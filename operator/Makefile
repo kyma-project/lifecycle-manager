@@ -115,6 +115,21 @@ ENVTEST = $(shell pwd)/bin/setup-envtest
 envtest: ## Download envtest-setup locally if necessary.
 	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
 
+CLIENT_GEN = $(shell pwd)/bin/client-gen
+.PHONY: client-gen
+client-gen: ## Download client-gen
+	$(call go-install-tool,$(CLIENT_GEN),k8s.io/code-generator/cmd/client-gen@v0.23.4)
+
+INFORMER_GEN = $(shell pwd)/bin/informer-gen
+.PHONY: informer-gen
+informer-gen: ## Download informer-gen
+	$(call go-install-tool,$(INFORMER_GEN),k8s.io/code-generator/cmd/informer-gen@v0.23.4)
+
+LISTER_GEN = $(shell pwd)/bin/lister-gen
+.PHONY: lister-gen
+lister-gen: ## Download lister-gen
+	$(call go-install-tool,$(LISTER_GEN),k8s.io/code-generator/cmd/lister-gen@v0.23.4)
+
 # go-get-tool will 'go get' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 define go-get-tool
@@ -125,6 +140,20 @@ cd $$TMP_DIR ;\
 go mod init tmp ;\
 echo "Downloading $(2)" ;\
 GOBIN=$(PROJECT_DIR)/bin go get $(2) ;\
+rm -rf $$TMP_DIR ;\
+}
+endef
+
+# go-install-tool will 'go install' any package $2 and install it to $1.
+PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
+define go-install-tool
+@[ -f $(1) ] || { \
+set -e ;\
+TMP_DIR=$$(mktemp -d) ;\
+cd $$TMP_DIR ;\
+go mod init tmp ;\
+echo "Downloading $(2)" ;\
+GOBIN=$(PROJECT_DIR)/bin go install $(2) ;\
 rm -rf $$TMP_DIR ;\
 }
 endef
