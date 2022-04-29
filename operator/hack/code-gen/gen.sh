@@ -2,7 +2,7 @@
 
 set -eo pipefail
 
-BASEDIR=$(realpath $(dirname "$0")/..)
+BASEDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/../.." && pwd )"
 
 rm -rf "$BASEDIR"/tmp
 mkdir -p "$BASEDIR"/tmp/api/operator.kyma-project.io
@@ -35,7 +35,7 @@ find "$BASEDIR"/tmp/pkg/client -name "*.go" -exec \
   sed -i "" "s#github\.com/kyma-project/kyma-operator/operator/tmp/api/operator\.kyma-project\.io/v1alpha1#github\.com/kyma-project/kyma-operator/operator/api/v1alpha1#g" \
   {} +
 
-rm -rf "$BASEDIR"/pkg/client && mkdir -p pkg
+rm -rf "$BASEDIR"/pkg/client
 mv "$BASEDIR"/tmp/pkg/client/github.com/kyma-project/kyma-operator/operator/pkg/client "$BASEDIR"/pkg/client
 
 rm -rf "$BASEDIR"/tmp
