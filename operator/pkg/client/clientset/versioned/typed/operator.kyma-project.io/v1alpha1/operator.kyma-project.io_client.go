@@ -20,8 +20,8 @@ package v1alpha1
 import (
 	"net/http"
 
-	v1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/client/clientset/versioned/scheme"
+	v1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	rest "k8s.io/client-go/rest"
 )
 
