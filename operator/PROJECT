@@ -1,0 +1,16 @@
+domain: kyma-project.io
+layout:
+- go.kubebuilder.io/v3
+projectName: operator
+repo: github.com/kyma-project/kyma-operator/operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: kyma-project.io
+  group: operator
+  kind: Kyma
+  path: github.com/kyma-project/kyma-operator/operator/api/v1alpha1
+  version: v1alpha1
+version: "3"
