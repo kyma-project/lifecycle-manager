@@ -51,7 +51,7 @@ Temporary Items
 .apdisk
 
 # Binaries
-bin/*
+operator/bin/*
 
 # Vendor
 vendor/
