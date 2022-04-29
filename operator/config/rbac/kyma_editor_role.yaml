@@ -1,0 +1,24 @@
+# permissions for end users to edit kymas.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kyma-editor-role
+rules:
+- apiGroups:
+  - operator.kyma-project.io
+  resources:
+  - kymas
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.kyma-project.io
+  resources:
+  - kymas/status
+  verbs:
+  - get
