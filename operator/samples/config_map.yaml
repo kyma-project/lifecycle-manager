@@ -1,0 +1,76 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: kyma-component-config
+  namespace: default
+data:
+  serverless: |-
+    crd-url: ""
+    kind: ServerlessConfiguration
+    group: kyma.kyma-project.io
+    resource: serverlessconfigurations
+    version: v1alpha1
+    spec: 
+      commonPrefix: "PENDING_STATE_FROM_KYMA_OP"
+      githubRepository:
+        authKey: "abcd1234"
+        url: "https://foobar.kyma-project.io"
+  istio: |-
+    kind: IstioConfiguration
+    group: kyma.kyma-project.io
+    resource: istioconfigurations
+    version: v1alpha1 
+    spec:
+      foo: "created From Dynamic Client"
+    
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: component-role
+rules:
+  - apiGroups:
+      - kyma.kyma-project.io
+    resources:
+      - serverlessconfigurations
+      - istioconfigurations
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - kyma.kyma-project.io
+    resources:
+      - serverlessconfigurations/finalizers
+      - istioconfigurations/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - kyma.kyma-project.io
+    resources:
+      - serverlessconfigurations/status
+      - istioconfigurations/status
+    verbs:
+      - get
+      - patch
+      - update
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: component-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: manager-role
+subjects:
+  - kind: ServiceAccount
+    name: controller-manager
+    namespace: system
