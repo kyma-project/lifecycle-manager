@@ -3,4 +3,4 @@ kind: Kyma
 metadata:
   name: kyma-sample
 spec:
-  # TODO(user): Add fields here
+  release: 2.1.2

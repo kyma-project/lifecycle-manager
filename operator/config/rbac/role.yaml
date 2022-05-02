@@ -11,9 +11,9 @@ rules:
   - kymas
   verbs:
   - create
-  - delete
   - get
   - list
+  - onEvent
   - patch
   - update
   - watch
