@@ -35,13 +35,64 @@ spec:
           spec:
             description: KymaSpec defines the desired state of Kyma
             properties:
-              foo:
-                description: Foo is an example field of Kyma. Edit kyma_types.go to
-                  remove/update
-                type: string
+              components:
+                description: Components specifies the list of components to be installed
+                items:
+                  description: ComponentType defines the components to be installed
+                  properties:
+                    name:
+                      type: string
+                    settings:
+                      additionalProperties:
+                        type: string
+                      type: object
+                  required:
+                  - name
+                  - settings
+                  type: object
+                type: array
             type: object
           status:
             description: KymaStatus defines the observed state of Kyma
+            properties:
+              conditions:
+                description: List of status conditions to indicate the status of a
+                  ServiceInstance.
+                items:
+                  description: KymaCondition describes condition information for Kyma.
+                  properties:
+                    lastTransitionTime:
+                      description: Timestamp for when Kyma last transitioned from
+                        one status to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: Human-readable message indicating details about
+                        the last status transition.
+                      type: string
+                    reason:
+                      description: Machine-readable text indicating the reason for
+                        the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the Kyma Condition. Value can be one
+                        of ("True", "False", "Unknown").
+                      type: string
+                    type:
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+              observedGeneration:
+                description: Observed generation
+                format: int64
+                type: integer
+              state:
+                description: State signifies current state of Kyma. Value can be one
+                  of ("Ready", "Processing", "Error", "Deleting").
+                type: string
             type: object
         type: object
     served: true

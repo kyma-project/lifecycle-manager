@@ -20,23 +20,91 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+// ComponentType defines the components to be installed
+type ComponentType struct {
+	Name     string            `json:"name"`
+	Settings map[string]string `json:"settings"`
+}
 
 // KymaSpec defines the desired state of Kyma
 type KymaSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of Kyma. Edit kyma_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// Components specifies the list of components to be installed
+	Components []ComponentType `json:"components,omitempty"`
 }
 
 // KymaStatus defines the observed state of Kyma
 type KymaStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// State signifies current state of Kyma.
+	// Value can be one of ("Ready", "Processing", "Error", "Deleting").
+	State KymaState `json:"state,omitempty"`
+
+	// List of status conditions to indicate the status of a ServiceInstance.
+	// +optional
+	Conditions []KymaCondition `json:"conditions,omitempty"`
+
+	// Observed generation
+	// +optional
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 }
+
+type KymaState string
+
+// Valid Kyma States
+const (
+	// KymaStateReady signifies Kyma is ready
+	KymaStateReady KymaState = "Ready"
+
+	// KymaStateProcessing signifies Kyma is reconciling
+	KymaStateProcessing KymaState = "Processing"
+
+	// KymaStateError signifies an error for Kyma
+	KymaStateError KymaState = "Error"
+
+	// KymaStateDeleting signifies Kyma is being deleted
+	KymaStateDeleting KymaState = "Deleting"
+)
+
+// KymaCondition describes condition information for Kyma.
+type KymaCondition struct {
+	Type KymaConditionType `json:"type"`
+
+	// Status of the Kyma Condition.
+	// Value can be one of ("True", "False", "Unknown").
+	Status KymaConditionStatus `json:"status"`
+
+	// Human-readable message indicating details about the last status transition.
+	// +optional
+	Message string `json:"message,omitempty"`
+
+	// Machine-readable text indicating the reason for the condition's last transition.
+	// +optional
+	Reason string `json:"reason,omitempty"`
+
+	// Timestamp for when Kyma last transitioned from one status to another.
+	// +optional
+	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`
+}
+
+type KymaConditionType string
+
+const (
+	// ConditionTypeReady represents KymaConditionType Ready
+	ConditionTypeReady KymaConditionType = "Ready"
+)
+
+type KymaConditionStatus string
+
+// Valid KymaCondition Status
+const (
+	// ConditionStatusTrue signifies KymaConditionStatus true
+	ConditionStatusTrue KymaConditionStatus = "True"
+
+	// ConditionStatusFalse signifies KymaConditionStatus false
+	ConditionStatusFalse KymaConditionStatus = "False"
+
+	// ConditionStatusUnknown signifies KymaConditionStatus unknown
+	ConditionStatusUnknown KymaConditionStatus = "Unknown"
+)
 
 //+genclient
 //+kubebuilder:object:root=true
