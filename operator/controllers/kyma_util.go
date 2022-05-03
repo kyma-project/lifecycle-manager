@@ -18,8 +18,9 @@ func GetConfig() (*rest.Config, error) {
 
 	// kubeconfig flag
 	if flag.Lookup("kubeconfig") != nil {
-		kubeconfig := flag.Lookup("kubeconfig").Value.String()
-		return clientcmd.BuildConfigFromFlags("", kubeconfig)
+		if kubeconfig := flag.Lookup("kubeconfig").Value.String(); kubeconfig != "" {
+			return clientcmd.BuildConfigFromFlags("", kubeconfig)
+		}
 	}
 
 	// env variable

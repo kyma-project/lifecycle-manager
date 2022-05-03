@@ -1,30 +1,3 @@
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: kyma-component-config
-  namespace: default
-data:
-  serverless: |-
-    crd-url: ""
-    kind: ServerlessConfiguration
-    group: kyma.kyma-project.io
-    resource: serverlessconfigurations
-    version: v1alpha1
-    spec: 
-      commonPrefix: "PENDING_STATE_FROM_KYMA_OP"
-      githubRepository:
-        authKey: "abcd1234"
-        url: "https://foobar.kyma-project.io"
-  istio: |-
-    kind: IstioConfiguration
-    group: kyma.kyma-project.io
-    resource: istioconfigurations
-    version: v1alpha1 
-    spec:
-      foo: "created From Dynamic Client"
-    
-
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:

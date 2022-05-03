@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	corev1 "k8s.io/api/core/v1"
-	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -64,17 +63,8 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		logger.Error(err, "kyma object read error")
 	}
 
-	configMap, err := r.GetConfigMap(req)
-	if apiErrors.IsNotFound(err) {
-		logger.Error(err, "component mapping ConfigMap not found, re-queuing resource %s", req.NamespacedName.String())
-		return ctrl.Result{}, err
-	} else if err != nil {
-		logger.Error(err, "component mapping ConfigMap read error, will not re-queue resource %s", req.NamespacedName.String())
-		return ctrl.Result{}, err
-	}
-
 	// read config map
-	if err := r.ReconcileFromConfigMap(ctx, req, configMap, *kymaObj); err != nil {
+	if err := r.ReconcileFromConfigMap(ctx, req, *kymaObj); err != nil {
 		logger.Error(err, "component CR creation error")
 		return ctrl.Result{}, err
 	}
@@ -82,15 +72,20 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return ctrl.Result{}, nil
 }
 
-func (r *KymaReconciler) GetConfigMap(req ctrl.Request) (*corev1.ConfigMap, error) {
-	configMapNamespaced := types.NamespacedName{Name: "kyma-component-config", Namespace: req.Namespace}
+func (r *KymaReconciler) GetConfigMap(ctx context.Context, component string) (*corev1.ConfigMap, error) {
+	configMapList := &corev1.ConfigMapList{}
+	if err := r.List(ctx, configMapList, client.MatchingLabels{"operator.kyma-project.io/controller-name": component}); err != nil {
+		return nil, err
+	}
 
-	configMap := &corev1.ConfigMap{}
+	if len(configMapList.Items) != 1 {
+		return nil, fmt.Errorf("more than one config map found for component: %s", component)
+	}
 
-	return configMap, r.Get(context.TODO(), configMapNamespaced, configMap)
+	return &configMapList.Items[0], nil
 }
 
-func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Request, configMap *corev1.ConfigMap, kymaObj operatorv1alpha1.Kyma) error {
+func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Request, kymaObj operatorv1alpha1.Kyma) error {
 	namespacedName := req.NamespacedName.String()
 	logger := log.FromContext(ctx).WithName(namespacedName)
 
@@ -99,6 +94,12 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 	}
 
 	for _, component := range kymaObj.Spec.Components {
+		configMap, err := r.GetConfigMap(ctx, component.Name)
+		if err != nil {
+			logger.Error(err, "component mapping ConfigMap read error, will not re-queue resource %s", req.NamespacedName.String())
+			return err
+		}
+
 		componentName := component.Name + "-name"
 
 		componentBytes, ok := configMap.Data[component.Name]
@@ -130,6 +131,10 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 				"metadata": map[string]interface{}{
 					"name":      componentName,
 					"namespace": req.Namespace,
+					"label": map[string]string{
+						"operator.kyma-project.io/managed-by":      "kyma-operator",
+						"operator.kyma-project.io/controller-name": component.Name,
+					},
 				},
 				"spec": componentYaml["spec"],
 			},
