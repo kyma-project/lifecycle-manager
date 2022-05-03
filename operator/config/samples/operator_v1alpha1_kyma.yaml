@@ -2,5 +2,10 @@ apiVersion: operator.kyma-project.io/v1alpha1
 kind: Kyma
 metadata:
   name: kyma-sample
+  namespace: operator-system
 spec:
-  release: 2.1.2
+  release: v2.2.3
+  components:
+    - name: test
+      settings:
+        key: value

@@ -123,24 +123,14 @@ func (r *KymaReconciler) onCreateOrUpdate(ctx context.Context, kyma *operatorv1a
 		kyma.Status.Conditions = append(kyma.Status.Conditions, operatorv1alpha1.KymaCondition{
 			Type:               operatorv1alpha1.ConditionTypeReady,
 			Status:             operatorv1alpha1.ConditionStatusFalse,
-			Message:            "Kyma has not been reconciled yet",
-			Reason:             "Reconciliation not finished yet!",
+			Message:            "reconciliation has to be finished",
+			Reason:             "reconciliation triggered",
 			LastTransitionTime: &v1.Time{Time: time.Now()},
 		})
 		r.Recorder.Event(kyma, "Normal", "Updated", fmt.Sprintf("Reconciliation started"))
 		return r.updateKymaStatus(ctx, kyma)
 	} else {
-		if semver.IsValid(kyma.Spec.Release) {
-			return r.reconcileKymaForRelease(ctx, kyma)
-		} else {
-			failureReason := fmt.Sprintf("reconciliation of %s is not possible, invalid semver!", kyma.Name)
-			logger.Info(failureReason)
-			kyma.Status.ObservedGeneration = kyma.ObjectMeta.Generation
-			kyma.Status.State = operatorv1alpha1.KymaStateError
-			r.Recorder.Event(kyma, "Warning", "ReconciliationFailed", fmt.Sprintf("Reconciliation failed: %s",
-				failureReason))
-			return r.updateKymaStatus(ctx, kyma)
-		}
+		return r.reconcileKymaForRelease(ctx, kyma)
 	}
 }
 
