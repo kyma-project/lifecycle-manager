@@ -1,0 +1,21 @@
+kind: ConfigMap
+apiVersion: v1
+
+metadata:
+  name: kyma-component-serverless
+  namespace: default
+  labels:
+    "operator.kyma-project.io/managed-by": "kyma-operator"
+    "operator.kyma-project.io/controller-name": "serverless"
+data:
+  serverless: |-
+    crd-url: ""
+    kind: ServerlessConfiguration
+    group: kyma.kyma-project.io
+    resource: serverlessconfigurations
+    version: v1alpha1
+    spec: 
+      commonPrefix: "PENDING_STATE_FROM_KYMA_OP"
+      githubRepository:
+        authKey: "abcd1234"
+        url: "https://foobar.kyma-project.io"
