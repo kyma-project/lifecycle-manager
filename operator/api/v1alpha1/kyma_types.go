@@ -28,7 +28,8 @@ type ComponentType struct {
 
 // KymaSpec defines the desired state of Kyma
 type KymaSpec struct {
-	Release string `json:"release"`
+	Release              string `json:"release"`
+	RevisionHistoryLimit int64  `json:"revisionHistoryLimit,omitempty,optional"`
 	// Components specifies the list of components to be installed
 	Components []ComponentType `json:"components,omitempty"`
 }

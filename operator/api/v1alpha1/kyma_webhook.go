@@ -25,6 +25,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"strings"
+	"time"
 )
 
 // log is for logging in this package.
@@ -42,14 +44,34 @@ func (r *Kyma) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Defaulter = &Kyma{}
 
+const PrefixReleaseRevision = "release.kyma-project.io"
+const RevisionHistoryLimitDefault = 3
+
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (r *Kyma) Default() {
+	// if our active release is also the specified release, we should back up the release spec
 	jsonout, err := json.Marshal(r.Spec)
 	if err != nil {
 		return
 	}
 
-	r.Annotations[fmt.Sprintf("release.kyma-project.io/%s", r.Spec.Release)] = string(jsonout)
+	revision := fmt.Sprintf("%s/%s-%s", PrefixReleaseRevision, r.Spec.Release, time.Now().Format("2006-01-02T15.04.05.000"))
+
+	if r.Spec.RevisionHistoryLimit <= 0 {
+		r.Spec.RevisionHistoryLimit = RevisionHistoryLimitDefault
+	}
+
+	var observedrevisions = r.Spec.RevisionHistoryLimit
+	for rev := range r.Annotations {
+		if strings.HasPrefix(rev, PrefixReleaseRevision) {
+			observedrevisions--
+			if observedrevisions <= 0 {
+				delete(r.Annotations, rev)
+			}
+		}
+	}
+
+	r.Annotations[revision] = string(jsonout)
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.

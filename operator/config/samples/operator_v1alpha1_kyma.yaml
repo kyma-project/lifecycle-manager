@@ -4,8 +4,9 @@ metadata:
   name: kyma-sample
   namespace: operator-system
 spec:
-  release: v2.2.3
+  revisionHistoryLimit: 4
+  release: v2.1.2
   components:
     - name: test
       settings:
-        key: value
+        key: value2
