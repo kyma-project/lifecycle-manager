@@ -13,4 +13,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: op
-  newTag: v0.0.3-test-deploy
+  newTag: v0.0.5-test-deploy

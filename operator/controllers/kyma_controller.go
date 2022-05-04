@@ -17,6 +17,7 @@ limitations under the License.
 package controllers
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"golang.org/x/mod/semver"
@@ -39,6 +40,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"text/template"
 	"time"
 
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
@@ -47,14 +49,31 @@ import (
 // KymaReconciler reconciles a Kyma object
 type KymaReconciler struct {
 	client.Client
-	Scheme  *runtime.Scheme
-	Builder *builder.Builder
+	Scheme   *runtime.Scheme
+	Builder  *builder.Builder
 	Recorder record.EventRecorder
 }
+
+type KymaProgressionPath string
+
+type KymaProgressionInfo struct {
+	KymaProgressionPath `json:"progressionPath"`
+	Old                 string `json:"old"`
+	New                 string `json:"new"`
+}
+
+const (
+	KymaUpgrade   KymaProgressionPath = "upgrade"
+	KymaDowngrade KymaProgressionPath = "downgrade"
+	KymaInstall   KymaProgressionPath = "install"
+	KymaUpdate    KymaProgressionPath = "update"
+)
 
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch;create;update;patch;onEvent;delete
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/finalizers,verbs=update
+//+kubebuilder:rbac:groups="",resources=events,verbs=create;patch;get;list;watch
+//+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;onEvent;watch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -62,8 +81,6 @@ type KymaReconciler struct {
 func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx).WithName(req.NamespacedName.String())
 	logger.Info("Reconciliation loop starting for", "resource", req.NamespacedName.String())
-	logger := log.FromContext(ctx).WithName(req.NamespacedName.String())
-	logger.Info("reconciling " + req.NamespacedName.String())
 	kyma := operatorv1alpha1.Kyma{}
 
 	if err := r.Get(ctx, req.NamespacedName, &kyma); err != nil {
@@ -79,13 +96,12 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		logger.Error(err, "kyma object read error")
 	}
 
-
 	// if deletionTimestamp is set, retry until it gets fully deleted
 	if !kyma.DeletionTimestamp.IsZero() {
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	err := r.onCreateOrUpdate(ctx, &kyma)
+	err := r.onCreateOrUpdate(ctx, req, &kyma)
 	if err != nil {
 		return ctrl.Result{}, err // retry
 	}
@@ -106,7 +122,8 @@ func (r *KymaReconciler) GetConfigMap(ctx context.Context, component string) (*c
 	return &configMapList.Items[0], nil
 }
 
-func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Request, kymaObj operatorv1alpha1.Kyma) error {
+func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Request, kymaObj operatorv1alpha1.Kyma,
+	progression *KymaProgressionInfo) error {
 	namespacedName := req.NamespacedName.String()
 	logger := log.FromContext(ctx).WithName(namespacedName)
 
@@ -128,8 +145,23 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 			return fmt.Errorf("%s component not found for resource %s", component.Name, namespacedName)
 		}
 
+		parsedTemplate, templateErr := template.New(component.Name).Funcs(template.FuncMap{
+			"installOperation":     func(interface{}) string { return string(progression.KymaProgressionPath) },
+			"installTargetVersion": func(interface{}) string { return progression.New },
+			"installOriginVersion": func(interface{}) string { return progression.Old },
+		}).Parse(componentBytes)
+		if templateErr != nil {
+			return fmt.Errorf("error during config map template parsing %w", templateErr)
+		}
+
+		templatedData := bytes.NewBufferString("")
+		templateExecErr := parsedTemplate.Execute(templatedData, nil)
+		if templateExecErr != nil {
+			return fmt.Errorf("error during config map template execution %w", templateExecErr)
+		}
+
 		componentYaml := make(map[string]interface{})
-		if err := yaml.Unmarshal([]byte(componentBytes), &componentYaml); err != nil {
+		if err := yaml.Unmarshal(templatedData.Bytes(), &componentYaml); err != nil {
 			return fmt.Errorf("error during config map unmarshal %w", err)
 		}
 
@@ -139,10 +171,10 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 			Version:  componentYaml["version"].(string),
 		}
 
-		if exists, err := r.GetUnstructuredResource(ctx, gvr, componentName, req.Namespace); client.IgnoreNotFound(err) != nil {
+		res, err := r.GetUnstructuredResource(ctx, gvr, componentName, req.Namespace)
+
+		if client.IgnoreNotFound(err) != nil {
 			return err
-		} else if exists {
-			continue
 		}
 
 		componentUnstructured := &unstructured.Unstructured{
@@ -152,31 +184,43 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 				"metadata": map[string]interface{}{
 					"name":      componentName,
 					"namespace": req.Namespace,
-					"label": map[string]string{
+					"labels": map[string]interface{}{
 						"operator.kyma-project.io/managed-by":      "kyma-operator",
 						"operator.kyma-project.io/controller-name": component.Name,
+						"operator.kyma-project.io/applied-as":      string(progression.KymaProgressionPath),
+						"operator.kyma-project.io/release":         progression.New,
 					},
 				},
 				"spec": componentYaml["spec"],
 			},
 		}
 
-		// set owner reference
-		if err := controllerutil.SetOwnerReference(&kymaObj, componentUnstructured, r.Scheme); err != nil {
-			return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w", component.Name, namespacedName, err)
-		}
+		if res != nil {
+			if err := r.Client.Patch(ctx, componentUnstructured, client.MergeFromWithOptions(res.DeepCopy(),
+				client.MergeFromWithOptimisticLock{})); err != nil {
+				return fmt.Errorf("error updating custom resource of type %s %w", component.Name, err)
+			}
 
-		if err := r.Client.Create(context.Background(), componentUnstructured, &client.CreateOptions{}); err != nil {
-			return fmt.Errorf("error creating custom resource of type %s %w", component.Name, err)
-		}
+			logger.Info("successfully updated component CR of", "type", component.Name)
+		} else {
 
-		logger.Info("successfully created component CR of", "type", component.Name)
+			// set owner reference
+			if err := controllerutil.SetOwnerReference(&kymaObj, componentUnstructured, r.Scheme); err != nil {
+				return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w", component.Name, namespacedName, err)
+			}
+
+			if err := r.Client.Create(ctx, componentUnstructured, &client.CreateOptions{}); err != nil {
+				return fmt.Errorf("error creating custom resource of type %s %w", component.Name, err)
+			}
+
+			logger.Info("successfully created component CR of", "type", component.Name)
+		}
 	}
 
 	return nil
 }
 
-func (r *KymaReconciler) onCreateOrUpdate(ctx context.Context, kyma *operatorv1alpha1.Kyma) error {
+func (r *KymaReconciler) onCreateOrUpdate(ctx context.Context, req ctrl.Request, kyma *operatorv1alpha1.Kyma) error {
 	logger := log.FromContext(ctx)
 	kyma = kyma.DeepCopy()
 
@@ -216,40 +260,59 @@ func (r *KymaReconciler) onCreateOrUpdate(ctx context.Context, kyma *operatorv1a
 			Status:             operatorv1alpha1.ConditionStatusFalse,
 			Message:            "reconciliation has to be finished",
 			Reason:             "reconciliation triggered",
-			LastTransitionTime: &v1.Time{Time: time.Now()},
+			LastTransitionTime: &metav1.Time{Time: time.Now()},
 		})
 		r.Recorder.Event(kyma, "Normal", "Updated", fmt.Sprintf("Reconciliation started"))
 		return r.updateKymaStatus(ctx, kyma)
 	} else {
-		return r.reconcileKymaForRelease(ctx, kyma)
+		return r.reconcileKymaForRelease(ctx, req, kyma)
 	}
 }
 
-func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, kyma *operatorv1alpha1.Kyma) error {
+func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, req ctrl.Request, kyma *operatorv1alpha1.Kyma) error {
+	logger := log.FromContext(ctx)
 	kyma.Status.Conditions[0].Status = operatorv1alpha1.ConditionStatusTrue
 	oldRelease, newRelease := kyma.Status.ActiveRelease, kyma.Spec.Release
-	kyma.Status.ActiveRelease = newRelease
 
 	compared := semver.Compare(oldRelease, newRelease)
+	var path KymaProgressionPath
 	if compared < 0 {
 		if oldRelease == "" {
+			path = KymaInstall
 			r.Recorder.Event(kyma, "Normal", "ReconciliationUpgrade", fmt.Sprintf("Initial Installation: %s", newRelease))
 		} else {
+			path = KymaUpgrade
 			r.Recorder.Event(kyma, "Normal", "ReconciliationUpgrade", fmt.Sprintf("Upgrade from %s to %s",
 				oldRelease, newRelease))
 		}
 	} else if compared > 0 {
+		path = KymaDowngrade
 		r.Recorder.Event(kyma, "Normal", "ReconciliationDowngrade", fmt.Sprintf("Downgrade from %s to %s",
 			oldRelease, newRelease))
 	} else {
+		path = KymaUpdate
 		r.Recorder.Event(kyma, "Normal", "ReconciliationUpdate", fmt.Sprintf("Update Active Release %s",
 			kyma.Spec.Release))
 	}
 
 	// read config map
-	if err := r.ReconcileFromConfigMap(ctx, req, *kymaObj); err != nil {
-		logger.Error(err, "component CR creation error")
+	if err := r.ReconcileFromConfigMap(ctx, req, *kyma, &KymaProgressionInfo{
+		KymaProgressionPath: path,
+		Old:                 oldRelease,
+		New:                 newRelease,
+	}); err != nil {
+		failureReason := fmt.Sprintf("CR creation error: %s", err.Error())
+		logger.Info(failureReason)
+		kyma.Status.ObservedGeneration = kyma.ObjectMeta.Generation
+		kyma.Status.State = operatorv1alpha1.KymaStateError
+		r.Recorder.Event(kyma, "Warning", "ReconciliationFailed", fmt.Sprintf("Reconciliation failed: %s",
+			failureReason))
+		statusUpdateErr := r.updateKymaStatus(ctx, kyma)
+		logger.Error(statusUpdateErr, "error ocurred after updating status for a failed reconciliation")
+		return err
 	}
+
+	kyma.Status.ActiveRelease = newRelease
 
 	return r.updateKymaStatus(ctx, kyma)
 }
@@ -266,22 +329,20 @@ func (r *KymaReconciler) updateKymaStatus(ctx context.Context, kyma *operatorv1a
 	})
 }
 
-func (r *KymaReconciler) GetUnstructuredResource(ctx context.Context, gvr schema.GroupVersionResource, name string, namespace string) (bool, error) {
+func (r *KymaReconciler) GetUnstructuredResource(ctx context.Context, gvr schema.GroupVersionResource, name string,
+	namespace string) (*unstructured.Unstructured, error) {
 	config, err := GetConfig()
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	dynamicClient, err := dynamic.NewForConfig(config)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
-	if _, err = dynamicClient.Resource(gvr).Namespace(namespace).Get(ctx, name, metav1.GetOptions{}); err != nil {
-		return false, err
-	}
-
-	return true, nil
+	return dynamicClient.Resource(gvr).Namespace(namespace).Get(ctx, name,
+		metav1.GetOptions{})
 }
 
 // SetupWithManager sets up the controller with the Manager.

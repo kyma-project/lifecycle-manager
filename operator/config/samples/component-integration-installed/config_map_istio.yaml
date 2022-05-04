@@ -14,4 +14,4 @@ data:
     resource: istioconfigurations
     version: v1alpha1 
     spec:
-      foo: "created From Dynamic Client"
+      foo: "created From Dynamic Client for {{installOperation .}} to {{installTargetVersion .}}"
