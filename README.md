@@ -32,8 +32,9 @@ kind: Kyma
 metadata:
   name: kyma-sample
 spec:
-  version: 2.2
-  kubeconfigName: cluster1-kubeconfig
+#  Note: kyma version and kubeconfig reference is not implemented yet
+#  version: 2.2
+#  kubeconfigName: cluster1-kubeconfig
   components:
   - name: istio
   - name: serverless
