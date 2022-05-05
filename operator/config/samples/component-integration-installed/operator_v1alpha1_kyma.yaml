@@ -4,7 +4,6 @@ metadata:
   name: kyma-sample
   namespace: default
 spec:
-  revisionHistoryLimit: 3
   release: v1.0.2
   components:
     - name: istio

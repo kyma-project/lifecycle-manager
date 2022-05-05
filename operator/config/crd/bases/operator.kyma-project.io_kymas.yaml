@@ -53,9 +53,6 @@ spec:
                 type: array
               release:
                 type: string
-              revisionHistoryLimit:
-                format: int64
-                type: integer
             required:
             - release
             type: object
