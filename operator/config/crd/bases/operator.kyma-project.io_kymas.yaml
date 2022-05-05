@@ -63,7 +63,7 @@ spec:
             description: KymaStatus defines the observed state of Kyma
             properties:
               activeRelease:
-                description: Observed generation
+                description: Active Release
                 type: string
               conditions:
                 description: List of status conditions to indicate the status of a
