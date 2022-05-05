@@ -1,10 +1,10 @@
 # kyma-operator
 
-Kyma is the opinionated set of Kubernetes based modular building blocks that includes the necessary capabilities to develop and run enterprise-grade cloud-native applications. Kyma operator is a tool that manages lifecycle of these components in your cluster.
+Kyma is the opinionated set of Kubernetes based modular building blocks that includes the necessary capabilities to develop and run enterprise-grade cloud-native applications. Kyma operator is a tool that manages the lifecycle of these components in your cluster.
 
 # Architecture
 
-Architecture of kyma-operator and component operators is derived from Kubernetes controllers/operators. Kyma-operator is a meta operator that coordinates lifecycle of kyma components by delegating it to component operators. 
+The architecture of `kyma-operator` and component operators is based on Kubernetes controllers/operators. `kyma-operator` is a meta operator that coordinates and tracks the lifecycle of kyma components by delegating it to component operators.
 
 Before you go further please make sure you understand concepts of Kubernetes API and resources. Recommended reading:
 - [Kubebuilder book](https://book.kubebuilder.io/)
@@ -17,11 +17,15 @@ Some architecture decisions were derived from business requirements and experime
 
 ![](docs/assets/kyma-operator-architecture.svg)
 
-Kyma-operator manages Kyma custom resource (CR). Kyma custom resource contains version of Kyma and list of components. Kyma-operator creates and watches component custom resources and updates Kyma resource status. Component operators watch only own custom resources, reconcile components in the target clusters to the desired states and update component resource status.
+`kyma-operator ` manages Clusters through the `Kyma` custom resource (CR). `Kyma` contains a desired state of all components in a cluster for a given Kyma Release. 
+
+`kyma-operator` creates component custom resources and updates `Kyma`'s status subresource based on the observed status changes in the component custom resource (similar to a deployment tracking pods). 
+
+Component operators watch only their own custom resources and reconcile components in the target clusters to the desired state. These states are then aggregated in `Kyma` to reflect the cluster state.
 
 ## Example
 
-Create resource Kyma:
+A sample `Kyma` CR could look like this:
 ```
 apiVersion: operator.kyma-project.io/v1alpha1
 kind: Kyma
@@ -35,4 +39,4 @@ spec:
   - name: serverless
 ```
 
-Such resource triggers kyma-operator, that creates 2 custom resources: `ServerlessComponent` and `IstioConfiguration`. These custom resources will trigger serverless-operator and istio-operator. When each component operator completes the installation it updates own resource status (`ServerlessComponent` and `IstioConfiguration`). Status changes trigger kyma-operator to update `Kyma` resource status. 
+The creation of the custom resource triggers a reconciliation of kyma-operator, that creates 2 custom resources: `ServerlessComponent` and `IstioConfiguration` based on a template. These custom resources will trigger serverless-operator and istio-operator. When each component operator completes the installation it updates it's own resource status (`ServerlessComponent/status` and `IstioConfiguration/status`). Status changes trigger kyma-operator to update `Kyma` resource status and aggregate and combine the readiness condition of the cluster.
