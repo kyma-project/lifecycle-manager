@@ -8,6 +8,7 @@ rules:
     resources:
       - serverlessconfigurations
       - istioconfigurations
+      - helms
     verbs:
       - create
       - delete
@@ -21,6 +22,7 @@ rules:
     resources:
       - serverlessconfigurations/finalizers
       - istioconfigurations/finalizers
+      - helms/finalizers
     verbs:
       - update
   - apiGroups:
@@ -28,6 +30,7 @@ rules:
     resources:
       - serverlessconfigurations/status
       - istioconfigurations/status
+      - helms/status
     verbs:
       - get
       - patch
