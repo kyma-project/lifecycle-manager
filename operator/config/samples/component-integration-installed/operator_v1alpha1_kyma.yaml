@@ -7,6 +7,12 @@ spec:
   release: v1.0.2
   components:
     - name: istio
+    - name: serverless
+    - name: helm
       settings:
-        type: "type"
-        config: "config"
+        chartName: cert-manager
+        create: "true"
+        releaseName: jet
+        releaseNamespace: default
+        repoName: jetstack
+        url: https://charts.jetstack.io

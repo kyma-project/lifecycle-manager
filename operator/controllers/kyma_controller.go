@@ -124,6 +124,7 @@ func (r *KymaReconciler) GetConfigMap(ctx context.Context, component string) (*c
 }
 
 func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Request, kymaObj operatorv1alpha1.Kyma, progression *KymaProgressionInfo) error {
+	var watchInputs []*unstructured.Unstructured
 	namespacedName := req.NamespacedName.String()
 	logger := log.FromContext(ctx).WithName(namespacedName)
 
@@ -186,93 +187,59 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 					"name":      componentName,
 					"namespace": req.Namespace,
 					"labels": map[string]interface{}{
-						"labels": map[string]string{
-							"operator.kyma-project.io/managed-by":      "kyma-operator",
-							"operator.kyma-project.io/controller-name": component.Name,
-							"operator.kyma-project.io/applied-as":      string(progression.KymaProgressionPath),
-							"operator.kyma-project.io/release":         progression.New,
-						},
+						"operator.kyma-project.io/managed-by":      "kyma-operator",
+						"operator.kyma-project.io/controller-name": component.Name,
+						"operator.kyma-project.io/applied-as":      string(progression.KymaProgressionPath),
+						"operator.kyma-project.io/release":         progression.New,
 					},
-					"spec":   componentYaml["spec"],
-					"status": map[string]string{},
 				},
+				"spec":   componentYaml["spec"],
+				"status": map[string]string{},
 			},
 		}
 		for key, value := range component.Settings {
 			componentUnstructured.Object["spec"].(map[string]interface{})[key] = value
-
-			if res != nil {
-				if err := r.Client.Patch(ctx, componentUnstructured, client.MergeFromWithOptions(res.DeepCopy(),
-					client.MergeFromWithOptimisticLock{})); err != nil {
-					return fmt.Errorf("error updating custom resource of type %s %w", component.Name, err)
-				}
-
-				logger.Info("successfully updated component CR of", "type", component.Name)
-			} else {
-
-				// set owner reference
-				if err := controllerutil.SetOwnerReference(&kymaObj, componentUnstructured, r.Scheme); err != nil {
-					return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w", component.Name, namespacedName, err)
-				}
-
-				if err := r.Client.Create(ctx, componentUnstructured, &client.CreateOptions{}); err != nil {
-					return fmt.Errorf("error creating custom resource of type %s %w", component.Name, err)
-				}
-
-				logger.Info("successfully created component CR of", "type", component.Name)
+		}
+		if res != nil {
+			if err := r.Client.Patch(ctx, componentUnstructured, client.MergeFromWithOptions(res.DeepCopy(),
+				client.MergeFromWithOptimisticLock{})); err != nil {
+				return fmt.Errorf("error updating custom resource of type %s %w", component.Name, err)
 			}
-			if err := r.Builder.
-				Watches(
-					&source.Kind{Type: componentUnstructured},
-					handler.Funcs{
-						UpdateFunc: func(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
-							objectBytes, err := json.Marshal(e.ObjectNew)
-							if err != nil {
-								panic(err)
-							}
-							componentObj := unstructured.Unstructured{}
-							if err = json.Unmarshal(objectBytes, &componentObj); err != nil {
-								panic(err)
-							}
-							if componentObj.Object["status"] == nil {
-								return
-							}
-							for key, value := range componentObj.Object["status"].(map[string]interface{}) {
-								if key == "state" && value == "Ready" {
-									kymaObj = operatorv1alpha1.Kyma{}
-									if err := r.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, &kymaObj); err != nil {
-										return
-									}
-									kymaObj.Status.State = operatorv1alpha1.KymaStateReady
-									kymaObj.Status.ObservedGeneration = kymaObj.Generation
-									var condition *operatorv1alpha1.KymaCondition
-									for _, existingCondition := range kymaObj.Status.Conditions {
-										if existingCondition.Type == operatorv1alpha1.ConditionTypeReady {
-											condition = &existingCondition
-										}
-									}
-									if condition == nil {
-										condition = &operatorv1alpha1.KymaCondition{
-											Type: operatorv1alpha1.ConditionTypeReady,
-										}
-									}
-									condition.LastTransitionTime = &metav1.Time{Time: time.Now()}
-									condition.Message = "successfully installed component type: " + e.ObjectNew.GetObjectKind().GroupVersionKind().String()
-									condition.Reason = "all component installed"
-									condition.Status = operatorv1alpha1.ConditionStatusTrue
-									kymaObj.Status.Conditions = append(kymaObj.Status.Conditions, *condition)
-									if err := r.Status().Update(ctx, &kymaObj); err != nil {
-										return
-									}
-								}
-							}
-						},
-					}, builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
-				).
-				Complete(r); err != nil {
-				logger.Error(err, "error while assigning watching update event on", "component", component.Name)
+
+			logger.Info("successfully updated component CR of", "type", component.Name)
+		} else {
+
+			// set owner reference
+			if err := controllerutil.SetOwnerReference(&kymaObj, componentUnstructured, r.Scheme); err != nil {
+				return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w", component.Name, namespacedName, err)
 			}
+
+			if err := r.Client.Create(ctx, componentUnstructured, &client.CreateOptions{}); err != nil {
+				return fmt.Errorf("error creating custom resource of type %s %w", component.Name, err)
+			}
+
+			// TODO: implement common watch mechanism for all unstructured kinds
+			watchInputs = append(watchInputs, componentUnstructured)
+
 			logger.Info("successfully created component CR of", "type", component.Name)
+		}
+
+	}
+
+	for _, addedComponent := range watchInputs {
+		r.Builder.
+			Watches(
+				&source.Kind{Type: addedComponent},
+				handler.Funcs{
+					UpdateFunc: r.ComponentChangeHandler,
+				}, builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+			)
+		logger.Info("successfully created component CR of", "type", addedComponent.GetKind())
+	}
+
+	if len(watchInputs) > 0 {
+		if err := r.Builder.Complete(r); err != nil {
+			logger.Error(err, "error while assigning watching update event on component CRs")
 		}
 	}
 	return nil
@@ -406,4 +373,62 @@ func (r *KymaReconciler) GetUnstructuredResource(ctx context.Context, gvr schema
 func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Builder = ctrl.NewControllerManagedBy(mgr)
 	return r.Builder.For(&operatorv1alpha1.Kyma{}).Complete(r)
+}
+
+func (r *KymaReconciler) ComponentChangeHandler(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
+	objectBytes, err := json.Marshal(e.ObjectNew)
+	if err != nil {
+		panic(err)
+	}
+	componentObj := unstructured.Unstructured{}
+	if err = json.Unmarshal(objectBytes, &componentObj); err != nil {
+		panic(err)
+	}
+	if componentObj.Object["status"] == nil {
+		return
+	}
+	for key, value := range componentObj.Object["status"].(map[string]interface{}) {
+		if key == "state" && value == "Ready" {
+			kymaObj := operatorv1alpha1.Kyma{}
+			ownerRefs := componentObj.GetOwnerReferences()
+			var ownerName string
+
+			for _, ownerRef := range ownerRefs {
+				if kymaObj.Kind == ownerRef.Kind {
+					ownerName = ownerRef.Name
+					break
+				}
+			}
+
+			if err := r.Get(context.TODO(), types.NamespacedName{Name: ownerName, Namespace: componentObj.GetNamespace()}, &kymaObj); err != nil {
+				return
+			}
+
+			kymaObj.Status.State = operatorv1alpha1.KymaStateReady
+			kymaObj.Status.ObservedGeneration = kymaObj.Generation
+			var condition *operatorv1alpha1.KymaCondition
+
+			for _, existingCondition := range kymaObj.Status.Conditions {
+				if existingCondition.Type == operatorv1alpha1.ConditionTypeReady {
+					condition = &existingCondition
+				}
+			}
+
+			if condition == nil {
+				condition = &operatorv1alpha1.KymaCondition{
+					Type: operatorv1alpha1.ConditionTypeReady,
+				}
+				kymaObj.Status.Conditions = append(kymaObj.Status.Conditions, *condition)
+			}
+
+			condition.LastTransitionTime = &metav1.Time{Time: time.Now()}
+			condition.Message = "successfully installed component type: " + e.ObjectNew.GetObjectKind().GroupVersionKind().String()
+			condition.Reason = "all component installed"
+			condition.Status = operatorv1alpha1.ConditionStatusTrue
+
+			if err := r.Status().Update(context.TODO(), &kymaObj); err != nil {
+				return
+			}
+		}
+	}
 }
