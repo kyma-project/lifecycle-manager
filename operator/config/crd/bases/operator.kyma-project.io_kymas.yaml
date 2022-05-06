@@ -51,10 +51,17 @@ spec:
                   - settings
                   type: object
                 type: array
+              release:
+                type: string
+            required:
+            - release
             type: object
           status:
             description: KymaStatus defines the observed state of Kyma
             properties:
+              activeRelease:
+                description: Active Release
+                type: string
               conditions:
                 description: List of status conditions to indicate the status of a
                   ServiceInstance.

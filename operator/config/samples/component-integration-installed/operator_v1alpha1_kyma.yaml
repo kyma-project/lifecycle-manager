@@ -1,0 +1,12 @@
+apiVersion: operator.kyma-project.io/v1alpha1
+kind: Kyma
+metadata:
+  name: kyma-sample
+  namespace: default
+spec:
+  release: v1.0.2
+  components:
+    - name: istio
+      settings:
+        type: "type"
+        config: "config"

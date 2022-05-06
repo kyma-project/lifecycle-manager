@@ -28,11 +28,13 @@ type ComponentType struct {
 
 // KymaSpec defines the desired state of Kyma
 type KymaSpec struct {
+	Release string `json:"release"`
 	// Components specifies the list of components to be installed
 	Components []ComponentType `json:"components,omitempty"`
 }
 
 // KymaStatus defines the observed state of Kyma
+// +kubebuilder:subresource:status
 type KymaStatus struct {
 	// State signifies current state of Kyma.
 	// Value can be one of ("Ready", "Processing", "Error", "Deleting").
@@ -45,6 +47,10 @@ type KymaStatus struct {
 	// Observed generation
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+
+	// Active Release
+	// +optional
+	ActiveRelease string `json:"activeRelease,omitempty"`
 }
 
 type KymaState string

@@ -6,6 +6,25 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - onEvent
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - watch
+- apiGroups:
   - operator.kyma-project.io
   resources:
   - kymas
@@ -14,6 +33,7 @@ rules:
   - delete
   - get
   - list
+  - onEvent
   - patch
   - update
   - watch
