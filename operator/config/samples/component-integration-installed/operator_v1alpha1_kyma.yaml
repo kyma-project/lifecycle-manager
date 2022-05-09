@@ -8,11 +8,11 @@ spec:
   components:
     - name: istio
     - name: serverless
-    - name: helm
+    - name: manifest
       settings:
+        createChart: "true"
         chartName: cert-manager
-        create: "true"
         releaseName: jet
-        releaseNamespace: default
         repoName: jetstack
         url: https://charts.jetstack.io
+        clientConfig: "CreateNamespace=true,Namespace=jet-cert"
