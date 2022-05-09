@@ -74,7 +74,6 @@ const (
 // KymaCondition describes condition information for Kyma.
 type KymaCondition struct {
 	Type KymaConditionType `json:"type"`
-
 	// Status of the Kyma Condition.
 	// Value can be one of ("True", "False", "Unknown").
 	Status KymaConditionStatus `json:"status"`
