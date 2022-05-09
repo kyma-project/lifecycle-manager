@@ -20,15 +20,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"golang.org/x/mod/semver"
-	corev1 "k8s.io/api/core/v1"
+	"github.com/kyma-project/kyma-operator/operator/pkg/dynamic"
+	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -41,6 +39,7 @@ import (
 	"time"
 
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	"github.com/kyma-project/kyma-operator/operator/pkg/release"
 )
 
 // KymaReconciler reconciles a Kyma object
@@ -50,21 +49,6 @@ type KymaReconciler struct {
 	Builder  *builder.Builder
 	Recorder record.EventRecorder
 }
-
-type KymaReleaseProgressionPath string
-
-type KymaReleaseProgressionInfo struct {
-	KymaReleaseProgressionPath `json:"progressionPath"`
-	Old                        string `json:"old"`
-	New                        string `json:"new"`
-}
-
-const (
-	KymaUpgrade   KymaReleaseProgressionPath = "upgrade"
-	KymaDowngrade KymaReleaseProgressionPath = "downgrade"
-	KymaInstall   KymaReleaseProgressionPath = "install"
-	KymaUpdate    KymaReleaseProgressionPath = "update"
-)
 
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch;create;update;patch;onEvent;delete
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/status,verbs=get;update;patch
@@ -88,14 +72,14 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	kymaObj := &operatorv1alpha1.Kyma{}
-	if err := r.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, kymaObj); err != nil {
-		logger.Error(err, "kyma object read error")
-	}
-
 	// if deletionTimestamp is set, retry until it gets fully deleted
 	if !kyma.DeletionTimestamp.IsZero() {
 		return ctrl.Result{Requeue: true}, nil
+	}
+
+	if kyma.IsAlreadyReconciled() {
+		logger.Info("skipping reconciliation for " + kyma.Name + ", already reconciled!")
+		return ctrl.Result{}, nil
 	}
 
 	err := r.onCreateOrUpdate(ctx, req, &kyma)
@@ -106,41 +90,21 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return ctrl.Result{}, nil
 }
 
-func (r *KymaReconciler) GetTemplateConfigMapForRelease(ctx context.Context, component, release string) (*corev1.ConfigMap, error) {
-	configMapList := &corev1.ConfigMapList{}
-	if err := r.List(ctx, configMapList,
-		client.MatchingLabels{
-			"operator.kyma-project.io/controller-name": component,
-			"operator.kyma-project.io/release":         release,
-		},
-	); err != nil {
-		return nil, err
-	}
-
-	if len(configMapList.Items) > 1 {
-		return nil, fmt.Errorf("more than one config map template found for component: %s", component)
-	}
-
-	if len(configMapList.Items) == 0 {
-		return nil, fmt.Errorf("no config map template found for component: %s", component)
-	}
-
-	return &configMapList.Items[0], nil
-}
-
-func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Request, kymaObj operatorv1alpha1.Kyma,
-	release *KymaReleaseProgressionInfo) error {
+func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Request, kyma *operatorv1alpha1.Kyma,
+	rel *release.Kyma) error {
 	namespacedName := req.NamespacedName.String()
 	logger := log.FromContext(ctx).WithName(namespacedName)
 
-	if len(kymaObj.Spec.Components) < 1 {
+	if len(kyma.Spec.Components) < 1 {
 		return fmt.Errorf("no component specified for resource %s", namespacedName)
 	}
 
-	for _, component := range kymaObj.Spec.Components {
-		configMap, err := r.GetTemplateConfigMapForRelease(ctx, component.Name, release.New)
+	finder := dynamic.NewTemplateFinder(r).Release(rel.New)
+
+	for _, component := range kyma.Spec.Components {
+		configMap, err := finder.For(component.Name).Find(ctx)
 		if err != nil {
-			logger.Error(err, fmt.Sprintf("could not find template configmap for resource %s and release %s, will not re-queue resource %s", component.Name, release.New, req.NamespacedName.String()))
+			logger.Error(err, fmt.Sprintf("could not find template configmap for resource %s and release %s, will not re-queue resource %s", component.Name, rel.New, req.NamespacedName.String()))
 			return err
 		}
 
@@ -151,12 +115,12 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 			return fmt.Errorf("%s component not found for resource %s", component.Name, namespacedName)
 		}
 
-		componentYaml, templateErr := r.GetTemplatedComponent(component.Name, componentBytes, release)
+		componentYaml, templateErr := r.GetTemplatedComponent(component.Name, componentBytes, rel)
 		if templateErr != nil {
 			return fmt.Errorf("error during config map template parsing %w", templateErr)
 		}
 
-		res, err := r.GetUnstructuredResource(ctx, schema.GroupVersionResource{
+		res, err := dynamic.GetUnstructuredResource(ctx, schema.GroupVersionResource{
 			Group:    componentYaml["group"].(string),
 			Resource: componentYaml["resource"].(string),
 			Version:  componentYaml["version"].(string),
@@ -166,6 +130,7 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 			return err
 		}
 
+		//goland:noinspection GoRedundantConversion
 		componentUnstructured := &unstructured.Unstructured{
 			Object: map[string]interface{}{
 				"kind":       componentYaml["kind"].(string),
@@ -174,10 +139,10 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 					"name":      componentName,
 					"namespace": req.Namespace,
 					"labels": map[string]interface{}{
-						"operator.kyma-project.io/managed-by":      "kyma-operator",
-						"operator.kyma-project.io/controller-name": component.Name,
-						"operator.kyma-project.io/applied-as":      string(release.KymaReleaseProgressionPath),
-						"operator.kyma-project.io/release":         release.New,
+						labels.ManagedBy:      "kyma-operator",
+						labels.ControllerName: component.Name,
+						labels.AppliedAs:      string(rel.Type),
+						labels.Release:        rel.New,
 					},
 				},
 				"spec": componentYaml["spec"],
@@ -193,7 +158,7 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 			logger.Info("successfully updated component CR of", "type", component.Name)
 		} else {
 			// set owner reference
-			if err := controllerutil.SetOwnerReference(&kymaObj, componentUnstructured, r.Scheme); err != nil {
+			if err := controllerutil.SetOwnerReference(kyma, componentUnstructured, r.Scheme); err != nil {
 				return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w", component.Name, namespacedName, err)
 			}
 
@@ -208,11 +173,11 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 	return nil
 }
 
-func (r *KymaReconciler) GetTemplatedComponent(templateName, componentTemplate string, release *KymaReleaseProgressionInfo) (map[string]interface{}, error) {
+func (r *KymaReconciler) GetTemplatedComponent(templateName, componentTemplate string, rel *release.Kyma) (map[string]interface{}, error) {
 	parsedTemplate, templateErr := template.New(templateName).Funcs(template.FuncMap{
-		"installOperation":     func(interface{}) string { return string(release.KymaReleaseProgressionPath) },
-		"installTargetVersion": func(interface{}) string { return release.New },
-		"installOriginVersion": func(interface{}) string { return release.Old },
+		"installOperation":     func(interface{}) release.Type { return rel.Type },
+		"installTargetVersion": func(interface{}) string { return rel.New },
+		"installOriginVersion": func(interface{}) string { return rel.Old },
 	}).Parse(componentTemplate)
 	if templateErr != nil {
 		return nil, fmt.Errorf("error during config map template parsing %w", templateErr)
@@ -234,16 +199,8 @@ func (r *KymaReconciler) GetTemplatedComponent(templateName, componentTemplate s
 
 func (r *KymaReconciler) onCreateOrUpdate(ctx context.Context, req ctrl.Request, kyma *operatorv1alpha1.Kyma) error {
 	logger := log.FromContext(ctx)
-	kyma = kyma.DeepCopy()
 
-	if (kyma.Status.State == operatorv1alpha1.KymaStateReady || kyma.Status.State == operatorv1alpha1.KymaStateError) && kyma.Status.
-		ObservedGeneration == kyma.
-		ObjectMeta.Generation {
-		logger.Info("skipping reconciliation for " + kyma.Name + ", already reconciled!")
-		return nil
-	}
-
-	if kyma.Status.State == operatorv1alpha1.KymaStateProcessing {
+	if kyma.IsReconciling() {
 		logger.Info("processing " + kyma.Name)
 		ready := true
 		for _, condition := range kyma.Status.Conditions {
@@ -271,7 +228,7 @@ func (r *KymaReconciler) onCreateOrUpdate(ctx context.Context, req ctrl.Request,
 			Type:               operatorv1alpha1.ConditionTypeReady,
 			Status:             operatorv1alpha1.ConditionStatusFalse,
 			Message:            "reconciliation has to be finished",
-			Reason:             "reconciliation triggered",
+			Reason:             "ReconciliationTriggered",
 			LastTransitionTime: &metav1.Time{Time: time.Now()},
 		})
 		r.Recorder.Event(kyma, "Normal", "Updated", fmt.Sprintf("Reconciliation started"))
@@ -284,35 +241,13 @@ func (r *KymaReconciler) onCreateOrUpdate(ctx context.Context, req ctrl.Request,
 func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, req ctrl.Request, kyma *operatorv1alpha1.Kyma) error {
 	logger := log.FromContext(ctx)
 	kyma.Status.Conditions[0].Status = operatorv1alpha1.ConditionStatusTrue
-	oldRelease, newRelease := kyma.Status.ActiveRelease, kyma.Spec.Release
 
-	compared := semver.Compare(oldRelease, newRelease)
-	var path KymaReleaseProgressionPath
-	if compared < 0 {
-		if oldRelease == "" {
-			path = KymaInstall
-			r.Recorder.Event(kyma, "Normal", "ReconciliationUpgrade", fmt.Sprintf("Initial Installation: %s", newRelease))
-		} else {
-			path = KymaUpgrade
-			r.Recorder.Event(kyma, "Normal", "ReconciliationUpgrade", fmt.Sprintf("Upgrade from %s to %s",
-				oldRelease, newRelease))
-		}
-	} else if compared > 0 {
-		path = KymaDowngrade
-		r.Recorder.Event(kyma, "Normal", "ReconciliationDowngrade", fmt.Sprintf("Downgrade from %s to %s",
-			oldRelease, newRelease))
-	} else {
-		path = KymaUpdate
-		r.Recorder.Event(kyma, "Normal", "ReconciliationUpdate", fmt.Sprintf("Update Active Release %s",
-			kyma.Spec.Release))
-	}
+	rel := release.NewKyma(kyma.Status.ActiveRelease, kyma.Spec.Release, func(eventtype, reason, message string) {
+		r.Recorder.Event(kyma, eventtype, reason, message)
+	})
 
 	// read config map
-	if err := r.ReconcileFromConfigMap(ctx, req, *kyma, &KymaReleaseProgressionInfo{
-		KymaReleaseProgressionPath: path,
-		Old:                        oldRelease,
-		New:                        newRelease,
-	}); err != nil {
+	if err := r.ReconcileFromConfigMap(ctx, req, kyma, rel); err != nil {
 		failureReason := fmt.Sprintf("CR creation error: %s", err.Error())
 		logger.Info(failureReason)
 		kyma.Status.ObservedGeneration = kyma.ObjectMeta.Generation
@@ -324,7 +259,7 @@ func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, req ctrl.R
 		return err
 	}
 
-	kyma.Status.ActiveRelease = newRelease
+	kyma.Status.ActiveRelease = rel.New
 
 	return r.updateKymaStatus(ctx, kyma)
 }
@@ -341,29 +276,13 @@ func (r *KymaReconciler) updateKymaStatus(ctx context.Context, kyma *operatorv1a
 	})
 }
 
-func (r *KymaReconciler) GetUnstructuredResource(ctx context.Context, gvr schema.GroupVersionResource, name string,
-	namespace string) (*unstructured.Unstructured, error) {
-	config, err := GetConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	dynamicClient, err := dynamic.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	return dynamicClient.Resource(gvr).Namespace(namespace).Get(ctx, name,
-		metav1.GetOptions{})
-}
-
 // SetupWithManager sets up the controller with the Manager.
 func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Builder = ctrl.NewControllerManagedBy(mgr)
 	return r.Builder.For(&operatorv1alpha1.Kyma{}).
 		//Owns(&corev1.ConfigMap{}).
 		//Watches(
-		//	&source.Kind{Type: &corev1.ConfigMap{}},
+		//	&source.Kind{CalculateReleaseType: &corev1.ConfigMap{}},
 		//	handler.EnqueueRequestsFromMapFunc(r.findObjectsForConfigMap),
 		//	builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		//).

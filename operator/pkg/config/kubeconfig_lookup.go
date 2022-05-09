@@ -1,4 +1,4 @@
-package controllers
+package config
 
 import (
 	"flag"
@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 )
 
-func GetConfig() (*rest.Config, error) {
+func Get() (*rest.Config, error) {
 	// in-cluster config
 	config, err := rest.InClusterConfig()
 	if err == nil {

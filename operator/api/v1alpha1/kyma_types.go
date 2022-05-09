@@ -125,6 +125,14 @@ type Kyma struct {
 	Status KymaStatus `json:"status,omitempty"`
 }
 
+func (k *Kyma) IsAlreadyReconciled() bool {
+	return (k.Status.State == KymaStateReady || k.Status.State == KymaStateError) && k.Status.ObservedGeneration == k.ObjectMeta.Generation
+}
+
+func (k *Kyma) IsReconciling() bool {
+	return k.Status.State == KymaStateProcessing
+}
+
 //+kubebuilder:object:root=true
 
 // KymaList contains a list of Kyma
