@@ -4,6 +4,7 @@ import (
 	"flag"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
@@ -71,4 +72,13 @@ func AddConditionForComponents(kymaObj *operatorv1alpha1.Kyma, componentNames []
 			}
 		}
 	}
+}
+
+func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, componentName string, progression KymaProgressionInfo) {
+	labels := unstructuredCompCR.Object["metadata"].(map[string]interface{})["labels"].(map[string]interface{})
+	labels["operator.kyma-project.io/managed-by"] = "kyma-operator"
+	labels["operator.kyma-project.io/controller-name"] = componentName
+	labels["operator.kyma-project.io/applied-as"] = string(progression.KymaProgressionPath)
+	labels["operator.kyma-project.io/release"] = progression.New
+	unstructuredCompCR.Object["metadata"].(map[string]interface{})["labels"] = labels
 }

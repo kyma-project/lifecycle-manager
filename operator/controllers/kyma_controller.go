@@ -181,42 +181,41 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 			return err
 		}
 
-		componentUnstructured := &unstructured.Unstructured{
-			Object: map[string]interface{}{
-				"kind":       componentYaml["kind"].(string),
-				"apiVersion": componentYaml["group"].(string) + "/" + componentYaml["version"].(string),
-				"metadata": map[string]interface{}{
-					"name":      componentName,
-					"namespace": req.Namespace,
-					"labels": map[string]interface{}{
-						"operator.kyma-project.io/managed-by":      "kyma-operator",
-						"operator.kyma-project.io/controller-name": component.Name,
-						"operator.kyma-project.io/applied-as":      string(progression.KymaProgressionPath),
-						"operator.kyma-project.io/release":         progression.New,
-					},
-				},
-				"spec": componentYaml["spec"],
-			},
-		}
-		for key, value := range component.Settings {
-			componentUnstructured.Object["spec"].(map[string]interface{})[key] = value
-		}
-
-		// set owner reference
-		if err := controllerutil.SetOwnerReference(kymaObj, componentUnstructured, r.Scheme); err != nil {
-			return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w", component.Name, namespacedName, err)
-		}
-
 		// overwrite labels for upgrade / downgrade of component versions
-		// KymaUpdate doesn't require a patch
+		// KymaUpdate doesn't require an update
 		if res != nil && progression.KymaProgressionPath != KymaUpdate {
-			if err := r.Client.Patch(ctx, componentUnstructured, client.MergeFromWithOptions(res.DeepCopy(),
-				client.MergeFromWithOptimisticLock{})); err != nil {
+			// set labels
+			SetComponentCRLabels(res, component.Name, *progression)
+
+			if err := r.Client.Update(ctx, res); err != nil {
 				return fmt.Errorf("error updating custom resource of type %s %w", component.Name, err)
 			}
 
 			logger.Info("successfully updated component CR of", "type", component.Name)
 		} else if res == nil {
+			componentUnstructured := &unstructured.Unstructured{
+				Object: map[string]interface{}{
+					"kind":       componentYaml["kind"].(string),
+					"apiVersion": componentYaml["group"].(string) + "/" + componentYaml["version"].(string),
+					"metadata": map[string]interface{}{
+						"name":      componentName,
+						"namespace": req.Namespace,
+						"labels":    map[string]interface{}{},
+					},
+					"spec": componentYaml["spec"],
+				},
+			}
+			for key, value := range component.Settings {
+				componentUnstructured.Object["spec"].(map[string]interface{})[key] = value
+			}
+
+			// set labels
+			SetComponentCRLabels(componentUnstructured, component.Name, *progression)
+
+			// set owner reference
+			if err := controllerutil.SetOwnerReference(kymaObj, componentUnstructured, r.Scheme); err != nil {
+				return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w", component.Name, namespacedName, err)
+			}
 
 			// create resource if not found
 			if err := r.Client.Create(ctx, componentUnstructured, &client.CreateOptions{}); err != nil {
@@ -360,8 +359,7 @@ func (r *KymaReconciler) GetUnstructuredResource(ctx context.Context, gvr schema
 		return nil, err
 	}
 
-	return dynamicClient.Resource(gvr).Namespace(namespace).Get(ctx, name,
-		metav1.GetOptions{})
+	return dynamicClient.Resource(gvr).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
 }
 
 // SetupWithManager sets up the controller with the Manager.
