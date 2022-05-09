@@ -40,7 +40,7 @@ func GetConfig() (*rest.Config, error) {
 	return nil, err
 }
 
-func GetConditionForComponent(kymaObj *operatorv1alpha1.Kyma, componentName string) (*operatorv1alpha1.KymaCondition, bool) {
+func getConditionForComponent(kymaObj *operatorv1alpha1.Kyma, componentName string) (*operatorv1alpha1.KymaCondition, bool) {
 	status := &kymaObj.Status
 	for _, existingCondition := range status.Conditions {
 		if existingCondition.Type == operatorv1alpha1.ConditionTypeReady && existingCondition.Reason == componentName {
@@ -53,7 +53,7 @@ func GetConditionForComponent(kymaObj *operatorv1alpha1.Kyma, componentName stri
 func AddConditionForComponents(kymaObj *operatorv1alpha1.Kyma, componentNames []string, conditionStatus operatorv1alpha1.KymaConditionStatus, message string) {
 	status := &kymaObj.Status
 	for _, componentName := range componentNames {
-		condition, exists := GetConditionForComponent(kymaObj, componentName)
+		condition, exists := getConditionForComponent(kymaObj, componentName)
 		if !exists {
 			condition = &operatorv1alpha1.KymaCondition{
 				Type:   operatorv1alpha1.ConditionTypeReady,
