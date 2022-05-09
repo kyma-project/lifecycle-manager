@@ -1,6 +1,0 @@
-apiVersion: operator.kyma-project.io/v1alpha1
-kind: Helm
-metadata:
-  name: helm-sample
-spec:
-  # TODO(user): Add fields here
