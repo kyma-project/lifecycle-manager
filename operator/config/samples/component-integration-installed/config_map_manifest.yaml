@@ -13,4 +13,5 @@ data:
     group: component.kyma-project.io
     resource: manifests
     version: v1alpha1
-    spec:
+    spec: 
+      defaultNamespace: "default"

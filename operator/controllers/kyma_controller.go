@@ -193,8 +193,7 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 						"operator.kyma-project.io/release":         progression.New,
 					},
 				},
-				"spec":   componentYaml["spec"],
-				"status": map[string]string{},
+				"spec": componentYaml["spec"],
 			},
 		}
 		for key, value := range component.Settings {
@@ -250,8 +249,7 @@ func (r *KymaReconciler) onCreateOrUpdate(ctx context.Context, req ctrl.Request,
 	kyma = kyma.DeepCopy()
 
 	if (kyma.Status.State == operatorv1alpha1.KymaStateReady || kyma.Status.State == operatorv1alpha1.KymaStateError) && kyma.Status.
-		ObservedGeneration == kyma.
-		ObjectMeta.Generation {
+		ObservedGeneration == kyma.Generation {
 		logger.Info("skipping reconciliation for " + kyma.Name + ", already reconciled!")
 		return nil
 	}
@@ -268,14 +266,14 @@ func (r *KymaReconciler) onCreateOrUpdate(ctx context.Context, req ctrl.Request,
 		if ready {
 			logger.Info(fmt.Sprintf("reconciliation of %s finished!", kyma.Name))
 			r.Recorder.Event(kyma, "Normal", "ReconciliationSuccess", fmt.Sprintf("Reconciliation finished!"))
-			kyma.Status.ObservedGeneration = kyma.ObjectMeta.Generation
+			kyma.Status.ObservedGeneration = kyma.Generation
 			kyma.Status.State = operatorv1alpha1.KymaStateReady
 			return r.updateKymaStatus(ctx, kyma)
 		}
 	}
 
 	kyma.Status.State = operatorv1alpha1.KymaStateProcessing
-	kyma.Status.ObservedGeneration = kyma.ObjectMeta.Generation
+	kyma.Status.ObservedGeneration = kyma.Generation
 
 	//THIS IS JUST STUB CODE
 	if len(kyma.Status.Conditions) == 0 {
@@ -328,7 +326,7 @@ func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, req ctrl.R
 	}); err != nil {
 		failureReason := fmt.Sprintf("CR creation error: %s", err.Error())
 		logger.Info(failureReason)
-		kyma.Status.ObservedGeneration = kyma.ObjectMeta.Generation
+		kyma.Status.ObservedGeneration = kyma.Generation
 		kyma.Status.State = operatorv1alpha1.KymaStateError
 		r.Recorder.Event(kyma, "Warning", "ReconciliationFailed", fmt.Sprintf("Reconciliation failed: %s",
 			failureReason))
@@ -400,6 +398,7 @@ func (r *KymaReconciler) ComponentChangeHandler(e event.UpdateEvent, q workqueue
 				}
 			}
 
+			// TODO: propagate context from Reconcile() function
 			if err := r.Get(context.TODO(), types.NamespacedName{Name: ownerName, Namespace: componentObj.GetNamespace()}, &kymaObj); err != nil {
 				return
 			}
@@ -426,7 +425,8 @@ func (r *KymaReconciler) ComponentChangeHandler(e event.UpdateEvent, q workqueue
 			condition.Reason = "all component installed"
 			condition.Status = operatorv1alpha1.ConditionStatusTrue
 
-			if err := r.Status().Update(context.TODO(), &kymaObj); err != nil {
+			// TODO: propagate context from Reconcile() function
+			if err := r.updateKymaStatus(context.TODO(), &kymaObj); err != nil {
 				return
 			}
 		}
