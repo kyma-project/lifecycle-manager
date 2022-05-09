@@ -14,4 +14,3 @@ data:
     resource: manifests
     version: v1alpha1
     spec:
-      test: ""
