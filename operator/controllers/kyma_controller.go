@@ -239,7 +239,7 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 
 	if len(watchInputs) > 0 {
 		if err := r.Builder.Complete(r); err != nil {
-			logger.Error(err, "error while assigning watching update event on component CRs")
+			logger.Error(err, "error while assigning watch update event on component CRs")
 		}
 	}
 	return nil
@@ -388,7 +388,7 @@ func (r *KymaReconciler) ComponentChangeHandler(e event.UpdateEvent, q workqueue
 		return
 	}
 	for key, value := range componentObj.Object["status"].(map[string]interface{}) {
-		if key == "state" && value == "Ready" {
+		if key == "state" && value == operatorv1alpha1.KymaStateReady {
 			kymaObj := operatorv1alpha1.Kyma{}
 			ownerRefs := componentObj.GetOwnerReferences()
 			var ownerName string
