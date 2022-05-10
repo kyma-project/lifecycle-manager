@@ -4,9 +4,15 @@ metadata:
   name: kyma-sample
   namespace: default
 spec:
-  release: v2.0.2
+  release: v2.0.5
   components:
     - name: istio
+    - name: serverless
+    - name: manifest
       settings:
-        type: "type"
-        config: "config"
+        createChart: "true"
+        chartName: cert-manager
+        releaseName: jet
+        repoName: jetstack
+        url: https://charts.jetstack.io
+        clientConfig: "CreateNamespace=true,Namespace=jet-cert"

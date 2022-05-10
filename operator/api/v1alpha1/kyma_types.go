@@ -23,7 +23,7 @@ import (
 // ComponentType defines the components to be installed
 type ComponentType struct {
 	Name     string            `json:"name"`
-	Settings map[string]string `json:"settings"`
+	Settings map[string]string `json:"settings,omitempty"`
 }
 
 // KymaSpec defines the desired state of Kyma
@@ -53,6 +53,7 @@ type KymaStatus struct {
 	ActiveRelease string `json:"activeRelease,omitempty"`
 }
 
+// +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error
 type KymaState string
 
 // Valid Kyma States
@@ -73,7 +74,6 @@ const (
 // KymaCondition describes condition information for Kyma.
 type KymaCondition struct {
 	Type KymaConditionType `json:"type"`
-
 	// Status of the Kyma Condition.
 	// Value can be one of ("True", "False", "Unknown").
 	Status KymaConditionStatus `json:"status"`
@@ -115,6 +115,8 @@ const (
 //+genclient
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
+//+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // Kyma is the Schema for the kymas API
 type Kyma struct {

@@ -4,6 +4,32 @@ metadata:
   name: component-role
 rules:
   - apiGroups:
+      - component.kyma-project.io
+    resources:
+      - manifests
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - component.kyma-project.io
+    resources:
+      - manifests/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - component.kyma-project.io
+    resources:
+      - manifests/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
       - kyma.kyma-project.io
     resources:
       - serverlessconfigurations
