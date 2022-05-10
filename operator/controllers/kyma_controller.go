@@ -266,7 +266,7 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 
 	// check component conditions, if not present add them
 	logger.Info("checking condition for component CRs")
-	AddConditionForComponents(kymaObj, componentNames, operatorv1alpha1.ConditionStatusTrue, "initial condition for component CR")
+	AddConditionForComponents(kymaObj, componentNames, operatorv1alpha1.ConditionStatusFalse, "initial condition for component CR")
 	return r.updateKymaStatus(ctx, kymaObj)
 }
 
