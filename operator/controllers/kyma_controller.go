@@ -17,7 +17,6 @@ limitations under the License.
 package controllers
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"golang.org/x/mod/semver"
@@ -37,7 +36,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"text/template"
 	"time"
 
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
@@ -151,7 +149,7 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 			return fmt.Errorf("%s component not found for resource %s", component.Name, namespacedName)
 		}
 
-		componentYaml, templateErr := r.GetTemplatedComponent(component.Name, componentBytes, release)
+		componentYaml, templateErr := r.GetTemplatedComponent(componentBytes)
 		if templateErr != nil {
 			return fmt.Errorf("error during config map template parsing %w", templateErr)
 		}
@@ -208,27 +206,11 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 	return nil
 }
 
-func (r *KymaReconciler) GetTemplatedComponent(templateName, componentTemplate string, release *KymaReleaseProgressionInfo) (map[string]interface{}, error) {
-	parsedTemplate, templateErr := template.New(templateName).Funcs(template.FuncMap{
-		"installOperation":     func(interface{}) string { return string(release.KymaReleaseProgressionPath) },
-		"installTargetVersion": func(interface{}) string { return release.New },
-		"installOriginVersion": func(interface{}) string { return release.Old },
-	}).Parse(componentTemplate)
-	if templateErr != nil {
-		return nil, fmt.Errorf("error during config map template parsing %w", templateErr)
-	}
-
-	templatedData := bytes.NewBufferString("")
-	templateExecErr := parsedTemplate.Execute(templatedData, nil)
-	if templateExecErr != nil {
-		return nil, fmt.Errorf("error during config map template execution %w", templateExecErr)
-	}
-
+func (r *KymaReconciler) GetTemplatedComponent(componentTemplate string) (map[string]interface{}, error) {
 	componentYaml := make(map[string]interface{})
-	if err := yaml.Unmarshal(templatedData.Bytes(), &componentYaml); err != nil {
+	if err := yaml.Unmarshal([]byte(componentTemplate), &componentYaml); err != nil {
 		return nil, fmt.Errorf("error during config map unmarshal %w", err)
 	}
-
 	return componentYaml, nil
 }
 
