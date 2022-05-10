@@ -17,19 +17,20 @@ limitations under the License.
 package controllers
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"golang.org/x/mod/semver"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/client-go/util/workqueue"
@@ -42,7 +43,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	"text/template"
 )
 
 // KymaReconciler reconciles a Kyma object
@@ -109,20 +109,45 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return ctrl.Result{}, nil
 }
 
-func (r *KymaReconciler) GetConfigMap(ctx context.Context, component string) (*corev1.ConfigMap, error) {
+func (r *KymaReconciler) GetTemplateConfigMapForRelease(ctx context.Context, component, release string) (*corev1.ConfigMap, error) {
 	configMapList := &corev1.ConfigMapList{}
-	if err := r.List(ctx, configMapList, client.MatchingLabels{"operator.kyma-project.io/controller-name": component}); err != nil {
+	if err := r.List(ctx, configMapList,
+		client.MatchingLabels{
+			"operator.kyma-project.io/controller-name": component,
+			"operator.kyma-project.io/release":         release,
+		},
+	); err != nil {
 		return nil, err
 	}
 
-	if len(configMapList.Items) != 1 {
-		return nil, fmt.Errorf("more than one config map found for component: %s", component)
+	if len(configMapList.Items) > 1 {
+		return nil, fmt.Errorf("more than one config map template found for component: %s", component)
+	}
+
+	if len(configMapList.Items) == 0 {
+		log.FromContext(ctx).Info(fmt.Sprintf("no template for component %s found for release %s, falling back to any found config map template", component, release))
+
+		if err := r.List(ctx, configMapList,
+			client.MatchingLabels{
+				"operator.kyma-project.io/controller-name": component,
+			},
+		); err != nil {
+			return nil, err
+		}
+
+		if len(configMapList.Items) > 1 {
+			return nil, fmt.Errorf("more than one config map template found for component: %s", component)
+		}
+
+		if len(configMapList.Items) == 0 {
+			return nil, fmt.Errorf("no config map template found for component: %s", component)
+		}
 	}
 
 	return &configMapList.Items[0], nil
 }
 
-func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Request, kymaObj *operatorv1alpha1.Kyma, progression *KymaProgressionInfo) error {
+func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Request, kymaObj *operatorv1alpha1.Kyma, release *KymaProgressionInfo) error {
 	var watchInputs []*unstructured.Unstructured
 	namespacedName := req.NamespacedName.String()
 	logger := log.FromContext(ctx).WithName(namespacedName)
@@ -133,49 +158,31 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 
 	var componentNames []string
 	for _, component := range kymaObj.Spec.Components {
+		configMap, err := r.GetTemplateConfigMapForRelease(ctx, component.Name, release.New)
 		componentNames = append(componentNames, component.Name)
-		configMap, err := r.GetConfigMap(ctx, component.Name)
 		if err != nil {
-			logger.Error(err, "component mapping ConfigMap read error, will not re-queue resource %s", req.NamespacedName.String())
+			logger.Error(err, fmt.Sprintf("could not find template configmap for resource %s and release %s, will not re-queue resource %s", component.Name, release.New, req.NamespacedName.String()))
 			return err
 		}
 
 		componentName := component.Name + "-name"
-		//+ uuid.New().String()
 
 		componentBytes, ok := configMap.Data[component.Name]
 		if !ok {
 			return fmt.Errorf("%s component not found for resource %s", component.Name, namespacedName)
 		}
 
-		parsedTemplate, templateErr := template.New(component.Name).Funcs(template.FuncMap{
-			"installOperation":     func(interface{}) string { return string(progression.KymaProgressionPath) },
-			"installTargetVersion": func(interface{}) string { return progression.New },
-			"installOriginVersion": func(interface{}) string { return progression.Old },
-		}).Parse(componentBytes)
+		componentYaml, templateErr := r.GetTemplatedComponent(componentBytes)
 		if templateErr != nil {
 			return fmt.Errorf("error during config map template parsing %w", templateErr)
 		}
 
-		templatedData := bytes.NewBufferString("")
-		templateExecErr := parsedTemplate.Execute(templatedData, nil)
-		if templateExecErr != nil {
-			return fmt.Errorf("error during config map template execution %w", templateExecErr)
-		}
+		res, err := r.GetUnstructuredResource(ctx, schema.GroupVersionResource{
+			Group:    componentYaml["group"].(string),
+			Resource: componentYaml["resource"].(string),
+			Version:  componentYaml["version"].(string),
+		}, componentName, req.Namespace)
 
-		componentYaml := make(map[string]interface{})
-		if err := yaml.Unmarshal(templatedData.Bytes(), &componentYaml); err != nil {
-			return fmt.Errorf("error during config map unmarshal %w", err)
-		}
-
-		res := unstructured.Unstructured{}
-		res.SetGroupVersionKind(schema.GroupVersionKind{
-			Group:   componentYaml["group"].(string),
-			Kind:    componentYaml["kind"].(string),
-			Version: componentYaml["version"].(string),
-		})
-
-		err = r.Get(ctx, client.ObjectKey{Namespace: req.Namespace, Name: componentName}, &res)
 		if client.IgnoreNotFound(err) != nil {
 			return err
 		}
@@ -183,11 +190,11 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 		// overwrite labels for upgrade / downgrade of component versions
 		// KymaUpdate doesn't require an update
 		if !errors.IsNotFound(err) {
-			if progression.KymaProgressionPath != KymaUpdate {
+			if release.KymaProgressionPath != KymaUpdate {
 				// set labels
-				SetComponentCRLabels(&res, component.Name, *progression)
+				SetComponentCRLabels(res, component.Name, *release)
 
-				if err := r.Client.Update(ctx, &res); err != nil {
+				if err := r.Client.Update(ctx, res); err != nil {
 					return fmt.Errorf("error updating custom resource of type %s %w", component.Name, err)
 				}
 
@@ -211,7 +218,7 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 			}
 
 			// set labels
-			SetComponentCRLabels(componentUnstructured, component.Name, *progression)
+			SetComponentCRLabels(componentUnstructured, component.Name, *release)
 
 			// set owner reference
 			if err := controllerutil.SetOwnerReference(kymaObj, componentUnstructured, r.Scheme); err != nil {
@@ -252,6 +259,14 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 	logger.Info("checking condition for component CRs")
 	AddConditionForComponents(kymaObj, componentNames, operatorv1alpha1.ConditionStatusFalse, "initial condition for component CR")
 	return r.updateKymaStatus(ctx, kymaObj)
+}
+
+func (r *KymaReconciler) GetTemplatedComponent(componentTemplate string) (map[string]interface{}, error) {
+	componentYaml := make(map[string]interface{})
+	if err := yaml.Unmarshal([]byte(componentTemplate), &componentYaml); err != nil {
+		return nil, fmt.Errorf("error during config map unmarshal %w", err)
+	}
+	return componentYaml, nil
 }
 
 func (r *KymaReconciler) onCreateOrUpdate(ctx context.Context, req ctrl.Request, kyma *operatorv1alpha1.Kyma) error {
@@ -347,6 +362,22 @@ func (r *KymaReconciler) updateKymaStatus(ctx context.Context, kyma *operatorv1a
 	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
 		return r.Status().Update(ctx, kyma)
 	})
+}
+
+func (r *KymaReconciler) GetUnstructuredResource(ctx context.Context, gvr schema.GroupVersionResource, name string,
+	namespace string) (*unstructured.Unstructured, error) {
+	config, err := GetConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	dynamicClient, err := dynamic.NewForConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	return dynamicClient.Resource(gvr).Namespace(namespace).Get(ctx, name,
+		metav1.GetOptions{})
 }
 
 // SetupWithManager sets up the controller with the Manager.

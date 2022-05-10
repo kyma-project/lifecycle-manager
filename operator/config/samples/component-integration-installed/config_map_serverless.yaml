@@ -7,6 +7,7 @@ metadata:
   labels:
     "operator.kyma-project.io/managed-by": "kyma-operator"
     "operator.kyma-project.io/controller-name": "serverless"
+    "operator.kyma-project.io/release": "v1.0.2"
 data:
   serverless: |-
     crd-url: ""
