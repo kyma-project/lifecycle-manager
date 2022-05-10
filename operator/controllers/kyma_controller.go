@@ -19,20 +19,18 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"github.com/go-logr/logr"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"golang.org/x/mod/semver"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/retry"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -91,53 +89,81 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		logger.Info(req.NamespacedName.String() + " got deleted!")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+	kyma = *kyma.DeepCopy()
 
 	// check if deletionTimestamp is set, retry until it gets fully deleted
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != operatorv1alpha1.KymaStateDeleting {
-		kyma.Status.State = operatorv1alpha1.KymaStateDeleting
-		return ctrl.Result{}, r.updateKymaStatus(ctx, &kyma)
+		return ctrl.Result{}, r.updateKymaStatus(ctx, &kyma, operatorv1alpha1.KymaStateDeleting, "deletion timestamp set")
 	}
 
 	// state handling
 	switch kyma.Status.State {
 	case "":
-		return ctrl.Result{}, r.HandleInitialState(ctx)
+		return ctrl.Result{}, r.HandleInitialState(ctx, &logger, &kyma)
 	case operatorv1alpha1.KymaStateProcessing:
-		return ctrl.Result{}, r.HandleProcessingState(ctx)
+		return ctrl.Result{}, r.HandleProcessingState(ctx, &logger, &kyma)
 	case operatorv1alpha1.KymaStateDeleting:
 		return ctrl.Result{}, r.HandleDeletingState(ctx)
 	case operatorv1alpha1.KymaStateError:
-		return ctrl.Result{}, r.HandleErrorState(ctx)
+		return ctrl.Result{}, r.HandleErrorState(ctx, &logger, &kyma)
 	case operatorv1alpha1.KymaStateReady:
-		return ctrl.Result{}, r.HandleReadyState(ctx)
-	}
-
-	err := r.onCreateOrUpdate(ctx, req, &kyma)
-	if err != nil {
-		return ctrl.Result{}, err // retry
+		return ctrl.Result{}, r.HandleReadyState(ctx, &logger, &kyma)
 	}
 
 	return ctrl.Result{}, nil
 }
 
-func (r *KymaReconciler) HandleInitialState(ctx context.Context) error {
+func (r *KymaReconciler) HandleInitialState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
 	return nil
 }
 
-func (r *KymaReconciler) HandleProcessingState(ctx context.Context) error {
-	return nil
+func (r *KymaReconciler) HandleProcessingState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
+	logger.Info("processing " + kyma.Name)
+
+	if areAllReadyConditionsSet(kyma) {
+		message := fmt.Sprintf("reconciliation of %s finished!", kyma.Name)
+		logger.Info(message)
+		r.Recorder.Event(kyma, "Normal", "ReconciliationSuccess", message)
+		return r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateReady, message)
+	}
+
+	return r.reconcileKymaForRelease(ctx, kyma)
 }
 
 func (r *KymaReconciler) HandleDeletingState(ctx context.Context) error {
 	return nil
 }
 
-func (r *KymaReconciler) HandleErrorState(ctx context.Context) error {
+func (r *KymaReconciler) HandleErrorState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
+	if kyma.Status.ObservedGeneration == kyma.Generation {
+		logger.Info("skipping reconciliation for " + kyma.Name + ", already reconciled!")
+	}
 	return nil
 }
 
-func (r *KymaReconciler) HandleReadyState(ctx context.Context) error {
+func (r *KymaReconciler) HandleReadyState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
+	if kyma.Status.ObservedGeneration == kyma.Generation {
+		logger.Info("skipping reconciliation for " + kyma.Name + ", already reconciled!")
+	}
 	return nil
+}
+
+func (r *KymaReconciler) updateKyma(ctx context.Context, kyma *operatorv1alpha1.Kyma) error {
+	return r.Update(ctx, kyma)
+}
+
+func (r *KymaReconciler) updateKymaStatus(ctx context.Context, kyma *operatorv1alpha1.Kyma, state operatorv1alpha1.KymaState, message string) error {
+	switch state {
+	case operatorv1alpha1.KymaStateReady:
+		addReadyConditionForObjects(kyma, []string{KymaKind}, operatorv1alpha1.ConditionStatusTrue, message)
+		// set active release only when ready state is set
+		SetActiveRelease(kyma)
+	case "":
+		addReadyConditionForObjects(kyma, []string{KymaKind}, operatorv1alpha1.ConditionStatusUnknown, message)
+	default:
+		addReadyConditionForObjects(kyma, []string{KymaKind}, operatorv1alpha1.ConditionStatusFalse, message)
+	}
+	return r.Status().Update(ctx, SetObservedGeneration(kyma))
 }
 
 func (r *KymaReconciler) GetTemplateConfigMapForRelease(ctx context.Context, component, release string) (*corev1.ConfigMap, error) {
@@ -178,9 +204,10 @@ func (r *KymaReconciler) GetTemplateConfigMapForRelease(ctx context.Context, com
 	return &configMapList.Items[0], nil
 }
 
-func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Request, kymaObj *operatorv1alpha1.Kyma, release *KymaProgressionInfo) error {
+func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, kymaObj *operatorv1alpha1.Kyma, release *KymaProgressionInfo) error {
 	var watchInputs []*unstructured.Unstructured
-	namespacedName := req.NamespacedName.String()
+	kymaObjectKey := client.ObjectKey{Name: kymaObj.Name, Namespace: kymaObj.Namespace}
+	namespacedName := kymaObjectKey.String()
 	logger := log.FromContext(ctx).WithName(namespacedName)
 
 	if len(kymaObj.Spec.Components) < 1 {
@@ -192,7 +219,7 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 		configMap, err := r.GetTemplateConfigMapForRelease(ctx, component.Name, release.New)
 		componentNames = append(componentNames, component.Name)
 		if err != nil {
-			logger.Error(err, fmt.Sprintf("could not find template configmap for resource %s and release %s, will not re-queue resource %s", component.Name, release.New, req.NamespacedName.String()))
+			logger.Error(err, fmt.Sprintf("could not find template configmap for resource %s and release %s, will not re-queue resource %s", component.Name, release.New, namespacedName))
 			return err
 		}
 
@@ -208,12 +235,14 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 			return fmt.Errorf("error during config map template parsing %w", templateErr)
 		}
 
-		res, err := r.GetUnstructuredResource(ctx, schema.GroupVersionResource{
-			Group:    componentYaml["group"].(string),
-			Resource: componentYaml["resource"].(string),
-			Version:  componentYaml["version"].(string),
-		}, componentName, req.Namespace)
+		res := unstructured.Unstructured{}
+		res.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   componentYaml["group"].(string),
+			Kind:    componentYaml["kind"].(string),
+			Version: componentYaml["version"].(string),
+		})
 
+		err = r.Get(ctx, client.ObjectKey{Namespace: kymaObj.Namespace, Name: componentName}, &res)
 		if client.IgnoreNotFound(err) != nil {
 			return err
 		}
@@ -223,9 +252,9 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 		if !errors.IsNotFound(err) {
 			if release.KymaProgressionPath != KymaUpdate {
 				// set labels
-				SetComponentCRLabels(res, component.Name, *release)
+				SetComponentCRLabels(&res, component.Name, *release)
 
-				if err := r.Client.Update(ctx, res); err != nil {
+				if err := r.Client.Update(ctx, &res); err != nil {
 					return fmt.Errorf("error updating custom resource of type %s %w", component.Name, err)
 				}
 
@@ -238,7 +267,7 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 					"apiVersion": componentYaml["group"].(string) + "/" + componentYaml["version"].(string),
 					"metadata": map[string]interface{}{
 						"name":      componentName,
-						"namespace": req.Namespace,
+						"namespace": kymaObj.Namespace,
 						"labels":    map[string]interface{}{},
 					},
 					"spec": componentYaml["spec"],
@@ -288,8 +317,8 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 
 	// check component conditions, if not present add them
 	logger.Info("checking condition for component CRs")
-	AddConditionForComponents(kymaObj, componentNames, operatorv1alpha1.ConditionStatusFalse, "initial condition for component CR")
-	return r.updateKymaStatus(ctx, kymaObj)
+	addReadyConditionForObjects(kymaObj, componentNames, operatorv1alpha1.ConditionStatusFalse, "initial condition for component CR")
+	return r.updateKymaStatus(ctx, kymaObj, kymaObj.Status.State, "")
 }
 
 func (r *KymaReconciler) GetTemplatedComponent(componentTemplate string) (map[string]interface{}, error) {
@@ -300,43 +329,7 @@ func (r *KymaReconciler) GetTemplatedComponent(componentTemplate string) (map[st
 	return componentYaml, nil
 }
 
-func (r *KymaReconciler) onCreateOrUpdate(ctx context.Context, req ctrl.Request, kyma *operatorv1alpha1.Kyma) error {
-	logger := log.FromContext(ctx)
-	kyma = kyma.DeepCopy()
-
-	if (kyma.Status.State == operatorv1alpha1.KymaStateReady || kyma.Status.State == operatorv1alpha1.KymaStateError) && kyma.Status.
-		ObservedGeneration == kyma.Generation {
-		logger.Info("skipping reconciliation for " + kyma.Name + ", already reconciled!")
-		return nil
-	}
-
-	if kyma.Status.State == operatorv1alpha1.KymaStateProcessing {
-		logger.Info("processing " + kyma.Name)
-		ready := len(kyma.Status.Conditions) > 0
-
-		for _, condition := range kyma.Status.Conditions {
-			if condition.Type == operatorv1alpha1.ConditionTypeReady && condition.Status != operatorv1alpha1.ConditionStatusTrue {
-				ready = false
-				break
-			}
-		}
-
-		if ready {
-			logger.Info(fmt.Sprintf("reconciliation of %s finished!", kyma.Name))
-			r.Recorder.Event(kyma, "Normal", "ReconciliationSuccess", fmt.Sprintf("Reconciliation finished!"))
-			kyma.Status.ObservedGeneration = kyma.Generation
-			kyma.Status.State = operatorv1alpha1.KymaStateReady
-			return r.updateKymaStatus(ctx, kyma)
-		}
-	}
-
-	kyma.Status.State = operatorv1alpha1.KymaStateProcessing
-	kyma.Status.ObservedGeneration = kyma.Generation
-
-	return r.reconcileKymaForRelease(ctx, req, kyma)
-}
-
-func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, req ctrl.Request, kyma *operatorv1alpha1.Kyma) error {
+func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, kyma *operatorv1alpha1.Kyma) error {
 	logger := log.FromContext(ctx)
 	oldRelease, newRelease := kyma.Status.ActiveRelease, kyma.Spec.Release
 
@@ -362,53 +355,26 @@ func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, req ctrl.R
 	}
 
 	// read config map
-	if err := r.ReconcileFromConfigMap(ctx, req, kyma, &KymaProgressionInfo{
+	if err := r.ReconcileFromConfigMap(ctx, kyma, &KymaProgressionInfo{
 		KymaProgressionPath: path,
 		Old:                 oldRelease,
 		New:                 newRelease,
 	}); err != nil {
-		failureReason := fmt.Sprintf("CR creation error: %s", err.Error())
-		logger.Info(failureReason)
-		kyma.Status.ObservedGeneration = kyma.Generation
-		kyma.Status.State = operatorv1alpha1.KymaStateError
-		r.Recorder.Event(kyma, "Warning", "ReconciliationFailed", fmt.Sprintf("Reconciliation failed: %s",
-			failureReason))
-		statusUpdateErr := r.updateKymaStatus(ctx, kyma)
-		logger.Error(statusUpdateErr, "error ocurred after updating status for a failed reconciliation")
+		message := fmt.Sprintf("CR creation error: %s", err.Error())
+		logger.Info(message)
+		r.Recorder.Event(kyma, "Warning", "ReconciliationFailed", fmt.Sprintf("Reconciliation failed: %s", message))
+
+		if err := r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateError, message); err != nil {
+			return err
+		}
+
 		return err
 	}
 
-	kyma.Status.ActiveRelease = newRelease
-
-	return r.updateKymaStatus(ctx, kyma)
-}
-
-func (r *KymaReconciler) updateKyma(ctx context.Context, kyma *operatorv1alpha1.Kyma) error {
-	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		return r.Update(ctx, kyma)
-	})
-}
-
-func (r *KymaReconciler) updateKymaStatus(ctx context.Context, kyma *operatorv1alpha1.Kyma) error {
-	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		return r.Status().Update(ctx, kyma)
-	})
-}
-
-func (r *KymaReconciler) GetUnstructuredResource(ctx context.Context, gvr schema.GroupVersionResource, name string,
-	namespace string) (*unstructured.Unstructured, error) {
-	config, err := GetConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	dynamicClient, err := dynamic.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	return dynamicClient.Resource(gvr).Namespace(namespace).Get(ctx, name,
-		metav1.GetOptions{})
+	//kyma.Status.ActiveRelease = newRelease
+	//
+	//return r.updateKymaStatus(ctx, kyma)
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -455,11 +421,11 @@ func (r *KymaReconciler) ComponentChangeHandler(e event.UpdateEvent, q workqueue
 			}
 
 			// TODO: "istio", "serverless" are hard-coded, remove!
-			AddConditionForComponents(kymaObj, []string{componentNameLabel, "istio", "serverless"}, operatorv1alpha1.ConditionStatusTrue,
+			addReadyConditionForObjects(kymaObj, []string{componentNameLabel, "istio", "serverless"}, operatorv1alpha1.ConditionStatusTrue,
 				fmt.Sprintf("successfully installed component : %s", e.ObjectNew.GetObjectKind().GroupVersionKind().String()))
 
 			// TODO: propagate context from Reconcile() function
-			if err := r.updateKymaStatus(context.TODO(), kymaObj); err != nil {
+			if err := r.updateKymaStatus(context.TODO(), kymaObj, operatorv1alpha1.KymaStateReady, "all components are in ready state"); err != nil {
 				return
 			}
 		}

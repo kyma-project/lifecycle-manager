@@ -40,7 +40,20 @@ func GetConfig() (*rest.Config, error) {
 	return nil, err
 }
 
-func getConditionForComponent(kymaObj *operatorv1alpha1.Kyma, componentName string) (*operatorv1alpha1.KymaCondition, bool) {
+func areAllReadyConditionsSet(kymaObj *operatorv1alpha1.Kyma) bool {
+	status := &kymaObj.Status
+	if len(status.Conditions) < 1 {
+		return false
+	}
+	for _, existingCondition := range status.Conditions {
+		if existingCondition.Type == operatorv1alpha1.ConditionTypeReady && existingCondition.Status != operatorv1alpha1.ConditionStatusTrue {
+			return false
+		}
+	}
+	return true
+}
+
+func getReadyConditionForComponent(kymaObj *operatorv1alpha1.Kyma, componentName string) (*operatorv1alpha1.KymaCondition, bool) {
 	status := &kymaObj.Status
 	for _, existingCondition := range status.Conditions {
 		if existingCondition.Type == operatorv1alpha1.ConditionTypeReady && existingCondition.Reason == componentName {
@@ -50,10 +63,10 @@ func getConditionForComponent(kymaObj *operatorv1alpha1.Kyma, componentName stri
 	return &operatorv1alpha1.KymaCondition{}, false
 }
 
-func AddConditionForComponents(kymaObj *operatorv1alpha1.Kyma, componentNames []string, conditionStatus operatorv1alpha1.KymaConditionStatus, message string) {
+func addReadyConditionForObjects(kymaObj *operatorv1alpha1.Kyma, componentNames []string, conditionStatus operatorv1alpha1.KymaConditionStatus, message string) {
 	status := &kymaObj.Status
 	for _, componentName := range componentNames {
-		condition, exists := getConditionForComponent(kymaObj, componentName)
+		condition, exists := getReadyConditionForComponent(kymaObj, componentName)
 		if !exists {
 			condition = &operatorv1alpha1.KymaCondition{
 				Type:   operatorv1alpha1.ConditionTypeReady,
@@ -81,4 +94,14 @@ func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, compone
 	labels["operator.kyma-project.io/applied-as"] = string(progression.KymaProgressionPath)
 	labels["operator.kyma-project.io/release"] = progression.New
 	unstructuredCompCR.Object["metadata"].(map[string]interface{})["labels"] = labels
+}
+
+func SetObservedGeneration(kyma *operatorv1alpha1.Kyma) *operatorv1alpha1.Kyma {
+	kyma.Status.ObservedGeneration = kyma.Generation
+	return kyma
+}
+
+func SetActiveRelease(kyma *operatorv1alpha1.Kyma) *operatorv1alpha1.Kyma {
+	kyma.Status.ActiveRelease = kyma.Spec.Release
+	return kyma
 }
