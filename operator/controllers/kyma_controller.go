@@ -23,14 +23,12 @@ import (
 	"golang.org/x/mod/semver"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/client-go/util/workqueue"
@@ -80,7 +78,7 @@ const (
 
 func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx).WithName(req.NamespacedName.String())
-	logger.Info("Reconciliation loop starting for", "resource", req.NamespacedName.String())
+	logger.Info("reconciliation loop starting", "resource", req.NamespacedName.String())
 	kyma := operatorv1alpha1.Kyma{}
 
 	if err := r.Get(ctx, req.NamespacedName, &kyma); err != nil {
@@ -177,64 +175,75 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 			return fmt.Errorf("error during config map template parsing %w", templateErr)
 		}
 
-		res, err := r.GetUnstructuredResource(ctx, schema.GroupVersionResource{
-			Group:    componentYaml["group"].(string),
-			Resource: componentYaml["resource"].(string),
-			Version:  componentYaml["version"].(string),
-		}, componentName, req.Namespace)
+		res := &unstructured.Unstructured{}
+		res.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   componentYaml["group"].(string),
+			Kind:    componentYaml["kind"].(string),
+			Version: componentYaml["version"].(string),
+		})
 
-		if client.IgnoreNotFound(err) != nil {
+		err = retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+			err = r.Get(ctx, client.ObjectKey{Namespace: req.Namespace, Name: componentName}, res)
+
+			if client.IgnoreNotFound(err) != nil {
+				return err
+			}
+
+			// overwrite labels for upgrade / downgrade of component versions
+			// KymaUpdate doesn't require an update
+			if !errors.IsNotFound(err) {
+				if release.KymaProgressionPath != KymaUpdate {
+					// set labels
+					SetComponentCRLabels(res, component.Name, *release)
+
+					err := r.Client.Update(ctx, res)
+
+					logger.Info("successfully updated component CR", "type", component.Name)
+
+					return err
+				}
+			} else {
+				componentUnstructured := &unstructured.Unstructured{
+					Object: map[string]interface{}{
+						"kind":       componentYaml["kind"].(string),
+						"apiVersion": componentYaml["group"].(string) + "/" + componentYaml["version"].(string),
+						"metadata": map[string]interface{}{
+							"name":      componentName,
+							"namespace": req.Namespace,
+							"labels":    map[string]interface{}{},
+						},
+						"spec": componentYaml["spec"],
+					},
+				}
+				for key, value := range component.Settings {
+					componentUnstructured.Object["spec"].(map[string]interface{})[key] = value
+				}
+
+				// set labels
+				SetComponentCRLabels(componentUnstructured, component.Name, *release)
+
+				// set owner reference
+				if err := controllerutil.SetOwnerReference(kymaObj, componentUnstructured, r.Scheme); err != nil {
+					return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w", component.Name, namespacedName, err)
+				}
+
+				// create resource if not found
+				if err := r.Client.Create(ctx, componentUnstructured, &client.CreateOptions{}); err != nil {
+					return fmt.Errorf("error creating custom resource of type %s %w", component.Name, err)
+				}
+
+				// TODO: implement common watch mechanism for all unstructured kinds
+				watchInputs = append(watchInputs, componentUnstructured)
+
+				logger.Info("successfully created component CR of", "type", component.Name)
+			}
+			return nil
+		})
+
+		if err != nil {
 			return err
 		}
 
-		// overwrite labels for upgrade / downgrade of component versions
-		// KymaUpdate doesn't require an update
-		if !errors.IsNotFound(err) {
-			if release.KymaProgressionPath != KymaUpdate {
-				// set labels
-				SetComponentCRLabels(res, component.Name, *release)
-
-				if err := r.Client.Update(ctx, res); err != nil {
-					return fmt.Errorf("error updating custom resource of type %s %w", component.Name, err)
-				}
-
-				logger.Info("successfully updated component CR of", "type", component.Name)
-			}
-		} else {
-			componentUnstructured := &unstructured.Unstructured{
-				Object: map[string]interface{}{
-					"kind":       componentYaml["kind"].(string),
-					"apiVersion": componentYaml["group"].(string) + "/" + componentYaml["version"].(string),
-					"metadata": map[string]interface{}{
-						"name":      componentName,
-						"namespace": req.Namespace,
-						"labels":    map[string]interface{}{},
-					},
-					"spec": componentYaml["spec"],
-				},
-			}
-			for key, value := range component.Settings {
-				componentUnstructured.Object["spec"].(map[string]interface{})[key] = value
-			}
-
-			// set labels
-			SetComponentCRLabels(componentUnstructured, component.Name, *release)
-
-			// set owner reference
-			if err := controllerutil.SetOwnerReference(kymaObj, componentUnstructured, r.Scheme); err != nil {
-				return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w", component.Name, namespacedName, err)
-			}
-
-			// create resource if not found
-			if err := r.Client.Create(ctx, componentUnstructured, &client.CreateOptions{}); err != nil {
-				return fmt.Errorf("error creating custom resource of type %s %w", component.Name, err)
-			}
-
-			// TODO: implement common watch mechanism for all unstructured kinds
-			watchInputs = append(watchInputs, componentUnstructured)
-
-			logger.Info("successfully created component CR of", "type", component.Name)
-		}
 	}
 
 	// TODO: watch all allocated types during controller startup
@@ -257,7 +266,7 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 
 	// check component conditions, if not present add them
 	logger.Info("checking condition for component CRs")
-	AddConditionForComponents(kymaObj, componentNames, operatorv1alpha1.ConditionStatusFalse, "initial condition for component CR")
+	AddConditionForComponents(kymaObj, componentNames, operatorv1alpha1.ConditionStatusTrue, "initial condition for component CR")
 	return r.updateKymaStatus(ctx, kymaObj)
 }
 
@@ -292,7 +301,7 @@ func (r *KymaReconciler) onCreateOrUpdate(ctx context.Context, req ctrl.Request,
 
 		if ready {
 			logger.Info(fmt.Sprintf("reconciliation of %s finished!", kyma.Name))
-			r.Recorder.Event(kyma, "Normal", "ReconciliationSuccess", fmt.Sprintf("Reconciliation finished!"))
+			r.Recorder.Event(kyma, "Normal", "ReconciliationSuccess", "Reconciliation finished!")
 			kyma.Status.ObservedGeneration = kyma.Generation
 			kyma.Status.State = operatorv1alpha1.KymaStateReady
 			return r.updateKymaStatus(ctx, kyma)
@@ -314,20 +323,17 @@ func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, req ctrl.R
 	if compared < 0 {
 		if oldRelease == "" {
 			path = KymaInstall
-			r.Recorder.Event(kyma, "Normal", "ReconciliationUpgrade", fmt.Sprintf("Initial Installation: %s", newRelease))
+			r.Recorder.Eventf(kyma, "Normal", "ReconciliationUpgrade", "Initial Installation: %s", newRelease)
 		} else {
 			path = KymaUpgrade
-			r.Recorder.Event(kyma, "Normal", "ReconciliationUpgrade", fmt.Sprintf("Upgrade from %s to %s",
-				oldRelease, newRelease))
+			r.Recorder.Eventf(kyma, "Normal", "ReconciliationUpgrade", "Upgrade from %s to %s", oldRelease, newRelease)
 		}
 	} else if compared > 0 {
 		path = KymaDowngrade
-		r.Recorder.Event(kyma, "Normal", "ReconciliationDowngrade", fmt.Sprintf("Downgrade from %s to %s",
-			oldRelease, newRelease))
+		r.Recorder.Eventf(kyma, "Normal", "ReconciliationDowngrade", "Downgrade from %s to %s", oldRelease, newRelease)
 	} else {
 		path = KymaUpdate
-		r.Recorder.Event(kyma, "Normal", "ReconciliationUpdate", fmt.Sprintf("Update Active Release %s",
-			kyma.Spec.Release))
+		r.Recorder.Eventf(kyma, "Normal", "ReconciliationUpdate", "Update Active Release %s", kyma.Spec.Release)
 	}
 
 	// read config map
@@ -340,8 +346,7 @@ func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, req ctrl.R
 		logger.Info(failureReason)
 		kyma.Status.ObservedGeneration = kyma.Generation
 		kyma.Status.State = operatorv1alpha1.KymaStateError
-		r.Recorder.Event(kyma, "Warning", "ReconciliationFailed", fmt.Sprintf("Reconciliation failed: %s",
-			failureReason))
+		r.Recorder.Eventf(kyma, "Warning", "ReconciliationFailed", "Reconciliation failed: %s", failureReason)
 		statusUpdateErr := r.updateKymaStatus(ctx, kyma)
 		logger.Error(statusUpdateErr, "error ocurred after updating status for a failed reconciliation")
 		return err
@@ -352,32 +357,17 @@ func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, req ctrl.R
 	return r.updateKymaStatus(ctx, kyma)
 }
 
-func (r *KymaReconciler) updateKyma(ctx context.Context, kyma *operatorv1alpha1.Kyma) error {
-	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		return r.Update(ctx, kyma)
-	})
-}
-
 func (r *KymaReconciler) updateKymaStatus(ctx context.Context, kyma *operatorv1alpha1.Kyma) error {
 	return retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		return r.Status().Update(ctx, kyma)
+		kymaAfterConflict := &operatorv1alpha1.Kyma{}
+		err := r.Get(ctx, types.NamespacedName{Name: kyma.GetName(), Namespace: kyma.GetNamespace()}, kymaAfterConflict)
+		if err != nil {
+			return err
+		}
+		kymaAfterConflict.Status = kyma.Status
+		err = r.Status().Update(ctx, kyma)
+		return err
 	})
-}
-
-func (r *KymaReconciler) GetUnstructuredResource(ctx context.Context, gvr schema.GroupVersionResource, name string,
-	namespace string) (*unstructured.Unstructured, error) {
-	config, err := GetConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	dynamicClient, err := dynamic.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	return dynamicClient.Resource(gvr).Namespace(namespace).Get(ctx, name,
-		metav1.GetOptions{})
 }
 
 // SetupWithManager sets up the controller with the Manager.
