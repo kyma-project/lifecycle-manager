@@ -15,5 +15,5 @@ data:
     resource: istioconfigurations
     version: v1alpha1 
     spec:
-      foo: "created From Dynamic Client for {{installOperation .}} to {{installTargetVersion .}}"
+      foo: "created From Dynamic Client for 2.0.2"
       someNewKey: "someNewValue"
