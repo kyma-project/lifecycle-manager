@@ -81,8 +81,9 @@ const (
 func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx).WithName(req.NamespacedName.String())
 	logger.Info("Reconciliation loop starting for", "resource", req.NamespacedName.String())
-	kyma := operatorv1alpha1.Kyma{}
 
+	// check if kyma resource exists
+	kyma := operatorv1alpha1.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, &kyma); err != nil {
 		// we'll ignore not-found errors, since they can't be fixed by an immediate
 		// requeue (we'll need to wait for a new notification), and we can get them
@@ -91,14 +92,24 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	kymaObj := &operatorv1alpha1.Kyma{}
-	if err := r.Get(ctx, types.NamespacedName{Name: req.Name, Namespace: req.Namespace}, kymaObj); err != nil {
-		logger.Error(err, "kyma object read error")
+	// check if deletionTimestamp is set, retry until it gets fully deleted
+	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != operatorv1alpha1.KymaStateDeleting {
+		kyma.Status.State = operatorv1alpha1.KymaStateDeleting
+		return ctrl.Result{}, r.updateKymaStatus(ctx, &kyma)
 	}
 
-	// if deletionTimestamp is set, retry until it gets fully deleted
-	if !kyma.DeletionTimestamp.IsZero() {
-		return ctrl.Result{Requeue: true}, nil
+	// state handling
+	switch kyma.Status.State {
+	case "":
+		return ctrl.Result{}, r.HandleInitialState(ctx)
+	case operatorv1alpha1.KymaStateProcessing:
+		return ctrl.Result{}, r.HandleProcessingState(ctx)
+	case operatorv1alpha1.KymaStateDeleting:
+		return ctrl.Result{}, r.HandleDeletingState(ctx)
+	case operatorv1alpha1.KymaStateError:
+		return ctrl.Result{}, r.HandleErrorState(ctx)
+	case operatorv1alpha1.KymaStateReady:
+		return ctrl.Result{}, r.HandleReadyState(ctx)
 	}
 
 	err := r.onCreateOrUpdate(ctx, req, &kyma)
@@ -107,6 +118,26 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	return ctrl.Result{}, nil
+}
+
+func (r *KymaReconciler) HandleInitialState(ctx context.Context) error {
+	return nil
+}
+
+func (r *KymaReconciler) HandleProcessingState(ctx context.Context) error {
+	return nil
+}
+
+func (r *KymaReconciler) HandleDeletingState(ctx context.Context) error {
+	return nil
+}
+
+func (r *KymaReconciler) HandleErrorState(ctx context.Context) error {
+	return nil
+}
+
+func (r *KymaReconciler) HandleReadyState(ctx context.Context) error {
+	return nil
 }
 
 func (r *KymaReconciler) GetTemplateConfigMapForRelease(ctx context.Context, component, release string) (*corev1.ConfigMap, error) {
