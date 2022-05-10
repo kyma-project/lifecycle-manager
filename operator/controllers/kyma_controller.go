@@ -23,14 +23,13 @@ import (
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"golang.org/x/mod/semver"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/client-go/util/workqueue"
@@ -169,30 +168,32 @@ func (r *KymaReconciler) ReconcileFromConfigMap(ctx context.Context, req ctrl.Re
 			return fmt.Errorf("error during config map unmarshal %w", err)
 		}
 
-		gvr := schema.GroupVersionResource{
-			Group:    componentYaml["group"].(string),
-			Resource: componentYaml["resource"].(string),
-			Version:  componentYaml["version"].(string),
-		}
+		res := unstructured.Unstructured{}
+		res.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   componentYaml["group"].(string),
+			Kind:    componentYaml["kind"].(string),
+			Version: componentYaml["version"].(string),
+		})
 
-		res, err := r.GetUnstructuredResource(ctx, gvr, componentName, req.Namespace)
-
+		err = r.Get(ctx, client.ObjectKey{Namespace: req.Namespace, Name: componentName}, &res)
 		if client.IgnoreNotFound(err) != nil {
 			return err
 		}
 
 		// overwrite labels for upgrade / downgrade of component versions
 		// KymaUpdate doesn't require an update
-		if res != nil && progression.KymaProgressionPath != KymaUpdate {
-			// set labels
-			SetComponentCRLabels(res, component.Name, *progression)
+		if !errors.IsNotFound(err) {
+			if progression.KymaProgressionPath != KymaUpdate {
+				// set labels
+				SetComponentCRLabels(&res, component.Name, *progression)
 
-			if err := r.Client.Update(ctx, res); err != nil {
-				return fmt.Errorf("error updating custom resource of type %s %w", component.Name, err)
+				if err := r.Client.Update(ctx, &res); err != nil {
+					return fmt.Errorf("error updating custom resource of type %s %w", component.Name, err)
+				}
+
+				logger.Info("successfully updated component CR of", "type", component.Name)
 			}
-
-			logger.Info("successfully updated component CR of", "type", component.Name)
-		} else if res == nil {
+		} else {
 			componentUnstructured := &unstructured.Unstructured{
 				Object: map[string]interface{}{
 					"kind":       componentYaml["kind"].(string),
@@ -348,20 +349,6 @@ func (r *KymaReconciler) updateKymaStatus(ctx context.Context, kyma *operatorv1a
 	})
 }
 
-func (r *KymaReconciler) GetUnstructuredResource(ctx context.Context, gvr schema.GroupVersionResource, name string, namespace string) (*unstructured.Unstructured, error) {
-	config, err := GetConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	dynamicClient, err := dynamic.NewForConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	return dynamicClient.Resource(gvr).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
-}
-
 // SetupWithManager sets up the controller with the Manager.
 func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Builder = ctrl.NewControllerManagedBy(mgr)
@@ -405,8 +392,9 @@ func (r *KymaReconciler) ComponentChangeHandler(e event.UpdateEvent, q workqueue
 				return
 			}
 
-			AddConditionForComponents(kymaObj, []string{componentNameLabel}, operatorv1alpha1.ConditionStatusTrue,
-				fmt.Sprintf("successfully installed component type: %s", e.ObjectNew.GetObjectKind().GroupVersionKind().String()))
+			// TODO: "istio", "serverless" are hard-coded, remove!
+			AddConditionForComponents(kymaObj, []string{componentNameLabel, "istio", "serverless"}, operatorv1alpha1.ConditionStatusTrue,
+				fmt.Sprintf("successfully installed component : %s", e.ObjectNew.GetObjectKind().GroupVersionKind().String()))
 
 			// TODO: propagate context from Reconcile() function
 			if err := r.updateKymaStatus(context.TODO(), kymaObj); err != nil {
