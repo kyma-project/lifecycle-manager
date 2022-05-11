@@ -44,13 +44,15 @@ func GetConfig() (*rest.Config, error) {
 	return nil, err
 }
 
-func areAllReadyConditionsSet(kymaObj *operatorv1alpha1.Kyma) bool {
+func areAllReadyConditionsSetForKyma(kymaObj *operatorv1alpha1.Kyma) bool {
 	status := &kymaObj.Status
 	if len(status.Conditions) < 1 {
 		return false
 	}
 	for _, existingCondition := range status.Conditions {
-		if existingCondition.Type == operatorv1alpha1.ConditionTypeReady && existingCondition.Status != operatorv1alpha1.ConditionStatusTrue {
+		if existingCondition.Type == operatorv1alpha1.ConditionTypeReady &&
+			existingCondition.Status != operatorv1alpha1.ConditionStatusTrue &&
+			existingCondition.Reason != KymaKind {
 			return false
 		}
 	}

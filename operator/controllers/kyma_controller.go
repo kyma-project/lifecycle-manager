@@ -27,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
@@ -50,7 +49,6 @@ import (
 type KymaReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
-	Builder  *builder.Builder
 	Recorder record.EventRecorder
 }
 
@@ -127,7 +125,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, logger *logr
 		return err
 	}
 
-	if areAllReadyConditionsSet(kyma) {
+	if areAllReadyConditionsSetForKyma(kyma) {
 		message := fmt.Sprintf("reconciliation of %s finished!", kyma.Name)
 		logger.Info(message)
 		r.Recorder.Event(kyma, "Normal", "ReconciliationSuccess", message)
@@ -213,7 +211,6 @@ func (r *KymaReconciler) GetTemplateConfigMapForRelease(ctx context.Context, com
 }
 
 func (r *KymaReconciler) CreateComponentsFromConfigMap(ctx context.Context, kymaObj *operatorv1alpha1.Kyma, release *KymaProgressionInfo) ([]string, error) {
-	//var watchInputs []*unstructured.Unstructured
 	kymaObjectKey := client.ObjectKey{Name: kymaObj.Name, Namespace: kymaObj.Namespace}
 	namespacedName := kymaObjectKey.String()
 	logger := log.FromContext(ctx).WithName(namespacedName)
@@ -275,33 +272,12 @@ func (r *KymaReconciler) CreateComponentsFromConfigMap(ctx context.Context, kyma
 				return nil, fmt.Errorf("error creating custom resource of type %s %w", component.Name, err)
 			}
 
-			// TODO: implement common watch mechanism for all unstructured kinds
-			//watchInputs = append(watchInputs, componentUnstructured)
-
 			logger.Info("successfully created component CR of", "type", component.Name)
 
 			componentNamesCreated = append(componentNamesCreated, component.Name)
 		}
 	}
 	return componentNamesCreated, nil
-
-	// TODO: watch all allocated types during controller startup
-	//for _, addedComponent := range watchInputs {
-	//	r.Builder.
-	//		Watches(
-	//			&source.Kind{Type: addedComponent},
-	//			handler.Funcs{
-	//				UpdateFunc: r.ComponentChangeHandler,
-	//			}, builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
-	//		)
-	//	logger.Info("successfully created component CR of", "type", addedComponent.GetKind())
-	//}
-	//
-	//if len(watchInputs) > 0 {
-	//	if err := r.Builder.Complete(r); err != nil {
-	//		logger.Error(err, "error while assigning watch update event on component CRs")
-	//	}
-	//}
 }
 
 func (r *KymaReconciler) UpdateProgressionLabelsForComponentCRs(ctx context.Context, kymaObj *operatorv1alpha1.Kyma, release *KymaProgressionInfo) error {
@@ -405,8 +381,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
-	r.Builder = ctrl.NewControllerManagedBy(mgr)
-	return r.Builder.
+	return ctrl.NewControllerManagedBy(mgr).
 		For(&operatorv1alpha1.Kyma{}).
 		Watches(
 			&source.Informer{Informer: informers.ForResource(schema.GroupVersionResource{
@@ -424,17 +399,17 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (r *KymaReconciler) ComponentChangeHandler(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
 	objectBytes, err := json.Marshal(e.ObjectNew)
 	if err != nil {
-		panic(err)
+		return
 	}
 	componentObj := unstructured.Unstructured{}
 	if err = json.Unmarshal(objectBytes, &componentObj); err != nil {
-		panic(err)
+		return
 	}
 	if componentObj.Object["status"] == nil {
 		return
 	}
 	for key, value := range componentObj.Object["status"].(map[string]interface{}) {
-		if key == "state" && value == "Ready" {
+		if key == "state" && value == string(operatorv1alpha1.KymaStateReady) {
 			ownerRefs := componentObj.GetOwnerReferences()
 			var ownerName string
 			kymaObj := &operatorv1alpha1.Kyma{}
@@ -445,8 +420,8 @@ func (r *KymaReconciler) ComponentChangeHandler(e event.UpdateEvent, q workqueue
 				}
 			}
 
-			// TODO: propagate context from Reconcile() function
-			if err := r.Get(context.TODO(), types.NamespacedName{Name: ownerName, Namespace: componentObj.GetNamespace()}, kymaObj); err != nil {
+			kymaNamespacedName := client.ObjectKey{Name: ownerName, Namespace: componentObj.GetNamespace()}
+			if err := r.Get(context.TODO(), kymaNamespacedName, kymaObj); err != nil {
 				return
 			}
 
@@ -459,8 +434,9 @@ func (r *KymaReconciler) ComponentChangeHandler(e event.UpdateEvent, q workqueue
 			addReadyConditionForObjects(kymaObj, []string{componentNameLabel, "istio", "serverless"}, operatorv1alpha1.ConditionStatusTrue,
 				fmt.Sprintf("successfully installed component : %s", e.ObjectNew.GetObjectKind().GroupVersionKind().String()))
 
-			// TODO: propagate context from Reconcile() function
-			if err := r.updateKymaStatus(context.TODO(), kymaObj, operatorv1alpha1.KymaStateReady, "all components are in ready state"); err != nil {
+			// riggers reconciliation on Kyma
+			if err := r.updateKymaStatus(context.TODO(), kymaObj, kymaObj.Status.State,
+				fmt.Sprintf("component %s set to %s state", componentNameLabel, string(operatorv1alpha1.KymaStateReady))); err != nil {
 				return
 			}
 		}
