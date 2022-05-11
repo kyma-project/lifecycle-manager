@@ -54,7 +54,7 @@ type KymaReconciler struct {
 	Recorder record.EventRecorder
 }
 
-func (r KymaReconciler) GetEventAdapter(kyma *operatorv1alpha1.Kyma) adapter.Eventing {
+func (r *KymaReconciler) GetEventAdapter(kyma *operatorv1alpha1.Kyma) adapter.Eventing {
 	return func(eventtype, reason, message string) {
 		r.Recorder.Event(kyma, eventtype, reason, message)
 	}
@@ -85,12 +85,9 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	kyma = *kyma.DeepCopy()
 
 	// check if deletionTimestamp is set, retry until it gets fully deleted
-	if !kyma.DeletionTimestamp.IsZero() {
+	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != operatorv1alpha1.KymaStateDeleting {
 		// if the status is not yet set to deleting, also update the status
-		if kyma.Status.State != operatorv1alpha1.KymaStateDeleting {
-			return ctrl.Result{}, r.updateKymaStatus(ctx, &kyma, operatorv1alpha1.KymaStateDeleting, "deletion timestamp set")
-		}
-		return ctrl.Result{}, nil
+		return ctrl.Result{}, r.updateKymaStatus(ctx, &kyma, operatorv1alpha1.KymaStateDeleting, "deletion timestamp set")
 	}
 
 	// state handling
