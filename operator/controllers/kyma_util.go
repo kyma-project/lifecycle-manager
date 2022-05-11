@@ -2,9 +2,13 @@ package controllers
 
 import (
 	"flag"
+	"fmt"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
@@ -87,21 +91,45 @@ func addReadyConditionForObjects(kymaObj *operatorv1alpha1.Kyma, componentNames 
 	}
 }
 
-func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, componentName string, progression KymaProgressionInfo) {
+func setComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, componentName string, progression KymaProgressionInfo) {
 	labels := unstructuredCompCR.Object["metadata"].(map[string]interface{})["labels"].(map[string]interface{})
-	labels["operator.kyma-project.io/managed-by"] = "kyma-operator"
 	labels["operator.kyma-project.io/controller-name"] = componentName
 	labels["operator.kyma-project.io/applied-as"] = string(progression.KymaProgressionPath)
 	labels["operator.kyma-project.io/release"] = progression.New
 	unstructuredCompCR.Object["metadata"].(map[string]interface{})["labels"] = labels
 }
 
-func SetObservedGeneration(kyma *operatorv1alpha1.Kyma) *operatorv1alpha1.Kyma {
+func setObservedGeneration(kyma *operatorv1alpha1.Kyma) *operatorv1alpha1.Kyma {
 	kyma.Status.ObservedGeneration = kyma.Generation
 	return kyma
 }
 
-func SetActiveRelease(kyma *operatorv1alpha1.Kyma) *operatorv1alpha1.Kyma {
+func setActiveRelease(kyma *operatorv1alpha1.Kyma) *operatorv1alpha1.Kyma {
 	kyma.Status.ActiveRelease = kyma.Spec.Release
 	return kyma
+}
+
+func getGvkAndSpecFromConfigMap(configMap *v1.ConfigMap, componentName string) (*schema.GroupVersionKind, interface{}, error) {
+	componentBytes, ok := configMap.Data[componentName]
+	if !ok {
+		return nil, nil, fmt.Errorf("%s component not found for resource in ConfigMap", componentName)
+	}
+	componentYaml, err := getTemplatedComponent(componentBytes)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error during config map template parsing %w", err)
+	}
+
+	return &schema.GroupVersionKind{
+		Group:   componentYaml["group"].(string),
+		Kind:    componentYaml["kind"].(string),
+		Version: componentYaml["version"].(string),
+	}, componentYaml["spec"], nil
+}
+
+func getTemplatedComponent(componentTemplate string) (map[string]interface{}, error) {
+	componentYaml := make(map[string]interface{})
+	if err := yaml.Unmarshal([]byte(componentTemplate), &componentYaml); err != nil {
+		return nil, fmt.Errorf("error during config map unmarshal %w", err)
+	}
+	return componentYaml, nil
 }
