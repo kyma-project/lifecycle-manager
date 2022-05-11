@@ -385,6 +385,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&operatorv1alpha1.Kyma{}).
 		Watches(
 			&source.Informer{Informer: informers.ForResource(schema.GroupVersionResource{
+				//TODO: hard-coded, remove!
 				Group:    "component.kyma-project.io",
 				Version:  "v1alpha1",
 				Resource: "manifests",
@@ -434,7 +435,7 @@ func (r *KymaReconciler) ComponentChangeHandler(e event.UpdateEvent, q workqueue
 			addReadyConditionForObjects(kymaObj, []string{componentNameLabel, "istio", "serverless"}, operatorv1alpha1.ConditionStatusTrue,
 				fmt.Sprintf("successfully installed component : %s", e.ObjectNew.GetObjectKind().GroupVersionKind().String()))
 
-			// riggers reconciliation on Kyma
+			// triggers reconciliation on Kyma
 			if err := r.updateKymaStatus(context.TODO(), kymaObj, kymaObj.Status.State,
 				fmt.Sprintf("component %s set to %s state", componentNameLabel, string(operatorv1alpha1.KymaStateReady))); err != nil {
 				return
