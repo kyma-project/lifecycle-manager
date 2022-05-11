@@ -20,6 +20,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const KymaKind = "Kyma"
+
 // ComponentType defines the components to be installed
 type ComponentType struct {
 	Name     string            `json:"name"`
@@ -31,6 +33,21 @@ type KymaSpec struct {
 	Release string `json:"release"`
 	// Components specifies the list of components to be installed
 	Components []ComponentType `json:"components,omitempty"`
+}
+
+func (k *Kyma) AreAllReadyConditionsSetForKyma() bool {
+	status := &k.Status
+	if len(status.Conditions) < 1 {
+		return false
+	}
+	for _, existingCondition := range status.Conditions {
+		if existingCondition.Type == ConditionTypeReady &&
+			existingCondition.Status != ConditionStatusTrue &&
+			existingCondition.Reason != KymaKind {
+			return false
+		}
+	}
+	return true
 }
 
 // KymaStatus defines the observed state of Kyma
@@ -125,6 +142,16 @@ type Kyma struct {
 
 	Spec   KymaSpec   `json:"spec,omitempty"`
 	Status KymaStatus `json:"status,omitempty"`
+}
+
+func (kyma *Kyma) SetObservedGeneration() *Kyma {
+	kyma.Status.ObservedGeneration = kyma.Generation
+	return kyma
+}
+
+func (kyma *Kyma) SetActiveRelease() *Kyma {
+	kyma.Status.ActiveRelease = kyma.Spec.Release
+	return kyma
 }
 
 //+kubebuilder:object:root=true

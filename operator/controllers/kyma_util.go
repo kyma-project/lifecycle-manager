@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
+	"github.com/kyma-project/kyma-operator/operator/pkg/release"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -44,21 +46,6 @@ func GetConfig() (*rest.Config, error) {
 	return nil, err
 }
 
-func areAllReadyConditionsSetForKyma(kymaObj *operatorv1alpha1.Kyma) bool {
-	status := &kymaObj.Status
-	if len(status.Conditions) < 1 {
-		return false
-	}
-	for _, existingCondition := range status.Conditions {
-		if existingCondition.Type == operatorv1alpha1.ConditionTypeReady &&
-			existingCondition.Status != operatorv1alpha1.ConditionStatusTrue &&
-			existingCondition.Reason != KymaKind {
-			return false
-		}
-	}
-	return true
-}
-
 func getReadyConditionForComponent(kymaObj *operatorv1alpha1.Kyma, componentName string) (*operatorv1alpha1.KymaCondition, bool) {
 	status := &kymaObj.Status
 	for _, existingCondition := range status.Conditions {
@@ -93,22 +80,12 @@ func addReadyConditionForObjects(kymaObj *operatorv1alpha1.Kyma, componentNames 
 	}
 }
 
-func setComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, componentName string, progression KymaProgressionInfo) {
-	labels := unstructuredCompCR.Object["metadata"].(map[string]interface{})["labels"].(map[string]interface{})
-	labels["operator.kyma-project.io/controller-name"] = componentName
-	labels["operator.kyma-project.io/applied-as"] = string(progression.KymaProgressionPath)
-	labels["operator.kyma-project.io/release"] = progression.New
-	unstructuredCompCR.Object["metadata"].(map[string]interface{})["labels"] = labels
-}
-
-func setObservedGeneration(kyma *operatorv1alpha1.Kyma) *operatorv1alpha1.Kyma {
-	kyma.Status.ObservedGeneration = kyma.Generation
-	return kyma
-}
-
-func setActiveRelease(kyma *operatorv1alpha1.Kyma) *operatorv1alpha1.Kyma {
-	kyma.Status.ActiveRelease = kyma.Spec.Release
-	return kyma
+func setComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, componentName string, release release.Release) {
+	labelMap := unstructuredCompCR.Object["metadata"].(map[string]interface{})["labels"].(map[string]interface{})
+	labelMap[labels.ControllerName] = componentName
+	labelMap[labels.AppliedAs] = release.GetType()
+	labelMap[labels.Release] = release.GetNew()
+	unstructuredCompCR.Object["metadata"].(map[string]interface{})["labels"] = labelMap
 }
 
 func getGvkAndSpecFromConfigMap(configMap *v1.ConfigMap, componentName string) (*schema.GroupVersionKind, interface{}, error) {
