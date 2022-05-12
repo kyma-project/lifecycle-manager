@@ -258,9 +258,15 @@ func (r *KymaReconciler) CreateComponentsFromConfigMap(ctx context.Context, kyma
 					"spec": spec,
 				},
 			}
-			for key, value := range component.Settings {
-				componentUnstructured.Object["spec"].(map[string]interface{})[key] = value
+			var charts []map[string]interface{}
+			for _, setting := range component.Settings {
+				chart := map[string]interface{}{}
+				for key, value := range setting {
+					chart[key] = value
+				}
+				charts = append(charts, chart)
 			}
+			componentUnstructured.Object["spec"].(map[string]interface{})["charts"] = charts
 
 			// set labels
 			setComponentCRLabels(componentUnstructured, component.Name, release)
