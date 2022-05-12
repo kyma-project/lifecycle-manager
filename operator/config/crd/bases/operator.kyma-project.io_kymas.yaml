@@ -50,9 +50,13 @@ spec:
                     name:
                       type: string
                     settings:
-                      additionalProperties:
-                        type: string
-                      type: object
+                      items:
+                        additionalProperties:
+                          type: string
+                        description: KymaSettings defines some component specific
+                          settings
+                        type: object
+                      type: array
                   required:
                   - name
                   type: object
