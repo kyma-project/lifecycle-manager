@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -362,20 +363,33 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&operatorv1alpha1.Kyma{}).
-		Watches(
-			&source.Informer{Informer: informers.ForResource(schema.GroupVersionResource{
-				//TODO: hard-coded, remove!
-				Group:    "component.kyma-project.io",
-				Version:  "v1alpha1",
-				Resource: "manifests",
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&operatorv1alpha1.Kyma{})
+
+	//TODO maybe replace with native REST Handling
+	cs, err := kubernetes.NewForConfig(mgr.GetConfig())
+	// This fetches all resources for our component operator CRDs, might become a problem if component operators
+	// create their own CRDs that we dont need to watch
+	resources, err := cs.ServerResourcesForGroupVersion(schema.GroupVersion{
+		Group:   labels.ComponentPrefix,
+		Version: "v1alpha1",
+	}.String())
+
+	if err != nil {
+		return err
+	}
+
+	for _, resource := range resources.APIResources {
+		controllerBuilder = controllerBuilder.
+			Watches(&source.Informer{Informer: informers.ForResource(schema.GroupVersionResource{
+				Group:    resource.Group,
+				Version:  resource.Version,
+				Resource: resource.Kind,
 			}).Informer()},
-			&handler.Funcs{
-				UpdateFunc: r.ComponentChangeHandler,
-			}, builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
-		).
-		Complete(r)
+				&handler.Funcs{UpdateFunc: r.ComponentChangeHandler},
+				builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
+	}
+
+	return controllerBuilder.Complete(r)
 }
 
 func (r *KymaReconciler) ComponentChangeHandler(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
