@@ -28,12 +28,13 @@ type KymaSettings map[string]string
 // ComponentType defines the components to be installed
 type ComponentType struct {
 	Name     string         `json:"name"`
+	Channel  Channel        `json:"channel,omitempty"`
 	Settings []KymaSettings `json:"settings,omitempty"`
 }
 
 // KymaSpec defines the desired state of Kyma
 type KymaSpec struct {
-	Release string `json:"release"`
+	Channel Channel `json:"channel"`
 	// Components specifies the list of components to be installed
 	Components []ComponentType `json:"components,omitempty"`
 }
@@ -68,9 +69,38 @@ type KymaStatus struct {
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
-	// Active Release
+	// Active Channel
 	// +optional
-	ActiveRelease string `json:"activeRelease,omitempty"`
+	ActiveChannel Channel `json:"activeChannel,omitempty"`
+
+	TemplateConfigStatus TemplateConfigStatus `json:"templateConfigStatus,omitempty"`
+}
+
+// +kubebuilder:validation:Enum=rapid;regular;stable
+type Channel string
+
+const (
+	DefaultChannel Channel = ChannelStable
+	ChannelRapid   Channel = "rapid"
+	ChannelRegular Channel = "regular"
+	ChannelStable  Channel = "stable"
+)
+
+// +kubebuilder:validation:Enum=synced;outdated
+type TemplateConfigStatus string
+
+const (
+	TemplateConfigStatusSynced   TemplateConfigStatus = "synced"
+	TemplateConfigStatusOutdated TemplateConfigStatus = "outdated"
+)
+
+func (kyma *Kyma) SetTemplateConfigStatusSynced() *Kyma {
+	kyma.Status.TemplateConfigStatus = TemplateConfigStatusSynced
+	return kyma
+}
+func (kyma *Kyma) SetTemplateConfigStatusOutdated() *Kyma {
+	kyma.Status.TemplateConfigStatus = TemplateConfigStatusOutdated
+	return kyma
 }
 
 // +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error
@@ -105,6 +135,8 @@ type KymaCondition struct {
 	// Machine-readable text indicating the reason for the condition's last transition.
 	// +optional
 	Reason string `json:"reason,omitempty"`
+
+	TemplateHash string `json:"templateHash,omitempty"`
 
 	// Timestamp for when Kyma last transitioned from one status to another.
 	// +optional
@@ -152,8 +184,8 @@ func (kyma *Kyma) SetObservedGeneration() *Kyma {
 	return kyma
 }
 
-func (kyma *Kyma) SetActiveRelease() *Kyma {
-	kyma.Status.ActiveRelease = kyma.Spec.Release
+func (kyma *Kyma) SetActiveChannel() *Kyma {
+	kyma.Status.ActiveChannel = kyma.Spec.Channel
 	return kyma
 }
 

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
-	"github.com/kyma-project/kyma-operator/operator/pkg/release"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -18,6 +17,11 @@ import (
 	"path/filepath"
 	"time"
 )
+
+type ComponentByTemplateGeneration struct {
+	ComponentName string
+	TemplateHash  *string
+}
 
 func GetConfig() (*rest.Config, error) {
 	// in-cluster config
@@ -56,16 +60,39 @@ func getReadyConditionForComponent(kymaObj *operatorv1alpha1.Kyma, componentName
 	return &operatorv1alpha1.KymaCondition{}, false
 }
 
-func addReadyConditionForObjects(kymaObj *operatorv1alpha1.Kyma, componentNames []string, conditionStatus operatorv1alpha1.KymaConditionStatus, message string) {
+func addReadyConditionForObjects(kymaObj *operatorv1alpha1.Kyma, typesByTemplate []ComponentByTemplateGeneration, conditionStatus operatorv1alpha1.KymaConditionStatus, message string) {
 	status := &kymaObj.Status
-	for _, componentName := range componentNames {
-		condition, exists := getReadyConditionForComponent(kymaObj, componentName)
+	for _, typeByTemplate := range typesByTemplate {
+		condition, exists := getReadyConditionForComponent(kymaObj, typeByTemplate.ComponentName)
 		if !exists {
 			condition = &operatorv1alpha1.KymaCondition{
 				Type:   operatorv1alpha1.ConditionTypeReady,
-				Reason: componentName,
+				Reason: typeByTemplate.ComponentName,
 			}
 			status.Conditions = append(status.Conditions, *condition)
+		}
+		if typeByTemplate.TemplateHash != nil {
+			condition.TemplateHash = *typeByTemplate.TemplateHash
+		}
+		condition.LastTransitionTime = &metav1.Time{Time: time.Now()}
+		condition.Message = message
+		condition.Status = conditionStatus
+
+		for i, existingCondition := range status.Conditions {
+			if existingCondition.Type == operatorv1alpha1.ConditionTypeReady && existingCondition.Reason == typeByTemplate.ComponentName {
+				status.Conditions[i] = *condition
+				break
+			}
+		}
+	}
+}
+
+func updateReadyCondition(kymaObj *operatorv1alpha1.Kyma, componentNames []string, conditionStatus operatorv1alpha1.KymaConditionStatus, message string) {
+	status := kymaObj.Status
+	for _, componentName := range componentNames {
+		condition, exists := getReadyConditionForComponent(kymaObj, componentName)
+		if !exists {
+			continue
 		}
 		condition.LastTransitionTime = &metav1.Time{Time: time.Now()}
 		condition.Message = message
@@ -80,11 +107,10 @@ func addReadyConditionForObjects(kymaObj *operatorv1alpha1.Kyma, componentNames 
 	}
 }
 
-func setComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, componentName string, release release.Release) {
+func setComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, componentName string, rel operatorv1alpha1.Channel) {
 	labelMap := unstructuredCompCR.Object["metadata"].(map[string]interface{})["labels"].(map[string]interface{})
 	labelMap[labels.ControllerName] = componentName
-	labelMap[labels.AppliedAs] = release.GetType()
-	labelMap[labels.Release] = release.GetNew()
+	labelMap[labels.Channel] = rel
 	unstructuredCompCR.Object["metadata"].(map[string]interface{})["labels"] = labelMap
 }
 

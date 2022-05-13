@@ -42,11 +42,23 @@ spec:
           spec:
             description: KymaSpec defines the desired state of Kyma
             properties:
+              channel:
+                enum:
+                - rapid
+                - regular
+                - stable
+                type: string
               components:
                 description: Components specifies the list of components to be installed
                 items:
                   description: ComponentType defines the components to be installed
                   properties:
+                    channel:
+                      enum:
+                      - rapid
+                      - regular
+                      - stable
+                      type: string
                     name:
                       type: string
                     settings:
@@ -61,16 +73,18 @@ spec:
                   - name
                   type: object
                 type: array
-              release:
-                type: string
             required:
-            - release
+            - channel
             type: object
           status:
             description: KymaStatus defines the observed state of Kyma
             properties:
-              activeRelease:
-                description: Active Release
+              activeChannel:
+                description: Active Channel
+                enum:
+                - rapid
+                - regular
+                - stable
                 type: string
               conditions:
                 description: List of status conditions to indicate the status of a
@@ -95,6 +109,8 @@ spec:
                       description: Status of the Kyma Condition. Value can be one
                         of ("True", "False", "Unknown").
                       type: string
+                    templateHash:
+                      type: string
                     type:
                       type: string
                   required:
@@ -114,6 +130,11 @@ spec:
                 - Deleting
                 - Ready
                 - Error
+                type: string
+              templateConfigStatus:
+                enum:
+                - synced
+                - outdated
                 type: string
             type: object
         type: object

@@ -2,81 +2,43 @@ package release
 
 import (
 	"fmt"
+	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
-	"golang.org/x/mod/semver"
 )
 
-type Type string
-
-const (
-	Upgrade   Type = "upgrade"
-	Downgrade Type = "downgrade"
-	Install   Type = "install"
-	Update    Type = "update"
-)
-
-type Release interface {
-	GetOld() string
-	GetNew() string
-	GetType() Type
-	IssueReleaseEvent()
+type ChannelSwitch interface {
+	GetOld() v1alpha1.Channel
+	GetNew() v1alpha1.Channel
+	IssueChannelChangeEvent()
 }
 
-type kyma struct {
-	old         string
-	new         string
-	t           Type
+type oldNewChannelSwitch struct {
+	old         v1alpha1.Channel
+	new         v1alpha1.Channel
 	eventIssuer func()
 }
 
-func (k *kyma) GetOld() string {
+func (k *oldNewChannelSwitch) GetOld() v1alpha1.Channel {
 	return k.old
 }
 
-func (k *kyma) GetNew() string {
+func (k *oldNewChannelSwitch) GetNew() v1alpha1.Channel {
 	return k.new
 }
 
-func (k *kyma) GetType() Type {
-	return k.t
-}
-
-func (k *kyma) IssueReleaseEvent() {
+func (k *oldNewChannelSwitch) IssueChannelChangeEvent() {
 	k.eventIssuer()
 }
 
-func New(old, new string, adapter adapter.Eventing) Release {
-	rel := &kyma{
+func New(old, new v1alpha1.Channel, adapter adapter.Eventing) ChannelSwitch {
+	rel := &oldNewChannelSwitch{
 		old: old,
 		new: new,
 	}
-	rel.calculateReleaseType(adapter)
-	return rel
-}
-
-func (k *kyma) calculateReleaseType(eventSender adapter.Eventing) {
-	compared := semver.Compare(k.old, k.new)
-	if compared < 0 {
-		if k.old == "" {
-			k.t = Install
-			k.eventIssuer = func() {
-				eventSender("Normal", "ReconciliationInstall", fmt.Sprintf("Initial Installation: %s", k.new))
-			}
-		} else {
-			k.t = Upgrade
-			k.eventIssuer = func() {
-				eventSender("Normal", "ReconciliationUpgrade", fmt.Sprintf("Upgrade from %s to %s", k.old, k.new))
-			}
-		}
-	} else if compared > 0 {
-		k.t = Downgrade
-		k.eventIssuer = func() {
-			eventSender("Normal", "ReconciliationDowngrade", fmt.Sprintf("Downgrade from %s to %s", k.old, k.new))
-		}
-	} else {
-		k.t = Update
-		k.eventIssuer = func() {
-			eventSender("Normal", "ReconciliationUpdate", fmt.Sprintf("Update Active Release %s", k.old))
+	rel.eventIssuer = func() {
+		if old != new {
+			adapter("Normal", "ChannelUpdate", fmt.Sprintf("channel update: %s -> %s", rel.old, rel.new))
 		}
 	}
+	return rel
 }
