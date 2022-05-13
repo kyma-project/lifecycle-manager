@@ -18,7 +18,7 @@ import (
 	"time"
 )
 
-type ComponentByTemplateGeneration struct {
+type ComponentsAssociatedWithTemplate struct {
 	ComponentName string
 	TemplateHash  *string
 }
@@ -60,7 +60,7 @@ func getReadyConditionForComponent(kymaObj *operatorv1alpha1.Kyma, componentName
 	return &operatorv1alpha1.KymaCondition{}, false
 }
 
-func addReadyConditionForObjects(kymaObj *operatorv1alpha1.Kyma, typesByTemplate []ComponentByTemplateGeneration, conditionStatus operatorv1alpha1.KymaConditionStatus, message string) {
+func addReadyConditionForObjects(kymaObj *operatorv1alpha1.Kyma, typesByTemplate []ComponentsAssociatedWithTemplate, conditionStatus operatorv1alpha1.KymaConditionStatus, message string) {
 	status := &kymaObj.Status
 	for _, typeByTemplate := range typesByTemplate {
 		condition, exists := getReadyConditionForComponent(kymaObj, typeByTemplate.ComponentName)

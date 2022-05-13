@@ -18,5 +18,5 @@ data:
     spec: 
       commonPrefix: "PENDING_STATE_FROM_KYMA_OP"
       githubRepository:
-        authKey: "abcd1234560110101"
+        authKey: "abcd12345601101010"
         url: "https://foobar.kyma-project.io"

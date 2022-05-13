@@ -9,13 +9,15 @@ import (
 type ChannelSwitch interface {
 	GetOld() v1alpha1.Channel
 	GetNew() v1alpha1.Channel
-	IssueChannelChangeEvent()
+	IssueChannelChangeInProgress()
+	IssueChannelChangeSuccess()
 }
 
 type oldNewChannelSwitch struct {
-	old         v1alpha1.Channel
-	new         v1alpha1.Channel
-	eventIssuer func()
+	old        v1alpha1.Channel
+	new        v1alpha1.Channel
+	inProgress func()
+	success    func()
 }
 
 func (k *oldNewChannelSwitch) GetOld() v1alpha1.Channel {
@@ -26,8 +28,12 @@ func (k *oldNewChannelSwitch) GetNew() v1alpha1.Channel {
 	return k.new
 }
 
-func (k *oldNewChannelSwitch) IssueChannelChangeEvent() {
-	k.eventIssuer()
+func (k *oldNewChannelSwitch) IssueChannelChangeInProgress() {
+	k.inProgress()
+}
+
+func (k *oldNewChannelSwitch) IssueChannelChangeSuccess() {
+	k.success()
 }
 
 func New(old, new v1alpha1.Channel, adapter adapter.Eventing) ChannelSwitch {
@@ -35,9 +41,14 @@ func New(old, new v1alpha1.Channel, adapter adapter.Eventing) ChannelSwitch {
 		old: old,
 		new: new,
 	}
-	rel.eventIssuer = func() {
+	rel.inProgress = func() {
 		if old != new {
-			adapter("Normal", "ChannelUpdate", fmt.Sprintf("channel update: %s -> %s", rel.old, rel.new))
+			adapter("Normal", "ChannelUpdateStart", fmt.Sprintf("channel update: %s -> %s", rel.old, rel.new))
+		}
+	}
+	rel.success = func() {
+		if old != new {
+			adapter("Normal", "ChannelUpdateFinish", fmt.Sprintf("channel update to %s successful!", rel.new))
 		}
 	}
 	return rel

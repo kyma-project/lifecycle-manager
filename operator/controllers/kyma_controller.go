@@ -96,7 +96,8 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, r.updateKymaStatus(ctx, &kyma, operatorv1alpha1.KymaStateDeleting, "deletion timestamp set")
 	}
 
-	if kyma.Status.TemplateConfigStatus == operatorv1alpha1.TemplateConfigStatusSynced && r.AreTemplatesOutdated(ctx, &logger, &kyma) {
+	templates := r.GetTemplates(ctx, &kyma)
+	if kyma.Status.TemplateConfigStatus == operatorv1alpha1.TemplateConfigStatusSynced && r.AreTemplatesOutdated(&logger, &kyma, templates) {
 		return ctrl.Result{}, r.HandleTemplateOutdated(ctx, &logger, &kyma)
 	}
 
@@ -105,7 +106,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	case "":
 		return ctrl.Result{}, r.HandleInitialState(ctx, &logger, &kyma)
 	case operatorv1alpha1.KymaStateProcessing:
-		return ctrl.Result{}, r.HandleProcessingState(ctx, &logger, &kyma)
+		return ctrl.Result{}, r.HandleProcessingState(ctx, &logger, &kyma, templates)
 	case operatorv1alpha1.KymaStateDeleting:
 		return ctrl.Result{}, r.HandleDeletingState(ctx)
 	case operatorv1alpha1.KymaStateError:
@@ -125,10 +126,10 @@ func (r *KymaReconciler) HandleInitialState(ctx context.Context, _ *logr.Logger,
 	return r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateProcessing, "initial state")
 }
 
-func (r *KymaReconciler) HandleProcessingState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
+func (r *KymaReconciler) HandleProcessingState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma, templates TemplatesByName) error {
 	logger.Info("processing " + kyma.Name)
 
-	if err := r.reconcileKymaForRelease(ctx, kyma); err != nil {
+	if err := r.reconcileKymaForRelease(ctx, kyma, templates); err != nil {
 		return err
 	}
 
@@ -168,41 +169,45 @@ func (r *KymaReconciler) updateKymaStatus(ctx context.Context, kyma *operatorv1a
 	kyma.Status.State = state
 	switch state {
 	case operatorv1alpha1.KymaStateReady:
-		addReadyConditionForObjects(kyma, []ComponentByTemplateGeneration{{
+		addReadyConditionForObjects(kyma, []ComponentsAssociatedWithTemplate{{
 			ComponentName: operatorv1alpha1.KymaKind,
 		}}, operatorv1alpha1.ConditionStatusTrue, message)
 		// set active release only when ready state is set
+		release.New(kyma.Status.ActiveChannel, kyma.Spec.Channel, r.GetEventAdapter(kyma)).IssueChannelChangeSuccess()
 		kyma.SetActiveChannel()
 	case "":
-		addReadyConditionForObjects(kyma, []ComponentByTemplateGeneration{{
+		addReadyConditionForObjects(kyma, []ComponentsAssociatedWithTemplate{{
 			ComponentName: operatorv1alpha1.KymaKind,
 		}}, operatorv1alpha1.ConditionStatusUnknown, message)
 	default:
-		addReadyConditionForObjects(kyma, []ComponentByTemplateGeneration{{
+		addReadyConditionForObjects(kyma, []ComponentsAssociatedWithTemplate{{
 			ComponentName: operatorv1alpha1.KymaKind,
 		}}, operatorv1alpha1.ConditionStatusFalse, message)
 	}
 	return r.Status().Update(ctx, kyma.SetObservedGeneration())
 }
 
-func (r *KymaReconciler) CreateOrUpdateComponentsFromConfigMap(ctx context.Context, kymaObj *operatorv1alpha1.Kyma, channel operatorv1alpha1.Channel) ([]ComponentByTemplateGeneration, error) {
+func (r *KymaReconciler) CreateOrUpdateComponentsFromConfigMap(ctx context.Context, kymaObj *operatorv1alpha1.Kyma, templates TemplatesByName) ([]ComponentsAssociatedWithTemplate, error) {
 	kymaObjectKey := client.ObjectKey{Name: kymaObj.Name, Namespace: kymaObj.Namespace}
 	namespacedName := kymaObjectKey.String()
 	logger := log.FromContext(ctx).WithName(namespacedName)
+	channel := kymaObj.Spec.Channel
 
 	if len(kymaObj.Spec.Components) < 1 {
 		return nil, fmt.Errorf("no component specified for resource %s", namespacedName)
 	}
 
-	var componentNamesAffected []ComponentByTemplateGeneration
+	var componentNamesAffected []ComponentsAssociatedWithTemplate
 	for _, component := range kymaObj.Spec.Components {
 		componentName := component.Name + "-name"
 
-		configMap, err := release.NewChannelConfigMapTemplate(r, component, channel).Lookup(ctx)
-		if err != nil {
-			logger.Error(err, fmt.Sprintf("could not find template configmap for resource %s and release %s, will not re-queue resource %s", component.Name, channel, namespacedName))
+		configMap, configMapPresent := templates[component.Name]
+		if !configMapPresent || configMap == nil {
+			err := fmt.Errorf("could not find template configmap for resource %s and release %s, will not re-queue resource %s", component.Name, channel, namespacedName)
+			logger.Error(err, "config map lookup failed")
 			return nil, err
 		}
+
 		gvk, spec, err := getGvkAndSpecFromConfigMap(configMap, component.Name)
 		if err != nil {
 			return nil, err
@@ -256,7 +261,7 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromConfigMap(ctx context.Conte
 
 			logger.Info("successfully created component CR of", "type", component.Name)
 
-			componentNamesAffected = append(componentNamesAffected, ComponentByTemplateGeneration{
+			componentNamesAffected = append(componentNamesAffected, ComponentsAssociatedWithTemplate{
 				ComponentName: component.Name,
 				TemplateHash:  configMapHash,
 			})
@@ -268,7 +273,7 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromConfigMap(ctx context.Conte
 						return nil, fmt.Errorf("error updating custom resource of type %s %w", component.Name, err)
 					}
 					logger.Info("successfully updated component CR of", "type", component.Name)
-					componentNamesAffected = append(componentNamesAffected, ComponentByTemplateGeneration{
+					componentNamesAffected = append(componentNamesAffected, ComponentsAssociatedWithTemplate{
 						ComponentName: component.Name,
 						TemplateHash:  configMapHash,
 					})
@@ -279,54 +284,18 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromConfigMap(ctx context.Conte
 	return componentNamesAffected, nil
 }
 
-func (r *KymaReconciler) UpdateProgressionLabelsForComponentCRs(ctx context.Context, kymaObj *operatorv1alpha1.Kyma, channel operatorv1alpha1.Channel) error {
-	namespacedName := client.ObjectKey{Name: kymaObj.Name, Namespace: kymaObj.Namespace}.String()
-	logger := log.FromContext(ctx).WithName(namespacedName)
-	// get all component CRs by label
-	for _, component := range kymaObj.Spec.Components {
-		componentName := component.Name + "-name"
-		configMap, err := release.NewChannelConfigMapTemplate(r, component, channel).Lookup(ctx)
-		if err != nil {
-			logger.Error(err, fmt.Sprintf("could not find template configmap for resource %s and release %s, will not re-queue resource %s", component.Name, channel, namespacedName))
-			return err
-		}
-		gvk, _, err := getGvkAndSpecFromConfigMap(configMap, component.Name)
-		if err != nil {
-			return err
-		}
-		res := unstructured.Unstructured{}
-		res.SetGroupVersionKind(*gvk)
-
-		if err = r.Get(ctx, client.ObjectKey{Namespace: kymaObj.Namespace, Name: componentName}, &res); err != nil {
-			return err
-		}
-
-		// set labels
-		setComponentCRLabels(&res, component.Name, channel)
-
-		if err := r.Client.Update(ctx, &res); err != nil {
-			return fmt.Errorf("error updating custom resource of type %s %w", component.Name, err)
-		}
-
-	}
-	return nil
-}
-
-func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, kyma *operatorv1alpha1.Kyma) error {
+func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, kyma *operatorv1alpha1.Kyma, templates TemplatesByName) error {
 	logger := log.FromContext(ctx)
 
-	rel := release.New(kyma.Status.ActiveChannel, kyma.Spec.Channel, r.GetEventAdapter(kyma))
+	affectedComponents, err := r.CreateOrUpdateComponentsFromConfigMap(ctx, kyma, templates)
 
-	componentsByTemplate, err := r.CreateOrUpdateComponentsFromConfigMap(ctx, kyma, rel.GetNew())
-
-	if len(componentsByTemplate) > 0 {
+	if len(affectedComponents) > 0 {
 		// check component conditions, if not present add them
 		logger.Info("checking condition for component CRs")
-		addReadyConditionForObjects(kyma, componentsByTemplate, operatorv1alpha1.ConditionStatusFalse, "initial condition for component CR")
+		addReadyConditionForObjects(kyma, affectedComponents, operatorv1alpha1.ConditionStatusFalse, "initial condition for component CR")
+		release.New(kyma.Status.ActiveChannel, kyma.Spec.Channel, r.GetEventAdapter(kyma)).IssueChannelChangeInProgress()
 		return r.updateKymaStatus(ctx, kyma.SetTemplateConfigStatusSynced(), kyma.Status.State, "")
 	}
-
-	rel.IssueChannelChangeEvent()
 
 	if err != nil {
 		message := fmt.Sprintf("Component CR creation error: %s", err.Error())
@@ -490,18 +459,27 @@ func (r *KymaReconciler) ComponentChangeHandler(e event.UpdateEvent, _ workqueue
 	}
 }
 
-func (r *KymaReconciler) AreTemplatesOutdated(ctx context.Context, logger *logr.Logger, k *operatorv1alpha1.Kyma) bool {
+type TemplatesByName map[string]*corev1.ConfigMap
+
+func (r *KymaReconciler) GetTemplates(ctx context.Context, k *operatorv1alpha1.Kyma) TemplatesByName {
+	templates := make(map[string]*corev1.ConfigMap)
 	for _, component := range k.Spec.Components {
 		configMap, err := release.NewChannelConfigMapTemplate(r, component, k.Spec.Channel).Lookup(ctx)
-		for _, condition := range k.Status.Conditions {
-			if condition.Reason == component.Name {
-				if err != nil {
-					return true
-				}
+		if err != nil {
+			templates[component.Name] = nil
+		}
+		templates[component.Name] = configMap
+	}
+	return templates
+}
 
-				templateHash := *asHash(configMap.Data)
+func (r *KymaReconciler) AreTemplatesOutdated(logger *logr.Logger, k *operatorv1alpha1.Kyma, templates TemplatesByName) bool {
+	for componentName, template := range templates {
+		for _, condition := range k.Status.Conditions {
+			if condition.Reason == componentName && template != nil {
+				templateHash := *asHash(template.Data)
 				if templateHash != condition.TemplateHash {
-					logger.Info("detected outdated template", "condition", condition.Reason, "template", configMap.Name, "templateHash", templateHash, "oldHash", condition.TemplateHash)
+					logger.Info("detected outdated template", "condition", condition.Reason, "template", template.Name, "templateHash", templateHash, "oldHash", condition.TemplateHash)
 					return true
 				}
 			}
