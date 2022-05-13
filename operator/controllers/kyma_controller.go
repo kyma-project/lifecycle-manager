@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"crypto/sha256"
 	"fmt"
 	"github.com/go-logr/logr"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
@@ -96,8 +95,8 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, r.updateKymaStatus(ctx, &kyma, operatorv1alpha1.KymaStateDeleting, "deletion timestamp set")
 	}
 
-	templates := r.GetTemplates(ctx, &kyma)
-	if kyma.Status.TemplateConfigStatus == operatorv1alpha1.TemplateConfigStatusSynced && r.AreTemplatesOutdated(&logger, &kyma, templates) {
+	templates := release.GetTemplates(r, ctx, &kyma)
+	if kyma.Status.TemplateConfigStatus == operatorv1alpha1.TemplateConfigStatusSynced && areTemplatesOutdated(&logger, &kyma, templates) {
 		return ctrl.Result{}, r.HandleTemplateOutdated(ctx, &logger, &kyma)
 	}
 
@@ -126,7 +125,7 @@ func (r *KymaReconciler) HandleInitialState(ctx context.Context, _ *logr.Logger,
 	return r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateProcessing, "initial state")
 }
 
-func (r *KymaReconciler) HandleProcessingState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma, templates TemplatesByName) error {
+func (r *KymaReconciler) HandleProcessingState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma, templates release.TemplatesByName) error {
 	logger.Info("processing " + kyma.Name)
 
 	if err := r.reconcileKymaForRelease(ctx, kyma, templates); err != nil {
@@ -187,7 +186,7 @@ func (r *KymaReconciler) updateKymaStatus(ctx context.Context, kyma *operatorv1a
 	return r.Status().Update(ctx, kyma.SetObservedGeneration())
 }
 
-func (r *KymaReconciler) CreateOrUpdateComponentsFromConfigMap(ctx context.Context, kymaObj *operatorv1alpha1.Kyma, templates TemplatesByName) ([]ComponentsAssociatedWithTemplate, error) {
+func (r *KymaReconciler) CreateOrUpdateComponentsFromConfigMap(ctx context.Context, kymaObj *operatorv1alpha1.Kyma, templates release.TemplatesByName) ([]ComponentsAssociatedWithTemplate, error) {
 	kymaObjectKey := client.ObjectKey{Name: kymaObj.Name, Namespace: kymaObj.Namespace}
 	namespacedName := kymaObjectKey.String()
 	logger := log.FromContext(ctx).WithName(namespacedName)
@@ -232,15 +231,17 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromConfigMap(ctx context.Conte
 				"spec": spec,
 			},
 		}
-		var charts []map[string]interface{}
-		for _, setting := range component.Settings {
-			chart := map[string]interface{}{}
-			for key, value := range setting {
-				chart[key] = value
+		if len(component.Settings) > 0 {
+			var charts []map[string]interface{}
+			for _, setting := range component.Settings {
+				chart := map[string]interface{}{}
+				for key, value := range setting {
+					chart[key] = value
+				}
+				charts = append(charts, chart)
 			}
-			charts = append(charts, chart)
+			componentUnstructured.Object["spec"].(map[string]interface{})["charts"] = charts
 		}
-		componentUnstructured.Object["spec"].(map[string]interface{})["charts"] = charts
 
 		// set labels
 		setComponentCRLabels(componentUnstructured, component.Name, channel)
@@ -284,7 +285,7 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromConfigMap(ctx context.Conte
 	return componentNamesAffected, nil
 }
 
-func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, kyma *operatorv1alpha1.Kyma, templates TemplatesByName) error {
+func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, kyma *operatorv1alpha1.Kyma, templates release.TemplatesByName) error {
 	logger := log.FromContext(ctx)
 
 	affectedComponents, err := r.CreateOrUpdateComponentsFromConfigMap(ctx, kyma, templates)
@@ -391,10 +392,10 @@ func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager
 			}
 			requests := make([]reconcile.Request, len(affectedKymas.Items))
 			for i, item := range affectedKymas.Items {
-				if errors.IsNotFound(r.Get(context.TODO(), client.ObjectKey{
+				if err := r.Get(context.TODO(), client.ObjectKey{
 					Namespace: item.Namespace,
 					Name:      item.Name,
-				}, &unstructured.Unstructured{})) {
+				}, &unstructured.Unstructured{}); errors.IsNotFound(err) {
 					continue
 				}
 				requests[i] = reconcile.Request{
@@ -457,40 +458,4 @@ func (r *KymaReconciler) ComponentChangeHandler(e event.UpdateEvent, _ workqueue
 			}
 		}
 	}
-}
-
-type TemplatesByName map[string]*corev1.ConfigMap
-
-func (r *KymaReconciler) GetTemplates(ctx context.Context, k *operatorv1alpha1.Kyma) TemplatesByName {
-	templates := make(map[string]*corev1.ConfigMap)
-	for _, component := range k.Spec.Components {
-		configMap, err := release.NewChannelConfigMapTemplate(r, component, k.Spec.Channel).Lookup(ctx)
-		if err != nil {
-			templates[component.Name] = nil
-		}
-		templates[component.Name] = configMap
-	}
-	return templates
-}
-
-func (r *KymaReconciler) AreTemplatesOutdated(logger *logr.Logger, k *operatorv1alpha1.Kyma, templates TemplatesByName) bool {
-	for componentName, template := range templates {
-		for _, condition := range k.Status.Conditions {
-			if condition.Reason == componentName && template != nil {
-				templateHash := *asHash(template.Data)
-				if templateHash != condition.TemplateHash {
-					logger.Info("detected outdated template", "condition", condition.Reason, "template", template.Name, "templateHash", templateHash, "oldHash", condition.TemplateHash)
-					return true
-				}
-			}
-		}
-	}
-	return false
-}
-
-func asHash(o interface{}) *string {
-	h := sha256.New()
-	h.Write([]byte(fmt.Sprintf("%v", o)))
-	v := fmt.Sprintf("%x", h.Sum(nil))
-	return &v
 }

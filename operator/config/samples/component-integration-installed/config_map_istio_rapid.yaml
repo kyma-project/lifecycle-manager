@@ -2,12 +2,12 @@ kind: ConfigMap
 apiVersion: v1
 
 metadata:
-  name: kyma-component-istio
+  name: kyma-component-istio-rapid
   namespace: default
   labels:
     "operator.kyma-project.io/managed-by": "kyma-operator"
     "operator.kyma-project.io/controller-name": "istio"
-    "operator.kyma-project.io/channel": "stable"
+    "operator.kyma-project.io/channel": "rapid"
 data:
   istio: |-
     kind: IstioConfiguration
@@ -15,4 +15,4 @@ data:
     resource: istioconfigurations
     version: v1alpha1
     spec:
-      foo: "Stable Speed!"
+      foo: "Rapid Speed!"

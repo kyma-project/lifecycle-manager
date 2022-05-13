@@ -1,10 +1,13 @@
 package controllers
 
 import (
+	"crypto/sha256"
 	"flag"
 	"fmt"
+	"github.com/go-logr/logr"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
+	"github.com/kyma-project/kyma-operator/operator/pkg/release"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -137,4 +140,31 @@ func getTemplatedComponent(componentTemplate string) (map[string]interface{}, er
 		return nil, fmt.Errorf("error during config map unmarshal %w", err)
 	}
 	return componentYaml, nil
+}
+
+func areTemplatesOutdated(logger *logr.Logger, k *operatorv1alpha1.Kyma, templates release.TemplatesByName) bool {
+	for componentName, template := range templates {
+		for _, condition := range k.Status.Conditions {
+			if condition.Reason == componentName && template != nil {
+				templateHash := *asHash(template.Data)
+				if templateHash != condition.TemplateHash {
+					logger.Info("detected outdated template",
+						"condition", condition.Reason,
+						"template", template.Name,
+						"templateHash", templateHash,
+						"oldHash", condition.TemplateHash,
+					)
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func asHash(o interface{}) *string {
+	h := sha256.New()
+	h.Write([]byte(fmt.Sprintf("%v", o)))
+	v := fmt.Sprintf("%x", h.Sum(nil))
+	return &v
 }

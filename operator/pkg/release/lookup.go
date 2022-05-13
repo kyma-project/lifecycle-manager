@@ -14,6 +14,20 @@ type ConfigMapTemplate interface {
 	Lookup(ctx context.Context) (*corev1.ConfigMap, error)
 }
 
+type TemplatesByName map[string]*corev1.ConfigMap
+
+func GetTemplates(c client.Reader, ctx context.Context, k *operatorv1alpha1.Kyma) TemplatesByName {
+	templates := make(map[string]*corev1.ConfigMap)
+	for _, component := range k.Spec.Components {
+		configMap, err := NewChannelConfigMapTemplate(c, component, k.Spec.Channel).Lookup(ctx)
+		if err != nil {
+			templates[component.Name] = nil
+		}
+		templates[component.Name] = configMap
+	}
+	return templates
+}
+
 func NewChannelConfigMapTemplate(client client.Reader, component operatorv1alpha1.ComponentType, channel operatorv1alpha1.Channel) ConfigMapTemplate {
 	return &channelConfigMapLookup{
 		reader:    client,
