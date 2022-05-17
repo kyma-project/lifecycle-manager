@@ -16,8 +16,7 @@ data:
     version: v1alpha1
     spec: 
       charts:
-      - createChart: "true"
-        chartName: nginx-ingress-stable
+      - chartName: nginx-ingress-stable
         repoName: nginx-stable
         releaseName: nginx
         url: https://helm.nginx.com/stable
