@@ -16,8 +16,8 @@ data:
     version: v1alpha1
     spec: 
       charts:
-      - chartName: nginx-ingress-stable
+      - chartName: nginx-ingress
         repoName: nginx-stable
         releaseName: nginx
         url: https://helm.nginx.com/stable
-        clientConfig: "CreateNamespace=true,Namespace=nginx-stable"
+        clientConfig: "CreateNamespace=true,Namespace=nginx"

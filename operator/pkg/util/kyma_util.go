@@ -109,17 +109,3 @@ func AsHash(o interface{}) *string {
 	v := fmt.Sprintf("%x", h.Sum(nil))
 	return &v
 }
-
-func CopyComponentSettingsToUnstructuredFromResource(resource *unstructured.Unstructured, component operatorv1alpha1.ComponentType) {
-	if len(component.Settings) > 0 {
-		var charts []map[string]interface{}
-		for _, setting := range component.Settings {
-			chart := map[string]interface{}{}
-			for key, value := range setting {
-				chart[key] = value
-			}
-			charts = append(charts, chart)
-		}
-		resource.Object["spec"].(map[string]interface{})["charts"] = charts
-	}
-}

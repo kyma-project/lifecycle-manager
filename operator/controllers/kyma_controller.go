@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-logr/logr"
+	"github.com/imdario/mergo"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"github.com/kyma-project/kyma-operator/operator/pkg/release"
@@ -183,6 +184,9 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromConfigMap(ctx context.Conte
 		if err != nil {
 			return nil, err
 		}
+		// combine config map and Kyma settings for component
+		mergo.Merge(spec, component.Settings)
+
 		res := unstructured.Unstructured{}
 		res.SetGroupVersionKind(*gvk)
 
@@ -208,7 +212,6 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromConfigMap(ctx context.Conte
 				},
 			}
 
-			util.CopyComponentSettingsToUnstructuredFromResource(componentUnstructured, component)
 			// set labels
 			util.SetComponentCRLabels(componentUnstructured, component.Name, channel)
 
@@ -231,13 +234,15 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromConfigMap(ctx context.Conte
 		} else if kymaObj.Status.TemplateConfigStatus == operatorv1alpha1.TemplateConfigStatusOutdated {
 			for _, condition := range kymaObj.Status.Conditions {
 				if condition.Reason == component.Name && condition.TemplateHash != *configMapHash {
-					updateObject := res.DeepCopy()
+					updatedComponent := res.DeepCopy()
 
-					util.CopyComponentSettingsToUnstructuredFromResource(updateObject, component)
+					// overwrite spec
+					updatedComponent.Object["spec"] = spec
+
 					// set labels
-					util.SetComponentCRLabels(updateObject, component.Name, channel)
+					util.SetComponentCRLabels(updatedComponent, component.Name, channel)
 
-					if err := r.Client.Update(ctx, updateObject, &client.UpdateOptions{}); err != nil {
+					if err := r.Client.Update(ctx, updatedComponent, &client.UpdateOptions{}); err != nil {
 						return nil, fmt.Errorf("error updating custom resource of type %s %w", component.Name, err)
 					}
 
