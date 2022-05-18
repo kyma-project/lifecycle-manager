@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-logr/logr"
-	"github.com/imdario/mergo"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"github.com/kyma-project/kyma-operator/operator/pkg/release"
@@ -184,10 +183,6 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromConfigMap(ctx context.Conte
 		if err != nil {
 			return nil, err
 		}
-		// combine config map and Kyma settings for component
-		if err = mergo.Merge(spec, component.Settings); err != nil {
-			return nil, err
-		}
 
 		res := unstructured.Unstructured{}
 		res.SetGroupVersionKind(*gvk)
@@ -213,6 +208,9 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromConfigMap(ctx context.Conte
 					"spec": spec,
 				},
 			}
+
+			// merge config map and component settings
+			util.CopyComponentSettingsToUnstructuredFromResource(componentUnstructured, component)
 
 			// set labels
 			util.SetComponentCRLabels(componentUnstructured, component.Name, channel)
@@ -240,6 +238,9 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromConfigMap(ctx context.Conte
 
 					// overwrite spec
 					updatedComponent.Object["spec"] = spec
+
+					// merge config map and component settings
+					util.CopyComponentSettingsToUnstructuredFromResource(updatedComponent, component)
 
 					// set labels
 					util.SetComponentCRLabels(updatedComponent, component.Name, channel)
