@@ -1,13 +1,14 @@
-package controllers
+package util
 
 import (
+	"crypto/sha256"
 	"flag"
 	"fmt"
+	"github.com/go-logr/logr"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"github.com/kyma-project/kyma-operator/operator/pkg/release"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -16,8 +17,12 @@ import (
 	"k8s.io/client-go/util/homedir"
 	"os"
 	"path/filepath"
-	"time"
 )
+
+type ComponentsAssociatedWithTemplate struct {
+	ComponentName string
+	TemplateHash  *string
+}
 
 func GetConfig() (*rest.Config, error) {
 	// in-cluster config
@@ -46,49 +51,14 @@ func GetConfig() (*rest.Config, error) {
 	return nil, err
 }
 
-func getReadyConditionForComponent(kymaObj *operatorv1alpha1.Kyma, componentName string) (*operatorv1alpha1.KymaCondition, bool) {
-	status := &kymaObj.Status
-	for _, existingCondition := range status.Conditions {
-		if existingCondition.Type == operatorv1alpha1.ConditionTypeReady && existingCondition.Reason == componentName {
-			return &existingCondition, true
-		}
-	}
-	return &operatorv1alpha1.KymaCondition{}, false
-}
-
-func addReadyConditionForObjects(kymaObj *operatorv1alpha1.Kyma, componentNames []string, conditionStatus operatorv1alpha1.KymaConditionStatus, message string) {
-	status := &kymaObj.Status
-	for _, componentName := range componentNames {
-		condition, exists := getReadyConditionForComponent(kymaObj, componentName)
-		if !exists {
-			condition = &operatorv1alpha1.KymaCondition{
-				Type:   operatorv1alpha1.ConditionTypeReady,
-				Reason: componentName,
-			}
-			status.Conditions = append(status.Conditions, *condition)
-		}
-		condition.LastTransitionTime = &metav1.Time{Time: time.Now()}
-		condition.Message = message
-		condition.Status = conditionStatus
-
-		for i, existingCondition := range status.Conditions {
-			if existingCondition.Type == operatorv1alpha1.ConditionTypeReady && existingCondition.Reason == componentName {
-				status.Conditions[i] = *condition
-				break
-			}
-		}
-	}
-}
-
-func setComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, componentName string, release release.Release) {
+func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, componentName string, rel operatorv1alpha1.Channel) {
 	labelMap := unstructuredCompCR.Object["metadata"].(map[string]interface{})["labels"].(map[string]interface{})
 	labelMap[labels.ControllerName] = componentName
-	labelMap[labels.AppliedAs] = release.GetType()
-	labelMap[labels.Release] = release.GetNew()
+	labelMap[labels.Channel] = rel
 	unstructuredCompCR.Object["metadata"].(map[string]interface{})["labels"] = labelMap
 }
 
-func getGvkAndSpecFromConfigMap(configMap *v1.ConfigMap, componentName string) (*schema.GroupVersionKind, interface{}, error) {
+func GetGvkAndSpecFromConfigMap(configMap *v1.ConfigMap, componentName string) (*schema.GroupVersionKind, interface{}, error) {
 	componentBytes, ok := configMap.Data[componentName]
 	if !ok {
 		return nil, nil, fmt.Errorf("%s component not found for resource in ConfigMap", componentName)
@@ -111,4 +81,45 @@ func getTemplatedComponent(componentTemplate string) (map[string]interface{}, er
 		return nil, fmt.Errorf("error during config map unmarshal %w", err)
 	}
 	return componentYaml, nil
+}
+
+func AreTemplatesOutdated(logger *logr.Logger, k *operatorv1alpha1.Kyma, templates release.TemplatesByName) bool {
+	for componentName, template := range templates {
+		for _, condition := range k.Status.Conditions {
+			if condition.Reason == componentName && template != nil {
+				templateHash := *AsHash(template.Data)
+				if templateHash != condition.TemplateHash {
+					logger.Info("detected outdated template",
+						"condition", condition.Reason,
+						"template", template.Name,
+						"templateHash", templateHash,
+						"oldHash", condition.TemplateHash,
+					)
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func AsHash(o interface{}) *string {
+	h := sha256.New()
+	h.Write([]byte(fmt.Sprintf("%v", o)))
+	v := fmt.Sprintf("%x", h.Sum(nil))
+	return &v
+}
+
+func CopyComponentSettingsToUnstructuredFromResource(resource *unstructured.Unstructured, component operatorv1alpha1.ComponentType) {
+	if len(component.Settings) > 0 {
+		var charts []map[string]interface{}
+		for _, setting := range component.Settings {
+			chart := map[string]interface{}{}
+			for key, value := range setting {
+				chart[key] = value
+			}
+			charts = append(charts, chart)
+		}
+		resource.Object["spec"].(map[string]interface{})["charts"] = charts
+	}
 }

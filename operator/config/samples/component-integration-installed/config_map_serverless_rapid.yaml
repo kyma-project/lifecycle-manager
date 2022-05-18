@@ -2,12 +2,12 @@ kind: ConfigMap
 apiVersion: v1
 
 metadata:
-  name: kyma-component-serverless
+  name: kyma-component-serverless-rapid
   namespace: default
   labels:
     "operator.kyma-project.io/managed-by": "kyma-operator"
     "operator.kyma-project.io/controller-name": "serverless"
-    "operator.kyma-project.io/channel": "stable"
+    "operator.kyma-project.io/channel": "rapid"
 data:
   serverless: |-
     crd-url: ""
@@ -18,5 +18,5 @@ data:
     spec: 
       commonPrefix: "PENDING_STATE_FROM_KYMA_OP"
       githubRepository:
-        authKey: "abcd12345601101010stable3"
+        authKey: "abcd12345601101010somethingrapid4"
         url: "https://foobar.kyma-project.io"

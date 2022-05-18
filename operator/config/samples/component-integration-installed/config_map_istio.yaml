@@ -7,12 +7,12 @@ metadata:
   labels:
     "operator.kyma-project.io/managed-by": "kyma-operator"
     "operator.kyma-project.io/controller-name": "istio"
-    "operator.kyma-project.io/release": "v1.0.2"
+    "operator.kyma-project.io/channel": "stable"
 data:
   istio: |-
     kind: IstioConfiguration
     group: kyma.kyma-project.io
     resource: istioconfigurations
-    version: v1alpha1 
+    version: v1alpha1
     spec:
-      foo: "created From Dynamic Client for 1.0.2"
+      foo: "Stable Speed!"

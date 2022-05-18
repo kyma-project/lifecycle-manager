@@ -5,7 +5,7 @@ const (
 	ComponentPrefix = "component.kyma-project.io"
 	Seperator       = "/"
 	ControllerName  = OperatorPrefix + Seperator + "controller-name"
-	Release         = OperatorPrefix + Seperator + "release"
+	Channel         = OperatorPrefix + Seperator + "channel"
 	AppliedAs       = OperatorPrefix + Seperator + "applied-as"
 	ManagedBy       = OperatorPrefix + Seperator + "managed-by"
 )

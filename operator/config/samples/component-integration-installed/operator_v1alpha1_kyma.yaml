@@ -4,21 +4,8 @@ metadata:
   name: kyma-sample
   namespace: default
 spec:
-  release: v2.0.5
+  channel: rapid
   components:
     - name: istio
     - name: serverless
     - name: manifest
-      settings:
-        - createChart: "true"
-          chartName: cert-manager
-          releaseName: jet
-          repoName: jetstack
-          url: https://charts.jetstack.io
-          clientConfig: "CreateNamespace=true,Namespace=jet-cert"
-        - createChart: "true"
-          chartName: nginx-ingress
-          releaseName: nginx
-          repoName: nginx-stable
-          url: https://helm.nginx.com/stable
-          clientConfig: "CreateNamespace=true,Namespace=nginx"

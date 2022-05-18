@@ -21,30 +21,30 @@ import (
 	"fmt"
 	"github.com/go-logr/logr"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"github.com/kyma-project/kyma-operator/operator/pkg/release"
+	"github.com/kyma-project/kyma-operator/operator/pkg/status"
+	"github.com/kyma-project/kyma-operator/operator/pkg/util"
+	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"strings"
 	"time"
 )
 
@@ -53,12 +53,6 @@ type KymaReconciler struct {
 	client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
-}
-
-func (r *KymaReconciler) GetEventAdapter(kyma *operatorv1alpha1.Kyma) adapter.Eventing {
-	return func(eventtype, reason, message string) {
-		r.Recorder.Event(kyma, eventtype, reason, message)
-	}
 }
 
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch;create;update;patch;onEvent;delete
@@ -91,12 +85,17 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, r.updateKymaStatus(ctx, &kyma, operatorv1alpha1.KymaStateDeleting, "deletion timestamp set")
 	}
 
+	templates := release.GetTemplates(r, ctx, &kyma)
+	if kyma.Status.TemplateConfigStatus == operatorv1alpha1.TemplateConfigStatusSynced && util.AreTemplatesOutdated(&logger, &kyma, templates) {
+		return ctrl.Result{}, r.HandleTemplateOutdated(ctx, &logger, &kyma)
+	}
+
 	// state handling
 	switch kyma.Status.State {
 	case "":
 		return ctrl.Result{}, r.HandleInitialState(ctx, &logger, &kyma)
 	case operatorv1alpha1.KymaStateProcessing:
-		return ctrl.Result{}, r.HandleProcessingState(ctx, &logger, &kyma)
+		return ctrl.Result{}, r.HandleProcessingState(ctx, &logger, &kyma, templates)
 	case operatorv1alpha1.KymaStateDeleting:
 		return ctrl.Result{}, r.HandleDeletingState(ctx)
 	case operatorv1alpha1.KymaStateError:
@@ -108,14 +107,18 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return ctrl.Result{}, nil
 }
 
-func (r *KymaReconciler) HandleInitialState(_ context.Context, _ *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
-	return r.updateKymaStatus(context.TODO(), kyma, operatorv1alpha1.KymaStateProcessing, "initial state")
+func (r *KymaReconciler) HandleTemplateOutdated(ctx context.Context, _ *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
+	return r.updateKymaStatus(ctx, kyma.SetTemplateConfigStatusOutdated(), operatorv1alpha1.KymaStateProcessing, "template update")
 }
 
-func (r *KymaReconciler) HandleProcessingState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
+func (r *KymaReconciler) HandleInitialState(ctx context.Context, _ *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
+	return r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateProcessing, "initial state")
+}
+
+func (r *KymaReconciler) HandleProcessingState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma, templates release.TemplatesByName) error {
 	logger.Info("processing " + kyma.Name)
 
-	if err := r.reconcileKymaForRelease(ctx, kyma); err != nil {
+	if err := r.reconcileKymaForRelease(ctx, kyma, templates); err != nil {
 		return err
 	}
 
@@ -152,90 +155,35 @@ func (r *KymaReconciler) updateKyma(ctx context.Context, kyma *operatorv1alpha1.
 }
 
 func (r *KymaReconciler) updateKymaStatus(ctx context.Context, kyma *operatorv1alpha1.Kyma, state operatorv1alpha1.KymaState, message string) error {
-	kyma.Status.State = state
-	switch state {
-	case operatorv1alpha1.KymaStateReady:
-		addReadyConditionForObjects(kyma, []string{operatorv1alpha1.KymaKind}, operatorv1alpha1.ConditionStatusTrue, message)
-		// set active release only when ready state is set
-		kyma.SetActiveRelease()
-	case "":
-		addReadyConditionForObjects(kyma, []string{operatorv1alpha1.KymaKind}, operatorv1alpha1.ConditionStatusUnknown, message)
-	default:
-		addReadyConditionForObjects(kyma, []string{operatorv1alpha1.KymaKind}, operatorv1alpha1.ConditionStatusFalse, message)
-	}
-	return r.Status().Update(ctx, kyma.SetObservedGeneration())
+	return r.KymaStatus().UpdateStatus(ctx, kyma, state, message)
 }
 
-func (r *KymaReconciler) GetTemplateConfigMapForRelease(ctx context.Context, component, release string) (*corev1.ConfigMap, error) {
-	configMapList := &corev1.ConfigMapList{}
-	if err := r.List(ctx, configMapList,
-		client.MatchingLabels{
-			labels.ControllerName: component,
-			labels.Release:        release,
-		},
-	); err != nil {
-		return nil, err
-	}
-
-	if len(configMapList.Items) > 1 {
-		return nil, fmt.Errorf("more than one config map template found for component: %s", component)
-	}
-
-	if len(configMapList.Items) == 0 {
-		if err := r.List(ctx, configMapList,
-			client.MatchingLabels{
-				labels.ControllerName: component,
-			},
-		); err != nil {
-			return nil, err
-		}
-
-		if len(configMapList.Items) > 1 {
-			return nil, fmt.Errorf("more than one config map template found for component: %s", component)
-		}
-
-		if len(configMapList.Items) == 0 {
-			return nil, fmt.Errorf("no config map template found for component: %s", component)
-		}
-
-	}
-
-	actualReleaseVersion := configMapList.Items[0].GetLabels()[labels.Release]
-	if actualReleaseVersion == "" {
-		actualReleaseVersion = "unversioned"
-	}
-
-	if actualReleaseVersion != release {
-		log.FromContext(ctx).Info(fmt.Sprintf("using %s (instead of %s) for component %s", actualReleaseVersion, release, component))
-	} else {
-		log.FromContext(ctx).Info(fmt.Sprintf("using %s for component %s", actualReleaseVersion, component))
-	}
-
-	return &configMapList.Items[0], nil
-}
-
-func (r *KymaReconciler) CreateComponentsFromConfigMap(ctx context.Context, kymaObj *operatorv1alpha1.Kyma, release release.Release) ([]string, error) {
+func (r *KymaReconciler) CreateOrUpdateComponentsFromConfigMap(ctx context.Context, kymaObj *operatorv1alpha1.Kyma, templates release.TemplatesByName) ([]util.ComponentsAssociatedWithTemplate, error) {
 	kymaObjectKey := client.ObjectKey{Name: kymaObj.Name, Namespace: kymaObj.Namespace}
 	namespacedName := kymaObjectKey.String()
 	logger := log.FromContext(ctx).WithName(namespacedName)
+	channel := kymaObj.Spec.Channel
 
 	if len(kymaObj.Spec.Components) < 1 {
 		return nil, fmt.Errorf("no component specified for resource %s", namespacedName)
 	}
 
-	var componentNamesCreated []string
+	var componentNamesAffected []util.ComponentsAssociatedWithTemplate
 	for _, component := range kymaObj.Spec.Components {
 		componentName := component.Name + "-name"
 
-		configMap, err := r.GetTemplateConfigMapForRelease(ctx, component.Name, release.GetNew())
-		if err != nil {
-			logger.Error(err, fmt.Sprintf("could not find template configmap for resource %s and release %s, will not re-queue resource %s", component.Name, release.GetNew(), namespacedName))
+		configMap, configMapPresent := templates[component.Name]
+		if !configMapPresent || configMap == nil {
+			err := fmt.Errorf("could not find template configmap for resource %s and release %s, will not re-queue resource %s", component.Name, channel, namespacedName)
+			logger.Error(err, "config map lookup failed")
 			return nil, err
 		}
-		gvk, spec, err := getGvkAndSpecFromConfigMap(configMap, component.Name)
+
+		gvk, spec, err := util.GetGvkAndSpecFromConfigMap(configMap, component.Name)
 		if err != nil {
 			return nil, err
 		}
+
 		res := unstructured.Unstructured{}
 		res.SetGroupVersionKind(*gvk)
 
@@ -244,8 +192,9 @@ func (r *KymaReconciler) CreateComponentsFromConfigMap(ctx context.Context, kyma
 			return nil, err
 		}
 
+		configMapHash := util.AsHash(configMap.Data)
+
 		// overwrite labels for upgrade / downgrade of component versions
-		// KymaUpdate doesn't require an update
 		if errors.IsNotFound(err) {
 			componentUnstructured := &unstructured.Unstructured{
 				Object: map[string]interface{}{
@@ -259,18 +208,12 @@ func (r *KymaReconciler) CreateComponentsFromConfigMap(ctx context.Context, kyma
 					"spec": spec,
 				},
 			}
-			var charts []map[string]interface{}
-			for _, setting := range component.Settings {
-				chart := map[string]interface{}{}
-				for key, value := range setting {
-					chart[key] = value
-				}
-				charts = append(charts, chart)
-			}
-			componentUnstructured.Object["spec"].(map[string]interface{})["charts"] = charts
+
+			// merge config map and component settings
+			util.CopyComponentSettingsToUnstructuredFromResource(componentUnstructured, component)
 
 			// set labels
-			setComponentCRLabels(componentUnstructured, component.Name, release)
+			util.SetComponentCRLabels(componentUnstructured, component.Name, channel)
 
 			// set owner reference
 			if err := controllerutil.SetOwnerReference(kymaObj, componentUnstructured, r.Scheme); err != nil {
@@ -284,65 +227,43 @@ func (r *KymaReconciler) CreateComponentsFromConfigMap(ctx context.Context, kyma
 
 			logger.Info("successfully created component CR of", "type", component.Name)
 
-			componentNamesCreated = append(componentNamesCreated, component.Name)
+			componentNamesAffected = append(componentNamesAffected, util.ComponentsAssociatedWithTemplate{
+				ComponentName: component.Name,
+				TemplateHash:  configMapHash,
+			})
+		} else if kymaObj.Status.TemplateConfigStatus == operatorv1alpha1.TemplateConfigStatusOutdated {
+			for _, condition := range kymaObj.Status.Conditions {
+				if condition.Reason == component.Name && condition.TemplateHash != *configMapHash {
+					updatedComponent := res.DeepCopy()
+
+					// overwrite spec
+					updatedComponent.Object["spec"] = spec
+
+					// merge config map and component settings
+					util.CopyComponentSettingsToUnstructuredFromResource(updatedComponent, component)
+
+					// set labels
+					util.SetComponentCRLabels(updatedComponent, component.Name, channel)
+
+					if err := r.Client.Update(ctx, updatedComponent, &client.UpdateOptions{}); err != nil {
+						return nil, fmt.Errorf("error updating custom resource of type %s %w", component.Name, err)
+					}
+
+					logger.Info("successfully updated component CR of", "type", component.Name)
+					componentNamesAffected = append(componentNamesAffected, util.ComponentsAssociatedWithTemplate{
+						ComponentName: component.Name,
+						TemplateHash:  configMapHash,
+					})
+				}
+			}
 		}
 	}
-	return componentNamesCreated, nil
+	return componentNamesAffected, nil
 }
 
-func (r *KymaReconciler) UpdateProgressionLabelsForComponentCRs(ctx context.Context, kymaObj *operatorv1alpha1.Kyma, release release.Release) error {
-	namespacedName := client.ObjectKey{Name: kymaObj.Name, Namespace: kymaObj.Namespace}.String()
-	logger := log.FromContext(ctx).WithName(namespacedName)
-	// get all component CRs by label
-	for _, component := range kymaObj.Spec.Components {
-		componentName := component.Name + "-name"
-		configMap, err := r.GetTemplateConfigMapForRelease(ctx, component.Name, release.GetNew())
-		if err != nil {
-			logger.Error(err, fmt.Sprintf("could not find template configmap for resource %s and release %s, will not re-queue resource %s", component.Name, release.GetNew(), namespacedName))
-			return err
-		}
-		gvk, _, err := getGvkAndSpecFromConfigMap(configMap, component.Name)
-		if err != nil {
-			return err
-		}
-		res := unstructured.Unstructured{}
-		res.SetGroupVersionKind(*gvk)
-
-		if err = r.Get(ctx, client.ObjectKey{Namespace: kymaObj.Namespace, Name: componentName}, &res); err != nil {
-			return err
-		}
-
-		// set labels
-		setComponentCRLabels(&res, component.Name, release)
-
-		if err := r.Client.Update(ctx, &res); err != nil {
-			return fmt.Errorf("error updating custom resource of type %s %w", component.Name, err)
-		}
-
-	}
-	return nil
-}
-
-func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, kyma *operatorv1alpha1.Kyma) error {
+func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, kyma *operatorv1alpha1.Kyma, templates release.TemplatesByName) error {
 	logger := log.FromContext(ctx)
-
-	rel := release.New(kyma.Status.ActiveRelease, kyma.Spec.Release, r.GetEventAdapter(kyma))
-
-	componentNamesCreated, err := r.CreateComponentsFromConfigMap(ctx, kyma, rel)
-
-	if len(componentNamesCreated) > 0 {
-		// check component conditions, if not present add them
-		logger.Info("checking condition for component CRs")
-		addReadyConditionForObjects(kyma, componentNamesCreated, operatorv1alpha1.ConditionStatusFalse, "initial condition for component CR")
-		return r.updateKymaStatus(ctx, kyma, kyma.Status.State, "")
-	}
-
-	// no update required for KymaUpdate
-	if err == nil && rel.GetType() != release.Update {
-		err = r.UpdateProgressionLabelsForComponentCRs(ctx, kyma, rel)
-	}
-
-	rel.IssueReleaseEvent()
+	affectedComponents, err := r.CreateOrUpdateComponentsFromConfigMap(ctx, kyma, templates)
 
 	if err != nil {
 		message := fmt.Sprintf("Component CR creation error: %s", err.Error())
@@ -351,11 +272,19 @@ func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, kyma *oper
 		return r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateError, message)
 	}
 
+	if len(affectedComponents) > 0 {
+		// check component conditions, if not present add them
+		logger.Info("checking condition for component CRs")
+		r.KymaStatus().AddReadyConditionForObjects(kyma, affectedComponents, operatorv1alpha1.ConditionStatusFalse, "initial condition for component CR")
+		release.New(kyma.Status.ActiveChannel, kyma.Spec.Channel, r.KymaStatus().GetEventAdapter(kyma)).IssueChannelChangeInProgress()
+		return r.updateKymaStatus(ctx, kyma.SetTemplateConfigStatusSynced(), kyma.Status.State, "")
+	}
+
 	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager) error {
 	c, err := dynamic.NewForConfig(mgr.GetConfig())
 	if err != nil {
 		return err
@@ -375,72 +304,51 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	cs, err := kubernetes.NewForConfig(mgr.GetConfig())
 	// This fetches all resources for our component operator CRDs, might become a problem if component operators
 	// create their own CRDs that we dont need to watch
-	resources, err := cs.ServerResourcesForGroupVersion(schema.GroupVersion{
+	gv := schema.GroupVersion{
 		Group:   labels.ComponentPrefix,
 		Version: "v1alpha1",
-	}.String())
-
+	}
+	resources, err := cs.ServerResourcesForGroupVersion(gv.String())
 	if err != nil {
 		return err
 	}
 
+	dynamicInformerSet := make(map[string]*source.Informer)
 	for _, resource := range resources.APIResources {
-		controllerBuilder = controllerBuilder.
-			Watches(&source.Informer{Informer: informers.ForResource(schema.GroupVersionResource{
-				Group:    resource.Group,
-				Version:  resource.Version,
-				Resource: resource.Kind,
-			}).Informer()},
-				&handler.Funcs{UpdateFunc: r.ComponentChangeHandler},
-				builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
+		//TODO Verify if this filtering is really necessary or if we can somehow only listen to status changes instead of resource changes with ResourceVersionChangedPredicate
+		if strings.HasSuffix(resource.Name, "status") {
+			continue
+		}
+		gvr := gv.WithResource(resource.Name)
+		dynamicInformerSet[gvr.String()] = &source.Informer{Informer: informers.ForResource(gvr).Informer()}
 	}
+
+	for gvr, informer := range dynamicInformerSet {
+		controllerBuilder = controllerBuilder.
+			Watches(informer, &handler.Funcs{UpdateFunc: r.ComponentChangeHandler().ComponentChange(context.TODO())},
+				builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
+		setupLog.Info("initialized dynamic watching", "source", gvr)
+	}
+
+	registration := watch.NewKymaChannelWatch(mgr)
+	//Add the channel as field watch
+	if err := registration.Index(context.TODO()); err != nil {
+		return err
+	}
+
+	controllerBuilder = controllerBuilder.Watches(
+		&source.Kind{Type: &corev1.ConfigMap{}},
+		handler.EnqueueRequestsFromMapFunc(registration.Watch(context.TODO())),
+		builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+	)
 
 	return controllerBuilder.Complete(r)
 }
 
-func (r *KymaReconciler) ComponentChangeHandler(e event.UpdateEvent, q workqueue.RateLimitingInterface) {
-	objectBytes, err := json.Marshal(e.ObjectNew)
-	if err != nil {
-		return
-	}
-	componentObj := unstructured.Unstructured{}
-	if err = json.Unmarshal(objectBytes, &componentObj); err != nil {
-		return
-	}
-	if componentObj.Object["status"] == nil {
-		return
-	}
-	for key, value := range componentObj.Object["status"].(map[string]interface{}) {
-		if key == "state" && value == string(operatorv1alpha1.KymaStateReady) {
-			ownerRefs := componentObj.GetOwnerReferences()
-			var ownerName string
-			kymaObj := &operatorv1alpha1.Kyma{}
-			for _, ownerRef := range ownerRefs {
-				if operatorv1alpha1.KymaKind == ownerRef.Kind {
-					ownerName = ownerRef.Name
-					break
-				}
-			}
+func (r *KymaReconciler) ComponentChangeHandler() *watch.ComponentChangeHandler {
+	return &watch.ComponentChangeHandler{Reader: r.Client, StatusWriter: r.Status(), EventRecorder: r.Recorder}
+}
 
-			kymaNamespacedName := client.ObjectKey{Name: ownerName, Namespace: componentObj.GetNamespace()}
-			if err := r.Get(context.TODO(), kymaNamespacedName, kymaObj); err != nil {
-				return
-			}
-
-			componentNameLabel := componentObj.GetLabels()[labels.ControllerName]
-			if componentNameLabel == "" {
-				return
-			}
-
-			// TODO: "istio", "serverless" are hard-coded, remove!
-			addReadyConditionForObjects(kymaObj, []string{componentNameLabel, "istio", "serverless"}, operatorv1alpha1.ConditionStatusTrue,
-				fmt.Sprintf("successfully installed component : %s", e.ObjectNew.GetObjectKind().GroupVersionKind().String()))
-
-			// triggers reconciliation on Kyma
-			if err := r.updateKymaStatus(context.TODO(), kymaObj, kymaObj.Status.State,
-				fmt.Sprintf("component %s set to %s state", componentNameLabel, string(operatorv1alpha1.KymaStateReady))); err != nil {
-				return
-			}
-		}
-	}
+func (r *KymaReconciler) KymaStatus() *status.Kyma {
+	return &status.Kyma{StatusWriter: r.Status(), EventRecorder: r.Recorder}
 }
