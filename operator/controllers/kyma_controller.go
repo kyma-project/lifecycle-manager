@@ -185,7 +185,9 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromConfigMap(ctx context.Conte
 			return nil, err
 		}
 		// combine config map and Kyma settings for component
-		mergo.Merge(spec, component.Settings)
+		if err = mergo.Merge(spec, component.Settings); err != nil {
+			return nil, err
+		}
 
 		res := unstructured.Unstructured{}
 		res.SetGroupVersionKind(*gvk)
@@ -260,7 +262,6 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromConfigMap(ctx context.Conte
 
 func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, kyma *operatorv1alpha1.Kyma, templates release.TemplatesByName) error {
 	logger := log.FromContext(ctx)
-
 	affectedComponents, err := r.CreateOrUpdateComponentsFromConfigMap(ctx, kyma, templates)
 
 	if err != nil {
