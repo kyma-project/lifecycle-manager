@@ -2,6 +2,8 @@ package status
 
 import (
 	"context"
+	"time"
+
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
 	"github.com/kyma-project/kyma-operator/operator/pkg/release"
@@ -9,7 +11,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 )
 
 type Kyma struct {
@@ -56,9 +57,8 @@ func (h *Kyma) AddReadyConditionForObjects(kymaObj *operatorv1alpha1.Kyma, types
 			}
 			status.Conditions = append(status.Conditions, *condition)
 		}
-		if typeByTemplate.TemplateHash != nil {
-			condition.TemplateHash = *typeByTemplate.TemplateHash
-		}
+		condition.TemplateChannel = typeByTemplate.TemplateChannel
+		condition.TemplateGeneration = typeByTemplate.TemplateGeneration
 		condition.LastTransitionTime = &metav1.Time{Time: time.Now()}
 		condition.Message = message
 		condition.Status = conditionStatus

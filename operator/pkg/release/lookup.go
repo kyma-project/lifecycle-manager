@@ -3,29 +3,29 @@ package release
 import (
 	"context"
 	"fmt"
+
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
-	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 type ConfigMapTemplate interface {
-	Lookup(ctx context.Context) (*corev1.ConfigMap, error)
+	Lookup(ctx context.Context) (*operatorv1alpha1.ModuleTemplate, error)
 }
 
-type TemplatesByName map[string]*corev1.ConfigMap
+type TemplatesByName map[string]*operatorv1alpha1.ModuleTemplate
 
-func GetTemplates(c client.Reader, ctx context.Context, k *operatorv1alpha1.Kyma) TemplatesByName {
-	templates := make(map[string]*corev1.ConfigMap)
+func GetTemplates(c client.Reader, ctx context.Context, k *operatorv1alpha1.Kyma) (TemplatesByName, error) {
+	templates := make(map[string]*operatorv1alpha1.ModuleTemplate)
 	for _, component := range k.Spec.Components {
 		configMap, err := NewChannelConfigMapTemplate(c, component, k.Spec.Channel).Lookup(ctx)
 		if err != nil {
-			templates[component.Name] = nil
+			return nil, err
 		}
 		templates[component.Name] = configMap
 	}
-	return templates
+	return templates, nil
 }
 
 func NewChannelConfigMapTemplate(client client.Reader, component operatorv1alpha1.ComponentType, channel operatorv1alpha1.Channel) ConfigMapTemplate {
@@ -42,8 +42,8 @@ type channelConfigMapLookup struct {
 	channel   operatorv1alpha1.Channel
 }
 
-func (c *channelConfigMapLookup) Lookup(ctx context.Context) (*corev1.ConfigMap, error) {
-	configMapList := &corev1.ConfigMapList{}
+func (c *channelConfigMapLookup) Lookup(ctx context.Context) (*operatorv1alpha1.ModuleTemplate, error) {
+	configMapList := &operatorv1alpha1.ModuleTemplateList{}
 
 	var desiredChannel operatorv1alpha1.Channel
 
@@ -99,9 +99,9 @@ func (c *channelConfigMapLookup) Lookup(ctx context.Context) (*corev1.ConfigMap,
 	}
 
 	if actualChannel != c.channel {
-		log.FromContext(ctx).Info(fmt.Sprintf("using %s (instead of %s) for component %s", actualChannel, c.channel, c.component.Name))
+		log.FromContext(ctx).V(0).Info(fmt.Sprintf("using %s (instead of %s) for component %s", actualChannel, c.channel, c.component.Name))
 	} else {
-		log.FromContext(ctx).Info(fmt.Sprintf("using %s for component %s", actualChannel, c.component.Name))
+		log.FromContext(ctx).V(0).Info(fmt.Sprintf("using %s for component %s", actualChannel, c.component.Name))
 	}
 
 	return &configMapList.Items[0], nil

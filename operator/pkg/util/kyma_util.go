@@ -1,54 +1,21 @@
 package util
 
 import (
-	"crypto/sha256"
-	"flag"
 	"fmt"
+
 	"github.com/go-logr/logr"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"github.com/kyma-project/kyma-operator/operator/pkg/release"
-	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
-	"os"
-	"path/filepath"
 )
 
 type ComponentsAssociatedWithTemplate struct {
-	ComponentName string
-	TemplateHash  *string
-}
-
-func GetConfig() (*rest.Config, error) {
-	// in-cluster config
-	config, err := rest.InClusterConfig()
-	if err == nil {
-		return config, err
-	}
-
-	// kubeconfig flag
-	if flag.Lookup("kubeconfig") != nil {
-		if kubeconfig := flag.Lookup("kubeconfig").Value.String(); kubeconfig != "" {
-			return clientcmd.BuildConfigFromFlags("", kubeconfig)
-		}
-	}
-
-	// env variable
-	if len(os.Getenv("KUBECONFIG")) > 0 {
-		return clientcmd.BuildConfigFromFlags("masterURL", os.Getenv("KUBECONFIG"))
-	}
-
-	// If no in-cluster config, try the default location in the user's home directory
-	if home := homedir.HomeDir(); home != "" {
-		return clientcmd.BuildConfigFromFlags("", filepath.Join(home, ".kube", "config"))
-	}
-
-	return nil, err
+	ComponentName      string
+	TemplateGeneration int64
+	TemplateChannel    operatorv1alpha1.Channel
 }
 
 func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, componentName string, rel operatorv1alpha1.Channel) {
@@ -58,8 +25,8 @@ func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, compone
 	unstructuredCompCR.Object["metadata"].(map[string]interface{})["labels"] = labelMap
 }
 
-func GetGvkAndSpecFromConfigMap(configMap *v1.ConfigMap, componentName string) (*schema.GroupVersionKind, interface{}, error) {
-	componentBytes, ok := configMap.Data[componentName]
+func GetGvkAndSpecFromTemplate(configMap *operatorv1alpha1.ModuleTemplate, componentName string) (*schema.GroupVersionKind, interface{}, error) {
+	componentBytes, ok := configMap.Spec.Data[componentName]
 	if !ok {
 		return nil, nil, fmt.Errorf("%s component not found for resource in ConfigMap", componentName)
 	}
@@ -87,13 +54,14 @@ func AreTemplatesOutdated(logger *logr.Logger, k *operatorv1alpha1.Kyma, templat
 	for componentName, template := range templates {
 		for _, condition := range k.Status.Conditions {
 			if condition.Reason == componentName && template != nil {
-				templateHash := *AsHash(template.Data)
-				if templateHash != condition.TemplateHash {
+				if template.GetGeneration() != condition.TemplateGeneration || operatorv1alpha1.Channel(template.Labels[labels.Channel]) != condition.TemplateChannel {
 					logger.Info("detected outdated template",
 						"condition", condition.Reason,
 						"template", template.Name,
-						"templateHash", templateHash,
-						"oldHash", condition.TemplateHash,
+						"templateGeneration", template.GetGeneration(),
+						"previousGeneration", condition.TemplateGeneration,
+						"templateChannel", operatorv1alpha1.Channel(template.Labels[labels.Channel]),
+						"previousChannel", condition.TemplateChannel,
 					)
 					return true
 				}
@@ -101,13 +69,6 @@ func AreTemplatesOutdated(logger *logr.Logger, k *operatorv1alpha1.Kyma, templat
 		}
 	}
 	return false
-}
-
-func AsHash(o interface{}) *string {
-	h := sha256.New()
-	h.Write([]byte(fmt.Sprintf("%v", o)))
-	v := fmt.Sprintf("%x", h.Sum(nil))
-	return &v
 }
 
 func CopyComponentSettingsToUnstructuredFromResource(resource *unstructured.Unstructured, component operatorv1alpha1.ComponentType) {

@@ -136,7 +136,8 @@ type KymaCondition struct {
 	// +optional
 	Reason string `json:"reason,omitempty"`
 
-	TemplateHash string `json:"templateHash,omitempty"`
+	TemplateGeneration int64   `json:"templateGeneration,omitempty"`
+	TemplateChannel    Channel `json:"templateChannel,omitempty"`
 
 	// Timestamp for when Kyma last transitioned from one status to another.
 	// +optional

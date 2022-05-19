@@ -31,6 +31,10 @@ func (c *FakeOperatorV1alpha1) Kymas(namespace string) v1alpha1.KymaInterface {
 	return &FakeKymas{c, namespace}
 }
 
+func (c *FakeOperatorV1alpha1) ModuleTemplates(namespace string) v1alpha1.ModuleTemplateInterface {
+	return &FakeModuleTemplates{c, namespace}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeOperatorV1alpha1) RESTClient() rest.Interface {

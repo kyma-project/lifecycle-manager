@@ -1,0 +1,22 @@
+apiVersion: operator.kyma-project.io/v1alpha1
+kind: ModuleTemplate
+metadata:
+  name: moduletemplate-sample-serverless
+  namespace: default
+  labels:
+    "operator.kyma-project.io/managed-by": "kyma-operator"
+    "operator.kyma-project.io/controller-name": "serverless"
+    "operator.kyma-project.io/channel": "stable"
+spec:
+  data:
+    serverless: |-
+      crd-url: ""
+      kind: ServerlessConfiguration
+      group: kyma.kyma-project.io
+      resource: serverlessconfigurations
+      version: v1alpha1
+      spec: 
+        commonPrefix: "PENDING_STATE_FROM_KYMA_OP"
+        githubRepository:
+          authKey: "abcd12345601101010somethingrapid4"
+          url: "https://foobar.kyma-project.io"

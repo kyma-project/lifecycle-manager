@@ -4,7 +4,7 @@ metadata:
   name: kyma-sample
   namespace: default
 spec:
-  channel: rapid
+  channel: stable
   components:
     - name: istio
     - name: serverless

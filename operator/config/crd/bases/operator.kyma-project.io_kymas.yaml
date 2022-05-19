@@ -109,8 +109,15 @@ spec:
                       description: Status of the Kyma Condition. Value can be one
                         of ("True", "False", "Unknown").
                       type: string
-                    templateHash:
+                    templateChannel:
+                      enum:
+                      - rapid
+                      - regular
+                      - stable
                       type: string
+                    templateGeneration:
+                      format: int64
+                      type: integer
                     type:
                       type: string
                   required:

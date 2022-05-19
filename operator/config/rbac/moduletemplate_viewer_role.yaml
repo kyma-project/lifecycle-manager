@@ -1,0 +1,20 @@
+# permissions for end users to view moduletemplates.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: moduletemplate-viewer-role
+rules:
+- apiGroups:
+  - operator.kyma-project.io
+  resources:
+  - moduletemplates
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - operator.kyma-project.io
+  resources:
+  - moduletemplates/status
+  verbs:
+  - get
