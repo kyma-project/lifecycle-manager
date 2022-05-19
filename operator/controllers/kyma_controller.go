@@ -309,6 +309,9 @@ func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager
 
 	//TODO maybe replace with native REST Handling
 	cs, err := kubernetes.NewForConfig(mgr.GetConfig())
+	if err != nil {
+		return err
+	}
 	// This fetches all resources for our component operator CRDs, might become a problem if component operators
 	// create their own CRDs that we dont need to watch
 	gv := schema.GroupVersion{
