@@ -25,14 +25,14 @@ func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, compone
 	unstructuredCompCR.Object["metadata"].(map[string]interface{})["labels"] = labelMap
 }
 
-func GetGvkAndSpecFromTemplate(configMap *operatorv1alpha1.ModuleTemplate, componentName string) (*schema.GroupVersionKind, interface{}, error) {
-	componentBytes, ok := configMap.Spec.Data[componentName]
+func GetGvkAndSpecFromTemplate(template *operatorv1alpha1.ModuleTemplate, componentName string) (*schema.GroupVersionKind, interface{}, error) {
+	componentBytes, ok := template.Spec.Data[componentName]
 	if !ok {
-		return nil, nil, fmt.Errorf("%s component not found for resource in ConfigMap", componentName)
+		return nil, nil, fmt.Errorf("%s component not found for resource in template", componentName)
 	}
 	componentYaml, err := getTemplatedComponent(componentBytes)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error during config map template parsing %w", err)
+		return nil, nil, fmt.Errorf("error during template parsing %w", err)
 	}
 
 	return &schema.GroupVersionKind{
@@ -45,7 +45,7 @@ func GetGvkAndSpecFromTemplate(configMap *operatorv1alpha1.ModuleTemplate, compo
 func getTemplatedComponent(componentTemplate string) (map[string]interface{}, error) {
 	componentYaml := make(map[string]interface{})
 	if err := yaml.Unmarshal([]byte(componentTemplate), &componentYaml); err != nil {
-		return nil, fmt.Errorf("error during config map unmarshal %w", err)
+		return nil, fmt.Errorf("error during unmarshal %w", err)
 	}
 	return componentYaml, nil
 }

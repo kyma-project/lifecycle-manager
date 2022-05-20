@@ -17,7 +17,7 @@ type TemplateLookupResult struct {
 	Template   *operatorv1alpha1.ModuleTemplate
 	forChannel *operatorv1alpha1.Channel
 }
-type ConfigMapTemplate interface {
+type Template interface {
 	Lookup(ctx context.Context) (*TemplateLookupResult, error)
 }
 
@@ -26,30 +26,30 @@ type TemplateLookupResultsByName map[string]*TemplateLookupResult
 func GetTemplates(c client.Reader, ctx context.Context, k *operatorv1alpha1.Kyma) (TemplateLookupResultsByName, error) {
 	templates := make(TemplateLookupResultsByName)
 	for _, component := range k.Spec.Components {
-		configMap, err := NewChannelConfigMapTemplate(c, component, k.Spec.Channel).Lookup(ctx)
+		template, err := NewChannelTemplate(c, component, k.Spec.Channel).Lookup(ctx)
 		if err != nil {
 			return nil, err
 		}
-		templates[component.Name] = configMap
+		templates[component.Name] = template
 	}
 	return templates, nil
 }
 
-func NewChannelConfigMapTemplate(client client.Reader, component operatorv1alpha1.ComponentType, channel operatorv1alpha1.Channel) ConfigMapTemplate {
-	return &channelConfigMapLookup{
+func NewChannelTemplate(client client.Reader, component operatorv1alpha1.ComponentType, channel operatorv1alpha1.Channel) Template {
+	return &channelTemplateLookup{
 		reader:    client,
 		component: component,
 		channel:   channel,
 	}
 }
 
-type channelConfigMapLookup struct {
+type channelTemplateLookup struct {
 	reader    client.Reader
 	component operatorv1alpha1.ComponentType
 	channel   operatorv1alpha1.Channel
 }
 
-func (c *channelConfigMapLookup) Lookup(ctx context.Context) (*TemplateLookupResult, error) {
+func (c *channelTemplateLookup) Lookup(ctx context.Context) (*TemplateLookupResult, error) {
 	templateList := &operatorv1alpha1.ModuleTemplateList{}
 
 	var desiredChannel operatorv1alpha1.Channel

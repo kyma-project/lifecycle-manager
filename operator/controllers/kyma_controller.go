@@ -177,7 +177,7 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 		lookupResult := lookupResults[component.Name]
 		if lookupResult == nil {
 			err := fmt.Errorf("could not find template for resource %s and release %s, will not re-queue resource %s", component.Name, channel, namespacedName)
-			logger.Error(err, "config map lookup failed")
+			logger.Error(err, "template lookup failed")
 			return nil, err
 		}
 
@@ -209,7 +209,7 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 				},
 			}
 
-			// merge config map and component settings
+			// merge template and component settings
 			util.CopyComponentSettingsToUnstructuredFromResource(componentUnstructured, component)
 
 			// set labels
@@ -242,7 +242,7 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 					// overwrite spec
 					updatedComponent.Object["spec"] = spec
 
-					// merge config map and component settings
+					// merge template and component settings
 					util.CopyComponentSettingsToUnstructuredFromResource(updatedComponent, component)
 
 					// set labels
