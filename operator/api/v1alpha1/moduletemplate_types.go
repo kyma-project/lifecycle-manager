@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -27,14 +28,16 @@ import (
 type ModuleTemplateSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Channel Channel           `json:"channel,omitempty"`
-	Data    map[string]string `json:"data,omitempty"`
+	Channel Channel `json:"channel,omitempty"`
+
+	//+kubebuilder:pruning:PreserveUnknownFields
+	//+kubebuilder:validation:XEmbeddedResource
+	Data unstructured.Unstructured `json:"data,omitempty"`
 }
 
 //+genclient
 //+kubebuilder:object:root=true
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-
 // ModuleTemplate is the Schema for the moduletemplates API
 type ModuleTemplate struct {
 	metav1.TypeMeta   `json:",inline"`

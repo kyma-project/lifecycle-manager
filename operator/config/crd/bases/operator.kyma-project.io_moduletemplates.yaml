@@ -48,9 +48,9 @@ spec:
                 - stable
                 type: string
               data:
-                additionalProperties:
-                  type: string
                 type: object
+                x-kubernetes-embedded-resource: true
+                x-kubernetes-preserve-unknown-fields: true
             type: object
         type: object
     served: true

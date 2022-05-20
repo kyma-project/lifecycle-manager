@@ -32,7 +32,6 @@ import (
 	"github.com/kyma-project/kyma-operator/operator/pkg/util"
 	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -172,7 +171,6 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 
 	var componentNamesAffected []util.ComponentsAssociatedWithTemplate
 	for _, component := range kymaObj.Spec.Components {
-		componentName := component.Name + "-name"
 
 		lookupResult := lookupResults[component.Name]
 		if lookupResult == nil {
@@ -181,47 +179,30 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 			return nil, err
 		}
 
-		gvk, spec, err := util.GetGvkAndSpecFromTemplate(lookupResult.Template, component.Name)
-		if err != nil {
-			return nil, err
-		}
+		desired := &lookupResult.Template.Spec.Data
+		desired.SetName(component.Name + "-name")
+		desired.SetNamespace(kymaObj.GetNamespace())
 
-		res := unstructured.Unstructured{}
-		res.SetGroupVersionKind(*gvk)
-
-		err = r.Get(ctx, client.ObjectKey{Namespace: kymaObj.Namespace, Name: componentName}, &res)
+		actual := desired.DeepCopy()
+		err := r.Get(ctx, client.ObjectKeyFromObject(actual), actual)
 		if client.IgnoreNotFound(err) != nil {
 			return nil, err
 		}
 
 		// overwrite labels for upgrade / downgrade of component versions
 		if errors.IsNotFound(err) {
-			componentUnstructured := &unstructured.Unstructured{
-				Object: map[string]interface{}{
-					"kind":       gvk.Kind,
-					"apiVersion": gvk.Group + "/" + gvk.Version,
-					"metadata": map[string]interface{}{
-						"name":      componentName,
-						"namespace": kymaObj.Namespace,
-						"labels":    map[string]interface{}{},
-					},
-					"spec": spec,
-				},
-			}
-
 			// merge template and component settings
-			util.CopyComponentSettingsToUnstructuredFromResource(componentUnstructured, component)
+			util.CopyComponentSettingsToUnstructuredFromResource(desired, component)
 
 			// set labels
-			util.SetComponentCRLabels(componentUnstructured, component.Name, channel)
-
+			util.SetComponentCRLabels(desired, component.Name, channel)
 			// set owner reference
-			if err := controllerutil.SetOwnerReference(kymaObj, componentUnstructured, r.Scheme); err != nil {
+			if err := controllerutil.SetOwnerReference(kymaObj, desired, r.Scheme); err != nil {
 				return nil, fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w", component.Name, namespacedName, err)
 			}
 
 			// create resource if not found
-			if err := r.Client.Create(ctx, componentUnstructured, &client.CreateOptions{}); err != nil {
+			if err := r.Client.Create(ctx, desired, &client.CreateOptions{}); err != nil {
 				return nil, fmt.Errorf("error creating custom resource of type %s %w", component.Name, err)
 			}
 
@@ -237,18 +218,17 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 				if condition.Reason == component.Name &&
 					// either the template in the condition is outdated (reflected by a generation change on the template) or the template that is supposed to be applied changed (e.g. because the kyma spec changed)
 					(condition.TemplateInfo.Generation != lookupResult.Template.GetGeneration() || condition.TemplateInfo.Channel != lookupResult.Template.Spec.Channel) {
-					updatedComponent := res.DeepCopy()
-
-					// overwrite spec
-					updatedComponent.Object["spec"] = spec
 
 					// merge template and component settings
-					util.CopyComponentSettingsToUnstructuredFromResource(updatedComponent, component)
+					util.CopyComponentSettingsToUnstructuredFromResource(actual, component)
 
 					// set labels
-					util.SetComponentCRLabels(updatedComponent, component.Name, channel)
+					util.SetComponentCRLabels(actual, component.Name, channel)
 
-					if err := r.Client.Update(ctx, updatedComponent, &client.UpdateOptions{}); err != nil {
+					// update the spec
+					actual.Object["spec"] = desired.Object["spec"]
+
+					if err := r.Client.Update(ctx, actual, &client.UpdateOptions{}); err != nil {
 						return nil, fmt.Errorf("error updating custom resource of type %s %w", component.Name, err)
 					}
 

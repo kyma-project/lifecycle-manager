@@ -9,14 +9,11 @@ metadata:
 spec:
   channel: stable
   data:
-    serverless: |-
-      crd-url: ""
-      kind: ServerlessConfiguration
-      group: kyma.kyma-project.io
-      resource: serverlessconfigurations
-      version: v1alpha1
-      spec: 
-        commonPrefix: "PENDING_STATE_FROM_KYMA_OP"
-        githubRepository:
-          authKey: "abcd12345601101010somethingrapid4"
-          url: "https://foobar.kyma-project.io"
+    kind: ServerlessConfiguration
+    resource: serverlessconfigurations
+    apiVersion: kyma.kyma-project.io/v1alpha1
+    spec: 
+      commonPrefix: "PENDING_STATE_FROM_KYMA_OP"
+      githubRepository:
+        authKey: "abcd12345601101010somethingrapid4"
+        url: "https://foobar.kyma-project.io"

@@ -9,16 +9,14 @@ metadata:
 spec:
   channel: stable
   data:
-    manifest: |-
-      crd-url: ""
-      kind: Manifest
-      group: component.kyma-project.io
-      resource: manifests
-      version: v1alpha1
-      spec: 
-        charts:
-        - chartName: nginx-ingress
-          repoName: nginx-stable
-          releaseName: nginx
-          url: https://helm.nginx.com/stable
-          clientConfig: "CreateNamespace=true,Namespace=nginx"
+    crd-url: ""
+    kind: Manifest
+    resource: manifests
+    apiVersion: component.kyma-project.io/v1alpha1
+    spec: 
+      charts:
+      - chartName: nginx-ingress
+        repoName: nginx-stable
+        releaseName: nginx
+        url: https://helm.nginx.com/stable
+        clientConfig: "CreateNamespace=true,Namespace=nginx"

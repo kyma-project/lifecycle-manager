@@ -9,16 +9,14 @@ metadata:
 spec:
   channel: rapid
   data:
-    manifest: |-
-      crd-url: ""
-      kind: Manifest
-      group: component.kyma-project.io
-      resource: manifests
-      version: v1alpha1
-      spec: 
-        charts:
-        - chartName: cert-manager
-          releaseName: jet
-          repoName: jetstack
-          url: https://charts.jetstack.io
-          clientConfig: "CreateNamespace=true,Namespace=jet-cert"
+    crd-url: ""
+    kind: Manifest 
+    resource: manifests
+    apiVersion: component.kyma-project.io/v1alpha1
+    spec: 
+      charts:
+      - chartName: cert-manager
+        releaseName: jet
+        repoName: jetstack
+        url: https://charts.jetstack.io
+        clientConfig: "CreateNamespace=true,Namespace=jet-cert"

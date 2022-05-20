@@ -9,10 +9,8 @@ metadata:
 spec:
   channel: rapid
   data:
-    istio: |-
-      kind: IstioConfiguration
-      group: kyma.kyma-project.io
-      resource: istioconfigurations
-      version: v1alpha1
-      spec:
-        foo: "Rapid Speed!"
+    kind: IstioConfiguration
+    resource: istioconfigurations
+    apiVersion: kyma.kyma-project.io/v1alpha1
+    spec:
+      foo: "Rapid Speed!"

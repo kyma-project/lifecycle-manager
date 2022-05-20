@@ -1,15 +1,11 @@
 package util
 
 import (
-	"fmt"
-
 	"github.com/go-logr/logr"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"github.com/kyma-project/kyma-operator/operator/pkg/release"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 type ComponentsAssociatedWithTemplate struct {
@@ -19,35 +15,13 @@ type ComponentsAssociatedWithTemplate struct {
 }
 
 func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, componentName string, channel operatorv1alpha1.Channel) {
-	labelMap := unstructuredCompCR.Object["metadata"].(map[string]interface{})["labels"].(map[string]interface{})
+	labelMap := unstructuredCompCR.GetLabels()
+	if labelMap == nil {
+		labelMap = make(map[string]string)
+	}
 	labelMap[labels.ControllerName] = componentName
-	labelMap[labels.Channel] = channel
-	unstructuredCompCR.Object["metadata"].(map[string]interface{})["labels"] = labelMap
-}
-
-func GetGvkAndSpecFromTemplate(template *operatorv1alpha1.ModuleTemplate, componentName string) (*schema.GroupVersionKind, interface{}, error) {
-	componentBytes, ok := template.Spec.Data[componentName]
-	if !ok {
-		return nil, nil, fmt.Errorf("%s component not found for resource in template", componentName)
-	}
-	componentYaml, err := getTemplatedComponent(componentBytes)
-	if err != nil {
-		return nil, nil, fmt.Errorf("error during template parsing %w", err)
-	}
-
-	return &schema.GroupVersionKind{
-		Group:   componentYaml["group"].(string),
-		Kind:    componentYaml["kind"].(string),
-		Version: componentYaml["version"].(string),
-	}, componentYaml["spec"], nil
-}
-
-func getTemplatedComponent(componentTemplate string) (map[string]interface{}, error) {
-	componentYaml := make(map[string]interface{})
-	if err := yaml.Unmarshal([]byte(componentTemplate), &componentYaml); err != nil {
-		return nil, fmt.Errorf("error during unmarshal %w", err)
-	}
-	return componentYaml, nil
+	labelMap[labels.Channel] = string(channel)
+	unstructuredCompCR.SetLabels(labelMap)
 }
 
 func AreTemplatesOutdated(logger *logr.Logger, k *operatorv1alpha1.Kyma, lookupResults release.TemplateLookupResultsByName) bool {
