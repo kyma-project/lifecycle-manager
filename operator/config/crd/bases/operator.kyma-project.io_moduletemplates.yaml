@@ -39,6 +39,14 @@ spec:
           spec:
             description: ModuleTemplateSpec defines the desired state of ModuleTemplate
             properties:
+              channel:
+                description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                  Important: Run "make" to regenerate code after modifying this file'
+                enum:
+                - rapid
+                - regular
+                - stable
+                type: string
               data:
                 additionalProperties:
                   type: string

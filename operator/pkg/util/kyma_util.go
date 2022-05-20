@@ -18,10 +18,10 @@ type ComponentsAssociatedWithTemplate struct {
 	TemplateChannel    operatorv1alpha1.Channel
 }
 
-func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, componentName string, rel operatorv1alpha1.Channel) {
+func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, componentName string, channel operatorv1alpha1.Channel) {
 	labelMap := unstructuredCompCR.Object["metadata"].(map[string]interface{})["labels"].(map[string]interface{})
 	labelMap[labels.ControllerName] = componentName
-	labelMap[labels.Channel] = rel
+	labelMap[labels.Channel] = channel
 	unstructuredCompCR.Object["metadata"].(map[string]interface{})["labels"] = labelMap
 }
 
@@ -50,21 +50,28 @@ func getTemplatedComponent(componentTemplate string) (map[string]interface{}, er
 	return componentYaml, nil
 }
 
-func AreTemplatesOutdated(logger *logr.Logger, k *operatorv1alpha1.Kyma, templates release.TemplatesByName) bool {
-	for componentName, template := range templates {
+func AreTemplatesOutdated(logger *logr.Logger, k *operatorv1alpha1.Kyma, lookupResults release.TemplateLookupResultsByName) bool {
+	// this is a shortcut as we already know templates are outdated when the generation changes
+	if k.GetGeneration() != k.Status.ObservedGeneration {
+		logger.Info("new kyma spec, setting template status outdated")
+		return true
+	}
+	// in the case that the kyma spec did not change, we only have to verify that all desired templates are still referenced in the latest spec generation
+	for componentName, lookupResult := range lookupResults {
 		for _, condition := range k.Status.Conditions {
-			if condition.Reason == componentName && template != nil {
-				if template.GetGeneration() != condition.TemplateGeneration || operatorv1alpha1.Channel(template.Labels[labels.Channel]) != condition.TemplateChannel {
+			if condition.Reason == componentName && lookupResult != nil {
+				if lookupResult.Template.GetGeneration() != condition.TemplateInfo.Generation {
 					logger.Info("detected outdated template",
 						"condition", condition.Reason,
-						"template", template.Name,
-						"templateGeneration", template.GetGeneration(),
-						"previousGeneration", condition.TemplateGeneration,
-						"templateChannel", operatorv1alpha1.Channel(template.Labels[labels.Channel]),
-						"previousChannel", condition.TemplateChannel,
+						"template", lookupResult.Template.Name,
+						"templateGeneration", lookupResult.Template.GetGeneration(),
+						"previousGeneration", condition.TemplateInfo.Generation,
+						"templateChannel", lookupResult.Template.Spec.Channel,
+						"previousChannel", condition.TemplateInfo.Channel,
 					)
 					return true
 				}
+
 			}
 		}
 	}

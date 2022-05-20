@@ -6,8 +6,8 @@ metadata:
   labels:
     "operator.kyma-project.io/managed-by": "kyma-operator"
     "operator.kyma-project.io/controller-name": "manifest"
-    "operator.kyma-project.io/channel": "stable"
 spec:
+  channel: stable
   data:
     manifest: |-
       crd-url: ""

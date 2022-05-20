@@ -136,12 +136,18 @@ type KymaCondition struct {
 	// +optional
 	Reason string `json:"reason,omitempty"`
 
-	TemplateGeneration int64   `json:"templateGeneration,omitempty"`
-	TemplateChannel    Channel `json:"templateChannel,omitempty"`
+	// Additional Information when the condition is bound to a template
+	// +optional
+	TemplateInfo TemplateInfo `json:"templateInfo,omitempty"`
 
 	// Timestamp for when Kyma last transitioned from one status to another.
 	// +optional
 	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`
+}
+
+type TemplateInfo struct {
+	Generation int64   `json:"generation,omitempty"`
+	Channel    Channel `json:"channel,omitempty"`
 }
 
 type KymaConditionType string

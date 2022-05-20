@@ -7,9 +7,7 @@ import (
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -34,9 +32,9 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 		l := template.GetLabels()
 		managedBy, managedByPresent := l[labels.ManagedBy]
 		controller, controllerLabelPresent := l[labels.ControllerName]
-		channel, channelPresent := l[labels.Channel]
+		channel := template.Spec.Channel
 		if !controllerLabelPresent || controller == "" ||
-			!channelPresent || channel == "" ||
+			channel == "" ||
 			!managedByPresent || managedBy != "kyma-operator" {
 			return requests
 		}
@@ -80,41 +78,5 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 			requests = append(requests, reconcile.Request{NamespacedName: namespacedNameForKyma})
 		}
 		return requests
-	}
-}
-
-func (h *TemplateChangeHandler) TemplateChange(
-	ctx context.Context,
-) func(event.UpdateEvent, workqueue.RateLimitingInterface) {
-	watch := h.Watch(ctx)
-	return func(event event.UpdateEvent, queue workqueue.RateLimitingInterface) {
-		requests := watch(event.ObjectNew)
-		for _, request := range requests {
-			queue.AddRateLimited(request)
-		}
-	}
-}
-
-func (h *TemplateChangeHandler) TemplateDelete(
-	ctx context.Context,
-) func(event.DeleteEvent, workqueue.RateLimitingInterface) {
-	watch := h.Watch(ctx)
-	return func(e event.DeleteEvent, queue workqueue.RateLimitingInterface) {
-		requests := watch(e.Object)
-		for _, request := range requests {
-			queue.AddRateLimited(request)
-		}
-	}
-}
-
-func (h *TemplateChangeHandler) TemplateCreate(
-	ctx context.Context,
-) func(event.CreateEvent, workqueue.RateLimitingInterface) {
-	watch := h.Watch(ctx)
-	return func(e event.CreateEvent, queue workqueue.RateLimitingInterface) {
-		requests := watch(e.Object)
-		for _, request := range requests {
-			queue.AddRateLimited(request)
-		}
 	}
 }

@@ -57,8 +57,10 @@ func (h *Kyma) AddReadyConditionForObjects(kymaObj *operatorv1alpha1.Kyma, types
 			}
 			status.Conditions = append(status.Conditions, *condition)
 		}
-		condition.TemplateChannel = typeByTemplate.TemplateChannel
-		condition.TemplateGeneration = typeByTemplate.TemplateGeneration
+		condition.TemplateInfo = operatorv1alpha1.TemplateInfo{
+			Channel:    typeByTemplate.TemplateChannel,
+			Generation: typeByTemplate.TemplateGeneration,
+		}
 		condition.LastTransitionTime = &metav1.Time{Time: time.Now()}
 		condition.Message = message
 		condition.Status = conditionStatus

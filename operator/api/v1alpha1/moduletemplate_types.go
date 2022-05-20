@@ -27,8 +27,8 @@ import (
 type ModuleTemplateSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-
-	Data map[string]string `json:"data,omitempty"`
+	Channel Channel           `json:"channel,omitempty"`
+	Data    map[string]string `json:"data,omitempty"`
 }
 
 //+genclient

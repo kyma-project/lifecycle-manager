@@ -25,6 +25,7 @@ import (
 	"github.com/go-logr/logr"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 
+	"github.com/kyma-project/kyma-operator/operator/pkg/index"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"github.com/kyma-project/kyma-operator/operator/pkg/release"
 	"github.com/kyma-project/kyma-operator/operator/pkg/status"
@@ -89,8 +90,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	templates, templateErr := release.GetTemplates(r, ctx, &kyma)
 	if templateErr != nil {
-		logger.V(3).Error(templateErr, "template error, requeing")
-		return ctrl.Result{RequeueAfter: time.Second * 1}, nil
+		return ctrl.Result{RequeueAfter: 3 * time.Second}, r.updateKymaStatus(ctx, &kyma, operatorv1alpha1.KymaStateProcessing, templateErr.Error())
 	}
 	if kyma.Status.TemplateConfigStatus == operatorv1alpha1.TemplateConfigStatusSynced && util.AreTemplatesOutdated(&logger, &kyma, templates) {
 		return ctrl.Result{}, r.HandleTemplateOutdated(ctx, &logger, &kyma)
@@ -105,7 +105,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	case operatorv1alpha1.KymaStateDeleting:
 		return ctrl.Result{}, r.HandleDeletingState(ctx)
 	case operatorv1alpha1.KymaStateError:
-		return ctrl.Result{}, r.HandleErrorState(ctx, &logger, &kyma)
+		return ctrl.Result{RequeueAfter: 3 * time.Second}, r.HandleErrorState(ctx, &logger, &kyma)
 	case operatorv1alpha1.KymaStateReady:
 		return ctrl.Result{}, r.HandleReadyState(ctx, &logger, &kyma)
 	}
@@ -121,7 +121,7 @@ func (r *KymaReconciler) HandleInitialState(ctx context.Context, _ *logr.Logger,
 	return r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateProcessing, "initial state")
 }
 
-func (r *KymaReconciler) HandleProcessingState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma, templates release.TemplatesByName) error {
+func (r *KymaReconciler) HandleProcessingState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma, templates release.TemplateLookupResultsByName) error {
 	logger.Info("processing " + kyma.Name)
 
 	if err := r.reconcileKymaForRelease(ctx, kyma, templates); err != nil {
@@ -156,15 +156,11 @@ func (r *KymaReconciler) HandleReadyState(_ context.Context, logger *logr.Logger
 	return nil
 }
 
-func (r *KymaReconciler) updateKyma(ctx context.Context, kyma *operatorv1alpha1.Kyma) error {
-	return r.Update(ctx, kyma)
-}
-
 func (r *KymaReconciler) updateKymaStatus(ctx context.Context, kyma *operatorv1alpha1.Kyma, state operatorv1alpha1.KymaState, message string) error {
 	return r.KymaStatus().UpdateStatus(ctx, kyma, state, message)
 }
 
-func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Context, kymaObj *operatorv1alpha1.Kyma, templates release.TemplatesByName) ([]util.ComponentsAssociatedWithTemplate, error) {
+func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Context, kymaObj *operatorv1alpha1.Kyma, lookupResults release.TemplateLookupResultsByName) ([]util.ComponentsAssociatedWithTemplate, error) {
 	kymaObjectKey := client.ObjectKey{Name: kymaObj.Name, Namespace: kymaObj.Namespace}
 	namespacedName := kymaObjectKey.String()
 	logger := log.FromContext(ctx).WithName(namespacedName)
@@ -178,14 +174,14 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 	for _, component := range kymaObj.Spec.Components {
 		componentName := component.Name + "-name"
 
-		template := templates[component.Name]
-		if template == nil {
+		lookupResult := lookupResults[component.Name]
+		if lookupResult == nil {
 			err := fmt.Errorf("could not find template for resource %s and release %s, will not re-queue resource %s", component.Name, channel, namespacedName)
 			logger.Error(err, "config map lookup failed")
 			return nil, err
 		}
 
-		gvk, spec, err := util.GetGvkAndSpecFromTemplate(template, component.Name)
+		gvk, spec, err := util.GetGvkAndSpecFromTemplate(lookupResult.Template, component.Name)
 		if err != nil {
 			return nil, err
 		}
@@ -229,16 +225,18 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 				return nil, fmt.Errorf("error creating custom resource of type %s %w", component.Name, err)
 			}
 
-			logger.Info("successfully created component CR of", "type", component.Name, "templateGeneration", template.GetGeneration())
+			logger.Info("successfully created component CR of", "type", component.Name, "templateGeneration", lookupResult.Template.GetGeneration())
 
 			componentNamesAffected = append(componentNamesAffected, util.ComponentsAssociatedWithTemplate{
 				ComponentName:      component.Name,
-				TemplateGeneration: template.GetGeneration(),
-				TemplateChannel:    operatorv1alpha1.Channel(template.Labels[labels.Channel]),
+				TemplateGeneration: lookupResult.Template.GetGeneration(),
+				TemplateChannel:    lookupResult.Template.Spec.Channel,
 			})
 		} else if kymaObj.Status.TemplateConfigStatus == operatorv1alpha1.TemplateConfigStatusOutdated {
 			for _, condition := range kymaObj.Status.Conditions {
-				if condition.Reason == component.Name && (condition.TemplateGeneration != template.GetGeneration() || condition.TemplateChannel != operatorv1alpha1.Channel(template.Labels[labels.Channel])) {
+				if condition.Reason == component.Name &&
+					// either the template in the condition is outdated (reflected by a generation change on the template) or the template that is supposed to be applied changed (e.g. because the kyma spec changed)
+					(condition.TemplateInfo.Generation != lookupResult.Template.GetGeneration() || condition.TemplateInfo.Channel != lookupResult.Template.Spec.Channel) {
 					updatedComponent := res.DeepCopy()
 
 					// overwrite spec
@@ -254,11 +252,11 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 						return nil, fmt.Errorf("error updating custom resource of type %s %w", component.Name, err)
 					}
 
-					logger.Info("successfully updated component cr", "type", component.Name, "templateGeneration", template.GetGeneration())
+					logger.Info("successfully updated component cr", "type", component.Name, "templateGeneration", lookupResult.Template.GetGeneration())
 					componentNamesAffected = append(componentNamesAffected, util.ComponentsAssociatedWithTemplate{
 						ComponentName:      component.Name,
-						TemplateGeneration: template.GetGeneration(),
-						TemplateChannel:    operatorv1alpha1.Channel(template.Labels[labels.Channel]),
+						TemplateGeneration: lookupResult.Template.GetGeneration(),
+						TemplateChannel:    lookupResult.Template.Spec.Channel,
 					})
 				}
 			}
@@ -267,7 +265,7 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 	return componentNamesAffected, nil
 }
 
-func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, kyma *operatorv1alpha1.Kyma, templates release.TemplatesByName) error {
+func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, kyma *operatorv1alpha1.Kyma, templates release.TemplateLookupResultsByName) error {
 	logger := log.FromContext(ctx)
 	affectedComponents, err := r.CreateOrUpdateComponentsFromTemplate(ctx, kyma, templates)
 
@@ -344,6 +342,8 @@ func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager
 		&source.Kind{Type: &operatorv1alpha1.ModuleTemplate{}},
 		handler.EnqueueRequestsFromMapFunc(r.TemplateChangeHandler().Watch(context.TODO())),
 		builder.WithPredicates(predicate.GenerationChangedPredicate{}))
+
+	index.NewTemplateChannelIndex().IndexWith(context.TODO(), mgr.GetFieldIndexer())
 
 	return controllerBuilder.Complete(r)
 }
