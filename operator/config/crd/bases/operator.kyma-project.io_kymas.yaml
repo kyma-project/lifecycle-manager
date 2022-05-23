@@ -143,11 +143,6 @@ spec:
                 - Ready
                 - Error
                 type: string
-              templateConfigStatus:
-                enum:
-                - synced
-                - outdated
-                type: string
             type: object
         type: object
     served: true
