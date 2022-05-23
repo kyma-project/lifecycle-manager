@@ -98,7 +98,7 @@ func (c *channelTemplateLookup) Lookup(ctx context.Context) (*TemplateLookupResu
 
 	}
 
-	actualChannel := operatorv1alpha1.Channel(templateList.Items[0].Spec.Channel)
+	actualChannel := templateList.Items[0].Spec.Channel
 
 	// if the found configMap has no channel assigned to it set a sensible log output
 	if actualChannel == "" {
@@ -119,8 +119,8 @@ func (c *channelTemplateLookup) Lookup(ctx context.Context) (*TemplateLookupResu
 
 func MoreThanOneTemplateCandidateErr(component operatorv1alpha1.ComponentType, candidateTemplates []operatorv1alpha1.ModuleTemplate) error {
 	candidates := make([]string, len(candidateTemplates))
-	for i, candiate := range candidateTemplates {
-		candidates[i] = candiate.GetName()
+	for i, candidate := range candidateTemplates {
+		candidates[i] = candidate.GetName()
 	}
 	return fmt.Errorf("more than one config map template found for component: %s, candidates: %v", component.Name, candidates)
 }

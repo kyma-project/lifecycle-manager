@@ -87,9 +87,14 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, r.updateKymaStatus(ctx, &kyma, operatorv1alpha1.KymaStateDeleting, "deletion timestamp set")
 	}
 
-	templates, templateErr := release.GetTemplates(r, ctx, &kyma)
-	if templateErr != nil {
-		return ctrl.Result{RequeueAfter: 3 * time.Second}, r.updateKymaStatus(ctx, &kyma, operatorv1alpha1.KymaStateProcessing, templateErr.Error())
+	// remove template status
+	// if ready or error state check
+	// observed generation
+	// templates outdated - if yes set to processing with const reason
+
+	templates, err := release.GetTemplates(r, ctx, &kyma)
+	if err != nil {
+		return ctrl.Result{RequeueAfter: 3 * time.Second}, r.updateKymaStatus(ctx, &kyma, operatorv1alpha1.KymaStateProcessing, err.Error())
 	}
 	if kyma.Status.TemplateConfigStatus == operatorv1alpha1.TemplateConfigStatusSynced && util.AreTemplatesOutdated(&logger, &kyma, templates) {
 		return ctrl.Result{}, r.HandleTemplateOutdated(ctx, &logger, &kyma)
