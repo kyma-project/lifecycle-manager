@@ -317,25 +317,28 @@ func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager
 		Version: "v1alpha1",
 	}
 	resources, err := cs.ServerResourcesForGroupVersion(gv.String())
-	if err != nil {
+	if client.IgnoreNotFound(err) != nil {
 		return err
 	}
 
-	dynamicInformerSet := make(map[string]*source.Informer)
-	for _, resource := range resources.APIResources {
-		//TODO Verify if this filtering is really necessary or if we can somehow only listen to status changes instead of resource changes with ResourceVersionChangedPredicate
-		if strings.HasSuffix(resource.Name, "status") {
-			continue
+	// resources found
+	if err == nil {
+		dynamicInformerSet := make(map[string]*source.Informer)
+		for _, resource := range resources.APIResources {
+			//TODO Verify if this filtering is really necessary or if we can somehow only listen to status changes instead of resource changes with ResourceVersionChangedPredicate
+			if strings.HasSuffix(resource.Name, "status") {
+				continue
+			}
+			gvr := gv.WithResource(resource.Name)
+			dynamicInformerSet[gvr.String()] = &source.Informer{Informer: informers.ForResource(gvr).Informer()}
 		}
-		gvr := gv.WithResource(resource.Name)
-		dynamicInformerSet[gvr.String()] = &source.Informer{Informer: informers.ForResource(gvr).Informer()}
-	}
 
-	for gvr, informer := range dynamicInformerSet {
-		controllerBuilder = controllerBuilder.
-			Watches(informer, &handler.Funcs{UpdateFunc: r.ComponentChangeHandler().ComponentChange(context.TODO())},
-				builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
-		setupLog.Info("initialized dynamic watching", "source", gvr)
+		for gvr, informer := range dynamicInformerSet {
+			controllerBuilder = controllerBuilder.
+				Watches(informer, &handler.Funcs{UpdateFunc: r.ComponentChangeHandler().ComponentChange(context.TODO())},
+					builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
+			setupLog.Info("initialized dynamic watching", "source", gvr)
+		}
 	}
 
 	controllerBuilder = controllerBuilder.Watches(
