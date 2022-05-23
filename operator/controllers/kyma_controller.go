@@ -121,16 +121,19 @@ func (r *KymaReconciler) HandleInitialState(ctx context.Context, _ *logr.Logger,
 func (r *KymaReconciler) HandleProcessingState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
 	logger.Info("processing " + kyma.Name)
 
+	// fetch templates
 	templates, err := release.GetTemplates(ctx, r, kyma)
 	if err != nil {
-		return r.KymaStatus().UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError, "templates could not be fetched")
+		return r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateError, "templates could not be fetched")
 	}
 
+	// reconcile from templates
 	if err := r.reconcileKymaForRelease(ctx, kyma, templates); err != nil {
 		return err
 	}
 
-	updateRequired, err := r.updateComponentConditions(ctx, kyma, templates)
+	// update status conditions
+	updateRequired, err := r.checkAndUpdateComponentConditions(ctx, kyma, templates)
 	if err != nil {
 		return err
 	}
@@ -138,6 +141,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, logger *logr
 		return r.updateKymaStatus(ctx, kyma, kyma.Status.State, "updating component conditions")
 	}
 
+	// set ready condition if applicable
 	if kyma.AreAllReadyConditionsSetForKyma() {
 		message := fmt.Sprintf("reconciliation of %s finished!", kyma.Name)
 		logger.Info(message)
@@ -314,7 +318,7 @@ func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, kyma *oper
 	return nil
 }
 
-func (r *KymaReconciler) updateComponentConditions(ctx context.Context, kyma *operatorv1alpha1.Kyma, templates release.TemplateLookupResultsByName) (bool, error) {
+func (r *KymaReconciler) checkAndUpdateComponentConditions(ctx context.Context, kyma *operatorv1alpha1.Kyma, templates release.TemplateLookupResultsByName) (bool, error) {
 	updateRequired := false
 	for _, component := range kyma.Spec.Components {
 
@@ -327,31 +331,14 @@ func (r *KymaReconciler) updateComponentConditions(ctx context.Context, kyma *op
 			return false, err
 		}
 
-		componentStatus := actualComponentStruct.Object[watch.Status]
-		if componentStatus != nil {
-			condition, exists := r.KymaStatus().GetReadyConditionForComponent(kyma, component.Name)
-			if !exists {
-				return false, fmt.Errorf("condition not found for component %s", component.Name)
-			}
-			switch componentStatus.(map[string]interface{})[watch.State].(string) {
-			case string(operatorv1alpha1.KymaStateReady):
-				if condition.Status != operatorv1alpha1.ConditionStatusTrue {
-					r.KymaStatus().UpdateReadyCondition(kyma, []string{component.Name}, operatorv1alpha1.ConditionStatusTrue, "component ready!")
-					// "istio", "serverless" are hardcoded, remove!
-					r.KymaStatus().UpdateReadyCondition(kyma, []string{"istio", "serverless"}, operatorv1alpha1.ConditionStatusTrue, "component ready!")
-					updateRequired = true
-				}
-			case "":
-				if condition.Status != operatorv1alpha1.ConditionStatusUnknown {
-					r.KymaStatus().UpdateReadyCondition(kyma, []string{component.Name}, operatorv1alpha1.ConditionStatusUnknown, "component status not known!")
-					updateRequired = true
-				}
-			default:
-				if condition.Status != operatorv1alpha1.ConditionStatusFalse {
-					r.KymaStatus().UpdateReadyCondition(kyma, []string{component.Name}, operatorv1alpha1.ConditionStatusFalse, "component not ready!")
-					updateRequired = true
-				}
-			}
+		updated, err := r.KymaStatus().UpdateComponentConditions(actualComponentStruct, kyma)
+		if err != nil {
+			return false, err
+		}
+
+		if !updateRequired {
+			// only set once and do not overwrite
+			updateRequired = updated
 		}
 	}
 	return updateRequired, nil
