@@ -114,17 +114,6 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return ctrl.Result{}, nil
 }
 
-func (r *KymaReconciler) HandleTemplateOutdated(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
-	templates, err := release.GetTemplates(r, ctx, kyma)
-	if err != nil {
-		return r.KymaStatus().UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError, "templates could not be fetched")
-	}
-	if util.AreTemplatesOutdated(logger, kyma, templates) {
-		return r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateProcessing, "template update")
-	}
-	return nil
-}
-
 func (r *KymaReconciler) HandleInitialState(ctx context.Context, _ *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
 	return r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateProcessing, "initial state")
 }
@@ -326,7 +315,7 @@ func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, kyma *oper
 		logger.Info("checking condition for component CRs")
 		r.KymaStatus().AddReadyConditionForObjects(kyma, affectedComponents, operatorv1alpha1.ConditionStatusFalse, "initial condition for component CR")
 		release.New(kyma.Status.ActiveChannel, kyma.Spec.Channel, r.KymaStatus().GetEventAdapter(kyma)).IssueChannelChangeInProgress()
-		return r.updateKymaStatus(ctx, kyma.SetTemplateConfigStatusSynced(), kyma.Status.State, "")
+		return r.updateKymaStatus(ctx, kyma, kyma.Status.State, "component conditions updated")
 	}
 
 	return nil
