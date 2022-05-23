@@ -3,6 +3,7 @@ package status
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"time"
@@ -116,17 +117,18 @@ func (h *Kyma) UpdateReadyCondition(kymaObj *operatorv1alpha1.Kyma, componentNam
 func (h *Kyma) UpdateComponentConditions(actualComponentStruct *unstructured.Unstructured, kyma *operatorv1alpha1.Kyma) (bool, error) {
 	updateRequired := false
 	componentStatus := actualComponentStruct.Object[watch.Status]
+	componentName := actualComponentStruct.GetLabels()[labels.ControllerName]
 	if componentStatus != nil {
-		condition, exists := h.GetReadyConditionForComponent(kyma, actualComponentStruct.GetName())
+		condition, exists := h.GetReadyConditionForComponent(kyma, componentName)
 		if !exists {
-			return false, fmt.Errorf("condition not found for component %s", actualComponentStruct.GetName())
+			return false, fmt.Errorf("condition not found for component %s", componentName)
 		}
 
 		switch componentStatus.(map[string]interface{})[watch.State].(string) {
 
 		case string(operatorv1alpha1.KymaStateReady):
 			if condition.Status != operatorv1alpha1.ConditionStatusTrue {
-				h.UpdateReadyCondition(kyma, []string{actualComponentStruct.GetName()},
+				h.UpdateReadyCondition(kyma, []string{componentName},
 					operatorv1alpha1.ConditionStatusTrue, "component ready!")
 				// "istio", "serverless" are hardcoded, remove!
 				h.UpdateReadyCondition(kyma, []string{"istio", "serverless"},
@@ -136,14 +138,14 @@ func (h *Kyma) UpdateComponentConditions(actualComponentStruct *unstructured.Uns
 
 		case "":
 			if condition.Status != operatorv1alpha1.ConditionStatusUnknown {
-				h.UpdateReadyCondition(kyma, []string{actualComponentStruct.GetName()},
+				h.UpdateReadyCondition(kyma, []string{componentName},
 					operatorv1alpha1.ConditionStatusUnknown, "component status not known!")
 				updateRequired = true
 			}
 
 		default:
 			if condition.Status != operatorv1alpha1.ConditionStatusFalse {
-				h.UpdateReadyCondition(kyma, []string{actualComponentStruct.GetName()},
+				h.UpdateReadyCondition(kyma, []string{componentName},
 					operatorv1alpha1.ConditionStatusFalse, "component not ready!")
 				updateRequired = true
 			}
