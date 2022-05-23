@@ -287,8 +287,6 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 					TemplateChannel:    lookupResult.Template.Spec.Channel,
 				})
 			}
-		} else {
-
 		}
 	}
 	return componentNamesAffected, nil

@@ -100,6 +100,5 @@ func (h *ComponentChangeHandler) GetKymaOwner(ctx context.Context, component *un
 		Namespace: component.GetNamespace(),
 	}, kyma)
 
-	//event.ObjectNew.GetObjectKind().GroupVersionKind().String()
 	return kyma, err
 }
