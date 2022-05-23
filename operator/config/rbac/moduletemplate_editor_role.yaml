@@ -1,0 +1,24 @@
+# permissions for end users to edit moduletemplates.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: moduletemplate-editor-role
+rules:
+- apiGroups:
+  - operator.kyma-project.io
+  resources:
+  - moduletemplates
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.kyma-project.io
+  resources:
+  - moduletemplates/status
+  verbs:
+  - get

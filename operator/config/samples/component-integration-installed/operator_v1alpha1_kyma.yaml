@@ -9,3 +9,4 @@ spec:
     - name: istio
     - name: serverless
     - name: manifest
+      channel: stable

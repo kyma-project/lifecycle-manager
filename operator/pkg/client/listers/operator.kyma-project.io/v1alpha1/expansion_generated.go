@@ -24,3 +24,11 @@ type KymaListerExpansion interface{}
 // KymaNamespaceListerExpansion allows custom methods to be added to
 // KymaNamespaceLister.
 type KymaNamespaceListerExpansion interface{}
+
+// ModuleTemplateListerExpansion allows custom methods to be added to
+// ModuleTemplateLister.
+type ModuleTemplateListerExpansion interface{}
+
+// ModuleTemplateNamespaceListerExpansion allows custom methods to be added to
+// ModuleTemplateNamespaceLister.
+type ModuleTemplateNamespaceListerExpansion interface{}

@@ -54,6 +54,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=operator.kyma-project.io, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("kymas"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Operator().V1alpha1().Kymas().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("moduletemplates"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Operator().V1alpha1().ModuleTemplates().Informer()}, nil
 
 	}
 

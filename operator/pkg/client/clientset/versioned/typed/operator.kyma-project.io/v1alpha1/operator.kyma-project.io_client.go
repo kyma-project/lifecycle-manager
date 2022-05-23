@@ -28,6 +28,7 @@ import (
 type OperatorV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	KymasGetter
+	ModuleTemplatesGetter
 }
 
 // OperatorV1alpha1Client is used to interact with features provided by the operator.kyma-project.io group.
@@ -37,6 +38,10 @@ type OperatorV1alpha1Client struct {
 
 func (c *OperatorV1alpha1Client) Kymas(namespace string) KymaInterface {
 	return newKymas(c, namespace)
+}
+
+func (c *OperatorV1alpha1Client) ModuleTemplates(namespace string) ModuleTemplateInterface {
+	return newModuleTemplates(c, namespace)
 }
 
 // NewForConfig creates a new OperatorV1alpha1Client for the given config.

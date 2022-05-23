@@ -1,19 +1,18 @@
-kind: ConfigMap
-apiVersion: v1
+apiVersion: operator.kyma-project.io/v1alpha1
+kind: ModuleTemplate
 metadata:
-  name: kyma-component-manifest-rapid
+  name: moduletemplate-sample-manifest-rapid
   namespace: default
   labels:
     "operator.kyma-project.io/managed-by": "kyma-operator"
     "operator.kyma-project.io/controller-name": "manifest"
-    "operator.kyma-project.io/channel": "rapid"
-data:
-  manifest: |-
+spec:
+  channel: rapid
+  data:
     crd-url: ""
-    kind: Manifest
-    group: component.kyma-project.io
+    kind: Manifest 
     resource: manifests
-    version: v1alpha1
+    apiVersion: component.kyma-project.io/v1alpha1
     spec: 
       charts:
       - chartName: cert-manager

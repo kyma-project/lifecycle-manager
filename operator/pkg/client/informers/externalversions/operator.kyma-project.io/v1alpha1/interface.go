@@ -25,6 +25,8 @@ import (
 type Interface interface {
 	// Kymas returns a KymaInformer.
 	Kymas() KymaInformer
+	// ModuleTemplates returns a ModuleTemplateInformer.
+	ModuleTemplates() ModuleTemplateInformer
 }
 
 type version struct {
@@ -41,4 +43,9 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // Kymas returns a KymaInformer.
 func (v *version) Kymas() KymaInformer {
 	return &kymaInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// ModuleTemplates returns a ModuleTemplateInformer.
+func (v *version) ModuleTemplates() ModuleTemplateInformer {
+	return &moduleTemplateInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
