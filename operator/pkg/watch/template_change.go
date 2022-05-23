@@ -51,7 +51,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 			Name:      template.GetName(),
 		}
 		for _, kyma := range kymas.Items {
-			globalChannelMatch := kyma.Spec.Channel != channel
+			globalChannelMatch := kyma.Spec.Channel == channel
 			requeueKyma := false
 
 			for _, component := range kyma.Spec.Components {
