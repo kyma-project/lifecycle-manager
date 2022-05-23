@@ -1,10 +1,13 @@
 package labels
 
+import "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+
 const (
 	OperatorPrefix  = "operator.kyma-project.io"
 	ComponentPrefix = "component.kyma-project.io"
-	Seperator       = "/"
-	ControllerName  = OperatorPrefix + Seperator + "controller-name"
-	Channel         = OperatorPrefix + Seperator + "channel"
-	ManagedBy       = OperatorPrefix + Seperator + "managed-by"
+	Separator       = "/"
+	ControllerName  = OperatorPrefix + Separator + "controller-name"
+	Channel         = OperatorPrefix + Separator + "channel"
+	ManagedBy       = OperatorPrefix + Separator + "managed-by"
+	Finalizer       = OperatorPrefix + Separator + v1alpha1.KymaKind
 )

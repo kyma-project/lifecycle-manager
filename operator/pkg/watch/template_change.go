@@ -36,6 +36,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 		if !controllerLabelPresent || controller == "" ||
 			channel == "" ||
 			!managedByPresent || managedBy != "kyma-operator" {
+			// limit cache from managedBy
 			return requests
 		}
 
@@ -50,18 +51,22 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 			Name:      template.GetName(),
 		}
 		for _, kyma := range kymas.Items {
-			if kyma.Spec.Channel != v1alpha1.Channel(channel) {
-				continue
-			}
+			globalChannelMatch := kyma.Spec.Channel == channel
+			requeueKyma := false
 
-			referenced := false
 			for _, component := range kyma.Spec.Components {
 				if component.Name == controller {
-					referenced = true
-					break
+					// check component level channel on matching component
+					requeueKyma = (component.Channel == "" && globalChannelMatch) ||
+						component.Channel == channel
+
+					if requeueKyma {
+						break
+					}
 				}
 			}
-			if !referenced {
+
+			if !requeueKyma {
 				continue
 			}
 

@@ -72,8 +72,6 @@ type KymaStatus struct {
 	// Active Channel
 	// +optional
 	ActiveChannel Channel `json:"activeChannel,omitempty"`
-
-	TemplateConfigStatus TemplateConfigStatus `json:"templateConfigStatus,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=rapid;regular;stable
@@ -85,23 +83,6 @@ const (
 	ChannelRegular Channel = "regular"
 	ChannelStable  Channel = "stable"
 )
-
-// +kubebuilder:validation:Enum=synced;outdated
-type TemplateConfigStatus string
-
-const (
-	TemplateConfigStatusSynced   TemplateConfigStatus = "synced"
-	TemplateConfigStatusOutdated TemplateConfigStatus = "outdated"
-)
-
-func (kyma *Kyma) SetTemplateConfigStatusSynced() *Kyma {
-	kyma.Status.TemplateConfigStatus = TemplateConfigStatusSynced
-	return kyma
-}
-func (kyma *Kyma) SetTemplateConfigStatusOutdated() *Kyma {
-	kyma.Status.TemplateConfigStatus = TemplateConfigStatusOutdated
-	return kyma
-}
 
 // +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error
 type KymaState string
