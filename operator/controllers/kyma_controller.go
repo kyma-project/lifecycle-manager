@@ -87,6 +87,12 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, r.updateKymaStatus(ctx, &kyma, operatorv1alpha1.KymaStateDeleting, "deletion timestamp set")
 	}
 
+	// check finalizer
+	if !controllerutil.ContainsFinalizer(&kyma, labels.Finalizer) {
+		controllerutil.AddFinalizer(&kyma, labels.Finalizer)
+		return ctrl.Result{}, r.Update(ctx, &kyma)
+	}
+
 	// state handling
 	switch kyma.Status.State {
 	case "":
@@ -94,7 +100,11 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	case operatorv1alpha1.KymaStateProcessing:
 		return ctrl.Result{}, r.HandleProcessingState(ctx, &logger, &kyma)
 	case operatorv1alpha1.KymaStateDeleting:
-		return ctrl.Result{}, r.HandleDeletingState(ctx)
+		if dependentsDeleting, err := r.HandleDeletingState(ctx, &logger, &kyma); err != nil {
+			return ctrl.Result{}, err
+		} else if dependentsDeleting {
+			return ctrl.Result{RequeueAfter: 3 * time.Second}, nil
+		}
 	case operatorv1alpha1.KymaStateError:
 		return ctrl.Result{RequeueAfter: 3 * time.Second}, r.HandleErrorState(ctx, &logger, &kyma)
 	case operatorv1alpha1.KymaStateReady:
@@ -141,8 +151,43 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, logger *logr
 	return nil
 }
 
-func (r *KymaReconciler) HandleDeletingState(_ context.Context) error {
-	return nil
+func (r *KymaReconciler) HandleDeletingState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) (bool, error) {
+	templates, err := release.GetTemplates(r, ctx, kyma)
+	if err != nil {
+		return false, r.KymaStatus().UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError,
+			"deletion cannot proceed - templates could not be fetched")
+	}
+
+	for _, component := range kyma.Spec.Components {
+		lookupResult := templates[component.Name]
+		if lookupResult == nil {
+			return false, fmt.Errorf("deletion cannot proceed - could not find template %s for resource %s",
+				component.Name, client.ObjectKeyFromObject(kyma))
+		}
+
+		desiredComponentStruct := &lookupResult.Template.Spec.Data
+		desiredComponentStruct.SetName(component.Name + "-name")
+		desiredComponentStruct.SetNamespace(kyma.GetNamespace())
+
+		actualComponentStruct := desiredComponentStruct.DeepCopy()
+
+		if err = r.Get(ctx, client.ObjectKeyFromObject(actualComponentStruct), actualComponentStruct); err == nil {
+			// component CR still exists
+			logger.Info(fmt.Sprintf("deletion cannot proceed - waiting for component CR %s to be deleted for %s",
+				desiredComponentStruct.GetName(), client.ObjectKeyFromObject(kyma)))
+			return true, nil
+		} else if !errors.IsNotFound(err) {
+			// unknown error while getting component CR
+			return false, fmt.Errorf("deletion cannot proceed - unknown error: %w", err)
+		}
+	}
+
+	logger.Info("All component CRs have been removed, removing finalizer",
+		"resource", client.ObjectKeyFromObject(kyma))
+
+	// remove finalizer
+	controllerutil.RemoveFinalizer(kyma, labels.Finalizer)
+	return false, r.Update(ctx, kyma)
 }
 
 func (r *KymaReconciler) HandleErrorState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
