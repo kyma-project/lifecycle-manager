@@ -87,25 +87,12 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, r.updateKymaStatus(ctx, &kyma, operatorv1alpha1.KymaStateDeleting, "deletion timestamp set")
 	}
 
-	// remove template status
-	// if ready or error state check
-	// observed generation
-	// templates outdated - if yes set to processing with const reason
-
-	templates, err := release.GetTemplates(r, ctx, &kyma)
-	if err != nil {
-		return ctrl.Result{RequeueAfter: 3 * time.Second}, r.updateKymaStatus(ctx, &kyma, operatorv1alpha1.KymaStateProcessing, err.Error())
-	}
-	if kyma.Status.TemplateConfigStatus == operatorv1alpha1.TemplateConfigStatusSynced && util.AreTemplatesOutdated(&logger, &kyma, templates) {
-		return ctrl.Result{}, r.HandleTemplateOutdated(ctx, &logger, &kyma)
-	}
-
 	// state handling
 	switch kyma.Status.State {
 	case "":
 		return ctrl.Result{}, r.HandleInitialState(ctx, &logger, &kyma)
 	case operatorv1alpha1.KymaStateProcessing:
-		return ctrl.Result{}, r.HandleProcessingState(ctx, &logger, &kyma, templates)
+		return ctrl.Result{}, r.HandleProcessingState(ctx, &logger, &kyma)
 	case operatorv1alpha1.KymaStateDeleting:
 		return ctrl.Result{}, r.HandleDeletingState(ctx)
 	case operatorv1alpha1.KymaStateError:
@@ -117,16 +104,28 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return ctrl.Result{}, nil
 }
 
-func (r *KymaReconciler) HandleTemplateOutdated(ctx context.Context, _ *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
-	return r.updateKymaStatus(ctx, kyma.SetTemplateConfigStatusOutdated(), operatorv1alpha1.KymaStateProcessing, "template update")
+func (r *KymaReconciler) HandleTemplateOutdated(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
+	templates, err := release.GetTemplates(r, ctx, kyma)
+	if err != nil {
+		return r.KymaStatus().UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError, "templates could not be fetched")
+	}
+	if util.AreTemplatesOutdated(logger, kyma, templates) {
+		return r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateProcessing, "template update")
+	}
+	return nil
 }
 
 func (r *KymaReconciler) HandleInitialState(ctx context.Context, _ *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
 	return r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateProcessing, "initial state")
 }
 
-func (r *KymaReconciler) HandleProcessingState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma, templates release.TemplateLookupResultsByName) error {
+func (r *KymaReconciler) HandleProcessingState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
 	logger.Info("processing " + kyma.Name)
+
+	templates, err := release.GetTemplates(r, ctx, kyma)
+	if err != nil {
+		return r.KymaStatus().UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError, "templates could not be fetched")
+	}
 
 	if err := r.reconcileKymaForRelease(ctx, kyma, templates); err != nil {
 		return err
@@ -146,17 +145,29 @@ func (r *KymaReconciler) HandleDeletingState(_ context.Context) error {
 	return nil
 }
 
-func (r *KymaReconciler) HandleErrorState(_ context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
-	if kyma.Status.ObservedGeneration == kyma.Generation {
-		logger.Info("skipping reconciliation for " + kyma.Name + ", already reconciled!")
-	}
-	return nil
+func (r *KymaReconciler) HandleErrorState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
+	return r.HandleConsistencyChanges(ctx, logger, kyma)
 }
 
-func (r *KymaReconciler) HandleReadyState(_ context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
-	if kyma.Status.ObservedGeneration == kyma.Generation {
-		logger.Info("skipping reconciliation for " + kyma.Name + ", already reconciled!")
+func (r *KymaReconciler) HandleReadyState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
+	return r.HandleConsistencyChanges(ctx, logger, kyma)
+}
+
+func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
+	if kyma.Status.ObservedGeneration != kyma.Generation {
+		return r.KymaStatus().UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateReady,
+			"observed generation did not match")
 	}
+
+	templates, err := release.GetTemplates(r, ctx, kyma)
+	if err != nil {
+		return r.KymaStatus().UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError,
+			"templates could not be fetched")
+	}
+	if util.AreTemplatesOutdated(logger, kyma, templates) {
+		return r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateProcessing, "template update")
+	}
+
 	return nil
 }
 
@@ -164,7 +175,7 @@ func (r *KymaReconciler) updateKymaStatus(ctx context.Context, kyma *operatorv1a
 	return r.KymaStatus().UpdateStatus(ctx, kyma, state, message)
 }
 
-func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Context, kymaObj *operatorv1alpha1.Kyma, lookupResults release.TemplateLookupResultsByName) ([]util.ComponentsAssociatedWithTemplate, error) {
+func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Context, kymaObj *operatorv1alpha1.Kyma, templates release.TemplateLookupResultsByName) ([]util.ComponentsAssociatedWithTemplate, error) {
 	kymaObjectKey := client.ObjectKey{Name: kymaObj.Name, Namespace: kymaObj.Namespace}
 	namespacedName := kymaObjectKey.String()
 	logger := log.FromContext(ctx).WithName(namespacedName)
@@ -177,7 +188,7 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 	var componentNamesAffected []util.ComponentsAssociatedWithTemplate
 	for _, component := range kymaObj.Spec.Components {
 
-		lookupResult := lookupResults[component.Name]
+		lookupResult := templates[component.Name]
 		if lookupResult == nil {
 			err := fmt.Errorf("could not find template for resource %s and release %s, will not re-queue resource %s", component.Name, channel, namespacedName)
 			logger.Error(err, "template lookup failed")
@@ -218,11 +229,15 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 				TemplateGeneration: lookupResult.Template.GetGeneration(),
 				TemplateChannel:    lookupResult.Template.Spec.Channel,
 			})
-		} else if kymaObj.Status.TemplateConfigStatus == operatorv1alpha1.TemplateConfigStatusOutdated {
+		} else if util.AreTemplatesOutdated(&logger, kymaObj, templates) {
+
 			for _, condition := range kymaObj.Status.Conditions {
+
+				// either the template in the condition is outdated (reflected by a generation change on the template)
+				//or the template that is supposed to be applied changed (e.g. because the kyma spec changed)
 				if condition.Reason == component.Name &&
-					// either the template in the condition is outdated (reflected by a generation change on the template) or the template that is supposed to be applied changed (e.g. because the kyma spec changed)
-					(condition.TemplateInfo.Generation != lookupResult.Template.GetGeneration() || condition.TemplateInfo.Channel != lookupResult.Template.Spec.Channel) {
+					(condition.TemplateInfo.Generation != lookupResult.Template.GetGeneration() ||
+						condition.TemplateInfo.Channel != lookupResult.Template.Spec.Channel) {
 
 					// merge template and component settings
 					util.CopyComponentSettingsToUnstructuredFromResource(actual, component)
