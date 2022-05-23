@@ -192,12 +192,6 @@ func (r *KymaReconciler) HandleReadyState(ctx context.Context, logger *logr.Logg
 }
 
 func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
-	// generation change
-	if kyma.Status.ObservedGeneration != kyma.Generation {
-		return r.KymaStatus().UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateReady,
-			"observed generation did not match")
-	}
-
 	// outdated template
 	templates, err := release.GetTemplates(ctx, r, kyma)
 	if err != nil {
@@ -217,6 +211,12 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, logger *l
 		}
 		return r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateProcessing,
 			"updating component conditions")
+	}
+
+	// generation change
+	if kyma.Status.ObservedGeneration != kyma.Generation {
+		return r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateProcessing,
+			"object updated")
 	}
 
 	return nil
