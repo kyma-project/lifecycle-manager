@@ -121,7 +121,7 @@ func (r *KymaReconciler) HandleInitialState(ctx context.Context, _ *logr.Logger,
 func (r *KymaReconciler) HandleProcessingState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
 	logger.Info("processing " + kyma.Name)
 
-	templates, err := release.GetTemplates(r, ctx, kyma)
+	templates, err := release.GetTemplates(ctx, r, kyma)
 	if err != nil {
 		return r.KymaStatus().UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError, "templates could not be fetched")
 	}
@@ -141,10 +141,9 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, logger *logr
 }
 
 func (r *KymaReconciler) HandleDeletingState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) (bool, error) {
-	templates, err := release.GetTemplates(r, ctx, kyma)
+	templates, err := release.GetTemplates(ctx, r, kyma)
 	if err != nil {
-		return false, r.KymaStatus().UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError,
-			"deletion cannot proceed - templates could not be fetched")
+		return false, fmt.Errorf("deletion cannot proceed - templates could not be fetched: %w", err)
 	}
 
 	for _, component := range kyma.Spec.Components {
@@ -193,12 +192,12 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, logger *l
 			"observed generation did not match")
 	}
 
-	templates, err := release.GetTemplates(r, ctx, kyma)
+	templates, err := release.GetTemplates(ctx, r, kyma)
 	if err != nil {
-		return r.KymaStatus().UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError,
-			"templates could not be fetched")
+		logger.Error(err, "error fetching fetching templates")
+		return r.KymaStatus().UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError, err.Error())
 	}
-	if util.AreTemplatesOutdated(logger, kyma, templates) {
+	if release.AreTemplatesOutdated(logger, kyma, templates) {
 		return r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateProcessing, "template update")
 	}
 
@@ -239,7 +238,6 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 			return nil, err
 		}
 
-		// overwrite labels for upgrade / downgrade of component versions
 		if errors.IsNotFound(err) {
 			// merge template and component settings
 			util.CopyComponentSettingsToUnstructuredFromResource(desired, component)
@@ -263,8 +261,7 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 				TemplateGeneration: lookupResult.Template.GetGeneration(),
 				TemplateChannel:    lookupResult.Template.Spec.Channel,
 			})
-		} else if util.AreTemplatesOutdated(&logger, kymaObj, templates) {
-
+		} else if release.AreTemplatesOutdated(&logger, kymaObj, templates) {
 			for _, condition := range kymaObj.Status.Conditions {
 
 				// either the template in the condition is outdated (reflected by a generation change on the template)
