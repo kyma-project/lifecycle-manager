@@ -47,7 +47,7 @@ func GetUnstructuredComponentFromTemplate(templates release.TemplateLookupResult
 	}
 
 	desiredComponentStruct := &lookupResult.Template.Spec.Data
-	desiredComponentStruct.SetName(componentName + "-name")
+	desiredComponentStruct.SetName(componentName + "-" + kyma.Name + "-name")
 	desiredComponentStruct.SetNamespace(kyma.GetNamespace())
 
 	return desiredComponentStruct.DeepCopy(), nil

@@ -1,0 +1,9 @@
+apiVersion: operator.kyma-project.io/v1alpha1
+kind: Kyma
+metadata:
+  name: kyma-3
+  namespace: default
+spec:
+  channel: stable
+  components:
+    - name: manifest
