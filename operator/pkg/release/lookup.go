@@ -41,7 +41,7 @@ func AreTemplatesOutdated(logger *logr.Logger, k *operatorv1alpha1.Kyma, templat
 	for componentName, lookupResult := range templates {
 		for _, condition := range k.Status.Conditions {
 			if condition.Reason == componentName && lookupResult != nil {
-				if lookupResult.Template.GetGeneration() != condition.TemplateInfo.Generation {
+				if lookupResult.Template.GetGeneration() != condition.TemplateInfo.Generation || lookupResult.Template.Spec.Channel != condition.TemplateInfo.Channel {
 					logger.Info("detected outdated template",
 						"condition", condition.Reason,
 						"template", lookupResult.Template.Name,
