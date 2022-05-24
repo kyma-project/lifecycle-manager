@@ -1,7 +1,7 @@
 apiVersion: operator.kyma-project.io/v1alpha1
 kind: Kyma
 metadata:
-  name: kyma-3
+  name: kyma-4-00
   namespace: default
 spec:
   channel: stable
