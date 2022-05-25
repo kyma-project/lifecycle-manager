@@ -70,5 +70,5 @@ roleRef:
   name: component-role
 subjects:
   - kind: ServiceAccount
-    name: controller-manager
-    namespace: system
+    name: operator-controller-manager
+    namespace: operator-system
