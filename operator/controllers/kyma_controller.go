@@ -19,6 +19,8 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-project/kyma-operator/operator/pkg/listener"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"strings"
 	"time"
 
@@ -358,7 +360,7 @@ func (r *KymaReconciler) checkAndUpdateComponentConditions(ctx context.Context, 
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager) error {
+func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager, eventsSource <-chan event.GenericEvent) error {
 	c, err := dynamic.NewForConfig(mgr.GetConfig())
 	if err != nil {
 		return err
@@ -416,6 +418,15 @@ func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager
 		handler.EnqueueRequestsFromMapFunc(r.TemplateChangeHandler().Watch(context.TODO())),
 		builder.WithPredicates(predicate.GenerationChangedPredicate{}))
 
+	controllerBuilder = controllerBuilder.Watches(
+		&source.Channel{Source: eventsSource},
+		&handler.Funcs{
+			GenericFunc: r.WatcherEventsHandler().
+				ProcessWatcherEvent(context.TODO()),
+		},
+	)
+	setupLog.Info("initialized listener to watch for generic events from the SKR watcher")
+
 	index.NewTemplateChannelIndex().IndexWith(context.TODO(), mgr.GetFieldIndexer())
 
 	return controllerBuilder.Complete(r)
@@ -431,4 +442,8 @@ func (r *KymaReconciler) TemplateChangeHandler() *watch.TemplateChangeHandler {
 
 func (r *KymaReconciler) KymaStatus() *status.Kyma {
 	return &status.Kyma{StatusWriter: r.Status(), EventRecorder: r.Recorder}
+}
+
+func (r *KymaReconciler) WatcherEventsHandler() *listener.WatcherEventsHandler {
+	return &listener.WatcherEventsHandler{}
 }

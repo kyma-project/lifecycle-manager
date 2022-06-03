@@ -18,11 +18,11 @@ package main
 
 import (
 	"flag"
+	"github.com/kyma-project/kyma-operator/operator/pkg/listener"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
-
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -55,8 +55,10 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
+	var listenerAddr string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flag.StringVar(&listenerAddr, "skr-listener-bind-address", ":8082", "The address the skr listener endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
@@ -90,11 +92,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	skrEventsListener := &listener.SKREventsListener{
+		Addr:   listenerAddr,
+		Logger: setupLog,
+	}
+	eventsSource := skrEventsListener.ReceivedEvents()
+
 	if err = (&controllers.KymaReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("kyma-operator"),
-	}).SetupWithManager(setupLog, mgr); err != nil {
+	}).SetupWithManager(setupLog, mgr, eventsSource); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
@@ -106,6 +114,13 @@ func main() {
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up ready check")
+		os.Exit(1)
+	}
+
+	//TODO: check if we need to run the SKR events listener as a runnable
+	// adding events listener as a runnable of the manager
+	if err = mgr.Add(skrEventsListener); err != nil {
+		setupLog.Error(err, "unable to start skr event listener", "controller", "Kyma")
 		os.Exit(1)
 	}
 
