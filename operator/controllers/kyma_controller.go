@@ -19,10 +19,11 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"github.com/kyma-project/kyma-operator/operator/pkg/listener"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	"strings"
 	"time"
+
+	"github.com/kyma-project/kyma-operator/operator/pkg/listener"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 
 	"github.com/go-logr/logr"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
@@ -445,5 +446,5 @@ func (r *KymaReconciler) KymaStatus() *status.Kyma {
 }
 
 func (r *KymaReconciler) WatcherEventsHandler() *listener.WatcherEventsHandler {
-	return &listener.WatcherEventsHandler{}
+	return &listener.WatcherEventsHandler{Reader: r.Client, StatusWriter: r.Status()}
 }

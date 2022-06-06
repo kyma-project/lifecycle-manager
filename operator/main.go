@@ -18,11 +18,13 @@ package main
 
 import (
 	"flag"
+	"os"
+
 	"github.com/kyma-project/kyma-operator/operator/pkg/listener"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -117,8 +119,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	//TODO: check if we need to run the SKR events listener as a runnable
-	// adding events listener as a runnable of the manager
+	// Adding events listener as a runnable of the manager
 	if err = mgr.Add(skrEventsListener); err != nil {
 		setupLog.Error(err, "unable to start skr event listener", "controller", "Kyma")
 		os.Exit(1)
