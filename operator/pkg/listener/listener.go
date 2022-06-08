@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"net/http"
 	"time"
 
@@ -18,12 +21,37 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-type EventType string
-
 type WatcherEvent struct {
-	SkrClusterID string             `json:"skrClusterID"`
-	Type         EventType          `json:"eventType"`
-	Body         event.GenericEvent `json:"eventBody"`
+	SkrClusterID  string `json:"skrClusterID"`
+	Type          string `json:"eventType"`
+	ComponentName string `json:"componentName"`
+	ConfigData    string `json:"configData"`
+}
+
+type GenericEventObject struct {
+	metav1.TypeMeta
+	metav1.ObjectMeta
+}
+
+// DeepCopyObject TODO: use kube builder to generate this
+func (g *GenericEventObject) DeepCopyObject() runtime.Object {
+	if c := g.DeepCopy(); c != nil {
+		return c
+	}
+	return nil
+}
+
+// DeepCopy TODO: use kube builder to generate this
+func (g *GenericEventObject) DeepCopy() *GenericEventObject {
+
+	if g == nil {
+		return nil
+	}
+	ng := new(GenericEventObject)
+	*ng = *g
+	ng.TypeMeta = g.TypeMeta
+	g.ObjectMeta.DeepCopyInto(&ng.ObjectMeta)
+	return ng
 }
 
 type SKREventsListener struct {
@@ -35,12 +63,13 @@ type SKREventsListener struct {
 const paramContractVersion = "contractVersion"
 
 func (l *SKREventsListener) Start(ctx context.Context) error {
+	//TODO: replace gorilla mux path routing with vanilla path routing
 	//routing
 	mainRouter := mux.NewRouter()
 	apiRouter := mainRouter.PathPrefix("/").Subrouter()
 
 	apiRouter.HandleFunc(
-		fmt.Sprintf("/v{%s}/listener", paramContractVersion),
+		fmt.Sprintf("/v{%s}/skr/events", paramContractVersion),
 		l.transformWatcherEvents()).
 		Methods(http.MethodPost)
 
@@ -52,6 +81,8 @@ func (l *SKREventsListener) Start(ctx context.Context) error {
 		if err != nil && err != http.ErrServerClosed {
 			l.Logger.Error(err, "Webserver startup failed")
 		}
+		l.Logger.WithValues("Address:", server.Addr).
+			Info("SKR events listener started up successfully")
 	}()
 	<-ctx.Done()
 	l.Logger.Info("SKR events listener is shutting down: context got closed")
@@ -90,7 +121,10 @@ func (l *SKREventsListener) transformWatcherEvents() http.HandlerFunc {
 		}
 
 		//add event to the channel
-		l.receivedEvents <- watcherEvent.Body
+		genericEvtObject := &GenericEventObject{}
+		genericEvtObject.SetName(watcherEvent.ComponentName)
+		genericEvtObject.SetClusterName(watcherEvent.SkrClusterID)
+		l.receivedEvents <- event.GenericEvent{Object: genericEvtObject}
 		w.WriteHeader(http.StatusOK)
 	}
 }
@@ -111,11 +145,38 @@ func (h *WatcherEventsHandler) ProcessWatcherEvent(ctx context.Context) func(eve
 	logger := log.FromContext(ctx).WithName("skr-watcher-events-processing")
 	return func(genericEvent event.GenericEvent, _ workqueue.RateLimitingInterface) {
 		//Label component template with a current timestamp when an event is received from the SKR watcher
-		logger.Info("started dispatching event", genericEvent)
+		componentName := genericEvent.Object.GetName()
+		clusterName := genericEvent.Object.GetClusterName()
+		logger.WithValues(
+			"component", componentName,
+			"cluster-name", clusterName,
+		).Info("started dispatching event")
+
+		kymaCRsForCluster := &v1alpha1.KymaList{}
+		err := h.List(ctx, kymaCRsForCluster, client.MatchingLabels{
+			labels.ClusterName: clusterName,
+		})
+		if err != nil {
+			logger.WithValues(
+				"component", componentName,
+				"cluster-name", clusterName,
+			).Error(err, "could not get Kyma CR for cluster")
+			return
+		}
+		if len(kymaCRsForCluster.Items) == 0 {
+			logger.WithValues(
+				"component", componentName,
+				"cluster-name", clusterName,
+			).Error(err, "Kyma CR for cluster not found")
+			return
+		}
+		kymaCR := kymaCRsForCluster.Items[0]
 
 		componentTemplate := &v1alpha1.ModuleTemplate{}
-		eventObject := genericEvent.Object
-		namespacedName := client.ObjectKeyFromObject(eventObject)
+		namespacedName := types.NamespacedName{
+			Name:      componentName + kymaCR.Name,
+			Namespace: kymaCR.Namespace,
+		}
 
 		if err := h.Get(ctx, namespacedName, componentTemplate); err != nil {
 			logger.WithValues(

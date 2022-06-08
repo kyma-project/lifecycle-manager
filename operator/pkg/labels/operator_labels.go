@@ -12,4 +12,5 @@ const (
 	ManagedBy           = OperatorPrefix + Separator + "managed-by"
 	Finalizer           = OperatorPrefix + Separator + v1alpha1.KymaKind
 	ListenerLastUpdated = SKREventsPrefix + Separator + "last-updated"
+	ClusterName         = SKREventsPrefix + Separator + "cluster-name"
 )

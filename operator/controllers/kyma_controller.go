@@ -421,10 +421,7 @@ func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager
 
 	controllerBuilder = controllerBuilder.Watches(
 		&source.Channel{Source: eventsSource},
-		&handler.Funcs{
-			GenericFunc: r.WatcherEventsHandler().
-				ProcessWatcherEvent(context.TODO()),
-		},
+		&handler.Funcs{GenericFunc: r.WatcherEventsHandler().ProcessWatcherEvent(context.TODO())},
 	)
 	setupLog.Info("initialized listener to watch for generic events from the SKR watcher")
 
