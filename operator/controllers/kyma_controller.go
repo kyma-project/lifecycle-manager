@@ -443,5 +443,5 @@ func (r *KymaReconciler) KymaStatus() *status.Kyma {
 }
 
 func (r *KymaReconciler) WatcherEventsHandler() *listener.WatcherEventsHandler {
-	return &listener.WatcherEventsHandler{Reader: r.Client, StatusWriter: r.Status()}
+	return &listener.WatcherEventsHandler{Client: r.Client}
 }

@@ -5,22 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
-	"net/http"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
-	"k8s.io/client-go/util/workqueue"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+// WatcherEvent TODO: update Watcher Event fields
 type WatcherEvent struct {
 	SkrClusterID  string `json:"skrClusterID"`
 	Type          string `json:"eventType"`
@@ -134,70 +129,4 @@ func (l *SKREventsListener) ReceivedEvents() chan event.GenericEvent {
 		l.receivedEvents = make(chan event.GenericEvent)
 	}
 	return l.receivedEvents
-}
-
-type WatcherEventsHandler struct {
-	client.Reader
-	client.StatusWriter
-}
-
-func (h *WatcherEventsHandler) ProcessWatcherEvent(ctx context.Context) func(event.GenericEvent, workqueue.RateLimitingInterface) {
-	logger := log.FromContext(ctx).WithName("skr-watcher-events-processing")
-	return func(genericEvent event.GenericEvent, _ workqueue.RateLimitingInterface) {
-		//Label component template with a current timestamp when an event is received from the SKR watcher
-		componentName := genericEvent.Object.GetName()
-		clusterName := genericEvent.Object.GetClusterName()
-		logger.WithValues(
-			"component", componentName,
-			"cluster-name", clusterName,
-		).Info("started dispatching event")
-
-		kymaCRsForCluster := &v1alpha1.KymaList{}
-		err := h.List(ctx, kymaCRsForCluster, client.MatchingLabels{
-			labels.ClusterName: clusterName,
-		})
-		if err != nil {
-			logger.WithValues(
-				"component", componentName,
-				"cluster-name", clusterName,
-			).Error(err, "could not get Kyma CR for cluster")
-			return
-		}
-		if len(kymaCRsForCluster.Items) == 0 {
-			logger.WithValues(
-				"component", componentName,
-				"cluster-name", clusterName,
-			).Error(err, "Kyma CR for cluster not found")
-			return
-		}
-		kymaCR := kymaCRsForCluster.Items[0]
-
-		componentTemplate := &v1alpha1.ModuleTemplate{}
-		namespacedName := types.NamespacedName{
-			Name:      componentName + kymaCR.Name,
-			Namespace: kymaCR.Namespace,
-		}
-
-		if err := h.Get(ctx, namespacedName, componentTemplate); err != nil {
-			logger.WithValues(
-				"component", namespacedName.Name,
-				"namespace", namespacedName.Namespace,
-			).Error(err, "could not get component CR")
-			return
-		}
-		componentLabels := componentTemplate.GetLabels()
-		componentLabels[labels.ListenerLastUpdated] = time.Now().UTC().Format(time.RFC1123)
-		componentTemplate.SetLabels(componentLabels)
-		if err := h.Update(ctx, componentTemplate); err != nil {
-			logger.WithValues(
-				"component", namespacedName.Name,
-				"namespace", namespacedName.Namespace,
-			).Error(err, "could not update component CR to trigger the reconciliation loop")
-			return
-		}
-		logger.WithValues(
-			"component", namespacedName.Name,
-			"namespace", namespacedName.Namespace,
-		).Info("successfully update component CR to trigger its reconciliation loop")
-	}
 }
