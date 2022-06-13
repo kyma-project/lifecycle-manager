@@ -37,7 +37,7 @@ func (h *WatcherEventsHandler) ProcessWatcherEvent(ctx context.Context) func(eve
 			"cluster-name", clusterName,
 		).Info("started dispatching event")
 
-		kymaCR, err := h.getKymaCR(ctx, clusterName, componentName)
+		kymaCR, err := h.getKymaCR(ctx, clusterName)
 		if err != nil {
 			h.logger.WithValues(
 				"component", componentName,
@@ -114,7 +114,7 @@ func (h *WatcherEventsHandler) getComponentCR(ctx context.Context, kymaCR *v1alp
 	return componentCR, nil
 }
 
-func (h *WatcherEventsHandler) getKymaCR(ctx context.Context, clusterName, componentName string) (*v1alpha1.Kyma, error) {
+func (h *WatcherEventsHandler) getKymaCR(ctx context.Context, clusterName string) (*v1alpha1.Kyma, error) {
 	kymaCRsForCluster := &v1alpha1.KymaList{}
 	err := h.List(ctx, kymaCRsForCluster, client.MatchingLabels{
 		labels.ClusterName: clusterName,

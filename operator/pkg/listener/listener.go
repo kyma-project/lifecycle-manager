@@ -17,10 +17,8 @@ import (
 
 // WatcherEvent TODO: update Watcher Event fields
 type WatcherEvent struct {
-	SkrClusterID  string `json:"skrClusterID"`
-	Type          string `json:"eventType"`
-	ComponentName string `json:"componentName"`
-	ConfigData    string `json:"configData"`
+	SkrClusterID string      `json:"skrClusterID"`
+	Body         interface{} `json:"body"`
 }
 
 type GenericEventObject struct {
@@ -115,9 +113,23 @@ func (l *SKREventsListener) transformWatcherEvents() http.HandlerFunc {
 			return
 		}
 
+		var componentName string
+		switch watcherEvent.Body.(type) {
+		case event.CreateEvent:
+			componentName = watcherEvent.Body.(event.CreateEvent).Object.GetName()
+		case event.UpdateEvent:
+			//TODO: compare names of new object and old object
+			componentName = watcherEvent.Body.(event.UpdateEvent).ObjectNew.GetName()
+		case event.DeleteEvent:
+			//TODO: check DeleteStateUnknown
+			componentName = watcherEvent.Body.(event.DeleteEvent).Object.GetName()
+		case event.GenericEvent:
+			componentName = watcherEvent.Body.(event.GenericEvent).Object.GetName()
+		}
+
 		//add event to the channel
 		genericEvtObject := &GenericEventObject{}
-		genericEvtObject.SetName(watcherEvent.ComponentName)
+		genericEvtObject.SetName(componentName)
 		genericEvtObject.SetClusterName(watcherEvent.SkrClusterID)
 		l.receivedEvents <- event.GenericEvent{Object: genericEvtObject}
 		w.WriteHeader(http.StatusOK)
