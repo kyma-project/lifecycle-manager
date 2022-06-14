@@ -118,13 +118,17 @@ func (l *SKREventsListener) transformWatcherEvents() http.HandlerFunc {
 		case event.CreateEvent:
 			componentName = watcherEvent.Body.(event.CreateEvent).Object.GetName()
 		case event.UpdateEvent:
-			//TODO: compare names of new object and old object
+			//TODO: compare names of new object and old object (if resource name is used for mapping)
 			componentName = watcherEvent.Body.(event.UpdateEvent).ObjectNew.GetName()
 		case event.DeleteEvent:
 			//TODO: check DeleteStateUnknown
 			componentName = watcherEvent.Body.(event.DeleteEvent).Object.GetName()
 		case event.GenericEvent:
 			componentName = watcherEvent.Body.(event.GenericEvent).Object.GetName()
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("could not unmarshal watcher event body"))
+			return
 		}
 
 		//add event to the channel
