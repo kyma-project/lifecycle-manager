@@ -22,7 +22,7 @@ type TemplateLookupResultsByName map[string]*TemplateLookupResult
 func GetTemplates(ctx context.Context, c client.Reader, k *operatorv1alpha1.Kyma) (TemplateLookupResultsByName, error) {
 	templates := make(TemplateLookupResultsByName)
 	for _, component := range k.Spec.Components {
-		template, err := NewChannelTemplate(c, component, k.Spec.Channel).Lookup(ctx)
+		template, err := LookupTemplate(c, component, k.Spec.Channel).WithContext(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -58,37 +58,37 @@ func AreTemplatesOutdated(logger *logr.Logger, k *operatorv1alpha1.Kyma, templat
 	return false
 }
 
-type Template interface {
-	Lookup(ctx context.Context) (*TemplateLookupResult, error)
+type Lookup interface {
+	WithContext(ctx context.Context) (*TemplateLookupResult, error)
 }
 
-func NewChannelTemplate(client client.Reader, component operatorv1alpha1.ComponentType, channel operatorv1alpha1.Channel) Template {
+func LookupTemplate(client client.Reader, component operatorv1alpha1.ComponentType, defaultChannel operatorv1alpha1.Channel) Lookup {
 	return &channelTemplateLookup{
-		reader:    client,
-		component: component,
-		channel:   channel,
+		reader:         client,
+		component:      component,
+		defaultChannel: defaultChannel,
 	}
 }
 
 type channelTemplateLookup struct {
-	reader    client.Reader
-	component operatorv1alpha1.ComponentType
-	channel   operatorv1alpha1.Channel
+	reader         client.Reader
+	component      operatorv1alpha1.ComponentType
+	defaultChannel operatorv1alpha1.Channel
 }
 
-func (c *channelTemplateLookup) Lookup(ctx context.Context) (*TemplateLookupResult, error) {
+func (c *channelTemplateLookup) WithContext(ctx context.Context) (*TemplateLookupResult, error) {
 	templateList := &operatorv1alpha1.ModuleTemplateList{}
 
 	var desiredChannel operatorv1alpha1.Channel
 
 	if c.component.Channel != "" {
-		// if component channel is set it takes precedence
+		// if component defaultChannel is set it takes precedence
 		desiredChannel = c.component.Channel
-	} else if c.channel != "" {
-		// else if the global channel is set it takes precedence
-		desiredChannel = c.channel
+	} else if c.defaultChannel != "" {
+		// else if the global defaultChannel is set it takes precedence
+		desiredChannel = c.defaultChannel
 	} else {
-		// else use the default channel
+		// else use the default defaultChannel
 		desiredChannel = operatorv1alpha1.DefaultChannel
 	}
 
@@ -102,7 +102,7 @@ func (c *channelTemplateLookup) Lookup(ctx context.Context) (*TemplateLookupResu
 	}
 
 	if len(templateList.Items) > 1 {
-		return nil, MoreThanOneTemplateCandidateErr(c.component, templateList.Items)
+		return nil, NewMoreThanOneTemplateCandidateErr(c.component, templateList.Items)
 	}
 
 	// if the desiredChannel cannot be found, use the next best available
@@ -116,7 +116,7 @@ func (c *channelTemplateLookup) Lookup(ctx context.Context) (*TemplateLookupResu
 		}
 
 		if len(templateList.Items) > 1 {
-			return nil, MoreThanOneTemplateCandidateErr(c.component, templateList.Items)
+			return nil, NewMoreThanOneTemplateCandidateErr(c.component, templateList.Items)
 		}
 
 		if len(templateList.Items) == 0 {
@@ -127,13 +127,13 @@ func (c *channelTemplateLookup) Lookup(ctx context.Context) (*TemplateLookupResu
 
 	actualChannel := templateList.Items[0].Spec.Channel
 
-	// if the found configMap has no channel assigned to it set a sensible log output
+	// if the found configMap has no defaultChannel assigned to it set a sensible log output
 	if actualChannel == "" {
-		return nil, fmt.Errorf("no channel found on template for component: %s, specifying no channel is not allowed", c.component.Name)
+		return nil, fmt.Errorf("no defaultChannel found on template for component: %s, specifying no defaultChannel is not allowed", c.component.Name)
 	}
 
-	if actualChannel != c.channel {
-		log.FromContext(ctx).V(3).Info(fmt.Sprintf("using %s (instead of %s) for component %s", actualChannel, c.channel, c.component.Name))
+	if actualChannel != c.defaultChannel {
+		log.FromContext(ctx).V(3).Info(fmt.Sprintf("using %s (instead of %s) for component %s", actualChannel, c.defaultChannel, c.component.Name))
 	} else {
 		log.FromContext(ctx).V(3).Info(fmt.Sprintf("using %s for component %s", actualChannel, c.component.Name))
 	}
@@ -144,7 +144,7 @@ func (c *channelTemplateLookup) Lookup(ctx context.Context) (*TemplateLookupResu
 	}, nil
 }
 
-func MoreThanOneTemplateCandidateErr(component operatorv1alpha1.ComponentType, candidateTemplates []operatorv1alpha1.ModuleTemplate) error {
+func NewMoreThanOneTemplateCandidateErr(component operatorv1alpha1.ComponentType, candidateTemplates []operatorv1alpha1.ModuleTemplate) error {
 	candidates := make([]string, len(candidateTemplates))
 	for i, candidate := range candidateTemplates {
 		candidates[i] = candidate.GetName()

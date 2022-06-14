@@ -7,12 +7,12 @@ import (
 )
 
 type Indexed interface {
-	IndexWith(ctx context.Context, indexer client.FieldIndexer)
+	With(ctx context.Context, indexer client.FieldIndexer) error
 }
 
-type IndexField string
+type Field string
 
-func (f IndexField) WithValue(v string) client.MatchingFields {
+func (f Field) WithValue(v string) client.MatchingFields {
 	return client.MatchingFields{
 		string(f): v,
 	}

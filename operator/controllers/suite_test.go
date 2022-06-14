@@ -19,10 +19,14 @@ package controllers
 import (
 	"context"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
+	"net/http"
 	"path/filepath"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -44,6 +48,7 @@ import (
 
 var cfg *rest.Config
 var k8sClient client.Client
+var k8sManager manager.Manager
 var testEnv *envtest.Environment
 var ctx context.Context
 var cancel context.CancelFunc
@@ -62,8 +67,16 @@ var _ = BeforeSuite(func() {
 	logf.SetLogger(logger)
 
 	By("bootstrapping test environment")
+
+	manifestCrd := &v1.CustomResourceDefinition{}
+	res, err := http.DefaultClient.Get("https://raw.githubusercontent.com/kyma-project/manifest-operator/main/api/config/crd/bases/component.kyma-project.io_manifests.yaml")
+	Expect(err).NotTo(HaveOccurred())
+	Expect(res.StatusCode).To(BeEquivalentTo(http.StatusOK))
+	Expect(yaml2.NewYAMLOrJSONDecoder(res.Body, 2048).Decode(manifestCrd)).To(Succeed())
+
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases")},
+		CRDs:                  []*v1.CustomResourceDefinition{manifestCrd},
 		ErrorIfCRDPathMissing: true,
 	}
 
@@ -80,7 +93,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
-	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
+	k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme.Scheme,
 		NewCache: cache.BuilderWithOptions(cache.Options{
 			SelectorsByObject: cache.SelectorsByObject{

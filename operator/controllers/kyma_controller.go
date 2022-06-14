@@ -427,7 +427,9 @@ func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager
 		handler.EnqueueRequestsFromMapFunc(r.TemplateChangeHandler().Watch(context.TODO())),
 		builder.WithPredicates(predicate.GenerationChangedPredicate{}))
 
-	index.NewTemplateChannelIndex().IndexWith(context.TODO(), mgr.GetFieldIndexer())
+	if err := index.TemplateChannel().With(context.TODO(), mgr.GetFieldIndexer()); err != nil {
+		return err
+	}
 
 	return controllerBuilder.Complete(r)
 }
