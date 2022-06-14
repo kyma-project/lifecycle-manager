@@ -4,21 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
+	"io/ioutil"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"net/http"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 
 // WatcherEvent TODO: update Watcher Event fields
 type WatcherEvent struct {
-	SkrClusterID string      `json:"skrClusterID"`
-	Body         interface{} `json:"body"`
+	SkrClusterID string `json:"skrClusterID"`
+	Body         []byte `json:"body"`
+	EventType    string `json:"eventType"`
 }
 
 type GenericEventObject struct {
@@ -98,6 +98,7 @@ func (l *SKREventsListener) transformWatcherEvents() http.HandlerFunc {
 			w.Write([]byte("could not read request body"))
 			return
 		}
+		l.Logger.Info(fmt.Sprintf("B Body: %s", b))
 
 		if contractVersion == "" {
 			w.WriteHeader(http.StatusBadRequest)
@@ -108,24 +109,54 @@ func (l *SKREventsListener) transformWatcherEvents() http.HandlerFunc {
 		watcherEvent := &WatcherEvent{}
 		err = json.Unmarshal(b, watcherEvent)
 		if err != nil {
+			l.Logger.Info(fmt.Sprintf("ERROR  while unmarshaling%s", err))
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte("could not unmarshal watcher event"))
 			return
 		}
+		l.Logger.Info(fmt.Sprintf("WatcherEvent: %#v", watcherEvent))
 
+		l.Logger.Info(fmt.Sprintf("EventType: %s", watcherEvent.EventType))
 		var componentName string
-		switch watcherEvent.Body.(type) {
-		case event.CreateEvent:
-			componentName = watcherEvent.Body.(event.CreateEvent).Object.GetName()
-		case event.UpdateEvent:
+		l.Logger.Info(fmt.Sprintf("Body: %s", watcherEvent.Body))
+
+		l.Logger.Info(fmt.Sprintf("Component Name: %s", componentName))
+		switch watcherEvent.EventType {
+		case "create":
+			l.Logger.Info("CreateEvent")
+			//component := unstructured.Unstructured{}
+			//if err = json.Unmarshal(watcherEvent.Body, &component); err != nil {
+			//	l.Logger.Error(err, "error transforming new component object")
+			//	return
+			//}
+			//l.Logger.Info(fmt.Sprintf("Component after CreateEvent: %#v", component))
+
+			//objectBytesNew, err := json.Marshal(watcherEvent.Body)
+			//if err != nil {
+			//	l.Logger.Error(err, "error transforming new component object")
+			//	return
+			//}
+
+			component := unstructured.Unstructured{}
+			if err = json.Unmarshal(watcherEvent.Body, &component); err != nil {
+				l.Logger.Error(err, "error transforming new component object")
+				return
+			}
+
+			//componentName = component.GetName()
+		case "update":
+			l.Logger.Info("UpdateEvent")
 			//TODO: compare names of new object and old object (if resource name is used for mapping)
-			componentName = watcherEvent.Body.(event.UpdateEvent).ObjectNew.GetName()
-		case event.DeleteEvent:
+			//componentName = watcherEvent.Body.(event.UpdateEvent).ObjectNew.GetName()
+		case "delete":
+			l.Logger.Info("DeleteEvent")
 			//TODO: check DeleteStateUnknown
-			componentName = watcherEvent.Body.(event.DeleteEvent).Object.GetName()
-		case event.GenericEvent:
-			componentName = watcherEvent.Body.(event.GenericEvent).Object.GetName()
+			//componentName = watcherEvent.Body.(event.DeleteEvent).Object.GetName()
+		case "generic":
+			l.Logger.Info("GenericEvent")
+			//componentName = watcherEvent.Body.(event.GenericEvent).Object.GetName()
 		default:
+			l.Logger.Info("Default Case - Should not happen")
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte("could not unmarshal watcher event body"))
 			return
