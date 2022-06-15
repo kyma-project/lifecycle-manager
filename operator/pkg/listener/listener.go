@@ -55,15 +55,36 @@ type SKREventsListener struct {
 
 const paramContractVersion = "contractVersion"
 
+func (l *SKREventsListener) ReceivedEvents() chan event.GenericEvent {
+	if l.receivedEvents == nil {
+		l.receivedEvents = make(chan event.GenericEvent)
+	}
+	return l.receivedEvents
+}
+
 func (l *SKREventsListener) Start(ctx context.Context) error {
-	//TODO: replace gorilla mux path routing with vanilla path routing
 	//routing
 	mainRouter := mux.NewRouter()
 	apiRouter := mainRouter.PathPrefix("/").Subrouter()
 
 	apiRouter.HandleFunc(
-		fmt.Sprintf("/v{%s}/skr/events", paramContractVersion),
-		l.transformWatcherEvents()).
+		fmt.Sprintf("/v{%s}/skr/events/create", paramContractVersion),
+		l.handleCreateEvent()).
+		Methods(http.MethodPost)
+
+	apiRouter.HandleFunc(
+		fmt.Sprintf("/v{%s}/skr/events/update", paramContractVersion),
+		l.handleCreateEvent()).
+		Methods(http.MethodPost)
+
+	apiRouter.HandleFunc(
+		fmt.Sprintf("/v{%s}/skr/events/delete", paramContractVersion),
+		l.handleCreateEvent()).
+		Methods(http.MethodPost)
+
+	apiRouter.HandleFunc(
+		fmt.Sprintf("/v{%s}/skr/events/generic", paramContractVersion),
+		l.handleCreateEvent()).
 		Methods(http.MethodPost)
 
 	//start web server
@@ -82,98 +103,87 @@ func (l *SKREventsListener) Start(ctx context.Context) error {
 	return server.Shutdown(ctx)
 }
 
-func (l *SKREventsListener) transformWatcherEvents() http.HandlerFunc {
+func (l *SKREventsListener) handleCreateEvent() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		params := mux.Vars(r)
-		contractVersion, ok := params[paramContractVersion]
-		if !ok {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("contract version could not be parsed"))
-			return
-		}
+		l.Logger.Info("CreateEvent")
 
-		b, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("could not read request body"))
-			return
-		}
-		l.Logger.Info(fmt.Sprintf("B Body: %s", b))
-
-		if contractVersion == "" {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("contract version cannot be empty"))
-			return
-		}
-
-		watcherEvent := &WatcherEvent{}
-		err = json.Unmarshal(b, watcherEvent)
-		if err != nil {
-			l.Logger.Info(fmt.Sprintf("ERROR  while unmarshaling%s", err))
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("could not unmarshal watcher event"))
-			return
-		}
-		l.Logger.Info(fmt.Sprintf("WatcherEvent: %#v", watcherEvent))
-
-		l.Logger.Info(fmt.Sprintf("EventType: %s", watcherEvent.EventType))
-		var componentName string
-		l.Logger.Info(fmt.Sprintf("Body: %s", watcherEvent.Body))
-
-		l.Logger.Info(fmt.Sprintf("Component Name: %s", componentName))
-		switch watcherEvent.EventType {
-		case "create":
-			l.Logger.Info("CreateEvent")
-			//component := unstructured.Unstructured{}
-			//if err = json.Unmarshal(watcherEvent.Body, &component); err != nil {
-			//	l.Logger.Error(err, "error transforming new component object")
-			//	return
-			//}
-			//l.Logger.Info(fmt.Sprintf("Component after CreateEvent: %#v", component))
-
-			//objectBytesNew, err := json.Marshal(watcherEvent.Body)
-			//if err != nil {
-			//	l.Logger.Error(err, "error transforming new component object")
-			//	return
-			//}
-
-			component := unstructured.Unstructured{}
-			if err = json.Unmarshal(watcherEvent.Body, &component); err != nil {
-				l.Logger.Error(err, "error transforming new component object")
-				return
-			}
-
-			//componentName = component.GetName()
-		case "update":
-			l.Logger.Info("UpdateEvent")
-			//TODO: compare names of new object and old object (if resource name is used for mapping)
-			//componentName = watcherEvent.Body.(event.UpdateEvent).ObjectNew.GetName()
-		case "delete":
-			l.Logger.Info("DeleteEvent")
-			//TODO: check DeleteStateUnknown
-			//componentName = watcherEvent.Body.(event.DeleteEvent).Object.GetName()
-		case "generic":
-			l.Logger.Info("GenericEvent")
-			//componentName = watcherEvent.Body.(event.GenericEvent).Object.GetName()
-		default:
-			l.Logger.Info("Default Case - Should not happen")
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("could not unmarshal watcher event body"))
-			return
-		}
+		//unmarshal received event
+		watcherEvent, skrEventObject := l.unmarshalEvent(w, r)
 
 		//add event to the channel
 		genericEvtObject := &GenericEventObject{}
-		genericEvtObject.SetName(componentName)
+		genericEvtObject.SetName(skrEventObject.GetName())
 		genericEvtObject.SetClusterName(watcherEvent.SkrClusterID)
 		l.receivedEvents <- event.GenericEvent{Object: genericEvtObject}
 		w.WriteHeader(http.StatusOK)
 	}
 }
 
-func (l *SKREventsListener) ReceivedEvents() chan event.GenericEvent {
-	if l.receivedEvents == nil {
-		l.receivedEvents = make(chan event.GenericEvent)
+func (l *SKREventsListener) handleUpdateEvent() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		l.Logger.Info("UpdateEvent")
+
+		//unmarshal received event
+		watcherEvent, skrEventObject := l.unmarshalEvent(w, r)
+
+		//add event to the channel
+		genericEvtObject := &GenericEventObject{}
+		genericEvtObject.SetName(skrEventObject.GetName())
+		genericEvtObject.SetClusterName(watcherEvent.SkrClusterID)
+		l.receivedEvents <- event.GenericEvent{Object: genericEvtObject}
+		w.WriteHeader(http.StatusOK)
 	}
-	return l.receivedEvents
+}
+
+func (l *SKREventsListener) handleDeleteEvent() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		l.Logger.Info("DeleteEvent")
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func (l *SKREventsListener) handleGenericEvent() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		l.Logger.Info("GenericEvent")
+		w.WriteHeader(http.StatusOK)
+	}
+}
+
+func (l *SKREventsListener) unmarshalEvent(w http.ResponseWriter, r *http.Request) (*WatcherEvent, unstructured.Unstructured) {
+	params := mux.Vars(r)
+	contractVersion, ok := params[paramContractVersion]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("contract version could not be parsed"))
+		return nil, unstructured.Unstructured{}
+	}
+
+	if contractVersion == "" {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("contract version cannot be empty"))
+		return nil, unstructured.Unstructured{}
+	}
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("could not read request body"))
+		return nil, unstructured.Unstructured{}
+	}
+
+	watcherEvent := &WatcherEvent{}
+	err = json.Unmarshal(body, watcherEvent)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("could not unmarshal watcher event"))
+		return nil, unstructured.Unstructured{}
+	}
+
+	skrEventObject := unstructured.Unstructured{}
+	if err = json.Unmarshal(watcherEvent.Body, &skrEventObject); err != nil {
+		l.Logger.Error(err, "error transforming new component object")
+		return nil, unstructured.Unstructured{}
+	}
+
+	return watcherEvent, skrEventObject
 }
