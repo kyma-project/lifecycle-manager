@@ -4,17 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	"io/ioutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"net/http"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 
-// WatcherEvent TODO: update Watcher Event fields
 type WatcherEvent struct {
 	SkrClusterID string `json:"skrClusterID"`
 	Body         []byte `json:"body"`
@@ -74,17 +74,17 @@ func (l *SKREventsListener) Start(ctx context.Context) error {
 
 	apiRouter.HandleFunc(
 		fmt.Sprintf("/v{%s}/skr/events/update", paramContractVersion),
-		l.handleCreateEvent()).
+		l.handleUpdateEvent()).
 		Methods(http.MethodPost)
 
 	apiRouter.HandleFunc(
 		fmt.Sprintf("/v{%s}/skr/events/delete", paramContractVersion),
-		l.handleCreateEvent()).
+		l.handleDeleteEvent()).
 		Methods(http.MethodPost)
 
 	apiRouter.HandleFunc(
 		fmt.Sprintf("/v{%s}/skr/events/generic", paramContractVersion),
-		l.handleCreateEvent()).
+		l.handleGenericEvent()).
 		Methods(http.MethodPost)
 
 	//start web server
