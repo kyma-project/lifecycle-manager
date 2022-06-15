@@ -15,27 +15,28 @@ type ComponentsAssociatedWithTemplate struct {
 	TemplateChannel    operatorv1alpha1.Channel
 }
 
-func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, componentName string, channel operatorv1alpha1.Channel) {
+func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, componentName string, channel operatorv1alpha1.Channel, kymaName string) {
 	labelMap := unstructuredCompCR.GetLabels()
 	if labelMap == nil {
 		labelMap = make(map[string]string)
 	}
 	labelMap[labels.ControllerName] = componentName
 	labelMap[labels.Channel] = string(channel)
+	labelMap[labels.ComponentOwner] = kymaName
 	unstructuredCompCR.SetLabels(labelMap)
 }
 
 func CopyComponentSettingsToUnstructuredFromResource(resource *unstructured.Unstructured, component operatorv1alpha1.ComponentType) {
 	if len(component.Settings) > 0 {
-		var charts []map[string]interface{}
+		var customStates []map[string]interface{}
 		for _, setting := range component.Settings {
-			chart := map[string]interface{}{}
+			customState := map[string]interface{}{}
 			for key, value := range setting {
-				chart[key] = value
+				customState[key] = value
 			}
-			charts = append(charts, chart)
+			customStates = append(customStates, customState)
 		}
-		resource.Object["spec"].(map[string]interface{})["charts"] = charts
+		resource.Object["spec"].(map[string]interface{})["customStates"] = customStates
 	}
 }
 
