@@ -19,7 +19,10 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"golang.org/x/time/rate"
+	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/ratelimiter"
 	"strings"
 	"time"
 
@@ -53,13 +56,12 @@ import (
 // KymaReconciler reconciles a Kyma object
 type KymaReconciler struct {
 	client.Client
-	Scheme   *runtime.Scheme
-	Recorder record.EventRecorder
+	Scheme       *runtime.Scheme
+	Recorder     record.EventRecorder
+	WorkersCount int
+	RateQPS      int
+	RateBurst    int
 }
-
-const (
-	DefaultWorkersCount = 4
-)
 
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch;create;update;patch;onEvent;delete
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/status,verbs=get;update;patch
@@ -374,13 +376,13 @@ func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager
 		informers.Start(ctx.Done())
 		return nil
 	}))
+
 	if err != nil {
 		return err
 	}
 
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&operatorv1alpha1.Kyma{}).WithOptions(controller.Options{
-		MaxConcurrentReconciles: DefaultWorkersCount,
-	})
+		MaxConcurrentReconciles: r.WorkersCount, RateLimiter: r.CustomRateLimiter()})
 
 	//TODO maybe replace with native REST Handling
 	cs, err := kubernetes.NewForConfig(mgr.GetConfig())
@@ -438,4 +440,10 @@ func (r *KymaReconciler) TemplateChangeHandler() *watch.TemplateChangeHandler {
 
 func (r *KymaReconciler) KymaStatus() *status.Kyma {
 	return &status.Kyma{StatusWriter: r.Status(), EventRecorder: r.Recorder}
+}
+
+func (r *KymaReconciler) CustomRateLimiter() ratelimiter.RateLimiter {
+	return workqueue.NewMaxOfRateLimiter(
+		workqueue.NewItemExponentialFailureRateLimiter(1*time.Second, 1000*time.Second),
+		&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(r.RateQPS), r.RateBurst)})
 }

@@ -22,13 +22,18 @@ spec:
           name: https
         resources:
           limits:
-            cpu: 4000m
-            memory: 4Gi
+            cpu: 500m
+            memory: 512Mi
           requests:
-            cpu: 200m
-            memory: 2Gi
+            cpu: 5m
+            memory: 64Mi
       - name: manager
         args:
         - "--health-probe-bind-address=:8081"
         - "--metrics-bind-address=127.0.0.1:8080"
         - "--leader-elect"
+        - "--k8s-client-qps=150"
+        - "--k8s-client-burst=150"
+        - "--workers-count=20"
+        - "--rate-qps=30"
+        - "--rate-burst=200"

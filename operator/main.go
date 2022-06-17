@@ -55,11 +55,22 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
+	var clientQPS float64
+	var clientBurst int
+	var workersCount int
+	var rateQPS int
+	var rateBurst int
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
+	flag.Float64Var(&clientQPS, "k8s-client-qps", 150, "kubernetes client QPS")
+	flag.IntVar(&clientBurst, "k8s-client-burst", 150, "kubernetes client Burst")
+	flag.IntVar(&workersCount, "workers-count", 20, "workers count")
+	flag.IntVar(&rateQPS, "rate-qps", 30, "rate qps")
+	flag.IntVar(&rateBurst, "rate-burst", 200, "rate burst")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+
 	opts := zap.Options{
 		Development: true,
 	}
@@ -68,7 +79,11 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+	config := ctrl.GetConfigOrDie()
+	config.QPS = float32(clientQPS)
+	config.Burst = clientBurst
+
+	mgr, err := ctrl.NewManager(config, ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
 		Port:                   9443,
@@ -85,15 +100,19 @@ func main() {
 			},
 		}),
 	})
+
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
 
 	if err = (&controllers.KymaReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("kyma-operator"),
+		Client:       mgr.GetClient(),
+		Scheme:       mgr.GetScheme(),
+		WorkersCount: workersCount,
+		RateQPS:      rateQPS,
+		RateBurst:    rateBurst,
+		Recorder:     mgr.GetEventRecorderFor("kyma-operator"),
 	}).SetupWithManager(setupLog, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
