@@ -9,42 +9,13 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 
 type WatcherEvent struct {
 	SkrClusterID string `json:"skrClusterID"`
 	Body         []byte `json:"body"`
-	EventType    string `json:"eventType"`
-}
-
-type GenericEventObject struct {
-	metav1.TypeMeta
-	metav1.ObjectMeta
-}
-
-// DeepCopyObject TODO: use kube builder to generate this
-func (g *GenericEventObject) DeepCopyObject() runtime.Object {
-	if c := g.DeepCopy(); c != nil {
-		return c
-	}
-	return nil
-}
-
-// DeepCopy TODO: use kube builder to generate this
-func (g *GenericEventObject) DeepCopy() *GenericEventObject {
-
-	if g == nil {
-		return nil
-	}
-	ng := new(GenericEventObject)
-	*ng = *g
-	ng.TypeMeta = g.TypeMeta
-	g.ObjectMeta.DeepCopyInto(&ng.ObjectMeta)
-	return ng
 }
 
 type SKREventsListener struct {
@@ -108,12 +79,12 @@ func (l *SKREventsListener) handleCreateEvent() http.HandlerFunc {
 		l.Logger.Info("CreateEvent")
 
 		//unmarshal received event
-		watcherEvent, skrEventObject := l.unmarshalEvent(w, r)
+		skrClusterID, skrEventObject := l.unmarshalEvent(w, r)
 
 		//add event to the channel
-		genericEvtObject := &GenericEventObject{}
+		genericEvtObject := &unstructured.Unstructured{}
 		genericEvtObject.SetName(skrEventObject.GetName())
-		genericEvtObject.SetClusterName(watcherEvent.SkrClusterID)
+		genericEvtObject.SetClusterName(skrClusterID)
 		l.receivedEvents <- event.GenericEvent{Object: genericEvtObject}
 		w.WriteHeader(http.StatusOK)
 	}
@@ -124,12 +95,12 @@ func (l *SKREventsListener) handleUpdateEvent() http.HandlerFunc {
 		l.Logger.Info("UpdateEvent")
 
 		//unmarshal received event
-		watcherEvent, skrEventObject := l.unmarshalEvent(w, r)
+		skrClusterID, skrEventObject := l.unmarshalEvent(w, r)
 
 		//add event to the channel
-		genericEvtObject := &GenericEventObject{}
+		genericEvtObject := &unstructured.Unstructured{}
 		genericEvtObject.SetName(skrEventObject.GetName())
-		genericEvtObject.SetClusterName(watcherEvent.SkrClusterID)
+		genericEvtObject.SetClusterName(skrClusterID)
 		l.receivedEvents <- event.GenericEvent{Object: genericEvtObject}
 		w.WriteHeader(http.StatusOK)
 	}
@@ -149,26 +120,26 @@ func (l *SKREventsListener) handleGenericEvent() http.HandlerFunc {
 	}
 }
 
-func (l *SKREventsListener) unmarshalEvent(w http.ResponseWriter, r *http.Request) (*WatcherEvent, unstructured.Unstructured) {
+func (l *SKREventsListener) unmarshalEvent(w http.ResponseWriter, r *http.Request) (string, unstructured.Unstructured) {
 	params := mux.Vars(r)
 	contractVersion, ok := params[paramContractVersion]
 	if !ok {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("contract version could not be parsed"))
-		return nil, unstructured.Unstructured{}
+		return "", unstructured.Unstructured{}
 	}
 
 	if contractVersion == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("contract version cannot be empty"))
-		return nil, unstructured.Unstructured{}
+		return "", unstructured.Unstructured{}
 	}
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("could not read request body"))
-		return nil, unstructured.Unstructured{}
+		return "", unstructured.Unstructured{}
 	}
 
 	watcherEvent := &WatcherEvent{}
@@ -176,14 +147,14 @@ func (l *SKREventsListener) unmarshalEvent(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("could not unmarshal watcher event"))
-		return nil, unstructured.Unstructured{}
+		return "", unstructured.Unstructured{}
 	}
 
 	skrEventObject := unstructured.Unstructured{}
 	if err = json.Unmarshal(watcherEvent.Body, &skrEventObject); err != nil {
 		l.Logger.Error(err, "error transforming new component object")
-		return nil, unstructured.Unstructured{}
+		return "", unstructured.Unstructured{}
 	}
 
-	return watcherEvent, skrEventObject
+	return watcherEvent.SkrClusterID, skrEventObject
 }

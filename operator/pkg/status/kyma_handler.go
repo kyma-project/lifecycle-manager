@@ -3,10 +3,11 @@ package status
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"time"
 
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
@@ -50,7 +51,12 @@ func (h *Kyma) UpdateStatus(
 
 }
 
-func (h *Kyma) AddReadyConditionForObjects(kymaObj *operatorv1alpha1.Kyma, typesByTemplate []util.ComponentsAssociatedWithTemplate, conditionStatus operatorv1alpha1.KymaConditionStatus, message string) {
+func (h *Kyma) AddReadyConditionForObjects(
+	kymaObj *operatorv1alpha1.Kyma,
+	typesByTemplate []util.ComponentsAssociatedWithTemplate,
+	conditionStatus operatorv1alpha1.KymaConditionStatus,
+	message string,
+) {
 	status := &kymaObj.Status
 	for _, typeByTemplate := range typesByTemplate {
 		condition, exists := h.GetReadyConditionForComponent(kymaObj, typeByTemplate.ComponentName)
