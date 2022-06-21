@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"github.com/kyma-project/kyma-operator/operator/pkg/release/template"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"os"
@@ -91,9 +92,10 @@ func main() {
 	}
 
 	if err = (&controllers.KymaReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("kyma-operator"),
+		TemplateCache: template.NewInMemoryCache(),
+		Client:        mgr.GetClient(),
+		Scheme:        mgr.GetScheme(),
+		Recorder:      mgr.GetEventRecorderFor("kyma-operator"),
 	}).SetupWithManager(setupLog, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)

@@ -1,12 +1,9 @@
 package util
 
 import (
-	"fmt"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
-	"github.com/kyma-project/kyma-operator/operator/pkg/release"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type ComponentsAssociatedWithTemplate struct {
@@ -37,18 +34,4 @@ func CopyComponentSettingsToUnstructuredFromResource(resource *unstructured.Unst
 		}
 		resource.Object["spec"].(map[string]interface{})["charts"] = charts
 	}
-}
-
-func GetUnstructuredComponentFromTemplate(templates release.TemplateLookupResultsByName, componentName string, kyma *operatorv1alpha1.Kyma) (*unstructured.Unstructured, error) {
-	lookupResult := templates[componentName]
-	if lookupResult == nil {
-		return nil, fmt.Errorf("could not find template %s for resource %s",
-			componentName, client.ObjectKeyFromObject(kyma))
-	}
-
-	desiredComponentStruct := &lookupResult.Template.Spec.Data
-	desiredComponentStruct.SetName(componentName + kyma.Name)
-	desiredComponentStruct.SetNamespace(kyma.GetNamespace())
-
-	return desiredComponentStruct.DeepCopy(), nil
 }

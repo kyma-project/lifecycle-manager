@@ -92,7 +92,7 @@ func (s moduleTemplateNamespaceLister) Get(name string) (*v1alpha1.ModuleTemplat
 		return nil, err
 	}
 	if !exists {
-		return nil, errors.NewNotFound(v1alpha1.Resource("moduletemplate"), name)
+		return nil, errors.NewNotFound(v1alpha1.Resource("template"), name)
 	}
 	return obj.(*v1alpha1.ModuleTemplate), nil
 }

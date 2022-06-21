@@ -2,9 +2,9 @@ package watch
 
 import (
 	"context"
-
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
+	"github.com/kyma-project/kyma-operator/operator/pkg/release/template"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -14,6 +14,7 @@ import (
 )
 
 type TemplateChangeHandler struct {
+	Cache template.Cache
 	client.Reader
 	client.StatusWriter
 	record.EventRecorder
@@ -23,21 +24,25 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 	logger := log.FromContext(ctx).WithName("template-change-detection")
 	return func(o client.Object) []reconcile.Request {
 		requests := make([]reconcile.Request, 0)
-		template := &v1alpha1.ModuleTemplate{}
+		moduleTemplate := &v1alpha1.ModuleTemplate{}
 
-		if err := h.Get(ctx, client.ObjectKeyFromObject(o), template); err != nil {
+		if err := h.Get(ctx, client.ObjectKeyFromObject(o), moduleTemplate); err != nil {
 			return requests
 		}
 
-		l := template.GetLabels()
+		l := moduleTemplate.GetLabels()
 		managedBy, managedByPresent := l[labels.ManagedBy]
 		controller, controllerLabelPresent := l[labels.ControllerName]
-		channel := template.Spec.Channel
+		channel := moduleTemplate.Spec.Channel
 		if !controllerLabelPresent || controller == "" ||
 			channel == "" ||
 			!managedByPresent || managedBy != "kyma-operator" {
 			// limit cache from managedBy
 			return requests
+		}
+
+		if err := h.Cache.Delete(template.GetTemplateCacheKey(controller, channel)); err != nil {
+			panic(err)
 		}
 
 		kymas := &v1alpha1.KymaList{}
@@ -47,8 +52,8 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 		}
 
 		templateNamespacedName := types.NamespacedName{
-			Namespace: template.GetNamespace(),
-			Name:      template.GetName(),
+			Namespace: moduleTemplate.GetNamespace(),
+			Name:      moduleTemplate.GetName(),
 		}
 		for _, kyma := range kymas.Items {
 			globalChannelMatch := kyma.Spec.Channel == channel

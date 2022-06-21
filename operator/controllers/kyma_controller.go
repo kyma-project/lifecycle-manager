@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-project/kyma-operator/operator/pkg/release/template"
 	"strings"
 	"time"
 
@@ -51,6 +52,7 @@ import (
 
 // KymaReconciler reconciles a Kyma object
 type KymaReconciler struct {
+	TemplateCache template.Cache
 	client.Client
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
@@ -122,7 +124,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, logger *logr
 	logger.Info("processing " + kyma.Name)
 
 	// fetch templates
-	templates, err := release.GetTemplates(ctx, r, kyma)
+	templates, err := template.GetTemplates(ctx, r, kyma, r.TemplateCache)
 	if err != nil {
 		return r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateError, "templates could not be fetched")
 	}
@@ -153,13 +155,13 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, logger *logr
 }
 
 func (r *KymaReconciler) HandleDeletingState(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) (bool, error) {
-	templates, err := release.GetTemplates(ctx, r, kyma)
+	templates, err := template.GetTemplates(ctx, r, kyma, r.TemplateCache)
 	if err != nil {
 		return false, fmt.Errorf("deletion cannot proceed - templates could not be fetched: %w", err)
 	}
 
 	for _, component := range kyma.Spec.Components {
-		actualComponentStruct, err := util.GetUnstructuredComponentFromTemplate(templates, component.Name, kyma)
+		actualComponentStruct, err := template.GetUnstructuredComponentFromTemplate(templates, component.Name, kyma)
 		if err != nil {
 			return false, err
 		}
@@ -194,12 +196,12 @@ func (r *KymaReconciler) HandleReadyState(ctx context.Context, logger *logr.Logg
 
 func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, logger *logr.Logger, kyma *operatorv1alpha1.Kyma) error {
 	// outdated template
-	templates, err := release.GetTemplates(ctx, r, kyma)
+	templates, err := template.GetTemplates(ctx, r, kyma, r.TemplateCache)
 	if err != nil {
 		logger.Error(err, "error fetching fetching templates")
 		return r.KymaStatus().UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError, err.Error())
 	}
-	if release.AreTemplatesOutdated(logger, kyma, templates) {
+	if template.AreTemplatesOutdated(logger, kyma, templates) {
 		return r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateProcessing, "template update")
 	}
 
@@ -227,7 +229,7 @@ func (r *KymaReconciler) updateKymaStatus(ctx context.Context, kyma *operatorv1a
 	return r.KymaStatus().UpdateStatus(ctx, kyma, state, message)
 }
 
-func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Context, kymaObj *operatorv1alpha1.Kyma, templates release.TemplateLookupResultsByName) ([]util.ComponentsAssociatedWithTemplate, error) {
+func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Context, kymaObj *operatorv1alpha1.Kyma, templates template.LookupResultsByName) ([]util.ComponentsAssociatedWithTemplate, error) {
 	kymaObjectKey := client.ObjectKey{Name: kymaObj.Name, Namespace: kymaObj.Namespace}
 	namespacedName := kymaObjectKey.String()
 	logger := log.FromContext(ctx).WithName(namespacedName)
@@ -237,12 +239,12 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 		return nil, fmt.Errorf("no component specified for resource %s", namespacedName)
 	}
 
-	templatesOutdated := release.AreTemplatesOutdated(&logger, kymaObj, templates)
+	templatesOutdated := template.AreTemplatesOutdated(&logger, kymaObj, templates)
 
 	var componentNamesAffected []util.ComponentsAssociatedWithTemplate
 	for _, component := range kymaObj.Spec.Components {
 		lookupResult := templates[component.Name]
-		actualComponentStruct, err := util.GetUnstructuredComponentFromTemplate(templates, component.Name, kymaObj)
+		actualComponentStruct, err := template.GetUnstructuredComponentFromTemplate(templates, component.Name, kymaObj)
 		if err != nil {
 			return nil, err
 		}
@@ -310,7 +312,7 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 	return componentNamesAffected, nil
 }
 
-func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, kyma *operatorv1alpha1.Kyma, templates release.TemplateLookupResultsByName) error {
+func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, kyma *operatorv1alpha1.Kyma, templates template.LookupResultsByName) error {
 	logger := log.FromContext(ctx)
 	affectedComponents, err := r.CreateOrUpdateComponentsFromTemplate(ctx, kyma, templates)
 
@@ -336,11 +338,11 @@ func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, kyma *oper
 	return nil
 }
 
-func (r *KymaReconciler) checkAndUpdateComponentConditions(ctx context.Context, kyma *operatorv1alpha1.Kyma, templates release.TemplateLookupResultsByName) (bool, error) {
+func (r *KymaReconciler) checkAndUpdateComponentConditions(ctx context.Context, kyma *operatorv1alpha1.Kyma, templates template.LookupResultsByName) (bool, error) {
 	updateRequired := false
 	for _, component := range kyma.Spec.Components {
 
-		actualComponentStruct, err := util.GetUnstructuredComponentFromTemplate(templates, component.Name, kyma)
+		actualComponentStruct, err := template.GetUnstructuredComponentFromTemplate(templates, component.Name, kyma)
 		if err != nil {
 			return false, err
 		}
@@ -433,7 +435,12 @@ func (r *KymaReconciler) ComponentChangeHandler() *watch.ComponentChangeHandler 
 }
 
 func (r *KymaReconciler) TemplateChangeHandler() *watch.TemplateChangeHandler {
-	return &watch.TemplateChangeHandler{Reader: r.Client, StatusWriter: r.Status(), EventRecorder: r.Recorder}
+	return &watch.TemplateChangeHandler{
+		Reader:        r.Client,
+		StatusWriter:  r.Status(),
+		EventRecorder: r.Recorder,
+		Cache:         r.TemplateCache,
+	}
 }
 
 func (r *KymaReconciler) KymaStatus() *status.Kyma {
