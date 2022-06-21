@@ -166,6 +166,7 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, logger *logr.L
 
 		if err = r.Get(ctx, client.ObjectKeyFromObject(actualComponentStruct), actualComponentStruct); err == nil {
 			// component CR still exists
+
 			logger.Info(fmt.Sprintf("deletion cannot proceed - waiting for component CR %s to be deleted for %s",
 				actualComponentStruct.GetName(), client.ObjectKeyFromObject(kyma)))
 			return true, nil
@@ -317,7 +318,11 @@ func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, kyma *oper
 		message := fmt.Sprintf("Component CR creation error: %s", err.Error())
 		logger.Info(message)
 		r.Recorder.Event(kyma, "Warning", "ReconciliationFailed", fmt.Sprintf("Reconciliation failed: %s", message))
-		return r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateError, message)
+		statusErr := r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateError, message)
+		if statusErr != nil {
+			return statusErr
+		}
+		return err
 	}
 
 	if len(affectedComponents) > 0 {
@@ -416,7 +421,9 @@ func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager
 		handler.EnqueueRequestsFromMapFunc(r.TemplateChangeHandler().Watch(context.TODO())),
 		builder.WithPredicates(predicate.GenerationChangedPredicate{}))
 
-	index.NewTemplateChannelIndex().IndexWith(context.TODO(), mgr.GetFieldIndexer())
+	if err := index.TemplateChannel().With(context.TODO(), mgr.GetFieldIndexer()); err != nil {
+		return err
+	}
 
 	return controllerBuilder.Complete(r)
 }

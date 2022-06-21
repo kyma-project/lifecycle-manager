@@ -43,12 +43,12 @@ func New(old, new v1alpha1.Channel, adapter adapter.Eventing) ChannelSwitch {
 	}
 	rel.inProgress = func() {
 		if old != new {
-			adapter("Normal", "ChannelUpdateStart", fmt.Sprintf("channel update: %s -> %s", rel.old, rel.new))
+			adapter("Normal", "ChannelUpdateStart", fmt.Sprintf("defaultChannel update: %s -> %s", rel.old, rel.new))
 		}
 	}
 	rel.success = func() {
 		if old != new {
-			adapter("Normal", "ChannelUpdateFinish", fmt.Sprintf("channel update to %s successful!", rel.new))
+			adapter("Normal", "ChannelUpdateFinish", fmt.Sprintf("defaultChannel update to %s successful!", rel.new))
 		}
 	}
 	return rel

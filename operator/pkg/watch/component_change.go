@@ -50,7 +50,7 @@ func (h *ComponentChangeHandler) ComponentChange(ctx context.Context) func(event
 			return
 		}
 
-		if componentNew.Object[Status] == nil || componentOld.Object[Status] == nil {
+		if componentNew.Object[Status] == nil {
 			return
 		}
 
@@ -64,11 +64,19 @@ func (h *ComponentChangeHandler) ComponentChange(ctx context.Context) func(event
 			logger.Error(err, "error getting Kyma owner")
 		}
 
-		oldState, ok := componentOld.Object[Status].(map[string]interface{})[State]
-		if !ok {
-			logger.Error(errors.New("state from old component object could not be interpreted"), "missing state")
+		var oldState, newState interface{}
+		var ok bool
+
+		if componentOld.Object[Status] != nil {
+			oldState, ok = componentOld.Object[Status].(map[string]interface{})[State]
+			if !ok {
+				logger.Error(errors.New("state from old component object could not be interpreted"), "missing state")
+			}
+		} else {
+			oldState = ""
 		}
-		newState, ok := componentNew.Object[Status].(map[string]interface{})[State]
+
+		newState, ok = componentNew.Object[Status].(map[string]interface{})[State]
 		if !ok {
 			logger.Error(errors.New("state from new component object could not be interpreted"), "missing state")
 		}
