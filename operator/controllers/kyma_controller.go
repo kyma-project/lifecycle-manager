@@ -167,12 +167,6 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, logger *logr.L
 		if err = r.Get(ctx, client.ObjectKeyFromObject(actualComponentStruct), actualComponentStruct); err == nil {
 			// component CR still exists
 
-			//TODO remove skip for hardcoded components
-			if strings.Contains(actualComponentStruct.GetName(), "istio") ||
-				strings.Contains(actualComponentStruct.GetName(), "serverless") {
-				continue
-			}
-
 			logger.Info(fmt.Sprintf("deletion cannot proceed - waiting for component CR %s to be deleted for %s",
 				actualComponentStruct.GetName(), client.ObjectKeyFromObject(kyma)))
 			return true, nil
