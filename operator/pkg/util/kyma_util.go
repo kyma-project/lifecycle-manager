@@ -27,16 +27,8 @@ func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, compone
 }
 
 func CopyComponentSettingsToUnstructuredFromResource(resource *unstructured.Unstructured, component operatorv1alpha1.ComponentType) {
-	if len(component.Settings) > 0 {
-		var customStates []map[string]interface{}
-		for _, setting := range component.Settings {
-			customState := map[string]interface{}{}
-			for key, value := range setting {
-				customState[key] = value
-			}
-			customStates = append(customStates, customState)
-		}
-		resource.Object["spec"].(map[string]interface{})["customStates"] = customStates
+	if len(component.CustomStates) > 0 {
+		resource.Object["spec"].(map[string]interface{})["customStates"] = component.CustomStates
 	}
 }
 

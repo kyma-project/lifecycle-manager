@@ -8,7 +8,7 @@ spec:
   components:
     - name: manifest
       channel: stable
-      settings:
+      customStates:
         - apiVersion: operator.kyma-project.io/v1alpha1
           kind: Kyma
           name: kyma-sample
