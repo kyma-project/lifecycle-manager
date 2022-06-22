@@ -22,14 +22,14 @@ import (
 
 const KymaKind = "Kyma"
 
-// KymaSettings defines some component specific settings
-type KymaSettings map[string]string
+// CustomStates defines some component specific settings
+type CustomStates map[string]string
 
 // ComponentType defines the components to be installed
 type ComponentType struct {
-	Name     string         `json:"name"`
-	Channel  Channel        `json:"channel,omitempty"`
-	Settings []KymaSettings `json:"settings,omitempty"`
+	Name         string         `json:"name"`
+	Channel      Channel        `json:"channel,omitempty"`
+	CustomStates []CustomStates `json:"customStates,omitempty"`
 }
 
 // KymaSpec defines the desired state of Kyma
