@@ -169,6 +169,7 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, logger *logr.L
 
 		if err = r.Get(ctx, client.ObjectKeyFromObject(actualComponentStruct), actualComponentStruct); err == nil {
 			// component CR still exists
+
 			logger.Info(fmt.Sprintf("deletion cannot proceed - waiting for component CR %s to be deleted for %s",
 				actualComponentStruct.GetName(), client.ObjectKeyFromObject(kyma)))
 			return true, nil
@@ -258,7 +259,7 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 			util.CopyComponentSettingsToUnstructuredFromResource(actualComponentStruct, component)
 
 			// set labels
-			util.SetComponentCRLabels(actualComponentStruct, component.Name, channel)
+			util.SetComponentCRLabels(actualComponentStruct, component.Name, channel, kymaObj.Name)
 			// set owner reference
 			if err := controllerutil.SetOwnerReference(kymaObj, actualComponentStruct, r.Scheme); err != nil {
 				return nil, fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w", component.Name, namespacedName, err)
@@ -291,7 +292,7 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 				util.CopyComponentSettingsToUnstructuredFromResource(actualComponentStruct, component)
 
 				// set labels
-				util.SetComponentCRLabels(actualComponentStruct, component.Name, channel)
+				util.SetComponentCRLabels(actualComponentStruct, component.Name, channel, kymaObj.Name)
 
 				// update the spec
 				actualComponentStruct.Object["spec"] = lookupResult.Template.Spec.Data.Object["spec"]
@@ -320,7 +321,11 @@ func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, kyma *oper
 		message := fmt.Sprintf("Component CR creation error: %s", err.Error())
 		logger.Info(message)
 		r.Recorder.Event(kyma, "Warning", "ReconciliationFailed", fmt.Sprintf("Reconciliation failed: %s", message))
-		return r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateError, message)
+		statusErr := r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateError, message)
+		if statusErr != nil {
+			return statusErr
+		}
+		return err
 	}
 
 	if len(affectedComponents) > 0 {
@@ -425,7 +430,9 @@ func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager
 	)
 	setupLog.Info("initialized listener to watch for generic events from the SKR watcher")
 
-	index.NewTemplateChannelIndex().IndexWith(context.TODO(), mgr.GetFieldIndexer())
+	if err := index.TemplateChannel().With(context.TODO(), mgr.GetFieldIndexer()); err != nil {
+		return err
+	}
 
 	return controllerBuilder.Complete(r)
 }
