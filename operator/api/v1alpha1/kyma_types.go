@@ -69,6 +69,8 @@ type KymaStatus struct {
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
+	ObservedRemoteGeneration int64 `json:"observedRemoteGeneration,omitempty"`
+
 	// Active Channel
 	// +optional
 	ActiveChannel Channel `json:"activeChannel,omitempty"`

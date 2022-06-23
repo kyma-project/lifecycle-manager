@@ -19,6 +19,10 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-project/kyma-operator/operator/pkg/remote"
+	v1 "k8s.io/api/core/v1"
+	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"strings"
 	"time"
 
@@ -60,6 +64,7 @@ type KymaReconciler struct {
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/finalizers,verbs=update
 //+kubebuilder:rbac:groups="",resources=events,verbs=create;patch;get;list;watch
+//+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=moduletemplates,verbs=get;list;watch;create;update;patch;onEvent;delete
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=moduletemplates/finalizers,verbs=update
 
@@ -79,7 +84,6 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		logger.Info(req.NamespacedName.String() + " got deleted!")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	kyma = *kyma.DeepCopy()
 
 	// check if deletionTimestamp is set, retry until it gets fully deleted
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != operatorv1alpha1.KymaStateDeleting {
@@ -91,6 +95,18 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	if !controllerutil.ContainsFinalizer(&kyma, labels.Finalizer) {
 		controllerutil.AddFinalizer(&kyma, labels.Finalizer)
 		return ctrl.Result{}, r.Update(ctx, &kyma)
+	}
+
+	remoteClient, err := r.InitializeRemoteClient(ctx, &kyma)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	remoteKyma, err := r.FetchRemoteKyma(ctx, remoteClient, &kyma)
+	if err != nil {
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, err
+	}
+	if synchronizationRequiresRequeue, err := r.SynchronizeRemoteKyma(ctx, remoteClient, &kyma, remoteKyma); err != nil || synchronizationRequiresRequeue {
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, err
 	}
 
 	// state handling
@@ -108,7 +124,8 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	case operatorv1alpha1.KymaStateError:
 		return ctrl.Result{RequeueAfter: 3 * time.Second}, r.HandleErrorState(ctx, &logger, &kyma)
 	case operatorv1alpha1.KymaStateReady:
-		return ctrl.Result{}, r.HandleReadyState(ctx, &logger, &kyma)
+		//TODO Adjust again
+		return ctrl.Result{RequeueAfter: 20 * time.Second}, r.HandleReadyState(ctx, &logger, &kyma)
 	}
 
 	return ctrl.Result{}, nil
@@ -421,6 +438,9 @@ func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager
 		handler.EnqueueRequestsFromMapFunc(r.TemplateChangeHandler().Watch(context.TODO())),
 		builder.WithPredicates(predicate.GenerationChangedPredicate{}))
 
+	// here we define a watch on secrets for the kyma operator so that the cache is picking up changes
+	controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: &v1.Secret{}}, handler.Funcs{})
+
 	if err := index.TemplateChannel().With(context.TODO(), mgr.GetFieldIndexer()); err != nil {
 		return err
 	}
@@ -438,4 +458,104 @@ func (r *KymaReconciler) TemplateChangeHandler() *watch.TemplateChangeHandler {
 
 func (r *KymaReconciler) KymaStatus() *status.Kyma {
 	return &status.Kyma{StatusWriter: r.Status(), EventRecorder: r.Recorder}
+}
+
+func (r *KymaReconciler) InitializeRemoteClient(ctx context.Context, kyma *operatorv1alpha1.Kyma) (client.Client, error) {
+	cc := remote.ClusterClient{DefaultClient: r.Client}
+
+	rc, err := cc.GetRestConfigFromSecret(ctx, kyma.GetName(), kyma.GetNamespace())
+	if err != nil {
+		r.Recorder.Event(kyma, "Warning", err.Error(), "Rest Config could not be fetched")
+		return nil, err
+	}
+
+	remoteClient, err := cc.GetNewClient(rc, client.Options{Scheme: r.Scheme})
+	if err != nil {
+		r.Recorder.Event(kyma, "Warning", err.Error(), "Remote Client could not be created")
+		return nil, err
+	}
+
+	return remoteClient, nil
+}
+
+func (r *KymaReconciler) FetchRemoteKyma(ctx context.Context, remoteClient client.Client, kyma *operatorv1alpha1.Kyma) (*operatorv1alpha1.Kyma, error) {
+	remoteKyma := &operatorv1alpha1.Kyma{}
+	err := remoteClient.Get(ctx, client.ObjectKeyFromObject(kyma), remoteKyma)
+
+	if meta.IsNoMatchError(err) {
+		r.Recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
+		crd := v1extensions.CustomResourceDefinition{}
+		err = r.Get(ctx, client.ObjectKey{Name: fmt.Sprintf("%s.%s", "kymas", operatorv1alpha1.GroupVersion.Group)}, &crd)
+		if err != nil {
+			return nil, err
+		}
+		remoteCrd := v1extensions.CustomResourceDefinition{}
+		remoteCrd.Name = crd.Name
+		remoteCrd.Namespace = crd.Namespace
+		remoteCrd.Spec = crd.Spec
+		err = remoteClient.Create(ctx, &remoteCrd)
+		if err != nil {
+			return nil, err
+		}
+		r.Recorder.Event(kyma, "Normal", "CRDInstallation", "CRDs were installed to SKR")
+		return nil, err
+	}
+
+	if errors.IsNotFound(err) {
+		remoteKyma.Name = kyma.Name
+		remoteKyma.Namespace = kyma.Namespace
+		remoteKyma.Spec = *kyma.Spec.DeepCopy()
+		err = remoteClient.Create(ctx, remoteKyma)
+		if err != nil {
+			r.Recorder.Event(remoteKyma, "Warning", err.Error(), "Client could not create remote Kyma")
+			return nil, err
+		}
+
+		return remoteKyma, r.Status().Update(ctx, kyma)
+	} else if err != nil {
+		r.Recorder.Event(kyma, "Warning", err.Error(), "Client could not fetch remote Kyma")
+		return nil, err
+	}
+
+	return remoteKyma, err
+}
+
+func (r *KymaReconciler) SynchronizeRemoteKyma(ctx context.Context, remoteClient client.Client, kyma *operatorv1alpha1.Kyma, remoteKyma *operatorv1alpha1.Kyma) (bool, error) {
+	// check finalizer
+	if !controllerutil.ContainsFinalizer(remoteKyma, labels.Finalizer) {
+		controllerutil.AddFinalizer(remoteKyma, labels.Finalizer)
+	}
+
+	if remoteKyma.Status.ObservedRemoteGeneration != remoteKyma.GetGeneration() {
+		kyma.Spec = remoteKyma.Spec
+		err := r.Update(ctx, kyma)
+		if err != nil {
+			r.Recorder.Event(remoteKyma, "Warning", err.Error(), "Client could not update Control Plane Kyma")
+		}
+		remoteKyma.Status.ObservedRemoteGeneration = remoteKyma.GetGeneration()
+		err = remoteClient.Status().Update(ctx, remoteKyma)
+		if err != nil {
+			return true, err
+		}
+	}
+
+	if remoteKyma.Status.State != kyma.Status.State {
+		remoteKyma.Status.State = kyma.Status.State
+		err := remoteClient.Status().Update(ctx, remoteKyma)
+		if err != nil {
+			return true, err
+		}
+	}
+
+	lastSyncDate := time.Now().Format(time.RFC3339)
+	if remoteKyma.Annotations == nil {
+		remoteKyma.Annotations = make(map[string]string)
+	}
+	remoteKyma.Annotations[labels.LastSync] = lastSyncDate
+	err := remoteClient.Update(ctx, remoteKyma)
+	if err != nil {
+		return true, err
+	}
+
+	return false, nil
 }

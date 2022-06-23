@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"go.uber.org/zap/zapcore"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"os"
@@ -27,6 +28,7 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -36,8 +38,11 @@ import (
 
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/controllers"
+	operatorLabels "github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	//+kubebuilder:scaffold:imports
 )
+
+const name = "kyma-operator"
 
 var (
 	scheme   = runtime.NewScheme()
@@ -46,8 +51,8 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-
 	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(v1extensions.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -62,12 +67,16 @@ func main() {
 			"Enabling this will ensure there is only one active controller manager.")
 	opts := zap.Options{
 		Development: true,
+		Level:       zapcore.DebugLevel,
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
+	cacheLabelSelector := labels.SelectorFromSet(
+		labels.Set{operatorLabels.ManagedBy: name},
+	)
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
@@ -77,14 +86,12 @@ func main() {
 		LeaderElectionID:       "893110f7.kyma-project.io",
 		NewCache: cache.BuilderWithOptions(cache.Options{
 			SelectorsByObject: cache.SelectorsByObject{
-				&corev1.ConfigMap{}: {
-					Label: labels.SelectorFromSet(
-						labels.Set{"operator.kyma-project.io/managed-by": "kyma-operator"},
-					),
-				},
+				&operatorv1alpha1.ModuleTemplate{}: {Label: cacheLabelSelector},
+				&corev1.Secret{}:                   {Label: cacheLabelSelector},
 			},
 		}),
 	})
+
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
@@ -93,7 +100,7 @@ func main() {
 	if err = (&controllers.KymaReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("kyma-operator"),
+		Recorder: mgr.GetEventRecorderFor(name),
 	}).SetupWithManager(setupLog, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
