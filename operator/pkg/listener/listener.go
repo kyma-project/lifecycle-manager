@@ -13,9 +13,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 
+type UnmarshalError struct {
+	Message       string
+	httpErrorCode int
+}
+
 type WatcherEvent struct {
 	SkrClusterID string `json:"skrClusterID"`
-	Body         []byte `json:"body"`
+	Namespace    string `json:"namespace"`
+	ResourceName string `json:"resourceName"`
+	Component    string `json:"component"`
 }
 
 type SKREventsListener struct {
@@ -79,13 +86,15 @@ func (l *SKREventsListener) handleCreateEvent() http.HandlerFunc {
 		l.Logger.Info("CreateEvent")
 
 		//unmarshal received event
-		skrClusterID, skrEventObject := l.unmarshalEvent(w, r)
+		genEvtObject, unmarshalErr := l.unmarshalEvent(w, r)
+		if unmarshalErr != nil {
+			w.WriteHeader(unmarshalErr.httpErrorCode)
+			w.Write([]byte(unmarshalErr.Message))
+			return
+		}
 
 		//add event to the channel
-		genericEvtObject := &unstructured.Unstructured{}
-		genericEvtObject.SetName(skrEventObject.GetName())
-		genericEvtObject.SetClusterName(skrClusterID)
-		l.receivedEvents <- event.GenericEvent{Object: genericEvtObject}
+		l.receivedEvents <- event.GenericEvent{Object: genEvtObject}
 		w.WriteHeader(http.StatusOK)
 	}
 }
@@ -95,13 +104,15 @@ func (l *SKREventsListener) handleUpdateEvent() http.HandlerFunc {
 		l.Logger.Info("UpdateEvent")
 
 		//unmarshal received event
-		skrClusterID, skrEventObject := l.unmarshalEvent(w, r)
+		genEvtObject, unmarshalErr := l.unmarshalEvent(w, r)
+		if unmarshalErr != nil {
+			w.WriteHeader(unmarshalErr.httpErrorCode)
+			w.Write([]byte(unmarshalErr.Message))
+			return
+		}
 
 		//add event to the channel
-		genericEvtObject := &unstructured.Unstructured{}
-		genericEvtObject.SetName(skrEventObject.GetName())
-		genericEvtObject.SetClusterName(skrClusterID)
-		l.receivedEvents <- event.GenericEvent{Object: genericEvtObject}
+		l.receivedEvents <- event.GenericEvent{Object: genEvtObject}
 		w.WriteHeader(http.StatusOK)
 	}
 }
@@ -120,41 +131,31 @@ func (l *SKREventsListener) handleGenericEvent() http.HandlerFunc {
 	}
 }
 
-func (l *SKREventsListener) unmarshalEvent(w http.ResponseWriter, r *http.Request) (string, unstructured.Unstructured) {
+func (l *SKREventsListener) unmarshalEvent(w http.ResponseWriter, r *http.Request) (*unstructured.Unstructured, *UnmarshalError) {
 	params := mux.Vars(r)
 	contractVersion, ok := params[paramContractVersion]
 	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("contract version could not be parsed"))
-		return "", unstructured.Unstructured{}
+		return nil, &UnmarshalError{"contract version could not be parsed", http.StatusBadRequest}
 	}
 
 	if contractVersion == "" {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("contract version cannot be empty"))
-		return "", unstructured.Unstructured{}
+		return nil, &UnmarshalError{"contract version cannot be empty", http.StatusBadRequest}
 	}
 
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("could not read request body"))
-		return "", unstructured.Unstructured{}
+		return nil, &UnmarshalError{"could not read request body", http.StatusInternalServerError}
 	}
 
 	watcherEvent := &WatcherEvent{}
 	err = json.Unmarshal(body, watcherEvent)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("could not unmarshal watcher event"))
-		return "", unstructured.Unstructured{}
+		return nil, &UnmarshalError{"could not unmarshal watcher event", http.StatusInternalServerError}
 	}
+	genEvtObject := &unstructured.Unstructured{}
+	genEvtObject.SetName(watcherEvent.ResourceName)
+	genEvtObject.SetClusterName(watcherEvent.SkrClusterID)
+	genEvtObject.SetNamespace(watcherEvent.Namespace)
 
-	skrEventObject := unstructured.Unstructured{}
-	if err = json.Unmarshal(watcherEvent.Body, &skrEventObject); err != nil {
-		l.Logger.Error(err, "error transforming new component object")
-		return "", unstructured.Unstructured{}
-	}
-
-	return watcherEvent.SkrClusterID, skrEventObject
+	return genEvtObject, nil
 }
