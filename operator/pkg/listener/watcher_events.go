@@ -19,10 +19,6 @@ func (h *WatcherEventsHandler) ProcessWatcherEvent(ctx context.Context) func(eve
 	logger := log.FromContext(ctx).WithName("skr-watcher-events-processing")
 	return func(genEvt event.GenericEvent, q workqueue.RateLimitingInterface) {
 
-		if genEvt.Object == nil {
-			logger.Error(nil, "event received with no metadata", "event", genEvt)
-			return
-		}
 		kymaObjectKey := client.ObjectKeyFromObject(genEvt.Object)
 		logger.WithValues(
 			"object", kymaObjectKey.Name,

@@ -86,7 +86,7 @@ func (l *SKREventsListener) handleCreateEvent() http.HandlerFunc {
 		l.Logger.Info("CreateEvent")
 
 		//unmarshal received event
-		genEvtObject, unmarshalErr := l.unmarshalEvent(w, r)
+		genEvtObject, unmarshalErr := unmarshalEvent(r)
 		if unmarshalErr != nil {
 			w.WriteHeader(unmarshalErr.httpErrorCode)
 			w.Write([]byte(unmarshalErr.Message))
@@ -104,7 +104,7 @@ func (l *SKREventsListener) handleUpdateEvent() http.HandlerFunc {
 		l.Logger.Info("UpdateEvent")
 
 		//unmarshal received event
-		genEvtObject, unmarshalErr := l.unmarshalEvent(w, r)
+		genEvtObject, unmarshalErr := unmarshalEvent(r)
 		if unmarshalErr != nil {
 			w.WriteHeader(unmarshalErr.httpErrorCode)
 			w.Write([]byte(unmarshalErr.Message))
@@ -131,7 +131,7 @@ func (l *SKREventsListener) handleGenericEvent() http.HandlerFunc {
 	}
 }
 
-func (l *SKREventsListener) unmarshalEvent(w http.ResponseWriter, r *http.Request) (*unstructured.Unstructured, *UnmarshalError) {
+func unmarshalEvent(r *http.Request) (*unstructured.Unstructured, *UnmarshalError) {
 	params := mux.Vars(r)
 	contractVersion, ok := params[paramContractVersion]
 	if !ok {
@@ -152,6 +152,7 @@ func (l *SKREventsListener) unmarshalEvent(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		return nil, &UnmarshalError{"could not unmarshal watcher event", http.StatusInternalServerError}
 	}
+
 	genEvtObject := &unstructured.Unstructured{}
 	genEvtObject.SetName(watcherEvent.ResourceName)
 	genEvtObject.SetClusterName(watcherEvent.SkrClusterID)
