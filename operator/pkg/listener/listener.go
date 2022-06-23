@@ -10,6 +10,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 )
 
@@ -20,9 +21,9 @@ type UnmarshalError struct {
 
 type WatcherEvent struct {
 	SkrClusterID string `json:"skrClusterID"`
+	Component    string `json:"body"`
 	Namespace    string `json:"namespace"`
-	ResourceName string `json:"resourceName"`
-	Component    string `json:"component"`
+	Name         string `json:"name"`
 }
 
 type SKREventsListener struct {
@@ -46,24 +47,9 @@ func (l *SKREventsListener) Start(ctx context.Context) error {
 	apiRouter := mainRouter.PathPrefix("/").Subrouter()
 
 	apiRouter.HandleFunc(
-		fmt.Sprintf("/v{%s}/skr/events/create", paramContractVersion),
-		l.handleCreateEvent()).
-		Methods(http.MethodPost)
-
-	apiRouter.HandleFunc(
-		fmt.Sprintf("/v{%s}/skr/events/update", paramContractVersion),
-		l.handleUpdateEvent()).
-		Methods(http.MethodPost)
-
-	apiRouter.HandleFunc(
-		fmt.Sprintf("/v{%s}/skr/events/delete", paramContractVersion),
-		l.handleDeleteEvent()).
-		Methods(http.MethodPost)
-
-	apiRouter.HandleFunc(
-		fmt.Sprintf("/v{%s}/skr/events/generic", paramContractVersion),
-		l.handleGenericEvent()).
-		Methods(http.MethodPost)
+		fmt.Sprintf("/v{%s}/skr/event", paramContractVersion),
+		l.handleSKREvent(),
+	).Methods(http.MethodPost)
 
 	//start web server
 	server := &http.Server{Addr: l.Addr, Handler: mainRouter}
@@ -81,57 +67,27 @@ func (l *SKREventsListener) Start(ctx context.Context) error {
 	return server.Shutdown(ctx)
 }
 
-func (l *SKREventsListener) handleCreateEvent() http.HandlerFunc {
+func (l *SKREventsListener) handleSKREvent() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		l.Logger.Info("CreateEvent")
+		l.Logger.Info("received event from SKR")
 
 		//unmarshal received event
-		genEvtObject, unmarshalErr := unmarshalEvent(r)
+		genericEvtObject, unmarshalErr := unmarshalSKREvent(r)
 		if unmarshalErr != nil {
+			l.Logger.Error(nil, unmarshalErr.Message)
 			w.WriteHeader(unmarshalErr.httpErrorCode)
 			w.Write([]byte(unmarshalErr.Message))
 			return
 		}
 
 		//add event to the channel
-		l.receivedEvents <- event.GenericEvent{Object: genEvtObject}
+		l.receivedEvents <- event.GenericEvent{Object: genericEvtObject}
+		l.Logger.Info("dispatched event object into channel", "resource", genericEvtObject.GetName())
 		w.WriteHeader(http.StatusOK)
 	}
 }
 
-func (l *SKREventsListener) handleUpdateEvent() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		l.Logger.Info("UpdateEvent")
-
-		//unmarshal received event
-		genEvtObject, unmarshalErr := unmarshalEvent(r)
-		if unmarshalErr != nil {
-			w.WriteHeader(unmarshalErr.httpErrorCode)
-			w.Write([]byte(unmarshalErr.Message))
-			return
-		}
-
-		//add event to the channel
-		l.receivedEvents <- event.GenericEvent{Object: genEvtObject}
-		w.WriteHeader(http.StatusOK)
-	}
-}
-
-func (l *SKREventsListener) handleDeleteEvent() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		l.Logger.Info("DeleteEvent")
-		w.WriteHeader(http.StatusOK)
-	}
-}
-
-func (l *SKREventsListener) handleGenericEvent() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		l.Logger.Info("GenericEvent")
-		w.WriteHeader(http.StatusOK)
-	}
-}
-
-func unmarshalEvent(r *http.Request) (*unstructured.Unstructured, *UnmarshalError) {
+func unmarshalSKREvent(r *http.Request) (client.Object, *UnmarshalError) {
 	params := mux.Vars(r)
 	contractVersion, ok := params[paramContractVersion]
 	if !ok {
@@ -153,10 +109,10 @@ func unmarshalEvent(r *http.Request) (*unstructured.Unstructured, *UnmarshalErro
 		return nil, &UnmarshalError{"could not unmarshal watcher event", http.StatusInternalServerError}
 	}
 
-	genEvtObject := &unstructured.Unstructured{}
-	genEvtObject.SetName(watcherEvent.ResourceName)
-	genEvtObject.SetClusterName(watcherEvent.SkrClusterID)
-	genEvtObject.SetNamespace(watcherEvent.Namespace)
+	genericEvtObject := &unstructured.Unstructured{}
+	genericEvtObject.SetName(watcherEvent.Name)
+	genericEvtObject.SetClusterName(watcherEvent.SkrClusterID)
+	genericEvtObject.SetNamespace(watcherEvent.Namespace)
 
-	return genEvtObject, nil
+	return genericEvtObject, nil
 }
