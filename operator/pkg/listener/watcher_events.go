@@ -3,7 +3,6 @@ package listener
 import (
 	"context"
 
-	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -30,11 +29,6 @@ func (h *WatcherEventsHandler) ProcessWatcherEvent(ctx context.Context) func(eve
 			"namespace", kymaObjectKey.Namespace,
 		).Info("started dispatching SKR event")
 
-		//check if event object is of Kyma kind
-		if genEvt.Object.GetObjectKind().GroupVersionKind().Kind != operatorv1alpha1.KymaKind {
-			logger.Error(nil, "event received for the wrong kind of resource", "event", genEvt)
-			return
-		}
 		//Enqueue for object received from SKR
 		q.Add(reconcile.Request{NamespacedName: types.NamespacedName{
 			Name:      kymaObjectKey.Name,
