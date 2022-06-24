@@ -19,11 +19,10 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
+	"github.com/kyma-project/kyma-operator/operator/pkg/dynamic"
 	"github.com/kyma-project/kyma-operator/operator/pkg/remote"
 	v1 "k8s.io/api/core/v1"
-	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/api/meta"
-	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -36,11 +35,6 @@ import (
 	"github.com/kyma-project/kyma-operator/operator/pkg/util"
 	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/dynamic"
-	"k8s.io/client-go/dynamic/dynamicinformer"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -48,7 +42,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
@@ -56,8 +49,11 @@ import (
 // KymaReconciler reconciles a Kyma object
 type KymaReconciler struct {
 	client.Client
-	Scheme   *runtime.Scheme
-	Recorder record.EventRecorder
+	record.EventRecorder
+}
+
+func (r *KymaReconciler) GetEventRecorder() record.EventRecorder {
+	return r.EventRecorder
 }
 
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch;create;update;patch;onEvent;delete
@@ -75,6 +71,8 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	logger := log.FromContext(ctx).WithName(req.NamespacedName.String())
 	logger.Info("Reconciliation loop starting for", "resource", req.NamespacedName.String())
 
+	ctx = adapter.ContextWithRecorder(ctx, r.GetEventRecorder())
+
 	// check if kyma resource exists
 	kyma := operatorv1alpha1.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, &kyma); err != nil {
@@ -87,6 +85,9 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	// check if deletionTimestamp is set, retry until it gets fully deleted
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != operatorv1alpha1.KymaStateDeleting {
+		if err := remote.DeleteRemotelySyncedKyma(ctx, r.Client, client.ObjectKeyFromObject(&kyma)); client.IgnoreNotFound(err) != nil {
+			return ctrl.Result{RequeueAfter: 10 * time.Second}, err
+		}
 		// if the status is not yet set to deleting, also update the status
 		return ctrl.Result{}, r.updateKymaStatus(ctx, &kyma, operatorv1alpha1.KymaStateDeleting, "deletion timestamp set")
 	}
@@ -97,15 +98,15 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, r.Update(ctx, &kyma)
 	}
 
-	remoteClient, err := r.InitializeRemoteClient(ctx, &kyma)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-	remoteKyma, err := r.FetchRemoteKyma(ctx, remoteClient, &kyma)
+	syncContext, err := remote.InitializeKymaSynchronizationContext(ctx, r.Client, &kyma)
 	if err != nil {
 		return ctrl.Result{RequeueAfter: 5 * time.Second}, err
 	}
-	if synchronizationRequiresRequeue, err := r.SynchronizeRemoteKyma(ctx, remoteClient, &kyma, remoteKyma); err != nil || synchronizationRequiresRequeue {
+	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx)
+	if err != nil {
+		return ctrl.Result{RequeueAfter: 5 * time.Second}, err
+	}
+	if synchronizationRequiresRequeue, err := syncContext.SynchronizeRemoteKyma(ctx, remoteKyma); err != nil || synchronizationRequiresRequeue {
 		return ctrl.Result{RequeueAfter: 5 * time.Second}, err
 	}
 
@@ -145,7 +146,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, logger *logr
 	}
 
 	// reconcile from templates
-	if err := r.reconcileKymaForRelease(ctx, kyma, templates); err != nil {
+	if err := r.ReconcileKymaForRelease(ctx, kyma, templates); err != nil {
 		return err
 	}
 
@@ -162,7 +163,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, logger *logr
 	if kyma.AreAllReadyConditionsSetForKyma() {
 		message := fmt.Sprintf("reconciliation of %s finished!", kyma.Name)
 		logger.Info(message)
-		r.Recorder.Event(kyma, "Normal", "ReconciliationSuccess", message)
+		r.Event(kyma, "Normal", "ReconciliationSuccess", message)
 		return r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateReady, message)
 	}
 
@@ -196,6 +197,12 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, logger *logr.L
 	logger.Info("All component CRs have been removed, removing finalizer",
 		"resource", client.ObjectKeyFromObject(kyma))
 
+	if err := remote.RemoveFinalizerFromRemoteKyma(ctx, r, client.ObjectKeyFromObject(kyma)); client.IgnoreNotFound(err) != nil {
+		return false, err
+	}
+	logger.Info("removed remote finalizer",
+		"resource", client.ObjectKeyFromObject(kyma))
+
 	// remove finalizer
 	controllerutil.RemoveFinalizer(kyma, labels.Finalizer)
 	return false, r.Update(ctx, kyma)
@@ -214,7 +221,7 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, logger *l
 	templates, err := release.GetTemplates(ctx, r, kyma)
 	if err != nil {
 		logger.Error(err, "error fetching fetching templates")
-		return r.KymaStatus().UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError, err.Error())
+		return status.KymaHandler(r).UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError, err.Error())
 	}
 	if release.AreTemplatesOutdated(logger, kyma, templates) {
 		return r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateProcessing, "template update")
@@ -241,7 +248,7 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, logger *l
 }
 
 func (r *KymaReconciler) updateKymaStatus(ctx context.Context, kyma *operatorv1alpha1.Kyma, state operatorv1alpha1.KymaState, message string) error {
-	return r.KymaStatus().UpdateStatus(ctx, kyma, state, message)
+	return status.KymaHandler(r).UpdateStatus(ctx, kyma, state, message)
 }
 
 func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Context, kymaObj *operatorv1alpha1.Kyma, templates release.TemplateLookupResultsByName) ([]util.ComponentsAssociatedWithTemplate, error) {
@@ -275,7 +282,7 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 			// set labels
 			util.SetComponentCRLabels(actualComponentStruct, component.Name, channel)
 			// set owner reference
-			if err := controllerutil.SetOwnerReference(kymaObj, actualComponentStruct, r.Scheme); err != nil {
+			if err := controllerutil.SetOwnerReference(kymaObj, actualComponentStruct, r.Scheme()); err != nil {
 				return nil, fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w", component.Name, namespacedName, err)
 			}
 
@@ -292,7 +299,7 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 				TemplateChannel:    lookupResult.Template.Spec.Channel,
 			})
 		} else if templatesOutdated {
-			condition, exists := r.KymaStatus().GetReadyConditionForComponent(kymaObj, component.Name)
+			condition, exists := status.KymaHandler(r).GetReadyConditionForComponent(kymaObj, component.Name)
 			if !exists {
 				return nil, fmt.Errorf("condition not found for component %s", component.Name)
 			}
@@ -327,14 +334,14 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 	return componentNamesAffected, nil
 }
 
-func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, kyma *operatorv1alpha1.Kyma, templates release.TemplateLookupResultsByName) error {
+func (r *KymaReconciler) ReconcileKymaForRelease(ctx context.Context, kyma *operatorv1alpha1.Kyma, templates release.TemplateLookupResultsByName) error {
 	logger := log.FromContext(ctx)
 	affectedComponents, err := r.CreateOrUpdateComponentsFromTemplate(ctx, kyma, templates)
 
 	if err != nil {
 		message := fmt.Sprintf("Component CR creation error: %s", err.Error())
 		logger.Info(message)
-		r.Recorder.Event(kyma, "Warning", "ReconciliationFailed", fmt.Sprintf("Reconciliation failed: %s", message))
+		r.Event(kyma, "Warning", "ReconciliationFailed", fmt.Sprintf("Reconciliation failed: %s", message))
 		statusErr := r.updateKymaStatus(ctx, kyma, operatorv1alpha1.KymaStateError, message)
 		if statusErr != nil {
 			return statusErr
@@ -345,8 +352,8 @@ func (r *KymaReconciler) reconcileKymaForRelease(ctx context.Context, kyma *oper
 	if len(affectedComponents) > 0 {
 		// check component conditions, if not present add them
 		logger.Info("checking condition for component CRs")
-		r.KymaStatus().AddReadyConditionForObjects(kyma, affectedComponents, operatorv1alpha1.ConditionStatusFalse, "initial condition for component CR")
-		release.New(kyma.Status.ActiveChannel, kyma.Spec.Channel, r.KymaStatus().GetEventAdapter(kyma)).IssueChannelChangeInProgress()
+		status.KymaHandler(r).AddReadyConditionForObjects(kyma, affectedComponents, operatorv1alpha1.ConditionStatusFalse, "initial condition for component CR")
+		release.New(kyma, ctx).IssueChannelChangeInProgress()
 		return r.updateKymaStatus(ctx, kyma, kyma.Status.State, "component conditions updated")
 	}
 
@@ -366,7 +373,7 @@ func (r *KymaReconciler) checkAndUpdateComponentConditions(ctx context.Context, 
 			return false, err
 		}
 
-		updated, err := r.KymaStatus().UpdateComponentConditions(actualComponentStruct, kyma)
+		updated, err := status.KymaHandler(r).UpdateComponentConditions(actualComponentStruct, kyma)
 		if err != nil {
 			return false, err
 		}
@@ -381,53 +388,14 @@ func (r *KymaReconciler) checkAndUpdateComponentConditions(ctx context.Context, 
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager) error {
-	c, err := dynamic.NewForConfig(mgr.GetConfig())
-	if err != nil {
-		return err
-	}
-
-	informers := dynamicinformer.NewDynamicSharedInformerFactory(c, time.Minute*30)
-	err = mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
-		informers.Start(ctx.Done())
-		return nil
-	}))
-	if err != nil {
-		return err
-	}
-
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&operatorv1alpha1.Kyma{})
 
-	//TODO maybe replace with native REST Handling
-	cs, err := kubernetes.NewForConfig(mgr.GetConfig())
-	if err != nil {
+	if dynamicInformers, err := dynamic.Informers(mgr); err != nil {
 		return err
-	}
-	// This fetches all resources for our component operator CRDs, might become a problem if component operators
-	// create their own CRDs that we dont need to watch
-	gv := schema.GroupVersion{
-		Group:   labels.ComponentPrefix,
-		Version: "v1alpha1",
-	}
-	resources, err := cs.ServerResourcesForGroupVersion(gv.String())
-	if client.IgnoreNotFound(err) != nil {
-		return err
-	}
-
-	// resources found
-	if err == nil {
-		dynamicInformerSet := make(map[string]*source.Informer)
-		for _, resource := range resources.APIResources {
-			//TODO Verify if this filtering is really necessary or if we can somehow only listen to status changes instead of resource changes with ResourceVersionChangedPredicate
-			if strings.HasSuffix(resource.Name, "status") {
-				continue
-			}
-			gvr := gv.WithResource(resource.Name)
-			dynamicInformerSet[gvr.String()] = &source.Informer{Informer: informers.ForResource(gvr).Informer()}
-		}
-
-		for gvr, informer := range dynamicInformerSet {
+	} else {
+		for gvr, informer := range dynamicInformers {
 			controllerBuilder = controllerBuilder.
-				Watches(informer, &handler.Funcs{UpdateFunc: r.ComponentChangeHandler().ComponentChange(context.TODO())},
+				Watches(informer, &handler.Funcs{UpdateFunc: watch.NewComponentChangeHandler(r).Watch(context.TODO())},
 					builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
 			setupLog.Info("initialized dynamic watching", "source", gvr)
 		}
@@ -435,7 +403,7 @@ func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager
 
 	controllerBuilder = controllerBuilder.Watches(
 		&source.Kind{Type: &operatorv1alpha1.ModuleTemplate{}},
-		handler.EnqueueRequestsFromMapFunc(r.TemplateChangeHandler().Watch(context.TODO())),
+		handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch(context.TODO())),
 		builder.WithPredicates(predicate.GenerationChangedPredicate{}))
 
 	// here we define a watch on secrets for the kyma operator so that the cache is picking up changes
@@ -446,116 +414,4 @@ func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager
 	}
 
 	return controllerBuilder.Complete(r)
-}
-
-func (r *KymaReconciler) ComponentChangeHandler() *watch.ComponentChangeHandler {
-	return &watch.ComponentChangeHandler{Reader: r.Client, StatusWriter: r.Status(), EventRecorder: r.Recorder}
-}
-
-func (r *KymaReconciler) TemplateChangeHandler() *watch.TemplateChangeHandler {
-	return &watch.TemplateChangeHandler{Reader: r.Client, StatusWriter: r.Status(), EventRecorder: r.Recorder}
-}
-
-func (r *KymaReconciler) KymaStatus() *status.Kyma {
-	return &status.Kyma{StatusWriter: r.Status(), EventRecorder: r.Recorder}
-}
-
-func (r *KymaReconciler) InitializeRemoteClient(ctx context.Context, kyma *operatorv1alpha1.Kyma) (client.Client, error) {
-	cc := remote.ClusterClient{DefaultClient: r.Client}
-
-	rc, err := cc.GetRestConfigFromSecret(ctx, kyma.GetName(), kyma.GetNamespace())
-	if err != nil {
-		r.Recorder.Event(kyma, "Warning", err.Error(), "Rest Config could not be fetched")
-		return nil, err
-	}
-
-	remoteClient, err := cc.GetNewClient(rc, client.Options{Scheme: r.Scheme})
-	if err != nil {
-		r.Recorder.Event(kyma, "Warning", err.Error(), "Remote Client could not be created")
-		return nil, err
-	}
-
-	return remoteClient, nil
-}
-
-func (r *KymaReconciler) FetchRemoteKyma(ctx context.Context, remoteClient client.Client, kyma *operatorv1alpha1.Kyma) (*operatorv1alpha1.Kyma, error) {
-	remoteKyma := &operatorv1alpha1.Kyma{}
-	err := remoteClient.Get(ctx, client.ObjectKeyFromObject(kyma), remoteKyma)
-
-	if meta.IsNoMatchError(err) {
-		r.Recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
-		crd := v1extensions.CustomResourceDefinition{}
-		err = r.Get(ctx, client.ObjectKey{Name: fmt.Sprintf("%s.%s", "kymas", operatorv1alpha1.GroupVersion.Group)}, &crd)
-		if err != nil {
-			return nil, err
-		}
-		remoteCrd := v1extensions.CustomResourceDefinition{}
-		remoteCrd.Name = crd.Name
-		remoteCrd.Namespace = crd.Namespace
-		remoteCrd.Spec = crd.Spec
-		err = remoteClient.Create(ctx, &remoteCrd)
-		if err != nil {
-			return nil, err
-		}
-		r.Recorder.Event(kyma, "Normal", "CRDInstallation", "CRDs were installed to SKR")
-		return nil, err
-	}
-
-	if errors.IsNotFound(err) {
-		remoteKyma.Name = kyma.Name
-		remoteKyma.Namespace = kyma.Namespace
-		remoteKyma.Spec = *kyma.Spec.DeepCopy()
-		err = remoteClient.Create(ctx, remoteKyma)
-		if err != nil {
-			r.Recorder.Event(remoteKyma, "Warning", err.Error(), "Client could not create remote Kyma")
-			return nil, err
-		}
-
-		return remoteKyma, r.Status().Update(ctx, kyma)
-	} else if err != nil {
-		r.Recorder.Event(kyma, "Warning", err.Error(), "Client could not fetch remote Kyma")
-		return nil, err
-	}
-
-	return remoteKyma, err
-}
-
-func (r *KymaReconciler) SynchronizeRemoteKyma(ctx context.Context, remoteClient client.Client, kyma *operatorv1alpha1.Kyma, remoteKyma *operatorv1alpha1.Kyma) (bool, error) {
-	// check finalizer
-	if !controllerutil.ContainsFinalizer(remoteKyma, labels.Finalizer) {
-		controllerutil.AddFinalizer(remoteKyma, labels.Finalizer)
-	}
-
-	if remoteKyma.Status.ObservedRemoteGeneration != remoteKyma.GetGeneration() {
-		kyma.Spec = remoteKyma.Spec
-		err := r.Update(ctx, kyma)
-		if err != nil {
-			r.Recorder.Event(remoteKyma, "Warning", err.Error(), "Client could not update Control Plane Kyma")
-		}
-		remoteKyma.Status.ObservedRemoteGeneration = remoteKyma.GetGeneration()
-		err = remoteClient.Status().Update(ctx, remoteKyma)
-		if err != nil {
-			return true, err
-		}
-	}
-
-	if remoteKyma.Status.State != kyma.Status.State {
-		remoteKyma.Status.State = kyma.Status.State
-		err := remoteClient.Status().Update(ctx, remoteKyma)
-		if err != nil {
-			return true, err
-		}
-	}
-
-	lastSyncDate := time.Now().Format(time.RFC3339)
-	if remoteKyma.Annotations == nil {
-		remoteKyma.Annotations = make(map[string]string)
-	}
-	remoteKyma.Annotations[labels.LastSync] = lastSyncDate
-	err := remoteClient.Update(ctx, remoteKyma)
-	if err != nil {
-		return true, err
-	}
-
-	return false, nil
 }

@@ -22,11 +22,14 @@ const (
 
 type ComponentChangeHandler struct {
 	client.Reader
-	client.StatusWriter
 	record.EventRecorder
 }
 
-func (h *ComponentChangeHandler) ComponentChange(ctx context.Context) func(event.UpdateEvent, workqueue.RateLimitingInterface) {
+func NewComponentChangeHandler(handlerClient ChangeHandlerClient) *ComponentChangeHandler {
+	return &ComponentChangeHandler{Reader: handlerClient, EventRecorder: handlerClient}
+}
+
+func (h *ComponentChangeHandler) Watch(ctx context.Context) func(event.UpdateEvent, workqueue.RateLimitingInterface) {
 	logger := log.FromContext(ctx).WithName("component-change-handler")
 	return func(event event.UpdateEvent, q workqueue.RateLimitingInterface) {
 		objectBytesNew, err := json.Marshal(event.ObjectNew)

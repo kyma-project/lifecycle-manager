@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/go-logr/logr"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -17,6 +18,7 @@ import (
 )
 
 type ClusterClient struct {
+	logr.Logger
 	DefaultClient client.Client
 }
 
@@ -41,39 +43,39 @@ func (cc *ClusterClient) GetRestConfigFromSecret(ctx context.Context, name, name
 	kubeConfigSecret := kubeConfigSecretList.Items[0]
 
 	kubeconfigString := string(kubeConfigSecret.Data["config"])
-	restConfig, err := GetConfig(kubeconfigString, "")
+	restConfig, err := cc.GetConfig(kubeconfigString, "")
 	if err != nil {
 		return nil, err
 	}
 	return restConfig, err
 }
 
-func GetConfig(kubeConfig string, explicitPath string) (*rest.Config, error) {
+func (cc *ClusterClient) GetConfig(kubeConfig string, explicitPath string) (*rest.Config, error) {
 	if kubeConfig != "" {
 		// parameter string
 		return clientcmd.BuildConfigFromKubeconfigGetter("", func() (config *clientcmdapi.Config, e error) {
-			fmt.Println("Found config from passed kubeconfig")
+			cc.Info("Found config from passed kubeconfig")
 			return clientcmd.Load([]byte(kubeConfig))
 		})
 	}
 	// in-cluster config
 	config, err := rest.InClusterConfig()
 	if err == nil {
-		fmt.Println("Found config in-cluster")
+		cc.Info("Found config in-cluster")
 		return config, err
 	}
 
 	// kubeconfig flag
 	if flag.Lookup("kubeconfig") != nil {
 		if kubeconfig := flag.Lookup("kubeconfig").Value.String(); kubeconfig != "" {
-			fmt.Println("Found config from flags")
+			cc.Info("Found config from flags")
 			return clientcmd.BuildConfigFromFlags("", kubeconfig)
 		}
 	}
 
 	// env variable
 	if len(os.Getenv("KUBECONFIG")) > 0 {
-		fmt.Println("Found config from env")
+		cc.Info("Found config from env")
 		return clientcmd.BuildConfigFromFlags("masterURL", os.Getenv("KUBECONFIG"))
 	}
 
@@ -91,6 +93,6 @@ func GetConfig(kubeConfig string, explicitPath string) (*rest.Config, error) {
 		return nil, err
 	}
 
-	fmt.Printf("Found config file in: %s", clientConfig.ConfigAccess().GetDefaultFilename())
+	cc.Info(fmt.Sprintf("Found config file in: %s", clientConfig.ConfigAccess().GetDefaultFilename()))
 	return config, nil
 }

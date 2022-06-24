@@ -98,9 +98,8 @@ func main() {
 	}
 
 	if err = (&controllers.KymaReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor(name),
+		Client:        mgr.GetClient(),
+		EventRecorder: mgr.GetEventRecorderFor(name),
 	}).SetupWithManager(setupLog, mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
