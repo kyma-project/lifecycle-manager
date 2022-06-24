@@ -14,15 +14,24 @@ import (
 	"time"
 )
 
-func Informers(mgr manager.Manager) (map[string]*source.Informer, error) {
+type ComponentInformer struct {
+	schema.GroupVersionResource
+	source.Informer
+}
+
+func (ci *ComponentInformer) String() string {
+	return ci.GroupVersionResource.String()
+}
+
+func Informers(mgr manager.Manager) (map[string]source.Source, error) {
 	c, err := dynamic.NewForConfig(mgr.GetConfig())
 	if err != nil {
 		return nil, err
 	}
 
-	informers := dynamicinformer.NewDynamicSharedInformerFactory(c, time.Minute*30)
+	informerFactory := dynamicinformer.NewDynamicSharedInformerFactory(c, time.Minute*30)
 	err = mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
-		informers.Start(ctx.Done())
+		informerFactory.Start(ctx.Done())
 		return nil
 	}))
 	if err != nil {
@@ -49,14 +58,15 @@ func Informers(mgr manager.Manager) (map[string]*source.Informer, error) {
 		return nil, err
 	}
 
-	dynamicInformerSet := make(map[string]*source.Informer)
+	dynamicInformerSet := make(map[string]source.Source)
 	for _, resource := range resources.APIResources {
 		//TODO Verify if this filtering is really necessary or if we can somehow only listen to status changes instead of resource changes with ResourceVersionChangedPredicate
 		if strings.HasSuffix(resource.Name, "status") {
 			continue
 		}
 		gvr := gv.WithResource(resource.Name)
-		dynamicInformerSet[gvr.String()] = &source.Informer{Informer: informers.ForResource(gvr).Informer()}
+		informer := informerFactory.ForResource(gvr).Informer()
+		dynamicInformerSet[gvr.String()] = &ComponentInformer{Informer: source.Informer{Informer: informer}, GroupVersionResource: gvr}
 	}
 	return dynamicInformerSet, nil
 }

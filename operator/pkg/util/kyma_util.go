@@ -22,7 +22,7 @@ func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, compone
 	}
 	labelMap[labels.ControllerName] = componentName
 	labelMap[labels.Channel] = string(channel)
-	labelMap[labels.ComponentOwner] = kymaName
+	labelMap[labels.KymaName] = kymaName
 	unstructuredCompCR.SetLabels(labelMap)
 }
 

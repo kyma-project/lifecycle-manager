@@ -21,6 +21,7 @@ import (
 )
 
 const KymaKind = "Kyma"
+const KymaPlural = "kymas"
 
 // CustomStates defines some component specific settings
 type CustomStates map[string]string
@@ -68,8 +69,6 @@ type KymaStatus struct {
 	// Observed generation
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
-
-	ObservedRemoteGeneration int64 `json:"observedRemoteGeneration,omitempty"`
 
 	// Active Channel
 	// +optional

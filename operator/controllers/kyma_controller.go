@@ -23,6 +23,7 @@ import (
 	"github.com/kyma-project/kyma-operator/operator/pkg/dynamic"
 	"github.com/kyma-project/kyma-operator/operator/pkg/remote"
 	v1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -115,7 +116,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	case "":
 		return ctrl.Result{}, r.HandleInitialState(ctx, &logger, &kyma)
 	case operatorv1alpha1.KymaStateProcessing:
-		return ctrl.Result{}, r.HandleProcessingState(ctx, &logger, &kyma)
+		return ctrl.Result{RequeueAfter: 10 * time.Second}, r.HandleProcessingState(ctx, &logger, &kyma)
 	case operatorv1alpha1.KymaStateDeleting:
 		if dependentsDeleting, err := r.HandleDeletingState(ctx, &logger, &kyma); err != nil {
 			return ctrl.Result{}, err
@@ -387,17 +388,16 @@ func (r *KymaReconciler) checkAndUpdateComponentConditions(ctx context.Context, 
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager) error {
-	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&operatorv1alpha1.Kyma{})
+func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&operatorv1alpha1.Kyma{}).WithOptions(options)
 
 	if dynamicInformers, err := dynamic.Informers(mgr); err != nil {
 		return err
 	} else {
-		for gvr, informer := range dynamicInformers {
+		for _, informer := range dynamicInformers {
 			controllerBuilder = controllerBuilder.
 				Watches(informer, &handler.Funcs{UpdateFunc: watch.NewComponentChangeHandler(r).Watch(context.TODO())},
 					builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
-			setupLog.Info("initialized dynamic watching", "source", gvr)
 		}
 	}
 

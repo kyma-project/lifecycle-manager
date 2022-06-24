@@ -134,9 +134,6 @@ spec:
                 description: Observed generation
                 format: int64
                 type: integer
-              observedRemoteGeneration:
-                format: int64
-                type: integer
               state:
                 description: State signifies current state of Kyma. Value can be one
                   of ("Ready", "Processing", "Error", "Deleting").

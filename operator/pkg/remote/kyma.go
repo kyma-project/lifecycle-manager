@@ -32,11 +32,10 @@ func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, name
 		return nil, err
 	}
 
-	remoteClient, err := cc.GetNewClient(rc, client.Options{Scheme: controlPlaneClient.Scheme()})
+	remoteClient, err := client.New(rc, client.Options{Scheme: controlPlaneClient.Scheme()})
 	if err != nil {
 		return nil, err
 	}
-
 	return remoteClient, nil
 }
 
@@ -87,6 +86,27 @@ func InitializeKymaSynchronizationContext(ctx context.Context, controlPlaneClien
 	return sync, nil
 }
 
+func (c *KymaSynchronizationContext) CreateCRD(ctx context.Context) error {
+	crd := v1extensions.CustomResourceDefinition{}
+	err := c.controlPlaneClient.Get(ctx, client.ObjectKey{
+		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
+		// name changes, this also has to be adjusted here. We can think of making this configurable later
+		Name: fmt.Sprintf("%s.%s", operatorv1alpha1.KymaPlural, operatorv1alpha1.GroupVersion.Group),
+	}, &crd)
+	if err != nil {
+		return err
+	}
+	remoteCrd := v1extensions.CustomResourceDefinition{}
+	remoteCrd.Name = crd.Name
+	remoteCrd.Namespace = crd.Namespace
+	remoteCrd.Spec = crd.Spec
+	err = c.runtimeClient.Create(ctx, &remoteCrd)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
 func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context) (*operatorv1alpha1.Kyma, error) {
 	kyma := c.controlPlaneKyma
 	recorder := adapter.RecorderFromContext(ctx)
@@ -95,21 +115,12 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 
 	if meta.IsNoMatchError(err) {
 		recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
-		crd := v1extensions.CustomResourceDefinition{}
-		err = c.controlPlaneClient.Get(ctx, client.ObjectKey{Name: fmt.Sprintf("%s.%s", "kymas", operatorv1alpha1.GroupVersion.Group)}, &crd)
-		if err != nil {
-			return nil, err
-		}
-		remoteCrd := v1extensions.CustomResourceDefinition{}
-		remoteCrd.Name = crd.Name
-		remoteCrd.Namespace = crd.Namespace
-		remoteCrd.Spec = crd.Spec
-		err = c.runtimeClient.Create(ctx, &remoteCrd)
-		if err != nil {
+		if err := c.CreateCRD(ctx); err != nil {
 			return nil, err
 		}
 		recorder.Event(kyma, "Normal", "CRDInstallation", "CRDs were installed to SKR")
-		return nil, err
+		// the NoMatch error we previously encountered is now fixed through the CRD installation
+		err = nil
 	}
 
 	if errors.IsNotFound(err) {
@@ -121,12 +132,6 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 			recorder.Event(kyma, "Normal", "CRDInstallation", "CRDs were installed to SKR")
 			return nil, err
 		}
-
-		//err = c.controlPlaneClient.Status().Update(ctx, kyma)
-		//if err != nil {
-		//	recorder.Event(remoteKyma, "Warning", err.Error(), "Client could not create remote Kyma")
-		//	return nil, err
-		//}
 	} else if err != nil {
 		recorder.Event(kyma, "Warning", err.Error(), "Client could not fetch remote Kyma")
 		return nil, err
@@ -143,14 +148,14 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, 
 		controllerutil.AddFinalizer(remoteKyma, labels.Finalizer)
 	}
 
-	if remoteKyma.Status.ObservedRemoteGeneration != remoteKyma.GetGeneration() {
+	if remoteKyma.Status.ObservedGeneration != remoteKyma.GetGeneration() {
 		kyma.Spec = remoteKyma.Spec
 		err := c.controlPlaneClient.Update(ctx, kyma)
 		if err != nil {
 			recorder.Event(remoteKyma, "Warning", err.Error(), "Client could not update Control Plane Kyma")
 			return true, err
 		}
-		remoteKyma.Status.ObservedRemoteGeneration = remoteKyma.GetGeneration()
+		remoteKyma.Status.ObservedGeneration = remoteKyma.GetGeneration()
 		err = c.runtimeClient.Status().Update(ctx, remoteKyma)
 		if err != nil {
 			return true, err

@@ -22,14 +22,6 @@ type ClusterClient struct {
 	DefaultClient client.Client
 }
 
-func (cc *ClusterClient) GetNewClient(restConfig *rest.Config, options client.Options) (client.Client, error) {
-	c, err := client.New(restConfig, options)
-	if err != nil {
-		return nil, err
-	}
-	return c, nil
-}
-
 func (cc *ClusterClient) GetRestConfigFromSecret(ctx context.Context, name, namespace string) (*rest.Config, error) {
 	kubeConfigSecretList := &v1.SecretList{}
 	if err := cc.DefaultClient.List(ctx, kubeConfigSecretList, &client.ListOptions{
