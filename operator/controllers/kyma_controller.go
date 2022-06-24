@@ -280,7 +280,7 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 			util.CopyComponentSettingsToUnstructuredFromResource(actualComponentStruct, component)
 
 			// set labels
-			util.SetComponentCRLabels(actualComponentStruct, component.Name, channel)
+			util.SetComponentCRLabels(actualComponentStruct, component.Name, channel, kymaObj.Name)
 			// set owner reference
 			if err := controllerutil.SetOwnerReference(kymaObj, actualComponentStruct, r.Scheme()); err != nil {
 				return nil, fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w", component.Name, namespacedName, err)
@@ -313,7 +313,7 @@ func (r *KymaReconciler) CreateOrUpdateComponentsFromTemplate(ctx context.Contex
 				util.CopyComponentSettingsToUnstructuredFromResource(actualComponentStruct, component)
 
 				// set labels
-				util.SetComponentCRLabels(actualComponentStruct, component.Name, channel)
+				util.SetComponentCRLabels(actualComponentStruct, component.Name, channel, kymaObj.Name)
 
 				// update the spec
 				actualComponentStruct.Object["spec"] = lookupResult.Template.Spec.Data.Object["spec"]
