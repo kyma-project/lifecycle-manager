@@ -9,6 +9,7 @@ import (
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -88,23 +89,17 @@ func InitializeKymaSynchronizationContext(ctx context.Context, controlPlaneClien
 
 func (c *KymaSynchronizationContext) CreateCRD(ctx context.Context) error {
 	crd := v1extensions.CustomResourceDefinition{}
-	err := c.controlPlaneClient.Get(ctx, client.ObjectKey{
+	if err := c.controlPlaneClient.Get(ctx, client.ObjectKey{
 		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
 		// name changes, this also has to be adjusted here. We can think of making this configurable later
 		Name: fmt.Sprintf("%s.%s", operatorv1alpha1.KymaPlural, operatorv1alpha1.GroupVersion.Group),
-	}, &crd)
-	if err != nil {
+	}, &crd); err != nil {
 		return err
 	}
-	remoteCrd := v1extensions.CustomResourceDefinition{}
-	remoteCrd.Name = crd.Name
-	remoteCrd.Namespace = crd.Namespace
-	remoteCrd.Spec = crd.Spec
-	err = c.runtimeClient.Create(ctx, &remoteCrd)
-	if err != nil {
-		return err
-	}
-	return err
+	return c.runtimeClient.Create(ctx, &v1extensions.CustomResourceDefinition{
+		ObjectMeta: v1.ObjectMeta{Name: crd.Name, Namespace: crd.Namespace},
+		Spec:       crd.Spec,
+	})
 }
 
 func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context) (*operatorv1alpha1.Kyma, error) {
@@ -141,7 +136,6 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 }
 
 func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, remoteKyma *operatorv1alpha1.Kyma) (bool, error) {
-	kyma := c.controlPlaneKyma
 	recorder := adapter.RecorderFromContext(ctx)
 	// check finalizer
 	if !controllerutil.ContainsFinalizer(remoteKyma, labels.Finalizer) {
@@ -149,27 +143,32 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, 
 	}
 
 	if remoteKyma.Status.ObservedGeneration != remoteKyma.GetGeneration() {
-		kyma.Spec = remoteKyma.Spec
-		err := c.controlPlaneClient.Update(ctx, kyma)
-		if err != nil {
-			recorder.Event(remoteKyma, "Warning", err.Error(), "Client could not update Control Plane Kyma")
+		// remote is new, lets update the control plane
+		c.controlPlaneKyma.Spec = remoteKyma.Spec
+		if err := c.controlPlaneClient.Update(ctx, c.controlPlaneKyma); err != nil {
+			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update control clane kyma")
 			return true, err
 		}
 		remoteKyma.Status.ObservedGeneration = remoteKyma.GetGeneration()
-		err = c.runtimeClient.Status().Update(ctx, remoteKyma)
-		if err != nil {
+		if err := c.runtimeClient.Status().Update(ctx, remoteKyma); err != nil {
+			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
 			return true, err
 		}
-	}
-
-	if remoteKyma.Status.State != kyma.Status.State {
-		remoteKyma.Status.State = kyma.Status.State
+	} else if c.controlPlaneKyma.Status.ObservedGeneration != c.controlPlaneKyma.GetGeneration() {
+		// control plane got updated, runtime on cluster is using the wrong base instance for customization
+		// TODO this now requires custom merge logic, but for now we reapply the control plane version
+		remoteKyma.Spec = c.controlPlaneKyma.Spec
+	} else if remoteKyma.Status.State != c.controlPlaneKyma.Status.State {
+		// control plane and runtime spec are in sync, but the status got updated in the control plane
+		remoteKyma.Status.State = c.controlPlaneKyma.Status.State
 		err := c.runtimeClient.Status().Update(ctx, remoteKyma)
 		if err != nil {
+			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
 			return true, err
 		}
 	}
 
+	// this is an additional update on the runtime and might not be worth it
 	lastSyncDate := time.Now().Format(time.RFC3339)
 	if remoteKyma.Annotations == nil {
 		remoteKyma.Annotations = make(map[string]string)
