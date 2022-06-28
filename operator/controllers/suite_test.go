@@ -18,16 +18,17 @@ package controllers
 
 import (
 	"context"
+	"net/http"
+	"path/filepath"
+	"testing"
+
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
-	"net/http"
-	"path/filepath"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -45,6 +46,8 @@ import (
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
+
+const listenerAddr = ":8082"
 
 var cfg *rest.Config
 var k8sClient client.Client
@@ -111,7 +114,7 @@ var _ = BeforeSuite(func() {
 		Client:   k8sManager.GetClient(),
 		Scheme:   k8sManager.GetScheme(),
 		Recorder: k8sManager.GetEventRecorderFor("kyma-operator"),
-	}).SetupWithManager(logger, k8sManager)
+	}).SetupWithManager(logger, k8sManager, listenerAddr)
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {

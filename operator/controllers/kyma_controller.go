@@ -23,7 +23,6 @@ import (
 	"time"
 
 	"github.com/kyma-project/kyma-operator/operator/pkg/listener"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 
 	"github.com/go-logr/logr"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
@@ -366,7 +365,7 @@ func (r *KymaReconciler) checkAndUpdateComponentConditions(ctx context.Context, 
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager, eventsSource <-chan event.GenericEvent) error {
+func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager, listenerAddr string) error {
 	c, err := dynamic.NewForConfig(mgr.GetConfig())
 	if err != nil {
 		return err
@@ -424,10 +423,16 @@ func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager
 		handler.EnqueueRequestsFromMapFunc(r.TemplateChangeHandler().Watch(context.TODO())),
 		builder.WithPredicates(predicate.GenerationChangedPredicate{}))
 
+	skrEventsListener := r.SKREventsListener(setupLog, listenerAddr)
+	eventsSource := skrEventsListener.ReceivedEvents()
 	controllerBuilder = controllerBuilder.Watches(
 		&source.Channel{Source: eventsSource},
 		&handler.Funcs{GenericFunc: r.WatcherEventsHandler().ProcessWatcherEvent(context.TODO())},
 	)
+	// Adding events listener as a runnable of the manager
+	if err = mgr.Add(skrEventsListener); err != nil {
+		return err
+	}
 	setupLog.Info("initialized listener to watch for generic events from the SKR watcher")
 
 	if err := index.TemplateChannel().With(context.TODO(), mgr.GetFieldIndexer()); err != nil {
@@ -451,4 +456,11 @@ func (r *KymaReconciler) KymaStatus() *status.Kyma {
 
 func (r *KymaReconciler) WatcherEventsHandler() *listener.WatcherEventsHandler {
 	return &listener.WatcherEventsHandler{Client: r.Client}
+}
+
+func (r *KymaReconciler) SKREventsListener(setupLog logr.Logger, listenerAddr string) *listener.SKREventsListener {
+	return &listener.SKREventsListener{
+		Addr:   listenerAddr,
+		Logger: setupLog,
+	}
 }

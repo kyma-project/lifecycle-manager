@@ -20,7 +20,6 @@ import (
 	"flag"
 	"os"
 
-	"github.com/kyma-project/kyma-operator/operator/pkg/listener"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -94,17 +93,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	skrEventsListener := &listener.SKREventsListener{
-		Addr:   listenerAddr,
-		Logger: setupLog,
-	}
-	eventsSource := skrEventsListener.ReceivedEvents()
-
 	if err = (&controllers.KymaReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("kyma-operator"),
-	}).SetupWithManager(setupLog, mgr, eventsSource); err != nil {
+	}).SetupWithManager(setupLog, mgr, listenerAddr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
@@ -116,12 +109,6 @@ func main() {
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up ready check")
-		os.Exit(1)
-	}
-
-	// Adding events listener as a runnable of the manager
-	if err = mgr.Add(skrEventsListener); err != nil {
-		setupLog.Error(err, "unable to start skr event listener", "controller", "Kyma")
 		os.Exit(1)
 	}
 
