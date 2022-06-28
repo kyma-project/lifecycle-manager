@@ -65,12 +65,25 @@ func main() {
 	var enableLeaderElection bool
 	var probeAddr string
 	var maxConcurrentReconciles int
+	var requeueSuccessInterval, requeueFailureInterval, requeueWaitingInterval time.Duration
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.IntVar(&maxConcurrentReconciles, "max-concurrent-reconciles", 1, "The maximum number of concurrent Reconciles which can be run.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+
+	flag.DurationVar(&requeueSuccessInterval, "requeue-success-interval", 20*time.Second,
+		"determines the duration after which an already successfully reconciled Kyma is enqueued for checking "+
+			"if it's still in a consistent state.")
+	flag.DurationVar(&requeueFailureInterval, "requeue-failure-interval", 10*time.Second,
+		"determines the duration after which a failing reconciliation is retried and "+
+			"enqueued for a next try at recovering (e.g. because an Remote Synchronization Interaction failed)")
+	flag.DurationVar(&requeueWaitingInterval, "requeue-waiting-interval", 3*time.Second,
+		"etermines the duration after which a pending reconciliation is requeued "+
+			"if the operator decides that it needs to wait for a certain state to update before it can proceed "+
+			"(e.g. because of pending finalizers in the deletion process)")
+
 	opts := zap.Options{
 		Development: true,
 		Level:       zapcore.DebugLevel,
@@ -106,6 +119,11 @@ func main() {
 	if err = (&controllers.KymaReconciler{
 		Client:        mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor(name),
+		RequeueIntervals: controllers.RequeueIntervals{
+			Success: requeueSuccessInterval,
+			Failure: requeueFailureInterval,
+			Waiting: requeueWaitingInterval,
+		},
 	}).SetupWithManager(mgr, controller.Options{
 		RateLimiter: workqueue.NewMaxOfRateLimiter(
 			workqueue.NewItemExponentialFailureRateLimiter(100*time.Millisecond, 1000*time.Second),

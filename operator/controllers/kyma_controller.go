@@ -47,10 +47,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
+type RequeueIntervals struct {
+	Success time.Duration
+	Failure time.Duration
+	Waiting time.Duration
+}
+
 // KymaReconciler reconciles a Kyma object
 type KymaReconciler struct {
 	client.Client
 	record.EventRecorder
+	RequeueIntervals
 }
 
 func (r *KymaReconciler) GetEventRecorder() record.EventRecorder {
@@ -87,7 +94,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	// check if deletionTimestamp is set, retry until it gets fully deleted
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != operatorv1alpha1.KymaStateDeleting {
 		if err := remote.DeleteRemotelySyncedKyma(ctx, r.Client, client.ObjectKeyFromObject(&kyma)); client.IgnoreNotFound(err) != nil {
-			return ctrl.Result{RequeueAfter: 10 * time.Second}, err
+			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
 		}
 		// if the status is not yet set to deleting, also update the status
 		return ctrl.Result{}, status.Helper(r).UpdateStatus(ctx, &kyma, operatorv1alpha1.KymaStateDeleting, "deletion timestamp set")
@@ -102,14 +109,14 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	// create a remote synchronization context, and update the remote kyma with the state of the control plane
 	syncContext, err := remote.InitializeKymaSynchronizationContext(ctx, r.Client, &kyma)
 	if err != nil {
-		return ctrl.Result{RequeueAfter: 5 * time.Second}, err
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
 	}
 	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx)
 	if err != nil {
-		return ctrl.Result{RequeueAfter: 5 * time.Second}, err
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
 	}
 	if synchronizationRequiresRequeue, err := syncContext.SynchronizeRemoteKyma(ctx, remoteKyma); err != nil || synchronizationRequiresRequeue {
-		return ctrl.Result{RequeueAfter: 5 * time.Second}, err
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
 	}
 
 	// state handling
@@ -117,18 +124,18 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	case "":
 		return ctrl.Result{}, r.HandleInitialState(ctx, &kyma)
 	case operatorv1alpha1.KymaStateProcessing:
-		return ctrl.Result{RequeueAfter: 10 * time.Second}, r.HandleProcessingState(ctx, &kyma)
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, r.HandleProcessingState(ctx, &kyma)
 	case operatorv1alpha1.KymaStateDeleting:
 		if dependentsDeleting, err := r.HandleDeletingState(ctx, &kyma); err != nil {
 			return ctrl.Result{}, err
 		} else if dependentsDeleting {
-			return ctrl.Result{RequeueAfter: 3 * time.Second}, nil
+			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Waiting}, nil
 		}
 	case operatorv1alpha1.KymaStateError:
-		return ctrl.Result{RequeueAfter: 3 * time.Second}, r.HandleErrorState(ctx, &kyma)
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Waiting}, r.HandleErrorState(ctx, &kyma)
 	case operatorv1alpha1.KymaStateReady:
 		//TODO Adjust again
-		return ctrl.Result{RequeueAfter: 20 * time.Second}, r.HandleReadyState(ctx, &kyma)
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, r.HandleReadyState(ctx, &kyma)
 	}
 
 	return ctrl.Result{}, nil
