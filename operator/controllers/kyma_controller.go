@@ -22,11 +22,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyma-project/kyma-operator/operator/pkg/listener"
-
 	"github.com/go-logr/logr"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 
+	"github.com/khlifi411/kyma-listener/listener"
 	"github.com/kyma-project/kyma-operator/operator/pkg/index"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"github.com/kyma-project/kyma-operator/operator/pkg/release"
@@ -423,17 +422,7 @@ func (r *KymaReconciler) SetupWithManager(setupLog logr.Logger, mgr ctrl.Manager
 		handler.EnqueueRequestsFromMapFunc(r.TemplateChangeHandler().Watch(context.TODO())),
 		builder.WithPredicates(predicate.GenerationChangedPredicate{}))
 
-	skrEventsListener := r.SKREventsListener(setupLog, listenerAddr)
-	eventsSource := skrEventsListener.ReceivedEvents()
-	controllerBuilder = controllerBuilder.Watches(
-		&source.Channel{Source: eventsSource},
-		&handler.Funcs{GenericFunc: r.WatcherEventsHandler().ProcessWatcherEvent(context.TODO())},
-	)
-	// Adding events listener as a runnable of the manager
-	if err = mgr.Add(skrEventsListener); err != nil {
-		return err
-	}
-	setupLog.Info("initialized listener to watch for generic events from the SKR watcher")
+	controllerBuilder = listener.RegisterListenerComponent(setupLog, mgr, controllerBuilder, listenerAddr, &handler.EnqueueRequestForObject{})
 
 	if err := index.TemplateChannel().With(context.TODO(), mgr.GetFieldIndexer()); err != nil {
 		return err
@@ -452,15 +441,4 @@ func (r *KymaReconciler) TemplateChangeHandler() *watch.TemplateChangeHandler {
 
 func (r *KymaReconciler) KymaStatus() *status.Kyma {
 	return &status.Kyma{StatusWriter: r.Status(), EventRecorder: r.Recorder}
-}
-
-func (r *KymaReconciler) WatcherEventsHandler() *listener.WatcherEventsHandler {
-	return &listener.WatcherEventsHandler{Client: r.Client}
-}
-
-func (r *KymaReconciler) SKREventsListener(setupLog logr.Logger, listenerAddr string) *listener.SKREventsListener {
-	return &listener.SKREventsListener{
-		Addr:   listenerAddr,
-		Logger: setupLog,
-	}
 }
