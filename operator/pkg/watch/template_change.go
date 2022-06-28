@@ -15,8 +15,11 @@ import (
 
 type TemplateChangeHandler struct {
 	client.Reader
-	client.StatusWriter
 	record.EventRecorder
+}
+
+func NewTemplateChangeHandler(handlerClient ChangeHandlerClient) *TemplateChangeHandler {
+	return &TemplateChangeHandler{Reader: handlerClient, EventRecorder: handlerClient}
 }
 
 func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
