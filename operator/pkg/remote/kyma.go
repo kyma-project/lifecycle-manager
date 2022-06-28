@@ -9,6 +9,7 @@ import (
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -87,24 +88,17 @@ func InitializeKymaSynchronizationContext(ctx context.Context, controlPlaneClien
 }
 
 func (c *KymaSynchronizationContext) CreateCRD(ctx context.Context) error {
-	crd := v1extensions.CustomResourceDefinition{}
-	err := c.controlPlaneClient.Get(ctx, client.ObjectKey{
+	crd := &v1extensions.CustomResourceDefinition{}
+	if err := c.controlPlaneClient.Get(ctx, client.ObjectKey{
 		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
 		// name changes, this also has to be adjusted here. We can think of making this configurable later
 		Name: fmt.Sprintf("%s.%s", operatorv1alpha1.KymaPlural, operatorv1alpha1.GroupVersion.Group),
-	}, &crd)
-	if err != nil {
+	}, crd); err != nil {
 		return err
 	}
-	remoteCrd := v1extensions.CustomResourceDefinition{}
-	remoteCrd.Name = crd.Name
-	remoteCrd.Namespace = crd.Namespace
-	remoteCrd.Spec = crd.Spec
-	err = c.runtimeClient.Create(ctx, &remoteCrd)
-	if err != nil {
-		return err
-	}
-	return err
+	return c.runtimeClient.Create(ctx, &v1extensions.CustomResourceDefinition{
+		ObjectMeta: v1.ObjectMeta{Name: crd.Name, Namespace: crd.Namespace}, Spec: crd.Spec,
+	})
 }
 
 func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context) (*operatorv1alpha1.Kyma, error) {
