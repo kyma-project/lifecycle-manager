@@ -142,25 +142,33 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, 
 		controllerutil.AddFinalizer(remoteKyma, labels.Finalizer)
 	}
 
+	previousRemoteObservedGeneration := remoteKyma.Status.ObservedGeneration
 	if remoteKyma.Status.ObservedGeneration != remoteKyma.GetGeneration() {
+		remoteKyma.Status.ObservedGeneration = remoteKyma.GetGeneration()
+		if err := c.runtimeClient.Status().Update(ctx, remoteKyma); err != nil {
+			return false, err
+		}
+
 		kyma.Spec = remoteKyma.Spec
 		err := c.controlPlaneClient.Update(ctx, kyma)
 		if err != nil {
-			recorder.Event(remoteKyma, "Warning", err.Error(), "Client could not update Control Plane Kyma")
-			return true, err
+			// revert remote observed generation
+			remoteKyma.Status.ObservedGeneration = previousRemoteObservedGeneration
+			if err := c.runtimeClient.Status().Update(ctx, remoteKyma); err != nil {
+				return false, err
+			}
+			recorder.Event(remoteKyma, "Warning", err.Error(), "Client could not update "+
+				"Control Plane Kyma while syncing with remote Kyma")
 		}
-		remoteKyma.Status.ObservedGeneration = remoteKyma.GetGeneration()
-		err = c.runtimeClient.Status().Update(ctx, remoteKyma)
-		if err != nil {
-			return true, err
-		}
+		// only re-queue if control plane Kyma is updated
+		return true, err
 	}
 
 	if remoteKyma.Status.State != kyma.Status.State {
 		remoteKyma.Status.State = kyma.Status.State
 		err := c.runtimeClient.Status().Update(ctx, remoteKyma)
 		if err != nil {
-			return true, err
+			return false, err
 		}
 	}
 
@@ -169,10 +177,6 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, 
 		remoteKyma.Annotations = make(map[string]string)
 	}
 	remoteKyma.Annotations[labels.LastSync] = lastSyncDate
-	err := c.runtimeClient.Update(ctx, remoteKyma)
-	if err != nil {
-		return true, err
-	}
 
-	return false, nil
+	return false, c.runtimeClient.Update(ctx, remoteKyma)
 }
