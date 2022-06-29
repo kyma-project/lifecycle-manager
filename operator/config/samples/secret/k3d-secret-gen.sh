@@ -8,5 +8,5 @@ metadata:
     "operator.kyma-project.io/kyma-name": "kyma-sample"
 type: Opaque
 data:
-  config: $(cat /Users/d063994/SAPDevelop/go/kyma-operator/operator/kubeconfigs/kubeconfig--jellyfish--ab-test1.yaml | sed 's/---//g' | base64)
+  config: $(cat k3d kubeconfig get kyma | sed 's/---//g' | base64)
 EOF
