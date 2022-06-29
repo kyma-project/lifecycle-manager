@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.0
   creationTimestamp: null
   name: kymas.operator.kyma-project.io
 spec:
@@ -84,8 +84,8 @@ spec:
                   namespace:
                     description: The target namespace, if empty the namespace is reflected
                       from the control plane Note that cleanup is currently not supported
-                      if you are switching the namespace so you will manually need
-                      to cleanup old resources
+                      if you are switching the namespace, so you will manually need
+                      to cleanup old synchronized Kymas
                     type: string
                   strategy:
                     default: secret
@@ -169,9 +169,3 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []
