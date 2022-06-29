@@ -142,26 +142,21 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, 
 		controllerutil.AddFinalizer(remoteKyma, labels.Finalizer)
 	}
 
-	previousRemoteObservedGeneration := remoteKyma.Status.ObservedGeneration
 	if remoteKyma.Status.ObservedGeneration != remoteKyma.GetGeneration() {
-		remoteKyma.Status.ObservedGeneration = remoteKyma.GetGeneration()
-		if err := c.runtimeClient.Status().Update(ctx, remoteKyma); err != nil {
-			return false, err
-		}
-
+		// TODO: Remote Kyma Status().Update() should be called before control place Kyma Update()
+		// TODO: No operations should be allowed after a reconcile-able object, i.e. control plane kyma, is updated!
 		kyma.Spec = remoteKyma.Spec
 		err := c.controlPlaneClient.Update(ctx, kyma)
 		if err != nil {
-			// revert remote observed generation
-			remoteKyma.Status.ObservedGeneration = previousRemoteObservedGeneration
-			if err := c.runtimeClient.Status().Update(ctx, remoteKyma); err != nil {
-				return false, err
-			}
-			recorder.Event(remoteKyma, "Warning", err.Error(), "Client could not update "+
-				"Control Plane Kyma while syncing with remote Kyma")
+			recorder.Event(remoteKyma, "Warning", err.Error(), "Client could not update Control Plane Kyma")
+			return false, err
 		}
-		// only re-queue if control plane Kyma is updated
-		return true, err
+
+		remoteKyma.Status.ObservedGeneration = remoteKyma.GetGeneration()
+		if err = c.runtimeClient.Status().Update(ctx, remoteKyma); err != nil {
+			return false, err
+		}
+		return true, nil
 	}
 
 	if remoteKyma.Status.State != kyma.Status.State {
