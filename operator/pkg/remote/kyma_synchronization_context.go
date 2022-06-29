@@ -6,10 +6,12 @@ import (
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
+	corev1 "k8s.io/api/core/v1"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -22,13 +24,20 @@ type KymaSynchronizationContext struct {
 	controlPlaneKyma   *operatorv1alpha1.Kyma
 }
 
-func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, name, namespace string) (client.Client, error) {
+func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, key client.ObjectKey, strategy operatorv1alpha1.SyncStrategy) (client.Client, error) {
 	cc := ClusterClient{
 		DefaultClient: controlPlaneClient,
 		Logger:        log.FromContext(ctx),
 	}
 
-	rc, err := cc.GetRestConfigFromSecret(ctx, name, namespace)
+	var rc *rest.Config
+	var err error
+	switch strategy {
+	case operatorv1alpha1.SyncStrategyLocalSecret:
+		fallthrough
+	default:
+		rc, err = cc.GetRestConfigFromSecret(ctx, key.Name, key.Namespace)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -48,24 +57,24 @@ func GetRemotelySyncedKyma(ctx context.Context, runtimeClient client.Client, key
 	return remoteKyma, nil
 }
 
-func DeleteRemotelySyncedKyma(ctx context.Context, controlPlaneClient client.Client, key client.ObjectKey) error {
-	runtimeClient, err := NewRemoteClient(ctx, controlPlaneClient, key.Name, key.Namespace)
+func DeleteRemotelySyncedKyma(ctx context.Context, controlPlaneClient client.Client, kyma *operatorv1alpha1.Kyma) error {
+	runtimeClient, err := NewRemoteClient(ctx, controlPlaneClient, client.ObjectKeyFromObject(kyma), kyma.Spec.Sync.Strategy)
 	if err != nil {
 		return err
 	}
-	remoteKyma, err := GetRemotelySyncedKyma(ctx, runtimeClient, key)
+	remoteKyma, err := GetRemotelySyncedKyma(ctx, runtimeClient, GetRemoteObjectKey(kyma))
 	if err != nil {
 		return err
 	}
 	return runtimeClient.Delete(ctx, remoteKyma)
 }
 
-func RemoveFinalizerFromRemoteKyma(ctx context.Context, controlPlaneClient client.Client, key client.ObjectKey) error {
-	runtimeClient, err := NewRemoteClient(ctx, controlPlaneClient, key.Name, key.Namespace)
+func RemoveFinalizerFromRemoteKyma(ctx context.Context, controlPlaneClient client.Client, kyma *operatorv1alpha1.Kyma) error {
+	runtimeClient, err := NewRemoteClient(ctx, controlPlaneClient, client.ObjectKeyFromObject(kyma), kyma.Spec.Sync.Strategy)
 	if err != nil {
 		return err
 	}
-	remoteKyma, err := GetRemotelySyncedKyma(ctx, runtimeClient, key)
+	remoteKyma, err := GetRemotelySyncedKyma(ctx, runtimeClient, GetRemoteObjectKey(kyma))
 	if err != nil {
 		return err
 	}
@@ -74,7 +83,7 @@ func RemoveFinalizerFromRemoteKyma(ctx context.Context, controlPlaneClient clien
 }
 
 func InitializeKymaSynchronizationContext(ctx context.Context, controlPlaneClient client.Client, controlPlaneKyma *operatorv1alpha1.Kyma) (*KymaSynchronizationContext, error) {
-	runtimeClient, err := NewRemoteClient(ctx, controlPlaneClient, controlPlaneKyma.Name, controlPlaneKyma.Namespace)
+	runtimeClient, err := NewRemoteClient(ctx, controlPlaneClient, client.ObjectKeyFromObject(controlPlaneKyma), controlPlaneKyma.Spec.Sync.Strategy)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +114,14 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 	kyma := c.controlPlaneKyma
 	recorder := adapter.RecorderFromContext(ctx)
 	remoteKyma := &operatorv1alpha1.Kyma{}
-	err := c.runtimeClient.Get(ctx, client.ObjectKeyFromObject(kyma), remoteKyma)
+
+	remoteKyma.Name = kyma.Name
+	remoteKyma.Namespace = c.controlPlaneKyma.Namespace
+	if c.controlPlaneKyma.Spec.Sync.Namespace != "" {
+		remoteKyma.Namespace = c.controlPlaneKyma.Spec.Sync.Namespace
+	}
+
+	err := c.runtimeClient.Get(ctx, client.ObjectKeyFromObject(remoteKyma), remoteKyma)
 
 	if meta.IsNoMatchError(err) {
 		recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
@@ -118,9 +134,13 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 	}
 
 	if errors.IsNotFound(err) {
-		remoteKyma.Name = kyma.Name
-		remoteKyma.Namespace = kyma.Namespace
-		remoteKyma.Spec = *kyma.Spec.DeepCopy()
+		if err := c.EnsureNamespaceExists(ctx, remoteKyma.Namespace); err != nil {
+			recorder.Event(kyma, "Warning", "RemoteKymaInstallation", fmt.Sprintf("namespace %s could not be synced", remoteKyma.Namespace))
+			return nil, err
+		}
+
+		kyma.Spec.DeepCopyInto(&remoteKyma.Spec)
+
 		err = c.runtimeClient.Create(ctx, remoteKyma)
 		if err != nil {
 			recorder.Event(kyma, "Normal", "CRDInstallation", "CRDs were installed to SKR")
@@ -179,4 +199,22 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, 
 	}
 
 	return false, nil
+}
+
+func (c *KymaSynchronizationContext) EnsureNamespaceExists(ctx context.Context, namespace string) error {
+	ns := &corev1.Namespace{ObjectMeta: v1.ObjectMeta{Name: namespace}}
+	if err := c.runtimeClient.Get(ctx, client.ObjectKey{Name: namespace}, ns); errors.IsNotFound(err) {
+		return c.runtimeClient.Create(ctx, ns)
+	} else {
+		return err
+	}
+}
+
+func GetRemoteObjectKey(kyma *operatorv1alpha1.Kyma) client.ObjectKey {
+	name := kyma.Name
+	namespace := kyma.Namespace
+	if kyma.Spec.Sync.Namespace != "" {
+		namespace = kyma.Spec.Sync.Namespace
+	}
+	return client.ObjectKey{Namespace: namespace, Name: name}
 }
