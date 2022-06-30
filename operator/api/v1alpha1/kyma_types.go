@@ -21,6 +21,7 @@ import (
 )
 
 const KymaKind = "Kyma"
+const KymaPlural = "kymas"
 
 // CustomStates defines some component specific settings
 type CustomStates map[string]string
