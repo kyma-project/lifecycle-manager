@@ -55,6 +55,8 @@ type RequeueIntervals struct {
 	Waiting time.Duration
 }
 
+const componentName = "kyma"
+
 // KymaReconciler reconciles a Kyma object
 type KymaReconciler struct {
 	client.Client
@@ -414,9 +416,9 @@ func (r *KymaReconciler) SetupWithManager(logger logr.Logger, mgr ctrl.Manager, 
 		handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch(context.TODO())),
 		builder.WithPredicates(predicate.GenerationChangedPredicate{}))
 
-	controllerBuilder = listener.RegisterListenerComponent(logger, mgr, controllerBuilder, listenerAddr, &handler.EnqueueRequestForObject{}, "kyma")
 	// here we define a watch on secrets for the kyma operator so that the cache is picking up changes
 	controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: &v1.Secret{}}, handler.Funcs{})
+	controllerBuilder = listener.RegisterListenerComponent(logger, mgr, controllerBuilder, listenerAddr, &handler.EnqueueRequestForObject{}, componentName)
 
 	if err := index.TemplateChannel().With(context.TODO(), mgr.GetFieldIndexer()); err != nil {
 		return err
