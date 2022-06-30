@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/go-logr/logr v1.2.3
-	github.com/khlifi411/kyma-listener v0.0.0-20220630064745-f01257cf7ce7
+	github.com/khlifi411/kyma-listener v0.0.0-20220630123145-65d46e84be90
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.18.1
 	go.uber.org/zap v1.19.1
