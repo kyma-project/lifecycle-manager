@@ -1,4 +1,6 @@
-cat <<EOF > ./../component-integration-installed/secret.yaml
+#! /bin/bash
+
+echo "
 apiVersion: v1
 kind: Secret
 metadata:
@@ -8,5 +10,4 @@ metadata:
     "operator.kyma-project.io/kyma-name": "kyma-sample"
 type: Opaque
 data:
-  config: $(cat k3d kubeconfig get kyma | sed 's/---//g' | base64)
-EOF
+  config: $(kubectl config view --raw --minify | sed 's/---//g' | base64)" | kubectl apply -f -
