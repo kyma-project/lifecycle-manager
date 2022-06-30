@@ -135,7 +135,6 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 }
 
 func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, remoteKyma *operatorv1alpha1.Kyma) (bool, error) {
-	kyma := c.controlPlaneKyma
 	recorder := adapter.RecorderFromContext(ctx)
 	// check finalizer
 	if !controllerutil.ContainsFinalizer(remoteKyma, labels.Finalizer) {
@@ -143,30 +142,36 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, 
 	}
 
 	if remoteKyma.Status.ObservedGeneration != remoteKyma.GetGeneration() {
-		// TODO: Remote Kyma Status().Update() should be called before control place Kyma Update()
-		// TODO: No operations should be allowed after a reconcile-able object, i.e. control plane kyma, is updated!
-		kyma.Spec = remoteKyma.Spec
-		err := c.controlPlaneClient.Update(ctx, kyma)
-		if err != nil {
-			recorder.Event(remoteKyma, "Warning", err.Error(), "Client could not update Control Plane Kyma")
-			return false, err
-		}
-
+		// remote is new, lets update the control plane
 		remoteKyma.Status.ObservedGeneration = remoteKyma.GetGeneration()
-		if err = c.runtimeClient.Status().Update(ctx, remoteKyma); err != nil {
-			return false, err
+		if err := c.runtimeClient.Status().Update(ctx, remoteKyma); err != nil {
+			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
+			return true, err
 		}
-		return true, nil
-	}
 
-	if remoteKyma.Status.State != kyma.Status.State {
-		remoteKyma.Status.State = kyma.Status.State
+		c.controlPlaneKyma.Spec = remoteKyma.Spec
+		if err := c.controlPlaneClient.Update(ctx, c.controlPlaneKyma); err != nil {
+			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update control clane kyma")
+			return true, err
+		}
+
+		// as we have updated the control plane, we will requeue the object
+		return true, nil
+	} else if c.controlPlaneKyma.Status.ObservedGeneration != c.controlPlaneKyma.GetGeneration() {
+		// control plane got updated, runtime on cluster is using the wrong base instance for customization
+		// TODO this now requires custom merge logic, but for now we reapply the control plane version
+		remoteKyma.Spec = c.controlPlaneKyma.Spec
+	} else if remoteKyma.Status.State != c.controlPlaneKyma.Status.State {
+		// control plane and runtime spec are in sync, but the status got updated in the control plane
+		remoteKyma.Status.State = c.controlPlaneKyma.Status.State
 		err := c.runtimeClient.Status().Update(ctx, remoteKyma)
 		if err != nil {
+			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
 			return false, err
 		}
 	}
 
+	// this is an additional update on the runtime and might not be worth it
 	lastSyncDate := time.Now().Format(time.RFC3339)
 	if remoteKyma.Annotations == nil {
 		remoteKyma.Annotations = make(map[string]string)
