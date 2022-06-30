@@ -396,7 +396,7 @@ func (r *KymaReconciler) checkAndUpdateComponentConditions(ctx context.Context, 
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+func (r *KymaReconciler) SetupWithManager(logger logr.Logger, mgr ctrl.Manager, options controller.Options, listenerAddr string) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&operatorv1alpha1.Kyma{}).WithOptions(options)
 
 	if dynamicInformers, err := dynamic.Informers(mgr); err != nil {
@@ -414,7 +414,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 		handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch(context.TODO())),
 		builder.WithPredicates(predicate.GenerationChangedPredicate{}))
 
-	controllerBuilder = listener.RegisterListenerComponent(setupLog, mgr, controllerBuilder, listenerAddr, &handler.EnqueueRequestForObject{})
+	controllerBuilder = listener.RegisterListenerComponent(logger, mgr, controllerBuilder, listenerAddr, &handler.EnqueueRequestForObject{}, "kyma")
 	// here we define a watch on secrets for the kyma operator so that the cache is picking up changes
 	controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: &v1.Secret{}}, handler.Funcs{})
 
