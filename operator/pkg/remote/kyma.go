@@ -143,24 +143,27 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, 
 	}
 
 	if remoteKyma.Status.ObservedGeneration != remoteKyma.GetGeneration() {
+		// TODO: Remote Kyma Status().Update() should be called before control place Kyma Update()
+		// TODO: No operations should be allowed after a reconcile-able object, i.e. control plane kyma, is updated!
 		kyma.Spec = remoteKyma.Spec
 		err := c.controlPlaneClient.Update(ctx, kyma)
 		if err != nil {
 			recorder.Event(remoteKyma, "Warning", err.Error(), "Client could not update Control Plane Kyma")
-			return true, err
+			return false, err
 		}
+
 		remoteKyma.Status.ObservedGeneration = remoteKyma.GetGeneration()
-		err = c.runtimeClient.Status().Update(ctx, remoteKyma)
-		if err != nil {
-			return true, err
+		if err = c.runtimeClient.Status().Update(ctx, remoteKyma); err != nil {
+			return false, err
 		}
+		return true, nil
 	}
 
 	if remoteKyma.Status.State != kyma.Status.State {
 		remoteKyma.Status.State = kyma.Status.State
 		err := c.runtimeClient.Status().Update(ctx, remoteKyma)
 		if err != nil {
-			return true, err
+			return false, err
 		}
 	}
 
@@ -169,10 +172,6 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, 
 		remoteKyma.Annotations = make(map[string]string)
 	}
 	remoteKyma.Annotations[labels.LastSync] = lastSyncDate
-	err := c.runtimeClient.Update(ctx, remoteKyma)
-	if err != nil {
-		return true, err
-	}
 
-	return false, nil
+	return false, c.runtimeClient.Update(ctx, remoteKyma)
 }
