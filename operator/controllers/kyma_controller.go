@@ -322,7 +322,7 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *operat
 				return false, err
 			}
 			status.Helper(r).SyncReadyConditionForModules(kyma, util.Modules{name: module},
-				operatorv1alpha1.ConditionStatusFalse, fmt.Sprintf("initial condition for %s module CR", module)
+				operatorv1alpha1.ConditionStatusFalse, fmt.Sprintf("initial condition for %s module CR", module.Name))
 			logger.Info("successfully created module CR of",
 				"type", name,
 				"templateChannel", module.Channel(),
