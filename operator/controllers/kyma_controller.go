@@ -176,9 +176,8 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *operat
 		message := fmt.Sprintf("Component CR creation error: %s", err.Error())
 		logger.Info(message)
 		r.Event(kyma, "Warning", "ReconciliationFailed", fmt.Sprintf("Reconciliation failed: %s", message))
-		statusErr := status.Helper(r).UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError, message)
-		if statusErr != nil {
-			return statusErr
+		if err := status.Helper(r).UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError, message); err != nil {
+			return err
 		}
 		return err
 	}
@@ -333,8 +332,8 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *operat
 				return false, err
 			}
 			status.Helper(r).SyncReadyConditionForModules(kyma, util.Modules{name: module},
-				operatorv1alpha1.ConditionStatusFalse, "initial condition for module cr")
-			logger.Info("successfully created component CR of",
+				operatorv1alpha1.ConditionStatusFalse, fmt.Sprintf("initial condition for %s module CR", module.Name))
+			logger.Info("successfully created module CR of",
 				"type", name,
 				"templateChannel", module.Channel(),
 				"templateGeneration", module.Template.GetGeneration())
