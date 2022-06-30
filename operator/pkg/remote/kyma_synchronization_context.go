@@ -163,16 +163,20 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, 
 
 	if remoteKyma.Status.ObservedGeneration != remoteKyma.GetGeneration() {
 		// remote is new, lets update the control plane
-		c.controlPlaneKyma.Spec = remoteKyma.Spec
-		if err := c.controlPlaneClient.Update(ctx, c.controlPlaneKyma); err != nil {
-			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update control clane kyma")
-			return true, err
-		}
 		remoteKyma.Status.ObservedGeneration = remoteKyma.GetGeneration()
 		if err := c.runtimeClient.Status().Update(ctx, remoteKyma); err != nil {
 			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
 			return true, err
 		}
+
+		c.controlPlaneKyma.Spec = remoteKyma.Spec
+		if err := c.controlPlaneClient.Update(ctx, c.controlPlaneKyma); err != nil {
+			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update control clane kyma")
+			return true, err
+		}
+
+		// as we have updated the control plane, we will requeue the object
+		return true, nil
 	} else if c.controlPlaneKyma.Status.ObservedGeneration != c.controlPlaneKyma.GetGeneration() {
 		// control plane got updated, runtime on cluster is using the wrong base instance for customization
 		// TODO this now requires custom merge logic, but for now we reapply the control plane version
@@ -183,7 +187,7 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, 
 		err := c.runtimeClient.Status().Update(ctx, remoteKyma)
 		if err != nil {
 			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
-			return true, err
+			return false, err
 		}
 	}
 
@@ -193,12 +197,8 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, 
 		remoteKyma.Annotations = make(map[string]string)
 	}
 	remoteKyma.Annotations[labels.LastSync] = lastSyncDate
-	err := c.runtimeClient.Update(ctx, remoteKyma)
-	if err != nil {
-		return true, err
-	}
 
-	return false, nil
+	return false, c.runtimeClient.Update(ctx, remoteKyma)
 }
 
 func (c *KymaSynchronizationContext) EnsureNamespaceExists(ctx context.Context, namespace string) error {
