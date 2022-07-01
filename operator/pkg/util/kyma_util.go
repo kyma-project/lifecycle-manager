@@ -48,6 +48,8 @@ func ParseTemplates(kyma *operatorv1alpha1.Kyma, templates release.TemplatesInCh
 	// (since we do not know which component we are dealing with)
 	modules := make(Modules)
 
+	var module *unstructured.Unstructured
+
 	for _, component := range kyma.Spec.Components {
 		template := templates[component.Name]
 		if template == nil {
@@ -55,15 +57,16 @@ func ParseTemplates(kyma *operatorv1alpha1.Kyma, templates release.TemplatesInCh
 				component.Name, client.ObjectKeyFromObject(kyma))
 		}
 
-		if module, err := GetUnstructuredComponentFromTemplate(template, component.Name, kyma); err != nil {
+		var err error
+		if module, err = GetUnstructuredComponentFromTemplate(template, component.Name, kyma); err != nil {
 			return nil, err
-		} else {
-			modules[component.Name] = &Module{
-				Template:         template.Template,
-				TemplateOutdated: template.Outdated,
-				Unstructured:     module,
-				Settings:         component.Settings,
-			}
+		}
+
+		modules[component.Name] = &Module{
+			Template:         template.Template,
+			TemplateOutdated: template.Outdated,
+			Unstructured:     module,
+			Settings:         component.Settings,
 		}
 	}
 

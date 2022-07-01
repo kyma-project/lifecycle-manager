@@ -401,19 +401,23 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 		// here we define a watch on secrets for the kyma operator so that the cache is picking up changes
 		Watches(&source.Kind{Type: &v1.Secret{}}, handler.Funcs{})
 
+	var dynamicInformers map[string]source.Source
+
+	var err error
+
 	// This fetches all resources for our component operator CRDs, might become a problem if component operators
 	// create their own CRDs that we dont need to watch
-	if dynamicInformers, err := dynamic.Informers(mgr, schema.GroupVersion{
+	if dynamicInformers, err = dynamic.Informers(mgr, schema.GroupVersion{
 		Group:   labels.ComponentPrefix,
 		Version: "v1alpha1",
 	}); err != nil {
 		return err
-	} else {
-		for _, informer := range dynamicInformers {
-			controllerBuilder = controllerBuilder.
-				Watches(informer, &handler.Funcs{UpdateFunc: watch.NewComponentChangeHandler(r).Watch(context.TODO())},
-					builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
-		}
+	}
+
+	for _, informer := range dynamicInformers {
+		controllerBuilder = controllerBuilder.
+			Watches(informer, &handler.Funcs{UpdateFunc: watch.NewComponentChangeHandler(r).Watch(context.TODO())},
+				builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
 	}
 
 	if err := index.TemplateChannel().With(context.TODO(), mgr.GetFieldIndexer()); err != nil {
