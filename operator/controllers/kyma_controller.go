@@ -93,8 +93,12 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	// check if deletionTimestamp is set, retry until it gets fully deleted
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != operatorv1alpha1.KymaStateDeleting {
-		if err := remote.DeleteRemotelySyncedKyma(ctx, r.Client, client.ObjectKeyFromObject(&kyma)); client.IgnoreNotFound(err) != nil {
-			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
+		if kyma.Spec.Sync.Enabled {
+			if err := remote.DeleteRemotelySyncedKyma(ctx, r.Client, &kyma); client.IgnoreNotFound(err) != nil {
+				logger.Info(req.NamespacedName.String() + " could not be deleted remotely!")
+				return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
+			}
+			logger.Info(req.NamespacedName.String() + " got deleted remotely!")
 		}
 		// if the status is not yet set to deleting, also update the status
 		return ctrl.Result{}, status.Helper(r).UpdateStatus(ctx, &kyma, operatorv1alpha1.KymaStateDeleting, "deletion timestamp set")
@@ -107,16 +111,18 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	// create a remote synchronization context, and update the remote kyma with the state of the control plane
-	syncContext, err := remote.InitializeKymaSynchronizationContext(ctx, r.Client, &kyma)
-	if err != nil {
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
-	}
-	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx)
-	if err != nil {
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
-	}
-	if synchronizationRequiresRequeue, err := syncContext.SynchronizeRemoteKyma(ctx, remoteKyma); err != nil || synchronizationRequiresRequeue {
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
+	if kyma.Spec.Sync.Enabled {
+		syncContext, err := remote.InitializeKymaSynchronizationContext(ctx, r.Client, &kyma)
+		if err != nil {
+			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
+		}
+		remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx)
+		if err != nil {
+			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
+		}
+		if synchronizationRequiresRequeue, err := syncContext.SynchronizeRemoteKyma(ctx, remoteKyma); err != nil || synchronizationRequiresRequeue {
+			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
+		}
 	}
 
 	// state handling
@@ -224,11 +230,15 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *operator
 	// remove finalizer
 	logger.Info("All component CRs have been removed, removing finalizer",
 		"resource", client.ObjectKeyFromObject(kyma))
-	if err := remote.RemoveFinalizerFromRemoteKyma(ctx, r, client.ObjectKeyFromObject(kyma)); client.IgnoreNotFound(err) != nil {
-		return false, err
+
+	if kyma.Spec.Sync.Enabled {
+		if err := remote.RemoveFinalizerFromRemoteKyma(ctx, r, kyma); client.IgnoreNotFound(err) != nil {
+			return false, err
+		}
+		logger.Info("removed remote finalizer",
+			"resource", client.ObjectKeyFromObject(kyma))
 	}
-	logger.Info("removed remote finalizer",
-		"resource", client.ObjectKeyFromObject(kyma))
+
 	controllerutil.RemoveFinalizer(kyma, labels.Finalizer)
 
 	return false, r.Update(ctx, kyma)
