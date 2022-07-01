@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/index"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
@@ -135,16 +134,15 @@ func (c *channelTemplateLookup) WithContext(ctx context.Context) (*TemplateInCha
 func (c *channelTemplateLookup) createDesiredChannel() operatorv1alpha1.Channel {
 	var desiredChannel operatorv1alpha1.Channel
 
-	if c.component.Channel != "" {
-		// if component defaultChannel is set it takes precedence
+	switch {
+	case c.component.Channel != "":
 		desiredChannel = c.component.Channel
-	} else if c.defaultChannel != "" {
-		// else if the global defaultChannel is set it takes precedence
+	case c.defaultChannel != "":
 		desiredChannel = c.defaultChannel
-	} else {
-		// else use the default defaultChannel
+	default:
 		desiredChannel = operatorv1alpha1.DefaultChannel
 	}
+
 	return desiredChannel
 }
 

@@ -3,8 +3,8 @@ package watch
 import (
 	"context"
 	"errors"
-	"github.com/go-logr/logr"
 
+	"github.com/go-logr/logr"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

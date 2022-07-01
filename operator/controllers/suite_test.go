@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	corev1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1" //nolint:gci
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
@@ -51,11 +51,11 @@ import (
 
 var (
 	_          *rest.Config
-	k8sClient  client.Client
-	k8sManager manager.Manager
-	testEnv    *envtest.Environment
-	ctx        context.Context
-	cancel     context.CancelFunc
+	k8sClient  client.Client        //nolint:gochecknoglobals
+	k8sManager manager.Manager      //nolint:gochecknoglobals
+	testEnv    *envtest.Environment //nolint:gochecknoglobals
+	ctx        context.Context      //nolint:gochecknoglobals
+	cancel     context.CancelFunc   //nolint:gochecknoglobals
 )
 
 func TestAPIs(t *testing.T) {

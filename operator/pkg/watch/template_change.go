@@ -2,6 +2,7 @@ package watch
 
 import (
 	"context"
+
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"

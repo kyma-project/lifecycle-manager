@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
+	"github.com/kyma-project/kyma-operator/operator/pkg/adapter" //nolint:gci
 	"github.com/kyma-project/kyma-operator/operator/pkg/dynamic"
 	"github.com/kyma-project/kyma-operator/operator/pkg/remote"
 	v1 "k8s.io/api/core/v1"
@@ -318,10 +318,12 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *operat
 	kymaSyncNecessary := false
 	for name, module := range modules {
 		// either the template in the condition is outdated (reflected by a generation change on the template)
-
-		if err := r.Get(ctx, client.ObjectKeyFromObject(module.Unstructured), module.Unstructured); client.IgnoreNotFound(err) != nil {
+		err := r.Get(ctx, client.ObjectKeyFromObject(module.Unstructured), module.Unstructured)
+		if client.IgnoreNotFound(err) != nil {
 			return false, err
-		} else if errors.IsNotFound(err) { // create resource if not found
+		}
+
+		if errors.IsNotFound(err) { // create resource if not found
 			if err := r.CreateModule(ctx, name, kyma, module); err != nil {
 				return false, err
 			}

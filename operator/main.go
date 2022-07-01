@@ -52,8 +52,8 @@ import (
 const name = "kyma-operator"
 
 var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
+	scheme   = runtime.NewScheme()        //nolint:gochecknoglobals
+	setupLog = ctrl.Log.WithName("setup") //nolint:gochecknoglobals
 )
 
 func init() {

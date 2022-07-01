@@ -5,11 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
-	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
-
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"github.com/kyma-project/kyma-operator/operator/pkg/util"
+	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

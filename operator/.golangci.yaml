@@ -7,3 +7,6 @@ linters:
     - maligned
     - scopelint
     - forcetypeassert
+  linters-settings:
+    gci:
+      local-prefixes: github.com/kyma-project
