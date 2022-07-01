@@ -40,11 +40,13 @@ func GetTemplates(ctx context.Context, c client.Reader, kymaObj *operatorv1alpha
 }
 
 func CheckForOutdatedTemplates(logger logr.Logger, k *operatorv1alpha1.Kyma, templates TemplatesInChannels) {
-	// in the case that the kyma spec did not change, we only have to verify that all desired templates are still referenced in the latest spec generation
+	// in the case that the kyma spec did not change, we only have to verify
+	// that all desired templates are still referenced in the latest spec generation
 	for componentName, lookupResult := range templates {
 		for _, condition := range k.Status.Conditions {
 			if condition.Reason == componentName && lookupResult != nil {
-				if lookupResult.Template.GetGeneration() != condition.TemplateInfo.Generation || lookupResult.Template.Spec.Channel != condition.TemplateInfo.Channel {
+				if lookupResult.Template.GetGeneration() != condition.TemplateInfo.Generation ||
+					lookupResult.Template.Spec.Channel != condition.TemplateInfo.Channel {
 					logger.Info("detected outdated template",
 						"condition", condition.Reason,
 						"template", lookupResult.Template.Name,
@@ -65,7 +67,8 @@ type Lookup interface {
 	WithContext(ctx context.Context) (*TemplateInChannel, error)
 }
 
-func LookupTemplate(client client.Reader, component operatorv1alpha1.ComponentType, defaultChannel operatorv1alpha1.Channel) Lookup {
+func LookupTemplate(client client.Reader, component operatorv1alpha1.ComponentType,
+	defaultChannel operatorv1alpha1.Channel) Lookup {
 	return &channelTemplateLookup{
 		reader:         client,
 		component:      component,
@@ -131,13 +134,17 @@ func (c *channelTemplateLookup) WithContext(ctx context.Context) (*TemplateInCha
 
 	// if the found configMap has no defaultChannel assigned to it set a sensible log output
 	if actualChannel == "" {
-		return nil, fmt.Errorf("no defaultChannel found on template for component: %s, specifying no defaultChannel is not allowed", c.component.Name)
+		return nil, fmt.Errorf(
+			"no defaultChannel found on template for component: %s, specifying no defaultChannel is not allowed",
+			c.component.Name)
 	}
 
 	if actualChannel != c.defaultChannel {
-		log.FromContext(ctx).V(3).Info(fmt.Sprintf("using %s (instead of %s) for component %s", actualChannel, c.defaultChannel, c.component.Name))
+		log.FromContext(ctx).V(3).Info(fmt.Sprintf("using %s (instead of %s) for component %s",
+			actualChannel, c.defaultChannel, c.component.Name))
 	} else {
-		log.FromContext(ctx).V(3).Info(fmt.Sprintf("using %s for component %s", actualChannel, c.component.Name))
+		log.FromContext(ctx).V(3).Info(fmt.Sprintf("using %s for component %s",
+			actualChannel, c.component.Name))
 	}
 
 	return &TemplateInChannel{
@@ -147,11 +154,13 @@ func (c *channelTemplateLookup) WithContext(ctx context.Context) (*TemplateInCha
 	}, nil
 }
 
-func NewMoreThanOneTemplateCandidateErr(component operatorv1alpha1.ComponentType, candidateTemplates []operatorv1alpha1.ModuleTemplate) error {
+func NewMoreThanOneTemplateCandidateErr(component operatorv1alpha1.ComponentType,
+	candidateTemplates []operatorv1alpha1.ModuleTemplate) error {
 	candidates := make([]string, len(candidateTemplates))
 	for i, candidate := range candidateTemplates {
 		candidates[i] = candidate.GetName()
 	}
 
-	return fmt.Errorf("more than one config map template found for component: %s, candidates: %v", component.Name, candidates)
+	return fmt.Errorf("more than one config map template found for component: %s, candidates: %v",
+		component.Name, candidates)
 }

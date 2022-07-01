@@ -65,6 +65,7 @@ func (r *KymaReconciler) GetEventRecorder() record.EventRecorder {
 	return r.EventRecorder
 }
 
+//nolint:lll
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch;create;update;patch;onEvent;delete
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/finalizers,verbs=update
@@ -95,11 +96,13 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	// check if deletionTimestamp is set, retry until it gets fully deleted
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != operatorv1alpha1.KymaStateDeleting {
-		if err := remote.DeleteRemotelySyncedKyma(ctx, r.Client, client.ObjectKeyFromObject(&kyma)); client.IgnoreNotFound(err) != nil {
+		err := remote.DeleteRemotelySyncedKyma(ctx, r.Client, client.ObjectKeyFromObject(&kyma))
+		if client.IgnoreNotFound(err) != nil {
 			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
 		}
 		// if the status is not yet set to deleting, also update the status
-		return ctrl.Result{}, status.Helper(r).UpdateStatus(ctx, &kyma, operatorv1alpha1.KymaStateDeleting, "deletion timestamp set")
+		return ctrl.Result{}, status.Helper(r).UpdateStatus(ctx, &kyma, operatorv1alpha1.KymaStateDeleting,
+			"deletion timestamp set")
 	}
 
 	// check finalizer
@@ -120,7 +123,8 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
 	}
 
-	if synchronizationRequiresRequeue, err := syncContext.SynchronizeRemoteKyma(ctx, remoteKyma); err != nil || synchronizationRequiresRequeue {
+	if synchronizationRequiresRequeue, err := syncContext.SynchronizeRemoteKyma(ctx, remoteKyma); err != nil ||
+		synchronizationRequiresRequeue {
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
 	}
 
@@ -210,7 +214,8 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *operator
 
 	templates, err := release.GetTemplates(ctx, r, kyma)
 	if err != nil {
-		return false, status.Helper(r).UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError, "templates could not be fetched")
+		return false, status.Helper(r).UpdateStatus(ctx, kyma,
+			operatorv1alpha1.KymaStateError, "templates could not be fetched")
 	}
 
 	modules, err := util.ParseTemplates(kyma, templates)
@@ -235,7 +240,8 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *operator
 	logger.Info("All component CRs have been removed, removing finalizer",
 		"resource", client.ObjectKeyFromObject(kyma))
 
-	if err := remote.RemoveFinalizerFromRemoteKyma(ctx, r, client.ObjectKeyFromObject(kyma)); client.IgnoreNotFound(err) != nil {
+	err = remote.RemoveFinalizerFromRemoteKyma(ctx, r, client.ObjectKeyFromObject(kyma))
+	if client.IgnoreNotFound(err) != nil {
 		return false, err
 	}
 
@@ -296,7 +302,8 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *ope
 	return nil
 }
 
-func (r *KymaReconciler) SyncConditionsWithModuleStates(ctx context.Context, kyma *operatorv1alpha1.Kyma, modules util.Modules) (bool, error) {
+func (r *KymaReconciler) SyncConditionsWithModuleStates(ctx context.Context, kyma *operatorv1alpha1.Kyma,
+	modules util.Modules) (bool, error) {
 	var err error
 
 	// Now we track the conditions: update the status based on their state
@@ -323,13 +330,15 @@ func (r *KymaReconciler) SyncConditionsWithModuleStates(ctx context.Context, kym
 	return statusUpdateRequired, err
 }
 
-func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *operatorv1alpha1.Kyma, modules util.Modules) (bool, error) {
+func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *operatorv1alpha1.Kyma,
+	modules util.Modules) (bool, error) {
 	logger := log.FromContext(ctx).WithName(client.ObjectKey{Name: kyma.Name, Namespace: kyma.Namespace}.String())
 	kymaSyncNecessary := false
 
 	for name, module := range modules {
 		// either the template in the condition is outdated (reflected by a generation change on the template)
-		if err := r.Get(ctx, client.ObjectKeyFromObject(module.Unstructured), module.Unstructured); client.IgnoreNotFound(err) != nil {
+		err := r.Get(ctx, client.ObjectKeyFromObject(module.Unstructured), module.Unstructured)
+		if client.IgnoreNotFound(err) != nil {
 			return false, err
 		} else if errors.IsNotFound(err) { // create resource if not found
 			if err := r.CreateModule(ctx, name, kyma, module); err != nil {
@@ -363,14 +372,16 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *operat
 	return kymaSyncNecessary, nil
 }
 
-func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *operatorv1alpha1.Kyma, module *util.Module) error {
+func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *operatorv1alpha1.Kyma,
+	module *util.Module) error {
 	// merge template and component settings
 	util.CopySettingsToUnstructuredFromResource(module.Unstructured, module.Settings)
 	// set labels
 	util.SetComponentCRLabels(module.Unstructured, name, module.Template.Spec.Channel, kyma.Name)
 	// set owner reference
 	if err := controllerutil.SetOwnerReference(kyma, module.Unstructured, r.Scheme()); err != nil {
-		return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w", name, kyma.Name, err)
+		return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w",
+			name, kyma.Name, err)
 	}
 	// create resource if not found
 	if err := r.Client.Create(ctx, module.Unstructured, &client.CreateOptions{}); err != nil {
@@ -380,7 +391,8 @@ func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *op
 	return nil
 }
 
-func (r *KymaReconciler) UpdateModule(ctx context.Context, name string, kyma *operatorv1alpha1.Kyma, module *util.Module) error {
+func (r *KymaReconciler) UpdateModule(ctx context.Context, name string, kyma *operatorv1alpha1.Kyma,
+	module *util.Module) error {
 	// merge template and component settings
 	util.CopySettingsToUnstructuredFromResource(module.Unstructured, module.Settings)
 	// set labels

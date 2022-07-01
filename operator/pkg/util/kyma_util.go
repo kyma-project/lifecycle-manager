@@ -25,7 +25,8 @@ func (m *Module) Channel() operatorv1alpha1.Channel {
 	return m.Template.Spec.Channel
 }
 
-func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, componentName string, channel operatorv1alpha1.Channel, kymaName string) {
+func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, componentName string,
+	channel operatorv1alpha1.Channel, kymaName string) {
 	labelMap := unstructuredCompCR.GetLabels()
 	if labelMap == nil {
 		labelMap = make(map[string]string)
@@ -73,7 +74,8 @@ func ParseTemplates(kyma *operatorv1alpha1.Kyma, templates release.TemplatesInCh
 	return modules, nil
 }
 
-func GetUnstructuredComponentFromTemplate(template *release.TemplateInChannel, componentName string, kyma *operatorv1alpha1.Kyma) (*unstructured.Unstructured, error) {
+func GetUnstructuredComponentFromTemplate(template *release.TemplateInChannel, componentName string,
+	kyma *operatorv1alpha1.Kyma) (*unstructured.Unstructured, error) {
 	desiredComponentStruct := &template.Template.Spec.Data
 	desiredComponentStruct.SetName(componentName + kyma.Name)
 	desiredComponentStruct.SetNamespace(kyma.GetNamespace())

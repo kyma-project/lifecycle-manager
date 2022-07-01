@@ -105,7 +105,8 @@ func (h *ComponentChangeHandler) Watch(ctx context.Context) func(event.UpdateEve
 	}
 }
 
-func (h *ComponentChangeHandler) GetKymaOwner(ctx context.Context, component *unstructured.Unstructured) (*operatorv1alpha1.Kyma, error) {
+func (h *ComponentChangeHandler) GetKymaOwner(ctx context.Context,
+	component *unstructured.Unstructured) (*operatorv1alpha1.Kyma, error) {
 	var ownerName string
 
 	ownerRefs := component.GetOwnerReferences()

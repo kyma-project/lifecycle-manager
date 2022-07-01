@@ -63,7 +63,8 @@ func Informers(mgr manager.Manager, groupVersion schema.GroupVersion) (map[strin
 
 		gvr := groupVersion.WithResource(resource.Name)
 		informer := informerFactory.ForResource(gvr).Informer()
-		dynamicInformerSet[gvr.String()] = &ComponentInformer{Informer: source.Informer{Informer: informer}, GroupVersionResource: gvr}
+		dynamicInformerSet[gvr.String()] = &ComponentInformer{Informer: source.Informer{Informer: informer},
+			GroupVersionResource: gvr}
 	}
 
 	return dynamicInformerSet, nil

@@ -74,7 +74,8 @@ var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 
 	manifestCrd := &v1.CustomResourceDefinition{}
-	res, err := http.DefaultClient.Get("https://raw.githubusercontent.com/kyma-project/manifest-operator/main/api/config/crd/bases/component.kyma-project.io_manifests.yaml")
+	res, err := http.DefaultClient.Get(
+		"https://raw.githubusercontent.com/kyma-project/manifest-operator/main/api/config/crd/bases/component.kyma-project.io_manifests.yaml") //nolint:lll
 	Expect(err).NotTo(HaveOccurred())
 	Expect(res.StatusCode).To(BeEquivalentTo(http.StatusOK))
 	Expect(yaml2.NewYAMLOrJSONDecoder(res.Body, 2048).Decode(manifestCrd)).To(Succeed())
