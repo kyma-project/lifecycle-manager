@@ -42,8 +42,8 @@ type KymaSpec struct {
 	Components []ComponentType `json:"components,omitempty"`
 }
 
-func (k *Kyma) AreAllReadyConditionsSetForKyma() bool {
-	status := &k.Status
+func (kyma *Kyma) AreAllReadyConditionsSetForKyma() bool {
+	status := &kyma.Status
 	if len(status.Conditions) < 1 {
 		return false
 	}

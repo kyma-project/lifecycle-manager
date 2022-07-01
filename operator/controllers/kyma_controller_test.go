@@ -136,18 +136,18 @@ var _ = Describe("Kyma Controller", func() {
 			When(fmt.Sprintf("all of the modules change their state to %s", v1alpha1.KymaStateReady), func() {
 				for _, activeModule := range activeModules {
 					Eventually(func() error {
-						activeUnstructuredModuleFromApiServer := &unstructured.Unstructured{}
-						activeUnstructuredModuleFromApiServer.SetGroupVersionKind(activeModule.Spec.Data.GroupVersionKind())
+						activeUnstructuredModuleFromAPIServer := &unstructured.Unstructured{}
+						activeUnstructuredModuleFromAPIServer.SetGroupVersionKind(activeModule.Spec.Data.GroupVersionKind())
 						Expect(k8sClient.Get(ctx, client.ObjectKey{
 							Namespace: namespace,
 							Name:      activeModule.GetLabels()[labels.ControllerName] + kyma.Name,
 						},
-							activeUnstructuredModuleFromApiServer),
+							activeUnstructuredModuleFromAPIServer),
 						).To(Succeed())
-						activeUnstructuredModuleFromApiServer.Object[watch.Status] = map[string]interface{}{
+						activeUnstructuredModuleFromAPIServer.Object[watch.Status] = map[string]interface{}{
 							watch.State: v1alpha1.KymaStateReady,
 						}
-						return k8sManager.GetClient().Status().Update(ctx, activeUnstructuredModuleFromApiServer)
+						return k8sManager.GetClient().Status().Update(ctx, activeUnstructuredModuleFromAPIServer)
 					}, timeout, interval).Should(Succeed())
 				}
 			})
