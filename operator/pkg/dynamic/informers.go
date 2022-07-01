@@ -53,7 +53,6 @@ func Informers(mgr manager.Manager, gv schema.GroupVersion) (map[string]source.S
 
 	dynamicInformerSet := make(map[string]source.Source)
 	for _, resource := range resources.APIResources {
-
 		if strings.HasSuffix(resource.Name, "status") {
 			continue
 		}
