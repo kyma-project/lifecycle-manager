@@ -1,7 +1,0 @@
-name: 'manifest'
-type: 'yaml'
-relation: 'local'
-input:
-  type: "file"
-  path: "./data/manifest.yaml" # path is relative to the current resource file
-  mediaType: "application/yaml" # optional, will be defaulted to application/octet-stream

@@ -1,0 +1,26 @@
+component:
+  componentReferences: []
+  name: kyma-project.io/module/example
+  provider: internal
+  repositoryContexts: []
+  resources:
+  - access:
+      filename: sha256:bac0dfedc8b7ae961db3091f2e116091651701ab7bff8adc0eee3fa7c62fe1e4
+      mediaType: application/yaml
+      type: localFilesystemBlob
+    name: manifest
+    relation: local
+    type: yaml
+    version: v0.0.10
+  - access:
+      filename: sha256:a7f0d083ab372d914dde63a1db7d1e4071d6dae58e4cdad97d0a9b7ff2825dbe
+      mediaType: application/gzip
+      type: localFilesystemBlob
+    name: chart
+    relation: local
+    type: helm-chart
+    version: v0.0.10
+  sources: []
+  version: v0.0.10
+meta:
+  schemaVersion: v2
