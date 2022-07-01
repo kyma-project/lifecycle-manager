@@ -9,10 +9,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type ComponentsAssociatedWithTemplate struct {
-	ComponentName      string
-	TemplateGeneration int64
-	TemplateChannel    operatorv1alpha1.Channel
+type Modules map[string]*Module
+type Module struct {
+	Name             string
+	Template         *operatorv1alpha1.ModuleTemplate
+	TemplateOutdated bool
+	*unstructured.Unstructured
+	Settings []operatorv1alpha1.Settings
+}
+
+func (m *Module) Channel() operatorv1alpha1.Channel {
+	return m.Template.Spec.Channel
 }
 
 func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, componentName string, channel operatorv1alpha1.Channel, kymaName string) {
@@ -26,20 +33,38 @@ func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, compone
 	unstructuredCompCR.SetLabels(labelMap)
 }
 
-func CopyComponentSettingsToUnstructuredFromResource(resource *unstructured.Unstructured, component operatorv1alpha1.ComponentType) {
-	if len(component.CustomStates) > 0 {
-		resource.Object["spec"].(map[string]interface{})["customStates"] = component.CustomStates
+func CopySettingsToUnstructuredFromResource(resource *unstructured.Unstructured, settings []operatorv1alpha1.Settings) {
+	if len(settings) > 0 {
+		resource.Object["spec"].(map[string]interface{})["customStates"] = settings
 	}
 }
 
-func GetUnstructuredComponentFromTemplate(templates release.TemplateLookupResultsByName, componentName string, kyma *operatorv1alpha1.Kyma) (*unstructured.Unstructured, error) {
-	lookupResult := templates[componentName]
-	if lookupResult == nil {
-		return nil, fmt.Errorf("could not find template %s for resource %s",
-			componentName, client.ObjectKeyFromObject(kyma))
+func ParseTemplates(kyma *operatorv1alpha1.Kyma, templates release.TemplatesInChannels) (Modules, error) {
+	// First, we fetch the component spec from the template and use it to resolve it into an arbitrary object
+	// (since we do not know which component we are dealing with)
+	modules := make(Modules)
+	for _, component := range kyma.Spec.Components {
+		template := templates[component.Name]
+		if template == nil {
+			return nil, fmt.Errorf("could not find template %s for resource %s",
+				component.Name, client.ObjectKeyFromObject(kyma))
+		}
+		if module, err := GetUnstructuredComponentFromTemplate(template, component.Name, kyma); err != nil {
+			return nil, err
+		} else {
+			modules[component.Name] = &Module{
+				Template:         template.Template,
+				TemplateOutdated: template.Outdated,
+				Unstructured:     module,
+				Settings:         component.Settings,
+			}
+		}
 	}
+	return modules, nil
+}
 
-	desiredComponentStruct := &lookupResult.Template.Spec.Data
+func GetUnstructuredComponentFromTemplate(template *release.TemplateInChannel, componentName string, kyma *operatorv1alpha1.Kyma) (*unstructured.Unstructured, error) {
+	desiredComponentStruct := &template.Template.Spec.Data
 	desiredComponentStruct.SetName(componentName + kyma.Name)
 	desiredComponentStruct.SetNamespace(kyma.GetNamespace())
 

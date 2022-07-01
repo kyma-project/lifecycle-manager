@@ -12,15 +12,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-type TemplateLookupResult struct {
-	Template   *operatorv1alpha1.ModuleTemplate
-	forChannel *operatorv1alpha1.Channel
+type TemplateInChannel struct {
+	Template *operatorv1alpha1.ModuleTemplate
+	Channel  *operatorv1alpha1.Channel
+	Outdated bool
 }
 
-type TemplateLookupResultsByName map[string]*TemplateLookupResult
+type TemplatesInChannels map[string]*TemplateInChannel
 
-func GetTemplates(ctx context.Context, c client.Reader, k *operatorv1alpha1.Kyma) (TemplateLookupResultsByName, error) {
-	templates := make(TemplateLookupResultsByName)
+func GetTemplates(ctx context.Context, c client.Reader, k *operatorv1alpha1.Kyma) (TemplatesInChannels, error) {
+	logger := log.FromContext(ctx)
+	templates := make(TemplatesInChannels)
 	for _, component := range k.Spec.Components {
 		template, err := LookupTemplate(c, component, k.Spec.Channel).WithContext(ctx)
 		if err != nil {
@@ -28,15 +30,11 @@ func GetTemplates(ctx context.Context, c client.Reader, k *operatorv1alpha1.Kyma
 		}
 		templates[component.Name] = template
 	}
+	CheckForOutdatedTemplates(logger, k, templates)
 	return templates, nil
 }
 
-func AreTemplatesOutdated(logger *logr.Logger, k *operatorv1alpha1.Kyma, templates TemplateLookupResultsByName) bool {
-	// this is a shortcut as we already know templates are outdated when the generation changes
-	if k.GetGeneration() != k.Status.ObservedGeneration {
-		logger.Info("new kyma spec, setting template status outdated")
-		return true
-	}
+func CheckForOutdatedTemplates(logger logr.Logger, k *operatorv1alpha1.Kyma, templates TemplatesInChannels) {
 	// in the case that the kyma spec did not change, we only have to verify that all desired templates are still referenced in the latest spec generation
 	for componentName, lookupResult := range templates {
 		for _, condition := range k.Status.Conditions {
@@ -45,21 +43,20 @@ func AreTemplatesOutdated(logger *logr.Logger, k *operatorv1alpha1.Kyma, templat
 					logger.Info("detected outdated template",
 						"condition", condition.Reason,
 						"template", lookupResult.Template.Name,
-						"templateGeneration", lookupResult.Template.GetGeneration(),
-						"previousGeneration", condition.TemplateInfo.Generation,
-						"templateChannel", lookupResult.Template.Spec.Channel,
-						"previousChannel", condition.TemplateInfo.Channel,
+						"newTemplateGeneration", lookupResult.Template.GetGeneration(),
+						"previousTemplateGeneration", condition.TemplateInfo.Generation,
+						"newTemplateChannel", lookupResult.Template.Spec.Channel,
+						"previousTemplateChannel", condition.TemplateInfo.Channel,
 					)
-					return true
+					lookupResult.Outdated = true
 				}
 			}
 		}
 	}
-	return false
 }
 
 type Lookup interface {
-	WithContext(ctx context.Context) (*TemplateLookupResult, error)
+	WithContext(ctx context.Context) (*TemplateInChannel, error)
 }
 
 func LookupTemplate(client client.Reader, component operatorv1alpha1.ComponentType, defaultChannel operatorv1alpha1.Channel) Lookup {
@@ -76,7 +73,7 @@ type channelTemplateLookup struct {
 	defaultChannel operatorv1alpha1.Channel
 }
 
-func (c *channelTemplateLookup) WithContext(ctx context.Context) (*TemplateLookupResult, error) {
+func (c *channelTemplateLookup) WithContext(ctx context.Context) (*TemplateInChannel, error) {
 	templateList := &operatorv1alpha1.ModuleTemplateList{}
 
 	var desiredChannel operatorv1alpha1.Channel
@@ -138,9 +135,10 @@ func (c *channelTemplateLookup) WithContext(ctx context.Context) (*TemplateLooku
 		log.FromContext(ctx).V(3).Info(fmt.Sprintf("using %s for component %s", actualChannel, c.component.Name))
 	}
 
-	return &TemplateLookupResult{
-		Template:   &templateList.Items[0],
-		forChannel: &actualChannel,
+	return &TemplateInChannel{
+		Template: &templateList.Items[0],
+		Channel:  &actualChannel,
+		Outdated: false,
 	}, nil
 }
 

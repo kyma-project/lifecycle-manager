@@ -2,7 +2,6 @@ package dynamic
 
 import (
 	"context"
-	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
@@ -23,7 +22,7 @@ func (ci *ComponentInformer) String() string {
 	return ci.GroupVersionResource.String()
 }
 
-func Informers(mgr manager.Manager) (map[string]source.Source, error) {
+func Informers(mgr manager.Manager, gv schema.GroupVersion) (map[string]source.Source, error) {
 	c, err := dynamic.NewForConfig(mgr.GetConfig())
 	if err != nil {
 		return nil, err
@@ -42,12 +41,6 @@ func Informers(mgr manager.Manager) (map[string]source.Source, error) {
 	cs, err := kubernetes.NewForConfig(mgr.GetConfig())
 	if err != nil {
 		return nil, err
-	}
-	// This fetches all resources for our component operator CRDs, might become a problem if component operators
-	// create their own CRDs that we dont need to watch
-	gv := schema.GroupVersion{
-		Group:   labels.ComponentPrefix,
-		Version: "v1alpha1",
 	}
 	resources, err := cs.ServerResourcesForGroupVersion(gv.String())
 	if client.IgnoreNotFound(err) != nil {
