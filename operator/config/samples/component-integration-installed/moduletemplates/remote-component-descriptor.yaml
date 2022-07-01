@@ -15,7 +15,7 @@ component:
     type: yaml
     version: v0.0.10
   - access:
-      digest: sha256:a7f0d083ab372d914dde63a1db7d1e4071d6dae58e4cdad97d0a9b7ff2825dbe
+      digest: sha256:6ec1e4757297c2ca8b95586e8300db6a61f364886d8c2f953de33c09db50f77e
       type: localOciBlob
     name: chart
     relation: local

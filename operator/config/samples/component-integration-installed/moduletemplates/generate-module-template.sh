@@ -7,6 +7,7 @@ indent() {
 
 HOSTS_FILE="/etc/hosts"
 COMPONENT_ARCHIVE="./example"
+DATA_DIR="./data"
 COMPONENT_RESOURCES="./resources.yaml"
 PRIVATE_KEY="./private-key.pem"
 PUBLIC_KEY="./public-key.pem"
@@ -20,6 +21,9 @@ REGISTRY_NAME="operator-test-registry"
 REGISTRY_HOST="${REGISTRY_NAME}.localhost"
 REGISTRY_URL="${REGISTRY_HOST}:50241"
 SIGNATURE_NAME="test-signature"
+
+helm repo add nginx-stable https://helm.nginx.com/stable
+helm pull nginx-stable/nginx-ingress --untar --untardir ${DATA_DIR}
 
 if k3d registry get ${REGISTRY_NAME} | grep -q ${REGISTRY_NAME}; then
    echo "OCI Registry ${REGISTRY_NAME} Exists, continuing..."

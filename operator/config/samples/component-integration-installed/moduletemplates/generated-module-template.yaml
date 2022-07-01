@@ -14,7 +14,7 @@ metadata:
     "operator.kyma-project.io/control-signature-name": "test-signature"
     "operator.kyma-project.io/control-signature-algorithm": "sha256"
     "operator.kyma-project.io/control-signature-value": "59452a517435d6ef2c9778952715c01c0e751786f228c2a6254e948861e491d1"
-    "operator.kyma-project.io/generated-at": "2022-07-01T15:54:14Z"
+    "operator.kyma-project.io/generated-at": "2022-07-01T16:56:10Z"
 spec:
   channel: stable
   descriptor:
