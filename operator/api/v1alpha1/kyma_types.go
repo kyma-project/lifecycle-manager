@@ -20,9 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const KymaKind = "Kyma"
-const KymaPlural = "kymas"
-
 // Settings defines some component specific settings
 type Settings map[string]string
 
@@ -33,11 +30,38 @@ type ComponentType struct {
 	Settings []Settings `json:"settings,omitempty"`
 }
 
+type SyncStrategy string
+
+const (
+	SyncStrategyLocalSecret = "local-secret"
+)
+
+// Sync defines settings used to apply the kyma synchronization to other clusters
+type Sync struct {
+	// +kubebuilder:default:=true
+	// Enabled set to true will look up a kubeconfig for the remote cluster based on the strategy
+	// and synchronize its state there.
+	Enabled bool `json:"enabled,omitempty"`
+
+	// +kubebuilder:default:=secret
+	// Strategy determines the way to lookup the remotely synced kubeconfig, by default it is fetched from a secret
+	Strategy SyncStrategy `json:"strategy,omitempty"`
+
+	// The target namespace, if empty the namespace is reflected from the control plane
+	// Note that cleanup is currently not supported if you are switching the namespace, so you will
+	// manually need to cleanup old synchronized Kymas
+	Namespace string `json:"namespace,omitempty"`
+}
+
 // KymaSpec defines the desired state of Kyma
 type KymaSpec struct {
 	Channel Channel `json:"channel"`
 	// Components specifies the list of components to be installed
 	Components []ComponentType `json:"components,omitempty"`
+
+	// Active Synchronization Settings
+	// +optional
+	Sync Sync `json:"sync,omitempty"`
 }
 
 func (k *Kyma) AreAllReadyConditionsSetForKyma() bool {
