@@ -62,7 +62,7 @@ func (cc *ClusterClient) GetConfig(kubeConfig string, explicitPath string) (*res
 	if err == nil {
 		cc.Info("Found config in-cluster")
 
-		return config, err
+		return config, nil
 	}
 
 	// kubeconfig flag
