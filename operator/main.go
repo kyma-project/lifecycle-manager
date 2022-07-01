@@ -55,6 +55,7 @@ var (
 	setupLog = ctrl.Log.WithName("setup")
 )
 
+//nolint:wsl
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
