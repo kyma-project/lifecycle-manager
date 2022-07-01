@@ -33,6 +33,7 @@ func Informers(mgr manager.Manager, groupVersion schema.GroupVersion) (map[strin
 
 	err = mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
 		informerFactory.Start(ctx.Done())
+
 		return nil
 	}))
 	if err != nil {

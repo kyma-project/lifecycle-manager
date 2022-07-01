@@ -80,6 +80,7 @@ func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules
 		for i, existingCondition := range status.Conditions {
 			if existingCondition.Type == operatorv1alpha1.ConditionTypeReady && existingCondition.Reason == name {
 				status.Conditions[i] = *condition
+
 				break
 			}
 		}

@@ -89,6 +89,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		// requeue (we'll need to wait for a new notification), and we can get them
 		// on deleted requests.
 		logger.Info(req.NamespacedName.String() + " got deleted!")
+
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
@@ -104,6 +105,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	// check finalizer
 	if !controllerutil.ContainsFinalizer(&kyma, labels.Finalizer) {
 		controllerutil.AddFinalizer(&kyma, labels.Finalizer)
+
 		return ctrl.Result{}, r.Update(ctx, &kyma)
 	}
 
@@ -221,6 +223,7 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *operator
 			// component CR still exists
 			logger.Info(fmt.Sprintf("deletion cannot proceed - waiting for component CR %s to be deleted for %s",
 				name, client.ObjectKeyFromObject(kyma)))
+
 			return true, nil
 		} else if !errors.IsNotFound(err) {
 			// unknown error while getting component CR
@@ -257,6 +260,7 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *ope
 	templates, err := release.GetTemplates(ctx, r, kyma)
 	if err != nil {
 		logger.Error(err, "error fetching fetching templates")
+
 		return status.Helper(r).UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError, err.Error())
 	}
 

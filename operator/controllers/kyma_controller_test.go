@@ -48,6 +48,7 @@ var _ = Describe("Kyma Controller", func() {
 			if err != nil || createdKyma.Status.State != v1alpha1.KymaStateError {
 				return false
 			}
+
 			return true
 		}
 
@@ -90,6 +91,7 @@ var _ = Describe("Kyma Controller", func() {
 			if err != nil {
 				return ""
 			}
+
 			return string(createdKyma.Status.State)
 		}
 
@@ -147,6 +149,7 @@ var _ = Describe("Kyma Controller", func() {
 						activeUnstructuredModuleFromAPIServer.Object[watch.Status] = map[string]interface{}{
 							watch.State: v1alpha1.KymaStateReady,
 						}
+
 						return k8sManager.GetClient().Status().Update(ctx, activeUnstructuredModuleFromAPIServer)
 					}, timeout, interval).Should(Succeed())
 				}

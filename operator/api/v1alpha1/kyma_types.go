@@ -174,11 +174,13 @@ type Kyma struct {
 
 func (kyma *Kyma) SetObservedGeneration() *Kyma {
 	kyma.Status.ObservedGeneration = kyma.Generation
+
 	return kyma
 }
 
 func (kyma *Kyma) SetActiveChannel() *Kyma {
 	kyma.Status.ActiveChannel = kyma.Spec.Channel
+
 	return kyma
 }
 

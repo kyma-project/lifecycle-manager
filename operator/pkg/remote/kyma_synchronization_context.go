@@ -137,10 +137,12 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 		err = c.runtimeClient.Create(ctx, remoteKyma)
 		if err != nil {
 			recorder.Event(kyma, "Normal", "CRDInstallation", "CRDs were installed to SKR")
+
 			return nil, err
 		}
 	} else if err != nil {
 		recorder.Event(kyma, "Warning", err.Error(), "Client could not fetch remote Kyma")
+
 		return nil, err
 	}
 
@@ -159,12 +161,14 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, 
 		remoteKyma.Status.ObservedGeneration = remoteKyma.GetGeneration()
 		if err := c.runtimeClient.Status().Update(ctx, remoteKyma); err != nil {
 			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
+
 			return true, err
 		}
 
 		c.controlPlaneKyma.Spec = remoteKyma.Spec
 		if err := c.controlPlaneClient.Update(ctx, c.controlPlaneKyma); err != nil {
 			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update control clane kyma")
+
 			return true, err
 		}
 
@@ -180,6 +184,7 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, 
 		err := c.runtimeClient.Status().Update(ctx, remoteKyma)
 		if err != nil {
 			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
+
 			return false, err
 		}
 	}

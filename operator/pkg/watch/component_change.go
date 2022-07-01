@@ -37,12 +37,14 @@ func (h *ComponentChangeHandler) Watch(ctx context.Context) func(event.UpdateEve
 		objectBytesNew, err := json.Marshal(event.ObjectNew)
 		if err != nil {
 			logger.Error(err, "error transforming new component object")
+
 			return
 		}
 
 		objectBytesOld, err := json.Marshal(event.ObjectOld)
 		if err != nil {
 			logger.Error(err, "error transforming old component object")
+
 			return
 		}
 
@@ -51,11 +53,13 @@ func (h *ComponentChangeHandler) Watch(ctx context.Context) func(event.UpdateEve
 
 		if err = json.Unmarshal(objectBytesNew, &componentNew); err != nil {
 			logger.Error(err, "error transforming new component object")
+
 			return
 		}
 
 		if err = json.Unmarshal(objectBytesOld, &componentOld); err != nil {
 			logger.Error(err, "error transforming old component object")
+
 			return
 		}
 
@@ -110,6 +114,7 @@ func (h *ComponentChangeHandler) GetKymaOwner(ctx context.Context, component *un
 	for _, ownerRef := range ownerRefs {
 		if operatorv1alpha1.KymaKind == ownerRef.Kind {
 			ownerName = ownerRef.Name
+
 			break
 		}
 	}

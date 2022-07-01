@@ -32,6 +32,7 @@ func (cc *ClusterClient) GetRestConfigFromSecret(ctx context.Context, name, name
 		return nil, err
 	} else if len(kubeConfigSecretList.Items) < 1 {
 		gr := v1.SchemeGroupVersion.WithResource(fmt.Sprintf("secret with label %s", labels.KymaName)).GroupResource()
+
 		return nil, errors.NewNotFound(gr, name)
 	}
 
@@ -52,6 +53,7 @@ func (cc *ClusterClient) GetConfig(kubeConfig string, explicitPath string) (*res
 		// parameter string
 		return clientcmd.BuildConfigFromKubeconfigGetter("", func() (*clientcmdapi.Config, error) {
 			cc.Info("Found config from passed kubeconfig")
+
 			return clientcmd.Load([]byte(kubeConfig))
 		})
 	}
@@ -59,6 +61,7 @@ func (cc *ClusterClient) GetConfig(kubeConfig string, explicitPath string) (*res
 	config, err := rest.InClusterConfig()
 	if err == nil {
 		cc.Info("Found config in-cluster")
+
 		return config, err
 	}
 
@@ -66,6 +69,7 @@ func (cc *ClusterClient) GetConfig(kubeConfig string, explicitPath string) (*res
 	if flag.Lookup("kubeconfig") != nil {
 		if kubeconfig := flag.Lookup("kubeconfig").Value.String(); kubeconfig != "" {
 			cc.Info("Found config from flags")
+
 			return clientcmd.BuildConfigFromFlags("", kubeconfig)
 		}
 	}
@@ -73,6 +77,7 @@ func (cc *ClusterClient) GetConfig(kubeConfig string, explicitPath string) (*res
 	// env variable
 	if len(os.Getenv("KUBECONFIG")) > 0 {
 		cc.Info("Found config from env")
+
 		return clientcmd.BuildConfigFromFlags("masterURL", os.Getenv("KUBECONFIG"))
 	}
 
