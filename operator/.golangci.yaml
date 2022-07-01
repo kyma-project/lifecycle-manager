@@ -1,8 +1,15 @@
 linters:
-  enable-all: true
-  disable:
-    - exhaustivestruct
-    - golint
-    - interfacer
-    - maligned
-    - scopelint
+  disable-all: true
+  enable:
+  - "lll"
+  - "nilerr"
+  - "nlreturn"
+  - "nonamedreturns"
+  - "revive"
+  - "stylecheck"
+  - "varnamelen"
+  - "whitespace"
+  - "wsl"
+#  - "wrapcheck" #Disabled because it requires proper "wrapping" i.e. adding a context to every error. It's not an automatic process, code author must put some meaningful context/message. This must be done case-by-case, and we have TONS of warnings here. It may easily take few days of work.
+#  - "paralleltest" #Disabled because it's not automatically valid for all tests to be "t.Parallel()".
+#  - "testpackage" #Disabled, because not all tests should follow black-box approach. This is a project management decision of how we approach testing in general.
