@@ -362,7 +362,9 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *operat
 
 func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *operatorv1alpha1.Kyma, module *util.Module) error {
 	// merge template and component settings
-	util.CopySettingsToUnstructuredFromResource(module.Unstructured, module.Settings)
+	if err := util.CopySettingsToUnstructuredFromResource(module.Unstructured, module.Settings); err != nil {
+		return err
+	}
 	// set labels
 	util.SetComponentCRLabels(module.Unstructured, name, module.Template.Spec.Channel, kyma.Name)
 	// set owner reference
@@ -378,7 +380,9 @@ func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *op
 
 func (r *KymaReconciler) UpdateModule(ctx context.Context, name string, kyma *operatorv1alpha1.Kyma, module *util.Module) error {
 	// merge template and component settings
-	util.CopySettingsToUnstructuredFromResource(module.Unstructured, module.Settings)
+	if err := util.CopySettingsToUnstructuredFromResource(module.Unstructured, module.Settings); err != nil {
+		return err
+	}
 	// set labels
 	util.SetComponentCRLabels(module.Unstructured, name, module.Template.Spec.Channel, kyma.Name)
 	// update the spec
