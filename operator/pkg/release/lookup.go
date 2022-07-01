@@ -77,18 +77,7 @@ type channelTemplateLookup struct {
 func (c *channelTemplateLookup) WithContext(ctx context.Context) (*TemplateInChannel, error) {
 	templateList := &operatorv1alpha1.ModuleTemplateList{}
 
-	var desiredChannel operatorv1alpha1.Channel
-
-	if c.component.Channel != "" {
-		// if component defaultChannel is set it takes precedence
-		desiredChannel = c.component.Channel
-	} else if c.defaultChannel != "" {
-		// else if the global defaultChannel is set it takes precedence
-		desiredChannel = c.defaultChannel
-	} else {
-		// else use the default defaultChannel
-		desiredChannel = operatorv1alpha1.DefaultChannel
-	}
+	desiredChannel := c.createDesiredChannel()
 
 	if err := c.reader.List(ctx, templateList,
 		client.MatchingLabels{
@@ -122,7 +111,8 @@ func (c *channelTemplateLookup) WithContext(ctx context.Context) (*TemplateInCha
 		}
 	}
 
-	actualChannel := templateList.Items[0].Spec.Channel
+	template := templateList.Items[0]
+	actualChannel := template.Spec.Channel
 
 	// if the found configMap has no defaultChannel assigned to it set a sensible log output
 	if actualChannel == "" {
@@ -136,10 +126,26 @@ func (c *channelTemplateLookup) WithContext(ctx context.Context) (*TemplateInCha
 	}
 
 	return &TemplateInChannel{
-		Template: &templateList.Items[0],
+		Template: &template,
 		Channel:  &actualChannel,
 		Outdated: false,
 	}, nil
+}
+
+func (c *channelTemplateLookup) createDesiredChannel() operatorv1alpha1.Channel {
+	var desiredChannel operatorv1alpha1.Channel
+
+	if c.component.Channel != "" {
+		// if component defaultChannel is set it takes precedence
+		desiredChannel = c.component.Channel
+	} else if c.defaultChannel != "" {
+		// else if the global defaultChannel is set it takes precedence
+		desiredChannel = c.defaultChannel
+	} else {
+		// else use the default defaultChannel
+		desiredChannel = operatorv1alpha1.DefaultChannel
+	}
+	return desiredChannel
 }
 
 func NewMoreThanOneTemplateCandidateErr(component operatorv1alpha1.ComponentType, candidateTemplates []operatorv1alpha1.ModuleTemplate) error {

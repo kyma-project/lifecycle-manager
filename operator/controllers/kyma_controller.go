@@ -121,6 +121,10 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	// state handling
+	return r.stateHandling(ctx, kyma)
+}
+
+func (r *KymaReconciler) stateHandling(ctx context.Context, kyma operatorv1alpha1.Kyma) (ctrl.Result, error) {
 	switch kyma.Status.State {
 	case "":
 		return ctrl.Result{}, r.HandleInitialState(ctx, &kyma)

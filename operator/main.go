@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"time"
 
 	"go.uber.org/zap/zapcore"
@@ -68,23 +69,7 @@ func main() {
 	var probeAddr string
 	var maxConcurrentReconciles int
 	var requeueSuccessInterval, requeueFailureInterval, requeueWaitingInterval time.Duration
-	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
-	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flag.IntVar(&maxConcurrentReconciles, "max-concurrent-reconciles", 1, "The maximum number of concurrent Reconciles which can be run.")
-	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
-
-	flag.DurationVar(&requeueSuccessInterval, "requeue-success-interval", 20*time.Second,
-		"determines the duration after which an already successfully reconciled Kyma is enqueued for checking "+
-			"if it's still in a consistent state.")
-	flag.DurationVar(&requeueFailureInterval, "requeue-failure-interval", 10*time.Second,
-		"determines the duration after which a failing reconciliation is retried and "+
-			"enqueued for a next try at recovering (e.g. because an Remote Synchronization Interaction failed)")
-	flag.DurationVar(&requeueWaitingInterval, "requeue-waiting-interval", 3*time.Second,
-		"etermines the duration after which a pending reconciliation is requeued "+
-			"if the operator decides that it needs to wait for a certain state to update before it can proceed "+
-			"(e.g. because of pending finalizers in the deletion process)")
+	defineFlag(metricsAddr, probeAddr, maxConcurrentReconciles, enableLeaderElection, requeueSuccessInterval, requeueFailureInterval, requeueWaitingInterval)
 
 	opts := zap.Options{
 		Development: true,
@@ -98,6 +83,25 @@ func main() {
 	cacheLabelSelector := labels.SelectorFromSet(
 		labels.Set{operatorLabels.ManagedBy: name},
 	)
+	mgr := setupManager(metricsAddr, probeAddr, enableLeaderElection, cacheLabelSelector, requeueSuccessInterval, requeueFailureInterval, requeueWaitingInterval, maxConcurrentReconciles)
+	//+kubebuilder:scaffold:builder
+
+	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+		setupLog.Error(err, "unable to set up health check")
+		os.Exit(1)
+	}
+	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
+		setupLog.Error(err, "unable to set up ready check")
+		os.Exit(1)
+	}
+
+	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+		setupLog.Error(err, "problem running manager")
+		os.Exit(1)
+	}
+}
+
+func setupManager(metricsAddr string, probeAddr string, enableLeaderElection bool, cacheLabelSelector labels.Selector, requeueSuccessInterval time.Duration, requeueFailureInterval time.Duration, requeueWaitingInterval time.Duration, maxConcurrentReconciles int) manager.Manager {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
@@ -134,19 +138,25 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
-	//+kubebuilder:scaffold:builder
+	return mgr
+}
 
-	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up health check")
-		os.Exit(1)
-	}
-	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		setupLog.Error(err, "unable to set up ready check")
-		os.Exit(1)
-	}
+func defineFlag(metricsAddr string, probeAddr string, maxConcurrentReconciles int, enableLeaderElection bool, requeueSuccessInterval time.Duration, requeueFailureInterval time.Duration, requeueWaitingInterval time.Duration) {
+	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
+	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flag.IntVar(&maxConcurrentReconciles, "max-concurrent-reconciles", 1, "The maximum number of concurrent Reconciles which can be run.")
+	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
+		"Enable leader election for controller manager. "+
+			"Enabling this will ensure there is only one active controller manager.")
 
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running manager")
-		os.Exit(1)
-	}
+	flag.DurationVar(&requeueSuccessInterval, "requeue-success-interval", 20*time.Second,
+		"determines the duration after which an already successfully reconciled Kyma is enqueued for checking "+
+			"if it's still in a consistent state.")
+	flag.DurationVar(&requeueFailureInterval, "requeue-failure-interval", 10*time.Second,
+		"determines the duration after which a failing reconciliation is retried and "+
+			"enqueued for a next try at recovering (e.g. because an Remote Synchronization Interaction failed)")
+	flag.DurationVar(&requeueWaitingInterval, "requeue-waiting-interval", 3*time.Second,
+		"etermines the duration after which a pending reconciliation is requeued "+
+			"if the operator decides that it needs to wait for a certain state to update before it can proceed "+
+			"(e.g. because of pending finalizers in the deletion process)")
 }

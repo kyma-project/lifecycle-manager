@@ -50,7 +50,7 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	cfg        *rest.Config
+	_          *rest.Config
 	k8sClient  client.Client
 	k8sManager manager.Manager
 	testEnv    *envtest.Environment

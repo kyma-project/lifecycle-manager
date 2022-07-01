@@ -3,6 +3,7 @@ package watch
 import (
 	"context"
 	"errors"
+	"github.com/go-logr/logr"
 
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
@@ -68,23 +69,8 @@ func (h *ComponentChangeHandler) Watch(ctx context.Context) func(event.UpdateEve
 			logger.Error(err, "error getting Kyma owner")
 		}
 
-		var oldState, newState interface{}
-		var ok bool
-
-		if componentOld.Object[Status] != nil {
-			oldState, ok = componentOld.Object[Status].(map[string]interface{})[State]
-			if !ok {
-				logger.Error(errors.New("state from old component object could not be interpreted"), "missing state")
-			}
-		} else {
-			oldState = ""
-		}
-
-		newState, ok = componentNew.Object[Status].(map[string]interface{})[State]
-		if !ok {
-			logger.Error(errors.New("state from new component object could not be interpreted"), "missing state")
-		}
-
+		oldState := extractState(componentOld, logger)
+		newState := extractState(componentNew, logger)
 		if oldState.(string) == newState.(string) {
 			return
 		}
@@ -93,6 +79,22 @@ func (h *ComponentChangeHandler) Watch(ctx context.Context) func(event.UpdateEve
 			NamespacedName: client.ObjectKeyFromObject(kyma),
 		})
 	}
+}
+
+func extractState(component unstructured.Unstructured, logger logr.Logger) interface{} {
+	var state interface{}
+	var ok bool
+
+	if component.Object[Status] != nil {
+		state, ok = component.Object[Status].(map[string]interface{})[State]
+		if !ok {
+			logger.Error(errors.New("state from component object could not be interpreted"), "missing state")
+		}
+	} else {
+		state = ""
+	}
+
+	return state
 }
 
 func (h *ComponentChangeHandler) GetKymaOwner(ctx context.Context, component *unstructured.Unstructured) (*operatorv1alpha1.Kyma, error) {
