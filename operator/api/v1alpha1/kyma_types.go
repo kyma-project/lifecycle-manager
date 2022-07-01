@@ -38,7 +38,6 @@ const (
 
 // Sync defines settings used to apply the kyma synchronization to other clusters
 type Sync struct {
-	// +kubebuilder:default:=true
 	// Enabled set to true will look up a kubeconfig for the remote cluster based on the strategy
 	// and synchronize its state there.
 	Enabled bool `json:"enabled,omitempty"`

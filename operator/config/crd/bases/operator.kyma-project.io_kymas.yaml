@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: kymas.operator.kyma-project.io
 spec:
@@ -76,7 +76,6 @@ spec:
                 description: Active Synchronization Settings
                 properties:
                   enabled:
-                    default: true
                     description: Enabled set to true will look up a kubeconfig for
                       the remote cluster based on the strategy and synchronize its
                       state there.
