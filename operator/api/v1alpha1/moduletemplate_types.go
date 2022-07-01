@@ -24,7 +24,7 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// ModuleTemplateSpec defines the desired state of ModuleTemplate
+// ModuleTemplateSpec defines the desired state of ModuleTemplate.
 type ModuleTemplateSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
@@ -38,7 +38,7 @@ type ModuleTemplateSpec struct {
 //+genclient
 //+kubebuilder:object:root=true
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// ModuleTemplate is the Schema for the moduletemplates API
+// ModuleTemplate is the Schema for the moduletemplates API.
 type ModuleTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -48,7 +48,7 @@ type ModuleTemplate struct {
 
 //+kubebuilder:object:root=true
 
-// ModuleTemplateList contains a list of ModuleTemplate
+// ModuleTemplateList contains a list of ModuleTemplate.
 type ModuleTemplateList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

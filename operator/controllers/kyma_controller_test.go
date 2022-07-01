@@ -2,6 +2,10 @@ package controllers
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
@@ -11,10 +15,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"os"
-	"path/filepath"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 )
 
 var _ = Describe("Kyma Controller", func() {
@@ -138,7 +140,8 @@ var _ = Describe("Kyma Controller", func() {
 						activeUnstructuredModuleFromApiServer.SetGroupVersionKind(activeModule.Spec.Data.GroupVersionKind())
 						Expect(k8sClient.Get(ctx, client.ObjectKey{
 							Namespace: namespace,
-							Name:      activeModule.GetLabels()[labels.ControllerName] + kyma.Name},
+							Name:      activeModule.GetLabels()[labels.ControllerName] + kyma.Name,
+						},
 							activeUnstructuredModuleFromApiServer),
 						).To(Succeed())
 						activeUnstructuredModuleFromApiServer.Object[watch.Status] = map[string]interface{}{

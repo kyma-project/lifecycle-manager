@@ -2,6 +2,9 @@ package dynamic
 
 import (
 	"context"
+	"strings"
+	"time"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
@@ -9,8 +12,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-	"strings"
-	"time"
 )
 
 type ComponentInformer struct {
@@ -37,7 +38,6 @@ func Informers(mgr manager.Manager, gv schema.GroupVersion) (map[string]source.S
 		return nil, err
 	}
 
-	//TODO maybe replace with native REST Handling
 	cs, err := kubernetes.NewForConfig(mgr.GetConfig())
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func Informers(mgr manager.Manager, gv schema.GroupVersion) (map[string]source.S
 
 	dynamicInformerSet := make(map[string]source.Source)
 	for _, resource := range resources.APIResources {
-		//TODO Verify if this filtering is really necessary or if we can somehow only listen to status changes instead of resource changes with ResourceVersionChangedPredicate
+
 		if strings.HasSuffix(resource.Name, "status") {
 			continue
 		}

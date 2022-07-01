@@ -19,13 +19,14 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
 	"github.com/kyma-project/kyma-operator/operator/pkg/dynamic"
 	"github.com/kyma-project/kyma-operator/operator/pkg/remote"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"time"
 
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 
@@ -53,7 +54,7 @@ type RequeueIntervals struct {
 	Waiting time.Duration
 }
 
-// KymaReconciler reconciles a Kyma object
+// KymaReconciler reconciles a Kyma object.
 type KymaReconciler struct {
 	client.Client
 	record.EventRecorder
@@ -134,7 +135,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	case operatorv1alpha1.KymaStateError:
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Waiting}, r.HandleErrorState(ctx, &kyma)
 	case operatorv1alpha1.KymaStateReady:
-		//TODO Adjust again
+
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, r.HandleReadyState(ctx, &kyma)
 	}
 
@@ -313,11 +314,10 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *operat
 	kymaSyncNecessary := false
 	for name, module := range modules {
 		// either the template in the condition is outdated (reflected by a generation change on the template)
-		//or the template that is supposed to be applied changed (e.g. because the kyma spec changed)
+
 		if err := r.Get(ctx, client.ObjectKeyFromObject(module.Unstructured), module.Unstructured); client.IgnoreNotFound(err) != nil {
 			return false, err
 		} else if errors.IsNotFound(err) { // create resource if not found
-
 			if err := r.CreateModule(ctx, name, kyma, module); err != nil {
 				return false, err
 			}
@@ -328,12 +328,10 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *operat
 				"templateChannel", module.Channel(),
 				"templateGeneration", module.Template.GetGeneration())
 			kymaSyncNecessary = true
-
 		} else if module.TemplateOutdated {
 			condition, _ := status.Helper(r).GetReadyConditionForComponent(kyma, name)
 			if condition.TemplateInfo.Generation != module.Template.GetGeneration() ||
 				condition.TemplateInfo.Channel != module.Template.Spec.Channel {
-
 				if err := r.UpdateModule(ctx, name, kyma, module); err != nil {
 					return false, err
 				}
@@ -344,7 +342,6 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *operat
 				status.Helper(r).SyncReadyConditionForModules(kyma, util.Modules{name: module},
 					operatorv1alpha1.ConditionStatusFalse, "updated condition for module cr")
 				kymaSyncNecessary = true
-
 			}
 		}
 	}

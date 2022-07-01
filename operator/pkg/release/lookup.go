@@ -3,6 +3,7 @@ package release
 import (
 	"context"
 	"fmt"
+
 	"github.com/go-logr/logr"
 
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
@@ -119,7 +120,6 @@ func (c *channelTemplateLookup) WithContext(ctx context.Context) (*TemplateInCha
 		if len(templateList.Items) == 0 {
 			return nil, fmt.Errorf("no config map template found for component: %s", c.component.Name)
 		}
-
 	}
 
 	actualChannel := templateList.Items[0].Spec.Channel

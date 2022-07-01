@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"github.com/kyma-project/kyma-operator/operator/pkg/release"
@@ -9,14 +10,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type Modules map[string]*Module
-type Module struct {
-	Name             string
-	Template         *operatorv1alpha1.ModuleTemplate
-	TemplateOutdated bool
-	*unstructured.Unstructured
-	Settings []operatorv1alpha1.Settings
-}
+type (
+	Modules map[string]*Module
+	Module  struct {
+		Name             string
+		Template         *operatorv1alpha1.ModuleTemplate
+		TemplateOutdated bool
+		*unstructured.Unstructured
+		Settings []operatorv1alpha1.Settings
+	}
+)
 
 func (m *Module) Channel() operatorv1alpha1.Channel {
 	return m.Template.Spec.Channel

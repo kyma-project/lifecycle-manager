@@ -3,9 +3,10 @@ package status
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
-	"time"
 
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/util"
@@ -48,7 +49,6 @@ func (k *Kyma) UpdateStatus(
 		}, operatorv1alpha1.ConditionStatusFalse, message)
 	}
 	return k.Update(ctx, kyma.SetObservedGeneration())
-
 }
 
 func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules util.Modules, conditionStatus operatorv1alpha1.KymaConditionStatus, message string) {
@@ -103,7 +103,6 @@ func (k *Kyma) UpdateConditionFromComponentState(name string, module *util.Modul
 		}
 
 		switch componentStatus.(map[string]interface{})[watch.State].(string) {
-
 		case string(operatorv1alpha1.KymaStateReady):
 			if condition.Status != operatorv1alpha1.ConditionStatusTrue {
 				k.SyncReadyConditionForModules(kyma, util.Modules{name: module},

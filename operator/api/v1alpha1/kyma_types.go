@@ -20,20 +20,22 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const KymaKind = "Kyma"
-const KymaPlural = "kymas"
+const (
+	KymaKind   = "Kyma"
+	KymaPlural = "kymas"
+)
 
-// Settings defines some component specific settings
+// Settings defines some component specific settings.
 type Settings map[string]string
 
-// ComponentType defines the components to be installed
+// ComponentType defines the components to be installed.
 type ComponentType struct {
 	Name     string     `json:"name"`
 	Channel  Channel    `json:"channel,omitempty"`
 	Settings []Settings `json:"settings,omitempty"`
 }
 
-// KymaSpec defines the desired state of Kyma
+// KymaSpec defines the desired state of Kyma.
 type KymaSpec struct {
 	Channel Channel `json:"channel"`
 	// Components specifies the list of components to be installed
@@ -88,18 +90,18 @@ const (
 // +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error
 type KymaState string
 
-// Valid Kyma States
+// Valid Kyma States.
 const (
-	// KymaStateReady signifies Kyma is ready
+	// KymaStateReady signifies Kyma is ready.
 	KymaStateReady KymaState = "Ready"
 
-	// KymaStateProcessing signifies Kyma is reconciling
+	// KymaStateProcessing signifies Kyma is reconciling.
 	KymaStateProcessing KymaState = "Processing"
 
-	// KymaStateError signifies an error for Kyma
+	// KymaStateError signifies an error for Kyma.
 	KymaStateError KymaState = "Error"
 
-	// KymaStateDeleting signifies Kyma is being deleted
+	// KymaStateDeleting signifies Kyma is being deleted.
 	KymaStateDeleting KymaState = "Deleting"
 )
 
@@ -135,21 +137,21 @@ type TemplateInfo struct {
 type KymaConditionType string
 
 const (
-	// ConditionTypeReady represents KymaConditionType Ready
+	// ConditionTypeReady represents KymaConditionType Ready.
 	ConditionTypeReady KymaConditionType = "Ready"
 )
 
 type KymaConditionStatus string
 
-// Valid KymaCondition Status
+// Valid KymaCondition Status.
 const (
-	// ConditionStatusTrue signifies KymaConditionStatus true
+	// ConditionStatusTrue signifies KymaConditionStatus true.
 	ConditionStatusTrue KymaConditionStatus = "True"
 
-	// ConditionStatusFalse signifies KymaConditionStatus false
+	// ConditionStatusFalse signifies KymaConditionStatus false.
 	ConditionStatusFalse KymaConditionStatus = "False"
 
-	// ConditionStatusUnknown signifies KymaConditionStatus unknown
+	// ConditionStatusUnknown signifies KymaConditionStatus unknown.
 	ConditionStatusUnknown KymaConditionStatus = "Unknown"
 )
 
@@ -159,7 +161,7 @@ const (
 //+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
-// Kyma is the Schema for the kymas API
+// Kyma is the Schema for the kymas API.
 type Kyma struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -180,7 +182,7 @@ func (kyma *Kyma) SetActiveChannel() *Kyma {
 
 //+kubebuilder:object:root=true
 
-// KymaList contains a list of Kyma
+// KymaList contains a list of Kyma.
 type KymaList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

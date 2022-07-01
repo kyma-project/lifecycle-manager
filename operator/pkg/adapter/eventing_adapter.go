@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"context"
+
 	"k8s.io/client-go/tools/record"
 )
 
