@@ -33,7 +33,7 @@ func NewComponentChangeHandler(handlerClient ChangeHandlerClient) *ComponentChan
 func (h *ComponentChangeHandler) Watch(ctx context.Context) func(event.UpdateEvent, workqueue.RateLimitingInterface) {
 	logger := log.FromContext(ctx).WithName("component-change-handler")
 
-	return func(event event.UpdateEvent, q workqueue.RateLimitingInterface) {
+	return func(event event.UpdateEvent, queue workqueue.RateLimitingInterface) {
 		objectBytesNew, err := json.Marshal(event.ObjectNew)
 		if err != nil {
 			logger.Error(err, "error transforming new component object")
@@ -75,19 +75,19 @@ func (h *ComponentChangeHandler) Watch(ctx context.Context) func(event.UpdateEve
 
 		var oldState, newState interface{}
 
-		var ok bool
+		var valueExists bool
 
 		if componentOld.Object[Status] != nil {
-			oldState, ok = componentOld.Object[Status].(map[string]interface{})[State]
-			if !ok {
+			oldState, valueExists = componentOld.Object[Status].(map[string]interface{})[State]
+			if !valueExists {
 				logger.Error(errors.New("state from old component object could not be interpreted"), "missing state")
 			}
 		} else {
 			oldState = ""
 		}
 
-		newState, ok = componentNew.Object[Status].(map[string]interface{})[State]
-		if !ok {
+		newState, valueExists = componentNew.Object[Status].(map[string]interface{})[State]
+		if !valueExists {
 			logger.Error(errors.New("state from new component object could not be interpreted"), "missing state")
 		}
 
@@ -95,7 +95,7 @@ func (h *ComponentChangeHandler) Watch(ctx context.Context) func(event.UpdateEve
 			return
 		}
 
-		q.Add(reconcile.Request{
+		queue.Add(reconcile.Request{
 			NamespacedName: client.ObjectKeyFromObject(kyma),
 		})
 	}

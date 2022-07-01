@@ -21,12 +21,12 @@ type TemplateInChannel struct {
 
 type TemplatesInChannels map[string]*TemplateInChannel
 
-func GetTemplates(ctx context.Context, c client.Reader, k *operatorv1alpha1.Kyma) (TemplatesInChannels, error) {
+func GetTemplates(ctx context.Context, c client.Reader, kymaObj *operatorv1alpha1.Kyma) (TemplatesInChannels, error) {
 	logger := log.FromContext(ctx)
 	templates := make(TemplatesInChannels)
 
-	for _, component := range k.Spec.Components {
-		template, err := LookupTemplate(c, component, k.Spec.Channel).WithContext(ctx)
+	for _, component := range kymaObj.Spec.Components {
+		template, err := LookupTemplate(c, component, kymaObj.Spec.Channel).WithContext(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -34,7 +34,7 @@ func GetTemplates(ctx context.Context, c client.Reader, k *operatorv1alpha1.Kyma
 		templates[component.Name] = template
 	}
 
-	CheckForOutdatedTemplates(logger, k, templates)
+	CheckForOutdatedTemplates(logger, kymaObj, templates)
 
 	return templates, nil
 }
