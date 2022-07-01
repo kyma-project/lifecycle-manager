@@ -32,6 +32,7 @@ func (k *Kyma) UpdateStatus(
 	message string,
 ) error {
 	kyma.Status.State = newState
+
 	switch newState {
 	case operatorv1alpha1.KymaStateReady:
 		k.SyncReadyConditionForModules(kyma, util.Modules{
@@ -47,11 +48,14 @@ func (k *Kyma) UpdateStatus(
 			operatorv1alpha1.KymaKind: &util.Module{},
 		}, operatorv1alpha1.ConditionStatusFalse, message)
 	}
+
 	return k.Update(ctx, kyma.SetObservedGeneration())
 }
 
-func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules util.Modules, conditionStatus operatorv1alpha1.KymaConditionStatus, message string) {
+func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules util.Modules,
+	conditionStatus operatorv1alpha1.KymaConditionStatus, message string) {
 	status := &kyma.Status
+
 	for name, module := range modules {
 		condition, exists := k.GetReadyConditionForComponent(kyma, name)
 		if !exists {
@@ -61,12 +65,14 @@ func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules
 			}
 			status.Conditions = append(status.Conditions, *condition)
 		}
+
 		if module.Template != nil {
 			condition.TemplateInfo = operatorv1alpha1.TemplateInfo{
 				Channel:    module.Template.Spec.Channel,
 				Generation: module.Template.Generation,
 			}
 		}
+
 		condition.LastTransitionTime = &metav1.Time{Time: time.Now()}
 		condition.Message = message
 		condition.Status = conditionStatus
@@ -74,27 +80,32 @@ func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules
 		for i, existingCondition := range status.Conditions {
 			if existingCondition.Type == operatorv1alpha1.ConditionTypeReady && existingCondition.Reason == name {
 				status.Conditions[i] = *condition
+
 				break
 			}
 		}
 	}
 }
 
-func (k *Kyma) GetReadyConditionForComponent(kymaObj *operatorv1alpha1.Kyma, componentName string) (*operatorv1alpha1.KymaCondition, bool) {
+func (k *Kyma) GetReadyConditionForComponent(kymaObj *operatorv1alpha1.Kyma,
+	componentName string) (*operatorv1alpha1.KymaCondition, bool) {
 	status := &kymaObj.Status
 	for _, existingCondition := range status.Conditions {
 		if existingCondition.Type == operatorv1alpha1.ConditionTypeReady && existingCondition.Reason == componentName {
 			return &existingCondition, true
 		}
 	}
+
 	return &operatorv1alpha1.KymaCondition{}, false
 }
 
-func (k *Kyma) UpdateConditionFromComponentState(name string, module *util.Module, kyma *operatorv1alpha1.Kyma) (bool, error) {
+func (k *Kyma) UpdateConditionFromComponentState(name string, module *util.Module,
+	kyma *operatorv1alpha1.Kyma) (bool, error) {
 	updateRequired := false
 	actualComponentStruct := module.Unstructured
-	componentStatus := actualComponentStruct.Object[watch.Status]
 	componentName := actualComponentStruct.GetLabels()[labels.ControllerName]
+
+	componentStatus := actualComponentStruct.Object[watch.Status]
 	if componentStatus != nil {
 		condition, exists := k.GetReadyConditionForComponent(kyma, componentName)
 		if !exists {
@@ -106,6 +117,7 @@ func (k *Kyma) UpdateConditionFromComponentState(name string, module *util.Modul
 			if condition.Status != operatorv1alpha1.ConditionStatusTrue {
 				k.SyncReadyConditionForModules(kyma, util.Modules{name: module},
 					operatorv1alpha1.ConditionStatusTrue, "component ready!")
+
 				updateRequired = true
 			}
 
@@ -113,6 +125,7 @@ func (k *Kyma) UpdateConditionFromComponentState(name string, module *util.Modul
 			if condition.Status != operatorv1alpha1.ConditionStatusUnknown {
 				k.SyncReadyConditionForModules(kyma, util.Modules{name: module},
 					operatorv1alpha1.ConditionStatusUnknown, "component status not known!")
+
 				updateRequired = true
 			}
 
@@ -120,9 +133,11 @@ func (k *Kyma) UpdateConditionFromComponentState(name string, module *util.Modul
 			if condition.Status != operatorv1alpha1.ConditionStatusFalse {
 				k.SyncReadyConditionForModules(kyma, util.Modules{name: module},
 					operatorv1alpha1.ConditionStatusFalse, "component not ready!")
+
 				updateRequired = true
 			}
 		}
 	}
+
 	return updateRequired, nil
 }

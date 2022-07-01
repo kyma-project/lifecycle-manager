@@ -23,15 +23,17 @@ func (ci *ComponentInformer) String() string {
 	return ci.GroupVersionResource.String()
 }
 
-func Informers(mgr manager.Manager, gv schema.GroupVersion) (map[string]source.Source, error) {
+func Informers(mgr manager.Manager, groupVersion schema.GroupVersion) (map[string]source.Source, error) {
 	c, err := dynamic.NewForConfig(mgr.GetConfig())
 	if err != nil {
 		return nil, err
 	}
 
 	informerFactory := dynamicinformer.NewDynamicSharedInformerFactory(c, time.Minute*30)
+
 	err = mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
 		informerFactory.Start(ctx.Done())
+
 		return nil
 	}))
 	if err != nil {
@@ -42,7 +44,8 @@ func Informers(mgr manager.Manager, gv schema.GroupVersion) (map[string]source.S
 	if err != nil {
 		return nil, err
 	}
-	resources, err := cs.ServerResourcesForGroupVersion(gv.String())
+
+	resources, err := cs.ServerResourcesForGroupVersion(groupVersion.String())
 	if client.IgnoreNotFound(err) != nil {
 		return nil, err
 	}
@@ -52,13 +55,17 @@ func Informers(mgr manager.Manager, gv schema.GroupVersion) (map[string]source.S
 	}
 
 	dynamicInformerSet := make(map[string]source.Source)
+
 	for _, resource := range resources.APIResources {
 		if strings.HasSuffix(resource.Name, "status") {
 			continue
 		}
-		gvr := gv.WithResource(resource.Name)
+
+		gvr := groupVersion.WithResource(resource.Name)
 		informer := informerFactory.ForResource(gvr).Informer()
-		dynamicInformerSet[gvr.String()] = &ComponentInformer{Informer: source.Informer{Informer: informer}, GroupVersionResource: gvr}
+		dynamicInformerSet[gvr.String()] = &ComponentInformer{Informer: source.Informer{Informer: informer},
+			GroupVersionResource: gvr}
 	}
+
 	return dynamicInformerSet, nil
 }

@@ -56,6 +56,7 @@ var (
 	setupLog = ctrl.Log.WithName("setup") //nolint:gochecknoglobals
 )
 
+//nolint:wsl
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
@@ -65,9 +66,13 @@ func init() {
 
 func main() {
 	var metricsAddr string
+
 	var enableLeaderElection bool
+
 	var probeAddr string
+
 	var maxConcurrentReconciles int
+
 	var requeueSuccessInterval, requeueFailureInterval, requeueWaitingInterval time.Duration
 	defineFlag(metricsAddr, probeAddr, maxConcurrentReconciles, enableLeaderElection, requeueSuccessInterval, requeueFailureInterval, requeueWaitingInterval)
 
@@ -83,6 +88,7 @@ func main() {
 	cacheLabelSelector := labels.SelectorFromSet(
 		labels.Set{operatorLabels.ManagedBy: name},
 	)
+
 	mgr := setupManager(metricsAddr, probeAddr, enableLeaderElection, cacheLabelSelector, requeueSuccessInterval, requeueFailureInterval, requeueWaitingInterval, maxConcurrentReconciles)
 	//+kubebuilder:scaffold:builder
 
@@ -90,6 +96,7 @@ func main() {
 		setupLog.Error(err, "unable to set up health check")
 		os.Exit(1)
 	}
+
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)

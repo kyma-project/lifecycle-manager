@@ -23,7 +23,8 @@ type KymaSynchronizationContext struct {
 	controlPlaneKyma   *operatorv1alpha1.Kyma
 }
 
-func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, name, namespace string) (client.Client, error) {
+func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, name,
+	namespace string) (client.Client, error) {
 	cc := ClusterClient{
 		DefaultClient: controlPlaneClient,
 		Logger:        log.FromContext(ctx),
@@ -38,14 +39,17 @@ func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, name
 	if err != nil {
 		return nil, err
 	}
+
 	return remoteClient, nil
 }
 
-func GetRemotelySyncedKyma(ctx context.Context, runtimeClient client.Client, key client.ObjectKey) (*operatorv1alpha1.Kyma, error) {
+func GetRemotelySyncedKyma(ctx context.Context, runtimeClient client.Client,
+	key client.ObjectKey) (*operatorv1alpha1.Kyma, error) {
 	remoteKyma := &operatorv1alpha1.Kyma{}
 	if err := runtimeClient.Get(ctx, key, remoteKyma); err != nil {
 		return nil, err
 	}
+
 	return remoteKyma, nil
 }
 
@@ -54,10 +58,12 @@ func DeleteRemotelySyncedKyma(ctx context.Context, controlPlaneClient client.Cli
 	if err != nil {
 		return err
 	}
+
 	remoteKyma, err := GetRemotelySyncedKyma(ctx, runtimeClient, key)
 	if err != nil {
 		return err
 	}
+
 	return runtimeClient.Delete(ctx, remoteKyma)
 }
 
@@ -66,19 +72,24 @@ func RemoveFinalizerFromRemoteKyma(ctx context.Context, controlPlaneClient clien
 	if err != nil {
 		return err
 	}
+
 	remoteKyma, err := GetRemotelySyncedKyma(ctx, runtimeClient, key)
 	if err != nil {
 		return err
 	}
+
 	controllerutil.RemoveFinalizer(remoteKyma, labels.Finalizer)
+
 	return runtimeClient.Update(ctx, remoteKyma)
 }
 
-func InitializeKymaSynchronizationContext(ctx context.Context, controlPlaneClient client.Client, controlPlaneKyma *operatorv1alpha1.Kyma) (*KymaSynchronizationContext, error) {
+func InitializeKymaSynchronizationContext(ctx context.Context, controlPlaneClient client.Client,
+	controlPlaneKyma *operatorv1alpha1.Kyma) (*KymaSynchronizationContext, error) {
 	runtimeClient, err := NewRemoteClient(ctx, controlPlaneClient, controlPlaneKyma.Name, controlPlaneKyma.Namespace)
 	if err != nil {
 		return nil, err
 	}
+
 	sync := &KymaSynchronizationContext{
 		controlPlaneClient: controlPlaneClient,
 		runtimeClient:      runtimeClient,
@@ -97,6 +108,7 @@ func (c *KymaSynchronizationContext) CreateCRD(ctx context.Context) error {
 	}, crd); err != nil {
 		return err
 	}
+
 	return c.runtimeClient.Create(ctx, &v1extensions.CustomResourceDefinition{
 		ObjectMeta: v1.ObjectMeta{Name: crd.Name, Namespace: crd.Namespace}, Spec: crd.Spec,
 	})
@@ -110,9 +122,11 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 
 	if meta.IsNoMatchError(err) {
 		recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
+
 		if err := c.CreateCRD(ctx); err != nil {
 			return nil, err
 		}
+
 		recorder.Event(kyma, "Normal", "CRDInstallation", "CRDs were installed to SKR")
 		// the NoMatch error we previously encountered is now fixed through the CRD installation
 		err = nil
@@ -122,20 +136,24 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 		remoteKyma.Name = kyma.Name
 		remoteKyma.Namespace = kyma.Namespace
 		remoteKyma.Spec = *kyma.Spec.DeepCopy()
+
 		err = c.runtimeClient.Create(ctx, remoteKyma)
 		if err != nil {
 			recorder.Event(kyma, "Normal", "CRDInstallation", "CRDs were installed to SKR")
+
 			return nil, err
 		}
 	} else if err != nil {
 		recorder.Event(kyma, "Warning", err.Error(), "Client could not fetch remote Kyma")
+
 		return nil, err
 	}
 
 	return remoteKyma, err
 }
 
-func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, remoteKyma *operatorv1alpha1.Kyma) (bool, error) {
+func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context,
+	remoteKyma *operatorv1alpha1.Kyma) (bool, error) {
 	recorder := adapter.RecorderFromContext(ctx)
 	// check finalizer
 	if !controllerutil.ContainsFinalizer(remoteKyma, labels.Finalizer) {
@@ -147,12 +165,14 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, 
 		remoteKyma.Status.ObservedGeneration = remoteKyma.GetGeneration()
 		if err := c.runtimeClient.Status().Update(ctx, remoteKyma); err != nil {
 			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
+
 			return true, err
 		}
 
 		c.controlPlaneKyma.Spec = remoteKyma.Spec
 		if err := c.controlPlaneClient.Update(ctx, c.controlPlaneKyma); err != nil {
 			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update control clane kyma")
+
 			return true, err
 		}
 
@@ -173,15 +193,18 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, 
 		err := c.runtimeClient.Status().Update(ctx, remoteKyma)
 		if err != nil {
 			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
+
 			return false, err
 		}
 	}
 
 	// this is an additional update on the runtime and might not be worth it
 	lastSyncDate := time.Now().Format(time.RFC3339)
+
 	if remoteKyma.Annotations == nil {
 		remoteKyma.Annotations = make(map[string]string)
 	}
+
 	remoteKyma.Annotations[labels.LastSync] = lastSyncDate
 
 	return false, c.runtimeClient.Update(ctx, remoteKyma)

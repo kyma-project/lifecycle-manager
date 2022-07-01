@@ -33,25 +33,34 @@ func NewComponentChangeHandler(handlerClient ChangeHandlerClient) *ComponentChan
 
 func (h *ComponentChangeHandler) Watch(ctx context.Context) func(event.UpdateEvent, workqueue.RateLimitingInterface) {
 	logger := log.FromContext(ctx).WithName("component-change-handler")
-	return func(event event.UpdateEvent, q workqueue.RateLimitingInterface) {
+
+	return func(event event.UpdateEvent, queue workqueue.RateLimitingInterface) {
 		objectBytesNew, err := json.Marshal(event.ObjectNew)
 		if err != nil {
 			logger.Error(err, "error transforming new component object")
+
 			return
 		}
+
 		objectBytesOld, err := json.Marshal(event.ObjectOld)
 		if err != nil {
 			logger.Error(err, "error transforming old component object")
+
 			return
 		}
+
 		componentNew := unstructured.Unstructured{}
 		componentOld := unstructured.Unstructured{}
+
 		if err = json.Unmarshal(objectBytesNew, &componentNew); err != nil {
 			logger.Error(err, "error transforming new component object")
+
 			return
 		}
+
 		if err = json.Unmarshal(objectBytesOld, &componentOld); err != nil {
 			logger.Error(err, "error transforming old component object")
+
 			return
 		}
 
@@ -75,7 +84,7 @@ func (h *ComponentChangeHandler) Watch(ctx context.Context) func(event.UpdateEve
 			return
 		}
 
-		q.Add(reconcile.Request{
+		queue.Add(reconcile.Request{
 			NamespacedName: client.ObjectKeyFromObject(kyma),
 		})
 	}
@@ -97,14 +106,17 @@ func extractState(component unstructured.Unstructured, logger logr.Logger) inter
 	return state
 }
 
-func (h *ComponentChangeHandler) GetKymaOwner(ctx context.Context, component *unstructured.Unstructured) (*operatorv1alpha1.Kyma, error) {
-	ownerRefs := component.GetOwnerReferences()
+func (h *ComponentChangeHandler) GetKymaOwner(ctx context.Context,
+	component *unstructured.Unstructured) (*operatorv1alpha1.Kyma, error) {
 	var ownerName string
+
+	ownerRefs := component.GetOwnerReferences()
 	kyma := &operatorv1alpha1.Kyma{}
 
 	for _, ownerRef := range ownerRefs {
 		if operatorv1alpha1.KymaKind == ownerRef.Kind {
 			ownerName = ownerRef.Name
+
 			break
 		}
 	}

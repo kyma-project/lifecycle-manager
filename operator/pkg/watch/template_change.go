@@ -35,6 +35,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 		managedBy, managedByPresent := l[labels.ManagedBy]
 		controller, controllerLabelPresent := l[labels.ControllerName]
 		channel := template.Spec.Channel
+
 		if !controllerLabelPresent || controller == "" ||
 			channel == "" ||
 			!managedByPresent || managedBy != "kyma-operator" {
@@ -43,6 +44,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 		}
 
 		kymas := &v1alpha1.KymaList{}
+
 		err := h.List(ctx, kymas)
 		if err != nil {
 			return requests

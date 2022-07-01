@@ -42,11 +42,12 @@ type KymaSpec struct {
 	Components []ComponentType `json:"components,omitempty"`
 }
 
-func (k *Kyma) AreAllReadyConditionsSetForKyma() bool {
-	status := &k.Status
+func (kyma *Kyma) AreAllReadyConditionsSetForKyma() bool {
+	status := &kyma.Status
 	if len(status.Conditions) < 1 {
 		return false
 	}
+
 	for _, existingCondition := range status.Conditions {
 		if existingCondition.Type == ConditionTypeReady &&
 			existingCondition.Status != ConditionStatusTrue &&
@@ -54,6 +55,7 @@ func (k *Kyma) AreAllReadyConditionsSetForKyma() bool {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -172,11 +174,13 @@ type Kyma struct {
 
 func (kyma *Kyma) SetObservedGeneration() *Kyma {
 	kyma.Status.ObservedGeneration = kyma.Generation
+
 	return kyma
 }
 
 func (kyma *Kyma) SetActiveChannel() *Kyma {
 	kyma.Status.ActiveChannel = kyma.Spec.Channel
+
 	return kyma
 }
 

@@ -31,23 +31,28 @@ func (cc *ClusterClient) GetRestConfigFromSecret(ctx context.Context, name, name
 		return nil, err
 	} else if len(kubeConfigSecretList.Items) < 1 {
 		gr := v1.SchemeGroupVersion.WithResource(fmt.Sprintf("secret with label %s", labels.KymaName)).GroupResource()
+
 		return nil, errors.NewNotFound(gr, name)
 	}
+
 	kubeConfigSecret := kubeConfigSecretList.Items[0]
 
 	kubeconfigString := string(kubeConfigSecret.Data["config"])
+
 	restConfig, err := cc.GetConfig(kubeconfigString, "")
 	if err != nil {
 		return nil, err
 	}
+
 	return restConfig, err
 }
 
 func (cc *ClusterClient) GetConfig(kubeConfig string, explicitPath string) (*rest.Config, error) {
 	if kubeConfig != "" {
 		// parameter string
-		return clientcmd.BuildConfigFromKubeconfigGetter("", func() (config *clientcmdapi.Config, e error) {
+		return clientcmd.BuildConfigFromKubeconfigGetter("", func() (*clientcmdapi.Config, error) {
 			cc.Info("Found config from passed kubeconfig")
+
 			return clientcmd.Load([]byte(kubeConfig))
 		})
 	}
@@ -55,13 +60,15 @@ func (cc *ClusterClient) GetConfig(kubeConfig string, explicitPath string) (*res
 	config, err := rest.InClusterConfig()
 	if err == nil {
 		cc.Info("Found config in-cluster")
-		return config, err
+
+		return config, nil
 	}
 
 	// kubeconfig flag
 	if flag.Lookup("kubeconfig") != nil {
 		if kubeconfig := flag.Lookup("kubeconfig").Value.String(); kubeconfig != "" {
 			cc.Info("Found config from flags")
+
 			return clientcmd.BuildConfigFromFlags("", kubeconfig)
 		}
 	}
@@ -69,23 +76,28 @@ func (cc *ClusterClient) GetConfig(kubeConfig string, explicitPath string) (*res
 	// env variable
 	if len(os.Getenv("KUBECONFIG")) > 0 {
 		cc.Info("Found config from env")
+
 		return clientcmd.BuildConfigFromFlags("masterURL", os.Getenv("KUBECONFIG"))
 	}
 
 	// default directory + working directory + explicit path -> merged
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.ExplicitPath = explicitPath
+
 	pwd, err := os.Getwd()
 	if err != nil {
 		return nil, fmt.Errorf("error reading current working directory %w", err)
 	}
+
 	loadingRules.Precedence = append(loadingRules.Precedence, path.Join(pwd, ".kubeconfig"))
 	clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
+
 	config, err = clientConfig.ClientConfig()
 	if err != nil {
 		return nil, err
 	}
 
 	cc.Info(fmt.Sprintf("Found config file in: %s", clientConfig.ConfigAccess().GetDefaultFilename()))
+
 	return config, nil
 }
