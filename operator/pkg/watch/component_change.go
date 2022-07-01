@@ -32,23 +32,28 @@ func NewComponentChangeHandler(handlerClient ChangeHandlerClient) *ComponentChan
 
 func (h *ComponentChangeHandler) Watch(ctx context.Context) func(event.UpdateEvent, workqueue.RateLimitingInterface) {
 	logger := log.FromContext(ctx).WithName("component-change-handler")
+
 	return func(event event.UpdateEvent, q workqueue.RateLimitingInterface) {
 		objectBytesNew, err := json.Marshal(event.ObjectNew)
 		if err != nil {
 			logger.Error(err, "error transforming new component object")
 			return
 		}
+
 		objectBytesOld, err := json.Marshal(event.ObjectOld)
 		if err != nil {
 			logger.Error(err, "error transforming old component object")
 			return
 		}
+
 		componentNew := unstructured.Unstructured{}
 		componentOld := unstructured.Unstructured{}
+
 		if err = json.Unmarshal(objectBytesNew, &componentNew); err != nil {
 			logger.Error(err, "error transforming new component object")
 			return
 		}
+
 		if err = json.Unmarshal(objectBytesOld, &componentOld); err != nil {
 			logger.Error(err, "error transforming old component object")
 			return
@@ -69,6 +74,7 @@ func (h *ComponentChangeHandler) Watch(ctx context.Context) func(event.UpdateEve
 		}
 
 		var oldState, newState interface{}
+
 		var ok bool
 
 		if componentOld.Object[Status] != nil {
@@ -96,8 +102,9 @@ func (h *ComponentChangeHandler) Watch(ctx context.Context) func(event.UpdateEve
 }
 
 func (h *ComponentChangeHandler) GetKymaOwner(ctx context.Context, component *unstructured.Unstructured) (*operatorv1alpha1.Kyma, error) {
-	ownerRefs := component.GetOwnerReferences()
 	var ownerName string
+
+	ownerRefs := component.GetOwnerReferences()
 	kyma := &operatorv1alpha1.Kyma{}
 
 	for _, ownerRef := range ownerRefs {

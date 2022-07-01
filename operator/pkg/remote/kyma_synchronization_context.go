@@ -38,6 +38,7 @@ func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, name
 	if err != nil {
 		return nil, err
 	}
+
 	return remoteClient, nil
 }
 
@@ -46,6 +47,7 @@ func GetRemotelySyncedKyma(ctx context.Context, runtimeClient client.Client, key
 	if err := runtimeClient.Get(ctx, key, remoteKyma); err != nil {
 		return nil, err
 	}
+
 	return remoteKyma, nil
 }
 
@@ -54,10 +56,12 @@ func DeleteRemotelySyncedKyma(ctx context.Context, controlPlaneClient client.Cli
 	if err != nil {
 		return err
 	}
+
 	remoteKyma, err := GetRemotelySyncedKyma(ctx, runtimeClient, key)
 	if err != nil {
 		return err
 	}
+
 	return runtimeClient.Delete(ctx, remoteKyma)
 }
 
@@ -66,11 +70,14 @@ func RemoveFinalizerFromRemoteKyma(ctx context.Context, controlPlaneClient clien
 	if err != nil {
 		return err
 	}
+
 	remoteKyma, err := GetRemotelySyncedKyma(ctx, runtimeClient, key)
 	if err != nil {
 		return err
 	}
+
 	controllerutil.RemoveFinalizer(remoteKyma, labels.Finalizer)
+
 	return runtimeClient.Update(ctx, remoteKyma)
 }
 
@@ -79,6 +86,7 @@ func InitializeKymaSynchronizationContext(ctx context.Context, controlPlaneClien
 	if err != nil {
 		return nil, err
 	}
+
 	sync := &KymaSynchronizationContext{
 		controlPlaneClient: controlPlaneClient,
 		runtimeClient:      runtimeClient,
@@ -97,6 +105,7 @@ func (c *KymaSynchronizationContext) CreateCRD(ctx context.Context) error {
 	}, crd); err != nil {
 		return err
 	}
+
 	return c.runtimeClient.Create(ctx, &v1extensions.CustomResourceDefinition{
 		ObjectMeta: v1.ObjectMeta{Name: crd.Name, Namespace: crd.Namespace}, Spec: crd.Spec,
 	})
@@ -110,9 +119,11 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 
 	if meta.IsNoMatchError(err) {
 		recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
+
 		if err := c.CreateCRD(ctx); err != nil {
 			return nil, err
 		}
+
 		recorder.Event(kyma, "Normal", "CRDInstallation", "CRDs were installed to SKR")
 		// the NoMatch error we previously encountered is now fixed through the CRD installation
 		err = nil
@@ -122,6 +133,7 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 		remoteKyma.Name = kyma.Name
 		remoteKyma.Namespace = kyma.Namespace
 		remoteKyma.Spec = *kyma.Spec.DeepCopy()
+
 		err = c.runtimeClient.Create(ctx, remoteKyma)
 		if err != nil {
 			recorder.Event(kyma, "Normal", "CRDInstallation", "CRDs were installed to SKR")
@@ -174,9 +186,11 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, 
 
 	// this is an additional update on the runtime and might not be worth it
 	lastSyncDate := time.Now().Format(time.RFC3339)
+
 	if remoteKyma.Annotations == nil {
 		remoteKyma.Annotations = make(map[string]string)
 	}
+
 	remoteKyma.Annotations[labels.LastSync] = lastSyncDate
 
 	return false, c.runtimeClient.Update(ctx, remoteKyma)

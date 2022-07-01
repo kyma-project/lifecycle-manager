@@ -30,6 +30,7 @@ func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, compone
 	if labelMap == nil {
 		labelMap = make(map[string]string)
 	}
+
 	labelMap[labels.ControllerName] = componentName
 	labelMap[labels.Channel] = string(channel)
 	labelMap[labels.KymaName] = kymaName
@@ -46,12 +47,14 @@ func ParseTemplates(kyma *operatorv1alpha1.Kyma, templates release.TemplatesInCh
 	// First, we fetch the component spec from the template and use it to resolve it into an arbitrary object
 	// (since we do not know which component we are dealing with)
 	modules := make(Modules)
+
 	for _, component := range kyma.Spec.Components {
 		template := templates[component.Name]
 		if template == nil {
 			return nil, fmt.Errorf("could not find template %s for resource %s",
 				component.Name, client.ObjectKeyFromObject(kyma))
 		}
+
 		if module, err := GetUnstructuredComponentFromTemplate(template, component.Name, kyma); err != nil {
 			return nil, err
 		} else {
@@ -63,6 +66,7 @@ func ParseTemplates(kyma *operatorv1alpha1.Kyma, templates release.TemplatesInCh
 			}
 		}
 	}
+
 	return modules, nil
 }
 

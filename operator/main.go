@@ -64,10 +64,15 @@ func init() {
 
 func main() {
 	var metricsAddr string
+
 	var enableLeaderElection bool
+
 	var probeAddr string
+
 	var maxConcurrentReconciles int
+
 	var requeueSuccessInterval, requeueFailureInterval, requeueWaitingInterval time.Duration
+
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.IntVar(&maxConcurrentReconciles, "max-concurrent-reconciles", 1, "The maximum number of concurrent Reconciles which can be run.")
@@ -98,6 +103,7 @@ func main() {
 	cacheLabelSelector := labels.SelectorFromSet(
 		labels.Set{operatorLabels.ManagedBy: name},
 	)
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
@@ -140,6 +146,7 @@ func main() {
 		setupLog.Error(err, "unable to set up health check")
 		os.Exit(1)
 	}
+
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)

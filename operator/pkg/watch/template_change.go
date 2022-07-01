@@ -24,6 +24,7 @@ func NewTemplateChangeHandler(handlerClient ChangeHandlerClient) *TemplateChange
 
 func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 	logger := log.FromContext(ctx).WithName("template-change-detection")
+
 	return func(o client.Object) []reconcile.Request {
 		requests := make([]reconcile.Request, 0)
 		template := &v1alpha1.ModuleTemplate{}
@@ -36,6 +37,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 		managedBy, managedByPresent := l[labels.ManagedBy]
 		controller, controllerLabelPresent := l[labels.ControllerName]
 		channel := template.Spec.Channel
+
 		if !controllerLabelPresent || controller == "" ||
 			channel == "" ||
 			!managedByPresent || managedBy != "kyma-operator" {
@@ -44,6 +46,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 		}
 
 		kymas := &v1alpha1.KymaList{}
+
 		err := h.List(ctx, kymas)
 		if err != nil {
 			return requests
@@ -53,6 +56,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 			Namespace: template.GetNamespace(),
 			Name:      template.GetName(),
 		}
+
 		for _, kyma := range kymas.Items {
 			globalChannelMatch := kyma.Spec.Channel == channel
 			requeueKyma := false
@@ -85,6 +89,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 
 			requests = append(requests, reconcile.Request{NamespacedName: namespacedNameForKyma})
 		}
+
 		return requests
 	}
 }

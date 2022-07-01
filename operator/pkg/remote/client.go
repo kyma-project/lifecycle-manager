@@ -34,13 +34,16 @@ func (cc *ClusterClient) GetRestConfigFromSecret(ctx context.Context, name, name
 		gr := v1.SchemeGroupVersion.WithResource(fmt.Sprintf("secret with label %s", labels.KymaName)).GroupResource()
 		return nil, errors.NewNotFound(gr, name)
 	}
+
 	kubeConfigSecret := kubeConfigSecretList.Items[0]
 
 	kubeconfigString := string(kubeConfigSecret.Data["config"])
+
 	restConfig, err := cc.GetConfig(kubeconfigString, "")
 	if err != nil {
 		return nil, err
 	}
+
 	return restConfig, err
 }
 
@@ -76,17 +79,21 @@ func (cc *ClusterClient) GetConfig(kubeConfig string, explicitPath string) (*res
 	// default directory + working directory + explicit path -> merged
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.ExplicitPath = explicitPath
+
 	pwd, err := os.Getwd()
 	if err != nil {
 		return nil, fmt.Errorf("error reading current working directory %w", err)
 	}
+
 	loadingRules.Precedence = append(loadingRules.Precedence, path.Join(pwd, ".kubeconfig"))
 	clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
+
 	config, err = clientConfig.ClientConfig()
 	if err != nil {
 		return nil, err
 	}
 
 	cc.Info(fmt.Sprintf("Found config file in: %s", clientConfig.ConfigAccess().GetDefaultFilename()))
+
 	return config, nil
 }

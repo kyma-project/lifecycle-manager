@@ -47,6 +47,7 @@ func (k *Kyma) AreAllReadyConditionsSetForKyma() bool {
 	if len(status.Conditions) < 1 {
 		return false
 	}
+
 	for _, existingCondition := range status.Conditions {
 		if existingCondition.Type == ConditionTypeReady &&
 			existingCondition.Status != ConditionStatusTrue &&
@@ -54,6 +55,7 @@ func (k *Kyma) AreAllReadyConditionsSetForKyma() bool {
 			return false
 		}
 	}
+
 	return true
 }
 

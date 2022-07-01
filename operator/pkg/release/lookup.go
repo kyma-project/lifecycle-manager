@@ -24,14 +24,18 @@ type TemplatesInChannels map[string]*TemplateInChannel
 func GetTemplates(ctx context.Context, c client.Reader, k *operatorv1alpha1.Kyma) (TemplatesInChannels, error) {
 	logger := log.FromContext(ctx)
 	templates := make(TemplatesInChannels)
+
 	for _, component := range k.Spec.Components {
 		template, err := LookupTemplate(c, component, k.Spec.Channel).WithContext(ctx)
 		if err != nil {
 			return nil, err
 		}
+
 		templates[component.Name] = template
 	}
+
 	CheckForOutdatedTemplates(logger, k, templates)
+
 	return templates, nil
 }
 
@@ -49,6 +53,7 @@ func CheckForOutdatedTemplates(logger logr.Logger, k *operatorv1alpha1.Kyma, tem
 						"newTemplateChannel", lookupResult.Template.Spec.Channel,
 						"previousTemplateChannel", condition.TemplateInfo.Channel,
 					)
+
 					lookupResult.Outdated = true
 				}
 			}
@@ -147,5 +152,6 @@ func NewMoreThanOneTemplateCandidateErr(component operatorv1alpha1.ComponentType
 	for i, candidate := range candidateTemplates {
 		candidates[i] = candidate.GetName()
 	}
+
 	return fmt.Errorf("more than one config map template found for component: %s, candidates: %v", component.Name, candidates)
 }
