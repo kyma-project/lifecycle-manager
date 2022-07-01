@@ -14,6 +14,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
+const (
+	defaultResync = 30 * time.Minute
+)
+
 type ComponentInformer struct {
 	schema.GroupVersionResource
 	source.Informer
@@ -29,7 +33,7 @@ func Informers(mgr manager.Manager, groupVersion schema.GroupVersion) (map[strin
 		return nil, err
 	}
 
-	informerFactory := dynamicinformer.NewDynamicSharedInformerFactory(c, time.Minute*30)
+	informerFactory := dynamicinformer.NewDynamicSharedInformerFactory(c, defaultResync)
 
 	err = mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
 		informerFactory.Start(ctx.Done())

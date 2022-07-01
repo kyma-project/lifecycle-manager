@@ -128,11 +128,12 @@ func (c *channelTemplateLookup) WithContext(ctx context.Context) (*TemplateInCha
 			c.component.Name)
 	}
 
+	const logLevel = 3
 	if actualChannel != c.defaultChannel {
-		log.FromContext(ctx).V(3).Info(fmt.Sprintf("using %s (instead of %s) for component %s",
+		log.FromContext(ctx).V(logLevel).Info(fmt.Sprintf("using %s (instead of %s) for component %s",
 			actualChannel, c.defaultChannel, c.component.Name))
 	} else {
-		log.FromContext(ctx).V(3).Info(fmt.Sprintf("using %s for component %s",
+		log.FromContext(ctx).V(logLevel).Info(fmt.Sprintf("using %s for component %s",
 			actualChannel, c.component.Name))
 	}
 

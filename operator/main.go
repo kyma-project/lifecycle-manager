@@ -49,7 +49,17 @@ import (
 	//+kubebuilder:scaffold:imports
 )
 
-const name = "kyma-operator"
+const (
+	name                          = "kyma-operator"
+	baseDelay                     = 100 * time.Millisecond
+	maxDelay                      = 1000 * time.Second
+	limit                         = rate.Limit(30)
+	burst                         = 200
+	port                          = 9443
+	defaultRequeueSuccessInterval = 20 * time.Second
+	defaultRequeueFailureInterval = 10 * time.Second
+	defaultRequeueWaitingInterval = 3 * time.Second
+)
 
 var (
 	scheme   = runtime.NewScheme()        //nolint:gochecknoglobals
@@ -112,7 +122,7 @@ func setupManager(metricsAddr string, probeAddr string, enableLeaderElection boo
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
+		Port:                   port,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "893110f7.kyma-project.io",
@@ -138,8 +148,8 @@ func setupManager(metricsAddr string, probeAddr string, enableLeaderElection boo
 		},
 	}).SetupWithManager(mgr, controller.Options{
 		RateLimiter: workqueue.NewMaxOfRateLimiter(
-			workqueue.NewItemExponentialFailureRateLimiter(100*time.Millisecond, 1000*time.Second),
-			&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(30), 200)}),
+			workqueue.NewItemExponentialFailureRateLimiter(baseDelay, maxDelay),
+			&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(limit, burst)}),
 		MaxConcurrentReconciles: maxConcurrentReconciles,
 	}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
@@ -155,14 +165,13 @@ func defineFlag(metricsAddr string, probeAddr string, maxConcurrentReconciles in
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-
-	flag.DurationVar(&requeueSuccessInterval, "requeue-success-interval", 20*time.Second,
+	flag.DurationVar(&requeueSuccessInterval, "requeue-success-interval", defaultRequeueSuccessInterval,
 		"determines the duration after which an already successfully reconciled Kyma is enqueued for checking "+
 			"if it's still in a consistent state.")
-	flag.DurationVar(&requeueFailureInterval, "requeue-failure-interval", 10*time.Second,
+	flag.DurationVar(&requeueFailureInterval, "requeue-failure-interval", defaultRequeueFailureInterval,
 		"determines the duration after which a failing reconciliation is retried and "+
 			"enqueued for a next try at recovering (e.g. because an Remote Synchronization Interaction failed)")
-	flag.DurationVar(&requeueWaitingInterval, "requeue-waiting-interval", 3*time.Second,
+	flag.DurationVar(&requeueWaitingInterval, "requeue-waiting-interval", defaultRequeueWaitingInterval,
 		"etermines the duration after which a pending reconciliation is requeued "+
 			"if the operator decides that it needs to wait for a certain state to update before it can proceed "+
 			"(e.g. because of pending finalizers in the deletion process)")
