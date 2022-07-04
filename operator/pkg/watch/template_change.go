@@ -54,50 +54,42 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 			Namespace: template.GetNamespace(),
 			Name:      template.GetName(),
 		}
-		requests = handleRequest(ctx, kymas, channel, controller, templateNamespacedName, requests)
+		logger := log.FromContext(ctx).WithName("template-change-detection")
+
+		for _, kyma := range kymas.Items {
+			globalChannelMatch := kyma.Spec.Channel == channel
+
+			if !requeueKyma(kyma, controller, globalChannelMatch, channel) {
+				continue
+			}
+
+			namespacedNameForKyma := types.NamespacedName{
+				Namespace: kyma.GetNamespace(),
+				Name:      kyma.GetName(),
+			}
+			logger.WithValues(
+				"controller", controller,
+				"channel", channel,
+				"template", templateNamespacedName.String(),
+			).Info(namespacedNameForKyma.String())
+
+			requests = append(requests, reconcile.Request{NamespacedName: namespacedNameForKyma})
+		}
 
 		return requests
 	}
 }
 
-func handleRequest(ctx context.Context, kymas *v1alpha1.KymaList, channel v1alpha1.Channel,
-	controller string, templateNamespacedName types.NamespacedName,
-	requests []reconcile.Request,
-) []reconcile.Request {
-	logger := log.FromContext(ctx).WithName("template-change-detection")
-
-	for _, kyma := range kymas.Items {
-		globalChannelMatch := kyma.Spec.Channel == channel
-		requeueKyma := false
-
-		for _, component := range kyma.Spec.Components {
-			if component.Name == controller {
-				// check component level channel on matching component
-				requeueKyma = (component.Channel == "" && globalChannelMatch) ||
-					component.Channel == channel
-
-				if requeueKyma {
-					break
-				}
+func requeueKyma(kyma v1alpha1.Kyma, controller string, globalChannelMatch bool, channel v1alpha1.Channel) bool {
+	for _, component := range kyma.Spec.Components {
+		if component.Name == controller {
+			// check component level channel on matching component
+			if (component.Channel == "" && globalChannelMatch) ||
+				component.Channel == channel {
+				return true
 			}
 		}
-
-		if !requeueKyma {
-			continue
-		}
-
-		namespacedNameForKyma := types.NamespacedName{
-			Namespace: kyma.GetNamespace(),
-			Name:      kyma.GetName(),
-		}
-		logger.WithValues(
-			"controller", controller,
-			"channel", channel,
-			"template", templateNamespacedName.String(),
-		).Info(namespacedNameForKyma.String())
-
-		requests = append(requests, reconcile.Request{NamespacedName: namespacedNameForKyma})
 	}
 
-	return requests
+	return false
 }
