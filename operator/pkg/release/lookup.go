@@ -20,12 +20,12 @@ type TemplateInChannel struct {
 
 type TemplatesInChannels map[string]*TemplateInChannel
 
-func GetTemplates(ctx context.Context, c client.Reader, kymaObj *operatorv1alpha1.Kyma) (TemplatesInChannels, error) {
+func GetTemplates(ctx context.Context, c client.Reader, kyma *operatorv1alpha1.Kyma) (TemplatesInChannels, error) {
 	logger := log.FromContext(ctx)
 	templates := make(TemplatesInChannels)
 
-	for _, component := range kymaObj.Spec.Components {
-		template, err := LookupTemplate(c, component, kymaObj.Spec.Channel).WithContext(ctx)
+	for _, component := range kyma.Spec.Components {
+		template, err := LookupTemplate(c, component, kyma.Spec.Channel).WithContext(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -33,7 +33,7 @@ func GetTemplates(ctx context.Context, c client.Reader, kymaObj *operatorv1alpha
 		templates[component.Name] = template
 	}
 
-	CheckForOutdatedTemplates(logger, kymaObj, templates)
+	CheckForOutdatedTemplates(logger, kyma, templates)
 
 	return templates, nil
 }
@@ -85,7 +85,7 @@ type channelTemplateLookup struct {
 func (c *channelTemplateLookup) WithContext(ctx context.Context) (*TemplateInChannel, error) {
 	templateList := &operatorv1alpha1.ModuleTemplateList{}
 
-	desiredChannel := c.createDesiredChannel()
+	desiredChannel := c.getDesiredChannel()
 
 	if err := c.reader.List(ctx, templateList,
 		client.MatchingLabels{
@@ -145,7 +145,7 @@ func (c *channelTemplateLookup) WithContext(ctx context.Context) (*TemplateInCha
 	}, nil
 }
 
-func (c *channelTemplateLookup) createDesiredChannel() operatorv1alpha1.Channel {
+func (c *channelTemplateLookup) getDesiredChannel() operatorv1alpha1.Channel {
 	var desiredChannel operatorv1alpha1.Channel
 
 	switch {

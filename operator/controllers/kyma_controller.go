@@ -350,6 +350,8 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *operat
 
 	for name, module := range modules {
 		// either the template in the condition is outdated (reflected by a generation change on the template)
+		// or the template that is supposed to be applied changed (e.g. because the kyma spec changed)
+
 		err := r.Get(ctx, client.ObjectKeyFromObject(module.Unstructured), module.Unstructured)
 		if client.IgnoreNotFound(err) != nil {
 			return false, err
