@@ -105,8 +105,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	// check finalizer
-	if !controllerutil.ContainsFinalizer(kyma, labels.Finalizer) {
-		controllerutil.AddFinalizer(kyma, labels.Finalizer)
+	if labels.CheckLabelsAndFinalizers(kyma) {
 		return ctrl.Result{}, r.Update(ctx, kyma)
 	}
 
@@ -363,7 +362,9 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *operat
 
 func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *operatorv1alpha1.Kyma, module *util.Module) error {
 	// merge template and component settings
-	util.CopySettingsToUnstructuredFromResource(module.Unstructured, module.Settings)
+	if err := util.CopySettingsToUnstructuredFromResource(module.Unstructured, module.Settings); err != nil {
+		return err
+	}
 	// set labels
 	util.SetComponentCRLabels(module.Unstructured, name, module.Template.Spec.Channel, kyma.Name)
 	// set owner reference
@@ -379,12 +380,14 @@ func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *op
 
 func (r *KymaReconciler) UpdateModule(ctx context.Context, name string, kyma *operatorv1alpha1.Kyma, module *util.Module) error {
 	// merge template and component settings
-	util.CopySettingsToUnstructuredFromResource(module.Unstructured, module.Settings)
+	if err := util.CopySettingsToUnstructuredFromResource(module.Unstructured, module.Settings); err != nil {
+		return err
+	}
 	// set labels
 	util.SetComponentCRLabels(module.Unstructured, name, module.Template.Spec.Channel, kyma.Name)
 	// update the spec
 	module.Unstructured.Object["spec"] = module.Template.Spec.Data.Object["spec"]
-	if err := r.Client.Update(ctx, module.Unstructured, &client.UpdateOptions{}); err != nil {
+	if err := r.Update(ctx, module.Unstructured, &client.UpdateOptions{}); err != nil {
 		return fmt.Errorf("error updating custom resource of type %s %w", name, err)
 	}
 	return nil

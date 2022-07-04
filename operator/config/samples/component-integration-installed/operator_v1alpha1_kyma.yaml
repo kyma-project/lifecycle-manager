@@ -10,9 +10,3 @@ spec:
   components:
     - name: manifest
       channel: stable
-      settings:
-        - apiVersion: operator.kyma-project.io/v1alpha1
-          kind: Kyma
-          name: kyma-sample
-          namespace: default
-          state: "Processing"

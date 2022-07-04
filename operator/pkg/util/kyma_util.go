@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"github.com/imdario/mergo"
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/gardener/component-spec/bindings-go/codec"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
@@ -37,10 +38,14 @@ func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, compone
 	unstructuredCompCR.SetLabels(labelMap)
 }
 
-func CopySettingsToUnstructuredFromResource(resource *unstructured.Unstructured, settings []operatorv1alpha1.Settings) {
+func CopySettingsToUnstructuredFromResource(resource *unstructured.Unstructured, settings []operatorv1alpha1.Settings) error {
 	if len(settings) > 0 {
-		resource.Object["spec"].(map[string]interface{})["customStates"] = settings
+		resource.Object["spec"] = settings
+		if err := mergo.Merge(resource.Object["spec"], settings); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func ParseTemplates(kyma *operatorv1alpha1.Kyma, templates release.TemplatesInChannels) (Modules, error) {
