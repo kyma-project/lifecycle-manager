@@ -5,12 +5,10 @@ metadata:
   namespace: default
 spec:
   channel: stable
+  sync:
+    enabled: true
+    strategy: local-secret
+    namespace: kyma-system
   components:
     - name: manifest
       channel: stable
-      settings:
-        - apiVersion: operator.kyma-project.io/v1alpha1
-          kind: Kyma
-          name: kyma-sample
-          namespace: default
-          state: "Processing"

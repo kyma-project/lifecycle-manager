@@ -80,8 +80,8 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
 
 	// check if kyma resource exists
-	kyma := operatorv1alpha1.Kyma{}
-	if err := r.Get(ctx, req.NamespacedName, &kyma); err != nil {
+	kyma := &operatorv1alpha1.Kyma{}
+	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
 		// we'll ignore not-found errors, since they can't be fixed by an immediate
 		// requeue (we'll need to wait for a new notification), and we can get them
 		// on deleted requests.
@@ -92,36 +92,36 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	// check if deletionTimestamp is set, retry until it gets fully deleted
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != operatorv1alpha1.KymaStateDeleting {
-		err := remote.DeleteRemotelySyncedKyma(ctx, r.Client, client.ObjectKeyFromObject(&kyma))
-		if client.IgnoreNotFound(err) != nil {
-			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
+		if kyma.Spec.Sync.Enabled {
+			if err := remote.DeleteRemotelySyncedKyma(ctx, r.Client, kyma); client.IgnoreNotFound(err) != nil {
+				logger.Info(req.NamespacedName.String() + " could not be deleted remotely!")
+				return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
+			}
+			logger.Info(req.NamespacedName.String() + " got deleted remotely!")
 		}
 		// if the status is not yet set to deleting, also update the status
-		return ctrl.Result{}, status.Helper(r).UpdateStatus(ctx, &kyma, operatorv1alpha1.KymaStateDeleting,
+		return ctrl.Result{}, status.Helper(r).UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateDeleting,
 			"deletion timestamp set")
 	}
 
 	// check finalizer
-	if !controllerutil.ContainsFinalizer(&kyma, labels.Finalizer) {
-		controllerutil.AddFinalizer(&kyma, labels.Finalizer)
-
-		return ctrl.Result{}, r.Update(ctx, &kyma)
+	if labels.CheckLabelsAndFinalizers(kyma) {
+		return ctrl.Result{}, r.Update(ctx, kyma)
 	}
 
 	// create a remote synchronization context, and update the remote kyma with the state of the control plane
-	syncContext, err := remote.InitializeKymaSynchronizationContext(ctx, r.Client, &kyma)
-	if err != nil {
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
-	}
-
-	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx)
-	if err != nil {
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
-	}
-
-	if synchronizationRequiresRequeue, err := syncContext.SynchronizeRemoteKyma(ctx, remoteKyma); err != nil ||
-		synchronizationRequiresRequeue {
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
+	if kyma.Spec.Sync.Enabled {
+		syncContext, err := remote.InitializeKymaSynchronizationContext(ctx, r.Client, kyma)
+		if err != nil {
+			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
+		}
+		remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx)
+		if err != nil {
+			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
+		}
+		if synchronizationRequiresRequeue, err := syncContext.SynchronizeRemoteKyma(ctx, remoteKyma); err != nil || synchronizationRequiresRequeue {
+			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
+		}
 	}
 
 	// state handling
@@ -131,19 +131,20 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 func (r *KymaReconciler) stateHandling(ctx context.Context, kyma operatorv1alpha1.Kyma) (ctrl.Result, error) {
 	switch kyma.Status.State {
 	case "":
-		return ctrl.Result{}, r.HandleInitialState(ctx, &kyma)
+		return ctrl.Result{}, r.HandleInitialState(ctx, kyma)
 	case operatorv1alpha1.KymaStateProcessing:
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, r.HandleProcessingState(ctx, &kyma)
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, r.HandleProcessingState(ctx, kyma)
 	case operatorv1alpha1.KymaStateDeleting:
-		if dependentsDeleting, err := r.HandleDeletingState(ctx, &kyma); err != nil {
+		if dependentsDeleting, err := r.HandleDeletingState(ctx, kyma); err != nil {
 			return ctrl.Result{}, err
 		} else if dependentsDeleting {
 			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Waiting}, nil
 		}
 	case operatorv1alpha1.KymaStateError:
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Waiting}, r.HandleErrorState(ctx, &kyma)
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Waiting}, r.HandleErrorState(ctx, kyma)
 	case operatorv1alpha1.KymaStateReady:
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, r.HandleReadyState(ctx, &kyma)
+		//TODO Adjust again
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, r.HandleReadyState(ctx, kyma)
 	}
 
 	return ctrl.Result{}, nil
@@ -240,13 +241,14 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *operator
 	logger.Info("All component CRs have been removed, removing finalizer",
 		"resource", client.ObjectKeyFromObject(kyma))
 
-	err = remote.RemoveFinalizerFromRemoteKyma(ctx, r, client.ObjectKeyFromObject(kyma))
-	if client.IgnoreNotFound(err) != nil {
-		return false, err
+	if kyma.Spec.Sync.Enabled {
+		if err := remote.RemoveFinalizerFromRemoteKyma(ctx, r, kyma); client.IgnoreNotFound(err) != nil {
+			return false, err
+		}
+		logger.Info("removed remote finalizer",
+			"resource", client.ObjectKeyFromObject(kyma))
 	}
 
-	logger.Info("removed remote finalizer",
-		"resource", client.ObjectKeyFromObject(kyma))
 	controllerutil.RemoveFinalizer(kyma, labels.Finalizer)
 
 	return false, r.Update(ctx, kyma)
@@ -305,10 +307,10 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *ope
 func (r *KymaReconciler) SyncConditionsWithModuleStates(ctx context.Context, kyma *operatorv1alpha1.Kyma,
 	modules util.Modules,
 ) (bool, error) {
-	var err error
 
 	// Now we track the conditions: update the status based on their state
 	statusUpdateRequired := false
+	var err error
 
 	// Now, iterate through each module and compare the fitting condition in the Kyma CR to the state of the module
 	for name, module := range modules {
@@ -384,7 +386,9 @@ func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *op
 	module *util.Module,
 ) error {
 	// merge template and component settings
-	util.CopySettingsToUnstructuredFromResource(module.Unstructured, module.Settings)
+	if err := util.CopySettingsToUnstructuredFromResource(module.Unstructured, module.Settings); err != nil {
+		return err
+	}
 	// set labels
 	util.SetComponentCRLabels(module.Unstructured, name, module.Template.Spec.Channel, kyma.Name)
 	// set owner reference
@@ -404,12 +408,14 @@ func (r *KymaReconciler) UpdateModule(ctx context.Context, name string, kyma *op
 	module *util.Module,
 ) error {
 	// merge template and component settings
-	util.CopySettingsToUnstructuredFromResource(module.Unstructured, module.Settings)
+	if err := util.CopySettingsToUnstructuredFromResource(module.Unstructured, module.Settings); err != nil {
+		return err
+	}
 	// set labels
 	util.SetComponentCRLabels(module.Unstructured, name, module.Template.Spec.Channel, kyma.Name)
 	// update the spec
 	module.Unstructured.Object["spec"] = module.Template.Spec.Data.Object["spec"]
-	if err := r.Client.Update(ctx, module.Unstructured, &client.UpdateOptions{}); err != nil {
+	if err := r.Update(ctx, module.Unstructured, &client.UpdateOptions{}); err != nil {
 		return fmt.Errorf("error updating custom resource of type %s %w", name, err)
 	}
 

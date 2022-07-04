@@ -24,6 +24,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 
+const (
+	KymaKind   = "Kyma"
+	KymaPlural = "kymas"
+)
+
 var (
 	// GroupVersion is group version used to register these objects.
 	GroupVersion = schema.GroupVersion{Group: "operator.kyma-project.io", Version: "v1alpha1"}
@@ -36,6 +41,12 @@ var (
 
 	// SchemeGroupVersion is required by kubernetes code-generator.
 	SchemeGroupVersion = GroupVersion
+
+	// GroupVersionResource is group version resource
+	GroupVersionResource = GroupVersion.WithResource(KymaPlural)
+
+	// GroupVersionKind is group version kind
+	GroupVersionKind = GroupVersion.WithKind(KymaKind)
 )
 
 func Resource(resource string) schema.GroupResource {
