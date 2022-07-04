@@ -61,10 +61,6 @@ type KymaReconciler struct {
 	RequeueIntervals
 }
 
-func (r *KymaReconciler) GetEventRecorder() record.EventRecorder {
-	return r.EventRecorder
-}
-
 //nolint:lll
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch;create;update;patch;onEvent;delete
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/status,verbs=get;update;patch
@@ -81,7 +77,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciliation loop starting for", "resource", req.NamespacedName.String())
 
-	ctx = adapter.ContextWithRecorder(ctx, r.GetEventRecorder())
+	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
 
 	// check if kyma resource exists
 	kyma := operatorv1alpha1.Kyma{}

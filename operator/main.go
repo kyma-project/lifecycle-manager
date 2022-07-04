@@ -19,7 +19,6 @@ package main
 import (
 	"flag"
 	"os"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"time"
 
 	"go.uber.org/zap/zapcore"
@@ -30,6 +29,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -84,7 +84,9 @@ func main() {
 	var maxConcurrentReconciles int
 
 	var requeueSuccessInterval, requeueFailureInterval, requeueWaitingInterval time.Duration
-	defineFlag(metricsAddr, probeAddr, maxConcurrentReconciles, enableLeaderElection, requeueSuccessInterval, requeueFailureInterval, requeueWaitingInterval)
+
+	defineFlag(metricsAddr, probeAddr, maxConcurrentReconciles,
+		enableLeaderElection, requeueSuccessInterval, requeueFailureInterval, requeueWaitingInterval)
 
 	opts := zap.Options{
 		Development: true,
@@ -99,7 +101,9 @@ func main() {
 		labels.Set{operatorLabels.ManagedBy: name},
 	)
 
-	mgr := setupManager(metricsAddr, probeAddr, enableLeaderElection, cacheLabelSelector, requeueSuccessInterval, requeueFailureInterval, requeueWaitingInterval, maxConcurrentReconciles)
+	mgr := setupManager(metricsAddr, probeAddr, enableLeaderElection,
+		cacheLabelSelector, requeueSuccessInterval, requeueFailureInterval,
+		requeueWaitingInterval, maxConcurrentReconciles)
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
@@ -118,7 +122,9 @@ func main() {
 	}
 }
 
-func setupManager(metricsAddr string, probeAddr string, enableLeaderElection bool, cacheLabelSelector labels.Selector, requeueSuccessInterval time.Duration, requeueFailureInterval time.Duration, requeueWaitingInterval time.Duration, maxConcurrentReconciles int) manager.Manager {
+func setupManager(metricsAddr string, probeAddr string, enableLeaderElection bool,
+	cacheLabelSelector labels.Selector, requeueSuccessInterval time.Duration,
+	requeueFailureInterval time.Duration, requeueWaitingInterval time.Duration, maxConcurrentReconciles int) manager.Manager {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
@@ -155,13 +161,15 @@ func setupManager(metricsAddr string, probeAddr string, enableLeaderElection boo
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
+
 	return mgr
 }
 
-func defineFlag(metricsAddr string, probeAddr string, maxConcurrentReconciles int, enableLeaderElection bool, requeueSuccessInterval time.Duration, requeueFailureInterval time.Duration, requeueWaitingInterval time.Duration) {
+func defineFlag(metricsAddr string, probeAddr string, maxConcurrentReconciles int,
+	enableLeaderElection bool, requeueSuccessInterval time.Duration, requeueFailureInterval time.Duration, requeueWaitingInterval time.Duration) {
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flag.IntVar(&maxConcurrentReconciles, "max-concurrent-reconciles", 1, "The maximum number of concurrent Reconciles which can be run.")
+	flag.IntVar(&maxConcurrentReconciles, "max-concurrent-reconciles", 1, "The maximum number of concurrent Reconciles which can be run.") //nolint:lll
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")

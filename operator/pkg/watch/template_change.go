@@ -55,11 +55,13 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 			Name:      template.GetName(),
 		}
 		requests = handleRequest(kymas, channel, controller, ctx, templateNamespacedName, requests)
+
 		return requests
 	}
 }
 
-func handleRequest(kymas *v1alpha1.KymaList, channel v1alpha1.Channel, controller string, ctx context.Context, templateNamespacedName types.NamespacedName, requests []reconcile.Request) []reconcile.Request {
+func handleRequest(kymas *v1alpha1.KymaList, channel v1alpha1.Channel, controller string,
+	ctx context.Context, templateNamespacedName types.NamespacedName, requests []reconcile.Request) []reconcile.Request {
 	logger := log.FromContext(ctx).WithName("template-change-detection")
 
 	for _, kyma := range kymas.Items {

@@ -12,7 +12,7 @@ const ContextKey key = "EventRecorder"
 
 type EventingAdapter func(eventtype, reason, message string)
 
-func RecorderFromContext(ctx context.Context) record.EventRecorder {
+func RecorderFromContext(ctx context.Context) record.EventRecorder { //nolint:ireturn
 	return ctx.Value(ContextKey).(record.EventRecorder)
 }
 

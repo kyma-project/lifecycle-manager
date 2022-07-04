@@ -190,6 +190,7 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context,
 	if remoteKyma.Status.State != c.controlPlaneKyma.Status.State {
 		// control plane and runtime spec are in sync, but the status got updated in the control plane
 		remoteKyma.Status.State = c.controlPlaneKyma.Status.State
+
 		err := c.runtimeClient.Status().Update(ctx, remoteKyma)
 		if err != nil {
 			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")

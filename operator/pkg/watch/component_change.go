@@ -80,6 +80,7 @@ func (h *ComponentChangeHandler) Watch(ctx context.Context) func(event.UpdateEve
 
 		oldState := extractState(componentOld, logger)
 		newState := extractState(componentNew, logger)
+
 		if oldState.(string) == newState.(string) {
 			return
 		}
@@ -92,6 +93,7 @@ func (h *ComponentChangeHandler) Watch(ctx context.Context) func(event.UpdateEve
 
 func extractState(component unstructured.Unstructured, logger logr.Logger) interface{} {
 	var state interface{}
+
 	var ok bool
 
 	if component.Object[Status] != nil {

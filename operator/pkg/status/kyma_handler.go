@@ -43,6 +43,9 @@ func (k *Kyma) UpdateStatus(
 		k.SyncReadyConditionForModules(kyma, util.Modules{
 			operatorv1alpha1.KymaKind: &util.Module{},
 		}, operatorv1alpha1.ConditionStatusUnknown, message)
+	case operatorv1alpha1.KymaStateDeleting:
+	case operatorv1alpha1.KymaStateError:
+	case operatorv1alpha1.KymaStateProcessing:
 	default:
 		k.SyncReadyConditionForModules(kyma, util.Modules{
 			operatorv1alpha1.KymaKind: &util.Module{},
