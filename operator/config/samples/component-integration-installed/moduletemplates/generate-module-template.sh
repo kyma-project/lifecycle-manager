@@ -6,21 +6,30 @@ indent() {
 }
 
 HOSTS_FILE="/etc/hosts"
+
+OPERATOR_NAME="kyma-operator"
+
 COMPONENT_ARCHIVE="./example"
 DATA_DIR="./data"
 COMPONENT_RESOURCES="./resources.yaml"
+
 PRIVATE_KEY="./private-key.pem"
 PUBLIC_KEY="./public-key.pem"
+PUBLIC_KEY_VERIFICATION_SECRET="./public-key-secret.yaml"
+SIGNATURE_NAME="kyma-module-signature"
+
 REMOTE_DESCRIPTOR="./remote-component-descriptor.yaml"
 REMOTE_SIGNED_DESCRIPTOR="./remote-component-descriptor-signed.yaml"
-MODULE_TEMPLATE="./generated-module-template.yaml"
 
-COMPONENT_NAME="kyma-project.io/module/example"
-COMPONENT_VERSION="v0.0.10"
+MODULE_TEMPLATE="./generated-module-template.yaml"
+MODULE_TEMPLATE_CHANNEL="stable"
+MODULE_NAME="kyma-project.io/module/example"
+MODULE_VERSION="v0.0.23"
+
 REGISTRY_NAME="operator-test-registry"
 REGISTRY_HOST="${REGISTRY_NAME}.localhost"
 REGISTRY_URL="${REGISTRY_HOST}:50241"
-SIGNATURE_NAME="test-signature"
+
 
 helm repo add nginx-stable https://helm.nginx.com/stable
 helm pull nginx-stable/nginx-ingress --untar --untardir ${DATA_DIR}
@@ -41,7 +50,7 @@ fi
 
 rm -r ${COMPONENT_ARCHIVE}
 
-component-cli component-archive create ${COMPONENT_ARCHIVE} --component-name ${COMPONENT_NAME} --component-version ${COMPONENT_VERSION}
+component-cli component-archive create ${COMPONENT_ARCHIVE} --component-name ${MODULE_NAME} --component-version ${MODULE_VERSION}
 component-cli ca resources add ${COMPONENT_ARCHIVE} ${COMPONENT_RESOURCES}
 component-cli ca remote push ${COMPONENT_ARCHIVE} --repo-ctx ${REGISTRY_URL}
 
@@ -49,13 +58,29 @@ rm ${PRIVATE_KEY}
 openssl genpkey -algorithm RSA -out ${PRIVATE_KEY}
 rm ${PUBLIC_KEY}
 openssl rsa -in ${PRIVATE_KEY} -pubout > ${PUBLIC_KEY}
-component-cli ca signatures sign rsa ${REGISTRY_URL} ${COMPONENT_NAME} ${COMPONENT_VERSION} --upload-base-url ${REGISTRY_URL}/signed --recursive --signature-name ${SIGNATURE_NAME} --private-key ${PRIVATE_KEY}
-component-cli ca signatures verify rsa ${REGISTRY_URL}/signed ${COMPONENT_NAME} ${COMPONENT_VERSION} --signature-name ${SIGNATURE_NAME} --public-key ${PUBLIC_KEY}
+component-cli ca signatures sign rsa ${REGISTRY_URL} ${MODULE_NAME} ${MODULE_VERSION} --upload-base-url ${REGISTRY_URL}/signed --recursive --signature-name ${SIGNATURE_NAME} --private-key ${PRIVATE_KEY}
+component-cli ca signatures verify rsa ${REGISTRY_URL}/signed ${MODULE_NAME} ${MODULE_VERSION} --signature-name ${SIGNATURE_NAME} --public-key ${PUBLIC_KEY}
+
+cat <<EOF > ${PUBLIC_KEY_VERIFICATION_SECRET}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kyma-signature-check #change with your kyma name
+  labels:
+    "operator.kyma-project.io/managed-by": "${OPERATOR_NAME}"
+    "operator.kyma-project.io/signature": "${SIGNATURE_NAME}"
+type: Opaque
+data:
+  key: $(cat ${PUBLIC_KEY} | base64)
+EOF
+
+echo "Public Key successfully generated as secret:"
+kubectl apply -f ${PUBLIC_KEY_VERIFICATION_SECRET}
 
 rm ${REMOTE_DESCRIPTOR}
-component-cli ca remote get ${REGISTRY_URL} ${COMPONENT_NAME} ${COMPONENT_VERSION} >> ${REMOTE_DESCRIPTOR}
+component-cli ca remote get ${REGISTRY_URL} ${MODULE_NAME} ${MODULE_VERSION} >> ${REMOTE_DESCRIPTOR}
 rm ${REMOTE_SIGNED_DESCRIPTOR}
-component-cli ca remote get ${REGISTRY_URL}/signed ${COMPONENT_NAME} ${COMPONENT_VERSION} >> ${REMOTE_SIGNED_DESCRIPTOR}
+component-cli ca remote get ${REGISTRY_URL}/signed ${MODULE_NAME} ${MODULE_VERSION} >> ${REMOTE_SIGNED_DESCRIPTOR}
 
 echo "Successfully generated Remote Descriptors in ${REMOTE_DESCRIPTOR} (Signed Version at ${REMOTE_SIGNED_DESCRIPTOR})"
 
@@ -66,7 +91,7 @@ metadata:
   name: moduletemplate-sample-manifest
   namespace: default
   labels:
-    "operator.kyma-project.io/managed-by": "kyma-operator"
+    "operator.kyma-project.io/managed-by": "${OPERATOR_NAME}"
     "operator.kyma-project.io/controller-name": "manifest"
   annotations:
     "operator.kyma-project.io/module-name": "$(yq e ".component.name" remote-component-descriptor-signed.yaml)"
@@ -78,9 +103,14 @@ metadata:
     "operator.kyma-project.io/control-signature-value": "$(yq e ".signatures[0].digest.value" remote-component-descriptor-signed.yaml)"
     "operator.kyma-project.io/generated-at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 spec:
-  channel: stable
+  channel: ${MODULE_TEMPLATE_CHANNEL}
+  data:
+    kind: Manifest
+    resource: manifests
+    apiVersion: component.kyma-project.io/v1alpha1
   descriptor:
 $(cat ${REMOTE_SIGNED_DESCRIPTOR} | indent 4)
 EOF
 
 echo "Generated ModuleTemplate at ${MODULE_TEMPLATE}"
+kubectl apply -f ${MODULE_TEMPLATE}

@@ -19,9 +19,14 @@ package controllers
 import (
 	"context"
 	"fmt"
+	v2 "github.com/gardener/component-spec/bindings-go/apis/v2"
+	"github.com/gardener/component-spec/bindings-go/apis/v2/signatures"
 	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
 	"github.com/kyma-project/kyma-operator/operator/pkg/dynamic"
+	"github.com/kyma-project/kyma-operator/operator/pkg/img"
 	"github.com/kyma-project/kyma-operator/operator/pkg/remote"
+	"github.com/kyma-project/kyma-operator/operator/pkg/signature"
+	errors2 "github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -53,11 +58,18 @@ type RequeueIntervals struct {
 	Waiting time.Duration
 }
 
+type ModuleVerificationSettings struct {
+	EnableVerification  bool
+	PublicKeyFilePath   string
+	ValidSignatureNames []string
+}
+
 // KymaReconciler reconciles a Kyma object
 type KymaReconciler struct {
 	client.Client
 	record.EventRecorder
 	RequeueIntervals
+	ModuleVerificationSettings
 }
 
 func (r *KymaReconciler) GetEventRecorder() record.EventRecorder {
@@ -164,8 +176,13 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *operat
 		return status.Helper(r).UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError, "templates could not be fetched")
 	}
 
+	verifier, err := r.NewSignatureVerifier(ctx, kyma.GetNamespace())
+	if err != nil {
+		return err
+	}
+
 	// these are the actual modules
-	modules, err := util.ParseTemplates(kyma, templates)
+	modules, err := util.ParseTemplates(kyma, templates, verifier)
 	if err != nil {
 		return err
 	}
@@ -210,7 +227,12 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *operator
 		return false, status.Helper(r).UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError, "templates could not be fetched")
 	}
 
-	modules, err := util.ParseTemplates(kyma, templates)
+	verifier, err := r.NewSignatureVerifier(ctx, kyma.GetNamespace())
+	if err != nil {
+		return false, err
+	}
+
+	modules, err := util.ParseTemplates(kyma, templates, verifier)
 	if err != nil {
 		return false, err
 	}
@@ -265,8 +287,13 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *ope
 		}
 	}
 
+	verifier, err := r.NewSignatureVerifier(ctx, kyma.GetNamespace())
+	if err != nil {
+		return err
+	}
+
 	// condition update on CRs
-	modules, err := util.ParseTemplates(kyma, templates)
+	modules, err := util.ParseTemplates(kyma, templates, verifier)
 	if err != nil {
 		return err
 	}
@@ -424,4 +451,32 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 	}
 
 	return controllerBuilder.Complete(r)
+}
+
+func (r *KymaReconciler) NewSignatureVerifier(ctx context.Context, namespace string) (img.SignatureVerification, error) {
+	if !r.EnableVerification {
+		return img.NoSignatureVerification, nil
+	}
+
+	var verifier signatures.Verifier
+	var err error
+	if r.ModuleVerificationSettings.PublicKeyFilePath == "" {
+		verifier, err = signature.CreateRSAVerifierFromSecrets(ctx, r.Client, r.ValidSignatureNames, namespace)
+	} else {
+		verifier, err = signatures.CreateRSAVerifierFromKeyFile(r.ModuleVerificationSettings.PublicKeyFilePath)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return func(descriptor *v2.ComponentDescriptor) error {
+		for _, sig := range descriptor.Signatures {
+			for _, validName := range r.ModuleVerificationSettings.ValidSignatureNames {
+				if sig.Name == validName {
+					return verifier.Verify(*descriptor, sig)
+				}
+			}
+		}
+		return errors2.New("no signature was found in the descriptor matching the valid signature list")
+	}, nil
 }

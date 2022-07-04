@@ -2,9 +2,9 @@ package util
 
 import (
 	"fmt"
-	"github.com/imdario/mergo"
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/gardener/component-spec/bindings-go/codec"
+	"github.com/imdario/mergo"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/img"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
@@ -48,7 +48,7 @@ func CopySettingsToUnstructuredFromResource(resource *unstructured.Unstructured,
 	return nil
 }
 
-func ParseTemplates(kyma *operatorv1alpha1.Kyma, templates release.TemplatesInChannels) (Modules, error) {
+func ParseTemplates(kyma *operatorv1alpha1.Kyma, templates release.TemplatesInChannels, verificationFactory img.SignatureVerification) (Modules, error) {
 	// First, we fetch the component spec from the template and use it to resolve it into an arbitrary object
 	// (since we do not know which component we are dealing with)
 	modules := make(Modules)
@@ -58,7 +58,7 @@ func ParseTemplates(kyma *operatorv1alpha1.Kyma, templates release.TemplatesInCh
 			return nil, fmt.Errorf("could not find template %s for resource %s",
 				component.Name, client.ObjectKeyFromObject(kyma))
 		}
-		module, err := GetUnstructuredComponentFromTemplate(template, component.Name, kyma)
+		module, err := GetUnstructuredComponentFromTemplate(template, component.Name, kyma, verificationFactory)
 		if err != nil {
 			return nil, err
 		}
@@ -72,31 +72,35 @@ func ParseTemplates(kyma *operatorv1alpha1.Kyma, templates release.TemplatesInCh
 	return modules, nil
 }
 
-func GetUnstructuredComponentFromTemplate(template *release.TemplateInChannel, componentName string, kyma *operatorv1alpha1.Kyma) (*unstructured.Unstructured, error) {
-	component := &unstructured.Unstructured{}
+func GetUnstructuredComponentFromTemplate(template *release.TemplateInChannel, componentName string, kyma *operatorv1alpha1.Kyma, factory img.SignatureVerification) (*unstructured.Unstructured, error) {
+	component := &template.Template.Spec.Data
 	if template.Template.Spec.Descriptor.String() != "" {
 		var descriptor ocm.ComponentDescriptor
 		if err := codec.Decode(template.Template.Spec.Descriptor.Raw, &descriptor); err != nil {
 			return nil, errwrap.Wrap(err, "error while decoding the descriptor")
 		}
-		imgTemplate, err := img.ValidateAndParse(&descriptor, ".path")
+		imgTemplate, err := img.VerifyAndParse(&descriptor, factory)
 		if err != nil {
 			return nil, errwrap.Wrap(err, "error while parsing descriptor in module template")
 		}
 
 		for name, layer := range imgTemplate.Layers {
-			if name == "config" {
-				component.Object["spec"].(map[string]any)["config"] = layer
+			var mergeData any
+			layerData := map[string]any{
+				"name":   string(name),
+				"repo":   layer.Repo,
+				"module": layer.Module,
+				"digest": layer.Digest,
+				"type":   layer.LayerType,
 			}
-			appendToSpecMap(component, "installs", map[string]any{
-				"name": string(name),
-				"chartRef": map[string]any{
-					"repo":   layer.Repo,
-					"module": layer.Module,
-					"digest": layer.Digest,
-				},
-				"type": layer.LayerType,
-			})
+			if name == "config" {
+				mergeData = map[string]any{"ociRef": layerData}
+			} else {
+				mergeData = map[string]any{"installs": []map[string]any{layerData}}
+			}
+			if err := mergo.Merge(&component.Object, map[string]any{"spec": mergeData}); err != nil {
+				return nil, err
+			}
 		}
 	} else {
 		component = &template.Template.Spec.Data
@@ -104,13 +108,4 @@ func GetUnstructuredComponentFromTemplate(template *release.TemplateInChannel, c
 	component.SetName(componentName + kyma.Name)
 	component.SetNamespace(kyma.GetNamespace())
 	return component, nil
-}
-
-func appendToSpecMap(unstruct *unstructured.Unstructured, key string, m ...map[string]any) {
-	if unstruct.Object["spec"].(map[string]any)[key] == nil {
-		unstruct.Object["spec"].(map[string]any)[key] = []any{m}
-	} else {
-		unstruct.Object["spec"].(map[string]any)[key] =
-			append(unstruct.Object["spec"].(map[string]any)[key].([]any), m)
-	}
 }

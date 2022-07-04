@@ -26,6 +26,7 @@ import (
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"strings"
 	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -66,6 +67,7 @@ func main() {
 	var probeAddr string
 	var maxConcurrentReconciles int
 	var requeueSuccessInterval, requeueFailureInterval, requeueWaitingInterval time.Duration
+	var moduleVerificationKeyFilePath, moduleVerificationSignatureNames string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.IntVar(&maxConcurrentReconciles, "max-concurrent-reconciles", 1, "The maximum number of concurrent Reconciles which can be run.")
@@ -83,6 +85,10 @@ func main() {
 		"etermines the duration after which a pending reconciliation is requeued "+
 			"if the operator decides that it needs to wait for a certain state to update before it can proceed "+
 			"(e.g. because of pending finalizers in the deletion process)")
+	flag.StringVar(&moduleVerificationKeyFilePath, "module-verification-key-file", "",
+		"This verification key is used to verify modules against their signature")
+	flag.StringVar(&moduleVerificationKeyFilePath, "module-verification-signature-names", "kyma-module-signature:kyma-extension-signature",
+		"This verification key list is used to verify modules against their signature")
 
 	opts := zap.Options{
 		Development: true,
@@ -123,6 +129,10 @@ func main() {
 			Success: requeueSuccessInterval,
 			Failure: requeueFailureInterval,
 			Waiting: requeueWaitingInterval,
+		},
+		ModuleVerificationSettings: controllers.ModuleVerificationSettings{
+			PublicKeyFilePath:   moduleVerificationKeyFilePath,
+			ValidSignatureNames: strings.Split(moduleVerificationSignatureNames, ":"),
 		},
 	}).SetupWithManager(mgr, controller.Options{
 		RateLimiter: workqueue.NewMaxOfRateLimiter(

@@ -4,11 +4,10 @@ import (
 	"errors"
 	"fmt"
 	v2 "github.com/gardener/component-spec/bindings-go/apis/v2"
-	"github.com/gardener/component-spec/bindings-go/apis/v2/signatures"
 	errwrap "github.com/pkg/errors"
 )
 
-const defaultSignatureName = "test-signature"
+const DefaultRepoSubdirectory = "component-descriptors"
 
 type LayerName string
 
@@ -35,22 +34,15 @@ type Template struct {
 	ImageURL string
 }
 
-func ValidateAndParse(descriptor *v2.ComponentDescriptor, pathToVerificationKey string) (*Template, error) {
+type SignatureVerification func(descriptor *v2.ComponentDescriptor) error
+
+var NoSignatureVerification SignatureVerification = func(descriptor *v2.ComponentDescriptor) error { return nil }
+
+func VerifyAndParse(descriptor *v2.ComponentDescriptor, signatureVerification SignatureVerification) (*Template, error) {
 	ctx := descriptor.GetEffectiveRepositoryContext()
 
-	sig, err := signatures.GetSignatureByName(descriptor, defaultSignatureName)
-	if err != nil {
-		return nil, errwrap.Wrapf(err, "error while reading RSA Verification for Parser at %s", ".path")
-	}
-
-	verifier, err := signatures.CreateRSAVerifierFromKeyFile(pathToVerificationKey)
-	if err != nil {
-		return nil, errwrap.Wrapf(err, "error while reading RSA Verification for Parser at %s", ".path")
-	}
-
-	verifyErr := verifier.Verify(*descriptor, *sig)
-	if verifyErr != nil {
-		return nil, errwrap.Wrapf(verifyErr, "RSA Verification Error! Untrusted!")
+	if err := signatureVerification(descriptor); err != nil {
+		return nil, errwrap.Wrapf(err, "Signature Verification Error! Untrusted!")
 	}
 
 	return parseDescriptor(ctx, descriptor)
@@ -90,7 +82,7 @@ func parseLayersByName(repo *v2.OCIRegistryRepository, descriptor *v2.ComponentD
 			if err := access.DecodeInto(ociAccess); err != nil {
 				return nil, errwrap.Wrap(err, "error while decoding the access into OCIRegistryRepository")
 			}
-			layerRef, err := getLayerRef(repo, descriptor, resource.Digest.Value)
+			layerRef, err := getLayerRef(repo, descriptor, ociAccess.Digest)
 			if err != nil {
 				return nil, errwrap.Wrap(err, "building the digest url")
 			}
@@ -111,7 +103,11 @@ func getLayerRef(repo *v2.OCIRegistryRepository, descriptor *v2.ComponentDescrip
 	}
 	switch repo.ComponentNameMapping {
 	case v2.OCIRegistryURLPathMapping:
-		layerRef.Repo = fmt.Sprintf("%s/component-descriptors")
+		repoSubpath := DefaultRepoSubdirectory
+		if ext, found := descriptor.GetLabels().Get(fmt.Sprintf("%s%s", v2.OCIRegistryURLPathMapping, "RepoSubpath")); found {
+			repoSubpath = string(ext)
+		}
+		layerRef.Repo = fmt.Sprintf("%s/%s", repo.BaseURL, repoSubpath)
 		layerRef.Module = descriptor.GetName()
 		// if ref is not provided, we simply use the version of the descriptor, this will usually default
 		// to a component version that is valid

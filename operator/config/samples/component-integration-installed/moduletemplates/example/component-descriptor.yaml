@@ -5,22 +5,22 @@ component:
   repositoryContexts: []
   resources:
   - access:
-      filename: sha256:bac0dfedc8b7ae961db3091f2e116091651701ab7bff8adc0eee3fa7c62fe1e4
+      filename: sha256:9d37fb366e4371b44c94496f3db276bd6f3a1019c9d44077b689c68ec6486c1e
       mediaType: application/yaml
       type: localFilesystemBlob
-    name: manifest
+    name: config
     relation: local
     type: yaml
-    version: v0.0.10
+    version: v0.0.23
   - access:
-      filename: sha256:6ec1e4757297c2ca8b95586e8300db6a61f364886d8c2f953de33c09db50f77e
+      filename: sha256:079e0eeb88187349a2dd2584bbce122b4319acb767e1c23a9c49beace26ceda0
       mediaType: application/gzip
       type: localFilesystemBlob
-    name: chart
+    name: nginx-ingress
     relation: local
     type: helm-chart
-    version: v0.0.10
+    version: v0.0.23
   sources: []
-  version: v0.0.10
+  version: v0.0.23
 meta:
   schemaVersion: v2
