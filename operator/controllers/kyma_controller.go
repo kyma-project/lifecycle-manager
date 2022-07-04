@@ -303,7 +303,8 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *ope
 }
 
 func (r *KymaReconciler) SyncConditionsWithModuleStates(ctx context.Context, kyma *operatorv1alpha1.Kyma,
-	modules util.Modules) (bool, error) {
+	modules util.Modules,
+) (bool, error) {
 	var err error
 
 	// Now we track the conditions: update the status based on their state
@@ -331,7 +332,8 @@ func (r *KymaReconciler) SyncConditionsWithModuleStates(ctx context.Context, kym
 }
 
 func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *operatorv1alpha1.Kyma,
-	modules util.Modules) (bool, error) {
+	modules util.Modules,
+) (bool, error) {
 	logger := log.FromContext(ctx).WithName(client.ObjectKey{Name: kyma.Name, Namespace: kyma.Namespace}.String())
 	kymaSyncNecessary := false
 
@@ -375,7 +377,8 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *operat
 }
 
 func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *operatorv1alpha1.Kyma,
-	module *util.Module) error {
+	module *util.Module,
+) error {
 	// merge template and component settings
 	util.CopySettingsToUnstructuredFromResource(module.Unstructured, module.Settings)
 	// set labels
@@ -394,7 +397,8 @@ func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *op
 }
 
 func (r *KymaReconciler) UpdateModule(ctx context.Context, name string, kyma *operatorv1alpha1.Kyma,
-	module *util.Module) error {
+	module *util.Module,
+) error {
 	// merge template and component settings
 	util.CopySettingsToUnstructuredFromResource(module.Unstructured, module.Settings)
 	// set labels

@@ -124,7 +124,8 @@ func main() {
 
 func setupManager(metricsAddr string, probeAddr string, enableLeaderElection bool,
 	cacheLabelSelector labels.Selector, requeueSuccessInterval time.Duration,
-	requeueFailureInterval time.Duration, requeueWaitingInterval time.Duration, maxConcurrentReconciles int) manager.Manager {
+	requeueFailureInterval time.Duration, requeueWaitingInterval time.Duration, maxConcurrentReconciles int,
+) manager.Manager {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
 		MetricsBindAddress:     metricsAddr,
@@ -166,7 +167,8 @@ func setupManager(metricsAddr string, probeAddr string, enableLeaderElection boo
 }
 
 func defineFlag(metricsAddr string, probeAddr string, maxConcurrentReconciles int,
-	enableLeaderElection bool, requeueSuccessInterval time.Duration, requeueFailureInterval time.Duration, requeueWaitingInterval time.Duration) {
+	enableLeaderElection bool, requeueSuccessInterval time.Duration, requeueFailureInterval time.Duration, requeueWaitingInterval time.Duration,
+) {
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.IntVar(&maxConcurrentReconciles, "max-concurrent-reconciles", 1, "The maximum number of concurrent Reconciles which can be run.") //nolint:lll

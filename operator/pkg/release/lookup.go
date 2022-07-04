@@ -67,7 +67,8 @@ type Lookup interface {
 }
 
 func LookupTemplate(client client.Reader, component operatorv1alpha1.ComponentType,
-	defaultChannel operatorv1alpha1.Channel) Lookup {
+	defaultChannel operatorv1alpha1.Channel,
+) Lookup {
 	return &channelTemplateLookup{
 		reader:         client,
 		component:      component,
@@ -160,7 +161,8 @@ func (c *channelTemplateLookup) createDesiredChannel() operatorv1alpha1.Channel 
 }
 
 func NewMoreThanOneTemplateCandidateErr(component operatorv1alpha1.ComponentType,
-	candidateTemplates []operatorv1alpha1.ModuleTemplate) error {
+	candidateTemplates []operatorv1alpha1.ModuleTemplate,
+) error {
 	candidates := make([]string, len(candidateTemplates))
 	for i, candidate := range candidateTemplates {
 		candidates[i] = candidate.GetName()

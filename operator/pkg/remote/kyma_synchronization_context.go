@@ -24,7 +24,8 @@ type KymaSynchronizationContext struct {
 }
 
 func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, name,
-	namespace string) (client.Client, error) {
+	namespace string,
+) (client.Client, error) {
 	cc := ClusterClient{
 		DefaultClient: controlPlaneClient,
 		Logger:        log.FromContext(ctx),
@@ -44,7 +45,8 @@ func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, name
 }
 
 func GetRemotelySyncedKyma(ctx context.Context, runtimeClient client.Client,
-	key client.ObjectKey) (*operatorv1alpha1.Kyma, error) {
+	key client.ObjectKey,
+) (*operatorv1alpha1.Kyma, error) {
 	remoteKyma := &operatorv1alpha1.Kyma{}
 	if err := runtimeClient.Get(ctx, key, remoteKyma); err != nil {
 		return nil, err
@@ -84,7 +86,8 @@ func RemoveFinalizerFromRemoteKyma(ctx context.Context, controlPlaneClient clien
 }
 
 func InitializeKymaSynchronizationContext(ctx context.Context, controlPlaneClient client.Client,
-	controlPlaneKyma *operatorv1alpha1.Kyma) (*KymaSynchronizationContext, error) {
+	controlPlaneKyma *operatorv1alpha1.Kyma,
+) (*KymaSynchronizationContext, error) {
 	runtimeClient, err := NewRemoteClient(ctx, controlPlaneClient, controlPlaneKyma.Name, controlPlaneKyma.Namespace)
 	if err != nil {
 		return nil, err
@@ -153,7 +156,8 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 }
 
 func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context,
-	remoteKyma *operatorv1alpha1.Kyma) (bool, error) {
+	remoteKyma *operatorv1alpha1.Kyma,
+) (bool, error) {
 	recorder := adapter.RecorderFromContext(ctx)
 	// check finalizer
 	if !controllerutil.ContainsFinalizer(remoteKyma, labels.Finalizer) {

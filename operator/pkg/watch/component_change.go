@@ -109,7 +109,8 @@ func extractState(component unstructured.Unstructured, logger logr.Logger) inter
 }
 
 func (h *ComponentChangeHandler) GetKymaOwner(ctx context.Context,
-	component *unstructured.Unstructured) (*operatorv1alpha1.Kyma, error) {
+	component *unstructured.Unstructured,
+) (*operatorv1alpha1.Kyma, error) {
 	var ownerName string
 
 	ownerRefs := component.GetOwnerReferences()
