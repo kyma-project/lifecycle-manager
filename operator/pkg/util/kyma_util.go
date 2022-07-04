@@ -40,7 +40,9 @@ func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, compone
 	unstructuredCompCR.SetLabels(labelMap)
 }
 
-func CopySettingsToUnstructuredFromResource(resource *unstructured.Unstructured, settings []operatorv1alpha1.Settings) error {
+func CopySettingsToUnstructuredFromResource(resource *unstructured.Unstructured,
+	settings []operatorv1alpha1.Settings,
+) error {
 	if len(settings) > 0 {
 		resource.Object["spec"] = settings
 		if err := mergo.Merge(resource.Object["spec"], settings); err != nil {

@@ -42,10 +42,10 @@ var (
 	// SchemeGroupVersion is required by kubernetes code-generator.
 	SchemeGroupVersion = GroupVersion
 
-	// GroupVersionResource is group version resource
+	// GroupVersionResource is group version resource.
 	GroupVersionResource = GroupVersion.WithResource(KymaPlural)
 
-	// GroupVersionKind is group version kind
+	// GroupVersionKind is group version kind.
 	GroupVersionKind = GroupVersion.WithKind(KymaKind)
 )
 

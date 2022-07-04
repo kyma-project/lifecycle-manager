@@ -20,7 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// Settings defines some component specific settings
+// Settings defines some component specific settings.
 type Settings map[string]string
 
 // ComponentType defines the components to be installed.
@@ -36,7 +36,7 @@ const (
 	SyncStrategyLocalSecret = "local-secret"
 )
 
-// Sync defines settings used to apply the kyma synchronization to other clusters
+// Sync defines settings used to apply the kyma synchronization to other clusters.
 type Sync struct {
 	// +kubebuilder:default:=true
 	// Enabled set to true will look up a kubeconfig for the remote cluster based on the strategy

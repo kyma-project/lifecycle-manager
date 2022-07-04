@@ -111,15 +111,8 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	// create a remote synchronization context, and update the remote kyma with the state of the control plane
 	if kyma.Spec.Sync.Enabled {
-		syncContext, err := remote.InitializeKymaSynchronizationContext(ctx, r.Client, kyma)
+		err := r.updateRemote(ctx, kyma)
 		if err != nil {
-			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
-		}
-		remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx)
-		if err != nil {
-			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
-		}
-		if synchronizationRequiresRequeue, err := syncContext.SynchronizeRemoteKyma(ctx, remoteKyma); err != nil || synchronizationRequiresRequeue {
 			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
 		}
 	}
@@ -128,7 +121,23 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return r.stateHandling(ctx, kyma)
 }
 
-func (r *KymaReconciler) stateHandling(ctx context.Context, kyma operatorv1alpha1.Kyma) (ctrl.Result, error) {
+func (r *KymaReconciler) updateRemote(ctx context.Context, kyma *operatorv1alpha1.Kyma) error {
+	syncContext, err := remote.InitializeKymaSynchronizationContext(ctx, r.Client, kyma)
+	if err != nil {
+		return err
+	}
+	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx)
+	if err != nil {
+		return err
+	}
+	synchronizationRequiresRequeue, err := syncContext.SynchronizeRemoteKyma(ctx, remoteKyma)
+	if err != nil || synchronizationRequiresRequeue {
+		return err
+	}
+	return nil
+}
+
+func (r *KymaReconciler) stateHandling(ctx context.Context, kyma *operatorv1alpha1.Kyma) (ctrl.Result, error) {
 	switch kyma.Status.State {
 	case "":
 		return ctrl.Result{}, r.HandleInitialState(ctx, kyma)
@@ -143,7 +152,7 @@ func (r *KymaReconciler) stateHandling(ctx context.Context, kyma operatorv1alpha
 	case operatorv1alpha1.KymaStateError:
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Waiting}, r.HandleErrorState(ctx, kyma)
 	case operatorv1alpha1.KymaStateReady:
-		//TODO Adjust again
+		// TODO Adjust again
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, r.HandleReadyState(ctx, kyma)
 	}
 
@@ -307,9 +316,9 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *ope
 func (r *KymaReconciler) SyncConditionsWithModuleStates(ctx context.Context, kyma *operatorv1alpha1.Kyma,
 	modules util.Modules,
 ) (bool, error) {
-
 	// Now we track the conditions: update the status based on their state
 	statusUpdateRequired := false
+
 	var err error
 
 	// Now, iterate through each module and compare the fitting condition in the Kyma CR to the state of the module
