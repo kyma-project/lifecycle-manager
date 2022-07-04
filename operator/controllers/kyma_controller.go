@@ -56,8 +56,6 @@ type RequeueIntervals struct {
 	Waiting time.Duration
 }
 
-const componentName = "kyma"
-
 // KymaReconciler reconciles a Kyma object
 type KymaReconciler struct {
 	client.Client
@@ -425,7 +423,7 @@ func (r *KymaReconciler) SetupWithManager(logger logr.Logger, mgr ctrl.Manager, 
 		}
 	}
 
-	controllerBuilder = listener.RegisterListenerComponent(logger, mgr, controllerBuilder, listenerAddr, &handler.EnqueueRequestForObject{}, componentName)
+	controllerBuilder = listener.RegisterListenerComponent(logger, mgr, controllerBuilder, listenerAddr, &handler.EnqueueRequestForObject{}, operatorv1alpha1.KymaKind)
 
 	if err := index.TemplateChannel().With(context.TODO(), mgr.GetFieldIndexer()); err != nil {
 		return err

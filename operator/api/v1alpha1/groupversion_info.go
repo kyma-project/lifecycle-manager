@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	KymaKind   = "Kyma"
+	KymaKind   = "kyma"
 	KymaPlural = "kymas"
 )
 
