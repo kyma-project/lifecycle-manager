@@ -102,8 +102,6 @@ func GetUnstructuredComponentFromTemplate(template *release.TemplateInChannel, c
 				return nil, err
 			}
 		}
-	} else {
-		component = &template.Template.Spec.Data
 	}
 	component.SetName(componentName + kyma.Name)
 	component.SetNamespace(kyma.GetNamespace())
