@@ -74,19 +74,16 @@ func init() {
 	//+kubebuilder:scaffold:scheme
 }
 
+type FlagVar struct {
+	metricsAddr                                                            string
+	enableLeaderElection                                                   bool
+	probeAddr                                                              string
+	maxConcurrentReconciles                                                int
+	requeueSuccessInterval, requeueFailureInterval, requeueWaitingInterval time.Duration
+}
+
 func main() {
-	var metricsAddr string
-
-	var enableLeaderElection bool
-
-	var probeAddr string
-
-	var maxConcurrentReconciles int
-
-	var requeueSuccessInterval, requeueFailureInterval, requeueWaitingInterval time.Duration
-
-	defineFlag(metricsAddr, probeAddr, maxConcurrentReconciles,
-		enableLeaderElection, requeueSuccessInterval, requeueFailureInterval, requeueWaitingInterval)
+	flagVar := defineFlagVar()
 
 	opts := zap.Options{
 		Development: true,
@@ -101,9 +98,7 @@ func main() {
 		labels.Set{operatorLabels.ManagedBy: name},
 	)
 
-	mgr := setupManager(metricsAddr, probeAddr, enableLeaderElection,
-		cacheLabelSelector, requeueSuccessInterval, requeueFailureInterval,
-		requeueWaitingInterval, maxConcurrentReconciles)
+	mgr := setupManager(flagVar, cacheLabelSelector)
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
@@ -122,16 +117,13 @@ func main() {
 	}
 }
 
-func setupManager(metricsAddr string, probeAddr string, enableLeaderElection bool,
-	cacheLabelSelector labels.Selector, requeueSuccessInterval time.Duration,
-	requeueFailureInterval time.Duration, requeueWaitingInterval time.Duration, maxConcurrentReconciles int,
-) manager.Manager {
+func setupManager(flagVar *FlagVar, cacheLabelSelector labels.Selector) manager.Manager {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
+		MetricsBindAddress:     flagVar.metricsAddr,
 		Port:                   port,
-		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         enableLeaderElection,
+		HealthProbeBindAddress: flagVar.probeAddr,
+		LeaderElection:         flagVar.enableLeaderElection,
 		LeaderElectionID:       "893110f7.kyma-project.io",
 		NewCache: cache.BuilderWithOptions(cache.Options{
 			SelectorsByObject: cache.SelectorsByObject{
@@ -149,15 +141,15 @@ func setupManager(metricsAddr string, probeAddr string, enableLeaderElection boo
 		Client:        mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor(name),
 		RequeueIntervals: controllers.RequeueIntervals{
-			Success: requeueSuccessInterval,
-			Failure: requeueFailureInterval,
-			Waiting: requeueWaitingInterval,
+			Success: flagVar.requeueSuccessInterval,
+			Failure: flagVar.requeueFailureInterval,
+			Waiting: flagVar.requeueWaitingInterval,
 		},
 	}).SetupWithManager(mgr, controller.Options{
 		RateLimiter: workqueue.NewMaxOfRateLimiter(
 			workqueue.NewItemExponentialFailureRateLimiter(baseDelay, maxDelay),
 			&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(limit, burst)}),
-		MaxConcurrentReconciles: maxConcurrentReconciles,
+		MaxConcurrentReconciles: flagVar.maxConcurrentReconciles,
 	}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
@@ -166,24 +158,23 @@ func setupManager(metricsAddr string, probeAddr string, enableLeaderElection boo
 	return mgr
 }
 
-func defineFlag(metricsAddr string, probeAddr string, maxConcurrentReconciles int,
-	enableLeaderElection bool, requeueSuccessInterval time.Duration,
-	requeueFailureInterval time.Duration, requeueWaitingInterval time.Duration,
-) {
-	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
-	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flag.IntVar(&maxConcurrentReconciles, "max-concurrent-reconciles", 1, "The maximum number of concurrent Reconciles which can be run.") //nolint:lll
-	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
+func defineFlagVar() *FlagVar {
+	flagVar := new(FlagVar)
+	flag.StringVar(&flagVar.metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
+	flag.StringVar(&flagVar.probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flag.IntVar(&flagVar.maxConcurrentReconciles, "max-concurrent-reconciles", 1, "The maximum number of concurrent Reconciles which can be run.") //nolint:lll
+	flag.BoolVar(&flagVar.enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	flag.DurationVar(&requeueSuccessInterval, "requeue-success-interval", defaultRequeueSuccessInterval,
+	flag.DurationVar(&flagVar.requeueSuccessInterval, "requeue-success-interval", defaultRequeueSuccessInterval,
 		"determines the duration after which an already successfully reconciled Kyma is enqueued for checking "+
 			"if it's still in a consistent state.")
-	flag.DurationVar(&requeueFailureInterval, "requeue-failure-interval", defaultRequeueFailureInterval,
+	flag.DurationVar(&flagVar.requeueFailureInterval, "requeue-failure-interval", defaultRequeueFailureInterval,
 		"determines the duration after which a failing reconciliation is retried and "+
 			"enqueued for a next try at recovering (e.g. because an Remote Synchronization Interaction failed)")
-	flag.DurationVar(&requeueWaitingInterval, "requeue-waiting-interval", defaultRequeueWaitingInterval,
+	flag.DurationVar(&flagVar.requeueWaitingInterval, "requeue-waiting-interval", defaultRequeueWaitingInterval,
 		"etermines the duration after which a pending reconciliation is requeued "+
 			"if the operator decides that it needs to wait for a certain state to update before it can proceed "+
 			"(e.g. because of pending finalizers in the deletion process)")
+	return flagVar
 }
