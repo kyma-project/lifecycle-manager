@@ -21,7 +21,7 @@ import (
 	"os"
 	"time"
 
-	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zapcore" //nolint:gci
 	"golang.org/x/time/rate"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -62,8 +62,8 @@ const (
 )
 
 var (
-	scheme   = runtime.NewScheme()        //nolint:gochecknoglobals
-	setupLog = ctrl.Log.WithName("setup") //nolint:gochecknoglobals
+	scheme   = runtime.NewScheme()
+	setupLog = ctrl.Log.WithName("setup")
 )
 
 //nolint:wsl
@@ -167,7 +167,8 @@ func setupManager(metricsAddr string, probeAddr string, enableLeaderElection boo
 }
 
 func defineFlag(metricsAddr string, probeAddr string, maxConcurrentReconciles int,
-	enableLeaderElection bool, requeueSuccessInterval time.Duration, requeueFailureInterval time.Duration, requeueWaitingInterval time.Duration,
+	enableLeaderElection bool, requeueSuccessInterval time.Duration,
+	requeueFailureInterval time.Duration, requeueWaitingInterval time.Duration,
 ) {
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")

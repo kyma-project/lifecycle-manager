@@ -344,16 +344,20 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *operat
 			return false, err
 		}
 
-		if errors.IsNotFound(err) { // create resource if not found
-			if err := r.CreateModule(ctx, name, kyma, module); err != nil {
+		if errors.IsNotFound(err) { //nolint:nestif    // create resource if not found
+			err := r.CreateModule(ctx, name, kyma, module)
+			if err != nil {
 				return false, err
 			}
+
 			status.Helper(r).SyncReadyConditionForModules(kyma, util.Modules{name: module},
 				operatorv1alpha1.ConditionStatusFalse, fmt.Sprintf("initial condition for %s module CR", module.Name))
+
 			logger.Info("successfully created module CR of",
 				"type", name,
 				"templateChannel", module.Channel(),
 				"templateGeneration", module.Template.GetGeneration())
+
 			kymaSyncNecessary = true
 		} else if module.TemplateOutdated {
 			condition, _ := status.Helper(r).GetReadyConditionForComponent(kyma, name)
