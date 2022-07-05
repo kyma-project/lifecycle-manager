@@ -18,16 +18,17 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
-
-// Settings defines some component specific settings
-type Settings map[string]string
 
 // ComponentType defines the components to be installed
 type ComponentType struct {
-	Name     string     `json:"name"`
-	Channel  Channel    `json:"channel,omitempty"`
-	Settings []Settings `json:"settings,omitempty"`
+	Name    string  `json:"name"`
+	Channel Channel `json:"channel,omitempty"`
+
+	//+kubebuilder:pruning:PreserveUnknownFields
+	//+kubebuilder:validation:XEmbeddedResource
+	Settings unstructured.Unstructured `json:"settings,omitempty"`
 }
 
 type SyncStrategy string
