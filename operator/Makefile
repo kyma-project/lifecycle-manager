@@ -47,17 +47,9 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
-.PHONY: fmt
-fmt: ## Run go fmt against code.
-	go fmt ./...
-
 .PHONY: vet
 vet: ## Run go vet against code.
 	go vet ./...
-
-.PHONY: lint
-lint: ## Run golangci-lint against code.
-	golangci-lint run --max-issues-per-linter=0 --max-same-issues=0 --sort-results --fix
 
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run tests.
@@ -116,10 +108,12 @@ ENVTEST ?= $(LOCALBIN)/setup-envtest
 CLIENT_GEN ?= $(LOCALBIN)/client-gen
 INFORMER_GEN = $(LOCALBIN)/informer-gen
 LISTER_GEN = $(LOCALBIN)/lister-gen
+GOLANG_CI_LINT = $(LOCALBIN)/golangci-lint
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v3.8.7
 CONTROLLER_TOOLS_VERSION ?= v0.9.2
+GOLANG_CI_LINT_VERSION ?= v1.46.2
 
 KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
 .PHONY: kustomize
@@ -139,12 +133,22 @@ $(ENVTEST): $(LOCALBIN)
 
 .PHONY: client-gen
 client-gen: ## Download client-gen
-	GOBIN=$(LOCALBIN) go install k8s.io/code-generator/cmd/client-gen@v0.23.4)
+	GOBIN=$(LOCALBIN) go install k8s.io/code-generator/cmd/client-gen@v0.23.4
 
 .PHONY: informer-gen
 informer-gen: ## Download informer-gen
-	GOBIN=$(LOCALBIN) go install k8s.io/code-generator/cmd/informer-gen@v0.23.4)
+	GOBIN=$(LOCALBIN) go install k8s.io/code-generator/cmd/informer-gen@v0.23.4
 
 .PHONY: lister-gen
 lister-gen: ## Download lister-gen
-	GOBIN=$(LOCALBIN) go install k8s.io/code-generator/cmd/lister-gen@v0.23.4)
+	GOBIN=$(LOCALBIN) go install k8s.io/code-generator/cmd/lister-gen@v0.23.4
+
+
+.PHONY: fmt
+fmt: ## Run go fmt against code.
+	go fmt ./...
+
+.PHONY: lint
+lint: ## Run golangci-lint against code.
+	GOBIN=$(LOCALBIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANG_CI_LINT_VERSION)
+	$(LOCALBIN)/golangci-lint run --max-issues-per-linter=0 --max-same-issues=0 --sort-results --fix

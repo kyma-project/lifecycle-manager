@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/gardener/component-spec/bindings-go/codec"
 
@@ -92,36 +93,41 @@ func GetUnstructuredComponentFromTemplate(
 	factory img.SignatureVerification,
 ) (*unstructured.Unstructured, error) {
 	component := &template.Template.Spec.Data
-	if template.Template.Spec.Descriptor.String() != "" {
-		var descriptor ocm.ComponentDescriptor
-		if err := codec.Decode(template.Template.Spec.Descriptor.Raw, &descriptor); err != nil {
-			return nil, errwrap.Wrap(err, "error while decoding the descriptor")
-		}
-		imgTemplate, err := img.VerifyAndParse(&descriptor, factory)
-		if err != nil {
-			return nil, errwrap.Wrap(err, "error while parsing descriptor in module template")
-		}
-
-		for name, layer := range imgTemplate.Layers {
-			var mergeData any
-			layerData := map[string]any{
-				"name":   string(name),
-				"repo":   layer.Repo,
-				"module": layer.Module,
-				"digest": layer.Digest,
-				"type":   layer.LayerType,
-			}
-			if name == "config" {
-				mergeData = map[string]any{"ociRef": layerData}
-			} else {
-				mergeData = map[string]any{"installs": []map[string]any{layerData}}
-			}
-			if err := mergo.Merge(&component.Object, map[string]any{"spec": mergeData}); err != nil {
-				return nil, err
-			}
-		}
-	}
 	component.SetName(componentName + kyma.Name)
 	component.SetNamespace(kyma.GetNamespace())
+
+	if template.Template.Spec.Descriptor.String() == "" {
+		return component, nil
+	}
+
+	var descriptor ocm.ComponentDescriptor
+	if err := codec.Decode(template.Template.Spec.Descriptor.Raw, &descriptor); err != nil {
+		return nil, errwrap.Wrap(err, "error while decoding the descriptor")
+	}
+
+	imgTemplate, err := img.VerifyAndParse(&descriptor, factory)
+	if err != nil {
+		return nil, errwrap.Wrap(err, "error while parsing descriptor in module template")
+	}
+
+	for name, layer := range imgTemplate.Layers {
+		var mergeData any
+		layerData := map[string]any{
+			"name":   string(name),
+			"repo":   layer.Repo,
+			"module": layer.Module,
+			"digest": layer.Digest,
+			"type":   layer.LayerType,
+		}
+		if name == "config" {
+			mergeData = map[string]any{"ociRef": layerData}
+		} else {
+			mergeData = map[string]any{"installs": []map[string]any{layerData}}
+		}
+		if err := mergo.Merge(&component.Object, map[string]any{"spec": mergeData}); err != nil {
+			return nil, err
+		}
+	}
+
 	return component, nil
 }

@@ -104,7 +104,7 @@ type KymaStatus struct {
 type Channel string
 
 const (
-	DefaultChannel Channel = ChannelStable
+	DefaultChannel         = ChannelStable
 	ChannelRapid   Channel = "rapid"
 	ChannelRegular Channel = "regular"
 	ChannelStable  Channel = "stable"
@@ -153,8 +153,9 @@ type KymaCondition struct {
 }
 
 type TemplateInfo struct {
-	Generation int64   `json:"generation,omitempty"`
-	Channel    Channel `json:"channel,omitempty"`
+	Generation       int64                   `json:"generation,omitempty"`
+	Channel          Channel                 `json:"channel,omitempty"`
+	GroupVersionKind metav1.GroupVersionKind `json:"gvk,omitempty"`
 }
 
 type KymaConditionType string
@@ -214,6 +215,7 @@ type KymaList struct {
 	Items           []Kyma `json:"items"`
 }
 
+//nolint:gochecknoinits
 func init() {
 	SchemeBuilder.Register(&Kyma{}, &KymaList{})
 }

@@ -3,6 +3,7 @@ package watch
 import (
 	"context"
 	"errors"
+	errwrap "github.com/pkg/errors"
 
 	"github.com/go-logr/logr"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
@@ -22,6 +23,14 @@ const (
 	State  = "state"
 )
 
+var ErrStateInvalid = errors.New("state from component object could not be interpreted")
+
+// ComponentChangeHandler is necessary because we cannot simply trust the Observation Process triggered by a Controller
+// through the Controller Owner Reference. This is because there are state changes in components, which we do not want
+// to observe and instead discard. Using a Controller Owner Reference this would not be possible. Instead, we use a
+// custom OwnerReference in combination with this change handler, which only reacts to Component State changes on
+// the defined field. This causes us to only react with Kyma Reconciliations when the components update their
+// well-defined state. Every other change will be discarded.
 type ComponentChangeHandler struct {
 	client.Reader
 	record.EventRecorder
@@ -99,7 +108,7 @@ func extractState(component unstructured.Unstructured, logger logr.Logger) inter
 	if component.Object[Status] != nil {
 		state, ok = component.Object[Status].(map[string]interface{})[State]
 		if !ok {
-			logger.Error(errors.New("state from component object could not be interpreted"), "missing state")
+			logger.Error(ErrStateInvalid, "missing state")
 		}
 	} else {
 		state = ""
@@ -129,5 +138,5 @@ func (h *ComponentChangeHandler) GetKymaOwner(ctx context.Context,
 		Namespace: component.GetNamespace(),
 	}, kyma)
 
-	return kyma, err
+	return kyma, errwrap.Wrap(err, "error while fetching kyma owner in the component change handler")
 }

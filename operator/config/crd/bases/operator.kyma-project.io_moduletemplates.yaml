@@ -22,7 +22,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ModuleTemplate is the Schema for the moduletemplates API
+        description: ModuleTemplate is the Schema for the moduletemplates API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -37,7 +37,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: ModuleTemplateSpec defines the desired state of ModuleTemplate
+            description: ModuleTemplateSpec defines the desired state of ModuleTemplate.
             properties:
               channel:
                 description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster

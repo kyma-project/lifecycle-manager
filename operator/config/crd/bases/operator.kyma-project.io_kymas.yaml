@@ -25,7 +25,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Kyma is the Schema for the kymas API
+        description: Kyma is the Schema for the kymas API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -40,7 +40,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: KymaSpec defines the desired state of Kyma
+            description: KymaSpec defines the desired state of Kyma.
             properties:
               channel:
                 enum:
@@ -51,7 +51,7 @@ spec:
               components:
                 description: Components specifies the list of components to be installed
                 items:
-                  description: ComponentType defines the components to be installed
+                  description: ComponentType defines the components to be installed.
                   properties:
                     channel:
                       enum:
@@ -65,7 +65,7 @@ spec:
                       items:
                         additionalProperties:
                           type: string
-                        description: Settings defines some component specific settings
+                        description: Settings defines some component specific settings.
                         type: object
                       type: array
                   required:
@@ -141,6 +141,23 @@ spec:
                         generation:
                           format: int64
                           type: integer
+                        gvk:
+                          description: GroupVersionKind unambiguously identifies a
+                            kind.  It doesn't anonymously include GroupVersion to
+                            avoid automatic coercion.  It doesn't use a GroupVersion
+                            to avoid custom marshalling
+                          properties:
+                            group:
+                              type: string
+                            kind:
+                              type: string
+                            version:
+                              type: string
+                          required:
+                          - group
+                          - kind
+                          - version
+                          type: object
                       type: object
                     type:
                       type: string

@@ -6,16 +6,19 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"strings"
+
 	v2 "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/gardener/component-spec/bindings-go/apis/v2/signatures"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
-	errors2 "github.com/pkg/errors"
+	errwrap "github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
+
+var ErrPublicKeyWrongType = errwrap.New("parsed public key is not correct type")
 
 type MultiVerifier struct {
 	verifiers map[string]signatures.Verifier
@@ -34,12 +37,14 @@ func CreateMultiRSAVerifier(publicKeys map[string]*rsa.PublicKey) (*MultiVerifie
 }
 
 func (v MultiVerifier) Verify(componentDescriptor v2.ComponentDescriptor, signature v2.Signature) error {
-	return v.verifiers[signature.Name].Verify(componentDescriptor, signature)
+	return v.verifiers[signature.Name].Verify(componentDescriptor, signature) //nolint:wrapcheck
 }
 
-// CreateRSAVerifierFromSecrets creates an instance of RsaVerifier from a rsa public key file located as secret in kubernetes.
-// The key has to be in the PKIX, ASN.1 DER form, see x509.ParsePKIXPublicKey.
-func CreateRSAVerifierFromSecrets(ctx context.Context, c client.Client, validSignatureNames []string, namespace string) (*MultiVerifier, error) {
+// CreateRSAVerifierFromSecrets creates an instance of RsaVerifier from a rsa public key file located as secret
+// in kubernetes. The key has to be in the PKIX, ASN.1 DER form, see x509.ParsePKIXPublicKey.
+func CreateRSAVerifierFromSecrets(
+	ctx context.Context, c client.Client, validSignatureNames []string, namespace string,
+) (*MultiVerifier, error) {
 	secretList := &v1.SecretList{}
 
 	selector, err := k8slabels.Parse(fmt.Sprintf("%s in (%s)", labels.Signature, strings.Join(validSignatureNames, ",")))
@@ -61,7 +66,7 @@ func CreateRSAVerifierFromSecrets(ctx context.Context, c client.Client, validSig
 		publicKey := item.Data["key"]
 		block, _ := pem.Decode(publicKey)
 		if block == nil {
-			return nil, errors2.New("unable to decode pem formatted block in key from secret")
+			return nil, errwrap.New("unable to decode pem formatted block in key from secret")
 		}
 		untypedKey, err := x509.ParsePKIXPublicKey(block.Bytes)
 		if err != nil {
@@ -71,7 +76,7 @@ func CreateRSAVerifierFromSecrets(ctx context.Context, c client.Client, validSig
 		case *rsa.PublicKey:
 			publicKeys[item.Labels[labels.Signature]] = key
 		default:
-			return nil, fmt.Errorf("parsed public key is not of type *rsa.PublicKey: %T", key)
+			return nil, fmt.Errorf("public key error: %w - type is %T", ErrPublicKeyWrongType, key)
 		}
 	}
 	return CreateMultiRSAVerifier(publicKeys)

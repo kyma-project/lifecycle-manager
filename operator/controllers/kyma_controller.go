@@ -19,18 +19,21 @@ package controllers
 import (
 	"context"
 	"fmt"
-	v2 "github.com/gardener/component-spec/bindings-go/apis/v2"
-	"github.com/gardener/component-spec/bindings-go/apis/v2/signatures"
 	"time"
 
-	"github.com/kyma-project/kyma-operator/operator/pkg/adapter" //nolint:gci
+	v2 "github.com/gardener/component-spec/bindings-go/apis/v2"
+	"github.com/gardener/component-spec/bindings-go/apis/v2/signatures"
+	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
 	"github.com/kyma-project/kyma-operator/operator/pkg/dynamic"
 	"github.com/kyma-project/kyma-operator/operator/pkg/img"
 	"github.com/kyma-project/kyma-operator/operator/pkg/remote"
 	"github.com/kyma-project/kyma-operator/operator/pkg/signature"
-	errors2 "github.com/pkg/errors"
+	errwrap "github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
@@ -52,6 +55,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
+
+var ErrNoComponentSpecified = errwrap.New("no component specified")
 
 type RequeueIntervals struct {
 	Success time.Duration
@@ -99,26 +104,23 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		// on deleted requests.
 		logger.Info(req.NamespacedName.String() + " got deleted!")
 
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		return ctrl.Result{}, client.IgnoreNotFound(err) //nolint:wrapcheck
 	}
 
 	// check if deletionTimestamp is set, retry until it gets fully deleted
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != operatorv1alpha1.KymaStateDeleting {
-		if kyma.Spec.Sync.Enabled {
-			if err := remote.DeleteRemotelySyncedKyma(ctx, r.Client, kyma); client.IgnoreNotFound(err) != nil {
-				logger.Info(req.NamespacedName.String() + " could not be deleted remotely!")
-				return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
-			}
-			logger.Info(req.NamespacedName.String() + " got deleted remotely!")
+		if err := r.TriggerKymaDeletion(ctx, kyma); err != nil {
+			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
 		}
 		// if the status is not yet set to deleting, also update the status
-		return ctrl.Result{}, status.Helper(r).UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateDeleting,
-			"deletion timestamp set")
+		return ctrl.Result{}, errwrap.Wrap(
+			status.Helper(r).UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateDeleting, "deletion timestamp set"),
+			"could not update kyma status after triggering deletion")
 	}
 
 	// check finalizer
 	if labels.CheckLabelsAndFinalizers(kyma) {
-		return ctrl.Result{}, r.Update(ctx, kyma)
+		return ctrl.Result{}, errwrap.Wrap(r.Update(ctx, kyma), "could not update kyma after finalizer check")
 	}
 
 	// create a remote synchronization context, and update the remote kyma with the state of the control plane
@@ -136,15 +138,15 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 func (r *KymaReconciler) updateRemote(ctx context.Context, kyma *operatorv1alpha1.Kyma) error {
 	syncContext, err := remote.InitializeKymaSynchronizationContext(ctx, r.Client, kyma)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not initialize remote context before updating remote kyma: %w", err)
 	}
 	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("could not fetch kyma updating remote kyma: %w", err)
 	}
 	synchronizationRequiresRequeue, err := syncContext.SynchronizeRemoteKyma(ctx, remoteKyma)
 	if err != nil || synchronizationRequiresRequeue {
-		return err
+		return fmt.Errorf("could not synchronize remote kyma: %w", err)
 	}
 	return nil
 }
@@ -180,7 +182,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *operat
 	logger.Info("processing " + kyma.Name)
 
 	if len(kyma.Spec.Components) < 1 {
-		return fmt.Errorf("no component specified for resource %s", kyma.Name)
+		return fmt.Errorf("error parsing %s: %w", kyma.Name, ErrNoComponentSpecified)
 	}
 
 	// fetch templates
@@ -274,7 +276,7 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *operator
 
 	if kyma.Spec.Sync.Enabled {
 		if err := remote.RemoveFinalizerFromRemoteKyma(ctx, r, kyma); client.IgnoreNotFound(err) != nil {
-			return false, err
+			return false, errwrap.Wrap(err, "error while trying to remove finalizer from remote")
 		}
 		logger.Info("removed remote finalizer",
 			"resource", client.ObjectKeyFromObject(kyma))
@@ -282,7 +284,7 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *operator
 
 	controllerutil.RemoveFinalizer(kyma, labels.Finalizer)
 
-	return false, r.Update(ctx, kyma)
+	return false, errwrap.Wrap(r.Update(ctx, kyma), "error while trying to udpate kyma during deletion")
 }
 
 func (r *KymaReconciler) HandleErrorState(ctx context.Context, kyma *operatorv1alpha1.Kyma) error {
@@ -366,7 +368,7 @@ func (r *KymaReconciler) SyncConditionsWithModuleStates(ctx context.Context, kym
 		}
 	}
 
-	return statusUpdateRequired, err
+	return statusUpdateRequired, errwrap.Wrap(err, "error occurred while synchronizing conditions with states")
 }
 
 func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *operatorv1alpha1.Kyma,
@@ -381,7 +383,7 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *operat
 
 		err := r.Get(ctx, client.ObjectKeyFromObject(module.Unstructured), module.Unstructured)
 		if client.IgnoreNotFound(err) != nil {
-			return false, err
+			return false, errwrap.Wrapf(err, "error occurred while fetching module %s", module.GetName())
 		}
 
 		if errors.IsNotFound(err) { //nolint:nestif    // create resource if not found
@@ -425,11 +427,11 @@ func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *op
 ) error {
 	// merge template and component settings
 	if err := util.CopySettingsToUnstructuredFromResource(module.Unstructured, module.Settings); err != nil {
-		return err
+		return errwrap.Wrap(err, "error occurred while creating module from settings")
 	}
 	// set labels
 	util.SetComponentCRLabels(module.Unstructured, name, module.Template.Spec.Channel, kyma.Name)
-	// set owner reference
+	// set owner reference - NOT Controller Reference as we use the custom ComponentChangeHandler for watching
 	if err := controllerutil.SetOwnerReference(kyma, module.Unstructured, r.Scheme()); err != nil {
 		return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w",
 			name, kyma.Name, err)
@@ -447,7 +449,7 @@ func (r *KymaReconciler) UpdateModule(ctx context.Context, name string, kyma *op
 ) error {
 	// merge template and component settings
 	if err := util.CopySettingsToUnstructuredFromResource(module.Unstructured, module.Settings); err != nil {
-		return err
+		return errwrap.Wrap(err, "error occurred while updating module from settings")
 	}
 	// set labels
 	util.SetComponentCRLabels(module.Unstructured, name, module.Template.Spec.Channel, kyma.Name)
@@ -477,11 +479,12 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 
 	// This fetches all resources for our component operator CRDs, might become a problem if component operators
 	// create their own CRDs that we dont need to watch
-	if dynamicInformers, err = dynamic.Informers(mgr, schema.GroupVersion{
+	gv := schema.GroupVersion{
 		Group:   labels.ComponentPrefix,
 		Version: "v1alpha1",
-	}); err != nil {
-		return err
+	}
+	if dynamicInformers, err = dynamic.Informers(mgr, gv); err != nil {
+		return errwrap.Wrapf(err, "error while setting up Dynamic Informers for GV %s", gv.String())
 	}
 
 	for _, informer := range dynamicInformers {
@@ -491,13 +494,15 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 	}
 
 	if err := index.TemplateChannel().With(context.TODO(), mgr.GetFieldIndexer()); err != nil {
-		return err
+		return errwrap.Wrap(err, "error while setting up Template Channel Field Indexer")
 	}
 
-	return controllerBuilder.Complete(r)
+	return errwrap.Wrap(controllerBuilder.Complete(r), "error occurred while building controller")
 }
 
-func (r *KymaReconciler) NewSignatureVerifier(ctx context.Context, namespace string) (img.SignatureVerification, error) {
+func (r *KymaReconciler) NewSignatureVerifier(
+	ctx context.Context, namespace string,
+) (img.SignatureVerification, error) {
 	if !r.EnableVerification {
 		return img.NoSignatureVerification, nil
 	}
@@ -510,17 +515,67 @@ func (r *KymaReconciler) NewSignatureVerifier(ctx context.Context, namespace str
 		verifier, err = signatures.CreateRSAVerifierFromKeyFile(r.ModuleVerificationSettings.PublicKeyFilePath)
 	}
 	if err != nil {
-		return nil, err
+		return nil, errwrap.Wrap(err, "error occurred while initializing Signature Verifier")
 	}
 
 	return func(descriptor *v2.ComponentDescriptor) error {
 		for _, sig := range descriptor.Signatures {
 			for _, validName := range r.ModuleVerificationSettings.ValidSignatureNames {
 				if sig.Name == validName {
-					return verifier.Verify(*descriptor, sig)
+					return errwrap.Wrap(verifier.Verify(*descriptor, sig),
+						"error occurred during signature verification")
 				}
 			}
 		}
-		return errors2.New("no signature was found in the descriptor matching the valid signature list")
+		return errwrap.New("no signature was found in the descriptor matching the valid signature list")
 	}, nil
+}
+
+func (r *KymaReconciler) TriggerKymaDeletion(ctx context.Context, kyma *operatorv1alpha1.Kyma) error {
+	logger := log.FromContext(ctx)
+	namespacedName := types.NamespacedName{
+		Namespace: kyma.GetNamespace(),
+		Name:      kyma.GetName(),
+	}.String()
+	if kyma.Spec.Sync.Enabled {
+		if err := remote.DeleteRemotelySyncedKyma(ctx, r.Client, kyma); client.IgnoreNotFound(err) != nil {
+			logger.Info(namespacedName + " could not be deleted remotely!")
+			return errwrap.Wrap(err, "error occurred while trying to delete remotely synced kyma")
+		}
+		logger.Info(namespacedName + " got deleted remotely!")
+	}
+	return r.DeleteKymaDependencies(ctx, kyma)
+}
+
+// DeleteKymaDependencies takes care of deleting all relevant dependencies of a Kyma Object. To make sure that we really
+// catch all Kymas that are available in the given context, we make use of deletion through the label that is set on
+// every generated resource. The alternative would be to parse the module templates, however if the module template was
+// deleted it could happened that the module were trying to delete can no longer be resolved.
+// This is why we take the GVK from the readiness condition and delete all objects of the GVK in the condition.
+func (r *KymaReconciler) DeleteKymaDependencies(ctx context.Context, kyma *operatorv1alpha1.Kyma) error {
+	if len(kyma.Status.Conditions) > 0 {
+		for _, condition := range kyma.Status.Conditions {
+			if condition.Type == operatorv1alpha1.ConditionTypeReady && condition.Reason != operatorv1alpha1.KymaKind {
+				gvk := condition.TemplateInfo.GroupVersionKind
+
+				toDelete := &metav1.PartialObjectMetadata{}
+				toDelete.SetGroupVersionKind(schema.GroupVersionKind{
+					Group:   gvk.Group,
+					Version: gvk.Version,
+					Kind:    gvk.Kind,
+				})
+
+				if err := r.DeleteAllOf(ctx, toDelete, &client.DeleteAllOfOptions{
+					ListOptions: client.ListOptions{
+						LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{labels.KymaName: kyma.GetName()}),
+						Namespace:     kyma.GetNamespace(),
+					},
+					DeleteOptions: client.DeleteOptions{},
+				}); err != nil {
+					return errwrap.Wrap(err, "error occurred while trying to delete kyma dependencies")
+				}
+			}
+		}
+	}
+	return nil
 }

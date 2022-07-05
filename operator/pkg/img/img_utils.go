@@ -3,11 +3,18 @@ package img
 import (
 	"errors"
 	"fmt"
+
 	v2 "github.com/gardener/component-spec/bindings-go/apis/v2"
 	errwrap "github.com/pkg/errors"
 )
 
 const DefaultRepoSubdirectory = "component-descriptors"
+
+var (
+	ErrAccessTypeNotSupported           = errors.New("access type not supported")
+	ErrContextTypeNotSupported          = errors.New("context type not supported")
+	ErrComponentNameMappingNotSupported = errors.New("componentNameMapping not supported")
+)
 
 type LayerName string
 
@@ -36,9 +43,11 @@ type Template struct {
 
 type SignatureVerification func(descriptor *v2.ComponentDescriptor) error
 
-var NoSignatureVerification SignatureVerification = func(descriptor *v2.ComponentDescriptor) error { return nil }
+var NoSignatureVerification SignatureVerification = func(descriptor *v2.ComponentDescriptor) error { return nil } //nolint:lll,gochecknoglobals
 
-func VerifyAndParse(descriptor *v2.ComponentDescriptor, signatureVerification SignatureVerification) (*Template, error) {
+func VerifyAndParse(
+	descriptor *v2.ComponentDescriptor, signatureVerification SignatureVerification,
+) (*Template, error) {
 	ctx := descriptor.GetEffectiveRepositoryContext()
 
 	if err := signatureVerification(descriptor); err != nil {
@@ -68,7 +77,8 @@ func parseDescriptor(ctx *v2.UnstructuredTypedObject, descriptor *v2.ComponentDe
 
 		return &Template{layersByName, imageURL.String()}, nil
 	default:
-		return nil, errors.New(fmt.Sprintf("context type %s not supported", ctx.GetType()))
+		return nil, fmt.Errorf("error while parsing context type %s: %w",
+			ctx.GetType(), ErrContextTypeNotSupported)
 	}
 }
 
@@ -87,21 +97,22 @@ func parseLayersByName(repo *v2.OCIRegistryRepository, descriptor *v2.ComponentD
 				return nil, errwrap.Wrap(err, "building the digest url")
 			}
 			layers[LayerName(resource.Name)] = Layer{
-				LayerRef:  layerRef,
-				LayerType: LayerType(access.GetType()),
+				LayerRef:  *layerRef,
+				LayerType: LayerType(resource.GetType()),
 			}
 		default:
-			return nil, errors.New(fmt.Sprintf("access type %s not supported", access.GetType()))
+			return nil, fmt.Errorf("error while parsing access type %s: %w",
+				access.GetType(), ErrAccessTypeNotSupported)
 		}
 	}
 	return layers, nil
 }
 
-func getLayerRef(repo *v2.OCIRegistryRepository, descriptor *v2.ComponentDescriptor, ref string) (LayerRef, error) {
+func getLayerRef(repo *v2.OCIRegistryRepository, descriptor *v2.ComponentDescriptor, ref string) (*LayerRef, error) {
 	layerRef := LayerRef{
 		Repo: repo.BaseURL,
 	}
-	switch repo.ComponentNameMapping {
+	switch repo.ComponentNameMapping { //nolint:exhaustive
 	case v2.OCIRegistryURLPathMapping:
 		repoSubpath := DefaultRepoSubdirectory
 		if ext, found := descriptor.GetLabels().Get(fmt.Sprintf("%s%s", v2.OCIRegistryURLPathMapping, "RepoSubpath")); found {
@@ -117,7 +128,8 @@ func getLayerRef(repo *v2.OCIRegistryRepository, descriptor *v2.ComponentDescrip
 			layerRef.Digest = ref
 		}
 	default:
-		return layerRef, errors.New(fmt.Sprintf("unrecognized componentNameMapping %s", repo.ComponentNameMapping))
+		return nil, fmt.Errorf("error while parsing componentNameMapping %s: %w",
+			repo.ComponentNameMapping, ErrComponentNameMappingNotSupported)
 	}
-	return layerRef, nil
+	return &layerRef, nil
 }
