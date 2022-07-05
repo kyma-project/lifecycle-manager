@@ -1,0 +1,25 @@
+linters:
+  enable-all: true
+  disable:
+    - exhaustivestruct
+    - golint
+    - interfacer
+    - maligned
+    - scopelint
+    - forcetypeassert
+    - godox
+    - wsl
+    - nlreturn
+    - bodyclose
+    - contextcheck
+    - nilerr
+    - noctx
+    - rowserrcheck
+    - sqlclosecheck
+    - structcheck
+    - tparallel
+    - unparam
+    - wastedassign
+  linters-settings:
+    gci:
+      local-prefixes: github.com/kyma-project

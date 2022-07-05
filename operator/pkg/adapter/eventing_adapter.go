@@ -2,10 +2,13 @@ package adapter
 
 import (
 	"context"
+
 	"k8s.io/client-go/tools/record"
 )
 
-const ContextKey = "EventRecorder"
+type key string
+
+const ContextKey key = "EventRecorder"
 
 type EventingAdapter func(eventtype, reason, message string)
 
