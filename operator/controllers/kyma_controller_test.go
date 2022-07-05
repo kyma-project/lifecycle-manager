@@ -1,7 +1,11 @@
-package controllers
+package controllers_test
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
@@ -11,10 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"os"
-	"path/filepath"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"time"
 )
 
 var _ = Describe("Kyma Controller", func() {
@@ -46,6 +47,7 @@ var _ = Describe("Kyma Controller", func() {
 			if err != nil || createdKyma.Status.State != v1alpha1.KymaStateError {
 				return false
 			}
+
 			return true
 		}
 
@@ -88,6 +90,7 @@ var _ = Describe("Kyma Controller", func() {
 			if err != nil {
 				return ""
 			}
+
 			return string(createdKyma.Status.State)
 		}
 
@@ -134,17 +137,19 @@ var _ = Describe("Kyma Controller", func() {
 			When(fmt.Sprintf("all of the modules change their state to %s", v1alpha1.KymaStateReady), func() {
 				for _, activeModule := range activeModules {
 					Eventually(func() error {
-						activeUnstructuredModuleFromApiServer := &unstructured.Unstructured{}
-						activeUnstructuredModuleFromApiServer.SetGroupVersionKind(activeModule.Spec.Data.GroupVersionKind())
+						activeUnstructuredModuleFromAPIServer := &unstructured.Unstructured{}
+						activeUnstructuredModuleFromAPIServer.SetGroupVersionKind(activeModule.Spec.Data.GroupVersionKind())
 						Expect(k8sClient.Get(ctx, client.ObjectKey{
 							Namespace: namespace,
-							Name:      activeModule.GetLabels()[labels.ControllerName] + kyma.Name},
-							activeUnstructuredModuleFromApiServer),
+							Name:      activeModule.GetLabels()[labels.ControllerName] + kyma.Name,
+						},
+							activeUnstructuredModuleFromAPIServer),
 						).To(Succeed())
-						activeUnstructuredModuleFromApiServer.Object[watch.Status] = map[string]interface{}{
+						activeUnstructuredModuleFromAPIServer.Object[watch.Status] = map[string]interface{}{
 							watch.State: v1alpha1.KymaStateReady,
 						}
-						return k8sManager.GetClient().Status().Update(ctx, activeUnstructuredModuleFromApiServer)
+
+						return k8sManager.GetClient().Status().Update(ctx, activeUnstructuredModuleFromAPIServer)
 					}, timeout, interval).Should(Succeed())
 				}
 			})
