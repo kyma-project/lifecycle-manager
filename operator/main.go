@@ -18,15 +18,18 @@ package main
 
 import (
 	"flag"
-	"go.uber.org/zap/zapcore"
+	"os"
+	"time"
+
+	"go.uber.org/zap/zapcore" //nolint:gci
 	"golang.org/x/time/rate"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/util/workqueue"
-	"os"
+
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"time"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -46,13 +49,24 @@ import (
 	//+kubebuilder:scaffold:imports
 )
 
-const name = "kyma-operator"
+const (
+	name                          = "kyma-operator"
+	baseDelay                     = 100 * time.Millisecond
+	maxDelay                      = 1000 * time.Second
+	limit                         = rate.Limit(30)
+	burst                         = 200
+	port                          = 9443
+	defaultRequeueSuccessInterval = 20 * time.Second
+	defaultRequeueFailureInterval = 10 * time.Second
+	defaultRequeueWaitingInterval = 3 * time.Second
+)
 
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
 )
 
+//nolint:wsl
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
@@ -60,29 +74,16 @@ func init() {
 	//+kubebuilder:scaffold:scheme
 }
 
-func main() {
-	var metricsAddr string
-	var enableLeaderElection bool
-	var probeAddr string
-	var maxConcurrentReconciles int
-	var requeueSuccessInterval, requeueFailureInterval, requeueWaitingInterval time.Duration
-	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
-	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flag.IntVar(&maxConcurrentReconciles, "max-concurrent-reconciles", 1, "The maximum number of concurrent Reconciles which can be run.")
-	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
+type FlagVar struct {
+	metricsAddr                                                            string
+	enableLeaderElection                                                   bool
+	probeAddr                                                              string
+	maxConcurrentReconciles                                                int
+	requeueSuccessInterval, requeueFailureInterval, requeueWaitingInterval time.Duration
+}
 
-	flag.DurationVar(&requeueSuccessInterval, "requeue-success-interval", 20*time.Second,
-		"determines the duration after which an already successfully reconciled Kyma is enqueued for checking "+
-			"if it's still in a consistent state.")
-	flag.DurationVar(&requeueFailureInterval, "requeue-failure-interval", 10*time.Second,
-		"determines the duration after which a failing reconciliation is retried and "+
-			"enqueued for a next try at recovering (e.g. because an Remote Synchronization Interaction failed)")
-	flag.DurationVar(&requeueWaitingInterval, "requeue-waiting-interval", 3*time.Second,
-		"etermines the duration after which a pending reconciliation is requeued "+
-			"if the operator decides that it needs to wait for a certain state to update before it can proceed "+
-			"(e.g. because of pending finalizers in the deletion process)")
+func main() {
+	flagVar := defineFlagVar()
 
 	opts := zap.Options{
 		Development: true,
@@ -96,49 +97,15 @@ func main() {
 	cacheLabelSelector := labels.SelectorFromSet(
 		labels.Set{operatorLabels.ManagedBy: name},
 	)
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
-		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "893110f7.kyma-project.io",
-		NewCache: cache.BuilderWithOptions(cache.Options{
-			SelectorsByObject: cache.SelectorsByObject{
-				&operatorv1alpha1.ModuleTemplate{}: {Label: cacheLabelSelector},
-				&corev1.Secret{}:                   {Label: cacheLabelSelector},
-			},
-		}),
-	})
 
-	if err != nil {
-		setupLog.Error(err, "unable to start manager")
-		os.Exit(1)
-	}
-
-	if err = (&controllers.KymaReconciler{
-		Client:        mgr.GetClient(),
-		EventRecorder: mgr.GetEventRecorderFor(name),
-		RequeueIntervals: controllers.RequeueIntervals{
-			Success: requeueSuccessInterval,
-			Failure: requeueFailureInterval,
-			Waiting: requeueWaitingInterval,
-		},
-	}).SetupWithManager(mgr, controller.Options{
-		RateLimiter: workqueue.NewMaxOfRateLimiter(
-			workqueue.NewItemExponentialFailureRateLimiter(100*time.Millisecond, 1000*time.Second),
-			&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(30), 200)}),
-		MaxConcurrentReconciles: maxConcurrentReconciles,
-	}); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
-		os.Exit(1)
-	}
+	mgr := setupManager(flagVar, cacheLabelSelector)
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
 		os.Exit(1)
 	}
+
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
@@ -148,4 +115,66 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func setupManager(flagVar *FlagVar, cacheLabelSelector labels.Selector) manager.Manager {
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+		Scheme:                 scheme,
+		MetricsBindAddress:     flagVar.metricsAddr,
+		Port:                   port,
+		HealthProbeBindAddress: flagVar.probeAddr,
+		LeaderElection:         flagVar.enableLeaderElection,
+		LeaderElectionID:       "893110f7.kyma-project.io",
+		NewCache: cache.BuilderWithOptions(cache.Options{
+			SelectorsByObject: cache.SelectorsByObject{
+				&operatorv1alpha1.ModuleTemplate{}: {Label: cacheLabelSelector},
+				&corev1.Secret{}:                   {Label: cacheLabelSelector},
+			},
+		}),
+	})
+	if err != nil {
+		setupLog.Error(err, "unable to start manager")
+		os.Exit(1)
+	}
+
+	if err = (&controllers.KymaReconciler{
+		Client:        mgr.GetClient(),
+		EventRecorder: mgr.GetEventRecorderFor(name),
+		RequeueIntervals: controllers.RequeueIntervals{
+			Success: flagVar.requeueSuccessInterval,
+			Failure: flagVar.requeueFailureInterval,
+			Waiting: flagVar.requeueWaitingInterval,
+		},
+	}).SetupWithManager(mgr, controller.Options{
+		RateLimiter: workqueue.NewMaxOfRateLimiter(
+			workqueue.NewItemExponentialFailureRateLimiter(baseDelay, maxDelay),
+			&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(limit, burst)}),
+		MaxConcurrentReconciles: flagVar.maxConcurrentReconciles,
+	}); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
+		os.Exit(1)
+	}
+
+	return mgr
+}
+
+func defineFlagVar() *FlagVar {
+	flagVar := new(FlagVar)
+	flag.StringVar(&flagVar.metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
+	flag.StringVar(&flagVar.probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flag.IntVar(&flagVar.maxConcurrentReconciles, "max-concurrent-reconciles", 1, "The maximum number of concurrent Reconciles which can be run.") //nolint:lll
+	flag.BoolVar(&flagVar.enableLeaderElection, "leader-elect", false,
+		"Enable leader election for controller manager. "+
+			"Enabling this will ensure there is only one active controller manager.")
+	flag.DurationVar(&flagVar.requeueSuccessInterval, "requeue-success-interval", defaultRequeueSuccessInterval,
+		"determines the duration after which an already successfully reconciled Kyma is enqueued for checking "+
+			"if it's still in a consistent state.")
+	flag.DurationVar(&flagVar.requeueFailureInterval, "requeue-failure-interval", defaultRequeueFailureInterval,
+		"determines the duration after which a failing reconciliation is retried and "+
+			"enqueued for a next try at recovering (e.g. because an Remote Synchronization Interaction failed)")
+	flag.DurationVar(&flagVar.requeueWaitingInterval, "requeue-waiting-interval", defaultRequeueWaitingInterval,
+		"etermines the duration after which a pending reconciliation is requeued "+
+			"if the operator decides that it needs to wait for a certain state to update before it can proceed "+
+			"(e.g. because of pending finalizers in the deletion process)")
+	return flagVar
 }
