@@ -16,16 +16,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type (
-	Modules map[string]*Module
-	Module  struct {
-		Name             string
-		Template         *operatorv1alpha1.ModuleTemplate
-		TemplateOutdated bool
-		*unstructured.Unstructured
-		Settings []operatorv1alpha1.Settings
-	}
-)
+type Modules map[string]*Module
+type Module struct {
+	Name             string
+	Template         *operatorv1alpha1.ModuleTemplate
+	TemplateOutdated bool
+	*unstructured.Unstructured
+	Settings unstructured.Unstructured
+}
 
 func (m *Module) Channel() operatorv1alpha1.Channel {
 	return m.Template.Spec.Channel
@@ -45,12 +43,11 @@ func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, compone
 	unstructuredCompCR.SetLabels(labelMap)
 }
 
-func CopySettingsToUnstructuredFromResource(resource *unstructured.Unstructured,
-	settings []operatorv1alpha1.Settings,
-) error {
-	if len(settings) > 0 {
-		resource.Object["spec"] = settings
-		if err := mergo.Merge(resource.Object["spec"], settings); err != nil {
+func CopySettingsToUnstructuredFromResource(resource *unstructured.Unstructured, settings unstructured.Unstructured) error {
+	overrideSpec := settings.Object["spec"]
+
+	if overrideSpec != nil {
+		if err := mergo.Merge(resource.Object["spec"], overrideSpec); err != nil {
 			return err
 		}
 	}
