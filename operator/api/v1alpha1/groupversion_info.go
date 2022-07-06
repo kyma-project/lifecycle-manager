@@ -31,22 +31,22 @@ const (
 
 var (
 	// GroupVersion is group version used to register these objects.
-	GroupVersion = schema.GroupVersion{Group: "operator.kyma-project.io", Version: "v1alpha1"} //nolint:lll
+	GroupVersion = schema.GroupVersion{Group: "operator.kyma-project.io", Version: "v1alpha1"} //nolint:gochecknoglobals,lll
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme.
-	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
+	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion} //nolint:gochecknoglobals
 
 	// AddToScheme adds the types in this group-version to the given scheme.
-	AddToScheme = SchemeBuilder.AddToScheme
+	AddToScheme = SchemeBuilder.AddToScheme //nolint:gochecknoglobals
 
 	// SchemeGroupVersion is required by kubernetes code-generator.
-	SchemeGroupVersion = GroupVersion
+	SchemeGroupVersion = GroupVersion //nolint:gochecknoglobals
 
 	// GroupVersionResource is group version resource.
-	GroupVersionResource = GroupVersion.WithResource(KymaPlural)
+	GroupVersionResource = GroupVersion.WithResource(KymaPlural) //nolint:gochecknoglobals
 
 	// GroupVersionKind is group version kind.
-	GroupVersionKind = GroupVersion.WithKind(KymaKind)
+	GroupVersionKind = GroupVersion.WithKind(KymaKind) //nolint:gochecknoglobals
 )
 
 func Resource(resource string) schema.GroupResource {

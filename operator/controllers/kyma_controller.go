@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kyma-project/kyma-operator/operator/pkg/adapter" //nolint:gci
+	//nolint:gci
 	"github.com/kyma-project/kyma-operator/operator/pkg/dynamic"
 	"github.com/kyma-project/kyma-operator/operator/pkg/remote"
 	v1 "k8s.io/api/core/v1"
@@ -77,8 +77,6 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciliation loop starting for", "resource", req.NamespacedName.String())
 
-	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
-
 	// check if kyma resource exists
 	kyma := &operatorv1alpha1.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
@@ -126,11 +124,11 @@ func (r *KymaReconciler) updateRemote(ctx context.Context, kyma *operatorv1alpha
 	if err != nil {
 		return err
 	}
-	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx)
+	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx, r.EventRecorder)
 	if err != nil {
 		return err
 	}
-	synchronizationRequiresRequeue, err := syncContext.SynchronizeRemoteKyma(ctx, remoteKyma)
+	synchronizationRequiresRequeue, err := syncContext.SynchronizeRemoteKyma(ctx, remoteKyma, r.EventRecorder)
 	if err != nil || synchronizationRequiresRequeue {
 		return err
 	}

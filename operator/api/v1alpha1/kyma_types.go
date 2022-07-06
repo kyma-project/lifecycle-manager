@@ -215,6 +215,7 @@ type KymaList struct {
 	Items           []Kyma `json:"items"`
 }
 
+//nolint:gochecknoinits
 func init() {
 	SchemeBuilder.Register(&Kyma{}, &KymaList{})
 }
