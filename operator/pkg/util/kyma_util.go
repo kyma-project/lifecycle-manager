@@ -116,7 +116,7 @@ func GetUnstructuredComponentFromTemplate(
 			"type":   layer.LayerType,
 		}
 		if name == "config" {
-			mergeData = map[string]any{"ociRef": layerData}
+			mergeData = map[string]any{"config": layerData}
 		} else {
 			mergeData = map[string]any{"installs": []map[string]any{layerData}}
 		}
