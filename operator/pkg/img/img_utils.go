@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	v2 "github.com/gardener/component-spec/bindings-go/apis/v2"
-	errwrap "github.com/pkg/errors"
 )
 
 const DefaultRepoSubdirectory = "component-descriptors"
@@ -51,7 +50,7 @@ func VerifyAndParse(
 	ctx := descriptor.GetEffectiveRepositoryContext()
 
 	if err := signatureVerification(descriptor); err != nil {
-		return nil, errwrap.Wrapf(err, "Signature Verification Error! Untrusted!")
+		return nil, fmt.Errorf("signature verification error, untrusted: %w", err)
 	}
 
 	return parseDescriptor(ctx, descriptor)
@@ -62,12 +61,12 @@ func parseDescriptor(ctx *v2.UnstructuredTypedObject, descriptor *v2.ComponentDe
 	case v2.OCIRegistryType:
 		repo := &v2.OCIRegistryRepository{}
 		if err := ctx.DecodeInto(repo); err != nil {
-			return nil, errwrap.Wrap(err, "error while decoding the repository context into an OCI registry")
+			return nil, fmt.Errorf("error while decoding the repository context into an OCI registry: %w", err)
 		}
 
 		imageURL, err := getLayerRef(repo, descriptor, "")
 		if err != nil {
-			return nil, errwrap.Wrap(err, "error while parsing the imageURL")
+			return nil, fmt.Errorf("error while parsing the imageURL: %w", err)
 		}
 
 		layersByName, err := parseLayersByName(repo, descriptor)
@@ -90,11 +89,11 @@ func parseLayersByName(repo *v2.OCIRegistryRepository, descriptor *v2.ComponentD
 		case v2.LocalOCIBlobType:
 			ociAccess := &v2.LocalOCIBlobAccess{}
 			if err := access.DecodeInto(ociAccess); err != nil {
-				return nil, errwrap.Wrap(err, "error while decoding the access into OCIRegistryRepository")
+				return nil, fmt.Errorf("error while decoding the access into OCIRegistryRepository: %w", err)
 			}
 			layerRef, err := getLayerRef(repo, descriptor, ociAccess.Digest)
 			if err != nil {
-				return nil, errwrap.Wrap(err, "building the digest url")
+				return nil, fmt.Errorf("building the digest url: %w", err)
 			}
 			layers[LayerName(resource.Name)] = Layer{
 				LayerRef:  *layerRef,

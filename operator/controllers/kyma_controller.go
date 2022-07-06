@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -28,7 +29,6 @@ import (
 	"github.com/kyma-project/kyma-operator/operator/pkg/img"
 	"github.com/kyma-project/kyma-operator/operator/pkg/remote"
 	"github.com/kyma-project/kyma-operator/operator/pkg/signature"
-	errwrap "github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
@@ -44,7 +44,7 @@ import (
 	"github.com/kyma-project/kyma-operator/operator/pkg/status"
 	"github.com/kyma-project/kyma-operator/operator/pkg/util"
 	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -56,7 +56,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
-var ErrNoComponentSpecified = errwrap.New("no component specified")
+var ErrNoComponentSpecified = errors.New("no component specified")
 
 type RequeueIntervals struct {
 	Success time.Duration
@@ -112,15 +112,20 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		if err := r.TriggerKymaDeletion(ctx, kyma); err != nil {
 			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
 		}
+
 		// if the status is not yet set to deleting, also update the status
-		return ctrl.Result{}, errwrap.Wrap(
-			status.Helper(r).UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateDeleting, "deletion timestamp set"),
-			"could not update kyma status after triggering deletion")
+		if err := status.Helper(r).UpdateStatus(
+			ctx, kyma, operatorv1alpha1.KymaStateDeleting, "deletion timestamp set",
+		); err != nil {
+			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, fmt.Errorf(
+				"could not update kyma status after triggering deletion: %w", err)
+		}
+		return ctrl.Result{}, nil
 	}
 
 	// check finalizer
 	if labels.CheckLabelsAndFinalizers(kyma) {
-		return ctrl.Result{}, errwrap.Wrap(r.Update(ctx, kyma), "could not update kyma after finalizer check")
+		return ctrl.Result{}, fmt.Errorf("could not update kyma after finalizer check: %w", r.Update(ctx, kyma))
 	}
 
 	// create a remote synchronization context, and update the remote kyma with the state of the control plane
@@ -264,7 +269,7 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *operator
 				name, client.ObjectKeyFromObject(kyma)))
 
 			return true, nil
-		} else if !errors.IsNotFound(err) {
+		} else if !k8serrors.IsNotFound(err) {
 			// unknown error while getting component CR
 			return false, fmt.Errorf("deletion cannot proceed - unknown error: %w", err)
 		}
@@ -276,7 +281,7 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *operator
 
 	if kyma.Spec.Sync.Enabled {
 		if err := remote.RemoveFinalizerFromRemoteKyma(ctx, r, kyma); client.IgnoreNotFound(err) != nil {
-			return false, errwrap.Wrap(err, "error while trying to remove finalizer from remote")
+			return false, fmt.Errorf("error while trying to remove finalizer from remote: %w", err)
 		}
 		logger.Info("removed remote finalizer",
 			"resource", client.ObjectKeyFromObject(kyma))
@@ -284,7 +289,11 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *operator
 
 	controllerutil.RemoveFinalizer(kyma, labels.Finalizer)
 
-	return false, errwrap.Wrap(r.Update(ctx, kyma), "error while trying to udpate kyma during deletion")
+	if err := r.Update(ctx, kyma); err != nil {
+		return false, fmt.Errorf("error while trying to udpate kyma during deletion: %w", r.Update(ctx, kyma))
+	}
+
+	return false, nil
 }
 
 func (r *KymaReconciler) HandleErrorState(ctx context.Context, kyma *operatorv1alpha1.Kyma) error {
@@ -368,7 +377,11 @@ func (r *KymaReconciler) SyncConditionsWithModuleStates(ctx context.Context, kym
 		}
 	}
 
-	return statusUpdateRequired, errwrap.Wrap(err, "error occurred while synchronizing conditions with states")
+	if err != nil {
+		return statusUpdateRequired, fmt.Errorf("error occurred while synchronizing conditions with states: %w", err)
+	}
+
+	return statusUpdateRequired, nil
 }
 
 func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *operatorv1alpha1.Kyma,
@@ -383,10 +396,10 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *operat
 
 		err := r.Get(ctx, client.ObjectKeyFromObject(module.Unstructured), module.Unstructured)
 		if client.IgnoreNotFound(err) != nil {
-			return false, errwrap.Wrapf(err, "error occurred while fetching module %s", module.GetName())
+			return false, fmt.Errorf("error occurred while fetching module %s: %w", module.GetName(), err)
 		}
 
-		if errors.IsNotFound(err) { //nolint:nestif    // create resource if not found
+		if k8serrors.IsNotFound(err) { //nolint:nestif    // create resource if not found
 			err := r.CreateModule(ctx, name, kyma, module)
 			if err != nil {
 				return false, err
@@ -427,7 +440,7 @@ func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *op
 ) error {
 	// merge template and component settings
 	if err := util.CopySettingsToUnstructuredFromResource(module.Unstructured, module.Settings); err != nil {
-		return errwrap.Wrap(err, "error occurred while creating module from settings")
+		return fmt.Errorf("error occurred while creating module from settings: %w", err)
 	}
 	// set labels
 	util.SetComponentCRLabels(module.Unstructured, name, module.Template.Spec.Channel, kyma.Name)
@@ -449,7 +462,7 @@ func (r *KymaReconciler) UpdateModule(ctx context.Context, name string, kyma *op
 ) error {
 	// merge template and component settings
 	if err := util.CopySettingsToUnstructuredFromResource(module.Unstructured, module.Settings); err != nil {
-		return errwrap.Wrap(err, "error occurred while updating module from settings")
+		return fmt.Errorf("error occurred while updating module from settings: %w", err)
 	}
 	// set labels
 	util.SetComponentCRLabels(module.Unstructured, name, module.Template.Spec.Channel, kyma.Name)
@@ -484,7 +497,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 		Version: "v1alpha1",
 	}
 	if dynamicInformers, err = dynamic.Informers(mgr, gv); err != nil {
-		return errwrap.Wrapf(err, "error while setting up Dynamic Informers for GV %s", gv.String())
+		return fmt.Errorf("error while setting up Dynamic Informers for GV %s: %w", gv.String(), err)
 	}
 
 	for _, informer := range dynamicInformers {
@@ -494,11 +507,17 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 	}
 
 	if err := index.TemplateChannel().With(context.TODO(), mgr.GetFieldIndexer()); err != nil {
-		return errwrap.Wrap(err, "error while setting up Template Channel Field Indexer")
+		return fmt.Errorf("error while setting up Template Channel Field Indexer: %w", err)
 	}
 
-	return errwrap.Wrap(controllerBuilder.Complete(r), "error occurred while building controller")
+	if err := controllerBuilder.Complete(r); err != nil {
+		return fmt.Errorf("error occurred while building controller: %w", err)
+	}
+
+	return nil
 }
+
+var ErrNoSignatureFound = errors.New("no signature was found")
 
 func (r *KymaReconciler) NewSignatureVerifier(
 	ctx context.Context, namespace string,
@@ -515,19 +534,21 @@ func (r *KymaReconciler) NewSignatureVerifier(
 		verifier, err = signatures.CreateRSAVerifierFromKeyFile(r.ModuleVerificationSettings.PublicKeyFilePath)
 	}
 	if err != nil {
-		return nil, errwrap.Wrap(err, "error occurred while initializing Signature Verifier")
+		return nil, fmt.Errorf("error occurred while initializing Signature Verifier: %w", err)
 	}
 
 	return func(descriptor *v2.ComponentDescriptor) error {
 		for _, sig := range descriptor.Signatures {
 			for _, validName := range r.ModuleVerificationSettings.ValidSignatureNames {
 				if sig.Name == validName {
-					return errwrap.Wrap(verifier.Verify(*descriptor, sig),
-						"error occurred during signature verification")
+					if err := verifier.Verify(*descriptor, sig); err != nil {
+						return fmt.Errorf("error occurred during signature verification: %w", err)
+					}
+					return nil
 				}
 			}
 		}
-		return errwrap.New("no signature was found in the descriptor matching the valid signature list")
+		return fmt.Errorf("descriptor contains invalid signature list: %w", ErrNoSignatureFound)
 	}, nil
 }
 
@@ -540,7 +561,7 @@ func (r *KymaReconciler) TriggerKymaDeletion(ctx context.Context, kyma *operator
 	if kyma.Spec.Sync.Enabled {
 		if err := remote.DeleteRemotelySyncedKyma(ctx, r.Client, kyma); client.IgnoreNotFound(err) != nil {
 			logger.Info(namespacedName + " could not be deleted remotely!")
-			return errwrap.Wrap(err, "error occurred while trying to delete remotely synced kyma")
+			return fmt.Errorf("error occurred while trying to delete remotely synced kyma: %w", err)
 		}
 		logger.Info(namespacedName + " got deleted remotely!")
 	}
@@ -572,7 +593,7 @@ func (r *KymaReconciler) DeleteKymaDependencies(ctx context.Context, kyma *opera
 					},
 					DeleteOptions: client.DeleteOptions{},
 				}); err != nil {
-					return errwrap.Wrap(err, "error occurred while trying to delete kyma dependencies")
+					return fmt.Errorf("error occurred while trying to delete kyma dependencies: %w", err)
 				}
 			}
 		}

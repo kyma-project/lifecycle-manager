@@ -51,7 +51,7 @@ spec:
               components:
                 description: Components specifies the list of components to be installed
                 items:
-                  description: ComponentType defines the components to be installed.
+                  description: ComponentType defines the components to be installed
                   properties:
                     channel:
                       enum:
@@ -62,12 +62,9 @@ spec:
                     name:
                       type: string
                     settings:
-                      items:
-                        additionalProperties:
-                          type: string
-                        description: Settings defines some component specific settings.
-                        type: object
-                      type: array
+                      type: object
+                      x-kubernetes-embedded-resource: true
+                      x-kubernetes-preserve-unknown-fields: true
                   required:
                   - name
                   type: object

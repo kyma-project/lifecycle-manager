@@ -11,7 +11,6 @@ import (
 	"github.com/kyma-project/kyma-operator/operator/pkg/img"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"github.com/kyma-project/kyma-operator/operator/pkg/release"
-	errwrap "github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -99,12 +98,12 @@ func GetUnstructuredComponentFromTemplate(
 
 	var descriptor ocm.ComponentDescriptor
 	if err := codec.Decode(template.Template.Spec.Descriptor.Raw, &descriptor); err != nil {
-		return nil, errwrap.Wrap(err, "error while decoding the descriptor")
+		return nil, fmt.Errorf("error while decoding the descriptor: %w", err)
 	}
 
 	imgTemplate, err := img.VerifyAndParse(&descriptor, factory)
 	if err != nil {
-		return nil, errwrap.Wrap(err, "error while parsing descriptor in module template")
+		return nil, fmt.Errorf("error while parsing descriptor in module template: %w", err)
 	}
 
 	for name, layer := range imgTemplate.Layers {

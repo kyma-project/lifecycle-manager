@@ -5,20 +5,20 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"strings"
 
 	v2 "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/gardener/component-spec/bindings-go/apis/v2/signatures"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
-	errwrap "github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var ErrPublicKeyWrongType = errwrap.New("parsed public key is not correct type")
+var ErrPublicKeyWrongType = errors.New("parsed public key is not correct type")
 
 type MultiVerifier struct {
 	verifiers map[string]signatures.Verifier
@@ -58,7 +58,7 @@ func CreateRSAVerifierFromSecrets(
 		return nil, err
 	} else if len(secretList.Items) < 1 {
 		gr := v1.SchemeGroupVersion.WithResource(fmt.Sprintf("secrets with label %s", labels.KymaName)).GroupResource()
-		return nil, errors.NewNotFound(gr, selector.String())
+		return nil, k8serrors.NewNotFound(gr, selector.String())
 	}
 
 	publicKeys := make(map[string]*rsa.PublicKey)
@@ -66,7 +66,7 @@ func CreateRSAVerifierFromSecrets(
 		publicKey := item.Data["key"]
 		block, _ := pem.Decode(publicKey)
 		if block == nil {
-			return nil, errwrap.New("unable to decode pem formatted block in key from secret")
+			return nil, errors.New("unable to decode pem formatted block in key from secret")
 		}
 		untypedKey, err := x509.ParsePKIXPublicKey(block.Bytes)
 		if err != nil {

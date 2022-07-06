@@ -3,7 +3,7 @@ package watch
 import (
 	"context"
 	"errors"
-	errwrap "github.com/pkg/errors"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
@@ -138,5 +138,5 @@ func (h *ComponentChangeHandler) GetKymaOwner(ctx context.Context,
 		Namespace: component.GetNamespace(),
 	}, kyma)
 
-	return kyma, errwrap.Wrap(err, "error while fetching kyma owner in the component change handler")
+	return kyma, fmt.Errorf("error while fetching kyma owner in the component change handler: %w", err)
 }
