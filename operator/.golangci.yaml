@@ -24,6 +24,12 @@ linters:
     - unparam
     - wastedassign
     - exhaustruct
-  linters-settings:
-    gci:
-      local-prefixes: github.com/kyma-project
+linters-settings:
+  gci:
+    local-prefixes: github.com/kyma-project
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  fix: true
+output:
+  sort-results: true
