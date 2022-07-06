@@ -2,154 +2,157 @@ package status
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
-	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"time"
 
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
-	"github.com/kyma-project/kyma-operator/operator/pkg/release"
+	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"github.com/kyma-project/kyma-operator/operator/pkg/util"
+	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var ErrConditionNotFound = errors.New("condition not found")
+
 type Kyma struct {
 	client.StatusWriter
-	record.EventRecorder
 }
 
-func (h *Kyma) UpdateStatus(
+type Handler interface {
+	Status() client.StatusWriter
+}
+
+func Helper(handler Handler) *Kyma {
+	return &Kyma{StatusWriter: handler.Status()}
+}
+
+func (k *Kyma) UpdateStatus(
 	ctx context.Context,
 	kyma *operatorv1alpha1.Kyma,
 	newState operatorv1alpha1.KymaState,
 	message string,
 ) error {
 	kyma.Status.State = newState
+
 	switch newState {
 	case operatorv1alpha1.KymaStateReady:
-		h.AddReadyConditionForObjects(kyma, []util.ComponentsAssociatedWithTemplate{{
-			ComponentName: operatorv1alpha1.KymaKind,
-		}}, operatorv1alpha1.ConditionStatusTrue, message)
-		// set active release only when ready newState is set
-		release.New(kyma.Status.ActiveChannel, kyma.Spec.Channel, h.GetEventAdapter(kyma)).IssueChannelChangeSuccess()
+		k.SyncReadyConditionForModules(kyma, util.Modules{
+			operatorv1alpha1.KymaKind: &util.Module{},
+		}, operatorv1alpha1.ConditionStatusTrue, message)
 		kyma.SetActiveChannel()
 	case "":
-		h.AddReadyConditionForObjects(kyma, []util.ComponentsAssociatedWithTemplate{{
-			ComponentName: operatorv1alpha1.KymaKind,
-		}}, operatorv1alpha1.ConditionStatusUnknown, message)
+		k.SyncReadyConditionForModules(kyma, util.Modules{
+			operatorv1alpha1.KymaKind: &util.Module{},
+		}, operatorv1alpha1.ConditionStatusUnknown, message)
+	case operatorv1alpha1.KymaStateDeleting:
+	case operatorv1alpha1.KymaStateError:
+	case operatorv1alpha1.KymaStateProcessing:
 	default:
-		h.AddReadyConditionForObjects(kyma, []util.ComponentsAssociatedWithTemplate{{
-			ComponentName: operatorv1alpha1.KymaKind,
-		}}, operatorv1alpha1.ConditionStatusFalse, message)
+		k.SyncReadyConditionForModules(kyma, util.Modules{
+			operatorv1alpha1.KymaKind: &util.Module{},
+		}, operatorv1alpha1.ConditionStatusFalse, message)
 	}
-	return h.Update(ctx, kyma.SetObservedGeneration())
 
+	return fmt.Errorf("conditions could not be updated: %w", k.Update(ctx, kyma.SetObservedGeneration()))
 }
 
-func (h *Kyma) AddReadyConditionForObjects(kymaObj *operatorv1alpha1.Kyma, typesByTemplate []util.ComponentsAssociatedWithTemplate, conditionStatus operatorv1alpha1.KymaConditionStatus, message string) {
-	status := &kymaObj.Status
-	for _, typeByTemplate := range typesByTemplate {
-		condition, exists := h.GetReadyConditionForComponent(kymaObj, typeByTemplate.ComponentName)
+func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules util.Modules,
+	conditionStatus operatorv1alpha1.KymaConditionStatus, message string,
+) {
+	status := &kyma.Status
+
+	for name, module := range modules {
+		condition, exists := k.GetReadyConditionForComponent(kyma, name)
 		if !exists {
 			condition = &operatorv1alpha1.KymaCondition{
 				Type:   operatorv1alpha1.ConditionTypeReady,
-				Reason: typeByTemplate.ComponentName,
+				Reason: name,
 			}
 			status.Conditions = append(status.Conditions, *condition)
 		}
-		condition.TemplateInfo = operatorv1alpha1.TemplateInfo{
-			Channel:    typeByTemplate.TemplateChannel,
-			Generation: typeByTemplate.TemplateGeneration,
+
+		if module.Template != nil {
+			condition.TemplateInfo = operatorv1alpha1.TemplateInfo{
+				Channel:    module.Template.Spec.Channel,
+				Generation: module.Template.Generation,
+				GroupVersionKind: metav1.GroupVersionKind{
+					Group:   module.GroupVersionKind().Group,
+					Version: module.GroupVersionKind().Version,
+					Kind:    module.GroupVersionKind().Kind,
+				},
+			}
 		}
+
 		condition.LastTransitionTime = &metav1.Time{Time: time.Now()}
 		condition.Message = message
 		condition.Status = conditionStatus
 
 		for i, existingCondition := range status.Conditions {
-			if existingCondition.Type == operatorv1alpha1.ConditionTypeReady && existingCondition.Reason == typeByTemplate.ComponentName {
+			if existingCondition.Type == operatorv1alpha1.ConditionTypeReady && existingCondition.Reason == name {
 				status.Conditions[i] = *condition
+
 				break
 			}
 		}
 	}
 }
 
-func (h *Kyma) GetReadyConditionForComponent(kymaObj *operatorv1alpha1.Kyma, componentName string) (*operatorv1alpha1.KymaCondition, bool) {
+func (k *Kyma) GetReadyConditionForComponent(kymaObj *operatorv1alpha1.Kyma,
+	componentName string,
+) (*operatorv1alpha1.KymaCondition, bool) {
 	status := &kymaObj.Status
 	for _, existingCondition := range status.Conditions {
 		if existingCondition.Type == operatorv1alpha1.ConditionTypeReady && existingCondition.Reason == componentName {
 			return &existingCondition, true
 		}
 	}
+
 	return &operatorv1alpha1.KymaCondition{}, false
 }
 
-func (h *Kyma) GetEventAdapter(kyma *operatorv1alpha1.Kyma) adapter.Eventing {
-	return func(eventtype, reason, message string) {
-		h.Event(kyma, eventtype, reason, message)
-	}
-}
-
-func (h *Kyma) UpdateReadyCondition(kymaObj *operatorv1alpha1.Kyma, componentNames []string, conditionStatus operatorv1alpha1.KymaConditionStatus, message string) {
-	status := kymaObj.Status
-	for _, componentName := range componentNames {
-		condition, exists := h.GetReadyConditionForComponent(kymaObj, componentName)
-		if !exists {
-			continue
-		}
-		condition.LastTransitionTime = &metav1.Time{Time: time.Now()}
-		condition.Message = message
-		condition.Status = conditionStatus
-
-		for i, existingCondition := range status.Conditions {
-			if existingCondition.Type == operatorv1alpha1.ConditionTypeReady && existingCondition.Reason == componentName {
-				status.Conditions[i] = *condition
-				break
-			}
-		}
-	}
-}
-
-func (h *Kyma) UpdateComponentConditions(actualComponentStruct *unstructured.Unstructured, kyma *operatorv1alpha1.Kyma) (bool, error) {
+func (k *Kyma) UpdateConditionFromComponentState(name string, module *util.Module,
+	kyma *operatorv1alpha1.Kyma,
+) (bool, error) {
 	updateRequired := false
-	componentStatus := actualComponentStruct.Object[watch.Status]
+	actualComponentStruct := module.Unstructured
 	componentName := actualComponentStruct.GetLabels()[labels.ControllerName]
+
+	componentStatus := actualComponentStruct.Object[watch.Status]
 	if componentStatus != nil {
-		condition, exists := h.GetReadyConditionForComponent(kyma, componentName)
+		condition, exists := k.GetReadyConditionForComponent(kyma, componentName)
 		if !exists {
-			return false, fmt.Errorf("condition not found for component %s", componentName)
+			return false, fmt.Errorf("error with condition for component %s: %w",
+				componentName, ErrConditionNotFound)
 		}
 
 		switch componentStatus.(map[string]interface{})[watch.State].(string) {
-
 		case string(operatorv1alpha1.KymaStateReady):
 			if condition.Status != operatorv1alpha1.ConditionStatusTrue {
-				h.UpdateReadyCondition(kyma, []string{componentName},
+				k.SyncReadyConditionForModules(kyma, util.Modules{name: module},
 					operatorv1alpha1.ConditionStatusTrue, "component ready!")
-				// "istio", "serverless" are hardcoded, remove!
-				h.UpdateReadyCondition(kyma, []string{"istio", "serverless"},
-					operatorv1alpha1.ConditionStatusTrue, "component ready!")
+
 				updateRequired = true
 			}
 
 		case "":
 			if condition.Status != operatorv1alpha1.ConditionStatusUnknown {
-				h.UpdateReadyCondition(kyma, []string{componentName},
+				k.SyncReadyConditionForModules(kyma, util.Modules{name: module},
 					operatorv1alpha1.ConditionStatusUnknown, "component status not known!")
+
 				updateRequired = true
 			}
 
 		default:
 			if condition.Status != operatorv1alpha1.ConditionStatusFalse {
-				h.UpdateReadyCondition(kyma, []string{componentName},
+				k.SyncReadyConditionForModules(kyma, util.Modules{name: module},
 					operatorv1alpha1.ConditionStatusFalse, "component not ready!")
+
 				updateRequired = true
 			}
 		}
 	}
+
 	return updateRequired, nil
 }

@@ -7,16 +7,17 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const TemplateChannelField IndexField = ".spec.channel"
+const TemplateChannelField Field = ".spec.channel"
 
 type TemplateChannelIndex struct{}
 
-func NewTemplateChannelIndex() Indexed {
+func TemplateChannel() *TemplateChannelIndex {
 	return &TemplateChannelIndex{}
 }
 
-func (idx *TemplateChannelIndex) IndexWith(ctx context.Context, indexer client.FieldIndexer) {
-	indexer.IndexField(ctx, &v1alpha1.ModuleTemplate{}, string(TemplateChannelField), func(o client.Object) []string {
-		return []string{string((o.(*v1alpha1.ModuleTemplate)).Spec.Channel)}
-	})
+func (idx *TemplateChannelIndex) With(ctx context.Context, indexer client.FieldIndexer) error {
+	return indexer.IndexField(ctx, &v1alpha1.ModuleTemplate{}, string(TemplateChannelField),
+		func(o client.Object) []string {
+			return []string{string((o.(*v1alpha1.ModuleTemplate)).Spec.Channel)}
+		})
 }

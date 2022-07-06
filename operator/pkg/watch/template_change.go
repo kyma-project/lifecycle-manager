@@ -15,12 +15,14 @@ import (
 
 type TemplateChangeHandler struct {
 	client.Reader
-	client.StatusWriter
 	record.EventRecorder
 }
 
+func NewTemplateChangeHandler(handlerClient ChangeHandlerClient) *TemplateChangeHandler {
+	return &TemplateChangeHandler{Reader: handlerClient, EventRecorder: handlerClient}
+}
+
 func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
-	logger := log.FromContext(ctx).WithName("template-change-detection")
 	return func(o client.Object) []reconcile.Request {
 		requests := make([]reconcile.Request, 0)
 		template := &v1alpha1.ModuleTemplate{}
@@ -33,6 +35,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 		managedBy, managedByPresent := l[labels.ManagedBy]
 		controller, controllerLabelPresent := l[labels.ControllerName]
 		channel := template.Spec.Channel
+
 		if !controllerLabelPresent || controller == "" ||
 			channel == "" ||
 			!managedByPresent || managedBy != "kyma-operator" {
@@ -41,6 +44,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 		}
 
 		kymas := &v1alpha1.KymaList{}
+
 		err := h.List(ctx, kymas)
 		if err != nil {
 			return requests
@@ -50,23 +54,12 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 			Namespace: template.GetNamespace(),
 			Name:      template.GetName(),
 		}
+		logger := log.FromContext(ctx).WithName("template-change-detection")
+
 		for _, kyma := range kymas.Items {
 			globalChannelMatch := kyma.Spec.Channel == channel
-			requeueKyma := false
 
-			for _, component := range kyma.Spec.Components {
-				if component.Name == controller {
-					// check component level channel on matching component
-					requeueKyma = (component.Channel == "" && globalChannelMatch) ||
-						component.Channel == channel
-
-					if requeueKyma {
-						break
-					}
-				}
-			}
-
-			if !requeueKyma {
+			if !requeueKyma(kyma, controller, globalChannelMatch, channel) {
 				continue
 			}
 
@@ -82,6 +75,21 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 
 			requests = append(requests, reconcile.Request{NamespacedName: namespacedNameForKyma})
 		}
+
 		return requests
 	}
+}
+
+func requeueKyma(kyma v1alpha1.Kyma, controller string, globalChannelMatch bool, channel v1alpha1.Channel) bool {
+	for _, component := range kyma.Spec.Components {
+		if component.Name == controller {
+			// check component level channel on matching component
+			if (component.Channel == "" && globalChannelMatch) ||
+				component.Channel == channel {
+				return true
+			}
+		}
+	}
+
+	return false
 }

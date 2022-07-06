@@ -13,10 +13,21 @@ spec:
     kind: Manifest
     resource: manifests
     apiVersion: component.kyma-project.io/v1alpha1
-    spec: 
+    spec:
+      customStates:
+      - apiVersion: operator.kyma-project.io/v1alpha1
+        kind: Kyma
+        name: kyma-sample
+        namespace: default
+        state: Processing
       charts:
       - chartName: nginx-ingress
         repoName: nginx-stable
         releaseName: nginx
         url: https://helm.nginx.com/stable
         clientConfig: "CreateNamespace=true,Namespace=nginx"
+      - chartName: cert-manager
+        releaseName: jet
+        repoName: jetstack
+        url: https://charts.jetstack.io
+        clientConfig: "CreateNamespace=true,Namespace=jet-cert"

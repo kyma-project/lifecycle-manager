@@ -18,32 +18,58 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-const KymaKind = "Kyma"
-
-// KymaSettings defines some component specific settings
-type KymaSettings map[string]string
-
-// ComponentType defines the components to be installed
+// ComponentType defines the components to be installed.
 type ComponentType struct {
-	Name     string         `json:"name"`
-	Channel  Channel        `json:"channel,omitempty"`
-	Settings []KymaSettings `json:"settings,omitempty"`
+	Name    string  `json:"name"`
+	Channel Channel `json:"channel,omitempty"`
+
+	//+kubebuilder:pruning:PreserveUnknownFields
+	//+kubebuilder:validation:XEmbeddedResource
+	Settings unstructured.Unstructured `json:"settings,omitempty"`
 }
 
-// KymaSpec defines the desired state of Kyma
+type SyncStrategy string
+
+const (
+	SyncStrategyLocalSecret = "local-secret"
+)
+
+// Sync defines settings used to apply the kyma synchronization to other clusters.
+type Sync struct {
+	// Enabled set to true will look up a kubeconfig for the remote cluster based on the strategy
+	// and synchronize its state there.
+	Enabled bool `json:"enabled,omitempty"`
+
+	// +kubebuilder:default:=secret
+	// Strategy determines the way to lookup the remotely synced kubeconfig, by default it is fetched from a secret
+	Strategy SyncStrategy `json:"strategy,omitempty"`
+
+	// The target namespace, if empty the namespace is reflected from the control plane
+	// Note that cleanup is currently not supported if you are switching the namespace, so you will
+	// manually need to cleanup old synchronized Kymas
+	Namespace string `json:"namespace,omitempty"`
+}
+
+// KymaSpec defines the desired state of Kyma.
 type KymaSpec struct {
 	Channel Channel `json:"channel"`
 	// Components specifies the list of components to be installed
 	Components []ComponentType `json:"components,omitempty"`
+
+	// Active Synchronization Settings
+	// +optional
+	Sync Sync `json:"sync,omitempty"`
 }
 
-func (k *Kyma) AreAllReadyConditionsSetForKyma() bool {
-	status := &k.Status
+func (kyma *Kyma) AreAllReadyConditionsSetForKyma() bool {
+	status := &kyma.Status
 	if len(status.Conditions) < 1 {
 		return false
 	}
+
 	for _, existingCondition := range status.Conditions {
 		if existingCondition.Type == ConditionTypeReady &&
 			existingCondition.Status != ConditionStatusTrue &&
@@ -51,6 +77,7 @@ func (k *Kyma) AreAllReadyConditionsSetForKyma() bool {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -78,7 +105,7 @@ type KymaStatus struct {
 type Channel string
 
 const (
-	DefaultChannel Channel = ChannelStable
+	DefaultChannel         = ChannelStable
 	ChannelRapid   Channel = "rapid"
 	ChannelRegular Channel = "regular"
 	ChannelStable  Channel = "stable"
@@ -87,18 +114,18 @@ const (
 // +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error
 type KymaState string
 
-// Valid Kyma States
+// Valid Kyma States.
 const (
-	// KymaStateReady signifies Kyma is ready
+	// KymaStateReady signifies Kyma is ready.
 	KymaStateReady KymaState = "Ready"
 
-	// KymaStateProcessing signifies Kyma is reconciling
+	// KymaStateProcessing signifies Kyma is reconciling.
 	KymaStateProcessing KymaState = "Processing"
 
-	// KymaStateError signifies an error for Kyma
+	// KymaStateError signifies an error for Kyma.
 	KymaStateError KymaState = "Error"
 
-	// KymaStateDeleting signifies Kyma is being deleted
+	// KymaStateDeleting signifies Kyma is being deleted.
 	KymaStateDeleting KymaState = "Deleting"
 )
 
@@ -127,28 +154,29 @@ type KymaCondition struct {
 }
 
 type TemplateInfo struct {
-	Generation int64   `json:"generation,omitempty"`
-	Channel    Channel `json:"channel,omitempty"`
+	Generation       int64                   `json:"generation,omitempty"`
+	Channel          Channel                 `json:"channel,omitempty"`
+	GroupVersionKind metav1.GroupVersionKind `json:"gvk,omitempty"`
 }
 
 type KymaConditionType string
 
 const (
-	// ConditionTypeReady represents KymaConditionType Ready
+	// ConditionTypeReady represents KymaConditionType Ready.
 	ConditionTypeReady KymaConditionType = "Ready"
 )
 
 type KymaConditionStatus string
 
-// Valid KymaCondition Status
+// Valid KymaCondition Status.
 const (
-	// ConditionStatusTrue signifies KymaConditionStatus true
+	// ConditionStatusTrue signifies KymaConditionStatus true.
 	ConditionStatusTrue KymaConditionStatus = "True"
 
-	// ConditionStatusFalse signifies KymaConditionStatus false
+	// ConditionStatusFalse signifies KymaConditionStatus false.
 	ConditionStatusFalse KymaConditionStatus = "False"
 
-	// ConditionStatusUnknown signifies KymaConditionStatus unknown
+	// ConditionStatusUnknown signifies KymaConditionStatus unknown.
 	ConditionStatusUnknown KymaConditionStatus = "Unknown"
 )
 
@@ -158,7 +186,7 @@ const (
 //+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
-// Kyma is the Schema for the kymas API
+// Kyma is the Schema for the kymas API.
 type Kyma struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -169,23 +197,26 @@ type Kyma struct {
 
 func (kyma *Kyma) SetObservedGeneration() *Kyma {
 	kyma.Status.ObservedGeneration = kyma.Generation
+
 	return kyma
 }
 
 func (kyma *Kyma) SetActiveChannel() *Kyma {
 	kyma.Status.ActiveChannel = kyma.Spec.Channel
+
 	return kyma
 }
 
 //+kubebuilder:object:root=true
 
-// KymaList contains a list of Kyma
+// KymaList contains a list of Kyma.
 type KymaList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Kyma `json:"items"`
 }
 
+//nolint:gochecknoinits
 func init() {
 	SchemeBuilder.Register(&Kyma{}, &KymaList{})
 }

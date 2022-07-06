@@ -1,0 +1,39 @@
+linters:
+  enable-all: true
+  disable:
+    - exhaustivestruct
+    - golint
+    - interfacer
+    - maligned
+    - scopelint
+    - forcetypeassert
+    - godox
+    - wsl
+    - nlreturn
+    - exhaustruct
+    - gci # disable because autofix is not supported https://github.com/golangci/golangci-lint/issues/2591
+    - wrapcheck
+    - goerr113
+    - bodyclose
+    - contextcheck
+    - nilerr
+    - noctx
+    - rowserrcheck
+    - sqlclosecheck
+    - structcheck
+    - tparallel
+    - unparam
+    - wastedassign
+    - exhaustruct
+linters-settings:
+  gci:
+    sections:
+      - standard # Captures all standard packages if they do not match another section.
+      - default # Contains all imports that could not be matched to another section type.
+      - prefix(github.com/kyma-project)
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  fix: true
+output:
+  sort-results: true
