@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"os"
+	"strings"
 	"time"
 
 	"go.uber.org/zap/zapcore" //nolint:gci
@@ -80,6 +81,7 @@ type FlagVar struct {
 	probeAddr                                                              string
 	maxConcurrentReconciles                                                int
 	requeueSuccessInterval, requeueFailureInterval, requeueWaitingInterval time.Duration
+	moduleVerificationKeyFilePath, moduleVerificationSignatureNames        string
 }
 
 func main() {
@@ -145,6 +147,10 @@ func setupManager(flagVar *FlagVar, cacheLabelSelector labels.Selector) manager.
 			Failure: flagVar.requeueFailureInterval,
 			Waiting: flagVar.requeueWaitingInterval,
 		},
+		ModuleVerificationSettings: controllers.ModuleVerificationSettings{
+			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
+			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
+		},
 	}).SetupWithManager(mgr, controller.Options{
 		RateLimiter: workqueue.NewMaxOfRateLimiter(
 			workqueue.NewItemExponentialFailureRateLimiter(baseDelay, maxDelay),
@@ -176,5 +182,10 @@ func defineFlagVar() *FlagVar {
 		"etermines the duration after which a pending reconciliation is requeued "+
 			"if the operator decides that it needs to wait for a certain state to update before it can proceed "+
 			"(e.g. because of pending finalizers in the deletion process)")
+
+	flag.StringVar(&flagVar.moduleVerificationKeyFilePath, "module-verification-key-file", "",
+		"This verification key is used to verify modules against their signature")
+	flag.StringVar(&flagVar.moduleVerificationKeyFilePath, "module-verification-signature-names", "kyma-module-signature:kyma-extension-signature",
+		"This verification key list is used to verify modules against their signature")
 	return flagVar
 }

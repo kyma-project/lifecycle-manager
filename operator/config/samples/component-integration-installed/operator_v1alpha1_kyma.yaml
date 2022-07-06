@@ -6,9 +6,7 @@ metadata:
 spec:
   channel: stable
   sync:
-    enabled: true
-    strategy: local-secret
-    namespace: kyma-system
+    enabled: false
   components:
     - name: manifest
       channel: stable

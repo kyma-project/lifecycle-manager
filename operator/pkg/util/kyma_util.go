@@ -3,8 +3,12 @@ package util
 import (
 	"fmt"
 
+	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
+	"github.com/gardener/component-spec/bindings-go/codec"
+
 	"github.com/imdario/mergo"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	"github.com/kyma-project/kyma-operator/operator/pkg/img"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"github.com/kyma-project/kyma-operator/operator/pkg/release"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -49,7 +53,7 @@ func CopySettingsToUnstructuredFromResource(resource *unstructured.Unstructured,
 	return nil
 }
 
-func ParseTemplates(kyma *operatorv1alpha1.Kyma, templates release.TemplatesInChannels) (Modules, error) {
+func ParseTemplates(kyma *operatorv1alpha1.Kyma, templates release.TemplatesInChannels, verificationFactory img.SignatureVerification) (Modules, error) {
 	// First, we fetch the component spec from the template and use it to resolve it into an arbitrary object
 	// (since we do not know which component we are dealing with)
 	modules := make(Modules)
@@ -64,10 +68,9 @@ func ParseTemplates(kyma *operatorv1alpha1.Kyma, templates release.TemplatesInCh
 		}
 
 		var err error
-		if module, err = GetUnstructuredComponentFromTemplate(template, component.Name, kyma); err != nil {
+		if module, err = GetUnstructuredComponentFromTemplate(template, component.Name, kyma, verificationFactory); err != nil {
 			return nil, err
 		}
-
 		modules[component.Name] = &Module{
 			Template:         template.Template,
 			TemplateOutdated: template.Outdated,
@@ -79,12 +82,48 @@ func ParseTemplates(kyma *operatorv1alpha1.Kyma, templates release.TemplatesInCh
 	return modules, nil
 }
 
-func GetUnstructuredComponentFromTemplate(template *release.TemplateInChannel, componentName string,
+func GetUnstructuredComponentFromTemplate(
+	template *release.TemplateInChannel,
+	componentName string,
 	kyma *operatorv1alpha1.Kyma,
+	factory img.SignatureVerification,
 ) (*unstructured.Unstructured, error) {
-	desiredComponentStruct := &template.Template.Spec.Data
-	desiredComponentStruct.SetName(componentName + kyma.Name)
-	desiredComponentStruct.SetNamespace(kyma.GetNamespace())
+	component := &template.Template.Spec.Data
+	component.SetName(componentName + kyma.Name)
+	component.SetNamespace(kyma.GetNamespace())
 
-	return desiredComponentStruct.DeepCopy(), nil
+	if template.Template.Spec.Descriptor.String() == "" {
+		return component, nil
+	}
+
+	var descriptor ocm.ComponentDescriptor
+	if err := codec.Decode(template.Template.Spec.Descriptor.Raw, &descriptor); err != nil {
+		return nil, fmt.Errorf("error while decoding the descriptor: %w", err)
+	}
+
+	imgTemplate, err := img.VerifyAndParse(&descriptor, factory)
+	if err != nil {
+		return nil, fmt.Errorf("error while parsing descriptor in module template: %w", err)
+	}
+
+	for name, layer := range imgTemplate.Layers {
+		var mergeData any
+		layerData := map[string]any{
+			"name":   string(name),
+			"repo":   layer.Repo,
+			"module": layer.Module,
+			"digest": layer.Digest,
+			"type":   layer.LayerType,
+		}
+		if name == "config" {
+			mergeData = map[string]any{"config": layerData}
+		} else {
+			mergeData = map[string]any{"installs": []map[string]any{layerData}}
+		}
+		if err := mergo.Merge(&component.Object, map[string]any{"spec": mergeData}); err != nil {
+			return nil, err
+		}
+	}
+
+	return component, nil
 }
