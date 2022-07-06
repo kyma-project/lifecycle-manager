@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/client-go/tools/record" //nolint:gci
-
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	corev1 "k8s.io/api/core/v1"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -137,10 +136,9 @@ func (c *KymaSynchronizationContext) CreateCRD(ctx context.Context) error {
 	})
 }
 
-func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context,
-	recorder record.EventRecorder,
-) (*operatorv1alpha1.Kyma, error) {
+func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context) (*operatorv1alpha1.Kyma, error) {
 	kyma := c.controlPlaneKyma
+	recorder := adapter.RecorderFromContext(ctx)
 	remoteKyma := &operatorv1alpha1.Kyma{}
 
 	remoteKyma.Name = kyma.Name
@@ -188,9 +186,8 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 	return remoteKyma, err
 }
 
-func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context,
-	remoteKyma *operatorv1alpha1.Kyma, recorder record.EventRecorder,
-) (bool, error) {
+func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, remoteKyma *operatorv1alpha1.Kyma) (bool, error) {
+	recorder := adapter.RecorderFromContext(ctx)
 	// check finalizer
 	if !controllerutil.ContainsFinalizer(remoteKyma, labels.Finalizer) {
 		controllerutil.AddFinalizer(remoteKyma, labels.Finalizer)

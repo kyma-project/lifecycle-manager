@@ -26,7 +26,10 @@ linters:
     - exhaustruct
 linters-settings:
   gci:
-    local-prefixes: github.com/kyma-project
+    sections:
+      - standard # Captures all standard packages if they do not match another section.
+      - default # Contains all imports that could not be matched to another section type.
+      - prefix(github.com/kyma-project)
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0

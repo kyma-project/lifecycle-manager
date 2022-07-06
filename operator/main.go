@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"go.uber.org/zap/zapcore" //nolint:gci
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
