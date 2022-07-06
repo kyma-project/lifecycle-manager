@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-logr/logr"
 	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
 	"github.com/kyma-project/kyma-operator/operator/pkg/dynamic"
 	"github.com/kyma-project/kyma-operator/operator/pkg/remote"
@@ -399,7 +398,7 @@ func (r *KymaReconciler) UpdateModule(ctx context.Context, name string, kyma *op
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *KymaReconciler) SetupWithManager(logger logr.Logger, mgr ctrl.Manager, options controller.Options, listenerAddr string) error {
+func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options, listenerAddr string) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&operatorv1alpha1.Kyma{}).WithOptions(options).
 		Watches(
 			&source.Kind{Type: &operatorv1alpha1.ModuleTemplate{}},
@@ -423,8 +422,12 @@ func (r *KymaReconciler) SetupWithManager(logger logr.Logger, mgr ctrl.Manager, 
 					builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
 		}
 	}
-
-	controllerBuilder = listener.RegisterListenerComponent(logger, mgr, controllerBuilder, listenerAddr, &handler.EnqueueRequestForObject{}, componentName)
+	//register listener component
+	runnableListener, eventChannel := listener.RegisterListenerComponent(listenerAddr, componentName)
+	//watch event channel
+	controllerBuilder.Watches(eventChannel, &handler.EnqueueRequestForObject{})
+	//start listener as a manager runnable
+	mgr.Add(runnableListener)
 
 	if err := index.TemplateChannel().With(context.TODO(), mgr.GetFieldIndexer()); err != nil {
 		return err

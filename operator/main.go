@@ -128,7 +128,7 @@ func main() {
 			Failure: requeueFailureInterval,
 			Waiting: requeueWaitingInterval,
 		},
-	}).SetupWithManager(setupLog, mgr, controller.Options{
+	}).SetupWithManager(mgr, controller.Options{
 		RateLimiter: workqueue.NewMaxOfRateLimiter(
 			workqueue.NewItemExponentialFailureRateLimiter(100*time.Millisecond, 1000*time.Second),
 			&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(30), 200)}),

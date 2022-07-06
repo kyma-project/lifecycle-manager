@@ -114,7 +114,7 @@ var _ = BeforeSuite(func() {
 	err = (&KymaReconciler{
 		Client:        k8sManager.GetClient(),
 		EventRecorder: k8sManager.GetEventRecorderFor("kyma-operator"),
-	}).SetupWithManager(logger, k8sManager, controller.Options{}, listenerAddr)
+	}).SetupWithManager(k8sManager, controller.Options{}, listenerAddr)
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
