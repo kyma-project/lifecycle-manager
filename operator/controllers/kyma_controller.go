@@ -24,7 +24,6 @@ import (
 
 	v2 "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/gardener/component-spec/bindings-go/apis/v2/signatures"
-	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
 	"github.com/kyma-project/kyma-operator/operator/pkg/dynamic"
 	"github.com/kyma-project/kyma-operator/operator/pkg/img"
 	"github.com/kyma-project/kyma-operator/operator/pkg/remote"

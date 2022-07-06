@@ -15,14 +15,16 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type Modules map[string]*Module
-type Module struct {
-	Name             string
-	Template         *operatorv1alpha1.ModuleTemplate
-	TemplateOutdated bool
-	*unstructured.Unstructured
-	Settings unstructured.Unstructured
-}
+type (
+	Modules map[string]*Module
+	Module  struct {
+		Name             string
+		Template         *operatorv1alpha1.ModuleTemplate
+		TemplateOutdated bool
+		*unstructured.Unstructured
+		Settings unstructured.Unstructured
+	}
+)
 
 func (m *Module) Channel() operatorv1alpha1.Channel {
 	return m.Template.Spec.Channel
@@ -42,7 +44,9 @@ func SetComponentCRLabels(unstructuredCompCR *unstructured.Unstructured, compone
 	unstructuredCompCR.SetLabels(labelMap)
 }
 
-func CopySettingsToUnstructuredFromResource(resource *unstructured.Unstructured, settings unstructured.Unstructured) error {
+func CopySettingsToUnstructuredFromResource(resource *unstructured.Unstructured,
+	settings unstructured.Unstructured,
+) error {
 	overrideSpec := settings.Object["spec"]
 
 	if overrideSpec != nil {
@@ -53,7 +57,9 @@ func CopySettingsToUnstructuredFromResource(resource *unstructured.Unstructured,
 	return nil
 }
 
-func ParseTemplates(kyma *operatorv1alpha1.Kyma, templates release.TemplatesInChannels, verificationFactory img.SignatureVerification) (Modules, error) {
+func ParseTemplates(kyma *operatorv1alpha1.Kyma, templates release.TemplatesInChannels,
+	verificationFactory img.SignatureVerification,
+) (Modules, error) {
 	// First, we fetch the component spec from the template and use it to resolve it into an arbitrary object
 	// (since we do not know which component we are dealing with)
 	modules := make(Modules)
@@ -68,7 +74,8 @@ func ParseTemplates(kyma *operatorv1alpha1.Kyma, templates release.TemplatesInCh
 		}
 
 		var err error
-		if module, err = GetUnstructuredComponentFromTemplate(template, component.Name, kyma, verificationFactory); err != nil {
+		if module, err = GetUnstructuredComponentFromTemplate(template, component.Name,
+			kyma, verificationFactory); err != nil {
 			return nil, err
 		}
 		modules[component.Name] = &Module{
