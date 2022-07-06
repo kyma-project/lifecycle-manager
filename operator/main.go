@@ -182,7 +182,8 @@ func defineFlagVar() *FlagVar {
 
 	flag.StringVar(&flagVar.moduleVerificationKeyFilePath, "module-verification-key-file", "",
 		"This verification key is used to verify modules against their signature")
-	flag.StringVar(&flagVar.moduleVerificationKeyFilePath, "module-verification-signature-names", "kyma-module-signature:kyma-extension-signature",
+	flag.StringVar(&flagVar.moduleVerificationKeyFilePath, "module-verification-signature-names",
+		"kyma-module-signature:kyma-extension-signature",
 		"This verification key list is used to verify modules against their signature")
 	return flagVar
 }

@@ -186,7 +186,9 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 	return remoteKyma, err
 }
 
-func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context, remoteKyma *operatorv1alpha1.Kyma) (bool, error) {
+func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context,
+	remoteKyma *operatorv1alpha1.Kyma,
+) (bool, error) {
 	recorder := adapter.RecorderFromContext(ctx)
 	// check finalizer
 	if !controllerutil.ContainsFinalizer(remoteKyma, labels.Finalizer) {

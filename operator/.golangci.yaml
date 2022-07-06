@@ -11,8 +11,9 @@ linters:
     - wsl
     - nlreturn
     - exhaustruct
-    - goerr113
+    - gci # disable because autofix is not supported https://github.com/golangci/golangci-lint/issues/2591
     - wrapcheck
+    - goerr113
     - bodyclose
     - contextcheck
     - nilerr
