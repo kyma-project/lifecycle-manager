@@ -19,8 +19,10 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/khlifi411/kyma-listener/listener"
 	"github.com/kyma-project/kyma-operator/operator/pkg/adapter" //nolint:gci
 	"github.com/kyma-project/kyma-operator/operator/pkg/dynamic"
 	"github.com/kyma-project/kyma-operator/operator/pkg/remote"
@@ -28,9 +30,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
+	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 
-	"github.com/khlifi411/kyma-listener/listener"
 	"github.com/kyma-project/kyma-operator/operator/pkg/index"
 	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"github.com/kyma-project/kyma-operator/operator/pkg/release"
@@ -463,8 +465,9 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 			Watches(informer, &handler.Funcs{UpdateFunc: watch.NewComponentChangeHandler(r).Watch(context.TODO())},
 				builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
 	}
+
 	//register listener component
-	runnableListener, eventChannel := listener.RegisterListenerComponent(listenerAddr, componentName)
+	runnableListener, eventChannel := listener.RegisterListenerComponent(listenerAddr, strings.ToLower(v1alpha1.KymaKind))
 	//watch event channel
 	controllerBuilder.Watches(eventChannel, &handler.EnqueueRequestForObject{})
 	//start listener as a manager runnable
