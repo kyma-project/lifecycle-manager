@@ -1,0 +1,59 @@
+component:
+  componentReferences: []
+  name: kyma-project.io/module/example
+  provider: internal
+  repositoryContexts:
+  - baseUrl: operator-test-registry.localhost:50241
+    componentNameMapping: urlPath
+    type: ociRegistry
+  - baseUrl: operator-test-registry.localhost:50241/signed
+    componentNameMapping: urlPath
+    type: ociRegistry
+  resources:
+  - access:
+      digest: sha256:9d37fb366e4371b44c94496f3db276bd6f3a1019c9d44077b689c68ec6486c1e
+      type: localOciBlob
+    digest:
+      hashAlgorithm: sha256
+      normalisationAlgorithm: genericBlobDigest/v1
+      value: 9d37fb366e4371b44c94496f3db276bd6f3a1019c9d44077b689c68ec6486c1e
+    name: config
+    relation: local
+    type: yaml
+    version: v0.0.23
+  - access:
+      digest: sha256:079e0eeb88187349a2dd2584bbce122b4319acb767e1c23a9c49beace26ceda0
+      type: localOciBlob
+    digest:
+      hashAlgorithm: sha256
+      normalisationAlgorithm: genericBlobDigest/v1
+      value: 079e0eeb88187349a2dd2584bbce122b4319acb767e1c23a9c49beace26ceda0
+    name: nginx-ingress
+    relation: local
+    type: helm-chart
+    version: v0.0.23
+  sources: []
+  version: v0.0.23
+meta:
+  schemaVersion: v2
+signatures:
+- digest:
+    hashAlgorithm: sha256
+    normalisationAlgorithm: jsonNormalisation/v1
+    value: 3c024831a33ac2b9ab0173ff558646793c6a40319a5ff9501a96fa3e63f99115
+  name: kyma-module-signature
+  signature:
+    algorithm: RSASSA-PKCS1-V1_5
+    mediaType: application/x-pem-file
+    value: |
+      -----BEGIN SIGNATURE-----
+      Signature Algorithm: RSASSA-PKCS1-V1_5
+
+      KodcgA3lYs+hPOSqfip6thShLZ8XdG2YflVK7ay3aaQV0EG3B8eo3bZL+HYQZTnv
+      111LfqkcNyd1kQklrc8Dv9H1w2AdvigZfN2kuCep4vZOHxP1RKKEosEwCtqQTtld
+      muM6a+jxZMnZkXLoGPEA9oh5IxQ2aHJO2l9WZbxNkWIjP6rZV0Ttz3HP1Mi7MecX
+      NkJASAMzaPgo5tFOfzKr3iB4X2KlX6UF2380HB1oqad4z99ayzuZ8t3w6wbvsh0G
+      2bavWyGEI2xLA2h6xqlz5vXkZcUUvV32Vo5L6KsmHycX/fEWURcKkm2HLp6l53Kl
+      10rojYoETqdDovp64cSY/Q==
+      -----END SIGNATURE-----
+

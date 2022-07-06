@@ -2,6 +2,7 @@ package status
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -12,6 +13,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+var ErrConditionNotFound = errors.New("condition not found")
 
 type Kyma struct {
 	client.StatusWriter
@@ -52,7 +55,7 @@ func (k *Kyma) UpdateStatus(
 		}, operatorv1alpha1.ConditionStatusFalse, message)
 	}
 
-	return k.Update(ctx, kyma.SetObservedGeneration())
+	return fmt.Errorf("conditions could not be updated: %w", k.Update(ctx, kyma.SetObservedGeneration()))
 }
 
 func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules util.Modules,
@@ -74,6 +77,11 @@ func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules
 			condition.TemplateInfo = operatorv1alpha1.TemplateInfo{
 				Channel:    module.Template.Spec.Channel,
 				Generation: module.Template.Generation,
+				GroupVersionKind: metav1.GroupVersionKind{
+					Group:   module.GroupVersionKind().Group,
+					Version: module.GroupVersionKind().Version,
+					Kind:    module.GroupVersionKind().Kind,
+				},
 			}
 		}
 
@@ -115,7 +123,8 @@ func (k *Kyma) UpdateConditionFromComponentState(name string, module *util.Modul
 	if componentStatus != nil {
 		condition, exists := k.GetReadyConditionForComponent(kyma, componentName)
 		if !exists {
-			return false, fmt.Errorf("condition not found for component %s", componentName)
+			return false, fmt.Errorf("error with condition for component %s: %w",
+				componentName, ErrConditionNotFound)
 		}
 
 		switch componentStatus.(map[string]interface{})[watch.State].(string) {

@@ -18,16 +18,17 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-// Settings defines some component specific settings.
-type Settings map[string]string
-
-// ComponentType defines the components to be installed.
+// ComponentType defines the components to be installed
 type ComponentType struct {
-	Name     string     `json:"name"`
-	Channel  Channel    `json:"channel,omitempty"`
-	Settings []Settings `json:"settings,omitempty"`
+	Name    string  `json:"name"`
+	Channel Channel `json:"channel,omitempty"`
+
+	//+kubebuilder:pruning:PreserveUnknownFields
+	//+kubebuilder:validation:XEmbeddedResource
+	Settings unstructured.Unstructured `json:"settings,omitempty"`
 }
 
 type SyncStrategy string
@@ -38,7 +39,6 @@ const (
 
 // Sync defines settings used to apply the kyma synchronization to other clusters.
 type Sync struct {
-	// +kubebuilder:default:=true
 	// Enabled set to true will look up a kubeconfig for the remote cluster based on the strategy
 	// and synchronize its state there.
 	Enabled bool `json:"enabled,omitempty"`
@@ -105,7 +105,7 @@ type KymaStatus struct {
 type Channel string
 
 const (
-	DefaultChannel Channel = ChannelStable
+	DefaultChannel         = ChannelStable
 	ChannelRapid   Channel = "rapid"
 	ChannelRegular Channel = "regular"
 	ChannelStable  Channel = "stable"
@@ -154,8 +154,9 @@ type KymaCondition struct {
 }
 
 type TemplateInfo struct {
-	Generation int64   `json:"generation,omitempty"`
-	Channel    Channel `json:"channel,omitempty"`
+	Generation       int64                   `json:"generation,omitempty"`
+	Channel          Channel                 `json:"channel,omitempty"`
+	GroupVersionKind metav1.GroupVersionKind `json:"gvk,omitempty"`
 }
 
 type KymaConditionType string

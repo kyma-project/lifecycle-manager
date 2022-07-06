@@ -15,6 +15,7 @@ const (
 	Finalizer       = OperatorPrefix + Separator + v1alpha1.KymaKind
 	KymaName        = OperatorPrefix + Separator + "kyma-name"
 	LastSync        = OperatorPrefix + Separator + "last-sync"
+	Signature       = OperatorPrefix + Separator + "signature"
 )
 
 func CheckLabelsAndFinalizers(kyma *v1alpha1.Kyma) bool {

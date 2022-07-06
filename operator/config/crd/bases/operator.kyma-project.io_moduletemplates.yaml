@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: moduletemplates.operator.kyma-project.io
 spec:
@@ -22,7 +22,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ModuleTemplate is the Schema for the moduletemplates API
+        description: ModuleTemplate is the Schema for the moduletemplates API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -37,7 +37,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: ModuleTemplateSpec defines the desired state of ModuleTemplate
+            description: ModuleTemplateSpec defines the desired state of ModuleTemplate.
             properties:
               channel:
                 description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -50,6 +50,9 @@ spec:
               data:
                 type: object
                 x-kubernetes-embedded-resource: true
+                x-kubernetes-preserve-unknown-fields: true
+              descriptor:
+                type: object
                 x-kubernetes-preserve-unknown-fields: true
             type: object
         type: object

@@ -23,6 +23,7 @@ linters:
     - tparallel
     - unparam
     - wastedassign
+    - exhaustruct
   linters-settings:
     gci:
       local-prefixes: github.com/kyma-project
