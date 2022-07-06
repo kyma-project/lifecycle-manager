@@ -30,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 
-	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 
 	"github.com/kyma-project/kyma-operator/operator/pkg/index"
@@ -468,7 +467,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 	}
 
 	//register listener component
-	runnableListener, eventChannel := listener.RegisterListenerComponent(listenerAddr, strings.ToLower(v1alpha1.KymaKind))
+	runnableListener, eventChannel := listener.RegisterListenerComponent(listenerAddr, strings.ToLower(operatorv1alpha1.KymaKind))
 	//watch event channel
 	controllerBuilder.Watches(eventChannel, &handler.EnqueueRequestForObject{})
 	//start listener as a manager runnable
