@@ -11,7 +11,7 @@ const TemplateChannelField Field = ".spec.channel"
 
 type TemplateChannelIndex struct{}
 
-func TemplateChannel() Indexed {
+func TemplateChannel() *TemplateChannelIndex {
 	return &TemplateChannelIndex{}
 }
 

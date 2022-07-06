@@ -25,7 +25,7 @@ type KymaSynchronizationContext struct {
 	controlPlaneKyma   *operatorv1alpha1.Kyma
 }
 
-func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, key client.ObjectKey,
+func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, key client.ObjectKey, //nolint:ireturn
 	strategy operatorv1alpha1.SyncStrategy,
 ) (client.Client, error) {
 	clusterClient := ClusterClient{

@@ -151,4 +151,4 @@ fmt: ## Run go fmt against code.
 .PHONY: lint
 lint: ## Run golangci-lint against code.
 	GOBIN=$(LOCALBIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANG_CI_LINT_VERSION)
-	$(LOCALBIN)/golangci-lint run --max-issues-per-linter=0 --max-same-issues=0 --sort-results --fix
+	$(LOCALBIN)/golangci-lint run
