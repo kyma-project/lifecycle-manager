@@ -78,6 +78,7 @@ type FlagVar struct {
 	metricsAddr                                                            string
 	enableLeaderElection                                                   bool
 	probeAddr                                                              string
+	listenerAddr                                                           string
 	maxConcurrentReconciles                                                int
 	requeueSuccessInterval, requeueFailureInterval, requeueWaitingInterval time.Duration
 	moduleVerificationKeyFilePath, moduleVerificationSignatureNames        string
@@ -139,7 +140,7 @@ func setupManager(flagVar *FlagVar, cacheLabelSelector labels.Selector, scheme *
 			workqueue.NewItemExponentialFailureRateLimiter(baseDelay, maxDelay),
 			&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(limit, burst)}),
 		MaxConcurrentReconciles: flagVar.maxConcurrentReconciles,
-	}); err != nil {
+	}, flagVar.listenerAddr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
@@ -165,6 +166,7 @@ func defineFlagVar() *FlagVar {
 	flagVar := new(FlagVar)
 	flag.StringVar(&flagVar.metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&flagVar.probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flag.StringVar(&flagVar.listenerAddr, "skr-listener-bind-address", ":8082", "The address the skr listener endpoint binds to.")
 	flag.IntVar(&flagVar.maxConcurrentReconciles, "max-concurrent-reconciles", 1, "The maximum number of concurrent Reconciles which can be run.") //nolint:lll
 	flag.BoolVar(&flagVar.enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
