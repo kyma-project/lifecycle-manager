@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -33,6 +34,9 @@ type ModuleTemplateSpec struct {
 	//+kubebuilder:pruning:PreserveUnknownFields
 	//+kubebuilder:validation:XEmbeddedResource
 	Data unstructured.Unstructured `json:"data,omitempty"`
+
+	//+kubebuilder:pruning:PreserveUnknownFields
+	Descriptor runtime.RawExtension `json:"descriptor,omitempty"`
 }
 
 //+genclient

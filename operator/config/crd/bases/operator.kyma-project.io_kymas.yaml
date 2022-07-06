@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.0
+    controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
   name: kymas.operator.kyma-project.io
 spec:
@@ -25,7 +25,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Kyma is the Schema for the kymas API
+        description: Kyma is the Schema for the kymas API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -40,7 +40,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: KymaSpec defines the desired state of Kyma
+            description: KymaSpec defines the desired state of Kyma.
             properties:
               channel:
                 enum:
@@ -62,12 +62,9 @@ spec:
                     name:
                       type: string
                     settings:
-                      items:
-                        additionalProperties:
-                          type: string
-                        description: Settings defines some component specific settings
-                        type: object
-                      type: array
+                      type: object
+                      x-kubernetes-embedded-resource: true
+                      x-kubernetes-preserve-unknown-fields: true
                   required:
                   - name
                   type: object
@@ -76,7 +73,6 @@ spec:
                 description: Active Synchronization Settings
                 properties:
                   enabled:
-                    default: true
                     description: Enabled set to true will look up a kubeconfig for
                       the remote cluster based on the strategy and synchronize its
                       state there.
@@ -142,6 +138,23 @@ spec:
                         generation:
                           format: int64
                           type: integer
+                        gvk:
+                          description: GroupVersionKind unambiguously identifies a
+                            kind.  It doesn't anonymously include GroupVersion to
+                            avoid automatic coercion.  It doesn't use a GroupVersion
+                            to avoid custom marshalling
+                          properties:
+                            group:
+                              type: string
+                            kind:
+                              type: string
+                            version:
+                              type: string
+                          required:
+                          - group
+                          - kind
+                          - version
+                          type: object
                       type: object
                     type:
                       type: string
