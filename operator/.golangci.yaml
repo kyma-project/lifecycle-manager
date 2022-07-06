@@ -10,6 +10,9 @@ linters:
     - godox
     - wsl
     - nlreturn
+    - exhaustruct
+    - goerr113
+    - wrapcheck
     - bodyclose
     - contextcheck
     - nilerr
