@@ -22,9 +22,10 @@ import (
 	"fmt"
 	"time"
 
-	v2 "github.com/gardener/component-spec/bindings-go/apis/v2"
-	"github.com/gardener/component-spec/bindings-go/apis/v2/signatures"
 	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
+
+	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
+	"github.com/gardener/component-spec/bindings-go/apis/v2/signatures"
 	"github.com/kyma-project/kyma-operator/operator/pkg/dynamic"
 	"github.com/kyma-project/kyma-operator/operator/pkg/img"
 	"github.com/kyma-project/kyma-operator/operator/pkg/remote"
@@ -179,7 +180,7 @@ func (r *KymaReconciler) stateHandling(ctx context.Context, kyma *operatorv1alph
 }
 
 func (r *KymaReconciler) HandleInitialState(ctx context.Context, kyma *operatorv1alpha1.Kyma) error {
-	return status.Helper(r).UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateProcessing, "initial state")
+	return r.UpdateStatusAndHandleErr(ctx, kyma, operatorv1alpha1.KymaStateProcessing, "initial state")
 }
 
 func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *operatorv1alpha1.Kyma) error {
@@ -190,21 +191,10 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *operat
 		return fmt.Errorf("error parsing %s: %w", kyma.Name, ErrNoComponentSpecified)
 	}
 
-	// fetch templates
-	templates, err := release.GetTemplates(ctx, r, kyma)
-	if err != nil {
-		return status.Helper(r).UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError, "templates could not be fetched")
-	}
-
-	verifier, err := r.NewSignatureVerifier(ctx, kyma.GetNamespace())
-	if err != nil {
-		return err
-	}
-
 	// these are the actual modules
-	modules, err := util.ParseTemplates(kyma, templates, verifier)
+	modules, err := r.GetModules(ctx, kyma, false)
 	if err != nil {
-		return err
+		return fmt.Errorf("error while fetching modules during processing: %w", err)
 	}
 
 	statusUpdateRequiredFromCreation, err := r.CreateOrUpdateModules(ctx, kyma, modules)
@@ -212,12 +202,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *operat
 		message := fmt.Sprintf("Component CR creation error: %s", err.Error())
 		logger.Info(message)
 		r.Event(kyma, "Warning", "ReconciliationFailed", fmt.Sprintf("Reconciliation failed: %s", message))
-
-		if err := status.Helper(r).UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError, message); err != nil {
-			return err
-		}
-
-		return err
+		return r.UpdateStatusAndHandleErr(ctx, kyma, operatorv1alpha1.KymaStateError, message)
 	}
 
 	// Now we track the conditions: update the status based on their state
@@ -232,12 +217,16 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *operat
 		logger.Info(message)
 		r.Event(kyma, "Normal", "ReconciliationSuccess", message)
 
-		return status.Helper(r).UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateReady, message)
+		return r.UpdateStatusAndHandleErr(ctx, kyma, operatorv1alpha1.KymaStateReady, message)
 	}
 
 	// if the ready condition is not applicable, but we changed the conditions, we still need to issue an update
 	if statusUpdateRequiredFromCreation || statusUpdateRequiredFromSync {
-		return status.Helper(r).UpdateStatus(ctx, kyma, kyma.Status.State, "updating component conditions")
+		if err := status.Helper(r).UpdateStatus(
+			ctx, kyma, kyma.Status.State, "updating component conditions"); err != nil {
+			return fmt.Errorf("error while updating status for condition change: %w", err)
+		}
+		return nil
 	}
 
 	return nil
@@ -246,20 +235,10 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *operat
 func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *operatorv1alpha1.Kyma) (bool, error) {
 	logger := log.FromContext(ctx)
 
-	templates, err := release.GetTemplates(ctx, r, kyma)
+	// these are the actual modules
+	modules, err := r.GetModules(ctx, kyma, false)
 	if err != nil {
-		return false, status.Helper(r).UpdateStatus(ctx, kyma,
-			operatorv1alpha1.KymaStateError, "templates could not be fetched")
-	}
-
-	verifier, err := r.NewSignatureVerifier(ctx, kyma.GetNamespace())
-	if err != nil {
-		return false, err
-	}
-
-	modules, err := util.ParseTemplates(kyma, templates, verifier)
-	if err != nil {
-		return false, err
+		return false, fmt.Errorf("error while fetching modules during deletion: %w", err)
 	}
 
 	for name, module := range modules {
@@ -306,29 +285,11 @@ func (r *KymaReconciler) HandleReadyState(ctx context.Context, kyma *operatorv1a
 
 func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *operatorv1alpha1.Kyma) error {
 	logger := log.FromContext(ctx)
-	// outdated template
-	templates, err := release.GetTemplates(ctx, r, kyma)
-	if err != nil {
-		logger.Error(err, "error fetching fetching templates")
-
-		return status.Helper(r).UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateError, err.Error())
-	}
-
-	for _, template := range templates {
-		if template.Outdated {
-			return status.Helper(r).UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateProcessing, "template update")
-		}
-	}
-
-	verifier, err := r.NewSignatureVerifier(ctx, kyma.GetNamespace())
-	if err != nil {
-		return err
-	}
 
 	// condition update on CRs
-	modules, err := util.ParseTemplates(kyma, templates, verifier)
+	modules, err := r.GetModules(ctx, kyma, true)
 	if err != nil {
-		return err
+		return fmt.Errorf("error while fetching modules during consistency check: %w", err)
 	}
 
 	statusUpdateRequired, err := r.SyncConditionsWithModuleStates(ctx, kyma, modules)
@@ -338,13 +299,13 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *ope
 
 	// at least one condition changed during the sync
 	if statusUpdateRequired {
-		return status.Helper(r).UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateProcessing,
+		return r.UpdateStatusAndHandleErr(ctx, kyma, operatorv1alpha1.KymaStateProcessing,
 			"updating component conditions")
 	}
 
 	// generation change
 	if kyma.Status.ObservedGeneration != kyma.Generation {
-		return status.Helper(r).UpdateStatus(ctx, kyma, operatorv1alpha1.KymaStateProcessing,
+		return r.UpdateStatusAndHandleErr(ctx, kyma, operatorv1alpha1.KymaStateProcessing,
 			"object updated")
 	}
 
@@ -537,7 +498,7 @@ func (r *KymaReconciler) NewSignatureVerifier(
 		return nil, fmt.Errorf("error occurred while initializing Signature Verifier: %w", err)
 	}
 
-	return func(descriptor *v2.ComponentDescriptor) error {
+	return func(descriptor *ocm.ComponentDescriptor) error {
 		for _, sig := range descriptor.Signatures {
 			for _, validName := range r.ModuleVerificationSettings.ValidSignatureNames {
 				if sig.Name == validName {
@@ -599,4 +560,44 @@ func (r *KymaReconciler) DeleteKymaDependencies(ctx context.Context, kyma *opera
 		}
 	}
 	return nil
+}
+
+func (r *KymaReconciler) UpdateStatusAndHandleErr(
+	ctx context.Context, kyma *operatorv1alpha1.Kyma, state operatorv1alpha1.KymaState, message string,
+) error {
+	if err := status.Helper(r).UpdateStatus(ctx, kyma,
+		operatorv1alpha1.KymaStateError, "templates could not be fetched"); err != nil {
+		return fmt.Errorf("error while updating status to %s because of %s: %w", state, message, err)
+	}
+	return nil
+}
+
+func (r *KymaReconciler) GetModules(
+	ctx context.Context, kyma *operatorv1alpha1.Kyma, checkOutdated bool,
+) (util.Modules, error) {
+	// fetch templates
+	templates, err := release.GetTemplates(ctx, r, kyma)
+	if err != nil {
+		return nil, r.UpdateStatusAndHandleErr(ctx, kyma, operatorv1alpha1.KymaStateError, "templates could not be fetched")
+	}
+
+	if checkOutdated {
+		for _, template := range templates {
+			if template.Outdated {
+				return nil, r.UpdateStatusAndHandleErr(ctx, kyma, operatorv1alpha1.KymaStateProcessing, "template update")
+			}
+		}
+	}
+
+	verifier, err := r.NewSignatureVerifier(ctx, kyma.GetNamespace())
+	if err != nil {
+		return nil, err
+	}
+
+	// these are the actual modules
+	modules, err := util.ParseTemplates(kyma, templates, verifier)
+	if err != nil {
+		return nil, fmt.Errorf("error while parsing templates during processing: %w", err)
+	}
+	return modules, nil
 }
