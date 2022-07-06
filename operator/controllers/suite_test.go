@@ -50,13 +50,15 @@ import (
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
+const listenerAddr = ":8082"
+
 var (
 	_          *rest.Config
-	k8sClient  client.Client
-	k8sManager manager.Manager
-	testEnv    *envtest.Environment
-	ctx        context.Context
-	cancel     context.CancelFunc
+	k8sClient  client.Client        //nolint:gochecknoglobals
+	k8sManager manager.Manager      //nolint:gochecknoglobals
+	testEnv    *envtest.Environment //nolint:gochecknoglobals
+	ctx        context.Context      //nolint:gochecknoglobals
+	cancel     context.CancelFunc   //nolint:gochecknoglobals
 )
 
 func TestAPIs(t *testing.T) {
@@ -118,7 +120,7 @@ var _ = BeforeSuite(func() {
 	err = (&kymacontroller.KymaReconciler{
 		Client:        k8sManager.GetClient(),
 		EventRecorder: k8sManager.GetEventRecorderFor("kyma-operator"),
-	}).SetupWithManager(k8sManager, controller.Options{})
+	}).SetupWithManager(k8sManager, controller.Options{}, listenerAddr)
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {

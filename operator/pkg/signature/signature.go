@@ -43,7 +43,7 @@ func (v MultiVerifier) Verify(componentDescriptor v2.ComponentDescriptor, signat
 // CreateRSAVerifierFromSecrets creates an instance of RsaVerifier from a rsa public key file located as secret
 // in kubernetes. The key has to be in the PKIX, ASN.1 DER form, see x509.ParsePKIXPublicKey.
 func CreateRSAVerifierFromSecrets(
-	ctx context.Context, c client.Client, validSignatureNames []string, namespace string,
+	ctx context.Context, k8sClient client.Client, validSignatureNames []string, namespace string,
 ) (*MultiVerifier, error) {
 	secretList := &v1.SecretList{}
 
@@ -52,7 +52,7 @@ func CreateRSAVerifierFromSecrets(
 		return nil, err
 	}
 
-	if err := c.List(ctx, secretList, &client.ListOptions{
+	if err := k8sClient.List(ctx, secretList, &client.ListOptions{
 		LabelSelector: selector, Namespace: namespace,
 	}); err != nil {
 		return nil, err

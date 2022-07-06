@@ -21,7 +21,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-// ComponentType defines the components to be installed
+// ComponentType defines the components to be installed.
 type ComponentType struct {
 	Name    string  `json:"name"`
 	Channel Channel `json:"channel,omitempty"`

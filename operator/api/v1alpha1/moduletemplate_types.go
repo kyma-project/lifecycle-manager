@@ -59,6 +59,7 @@ type ModuleTemplateList struct {
 	Items           []ModuleTemplate `json:"items"`
 }
 
+//nolint:gochecknoinits
 func init() {
 	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{})
 }

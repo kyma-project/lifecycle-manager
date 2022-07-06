@@ -20,12 +20,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
-
-	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/gardener/component-spec/bindings-go/apis/v2/signatures"
+	"github.com/khlifi411/kyma-listener/listener"
+	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
 	"github.com/kyma-project/kyma-operator/operator/pkg/dynamic"
 	"github.com/kyma-project/kyma-operator/operator/pkg/img"
 	"github.com/kyma-project/kyma-operator/operator/pkg/remote"
@@ -87,6 +88,7 @@ type KymaReconciler struct {
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=moduletemplates,verbs=get;list;watch;create;update;patch;onEvent;delete
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=moduletemplates/finalizers,verbs=update
+//+kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -437,7 +439,7 @@ func (r *KymaReconciler) UpdateModule(ctx context.Context, name string, kyma *op
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options, listenerAddr string) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&operatorv1alpha1.Kyma{}).WithOptions(options).
 		Watches(
 			&source.Kind{Type: &operatorv1alpha1.ModuleTemplate{}},
@@ -466,6 +468,13 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 			Watches(informer, &handler.Funcs{UpdateFunc: watch.NewComponentChangeHandler(r).Watch(context.TODO())},
 				builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
 	}
+
+	//register listener component
+	runnableListener, eventChannel := listener.RegisterListenerComponent(listenerAddr, strings.ToLower(operatorv1alpha1.KymaKind))
+	//watch event channel
+	controllerBuilder.Watches(eventChannel, &handler.EnqueueRequestForObject{})
+	//start listener as a manager runnable
+	mgr.Add(runnableListener)
 
 	if err := index.TemplateChannel().With(context.TODO(), mgr.GetFieldIndexer()); err != nil {
 		return fmt.Errorf("error while setting up Template Channel Field Indexer: %w", err)

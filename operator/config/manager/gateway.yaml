@@ -1,0 +1,71 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: kyma-gateway
+  namespace: default
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - hosts:
+        - '*'
+      port:
+        name: http
+        number: 80
+        protocol: HTTP
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: kyma-events
+  namespace: operator-system
+spec:
+  gateways:
+    - default/kyma-gateway
+  hosts:
+    - '*'
+  http:
+    - match:
+        - uri:
+            regex: \/v.*\/kyma\/event
+      route:
+        - destination:
+            host: operator-kyma-event-service
+            port:
+              number: 8082
+    - match:
+        - uri:
+            regex: \/v.*\/manifest\/event
+      route:
+        - destination:
+            host: operator-manifest-event-service
+            port:
+              number: 2022
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kyma-event-service
+  namespace: operator-system
+spec:
+  selector:
+    control-plane: controller-manager
+  ports:
+    - protocol: TCP
+      port: 8082
+      targetPort: 8082
+---
+###### manifest operator needs a different label than kyma operator to have a sufficient selector in place
+#apiVersion: v1
+#kind: Service
+#metadata:
+#  name: manifest-event-service
+#  namespace: operator-system
+#spec:
+#  selector:
+#    control-plane: controller-manager
+#  ports:
+#    - protocol: TCP
+#      port: 8082
+#      targetPort: 8082
+#---
