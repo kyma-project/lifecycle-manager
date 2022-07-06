@@ -59,6 +59,8 @@ const (
 	defaultRequeueSuccessInterval = 20 * time.Second
 	defaultRequeueFailureInterval = 10 * time.Second
 	defaultRequeueWaitingInterval = 3 * time.Second
+	defaultClientQPS              = 150
+	defaultClientBurst            = 150
 )
 
 var (
@@ -123,7 +125,6 @@ func setupManager(flagVar *FlagVar, cacheLabelSelector labels.Selector, scheme *
 			},
 		}),
 	})
-
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
@@ -186,8 +187,8 @@ func defineFlagVar() *FlagVar {
 		"etermines the duration after which a pending reconciliation is requeued "+
 			"if the operator decides that it needs to wait for a certain state to update before it can proceed "+
 			"(e.g. because of pending finalizers in the deletion process)")
-	flag.Float64Var(&flagVar.clientQPS, "k8s-client-qps", 150, "kubernetes client QPS")
-	flag.IntVar(&flagVar.clientBurst, "k8s-client-burst", 150, "kubernetes client Burst")
+	flag.Float64Var(&flagVar.clientQPS, "k8s-client-qps", defaultClientQPS, "kubernetes client QPS")
+	flag.IntVar(&flagVar.clientBurst, "k8s-client-burst", defaultClientBurst, "kubernetes client Burst")
 	flag.StringVar(&flagVar.moduleVerificationKeyFilePath, "module-verification-key-file", "",
 		"This verification key is used to verify modules against their signature")
 	flag.StringVar(&flagVar.moduleVerificationKeyFilePath, "module-verification-signature-names",
