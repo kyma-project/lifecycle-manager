@@ -77,9 +77,8 @@ type KymaReconciler struct {
 	record.EventRecorder
 	RequeueIntervals
 	ModuleVerificationSettings
-	WorkersCount int
-	RateQPS      int
-	RateBurst    int
+	RateQPS   int
+	RateBurst int
 }
 
 //nolint:lll
