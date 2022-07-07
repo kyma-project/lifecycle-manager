@@ -35,5 +35,3 @@ spec:
         - "--k8s-client-qps=150"
         - "--k8s-client-burst=150"
         - "--max-concurrent-reconciles=20"
-        - "--rate-qps=30"
-        - "--rate-burst=200"
