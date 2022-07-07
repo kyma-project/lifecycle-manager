@@ -15,8 +15,8 @@ spec:
     apiVersion: component.kyma-project.io/v1alpha1
     spec: 
       charts:
-      - chartName: httpbingo
-        releaseName: load-test
-        repoName: abc
-        url: https://estahn.github.io/charts
-        clientConfig: "Version=0.1.0"
+      - chartName: cert-manager
+        releaseName: jet
+        repoName: jetstack
+        url: https://charts.jetstack.io
+        clientConfig: "CreateNamespace=true,Namespace=jet-cert"
