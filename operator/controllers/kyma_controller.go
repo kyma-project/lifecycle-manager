@@ -604,9 +604,3 @@ func (r *KymaReconciler) GetModules(
 	}
 	return modules, nil
 }
-
-func (r *KymaReconciler) CustomRateLimiter() ratelimiter.RateLimiter {
-	return workqueue.NewMaxOfRateLimiter(
-		workqueue.NewItemExponentialFailureRateLimiter(1*time.Second, 1000*time.Second),
-		&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(r.RateQPS), r.RateBurst)})
-}
