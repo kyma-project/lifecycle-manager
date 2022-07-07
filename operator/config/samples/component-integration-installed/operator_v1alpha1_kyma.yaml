@@ -4,9 +4,20 @@ metadata:
   name: kyma-sample
   namespace: default
 spec:
+  profile: production
   channel: stable
   sync:
     enabled: false
-  components:
-    - name: manifest
+  modules:
+    - name: example-module-name
+      controller: manifest
       channel: stable
+      overrides:
+      - type: helm-value
+        name: nginx-ingress
+        value: "fullNameOverride=ft-123"
+      - type: helm-values
+        name: nginx-ingress
+        selector:
+          matchLabels:
+            kyma-project.io/config-override: "example-module-name-nginx-ingress"

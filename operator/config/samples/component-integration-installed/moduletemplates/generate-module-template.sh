@@ -23,8 +23,9 @@ REMOTE_SIGNED_DESCRIPTOR="./remote-component-descriptor-signed.yaml"
 
 MODULE_TEMPLATE="./generated-module-template.yaml"
 MODULE_TEMPLATE_CHANNEL="stable"
-MODULE_NAME="kyma-project.io/module/example"
-MODULE_VERSION="v0.0.23"
+MODULE_NAME="kyma-project.io/module/example-module-name"
+MODULE_VERSION="v0.0.30"
+MODULE_PROFILE="production"
 
 REGISTRY_NAME="operator-test-registry"
 REGISTRY_HOST="${REGISTRY_NAME}.localhost"
@@ -93,14 +94,13 @@ metadata:
   labels:
     "operator.kyma-project.io/managed-by": "${OPERATOR_NAME}"
     "operator.kyma-project.io/controller-name": "manifest"
+    "operator.kyma-project.io/module-name": "$(basename $MODULE_NAME)"
+    "operator.kyma-project.io/profile": "${MODULE_PROFILE}"
   annotations:
-    "operator.kyma-project.io/module-name": "$(yq e ".component.name" remote-component-descriptor-signed.yaml)"
     "operator.kyma-project.io/module-version": "$(yq e ".component.version" remote-component-descriptor-signed.yaml)"
     "operator.kyma-project.io/module-provider": "$(yq e ".component.provider" remote-component-descriptor-signed.yaml)"
     "operator.kyma-project.io/descriptor-schema-version": "$(yq e ".meta.schemaVersion" remote-component-descriptor-signed.yaml)"
     "operator.kyma-project.io/control-signature-name": "$(yq e ".signatures[0].name" remote-component-descriptor-signed.yaml)"
-    "operator.kyma-project.io/control-signature-algorithm": "$(yq e ".signatures[0].digest.hashAlgorithm" remote-component-descriptor-signed.yaml)"
-    "operator.kyma-project.io/control-signature-value": "$(yq e ".signatures[0].digest.value" remote-component-descriptor-signed.yaml)"
     "operator.kyma-project.io/generated-at": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
 spec:
   channel: ${MODULE_TEMPLATE_CHANNEL}

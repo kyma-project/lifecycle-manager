@@ -6,15 +6,14 @@ metadata:
   labels:
     "operator.kyma-project.io/managed-by": "kyma-operator"
     "operator.kyma-project.io/controller-name": "manifest"
+    "operator.kyma-project.io/module-name": "example-module-name"
+    "operator.kyma-project.io/profile": "production"
   annotations:
-    "operator.kyma-project.io/module-name": "kyma-project.io/module/example"
-    "operator.kyma-project.io/module-version": "v0.0.23"
+    "operator.kyma-project.io/module-version": "v0.0.30"
     "operator.kyma-project.io/module-provider": "internal"
     "operator.kyma-project.io/descriptor-schema-version": "v2"
     "operator.kyma-project.io/control-signature-name": "kyma-module-signature"
-    "operator.kyma-project.io/control-signature-algorithm": "sha256"
-    "operator.kyma-project.io/control-signature-value": "3c024831a33ac2b9ab0173ff558646793c6a40319a5ff9501a96fa3e63f99115"
-    "operator.kyma-project.io/generated-at": "2022-07-04T14:32:20Z"
+    "operator.kyma-project.io/generated-at": "2022-07-07T16:33:02Z"
 spec:
   channel: stable
   data:
@@ -24,7 +23,7 @@ spec:
   descriptor:
     component:
       componentReferences: []
-      name: kyma-project.io/module/example
+      name: kyma-project.io/module/example-module-name
       provider: internal
       repositoryContexts:
       - baseUrl: operator-test-registry.localhost:50241
@@ -44,7 +43,7 @@ spec:
         name: config
         relation: local
         type: yaml
-        version: v0.0.23
+        version: v0.0.30
       - access:
           digest: sha256:079e0eeb88187349a2dd2584bbce122b4319acb767e1c23a9c49beace26ceda0
           type: localOciBlob
@@ -55,16 +54,16 @@ spec:
         name: nginx-ingress
         relation: local
         type: helm-chart
-        version: v0.0.23
+        version: v0.0.30
       sources: []
-      version: v0.0.23
+      version: v0.0.30
     meta:
       schemaVersion: v2
     signatures:
     - digest:
         hashAlgorithm: sha256
         normalisationAlgorithm: jsonNormalisation/v1
-        value: 3c024831a33ac2b9ab0173ff558646793c6a40319a5ff9501a96fa3e63f99115
+        value: c39fd981382496f1d37d110bdfbe5523b0f197bb2a93b37d469467d7fea7db59
       name: kyma-module-signature
       signature:
         algorithm: RSASSA-PKCS1-V1_5
@@ -73,11 +72,11 @@ spec:
           -----BEGIN SIGNATURE-----
           Signature Algorithm: RSASSA-PKCS1-V1_5
     
-          KodcgA3lYs+hPOSqfip6thShLZ8XdG2YflVK7ay3aaQV0EG3B8eo3bZL+HYQZTnv
-          111LfqkcNyd1kQklrc8Dv9H1w2AdvigZfN2kuCep4vZOHxP1RKKEosEwCtqQTtld
-          muM6a+jxZMnZkXLoGPEA9oh5IxQ2aHJO2l9WZbxNkWIjP6rZV0Ttz3HP1Mi7MecX
-          NkJASAMzaPgo5tFOfzKr3iB4X2KlX6UF2380HB1oqad4z99ayzuZ8t3w6wbvsh0G
-          2bavWyGEI2xLA2h6xqlz5vXkZcUUvV32Vo5L6KsmHycX/fEWURcKkm2HLp6l53Kl
-          10rojYoETqdDovp64cSY/Q==
+          FRIfjdU2uK+k80s5i5QoT5lU+amDBa3ocBdZ4YRsVLTTX/i3rC0ZlyniK+PB9ty9
+          MHRtKIvzxZXGuq9VRAHwAaxbad1deg0Xow90h/ockjyDjcYa+3A+uxmjjYPmDAib
+          Cdi9ARgrE38vXoLQW8Z7a3kVpDcEKq6kQwh3IscTKr1ZknVA3xTjgGjmStuWmJV2
+          P07RS11fledI9Hzcd28ZxMNas4TvlskJNZs3sCzbBitFERTbDfKcikujDKTXC05n
+          Bh59kbZ+c9Vldkel8bwhda3xGaVQEA09EkNlFzBVqGI2xfqjSwfqvY3276wvQvFe
+          Tz297rXHFn2PfR3VAltylQ==
           -----END SIGNATURE-----
     

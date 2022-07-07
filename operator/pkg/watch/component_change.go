@@ -28,7 +28,7 @@ var ErrStateInvalid = errors.New("state from component object could not be inter
 // ComponentChangeHandler is necessary because we cannot simply trust the Observation Process triggered by a Controller
 // through the Controller Owner Reference. This is because there are state changes in components, which we do not want
 // to observe and instead discard. Using a Controller Owner Reference this would not be possible. Instead, we use a
-// custom OwnerReference in combination with this change handler, which only reacts to Component State changes on
+// custom OwnerReference in combination with this change handler, which only reacts to Module State changes on
 // the defined field. This causes us to only react with Kyma Reconciliations when the components update their
 // well-defined state. Every other change will be discarded.
 type ComponentChangeHandler struct {
@@ -137,6 +137,9 @@ func (h *ComponentChangeHandler) GetKymaOwner(ctx context.Context,
 		Name:      ownerName,
 		Namespace: component.GetNamespace(),
 	}, kyma)
+	if err != nil {
+		return nil, fmt.Errorf("error while fetching kyma owner in the component change handler: %w", err)
+	}
 
-	return kyma, fmt.Errorf("error while fetching kyma owner in the component change handler: %w", err)
+	return kyma, nil
 }

@@ -2,6 +2,7 @@ package labels
 
 import (
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -16,7 +17,22 @@ const (
 	KymaName        = OperatorPrefix + Separator + "kyma-name"
 	LastSync        = OperatorPrefix + Separator + "last-sync"
 	Signature       = OperatorPrefix + Separator + "signature"
+	ModuleName      = OperatorPrefix + Separator + "module-name"
+	Profile         = OperatorPrefix + Separator + "profile"
 )
+
+func GetMatchingLabelsForModule(module *v1alpha1.Module, profile v1alpha1.Profile) client.MatchingLabels {
+	selector := client.MatchingLabels{
+		ModuleName: module.Name,
+	}
+	if module.ControllerName != "" {
+		selector[ControllerName] = module.ControllerName
+	}
+	if profile != "" {
+		selector[Profile] = string(profile)
+	}
+	return selector
+}
 
 func CheckLabelsAndFinalizers(kyma *v1alpha1.Kyma) bool {
 	updateRequired := false

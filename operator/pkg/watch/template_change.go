@@ -81,7 +81,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 }
 
 func requeueKyma(kyma v1alpha1.Kyma, controller string, globalChannelMatch bool, channel v1alpha1.Channel) bool {
-	for _, component := range kyma.Spec.Components {
+	for _, component := range kyma.Spec.Modules {
 		if component.Name == controller {
 			// check component level channel on matching component
 			if (component.Channel == "" && globalChannelMatch) ||

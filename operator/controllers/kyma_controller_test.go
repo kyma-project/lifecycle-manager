@@ -36,8 +36,8 @@ var _ = Describe("Kyma Controller", func() {
 				Namespace: namespace,
 			},
 			Spec: v1alpha1.KymaSpec{
-				Components: []v1alpha1.ComponentType{},
-				Channel:    v1alpha1.DefaultChannel,
+				Modules: []v1alpha1.Module{},
+				Channel: v1alpha1.DefaultChannel,
 			},
 		}
 
@@ -76,7 +76,7 @@ var _ = Describe("Kyma Controller", func() {
 				Namespace: namespace,
 			},
 			Spec: v1alpha1.KymaSpec{
-				Components: []v1alpha1.ComponentType{
+				Modules: []v1alpha1.Module{
 					{
 						Name:    "manifest",
 						Channel: v1alpha1.ChannelStable,
@@ -100,7 +100,7 @@ var _ = Describe("Kyma Controller", func() {
 		BeforeEach(func() {
 			Skip("skip now")
 
-			for _, moduleSpec := range kyma.Spec.Components {
+			for _, moduleSpec := range kyma.Spec.Modules {
 				moduleFileName := fmt.Sprintf("operator_v1alpha1_moduletemplate_%s_%s.yaml", moduleSpec.Name, moduleSpec.Channel)
 				moduleFilePath := filepath.Join("..", "config", "samples", "component-integration-installed", moduleFileName)
 

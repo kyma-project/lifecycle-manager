@@ -21,14 +21,38 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-// ComponentType defines the components to be installed.
-type ComponentType struct {
-	Name    string  `json:"name"`
+type OverrideType string
+
+const (
+	OverrideTypeHelmValues = "helm-values"
+	OverrideTypeHelmValue  = "helm-value"
+)
+
+type (
+	Overrides []Override
+	Override  struct {
+		Name                  string `json:"name"`
+		Value                 string `json:"value,omitempty"`
+		*metav1.LabelSelector `json:"selector,omitempty"`
+		Type                  OverrideType `json:"type"`
+	}
+)
+
+type Modules []Module
+
+// Module defines the components to be installed.
+type Module struct {
+	Name string `json:"name"`
+
+	ControllerName string `json:"controller,omitempty"`
+
 	Channel Channel `json:"channel,omitempty"`
 
 	//+kubebuilder:pruning:PreserveUnknownFields
 	//+kubebuilder:validation:XEmbeddedResource
 	Settings unstructured.Unstructured `json:"settings,omitempty"`
+
+	Overrides `json:"overrides,omitempty"`
 }
 
 type SyncStrategy string
@@ -56,8 +80,11 @@ type Sync struct {
 // KymaSpec defines the desired state of Kyma.
 type KymaSpec struct {
 	Channel Channel `json:"channel"`
-	// Components specifies the list of components to be installed
-	Components []ComponentType `json:"components,omitempty"`
+
+	Profile Profile `json:"profile"`
+
+	// Modules specifies the list of components to be installed
+	Modules []Module `json:"modules,omitempty"`
 
 	// Active Synchronization Settings
 	// +optional
@@ -100,6 +127,15 @@ type KymaStatus struct {
 	// +optional
 	ActiveChannel Channel `json:"activeChannel,omitempty"`
 }
+
+// +kubebuilder:validation:Enum=evaluation;production
+type Profile string
+
+const (
+	DefaultProfile            = ProfileProduction
+	ProfileEvaluation Profile = "evaluation"
+	ProfileProduction Profile = "production"
+)
 
 // +kubebuilder:validation:Enum=rapid;regular;stable
 type Channel string

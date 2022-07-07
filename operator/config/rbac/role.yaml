@@ -28,13 +28,8 @@ rules:
   resources:
   - customresourcedefinitions
   verbs:
-  - create
-  - delete
   - get
   - list
-  - onEvent
-  - patch
-  - update
   - watch
 - apiGroups:
   - operator.kyma-project.io

@@ -38,27 +38,31 @@ func (k *Kyma) UpdateStatus(
 
 	switch newState {
 	case operatorv1alpha1.KymaStateReady:
-		k.SyncReadyConditionForModules(kyma, util.Modules{
-			operatorv1alpha1.KymaKind: &util.Module{},
+		k.SyncReadyConditionForModules(kyma, util.ParsedModules{
+			operatorv1alpha1.KymaKind: &util.ParsedModule{},
 		}, operatorv1alpha1.ConditionStatusTrue, message)
 		kyma.SetActiveChannel()
 	case "":
-		k.SyncReadyConditionForModules(kyma, util.Modules{
-			operatorv1alpha1.KymaKind: &util.Module{},
+		k.SyncReadyConditionForModules(kyma, util.ParsedModules{
+			operatorv1alpha1.KymaKind: &util.ParsedModule{},
 		}, operatorv1alpha1.ConditionStatusUnknown, message)
 	case operatorv1alpha1.KymaStateDeleting:
 	case operatorv1alpha1.KymaStateError:
 	case operatorv1alpha1.KymaStateProcessing:
 	default:
-		k.SyncReadyConditionForModules(kyma, util.Modules{
-			operatorv1alpha1.KymaKind: &util.Module{},
+		k.SyncReadyConditionForModules(kyma, util.ParsedModules{
+			operatorv1alpha1.KymaKind: &util.ParsedModule{},
 		}, operatorv1alpha1.ConditionStatusFalse, message)
 	}
 
-	return fmt.Errorf("conditions could not be updated: %w", k.Update(ctx, kyma.SetObservedGeneration()))
+	if err := k.Update(ctx, kyma.SetObservedGeneration()); err != nil {
+		return fmt.Errorf("conditions could not be updated: %w", err)
+	}
+
+	return nil
 }
 
-func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules util.Modules,
+func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules util.ParsedModules,
 	conditionStatus operatorv1alpha1.KymaConditionStatus, message string,
 ) {
 	status := &kyma.Status
@@ -112,25 +116,25 @@ func (k *Kyma) GetReadyConditionForComponent(kymaObj *operatorv1alpha1.Kyma,
 	return &operatorv1alpha1.KymaCondition{}, false
 }
 
-func (k *Kyma) UpdateConditionFromComponentState(name string, module *util.Module,
+func (k *Kyma) UpdateConditionFromComponentState(name string, module *util.ParsedModule,
 	kyma *operatorv1alpha1.Kyma,
 ) (bool, error) {
 	updateRequired := false
-	actualComponentStruct := module.Unstructured
-	componentName := actualComponentStruct.GetLabels()[labels.ControllerName]
+	component := module.Unstructured
+	moduleName := component.GetLabels()[labels.ModuleName]
 
-	componentStatus := actualComponentStruct.Object[watch.Status]
-	if componentStatus != nil {
-		condition, exists := k.GetReadyConditionForComponent(kyma, componentName)
+	status := component.Object[watch.Status]
+	if status != nil {
+		condition, exists := k.GetReadyConditionForComponent(kyma, moduleName)
 		if !exists {
 			return false, fmt.Errorf("error with condition for component %s: %w",
-				componentName, ErrConditionNotFound)
+				moduleName, ErrConditionNotFound)
 		}
 
-		switch componentStatus.(map[string]interface{})[watch.State].(string) {
+		switch status.(map[string]interface{})[watch.State].(string) {
 		case string(operatorv1alpha1.KymaStateReady):
 			if condition.Status != operatorv1alpha1.ConditionStatusTrue {
-				k.SyncReadyConditionForModules(kyma, util.Modules{name: module},
+				k.SyncReadyConditionForModules(kyma, util.ParsedModules{name: module},
 					operatorv1alpha1.ConditionStatusTrue, "component ready!")
 
 				updateRequired = true
@@ -138,7 +142,7 @@ func (k *Kyma) UpdateConditionFromComponentState(name string, module *util.Modul
 
 		case "":
 			if condition.Status != operatorv1alpha1.ConditionStatusUnknown {
-				k.SyncReadyConditionForModules(kyma, util.Modules{name: module},
+				k.SyncReadyConditionForModules(kyma, util.ParsedModules{name: module},
 					operatorv1alpha1.ConditionStatusUnknown, "component status not known!")
 
 				updateRequired = true
@@ -146,7 +150,7 @@ func (k *Kyma) UpdateConditionFromComponentState(name string, module *util.Modul
 
 		default:
 			if condition.Status != operatorv1alpha1.ConditionStatusFalse {
-				k.SyncReadyConditionForModules(kyma, util.Modules{name: module},
+				k.SyncReadyConditionForModules(kyma, util.ParsedModules{name: module},
 					operatorv1alpha1.ConditionStatusFalse, "component not ready!")
 
 				updateRequired = true
