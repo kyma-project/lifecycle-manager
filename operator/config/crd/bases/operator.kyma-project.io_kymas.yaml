@@ -195,6 +195,15 @@ spec:
                 - regular
                 - stable
                 type: string
+              activeOverrides:
+                additionalProperties:
+                  properties:
+                    applied:
+                      type: boolean
+                    hash:
+                      type: string
+                  type: object
+                type: object
               conditions:
                 description: List of status conditions to indicate the status of a
                   ServiceInstance.

@@ -16,4 +16,4 @@ spec:
       - name: nginx-ingress
         selector:
           matchLabels:
-            extension.kyma-project.io/config-override: "example-module-name-nginx-ingress"
+            extension.kyma-project.io/config-override: "a"

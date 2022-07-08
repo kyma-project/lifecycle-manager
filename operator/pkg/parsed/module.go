@@ -52,3 +52,8 @@ func (m *Module) CopySettingsToUnstructured() error {
 	}
 	return nil
 }
+
+func (m *Module) MismatchedWithCondition(condition *v1alpha1.KymaCondition) bool {
+	return condition.TemplateInfo.Generation != m.Template.GetGeneration() ||
+		condition.TemplateInfo.Channel != m.Template.Spec.Channel
+}

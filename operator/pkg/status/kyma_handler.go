@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-
 	"github.com/kyma-project/kyma-operator/operator/pkg/parsed"
 
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"

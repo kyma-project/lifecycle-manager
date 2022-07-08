@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"hash/fnv"
+	"strconv"
 
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -21,6 +23,9 @@ var (
 func ProcessModuleOverridesOnKyma(
 	ctx context.Context, clnt client.Client, kyma *v1alpha1.Kyma, modules Modules,
 ) error {
+	if kyma.Status.ActiveOverrides == nil {
+		kyma.Status.ActiveOverrides = make(map[string]*v1alpha1.ActiveOverride)
+	}
 	for _, moduleSpec := range kyma.Spec.Modules {
 		if len(moduleSpec.Overrides) < 1 {
 			continue
@@ -37,8 +42,17 @@ func ProcessModuleOverridesOnKyma(
 				return fmt.Errorf("error fetching config map from override selector: %w", err)
 			}
 
-			if err := ProcessOverrideConfigMap(module, override, configMap); err != nil {
+			if overrideHash, err := ProcessOverrideConfigMap(module, override, configMap); err != nil {
 				return fmt.Errorf("error while processing config map for override: %w", err)
+			} else {
+				active, overridePresent := kyma.Status.ActiveOverrides[moduleSpec.Name]
+				if !overridePresent {
+					active = &v1alpha1.ActiveOverride{}
+				}
+				if active.Hash != overrideHash {
+					active.Applied = false
+					active.Hash = overrideHash
+				}
 			}
 
 			if err := UpdateKymaControllerRefToConfigMap(ctx, clnt, kyma, configMap); err != nil {
@@ -51,7 +65,8 @@ func ProcessModuleOverridesOnKyma(
 
 func ProcessOverrideConfigMap(
 	module *Module, override v1alpha1.Override, configMap *corev1.ConfigMap,
-) error {
+) (string, error) {
+	var overrideHashKey string
 	var overrideType string
 	if overrideTypeFromLabel, found := configMap.
 		GetLabels()[v1alpha1.OverrideTypeLabel]; !found || overrideTypeFromLabel == "" {
@@ -62,12 +77,12 @@ func ProcessOverrideConfigMap(
 	if overrideType == v1alpha1.OverrideTypeHelmValues {
 		spec, specFound := module.Object["spec"].(map[string]any)
 		if !specFound {
-			return fmt.Errorf("error while applying override to .spec.installs[%s]: %w",
+			return "", fmt.Errorf("error while applying override to .spec.installs[%s]: %w",
 				override.Name, ErrOverrideApply)
 		}
 		installs, installsFound := spec["installs"].([]map[string]any)
 		if !installsFound {
-			return fmt.Errorf("error while applying override to .spec.installs[%s]: %w",
+			return "", fmt.Errorf("error while applying override to .spec.installs[%s]: %w",
 				override.Name, ErrOverrideApply)
 		}
 		for _, install := range installs {
@@ -76,10 +91,17 @@ func ProcessOverrideConfigMap(
 					"name":      configMap.GetName(),
 					"namespace": configMap.GetNamespace(),
 				}
+				overrideHashKey += configMap.GetNamespace() + configMap.GetName()
 			}
 		}
 	}
-	return nil
+	return strconv.FormatUint(QuickHash(overrideHashKey), 10), nil
+}
+
+func QuickHash(s string) uint64 {
+	h := fnv.New64()
+	_, _ = h.Write([]byte(s))
+	return h.Sum64()
 }
 
 func GetConfigMapFromLabelSelector(

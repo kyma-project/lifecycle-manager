@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"time"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	"github.com/kyma-project/kyma-operator/operator/pkg/parsed"
 
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
@@ -178,8 +180,10 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 		return fmt.Errorf("error parsing %s: %w", kyma.Name, ErrNoComponentSpecified)
 	}
 
+	var err error
+	var modules parsed.Modules
 	// these are the actual modules
-	modules, err := r.GetModules(ctx, kyma, false)
+	modules, err = r.GetModules(ctx, kyma, false)
 	if err != nil {
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
 			fmt.Errorf("error while fetching modules during processing: %w", err))
@@ -221,8 +225,10 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error) {
 	logger := log.FromContext(ctx)
 
+	var err error
+	var modules parsed.Modules
 	// these are the actual modules
-	modules, err := r.GetModules(ctx, kyma, false)
+	modules, err = r.GetModules(ctx, kyma, false)
 	if err != nil {
 		// in this case it could be that the module templates have already been removed or that the module does no longer
 		// exist in this configuration, sine we now have orphaned modules that cannot be controlled anymore, we log a warning
@@ -274,10 +280,17 @@ func (r *KymaReconciler) HandleReadyState(ctx context.Context, kyma *v1alpha1.Ky
 
 func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *v1alpha1.Kyma) error {
 	// condition update on CRs
-	modules, err := r.GetModules(ctx, kyma, true)
+
+	var err error
+	var modules parsed.Modules
+	// these are the actual modules
+	modules, err = r.GetModules(ctx, kyma, true)
 	if err != nil {
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
 			fmt.Errorf("error while fetching modules during consistency check: %w", err))
+	}
+	if kyma.HasOutdatedOverrides() {
+		return r.UpdateStatus(ctx, kyma, v1alpha1.KymaStateProcessing, "update for modules")
 	}
 
 	statusUpdateRequired, err := r.SyncConditionsWithModuleStates(ctx, kyma, modules)
@@ -347,18 +360,23 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 	modules parsed.Modules,
 ) (bool, error) {
 	logger := log.FromContext(ctx).WithName(client.ObjectKey{Name: kyma.Name, Namespace: kyma.Namespace}.String())
-	kymaSyncNecessary := false
 
 	for name, module := range modules {
 		// either the template in the condition is outdated (reflected by a generation change on the template)
 		// or the template that is supposed to be applied changed (e.g. because the kyma spec changed)
 
-		err := r.Get(ctx, client.ObjectKeyFromObject(module.Unstructured), module.Unstructured)
+		unstructuredFromServer := unstructured.Unstructured{}
+		unstructuredFromServer.SetGroupVersionKind(module.Unstructured.GroupVersionKind())
+		err := r.Get(ctx, client.ObjectKeyFromObject(module.Unstructured), &unstructuredFromServer)
 		if client.IgnoreNotFound(err) != nil {
 			return false, fmt.Errorf("error occurred while fetching module %s: %w", module.GetName(), err)
 		}
+		module.Unstructured.Object["status"] = unstructuredFromServer.Object["status"]
+		module.Unstructured.SetResourceVersion(unstructuredFromServer.GetResourceVersion())
 
-		if k8serrors.IsNotFound(err) { //nolint:nestif    // create resource if not found
+		outdatedOverride := kyma.HasOutdatedOverride(name)
+
+		if k8serrors.IsNotFound(err) {
 			err := r.CreateModule(ctx, name, kyma, module)
 			if err != nil {
 				return false, err
@@ -372,13 +390,21 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 				"templateChannel", module.Channel(),
 				"templateGeneration", module.Template.GetGeneration())
 
-			kymaSyncNecessary = true
-		} else if module.TemplateOutdated {
+			if outdatedOverride {
+				kyma.RefreshOverride(name)
+			}
+
+			return true, nil
+		}
+
+		if kyma.HasOutdatedOverride(name) || module.TemplateOutdated {
 			condition, _ := status.Helper(r).GetReadyConditionForComponent(kyma, name)
-			if condition.TemplateInfo.Generation != module.Template.GetGeneration() ||
-				condition.TemplateInfo.Channel != module.Template.Spec.Channel {
+			if kyma.HasOutdatedOverride(name) || module.MismatchedWithCondition(condition) {
 				if err := r.UpdateModule(ctx, name, kyma, module); err != nil {
 					return false, err
+				}
+				if outdatedOverride {
+					kyma.RefreshOverride(name)
 				}
 				logger.Info("successfully updated component cr",
 					"type", name,
@@ -386,12 +412,12 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 					"templateGeneration", module.Template.GetGeneration())
 				status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module},
 					v1alpha1.ConditionStatusFalse, "updated condition for module cr")
-				kymaSyncNecessary = true
+				return true, nil
 			}
 		}
 	}
 
-	return kymaSyncNecessary, nil
+	return false, nil
 }
 
 func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *v1alpha1.Kyma,
@@ -506,7 +532,7 @@ func (r *KymaReconciler) UpdateStatusFromErr(
 }
 
 func (r *KymaReconciler) GetModules(
-	ctx context.Context, kyma *v1alpha1.Kyma, checkOutdated bool,
+	ctx context.Context, kyma *v1alpha1.Kyma, checkOutdatedTemplates bool,
 ) (parsed.Modules, error) {
 	// fetch templates
 	templates, err := release.GetTemplates(ctx, r, kyma)
@@ -514,11 +540,10 @@ func (r *KymaReconciler) GetModules(
 		return nil, fmt.Errorf("templates could not be fetched: %w", err)
 	}
 
-	if checkOutdated {
+	if checkOutdatedTemplates {
 		for _, template := range templates {
 			if template.Outdated {
-				return nil, r.UpdateStatus(ctx, kyma, v1alpha1.KymaStateProcessing,
-					"template update")
+				return nil, nil
 			}
 		}
 	}
@@ -535,7 +560,7 @@ func (r *KymaReconciler) GetModules(
 		return nil, fmt.Errorf("could not convert templates to modules: %w", err)
 	}
 
-	if err := parsed.ProcessModuleOverridesOnKyma(ctx, r, kyma, modules); err != nil {
+	if err = parsed.ProcessModuleOverridesOnKyma(ctx, r, kyma, modules); err != nil {
 		return nil, fmt.Errorf("error while applying overrides: %w", err)
 	}
 

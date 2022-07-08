@@ -118,8 +118,8 @@ func translateLayerAndMergeIntoUnstructured(
 ) error {
 	var merge any
 	install := map[string]any{
-		"name": layer.LayerName,
-		"type": layer.LayerType,
+		"name": string(layer.LayerName),
+		"type": string(layer.LayerType),
 	}
 
 	if err := mergo.Merge(&install, layer.LayerRepresentation.ToGenericRepresentation()); err != nil {
