@@ -78,6 +78,8 @@ type KymaReconciler struct {
 	record.EventRecorder
 	RequeueIntervals
 	ModuleVerificationSettings
+	RateQPS   int
+	RateBurst int
 }
 
 //nolint:lll
@@ -277,7 +279,7 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *operator
 	controllerutil.RemoveFinalizer(kyma, labels.Finalizer)
 
 	if err := r.Update(ctx, kyma); err != nil {
-		return false, fmt.Errorf("error while trying to udpate kyma during deletion: %w", r.Update(ctx, kyma))
+		return false, fmt.Errorf("error while trying to udpate kyma during deletion: %w", err)
 	}
 
 	return false, nil
