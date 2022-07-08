@@ -1,0 +1,82 @@
+apiVersion: operator.kyma-project.io/v1alpha1
+kind: ModuleTemplate
+metadata:
+  name: moduletemplate-sample-manifest
+  namespace: default
+  labels:
+    "operator.kyma-project.io/managed-by": "kyma-operator"
+    "operator.kyma-project.io/controller-name": "manifest"
+    "operator.kyma-project.io/module-name": "example-module-name"
+    "operator.kyma-project.io/profile": "production"
+  annotations:
+    "operator.kyma-project.io/module-version": "v0.0.35"
+    "operator.kyma-project.io/module-provider": "internal"
+    "operator.kyma-project.io/descriptor-schema-version": "v2"
+    "operator.kyma-project.io/control-signature-name": "kyma-module-signature"
+    "operator.kyma-project.io/generated-at": "2022-07-08T18:44:49Z"
+spec:
+  channel: stable
+  data:
+    kind: Manifest
+    resource: manifests
+    apiVersion: component.kyma-project.io/v1alpha1
+  descriptor:
+    component:
+      componentReferences: []
+      name: kyma-project.io/module/example-module-name
+      provider: internal
+      repositoryContexts:
+      - baseUrl: operator-test-registry.localhost:50241
+        componentNameMapping: urlPath
+        type: ociRegistry
+      - baseUrl: operator-test-registry.localhost:50241/signed
+        componentNameMapping: urlPath
+        type: ociRegistry
+      resources:
+      - access:
+          digest: sha256:9d37fb366e4371b44c94496f3db276bd6f3a1019c9d44077b689c68ec6486c1e
+          type: localOciBlob
+        digest:
+          hashAlgorithm: sha256
+          normalisationAlgorithm: genericBlobDigest/v1
+          value: 9d37fb366e4371b44c94496f3db276bd6f3a1019c9d44077b689c68ec6486c1e
+        name: config
+        relation: local
+        type: yaml
+        version: v0.0.35
+      - access:
+          digest: sha256:45f2b9d3fbba23f5de6989bf8887b6b113a2b192c6ac07cbccd418aad09c0dee
+          type: localOciBlob
+        digest:
+          hashAlgorithm: sha256
+          normalisationAlgorithm: genericBlobDigest/v1
+          value: 45f2b9d3fbba23f5de6989bf8887b6b113a2b192c6ac07cbccd418aad09c0dee
+        name: nginx-ingress
+        relation: local
+        type: helm-chart
+        version: v0.0.35
+      sources: []
+      version: v0.0.35
+    meta:
+      schemaVersion: v2
+    signatures:
+    - digest:
+        hashAlgorithm: sha256
+        normalisationAlgorithm: jsonNormalisation/v1
+        value: 7d032f493353b7ecc83a800de682dda3ab082964c65eaa8788f91e15b18f9635
+      name: kyma-module-signature
+      signature:
+        algorithm: RSASSA-PKCS1-V1_5
+        mediaType: application/x-pem-file
+        value: |
+          -----BEGIN SIGNATURE-----
+          Signature Algorithm: RSASSA-PKCS1-V1_5
+    
+          Bui1tQ6Vv7AYznk2GxpYupwwURT/BWTqUlM7/Cs1XC+4zp5+vhk10SG1VPZTkAIO
+          6Z/4yWKnwCcgs0u02l+lHC/Zer1NAE9cllziygSPrLN5cfMWLSjAMcfJtXTPyReD
+          B6vwCAFmMjTirAAbu7jGyszTyjd2pMqjE27qmAN7AiKFLzBzRSDfg30rR8rw4Ohj
+          ACuqzYhgg1MCSMCl86iiRvqlsVrQ/9TDN20M6ejTXQEL8ZfWGqjALLKjek0RZuhz
+          sy3yVV7pRHnzVxY173YZzhNWYWEfGkCTeX4dp0fSx/6lV0jnmc3hK21iTnqDA1Gz
+          bIAc/S0mwXwxGTxAg4kA5w==
+          -----END SIGNATURE-----
+    

@@ -24,7 +24,7 @@ REMOTE_SIGNED_DESCRIPTOR="./remote-component-descriptor-signed.yaml"
 MODULE_TEMPLATE="./generated-module-template.yaml"
 MODULE_TEMPLATE_CHANNEL="stable"
 MODULE_NAME="kyma-project.io/module/example-module-name"
-MODULE_VERSION="v0.0.33"
+MODULE_VERSION="v0.0.35"
 MODULE_PROFILE="production"
 
 # this requires a k3d registry with a cluster
