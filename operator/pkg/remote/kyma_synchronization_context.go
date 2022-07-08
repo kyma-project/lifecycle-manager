@@ -7,7 +7,6 @@ import (
 
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
-	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	corev1 "k8s.io/api/core/v1"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -98,7 +97,7 @@ func RemoveFinalizerFromRemoteKyma(ctx context.Context, controlPlaneClient clien
 		return err
 	}
 
-	controllerutil.RemoveFinalizer(remoteKyma, labels.Finalizer)
+	controllerutil.RemoveFinalizer(remoteKyma, operatorv1alpha1.Finalizer)
 
 	return runtimeClient.Update(ctx, remoteKyma)
 }
@@ -191,8 +190,8 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context,
 ) (bool, error) {
 	recorder := adapter.RecorderFromContext(ctx)
 	// check finalizer
-	if !controllerutil.ContainsFinalizer(remoteKyma, labels.Finalizer) {
-		controllerutil.AddFinalizer(remoteKyma, labels.Finalizer)
+	if !controllerutil.ContainsFinalizer(remoteKyma, operatorv1alpha1.Finalizer) {
+		controllerutil.AddFinalizer(remoteKyma, operatorv1alpha1.Finalizer)
 	}
 
 	if remoteKyma.Status.ObservedGeneration != remoteKyma.GetGeneration() {
@@ -238,7 +237,7 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context,
 		remoteKyma.Annotations = make(map[string]string)
 	}
 
-	remoteKyma.Annotations[labels.LastSync] = lastSyncDate
+	remoteKyma.Annotations[operatorv1alpha1.LastSync] = lastSyncDate
 
 	return false, c.runtimeClient.Update(ctx, remoteKyma)
 }

@@ -22,6 +22,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kyma-project/kyma-operator/operator/pkg/signature"
+
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	corev1 "k8s.io/api/core/v1"
@@ -45,7 +47,6 @@ import (
 
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/controllers"
-	operatorLabels "github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -101,7 +102,7 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	cacheLabelSelector := labels.SelectorFromSet(
-		labels.Set{operatorLabels.ManagedBy: name},
+		labels.Set{operatorv1alpha1.ManagedBy: name},
 	)
 
 	setupManager(flagVar, cacheLabelSelector, scheme)
@@ -139,7 +140,7 @@ func setupManager(flagVar *FlagVar, cacheLabelSelector labels.Selector, scheme *
 			Failure: flagVar.requeueFailureInterval,
 			Waiting: flagVar.requeueWaitingInterval,
 		},
-		ModuleVerificationSettings: controllers.ModuleVerificationSettings{
+		VerificationSettings: signature.VerificationSettings{
 			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
 			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
 		},

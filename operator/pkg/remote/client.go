@@ -7,8 +7,11 @@ import (
 	"os"
 	"path"
 
+	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+
+	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+
 	"github.com/go-logr/logr"
-	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
@@ -26,11 +29,11 @@ type ClusterClient struct {
 func (cc *ClusterClient) GetRestConfigFromSecret(ctx context.Context, name, namespace string) (*rest.Config, error) {
 	kubeConfigSecretList := &v1.SecretList{}
 	if err := cc.DefaultClient.List(ctx, kubeConfigSecretList, &client.ListOptions{
-		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{labels.KymaName: name}), Namespace: namespace,
+		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{v1alpha1.KymaName: name}), Namespace: namespace,
 	}); err != nil {
 		return nil, err
 	} else if len(kubeConfigSecretList.Items) < 1 {
-		gr := v1.SchemeGroupVersion.WithResource(fmt.Sprintf("secret with label %s", labels.KymaName)).GroupResource()
+		gr := v1.SchemeGroupVersion.WithResource(fmt.Sprintf("secret with label %s", v1alpha1.KymaName)).GroupResource()
 
 		return nil, errors.NewNotFound(gr, name)
 	}

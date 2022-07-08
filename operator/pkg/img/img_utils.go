@@ -17,19 +17,10 @@ var (
 	ErrComponentNameMappingNotSupported = errors.New("componentNameMapping not supported")
 )
 
-type SignatureVerification func(descriptor *ocm.ComponentDescriptor) error
-
-var NoSignatureVerification SignatureVerification = func(descriptor *ocm.ComponentDescriptor) error { return nil } //nolint:lll,gochecknoglobals
-
-func VerifyAndParse(
-	descriptor *ocm.ComponentDescriptor, signatureVerification SignatureVerification,
+func Parse(
+	descriptor *ocm.ComponentDescriptor,
 ) (Layers, error) {
 	ctx := descriptor.GetEffectiveRepositoryContext()
-
-	if err := signatureVerification(descriptor); err != nil {
-		return nil, fmt.Errorf("signature verification error, untrusted: %w", err)
-	}
-
 	return parseDescriptor(ctx, descriptor)
 }
 
@@ -54,7 +45,7 @@ func parseDescriptor(ctx *ocm.UnstructuredTypedObject, descriptor *ocm.Component
 }
 
 func parseLayersByName(repo *ocm.OCIRegistryRepository, descriptor *ocm.ComponentDescriptor) (Layers, error) {
-	layers := make(Layers)
+	layers := Layers{}
 	for _, resource := range descriptor.Resources {
 		access := resource.Access
 		var layerRepresentation LayerRepresentation
@@ -84,10 +75,11 @@ func parseLayersByName(repo *ocm.OCIRegistryRepository, descriptor *ocm.Componen
 				access.GetType(), ErrAccessTypeNotSupported)
 		}
 
-		layers[LayerName(resource.Name)] = Layer{
+		layers = append(layers, Layer{
+			LayerName:           LayerName(resource.Name),
 			LayerRepresentation: layerRepresentation,
 			LayerType:           LayerType(resource.GetType()),
-		}
+		})
 	}
 	return layers, nil
 }

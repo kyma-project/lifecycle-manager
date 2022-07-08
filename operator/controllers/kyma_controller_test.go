@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -146,7 +145,7 @@ var _ = Describe("Kyma Controller", func() {
 						activeUnstructuredModuleFromAPIServer.SetGroupVersionKind(activeModule.Spec.Data.GroupVersionKind())
 						Expect(k8sClient.Get(ctx, client.ObjectKey{
 							Namespace: namespace,
-							Name:      activeModule.GetLabels()[labels.ControllerName] + kyma.Name,
+							Name:      activeModule.GetLabels()[v1alpha1.ControllerName] + kyma.Name,
 						},
 							activeUnstructuredModuleFromAPIServer),
 						).To(Succeed())

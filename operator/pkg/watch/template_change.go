@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -32,8 +31,8 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 		}
 
 		l := template.GetLabels()
-		managedBy, managedByPresent := l[labels.ManagedBy]
-		controller, controllerLabelPresent := l[labels.ControllerName]
+		managedBy, managedByPresent := l[v1alpha1.ManagedBy]
+		controller, controllerLabelPresent := l[v1alpha1.ControllerName]
 		channel := template.Spec.Channel
 
 		if !controllerLabelPresent || controller == "" ||

@@ -24,9 +24,11 @@ REMOTE_SIGNED_DESCRIPTOR="./remote-component-descriptor-signed.yaml"
 MODULE_TEMPLATE="./generated-module-template.yaml"
 MODULE_TEMPLATE_CHANNEL="stable"
 MODULE_NAME="kyma-project.io/module/example-module-name"
-MODULE_VERSION="v0.0.30"
+MODULE_VERSION="v0.0.33"
 MODULE_PROFILE="production"
 
+# this requires a k3d registry with a cluster
+# e.g. k3d cluster create operator-test --registry-create operator-test-registry.localhost:50241
 REGISTRY_NAME="operator-test-registry"
 REGISTRY_HOST="${REGISTRY_NAME}.localhost"
 REGISTRY_URL="${REGISTRY_HOST}:50241"

@@ -51,9 +51,10 @@ func (r *HelmRef) String() string {
 type (
 	LayerType string
 	Layer     struct {
+		LayerName
 		LayerRepresentation
 		LayerType
 	}
 )
 
-type Layers map[LayerName]Layer
+type Layers []Layer

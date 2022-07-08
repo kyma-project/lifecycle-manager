@@ -7,15 +7,14 @@ import (
 	"github.com/go-logr/logr"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/index"
-	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 type TemplateInChannel struct {
-	Template *operatorv1alpha1.ModuleTemplate
-	Channel  *operatorv1alpha1.Channel
-	Outdated bool
+	ModuleTemplate *operatorv1alpha1.ModuleTemplate
+	Channel        *operatorv1alpha1.Channel
+	Outdated       bool
 }
 
 type TemplatesInChannels map[string]*TemplateInChannel
@@ -44,14 +43,14 @@ func CheckForOutdatedTemplates(logger logr.Logger, k *operatorv1alpha1.Kyma, tem
 	for componentName, lookupResult := range templates {
 		for _, condition := range k.Status.Conditions {
 			if condition.Reason == componentName && lookupResult != nil {
-				if lookupResult.Template.GetGeneration() != condition.TemplateInfo.Generation ||
-					lookupResult.Template.Spec.Channel != condition.TemplateInfo.Channel {
+				if lookupResult.ModuleTemplate.GetGeneration() != condition.TemplateInfo.Generation ||
+					lookupResult.ModuleTemplate.Spec.Channel != condition.TemplateInfo.Channel {
 					logger.Info("detected outdated template",
 						"condition", condition.Reason,
-						"template", lookupResult.Template.Name,
-						"newTemplateGeneration", lookupResult.Template.GetGeneration(),
+						"template", lookupResult.ModuleTemplate.Name,
+						"newTemplateGeneration", lookupResult.ModuleTemplate.GetGeneration(),
 						"previousTemplateGeneration", condition.TemplateInfo.Generation,
-						"newTemplateChannel", lookupResult.Template.Spec.Channel,
+						"newTemplateChannel", lookupResult.ModuleTemplate.Spec.Channel,
 						"previousTemplateChannel", condition.TemplateInfo.Channel,
 					)
 
@@ -89,7 +88,7 @@ func (c *ChannelTemplateLookup) WithContext(ctx context.Context) (*TemplateInCha
 
 	desiredChannel := c.getDesiredChannel()
 
-	selector := labels.GetMatchingLabelsForModule(&c.module, c.profile)
+	selector := operatorv1alpha1.GetMatchingLabelsForModule(&c.module, c.profile)
 
 	if err := c.reader.List(ctx, templateList,
 		selector,
@@ -139,9 +138,9 @@ func (c *ChannelTemplateLookup) WithContext(ctx context.Context) (*TemplateInCha
 	}
 
 	return &TemplateInChannel{
-		Template: &template,
-		Channel:  &actualChannel,
-		Outdated: false,
+		ModuleTemplate: &template,
+		Channel:        &actualChannel,
+		Outdated:       false,
 	}, nil
 }
 

@@ -39,27 +39,45 @@ type Modules []Module
 
 // Module defines the components to be installed.
 type Module struct {
+	// Name is a unique identifier of the module.
+	// It is used together with KymaName, ChannelLabel, ProfileLabel label to resolve a ModuleTemplate.
 	Name string `json:"name"`
 
+	// ControllerName is able to set the controller used for reconciliation of the module. It can be used
+	// together with Cache Configuration on the Operator responsible for the templated Modules to split
+	// workload.
 	ControllerName string `json:"controller,omitempty"`
 
+	// Channel is the desired channel of the Module. If this changes or is set, it will be used to resolve a new
+	// ModuleTemplate based on the new resolved resources.
 	Channel Channel `json:"channel,omitempty"`
 
+	// Settings are a generic Representation of the entire Specification of a Module. It can be used as an alternative
+	// to generic Settings written into the ModuleTemplate as they are directly passed to the resulting CR.
+	// Note that this Settings argument is validated against the API Server and thus will not accept GVKs that are not
+	// registered as CustomResourceDefinition. This can be used to apply settings / overrides that the operator accepts
+	// as generic overrides for its CustomResource.
 	//+kubebuilder:pruning:PreserveUnknownFields
 	//+kubebuilder:validation:XEmbeddedResource
 	Settings unstructured.Unstructured `json:"settings,omitempty"`
 
+	// Overrides are a typed Representation of the Specification Values of a Module. It can be used to define
+	// certain types of override configurations that can be used to target specific override Interfaces.
 	Overrides `json:"overrides,omitempty"`
 }
 
+// SyncStrategy determines how the Remote Cluster is synchronized with the Control Plane. This can influence secret
+// lookup, or other behavioral patterns when interacting with the remote cluster.
 type SyncStrategy string
 
 const (
 	SyncStrategyLocalSecret = "local-secret"
 )
 
-// Sync defines settings used to apply the kyma synchronization to other clusters.
+// Sync defines settings used to apply the kyma synchronization to other clusters. This is defaulted to false
+// and NOT INTENDED FOR PRODUCTIVE USE.
 type Sync struct {
+	// +kubebuilder:default:=false
 	// Enabled set to true will look up a kubeconfig for the remote cluster based on the strategy
 	// and synchronize its state there.
 	Enabled bool `json:"enabled,omitempty"`
@@ -76,11 +94,13 @@ type Sync struct {
 
 // KymaSpec defines the desired state of Kyma.
 type KymaSpec struct {
+	// Channel specifies the desired Channel of the Installation, usually targeting different module versions.
 	Channel Channel `json:"channel"`
 
+	// Profile specifies the desired Profile of the Installation, usually targeting different resource limitations.
 	Profile Profile `json:"profile"`
 
-	// Modules specifies the list of components to be installed
+	// Modules specifies the list of modules to be installed
 	Modules []Module `json:"modules,omitempty"`
 
 	// Active Synchronization Settings
@@ -134,14 +154,21 @@ const (
 	ProfileProduction Profile = "production"
 )
 
+// Channel is the release channel in which a Kyma Instance is running. It is used for running Kyma Installations
+// in a control plane against different stability levels of our module system. When switching Channel, all modules
+// will be recalculated based on new templates. If you did not configure a ModuleTemplate for the new channel, the Kyma
+// will abort the installation.
 // +kubebuilder:validation:Enum=rapid;regular;stable
 type Channel string
 
 const (
-	DefaultChannel         = ChannelStable
-	ChannelRapid   Channel = "rapid"
+	DefaultChannel = ChannelStable
+	// ChannelRapid is meant as a fast track channel that will always be equal or close to the main codeline.
+	ChannelRapid Channel = "rapid"
+	// ChannelRegular is meant as the next best Ugrade path and a median between "bleeding edge" and stability.
 	ChannelRegular Channel = "regular"
-	ChannelStable  Channel = "stable"
+	// ChannelStable is meant as a reference point and should be used for productive installations.
+	ChannelStable Channel = "stable"
 )
 
 // +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error
@@ -149,22 +176,28 @@ type KymaState string
 
 // Valid Kyma States.
 const (
-	// KymaStateReady signifies Kyma is ready.
+	// KymaStateReady signifies Kyma is ready and has been installed successfully.
 	KymaStateReady KymaState = "Ready"
 
-	// KymaStateProcessing signifies Kyma is reconciling.
+	// KymaStateProcessing signifies Kyma is reconciling and is in the process of installation. Processing can also
+	// signal that the Installation previously encountered an error and is now recovering.
 	KymaStateProcessing KymaState = "Processing"
 
-	// KymaStateError signifies an error for Kyma.
+	// KymaStateError signifies an error for Kyma. This signifies that the Installation process encountered an error.
+	// Contrary to Processing, it can be expected that this state should change on the next retry.
 	KymaStateError KymaState = "Error"
 
-	// KymaStateDeleting signifies Kyma is being deleted.
+	// KymaStateDeleting signifies Kyma is being deleted. This is the state that is used when a deletionTimestamp
+	// was detected and Finalizers are picked up.
 	KymaStateDeleting KymaState = "Deleting"
 )
 
 // KymaCondition describes condition information for Kyma.
 type KymaCondition struct {
+	// Type is used to reflect what type of condition we are dealing with. Most commonly ConditionTypeReady it is used
+	// as extension marker in the future
 	Type KymaConditionType `json:"type"`
+
 	// Status of the Kyma Condition.
 	// Value can be one of ("True", "False", "Unknown").
 	Status KymaConditionStatus `json:"status"`
@@ -177,7 +210,9 @@ type KymaCondition struct {
 	// +optional
 	Reason string `json:"reason,omitempty"`
 
-	// Additional Information when the condition is bound to a template
+	// Additional Information when the condition is bound to a ModuleTemplate. It contains information about the last
+	// parsing that occurred and will track the state of the parser ModuleTemplate in Context of the Installation.
+	// This will update when Channel, Profile or the ModuleTemplate used in the Condition is changed.
 	// +optional
 	TemplateInfo TemplateInfo `json:"templateInfo,omitempty"`
 
@@ -187,8 +222,17 @@ type KymaCondition struct {
 }
 
 type TemplateInfo struct {
-	Generation       int64                   `json:"generation,omitempty"`
-	Channel          Channel                 `json:"channel,omitempty"`
+	// Generation tracks the active Generation of the ModuleTemplate. In Case it changes, the new Generation will differ
+	// from the one tracked in TemplateInfo and thus trigger a new reconciliation with a newly parser ModuleTemplate
+	Generation int64 `json:"generation,omitempty"`
+
+	// Channel tracks the active Channel of the ModuleTemplate. In Case it changes, the new Channel will have caused
+	// a new lookup to be necessary that maybe picks a different ModuleTemplate, which is why we need to reconcile.
+	Channel Channel `json:"channel,omitempty"`
+
+	// GroupVersionKind is used to track the Kind that was created from the ModuleTemplate. This is dynamic to not bind
+	// ourselves to any kind of Kind in the code and allows us to work generic on deletion / cleanup of
+	// related resources to a Kyma Installation.
 	GroupVersionKind metav1.GroupVersionKind `json:"gvk,omitempty"`
 }
 

@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-logr/logr"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/tools/record"
@@ -77,7 +76,7 @@ func (h *ComponentChangeHandler) Watch(ctx context.Context) func(event.UpdateEve
 			return
 		}
 
-		componentNameLabel := componentNew.GetLabels()[labels.ControllerName]
+		componentNameLabel := componentNew.GetLabels()[operatorv1alpha1.ControllerName]
 		if componentNameLabel == "" {
 			return
 		}

@@ -38,7 +38,7 @@ type ModuleTemplateSpec struct {
 	Overrides `json:"configSelector,omitempty"`
 
 	//+kubebuilder:pruning:PreserveUnknownFields
-	Descriptor runtime.RawExtension `json:"descriptor,omitempty"`
+	OCMDescriptor runtime.RawExtension `json:"descriptor,omitempty"`
 }
 
 //+genclient
