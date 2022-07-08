@@ -55,7 +55,10 @@ func (k *Kyma) UpdateStatus(
 		}, operatorv1alpha1.ConditionStatusFalse, message)
 	}
 
-	return fmt.Errorf("conditions could not be updated: %w", k.Update(ctx, kyma.SetObservedGeneration()))
+	if err := k.Update(ctx, kyma.SetObservedGeneration()); err != nil {
+		return fmt.Errorf("conditions could not be updated: %w", err)
+	}
+	return nil
 }
 
 func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules util.Modules,
