@@ -100,13 +100,8 @@ spec:
                           type: object
                       type: object
                       x-kubernetes-map-type: atomic
-                    type:
-                      type: string
-                    value:
-                      type: string
                   required:
                   - name
-                  - type
                   type: object
                 type: array
               data:

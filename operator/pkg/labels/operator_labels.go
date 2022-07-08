@@ -19,6 +19,7 @@ const (
 	Signature       = OperatorPrefix + Separator + "signature"
 	ModuleName      = OperatorPrefix + Separator + "module-name"
 	Profile         = OperatorPrefix + Separator + "profile"
+	OverrideType    = OperatorPrefix + Separator + "override-type"
 )
 
 func GetMatchingLabelsForModule(module *v1alpha1.Module, profile v1alpha1.Profile) client.MatchingLabels {

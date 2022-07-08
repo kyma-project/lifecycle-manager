@@ -25,16 +25,13 @@ type OverrideType string
 
 const (
 	OverrideTypeHelmValues = "helm-values"
-	OverrideTypeHelmValue  = "helm-value"
 )
 
 type (
 	Overrides []Override
 	Override  struct {
 		Name                  string `json:"name"`
-		Value                 string `json:"value,omitempty"`
 		*metav1.LabelSelector `json:"selector,omitempty"`
-		Type                  OverrideType `json:"type"`
 	}
 )
 
