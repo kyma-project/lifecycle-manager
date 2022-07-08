@@ -130,7 +130,10 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	// check finalizer
 	if labels.CheckLabelsAndFinalizers(kyma) {
-		return ctrl.Result{}, fmt.Errorf("could not update kyma after finalizer check: %w", r.Update(ctx, kyma))
+		if err := r.Update(ctx, kyma); err != nil {
+			return ctrl.Result{}, fmt.Errorf("could not update kyma after finalizer check: %w", err)
+		}
+		return ctrl.Result{}, nil
 	}
 
 	// create a remote synchronization context, and update the remote kyma with the state of the control plane
@@ -471,11 +474,10 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 				builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
 	}
 
-	//register listener component
 	runnableListener, eventChannel := listener.RegisterListenerComponent(listenerAddr, strings.ToLower(operatorv1alpha1.KymaKind))
-	//watch event channel
+
 	controllerBuilder.Watches(eventChannel, &handler.EnqueueRequestForObject{})
-	//start listener as a manager runnable
+	// start listener as a manager runnable
 	mgr.Add(runnableListener)
 
 	if err := index.TemplateChannel().With(context.TODO(), mgr.GetFieldIndexer()); err != nil {
