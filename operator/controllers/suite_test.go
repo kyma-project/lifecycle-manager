@@ -22,13 +22,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	corev1 "k8s.io/api/core/v1" //nolint:gci
+	//nolint:gci
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
 
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -104,16 +102,8 @@ var _ = BeforeSuite(func() {
 	Expect(k8sClient).NotTo(BeNil())
 
 	k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
-		Scheme: scheme.Scheme,
-		NewCache: cache.BuilderWithOptions(cache.Options{
-			SelectorsByObject: cache.SelectorsByObject{
-				&corev1.ConfigMap{}: {
-					Label: labels.SelectorFromSet(
-						labels.Set{"operator.kyma-project.io/managed-by": "kyma-operator"},
-					),
-				},
-			},
-		}),
+		Scheme:   scheme.Scheme,
+		NewCache: kymacontroller.NewCacheFunc(),
 	})
 	Expect(err).ToNot(HaveOccurred())
 

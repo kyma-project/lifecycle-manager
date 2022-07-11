@@ -22,14 +22,13 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
 	"github.com/kyma-project/kyma-operator/operator/pkg/parsed"
 
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
 	"github.com/kyma-project/kyma-operator/operator/pkg/remote"
 	"github.com/kyma-project/kyma-operator/operator/pkg/signature"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -37,7 +36,6 @@ import (
 
 	"github.com/kyma-project/kyma-operator/operator/pkg/release"
 	"github.com/kyma-project/kyma-operator/operator/pkg/status"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -289,6 +287,7 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *v1a
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
 			fmt.Errorf("error while fetching modules during consistency check: %w", err))
 	}
+
 	if kyma.HasOutdatedOverrides() {
 		return r.UpdateStatus(ctx, kyma, v1alpha1.KymaStateProcessing, "update for modules")
 	}
@@ -356,27 +355,29 @@ func (r *KymaReconciler) SyncConditionsWithModuleStates(ctx context.Context, kym
 	return statusUpdateRequired, nil
 }
 
+// CreateOrUpdateModules takes care of using the input module to acquire a new desired state in the control plane.
+// either the template in the condition is outdated (reflected by a generation change on the template)
+// or the template that is supposed to be applied changed (e.g. because the kyma spec changed)
+// Here we fetch the latest status from the cluster since our module hasn't actually been verified before.
+// This allows us to verify if the module has been present before or not.
 func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alpha1.Kyma,
 	modules parsed.Modules,
 ) (bool, error) {
 	logger := log.FromContext(ctx).WithName(client.ObjectKey{Name: kyma.Name, Namespace: kyma.Namespace}.String())
 
 	for name, module := range modules {
-		// either the template in the condition is outdated (reflected by a generation change on the template)
-		// or the template that is supposed to be applied changed (e.g. because the kyma spec changed)
-
-		unstructuredFromServer := unstructured.Unstructured{}
-		unstructuredFromServer.SetGroupVersionKind(module.Unstructured.GroupVersionKind())
-		err := r.Get(ctx, client.ObjectKeyFromObject(module.Unstructured), &unstructuredFromServer)
-		if client.IgnoreNotFound(err) != nil {
-			return false, fmt.Errorf("error occurred while fetching module %s: %w", module.GetName(), err)
+		err := module.UpdateStatusFromCluster(ctx, r)
+		if err != nil {
+			return false, fmt.Errorf("could not update module status: %w", err)
 		}
-		module.Unstructured.Object["status"] = unstructuredFromServer.Object["status"]
-		module.Unstructured.SetResourceVersion(unstructuredFromServer.GetResourceVersion())
+		logger := logger.WithValues(
+			"type", name,
+			"templateChannel", module.Channel(),
+			"templateGeneration", module.Template.GetGeneration())
 
 		outdatedOverride := kyma.HasOutdatedOverride(name)
 
-		if k8serrors.IsNotFound(err) {
+		if k8serrors.IsNotFound(errors.Unwrap(err)) {
 			err := r.CreateModule(ctx, name, kyma, module)
 			if err != nil {
 				return false, err
@@ -385,10 +386,7 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 			status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module},
 				v1alpha1.ConditionStatusFalse, fmt.Sprintf("initial condition for %s module CR", module.Name))
 
-			logger.Info("successfully created module CR of",
-				"type", name,
-				"templateChannel", module.Channel(),
-				"templateGeneration", module.Template.GetGeneration())
+			logger.Info("successfully created module CR")
 
 			if outdatedOverride {
 				kyma.RefreshOverride(name)
@@ -397,22 +395,27 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 			return true, nil
 		}
 
-		if kyma.HasOutdatedOverride(name) || module.TemplateOutdated {
+		update := func() (bool, error) {
+			if err := r.UpdateModule(ctx, name, kyma, module); err != nil {
+				return false, err
+			}
+			if outdatedOverride {
+				kyma.RefreshOverride(name)
+			}
+			logger.Info("successfully updated module CR")
+			status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module},
+				v1alpha1.ConditionStatusFalse, "updated condition for module CR")
+			return true, nil
+		}
+
+		if kyma.HasOutdatedOverride(name) {
+			return update()
+		}
+
+		if module.TemplateOutdated {
 			condition, _ := status.Helper(r).GetReadyConditionForComponent(kyma, name)
-			if kyma.HasOutdatedOverride(name) || module.MismatchedWithCondition(condition) {
-				if err := r.UpdateModule(ctx, name, kyma, module); err != nil {
-					return false, err
-				}
-				if outdatedOverride {
-					kyma.RefreshOverride(name)
-				}
-				logger.Info("successfully updated component cr",
-					"type", name,
-					"templateChannel", module.Channel(),
-					"templateGeneration", module.Template.GetGeneration())
-				status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module},
-					v1alpha1.ConditionStatusFalse, "updated condition for module cr")
-				return true, nil
+			if module.MismatchedWithCondition(condition) {
+				return update()
 			}
 		}
 	}

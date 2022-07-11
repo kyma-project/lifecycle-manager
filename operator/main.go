@@ -26,8 +26,6 @@ import (
 
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/util/workqueue"
 
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -51,7 +49,6 @@ import (
 )
 
 const (
-	name                          = "kyma-operator"
 	baseDelay                     = 100 * time.Millisecond
 	maxDelay                      = 1000 * time.Second
 	limit                         = rate.Limit(30)
@@ -101,14 +98,10 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	cacheLabelSelector := labels.SelectorFromSet(
-		labels.Set{operatorv1alpha1.ManagedBy: name},
-	)
-
-	setupManager(flagVar, cacheLabelSelector, scheme)
+	setupManager(flagVar, controllers.NewCacheFunc(), scheme)
 }
 
-func setupManager(flagVar *FlagVar, cacheLabelSelector labels.Selector, scheme *runtime.Scheme) {
+func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *runtime.Scheme) {
 	config := ctrl.GetConfigOrDie()
 	config.QPS = float32(flagVar.clientQPS)
 	config.Burst = flagVar.clientBurst
@@ -120,12 +113,7 @@ func setupManager(flagVar *FlagVar, cacheLabelSelector labels.Selector, scheme *
 		HealthProbeBindAddress: flagVar.probeAddr,
 		LeaderElection:         flagVar.enableLeaderElection,
 		LeaderElectionID:       "893110f7.kyma-project.io",
-		NewCache: cache.BuilderWithOptions(cache.Options{
-			SelectorsByObject: cache.SelectorsByObject{
-				&operatorv1alpha1.ModuleTemplate{}: {Label: cacheLabelSelector},
-				&corev1.Secret{}:                   {Label: cacheLabelSelector},
-			},
-		}),
+		NewCache:               newCacheFunc,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -134,7 +122,7 @@ func setupManager(flagVar *FlagVar, cacheLabelSelector labels.Selector, scheme *
 
 	if err = (&controllers.KymaReconciler{
 		Client:        mgr.GetClient(),
-		EventRecorder: mgr.GetEventRecorderFor(name),
+		EventRecorder: mgr.GetEventRecorderFor(controllers.OperatorName),
 		RequeueIntervals: controllers.RequeueIntervals{
 			Success: flagVar.requeueSuccessInterval,
 			Failure: flagVar.requeueFailureInterval,

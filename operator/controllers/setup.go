@@ -56,11 +56,6 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 		return err
 	}
 
-	controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: &corev1.ConfigMap{}}, &handler.EnqueueRequestForOwner{
-		OwnerType:    &v1alpha1.Kyma{},
-		IsController: true,
-	})
-
 	if err := index.TemplateChannel().With(context.TODO(), mgr.GetFieldIndexer()); err != nil {
 		return fmt.Errorf("error while setting up ModuleTemplate Channel Field Indexer, "+
 			"make sure you installed all CRDs: %w", err)

@@ -11,8 +11,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
+
+const HashFormatBase = 10
 
 var (
 	ErrMoreThanOneConfigMapCandidate = errors.New("more than one config map candidate found")
@@ -37,69 +38,52 @@ func ProcessModuleOverridesOnKyma(
 		}
 
 		for _, override := range moduleSpec.Overrides {
-			configMap, err := GetConfigMapFromLabelSelector(ctx, clnt, override.LabelSelector)
-			if err != nil {
-				return fmt.Errorf("error fetching config map from override selector: %w", err)
-			}
 
-			if overrideHash, err := ProcessOverrideConfigMap(module, override, configMap); err != nil {
+			var overrideHash string
+			var err error
+
+			if overrideHash, err = ProcessOverride(module, override); err != nil {
 				return fmt.Errorf("error while processing config map for override: %w", err)
-			} else {
-				active, overridePresent := kyma.Status.ActiveOverrides[moduleSpec.Name]
-				if !overridePresent {
-					active = &v1alpha1.ActiveOverride{}
-				}
-				if active.Hash != overrideHash {
-					active.Applied = false
-					active.Hash = overrideHash
-				}
 			}
 
-			if err := UpdateKymaControllerRefToConfigMap(ctx, clnt, kyma, configMap); err != nil {
-				return fmt.Errorf("error setting config map controller reference: %w", err)
+			active, overridePresent := kyma.Status.ActiveOverrides[moduleSpec.Name]
+			if !overridePresent {
+				active = &v1alpha1.ActiveOverride{}
+			}
+			if active.Hash != overrideHash {
+				active.Applied = false
+				active.Hash = overrideHash
 			}
 		}
 	}
 	return nil
 }
 
-func ProcessOverrideConfigMap(
-	module *Module, override v1alpha1.Override, configMap *corev1.ConfigMap,
+func ProcessOverride(
+	module *Module, override v1alpha1.Override,
 ) (string, error) {
 	var overrideHashKey string
-	var overrideType string
-	if overrideTypeFromLabel, found := configMap.
-		GetLabels()[v1alpha1.OverrideTypeLabel]; !found || overrideTypeFromLabel == "" {
-		overrideType = v1alpha1.OverrideTypeHelmValues
-	} else {
-		overrideType = overrideTypeFromLabel
+	spec, specFound := module.Object["spec"].(map[string]any)
+	if !specFound {
+		return "", fmt.Errorf("error while applying override to .spec.installs[%s]: %w",
+			override.Name, ErrOverrideApply)
 	}
-	if overrideType == v1alpha1.OverrideTypeHelmValues {
-		spec, specFound := module.Object["spec"].(map[string]any)
-		if !specFound {
-			return "", fmt.Errorf("error while applying override to .spec.installs[%s]: %w",
-				override.Name, ErrOverrideApply)
-		}
-		installs, installsFound := spec["installs"].([]map[string]any)
-		if !installsFound {
-			return "", fmt.Errorf("error while applying override to .spec.installs[%s]: %w",
-				override.Name, ErrOverrideApply)
-		}
-		for _, install := range installs {
-			if install["name"] == override.Name {
-				install["overrideRef"] = map[string]any{
-					"name":      configMap.GetName(),
-					"namespace": configMap.GetNamespace(),
-				}
-				overrideHashKey += configMap.GetNamespace() + configMap.GetName()
-			}
+	installs, installsFound := spec["installs"].([]map[string]any)
+	if !installsFound {
+		return "", fmt.Errorf("error while applying override to .spec.installs[%s]: %w",
+			override.Name, ErrOverrideApply)
+	}
+	for _, install := range installs {
+		if install["name"] == override.Name {
+			install["ref"] = override.LabelSelector.DeepCopy()
+			overrideHashKey += override.LabelSelector.String()
 		}
 	}
-	return strconv.FormatUint(QuickHash(overrideHashKey), 10), nil
+	return strconv.FormatUint(QuickHash(overrideHashKey), HashFormatBase), nil
 }
 
 func QuickHash(s string) uint64 {
-	h := fnv.New64()
+	h := fnv.New64a()
 	_, _ = h.Write([]byte(s))
 	return h.Sum64()
 }
@@ -132,20 +116,4 @@ func GetConfigMapFromLabelSelector(
 	}
 
 	return usedConfigMap, nil
-}
-
-func UpdateKymaControllerRefToConfigMap(
-	ctx context.Context, clnt client.Client, kyma *v1alpha1.Kyma, configMap *corev1.ConfigMap,
-) error {
-	// we now verify that we already own the config map
-	previousOwnerRefs := len(configMap.GetOwnerReferences())
-	if err := controllerutil.SetControllerReference(kyma, configMap, clnt.Scheme()); err != nil {
-		return fmt.Errorf("override configuration could not be owned to watch for overrides: %w", err)
-	}
-	if previousOwnerRefs != len(configMap.GetOwnerReferences()) {
-		if err := clnt.Update(ctx, configMap); err != nil {
-			return fmt.Errorf("error updating newly set owner config map: %w", err)
-		}
-	}
-	return nil
 }

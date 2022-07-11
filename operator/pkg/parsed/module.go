@@ -1,9 +1,13 @@
 package parsed
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/imdario/mergo"
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type (
@@ -56,4 +60,19 @@ func (m *Module) CopySettingsToUnstructured() error {
 func (m *Module) MismatchedWithCondition(condition *v1alpha1.KymaCondition) bool {
 	return condition.TemplateInfo.Generation != m.Template.GetGeneration() ||
 		condition.TemplateInfo.Channel != m.Template.Spec.Channel
+}
+
+// UpdateStatusFromCluster updates the status of the module based on an interaction with a client that is
+// connected to a cluster. It will wrap any error returned from the client, so checking for a k8s error
+// can be achievd with Unwrap.
+func (m *Module) UpdateStatusFromCluster(ctx context.Context, clnt client.Client) error {
+	unstructuredFromServer := unstructured.Unstructured{}
+	unstructuredFromServer.SetGroupVersionKind(m.Unstructured.GroupVersionKind())
+	err := clnt.Get(ctx, client.ObjectKeyFromObject(m.Unstructured), &unstructuredFromServer)
+	if client.IgnoreNotFound(err) != nil {
+		return fmt.Errorf("error occurred while fetching module %s: %w", m.GetName(), err)
+	}
+	m.Unstructured.Object["status"] = unstructuredFromServer.Object["status"]
+	m.Unstructured.SetResourceVersion(unstructuredFromServer.GetResourceVersion())
+	return nil
 }
