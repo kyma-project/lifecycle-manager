@@ -122,9 +122,9 @@ func translateLayerIntoInstall(
 ) error {
 	var merge any
 	install := map[string]any{"name": string(layer.LayerName)}
-	ref := map[string]any{"ref": layer.LayerRepresentation.ToGenericRepresentation()}
+	source := map[string]any{"source": layer.LayerRepresentation.ToGenericRepresentation()}
 
-	if err := mergo.Merge(&install, &ref); err != nil {
+	if err := mergo.Merge(&install, &source); err != nil {
 		return fmt.Errorf("error while merging the generic install representation: %w", err)
 	}
 

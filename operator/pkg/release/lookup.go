@@ -114,7 +114,7 @@ func (c *ChannelTemplateLookup) WithContext(ctx context.Context) (*TemplateInCha
 		}
 
 		if len(templateList.Items) == 0 {
-			return nil, fmt.Errorf("no config map template found for module: %s", c.module.Name)
+			return nil, fmt.Errorf("no module template found for module: %s", c.module.Name)
 		}
 	}
 

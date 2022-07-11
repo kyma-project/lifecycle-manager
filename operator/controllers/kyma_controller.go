@@ -175,7 +175,8 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	logger.Info("processing " + kyma.Name)
 
 	if len(kyma.Spec.Modules) < 1 {
-		return fmt.Errorf("error parsing %s: %w", kyma.Name, ErrNoComponentSpecified)
+		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
+			fmt.Errorf("error parsing %s: %w", kyma.Name, ErrNoComponentSpecified))
 	}
 
 	var err error
@@ -411,7 +412,7 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 
 		if module.TemplateOutdated {
 			condition, _ := status.Helper(r).GetReadyConditionForComponent(kyma, name)
-			if module.MismatchedWithCondition(condition) {
+			if module.StateMismatchedWithCondition(condition) {
 				return update()
 			}
 		}

@@ -21,6 +21,9 @@ func Parse(
 	descriptor *ocm.ComponentDescriptor,
 ) (Layers, error) {
 	ctx := descriptor.GetEffectiveRepositoryContext()
+	if ctx == nil {
+		return Layers{}, nil
+	}
 	return parseDescriptor(ctx, descriptor)
 }
 

@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"testing"
+	"time"
 
 	//nolint:gci
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -42,6 +43,7 @@ import (
 
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	kymacontroller "github.com/kyma-project/kyma-operator/operator/controllers"
+	"github.com/kyma-project/kyma-operator/operator/pkg/signature"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -77,7 +79,7 @@ var _ = BeforeSuite(func() {
 
 	manifestCrd := &v1.CustomResourceDefinition{}
 	res, err := http.DefaultClient.Get(
-		"https://raw.githubusercontent.com/kyma-project/manifest-operator/main/api/config/crd/bases/component.kyma-project.io_manifests.yaml") //nolint:lll
+		"https://raw.githubusercontent.com/adityabhatia/manifest-operator/overrideApiChanges/api/config/crd/bases/component.kyma-project.io_manifests.yaml") //nolint:lll
 	Expect(err).NotTo(HaveOccurred())
 	Expect(res.StatusCode).To(BeEquivalentTo(http.StatusOK))
 	Expect(yaml2.NewYAMLOrJSONDecoder(res.Body, 2048).Decode(manifestCrd)).To(Succeed())
@@ -92,8 +94,8 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	err = operatorv1alpha1.AddToScheme(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
+	Expect(operatorv1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 
@@ -110,6 +112,14 @@ var _ = BeforeSuite(func() {
 	err = (&kymacontroller.KymaReconciler{
 		Client:        k8sManager.GetClient(),
 		EventRecorder: k8sManager.GetEventRecorderFor("kyma-operator"),
+		RequeueIntervals: kymacontroller.RequeueIntervals{
+			Success: 20 * time.Second,
+			Failure: 10 * time.Second,
+			Waiting: 10 * time.Second,
+		},
+		VerificationSettings: signature.VerificationSettings{
+			EnableVerification: false,
+		},
 	}).SetupWithManager(k8sManager, controller.Options{}, listenerAddr)
 	Expect(err).ToNot(HaveOccurred())
 
