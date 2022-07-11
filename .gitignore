@@ -76,3 +76,6 @@ out.txt
 
 # ignore workspace sub-directory
 .workspace
+
+# ignore vscode delve debug binary
+*/__debug_bin

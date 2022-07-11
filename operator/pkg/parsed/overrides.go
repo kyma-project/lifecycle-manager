@@ -8,8 +8,6 @@ import (
 	"strconv"
 
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -38,7 +36,6 @@ func ProcessModuleOverridesOnKyma(
 		}
 
 		for _, override := range moduleSpec.Overrides {
-
 			var overrideHash string
 			var err error
 
@@ -62,58 +59,41 @@ func ProcessModuleOverridesOnKyma(
 func ProcessOverride(
 	module *Module, override v1alpha1.Override,
 ) (string, error) {
-	var overrideHashKey string
 	spec, specFound := module.Object["spec"].(map[string]any)
 	if !specFound {
 		return "", fmt.Errorf("error while applying override to .spec.installs[%s]: %w",
 			override.Name, ErrOverrideApply)
 	}
+
 	installs, installsFound := spec["installs"].([]map[string]any)
 	if !installsFound {
 		return "", fmt.Errorf("error while applying override to .spec.installs[%s]: %w",
 			override.Name, ErrOverrideApply)
 	}
+
+	hash, err := QuickHash(ApplyOverrideSelectors(override, installs))
+	if err != nil {
+		return "", fmt.Errorf("error in override hash calculation: %w", err)
+	}
+
+	return strconv.FormatUint(hash, HashFormatBase), nil
+}
+
+func QuickHash(s string) (uint64, error) {
+	h := fnv.New64a()
+	if _, err := h.Write([]byte(s)); err != nil {
+		return 0, fmt.Errorf("failed to calculate quick hash: %w", err)
+	}
+	return h.Sum64(), nil
+}
+
+func ApplyOverrideSelectors(override v1alpha1.Override, installs []map[string]any) string {
+	var overrideID string
 	for _, install := range installs {
 		if install["name"] == override.Name {
-			install["ref"] = override.LabelSelector.DeepCopy()
-			overrideHashKey += override.LabelSelector.String()
+			install["overrideSelector"] = override.LabelSelector.DeepCopy()
+			overrideID += override.LabelSelector.String()
 		}
 	}
-	return strconv.FormatUint(QuickHash(overrideHashKey), HashFormatBase), nil
-}
-
-func QuickHash(s string) uint64 {
-	h := fnv.New64a()
-	_, _ = h.Write([]byte(s))
-	return h.Sum64()
-}
-
-func GetConfigMapFromLabelSelector(
-	ctx context.Context, clnt client.Client, labelSelector *metav1.LabelSelector,
-) (*corev1.ConfigMap, error) {
-	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
-	if err != nil {
-		return nil, fmt.Errorf("selector invalid: %w", err)
-	}
-	overrideConfigMaps := &corev1.ConfigMapList{}
-	if err := clnt.List(ctx, overrideConfigMaps,
-		client.MatchingLabelsSelector{Selector: selector}); err != nil {
-		return nil, fmt.Errorf("error while fetching config map: %w", err)
-	}
-
-	if len(overrideConfigMaps.Items) > 1 {
-		return nil, fmt.Errorf("selector %s invalid: %w",
-			selector.String(), ErrMoreThanOneConfigMapCandidate)
-	} else if len(overrideConfigMaps.Items) == 0 {
-		return nil, fmt.Errorf("selector %s invalid: %w",
-			selector.String(), ErrNoConfigMapCandidate)
-	}
-
-	usedConfigMap := &overrideConfigMaps.Items[0]
-
-	if l := usedConfigMap.GetLabels(); l == nil {
-		usedConfigMap.SetLabels(make(map[string]string))
-	}
-
-	return usedConfigMap, nil
+	return overrideID
 }

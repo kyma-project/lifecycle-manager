@@ -65,7 +65,7 @@ func parseLayersByName(repo *ocm.OCIRegistryRepository, descriptor *ocm.Componen
 			if err := access.DecodeInto(helmChartAccess); err != nil {
 				return nil, fmt.Errorf("error while decoding the access into OCIRegistryRepository: %w", err)
 			}
-			layerRepresentation = &HelmRef{
+			layerRepresentation = &Helm{
 				ChartName: helmChartAccess.HelmChartName,
 				URL:       helmChartAccess.HelmChartRepoURL,
 				Version:   helmChartAccess.HelmChartVersion,
@@ -78,14 +78,13 @@ func parseLayersByName(repo *ocm.OCIRegistryRepository, descriptor *ocm.Componen
 		layers = append(layers, Layer{
 			LayerName:           LayerName(resource.Name),
 			LayerRepresentation: layerRepresentation,
-			LayerType:           LayerType(resource.GetType()),
 		})
 	}
 	return layers, nil
 }
 
-func getOCIRef(repo *ocm.OCIRegistryRepository, descriptor *ocm.ComponentDescriptor, ref string) (*OCIRef, error) {
-	layerRef := OCIRef{
+func getOCIRef(repo *ocm.OCIRegistryRepository, descriptor *ocm.ComponentDescriptor, ref string) (*OCI, error) {
+	layerRef := OCI{
 		Repo: repo.BaseURL,
 	}
 	switch repo.ComponentNameMapping { //nolint:exhaustive
@@ -96,13 +95,13 @@ func getOCIRef(repo *ocm.OCIRegistryRepository, descriptor *ocm.ComponentDescrip
 			repoSubpath = string(ext)
 		}
 		layerRef.Repo = fmt.Sprintf("%s/%s", repo.BaseURL, repoSubpath)
-		layerRef.Module = descriptor.GetName()
+		layerRef.Name = descriptor.GetName()
 		// if ref is not provided, we simply use the version of the descriptor, this will usually default
 		// to a component version that is valid
 		if ref == "" {
-			layerRef.Digest = descriptor.GetVersion()
+			layerRef.Ref = descriptor.GetVersion()
 		} else {
-			layerRef.Digest = ref
+			layerRef.Ref = ref
 		}
 	default:
 		return nil, fmt.Errorf("error while parsing componentNameMapping %s: %w",

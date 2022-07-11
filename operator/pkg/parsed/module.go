@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	"github.com/imdario/mergo"
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -23,6 +24,14 @@ type (
 
 func (m *Module) Channel() v1alpha1.Channel {
 	return m.Template.Spec.Channel
+}
+
+func (m *Module) Logger(base logr.Logger) logr.Logger {
+	return base.WithValues(
+		"module", m.Name,
+		"channel", m.Channel(),
+		"templateGeneration", m.Template.GetGeneration(),
+	)
 }
 
 func (m *Module) ApplyLabels(
@@ -68,10 +77,15 @@ func (m *Module) MismatchedWithCondition(condition *v1alpha1.KymaCondition) bool
 func (m *Module) UpdateStatusFromCluster(ctx context.Context, clnt client.Client) error {
 	unstructuredFromServer := unstructured.Unstructured{}
 	unstructuredFromServer.SetGroupVersionKind(m.Unstructured.GroupVersionKind())
-	err := clnt.Get(ctx, client.ObjectKeyFromObject(m.Unstructured), &unstructuredFromServer)
-	if client.IgnoreNotFound(err) != nil {
+
+	if err := clnt.Get(
+		ctx,
+		client.ObjectKeyFromObject(m.Unstructured),
+		&unstructuredFromServer,
+	); err != nil {
 		return fmt.Errorf("error occurred while fetching module %s: %w", m.GetName(), err)
 	}
+
 	m.Unstructured.Object["status"] = unstructuredFromServer.Object["status"]
 	m.Unstructured.SetResourceVersion(unstructuredFromServer.GetResourceVersion())
 	return nil

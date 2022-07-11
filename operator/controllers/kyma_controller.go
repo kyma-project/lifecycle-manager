@@ -363,21 +363,18 @@ func (r *KymaReconciler) SyncConditionsWithModuleStates(ctx context.Context, kym
 func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alpha1.Kyma,
 	modules parsed.Modules,
 ) (bool, error) {
-	logger := log.FromContext(ctx).WithName(client.ObjectKey{Name: kyma.Name, Namespace: kyma.Namespace}.String())
-
+	baseLogger := log.FromContext(ctx).WithName(client.ObjectKey{Name: kyma.Name, Namespace: kyma.Namespace}.String())
 	for name, module := range modules {
+		logger := module.Logger(baseLogger)
 		err := module.UpdateStatusFromCluster(ctx, r)
-		if err != nil {
+		if client.IgnoreNotFound(errors.Unwrap(err)) != nil {
 			return false, fmt.Errorf("could not update module status: %w", err)
 		}
-		logger := logger.WithValues(
-			"type", name,
-			"templateChannel", module.Channel(),
-			"templateGeneration", module.Template.GetGeneration())
 
 		outdatedOverride := kyma.HasOutdatedOverride(name)
 
 		if k8serrors.IsNotFound(errors.Unwrap(err)) {
+			logger.Info("module not found, attempting to create it...")
 			err := r.CreateModule(ctx, name, kyma, module)
 			if err != nil {
 				return false, err

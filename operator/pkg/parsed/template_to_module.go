@@ -20,7 +20,10 @@ type ModuleConversionSettings struct {
 	signature.Verification
 }
 
-var ErrEmptyRawExtension = errors.New("raw extension is empty")
+var (
+	ErrEmptyRawExtension    = errors.New("raw extension is empty")
+	ErrDefaultConfigParsing = errors.New("defaultConfig could not be parsed")
+)
 
 func Decode(ext runtime.RawExtension) (*ocm.ComponentDescriptor, error) {
 	if len(ext.Raw) == 0 {
@@ -60,6 +63,7 @@ func TemplatesToModules(
 			return nil, err
 		}
 		modules[module.Name] = &Module{
+			Name:             module.Name,
 			Template:         template.ModuleTemplate,
 			TemplateOutdated: template.Outdated,
 			Unstructured:     component,
@@ -106,38 +110,35 @@ func translateLayersAndMergeIntoUnstructured(
 		object.Object["spec"] = make(map[string]any)
 	}
 	for _, layer := range layers {
-		if err := translateLayerAndMergeIntoUnstructured(object, layer); err != nil {
+		if err := translateLayerIntoInstall(object, layer); err != nil {
 			return fmt.Errorf("error in layer %s: %w", layer.LayerName, err)
 		}
 	}
 	return nil
 }
 
-func translateLayerAndMergeIntoUnstructured(
-	object *unstructured.Unstructured, layer img.Layer,
+func translateLayerIntoInstall(
+	component *unstructured.Unstructured, layer img.Layer,
 ) error {
 	var merge any
-	install := map[string]any{
-		"name": string(layer.LayerName),
-		"type": string(layer.LayerType),
-	}
+	install := map[string]any{"name": string(layer.LayerName)}
+	ref := map[string]any{"ref": layer.LayerRepresentation.ToGenericRepresentation()}
 
-	if err := mergo.Merge(&install, layer.LayerRepresentation.ToGenericRepresentation()); err != nil {
+	if err := mergo.Merge(&install, &ref); err != nil {
 		return fmt.Errorf("error while merging the generic install representation: %w", err)
 	}
 
 	if layer.LayerName == "config" {
-		r := layer.LayerRepresentation.(*img.OCIRef)
-		merge = map[string]any{"config": map[string]any{
-			"repo":   r.Repo,
-			"module": r.Module,
-			"ref":    r.Digest,
-		}}
+		ociImage, ok := layer.LayerRepresentation.(*img.OCI)
+		if !ok {
+			return fmt.Errorf("%w: not an OCIImage", ErrDefaultConfigParsing)
+		}
+		merge = map[string]any{"defaultConfig": ociImage.ToGenericRepresentation()}
 	} else {
 		merge = map[string]any{"installs": []map[string]any{install}}
 	}
 
-	if err := mergo.Merge(&object.Object, map[string]any{"spec": merge}); err != nil {
+	if err := mergo.Merge(&component.Object, map[string]any{"spec": merge}); err != nil {
 		return fmt.Errorf("error while merging the layer representation into the spec: %w", err)
 	}
 

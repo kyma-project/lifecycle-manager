@@ -4,48 +4,51 @@ import "fmt"
 
 type LayerName string
 
+const (
+	OCIRepresentationType  = "oci-ref"
+	HelmRepresentationType = "helm-chart"
+)
+
 type LayerRepresentation interface {
 	ToGenericRepresentation() map[string]any
 }
 
-type OCIRef struct {
-	Repo   string
-	Module string
-	Digest string
+type OCI struct {
+	Repo string
+	Name string
+	Ref  string
 }
 
-func (r *OCIRef) ToGenericRepresentation() map[string]any {
+func (o *OCI) ToGenericRepresentation() map[string]any {
 	return map[string]any{
-		"ociRef": map[string]any{
-			"repo":   r.Repo,
-			"module": r.Module,
-			"ref":    r.Digest,
-		},
+		"repo": o.Repo,
+		"name": o.Name,
+		"ref":  o.Ref,
+		"type": OCIRepresentationType,
 	}
 }
 
-func (r *OCIRef) String() string {
-	return fmt.Sprintf("%s/%s:%s", r.Repo, r.Module, r.Digest)
+func (o *OCI) String() string {
+	return fmt.Sprintf("%s/%s:%s", o.Repo, o.Name, o.Ref)
 }
 
-type HelmRef struct {
+type Helm struct {
 	ChartName string
 	URL       string
 	Version   string
 }
 
-func (r *HelmRef) ToGenericRepresentation() map[string]any {
+func (h *Helm) ToGenericRepresentation() map[string]any {
 	return map[string]any{
-		"helmRef": map[string]any{
-			"chartName": r.ChartName,
-			"url":       r.URL,
-			"version":   r.Version,
-		},
+		"chartName": h.ChartName,
+		"url":       h.URL,
+		"version":   h.Version,
+		"type":      HelmRepresentationType,
 	}
 }
 
-func (r *HelmRef) String() string {
-	return fmt.Sprintf("%s/%s:%s", r.URL, r.ChartName, r.Version)
+func (h *Helm) String() string {
+	return fmt.Sprintf("%s/%s:%s", h.URL, h.ChartName, h.Version)
 }
 
 type (
@@ -53,7 +56,6 @@ type (
 	Layer     struct {
 		LayerName
 		LayerRepresentation
-		LayerType
 	}
 )
 
