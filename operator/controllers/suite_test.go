@@ -31,13 +31,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -65,9 +64,7 @@ func TestAPIs(t *testing.T) {
 	t.Parallel()
 	RegisterFailHandler(Fail)
 
-	RunSpecsWithDefaultAndCustomReporters(t,
-		"Controller Suite",
-		[]Reporter{printer.NewlineReporter{}})
+	RunSpecs(t, "Controller Suite")
 }
 
 var _ = BeforeSuite(func() {
@@ -113,9 +110,9 @@ var _ = BeforeSuite(func() {
 		Client:        k8sManager.GetClient(),
 		EventRecorder: k8sManager.GetEventRecorderFor("kyma-operator"),
 		RequeueIntervals: kymacontroller.RequeueIntervals{
-			Success: 20 * time.Second,
-			Failure: 10 * time.Second,
-			Waiting: 10 * time.Second,
+			Success: 3 * time.Second,
+			Failure: 1 * time.Second,
+			Waiting: 1 * time.Second,
 		},
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
@@ -128,7 +125,7 @@ var _ = BeforeSuite(func() {
 		err = k8sManager.Start(ctx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
-}, 60)
+})
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
