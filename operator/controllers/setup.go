@@ -41,9 +41,13 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 	}
 
 	for _, informer := range dynamicInformers {
-		controllerBuilder = controllerBuilder.
-			Watches(informer, &handler.Funcs{UpdateFunc: watch.NewComponentChangeHandler(r).Watch(context.TODO())},
-				builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
+		// controllerBuilder = controllerBuilder.
+		// 	Watches(informer, &handler.Funcs{UpdateFunc: watch.NewComponentChangeHandler(r).Watch(context.TODO())},
+		// 		builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
+		controllerBuilder.Watches(informer,
+			&watch.RestrictedEnqueueRequestForOwner{
+				Log: ctrl.Log, OwnerType: &v1alpha1.Kyma{}, IsController: true,
+			})
 	}
 
 	// register listener component
