@@ -29,7 +29,7 @@ import (
 )
 
 // log is for logging in this package.
-var moduletemplatelog = logf.Log.WithName("moduletemplate-resource")
+var moduletemplatelog = logf.Log.WithName("moduletemplate-resource") //nolint:gochecknoglobals
 
 func (r *ModuleTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
@@ -39,33 +39,35 @@ func (r *ModuleTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 // TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 
+//nolint:lll
 //+kubebuilder:webhook:path=/mutate-operator-kyma-project-io-v1alpha1-moduletemplate,mutating=true,failurePolicy=fail,sideEffects=None,groups=operator.kyma-project.io,resources=moduletemplates,verbs=create;update,versions=v1alpha1,name=mmoduletemplate.kb.io,admissionReviewVersions=v1
 
 var _ webhook.Defaulter = &ModuleTemplate{}
 
-// Default implements webhook.Defaulter so a webhook will be registered for the type
+// Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (r *ModuleTemplate) Default() {
 	moduletemplatelog.Info("default", "name", r.Name)
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
+//nolint:lll
 //+kubebuilder:webhook:path=/validate-operator-kyma-project-io-v1alpha1-moduletemplate,mutating=false,failurePolicy=fail,sideEffects=None,groups=operator.kyma-project.io,resources=moduletemplates,verbs=create;update,versions=v1alpha1,name=vmoduletemplate.kb.io,admissionReviewVersions=v1
 
 var _ webhook.Validator = &ModuleTemplate{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (r *ModuleTemplate) ValidateCreate() error {
 	moduletemplatelog.Info("validate create", "name", r.Name)
 	return r.validate()
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
+// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (r *ModuleTemplate) ValidateUpdate(old runtime.Object) error {
 	moduletemplatelog.Info("validate update", "name", r.Name)
 	return r.validate()
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
+// ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (r *ModuleTemplate) ValidateDelete() error {
 	moduletemplatelog.Info("validate delete", "name", r.Name)
 	return r.validate()
@@ -86,8 +88,8 @@ func (r *ModuleTemplate) validate() error {
 
 func (r *ModuleTemplate) validateDescriptor() *field.Error {
 	var descriptor ocm.ComponentDescriptor
-	if err := codec.Decode(r.Spec.Descriptor.Raw, &descriptor); err != nil {
-		return field.Invalid(field.NewPath("spec").Child("descriptor"), string(r.Spec.Descriptor.Raw), err.Error())
+	if err := codec.Decode(r.Spec.OCMDescriptor.Raw, &descriptor); err != nil {
+		return field.Invalid(field.NewPath("spec").Child("descriptor"), string(r.Spec.OCMDescriptor.Raw), err.Error())
 	}
 	return nil
 }

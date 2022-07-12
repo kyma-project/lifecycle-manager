@@ -8,7 +8,7 @@ import (
 
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -124,57 +124,52 @@ func GetModuleTemplate(sample string, module v1alpha1.Module, profile v1alpha1.P
 	return &moduleTemplate
 }
 
-var _ = Describe("Kyma Controller", func() {
-	eventually := func(actual any) AsyncAssertion {
-		return Eventually(actual, timeout, interval)
-	}
+var _ = Describe("Kyma with no ModuleTemplate", func() {
+	kyma := NewTestKyma("no-module-kyma")
+	RegisterDefaultLifecycleForKyma(kyma)
 
-	When("Creating a Kyma CR With No Modules", func() {
-		kyma := NewTestKyma("no-module-kyma")
-		RegisterDefaultLifecycleForKyma(kyma)
-
-		It("Should result in an error state", func() {
-			By(fmt.Sprintf("having transitioned the CR State to %s as there are no modules", v1alpha1.KymaStateError))
-			eventually(IsKymaInState(kyma, v1alpha1.KymaStateError)).Should(BeTrue())
-		})
+	It("Should result in an error state", func() {
+		By("having transitioned the CR State to Error as there are no modules")
+		Eventually(IsKymaInState(kyma, v1alpha1.KymaStateError), timeout, interval).Should(BeTrue())
 	})
 
 	When("creating a Kyma CR with Module based on an Empty ModuleTemplate", func() {
-		kyma := NewTestKyma("empty-module-kyma")
-		RegisterDefaultLifecycleForKyma(kyma)
+	})
+})
 
-		kyma.Spec.Modules = append(kyma.Spec.Modules, v1alpha1.Module{
-			ControllerName: "manifest",
-			Name:           "example-module-name",
-			Channel:        v1alpha1.ChannelStable,
-		})
+var _ = Describe("Kyma with empty ModuleTemplate", func() {
+	kyma := NewTestKyma("empty-module-kyma")
+	RegisterDefaultLifecycleForKyma(kyma)
 
-		moduleTemplates := make([]*v1alpha1.ModuleTemplate, 0)
+	kyma.Spec.Modules = append(kyma.Spec.Modules, v1alpha1.Module{
+		ControllerName: "manifest",
+		Name:           "example-module-name",
+		Channel:        v1alpha1.ChannelStable,
+	})
 
-		BeforeEach(func() {
-			for _, module := range kyma.Spec.Modules {
-				template := GetModuleTemplate("empty", module, v1alpha1.ProfileProduction)
-				Expect(k8sClient.Create(ctx, template)).To(Succeed())
-				moduleTemplates = append(moduleTemplates, template)
-			}
-		})
+	moduleTemplates := make([]*v1alpha1.ModuleTemplate, 0)
 
-		It(fmt.Sprintf("should result in a %s state", v1alpha1.KymaStateReady), func() {
-			By(fmt.Sprintf("checking the state to be in %s", v1alpha1.KymaStateProcessing))
-			Eventually(GetKymaState(kyma), 10*time.Second, interval).Should(BeEquivalentTo(string(v1alpha1.KymaStateProcessing)))
+	BeforeEach(func() {
+		for _, module := range kyma.Spec.Modules {
+			template := GetModuleTemplate("empty", module, v1alpha1.ProfileProduction)
+			Expect(k8sClient.Create(ctx, template)).To(Succeed())
+			moduleTemplates = append(moduleTemplates, template)
+		}
+	})
 
-			By("having created new conditions in its status")
-			eventually(GetKymaConditions(kyma)).ShouldNot(BeEmpty())
+	It("should result in Kyma becoming Ready", func() {
+		By("checking the state to be Processing")
+		Eventually(GetKymaState(kyma), 20*time.Second, interval).Should(BeEquivalentTo(string(v1alpha1.KymaStateProcessing)))
 
-			By("reacting to a change of its Modules")
-			When(fmt.Sprintf("all of the modules change their state to %s", v1alpha1.KymaStateReady), func() {
-				for _, activeModule := range moduleTemplates {
-					eventually(UpdateModuleState(kyma, activeModule, v1alpha1.KymaStateReady)).Should(Succeed())
-				}
-			})
+		By("having created new conditions in its status")
+		Eventually(GetKymaConditions(kyma), timeout, interval).ShouldNot(BeEmpty())
 
-			By("having updated the Kyma CR state to ready")
-			Eventually(GetKymaState(kyma), 20*time.Second, interval).Should(BeEquivalentTo(string(v1alpha1.KymaStateReady)))
-		})
+		By("reacting to a change of its Modules when they are set to ready")
+		for _, activeModule := range moduleTemplates {
+			Eventually(UpdateModuleState(kyma, activeModule, v1alpha1.KymaStateReady), timeout, interval).Should(Succeed())
+		}
+
+		By("having updated the Kyma CR state to ready")
+		Eventually(GetKymaState(kyma), 20*time.Second, interval).Should(BeEquivalentTo(string(v1alpha1.KymaStateReady)))
 	})
 })
