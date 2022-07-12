@@ -84,6 +84,7 @@ type FlagVar struct {
 	moduleVerificationKeyFilePath, moduleVerificationSignatureNames        string
 	clientQPS                                                              float64
 	clientBurst                                                            int
+	enableWebhooks                                                         bool
 }
 
 func main() {
@@ -142,9 +143,11 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
-	if err := (&operatorv1alpha1.ModuleTemplate{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
-		os.Exit(1)
+	if flagVar.enableWebhooks {
+		if err := (&operatorv1alpha1.ModuleTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
+			os.Exit(1)
+		}
 	}
 	//+kubebuilder:scaffold:builder
 
@@ -194,5 +197,7 @@ func defineFlagVar() *FlagVar {
 	flag.StringVar(&flagVar.moduleVerificationKeyFilePath, "module-verification-signature-names",
 		"kyma-module-signature:kyma-extension-signature",
 		"This verification key list is used to verify modules against their signature")
+	flag.BoolVar(&flagVar.enableWebhooks, "enable-webhooks", false,
+		"Enabling Validation/Conversion Webhooks.")
 	return flagVar
 }
