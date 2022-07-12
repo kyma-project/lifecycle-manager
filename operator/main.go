@@ -22,10 +22,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kyma-project/kyma-operator/operator/pkg/signature"
+
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/util/workqueue"
 
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -45,12 +45,10 @@ import (
 
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/controllers"
-	operatorLabels "github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	//+kubebuilder:scaffold:imports
 )
 
 const (
-	name                          = "kyma-operator"
 	baseDelay                     = 100 * time.Millisecond
 	maxDelay                      = 1000 * time.Second
 	limit                         = rate.Limit(30)
@@ -100,14 +98,10 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	cacheLabelSelector := labels.SelectorFromSet(
-		labels.Set{operatorLabels.ManagedBy: name},
-	)
-
-	setupManager(flagVar, cacheLabelSelector, scheme)
+	setupManager(flagVar, controllers.NewCacheFunc(), scheme)
 }
 
-func setupManager(flagVar *FlagVar, cacheLabelSelector labels.Selector, scheme *runtime.Scheme) {
+func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *runtime.Scheme) {
 	config := ctrl.GetConfigOrDie()
 	config.QPS = float32(flagVar.clientQPS)
 	config.Burst = flagVar.clientBurst
@@ -119,27 +113,23 @@ func setupManager(flagVar *FlagVar, cacheLabelSelector labels.Selector, scheme *
 		HealthProbeBindAddress: flagVar.probeAddr,
 		LeaderElection:         flagVar.enableLeaderElection,
 		LeaderElectionID:       "893110f7.kyma-project.io",
-		NewCache: cache.BuilderWithOptions(cache.Options{
-			SelectorsByObject: cache.SelectorsByObject{
-				&operatorv1alpha1.ModuleTemplate{}: {Label: cacheLabelSelector},
-				&corev1.Secret{}:                   {Label: cacheLabelSelector},
-			},
-		}),
+		NewCache:               newCacheFunc,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
 
+	client := mgr.GetClient()
 	if err = (&controllers.KymaReconciler{
-		Client:        mgr.GetClient(),
-		EventRecorder: mgr.GetEventRecorderFor(name),
+		Client:        client,
+		EventRecorder: mgr.GetEventRecorderFor(controllers.OperatorName),
 		RequeueIntervals: controllers.RequeueIntervals{
 			Success: flagVar.requeueSuccessInterval,
 			Failure: flagVar.requeueFailureInterval,
 			Waiting: flagVar.requeueWaitingInterval,
 		},
-		ModuleVerificationSettings: controllers.ModuleVerificationSettings{
+		VerificationSettings: signature.VerificationSettings{
 			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
 			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
 		},
@@ -172,10 +162,14 @@ func setupManager(flagVar *FlagVar, cacheLabelSelector labels.Selector, scheme *
 
 func defineFlagVar() *FlagVar {
 	flagVar := new(FlagVar)
-	flag.StringVar(&flagVar.metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
-	flag.StringVar(&flagVar.probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flag.StringVar(&flagVar.listenerAddr, "skr-listener-bind-address", ":8082", "The address the skr listener endpoint binds to.")
-	flag.IntVar(&flagVar.maxConcurrentReconciles, "max-concurrent-reconciles", 1, "The maximum number of concurrent Reconciles which can be run.") //nolint:lll
+	flag.StringVar(&flagVar.metricsAddr, "metrics-bind-address", ":8080",
+		"The address the metric endpoint binds to.")
+	flag.StringVar(&flagVar.probeAddr, "health-probe-bind-address", ":8081",
+		"The address the probe endpoint binds to.")
+	flag.StringVar(&flagVar.listenerAddr, "skr-listener-bind-address", ":8082",
+		"The address the skr listener endpoint binds to.")
+	flag.IntVar(&flagVar.maxConcurrentReconciles, "max-concurrent-reconciles", 1,
+		"The maximum number of concurrent Reconciles which can be run.")
 	flag.BoolVar(&flagVar.enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	"github.com/kyma-project/kyma-operator/operator/pkg/labels"
 	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,149 +17,164 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("Kyma Controller", func() {
-	const (
-		namespace = "default"
-		timeout   = time.Second * 3
-		interval  = time.Millisecond * 250
+const (
+	namespace = "default"
+	timeout   = time.Second * 3
+	interval  = time.Millisecond * 250
+)
+
+func NewTestKyma(name string) *v1alpha1.Kyma {
+	return &v1alpha1.Kyma{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: v1alpha1.GroupVersion.String(),
+			Kind:       v1alpha1.KymaKind,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: v1alpha1.KymaSpec{
+			Modules: []v1alpha1.Module{},
+			Channel: v1alpha1.DefaultChannel,
+			Profile: v1alpha1.DefaultProfile,
+		},
+	}
+}
+
+func RegisterDefaultLifecycleForKyma(kyma *v1alpha1.Kyma) {
+	BeforeEach(func() {
+		Expect(k8sClient.Create(ctx, kyma)).Should(Succeed())
+	})
+	AfterEach(func() {
+		Expect(k8sClient.Delete(ctx, kyma)).Should(Succeed())
+	})
+}
+
+func IsKymaInState(kyma *v1alpha1.Kyma, state v1alpha1.KymaState) func() bool {
+	return func() bool {
+		kymaFromCluster := &v1alpha1.Kyma{}
+		err := k8sClient.Get(ctx, types.NamespacedName{
+			Name:      kyma.GetName(),
+			Namespace: kyma.GetNamespace(),
+		}, kymaFromCluster)
+		if err != nil || kymaFromCluster.Status.State != state {
+			return false
+		}
+
+		return true
+	}
+}
+
+func GetKymaState(kyma *v1alpha1.Kyma) func() string {
+	return func() string {
+		createdKyma := &v1alpha1.Kyma{}
+		err := k8sClient.Get(ctx, types.NamespacedName{Name: kyma.GetName(), Namespace: kyma.GetNamespace()}, createdKyma)
+		if err != nil {
+			return ""
+		}
+		return string(createdKyma.Status.State)
+	}
+}
+
+func GetKymaConditions(kyma *v1alpha1.Kyma) func() []v1alpha1.KymaCondition {
+	return func() []v1alpha1.KymaCondition {
+		createdKyma := &v1alpha1.Kyma{}
+		err := k8sClient.Get(ctx, types.NamespacedName{Name: kyma.GetName(), Namespace: kyma.GetNamespace()}, createdKyma)
+		if err != nil {
+			return []v1alpha1.KymaCondition{}
+		}
+		return createdKyma.Status.Conditions
+	}
+}
+
+func UpdateModuleState(
+	kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate, state v1alpha1.KymaState,
+) func() error {
+	return func() error {
+		component := &unstructured.Unstructured{}
+		component.SetGroupVersionKind(moduleTemplate.Spec.Data.GroupVersionKind())
+		Expect(k8sClient.Get(ctx, client.ObjectKey{
+			Namespace: namespace,
+			Name:      moduleTemplate.GetLabels()[v1alpha1.ModuleName] + kyma.GetName(),
+		}, component),
+		).To(Succeed())
+		component.Object[watch.Status] = map[string]any{watch.State: string(state)}
+		return k8sManager.GetClient().Status().Update(ctx, component)
+	}
+}
+
+func GetModuleTemplate(sample string, module v1alpha1.Module, profile v1alpha1.Profile) *v1alpha1.ModuleTemplate {
+	moduleFileName := fmt.Sprintf(
+		"operator_v1alpha1_moduletemplate_%s_%s_%s_%s_%s.yaml",
+		module.ControllerName,
+		module.Name,
+		module.Channel,
+		string(profile),
+		sample,
 	)
+	modulePath := filepath.Join("..", "config", "samples", "component-integration-installed", moduleFileName)
+	By(fmt.Sprintf("using %s for %s in %s", modulePath, module.Name, module.Channel))
+
+	moduleFile, err := os.ReadFile(modulePath)
+	Expect(err).To(BeNil())
+	Expect(moduleFile).ToNot(BeEmpty())
+
+	var moduleTemplate v1alpha1.ModuleTemplate
+	Expect(yaml.Unmarshal(moduleFile, &moduleTemplate)).To(Succeed())
+	return &moduleTemplate
+}
+
+var _ = Describe("Kyma Controller", func() {
+	eventually := func(actual any) AsyncAssertion {
+		return Eventually(actual, timeout, interval)
+	}
 
 	When("Creating a Kyma CR With No Modules", func() {
-		kyma := &v1alpha1.Kyma{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: v1alpha1.GroupVersion.String(),
-				Kind:       v1alpha1.KymaKind,
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "no-module-kyma",
-				Namespace: namespace,
-			},
-			Spec: v1alpha1.KymaSpec{
-				Components: []v1alpha1.ComponentType{},
-				Channel:    v1alpha1.DefaultChannel,
-			},
-		}
-
-		kymaIsErrored := func() bool {
-			createdKyma := &v1alpha1.Kyma{}
-			err := k8sClient.Get(ctx, types.NamespacedName{Name: kyma.GetName(), Namespace: kyma.GetNamespace()}, createdKyma)
-			if err != nil || createdKyma.Status.State != v1alpha1.KymaStateError {
-				return false
-			}
-
-			return true
-		}
-
-		BeforeEach(func() {
-			Skip("skip now")
-			Expect(k8sClient.Create(ctx, kyma)).Should(Succeed())
-		})
-		AfterEach(func() {
-			Expect(k8sClient.Delete(ctx, kyma)).Should(Succeed())
-		})
+		kyma := NewTestKyma("no-module-kyma")
+		RegisterDefaultLifecycleForKyma(kyma)
 
 		It("Should result in an error state", func() {
 			By(fmt.Sprintf("having transitioned the CR State to %s as there are no modules", v1alpha1.KymaStateError))
-			Eventually(kymaIsErrored, timeout, interval).Should(BeTrue())
+			eventually(IsKymaInState(kyma, v1alpha1.KymaStateError)).Should(BeTrue())
 		})
 	})
 
-	When("creating a Kyma CR with a set of modules", func() {
-		kyma := &v1alpha1.Kyma{
-			TypeMeta: metav1.TypeMeta{
-				APIVersion: v1alpha1.GroupVersion.String(),
-				Kind:       v1alpha1.KymaKind,
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "multi-module-kyma",
-				Namespace: namespace,
-			},
-			Spec: v1alpha1.KymaSpec{
-				Components: []v1alpha1.ComponentType{
-					{
-						Name:    "manifest",
-						Channel: v1alpha1.ChannelStable,
-					},
-				},
-				Channel: v1alpha1.DefaultChannel,
-			},
-		}
-		kymaState := func() string {
-			createdKyma := &v1alpha1.Kyma{}
-			err := k8sClient.Get(ctx, types.NamespacedName{Name: kyma.GetName(), Namespace: kyma.GetNamespace()}, createdKyma)
-			if err != nil {
-				return ""
-			}
+	When("creating a Kyma CR with Module based on an Empty ModuleTemplate", func() {
+		kyma := NewTestKyma("empty-module-kyma")
+		RegisterDefaultLifecycleForKyma(kyma)
 
-			return string(createdKyma.Status.State)
-		}
+		kyma.Spec.Modules = append(kyma.Spec.Modules, v1alpha1.Module{
+			ControllerName: "manifest",
+			Name:           "example-module-name",
+			Channel:        v1alpha1.ChannelStable,
+		})
 
-		activeModules := make([]*v1alpha1.ModuleTemplate, 0)
+		moduleTemplates := make([]*v1alpha1.ModuleTemplate, 0)
 
 		BeforeEach(func() {
-			Skip("skip now")
-
-			for _, moduleSpec := range kyma.Spec.Components {
-				moduleFileName := fmt.Sprintf("operator_v1alpha1_moduletemplate_%s_%s.yaml", moduleSpec.Name, moduleSpec.Channel)
-				moduleFilePath := filepath.Join("..", "config", "samples", "component-integration-installed", moduleFileName)
-
-				By(fmt.Sprintf("using %s for %s in %s", moduleFilePath, moduleSpec.Name, moduleSpec.Channel))
-
-				moduleFile, err := os.ReadFile(moduleFilePath)
-				Expect(err).To(BeNil())
-				Expect(moduleFile).ToNot(BeEmpty())
-
-				var moduleTemplate v1alpha1.ModuleTemplate
-				Expect(yaml.Unmarshal(moduleFile, &moduleTemplate)).To(Succeed())
-
-				By(fmt.Sprintf("creating the module %s", moduleFilePath))
-				Expect(k8sClient.Create(ctx, moduleTemplate.DeepCopy())).To(Succeed())
-				activeModules = append(activeModules, &moduleTemplate)
+			for _, module := range kyma.Spec.Modules {
+				template := GetModuleTemplate("empty", module, v1alpha1.ProfileProduction)
+				Expect(k8sClient.Create(ctx, template)).To(Succeed())
+				moduleTemplates = append(moduleTemplates, template)
 			}
-		})
-		BeforeEach(func() {
-			Skip("skip now")
-
-			Expect(k8sClient.Create(ctx, kyma)).Should(Succeed())
-		})
-		AfterEach(func() {
-			Expect(k8sClient.Delete(ctx, kyma)).Should(Succeed())
 		})
 
 		It(fmt.Sprintf("should result in a %s state", v1alpha1.KymaStateReady), func() {
-			By(fmt.Sprintf("checking the state subresource to be in %s", v1alpha1.KymaStateProcessing))
-			Expect(k8sClient.Create(ctx, kyma))
-			Eventually(kymaState, timeout, interval).Should(BeEquivalentTo(string(v1alpha1.KymaStateProcessing)))
-			Consistently(kymaState, timeout, interval).Should(BeEquivalentTo(string(v1alpha1.KymaStateProcessing)))
+			By(fmt.Sprintf("checking the state to be in %s", v1alpha1.KymaStateProcessing))
+			Eventually(GetKymaState(kyma), 10*time.Second, interval).Should(BeEquivalentTo(string(v1alpha1.KymaStateProcessing)))
 
 			By("having created new conditions in its status")
-			var updatedKyma v1alpha1.Kyma
-			Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(kyma), &updatedKyma)).To(Succeed())
-			Expect(updatedKyma.Status.Conditions).To(HaveLen(len(activeModules) + 1))
+			eventually(GetKymaConditions(kyma)).ShouldNot(BeEmpty())
 
 			By("reacting to a change of its Modules")
 			When(fmt.Sprintf("all of the modules change their state to %s", v1alpha1.KymaStateReady), func() {
-				for _, activeModule := range activeModules {
-					Eventually(func() error {
-						activeUnstructuredModuleFromAPIServer := &unstructured.Unstructured{}
-						activeUnstructuredModuleFromAPIServer.SetGroupVersionKind(activeModule.Spec.Data.GroupVersionKind())
-						Expect(k8sClient.Get(ctx, client.ObjectKey{
-							Namespace: namespace,
-							Name:      activeModule.GetLabels()[labels.ControllerName] + kyma.Name,
-						},
-							activeUnstructuredModuleFromAPIServer),
-						).To(Succeed())
-						activeUnstructuredModuleFromAPIServer.Object[watch.Status] = map[string]interface{}{
-							watch.State: v1alpha1.KymaStateReady,
-						}
-
-						return k8sManager.GetClient().Status().Update(ctx, activeUnstructuredModuleFromAPIServer)
-					}, timeout, interval).Should(Succeed())
+				for _, activeModule := range moduleTemplates {
+					eventually(UpdateModuleState(kyma, activeModule, v1alpha1.KymaStateReady)).Should(Succeed())
 				}
 			})
 
 			By("having updated the Kyma CR state to ready")
-			Eventually(kymaState, 10*time.Second, interval).Should(BeEquivalentTo(string(v1alpha1.KymaStateReady)))
+			Eventually(GetKymaState(kyma), 20*time.Second, interval).Should(BeEquivalentTo(string(v1alpha1.KymaStateReady)))
 		})
 	})
 })

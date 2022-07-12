@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/dynamic/dynamicinformer"
@@ -27,7 +29,9 @@ func (ci *ComponentInformer) String() string {
 	return ci.GroupVersionResource.String()
 }
 
-func Informers(mgr manager.Manager, groupVersion schema.GroupVersion) (map[string]source.Source, error) {
+type GroupFilter []string
+
+func Informers(mgr manager.Manager, filter GroupFilter) (map[string]source.Source, error) {
 	c, err := dynamic.NewForConfig(mgr.GetConfig())
 	if err != nil {
 		return nil, err
@@ -49,9 +53,39 @@ func Informers(mgr manager.Manager, groupVersion schema.GroupVersion) (map[strin
 		return nil, err
 	}
 
-	resources, err := cs.ServerResourcesForGroupVersion(groupVersion.String())
-	if client.IgnoreNotFound(err) != nil {
+	apiGroupList, err := cs.ServerGroups()
+	if err != nil {
 		return nil, err
+	}
+
+	var groupVersions []schema.GroupVersion
+	for _, groupFromServer := range apiGroupList.Groups {
+		for _, filterGroup := range filter {
+			if strings.Contains(groupFromServer.Name, filterGroup) {
+				if gv, err := schema.ParseGroupVersion(groupFromServer.PreferredVersion.GroupVersion); err != nil {
+					return nil, err
+				} else {
+					groupVersions = append(groupVersions, gv)
+				}
+			}
+		}
+	}
+
+	var resources []v1.APIResource
+
+	for _, gv := range groupVersions {
+		resFromGv, err := cs.ServerResourcesForGroupVersion(gv.String())
+		if client.IgnoreNotFound(err) != nil {
+			return nil, err
+		}
+		for _, apiResource := range resFromGv.APIResources {
+			if strings.HasSuffix(apiResource.Name, "status") {
+				continue
+			}
+			apiResource.Group = gv.Group
+			apiResource.Version = gv.Version
+			resources = append(resources, apiResource)
+		}
 	}
 
 	if err != nil {
@@ -60,12 +94,12 @@ func Informers(mgr manager.Manager, groupVersion schema.GroupVersion) (map[strin
 
 	dynamicInformerSet := make(map[string]source.Source)
 
-	for _, resource := range resources.APIResources {
-		if strings.HasSuffix(resource.Name, "status") {
-			continue
+	for _, resource := range resources {
+		gvr := schema.GroupVersionResource{
+			Group:    resource.Group,
+			Version:  resource.Version,
+			Resource: resource.Name,
 		}
-
-		gvr := groupVersion.WithResource(resource.Name)
 		informer := informerFactory.ForResource(gvr).Informer()
 		dynamicInformerSet[gvr.String()] = &ComponentInformer{
 			Informer:             source.Informer{Informer: informer},

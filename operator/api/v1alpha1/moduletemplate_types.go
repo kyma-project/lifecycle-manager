@@ -35,8 +35,10 @@ type ModuleTemplateSpec struct {
 	//+kubebuilder:validation:XEmbeddedResource
 	Data unstructured.Unstructured `json:"data,omitempty"`
 
+	Overrides `json:"configSelector,omitempty"`
+
 	//+kubebuilder:pruning:PreserveUnknownFields
-	Descriptor runtime.RawExtension `json:"descriptor,omitempty"`
+	OCMDescriptor runtime.RawExtension `json:"descriptor,omitempty"`
 }
 
 //+genclient
