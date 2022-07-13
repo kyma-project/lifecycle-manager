@@ -31,7 +31,10 @@ func (ci *ComponentInformer) String() string {
 
 type GroupFilter []string
 
-func Informers(mgr manager.Manager, filter GroupFilter) (map[string]source.Source, error) {
+func Informers(mgr manager.Manager,
+	filter GroupFilter,
+) (map[string]source.Source, error) {
+
 	c, err := dynamic.NewForConfig(mgr.GetConfig())
 	if err != nil {
 		return nil, err
@@ -48,12 +51,12 @@ func Informers(mgr manager.Manager, filter GroupFilter) (map[string]source.Sourc
 		return nil, err
 	}
 
-	cs, err := kubernetes.NewForConfig(mgr.GetConfig())
+	clientSet, err := kubernetes.NewForConfig(mgr.GetConfig())
 	if err != nil {
 		return nil, err
 	}
 
-	apiGroupList, err := cs.ServerGroups()
+	apiGroupList, err := clientSet.ServerGroups()
 	if err != nil {
 		return nil, err
 	}
@@ -62,19 +65,19 @@ func Informers(mgr manager.Manager, filter GroupFilter) (map[string]source.Sourc
 	for _, groupFromServer := range apiGroupList.Groups {
 		for _, filterGroup := range filter {
 			if strings.Contains(groupFromServer.Name, filterGroup) {
-				if gv, err := schema.ParseGroupVersion(groupFromServer.PreferredVersion.GroupVersion); err != nil {
+				gv, err := schema.ParseGroupVersion(groupFromServer.PreferredVersion.GroupVersion)
+				if err != nil {
 					return nil, err
-				} else {
-					groupVersions = append(groupVersions, gv)
 				}
+				groupVersions = append(groupVersions, gv)
 			}
 		}
 	}
 
 	var resources []v1.APIResource
 
-	for _, gv := range groupVersions {
-		resFromGv, err := cs.ServerResourcesForGroupVersion(gv.String())
+	for _, groupVersion := range groupVersions {
+		resFromGv, err := clientSet.ServerResourcesForGroupVersion(groupVersion.String())
 		if client.IgnoreNotFound(err) != nil {
 			return nil, err
 		}
@@ -82,8 +85,8 @@ func Informers(mgr manager.Manager, filter GroupFilter) (map[string]source.Sourc
 			if strings.HasSuffix(apiResource.Name, "status") {
 				continue
 			}
-			apiResource.Group = gv.Group
-			apiResource.Version = gv.Version
+			apiResource.Group = groupVersion.Group
+			apiResource.Version = groupVersion.Version
 			resources = append(resources, apiResource)
 		}
 	}
