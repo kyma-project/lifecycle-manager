@@ -79,4 +79,3 @@ out.txt
 
 # ignore vscode delve debug binary
 */__debug_bin
-listener-test/
