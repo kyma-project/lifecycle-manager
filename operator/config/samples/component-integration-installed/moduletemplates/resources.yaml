@@ -13,3 +13,11 @@ input:
   type: 'dir'
   compress: true
   path: "./data/nginx-ingress" # path is relative to the current resource file
+---
+name: 'busybox'
+type: 'helm-chart'
+relation: 'local'
+input:
+  type: 'dir'
+  compress: true
+  path: "./data/busybox" # path is relative to the current resource file

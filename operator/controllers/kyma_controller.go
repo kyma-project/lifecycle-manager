@@ -40,7 +40,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-var ErrNoComponentSpecified = errors.New("no component specified")
+var (
+	ErrNoComponentSpecified = errors.New("no component specified")
+	ErrOutdatedTemplates    = errors.New("outdate templates require new module versions")
+)
 
 type RequeueIntervals struct {
 	Success time.Duration
@@ -255,6 +258,10 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *v1a
 	// these are the actual modules
 	modules, err = r.GetModules(ctx, kyma, true)
 	if err != nil {
+		if err.Error() == ErrOutdatedTemplates.Error() {
+			return r.UpdateStatus(ctx, kyma, v1alpha1.KymaStateProcessing,
+				"module templates were updated: %w")
+		}
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
 			fmt.Errorf("error while fetching modules during consistency check: %w", err))
 	}
@@ -478,7 +485,7 @@ func (r *KymaReconciler) GetModules(
 	if checkOutdatedTemplates {
 		for _, template := range templates {
 			if template.Outdated {
-				return nil, nil
+				return nil, ErrOutdatedTemplates
 			}
 		}
 	}

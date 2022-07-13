@@ -10,4 +10,4 @@ metadata:
     "operator.kyma-project.io/kyma-name": "kyma-sample"
 type: Opaque
 data:
-  config: $(kubectl config view --raw --minify | sed 's/---//g' | base64)" | kubectl apply -f -
+  config: $(kubectl config view --raw --minify | sed 's/---//g' | base64 -w 0)" | kubectl apply -f -

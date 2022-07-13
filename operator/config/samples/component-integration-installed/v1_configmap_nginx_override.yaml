@@ -19,6 +19,7 @@ metadata:
   labels:
     extension.kyma-project.io/config-override: b
     operator.kyma-project.io/override-type: helm-values
+    operator.kyma-project.io/managed-by: kyma-operator
 data:
   values.yaml: |
     fullNameOverride=ft-123
