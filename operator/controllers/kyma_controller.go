@@ -108,8 +108,8 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	// check finalizer
 	if v1alpha1.CheckLabelsAndFinalizers(kyma) {
 		if err := r.Update(ctx, kyma); err != nil {
-			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Waiting}, nil
-			// return ctrl.Result{}, fmt.Errorf("could not update kyma after finalizer check: %w", err)
+			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure},
+				fmt.Errorf("could not update kyma after finalizer check: %w", err)
 		}
 		return ctrl.Result{}, nil
 	}
@@ -343,37 +343,34 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 		}
 
 		outdatedOverride := kyma.HasOutdatedOverride(name)
-
-		if k8serrors.IsNotFound(errors.Unwrap(err)) {
+		syncCondition := func(message string) {
+			if outdatedOverride {
+				kyma.RefreshOverride(name)
+			}
+			status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module},
+				v1alpha1.ConditionStatusFalse, message)
+		}
+		create := func() (bool, error) {
 			logger.Info("module not found, attempting to create it...")
 			err := r.CreateModule(ctx, name, kyma, module)
 			if err != nil {
 				return false, err
 			}
-
-			status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module},
-				v1alpha1.ConditionStatusFalse, fmt.Sprintf("initial condition for %s module CR", module.Name))
-
+			syncCondition(fmt.Sprintf("initial condition for module %s", module.Name))
 			logger.Info("successfully created module CR")
-
-			if outdatedOverride {
-				kyma.RefreshOverride(name)
-			}
-
 			return true, nil
 		}
-
 		update := func() (bool, error) {
 			if err := r.UpdateModule(ctx, name, kyma, module); err != nil {
 				return false, err
 			}
-			if outdatedOverride {
-				kyma.RefreshOverride(name)
-			}
 			logger.Info("successfully updated module CR")
-			status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module},
-				v1alpha1.ConditionStatusFalse, "updated condition for module CR")
+			syncCondition(fmt.Sprintf("updated condition for module %s", module.Name))
 			return true, nil
+		}
+
+		if k8serrors.IsNotFound(errors.Unwrap(err)) {
+			return create()
 		}
 
 		if kyma.HasOutdatedOverride(name) {
