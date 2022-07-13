@@ -79,7 +79,10 @@ func Informers(mgr manager.Manager, filter GroupFilter) (map[string]source.Sourc
 	return GetDynamicInformerSources(resources, informerFactory), nil
 }
 
-func GetResourcesWithoutStatus(groupVersions []schema.GroupVersion, clientSet *kubernetes.Clientset) ([]v1.APIResource, error) {
+func GetResourcesWithoutStatus(
+	groupVersions []schema.GroupVersion,
+	clientSet *kubernetes.Clientset,
+) ([]v1.APIResource, error) {
 	var resources []v1.APIResource
 	for _, groupVersion := range groupVersions {
 		resFromGv, err := clientSet.ServerResourcesForGroupVersion(groupVersion.String())
