@@ -32,12 +32,12 @@ func (ci *ComponentInformer) String() string {
 type GroupFilter []string
 
 func Informers(mgr manager.Manager, filter GroupFilter) (map[string]source.Source, error) {
-	c, err := dynamic.NewForConfig(mgr.GetConfig())
+	clnt, err := dynamic.NewForConfig(mgr.GetConfig())
 	if err != nil {
 		return nil, err
 	}
 
-	informerFactory := dynamicinformer.NewDynamicSharedInformerFactory(c, defaultResync)
+	informerFactory := dynamicinformer.NewDynamicSharedInformerFactory(clnt, defaultResync)
 
 	err = mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
 		informerFactory.Start(ctx.Done())
@@ -48,12 +48,12 @@ func Informers(mgr manager.Manager, filter GroupFilter) (map[string]source.Sourc
 		return nil, err
 	}
 
-	cs, err := kubernetes.NewForConfig(mgr.GetConfig())
+	clientSet, err := kubernetes.NewForConfig(mgr.GetConfig())
 	if err != nil {
 		return nil, err
 	}
 
-	apiGroupList, err := cs.ServerGroups()
+	apiGroupList, err := clientSet.ServerGroups()
 	if err != nil {
 		return nil, err
 	}
@@ -62,19 +62,27 @@ func Informers(mgr manager.Manager, filter GroupFilter) (map[string]source.Sourc
 	for _, groupFromServer := range apiGroupList.Groups {
 		for _, filterGroup := range filter {
 			if strings.Contains(groupFromServer.Name, filterGroup) {
-				if gv, err := schema.ParseGroupVersion(groupFromServer.PreferredVersion.GroupVersion); err != nil {
+				var groupVersion schema.GroupVersion
+				if groupVersion, err = schema.ParseGroupVersion(groupFromServer.PreferredVersion.GroupVersion); err != nil {
 					return nil, err
-				} else {
-					groupVersions = append(groupVersions, gv)
 				}
+				groupVersions = append(groupVersions, groupVersion)
 			}
 		}
 	}
 
 	var resources []v1.APIResource
+	if resources, err = GetResourcesWithoutStatus(groupVersions, clientSet); err != nil {
+		return nil, err
+	}
 
+	return GetDynamicInformerSources(resources, informerFactory), nil
+}
+
+func GetResourcesWithoutStatus(groupVersions []schema.GroupVersion, clientSet *kubernetes.Clientset) ([]v1.APIResource, error) {
+	var resources []v1.APIResource
 	for _, groupVersion := range groupVersions {
-		resFromGv, err := cs.ServerResourcesForGroupVersion(groupVersion.String())
+		resFromGv, err := clientSet.ServerResourcesForGroupVersion(groupVersion.String())
 		if client.IgnoreNotFound(err) != nil {
 			return nil, err
 		}
@@ -87,25 +95,25 @@ func Informers(mgr manager.Manager, filter GroupFilter) (map[string]source.Sourc
 			resources = append(resources, apiResource)
 		}
 	}
+	return resources, nil
+}
 
-	if err != nil {
-		return nil, err
-	}
-
+func GetDynamicInformerSources(
+	resources []v1.APIResource,
+	factory dynamicinformer.DynamicSharedInformerFactory,
+) map[string]source.Source {
 	dynamicInformerSet := make(map[string]source.Source)
-
 	for _, resource := range resources {
-		gvr := schema.GroupVersionResource{
+		groupVersionResource := schema.GroupVersionResource{
 			Group:    resource.Group,
 			Version:  resource.Version,
 			Resource: resource.Name,
 		}
-		informer := informerFactory.ForResource(gvr).Informer()
-		dynamicInformerSet[gvr.String()] = &ComponentInformer{
+		informer := factory.ForResource(groupVersionResource).Informer()
+		dynamicInformerSet[groupVersionResource.String()] = &ComponentInformer{
 			Informer:             source.Informer{Informer: informer},
-			GroupVersionResource: gvr,
+			GroupVersionResource: groupVersionResource,
 		}
 	}
-
-	return dynamicInformerSet, nil
+	return dynamicInformerSet
 }
