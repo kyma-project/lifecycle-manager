@@ -73,8 +73,8 @@ func Informers(mgr manager.Manager, filter GroupFilter) (map[string]source.Sourc
 
 	var resources []v1.APIResource
 
-	for _, gv := range groupVersions {
-		resFromGv, err := cs.ServerResourcesForGroupVersion(gv.String())
+	for _, groupVersion := range groupVersions {
+		resFromGv, err := cs.ServerResourcesForGroupVersion(groupVersion.String())
 		if client.IgnoreNotFound(err) != nil {
 			return nil, err
 		}
@@ -82,8 +82,8 @@ func Informers(mgr manager.Manager, filter GroupFilter) (map[string]source.Sourc
 			if strings.HasSuffix(apiResource.Name, "status") {
 				continue
 			}
-			apiResource.Group = gv.Group
-			apiResource.Version = gv.Version
+			apiResource.Group = groupVersion.Group
+			apiResource.Version = groupVersion.Version
 			resources = append(resources, apiResource)
 		}
 	}

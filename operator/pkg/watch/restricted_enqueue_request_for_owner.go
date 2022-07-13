@@ -121,47 +121,57 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequest(
 				"api version", ref.APIVersion)
 			return
 		}
-
-		// Compare the OwnerReference Group and Kind against the OwnerType Group and Kind specified by the user.
-		// If the two match, create a Request for the objected referred to by
-		// the OwnerReference.  Use the Name from the OwnerReference and the Namespace from the
-		// object in the event.
-		if ref.Kind == e.groupKind.Kind && refGV.Group == e.groupKind.Group {
-			// Match found - add a Request for the object referred to in the OwnerReference
-			request := reconcile.Request{NamespacedName: types.NamespacedName{
-				Name: ref.Name,
-			}}
-
-			// if owner is not namespaced then we should set the namespace to the empty
-			mapping, err := e.mapper.RESTMapping(e.groupKind, refGV.Version)
-			if err != nil {
-				e.Log.Error(err, "Could not retrieve rest mapping", "kind", e.groupKind)
-				return
-			}
-			if mapping.Scope.Name() != meta.RESTScopeNameRoot {
-				request.Namespace = object.GetNamespace()
-			}
-
-			if oldIfAny != nil {
-				componentOld, okOld := oldIfAny.(*unstructured.Unstructured)
-				componentNew, okNew := object.(*unstructured.Unstructured)
-
-				if err != nil || !okNew || !okOld {
-					e.Log.Error(err, "error getting owner")
-				}
-
-				oldState := extractState(componentOld, e.Log)
-				newState := extractState(componentNew, e.Log)
-
-				if oldState.(string) != newState.(string) {
-					result[request] = ref
-					return
-				}
-			} else {
-				result[request] = ref
-			}
-		}
+		e.getOwnerReconcileRequestFromOwnerReference(oldIfAny, object, result, ref, refGV)
 	}
+}
+
+func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequestFromOwnerReference(
+	oldIfAny client.Object, object client.Object,
+	result map[reconcile.Request]any,
+	ref metav1.OwnerReference,
+	refGV schema.GroupVersion,
+) {
+	// Compare the OwnerReference Group and Kind against the OwnerType Group and Kind specified by the user.
+	// If the two match, create a Request for the objected referred to by
+	// the OwnerReference.  Use the Name from the OwnerReference and the Namespace from the
+	// object in the event.
+	if ref.Kind != e.groupKind.Kind || refGV.Group != e.groupKind.Group {
+		return
+	}
+
+	// Match found - add a Request for the object referred to in the OwnerReference
+	request := reconcile.Request{NamespacedName: types.NamespacedName{
+		Name: ref.Name,
+	}}
+
+	// if owner is not namespaced then we should set the namespace to the empty
+	mapping, err := e.mapper.RESTMapping(e.groupKind, refGV.Version)
+	if err != nil {
+		e.Log.Error(err, "Could not retrieve rest mapping", "kind", e.groupKind)
+		return
+	}
+	if mapping.Scope.Name() != meta.RESTScopeNameRoot {
+		request.Namespace = object.GetNamespace()
+	}
+
+	if oldIfAny != nil {
+		componentOld, okOld := oldIfAny.(*unstructured.Unstructured)
+		componentNew, okNew := object.(*unstructured.Unstructured)
+
+		if err != nil || !okNew || !okOld {
+			e.Log.Error(err, "error getting owner")
+		}
+
+		oldState := extractState(componentOld, e.Log)
+		newState := extractState(componentNew, e.Log)
+
+		if oldState.(string) != newState.(string) {
+			result[request] = ref
+		}
+		return
+	}
+
+	result[request] = ref
 }
 
 // getOwnersReferences returns the OwnerReferences for an object as specified by the EnqueueRequestForOwner
