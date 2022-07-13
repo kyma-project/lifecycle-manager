@@ -98,10 +98,10 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	setupManager(flagVar, controllers.NewCacheFunc(), scheme)
+	setupManager(flagVar, controllers.NewCacheFunc(), scheme, &opts)
 }
 
-func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *runtime.Scheme) {
+func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *runtime.Scheme, opts *zap.Options) {
 	config := ctrl.GetConfigOrDie()
 	config.QPS = float32(flagVar.clientQPS)
 	config.Burst = flagVar.clientBurst
@@ -138,7 +138,7 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 			workqueue.NewItemExponentialFailureRateLimiter(baseDelay, maxDelay),
 			&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(limit, burst)}),
 		MaxConcurrentReconciles: flagVar.maxConcurrentReconciles,
-	}, flagVar.listenerAddr); err != nil {
+	}, flagVar.listenerAddr, opts); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
