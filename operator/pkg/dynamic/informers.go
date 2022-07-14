@@ -32,7 +32,6 @@ func (ci *ComponentInformer) String() string {
 type GroupFilter []string
 
 func Informers(mgr manager.Manager, filter GroupFilter) (map[string]source.Source, error) {
-
 	c, err := dynamic.NewForConfig(mgr.GetConfig())
 	if err != nil {
 		return nil, err
@@ -40,27 +39,21 @@ func Informers(mgr manager.Manager, filter GroupFilter) (map[string]source.Sourc
 
 	informerFactory := dynamicinformer.NewDynamicSharedInformerFactory(c, defaultResync)
 
-	err = setupInformerFactoryWithManager(mgr, informerFactory)
+	err = mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
+		informerFactory.Start(ctx.Done())
+
+		return nil
+	}))
 	if err != nil {
 		return nil, err
 	}
 
-	clientSet, err := kubernetes.NewForConfig(mgr.GetConfig())
+	cs, err := kubernetes.NewForConfig(mgr.GetConfig())
 	if err != nil {
 		return nil, err
 	}
 
-	resources, err := retrieveResourcesForFilter(clientSet, filter)
-	if err != nil {
-		return nil, err
-	}
-
-	return setupInformerFactoryWithResources(resources, informerFactory)
-}
-
-func retrieveResourcesForFilter(clientSet *kubernetes.Clientset, filter GroupFilter) ([]v1.APIResource, error) {
-
-	apiGroupList, err := clientSet.ServerGroups()
+	apiGroupList, err := cs.ServerGroups()
 	if err != nil {
 		return nil, err
 	}
@@ -69,19 +62,19 @@ func retrieveResourcesForFilter(clientSet *kubernetes.Clientset, filter GroupFil
 	for _, groupFromServer := range apiGroupList.Groups {
 		for _, filterGroup := range filter {
 			if strings.Contains(groupFromServer.Name, filterGroup) {
-				gv, err := schema.ParseGroupVersion(groupFromServer.PreferredVersion.GroupVersion)
-				if err != nil {
+				if gv, err := schema.ParseGroupVersion(groupFromServer.PreferredVersion.GroupVersion); err != nil {
 					return nil, err
+				} else {
+					groupVersions = append(groupVersions, gv)
 				}
-				groupVersions = append(groupVersions, gv)
 			}
 		}
 	}
 
 	var resources []v1.APIResource
 
-	for _, groupVersion := range groupVersions {
-		resFromGv, err := clientSet.ServerResourcesForGroupVersion(groupVersion.String())
+	for _, gv := range groupVersions {
+		resFromGv, err := cs.ServerResourcesForGroupVersion(gv.String())
 		if client.IgnoreNotFound(err) != nil {
 			return nil, err
 		}
@@ -89,18 +82,15 @@ func retrieveResourcesForFilter(clientSet *kubernetes.Clientset, filter GroupFil
 			if strings.HasSuffix(apiResource.Name, "status") {
 				continue
 			}
-			apiResource.Group = groupVersion.Group
-			apiResource.Version = groupVersion.Version
+			apiResource.Group = gv.Group
+			apiResource.Version = gv.Version
 			resources = append(resources, apiResource)
 		}
 	}
 
-	return resources, nil
-}
-
-func setupInformerFactoryWithResources(
-	resources []v1.APIResource, informerFactory dynamicinformer.DynamicSharedInformerFactory,
-) (map[string]source.Source, error) {
+	if err != nil {
+		return nil, err
+	}
 
 	dynamicInformerSet := make(map[string]source.Source)
 
@@ -118,21 +108,4 @@ func setupInformerFactoryWithResources(
 	}
 
 	return dynamicInformerSet, nil
-}
-
-func setupInformerFactoryWithManager(
-	mgr manager.Manager, informerFactory dynamicinformer.DynamicSharedInformerFactory,
-) error {
-	err := mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
-
-		informerFactory.Start(ctx.Done())
-		return nil
-
-	}))
-
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
