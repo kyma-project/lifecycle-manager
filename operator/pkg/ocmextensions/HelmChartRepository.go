@@ -8,14 +8,14 @@ const HelmChartRepositoryType = "helmChartRepository"
 var _ ocm.TypedObjectAccessor = &HelmChartRepositoryAccess{}
 
 // NewLocalOCIBlobAccess creates a new LocalOCIBlob accessor.
-func NewLocalOCIBlobAccess(repoUrl, name, version string) *HelmChartRepositoryAccess {
+func NewLocalOCIBlobAccess(repoURL, name, version string) *HelmChartRepositoryAccess {
 	return &HelmChartRepositoryAccess{
 		ObjectType: ocm.ObjectType{
 			Type: HelmChartRepositoryType,
 		},
 		HelmChartName:    name,
 		HelmChartVersion: version,
-		HelmChartRepoURL: repoUrl,
+		HelmChartRepoURL: repoURL,
 	}
 }
 

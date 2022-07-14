@@ -29,9 +29,6 @@ import (
 	"github.com/kyma-project/kyma-operator/operator/pkg/remote"
 	"github.com/kyma-project/kyma-operator/operator/pkg/signature"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	k8slabels "k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/kyma-operator/operator/pkg/release"
@@ -43,7 +40,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-var ErrNoComponentSpecified = errors.New("no component specified")
+var (
+	ErrNoComponentSpecified = errors.New("no component specified")
+	ErrOutdatedTemplates    = errors.New("outdate templates require new module versions")
+)
 
 type RequeueIntervals struct {
 	Success time.Duration
@@ -111,7 +111,8 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	// check finalizer
 	if v1alpha1.CheckLabelsAndFinalizers(kyma) {
 		if err := r.Update(ctx, kyma); err != nil {
-			return ctrl.Result{}, fmt.Errorf("could not update kyma after finalizer check: %w", err)
+			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure},
+				fmt.Errorf("could not update kyma after finalizer check: %w", err)
 		}
 		return ctrl.Result{}, nil
 	}
@@ -224,34 +225,6 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error) {
 	logger := log.FromContext(ctx)
 
-	var err error
-	var modules parsed.Modules
-	// these are the actual modules
-	modules, err = r.GetModules(ctx, kyma, false)
-	if err != nil {
-		// in this case it could be that the module templates have already been removed or that the module does no longer
-		// exist in this configuration, sine we now have orphaned modules that cannot be controlled anymore, we log a warning
-		// the only way to resolve this now is with manual intervention
-		logger.Error(err, "deletion could not resolve all modules, maybe manual removal is necessary")
-	}
-
-	for name, module := range modules {
-		if err = r.Get(ctx, client.ObjectKeyFromObject(module.Unstructured), module.Unstructured); err == nil {
-			// component CR still exists
-			logger.Info(fmt.Sprintf("deletion cannot proceed - waiting for component CR %s to be deleted for %s",
-				name, client.ObjectKeyFromObject(kyma)))
-
-			return true, nil
-		} else if !k8serrors.IsNotFound(err) {
-			// unknown error while getting component CR
-			return false, fmt.Errorf("deletion cannot proceed - unknown error: %w", err)
-		}
-	}
-
-	// remove finalizer
-	logger.Info("All component CRs have been removed, removing finalizer",
-		"resource", client.ObjectKeyFromObject(kyma))
-
 	if kyma.Spec.Sync.Enabled {
 		if err := remote.RemoveFinalizerFromRemoteKyma(ctx, r, kyma); client.IgnoreNotFound(err) != nil {
 			return false, fmt.Errorf("error while trying to remove finalizer from remote: %w", err)
@@ -285,6 +258,10 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *v1a
 	// these are the actual modules
 	modules, err = r.GetModules(ctx, kyma, true)
 	if err != nil {
+		if err.Error() == ErrOutdatedTemplates.Error() {
+			return r.UpdateStatus(ctx, kyma, v1alpha1.KymaStateProcessing,
+				"module templates were updated: %w")
+		}
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
 			fmt.Errorf("error while fetching modules during consistency check: %w", err))
 	}
@@ -373,37 +350,34 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 		}
 
 		outdatedOverride := kyma.HasOutdatedOverride(name)
-
-		if k8serrors.IsNotFound(errors.Unwrap(err)) {
+		syncCondition := func(message string) {
+			if outdatedOverride {
+				kyma.RefreshOverride(name)
+			}
+			status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module},
+				v1alpha1.ConditionStatusFalse, message)
+		}
+		create := func() (bool, error) {
 			logger.Info("module not found, attempting to create it...")
 			err := r.CreateModule(ctx, name, kyma, module)
 			if err != nil {
 				return false, err
 			}
-
-			status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module},
-				v1alpha1.ConditionStatusFalse, fmt.Sprintf("initial condition for %s module CR", module.Name))
-
+			syncCondition(fmt.Sprintf("initial condition for module %s", module.Name))
 			logger.Info("successfully created module CR")
-
-			if outdatedOverride {
-				kyma.RefreshOverride(name)
-			}
-
 			return true, nil
 		}
-
 		update := func() (bool, error) {
 			if err := r.UpdateModule(ctx, name, kyma, module); err != nil {
 				return false, err
 			}
-			if outdatedOverride {
-				kyma.RefreshOverride(name)
-			}
 			logger.Info("successfully updated module CR")
-			status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module},
-				v1alpha1.ConditionStatusFalse, "updated condition for module CR")
+			syncCondition(fmt.Sprintf("updated condition for module %s", module.Name))
 			return true, nil
+		}
+
+		if k8serrors.IsNotFound(errors.Unwrap(err)) {
+			return create()
 		}
 
 		if kyma.HasOutdatedOverride(name) {
@@ -430,8 +404,8 @@ func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *v1
 	}
 	// set labels
 	module.ApplyLabels(kyma, name)
-	// set owner reference - NOT Controller Reference as we use the custom ComponentChangeHandler for watching
-	if err := controllerutil.SetOwnerReference(kyma, module.Unstructured, r.Scheme()); err != nil {
+	// set owner reference
+	if err := controllerutil.SetControllerReference(kyma, module.Unstructured, r.Scheme()); err != nil {
 		return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w",
 			name, kyma.Name, err)
 	}
@@ -474,39 +448,6 @@ func (r *KymaReconciler) TriggerKymaDeletion(ctx context.Context, kyma *v1alpha1
 		}
 		logger.Info(namespacedName + " got deleted remotely!")
 	}
-	return r.DeleteKymaDependencies(ctx, kyma)
-}
-
-// DeleteKymaDependencies takes care of deleting all relevant dependencies of a Kyma Object. To make sure that we really
-// catch all Kymas that are available in the given context, we make use of deletion through the label that is set on
-// every generated resource. The alternative would be to parser the module templates, however if the module template was
-// deleted it could happened that the module were trying to delete can no longer be resolved.
-// This is why we take the GVK from the readiness condition and delete all objects of the GVK in the condition.
-func (r *KymaReconciler) DeleteKymaDependencies(ctx context.Context, kyma *v1alpha1.Kyma) error {
-	if len(kyma.Status.Conditions) > 0 {
-		for _, condition := range kyma.Status.Conditions {
-			if condition.Type == v1alpha1.ConditionTypeReady && condition.Reason != v1alpha1.KymaKind {
-				gvk := condition.TemplateInfo.GroupVersionKind
-
-				toDelete := &metav1.PartialObjectMetadata{}
-				toDelete.SetGroupVersionKind(schema.GroupVersionKind{
-					Group:   gvk.Group,
-					Version: gvk.Version,
-					Kind:    gvk.Kind,
-				})
-
-				if err := r.DeleteAllOf(ctx, toDelete, &client.DeleteAllOfOptions{
-					ListOptions: client.ListOptions{
-						LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{v1alpha1.KymaName: kyma.GetName()}),
-						Namespace:     kyma.GetNamespace(),
-					},
-					DeleteOptions: client.DeleteOptions{},
-				}); err != nil {
-					return fmt.Errorf("error occurred while trying to delete kyma dependencies: %w", err)
-				}
-			}
-		}
-	}
 	return nil
 }
 
@@ -544,7 +485,7 @@ func (r *KymaReconciler) GetModules(
 	if checkOutdatedTemplates {
 		for _, template := range templates {
 			if template.Outdated {
-				return nil, nil
+				return nil, ErrOutdatedTemplates
 			}
 		}
 	}

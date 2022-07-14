@@ -137,8 +137,7 @@ func translateLayerIntoInstall(
 	} else {
 		merge = map[string]any{"installs": []map[string]any{install}}
 	}
-
-	if err := mergo.Merge(&component.Object, map[string]any{"spec": merge}); err != nil {
+	if err := mergo.Merge(&component.Object, map[string]any{"spec": merge}, mergo.WithAppendSlice); err != nil {
 		return fmt.Errorf("error while merging the layer representation into the spec: %w", err)
 	}
 

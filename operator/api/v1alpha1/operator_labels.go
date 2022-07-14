@@ -35,6 +35,10 @@ func GetMatchingLabelsForModule(module *Module, profile Profile) client.Matching
 }
 
 func CheckLabelsAndFinalizers(kyma *Kyma) bool {
+	if controllerutil.ContainsFinalizer(kyma, "foregroundDeletion") {
+		return false
+	}
+
 	updateRequired := false
 	if !controllerutil.ContainsFinalizer(kyma, Finalizer) {
 		controllerutil.AddFinalizer(kyma, Finalizer)
