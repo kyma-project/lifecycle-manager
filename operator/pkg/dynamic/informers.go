@@ -50,6 +50,16 @@ func Informers(mgr manager.Manager, filter GroupFilter) (map[string]source.Sourc
 		return nil, err
 	}
 
+	resources, err := retrieveResourcesForFilter(clientSet, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	return setupInformerFactoryWithResources(resources, informerFactory)
+}
+
+func retrieveResourcesForFilter(clientSet *kubernetes.Clientset, filter GroupFilter) ([]v1.APIResource, error) {
+
 	apiGroupList, err := clientSet.ServerGroups()
 	if err != nil {
 		return nil, err
@@ -85,11 +95,7 @@ func Informers(mgr manager.Manager, filter GroupFilter) (map[string]source.Sourc
 		}
 	}
 
-	if err != nil {
-		return nil, err
-	}
-
-	return setupInformerFactoryWithResources(resources, informerFactory)
+	return resources, nil
 }
 
 func setupInformerFactoryWithResources(resources []v1.APIResource, informerFactory dynamicinformer.DynamicSharedInformerFactory,
