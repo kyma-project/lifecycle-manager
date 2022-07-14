@@ -117,7 +117,7 @@ var _ = BeforeSuite(func() {
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
 		},
-	}).SetupWithManager(k8sManager, controller.Options{}, listenerAddr, &zap.Options{})
+	}).SetupWithManager(k8sManager, controller.Options{}, listenerAddr)
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {

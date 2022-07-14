@@ -15,7 +15,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
@@ -25,7 +24,6 @@ func (r *KymaReconciler) SetupWithManager(
 	mgr ctrl.Manager,
 	options controller.Options,
 	listenerAddr string,
-	opts *zap.Options,
 ) error {
 
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1alpha1.Kyma{}).WithOptions(options).
@@ -52,7 +50,7 @@ func (r *KymaReconciler) SetupWithManager(
 
 	// register listener component
 	runnableListener, eventChannel := listener.RegisterListenerComponent(
-		listenerAddr, strings.ToLower(v1alpha1.KymaKind), opts)
+		listenerAddr, strings.ToLower(v1alpha1.KymaKind))
 	// watch event channel
 	controllerBuilder.Watches(eventChannel, &handler.EnqueueRequestForObject{})
 	// start listener as a manager runnable
