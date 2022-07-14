@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/khlifi411/kyma-listener/listener"
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/dynamic"
 	"github.com/kyma-project/kyma-operator/operator/pkg/index"
 	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
+	"github.com/kyma-project/kyma-watcher/listener"
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
