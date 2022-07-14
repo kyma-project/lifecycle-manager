@@ -98,7 +98,6 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
-
 	setupManager(flagVar, controllers.NewCacheFunc(), scheme)
 }
 

@@ -2,6 +2,3 @@ configs:
   - name: nginx-ingress
     clientConfig: "CreateNamespace=true,Namespace=jakobs-new"
     overrides: "x=4"
-  - name: busybox
-    clientConfig: "CreateNamespace=true,Namespace=jakobs-change"
-    overrides: "resources.requests.memory=300m,resources.limits.memory=300m,selector=test"
