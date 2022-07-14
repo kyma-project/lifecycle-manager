@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/kyma-project/kyma-operator/operator/pkg/parsed"
 
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
@@ -375,50 +376,59 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 		outdatedOverride := kyma.HasOutdatedOverride(name)
 
 		if k8serrors.IsNotFound(errors.Unwrap(err)) {
-			logger.Info("module not found, attempting to create it...")
-			err := r.CreateModule(ctx, name, kyma, module)
-			if err != nil {
-				return false, err
-			}
-
-			status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module},
-				v1alpha1.ConditionStatusFalse, fmt.Sprintf("initial condition for %s module CR", module.Name))
-
-			logger.Info("successfully created module CR")
-
-			if outdatedOverride {
-				kyma.RefreshOverride(name)
-			}
-
-			return true, nil
-		}
-
-		update := func() (bool, error) {
-			if err := r.UpdateModule(ctx, name, kyma, module); err != nil {
-				return false, err
-			}
-			if outdatedOverride {
-				kyma.RefreshOverride(name)
-			}
-			logger.Info("successfully updated module CR")
-			status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module},
-				v1alpha1.ConditionStatusFalse, "updated condition for module CR")
-			return true, nil
+			return r.createAndUpdateNotFoundModule(ctx, kyma, module, logger, outdatedOverride, name)
 		}
 
 		if kyma.HasOutdatedOverride(name) {
-			return update()
+			return r.updateOutdatedTemplateAndOverrides(ctx, kyma, module, logger, outdatedOverride, name)
 		}
 
 		if module.TemplateOutdated {
 			condition, _ := status.Helper(r).GetReadyConditionForComponent(kyma, name)
 			if module.StateMismatchedWithCondition(condition) {
-				return update()
+				return r.updateOutdatedTemplateAndOverrides(ctx, kyma, module, logger, outdatedOverride, name)
 			}
 		}
 	}
 
 	return false, nil
+}
+
+func (r *KymaReconciler) createAndUpdateNotFoundModule(ctx context.Context, kyma *v1alpha1.Kyma,
+	module *parsed.Module, logger logr.Logger, outdatedOverride bool, name string) (bool, error) {
+
+	logger.Info("module not found, attempting to create it...")
+	err := r.CreateModule(ctx, name, kyma, module)
+	if err != nil {
+		return false, err
+	}
+
+	status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module},
+		v1alpha1.ConditionStatusFalse, fmt.Sprintf("initial condition for %s module CR", module.Name))
+
+	logger.Info("successfully created module CR")
+
+	if outdatedOverride {
+		kyma.RefreshOverride(name)
+	}
+
+	return true, nil
+}
+
+func (r *KymaReconciler) updateOutdatedTemplateAndOverrides(ctx context.Context, kyma *v1alpha1.Kyma,
+	module *parsed.Module, logger logr.Logger, outdatedOverride bool, name string) (bool, error) {
+
+	if err := r.UpdateModule(ctx, name, kyma, module); err != nil {
+		return false, err
+	}
+	if outdatedOverride {
+		kyma.RefreshOverride(name)
+	}
+	logger.Info("successfully updated module CR")
+	status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module},
+		v1alpha1.ConditionStatusFalse, "updated condition for module CR")
+
+	return true, nil
 }
 
 func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *v1alpha1.Kyma,

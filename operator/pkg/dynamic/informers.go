@@ -31,9 +31,9 @@ func (ci *ComponentInformer) String() string {
 
 type GroupFilter []string
 
-func Informers(mgr manager.Manager,
-	filter GroupFilter,
-) (map[string]source.Source, error) {
+type SrcMap map[string]source.Source
+
+func Informers(mgr manager.Manager, filter GroupFilter) (SrcMap, error) {
 
 	c, err := dynamic.NewForConfig(mgr.GetConfig())
 	if err != nil {

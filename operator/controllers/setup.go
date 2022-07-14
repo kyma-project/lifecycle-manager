@@ -21,7 +21,13 @@ import (
 )
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options, listenerAddr string, opts *zap.Options) error {
+func (r *KymaReconciler) SetupWithManager(
+	mgr ctrl.Manager,
+	options controller.Options,
+	listenerAddr string,
+	opts *zap.Options,
+) error {
+
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1alpha1.Kyma{}).WithOptions(options).
 		Watches(
 			&source.Kind{Type: &v1alpha1.ModuleTemplate{}},
@@ -31,13 +37,10 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 		// here we define a watch on secrets for the kyma operator so that the cache is picking up changes
 		Watches(&source.Kind{Type: &corev1.Secret{}}, handler.Funcs{})
 
-	var dynamicInformers map[string]source.Source
-
-	var err error
-
 	// This fetches all resources for our component operator CRDs, might become a problem if component operators
 	// create their own CRDs that we dont need to watch
-	if dynamicInformers, err = dynamic.Informers(mgr, []string{v1alpha1.ComponentPrefix}); err != nil {
+	dynamicInformers, err := dynamic.Informers(mgr, []string{v1alpha1.ComponentPrefix})
+	if err != nil {
 		return fmt.Errorf("error while setting up Dynamic Informers: %w", err)
 	}
 
