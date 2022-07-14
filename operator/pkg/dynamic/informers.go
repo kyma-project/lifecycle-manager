@@ -33,7 +33,14 @@ type GroupFilter []string
 
 func Informers(mgr manager.Manager, filter GroupFilter) (map[string]source.Source, error) {
 
-	informerFactory, err := setupInformerFactoryWithManager(mgr)
+	c, err := dynamic.NewForConfig(mgr.GetConfig())
+	if err != nil {
+		return nil, err
+	}
+
+	informerFactory := dynamicinformer.NewDynamicSharedInformerFactory(c, defaultResync)
+
+	err = setupInformerFactoryWithManager(mgr, informerFactory)
 	if err != nil {
 		return nil, err
 	}
@@ -82,6 +89,12 @@ func Informers(mgr manager.Manager, filter GroupFilter) (map[string]source.Sourc
 		return nil, err
 	}
 
+	return setupInformerFactoryWithResources(resources, informerFactory)
+}
+
+func setupInformerFactoryWithResources(resources []v1.APIResource, informerFactory dynamicinformer.DynamicSharedInformerFactory,
+) (map[string]source.Source, error) {
+
 	dynamicInformerSet := make(map[string]source.Source)
 
 	for _, resource := range resources {
@@ -100,23 +113,17 @@ func Informers(mgr manager.Manager, filter GroupFilter) (map[string]source.Sourc
 	return dynamicInformerSet, nil
 }
 
-func setupInformerFactoryWithManager(mgr manager.Manager) (dynamicinformer.DynamicSharedInformerFactory, error) {
-	c, err := dynamic.NewForConfig(mgr.GetConfig())
-	if err != nil {
-		return nil, err
-	}
+func setupInformerFactoryWithManager(mgr manager.Manager, informerFactory dynamicinformer.DynamicSharedInformerFactory) error {
+	err := mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
 
-	informerFactory := dynamicinformer.NewDynamicSharedInformerFactory(c, defaultResync)
-
-	err = mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
 		informerFactory.Start(ctx.Done())
-
 		return nil
+
 	}))
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return informerFactory, nil
+	return nil
 }
