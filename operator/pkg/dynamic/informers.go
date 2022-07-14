@@ -33,18 +33,7 @@ type GroupFilter []string
 
 func Informers(mgr manager.Manager, filter GroupFilter) (map[string]source.Source, error) {
 
-	c, err := dynamic.NewForConfig(mgr.GetConfig())
-	if err != nil {
-		return nil, err
-	}
-
-	informerFactory := dynamicinformer.NewDynamicSharedInformerFactory(c, defaultResync)
-
-	err = mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
-		informerFactory.Start(ctx.Done())
-
-		return nil
-	}))
+	informerFactory, err := setupInformerFactoryWithManager(mgr)
 	if err != nil {
 		return nil, err
 	}
@@ -109,4 +98,25 @@ func Informers(mgr manager.Manager, filter GroupFilter) (map[string]source.Sourc
 	}
 
 	return dynamicInformerSet, nil
+}
+
+func setupInformerFactoryWithManager(mgr manager.Manager) (dynamicinformer.DynamicSharedInformerFactory, error) {
+	c, err := dynamic.NewForConfig(mgr.GetConfig())
+	if err != nil {
+		return nil, err
+	}
+
+	informerFactory := dynamicinformer.NewDynamicSharedInformerFactory(c, defaultResync)
+
+	err = mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
+		informerFactory.Start(ctx.Done())
+
+		return nil
+	}))
+
+	if err != nil {
+		return nil, err
+	}
+
+	return informerFactory, nil
 }
