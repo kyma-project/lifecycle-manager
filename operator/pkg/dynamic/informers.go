@@ -98,7 +98,8 @@ func retrieveResourcesForFilter(clientSet *kubernetes.Clientset, filter GroupFil
 	return resources, nil
 }
 
-func setupInformerFactoryWithResources(resources []v1.APIResource, informerFactory dynamicinformer.DynamicSharedInformerFactory,
+func setupInformerFactoryWithResources(
+	resources []v1.APIResource, informerFactory dynamicinformer.DynamicSharedInformerFactory,
 ) (map[string]source.Source, error) {
 
 	dynamicInformerSet := make(map[string]source.Source)
@@ -119,7 +120,9 @@ func setupInformerFactoryWithResources(resources []v1.APIResource, informerFacto
 	return dynamicInformerSet, nil
 }
 
-func setupInformerFactoryWithManager(mgr manager.Manager, informerFactory dynamicinformer.DynamicSharedInformerFactory) error {
+func setupInformerFactoryWithManager(
+	mgr manager.Manager, informerFactory dynamicinformer.DynamicSharedInformerFactory,
+) error {
 	err := mgr.Add(manager.RunnableFunc(func(ctx context.Context) error {
 
 		informerFactory.Start(ctx.Done())
