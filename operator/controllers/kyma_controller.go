@@ -196,9 +196,12 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	}
 
 	// Now we track the conditions: update the status based on their state
+	// technically we could also update the state in the previous step alone determine if we are ready based on this
+
 	statusUpdateRequiredFromSync, err := r.SyncConditionsWithModuleStates(ctx, kyma, modules)
 	if err != nil {
-		return err
+		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
+			fmt.Errorf("error while syncing conditions during processing: %w", err))
 	}
 
 	// set ready condition if applicable
@@ -350,12 +353,11 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 		}
 
 		outdatedOverride := kyma.HasOutdatedOverride(name)
-		syncCondition := func(message string) {
+		syncCondition := func(message string, s v1alpha1.KymaConditionStatus) {
 			if outdatedOverride {
 				kyma.RefreshOverride(name)
 			}
-			status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module},
-				v1alpha1.ConditionStatusFalse, message)
+			status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module}, s, message)
 		}
 		create := func() (bool, error) {
 			logger.Info("module not found, attempting to create it...")
@@ -363,7 +365,7 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 			if err != nil {
 				return false, err
 			}
-			syncCondition(fmt.Sprintf("initial condition for module %s", module.Name))
+			syncCondition(fmt.Sprintf("initial condition for module %s", module.Name), v1alpha1.ConditionStatusFalse)
 			logger.Info("successfully created module CR")
 			return true, nil
 		}
@@ -372,7 +374,7 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 				return false, err
 			}
 			logger.Info("successfully updated module CR")
-			syncCondition(fmt.Sprintf("updated condition for module %s", module.Name))
+			syncCondition(fmt.Sprintf("updated condition for module %s", module.Name), v1alpha1.ConditionStatusFalse)
 			return true, nil
 		}
 
@@ -390,6 +392,15 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 				return update()
 			}
 		}
+
+		// if we have NO create, NO update,the template was NOT outdated and the Condition did not exist yet, then everything is awesome!
+		// Now there can be 2 cases
+		// either the condition was never tracked before, or it was tracked before but isnt ready yet.
+		// we now insert the condition to false as we expect the next step to verify every time if the module is still ready,
+		// by default the module will NOT be ready.
+		status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module}, v1alpha1.ConditionStatusFalse,
+			fmt.Sprintf("module %s was not created or updated", module.Name))
+
 	}
 
 	return false, nil
