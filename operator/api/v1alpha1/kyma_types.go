@@ -60,10 +60,6 @@ type Module struct {
 	//+kubebuilder:pruning:PreserveUnknownFields
 	//+kubebuilder:validation:XEmbeddedResource
 	Settings unstructured.Unstructured `json:"settings,omitempty"`
-
-	// Overrides are a typed Representation of the Specification Values of a Module. It can be used to define
-	// certain types of override configurations that can be used to target specific override Interfaces.
-	Overrides `json:"overrides,omitempty"`
 }
 
 // SyncStrategy determines how the Remote Cluster is synchronized with the Control Plane. This can influence secret
@@ -143,40 +139,6 @@ type KymaStatus struct {
 	// Active Channel
 	// +optional
 	ActiveChannel Channel `json:"activeChannel,omitempty"`
-
-	ActiveOverrides map[string]*ActiveOverride `json:"activeOverrides,omitempty"`
-}
-
-type ActiveOverride struct {
-	Hash    string `json:"hash,omitempty"`
-	Applied bool   `json:"applied,omitempty"`
-}
-
-func (kyma *Kyma) HasOutdatedOverrides() bool {
-	for _, override := range kyma.Status.ActiveOverrides {
-		if !override.Applied {
-			return true
-		}
-	}
-	return false
-}
-
-func (kyma *Kyma) HasOutdatedOverride(module string) bool {
-	for overwrittenModule, override := range kyma.Status.ActiveOverrides {
-		if overwrittenModule == module && !override.Applied {
-			return true
-		}
-	}
-	return false
-}
-
-func (kyma *Kyma) RefreshOverride(module string) {
-	for overwrittenModule, override := range kyma.Status.ActiveOverrides {
-		if overwrittenModule == module && !override.Applied {
-			override.Applied = true
-			break
-		}
-	}
 }
 
 // +kubebuilder:validation:Enum=evaluation;production

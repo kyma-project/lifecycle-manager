@@ -13,6 +13,7 @@ import (
 	"github.com/kyma-project/kyma-operator/operator/pkg/signature"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -36,6 +37,10 @@ func Decode(ext runtime.RawExtension) (*ocm.ComponentDescriptor, error) {
 	return &descriptor, nil
 }
 
+func ResolveModuleCRName(kyma *v1alpha1.Kyma, name string) string {
+	return name + kyma.Name
+}
+
 func TemplatesToModules(
 	kyma *v1alpha1.Kyma,
 	templates release.TemplatesInChannels,
@@ -48,6 +53,7 @@ func TemplatesToModules(
 	var component *unstructured.Unstructured
 
 	for _, module := range kyma.Spec.Modules {
+		module := module
 		template := templates[module.Name]
 		if template == nil {
 			return nil, fmt.Errorf("could not find module %s for resource %s",
@@ -55,13 +61,12 @@ func TemplatesToModules(
 		}
 
 		var err error
-
-		template.ModuleTemplate.Spec.Data.SetName(module.Name + kyma.Name)
-		template.ModuleTemplate.Spec.Data.SetNamespace(kyma.GetNamespace())
-
 		if component, err = NewModule(template.ModuleTemplate, settings.Verification); err != nil {
 			return nil, err
 		}
+		component.SetName(ResolveModuleCRName(kyma, module.Name))
+		component.SetNamespace(kyma.GetNamespace())
+
 		modules[module.Name] = &Module{
 			Name:             module.Name,
 			Template:         template.ModuleTemplate,
@@ -80,6 +85,18 @@ func NewModule(
 ) (*unstructured.Unstructured, error) {
 	component := &template.Spec.Data
 
+	if !template.Spec.Remote {
+		return component, nil
+	}
+
+	manifest := &unstructured.Unstructured{}
+	manifest.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "component.kyma-project.io",
+		Version: "v1alpha1",
+		Kind:    "Manifest",
+	})
+	manifest.Object["spec"] = map[string]any{"data": component}
+
 	var descriptor *ocm.ComponentDescriptor
 	var layers img.Layers
 	var err error
@@ -96,11 +113,11 @@ func NewModule(
 		return nil, fmt.Errorf("could not parse descriptor: %w", err)
 	}
 
-	if err := translateLayersAndMergeIntoUnstructured(component, layers); err != nil {
+	if err := translateLayersAndMergeIntoUnstructured(manifest, layers); err != nil {
 		return nil, fmt.Errorf("could not translate layers and merge them: %w", err)
 	}
 
-	return component, nil
+	return manifest, nil
 }
 
 func translateLayersAndMergeIntoUnstructured(

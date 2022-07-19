@@ -39,6 +39,8 @@ type ModuleTemplateSpec struct {
 
 	//+kubebuilder:pruning:PreserveUnknownFields
 	OCMDescriptor runtime.RawExtension `json:"descriptor,omitempty"`
+
+	Remote bool `json:"remote,omitempty"`
 }
 
 //+genclient

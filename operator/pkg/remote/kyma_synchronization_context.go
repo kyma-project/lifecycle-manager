@@ -214,11 +214,7 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context,
 		return true, nil
 	}
 
-	if c.controlPlaneKyma.Status.ObservedGeneration != c.controlPlaneKyma.GetGeneration() {
-		// control plane got updated, runtime on cluster is using the wrong base instance for customization
-		// TODO this now requires custom merge logic, but for now we reapply the control plane version
-		remoteKyma.Spec = c.controlPlaneKyma.Spec
-	} else if remoteKyma.Status.State != c.controlPlaneKyma.Status.State {
+	if remoteKyma.Status.State != c.controlPlaneKyma.Status.State {
 		// control plane and runtime spec are in sync, but the status got updated in the control plane
 		remoteKyma.Status.State = c.controlPlaneKyma.Status.State
 

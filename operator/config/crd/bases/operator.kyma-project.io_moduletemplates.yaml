@@ -111,6 +111,8 @@ spec:
               descriptor:
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
+              remote:
+                type: boolean
             type: object
         type: object
     served: true

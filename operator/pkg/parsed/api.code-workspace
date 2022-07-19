@@ -1,0 +1,25 @@
+{
+	"folders": [
+		{
+			"name": "manifest-api",
+			"path": "../../../../manifest-operator/api"
+		},
+		{
+			"name": "manifest-operator",
+			"path": "../../../../manifest-operator/operator"
+		},
+		{
+			"path": "../../../../test-infra"
+		},
+		{
+			"path": "../../../acceptance"
+		},
+		{
+			"path": "../.."
+		},
+		{
+			"path": "../../../docs"
+		}
+	],
+	"settings": {},
+}

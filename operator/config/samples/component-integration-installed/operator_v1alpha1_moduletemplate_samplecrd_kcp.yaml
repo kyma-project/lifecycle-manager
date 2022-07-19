@@ -14,11 +14,14 @@ metadata:
     "operator.kyma-project.io/descriptor-schema-version": "v2"
     "operator.kyma-project.io/generated-at": "2022-07-11T14:59:43Z"
 spec:
+  remote: false
   channel: stable
   data:
-    kind: Manifest
-    resource: manifests
+    kind: SampleCRD
+    resource: samplecrds
     apiVersion: component.kyma-project.io/v1alpha1
+    spec:
+      randomkey: samplevalue
   descriptor:
     component:
       componentReferences: []
