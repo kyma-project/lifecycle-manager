@@ -9,6 +9,8 @@ spec:
   sync:
     enabled: false
   modules:
-    - name: example-module-name
+    - name: skr-module
       controller: manifest
+      channel: stable
+    - name: kcp-module
       channel: stable

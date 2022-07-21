@@ -13,3 +13,11 @@ input:
   type: 'dir'
   compress: true
   path: "./data/nginx-ingress" # path is relative to the current resource file
+---
+name: 'crds'
+type: 'crds'
+relation: 'local'
+input:
+  type: 'dir'
+  compress: true
+  path: "./data/nginx-ingress/crds" # path is relative to the current resource file

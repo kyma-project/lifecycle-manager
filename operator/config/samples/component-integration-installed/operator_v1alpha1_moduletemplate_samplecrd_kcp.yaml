@@ -6,7 +6,7 @@ metadata:
   labels:
     "operator.kyma-project.io/managed-by": "kyma-operator"
     "operator.kyma-project.io/controller-name": "manifest"
-    "operator.kyma-project.io/module-name": "example-module-name"
+    "operator.kyma-project.io/module-name": "kcp-module"
     "operator.kyma-project.io/profile": "production"
   annotations:
     "operator.kyma-project.io/module-version": "v0.0.37"
@@ -25,7 +25,7 @@ spec:
   descriptor:
     component:
       componentReferences: []
-      name: kyma-project.io/module/example-module-name
+      name: kyma-project.io/module/kcp-module
       provider: internal
       repositoryContexts: []
       resources: []
