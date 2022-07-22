@@ -393,14 +393,13 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 			}
 		}
 
-		// if we have NO create, NO update,the template was NOT outdated and the Condition did not exist yet, then everything is awesome!
-		// Now there can be 2 cases
+		// if we have NO create, NO update,the template was NOT outdated and the Condition did not exist yet,
+		// then everything is awesome! Now there can be 2 cases
 		// either the condition was never tracked before, or it was tracked before but isnt ready yet.
 		// we now insert the condition to false as we expect the next step to verify every time if the module is still ready,
 		// by default the module will NOT be ready.
 		status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module}, v1alpha1.ConditionStatusFalse,
 			fmt.Sprintf("module %s was not created or updated", module.Name))
-
 	}
 
 	return false, nil
