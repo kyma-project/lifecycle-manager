@@ -1,0 +1,57 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: samplecrds.component.kyma-project.io
+spec:
+  group: component.kyma-project.io
+  names:
+    kind: SampleCRD
+    listKind: SampleCRDList
+    plural: samplecrds
+    singular: samplecrd
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: SampleCRD is the Schema for a component API.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec defines the desired state of Sample CRD.
+            properties:
+              randomkey:
+                description: Its random!
+                type: string
+            required:
+            - randomkey
+            type: object
+          status:
+            description: Status defines the observed state of Sample CRD
+            properties:
+              state:
+                description: State signifies current state of Sample CRD. Value can be one
+                  of ("Ready", "Processing", "Error", "Deleting").
+                enum:
+                - Deleting
+                - Ready
+                - Error
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
