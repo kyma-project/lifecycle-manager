@@ -9,11 +9,7 @@ spec:
   sync:
     enabled: false
   modules:
-    - name: example-module-name
+    - name: cp-module
+      controller: cp-operator
+    - name: remote-module
       controller: manifest
-      channel: stable
-      overrides:
-      - name: nginx-ingress
-        selector:
-          matchLabels:
-            extension.kyma-project.io/config-override: "a"

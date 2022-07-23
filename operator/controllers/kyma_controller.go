@@ -192,7 +192,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	statusUpdateRequiredFromCreation, err := r.CreateOrUpdateModules(ctx, kyma, modules)
 	if err != nil {
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
-			fmt.Errorf("ParsedModule CR creation/udate error: %w", err))
+			fmt.Errorf("ParsedModule CR creation/update error: %w", err))
 	}
 
 	// Now we track the conditions: update the status based on their state
@@ -260,7 +260,7 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *v1a
 	if err != nil {
 		if err.Error() == ErrOutdatedTemplates.Error() {
 			return r.UpdateStatus(ctx, kyma, v1alpha1.KymaStateProcessing,
-				"module templates were updated: %w")
+				fmt.Sprintf("module templates were updated: %v", err))
 		}
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
 			fmt.Errorf("error while fetching modules during consistency check: %w", err))

@@ -9,6 +9,12 @@ const (
 	HelmRepresentationType = "helm-chart"
 )
 
+const (
+	ConfigLayer  LayerName = "config"
+	CRDsLayer    LayerName = "crds"
+	InstallLayer LayerName = "installs"
+)
+
 type LayerRepresentation interface {
 	ToGenericRepresentation() map[string]any
 }

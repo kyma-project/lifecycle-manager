@@ -1,0 +1,62 @@
+apiVersion: operator.kyma-project.io/v1alpha1
+kind: ModuleTemplate
+metadata:
+  name: moduletemplate-sample-cp-module
+  namespace: default
+  labels:
+    "operator.kyma-project.io/managed-by": "kyma-operator"
+    "operator.kyma-project.io/controller-name": "cp-operator"
+    "operator.kyma-project.io/module-name": "cp-module"
+    "operator.kyma-project.io/profile": "production"
+  annotations:
+    "operator.kyma-project.io/module-version": "v0.0.37"
+    "operator.kyma-project.io/module-provider": "internal"
+    "operator.kyma-project.io/descriptor-schema-version": "v2"
+    "operator.kyma-project.io/generated-at": "2022-07-11T14:59:43Z"
+spec:
+  channel: stable
+  target: control-plane
+  data:
+    kind: ControlPlaneModule
+    resource: controlplanemodules
+    apiVersion: component.kyma-project.io/v1alpha1
+  descriptor:
+    component:
+      componentReferences: []
+      name: kyma-project.io/module/cp-module
+      provider: internal
+      repositoryContexts:
+        - baseUrl: ghcr.io/fake
+          componentNameMapping: urlPath
+          type: ociRegistry
+        - baseUrl: ghcr.io/fake/signed
+          componentNameMapping: urlPath
+          type: ociRegistry
+      resources:
+        - access:
+            digest: sha256:9d37fb366e4371b44c94496f3db276bd6f3a1019c9d44077b689c68ec6486c1e
+            type: localOciBlob
+          name: crds
+          relation: local
+          type: yaml
+          version: v0.0.40
+        - access:
+            digest: sha256:9d37fb366e4371b44c94496f3db276bd6f3a1019c9d44077b689c68ec6486c1e
+            type: localOciBlob
+          name: config
+          relation: local
+          type: yaml
+          version: v0.0.40
+        - access:
+            digest: sha256:ddd4e3972af752f950c43ac3f2ab36ee7dcf2e51bc3709a7f5e5423b0418b551
+            type: localOciBlob
+          name: kyma-test
+          relation: local
+          type: helm-chart
+          version: v0.0.40
+      sources: []
+      version: v0.0.40
+    meta:
+      schemaVersion: v2
+    signatures: []
+    

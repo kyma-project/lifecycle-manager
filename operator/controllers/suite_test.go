@@ -19,6 +19,7 @@ package controllers_test
 import (
 	"context"
 	"net/http"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -76,14 +77,22 @@ var _ = BeforeSuite(func() {
 
 	manifestCrd := &v1.CustomResourceDefinition{}
 	res, err := http.DefaultClient.Get(
-		"https://raw.githubusercontent.com/adityabhatia/manifest-operator/overrideApiChanges/api/config/crd/bases/component.kyma-project.io_manifests.yaml") //nolint:lll
+		"https://raw.githubusercontent.com/kyma-project/manifest-operator/main/operator/config/crd/bases/component.kyma-project.io_manifests.yaml") //nolint:lll
 	Expect(err).NotTo(HaveOccurred())
 	Expect(res.StatusCode).To(BeEquivalentTo(http.StatusOK))
 	Expect(yaml2.NewYAMLOrJSONDecoder(res.Body, 2048).Decode(manifestCrd)).To(Succeed())
 
+	controlplaneCrd := &v1.CustomResourceDefinition{}
+	modulePath := filepath.Join("..", "config", "samples", "component-integration-installed",
+		"crd", "component.kyma-project.io_controlplanemodules.yaml")
+	moduleFile, err := os.ReadFile(modulePath)
+	Expect(err).To(BeNil())
+	Expect(moduleFile).ToNot(BeEmpty())
+	Expect(yaml2.Unmarshal(moduleFile, &controlplaneCrd)).To(Succeed())
+
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases")},
-		CRDs:                  []*v1.CustomResourceDefinition{manifestCrd},
+		CRDs:                  []*v1.CustomResourceDefinition{manifestCrd, controlplaneCrd},
 		ErrorIfCRDPathMissing: true,
 	}
 

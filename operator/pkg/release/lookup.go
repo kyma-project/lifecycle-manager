@@ -167,6 +167,6 @@ func NewMoreThanOneTemplateCandidateErr(component operatorv1alpha1.Module,
 		candidates[i] = candidate.GetName()
 	}
 
-	return fmt.Errorf("more than one config map template found for module: %s, candidates: %v",
+	return fmt.Errorf("more than one module template found for module: %s, candidates: %v",
 		component.Name, candidates)
 }
