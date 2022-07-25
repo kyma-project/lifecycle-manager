@@ -56,7 +56,7 @@ func TemplatesToModules(
 
 		var err error
 
-		template.ModuleTemplate.Spec.Data.SetName(module.Name + kyma.Name)
+		template.ModuleTemplate.Spec.Data.SetName(CreateModuleName(module.Name, kyma.Name))
 		template.ModuleTemplate.Spec.Data.SetNamespace(kyma.GetNamespace())
 
 		if component, err = NewModule(template.ModuleTemplate, settings.Verification); err != nil {
@@ -72,6 +72,10 @@ func TemplatesToModules(
 	}
 
 	return modules, nil
+}
+
+func CreateModuleName(moduleName string, kymaName string) string {
+	return moduleName + kymaName
 }
 
 func NewModule(

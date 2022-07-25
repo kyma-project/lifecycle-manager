@@ -7,11 +7,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 )
 
-const OperatorName = "kyma-operator"
-
 func NewCacheFunc() cache.NewCacheFunc {
 	cacheLabelSelector := labels.SelectorFromSet(
-		labels.Set{v1alpha1.ManagedBy: OperatorName},
+		labels.Set{v1alpha1.ManagedBy: v1alpha1.OperatorName},
 	)
 	return cache.BuilderWithOptions(cache.Options{
 		SelectorsByObject: cache.SelectorsByObject{

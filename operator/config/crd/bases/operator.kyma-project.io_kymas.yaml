@@ -219,6 +219,16 @@ spec:
                       description: Human-readable message indicating details about
                         the last status transition.
                       type: string
+                    moduleInfo:
+                      description: ModuleInfo provide the latest deployed Module CR
+                        information.
+                      properties:
+                        generation:
+                          description: Generation tracks the active Generation of
+                            the Deployed Module CR.
+                          format: int64
+                          type: integer
+                      type: object
                     reason:
                       description: Machine-readable text indicating the reason for
                         the condition's last transition.

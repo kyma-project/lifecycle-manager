@@ -256,7 +256,7 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *v1a
 	var err error
 	var modules parsed.Modules
 	// these are the actual modules
-	modules, err = r.GetModules(ctx, kyma, true)
+	modules, err = r.GetModules(ctx, kyma, false)
 	if err != nil {
 		if err.Error() == ErrOutdatedTemplates.Error() {
 			return r.UpdateStatus(ctx, kyma, v1alpha1.KymaStateProcessing,
@@ -368,6 +368,10 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 			return true, nil
 		}
 		update := func() (bool, error) {
+			if module.Template.Spec.Target == v1alpha1.TargetControlPlane {
+				return false, nil
+			}
+
 			if err := r.UpdateModule(ctx, name, kyma, module); err != nil {
 				return false, err
 			}
@@ -381,6 +385,11 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 		}
 
 		if kyma.HasOutdatedOverride(name) {
+			return update()
+		}
+
+		moduleInfo := kyma.GetModuleInfo(name)
+		if module.OutdatedCheckWithModuleInfo(moduleInfo) {
 			return update()
 		}
 
@@ -426,8 +435,6 @@ func (r *KymaReconciler) UpdateModule(ctx context.Context, name string, kyma *v1
 	}
 	// set labels
 	module.ApplyLabels(kyma, name)
-	// update the spec
-	module.Unstructured.Object["spec"] = module.Template.Spec.Data.Object["spec"]
 	if err := r.Update(ctx, module.Unstructured, &client.UpdateOptions{}); err != nil {
 		return fmt.Errorf("error updating custom resource of type %s %w", name, err)
 	}
@@ -482,6 +489,7 @@ func (r *KymaReconciler) GetModules(
 		return nil, fmt.Errorf("templates could not be fetched: %w", err)
 	}
 
+	// TODO: if not necessary to prevent update, remove this condition
 	if checkOutdatedTemplates {
 		for _, template := range templates {
 			if template.Outdated {

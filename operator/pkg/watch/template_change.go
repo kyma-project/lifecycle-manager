@@ -77,12 +77,10 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 func manageable(template *v1alpha1.ModuleTemplate) bool {
 	labels := template.GetLabels()
 
-	managedBy, managedByPresent := labels[v1alpha1.ManagedBy]
-	if !managedByPresent || managedBy != "kyma-operator" {
+	if managedBy, ok := labels[v1alpha1.ManagedBy]; !ok || managedBy != v1alpha1.OperatorName {
 		return false
 	}
-	controller, controllerPresent := labels[v1alpha1.ControllerName]
-	if !controllerPresent || controller == "" {
+	if controller, ok := labels[v1alpha1.ControllerName]; !ok || controller == "" {
 		return false
 	}
 	if template.Spec.Target == v1alpha1.TargetControlPlane || template.Spec.Channel == "" {

@@ -162,6 +162,10 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequestFromOwnerRefe
 			e.Log.Error(err, "error getting owner")
 		}
 
+		// In case component state can't be updated due to operator error, still possible enqueue by Generation update.
+		if componentOld.GetGeneration() != componentNew.GetGeneration() {
+			result[request] = ref
+		}
 		oldState := extractState(componentOld, e.Log)
 		newState := extractState(componentNew, e.Log)
 

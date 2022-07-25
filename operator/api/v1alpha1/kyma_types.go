@@ -170,6 +170,15 @@ func (kyma *Kyma) HasOutdatedOverride(module string) bool {
 	return false
 }
 
+func (kyma *Kyma) GetModuleInfo(module string) *ModuleInfo {
+	for _, existingCondition := range kyma.Status.Conditions {
+		if existingCondition.Reason == module {
+			return &existingCondition.ModuleInfo
+		}
+	}
+	return nil
+}
+
 func (kyma *Kyma) RefreshOverride(module string) {
 	for overwrittenModule, override := range kyma.Status.ActiveOverrides {
 		if overwrittenModule == module && !override.Applied {
@@ -250,9 +259,17 @@ type KymaCondition struct {
 	// +optional
 	TemplateInfo TemplateInfo `json:"templateInfo,omitempty"`
 
+	// ModuleInfo provide the latest deployed Module CR information.
+	ModuleInfo ModuleInfo `json:"moduleInfo,omitempty"`
+
 	// Timestamp for when Kyma last transitioned from one status to another.
 	// +optional
 	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`
+}
+
+type ModuleInfo struct {
+	// Generation tracks the active Generation of the Deployed Module CR.
+	Generation int64 `json:"generation,omitempty"`
 }
 
 type TemplateInfo struct {

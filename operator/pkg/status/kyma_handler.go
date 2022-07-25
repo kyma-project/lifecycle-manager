@@ -89,6 +89,11 @@ func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules
 			}
 		}
 
+		// Here should make sure module.Unstructured come from actual module CR but not from module template
+		if module.Unstructured != nil {
+			condition.ModuleInfo = operatorv1alpha1.ModuleInfo{Generation: module.Unstructured.GetGeneration()}
+		}
+
 		condition.LastTransitionTime = &metav1.Time{Time: time.Now()}
 		condition.Message = message
 		condition.Status = conditionStatus

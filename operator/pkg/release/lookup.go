@@ -65,12 +65,12 @@ type Lookup interface {
 	WithContext(ctx context.Context) (*TemplateInChannel, error)
 }
 
-func LookupTemplate(client client.Reader, component operatorv1alpha1.Module,
+func LookupTemplate(client client.Reader, module operatorv1alpha1.Module,
 	defaultChannel operatorv1alpha1.Channel, profile operatorv1alpha1.Profile,
 ) *ChannelTemplateLookup {
 	return &ChannelTemplateLookup{
 		reader:         client,
-		module:         component,
+		module:         module,
 		defaultChannel: defaultChannel,
 		profile:        profile,
 	}

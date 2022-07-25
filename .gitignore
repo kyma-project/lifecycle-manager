@@ -80,3 +80,5 @@ out.txt
 # ignore vscode delve debug binary
 */__debug_bin
 /operator/config/crd/bases/component.kyma-project.io_controlplanemodules.yaml
+
+.run/

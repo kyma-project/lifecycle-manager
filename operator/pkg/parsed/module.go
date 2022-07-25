@@ -88,5 +88,13 @@ func (m *Module) UpdateStatusFromCluster(ctx context.Context, clnt client.Client
 
 	m.Unstructured.Object["status"] = unstructuredFromServer.Object["status"]
 	m.Unstructured.SetResourceVersion(unstructuredFromServer.GetResourceVersion())
+	m.Unstructured.SetGeneration(unstructuredFromServer.GetGeneration())
 	return nil
+}
+
+func (m *Module) OutdatedCheckWithModuleInfo(moduleInfo *v1alpha1.ModuleInfo) bool {
+	if moduleInfo != nil && moduleInfo.Generation != m.Unstructured.GetGeneration() {
+		return true
+	}
+	return false
 }

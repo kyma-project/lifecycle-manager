@@ -117,7 +117,7 @@ var _ = BeforeSuite(func() {
 
 	err = (&kymacontroller.KymaReconciler{
 		Client:        k8sManager.GetClient(),
-		EventRecorder: k8sManager.GetEventRecorderFor("kyma-operator"),
+		EventRecorder: k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
 		RequeueIntervals: kymacontroller.RequeueIntervals{
 			Success: 3 * time.Second,
 			Failure: 1 * time.Second,
