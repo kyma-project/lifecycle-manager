@@ -104,8 +104,7 @@ func UpdateModuleState(
 
 func deleteModule(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate,
 ) error {
-	component := &unstructured.Unstructured{}
-	component = moduleTemplate.Spec.Data.DeepCopy()
+	component := moduleTemplate.Spec.Data.DeepCopy()
 	if moduleTemplate.Spec.Target == v1alpha1.TargetRemote {
 		component.SetKind("Manifest")
 	}
@@ -297,7 +296,9 @@ func ModuleExist(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate) f
 	}
 }
 
-func ModuleExistWithOverwrites(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate, overwrites map[string]any) func() error {
+func ModuleExistWithOverwrites(kyma *v1alpha1.Kyma,
+	moduleTemplate *v1alpha1.ModuleTemplate, overwrites map[string]any,
+) func() error {
 	return func() error {
 		module, err := getModule(kyma, moduleTemplate)
 		Expect(module).ShouldNot(BeEmpty())
@@ -307,8 +308,7 @@ func ModuleExistWithOverwrites(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.Mod
 
 func getModule(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate,
 ) (*unstructured.Unstructured, error) {
-	component := &unstructured.Unstructured{}
-	component = moduleTemplate.Spec.Data.DeepCopy()
+	component := moduleTemplate.Spec.Data.DeepCopy()
 	if moduleTemplate.Spec.Target == v1alpha1.TargetRemote {
 		component.SetKind("Manifest")
 	}

@@ -368,10 +368,6 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 			return true, nil
 		}
 		update := func() (bool, error) {
-			if module.Template.Spec.Target == v1alpha1.TargetControlPlane {
-				return false, nil
-			}
-
 			if err := r.UpdateModule(ctx, name, kyma, module); err != nil {
 				return false, err
 			}
@@ -424,6 +420,10 @@ func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *v1
 func (r *KymaReconciler) UpdateModule(ctx context.Context, name string, kyma *v1alpha1.Kyma,
 	module *parsed.Module,
 ) error {
+	if module.Template.Spec.Target == v1alpha1.TargetControlPlane {
+		return nil
+	}
+
 	// merge template and component settings
 	if err := module.CopySettingsToUnstructured(); err != nil {
 		return fmt.Errorf("error occurred while updating module from settings: %w", err)
