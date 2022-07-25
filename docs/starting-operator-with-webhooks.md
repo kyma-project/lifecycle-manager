@@ -1,7 +1,7 @@
 # Enabling Webhooks in Kyma Operator
 
 To make local testing easier, webhooks are disabled by default. To enable webhooks running with the operator,
-you will have to change some kustomization.yaml files as well as introduce a flag that will enable the webhook server:
+you will have to change some kustomization.yaml files as well as introduce a flag that will enable the webhook server. For further information, please also checkout the [kubebuilder tutorial](https://book.kubebuilder.io/cronjob-tutorial/running-webhook.html)
 
 
 In `config/crd/kustomization.yaml`:
@@ -19,6 +19,24 @@ patchesStrategicMerge:
 - patches/cainjection_in_kymas.yaml
 - patches/cainjection_in_moduletemplates.yaml
 #+kubebuilder:scaffold:crdkustomizecainjectionpatch
+```
+
+In `config/default/kustomization.yaml`:
+
+```yaml
+bases:
+...
+- ../crd
+- ../rbac
+- ../manager
+# [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
+# crd/kustomization.yaml
+#- ../webhook
+# [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'. 'WEBHOOK' components are required.
+#- ../certmanager
+# [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
+- ../prometheus
+...
 ```
 
 Next, make sure to enable the webhooks by configuring the `enable-webhooks` flag:
