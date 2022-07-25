@@ -123,7 +123,7 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 	client := mgr.GetClient()
 	if err = (&controllers.KymaReconciler{
 		Client:        client,
-		EventRecorder: mgr.GetEventRecorderFor(controllers.OperatorName),
+		EventRecorder: mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
 		RequeueIntervals: controllers.RequeueIntervals{
 			Success: flagVar.requeueSuccessInterval,
 			Failure: flagVar.requeueFailureInterval,

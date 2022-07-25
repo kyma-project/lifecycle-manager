@@ -388,11 +388,6 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 			return update()
 		}
 
-		moduleInfo := kyma.GetModuleInfo(name)
-		if module.OutdatedCheckWithModuleInfo(moduleInfo) {
-			return update()
-		}
-
 		if module.TemplateOutdated {
 			condition, _ := status.Helper(r).GetReadyConditionForComponent(kyma, name)
 			if module.StateMismatchedWithCondition(condition) {
