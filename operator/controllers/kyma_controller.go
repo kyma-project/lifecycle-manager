@@ -40,10 +40,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-var (
-	ErrNoComponentSpecified = errors.New("no component specified")
-	ErrOutdatedTemplates    = errors.New("outdate templates require new module versions")
-)
+var ErrNoComponentSpecified = errors.New("no component specified")
 
 type RequeueIntervals struct {
 	Success time.Duration
@@ -183,7 +180,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	var err error
 	var modules parsed.Modules
 	// these are the actual modules
-	modules, err = r.GetModules(ctx, kyma, false)
+	modules, err = r.GetModules(ctx, kyma)
 	if err != nil {
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
 			fmt.Errorf("error while fetching modules during processing: %w", err))
@@ -256,12 +253,8 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *v1a
 	var err error
 	var modules parsed.Modules
 	// these are the actual modules
-	modules, err = r.GetModules(ctx, kyma, false)
+	modules, err = r.GetModules(ctx, kyma)
 	if err != nil {
-		if err.Error() == ErrOutdatedTemplates.Error() {
-			return r.UpdateStatus(ctx, kyma, v1alpha1.KymaStateProcessing,
-				fmt.Sprintf("module templates were updated: %v", err))
-		}
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
 			fmt.Errorf("error while fetching modules during consistency check: %w", err))
 	}
@@ -285,6 +278,13 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *v1a
 	if kyma.Status.ObservedGeneration != kyma.Generation {
 		return r.UpdateStatus(ctx, kyma, v1alpha1.KymaStateProcessing,
 			"object updated")
+	}
+
+	for _, module := range modules {
+		if module.TemplateOutdated {
+			return r.UpdateStatus(ctx, kyma, v1alpha1.KymaStateProcessing,
+				fmt.Sprintf("module template of module %s got updated", module.Name))
+		}
 	}
 
 	return nil
@@ -475,22 +475,11 @@ func (r *KymaReconciler) UpdateStatusFromErr(
 	return nil
 }
 
-func (r *KymaReconciler) GetModules(
-	ctx context.Context, kyma *v1alpha1.Kyma, checkOutdatedTemplates bool,
-) (parsed.Modules, error) {
+func (r *KymaReconciler) GetModules(ctx context.Context, kyma *v1alpha1.Kyma) (parsed.Modules, error) {
 	// fetch templates
 	templates, err := release.GetTemplates(ctx, r, kyma)
 	if err != nil {
 		return nil, fmt.Errorf("templates could not be fetched: %w", err)
-	}
-
-	// TODO: if not necessary to prevent update, remove this condition
-	if checkOutdatedTemplates {
-		for _, template := range templates {
-			if template.Outdated {
-				return nil, ErrOutdatedTemplates
-			}
-		}
 	}
 
 	verification, err := r.NewVerification(ctx, kyma.GetNamespace())
