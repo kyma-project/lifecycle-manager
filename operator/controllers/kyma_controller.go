@@ -269,10 +269,6 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *v1a
 			fmt.Errorf("error while fetching modules during consistency check: %w", err))
 	}
 
-	if kyma.HasOutdatedOverrides() {
-		return r.UpdateStatus(ctx, kyma, v1alpha1.KymaStateProcessing, "update for modules")
-	}
-
 	statusUpdateRequired, err := r.SyncConditionsWithModuleStates(ctx, kyma, modules)
 	if err != nil {
 		return fmt.Errorf("error while updating component status conditions: %w", err)
@@ -352,12 +348,9 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 			return false, fmt.Errorf("could not update module status: %w", err)
 		}
 
-		outdatedOverride := kyma.HasOutdatedOverride(name)
-		syncCondition := func(message string, s v1alpha1.KymaConditionStatus) {
-			if outdatedOverride {
-				kyma.RefreshOverride(name)
-			}
-			status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module}, s, message)
+		syncCondition := func(message string) {
+			status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module},
+				v1alpha1.ConditionStatusFalse, message)
 		}
 		create := func() (bool, error) {
 			logger.Info("module not found, attempting to create it...")
@@ -365,7 +358,7 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 			if err != nil {
 				return false, err
 			}
-			syncCondition(fmt.Sprintf("initial condition for module %s", module.Name), v1alpha1.ConditionStatusFalse)
+			syncCondition(fmt.Sprintf("initial condition for module %s", module.Name))
 			logger.Info("successfully created module CR")
 			return true, nil
 		}
@@ -374,16 +367,12 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 				return false, err
 			}
 			logger.Info("successfully updated module CR")
-			syncCondition(fmt.Sprintf("updated condition for module %s", module.Name), v1alpha1.ConditionStatusFalse)
+			syncCondition(fmt.Sprintf("updated condition for module %s", module.Name))
 			return true, nil
 		}
 
 		if k8serrors.IsNotFound(errors.Unwrap(err)) {
 			return create()
-		}
-
-		if kyma.HasOutdatedOverride(name) {
-			return update()
 		}
 
 		if module.TemplateOutdated {
@@ -509,10 +498,6 @@ func (r *KymaReconciler) GetModules(
 		&parsed.ModuleConversionSettings{Verification: verification})
 	if err != nil {
 		return nil, fmt.Errorf("could not convert templates to modules: %w", err)
-	}
-
-	if err = parsed.ProcessModuleOverridesOnKyma(ctx, r, kyma, modules); err != nil {
-		return nil, fmt.Errorf("error while applying overrides: %w", err)
 	}
 
 	return modules, nil
