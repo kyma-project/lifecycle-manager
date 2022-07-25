@@ -23,39 +23,51 @@ spec:
   descriptor:
     component:
       componentReferences: []
-      name: kyma-project.io/module/example-module-name
+      name: kyma-project.io/module/manifest1
       provider: internal
       repositoryContexts:
-        - baseUrl: ghcr.io/fake
+        - baseUrl: ghcr.io/ruanxin
           componentNameMapping: urlPath
           type: ociRegistry
-        - baseUrl: ghcr.io/fake/signed
+        - baseUrl: ghcr.io/ruanxin/signed
           componentNameMapping: urlPath
           type: ociRegistry
       resources:
         - access:
             digest: sha256:9d37fb366e4371b44c94496f3db276bd6f3a1019c9d44077b689c68ec6486c1e
             type: localOciBlob
-          name: crds
-          relation: local
-          type: yaml
-          version: v0.0.40
-        - access:
-            digest: sha256:9d37fb366e4371b44c94496f3db276bd6f3a1019c9d44077b689c68ec6486c1e
-            type: localOciBlob
+          digest:
+            hashAlgorithm: sha256
+            normalisationAlgorithm: genericBlobDigest/v1
+            value: 9d37fb366e4371b44c94496f3db276bd6f3a1019c9d44077b689c68ec6486c1e
           name: config
           relation: local
           type: yaml
-          version: v0.0.40
+          version: v0.0.45
         - access:
-            digest: sha256:ddd4e3972af752f950c43ac3f2ab36ee7dcf2e51bc3709a7f5e5423b0418b551
+            digest: sha256:0d30a40538b27cced900a0629e98feab35aa0066af0cf38bca2a2c2ec298ae13
             type: localOciBlob
-          name: kyma-test
+          digest:
+            hashAlgorithm: sha256
+            normalisationAlgorithm: genericBlobDigest/v1
+            value: 0d30a40538b27cced900a0629e98feab35aa0066af0cf38bca2a2c2ec298ae13
+          name: crds
+          relation: local
+          type: crds
+          version: v0.0.45
+        - access:
+            digest: sha256:e3c14b5294bee1f256f7e328854b42d57a68fba3b1d106a9f65d4cb9537bd953
+            type: localOciBlob
+          digest:
+            hashAlgorithm: sha256
+            normalisationAlgorithm: genericBlobDigest/v1
+            value: e3c14b5294bee1f256f7e328854b42d57a68fba3b1d106a9f65d4cb9537bd953
+          name: kyma-load-test
           relation: local
           type: helm-chart
-          version: v0.0.40
-      sources: []
-      version: v0.0.40
+          version: v0.0.45
+      sources: [ ]
+      version: v0.0.45
     meta:
       schemaVersion: v2
     signatures: []

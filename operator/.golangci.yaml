@@ -37,3 +37,6 @@ issues:
   fix: true
 output:
   sort-results: true
+run:
+  skip-files:
+    - zz_generated.deepcopy.go
