@@ -70,10 +70,6 @@ func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules
 	for name, module := range modules {
 		condition, exists := k.GetReadyConditionForComponent(kyma, name)
 		if !exists {
-			condition = &operatorv1alpha1.KymaCondition{
-				Type:   operatorv1alpha1.ConditionTypeReady,
-				Reason: name,
-			}
 			status.Conditions = append(status.Conditions, *condition)
 		}
 
@@ -113,7 +109,10 @@ func (k *Kyma) GetReadyConditionForComponent(kymaObj *operatorv1alpha1.Kyma,
 		}
 	}
 
-	return &operatorv1alpha1.KymaCondition{}, false
+	return &operatorv1alpha1.KymaCondition{
+		Type:   operatorv1alpha1.ConditionTypeReady,
+		Reason: componentName,
+	}, false
 }
 
 func (k *Kyma) UpdateConditionFromComponentState(name string, module *parsed.Module,
@@ -127,8 +126,13 @@ func (k *Kyma) UpdateConditionFromComponentState(name string, module *parsed.Mod
 	if status != nil {
 		condition, exists := k.GetReadyConditionForComponent(kyma, moduleName)
 		if !exists {
-			return false, fmt.Errorf("error with condition for component %s: %w",
-				moduleName, ErrConditionNotFound)
+			// In rare cases, the condition for a module does not yet exist in an update
+			// this can happen if the creation failed due to a resource version conflict
+			// if this happens we need to make sure to create it dynamically
+			k.SyncReadyConditionForModules(kyma, parsed.Modules{name: module},
+				operatorv1alpha1.ConditionStatusFalse, "component tracked!")
+			updateRequired = true
+			return updateRequired, nil
 		}
 
 		switch status.(map[string]interface{})[watch.State].(string) {
@@ -149,6 +153,7 @@ func (k *Kyma) UpdateConditionFromComponentState(name string, module *parsed.Mod
 			}
 
 		default:
+			// This will only trigger an update on the conditions in case the component was not set to not false before
 			if condition.Status != operatorv1alpha1.ConditionStatusFalse {
 				k.SyncReadyConditionForModules(kyma, parsed.Modules{name: module},
 					operatorv1alpha1.ConditionStatusFalse, "component not ready!")
