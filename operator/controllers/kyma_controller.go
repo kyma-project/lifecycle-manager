@@ -396,16 +396,8 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *v1alpha1.Kyma,
 	module *parsed.Module,
 ) error {
-	// merge template and component settings
-	if err := module.CopySettingsToUnstructured(); err != nil {
-		return fmt.Errorf("error occurred while creating module from settings: %w", err)
-	}
-	// set labels
-	module.ApplyLabels(kyma, name)
-	// set owner reference
-	if err := controllerutil.SetControllerReference(kyma, module.Unstructured, r.Scheme()); err != nil {
-		return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w",
-			name, kyma.Name, err)
+	if err := r.setupModule(module, kyma, name); err != nil {
+		return err
 	}
 	// create resource if not found
 	if err := r.Client.Create(ctx, module.Unstructured, &client.CreateOptions{}); err != nil {
@@ -422,14 +414,31 @@ func (r *KymaReconciler) UpdateModule(ctx context.Context, name string, kyma *v1
 		return nil
 	}
 
+	if err := r.setupModule(module, kyma, name); err != nil {
+		return err
+	}
+
+	if err := r.Update(ctx, module.Unstructured, &client.UpdateOptions{}); err != nil {
+		return fmt.Errorf("error updating custom resource of type %s %w", name, err)
+	}
+
+	return nil
+}
+
+func (r *KymaReconciler) setupModule(module *parsed.Module, kyma *v1alpha1.Kyma, name string) error {
 	// merge template and component settings
 	if err := module.CopySettingsToUnstructured(); err != nil {
 		return fmt.Errorf("error occurred while updating module from settings: %w", err)
 	}
 	// set labels
 	module.ApplyLabels(kyma, name)
-	if err := r.Update(ctx, module.Unstructured, &client.UpdateOptions{}); err != nil {
-		return fmt.Errorf("error updating custom resource of type %s %w", name, err)
+
+	if module.GetOwnerReferences() == nil {
+		// set owner reference
+		if err := controllerutil.SetControllerReference(kyma, module.Unstructured, r.Scheme()); err != nil {
+			return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w",
+				name, kyma.Name, err)
+		}
 	}
 
 	return nil

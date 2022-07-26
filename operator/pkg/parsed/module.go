@@ -88,5 +88,6 @@ func (m *Module) UpdateStatusFromCluster(ctx context.Context, clnt client.Client
 
 	m.Unstructured.Object["status"] = unstructuredFromServer.Object["status"]
 	m.Unstructured.SetResourceVersion(unstructuredFromServer.GetResourceVersion())
+	m.Unstructured.SetOwnerReferences(unstructuredFromServer.GetOwnerReferences())
 	return nil
 }
