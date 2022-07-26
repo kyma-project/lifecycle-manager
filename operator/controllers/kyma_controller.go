@@ -193,9 +193,12 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	}
 
 	// Now we track the conditions: update the status based on their state
+	// technically we could also update the state in the previous step alone determine if we are ready based on this
+
 	statusUpdateRequiredFromSync, err := r.SyncConditionsWithModuleStates(ctx, kyma, modules)
 	if err != nil {
-		return err
+		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
+			fmt.Errorf("error while syncing conditions during processing: %w", err))
 	}
 
 	// set ready condition if applicable
@@ -257,10 +260,6 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *v1a
 	if err != nil {
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
 			fmt.Errorf("error while fetching modules during consistency check: %w", err))
-	}
-
-	if kyma.HasOutdatedOverrides() {
-		return r.UpdateStatus(ctx, kyma, v1alpha1.KymaStateProcessing, "update for modules")
 	}
 
 	statusUpdateRequired, err := r.SyncConditionsWithModuleStates(ctx, kyma, modules)
@@ -349,11 +348,7 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 			return false, fmt.Errorf("could not update module status: %w", err)
 		}
 
-		outdatedOverride := kyma.HasOutdatedOverride(name)
 		syncCondition := func(message string) {
-			if outdatedOverride {
-				kyma.RefreshOverride(name)
-			}
 			status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module},
 				v1alpha1.ConditionStatusFalse, message)
 		}
@@ -380,16 +375,19 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 			return create()
 		}
 
-		if kyma.HasOutdatedOverride(name) {
-			return update()
-		}
-
 		if module.TemplateOutdated {
 			condition, _ := status.Helper(r).GetReadyConditionForComponent(kyma, name)
 			if module.StateMismatchedWithCondition(condition) {
 				return update()
 			}
 		}
+
+		// if we have NO create, NO update,the template was NOT outdated and the Condition did not exist yet.
+		// either the condition was never tracked before, or it was tracked before but isnt ready yet.
+		// we now insert the condition to false as we expect the next step to verify every time if the module is still ready,
+		// by default the module will NOT be ready.
+		status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module}, v1alpha1.ConditionStatusFalse,
+			fmt.Sprintf("module %s was not created or updated", module.Name))
 	}
 
 	return false, nil
@@ -492,10 +490,6 @@ func (r *KymaReconciler) GetModules(ctx context.Context, kyma *v1alpha1.Kyma) (p
 		&parsed.ModuleConversionSettings{Verification: verification})
 	if err != nil {
 		return nil, fmt.Errorf("could not convert templates to modules: %w", err)
-	}
-
-	if err = parsed.ProcessModuleOverridesOnKyma(ctx, r, kyma, modules); err != nil {
-		return nil, fmt.Errorf("error while applying overrides: %w", err)
 	}
 
 	return modules, nil
