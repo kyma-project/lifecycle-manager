@@ -1,15 +1,15 @@
 apiVersion: operator.kyma-project.io/v1alpha1
 kind: ModuleTemplate
 metadata:
-  name: moduletemplate-sample-cp-module
+  name: moduletemplate-sample-kcp-module
   namespace: default
   labels:
     "operator.kyma-project.io/managed-by": "kyma-operator"
-    "operator.kyma-project.io/controller-name": "cp-operator"
-    "operator.kyma-project.io/module-name": "cp-module"
+    "operator.kyma-project.io/controller-name": "kcp-operator"
+    "operator.kyma-project.io/module-name": "kcp-module"
     "operator.kyma-project.io/profile": "production"
   annotations:
-    "operator.kyma-project.io/module-version": "v0.0.37"
+    "operator.kyma-project.io/module-version": "v0.0.48"
     "operator.kyma-project.io/module-provider": "internal"
     "operator.kyma-project.io/descriptor-schema-version": "v2"
     "operator.kyma-project.io/generated-at": "2022-07-11T14:59:43Z"
@@ -17,9 +17,11 @@ spec:
   channel: stable
   target: control-plane
   data:
-    kind: ControlPlaneModule
-    resource: controlplanemodules
+    kind: KCPModule
+    resource: kcpmodules
     apiVersion: component.kyma-project.io/v1alpha1
+    spec:
+      initKey: initValue
   descriptor:
     component:
       componentReferences: []
@@ -43,31 +45,31 @@ spec:
           name: config
           relation: local
           type: yaml
-          version: v0.0.45
+          version: v0.0.48
         - access:
-            digest: sha256:0d30a40538b27cced900a0629e98feab35aa0066af0cf38bca2a2c2ec298ae13
+            digest: sha256:44499fc31e86bc504cfce0f6cb06d926cf5d3d9d1a000b71a9b2622c0e726042
             type: localOciBlob
           digest:
             hashAlgorithm: sha256
             normalisationAlgorithm: genericBlobDigest/v1
-            value: 0d30a40538b27cced900a0629e98feab35aa0066af0cf38bca2a2c2ec298ae13
+            value: 44499fc31e86bc504cfce0f6cb06d926cf5d3d9d1a000b71a9b2622c0e726042
           name: crds
           relation: local
           type: crds
-          version: v0.0.45
+          version: v0.0.48
         - access:
-            digest: sha256:e3c14b5294bee1f256f7e328854b42d57a68fba3b1d106a9f65d4cb9537bd953
+            digest: sha256:2b23d1f79c4fa47488154f1579ccfb9c9d8ecd6c8f16369fd8117a9ede39f2b7
             type: localOciBlob
           digest:
             hashAlgorithm: sha256
             normalisationAlgorithm: genericBlobDigest/v1
-            value: e3c14b5294bee1f256f7e328854b42d57a68fba3b1d106a9f65d4cb9537bd953
+            value: 2b23d1f79c4fa47488154f1579ccfb9c9d8ecd6c8f16369fd8117a9ede39f2b7
           name: kyma-load-test
           relation: local
           type: helm-chart
-          version: v0.0.45
+          version: v0.0.48
       sources: [ ]
-      version: v0.0.45
+      version: v0.0.48
     meta:
       schemaVersion: v2
     signatures: []

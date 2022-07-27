@@ -9,7 +9,7 @@ spec:
   sync:
     enabled: false
   modules:
-    - name: cp-module
-      controller: cp-operator
-    - name: remote-module
+    - name: kcp-module
+      controller: kcp-operator
+    - name: skr-module
       controller: manifest

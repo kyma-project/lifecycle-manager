@@ -24,48 +24,37 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// RemoteModuleSpec defines the desired state of RemoteModule.
-type RemoteModuleSpec struct {
-	// Config specifies OCI image configuration
-	// +optional
-	Config ImageSpec `json:"config"`
+// SKRModuleSpec defines the desired state of SKRModule.
+type SKRModuleSpec struct {
+	InitKey string `json:"initKey,omitempty"`
 }
 
 //+genclient
 //+kubebuilder:object:root=true
+//+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// RemoteModule is the Schema for the moduletemplates API.
-type RemoteModule struct {
+// SKRModule is the Schema for the moduletemplates API.
+type SKRModule struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   RemoteModuleSpec         `json:"spec,omitempty"`
-	Status ControlPlaneModuleStatus `json:"status,omitempty"`
+	Spec   SKRModuleSpec   `json:"spec,omitempty"`
+	Status SKRModuleStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error
-type RemoteModuleState string
+type SKRModuleState string
 
-const (
-	RemoteModuleStateReady RemoteModuleState = "Ready"
-
-	RemoteModuleStateProcessing RemoteModuleState = "Processing"
-
-	RemoteModuleStateError RemoteModuleState = "Error"
-
-	RemoteModuleStateDeleting RemoteModuleState = "Deleting"
-)
-
-// ManifestStatus defines the observed state of Manifest.
-type RemoteModuleStatus struct {
-	State RemoteModuleState `json:"state,omitempty"`
+// SKRModuleStatus defines the observed state of Manifest.
+type SKRModuleStatus struct {
+	State SKRModuleState `json:"state,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// ControlPlaneModuleList contains a list of RemoteModule.
-type RemoteModuleList struct {
+// SKRModuleList contains a list of SKRModule.
+type SKRModuleList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []RemoteModule `json:"items"`
+	Items           []SKRModule `json:"items"`
 }
