@@ -6,7 +6,7 @@ import (
 
 	"github.com/kyma-project/kyma-operator/operator/pkg/test"
 
-	sampleCRDv1alpha1 "github.com/kyma-project/kyma-operator/operator/config/samples/component-integration-installed/crd/v1alpha1"
+	sampleCRDv1alpha1 "github.com/kyma-project/kyma-operator/operator/config/samples/component-integration-installed/crd/v1alpha1" //nolint:lll
 
 	"github.com/kyma-project/kyma-operator/operator/pkg/parsed"
 	manifestV1alpha1 "github.com/kyma-project/manifest-operator/operator/api/v1alpha1"

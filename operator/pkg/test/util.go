@@ -3,6 +3,7 @@ package test
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -44,8 +45,11 @@ func readModuleTemplate(module v1alpha1.Module, moduleTemplate *v1alpha1.ModuleT
 	default:
 		template = "operator_v1alpha1_moduletemplate_kcp-module.yaml"
 	}
-
-	modulePath := filepath.Join("..", "..", "config", "samples", "component-integration-installed", template)
+	_, filename, _, ok := runtime.Caller(1)
+	if !ok {
+		panic("Can't capture current filename!")
+	}
+	modulePath := filepath.Join(filepath.Dir(filename), "../../config/samples/component-integration-installed", template)
 
 	moduleFile, err := os.ReadFile(modulePath)
 	if err != nil {
