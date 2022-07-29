@@ -101,6 +101,12 @@ spec:
                       if you are switching the namespace, so you will manually need
                       to cleanup old synchronized Kymas
                     type: string
+                  noModuleCopy:
+                    default: true
+                    description: NoModuleCopy set to true will cause the remote Kyma
+                      to be initialized without copying over the module spec of the
+                      control plane into the SKR
+                    type: boolean
                   strategy:
                     default: secret
                     description: Strategy determines the way to lookup the remotely

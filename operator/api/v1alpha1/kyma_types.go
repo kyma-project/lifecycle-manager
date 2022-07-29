@@ -78,6 +78,11 @@ type Sync struct {
 	// Note that cleanup is currently not supported if you are switching the namespace, so you will
 	// manually need to cleanup old synchronized Kymas
 	Namespace string `json:"namespace,omitempty"`
+
+	// +kubebuilder:default:=true
+	// NoModuleCopy set to true will cause the remote Kyma to be initialized without copying over the
+	// module spec of the control plane into the SKR
+	NoModuleCopy bool `json:"noModuleCopy,omitempty"`
 }
 
 // KymaSpec defines the desired state of Kyma.
