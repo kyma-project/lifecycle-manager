@@ -19,6 +19,7 @@ const (
 	ModuleName        = OperatorPrefix + Separator + "module-name"
 	ProfileLabel      = OperatorPrefix + Separator + "profile"
 	OverrideTypeLabel = OperatorPrefix + Separator + "override-type"
+	OperatorName      = "kyma-operator"
 )
 
 func GetMatchingLabelsForModule(module *Module, profile Profile) client.MatchingLabels {

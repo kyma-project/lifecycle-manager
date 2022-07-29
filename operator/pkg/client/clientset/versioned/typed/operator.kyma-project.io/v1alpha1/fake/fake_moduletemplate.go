@@ -35,9 +35,9 @@ type FakeModuleTemplates struct {
 	ns   string
 }
 
-var moduletemplatesResource = schema.GroupVersionResource{Group: "operator.kyma-project.io", Version: "v1alpha1", Resource: "moduletemplates"}
+var moduletemplatesResource = schema.GroupVersionResource{Group: "operator.kyma-project.io", Version: v1alpha1.Version, Resource: "moduletemplates"}
 
-var moduletemplatesKind = schema.GroupVersionKind{Group: "operator.kyma-project.io", Version: "v1alpha1", Kind: "ModuleTemplate"}
+var moduletemplatesKind = schema.GroupVersionKind{Group: "operator.kyma-project.io", Version: v1alpha1.Version, Kind: "ModuleTemplate"}
 
 // Get takes name of the moduleTemplate, and returns the corresponding moduleTemplate object, and an error if there is any.
 func (c *FakeModuleTemplates) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.ModuleTemplate, err error) {
@@ -76,7 +76,6 @@ func (c *FakeModuleTemplates) List(ctx context.Context, opts v1.ListOptions) (re
 func (c *FakeModuleTemplates) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(moduletemplatesResource, c.ns, opts))
-
 }
 
 // Create takes the representation of a moduleTemplate and creates it.  Returns the server's representation of the moduleTemplate, and an error, if there is any.

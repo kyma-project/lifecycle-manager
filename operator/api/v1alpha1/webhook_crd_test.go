@@ -5,6 +5,11 @@ import (
 	"os"
 	"path/filepath"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/kyma-project/kyma-operator/operator/pkg/test"
+
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -15,17 +20,24 @@ import (
 var testFiles = filepath.Join("..", "..", "config", "samples", "tests") //nolint:gochecknoglobals
 
 var _ = Describe("Webhook ValidationCreate", func() {
+	data := unstructured.Unstructured{}
+	data.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   v1alpha1.ComponentPrefix,
+		Version: v1alpha1.Version,
+		Kind:    "SampleCRD",
+	})
 	It("should successfully fetch accept a moduletemplate based on a compliant crd", func() {
 		crd := GetCRD("component.kyma-project.io", "samplecrd")
 		Eventually(func() error {
 			return k8sClient.Create(ctx, crd)
 		}, "10s").Should(Succeed())
 
-		template := GetModuleTemplate("samplecrd", v1alpha1.Module{
+		template, err := test.ModuleTemplateFactory("samplecrd", v1alpha1.Module{
 			ControllerName: "manifest",
 			Name:           "example-module-name",
 			Channel:        v1alpha1.ChannelStable,
-		}, v1alpha1.ProfileProduction)
+		}, v1alpha1.ProfileProduction, data)
+		Expect(err).ToNot(HaveOccurred())
 		Expect(k8sClient.Create(ctx, template)).Should(Succeed())
 		Expect(k8sClient.Delete(ctx, template)).Should(Succeed())
 
@@ -43,39 +55,18 @@ var _ = Describe("Webhook ValidationCreate", func() {
 		Eventually(func() error {
 			return k8sClient.Create(ctx, crd)
 		}, "10s").Should(Succeed())
-
-		template := GetModuleTemplate("samplecrd", v1alpha1.Module{
+		template, err := test.ModuleTemplateFactory("samplecrd-non-complaint", v1alpha1.Module{
 			ControllerName: "manifest",
 			Name:           "example-module-name",
 			Channel:        v1alpha1.ChannelStable,
-		}, v1alpha1.ProfileProduction)
+		}, v1alpha1.ProfileProduction, data)
+		Expect(err).ToNot(HaveOccurred())
 		Expect(k8sClient.Create(ctx, template)).Error().To(HaveField("ErrStatus.Message",
 			ContainSubstring("is invalid: spec.data.status.state[enum]: Not found: \"Processing\"")))
 
 		Expect(k8sClient.Delete(ctx, crd)).Should(Succeed())
 	})
 })
-
-func GetModuleTemplate(sample string, module v1alpha1.Module, profile v1alpha1.Profile) *v1alpha1.ModuleTemplate {
-	moduleFileName := fmt.Sprintf(
-		"operator_v1alpha1_moduletemplate_%s_%s_%s_%s_%s.yaml",
-		module.ControllerName,
-		module.Name,
-		module.Channel,
-		string(profile),
-		sample,
-	)
-	modulePath := filepath.Join(testFiles, "moduletemplates", moduleFileName)
-	By(fmt.Sprintf("using %s for %s in %s", modulePath, module.Name, module.Channel))
-
-	file, err := os.ReadFile(modulePath)
-	Expect(err).To(BeNil())
-	Expect(file).ToNot(BeEmpty())
-
-	var moduleTemplate v1alpha1.ModuleTemplate
-	Expect(yaml.Unmarshal(file, &moduleTemplate)).To(Succeed())
-	return &moduleTemplate
-}
 
 func GetCRD(group, sample string) *v1.CustomResourceDefinition {
 	crdFileName := fmt.Sprintf(

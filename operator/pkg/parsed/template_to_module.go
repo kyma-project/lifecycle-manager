@@ -56,7 +56,7 @@ func TemplatesToModules(
 
 		var err error
 
-		template.ModuleTemplate.Spec.Data.SetName(module.Name + kyma.Name)
+		template.ModuleTemplate.Spec.Data.SetName(CreateModuleName(module.Name, kyma.Name))
 		template.ModuleTemplate.Spec.Data.SetNamespace(kyma.GetNamespace())
 
 		if component, err = NewModule(template.ModuleTemplate, settings.Verification); err != nil {
@@ -74,12 +74,22 @@ func TemplatesToModules(
 	return modules, nil
 }
 
+func CreateModuleName(moduleName string, kymaName string) string {
+	return moduleName + kymaName
+}
+
 func NewModule(
 	template *v1alpha1.ModuleTemplate,
 	verification signature.Verification,
 ) (*unstructured.Unstructured, error) {
-	component := &template.Spec.Data
-
+	component := template.Spec.Data.DeepCopy()
+	if template.Spec.Target == v1alpha1.TargetRemote {
+		resource := template.Spec.Data.DeepCopy()
+		if err := mergeIntoSpecResource(resource, component); err != nil {
+			return nil, err
+		}
+		component.SetKind("Manifest")
+	}
 	var descriptor *ocm.ComponentDescriptor
 	var layers img.Layers
 	var err error
@@ -103,43 +113,56 @@ func NewModule(
 	return component, nil
 }
 
+func mergeIntoSpecResource(resource *unstructured.Unstructured, component *unstructured.Unstructured) error {
+	if err := mergo.Merge(&component.Object,
+		map[string]any{"spec": map[string]any{"resource": resource}},
+		mergo.WithAppendSlice); err != nil {
+		return fmt.Errorf("error while merging the template spec.data into the spec: %w", err)
+	}
+	return nil
+}
+
 func translateLayersAndMergeIntoUnstructured(
 	object *unstructured.Unstructured, layers img.Layers,
 ) error {
-	if object.Object["spec"] == nil {
-		object.Object["spec"] = make(map[string]any)
-	}
 	for _, layer := range layers {
-		if err := translateLayerIntoInstall(object, layer); err != nil {
+		if err := translateLayerIntoSpec(object, layer); err != nil {
 			return fmt.Errorf("error in layer %s: %w", layer.LayerName, err)
 		}
 	}
 	return nil
 }
 
-func translateLayerIntoInstall(
+func translateLayerIntoSpec(
 	component *unstructured.Unstructured, layer img.Layer,
 ) error {
 	var merge any
-	install := map[string]any{"name": string(layer.LayerName)}
-	source := map[string]any{"source": layer.LayerRepresentation.ToGenericRepresentation()}
-
-	if err := mergo.Merge(&install, &source); err != nil {
-		return fmt.Errorf("error while merging the generic install representation: %w", err)
-	}
-
-	if layer.LayerName == "config" {
+	var err error
+	if layer.LayerName == img.CRDsLayer || layer.LayerName == img.ConfigLayer {
 		ociImage, ok := layer.LayerRepresentation.(*img.OCI)
 		if !ok {
 			return fmt.Errorf("%w: not an OCIImage", ErrDefaultConfigParsing)
 		}
-		merge = map[string]any{"defaultConfig": ociImage.ToGenericRepresentation()}
+		merge = map[string]any{string(layer.LayerName): ociImage.ToGenericRepresentation()}
 	} else {
-		merge = map[string]any{"installs": []map[string]any{install}}
+		if merge, err = mergeInstalls(layer); err != nil {
+			return err
+		}
 	}
 	if err := mergo.Merge(&component.Object, map[string]any{"spec": merge}, mergo.WithAppendSlice); err != nil {
 		return fmt.Errorf("error while merging the layer representation into the spec: %w", err)
 	}
 
 	return nil
+}
+
+func mergeInstalls(layer img.Layer) (any, error) {
+	install := map[string]any{"name": string(layer.LayerName)}
+	source := map[string]any{"source": layer.LayerRepresentation.ToGenericRepresentation()}
+
+	if err := mergo.Merge(&install, &source); err != nil {
+		return nil, fmt.Errorf("error while merging the generic install representation: %w", err)
+	}
+	merge := map[string]any{string(img.InstallLayer): []map[string]any{install}}
+	return merge, nil
 }
