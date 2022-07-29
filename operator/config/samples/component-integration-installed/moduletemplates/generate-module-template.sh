@@ -38,7 +38,7 @@ REGISTRY_URL="${REGISTRY_HOST}:50241"
 helm repo add nginx-stable https://helm.nginx.com/stable
 helm pull nginx-stable/nginx-ingress --untar --untardir ${DATA_DIR}
 
-if k3d registry get ${REGISTRY_NAME} | grep -q ${REGISTRY_NAME}; then
+if k3d registry get ${REGISTRY_HOST} | grep -q ${REGISTRY_NAME}; then
    echo "OCI Registry ${REGISTRY_NAME} Exists, continuing..."
 else
    echo "OCI Registry ${REGISTRY_NAME} does not exist!"

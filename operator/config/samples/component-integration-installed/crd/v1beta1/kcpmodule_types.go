@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 //+groupName=component.kyma-project.io
-package v1alpha1
+package v1beta1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,37 +24,42 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// SKRModuleSpec defines the desired state of SKRModule.
-type SKRModuleSpec struct {
+// KCPModuleSpec defines the desired state of KCPModule.
+type KCPModuleSpec struct {
 	InitKey string `json:"initKey,omitempty"`
+	NewKey  string `json:"newKey,omitempty"`
 }
+
+type RefTypeMetadata string
 
 //+genclient
 //+kubebuilder:object:root=true
+//+kubebuilder:storageversion
 //+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// SKRModule is the Schema for the moduletemplates API.
-type SKRModule struct {
+// KCPModule is the Schema for the moduletemplates API.
+type KCPModule struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   SKRModuleSpec   `json:"spec,omitempty"`
-	Status SKRModuleStatus `json:"status,omitempty"`
+	Spec   KCPModuleSpec   `json:"spec,omitempty"`
+	Status KCPModuleStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error
-type SKRModuleState string
+type KCPModuleState string
 
-// SKRModuleStatus defines the observed state of Manifest.
-type SKRModuleStatus struct {
-	State SKRModuleState `json:"state,omitempty"`
+// ManifestStatus defines the observed state of Manifest.
+type KCPModuleStatus struct {
+	// +kubebuilder:validation:Enum=Ready;Processing;Error;Deleting;
+	State KCPModuleState `json:"state"`
 }
 
 //+kubebuilder:object:root=true
 
-// SKRModuleList contains a list of SKRModule.
-type SKRModuleList struct {
+// KCPModuleList contains a list of KCPModule.
+type KCPModuleList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []SKRModule `json:"items"`
+	Items           []KCPModule `json:"items"`
 }

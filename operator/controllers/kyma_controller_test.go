@@ -137,9 +137,9 @@ func readModuleTemplate(module v1alpha1.Module, moduleTemplate *v1alpha1.ModuleT
 	var template string
 	switch module.ControllerName {
 	case "manifest":
-		template = "operator_v1alpha1_moduletemplate_remote-module.yaml"
+		template = "operator_v1alpha1_moduletemplate_skr-module.yaml"
 	default:
-		template = "operator_v1alpha1_moduletemplate_cp-module.yaml"
+		template = "operator_v1alpha1_moduletemplate_kcp-module.yaml"
 	}
 
 	modulePath := filepath.Join("..", "config", "samples", "component-integration-installed", template)
