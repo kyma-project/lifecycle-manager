@@ -27,11 +27,12 @@ import (
 const (
 	KymaKind   = "Kyma"
 	KymaPlural = "kymas"
+	Version    = "v1alpha1"
 )
 
 var (
 	// GroupVersion is group version used to register these objects.
-	GroupVersion = schema.GroupVersion{Group: "operator.kyma-project.io", Version: "v1alpha1"} //nolint:gochecknoglobals,lll
+	GroupVersion = schema.GroupVersion{Group: "operator.kyma-project.io", Version: Version} //nolint:gochecknoglobals,lll
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme.
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion} //nolint:gochecknoglobals

@@ -35,9 +35,9 @@ type FakeKymas struct {
 	ns   string
 }
 
-var kymasResource = schema.GroupVersionResource{Group: "operator.kyma-project.io", Version: "v1alpha1", Resource: "kymas"}
+var kymasResource = schema.GroupVersionResource{Group: "operator.kyma-project.io", Version: v1alpha1.Version, Resource: "kymas"}
 
-var kymasKind = schema.GroupVersionKind{Group: "operator.kyma-project.io", Version: "v1alpha1", Kind: "Kyma"}
+var kymasKind = schema.GroupVersionKind{Group: "operator.kyma-project.io", Version: v1alpha1.Version, Kind: "Kyma"}
 
 // Get takes name of the kyma, and returns the corresponding kyma object, and an error if there is any.
 func (c *FakeKymas) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.Kyma, err error) {
@@ -76,7 +76,6 @@ func (c *FakeKymas) List(ctx context.Context, opts v1.ListOptions) (result *v1al
 func (c *FakeKymas) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(kymasResource, c.ns, opts))
-
 }
 
 // Create takes the representation of a kyma and creates it.  Returns the server's representation of the kyma, and an error, if there is any.

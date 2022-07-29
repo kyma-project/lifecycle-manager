@@ -2,10 +2,9 @@ package controllers_test
 
 import (
 	"encoding/json"
-	"fmt"
-	"os"
-	"path/filepath"
 	"time"
+
+	"github.com/kyma-project/kyma-operator/operator/pkg/test"
 
 	sampleCRDv1alpha1 "github.com/kyma-project/kyma-operator/operator/config/samples/component-integration-installed/crd/v1alpha1"
 
@@ -19,7 +18,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -115,45 +113,6 @@ func deleteModule(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate,
 	return k8sClient.Delete(ctx, component)
 }
 
-func ModuleTemplateFactory(sample string, module v1alpha1.Module,
-	profile v1alpha1.Profile,
-) (*v1alpha1.ModuleTemplate, error) {
-	var moduleTemplate v1alpha1.ModuleTemplate
-	readModuleTemplate(module, &moduleTemplate)
-
-	moduleTemplate.Name = module.Name + "-" + sample
-	moduleTemplate.Labels[v1alpha1.ModuleName] = module.Name
-	moduleTemplate.Labels[v1alpha1.ControllerName] = module.ControllerName
-	moduleTemplate.Labels[v1alpha1.ProfileLabel] = string(profile)
-	moduleTemplate.Spec.Channel = module.Channel
-	switch module.ControllerName {
-	case "manifest":
-		moduleTemplate.Spec.Target = v1alpha1.TargetRemote
-	default:
-		moduleTemplate.Spec.Target = v1alpha1.TargetControlPlane
-	}
-	return &moduleTemplate, nil
-}
-
-func readModuleTemplate(module v1alpha1.Module, moduleTemplate *v1alpha1.ModuleTemplate) {
-	var template string
-	switch module.ControllerName {
-	case "manifest":
-		template = "operator_v1alpha1_moduletemplate_skr-module.yaml"
-	default:
-		template = "operator_v1alpha1_moduletemplate_kcp-module.yaml"
-	}
-
-	modulePath := filepath.Join("..", "config", "samples", "component-integration-installed", template)
-	By(fmt.Sprintf("using %s for %s in %s", modulePath, module.Name, module.Channel))
-
-	moduleFile, err := os.ReadFile(modulePath)
-	Expect(err).To(BeNil())
-	Expect(moduleFile).ToNot(BeEmpty())
-
-	Expect(yaml.Unmarshal(moduleFile, &moduleTemplate)).To(Succeed())
-}
-
 var _ = Describe("Kyma with no ModuleTemplate", func() {
 	kyma := NewTestKyma("no-module-kyma")
 	RegisterDefaultLifecycleForKyma(kyma)
@@ -181,7 +140,8 @@ var _ = Describe("Kyma with empty ModuleTemplate", func() {
 
 	BeforeEach(func() {
 		for _, module := range kyma.Spec.Modules {
-			template, err := ModuleTemplateFactory("empty", module, v1alpha1.ProfileProduction)
+			template, err := test.ModuleTemplateFactory("empty", module,
+				v1alpha1.ProfileProduction, unstructured.Unstructured{})
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(k8sClient.Create(ctx, template)).To(Succeed())
 			moduleTemplates = append(moduleTemplates, template)
@@ -223,7 +183,8 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 
 	BeforeAll(func() {
 		for _, module := range kyma.Spec.Modules {
-			template, err := ModuleTemplateFactory("recreate", module, v1alpha1.ProfileProduction)
+			template, err := test.ModuleTemplateFactory("recreate", module,
+				v1alpha1.ProfileProduction, unstructured.Unstructured{})
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(k8sClient.Create(ctx, template)).To(Succeed())
 			moduleTemplates = append(moduleTemplates, template)
@@ -261,7 +222,8 @@ var _ = Describe("Kyma update Manifest CR", func() {
 
 	BeforeEach(func() {
 		for _, module := range kyma.Spec.Modules {
-			template, err := ModuleTemplateFactory("update", module, v1alpha1.ProfileProduction)
+			template, err := test.ModuleTemplateFactory("update", module,
+				v1alpha1.ProfileProduction, unstructured.Unstructured{})
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(k8sClient.Create(ctx, template)).To(Succeed())
 			moduleTemplates = append(moduleTemplates, template)
