@@ -1,0 +1,35 @@
+apiVersion: operator.kyma-project.io/v1alpha1
+kind: ModuleTemplate
+metadata:
+  name: moduletemplate-sample-manifest
+  namespace: default
+  labels:
+    "operator.kyma-project.io/managed-by": "kyma-operator"
+    "operator.kyma-project.io/controller-name": "manifest"
+    "operator.kyma-project.io/module-name": "example-module-name"
+    "operator.kyma-project.io/profile": "production"
+  annotations:
+    "operator.kyma-project.io/module-version": "v0.0.37"
+    "operator.kyma-project.io/module-provider": "internal"
+    "operator.kyma-project.io/descriptor-schema-version": "v2"
+    "operator.kyma-project.io/generated-at": "2022-07-11T14:59:43Z"
+spec:
+  channel: stable
+  data:    
+    kind: SampleCRD
+    apiVersion: component.kyma-project.io/v1alpha1
+    spec:
+      randomkey: samplevalue
+  descriptor:
+    component:
+      componentReferences: []
+      name: kyma-project.io/module/example-module-name
+      provider: internal
+      repositoryContexts: []
+      resources: []
+      sources: []
+      version: v0.0.37
+    meta:
+      schemaVersion: v2
+    signatures: []
+    
