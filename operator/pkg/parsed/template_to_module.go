@@ -67,7 +67,6 @@ func TemplatesToModules(
 			Template:         template.ModuleTemplate,
 			TemplateOutdated: template.Outdated,
 			Unstructured:     component,
-			Settings:         module.Settings,
 		}
 	}
 

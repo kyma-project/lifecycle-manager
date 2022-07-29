@@ -7,13 +7,8 @@ spec:
   profile: production
   channel: stable
   sync:
-    enabled: false
+    enabled: true
   modules:
     - name: example-module-name
       controller: manifest
       channel: stable
-      overrides:
-      - name: nginx-ingress
-        selector:
-          matchLabels:
-            extension.kyma-project.io/config-override: "a"

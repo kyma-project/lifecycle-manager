@@ -3,8 +3,8 @@ package remote
 import (
 	"context"
 	"fmt"
-	"time"
 
+	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
 	corev1 "k8s.io/api/core/v1"
@@ -187,59 +187,50 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 
 func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context,
 	remoteKyma *operatorv1alpha1.Kyma,
-) (bool, error) {
+) error {
 	recorder := adapter.RecorderFromContext(ctx)
-	// check finalizer
-	if !controllerutil.ContainsFinalizer(remoteKyma, operatorv1alpha1.Finalizer) {
-		controllerutil.AddFinalizer(remoteKyma, operatorv1alpha1.Finalizer)
-	}
+
+	stateUpdateRequired := false
 
 	if remoteKyma.Status.ObservedGeneration != remoteKyma.GetGeneration() {
 		// remote is new, lets update the control plane
-		remoteKyma.Status.ObservedGeneration = remoteKyma.GetGeneration()
+		remoteKyma.SetObservedGeneration()
+		remoteKyma.Status = c.controlPlaneKyma.Status
+		stateUpdateRequired = true
+	}
+
+	if stateUpdateRequired {
 		if err := c.runtimeClient.Status().Update(ctx, remoteKyma); err != nil {
 			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
-
-			return true, err
-		}
-
-		c.controlPlaneKyma.Spec = remoteKyma.Spec
-		if err := c.controlPlaneClient.Update(ctx, c.controlPlaneKyma); err != nil {
-			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update control clane kyma")
-
-			return true, err
-		}
-
-		// as we have updated the control plane, we will requeue the object
-		return true, nil
-	}
-
-	if c.controlPlaneKyma.Status.ObservedGeneration != c.controlPlaneKyma.GetGeneration() {
-		// control plane got updated, runtime on cluster is using the wrong base instance for customization
-		// TODO this now requires custom merge logic, but for now we reapply the control plane version
-		remoteKyma.Spec = c.controlPlaneKyma.Spec
-	} else if remoteKyma.Status.State != c.controlPlaneKyma.Status.State {
-		// control plane and runtime spec are in sync, but the status got updated in the control plane
-		remoteKyma.Status.State = c.controlPlaneKyma.Status.State
-
-		err := c.runtimeClient.Status().Update(ctx, remoteKyma)
-		if err != nil {
-			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
-
-			return false, err
+			return err
 		}
 	}
 
-	// this is an additional update on the runtime and might not be worth it
-	lastSyncDate := time.Now().Format(time.RFC3339)
+	return c.runtimeClient.Update(ctx, remoteKyma.SetLastSync())
+}
 
-	if remoteKyma.Annotations == nil {
-		remoteKyma.Annotations = make(map[string]string)
+// ReplaceWithVirtualKyma creates a virtual kyma instance from a control plane Kyma and N Remote Kymas,
+// merging the module specification in the process.
+func (c *KymaSynchronizationContext) ReplaceWithVirtualKyma(kyma *v1alpha1.Kyma, remotes ...*v1alpha1.Kyma) {
+	totalModuleAmount := len(kyma.Spec.Modules)
+	for _, remote := range remotes {
+		totalModuleAmount += len(remote.Spec.Modules)
+	}
+	modules := make(map[string]v1alpha1.Module, totalModuleAmount)
+
+	for _, remote := range remotes {
+		for _, m := range remote.Spec.Modules {
+			modules[m.Name] = m
+		}
+	}
+	for _, m := range kyma.Spec.Modules {
+		modules[m.Name] = m
 	}
 
-	remoteKyma.Annotations[operatorv1alpha1.LastSync] = lastSyncDate
-
-	return false, c.runtimeClient.Update(ctx, remoteKyma)
+	kyma.Spec.Modules = []v1alpha1.Module{}
+	for _, m := range modules {
+		kyma.Spec.Modules = append(kyma.Spec.Modules, m)
+	}
 }
 
 func (c *KymaSynchronizationContext) EnsureNamespaceExists(ctx context.Context, namespace string) error {
