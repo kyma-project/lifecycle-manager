@@ -343,7 +343,7 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 	baseLogger := log.FromContext(ctx).WithName(client.ObjectKey{Name: kyma.Name, Namespace: kyma.Namespace}.String())
 	for name, module := range modules {
 		logger := module.Logger(baseLogger)
-		err := module.UpdateStatusFromCluster(ctx, r)
+		err := module.UpdateModuleFromCluster(ctx, r)
 		if client.IgnoreNotFound(errors.Unwrap(err)) != nil {
 			return false, fmt.Errorf("could not update module status: %w", err)
 		}

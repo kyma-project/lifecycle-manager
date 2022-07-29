@@ -1,7 +1,7 @@
 apiVersion: operator.kyma-project.io/v1alpha1
 kind: Kyma
 metadata:
-  name: kyma-sample5
+  name: kyma-sample
   namespace: default
 spec:
   profile: production
@@ -9,5 +9,7 @@ spec:
   sync:
     enabled: false
   modules:
+    - name: skr-module
+      controller: manifest
     - name: kcp-module
       controller: kcp-operator
