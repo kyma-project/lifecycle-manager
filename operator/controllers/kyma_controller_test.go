@@ -1,14 +1,16 @@
 package controllers_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/imdario/mergo"
+	sampleCRDv1alpha1 "github.com/kyma-project/kyma-operator/operator/config/samples/component-integration-installed/crd/v1alpha1"
 
 	"github.com/kyma-project/kyma-operator/operator/pkg/parsed"
+	manifestV1alpha1 "github.com/kyma-project/manifest-operator/operator/api/v1alpha1"
 
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
@@ -209,7 +211,7 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 
 	kyma.Spec.Modules = append(kyma.Spec.Modules, v1alpha1.Module{
 		ControllerName: "manifest",
-		Name:           "remote-module",
+		Name:           "skr-module",
 		Channel:        v1alpha1.ChannelStable,
 	}, v1alpha1.Module{
 		ControllerName: "kcp-operator",
@@ -251,7 +253,7 @@ var _ = Describe("Kyma update Manifest CR", func() {
 
 	kyma.Spec.Modules = append(kyma.Spec.Modules, v1alpha1.Module{
 		ControllerName: "manifest",
-		Name:           "remote-module-update",
+		Name:           "skr-module-update",
 		Channel:        v1alpha1.ChannelStable,
 	})
 
@@ -272,20 +274,17 @@ var _ = Describe("Kyma update Manifest CR", func() {
 			Eventually(ModuleExist(kyma, activeModule), timeout, interval).Should(Succeed())
 		}
 
-		overwrites := map[string]any{"key": "value"}
-		By("Update Module Template")
+		By("Update Module Template spec.data.spec field")
+		valueUpdated := "valueUpdated"
 		for _, activeModule := range moduleTemplates {
-			err := mergo.Merge(&activeModule.Spec.Data.Object,
-				map[string]any{"spec": overwrites},
-				mergo.WithAppendSlice)
-			Expect(err).ShouldNot(HaveOccurred())
-			Expect(k8sClient.Update(ctx, activeModule)).To(Succeed())
+			activeModule.Spec.Data.Object["spec"] = map[string]any{"initKey": valueUpdated}
+			err := k8sClient.Update(ctx, activeModule)
+			Expect(err).ToNot(HaveOccurred())
 		}
-		// TODO unfinished
-		By("CR updated")
-		// for _, activeModule := range moduleTemplates {
-		//	Eventually(ModuleExistWithOverwrites(kyma, activeModule, overwrites), timeout, interval).Should(Succeed())
-		//}
+		By("CR updated with new value in spec.resource.spec")
+		for _, activeModule := range moduleTemplates {
+			Eventually(SKRModuleExistWithOverwrites(kyma, activeModule), timeout, interval).Should(Equal(valueUpdated))
+		}
 	})
 })
 
@@ -296,13 +295,21 @@ func ModuleExist(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate) f
 	}
 }
 
-func ModuleExistWithOverwrites(kyma *v1alpha1.Kyma,
-	moduleTemplate *v1alpha1.ModuleTemplate, overwrites map[string]any,
-) func() error {
-	return func() error {
+func SKRModuleExistWithOverwrites(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate) func() string {
+	return func() string {
 		module, err := getModule(kyma, moduleTemplate)
-		Expect(module).ShouldNot(BeEmpty())
-		return err
+		Expect(err).ToNot(HaveOccurred())
+		body, err := json.Marshal(module.Object["spec"])
+		Expect(err).ToNot(HaveOccurred())
+		manifestSpec := manifestV1alpha1.ManifestSpec{}
+		err = json.Unmarshal(body, &manifestSpec)
+		Expect(err).ToNot(HaveOccurred())
+		body, err = json.Marshal(manifestSpec.Resource.Object["spec"])
+		Expect(err).ToNot(HaveOccurred())
+		skrModuleSpec := sampleCRDv1alpha1.SKRModuleSpec{}
+		err = json.Unmarshal(body, &skrModuleSpec)
+		Expect(err).ToNot(HaveOccurred())
+		return skrModuleSpec.InitKey
 	}
 }
 
