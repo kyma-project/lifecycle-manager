@@ -2,6 +2,7 @@ package remote
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
@@ -9,13 +10,20 @@ import (
 	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
 	corev1 "k8s.io/api/core/v1"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+)
+
+type ClientFunc func() *rest.Config
+
+var (
+	LocalClient             ClientFunc //nolint:gochecknoglobals
+	ErrNoLocalClientDefined = errors.New("no local client defined")
 )
 
 type KymaSynchronizationContext struct {
@@ -37,6 +45,12 @@ func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, key 
 	var err error
 
 	switch strategy {
+	case operatorv1alpha1.SyncStrategyLocalClient:
+		if LocalClient != nil {
+			restConfig = LocalClient()
+		} else {
+			err = ErrNoLocalClientDefined
+		}
 	case operatorv1alpha1.SyncStrategyLocalSecret:
 		fallthrough
 	default:
@@ -138,7 +152,7 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context) erro
 		Name: fmt.Sprintf("%s.%s", operatorv1alpha1.KymaPlural, operatorv1alpha1.GroupVersion.Group),
 	}, crdFromRuntime)
 
-	if errors.IsNotFound(err) {
+	if k8serrors.IsNotFound(err) {
 		return c.runtimeClient.Create(ctx, &v1extensions.CustomResourceDefinition{
 			ObjectMeta: v1.ObjectMeta{Name: crd.Name, Namespace: crd.Namespace}, Spec: crd.Spec,
 		})
@@ -180,7 +194,7 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 		err = nil
 	}
 
-	if errors.IsNotFound(err) {
+	if k8serrors.IsNotFound(err) {
 		if err := c.EnsureNamespaceExists(ctx, remoteKyma.Namespace); err != nil {
 			recorder.Event(kyma, "Warning", "RemoteKymaInstallation",
 				fmt.Sprintf("namespace %s could not be synced", remoteKyma.Namespace))
@@ -256,7 +270,7 @@ func (c *KymaSynchronizationContext) ReplaceWithVirtualKyma(kyma *v1alpha1.Kyma,
 func (c *KymaSynchronizationContext) EnsureNamespaceExists(ctx context.Context, namespace string) error {
 	ns := &corev1.Namespace{ObjectMeta: v1.ObjectMeta{Name: namespace}}
 	var err error
-	if err = c.runtimeClient.Get(ctx, client.ObjectKey{Name: namespace}, ns); errors.IsNotFound(err) {
+	if err = c.runtimeClient.Get(ctx, client.ObjectKey{Name: namespace}, ns); k8serrors.IsNotFound(err) {
 		return c.runtimeClient.Create(ctx, ns)
 	}
 	return err

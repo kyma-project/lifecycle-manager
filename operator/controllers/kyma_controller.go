@@ -122,17 +122,6 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 	}
 
-	if len(kyma.MatchConditionsToModules()) > 1 {
-		// if the status is not yet set to deleting, also update the status
-		if err := status.Helper(r).UpdateStatus(
-			ctx, kyma, kyma.Status.State, "new conditions",
-		); err != nil {
-			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, fmt.Errorf(
-				"could not update kyma status after triggering deletion: %w", err)
-		}
-		return ctrl.Result{}, nil
-	}
-
 	if len(kyma.Spec.Modules) < 1 {
 		return ctrl.Result{}, r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
 			fmt.Errorf("error parsing %s: %w", kyma.Name, ErrNoComponentSpecified))
@@ -185,6 +174,7 @@ func (r *KymaReconciler) stateHandling(ctx context.Context, kyma *v1alpha1.Kyma)
 }
 
 func (r *KymaReconciler) HandleInitialState(ctx context.Context, kyma *v1alpha1.Kyma) error {
+	kyma.MatchConditionsToModules()
 	return r.UpdateStatus(ctx, kyma, v1alpha1.KymaStateProcessing, "initial state")
 }
 

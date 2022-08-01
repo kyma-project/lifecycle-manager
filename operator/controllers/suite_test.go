@@ -43,6 +43,7 @@ import (
 
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	kymacontroller "github.com/kyma-project/kyma-operator/operator/controllers"
+	"github.com/kyma-project/kyma-operator/operator/pkg/remote"
 	"github.com/kyma-project/kyma-operator/operator/pkg/signature"
 	//+kubebuilder:scaffold:imports
 )
@@ -109,9 +110,15 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
+	metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
+	if !found {
+		metricsBindAddress = ":8080"
+	}
+
 	k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
-		Scheme:   scheme.Scheme,
-		NewCache: kymacontroller.NewCacheFunc(),
+		MetricsBindAddress: metricsBindAddress,
+		Scheme:             scheme.Scheme,
+		NewCache:           kymacontroller.NewCacheFunc(),
 	})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -142,3 +149,44 @@ var _ = AfterSuite(func() {
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
+
+func SetLocalClientNewSKRCluster(secretName, secretNamespace string) (*rest.Config, *envtest.Environment) {
+	skrEnv := &envtest.Environment{
+		ErrorIfCRDPathMissing: true,
+	}
+	cfg, err := skrEnv.Start()
+	Expect(err).NotTo(HaveOccurred())
+	Expect(cfg).NotTo(BeNil())
+
+	var authUser *envtest.AuthenticatedUser
+	authUser, err = skrEnv.AddUser(envtest.User{
+		Name:   "skr-admin-account",
+		Groups: []string{"system:masters"},
+	}, cfg)
+	Expect(err).NotTo(HaveOccurred())
+
+	remote.LocalClient = func() *rest.Config {
+		return authUser.Config()
+	}
+
+	return authUser.Config(), skrEnv
+}
+
+func SetupSKR(secretName, secretNamespace string) func() client.Client {
+	var skrConfig *rest.Config
+	var skrClient client.Client
+	var skrEnv *envtest.Environment
+	BeforeEach(func() {
+		var err error
+		skrConfig, skrEnv = SetLocalClientNewSKRCluster(secretName, secretNamespace)
+		skrClient, err = client.New(skrConfig, client.Options{Scheme: k8sClient.Scheme()})
+		Expect(err).NotTo(HaveOccurred())
+	})
+	AfterEach(func() {
+		Expect(skrEnv.Stop()).NotTo(HaveOccurred())
+	})
+
+	return func() client.Client {
+		return skrClient
+	}
+}

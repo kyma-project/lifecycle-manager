@@ -60,6 +60,7 @@ type SyncStrategy string
 
 const (
 	SyncStrategyLocalSecret = "local-secret"
+	SyncStrategyLocalClient = "local-client"
 )
 
 // Sync defines settings used to apply the kyma synchronization to other clusters. This is defaulted to false
