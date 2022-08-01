@@ -59,10 +59,10 @@ func (m *Module) StateMismatchedWithCondition(condition *v1alpha1.KymaCondition)
 		condition.TemplateInfo.Channel != m.Template.Spec.Channel
 }
 
-// UpdateStatusFromCluster updates the status of the module based on an interaction with a client that is
-// connected to a cluster. It will wrap any error returned from the client, so checking for a k8s error
-// can be achievd with Unwrap.
-func (m *Module) UpdateStatusFromCluster(ctx context.Context, clnt client.Client) error {
+// UpdateModuleFromCluster update the module with necessary information (status, ownerReference) based on
+// an interaction with a client that is connected to a cluster. It will wrap any error returned from the client,
+// so checking for a k8s error can be achieved with Unwrap.
+func (m *Module) UpdateModuleFromCluster(ctx context.Context, clnt client.Client) error {
 	unstructuredFromServer := unstructured.Unstructured{}
 	unstructuredFromServer.SetGroupVersionKind(m.Unstructured.GroupVersionKind())
 
@@ -76,5 +76,18 @@ func (m *Module) UpdateStatusFromCluster(ctx context.Context, clnt client.Client
 
 	m.Unstructured.Object["status"] = unstructuredFromServer.Object["status"]
 	m.Unstructured.SetResourceVersion(unstructuredFromServer.GetResourceVersion())
+	m.Unstructured.SetOwnerReferences(unstructuredFromServer.GetOwnerReferences())
 	return nil
+}
+
+func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {
+	if m.Unstructured.GetOwnerReferences() == nil {
+		return false
+	}
+	for _, owner := range m.Unstructured.GetOwnerReferences() {
+		if owner.Name == ownerName {
+			return true
+		}
+	}
+	return false
 }

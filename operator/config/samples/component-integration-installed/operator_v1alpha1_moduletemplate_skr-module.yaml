@@ -1,0 +1,76 @@
+apiVersion: operator.kyma-project.io/v1alpha1
+kind: ModuleTemplate
+metadata:
+  name: moduletemplate-sample-skr-module
+  namespace: default
+  labels:
+    "operator.kyma-project.io/managed-by": "kyma-operator"
+    "operator.kyma-project.io/controller-name": "manifest"
+    "operator.kyma-project.io/module-name": "skr-module"
+    "operator.kyma-project.io/profile": "production"
+  annotations:
+    "operator.kyma-project.io/module-version": "v0.0.48"
+    "operator.kyma-project.io/module-provider": "internal"
+    "operator.kyma-project.io/descriptor-schema-version": "v2"
+    "operator.kyma-project.io/generated-at": "2022-07-11T14:59:43Z"
+spec:
+  channel: stable
+  target: remote
+  data:
+    kind: SKRModule
+    resource: skrmodules
+    apiVersion: component.kyma-project.io/v1alpha1
+    spec:
+      initKey: initValue
+  descriptor:
+    component:
+      componentReferences: []
+      name: kyma-project.io/module/manifest1
+      provider: internal
+      repositoryContexts:
+        - baseUrl: ghcr.io/ruanxin
+          componentNameMapping: urlPath
+          type: ociRegistry
+        - baseUrl: ghcr.io/ruanxin/signed
+          componentNameMapping: urlPath
+          type: ociRegistry
+      resources:
+        - access:
+            digest: sha256:9d37fb366e4371b44c94496f3db276bd6f3a1019c9d44077b689c68ec6486c1e
+            type: localOciBlob
+          digest:
+            hashAlgorithm: sha256
+            normalisationAlgorithm: genericBlobDigest/v1
+            value: 9d37fb366e4371b44c94496f3db276bd6f3a1019c9d44077b689c68ec6486c1e
+          name: config
+          relation: local
+          type: yaml
+          version: v0.0.48
+        - access:
+            digest: sha256:44499fc31e86bc504cfce0f6cb06d926cf5d3d9d1a000b71a9b2622c0e726042
+            type: localOciBlob
+          digest:
+            hashAlgorithm: sha256
+            normalisationAlgorithm: genericBlobDigest/v1
+            value: 44499fc31e86bc504cfce0f6cb06d926cf5d3d9d1a000b71a9b2622c0e726042
+          name: crds
+          relation: local
+          type: crds
+          version: v0.0.48
+        - access:
+            digest: sha256:2b23d1f79c4fa47488154f1579ccfb9c9d8ecd6c8f16369fd8117a9ede39f2b7
+            type: localOciBlob
+          digest:
+            hashAlgorithm: sha256
+            normalisationAlgorithm: genericBlobDigest/v1
+            value: 2b23d1f79c4fa47488154f1579ccfb9c9d8ecd6c8f16369fd8117a9ede39f2b7
+          name: kyma-load-test
+          relation: local
+          type: helm-chart
+          version: v0.0.48
+      sources: [ ]
+      version: v0.0.48
+    meta:
+      schemaVersion: v2
+    signatures: []
+    

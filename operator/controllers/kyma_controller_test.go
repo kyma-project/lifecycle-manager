@@ -1,10 +1,15 @@
 package controllers_test
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
+	"encoding/json"
 	"time"
+
+	"github.com/kyma-project/kyma-operator/operator/pkg/test"
+
+	sampleCRDv1alpha1 "github.com/kyma-project/kyma-operator/operator/config/samples/component-integration-installed/crd/v1alpha1" //nolint:lll
+
+	"github.com/kyma-project/kyma-operator/operator/pkg/parsed"
+	manifestV1alpha1 "github.com/kyma-project/manifest-operator/operator/api/v1alpha1"
 
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
@@ -13,13 +18,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
 	namespace = "default"
-	timeout   = time.Second * 3
+	timeout   = time.Second * 10
 	interval  = time.Millisecond * 250
 )
 
@@ -91,37 +95,22 @@ func UpdateModuleState(
 	kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate, state v1alpha1.KymaState,
 ) func() error {
 	return func() error {
-		component := &unstructured.Unstructured{}
-		component.SetGroupVersionKind(moduleTemplate.Spec.Data.GroupVersionKind())
-		Expect(k8sClient.Get(ctx, client.ObjectKey{
-			Namespace: namespace,
-			Name:      moduleTemplate.GetLabels()[v1alpha1.ModuleName] + kyma.GetName(),
-		}, component),
-		).To(Succeed())
+		component, err := getModule(kyma, moduleTemplate)
+		Expect(err).ShouldNot(HaveOccurred())
 		component.Object[watch.Status] = map[string]any{watch.State: string(state)}
 		return k8sManager.GetClient().Status().Update(ctx, component)
 	}
 }
 
-func GetModuleTemplate(sample string, module v1alpha1.Module, profile v1alpha1.Profile) *v1alpha1.ModuleTemplate {
-	moduleFileName := fmt.Sprintf(
-		"operator_v1alpha1_moduletemplate_%s_%s_%s_%s_%s.yaml",
-		module.ControllerName,
-		module.Name,
-		module.Channel,
-		string(profile),
-		sample,
-	)
-	modulePath := filepath.Join("..", "config", "samples", "component-integration-installed", moduleFileName)
-	By(fmt.Sprintf("using %s for %s in %s", modulePath, module.Name, module.Channel))
-
-	moduleFile, err := os.ReadFile(modulePath)
-	Expect(err).To(BeNil())
-	Expect(moduleFile).ToNot(BeEmpty())
-
-	var moduleTemplate v1alpha1.ModuleTemplate
-	Expect(yaml.Unmarshal(moduleFile, &moduleTemplate)).To(Succeed())
-	return &moduleTemplate
+func deleteModule(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate,
+) error {
+	component := moduleTemplate.Spec.Data.DeepCopy()
+	if moduleTemplate.Spec.Target == v1alpha1.TargetRemote {
+		component.SetKind("Manifest")
+	}
+	component.SetNamespace(namespace)
+	component.SetName(parsed.CreateModuleName(moduleTemplate.GetLabels()[v1alpha1.ModuleName], kyma.GetName()))
+	return k8sClient.Delete(ctx, component)
 }
 
 var _ = Describe("Kyma with no ModuleTemplate", func() {
@@ -151,7 +140,9 @@ var _ = Describe("Kyma with empty ModuleTemplate", func() {
 
 	BeforeEach(func() {
 		for _, module := range kyma.Spec.Modules {
-			template := GetModuleTemplate("empty", module, v1alpha1.ProfileProduction)
+			template, err := test.ModuleTemplateFactory("empty", module,
+				v1alpha1.ProfileProduction, unstructured.Unstructured{})
+			Expect(err).ShouldNot(HaveOccurred())
 			Expect(k8sClient.Create(ctx, template)).To(Succeed())
 			moduleTemplates = append(moduleTemplates, template)
 		}
@@ -173,3 +164,129 @@ var _ = Describe("Kyma with empty ModuleTemplate", func() {
 		Eventually(GetKymaState(kyma), 20*time.Second, interval).Should(BeEquivalentTo(string(v1alpha1.KymaStateReady)))
 	})
 })
+
+var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
+	kyma := NewTestKyma("kyma-test-recreate")
+	RegisterDefaultLifecycleForKyma(kyma)
+
+	kyma.Spec.Modules = append(kyma.Spec.Modules, v1alpha1.Module{
+		ControllerName: "manifest",
+		Name:           "skr-module",
+		Channel:        v1alpha1.ChannelStable,
+	}, v1alpha1.Module{
+		ControllerName: "kcp-operator",
+		Name:           "cp-module",
+		Channel:        v1alpha1.ChannelStable,
+	})
+
+	moduleTemplates := make([]*v1alpha1.ModuleTemplate, 0)
+
+	BeforeAll(func() {
+		for _, module := range kyma.Spec.Modules {
+			template, err := test.ModuleTemplateFactory("recreate", module,
+				v1alpha1.ProfileProduction, unstructured.Unstructured{})
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(k8sClient.Create(ctx, template)).To(Succeed())
+			moduleTemplates = append(moduleTemplates, template)
+		}
+	})
+
+	It("CR should be recreated after delete", func() {
+		By("CR created")
+		for _, activeModule := range moduleTemplates {
+			Eventually(ModuleExist(kyma, activeModule), timeout, interval).Should(Succeed())
+		}
+		By("Delete CR")
+		for _, activeModule := range moduleTemplates {
+			Expect(deleteModule(kyma, activeModule)).To(Succeed())
+		}
+
+		By("CR created again")
+		for _, activeModule := range moduleTemplates {
+			Eventually(ModuleExist(kyma, activeModule), timeout, interval).Should(Succeed())
+		}
+	})
+})
+
+var _ = Describe("Kyma update Manifest CR", func() {
+	kyma := NewTestKyma("kyma-test-update")
+	RegisterDefaultLifecycleForKyma(kyma)
+
+	kyma.Spec.Modules = append(kyma.Spec.Modules, v1alpha1.Module{
+		ControllerName: "manifest",
+		Name:           "skr-module-update",
+		Channel:        v1alpha1.ChannelStable,
+	})
+
+	moduleTemplates := make([]*v1alpha1.ModuleTemplate, 0)
+
+	BeforeEach(func() {
+		for _, module := range kyma.Spec.Modules {
+			template, err := test.ModuleTemplateFactory("update", module,
+				v1alpha1.ProfileProduction, unstructured.Unstructured{})
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(k8sClient.Create(ctx, template)).To(Succeed())
+			moduleTemplates = append(moduleTemplates, template)
+		}
+	})
+
+	It("Manifest CR should be updated after module template changed", func() {
+		By("CR created")
+		for _, activeModule := range moduleTemplates {
+			Eventually(ModuleExist(kyma, activeModule), timeout, interval).Should(Succeed())
+		}
+
+		By("Update Module Template spec.data.spec field")
+		valueUpdated := "valueUpdated"
+		for _, activeModule := range moduleTemplates {
+			activeModule.Spec.Data.Object["spec"] = map[string]any{"initKey": valueUpdated}
+			err := k8sClient.Update(ctx, activeModule)
+			Expect(err).ToNot(HaveOccurred())
+		}
+		By("CR updated with new value in spec.resource.spec")
+		for _, activeModule := range moduleTemplates {
+			Eventually(SKRModuleExistWithOverwrites(kyma, activeModule), timeout, interval).Should(Equal(valueUpdated))
+		}
+	})
+})
+
+func ModuleExist(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate) func() error {
+	return func() error {
+		_, err := getModule(kyma, moduleTemplate)
+		return err
+	}
+}
+
+func SKRModuleExistWithOverwrites(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate) func() string {
+	return func() string {
+		module, err := getModule(kyma, moduleTemplate)
+		Expect(err).ToNot(HaveOccurred())
+		body, err := json.Marshal(module.Object["spec"])
+		Expect(err).ToNot(HaveOccurred())
+		manifestSpec := manifestV1alpha1.ManifestSpec{}
+		err = json.Unmarshal(body, &manifestSpec)
+		Expect(err).ToNot(HaveOccurred())
+		body, err = json.Marshal(manifestSpec.Resource.Object["spec"])
+		Expect(err).ToNot(HaveOccurred())
+		skrModuleSpec := sampleCRDv1alpha1.SKRModuleSpec{}
+		err = json.Unmarshal(body, &skrModuleSpec)
+		Expect(err).ToNot(HaveOccurred())
+		return skrModuleSpec.InitKey
+	}
+}
+
+func getModule(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate,
+) (*unstructured.Unstructured, error) {
+	component := moduleTemplate.Spec.Data.DeepCopy()
+	if moduleTemplate.Spec.Target == v1alpha1.TargetRemote {
+		component.SetKind("Manifest")
+	}
+	err := k8sClient.Get(ctx, client.ObjectKey{
+		Namespace: namespace,
+		Name:      parsed.CreateModuleName(moduleTemplate.GetLabels()[v1alpha1.ModuleName], kyma.GetName()),
+	}, component)
+	if err != nil {
+		return nil, err
+	}
+	return component, nil
+}

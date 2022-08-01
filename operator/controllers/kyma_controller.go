@@ -40,10 +40,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-var (
-	ErrNoComponentSpecified = errors.New("no component specified")
-	ErrOutdatedTemplates    = errors.New("outdate templates require new module versions")
-)
+var ErrNoComponentSpecified = errors.New("no component specified")
 
 type RequeueIntervals struct {
 	Success time.Duration
@@ -198,7 +195,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	var err error
 	var modules parsed.Modules
 	// these are the actual modules
-	modules, err = r.GetModules(ctx, kyma, false)
+	modules, err = r.GetModules(ctx, kyma)
 	if err != nil {
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
 			fmt.Errorf("error while fetching modules during processing: %w", err))
@@ -207,7 +204,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	statusUpdateRequiredFromCreation, err := r.CreateOrUpdateModules(ctx, kyma, modules)
 	if err != nil {
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
-			fmt.Errorf("ParsedModule CR creation/udate error: %w", err))
+			fmt.Errorf("ParsedModule CR creation/update error: %w", err))
 	}
 
 	// Now we track the conditions: update the status based on their state
@@ -274,12 +271,8 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *v1a
 	var err error
 	var modules parsed.Modules
 	// these are the actual modules
-	modules, err = r.GetModules(ctx, kyma, true)
+	modules, err = r.GetModules(ctx, kyma)
 	if err != nil {
-		if err.Error() == ErrOutdatedTemplates.Error() {
-			return r.UpdateStatus(ctx, kyma, v1alpha1.KymaStateProcessing,
-				"module templates were updated: %w")
-		}
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
 			fmt.Errorf("error while fetching modules during consistency check: %w", err))
 	}
@@ -299,6 +292,13 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *v1a
 	if kyma.Status.ObservedGeneration != kyma.Generation {
 		return r.UpdateStatus(ctx, kyma, v1alpha1.KymaStateProcessing,
 			"object updated")
+	}
+
+	for _, module := range modules {
+		if module.TemplateOutdated {
+			return r.UpdateStatus(ctx, kyma, v1alpha1.KymaStateProcessing,
+				fmt.Sprintf("module template of module %s got updated", module.Name))
+		}
 	}
 
 	return nil
@@ -358,7 +358,7 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 	baseLogger := log.FromContext(ctx).WithName(client.ObjectKey{Name: kyma.Name, Namespace: kyma.Namespace}.String())
 	for name, module := range modules {
 		logger := module.Logger(baseLogger)
-		err := module.UpdateStatusFromCluster(ctx, r)
+		err := module.UpdateModuleFromCluster(ctx, r)
 		if client.IgnoreNotFound(errors.Unwrap(err)) != nil {
 			return false, fmt.Errorf("could not update module status: %w", err)
 		}
@@ -411,12 +411,8 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *v1alpha1.Kyma,
 	module *parsed.Module,
 ) error {
-	// set labels
-	module.ApplyLabels(kyma, name)
-	// set owner reference
-	if err := controllerutil.SetControllerReference(kyma, module.Unstructured, r.Scheme()); err != nil {
-		return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w",
-			name, kyma.Name, err)
+	if err := r.setupModule(module, kyma, name); err != nil {
+		return err
 	}
 	// create resource if not found
 	if err := r.Client.Create(ctx, module.Unstructured, &client.CreateOptions{}); err != nil {
@@ -429,12 +425,31 @@ func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *v1
 func (r *KymaReconciler) UpdateModule(ctx context.Context, name string, kyma *v1alpha1.Kyma,
 	module *parsed.Module,
 ) error {
-	// set labels
-	module.ApplyLabels(kyma, name)
-	// update the spec
-	module.Unstructured.Object["spec"] = module.Template.Spec.Data.Object["spec"]
+	if module.Template.Spec.Target == v1alpha1.TargetControlPlane {
+		return nil
+	}
+
+	if err := r.setupModule(module, kyma, name); err != nil {
+		return err
+	}
+
 	if err := r.Update(ctx, module.Unstructured, &client.UpdateOptions{}); err != nil {
 		return fmt.Errorf("error updating custom resource of type %s %w", name, err)
+	}
+
+	return nil
+}
+
+func (r *KymaReconciler) setupModule(module *parsed.Module, kyma *v1alpha1.Kyma, name string) error {
+	// set labels
+	module.ApplyLabels(kyma, name)
+
+	if module.GetOwnerReferences() == nil {
+		// set owner reference
+		if err := controllerutil.SetControllerReference(kyma, module.Unstructured, r.Scheme()); err != nil {
+			return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w",
+				name, kyma.Name, err)
+		}
 	}
 
 	return nil
@@ -478,21 +493,11 @@ func (r *KymaReconciler) UpdateStatusFromErr(
 	return nil
 }
 
-func (r *KymaReconciler) GetModules(
-	ctx context.Context, kyma *v1alpha1.Kyma, checkOutdatedTemplates bool,
-) (parsed.Modules, error) {
+func (r *KymaReconciler) GetModules(ctx context.Context, kyma *v1alpha1.Kyma) (parsed.Modules, error) {
 	// fetch templates
 	templates, err := release.GetTemplates(ctx, r, kyma)
 	if err != nil {
 		return nil, fmt.Errorf("templates could not be fetched: %w", err)
-	}
-
-	if checkOutdatedTemplates {
-		for _, template := range templates {
-			if template.Outdated {
-				return nil, ErrOutdatedTemplates
-			}
-		}
 	}
 
 	verification, err := r.NewVerification(ctx, kyma.GetNamespace())

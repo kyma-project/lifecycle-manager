@@ -65,12 +65,12 @@ type Lookup interface {
 	WithContext(ctx context.Context) (*TemplateInChannel, error)
 }
 
-func LookupTemplate(client client.Reader, component operatorv1alpha1.Module,
+func LookupTemplate(client client.Reader, module operatorv1alpha1.Module,
 	defaultChannel operatorv1alpha1.Channel, profile operatorv1alpha1.Profile,
 ) *ChannelTemplateLookup {
 	return &ChannelTemplateLookup{
 		reader:         client,
-		module:         component,
+		module:         module,
 		defaultChannel: defaultChannel,
 		profile:        profile,
 	}
@@ -167,6 +167,6 @@ func NewMoreThanOneTemplateCandidateErr(component operatorv1alpha1.Module,
 		candidates[i] = candidate.GetName()
 	}
 
-	return fmt.Errorf("more than one config map template found for module: %s, candidates: %v",
+	return fmt.Errorf("more than one module template found for module: %s, candidates: %v",
 		component.Name, candidates)
 }

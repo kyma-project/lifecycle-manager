@@ -39,6 +39,8 @@ type ModuleTemplateSpec struct {
 
 	//+kubebuilder:pruning:PreserveUnknownFields
 	OCMDescriptor runtime.RawExtension `json:"descriptor,omitempty"`
+
+	Target Target `json:"target"`
 }
 
 //+genclient
@@ -60,6 +62,14 @@ type ModuleTemplateList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []ModuleTemplate `json:"items"`
 }
+
+// +kubebuilder:validation:Enum=control-plane;remote
+type Target string
+
+const (
+	TargetRemote       Target = "remote"
+	TargetControlPlane Target = "control-plane"
+)
 
 //nolint:gochecknoinits
 func init() {
