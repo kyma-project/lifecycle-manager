@@ -23,12 +23,12 @@ kubebuilder create api --group component --version v1alpha1 --kind Mockup
 
 A basic kubebuilder project with appropriate scaffolding should be setup.
 
-### Status Object for custom resource(s)
+### Status sub-resource for custom resource(s)
 
 A custom resource is required to contain a specific set of properties in the Status object, to be tracked by the [kyma-operator](https://github.com/kyma-project/kyma-operator/tree/main/operator).
 This is required to track the current state of the module, represented by this custom resource.
 
 1. Check reference implementation of the [MockupStatus](./api/v1alpha1/mockup_types.go) struct of Mockup custom resource. Similarly `.status.state` property of your custom resource *MUST* contain these state values.
-On top, .status object could contain other relevant properties as per your requirements.
+On top, `.status` object could contain other relevant properties as per your requirements.
 2. Next, check method `Reconcile()` inside the [Mockup Controller](./controllers/mockup_controller.go), which demonstrates how `.status.state` properties could be set, depending upon your logic.
-3. The `.status.state` have a literal sense behind how they're addressed, so use them accordingly.
+3. The `.status.state` value has a literal sense behind it, so use them appropriately.

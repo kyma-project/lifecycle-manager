@@ -102,7 +102,7 @@ func (r *MockupReconciler) HandleDeletingState(ctx context.Context, mockupResour
 }
 
 func (r *MockupReconciler) HandleErrorState(ctx context.Context, mockupResource *v1alpha1.Mockup) error {
-	// TODO: deletion logic here
+	// TODO: error logic here
 
 	// Example: If Error state, set state to Processing
 	mockupResource.Status.State = v1alpha1.MockupStateProcessing
