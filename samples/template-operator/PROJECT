@@ -1,0 +1,16 @@
+domain: kyma-project.io
+layout:
+- go.kubebuilder.io/v3
+projectName: template-operator
+repo: github.com/kyma-project/kyma-operator/samples/template-operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: kyma-project.io
+  group: component
+  kind: Mockup
+  path: github.com/kyma-project/kyma-operator/samples/template-operator/api/v1alpha1
+  version: v1alpha1
+version: "3"
