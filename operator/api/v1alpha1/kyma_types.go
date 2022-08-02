@@ -132,6 +132,9 @@ type KymaStatus struct {
 	// +optional
 	Conditions []KymaCondition `json:"conditions,omitempty"`
 
+	// Contains essential information about the current deployed module
+	ModuleInfos []ModuleInfo `json:"moduleInfos,omitempty"`
+
 	// Observed generation
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
@@ -206,9 +209,6 @@ type KymaCondition struct {
 	// +optional
 	Reason string `json:"reason,omitempty"`
 
-	// Contains essential information about the current deployed module
-	ModuleInfo ModuleInfo `json:"moduleInfo"`
-
 	// Additional Information when the condition is bound to a ModuleTemplate. It contains information about the last
 	// parsing that occurred and will track the state of the parser ModuleTemplate in Context of the Installation.
 	// This will update when Channel, Profile or the ModuleTemplate used in the Condition is changed.
@@ -223,6 +223,9 @@ type KymaCondition struct {
 type ModuleInfo struct {
 	// Name is the current deployed module name
 	Name string `json:"name"`
+
+	// ModuleName is the unique identifier of the module.
+	ModuleName string `json:"moduleName"`
 
 	// Channel is the current deployed module channel
 	Channel Channel `json:"channel"`
@@ -306,9 +309,9 @@ type moduleInfoExistsPair struct {
 func (kyma *Kyma) GetNotExistsModuleInfos() []*ModuleInfo {
 	moduleInfoMap := make(map[string]*moduleInfoExistsPair)
 
-	for i := range kyma.Status.Conditions {
-		condition := &kyma.Status.Conditions[i]
-		moduleInfoMap[condition.Reason] = &moduleInfoExistsPair{exists: false, moduleInfo: &condition.ModuleInfo}
+	for i := range kyma.Status.ModuleInfos {
+		moduleInfo := &kyma.Status.ModuleInfos[i]
+		moduleInfoMap[moduleInfo.ModuleName] = &moduleInfoExistsPair{exists: false, moduleInfo: moduleInfo}
 	}
 
 	for i := range kyma.Spec.Modules {
@@ -317,6 +320,7 @@ func (kyma *Kyma) GetNotExistsModuleInfos() []*ModuleInfo {
 			moduleInfoMap[module.Name].exists = true
 		}
 	}
+
 	notExistsModules := make([]*ModuleInfo, 0)
 	for _, item := range moduleInfoMap {
 		if !item.exists {
@@ -324,6 +328,15 @@ func (kyma *Kyma) GetNotExistsModuleInfos() []*ModuleInfo {
 		}
 	}
 	return notExistsModules
+}
+
+func (kyma *Kyma) GetModuleInfoMap() map[string]*ModuleInfo {
+	moduleInfoMap := make(map[string]*ModuleInfo)
+	for i := range kyma.Status.ModuleInfos {
+		moduleInfo := &kyma.Status.ModuleInfos[i]
+		moduleInfoMap[moduleInfo.ModuleName] = moduleInfo
+	}
+	return moduleInfoMap
 }
 
 //+kubebuilder:object:root=true

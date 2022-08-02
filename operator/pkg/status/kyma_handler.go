@@ -85,8 +85,6 @@ func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules
 			}
 		}
 
-		SyncModuleInfo(condition, module)
-
 		condition.LastTransitionTime = &metav1.Time{Time: time.Now()}
 		condition.Message = message
 		condition.Status = conditionStatus
@@ -101,15 +99,26 @@ func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules
 	}
 }
 
-func SyncModuleInfo(condition *operatorv1alpha1.KymaCondition, module *parsed.Module) {
-	condition.ModuleInfo.Name = module.Unstructured.GetName()
-	condition.ModuleInfo.Namespace = module.Unstructured.GetNamespace()
-	condition.ModuleInfo.GroupVersionKind = metav1.GroupVersionKind{
-		Group:   module.GroupVersionKind().Group,
-		Version: module.GroupVersionKind().Version,
-		Kind:    module.GroupVersionKind().Kind,
+func (k *Kyma) SyncModuleInfo(kyma *operatorv1alpha1.Kyma, modules parsed.Modules) {
+	moduleInfoMap := kyma.GetModuleInfoMap()
+
+	for _, module := range modules {
+		latestModuleInfo := operatorv1alpha1.ModuleInfo{
+			ModuleName: module.Name,
+			Name:       module.Unstructured.GetName(),
+			Namespace:  module.Unstructured.GetNamespace(), GroupVersionKind: metav1.GroupVersionKind{
+				Group:   module.GroupVersionKind().Group,
+				Version: module.GroupVersionKind().Version,
+				Kind:    module.GroupVersionKind().Kind,
+			}, Channel: module.Channel(),
+		}
+		moduleInfo, exists := moduleInfoMap[module.Name]
+		if exists {
+			*moduleInfo = latestModuleInfo
+		} else {
+			kyma.Status.ModuleInfos = append(kyma.Status.ModuleInfos, latestModuleInfo)
+		}
 	}
-	condition.ModuleInfo.Channel = module.Channel()
 }
 
 func (k *Kyma) GetReadyConditionForComponent(kymaObj *operatorv1alpha1.Kyma,

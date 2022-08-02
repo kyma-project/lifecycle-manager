@@ -205,19 +205,14 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 			fmt.Errorf("error while syncing conditions during processing: %w", err))
 	}
 
-	notExistsModuleInfos := kyma.GetNotExistsModuleInfos()
-	if len(notExistsModuleInfos) > 0 {
-		requireSync, err := r.DeleteNotExistsModulesAndUpdateConditions(ctx, &kyma.Status, notExistsModuleInfos)
-		if err != nil {
-			return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
-				fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err))
-		}
-		if requireSync {
-			if err := status.Helper(r).UpdateStatusForExistingModules(
-				ctx, kyma, kyma.Status.State, "updating component conditions"); err != nil {
-				return fmt.Errorf("error while updating status for condition change: %w", err)
-			}
-		}
+	status.Helper(r).SyncModuleInfo(kyma, modules)
+
+	statusUpdateRequiredFromDeletion := r.UpdateAndRemoveNotExistsModuleInfo(ctx, kyma)
+	moduleInfos := kyma.GetNotExistsModuleInfos()
+	err = r.DeleteNotExistsModules(ctx, moduleInfos)
+	if err != nil {
+		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
+			fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err))
 	}
 
 	// set ready condition if applicable
@@ -230,7 +225,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	}
 
 	// if the ready condition is not applicable, but we changed the conditions, we still need to issue an update
-	if statusUpdateRequiredFromCreation || statusUpdateRequiredFromSync {
+	if statusUpdateRequiredFromCreation || statusUpdateRequiredFromSync || statusUpdateRequiredFromDeletion {
 		if err := status.Helper(r).UpdateStatusForExistingModules(
 			ctx, kyma, kyma.Status.State, "updating component conditions"); err != nil {
 			return fmt.Errorf("error while updating status for condition change: %w", err)
@@ -281,6 +276,8 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *v1a
 			fmt.Errorf("error while fetching modules during consistency check: %w", err))
 	}
 
+	status.Helper(r).SyncModuleInfo(kyma, modules)
+
 	statusUpdateRequired, err := r.SyncConditionsWithModuleStates(ctx, kyma, modules)
 	if err != nil {
 		return fmt.Errorf("error while updating component status conditions: %w", err)
@@ -318,7 +315,7 @@ func (r *KymaReconciler) SyncConditionsWithModuleStates(ctx context.Context, kym
 	statusUpdateRequired := false
 
 	var err error
-
+	// TODO: refactor this method to remove outdated condition which related module not exists
 	// Now, iterate through each module and compare the fitting condition in the Kyma CR to the state of the module
 	for name, module := range modules {
 		var conditionsUpdated bool
@@ -526,45 +523,47 @@ func (r *KymaReconciler) GetModules(ctx context.Context, kyma *v1alpha1.Kyma) (p
 	return modules, nil
 }
 
-func (r *KymaReconciler) DeleteNotExistsModulesAndUpdateConditions(ctx context.Context,
-	status *v1alpha1.KymaStatus, moduleInfos []*v1alpha1.ModuleInfo,
-) (bool, error) {
-	var err error
+func (r *KymaReconciler) UpdateAndRemoveNotExistsModuleInfo(ctx context.Context, kyma *v1alpha1.Kyma) bool {
 	requireUpdateCondition := false
-	conditionMap := convertToConditionMap(status)
+	moduleInfoMap := kyma.GetModuleInfoMap()
+	moduleInfos := kyma.GetNotExistsModuleInfos()
+	if len(moduleInfos) == 0 {
+		return false
+	}
+	for i := range moduleInfos {
+		moduleInfo := moduleInfos[i]
+		_, err := r.getModule(ctx, moduleInfo)
+		if k8serrors.IsNotFound(err) {
+			requireUpdateCondition = true
+			delete(moduleInfoMap, moduleInfo.ModuleName)
+		}
+	}
+	kyma.Status.ModuleInfos = convertToNewModuleInfos(moduleInfoMap)
+	return requireUpdateCondition
+}
 
+func (r *KymaReconciler) DeleteNotExistsModules(ctx context.Context, moduleInfos []*v1alpha1.ModuleInfo) error {
+	var err error
+	if len(moduleInfos) == 0 {
+		return nil
+	}
 	for i := range moduleInfos {
 		moduleInfo := moduleInfos[i]
 		err = r.deleteModule(ctx, moduleInfo)
-		if client.IgnoreNotFound(err) == nil {
-			requireUpdateCondition = true
-			delete(conditionMap, moduleInfo)
-		}
 	}
-
-	status.Conditions = convertToNewConditions(conditionMap)
 
 	if client.IgnoreNotFound(err) != nil {
-		return false, fmt.Errorf("error deleting module %w", err)
+		return fmt.Errorf("error deleting module %w", err)
 	}
-	return requireUpdateCondition, nil
+	return nil
 }
 
-func convertToConditionMap(status *v1alpha1.KymaStatus) map[*v1alpha1.ModuleInfo]*v1alpha1.KymaCondition {
-	conditionMap := make(map[*v1alpha1.ModuleInfo]*v1alpha1.KymaCondition)
-	for i := range status.Conditions {
-		condition := &status.Conditions[i]
-		conditionMap[&condition.ModuleInfo] = condition
+func convertToNewModuleInfos(moduleInfoMap map[string]*v1alpha1.ModuleInfo) []v1alpha1.ModuleInfo {
+	newModuleInfos := make([]v1alpha1.ModuleInfo, 0)
+	for _, moduleInfo := range moduleInfoMap {
+		newModuleInfos = append(newModuleInfos, *moduleInfo)
 	}
-	return conditionMap
-}
-
-func convertToNewConditions(conditionMap map[*v1alpha1.ModuleInfo]*v1alpha1.KymaCondition) []v1alpha1.KymaCondition {
-	newConditions := make([]v1alpha1.KymaCondition, 0)
-	for _, condition := range conditionMap {
-		newConditions = append(newConditions, *condition)
-	}
-	return newConditions
+	return newModuleInfos
 }
 
 func (r *KymaReconciler) deleteModule(ctx context.Context, moduleInfo *v1alpha1.ModuleInfo) error {
@@ -577,4 +576,17 @@ func (r *KymaReconciler) deleteModule(ctx context.Context, moduleInfo *v1alpha1.
 		Kind:    moduleInfo.GroupVersionKind.Kind,
 	})
 	return r.Delete(ctx, &module, &client.DeleteOptions{})
+}
+
+func (r *KymaReconciler) getModule(ctx context.Context,
+	moduleInfo *v1alpha1.ModuleInfo,
+) (unstructured.Unstructured, error) {
+	module := unstructured.Unstructured{}
+	module.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   moduleInfo.GroupVersionKind.Group,
+		Version: moduleInfo.GroupVersionKind.Version,
+		Kind:    moduleInfo.GroupVersionKind.Kind,
+	})
+	err := r.Get(ctx, client.ObjectKey{Namespace: moduleInfo.Namespace, Name: moduleInfo.Name}, &module)
+	return module, err
 }

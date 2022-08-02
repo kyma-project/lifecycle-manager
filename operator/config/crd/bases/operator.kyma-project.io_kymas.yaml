@@ -148,44 +148,6 @@ spec:
                       description: Human-readable message indicating details about
                         the last status transition.
                       type: string
-                    moduleInfo:
-                      description: Contains essential information about the current
-                        deployed module
-                      properties:
-                        channel:
-                          description: Channel is the current deployed module channel
-                          enum:
-                          - rapid
-                          - regular
-                          - stable
-                          type: string
-                        gvk:
-                          description: GroupVersionKind is the current deployed module
-                            gvk
-                          properties:
-                            group:
-                              type: string
-                            kind:
-                              type: string
-                            version:
-                              type: string
-                          required:
-                          - group
-                          - kind
-                          - version
-                          type: object
-                        name:
-                          description: Name is the current deployed module name
-                          type: string
-                        namespace:
-                          description: Namespace is the current deployed module namespace
-                          type: string
-                      required:
-                      - channel
-                      - gvk
-                      - name
-                      - namespace
-                      type: object
                     reason:
                       description: Machine-readable text indicating the reason for
                         the condition's last transition.
@@ -244,9 +206,52 @@ spec:
                         used as extension marker in the future
                       type: string
                   required:
-                  - moduleInfo
                   - status
                   - type
+                  type: object
+                type: array
+              moduleInfos:
+                description: Contains essential information about the current deployed
+                  module
+                items:
+                  properties:
+                    channel:
+                      description: Channel is the current deployed module channel
+                      enum:
+                      - rapid
+                      - regular
+                      - stable
+                      type: string
+                    gvk:
+                      description: GroupVersionKind is the current deployed module
+                        gvk
+                      properties:
+                        group:
+                          type: string
+                        kind:
+                          type: string
+                        version:
+                          type: string
+                      required:
+                      - group
+                      - kind
+                      - version
+                      type: object
+                    moduleName:
+                      description: ModuleName is the unique identifier of the module.
+                      type: string
+                    name:
+                      description: Name is the current deployed module name
+                      type: string
+                    namespace:
+                      description: Namespace is the current deployed module namespace
+                      type: string
+                  required:
+                  - channel
+                  - gvk
+                  - moduleName
+                  - name
+                  - namespace
                   type: object
                 type: array
               observedGeneration:
