@@ -22,6 +22,10 @@ import (
 	"fmt"
 	"time"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	"github.com/kyma-project/kyma-operator/operator/pkg/parsed"
 
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
@@ -96,7 +100,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 
 		// if the status is not yet set to deleting, also update the status
-		if err := status.Helper(r).UpdateStatus(
+		if err := status.Helper(r).UpdateStatusForExistingModules(
 			ctx, kyma, v1alpha1.KymaStateDeleting, "deletion timestamp set",
 		); err != nil {
 			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, fmt.Errorf(
@@ -201,6 +205,21 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 			fmt.Errorf("error while syncing conditions during processing: %w", err))
 	}
 
+	notExistsModuleInfos := kyma.GetNotExistsModuleInfos()
+	if len(notExistsModuleInfos) > 0 {
+		requireSync, err := r.DeleteNotExistsModulesAndUpdateConditions(ctx, &kyma.Status, notExistsModuleInfos)
+		if err != nil {
+			return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
+				fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err))
+		}
+		if requireSync {
+			if err := status.Helper(r).UpdateStatusForExistingModules(
+				ctx, kyma, kyma.Status.State, "updating component conditions"); err != nil {
+				return fmt.Errorf("error while updating status for condition change: %w", err)
+			}
+		}
+	}
+
 	// set ready condition if applicable
 	if kyma.AreAllReadyConditionsSetForKyma() {
 		message := fmt.Sprintf("reconciliation of %s finished!", kyma.Name)
@@ -212,7 +231,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 
 	// if the ready condition is not applicable, but we changed the conditions, we still need to issue an update
 	if statusUpdateRequiredFromCreation || statusUpdateRequiredFromSync {
-		if err := status.Helper(r).UpdateStatus(
+		if err := status.Helper(r).UpdateStatusForExistingModules(
 			ctx, kyma, kyma.Status.State, "updating component conditions"); err != nil {
 			return fmt.Errorf("error while updating status for condition change: %w", err)
 		}
@@ -286,6 +305,9 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *v1a
 		}
 	}
 
+	if len(kyma.GetNotExistsModuleInfos()) > 0 {
+		return r.UpdateStatus(ctx, kyma, v1alpha1.KymaStateProcessing, fmt.Sprintf("some module get deleted"))
+	}
 	return nil
 }
 
@@ -383,7 +405,7 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 		}
 
 		// if we have NO create, NO update,the template was NOT outdated and the Condition did not exist yet.
-		// either the condition was never tracked before, or it was tracked before but isnt ready yet.
+		// either the condition was never tracked before, or it was tracked before but isn't ready yet.
 		// we now insert the condition to false as we expect the next step to verify every time if the module is still ready,
 		// by default the module will NOT be ready.
 		status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module}, v1alpha1.ConditionStatusFalse,
@@ -463,7 +485,7 @@ func (r *KymaReconciler) TriggerKymaDeletion(ctx context.Context, kyma *v1alpha1
 func (r *KymaReconciler) UpdateStatus(
 	ctx context.Context, kyma *v1alpha1.Kyma, state v1alpha1.KymaState, message string,
 ) error {
-	if err := status.Helper(r).UpdateStatus(ctx, kyma,
+	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma,
 		state, "templates could not be fetched"); err != nil {
 		return fmt.Errorf("error while updating status to %s because of %s: %w", state, message, err)
 	}
@@ -474,7 +496,7 @@ func (r *KymaReconciler) UpdateStatus(
 func (r *KymaReconciler) UpdateStatusFromErr(
 	ctx context.Context, kyma *v1alpha1.Kyma, state v1alpha1.KymaState, err error,
 ) error {
-	if err := status.Helper(r).UpdateStatus(ctx, kyma,
+	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma,
 		state, err.Error()); err != nil {
 		return fmt.Errorf("error while updating status to %s: %w", state, err)
 	}
@@ -502,4 +524,57 @@ func (r *KymaReconciler) GetModules(ctx context.Context, kyma *v1alpha1.Kyma) (p
 	}
 
 	return modules, nil
+}
+
+func (r *KymaReconciler) DeleteNotExistsModulesAndUpdateConditions(ctx context.Context,
+	status *v1alpha1.KymaStatus, moduleInfos []*v1alpha1.ModuleInfo,
+) (bool, error) {
+	var err error
+	requireUpdateCondition := false
+	conditionMap := convertToConditionMap(status)
+
+	for i := range moduleInfos {
+		moduleInfo := moduleInfos[i]
+		err = r.deleteModule(ctx, moduleInfo)
+		if client.IgnoreNotFound(err) == nil {
+			requireUpdateCondition = true
+			delete(conditionMap, moduleInfo)
+		}
+	}
+
+	status.Conditions = convertToNewConditions(conditionMap)
+
+	if client.IgnoreNotFound(err) != nil {
+		return false, fmt.Errorf("error deleting module %w", err)
+	}
+	return requireUpdateCondition, nil
+}
+
+func convertToConditionMap(status *v1alpha1.KymaStatus) map[*v1alpha1.ModuleInfo]*v1alpha1.KymaCondition {
+	conditionMap := make(map[*v1alpha1.ModuleInfo]*v1alpha1.KymaCondition)
+	for i := range status.Conditions {
+		condition := &status.Conditions[i]
+		conditionMap[&condition.ModuleInfo] = condition
+	}
+	return conditionMap
+}
+
+func convertToNewConditions(conditionMap map[*v1alpha1.ModuleInfo]*v1alpha1.KymaCondition) []v1alpha1.KymaCondition {
+	newConditions := make([]v1alpha1.KymaCondition, 0)
+	for _, condition := range conditionMap {
+		newConditions = append(newConditions, *condition)
+	}
+	return newConditions
+}
+
+func (r *KymaReconciler) deleteModule(ctx context.Context, moduleInfo *v1alpha1.ModuleInfo) error {
+	module := unstructured.Unstructured{}
+	module.SetNamespace(moduleInfo.Namespace)
+	module.SetName(moduleInfo.Name)
+	module.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   moduleInfo.GroupVersionKind.Group,
+		Version: moduleInfo.GroupVersionKind.Version,
+		Kind:    moduleInfo.GroupVersionKind.Kind,
+	})
+	return r.Delete(ctx, &module, &client.DeleteOptions{})
 }

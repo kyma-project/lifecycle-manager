@@ -206,6 +206,9 @@ type KymaCondition struct {
 	// +optional
 	Reason string `json:"reason,omitempty"`
 
+	// Contains essential information about the current deployed module
+	ModuleInfo ModuleInfo `json:"moduleInfo"`
+
 	// Additional Information when the condition is bound to a ModuleTemplate. It contains information about the last
 	// parsing that occurred and will track the state of the parser ModuleTemplate in Context of the Installation.
 	// This will update when Channel, Profile or the ModuleTemplate used in the Condition is changed.
@@ -215,6 +218,20 @@ type KymaCondition struct {
 	// Timestamp for when Kyma last transitioned from one status to another.
 	// +optional
 	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`
+}
+
+type ModuleInfo struct {
+	// Name is the current deployed module name
+	Name string `json:"name"`
+
+	// Channel is the current deployed module channel
+	Channel Channel `json:"channel"`
+
+	// GroupVersionKind is the current deployed module gvk
+	GroupVersionKind metav1.GroupVersionKind `json:"gvk"`
+
+	// Namespace is the current deployed module namespace
+	Namespace string `json:"namespace"`
 }
 
 type TemplateInfo struct {
@@ -279,6 +296,34 @@ func (kyma *Kyma) SetActiveChannel() *Kyma {
 	kyma.Status.ActiveChannel = kyma.Spec.Channel
 
 	return kyma
+}
+
+type moduleInfoExistsPair struct {
+	moduleInfo *ModuleInfo
+	exists     bool
+}
+
+func (kyma *Kyma) GetNotExistsModuleInfos() []*ModuleInfo {
+	moduleInfoMap := make(map[string]*moduleInfoExistsPair)
+
+	for i := range kyma.Status.Conditions {
+		condition := &kyma.Status.Conditions[i]
+		moduleInfoMap[condition.Reason] = &moduleInfoExistsPair{exists: false, moduleInfo: &condition.ModuleInfo}
+	}
+
+	for i := range kyma.Spec.Modules {
+		module := &kyma.Spec.Modules[i]
+		if _, exists := moduleInfoMap[module.Name]; exists {
+			moduleInfoMap[module.Name].exists = true
+		}
+	}
+	notExistsModules := make([]*ModuleInfo, 0)
+	for _, item := range moduleInfoMap {
+		if !item.exists {
+			notExistsModules = append(notExistsModules, item.moduleInfo)
+		}
+	}
+	return notExistsModules
 }
 
 //+kubebuilder:object:root=true

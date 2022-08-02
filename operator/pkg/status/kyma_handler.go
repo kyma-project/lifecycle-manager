@@ -28,7 +28,7 @@ func Helper(handler Handler) *Kyma {
 	return &Kyma{StatusWriter: handler.Status()}
 }
 
-func (k *Kyma) UpdateStatus(
+func (k *Kyma) UpdateStatusForExistingModules(
 	ctx context.Context,
 	kyma *operatorv1alpha1.Kyma,
 	newState operatorv1alpha1.KymaState,
@@ -85,6 +85,8 @@ func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules
 			}
 		}
 
+		SyncModuleInfo(condition, module)
+
 		condition.LastTransitionTime = &metav1.Time{Time: time.Now()}
 		condition.Message = message
 		condition.Status = conditionStatus
@@ -97,6 +99,17 @@ func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules
 			}
 		}
 	}
+}
+
+func SyncModuleInfo(condition *operatorv1alpha1.KymaCondition, module *parsed.Module) {
+	condition.ModuleInfo.Name = module.Unstructured.GetName()
+	condition.ModuleInfo.Namespace = module.Unstructured.GetNamespace()
+	condition.ModuleInfo.GroupVersionKind = metav1.GroupVersionKind{
+		Group:   module.GroupVersionKind().Group,
+		Version: module.GroupVersionKind().Version,
+		Kind:    module.GroupVersionKind().Kind,
+	}
+	condition.ModuleInfo.Channel = module.Channel()
 }
 
 func (k *Kyma) GetReadyConditionForComponent(kymaObj *operatorv1alpha1.Kyma,
