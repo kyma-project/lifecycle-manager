@@ -7,10 +7,11 @@ import (
 
 	"github.com/kyma-project/kyma-operator/operator/pkg/parsed"
 
-	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 )
 
 const (
@@ -27,7 +28,7 @@ func deleteModule(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate,
 	}
 	component.SetNamespace(namespace)
 	component.SetName(parsed.CreateModuleName(moduleTemplate.GetLabels()[v1alpha1.ModuleName], kyma.GetName()))
-	return k8sClient.Delete(ctx, component)
+	return controlPlaneClient.Delete(ctx, component)
 }
 
 var _ = Describe("Kyma with no ModuleTemplate", func() {
@@ -60,7 +61,7 @@ var _ = Describe("Kyma with empty ModuleTemplate", func() {
 			template, err := test.ModuleTemplateFactory("empty", module,
 				v1alpha1.ProfileProduction, unstructured.Unstructured{})
 			Expect(err).ShouldNot(HaveOccurred())
-			Expect(k8sClient.Create(ctx, template)).To(Succeed())
+			Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
 			moduleTemplates = append(moduleTemplates, template)
 		}
 	})
@@ -103,7 +104,7 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 			template, err := test.ModuleTemplateFactory("recreate", module,
 				v1alpha1.ProfileProduction, unstructured.Unstructured{})
 			Expect(err).ShouldNot(HaveOccurred())
-			Expect(k8sClient.Create(ctx, template)).To(Succeed())
+			Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
 			moduleTemplates = append(moduleTemplates, template)
 		}
 	})
@@ -142,7 +143,7 @@ var _ = Describe("Kyma update Manifest CR", func() {
 			template, err := test.ModuleTemplateFactory("update", module,
 				v1alpha1.ProfileProduction, unstructured.Unstructured{})
 			Expect(err).ShouldNot(HaveOccurred())
-			Expect(k8sClient.Create(ctx, template)).To(Succeed())
+			Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
 			moduleTemplates = append(moduleTemplates, template)
 		}
 	})
@@ -157,7 +158,7 @@ var _ = Describe("Kyma update Manifest CR", func() {
 		valueUpdated := "valueUpdated"
 		for _, activeModule := range moduleTemplates {
 			activeModule.Spec.Data.Object["spec"] = map[string]any{"initKey": valueUpdated}
-			err := k8sClient.Update(ctx, activeModule)
+			err := controlPlaneClient.Update(ctx, activeModule)
 			Expect(err).ToNot(HaveOccurred())
 		}
 		By("CR updated with new value in spec.resource.spec")
@@ -177,8 +178,6 @@ var _ = Describe("Kyma sync into Remote Cluster", func() {
 		NoModuleCopy: true,
 	}
 
-	skrClient := SetupSKR(kyma.GetName(), kyma.GetNamespace())
-
 	RegisterDefaultLifecycleForKyma(kyma)
 
 	kyma.Spec.Modules = append(kyma.Spec.Modules, v1alpha1.Module{
@@ -194,14 +193,14 @@ var _ = Describe("Kyma sync into Remote Cluster", func() {
 			template, err := test.ModuleTemplateFactory("remote-kyma", module,
 				v1alpha1.ProfileProduction, unstructured.Unstructured{})
 			Expect(err).ShouldNot(HaveOccurred())
-			Expect(k8sClient.Create(ctx, template)).To(Succeed())
+			Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
 			moduleTemplates = append(moduleTemplates, template)
 		}
 	})
 
 	It("Kyma CR should be synchronized in both clusters", func() {
 		By("Remote Kyma created")
-		Eventually(RemoteKymaExists(skrClient(), kyma), "30s", interval).Should(Succeed())
+		Eventually(RemoteKymaExists(runtimeClient, kyma), "30s", interval).Should(Succeed())
 
 		By("CR created")
 		for _, activeModule := range moduleTemplates {

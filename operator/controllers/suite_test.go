@@ -54,12 +54,14 @@ import (
 const listenerAddr = ":8082"
 
 var (
-	_          *rest.Config
-	k8sClient  client.Client        //nolint:gochecknoglobals
-	k8sManager manager.Manager      //nolint:gochecknoglobals
-	testEnv    *envtest.Environment //nolint:gochecknoglobals
-	ctx        context.Context      //nolint:gochecknoglobals
-	cancel     context.CancelFunc   //nolint:gochecknoglobals
+	_                  *rest.Config
+	controlPlaneClient client.Client        //nolint:gochecknoglobals
+	runtimeClient      client.Client        //nolint:gochecknoglobals
+	k8sManager         manager.Manager      //nolint:gochecknoglobals
+	controlPlaneEnv    *envtest.Environment //nolint:gochecknoglobals
+	runtimeEnv         *envtest.Environment //nolint:gochecknoglobals
+	ctx                context.Context      //nolint:gochecknoglobals
+	cancel             context.CancelFunc   //nolint:gochecknoglobals
 )
 
 func TestAPIs(t *testing.T) {
@@ -91,13 +93,13 @@ var _ = BeforeSuite(func() {
 	Expect(moduleFile).ToNot(BeEmpty())
 	Expect(yaml2.Unmarshal(moduleFile, &controlplaneCrd)).To(Succeed())
 
-	testEnv = &envtest.Environment{
+	controlPlaneEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases")},
 		CRDs:                  []*v1.CustomResourceDefinition{manifestCrd, controlplaneCrd},
 		ErrorIfCRDPathMissing: true,
 	}
 
-	cfg, err := testEnv.Start()
+	cfg, err := controlPlaneEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
@@ -106,9 +108,11 @@ var _ = BeforeSuite(func() {
 
 	//+kubebuilder:scaffold:scheme
 
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	controlPlaneClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
-	Expect(k8sClient).NotTo(BeNil())
+	Expect(controlPlaneClient).NotTo(BeNil())
+
+	runtimeClient, runtimeEnv = NewSKRCluster()
 
 	metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
 	if !found {
@@ -146,17 +150,20 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	cancel()
-	err := testEnv.Stop()
+
+	err := controlPlaneEnv.Stop()
+	Expect(err).NotTo(HaveOccurred())
+	err = runtimeEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
 
-func SetLocalClientNewSKRCluster(secretName, secretNamespace string) (*rest.Config, *envtest.Environment) {
+func NewSKRCluster() (client.Client, *envtest.Environment) { //nolint:ireturn
 	skrEnv := &envtest.Environment{
 		ErrorIfCRDPathMissing: true,
 	}
 	cfg, err := skrEnv.Start()
-	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
+	Expect(err).NotTo(HaveOccurred())
 
 	var authUser *envtest.AuthenticatedUser
 	authUser, err = skrEnv.AddUser(envtest.User{
@@ -169,24 +176,8 @@ func SetLocalClientNewSKRCluster(secretName, secretNamespace string) (*rest.Conf
 		return authUser.Config()
 	}
 
-	return authUser.Config(), skrEnv
-}
+	skrClient, err := client.New(authUser.Config(), client.Options{Scheme: controlPlaneClient.Scheme()})
+	Expect(err).NotTo(HaveOccurred())
 
-func SetupSKR(secretName, secretNamespace string) func() client.Client {
-	var skrConfig *rest.Config
-	var skrClient client.Client
-	var skrEnv *envtest.Environment
-	BeforeEach(func() {
-		var err error
-		skrConfig, skrEnv = SetLocalClientNewSKRCluster(secretName, secretNamespace)
-		skrClient, err = client.New(skrConfig, client.Options{Scheme: k8sClient.Scheme()})
-		Expect(err).NotTo(HaveOccurred())
-	})
-	AfterEach(func() {
-		Expect(skrEnv.Stop()).NotTo(HaveOccurred())
-	})
-
-	return func() client.Client {
-		return skrClient
-	}
+	return skrClient, skrEnv
 }

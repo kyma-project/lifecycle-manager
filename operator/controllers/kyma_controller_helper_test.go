@@ -3,17 +3,18 @@ package controllers_test
 import (
 	"encoding/json"
 
-	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	sampleCRDv1alpha1 "github.com/kyma-project/kyma-operator/operator/config/samples/component-integration-installed/crd/v1alpha1" //nolint:lll
-	"github.com/kyma-project/kyma-operator/operator/pkg/parsed"
-	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
-	manifestV1alpha1 "github.com/kyma-project/manifest-operator/operator/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	sampleCRDv1alpha1 "github.com/kyma-project/kyma-operator/operator/config/samples/component-integration-installed/crd/v1alpha1" //nolint:lll
+	"github.com/kyma-project/kyma-operator/operator/pkg/parsed"
+	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
+	manifestV1alpha1 "github.com/kyma-project/manifest-operator/operator/api/v1alpha1"
 )
 
 func NewTestKyma(name string) *v1alpha1.Kyma {
@@ -36,17 +37,17 @@ func NewTestKyma(name string) *v1alpha1.Kyma {
 
 func RegisterDefaultLifecycleForKyma(kyma *v1alpha1.Kyma) {
 	BeforeEach(func() {
-		Expect(k8sClient.Create(ctx, kyma)).Should(Succeed())
+		Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
 	})
 	AfterEach(func() {
-		Expect(k8sClient.Delete(ctx, kyma)).Should(Succeed())
+		Expect(controlPlaneClient.Delete(ctx, kyma)).Should(Succeed())
 	})
 }
 
 func IsKymaInState(kyma *v1alpha1.Kyma, state v1alpha1.KymaState) func() bool {
 	return func() bool {
 		kymaFromCluster := &v1alpha1.Kyma{}
-		err := k8sClient.Get(ctx, types.NamespacedName{
+		err := controlPlaneClient.Get(ctx, types.NamespacedName{
 			Name:      kyma.GetName(),
 			Namespace: kyma.GetNamespace(),
 		}, kymaFromCluster)
@@ -61,7 +62,7 @@ func IsKymaInState(kyma *v1alpha1.Kyma, state v1alpha1.KymaState) func() bool {
 func GetKymaState(kyma *v1alpha1.Kyma) func() string {
 	return func() string {
 		createdKyma := &v1alpha1.Kyma{}
-		err := k8sClient.Get(ctx, types.NamespacedName{Name: kyma.GetName(), Namespace: kyma.GetNamespace()}, createdKyma)
+		err := controlPlaneClient.Get(ctx, types.NamespacedName{Name: kyma.GetName(), Namespace: kyma.GetNamespace()}, createdKyma)
 		if err != nil {
 			return ""
 		}
@@ -72,7 +73,7 @@ func GetKymaState(kyma *v1alpha1.Kyma) func() string {
 func GetKymaConditions(kyma *v1alpha1.Kyma) func() []v1alpha1.KymaCondition {
 	return func() []v1alpha1.KymaCondition {
 		createdKyma := &v1alpha1.Kyma{}
-		err := k8sClient.Get(ctx, types.NamespacedName{Name: kyma.GetName(), Namespace: kyma.GetNamespace()}, createdKyma)
+		err := controlPlaneClient.Get(ctx, types.NamespacedName{Name: kyma.GetName(), Namespace: kyma.GetNamespace()}, createdKyma)
 		if err != nil {
 			return []v1alpha1.KymaCondition{}
 		}
@@ -124,7 +125,7 @@ func getModule(
 	if moduleTemplate.Spec.Target == v1alpha1.TargetRemote {
 		component.SetKind("Manifest")
 	}
-	err := k8sClient.Get(ctx, client.ObjectKey{
+	err := controlPlaneClient.Get(ctx, client.ObjectKey{
 		Namespace: namespace,
 		Name:      parsed.CreateModuleName(moduleTemplate.GetLabels()[v1alpha1.ModuleName], kyma.GetName()),
 	}, component)
