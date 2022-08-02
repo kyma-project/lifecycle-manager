@@ -88,14 +88,6 @@ func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules
 		condition.LastTransitionTime = &metav1.Time{Time: time.Now()}
 		condition.Message = message
 		condition.Status = conditionStatus
-
-		for i, existingCondition := range status.Conditions {
-			if existingCondition.Type == operatorv1alpha1.ConditionTypeReady && existingCondition.Reason == name {
-				status.Conditions[i] = *condition
-
-				break
-			}
-		}
 	}
 }
 
@@ -125,9 +117,10 @@ func (k *Kyma) GetReadyConditionForComponent(kymaObj *operatorv1alpha1.Kyma,
 	componentName string,
 ) (*operatorv1alpha1.KymaCondition, bool) {
 	status := &kymaObj.Status
-	for _, existingCondition := range status.Conditions {
+	for i := range status.Conditions {
+		existingCondition := &status.Conditions[i]
 		if existingCondition.Type == operatorv1alpha1.ConditionTypeReady && existingCondition.Reason == componentName {
-			return &existingCondition, true
+			return existingCondition, true
 		}
 	}
 
