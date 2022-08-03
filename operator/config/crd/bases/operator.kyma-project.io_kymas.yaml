@@ -223,6 +223,51 @@ spec:
                 - Ready
                 - Error
                 type: string
+              templateInfos:
+                description: Additional Information when the condition is bound to
+                  a ModuleTemplate. It contains information about the last parsing
+                  that occurred and will track the state of the parser ModuleTemplate
+                  in Context of the Installation. This will update when Channel, Profile
+                  or the ModuleTemplate used in the Condition is changed.
+                items:
+                  properties:
+                    channel:
+                      description: Channel tracks the active Channel of the ModuleTemplate.
+                        In Case it changes, the new Channel will have caused a new
+                        lookup to be necessary that maybe picks a different ModuleTemplate,
+                        which is why we need to reconcile.
+                      enum:
+                      - rapid
+                      - regular
+                      - stable
+                      type: string
+                    generation:
+                      description: Generation tracks the active Generation of the
+                        ModuleTemplate. In Case it changes, the new Generation will
+                        differ from the one tracked in TemplateInfo and thus trigger
+                        a new reconciliation with a newly parser ModuleTemplate
+                      format: int64
+                      type: integer
+                    gvk:
+                      description: GroupVersionKind is used to track the Kind that
+                        was created from the ModuleTemplate. This is dynamic to not
+                        bind ourselves to any kind of Kind in the code and allows
+                        us to work generic on deletion / cleanup of related resources
+                        to a Kyma Installation.
+                      properties:
+                        group:
+                          type: string
+                        kind:
+                          type: string
+                        version:
+                          type: string
+                      required:
+                      - group
+                      - kind
+                      - version
+                      type: object
+                  type: object
+                type: array
             type: object
         type: object
     served: true

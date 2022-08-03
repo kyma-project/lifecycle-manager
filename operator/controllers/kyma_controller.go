@@ -376,8 +376,8 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 		}
 
 		if module.TemplateOutdated {
-			condition, _ := status.Helper(r).GetReadyConditionForComponent(kyma, name)
-			if module.StateMismatchedWithCondition(condition) {
+			templateInfo := status.Helper(r).GetTemplateInfoForModule(kyma, name)
+			if module.StateMismatchedWithTemplateInfo(templateInfo) {
 				return update()
 			}
 		}

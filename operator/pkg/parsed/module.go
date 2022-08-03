@@ -66,9 +66,9 @@ func (m *Module) CopySettingsToUnstructured() error {
 	return nil
 }
 
-func (m *Module) StateMismatchedWithCondition(condition *v1alpha1.KymaCondition) bool {
-	return condition.TemplateInfo.Generation != m.Template.GetGeneration() ||
-		condition.TemplateInfo.Channel != m.Template.Spec.Channel
+func (m *Module) StateMismatchedWithTemplateInfo(templateInfo *v1alpha1.TemplateInfo) bool {
+	return templateInfo == nil || templateInfo.Generation != m.Template.GetGeneration() ||
+		templateInfo.Channel != m.Template.Spec.Channel
 }
 
 // UpdateModuleFromCluster update the module with necessary information (status, ownerReference) based on

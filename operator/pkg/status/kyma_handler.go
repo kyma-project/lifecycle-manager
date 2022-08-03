@@ -67,22 +67,10 @@ func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules
 ) {
 	status := &kyma.Status
 
-	for name, module := range modules {
+	for name := range modules {
 		condition, exists := k.GetReadyConditionForComponent(kyma, name)
 		if !exists {
 			status.Conditions = append(status.Conditions, *condition)
-		}
-
-		if module.Template != nil {
-			condition.TemplateInfo = operatorv1alpha1.TemplateInfo{
-				Channel:    module.Template.Spec.Channel,
-				Generation: module.Template.Generation,
-				GroupVersionKind: metav1.GroupVersionKind{
-					Group:   module.GroupVersionKind().Group,
-					Version: module.GroupVersionKind().Version,
-					Kind:    module.GroupVersionKind().Kind,
-				},
-			}
 		}
 
 		condition.LastTransitionTime = &metav1.Time{Time: time.Now()}
@@ -97,6 +85,41 @@ func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules
 			}
 		}
 	}
+}
+
+func (k *Kyma) SyncTemplateInfo(kyma *operatorv1alpha1.Kyma, modules parsed.Modules) {
+	infoMap := kyma.GetTemplateInfoMap()
+
+	for _, module := range modules {
+		if module.Template == nil {
+			continue
+		}
+		latestModuleInfo := operatorv1alpha1.TemplateInfo{
+			Channel:    module.Template.Spec.Channel,
+			Generation: module.Template.Generation,
+			GroupVersionKind: metav1.GroupVersionKind{
+				Group:   module.GroupVersionKind().Group,
+				Version: module.GroupVersionKind().Version,
+				Kind:    module.GroupVersionKind().Kind,
+			},
+		}
+		moduleInfo, exists := infoMap[module.Name]
+		if exists {
+			*moduleInfo = latestModuleInfo
+		} else {
+			kyma.Status.TemplateInfos = append(kyma.Status.TemplateInfos, latestModuleInfo)
+		}
+	}
+}
+
+func (k *Kyma) GetTemplateInfoForModule(kyma *operatorv1alpha1.Kyma, moduleName string) *operatorv1alpha1.TemplateInfo {
+	for i := range kyma.Status.TemplateInfos {
+		templateInfo := &kyma.Status.TemplateInfos[i]
+		if templateInfo.ModuleName == moduleName {
+			return templateInfo
+		}
+	}
+	return nil
 }
 
 func (k *Kyma) GetReadyConditionForComponent(kymaObj *operatorv1alpha1.Kyma,
