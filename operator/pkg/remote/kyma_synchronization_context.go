@@ -205,7 +205,7 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context,
 
 		c.controlPlaneKyma.Spec = remoteKyma.Spec
 		if err := c.controlPlaneClient.Update(ctx, c.controlPlaneKyma); err != nil {
-			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update control clane kyma")
+			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update control plane kyma")
 
 			return true, err
 		}
