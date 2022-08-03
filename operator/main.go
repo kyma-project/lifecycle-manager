@@ -166,7 +166,7 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 
 func defineFlagVar() *FlagVar {
 	flagVar := new(FlagVar)
-	flag.StringVar(&flagVar.metricsAddr, "metrics-bind-address", ":8080",
+	flag.StringVar(&flagVar.metricsAddr, "metrics-bind-address", ":8085",
 		"The address the metric endpoint binds to.")
 	flag.StringVar(&flagVar.probeAddr, "health-probe-bind-address", ":8081",
 		"The address the probe endpoint binds to.")

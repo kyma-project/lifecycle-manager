@@ -43,6 +43,7 @@ import (
 
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	kymacontroller "github.com/kyma-project/kyma-operator/operator/controllers"
+	"github.com/kyma-project/kyma-operator/operator/pkg/remote"
 	"github.com/kyma-project/kyma-operator/operator/pkg/signature"
 	//+kubebuilder:scaffold:imports
 )
@@ -53,12 +54,14 @@ import (
 const listenerAddr = ":8082"
 
 var (
-	_          *rest.Config
-	k8sClient  client.Client        //nolint:gochecknoglobals
-	k8sManager manager.Manager      //nolint:gochecknoglobals
-	testEnv    *envtest.Environment //nolint:gochecknoglobals
-	ctx        context.Context      //nolint:gochecknoglobals
-	cancel     context.CancelFunc   //nolint:gochecknoglobals
+	_                  *rest.Config
+	controlPlaneClient client.Client        //nolint:gochecknoglobals
+	runtimeClient      client.Client        //nolint:gochecknoglobals
+	k8sManager         manager.Manager      //nolint:gochecknoglobals
+	controlPlaneEnv    *envtest.Environment //nolint:gochecknoglobals
+	runtimeEnv         *envtest.Environment //nolint:gochecknoglobals
+	ctx                context.Context      //nolint:gochecknoglobals
+	cancel             context.CancelFunc   //nolint:gochecknoglobals
 )
 
 func TestAPIs(t *testing.T) {
@@ -90,13 +93,13 @@ var _ = BeforeSuite(func() {
 	Expect(moduleFile).ToNot(BeEmpty())
 	Expect(yaml2.Unmarshal(moduleFile, &controlplaneCrd)).To(Succeed())
 
-	testEnv = &envtest.Environment{
+	controlPlaneEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases")},
 		CRDs:                  []*v1.CustomResourceDefinition{manifestCrd, controlplaneCrd},
 		ErrorIfCRDPathMissing: true,
 	}
 
-	cfg, err := testEnv.Start()
+	cfg, err := controlPlaneEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
@@ -105,13 +108,21 @@ var _ = BeforeSuite(func() {
 
 	//+kubebuilder:scaffold:scheme
 
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	controlPlaneClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
-	Expect(k8sClient).NotTo(BeNil())
+	Expect(controlPlaneClient).NotTo(BeNil())
+
+	runtimeClient, runtimeEnv = NewSKRCluster()
+
+	metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
+	if !found {
+		metricsBindAddress = ":8080"
+	}
 
 	k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
-		Scheme:   scheme.Scheme,
-		NewCache: kymacontroller.NewCacheFunc(),
+		MetricsBindAddress: metricsBindAddress,
+		Scheme:             scheme.Scheme,
+		NewCache:           kymacontroller.NewCacheFunc(),
 	})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -139,6 +150,34 @@ var _ = BeforeSuite(func() {
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	cancel()
-	err := testEnv.Stop()
+
+	err := controlPlaneEnv.Stop()
+	Expect(err).NotTo(HaveOccurred())
+	err = runtimeEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
+
+func NewSKRCluster() (client.Client, *envtest.Environment) { //nolint:ireturn
+	skrEnv := &envtest.Environment{
+		ErrorIfCRDPathMissing: true,
+	}
+	cfg, err := skrEnv.Start()
+	Expect(cfg).NotTo(BeNil())
+	Expect(err).NotTo(HaveOccurred())
+
+	var authUser *envtest.AuthenticatedUser
+	authUser, err = skrEnv.AddUser(envtest.User{
+		Name:   "skr-admin-account",
+		Groups: []string{"system:masters"},
+	}, cfg)
+	Expect(err).NotTo(HaveOccurred())
+
+	remote.LocalClient = func() *rest.Config {
+		return authUser.Config()
+	}
+
+	skrClient, err := client.New(authUser.Config(), client.Options{Scheme: controlPlaneClient.Scheme()})
+	Expect(err).NotTo(HaveOccurred())
+
+	return skrClient, skrEnv
+}

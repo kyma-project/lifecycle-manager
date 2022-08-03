@@ -17,8 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 type OverrideType string
@@ -51,15 +52,6 @@ type Module struct {
 	// Channel is the desired channel of the Module. If this changes or is set, it will be used to resolve a new
 	// ModuleTemplate based on the new resolved resources.
 	Channel Channel `json:"channel,omitempty"`
-
-	// Settings are a generic Representation of the entire Specification of a Module. It can be used as an alternative
-	// to generic Settings written into the ModuleTemplate as they are directly passed to the resulting CR.
-	// Note that this Settings argument is validated against the API Server and thus will not accept GVKs that are not
-	// registered as CustomResourceDefinition. This can be used to apply settings / overrides that the operator accepts
-	// as generic overrides for its CustomResource.
-	//+kubebuilder:pruning:PreserveUnknownFields
-	//+kubebuilder:validation:XEmbeddedResource
-	Settings unstructured.Unstructured `json:"settings,omitempty"`
 }
 
 // SyncStrategy determines how the Remote Cluster is synchronized with the Control Plane. This can influence secret
@@ -68,6 +60,7 @@ type SyncStrategy string
 
 const (
 	SyncStrategyLocalSecret = "local-secret"
+	SyncStrategyLocalClient = "local-client"
 )
 
 // Sync defines settings used to apply the kyma synchronization to other clusters. This is defaulted to false
@@ -86,6 +79,11 @@ type Sync struct {
 	// Note that cleanup is currently not supported if you are switching the namespace, so you will
 	// manually need to cleanup old synchronized Kymas
 	Namespace string `json:"namespace,omitempty"`
+
+	// +kubebuilder:default:=true
+	// NoModuleCopy set to true will cause the remote Kyma to be initialized without copying over the
+	// module spec of the control plane into the SKR
+	NoModuleCopy bool `json:"noModuleCopy,omitempty"`
 }
 
 // KymaSpec defines the desired state of Kyma.
@@ -104,7 +102,7 @@ type KymaSpec struct {
 	Sync Sync `json:"sync,omitempty"`
 }
 
-func (kyma *Kyma) AreAllReadyConditionsSetForKyma() bool {
+func (kyma *Kyma) AreAllConditionsReadyForKyma() bool {
 	status := &kyma.Status
 	if len(status.Conditions) < 1 {
 		return false
@@ -112,8 +110,7 @@ func (kyma *Kyma) AreAllReadyConditionsSetForKyma() bool {
 
 	for _, existingCondition := range status.Conditions {
 		if existingCondition.Type == ConditionTypeReady &&
-			existingCondition.Status != ConditionStatusTrue &&
-			existingCondition.Reason != KymaKind {
+			existingCondition.Status != ConditionStatusTrue {
 			return false
 		}
 	}
@@ -281,6 +278,17 @@ func (kyma *Kyma) SetActiveChannel() *Kyma {
 	return kyma
 }
 
+func (kyma *Kyma) SetLastSync() *Kyma {
+	// this is an additional update on the runtime and might not be worth it
+	lastSyncDate := time.Now().Format(time.RFC3339)
+	if kyma.Annotations == nil {
+		kyma.Annotations = make(map[string]string)
+	}
+	kyma.Annotations[LastSync] = lastSyncDate
+
+	return kyma
+}
+
 //+kubebuilder:object:root=true
 
 // KymaList contains a list of Kyma.
@@ -293,4 +301,29 @@ type KymaList struct {
 //nolint:gochecknoinits
 func init() {
 	SchemeBuilder.Register(&Kyma{}, &KymaList{})
+}
+
+const NewModuleMessage = "new module"
+
+func (kyma *Kyma) MatchConditionsToModules() []KymaCondition {
+	newConditions := []KymaCondition{}
+	for _, module := range kyma.Spec.Modules {
+		found := false
+		for _, condition := range kyma.Status.Conditions {
+			if module.Name == condition.Reason {
+				found = true
+			}
+		}
+		if !found {
+			newCondition := KymaCondition{
+				Type:    ConditionTypeReady,
+				Status:  ConditionStatusFalse,
+				Reason:  module.Name,
+				Message: NewModuleMessage,
+			}
+			kyma.Status.Conditions = append(kyma.Status.Conditions, newCondition)
+			newConditions = append(kyma.Status.Conditions, newCondition)
+		}
+	}
+	return newConditions
 }
