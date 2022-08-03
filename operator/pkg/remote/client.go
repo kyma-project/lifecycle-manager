@@ -19,6 +19,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const KubeConfigKey = "config"
+
 type ClusterClient struct {
 	logr.Logger
 	DefaultClient client.Client
@@ -38,7 +40,7 @@ func (cc *ClusterClient) GetRestConfigFromSecret(ctx context.Context, name, name
 
 	kubeConfigSecret := kubeConfigSecretList.Items[0]
 
-	kubeconfigString := string(kubeConfigSecret.Data["config"])
+	kubeconfigString := string(kubeConfigSecret.Data[KubeConfigKey])
 
 	restConfig, err := cc.GetConfig(kubeconfigString, "")
 	if err != nil {

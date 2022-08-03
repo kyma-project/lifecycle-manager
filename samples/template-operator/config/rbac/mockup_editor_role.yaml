@@ -1,0 +1,24 @@
+# permissions for end users to edit mockups.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mockup-editor-role
+rules:
+- apiGroups:
+  - component.kyma-project.io
+  resources:
+  - mockups
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - component.kyma-project.io
+  resources:
+  - mockups/status
+  verbs:
+  - get

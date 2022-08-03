@@ -83,3 +83,5 @@ out.txt
 .run/
 /operator/config/crd/bases/component.kyma-project.io_kcpmodules.yaml
 /operator/config/crd/bases/component.kyma-project.io_skrmodules.yaml
+.test.env
+**/**.code-workspace

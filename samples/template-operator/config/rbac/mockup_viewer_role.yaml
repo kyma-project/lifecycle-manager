@@ -1,0 +1,20 @@
+# permissions for end users to view mockups.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: mockup-viewer-role
+rules:
+- apiGroups:
+  - component.kyma-project.io
+  resources:
+  - mockups
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - component.kyma-project.io
+  resources:
+  - mockups/status
+  verbs:
+  - get

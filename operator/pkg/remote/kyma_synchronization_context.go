@@ -2,20 +2,28 @@ package remote
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"time"
 
+	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
 	corev1 "k8s.io/api/core/v1"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+)
+
+type ClientFunc func() *rest.Config
+
+var (
+	LocalClient             ClientFunc //nolint:gochecknoglobals
+	ErrNoLocalClientDefined = errors.New("no local client defined")
 )
 
 type KymaSynchronizationContext struct {
@@ -37,6 +45,12 @@ func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, key 
 	var err error
 
 	switch strategy {
+	case operatorv1alpha1.SyncStrategyLocalClient:
+		if LocalClient != nil {
+			restConfig = LocalClient()
+		} else {
+			err = ErrNoLocalClientDefined
+		}
 	case operatorv1alpha1.SyncStrategyLocalSecret:
 		fallthrough
 	default:
@@ -120,19 +134,39 @@ func InitializeKymaSynchronizationContext(ctx context.Context, controlPlaneClien
 	return sync, nil
 }
 
-func (c *KymaSynchronizationContext) CreateCRD(ctx context.Context) error {
+func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context) error {
 	crd := &v1extensions.CustomResourceDefinition{}
-	if err := c.controlPlaneClient.Get(ctx, client.ObjectKey{
+	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
+	var err error
+	err = c.controlPlaneClient.Get(ctx, client.ObjectKey{
 		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
 		// name changes, this also has to be adjusted here. We can think of making this configurable later
 		Name: fmt.Sprintf("%s.%s", operatorv1alpha1.KymaPlural, operatorv1alpha1.GroupVersion.Group),
-	}, crd); err != nil {
+	}, crd)
+
+	if err != nil {
 		return err
 	}
 
-	return c.runtimeClient.Create(ctx, &v1extensions.CustomResourceDefinition{
-		ObjectMeta: v1.ObjectMeta{Name: crd.Name, Namespace: crd.Namespace}, Spec: crd.Spec,
-	})
+	err = c.runtimeClient.Get(ctx, client.ObjectKey{
+		Name: fmt.Sprintf("%s.%s", operatorv1alpha1.KymaPlural, operatorv1alpha1.GroupVersion.Group),
+	}, crdFromRuntime)
+
+	if k8serrors.IsNotFound(err) {
+		return c.runtimeClient.Create(ctx, &v1extensions.CustomResourceDefinition{
+			ObjectMeta: v1.ObjectMeta{Name: crd.Name, Namespace: crd.Namespace}, Spec: crd.Spec,
+		})
+	}
+
+	if err != nil {
+		return err
+	}
+
+	// crd.SetResourceVersion(crdFromRuntime.GetResourceVersion())
+	// return c.runtimeClient.Update(ctx, &v1extensions.CustomResourceDefinition{
+	// 	ObjectMeta: v1.ObjectMeta{Name: crd.Name, Namespace: crd.Namespace}, Spec: crd.Spec,
+	// })
+	return nil
 }
 
 func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context) (*operatorv1alpha1.Kyma, error) {
@@ -151,7 +185,7 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 	if meta.IsNoMatchError(err) {
 		recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
 
-		if err := c.CreateCRD(ctx); err != nil {
+		if err := c.CreateOrUpdateCRD(ctx); err != nil {
 			return nil, err
 		}
 
@@ -160,7 +194,7 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 		err = nil
 	}
 
-	if errors.IsNotFound(err) {
+	if k8serrors.IsNotFound(err) {
 		if err := c.EnsureNamespaceExists(ctx, remoteKyma.Namespace); err != nil {
 			recorder.Event(kyma, "Warning", "RemoteKymaInstallation",
 				fmt.Sprintf("namespace %s could not be synced", remoteKyma.Namespace))
@@ -169,6 +203,10 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 		}
 
 		kyma.Spec.DeepCopyInto(&remoteKyma.Spec)
+
+		if kyma.Spec.Sync.NoModuleCopy {
+			remoteKyma.Spec.Modules = []v1alpha1.Module{}
+		}
 
 		err = c.runtimeClient.Create(ctx, remoteKyma)
 		if err != nil {
@@ -187,65 +225,52 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 
 func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context,
 	remoteKyma *operatorv1alpha1.Kyma,
-) (bool, error) {
+) error {
 	recorder := adapter.RecorderFromContext(ctx)
-	// check finalizer
-	if !controllerutil.ContainsFinalizer(remoteKyma, operatorv1alpha1.Finalizer) {
-		controllerutil.AddFinalizer(remoteKyma, operatorv1alpha1.Finalizer)
+
+	remoteKyma.Status = c.controlPlaneKyma.Status
+
+	if err := c.runtimeClient.Status().Update(ctx, remoteKyma.SetObservedGeneration()); err != nil {
+		recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
+		return err
 	}
 
-	if remoteKyma.Status.ObservedGeneration != remoteKyma.GetGeneration() {
-		// remote is new, lets update the control plane
-		remoteKyma.Status.ObservedGeneration = remoteKyma.GetGeneration()
-		if err := c.runtimeClient.Status().Update(ctx, remoteKyma); err != nil {
-			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
-
-			return true, err
-		}
-
-		c.controlPlaneKyma.Spec = remoteKyma.Spec
-		if err := c.controlPlaneClient.Update(ctx, c.controlPlaneKyma); err != nil {
-			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update control plane kyma")
-
-			return true, err
-		}
-
-		// as we have updated the control plane, we will requeue the object
-		return true, nil
+	if err := c.runtimeClient.Update(ctx, remoteKyma.SetLastSync()); err != nil {
+		recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma last sync annotation")
+		return err
 	}
 
-	if c.controlPlaneKyma.Status.ObservedGeneration != c.controlPlaneKyma.GetGeneration() {
-		// control plane got updated, runtime on cluster is using the wrong base instance for customization
-		// TODO this now requires custom merge logic, but for now we reapply the control plane version
-		remoteKyma.Spec = c.controlPlaneKyma.Spec
-	} else if remoteKyma.Status.State != c.controlPlaneKyma.Status.State {
-		// control plane and runtime spec are in sync, but the status got updated in the control plane
-		remoteKyma.Status.State = c.controlPlaneKyma.Status.State
+	return nil
+}
 
-		err := c.runtimeClient.Status().Update(ctx, remoteKyma)
-		if err != nil {
-			recorder.Event(c.controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
+// ReplaceWithVirtualKyma creates a virtual kyma instance from a control plane Kyma and N Remote Kymas,
+// merging the module specification in the process.
+func (c *KymaSynchronizationContext) ReplaceWithVirtualKyma(kyma *v1alpha1.Kyma, remotes ...*v1alpha1.Kyma) {
+	totalModuleAmount := len(kyma.Spec.Modules)
+	for _, remote := range remotes {
+		totalModuleAmount += len(remote.Spec.Modules)
+	}
+	modules := make(map[string]v1alpha1.Module, totalModuleAmount)
 
-			return false, err
+	for _, remote := range remotes {
+		for _, m := range remote.Spec.Modules {
+			modules[m.Name] = m
 		}
 	}
-
-	// this is an additional update on the runtime and might not be worth it
-	lastSyncDate := time.Now().Format(time.RFC3339)
-
-	if remoteKyma.Annotations == nil {
-		remoteKyma.Annotations = make(map[string]string)
+	for _, m := range kyma.Spec.Modules {
+		modules[m.Name] = m
 	}
 
-	remoteKyma.Annotations[operatorv1alpha1.LastSync] = lastSyncDate
-
-	return false, c.runtimeClient.Update(ctx, remoteKyma)
+	kyma.Spec.Modules = []v1alpha1.Module{}
+	for _, m := range modules {
+		kyma.Spec.Modules = append(kyma.Spec.Modules, m)
+	}
 }
 
 func (c *KymaSynchronizationContext) EnsureNamespaceExists(ctx context.Context, namespace string) error {
 	ns := &corev1.Namespace{ObjectMeta: v1.ObjectMeta{Name: namespace}}
 	var err error
-	if err = c.runtimeClient.Get(ctx, client.ObjectKey{Name: namespace}, ns); errors.IsNotFound(err) {
+	if err = c.runtimeClient.Get(ctx, client.ObjectKey{Name: namespace}, ns); k8serrors.IsNotFound(err) {
 		return c.runtimeClient.Create(ctx, ns)
 	}
 	return err

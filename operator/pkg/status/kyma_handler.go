@@ -38,25 +38,16 @@ func (k *Kyma) UpdateStatusForExistingModules(
 
 	switch newState {
 	case operatorv1alpha1.KymaStateReady:
-		k.SyncReadyConditionForModules(kyma, parsed.Modules{
-			operatorv1alpha1.KymaKind: &parsed.Module{},
-		}, operatorv1alpha1.ConditionStatusTrue, message)
 		kyma.SetActiveChannel()
 	case "":
-		k.SyncReadyConditionForModules(kyma, parsed.Modules{
-			operatorv1alpha1.KymaKind: &parsed.Module{},
-		}, operatorv1alpha1.ConditionStatusUnknown, message)
 	case operatorv1alpha1.KymaStateDeleting:
 	case operatorv1alpha1.KymaStateError:
 	case operatorv1alpha1.KymaStateProcessing:
 	default:
-		k.SyncReadyConditionForModules(kyma, parsed.Modules{
-			operatorv1alpha1.KymaKind: &parsed.Module{},
-		}, operatorv1alpha1.ConditionStatusFalse, message)
 	}
 
 	if err := k.Update(ctx, kyma.SetObservedGeneration()); err != nil {
-		return fmt.Errorf("conditions could not be updated: %w", err)
+		return fmt.Errorf("status could not be updated: %w", err)
 	}
 
 	return nil

@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/imdario/mergo"
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -18,7 +17,6 @@ type (
 		Template         *v1alpha1.ModuleTemplate
 		TemplateOutdated bool
 		*unstructured.Unstructured
-		Settings unstructured.Unstructured
 	}
 )
 
@@ -54,16 +52,6 @@ func (m *Module) ApplyLabels(
 	lbls[v1alpha1.ChannelLabel] = string(m.Template.Spec.Channel)
 
 	m.Unstructured.SetLabels(lbls)
-}
-
-func (m *Module) CopySettingsToUnstructured() error {
-	overrideSpec := m.Settings.Object["spec"]
-	if overrideSpec != nil {
-		if err := mergo.Merge(m.Unstructured.Object["spec"], overrideSpec); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (m *Module) StateMismatchedWithCondition(condition *v1alpha1.KymaCondition) bool {

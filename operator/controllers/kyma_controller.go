@@ -120,17 +120,24 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	// create a remote synchronization context, and update the remote kyma with the state of the control plane
 	if kyma.Spec.Sync.Enabled {
-		err := r.updateRemote(ctx, kyma)
+		err := r.replaceWithVirtualKyma(ctx, kyma)
 		if err != nil {
 			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
 		}
+	}
+
+	if len(kyma.Spec.Modules) < 1 {
+		return ctrl.Result{}, r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
+			fmt.Errorf("error parsing %s: %w", kyma.Name, ErrNoComponentSpecified))
 	}
 
 	// state handling
 	return r.stateHandling(ctx, kyma)
 }
 
-func (r *KymaReconciler) updateRemote(ctx context.Context, kyma *v1alpha1.Kyma) error {
+// replaceWithVirtualKyma replaces the given pointer to the Kyma Instance with an instance that contains the merged
+// specification of the Control Plane and the Runtime.
+func (r *KymaReconciler) replaceWithVirtualKyma(ctx context.Context, kyma *v1alpha1.Kyma) error {
 	syncContext, err := remote.InitializeKymaSynchronizationContext(ctx, r.Client, kyma)
 	if err != nil {
 		return fmt.Errorf("could not initialize remote context before updating remote kyma: %w", err)
@@ -139,10 +146,12 @@ func (r *KymaReconciler) updateRemote(ctx context.Context, kyma *v1alpha1.Kyma) 
 	if err != nil {
 		return fmt.Errorf("could not fetch kyma updating remote kyma: %w", err)
 	}
-	synchronizationRequiresRequeue, err := syncContext.SynchronizeRemoteKyma(ctx, remoteKyma)
-	if err != nil || synchronizationRequiresRequeue {
+	if err := syncContext.SynchronizeRemoteKyma(ctx, remoteKyma); err != nil {
 		return fmt.Errorf("could not synchronize remote kyma: %w", err)
 	}
+
+	syncContext.ReplaceWithVirtualKyma(kyma, remoteKyma)
+
 	return nil
 }
 
@@ -169,17 +178,13 @@ func (r *KymaReconciler) stateHandling(ctx context.Context, kyma *v1alpha1.Kyma)
 }
 
 func (r *KymaReconciler) HandleInitialState(ctx context.Context, kyma *v1alpha1.Kyma) error {
+	kyma.MatchConditionsToModules()
 	return r.UpdateStatus(ctx, kyma, v1alpha1.KymaStateProcessing, "initial state")
 }
 
 func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alpha1.Kyma) error {
 	logger := log.FromContext(ctx)
 	logger.Info("processing " + kyma.Name)
-
-	if len(kyma.Spec.Modules) < 1 {
-		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
-			fmt.Errorf("error parsing %s: %w", kyma.Name, ErrNoComponentSpecified))
-	}
 
 	var err error
 	var modules parsed.Modules
@@ -216,7 +221,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	}
 
 	// set ready condition if applicable
-	if kyma.AreAllReadyConditionsSetForKyma() {
+	if kyma.AreAllConditionsReadyForKyma() {
 		message := fmt.Sprintf("reconciliation of %s finished!", kyma.Name)
 		logger.Info(message)
 		r.Event(kyma, "Normal", "ReconciliationSuccess", message)
@@ -445,10 +450,6 @@ func (r *KymaReconciler) UpdateModule(ctx context.Context, name string, kyma *v1
 }
 
 func (r *KymaReconciler) setupModule(module *parsed.Module, kyma *v1alpha1.Kyma, name string) error {
-	// merge template and component settings
-	if err := module.CopySettingsToUnstructured(); err != nil {
-		return fmt.Errorf("error occurred while updating module from settings: %w", err)
-	}
 	// set labels
 	module.ApplyLabels(kyma, name)
 
