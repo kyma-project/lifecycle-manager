@@ -317,10 +317,9 @@ func (r *KymaReconciler) SyncConditionsWithModuleStates(ctx context.Context, kym
 	modules parsed.Modules,
 ) (bool, error) {
 	// Now we track the conditions: update the status based on their state
-	statusUpdateRequired := false
+	statusUpdateRequired := kyma.FilterNotExistsConditions()
 
 	var err error
-	// TODO: refactor this method to remove outdated condition which related module not exists
 	// Now, iterate through each module and compare the fitting condition in the Kyma CR to the state of the module
 	for name, module := range modules {
 		var conditionsUpdated bool

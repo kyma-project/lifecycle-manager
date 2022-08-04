@@ -385,3 +385,36 @@ func (kyma *Kyma) MatchConditionsToModules() []KymaCondition {
 	}
 	return newConditions
 }
+
+type conditionExistsPair struct {
+	condition *KymaCondition
+	exists    bool
+}
+
+// TODO: drop this after condition.Reason != module.Name.
+func (kyma *Kyma) FilterNotExistsConditions() bool {
+	conditionsMap := make(map[string]*conditionExistsPair)
+	updateRequired := false
+	for i := range kyma.Status.Conditions {
+		condition := &kyma.Status.Conditions[i]
+		conditionsMap[condition.Reason] = &conditionExistsPair{exists: false, condition: condition}
+	}
+
+	for i := range kyma.Spec.Modules {
+		module := &kyma.Spec.Modules[i]
+		if _, exists := conditionsMap[module.Name]; exists {
+			conditionsMap[module.Name].exists = true
+		}
+	}
+
+	existsModules := make([]KymaCondition, 0)
+	for _, item := range conditionsMap {
+		if item.exists {
+			existsModules = append(existsModules, *item.condition)
+		} else {
+			updateRequired = true
+		}
+	}
+	kyma.Status.Conditions = existsModules
+	return updateRequired
+}

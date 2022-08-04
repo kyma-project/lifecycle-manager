@@ -1,12 +1,12 @@
 apiVersion: operator.kyma-project.io/v1alpha1
 kind: ModuleTemplate
 metadata:
-  name: moduletemplate-sample-skr-module
+  name: moduletemplate-sample-skr-module2
   namespace: default
   labels:
     "operator.kyma-project.io/managed-by": "kyma-operator"
     "operator.kyma-project.io/controller-name": "manifest"
-    "operator.kyma-project.io/module-name": "skr-module"
+    "operator.kyma-project.io/module-name": "skr-module2"
     "operator.kyma-project.io/profile": "production"
   annotations:
     "operator.kyma-project.io/module-version": "v0.0.48"
@@ -17,8 +17,8 @@ spec:
   channel: stable
   target: remote
   data:
-    kind: SKRModule
-    resource: skrmodules
+    kind: SKRModule2
+    resource: skrmodules2
     apiVersion: component.kyma-project.io/v1alpha1
     spec:
       initKey: initValue
