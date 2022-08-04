@@ -120,26 +120,36 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		os.Exit(1)
 	}
 
-	client := mgr.GetClient()
-	if err = (&controllers.KymaReconciler{
-		Client:        client,
-		EventRecorder: mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		RequeueIntervals: controllers.RequeueIntervals{
-			Success: flagVar.requeueSuccessInterval,
-			Failure: flagVar.requeueFailureInterval,
-			Waiting: flagVar.requeueWaitingInterval,
-		},
-		VerificationSettings: signature.VerificationSettings{
-			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
-			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
-		},
-	}).SetupWithManager(mgr, controller.Options{
+	intervals := controllers.RequeueIntervals{
+		Success: flagVar.requeueSuccessInterval,
+		Failure: flagVar.requeueFailureInterval,
+		Waiting: flagVar.requeueWaitingInterval,
+	}
+	options := controller.Options{
 		RateLimiter: workqueue.NewMaxOfRateLimiter(
 			workqueue.NewItemExponentialFailureRateLimiter(baseDelay, maxDelay),
 			&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(limit, burst)}),
 		MaxConcurrentReconciles: flagVar.maxConcurrentReconciles,
-	}, flagVar.listenerAddr); err != nil {
+	}
+	client := mgr.GetClient()
+	if err = (&controllers.KymaReconciler{
+		Client:           client,
+		EventRecorder:    mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		RequeueIntervals: intervals,
+		VerificationSettings: signature.VerificationSettings{
+			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
+			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
+		},
+	}).SetupWithManager(mgr, options, flagVar.listenerAddr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
+		os.Exit(1)
+	}
+	if err = (&controllers.ModuleTemplateReconciler{
+		Client:           client,
+		EventRecorder:    mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		RequeueIntervals: intervals,
+	}).SetupWithManager(mgr, options); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ModuleTemplate")
 		os.Exit(1)
 	}
 	if flagVar.enableWebhooks {

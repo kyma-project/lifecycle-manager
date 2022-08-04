@@ -37,7 +37,7 @@ var _ = Describe("Kyma with no ModuleTemplate", func() {
 
 	It("Should result in an error state", func() {
 		By("having transitioned the CR State to Error as there are no modules")
-		Eventually(IsKymaInState(kyma, v1alpha1.KymaStateError), timeout, interval).Should(BeTrue())
+		Eventually(IsKymaInState(kyma, v1alpha1.StateError), timeout, interval).Should(BeTrue())
 	})
 
 	When("creating a Kyma CR with Module based on an Empty ModuleTemplate", func() {
@@ -68,18 +68,18 @@ var _ = Describe("Kyma with empty ModuleTemplate", func() {
 
 	It("should result in Kyma becoming Ready", func() {
 		By("checking the state to be Processing")
-		Eventually(GetKymaState(kyma), 20*time.Second, interval).Should(BeEquivalentTo(string(v1alpha1.KymaStateProcessing)))
+		Eventually(GetKymaState(kyma), 20*time.Second, interval).Should(BeEquivalentTo(string(v1alpha1.StateProcessing)))
 
 		By("having created new conditions in its status")
 		Eventually(GetKymaConditions(kyma), timeout, interval).ShouldNot(BeEmpty())
 
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range moduleTemplates {
-			Eventually(UpdateModuleState(kyma, activeModule, v1alpha1.KymaStateReady), 20*time.Second, interval).Should(Succeed())
+			Eventually(UpdateModuleState(kyma, activeModule, v1alpha1.StateReady), 20*time.Second, interval).Should(Succeed())
 		}
 
 		By("having updated the Kyma CR state to ready")
-		Eventually(GetKymaState(kyma), 20*time.Second, interval).Should(BeEquivalentTo(string(v1alpha1.KymaStateReady)))
+		Eventually(GetKymaState(kyma), 20*time.Second, interval).Should(BeEquivalentTo(string(v1alpha1.StateReady)))
 	})
 })
 
@@ -206,5 +206,8 @@ var _ = Describe("Kyma sync into Remote Cluster", func() {
 		for _, activeModule := range moduleTemplates {
 			Eventually(ModuleExist(kyma, activeModule), timeout, interval).Should(Succeed())
 		}
+
+		By("Remote Module Catalog created")
+		Eventually(RemoteCatalogExists(runtimeClient, kyma), "30s", interval).Should(Succeed())
 	})
 })

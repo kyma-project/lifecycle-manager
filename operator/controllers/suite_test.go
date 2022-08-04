@@ -126,18 +126,25 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
+	intervals := kymacontroller.RequeueIntervals{
+		Success: 3 * time.Second,
+		Failure: 1 * time.Second,
+		Waiting: 1 * time.Second,
+	}
 	err = (&kymacontroller.KymaReconciler{
-		Client:        k8sManager.GetClient(),
-		EventRecorder: k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		RequeueIntervals: kymacontroller.RequeueIntervals{
-			Success: 3 * time.Second,
-			Failure: 1 * time.Second,
-			Waiting: 1 * time.Second,
-		},
+		Client:           k8sManager.GetClient(),
+		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		RequeueIntervals: intervals,
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
 		},
 	}).SetupWithManager(k8sManager, controller.Options{}, listenerAddr)
+	Expect(err).ToNot(HaveOccurred())
+	err = (&kymacontroller.ModuleTemplateReconciler{
+		Client:           k8sManager.GetClient(),
+		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		RequeueIntervals: intervals,
+	}).SetupWithManager(k8sManager, controller.Options{})
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {

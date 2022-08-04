@@ -124,10 +124,10 @@ func (r *clusterAwareModuleTemplateValidator) validateCR(ctx context.Context, te
 
 func validateCRDState(parent *field.Path, crd *v1.CustomResourceDefinition) *field.Error {
 	valid := []string{
-		string(KymaStateProcessing),
-		string(KymaStateDeleting),
-		string(KymaStateReady),
-		string(KymaStateError),
+		string(StateProcessing),
+		string(StateDeleting),
+		string(StateReady),
+		string(StateError),
 	}
 	for _, version := range crd.Spec.Versions {
 		schema := version.Schema.OpenAPIV3Schema

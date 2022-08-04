@@ -5,18 +5,21 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
+	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
 )
 
 type ClientFunc func() *rest.Config
@@ -134,14 +137,14 @@ func InitializeKymaSynchronizationContext(ctx context.Context, controlPlaneClien
 	return sync, nil
 }
 
-func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context) error {
+func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plural string) error {
 	crd := &v1extensions.CustomResourceDefinition{}
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
 	var err error
 	err = c.controlPlaneClient.Get(ctx, client.ObjectKey{
 		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
 		// name changes, this also has to be adjusted here. We can think of making this configurable later
-		Name: fmt.Sprintf("%s.%s", operatorv1alpha1.KymaPlural, operatorv1alpha1.GroupVersion.Group),
+		Name: fmt.Sprintf("%s.%s", plural, operatorv1alpha1.GroupVersion.Group),
 	}, crd)
 
 	if err != nil {
@@ -149,12 +152,12 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context) erro
 	}
 
 	err = c.runtimeClient.Get(ctx, client.ObjectKey{
-		Name: fmt.Sprintf("%s.%s", operatorv1alpha1.KymaPlural, operatorv1alpha1.GroupVersion.Group),
+		Name: fmt.Sprintf("%s.%s", plural, operatorv1alpha1.GroupVersion.Group),
 	}, crdFromRuntime)
 
 	if k8serrors.IsNotFound(err) {
 		return c.runtimeClient.Create(ctx, &v1extensions.CustomResourceDefinition{
-			ObjectMeta: v1.ObjectMeta{Name: crd.Name, Namespace: crd.Namespace}, Spec: crd.Spec,
+			ObjectMeta: metav1.ObjectMeta{Name: crd.Name, Namespace: crd.Namespace}, Spec: crd.Spec,
 		})
 	}
 
@@ -185,7 +188,7 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 	if meta.IsNoMatchError(err) {
 		recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
 
-		if err := c.CreateOrUpdateCRD(ctx); err != nil {
+		if err := c.CreateOrUpdateCRD(ctx, operatorv1alpha1.KymaKind.Plural()); err != nil {
 			return nil, err
 		}
 
@@ -210,7 +213,7 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 
 		err = c.runtimeClient.Create(ctx, remoteKyma)
 		if err != nil {
-			recorder.Event(kyma, "Normal", "CRDInstallation", "CRDs were installed to SKR")
+			recorder.Event(kyma, "Normal", "RemoteInstallation", "Kyma was installed to SKR")
 
 			return nil, err
 		}
@@ -268,7 +271,7 @@ func (c *KymaSynchronizationContext) ReplaceWithVirtualKyma(kyma *v1alpha1.Kyma,
 }
 
 func (c *KymaSynchronizationContext) EnsureNamespaceExists(ctx context.Context, namespace string) error {
-	ns := &corev1.Namespace{ObjectMeta: v1.ObjectMeta{Name: namespace}}
+	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
 	var err error
 	if err = c.runtimeClient.Get(ctx, client.ObjectKey{Name: namespace}, ns); k8serrors.IsNotFound(err) {
 		return c.runtimeClient.Create(ctx, ns)
@@ -283,4 +286,69 @@ func GetRemoteObjectKey(kyma *operatorv1alpha1.Kyma) client.ObjectKey {
 		namespace = kyma.Spec.Sync.Namespace
 	}
 	return client.ObjectKey{Namespace: namespace, Name: name}
+}
+
+type CatalogSettings struct {
+	Name      string
+	Namespace string
+}
+
+type CatalogEntry struct {
+	Defaults *unstructured.Unstructured `json:"defaults"`
+	Channel  v1alpha1.Channel           `json:"channel"`
+	Target   v1alpha1.Target            `json:"target"`
+	Version  string                     `json:"version"`
+}
+
+func (c *KymaSynchronizationContext) CreateOrUpdateModuleTemplateCatalog(
+	ctx context.Context, catalogSettings CatalogSettings, moduleTemplates *v1alpha1.ModuleTemplateList,
+) error {
+	catalog := &corev1.ConfigMap{}
+	catalog.SetName(catalogSettings.Name)
+	catalog.SetNamespace(catalogSettings.Namespace)
+
+	create := false
+	err := c.runtimeClient.Get(ctx, client.ObjectKeyFromObject(catalog), catalog)
+	if client.IgnoreNotFound(err) != nil {
+		return err
+	}
+	create = k8serrors.IsNotFound(err)
+
+	if catalog.Data == nil {
+		catalog.Data = make(map[string]string)
+	}
+
+	for _, moduleTemplate := range moduleTemplates.Items {
+		moduleTemplate := &moduleTemplate
+		moduleName := moduleTemplate.GetLabels()[operatorv1alpha1.ModuleName]
+		var yml []byte
+		var err error
+
+		yml, err = yaml.Marshal(&CatalogEntry{
+			Defaults: &moduleTemplate.Spec.Data,
+			Channel:  moduleTemplate.Spec.Channel,
+			Target:   moduleTemplate.Spec.Target,
+			Version:  moduleTemplate.GetLabels()[operatorv1alpha1.ModuleVersion],
+		})
+
+		if err != nil {
+			return err
+		}
+
+		catalog.Data[moduleName] = string(yml)
+	}
+
+	if create {
+		return c.runtimeClient.Create(ctx, catalog)
+	}
+	return c.runtimeClient.Update(ctx, catalog)
+}
+
+func (c *KymaSynchronizationContext) DeleteModuleTemplateCatalog(
+	ctx context.Context, catalogSettings CatalogSettings,
+) error {
+	catalog := &corev1.Secret{}
+	catalog.SetName(catalogSettings.Name)
+	catalog.SetNamespace(catalogSettings.Namespace)
+	return c.controlPlaneClient.Delete(ctx, catalog)
 }

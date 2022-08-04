@@ -20,15 +20,23 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"strings"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 
 const (
-	KymaKind   = "Kyma"
-	KymaPlural = "kymas"
-	Version    = "v1alpha1"
+	KymaKind           Kind = "Kyma"
+	ModuleTemplateKind Kind = "ModuleTemplate"
+	Version                 = "v1alpha1"
 )
+
+type Kind string
+
+func (k Kind) Plural() string {
+	return strings.ToLower(string(k)) + "s"
+}
 
 var (
 	// GroupVersion is group version used to register these objects.
@@ -44,10 +52,10 @@ var (
 	SchemeGroupVersion = GroupVersion //nolint:gochecknoglobals
 
 	// GroupVersionResource is group version resource.
-	GroupVersionResource = GroupVersion.WithResource(KymaPlural) //nolint:gochecknoglobals
+	GroupVersionResource = GroupVersion.WithResource(KymaKind.Plural()) //nolint:gochecknoglobals
 
 	// GroupVersionKind is group version kind.
-	GroupVersionKind = GroupVersion.WithKind(KymaKind) //nolint:gochecknoglobals
+	GroupVersionKind = GroupVersion.WithKind(string(KymaKind)) //nolint:gochecknoglobals
 )
 
 func Resource(resource string) schema.GroupResource {
