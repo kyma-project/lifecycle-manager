@@ -29,6 +29,13 @@ var (
 	ErrNoLocalClientDefined = errors.New("no local client defined")
 )
 
+type ClientFunc func() *rest.Config
+
+var (
+	LocalClient             ClientFunc //nolint:gochecknoglobals
+	ErrNoLocalClientDefined = errors.New("no local client defined")
+)
+
 type KymaSynchronizationContext struct {
 	controlPlaneClient client.Client
 	runtimeClient      client.Client
