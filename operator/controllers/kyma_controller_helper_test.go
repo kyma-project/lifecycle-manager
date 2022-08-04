@@ -3,6 +3,8 @@ package controllers_test
 import (
 	"encoding/json"
 
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -92,10 +94,17 @@ func UpdateModuleState(
 	}
 }
 
-func ModuleExist(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate) func() error {
-	return func() error {
+func ModuleExist(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate) func() bool {
+	return func() bool {
 		_, err := getModule(kyma, moduleTemplate)
-		return err
+		return err == nil
+	}
+}
+
+func ModuleNotExist(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate) func() bool {
+	return func() bool {
+		_, err := getModule(kyma, moduleTemplate)
+		return k8serrors.IsNotFound(err)
 	}
 }
 

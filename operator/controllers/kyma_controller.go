@@ -119,7 +119,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	// create a remote synchronization context, and update the remote kyma with the state of the control plane
-	if kyma.Spec.Sync.Enabled {
+	if kyma.Status.State != v1alpha1.KymaStateDeleting && kyma.Spec.Sync.Enabled {
 		err := r.replaceWithVirtualKyma(ctx, kyma)
 		if err != nil {
 			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
