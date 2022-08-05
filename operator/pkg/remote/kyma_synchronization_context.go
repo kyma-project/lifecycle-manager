@@ -295,10 +295,12 @@ type CatalogSettings struct {
 }
 
 type CatalogEntry struct {
-	Defaults *unstructured.Unstructured `json:"defaults"`
-	Channel  v1alpha1.Channel           `json:"channel"`
-	Target   v1alpha1.Target            `json:"target"`
-	Version  string                     `json:"version"`
+	Name               string                     `json:"name"`
+	Defaults           *unstructured.Unstructured `json:"defaults"`
+	Channel            v1alpha1.Channel           `json:"channel"`
+	Target             v1alpha1.Target            `json:"target"`
+	Version            string                     `json:"version"`
+	TemplateGeneration int64                      `json:"templateGeneration"`
 }
 
 func (c *KymaSynchronizationContext) CreateOrUpdateModuleTemplateCatalog(
@@ -319,18 +321,28 @@ func (c *KymaSynchronizationContext) CreateOrUpdateModuleTemplateCatalog(
 		catalog.Data = make(map[string]string)
 	}
 
+	templatesNeedUpdate := false
 	for i := range moduleTemplates.Items {
 		moduleTemplate := &moduleTemplates.Items[i]
-		moduleName := moduleTemplate.GetLabels()[v1alpha1.ModuleName]
+		moduleName, found := moduleTemplate.GetLabels()[v1alpha1.ModuleName]
+		if !found {
+			return errors.New(v1alpha1.ModuleName + " does not exist on moduletemplate")
+		}
 		var yml []byte
 		var err error
 
 		yml, err = yaml.Marshal(&CatalogEntry{
-			Defaults: &moduleTemplate.Spec.Data,
-			Channel:  moduleTemplate.Spec.Channel,
-			Target:   moduleTemplate.Spec.Target,
-			Version:  moduleTemplate.GetLabels()[v1alpha1.ModuleVersion],
+			Name:               moduleName,
+			Defaults:           &moduleTemplate.Spec.Data,
+			Channel:            moduleTemplate.Spec.Channel,
+			Target:             moduleTemplate.Spec.Target,
+			Version:            moduleTemplate.GetLabels()[v1alpha1.ModuleVersion],
+			TemplateGeneration: moduleTemplate.GetGeneration(),
 		})
+
+		if !templatesNeedUpdate && DoesModuleTemplateNeedUpdateInCatalog(catalog, moduleTemplate) {
+			templatesNeedUpdate = true
+		}
 
 		if err != nil {
 			return err
@@ -342,7 +354,22 @@ func (c *KymaSynchronizationContext) CreateOrUpdateModuleTemplateCatalog(
 	if create {
 		return c.runtimeClient.Create(ctx, catalog)
 	}
-	return c.runtimeClient.Update(ctx, catalog)
+	if templatesNeedUpdate {
+		return c.runtimeClient.Update(ctx, catalog)
+	}
+	return nil
+}
+
+func DoesModuleTemplateNeedUpdateInCatalog(catalog *corev1.ConfigMap, template *v1alpha1.ModuleTemplate) bool {
+	moduleName := template.GetLabels()[v1alpha1.ModuleName]
+	if catalog.Data[moduleName] != "" {
+		oldCatalogEntry := &CatalogEntry{}
+		if err := yaml.Unmarshal([]byte(catalog.Data[moduleName]), oldCatalogEntry); err != nil ||
+			oldCatalogEntry.TemplateGeneration != template.Generation {
+			return true
+		}
+	}
+	return true
 }
 
 func (c *KymaSynchronizationContext) DeleteModuleTemplateCatalog(
