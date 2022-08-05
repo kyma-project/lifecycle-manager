@@ -40,18 +40,19 @@ func GetTemplates(ctx context.Context, c client.Reader, kyma *operatorv1alpha1.K
 func CheckForOutdatedTemplates(logger logr.Logger, k *operatorv1alpha1.Kyma, templates TemplatesInChannels) {
 	// in the case that the kyma spec did not change, we only have to verify
 	// that all desired templates are still referenced in the latest spec generation
-	for componentName, lookupResult := range templates {
-		for _, templateInfo := range k.Status.TemplateInfos {
-			if templateInfo.ModuleName == componentName && lookupResult != nil {
-				if lookupResult.ModuleTemplate.GetGeneration() != templateInfo.Generation ||
-					lookupResult.ModuleTemplate.Spec.Channel != templateInfo.Channel {
+	for moduleName, lookupResult := range templates {
+		for i := range k.Status.ModuleInfos {
+			moduleInfo := &k.Status.ModuleInfos[i]
+			if moduleInfo.ModuleName == moduleName && lookupResult != nil {
+				if lookupResult.ModuleTemplate.GetGeneration() != moduleInfo.TemplateInfo.Generation ||
+					lookupResult.ModuleTemplate.Spec.Channel != moduleInfo.TemplateInfo.Channel {
 					logger.Info("detected outdated template",
-						"templateInfo", templateInfo.ModuleName,
+						"templateInfo", moduleInfo.ModuleName,
 						"template", lookupResult.ModuleTemplate.Name,
 						"newTemplateGeneration", lookupResult.ModuleTemplate.GetGeneration(),
-						"previousTemplateGeneration", templateInfo.Generation,
+						"previousTemplateGeneration", moduleInfo.TemplateInfo.Generation,
 						"newTemplateChannel", lookupResult.ModuleTemplate.Spec.Channel,
-						"previousTemplateChannel", templateInfo.Channel,
+						"previousTemplateChannel", moduleInfo.TemplateInfo.Channel,
 					)
 
 					lookupResult.Outdated = true

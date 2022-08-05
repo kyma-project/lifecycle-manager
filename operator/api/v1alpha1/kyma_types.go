@@ -132,12 +132,6 @@ type KymaStatus struct {
 	// Contains essential information about the current deployed module
 	ModuleInfos []ModuleInfo `json:"moduleInfos,omitempty"`
 
-	// Additional Information when the condition is bound to a ModuleTemplate. It contains information about the last
-	// parsing that occurred and will track the state of the parser ModuleTemplate in Context of the Installation.
-	// This will update when Channel, Profile or the ModuleTemplate used in the Condition is changed.
-	// +optional
-	TemplateInfos []TemplateInfo `json:"templateInfos,omitempty"`
-
 	// Observed generation
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
@@ -224,20 +218,17 @@ type ModuleInfo struct {
 	// ModuleName is the unique identifier of the module.
 	ModuleName string `json:"moduleName"`
 
-	// Channel is the current deployed module channel
-	Channel Channel `json:"channel"`
-
-	// GroupVersionKind is the current deployed module gvk
-	GroupVersionKind metav1.GroupVersionKind `json:"gvk"`
+	// Additional Information when the condition is bound to a ModuleTemplate. It contains information about the last
+	// parsing that occurred and will track the state of the parser ModuleTemplate in Context of the Installation.
+	// This will update when Channel, Profile or the ModuleTemplate used in the Condition is changed.
+	// +optional
+	TemplateInfo TemplateInfo `json:"templateInfo"`
 
 	// Namespace is the current deployed module namespace
 	Namespace string `json:"namespace"`
 }
 
 type TemplateInfo struct {
-	// ModuleName is the unique identifier of the module.
-	ModuleName string `json:"moduleName"`
-
 	// Generation tracks the active Generation of the ModuleTemplate. In Case it changes, the new Generation will differ
 	// from the one tracked in TemplateInfo and thus trigger a new reconciliation with a newly parser ModuleTemplate
 	Generation int64 `json:"generation,omitempty"`
@@ -362,15 +353,6 @@ type KymaList struct {
 //nolint:gochecknoinits
 func init() {
 	SchemeBuilder.Register(&Kyma{}, &KymaList{})
-}
-
-func (kyma *Kyma) GetTemplateInfoMap() map[string]*TemplateInfo {
-	infoMap := make(map[string]*TemplateInfo)
-	for i := range kyma.Status.TemplateInfos {
-		info := &kyma.Status.TemplateInfos[i]
-		infoMap[info.ModuleName] = info
-	}
-	return infoMap
 }
 
 const NewModuleMessage = "new module"
