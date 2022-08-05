@@ -28,7 +28,7 @@ func Helper(handler Handler) *Kyma {
 	return &Kyma{StatusWriter: handler.Status()}
 }
 
-func (k *Kyma) UpdateStatus(
+func (k *Kyma) UpdateStatusForExistingModules(
 	ctx context.Context,
 	kyma *operatorv1alpha1.Kyma,
 	newState operatorv1alpha1.KymaState,
@@ -38,25 +38,16 @@ func (k *Kyma) UpdateStatus(
 
 	switch newState {
 	case operatorv1alpha1.KymaStateReady:
-		k.SyncReadyConditionForModules(kyma, parsed.Modules{
-			operatorv1alpha1.KymaKind: &parsed.Module{},
-		}, operatorv1alpha1.ConditionStatusTrue, message)
 		kyma.SetActiveChannel()
 	case "":
-		k.SyncReadyConditionForModules(kyma, parsed.Modules{
-			operatorv1alpha1.KymaKind: &parsed.Module{},
-		}, operatorv1alpha1.ConditionStatusUnknown, message)
 	case operatorv1alpha1.KymaStateDeleting:
 	case operatorv1alpha1.KymaStateError:
 	case operatorv1alpha1.KymaStateProcessing:
 	default:
-		k.SyncReadyConditionForModules(kyma, parsed.Modules{
-			operatorv1alpha1.KymaKind: &parsed.Module{},
-		}, operatorv1alpha1.ConditionStatusFalse, message)
 	}
 
 	if err := k.Update(ctx, kyma.SetObservedGeneration()); err != nil {
-		return fmt.Errorf("conditions could not be updated: %w", err)
+		return fmt.Errorf("status could not be updated: %w", err)
 	}
 
 	return nil
@@ -76,13 +67,27 @@ func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules
 		condition.LastTransitionTime = &metav1.Time{Time: time.Now()}
 		condition.Message = message
 		condition.Status = conditionStatus
+	}
+}
 
-		for i, existingCondition := range status.Conditions {
-			if existingCondition.Type == operatorv1alpha1.ConditionTypeReady && existingCondition.Reason == name {
-				status.Conditions[i] = *condition
+func (k *Kyma) SyncModuleInfo(kyma *operatorv1alpha1.Kyma, modules parsed.Modules) {
+	moduleInfoMap := kyma.GetModuleInfoMap()
 
-				break
-			}
+	for _, module := range modules {
+		latestModuleInfo := operatorv1alpha1.ModuleInfo{
+			ModuleName: module.Name,
+			Name:       module.Unstructured.GetName(),
+			Namespace:  module.Unstructured.GetNamespace(), GroupVersionKind: metav1.GroupVersionKind{
+				Group:   module.GroupVersionKind().Group,
+				Version: module.GroupVersionKind().Version,
+				Kind:    module.GroupVersionKind().Kind,
+			}, Channel: module.Channel(),
+		}
+		moduleInfo, exists := moduleInfoMap[module.Name]
+		if exists {
+			*moduleInfo = latestModuleInfo
+		} else {
+			kyma.Status.ModuleInfos = append(kyma.Status.ModuleInfos, latestModuleInfo)
 		}
 	}
 }
@@ -126,9 +131,10 @@ func (k *Kyma) GetReadyConditionForComponent(kymaObj *operatorv1alpha1.Kyma,
 	componentName string,
 ) (*operatorv1alpha1.KymaCondition, bool) {
 	status := &kymaObj.Status
-	for _, existingCondition := range status.Conditions {
+	for i := range status.Conditions {
+		existingCondition := &status.Conditions[i]
 		if existingCondition.Type == operatorv1alpha1.ConditionTypeReady && existingCondition.Reason == componentName {
-			return &existingCondition, true
+			return existingCondition, true
 		}
 	}
 

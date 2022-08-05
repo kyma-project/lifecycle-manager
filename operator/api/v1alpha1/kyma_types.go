@@ -17,8 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 type OverrideType string
@@ -51,15 +52,6 @@ type Module struct {
 	// Channel is the desired channel of the Module. If this changes or is set, it will be used to resolve a new
 	// ModuleTemplate based on the new resolved resources.
 	Channel Channel `json:"channel,omitempty"`
-
-	// Settings are a generic Representation of the entire Specification of a Module. It can be used as an alternative
-	// to generic Settings written into the ModuleTemplate as they are directly passed to the resulting CR.
-	// Note that this Settings argument is validated against the API Server and thus will not accept GVKs that are not
-	// registered as CustomResourceDefinition. This can be used to apply settings / overrides that the operator accepts
-	// as generic overrides for its CustomResource.
-	//+kubebuilder:pruning:PreserveUnknownFields
-	//+kubebuilder:validation:XEmbeddedResource
-	Settings unstructured.Unstructured `json:"settings,omitempty"`
 }
 
 // SyncStrategy determines how the Remote Cluster is synchronized with the Control Plane. This can influence secret
@@ -68,6 +60,7 @@ type SyncStrategy string
 
 const (
 	SyncStrategyLocalSecret = "local-secret"
+	SyncStrategyLocalClient = "local-client"
 )
 
 // Sync defines settings used to apply the kyma synchronization to other clusters. This is defaulted to false
@@ -86,6 +79,11 @@ type Sync struct {
 	// Note that cleanup is currently not supported if you are switching the namespace, so you will
 	// manually need to cleanup old synchronized Kymas
 	Namespace string `json:"namespace,omitempty"`
+
+	// +kubebuilder:default:=true
+	// NoModuleCopy set to true will cause the remote Kyma to be initialized without copying over the
+	// module spec of the control plane into the SKR
+	NoModuleCopy bool `json:"noModuleCopy,omitempty"`
 }
 
 // KymaSpec defines the desired state of Kyma.
@@ -104,7 +102,7 @@ type KymaSpec struct {
 	Sync Sync `json:"sync,omitempty"`
 }
 
-func (kyma *Kyma) AreAllReadyConditionsSetForKyma() bool {
+func (kyma *Kyma) AreAllConditionsReadyForKyma() bool {
 	status := &kyma.Status
 	if len(status.Conditions) < 1 {
 		return false
@@ -112,8 +110,7 @@ func (kyma *Kyma) AreAllReadyConditionsSetForKyma() bool {
 
 	for _, existingCondition := range status.Conditions {
 		if existingCondition.Type == ConditionTypeReady &&
-			existingCondition.Status != ConditionStatusTrue &&
-			existingCondition.Reason != KymaKind {
+			existingCondition.Status != ConditionStatusTrue {
 			return false
 		}
 	}
@@ -131,6 +128,9 @@ type KymaStatus struct {
 	// List of status conditions to indicate the status of a ServiceInstance.
 	// +optional
 	Conditions []KymaCondition `json:"conditions,omitempty"`
+
+	// Contains essential information about the current deployed module
+	ModuleInfos []ModuleInfo `json:"moduleInfos,omitempty"`
 
 	// Additional Information when the condition is bound to a ModuleTemplate. It contains information about the last
 	// parsing that occurred and will track the state of the parser ModuleTemplate in Context of the Installation.
@@ -217,6 +217,23 @@ type KymaCondition struct {
 	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`
 }
 
+type ModuleInfo struct {
+	// Name is the current deployed module name
+	Name string `json:"name"`
+
+	// ModuleName is the unique identifier of the module.
+	ModuleName string `json:"moduleName"`
+
+	// Channel is the current deployed module channel
+	Channel Channel `json:"channel"`
+
+	// GroupVersionKind is the current deployed module gvk
+	GroupVersionKind metav1.GroupVersionKind `json:"gvk"`
+
+	// Namespace is the current deployed module namespace
+	Namespace string `json:"namespace"`
+}
+
 type TemplateInfo struct {
 	// ModuleName is the unique identifier of the module.
 	ModuleName string `json:"moduleName"`
@@ -284,6 +301,55 @@ func (kyma *Kyma) SetActiveChannel() *Kyma {
 	return kyma
 }
 
+func (kyma *Kyma) SetLastSync() *Kyma {
+	// this is an additional update on the runtime and might not be worth it
+	lastSyncDate := time.Now().Format(time.RFC3339)
+	if kyma.Annotations == nil {
+		kyma.Annotations = make(map[string]string)
+	}
+	kyma.Annotations[LastSync] = lastSyncDate
+
+	return kyma
+}
+
+type moduleInfoExistsPair struct {
+	moduleInfo *ModuleInfo
+	exists     bool
+}
+
+func (kyma *Kyma) GetNoLongerExistingModuleInfos() []*ModuleInfo {
+	moduleInfoMap := make(map[string]*moduleInfoExistsPair)
+
+	for i := range kyma.Status.ModuleInfos {
+		moduleInfo := &kyma.Status.ModuleInfos[i]
+		moduleInfoMap[moduleInfo.ModuleName] = &moduleInfoExistsPair{exists: false, moduleInfo: moduleInfo}
+	}
+
+	for i := range kyma.Spec.Modules {
+		module := &kyma.Spec.Modules[i]
+		if _, exists := moduleInfoMap[module.Name]; exists {
+			moduleInfoMap[module.Name].exists = true
+		}
+	}
+
+	notExistsModules := make([]*ModuleInfo, 0)
+	for _, item := range moduleInfoMap {
+		if !item.exists {
+			notExistsModules = append(notExistsModules, item.moduleInfo)
+		}
+	}
+	return notExistsModules
+}
+
+func (kyma *Kyma) GetModuleInfoMap() map[string]*ModuleInfo {
+	moduleInfoMap := make(map[string]*ModuleInfo)
+	for i := range kyma.Status.ModuleInfos {
+		moduleInfo := &kyma.Status.ModuleInfos[i]
+		moduleInfoMap[moduleInfo.ModuleName] = moduleInfo
+	}
+	return moduleInfoMap
+}
+
 //+kubebuilder:object:root=true
 
 // KymaList contains a list of Kyma.
@@ -305,4 +371,59 @@ func (kyma *Kyma) GetTemplateInfoMap() map[string]*TemplateInfo {
 		infoMap[info.ModuleName] = info
 	}
 	return infoMap
+}
+
+const NewModuleMessage = "new module"
+
+func (kyma *Kyma) MatchConditionsToModules() {
+	for _, module := range kyma.Spec.Modules {
+		found := false
+		for _, condition := range kyma.Status.Conditions {
+			if module.Name == condition.Reason {
+				found = true
+			}
+		}
+		if !found {
+			newCondition := KymaCondition{
+				Type:    ConditionTypeReady,
+				Status:  ConditionStatusFalse,
+				Reason:  module.Name,
+				Message: NewModuleMessage,
+			}
+			kyma.Status.Conditions = append(kyma.Status.Conditions, newCondition)
+		}
+	}
+}
+
+type conditionExistsPair struct {
+	condition *KymaCondition
+	exists    bool
+}
+
+// TODO: drop this after condition.Reason != module.Name.
+func (kyma *Kyma) FilterNotExistsConditions() bool {
+	conditionsMap := make(map[string]*conditionExistsPair)
+	updateRequired := false
+	for i := range kyma.Status.Conditions {
+		condition := &kyma.Status.Conditions[i]
+		conditionsMap[condition.Reason] = &conditionExistsPair{exists: false, condition: condition}
+	}
+
+	for i := range kyma.Spec.Modules {
+		module := &kyma.Spec.Modules[i]
+		if _, exists := conditionsMap[module.Name]; exists {
+			conditionsMap[module.Name].exists = true
+		}
+	}
+
+	existsModules := make([]KymaCondition, 0)
+	for _, item := range conditionsMap {
+		if item.exists {
+			existsModules = append(existsModules, *item.condition)
+		} else {
+			updateRequired = true
+		}
+	}
+	kyma.Status.Conditions = existsModules
+	return updateRequired
 }

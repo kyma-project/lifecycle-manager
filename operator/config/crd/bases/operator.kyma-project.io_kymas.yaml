@@ -75,18 +75,6 @@ spec:
                         used together with KymaName, ChannelLabel, ProfileLabel label
                         to resolve a ModuleTemplate.
                       type: string
-                    settings:
-                      description: Settings are a generic Representation of the entire
-                        Specification of a Module. It can be used as an alternative
-                        to generic Settings written into the ModuleTemplate as they
-                        are directly passed to the resulting CR. Note that this Settings
-                        argument is validated against the API Server and thus will
-                        not accept GVKs that are not registered as CustomResourceDefinition.
-                        This can be used to apply settings / overrides that the operator
-                        accepts as generic overrides for its CustomResource.
-                      type: object
-                      x-kubernetes-embedded-resource: true
-                      x-kubernetes-preserve-unknown-fields: true
                   required:
                   - name
                   type: object
@@ -113,6 +101,12 @@ spec:
                       if you are switching the namespace, so you will manually need
                       to cleanup old synchronized Kymas
                     type: string
+                  noModuleCopy:
+                    default: true
+                    description: NoModuleCopy set to true will cause the remote Kyma
+                      to be initialized without copying over the module spec of the
+                      control plane into the SKR
+                    type: boolean
                   strategy:
                     default: secret
                     description: Strategy determines the way to lookup the remotely
@@ -208,6 +202,50 @@ spec:
                   required:
                   - status
                   - type
+                  type: object
+                type: array
+              moduleInfos:
+                description: Contains essential information about the current deployed
+                  module
+                items:
+                  properties:
+                    channel:
+                      description: Channel is the current deployed module channel
+                      enum:
+                      - rapid
+                      - regular
+                      - stable
+                      type: string
+                    gvk:
+                      description: GroupVersionKind is the current deployed module
+                        gvk
+                      properties:
+                        group:
+                          type: string
+                        kind:
+                          type: string
+                        version:
+                          type: string
+                      required:
+                      - group
+                      - kind
+                      - version
+                      type: object
+                    moduleName:
+                      description: ModuleName is the unique identifier of the module.
+                      type: string
+                    name:
+                      description: Name is the current deployed module name
+                      type: string
+                    namespace:
+                      description: Namespace is the current deployed module namespace
+                      type: string
+                  required:
+                  - channel
+                  - gvk
+                  - moduleName
+                  - name
+                  - namespace
                   type: object
                 type: array
               observedGeneration:

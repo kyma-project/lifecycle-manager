@@ -7,9 +7,8 @@ spec:
   profile: production
   channel: stable
   sync:
-    enabled: false
+    enabled: true
   modules:
     - name: skr-module
-      controller: manifest
+    - name: skr-module2
     - name: kcp-module
-      controller: kcp-operator
