@@ -123,7 +123,7 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 	It("CR should be recreated after delete", func() {
 		By("CR created")
 		for _, activeModule := range moduleTemplates {
-			Eventually(ModuleExist(kyma, activeModule), timeout, interval).Should(BeTrue())
+			Eventually(ModuleExists(kyma, activeModule), timeout, interval).Should(BeTrue())
 		}
 		By("Delete CR")
 		for _, activeModule := range moduleTemplates {
@@ -132,14 +132,14 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 
 		By("CR created again")
 		for _, activeModule := range moduleTemplates {
-			Eventually(ModuleExist(kyma, activeModule), timeout, interval).Should(BeTrue())
+			Eventually(ModuleExists(kyma, activeModule), timeout, interval).Should(BeTrue())
 		}
 	})
 
 	It("CR should be deleted after removed from kyma.spec.modules", func() {
 		By("CR created")
 		for _, activeModule := range moduleTemplates {
-			Eventually(ModuleExist(kyma, activeModule), timeout, interval).Should(BeTrue())
+			Eventually(ModuleExists(kyma, activeModule), timeout, interval).Should(BeTrue())
 		}
 		By("Remove kcp-module from kyma.spec.modules")
 		kyma.Spec.Modules = []v1alpha1.Module{
@@ -151,7 +151,7 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 		Eventually(ModuleNotExist(kyma, moduleTemplates[kcpModule.Name]), timeout, interval).Should(BeTrue())
 
 		By("skr-module exists")
-		Eventually(ModuleExist(kyma, moduleTemplates[skrModule.Name]), timeout, interval).Should(BeTrue())
+		Eventually(ModuleExists(kyma, moduleTemplates[skrModule.Name]), timeout, interval).Should(BeTrue())
 	})
 
 	AfterAll(func() {
@@ -184,7 +184,7 @@ var _ = Describe("Kyma update Manifest CR", func() {
 	It("Manifest CR should be updated after module template changed", func() {
 		By("CR created")
 		for _, activeModule := range moduleTemplates {
-			Eventually(ModuleExist(kyma, activeModule), timeout, interval).Should(BeTrue())
+			Eventually(ModuleExists(kyma, activeModule), timeout, interval).Should(BeTrue())
 		}
 
 		By("Update Module Template spec.data.spec field")
@@ -237,7 +237,7 @@ var _ = Describe("Kyma sync into Remote Cluster", func() {
 
 		By("CR created")
 		for _, activeModule := range moduleTemplates {
-			Eventually(ModuleExist(kyma, activeModule), timeout, interval).Should(BeTrue())
+			Eventually(ModuleExists(kyma, activeModule), timeout, interval).Should(BeTrue())
 		}
 	})
 })

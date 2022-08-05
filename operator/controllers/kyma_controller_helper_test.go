@@ -96,7 +96,7 @@ func UpdateModuleState(
 	}
 }
 
-func ModuleExist(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate) func() bool {
+func ModuleExists(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate) func() bool {
 	return func() bool {
 		_, err := getModule(kyma, moduleTemplate)
 		return err == nil

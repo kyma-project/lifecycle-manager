@@ -212,9 +212,9 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 
 	status.Helper(r).SyncModuleInfo(kyma, modules)
 
-	statusUpdateRequiredFromDeletion := r.UpdateAndRemoveNotExistsModuleInfo(ctx, kyma)
-	moduleInfos := kyma.GetNotExistsModuleInfos()
-	err = r.DeleteNotExistsModules(ctx, moduleInfos)
+	statusUpdateRequiredFromDeletion := r.UpdateStatusModuleInfos(ctx, kyma)
+	moduleInfos := kyma.GetNoLongerExistingModuleInfos()
+	err = r.DeleteNoLongerExistingModules(ctx, moduleInfos)
 	if err != nil {
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.KymaStateError,
 			fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err))
@@ -307,7 +307,7 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *v1a
 		}
 	}
 
-	if len(kyma.GetNotExistsModuleInfos()) > 0 {
+	if len(kyma.GetNoLongerExistingModuleInfos()) > 0 {
 		return r.UpdateStatus(ctx, kyma, v1alpha1.KymaStateProcessing, "some module get deleted")
 	}
 	return nil
@@ -523,10 +523,10 @@ func (r *KymaReconciler) GetModules(ctx context.Context, kyma *v1alpha1.Kyma) (p
 	return modules, nil
 }
 
-func (r *KymaReconciler) UpdateAndRemoveNotExistsModuleInfo(ctx context.Context, kyma *v1alpha1.Kyma) bool {
+func (r *KymaReconciler) UpdateStatusModuleInfos(ctx context.Context, kyma *v1alpha1.Kyma) bool {
 	requireUpdateCondition := false
 	moduleInfoMap := kyma.GetModuleInfoMap()
-	moduleInfos := kyma.GetNotExistsModuleInfos()
+	moduleInfos := kyma.GetNoLongerExistingModuleInfos()
 	if len(moduleInfos) == 0 {
 		return false
 	}
@@ -542,7 +542,7 @@ func (r *KymaReconciler) UpdateAndRemoveNotExistsModuleInfo(ctx context.Context,
 	return requireUpdateCondition
 }
 
-func (r *KymaReconciler) DeleteNotExistsModules(ctx context.Context, moduleInfos []*v1alpha1.ModuleInfo) error {
+func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, moduleInfos []*v1alpha1.ModuleInfo) error {
 	var err error
 	if len(moduleInfos) == 0 {
 		return nil

@@ -314,7 +314,7 @@ type moduleInfoExistsPair struct {
 	exists     bool
 }
 
-func (kyma *Kyma) GetNotExistsModuleInfos() []*ModuleInfo {
+func (kyma *Kyma) GetNoLongerExistingModuleInfos() []*ModuleInfo {
 	moduleInfoMap := make(map[string]*moduleInfoExistsPair)
 
 	for i := range kyma.Status.ModuleInfos {
