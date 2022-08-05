@@ -380,7 +380,7 @@ func (kyma *Kyma) MatchConditionsToModules() []KymaCondition {
 				Message: NewModuleMessage,
 			}
 			kyma.Status.Conditions = append(kyma.Status.Conditions, newCondition)
-			newConditions = append(kyma.Status.Conditions, newCondition)
+			newConditions = append(newConditions, newCondition)
 		}
 	}
 	return newConditions

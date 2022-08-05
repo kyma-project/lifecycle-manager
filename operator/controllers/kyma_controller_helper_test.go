@@ -64,7 +64,8 @@ func IsKymaInState(kyma *v1alpha1.Kyma, state v1alpha1.KymaState) func() bool {
 func GetKymaState(kyma *v1alpha1.Kyma) func() string {
 	return func() string {
 		createdKyma := &v1alpha1.Kyma{}
-		err := controlPlaneClient.Get(ctx, types.NamespacedName{Name: kyma.GetName(), Namespace: kyma.GetNamespace()}, createdKyma)
+		err := controlPlaneClient.Get(ctx,
+			types.NamespacedName{Name: kyma.GetName(), Namespace: kyma.GetNamespace()}, createdKyma)
 		if err != nil {
 			return ""
 		}
@@ -75,7 +76,8 @@ func GetKymaState(kyma *v1alpha1.Kyma) func() string {
 func GetKymaConditions(kyma *v1alpha1.Kyma) func() []v1alpha1.KymaCondition {
 	return func() []v1alpha1.KymaCondition {
 		createdKyma := &v1alpha1.Kyma{}
-		err := controlPlaneClient.Get(ctx, types.NamespacedName{Name: kyma.GetName(), Namespace: kyma.GetNamespace()}, createdKyma)
+		err := controlPlaneClient.Get(ctx,
+			types.NamespacedName{Name: kyma.GetName(), Namespace: kyma.GetNamespace()}, createdKyma)
 		if err != nil {
 			return []v1alpha1.KymaCondition{}
 		}

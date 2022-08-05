@@ -75,7 +75,8 @@ var _ = Describe("Kyma with empty ModuleTemplate", func() {
 
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range moduleTemplates {
-			Eventually(UpdateModuleState(kyma, activeModule, v1alpha1.KymaStateReady), 20*time.Second, interval).Should(Succeed())
+			Eventually(UpdateModuleState(kyma, activeModule, v1alpha1.KymaStateReady), 20*time.Second, interval).
+				Should(Succeed())
 		}
 
 		By("having updated the Kyma CR state to ready")
@@ -105,6 +106,7 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 	})
 
 	BeforeEach(func() {
+		By("get latest kyma CR")
 		Expect(controlPlaneClient.Get(ctx, client.ObjectKey{Name: kyma.Name, Namespace: namespace}, kyma)).Should(Succeed())
 	})
 

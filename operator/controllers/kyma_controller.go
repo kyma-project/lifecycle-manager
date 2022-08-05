@@ -308,7 +308,7 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *v1a
 	}
 
 	if len(kyma.GetNotExistsModuleInfos()) > 0 {
-		return r.UpdateStatus(ctx, kyma, v1alpha1.KymaStateProcessing, fmt.Sprintf("some module get deleted"))
+		return r.UpdateStatus(ctx, kyma, v1alpha1.KymaStateProcessing, "some module get deleted")
 	}
 	return nil
 }
