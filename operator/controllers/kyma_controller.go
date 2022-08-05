@@ -138,7 +138,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 // replaceWithVirtualKyma replaces the given pointer to the Kyma Instance with an instance that contains the merged
 // specification of the Control Plane and the Runtime.
 func (r *KymaReconciler) replaceWithVirtualKyma(ctx context.Context, kyma *v1alpha1.Kyma) error {
-	if kyma.Status.State != v1alpha1.KymaStateDeleting {
+	if kyma.Status.State == v1alpha1.KymaStateDeleting {
 		return nil
 	}
 	syncContext, err := remote.InitializeKymaSynchronizationContext(ctx, r.Client, kyma)
