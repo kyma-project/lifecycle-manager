@@ -3,6 +3,8 @@ package controllers_test
 import (
 	"encoding/json"
 
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,7 +64,8 @@ func IsKymaInState(kyma *v1alpha1.Kyma, state v1alpha1.KymaState) func() bool {
 func GetKymaState(kyma *v1alpha1.Kyma) func() string {
 	return func() string {
 		createdKyma := &v1alpha1.Kyma{}
-		err := controlPlaneClient.Get(ctx, types.NamespacedName{Name: kyma.GetName(), Namespace: kyma.GetNamespace()}, createdKyma)
+		err := controlPlaneClient.Get(ctx,
+			types.NamespacedName{Name: kyma.GetName(), Namespace: kyma.GetNamespace()}, createdKyma)
 		if err != nil {
 			return ""
 		}
@@ -73,7 +76,8 @@ func GetKymaState(kyma *v1alpha1.Kyma) func() string {
 func GetKymaConditions(kyma *v1alpha1.Kyma) func() []v1alpha1.KymaCondition {
 	return func() []v1alpha1.KymaCondition {
 		createdKyma := &v1alpha1.Kyma{}
-		err := controlPlaneClient.Get(ctx, types.NamespacedName{Name: kyma.GetName(), Namespace: kyma.GetNamespace()}, createdKyma)
+		err := controlPlaneClient.Get(ctx,
+			types.NamespacedName{Name: kyma.GetName(), Namespace: kyma.GetNamespace()}, createdKyma)
 		if err != nil {
 			return []v1alpha1.KymaCondition{}
 		}
@@ -92,10 +96,17 @@ func UpdateModuleState(
 	}
 }
 
-func ModuleExist(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate) func() error {
-	return func() error {
+func ModuleExists(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate) func() bool {
+	return func() bool {
 		_, err := getModule(kyma, moduleTemplate)
-		return err
+		return err == nil
+	}
+}
+
+func ModuleNotExist(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate) func() bool {
+	return func() bool {
+		_, err := getModule(kyma, moduleTemplate)
+		return k8serrors.IsNotFound(err)
 	}
 }
 
