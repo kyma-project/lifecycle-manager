@@ -363,8 +363,7 @@ func init() {
 
 const NewModuleMessage = "new module"
 
-func (kyma *Kyma) MatchConditionsToModules() []KymaCondition {
-	newConditions := []KymaCondition{}
+func (kyma *Kyma) MatchConditionsToModules() {
 	for _, module := range kyma.Spec.Modules {
 		found := false
 		for _, condition := range kyma.Status.Conditions {
@@ -380,10 +379,8 @@ func (kyma *Kyma) MatchConditionsToModules() []KymaCondition {
 				Message: NewModuleMessage,
 			}
 			kyma.Status.Conditions = append(kyma.Status.Conditions, newCondition)
-			newConditions = append(newConditions, newCondition)
 		}
 	}
-	return newConditions
 }
 
 type conditionExistsPair struct {

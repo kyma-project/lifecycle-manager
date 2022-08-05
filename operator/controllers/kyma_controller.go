@@ -119,7 +119,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	// create a remote synchronization context, and update the remote kyma with the state of the control plane
-	if kyma.Status.State != v1alpha1.KymaStateDeleting && kyma.Spec.Sync.Enabled {
+	if kyma.Spec.Sync.Enabled {
 		err := r.replaceWithVirtualKyma(ctx, kyma)
 		if err != nil {
 			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
@@ -138,6 +138,9 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 // replaceWithVirtualKyma replaces the given pointer to the Kyma Instance with an instance that contains the merged
 // specification of the Control Plane and the Runtime.
 func (r *KymaReconciler) replaceWithVirtualKyma(ctx context.Context, kyma *v1alpha1.Kyma) error {
+	if kyma.Status.State != v1alpha1.KymaStateDeleting {
+		return nil
+	}
 	syncContext, err := remote.InitializeKymaSynchronizationContext(ctx, r.Client, kyma)
 	if err != nil {
 		return fmt.Errorf("could not initialize remote context before updating remote kyma: %w", err)
@@ -324,11 +327,7 @@ func (r *KymaReconciler) SyncConditionsWithModuleStates(ctx context.Context, kym
 	for name, module := range modules {
 		var conditionsUpdated bool
 		// Next, we fetch it from the API Server to determine its status
-		if err = r.Get(
-			ctx,
-			client.ObjectKeyFromObject(module.Unstructured),
-			module.Unstructured,
-		); client.IgnoreNotFound(err) != nil {
+		if err = r.getModule(ctx, module.Unstructured); client.IgnoreNotFound(err) != nil {
 			break
 		}
 		// Finally, we update the condition based on its state and remember if we had to do an update
@@ -366,11 +365,6 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 	baseLogger := log.FromContext(ctx).WithName(client.ObjectKey{Name: kyma.Name, Namespace: kyma.Namespace}.String())
 	for name, module := range modules {
 		logger := module.Logger(baseLogger)
-		err := module.UpdateModuleFromCluster(ctx, r)
-		if client.IgnoreNotFound(errors.Unwrap(err)) != nil {
-			return false, fmt.Errorf("could not update module status: %w", err)
-		}
-
 		syncCondition := func(message string) {
 			status.Helper(r).SyncReadyConditionForModules(kyma, parsed.Modules{name: module},
 				v1alpha1.ConditionStatusFalse, message)
@@ -394,9 +388,15 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 			return true, nil
 		}
 
-		if k8serrors.IsNotFound(errors.Unwrap(err)) {
+		unstructuredFromServer := initModuleFromServer(module)
+		err := r.getModule(ctx, unstructuredFromServer)
+		if k8serrors.IsNotFound(err) {
 			return create()
+		} else if err != nil {
+			return false, fmt.Errorf("error occurred while fetching module %s: %w", module.GetName(), err)
 		}
+
+		module.UpdateModuleFromCluster(unstructuredFromServer)
 
 		if module.TemplateOutdated {
 			condition, _ := status.Helper(r).GetReadyConditionForComponent(kyma, name)
@@ -414,6 +414,14 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 	}
 
 	return false, nil
+}
+
+func initModuleFromServer(module *parsed.Module) *unstructured.Unstructured {
+	unstructuredFromServer := unstructured.Unstructured{}
+	unstructuredFromServer.SetGroupVersionKind(module.Unstructured.GroupVersionKind())
+	unstructuredFromServer.SetNamespace(module.Unstructured.GetNamespace())
+	unstructuredFromServer.SetName(module.Unstructured.GetName())
+	return &unstructuredFromServer
 }
 
 func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *v1alpha1.Kyma,
@@ -532,7 +540,13 @@ func (r *KymaReconciler) UpdateStatusModuleInfos(ctx context.Context, kyma *v1al
 	}
 	for i := range moduleInfos {
 		moduleInfo := moduleInfos[i]
-		_, err := r.getModule(ctx, moduleInfo)
+		module := unstructured.Unstructured{}
+		module.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   moduleInfo.GroupVersionKind.Group,
+			Version: moduleInfo.GroupVersionKind.Version,
+			Kind:    moduleInfo.GroupVersionKind.Kind,
+		})
+		err := r.getModule(ctx, &module)
 		if k8serrors.IsNotFound(err) {
 			requireUpdateCondition = true
 			delete(moduleInfoMap, moduleInfo.ModuleName)
@@ -578,15 +592,6 @@ func (r *KymaReconciler) deleteModule(ctx context.Context, moduleInfo *v1alpha1.
 	return r.Delete(ctx, &module, &client.DeleteOptions{})
 }
 
-func (r *KymaReconciler) getModule(ctx context.Context,
-	moduleInfo *v1alpha1.ModuleInfo,
-) (unstructured.Unstructured, error) {
-	module := unstructured.Unstructured{}
-	module.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   moduleInfo.GroupVersionKind.Group,
-		Version: moduleInfo.GroupVersionKind.Version,
-		Kind:    moduleInfo.GroupVersionKind.Kind,
-	})
-	err := r.Get(ctx, client.ObjectKey{Namespace: moduleInfo.Namespace, Name: moduleInfo.Name}, &module)
-	return module, err
+func (r *KymaReconciler) getModule(ctx context.Context, module *unstructured.Unstructured) error {
+	return r.Get(ctx, client.ObjectKey{Namespace: module.GetNamespace(), Name: module.GetName()}, module)
 }

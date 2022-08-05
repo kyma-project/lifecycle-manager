@@ -1,13 +1,9 @@
 package parsed
 
 import (
-	"context"
-	"fmt"
-
 	"github.com/go-logr/logr"
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type (
@@ -59,25 +55,12 @@ func (m *Module) StateMismatchedWithCondition(condition *v1alpha1.KymaCondition)
 		condition.TemplateInfo.Channel != m.Template.Spec.Channel
 }
 
-// UpdateModuleFromCluster update the module with necessary information (status, ownerReference) based on
-// an interaction with a client that is connected to a cluster. It will wrap any error returned from the client,
-// so checking for a k8s error can be achieved with Unwrap.
-func (m *Module) UpdateModuleFromCluster(ctx context.Context, clnt client.Client) error {
-	unstructuredFromServer := unstructured.Unstructured{}
-	unstructuredFromServer.SetGroupVersionKind(m.Unstructured.GroupVersionKind())
-
-	if err := clnt.Get(
-		ctx,
-		client.ObjectKeyFromObject(m.Unstructured),
-		&unstructuredFromServer,
-	); err != nil {
-		return fmt.Errorf("error occurred while fetching module %s: %w", m.GetName(), err)
-	}
-
+// UpdateModuleFromCluster update the module with necessary information (status, ownerReference) from
+// current deployed resource.
+func (m *Module) UpdateModuleFromCluster(unstructuredFromServer *unstructured.Unstructured) {
 	m.Unstructured.Object["status"] = unstructuredFromServer.Object["status"]
 	m.Unstructured.SetResourceVersion(unstructuredFromServer.GetResourceVersion())
 	m.Unstructured.SetOwnerReferences(unstructuredFromServer.GetOwnerReferences())
-	return nil
 }
 
 func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {
