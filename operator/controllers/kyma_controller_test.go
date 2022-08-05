@@ -234,7 +234,7 @@ var _ = Describe("Kyma sync into Remote Cluster", func() {
 
 	It("Kyma CR should be synchronized in both clusters", func() {
 		By("Remote Kyma created")
-		Eventually(RemoteKymaExists(runtimeClient, kyma), "30s", interval).Should(Succeed())
+		Eventually(RemoteKymaExists(runtimeClient, kyma), 30*time.Second, interval).Should(Succeed())
 
 		By("CR created")
 		for _, activeModule := range moduleTemplates {
@@ -242,6 +242,6 @@ var _ = Describe("Kyma sync into Remote Cluster", func() {
 		}
 
 		By("Remote Module Catalog created")
-		Eventually(RemoteCatalogExists(runtimeClient, kyma), "30s", interval).Should(Succeed())
+		Eventually(RemoteCatalogExists(runtimeClient, kyma), 30*time.Second, interval).Should(Succeed())
 	})
 })

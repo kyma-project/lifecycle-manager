@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -36,10 +37,13 @@ func (r *ModuleTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		// we'll ignore not-found errors, since they can't be fixed by an immediate
 		// requeue (we'll need to wait for a new notification), and we can get them
 		// on deleted requests.
-		logger.Info(req.NamespacedName.String() + " got deleted!")
+		if k8serrors.IsNotFound(err) {
+			logger.Info(req.NamespacedName.String() + " got deleted!")
+			return ctrl.Result{}, nil
+		}
 
 		// TODO add delete scenario for catalog
-		return ctrl.Result{}, client.IgnoreNotFound(err) //nolint:wrapcheck
+		return ctrl.Result{}, err //nolint:wrapcheck
 	}
 
 	moduleTemplateList := &v1alpha1.ModuleTemplateList{}
