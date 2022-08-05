@@ -164,7 +164,7 @@ var _ = AfterSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 })
 
-func NewSKRCluster() (client.Client, *envtest.Environment) { //nolint:ireturn
+func NewSKRCluster() (client.Client, *envtest.Environment) {
 	skrEnv := &envtest.Environment{
 		ErrorIfCRDPathMissing: true,
 	}

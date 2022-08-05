@@ -35,7 +35,7 @@ type KymaSynchronizationContext struct {
 	controlPlaneKyma   *operatorv1alpha1.Kyma
 }
 
-func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, key client.ObjectKey, //nolint:ireturn
+func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, key client.ObjectKey,
 	strategy operatorv1alpha1.SyncStrategy,
 ) (client.Client, error) {
 	clusterClient := ClusterClient{
@@ -208,7 +208,7 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 		kyma.Spec.DeepCopyInto(&remoteKyma.Spec)
 
 		if kyma.Spec.Sync.NoModuleCopy {
-			remoteKyma.Spec.Modules = []v1alpha1.Module{}
+			remoteKyma.Spec.Modules = []operatorv1alpha1.Module{}
 		}
 
 		err = c.runtimeClient.Create(ctx, remoteKyma)
@@ -248,12 +248,14 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context,
 
 // ReplaceWithVirtualKyma creates a virtual kyma instance from a control plane Kyma and N Remote Kymas,
 // merging the module specification in the process.
-func (c *KymaSynchronizationContext) ReplaceWithVirtualKyma(kyma *v1alpha1.Kyma, remotes ...*v1alpha1.Kyma) {
+func (c *KymaSynchronizationContext) ReplaceWithVirtualKyma(kyma *operatorv1alpha1.Kyma,
+	remotes ...*operatorv1alpha1.Kyma,
+) {
 	totalModuleAmount := len(kyma.Spec.Modules)
 	for _, remote := range remotes {
 		totalModuleAmount += len(remote.Spec.Modules)
 	}
-	modules := make(map[string]v1alpha1.Module, totalModuleAmount)
+	modules := make(map[string]operatorv1alpha1.Module, totalModuleAmount)
 
 	for _, remote := range remotes {
 		for _, m := range remote.Spec.Modules {
@@ -264,7 +266,7 @@ func (c *KymaSynchronizationContext) ReplaceWithVirtualKyma(kyma *v1alpha1.Kyma,
 		modules[m.Name] = m
 	}
 
-	kyma.Spec.Modules = []v1alpha1.Module{}
+	kyma.Spec.Modules = []operatorv1alpha1.Module{}
 	for _, m := range modules {
 		kyma.Spec.Modules = append(kyma.Spec.Modules, m)
 	}

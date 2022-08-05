@@ -129,6 +129,9 @@ type KymaStatus struct {
 	// +optional
 	Conditions []KymaCondition `json:"conditions,omitempty"`
 
+	// Contains essential information about the current deployed module
+	ModuleInfos []ModuleInfo `json:"moduleInfos,omitempty"`
+
 	// Observed generation
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
@@ -214,6 +217,23 @@ type KymaCondition struct {
 	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`
 }
 
+type ModuleInfo struct {
+	// Name is the current deployed module name
+	Name string `json:"name"`
+
+	// ModuleName is the unique identifier of the module.
+	ModuleName string `json:"moduleName"`
+
+	// Channel is the current deployed module channel
+	Channel Channel `json:"channel"`
+
+	// GroupVersionKind is the current deployed module gvk
+	GroupVersionKind metav1.GroupVersionKind `json:"gvk"`
+
+	// Namespace is the current deployed module namespace
+	Namespace string `json:"namespace"`
+}
+
 type TemplateInfo struct {
 	// Generation tracks the active Generation of the ModuleTemplate. In Case it changes, the new Generation will differ
 	// from the one tracked in TemplateInfo and thus trigger a new reconciliation with a newly parser ModuleTemplate
@@ -289,6 +309,44 @@ func (kyma *Kyma) SetLastSync() *Kyma {
 	return kyma
 }
 
+type moduleInfoExistsPair struct {
+	moduleInfo *ModuleInfo
+	exists     bool
+}
+
+func (kyma *Kyma) GetNoLongerExistingModuleInfos() []*ModuleInfo {
+	moduleInfoMap := make(map[string]*moduleInfoExistsPair)
+
+	for i := range kyma.Status.ModuleInfos {
+		moduleInfo := &kyma.Status.ModuleInfos[i]
+		moduleInfoMap[moduleInfo.ModuleName] = &moduleInfoExistsPair{exists: false, moduleInfo: moduleInfo}
+	}
+
+	for i := range kyma.Spec.Modules {
+		module := &kyma.Spec.Modules[i]
+		if _, exists := moduleInfoMap[module.Name]; exists {
+			moduleInfoMap[module.Name].exists = true
+		}
+	}
+
+	notExistsModules := make([]*ModuleInfo, 0)
+	for _, item := range moduleInfoMap {
+		if !item.exists {
+			notExistsModules = append(notExistsModules, item.moduleInfo)
+		}
+	}
+	return notExistsModules
+}
+
+func (kyma *Kyma) GetModuleInfoMap() map[string]*ModuleInfo {
+	moduleInfoMap := make(map[string]*ModuleInfo)
+	for i := range kyma.Status.ModuleInfos {
+		moduleInfo := &kyma.Status.ModuleInfos[i]
+		moduleInfoMap[moduleInfo.ModuleName] = moduleInfo
+	}
+	return moduleInfoMap
+}
+
 //+kubebuilder:object:root=true
 
 // KymaList contains a list of Kyma.
@@ -305,8 +363,7 @@ func init() {
 
 const NewModuleMessage = "new module"
 
-func (kyma *Kyma) MatchConditionsToModules() []KymaCondition {
-	newConditions := []KymaCondition{}
+func (kyma *Kyma) MatchConditionsToModules() {
 	for _, module := range kyma.Spec.Modules {
 		found := false
 		for _, condition := range kyma.Status.Conditions {
@@ -322,8 +379,39 @@ func (kyma *Kyma) MatchConditionsToModules() []KymaCondition {
 				Message: NewModuleMessage,
 			}
 			kyma.Status.Conditions = append(kyma.Status.Conditions, newCondition)
-			newConditions = append(kyma.Status.Conditions, newCondition) //nolint:gocritic
 		}
 	}
-	return newConditions
+}
+
+type conditionExistsPair struct {
+	condition *KymaCondition
+	exists    bool
+}
+
+// TODO: drop this after condition.Reason != module.Name.
+func (kyma *Kyma) FilterNotExistsConditions() bool {
+	conditionsMap := make(map[string]*conditionExistsPair)
+	updateRequired := false
+	for i := range kyma.Status.Conditions {
+		condition := &kyma.Status.Conditions[i]
+		conditionsMap[condition.Reason] = &conditionExistsPair{exists: false, condition: condition}
+	}
+
+	for i := range kyma.Spec.Modules {
+		module := &kyma.Spec.Modules[i]
+		if _, exists := conditionsMap[module.Name]; exists {
+			conditionsMap[module.Name].exists = true
+		}
+	}
+
+	existsModules := make([]KymaCondition, 0)
+	for _, item := range conditionsMap {
+		if item.exists {
+			existsModules = append(existsModules, *item.condition)
+		} else {
+			updateRequired = true
+		}
+	}
+	kyma.Status.Conditions = existsModules
+	return updateRequired
 }
