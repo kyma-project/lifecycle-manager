@@ -1,8 +1,23 @@
 
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
+
+IMG_OWNER ?= "jakobmoellersap"
+
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.23
+ENVTEST_K8S_VERSION = 1.24.1
+
+## Tool Versions
+KYMA_VERSION ?= 2.5.0
+KUSTOMIZE_VERSION ?= v4.5.6
+CONTROLLER_TOOLS_VERSION ?= v0.9.2
+GOLANG_CI_LINT_VERSION ?= v1.46.2
+COMPONENT_CLI_VERSION ?= latest
+
+MODULE_NAME ?= "template"
+MODULE_VERSION ?= "0.0.0"
+MODULE_REGISTRY ?= "op-kcp-registry:56888/$(IMG_OWNER)/unsigned"
+MODULE_TEMPLATE_CHANNEL ?= "stable"
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -47,22 +62,14 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
-.PHONY: fmt
-fmt: ## Run go fmt against code.
-	go fmt ./...
-
-.PHONY: vet
-vet: ## Run go vet against code.
-	go vet ./...
-
 .PHONY: test
-test: manifests generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
+test: manifests test-crd generate fmt vet envtest ## Run tests.
+	ACK_GINKGO_DEPRECATIONS=1.16.5 KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
 
 ##@ Build
 
 .PHONY: build
-build: generate fmt vet ## Build manager binary.
+build: generate fmt vet lint ## Build manager binary.
 	go build -o bin/manager main.go
 
 .PHONY: run
@@ -70,12 +77,28 @@ run: manifests generate fmt vet ## Run a controller from your host.
 	go run ./main.go
 
 .PHONY: docker-build
-docker-build: test ## Build docker image with the manager.
+docker-build: ## Build docker image with the manager.
 	docker build -t ${IMG} .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
+
+MODULE_TMP ?= ./mod
+.PHONY: module-build
+module-build: kyma manifests kustomize component-cli ## Uses a temporary folder to initialize the module structure of this kubebuilder project and build the module-template
+	mkdir -p $(MODULE_TMP)/crds $(MODULE_TMP)/charts/operator/templates
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/default > $(MODULE_TMP)/charts/operator/templates/operator.yaml
+	MODULE_NAME=$(MODULE_NAME) MODULE_VERSION=$(MODULE_VERSION) sh hack/gen-chart.sh > $(MODULE_TMP)/charts/operator/Chart.yaml
+	cp config/crd/bases/** $(MODULE_TMP)/crds
+	$(KYMA) alpha create module kyma.project.io/module/$(MODULE_NAME) $(MODULE_VERSION) $(MODULE_TMP) --mod-path $(MODULE_TMP)/build \
+		-r crds:crds@./config/crd/bases/ \
+		-r module:helm-chart@$(MODULE_TMP)/charts/operator \
+		-r mod:none@/dev/null \
+		--registry $(MODULE_REGISTRY) --insecure
+	$(COMPONENT_CLI) ca remote get $(MODULE_REGISTRY) kyma.project.io/module/$(MODULE_NAME) $(MODULE_VERSION) --allow-plain-http > $(MODULE_TMP)/build/remote-component-descriptor.yaml
+	REMOTE_SIGNED_DESCRIPTOR=$(MODULE_TMP)/build/remote-component-descriptor.yaml MODULE_NAME=$(MODULE_NAME) OPERATOR_NAME=kyma-operator MODULE_TEMPLATE_CHANNEL=$(MODULE_TEMPLATE_CHANNEL) MODULE_TEMPLATE=$(MODULE_TMP)/build/module-template.yaml sh hack/gen-mod-template.sh
 
 ##@ Deployment
 
@@ -100,31 +123,68 @@ deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
-CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
-.PHONY: controller-gen
-controller-gen: ## Download controller-gen locally if necessary.
-	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.8.0)
 
-KUSTOMIZE = $(shell pwd)/bin/kustomize
+##@ Tools
+
+## Location to install dependencies to
+LOCALBIN ?= $(shell pwd)/bin
+$(LOCALBIN):
+	mkdir -p $(LOCALBIN)
+
+########## Kyma CLI ###########
+KYMA_CLI_CHECKOUT_PATH = "/tmp/operator/$(MODULE_NAME)/kyma-cli"
+KYMA ?= $(LOCALBIN)/kyma
+.PHONY: get-kyma
+get-kyma:
+	if [ ! -d $(KYMA_CLI_CHECKOUT_PATH) ]; then GOBIN=$(LOCALBIN) git clone https://github.com/kyma-project/cli $(KYMA_CLI_CHECKOUT_PATH) -b $(KYMA_VERSION) --depth 1; fi
+	cd $(KYMA_CLI_CHECKOUT_PATH) && git pull --ff-only
+
+.PHONY: kyma
+kyma: get-kyma $(KYMA) ## Download & Build Kyma CLI locally if necessary.
+$(KYMA): $(LOCALBIN)
+	cd $(KYMA_CLI_CHECKOUT_PATH) && make resolve && go build -o $(KYMA) -ldflags '-s -w -X github.com/kyma-project/cli/cmd/kyma/version.Version=$(KYMA_VERSION)' ./cmd 
+
+########## Kustomize ###########
+KUSTOMIZE ?= $(LOCALBIN)/kustomize
 .PHONY: kustomize
-kustomize: ## Download kustomize locally if necessary.
-	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v3@v3.8.7)
+kustomize: $(KUSTOMIZE) ## Download & Build kustomize locally if necessary.
+$(KUSTOMIZE): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install sigs.k8s.io/kustomize/kustomize/v4@$(KUSTOMIZE_VERSION)
 
-ENVTEST = $(shell pwd)/bin/setup-envtest
+########## Kustomize ###########
+COMPONENT_CLI ?= $(LOCALBIN)/component-cli
+.PHONY: component-cli
+component-cli: $(COMPONENT_CLI) ## Download & Build kustomize locally if necessary.
+$(COMPONENT_CLI): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install github.com/gardener/component-cli/cmd/component-cli@$(COMPONENT_CLI_VERSION)
+
+########## controller-gen ###########
+CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
+.PHONY: controller-gen
+controller-gen: $(CONTROLLER_GEN) ## Download & Build controller-gen locally if necessary.
+$(CONTROLLER_GEN): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
+
+########## envtest ###########
+ENVTEST ?= $(LOCALBIN)/setup-envtest
 .PHONY: envtest
-envtest: ## Download envtest-setup locally if necessary.
-	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
+envtest: $(ENVTEST) ## Download & Build envtest-setup locally if necessary.
+$(ENVTEST): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
 
-# go-get-tool will 'go get' any package $2 and install it to $1.
-PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
-define go-get-tool
-@[ -f $(1) ] || { \
-set -e ;\
-TMP_DIR=$$(mktemp -d) ;\
-cd $$TMP_DIR ;\
-go mod init tmp ;\
-echo "Downloading $(2)" ;\
-GOBIN=$(PROJECT_DIR)/bin go get $(2) ;\
-rm -rf $$TMP_DIR ;\
-}
-endef
+##@ Checks
+
+########## static code checks ###########
+.PHONY: fmt
+fmt: ## Run go fmt against code.
+	go fmt ./...
+
+.PHONY: vet
+vet: ## Run go vet against code.
+	go vet ./...
+
+GOLANG_CI_LINT = $(LOCALBIN)/golangci-lint
+.PHONY: lint
+lint: ## Download & Build & Run golangci-lint against code.
+	GOBIN=$(LOCALBIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANG_CI_LINT_VERSION)
+	$(LOCALBIN)/golangci-lint run

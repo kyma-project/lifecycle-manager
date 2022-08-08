@@ -42,6 +42,16 @@ spec:
             type: object
           status:
             description: MockupStatus defines the observed state of Mockup
+            properties:
+              state:
+                description: State signifies current state of Mockup. Value can be
+                  one of ("Ready", "Processing", "Error", "Deleting").
+                enum:
+                - Processing
+                - Deleting
+                - Ready
+                - Error
+                type: string
             type: object
         type: object
     served: true
