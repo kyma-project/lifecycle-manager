@@ -123,7 +123,7 @@ func (kyma *Kyma) AreAllConditionsReadyForKyma() bool {
 type KymaStatus struct {
 	// State signifies current state of Kyma.
 	// Value can be one of ("Ready", "Processing", "Error", "Deleting").
-	State KymaState `json:"state,omitempty"`
+	State State `json:"state,omitempty"`
 
 	// List of status conditions to indicate the status of a ServiceInstance.
 	// +optional
@@ -168,24 +168,24 @@ const (
 )
 
 // +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error
-type KymaState string
+type State string
 
 // Valid Kyma States.
 const (
-	// KymaStateReady signifies Kyma is ready and has been installed successfully.
-	KymaStateReady KymaState = "Ready"
+	// StateReady signifies Kyma is ready and has been installed successfully.
+	StateReady State = "Ready"
 
-	// KymaStateProcessing signifies Kyma is reconciling and is in the process of installation. Processing can also
+	// StateProcessing signifies Kyma is reconciling and is in the process of installation. Processing can also
 	// signal that the Installation previously encountered an error and is now recovering.
-	KymaStateProcessing KymaState = "Processing"
+	StateProcessing State = "Processing"
 
-	// KymaStateError signifies an error for Kyma. This signifies that the Installation process encountered an error.
+	// StateError signifies an error for Kyma. This signifies that the Installation process encountered an error.
 	// Contrary to Processing, it can be expected that this state should change on the next retry.
-	KymaStateError KymaState = "Error"
+	StateError State = "Error"
 
-	// KymaStateDeleting signifies Kyma is being deleted. This is the state that is used when a deletionTimestamp
+	// StateDeleting signifies Kyma is being deleted. This is the state that is used when a deletionTimestamp
 	// was detected and Finalizers are picked up.
-	KymaStateDeleting KymaState = "Deleting"
+	StateDeleting State = "Deleting"
 )
 
 // KymaCondition describes condition information for Kyma.

@@ -8,10 +8,11 @@ import (
 
 	"github.com/kyma-project/kyma-operator/operator/pkg/parsed"
 
-	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
 )
 
 var ErrConditionNotFound = errors.New("condition not found")
@@ -31,18 +32,18 @@ func Helper(handler Handler) *Kyma {
 func (k *Kyma) UpdateStatusForExistingModules(
 	ctx context.Context,
 	kyma *operatorv1alpha1.Kyma,
-	newState operatorv1alpha1.KymaState,
+	newState operatorv1alpha1.State,
 	message string,
 ) error {
 	kyma.Status.State = newState
 
 	switch newState {
-	case operatorv1alpha1.KymaStateReady:
+	case operatorv1alpha1.StateReady:
 		kyma.SetActiveChannel()
 	case "":
-	case operatorv1alpha1.KymaStateDeleting:
-	case operatorv1alpha1.KymaStateError:
-	case operatorv1alpha1.KymaStateProcessing:
+	case operatorv1alpha1.StateDeleting:
+	case operatorv1alpha1.StateError:
+	case operatorv1alpha1.StateProcessing:
 	default:
 	}
 
@@ -142,7 +143,7 @@ func (k *Kyma) UpdateConditionFromComponentState(name string, module *parsed.Mod
 		}
 
 		switch status.(map[string]interface{})[watch.State].(string) {
-		case string(operatorv1alpha1.KymaStateReady):
+		case string(operatorv1alpha1.StateReady):
 			if condition.Status != operatorv1alpha1.ConditionStatusTrue {
 				k.SyncReadyConditionForModules(kyma, parsed.Modules{name: module},
 					operatorv1alpha1.ConditionStatusTrue, "component ready!")

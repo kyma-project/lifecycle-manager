@@ -5,11 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	"github.com/kyma-project/kyma-operator/operator/pkg/dynamic"
-	"github.com/kyma-project/kyma-operator/operator/pkg/index"
-	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
-	"github.com/kyma-project/kyma-watcher/listener"
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -17,6 +12,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	"github.com/kyma-project/kyma-operator/operator/pkg/dynamic"
+	"github.com/kyma-project/kyma-operator/operator/pkg/index"
+	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
+	"github.com/kyma-project/kyma-watcher/listener"
 )
 
 // SetupWithManager sets up the controller with the Manager.
@@ -52,7 +53,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 
 	// register listener component
 	runnableListener, eventChannel := listener.RegisterListenerComponent(
-		listenerAddr, strings.ToLower(v1alpha1.KymaKind))
+		listenerAddr, strings.ToLower(string(v1alpha1.KymaKind)))
 	// watch event channel
 	controllerBuilder.Watches(eventChannel, &handler.EnqueueRequestForObject{})
 	// start listener as a manager runnable
@@ -70,4 +71,14 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 	}
 
 	return nil
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *ModuleTemplateReconciler) SetupWithManager(
+	mgr ctrl.Manager,
+	options controller.Options,
+) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&v1alpha1.Kyma{}).
+		WithOptions(options).Complete(r)
 }
