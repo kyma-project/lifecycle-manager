@@ -219,7 +219,7 @@ type ModuleInfo struct {
 	ModuleName string `json:"moduleName"`
 
 	// Additional Information when the condition is bound to a ModuleTemplate. It contains information about the last
-	// parsing that occurred and will track the state of the parser ModuleTemplate in Context of the Installation.
+	// parsing that occurred and will track the state of the parsed ModuleTemplate in the context of installation.
 	// This will update when Channel, Profile or the ModuleTemplate used in the Condition is changed.
 	// +optional
 	TemplateInfo TemplateInfo `json:"templateInfo"`
