@@ -103,9 +103,8 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 		// if the status is not yet set to deleting, also update the status
 		if err := status.Helper(r).UpdateStatusForExistingModules(
-			ctx, kyma, v1alpha1.StateDeleting, "deletion timestamp set",
+			ctx, kyma, v1alpha1.StateDeleting,
 		); err != nil {
-		if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, v1alpha1.KymaStateDeleting); err != nil {
 			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, fmt.Errorf(
 				"could not update kyma status after triggering deletion: %w", err)
 		}
