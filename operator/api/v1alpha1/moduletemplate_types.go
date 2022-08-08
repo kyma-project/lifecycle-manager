@@ -43,9 +43,9 @@ type ModuleTemplateSpec struct {
 	Target Target `json:"target"`
 }
 
-//+genclient
-//+kubebuilder:object:root=true
-//+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +genclient
+// +kubebuilder:object:root=true
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // ModuleTemplate is the Schema for the moduletemplates API.
 type ModuleTemplate struct {
 	metav1.TypeMeta   `json:",inline"`

@@ -12,11 +12,12 @@ const (
 	ControllerName    = OperatorPrefix + Separator + "controller-name"
 	ChannelLabel      = OperatorPrefix + Separator + "channel"
 	ManagedBy         = OperatorPrefix + Separator + "managed-by"
-	Finalizer         = OperatorPrefix + Separator + KymaKind
+	Finalizer         = OperatorPrefix + Separator + string(KymaKind)
 	KymaName          = OperatorPrefix + Separator + "kyma-name"
 	LastSync          = OperatorPrefix + Separator + "last-sync"
 	Signature         = OperatorPrefix + Separator + "signature"
 	ModuleName        = OperatorPrefix + Separator + "module-name"
+	ModuleVersion     = OperatorPrefix + Separator + "module-version"
 	ProfileLabel      = OperatorPrefix + Separator + "profile"
 	OverrideTypeLabel = OperatorPrefix + Separator + "override-type"
 	OperatorName      = "kyma-operator"
@@ -35,7 +36,7 @@ func GetMatchingLabelsForModule(module *Module, profile Profile) client.Matching
 	return selector
 }
 
-func CheckLabelsAndFinalizers(kyma *Kyma) bool {
+func (kyma *Kyma) CheckLabelsAndFinalizers() bool {
 	if controllerutil.ContainsFinalizer(kyma, "foregroundDeletion") {
 		return false
 	}
@@ -51,7 +52,7 @@ func CheckLabelsAndFinalizers(kyma *Kyma) bool {
 	}
 
 	if _, ok := kyma.ObjectMeta.Labels[ManagedBy]; !ok {
-		kyma.ObjectMeta.Labels[ManagedBy] = KymaKind
+		kyma.ObjectMeta.Labels[ManagedBy] = string(KymaKind)
 		updateRequired = true
 	}
 	return updateRequired
