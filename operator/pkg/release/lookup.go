@@ -47,7 +47,7 @@ func CheckForOutdatedTemplates(logger logr.Logger, k *operatorv1alpha1.Kyma, tem
 				if lookupResult.ModuleTemplate.GetGeneration() != moduleInfo.TemplateInfo.Generation ||
 					lookupResult.ModuleTemplate.Spec.Channel != moduleInfo.TemplateInfo.Channel {
 					logger.Info("detected outdated template",
-						"templateInfo", moduleInfo.ModuleName,
+						"module", moduleInfo.ModuleName,
 						"template", lookupResult.ModuleTemplate.Name,
 						"newTemplateGeneration", lookupResult.ModuleTemplate.GetGeneration(),
 						"previousTemplateGeneration", moduleInfo.TemplateInfo.Generation,
