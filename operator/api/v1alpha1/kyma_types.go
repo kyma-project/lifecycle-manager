@@ -218,9 +218,8 @@ type ModuleInfo struct {
 	// ModuleName is the unique identifier of the module.
 	ModuleName string `json:"moduleName"`
 
-	// Additional Information when the condition is bound to a ModuleTemplate. It contains information about the last
-	// parsing that occurred and will track the state of the parser ModuleTemplate in Context of the Installation.
-	// This will update when Channel, Profile or the ModuleTemplate used in the Condition is changed.
+	// It contains information about the last parsed ModuleTemplate in Context of the Installation.
+	// This will update when Channel, Profile or the ModuleTemplate is changed.
 	// +optional
 	TemplateInfo TemplateInfo `json:"templateInfo"`
 
