@@ -48,7 +48,7 @@ issues:
 output:
   sort-results: true
 run:
-  concurrency: 4
+  concurrency: 8
   timeout: 5m
   skip-files:
     - zz_generated.deepcopy.go
