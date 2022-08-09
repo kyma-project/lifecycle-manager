@@ -57,16 +57,16 @@ GEN_MODULE_TEMPLATE ?= sh hack/gen-mod-template.sh
 
 .PHONY: module-chart
 module-chart: operator/manifests kustomize ## Bundle the Charts
-	mkdir -p "$(TEMPLATE_DIR)"/templates
+	mkdir -p "$(TEMPLATE_DIR)"/templates $(TEMPLATE_DIR)/crds/
 	cd operator/config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build operator/config/default > $(TEMPLATE_DIR)/templates/operator.yaml
+	$(KUSTOMIZE) build operator/config/default -o $(TEMPLATE_DIR)/templates/
+	mv $(TEMPLATE_DIR)/templates/apiextensions.k8s.io_v1_customresourcedefinition_* $(TEMPLATE_DIR)/crds
 	MODULE_NAME=$(MODULE_NAME) MODULE_VERSION=$(MODULE_VERSION) $(GEN_CHART) > $(TEMPLATE_DIR)/Chart.yaml
 
 .PHONY: module-build
 module-build: kyma component-cli module-chart ## Build the Module
 	$(KYMA) alpha create module kyma.project.io/module/$(MODULE_NAME) $(MODULE_VERSION) . \
 		--registry $(MODULE_REGISTRY) \
-		-r crds@crds:operator/config/crd/bases/ \
 		--insecure \
 		-w -v
 

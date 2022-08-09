@@ -8,7 +8,7 @@ component:
     type: ociRegistry
   resources:
   - access:
-      digest: sha256:9617c047ae671c98bab154cf570923dac03cbc1e09fdc905584c1216f6e7829f
+      digest: sha256:4ca3dcc19af77a57e0345018985aec0e7bf15a4fb4ae5b1c5392b45ea013c59a
       type: localOciBlob
     name: template-operator
     relation: local
@@ -22,14 +22,14 @@ component:
     type: yaml
     version: 0.0.0
   - access:
-      digest: sha256:a276022c122a84ff40d461518f9bf2770e2e950ede47873b03e4100ee9c8c418
+      digest: sha256:640bc70b1898349c19f413426f46ca66db2a7482bb0741257a0050197cd68dad
       type: localOciBlob
     name: operator
     relation: local
     type: operator
     version: 0.0.0
   - access:
-      digest: sha256:4807536c82274f6573ddc3ded977deb2f9e20b169da067f450a0028c095fca97
+      digest: sha256:50de4456b619e0ac1d552b000f56ca2050a4e013cbc0caa8ed1bd8434148f4fc
       type: localOciBlob
     name: crds
     relation: local
