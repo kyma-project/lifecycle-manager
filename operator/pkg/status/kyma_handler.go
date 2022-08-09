@@ -15,7 +15,7 @@ import (
 	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
 )
 
-var ErrConditionNotFound = errors.New("condition not found")
+var ErrTemplateNotFound = errors.New("template not found")
 
 type Kyma struct {
 	client.StatusWriter
@@ -29,11 +29,8 @@ func Helper(handler Handler) *Kyma {
 	return &Kyma{StatusWriter: handler.Status()}
 }
 
-func (k *Kyma) UpdateStatusForExistingModules(
-	ctx context.Context,
-	kyma *operatorv1alpha1.Kyma,
-	newState operatorv1alpha1.State,
-	message string,
+func (k *Kyma) UpdateStatusForExistingModules(ctx context.Context,
+	kyma *operatorv1alpha1.Kyma, newState operatorv1alpha1.State,
 ) error {
 	kyma.Status.State = newState
 
@@ -59,22 +56,10 @@ func (k *Kyma) SyncReadyConditionForModules(kyma *operatorv1alpha1.Kyma, modules
 ) {
 	status := &kyma.Status
 
-	for name, module := range modules {
+	for name := range modules {
 		condition, exists := k.GetReadyConditionForComponent(kyma, name)
 		if !exists {
 			status.Conditions = append(status.Conditions, *condition)
-		}
-
-		if module.Template != nil {
-			condition.TemplateInfo = operatorv1alpha1.TemplateInfo{
-				Channel:    module.Template.Spec.Channel,
-				Generation: module.Template.Generation,
-				GroupVersionKind: metav1.GroupVersionKind{
-					Group:   module.GroupVersionKind().Group,
-					Version: module.GroupVersionKind().Version,
-					Kind:    module.GroupVersionKind().Kind,
-				},
-			}
 		}
 
 		condition.LastTransitionTime = &metav1.Time{Time: time.Now()}
@@ -90,11 +75,16 @@ func (k *Kyma) SyncModuleInfo(kyma *operatorv1alpha1.Kyma, modules parsed.Module
 		latestModuleInfo := operatorv1alpha1.ModuleInfo{
 			ModuleName: module.Name,
 			Name:       module.Unstructured.GetName(),
-			Namespace:  module.Unstructured.GetNamespace(), GroupVersionKind: metav1.GroupVersionKind{
-				Group:   module.GroupVersionKind().Group,
-				Version: module.GroupVersionKind().Version,
-				Kind:    module.GroupVersionKind().Kind,
-			}, Channel: module.Channel(),
+			Namespace:  module.Unstructured.GetNamespace(),
+			TemplateInfo: operatorv1alpha1.TemplateInfo{
+				Channel:    module.Template.Spec.Channel,
+				Generation: module.Template.Generation,
+				GroupVersionKind: metav1.GroupVersionKind{
+					Group:   module.GroupVersionKind().Group,
+					Version: module.GroupVersionKind().Version,
+					Kind:    module.GroupVersionKind().Kind,
+				},
+			},
 		}
 		moduleInfo, exists := moduleInfoMap[module.Name]
 		if exists {
@@ -103,6 +93,20 @@ func (k *Kyma) SyncModuleInfo(kyma *operatorv1alpha1.Kyma, modules parsed.Module
 			kyma.Status.ModuleInfos = append(kyma.Status.ModuleInfos, latestModuleInfo)
 		}
 	}
+}
+
+func (k *Kyma) GetTemplateInfoForModule(
+	kyma *operatorv1alpha1.Kyma,
+	moduleName string,
+) (*operatorv1alpha1.TemplateInfo, error) {
+	for i := range kyma.Status.ModuleInfos {
+		moduleInfo := &kyma.Status.ModuleInfos[i]
+		if moduleInfo.ModuleName == moduleName {
+			return &moduleInfo.TemplateInfo, nil
+		}
+	}
+	// should not happen
+	return nil, ErrTemplateNotFound
 }
 
 func (k *Kyma) GetReadyConditionForComponent(kymaObj *operatorv1alpha1.Kyma,

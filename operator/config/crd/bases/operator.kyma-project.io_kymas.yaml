@@ -150,6 +150,30 @@ spec:
                       description: Status of the Kyma Condition. Value can be one
                         of ("True", "False", "Unknown").
                       type: string
+                    type:
+                      description: Type is used to reflect what type of condition
+                        we are dealing with. Most commonly ConditionTypeReady it is
+                        used as extension marker in the future
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+              moduleInfos:
+                description: Contains essential information about the current deployed
+                  module
+                items:
+                  properties:
+                    moduleName:
+                      description: ModuleName is the unique identifier of the module.
+                      type: string
+                    name:
+                      description: Name is the current deployed module name
+                      type: string
+                    namespace:
+                      description: Namespace is the current deployed module namespace
+                      type: string
                     templateInfo:
                       description: Additional Information when the condition is bound
                         to a ModuleTemplate. It contains information about the last
@@ -194,55 +218,7 @@ spec:
                           - version
                           type: object
                       type: object
-                    type:
-                      description: Type is used to reflect what type of condition
-                        we are dealing with. Most commonly ConditionTypeReady it is
-                        used as extension marker in the future
-                      type: string
                   required:
-                  - status
-                  - type
-                  type: object
-                type: array
-              moduleInfos:
-                description: Contains essential information about the current deployed
-                  module
-                items:
-                  properties:
-                    channel:
-                      description: Channel is the current deployed module channel
-                      enum:
-                      - rapid
-                      - regular
-                      - stable
-                      type: string
-                    gvk:
-                      description: GroupVersionKind is the current deployed module
-                        gvk
-                      properties:
-                        group:
-                          type: string
-                        kind:
-                          type: string
-                        version:
-                          type: string
-                      required:
-                      - group
-                      - kind
-                      - version
-                      type: object
-                    moduleName:
-                      description: ModuleName is the unique identifier of the module.
-                      type: string
-                    name:
-                      description: Name is the current deployed module name
-                      type: string
-                    namespace:
-                      description: Namespace is the current deployed module namespace
-                      type: string
-                  required:
-                  - channel
-                  - gvk
                   - moduleName
                   - name
                   - namespace

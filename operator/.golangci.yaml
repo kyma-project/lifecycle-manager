@@ -40,6 +40,7 @@ linters-settings:
       - empty
       - stdlib
       - Client
+      - record.EventRecorder
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
@@ -47,5 +48,7 @@ issues:
 output:
   sort-results: true
 run:
+  concurrency: 8
+  timeout: 1m
   skip-files:
     - zz_generated.deepcopy.go

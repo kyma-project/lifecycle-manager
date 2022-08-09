@@ -50,9 +50,9 @@ func (m *Module) ApplyLabels(
 	m.Unstructured.SetLabels(lbls)
 }
 
-func (m *Module) StateMismatchedWithCondition(condition *v1alpha1.KymaCondition) bool {
-	return condition.TemplateInfo.Generation != m.Template.GetGeneration() ||
-		condition.TemplateInfo.Channel != m.Template.Spec.Channel
+func (m *Module) StateMismatchedWithTemplateInfo(info *v1alpha1.TemplateInfo) bool {
+	return info.Generation != m.Template.GetGeneration() ||
+		info.Channel != m.Template.Spec.Channel
 }
 
 // UpdateModuleFromCluster update the module with necessary information (status, ownerReference) from

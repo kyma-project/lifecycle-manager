@@ -206,12 +206,6 @@ type KymaCondition struct {
 	// +optional
 	Reason string `json:"reason,omitempty"`
 
-	// Additional Information when the condition is bound to a ModuleTemplate. It contains information about the last
-	// parsing that occurred and will track the state of the parser ModuleTemplate in Context of the Installation.
-	// This will update when Channel, Profile or the ModuleTemplate used in the Condition is changed.
-	// +optional
-	TemplateInfo TemplateInfo `json:"templateInfo,omitempty"`
-
 	// Timestamp for when Kyma last transitioned from one status to another.
 	// +optional
 	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`
@@ -224,11 +218,10 @@ type ModuleInfo struct {
 	// ModuleName is the unique identifier of the module.
 	ModuleName string `json:"moduleName"`
 
-	// Channel is the current deployed module channel
-	Channel Channel `json:"channel"`
-
-	// GroupVersionKind is the current deployed module gvk
-	GroupVersionKind metav1.GroupVersionKind `json:"gvk"`
+	// It contains information about the last parsed ModuleTemplate in Context of the Installation.
+	// This will update when Channel, Profile or the ModuleTemplate is changed.
+	// +optional
+	TemplateInfo TemplateInfo `json:"templateInfo"`
 
 	// Namespace is the current deployed module namespace
 	Namespace string `json:"namespace"`

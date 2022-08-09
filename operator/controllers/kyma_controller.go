@@ -103,7 +103,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 		// if the status is not yet set to deleting, also update the status
 		if err := status.Helper(r).UpdateStatusForExistingModules(
-			ctx, kyma, v1alpha1.StateDeleting, "deletion timestamp set",
+			ctx, kyma, v1alpha1.StateDeleting,
 		); err != nil {
 			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, fmt.Errorf(
 				"could not update kyma status after triggering deletion: %w", err)
@@ -236,8 +236,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 
 	// if the ready condition is not applicable, but we changed the conditions, we still need to issue an update
 	if statusUpdateRequiredFromCreation || statusUpdateRequiredFromSync || statusUpdateRequiredFromDeletion {
-		if err := status.Helper(r).UpdateStatusForExistingModules(
-			ctx, kyma, kyma.Status.State, "updating component conditions"); err != nil {
+		if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, kyma.Status.State); err != nil {
 			return fmt.Errorf("error while updating status for condition change: %w", err)
 		}
 		return nil
@@ -401,8 +400,11 @@ func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alph
 		module.UpdateModuleFromCluster(unstructuredFromServer)
 
 		if module.TemplateOutdated {
-			condition, _ := status.Helper(r).GetReadyConditionForComponent(kyma, name)
-			if module.StateMismatchedWithCondition(condition) {
+			templateInfo, err := status.Helper(r).GetTemplateInfoForModule(kyma, name)
+			if err != nil {
+				return false, err
+			}
+			if module.StateMismatchedWithTemplateInfo(templateInfo) {
 				return update()
 			}
 		}
@@ -492,8 +494,7 @@ func (r *KymaReconciler) TriggerKymaDeletion(ctx context.Context, kyma *v1alpha1
 func (r *KymaReconciler) UpdateStatus(
 	ctx context.Context, kyma *v1alpha1.Kyma, state v1alpha1.State, message string,
 ) error {
-	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma,
-		state, "templates could not be fetched"); err != nil {
+	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state); err != nil {
 		return fmt.Errorf("error while updating status to %s because of %s: %w", state, message, err)
 	}
 	r.Event(kyma, "Normal", "StatusUpdate", message)
@@ -503,8 +504,7 @@ func (r *KymaReconciler) UpdateStatus(
 func (r *KymaReconciler) UpdateStatusFromErr(
 	ctx context.Context, kyma *v1alpha1.Kyma, state v1alpha1.State, err error,
 ) error {
-	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma,
-		state, err.Error()); err != nil {
+	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state); err != nil {
 		return fmt.Errorf("error while updating status to %s: %w", state, err)
 	}
 	r.Event(kyma, "Warning", "StatusUpdate", err.Error())
@@ -544,9 +544,9 @@ func (r *KymaReconciler) UpdateStatusModuleInfos(ctx context.Context, kyma *v1al
 		moduleInfo := moduleInfos[i]
 		module := unstructured.Unstructured{}
 		module.SetGroupVersionKind(schema.GroupVersionKind{
-			Group:   moduleInfo.GroupVersionKind.Group,
-			Version: moduleInfo.GroupVersionKind.Version,
-			Kind:    moduleInfo.GroupVersionKind.Kind,
+			Group:   moduleInfo.TemplateInfo.GroupVersionKind.Group,
+			Version: moduleInfo.TemplateInfo.GroupVersionKind.Version,
+			Kind:    moduleInfo.TemplateInfo.GroupVersionKind.Kind,
 		})
 		err := r.getModule(ctx, &module)
 		if k8serrors.IsNotFound(err) {
@@ -587,9 +587,9 @@ func (r *KymaReconciler) deleteModule(ctx context.Context, moduleInfo *v1alpha1.
 	module.SetNamespace(moduleInfo.Namespace)
 	module.SetName(moduleInfo.Name)
 	module.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   moduleInfo.GroupVersionKind.Group,
-		Version: moduleInfo.GroupVersionKind.Version,
-		Kind:    moduleInfo.GroupVersionKind.Kind,
+		Group:   moduleInfo.TemplateInfo.GroupVersionKind.Group,
+		Version: moduleInfo.TemplateInfo.GroupVersionKind.Version,
+		Kind:    moduleInfo.TemplateInfo.GroupVersionKind.Kind,
 	})
 	return r.Delete(ctx, &module, &client.DeleteOptions{})
 }
