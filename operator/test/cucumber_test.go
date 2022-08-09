@@ -3,42 +3,49 @@ package test_test
 import (
 	gotesting "testing"
 
+
+	"go.uber.org/zap"
+
 	"github.com/cucumber/godog"
 	"github.com/kyma-incubator/testdrape/godog/testing"
 )
 
+func log(msg string, args ...interface{}) {
+	zap.S().Infof(msg, args...)
+}
+
 func createKCPCluster(t *testing.T) {
-	t.Errorf("Creating KCP cluster")
+	log("Creating KCP cluster")
 }
 
 func createSKRCluster(t *testing.T) {
-	t.Errorf("Creating customer cluster")
+	log("Creating customer cluster")
 }
 
 func installReconciler(t *testing.T) {
-	t.Errorf("Install reconciler")
+	log("Install reconciler")
 }
 
 func createKymaCR(t *testing.T, centralMods, decentralMods int64, cluster string) {
-	t.Errorf("Create Kyma CR with %d centralised and %d dencentralized modules in cluster '%s'",
+	log("Create Kyma CR with %d centralised and %d dencentralized modules in cluster '%s'",
 		centralMods, decentralMods, cluster)
 }
 
 func updateKymaCR(t *testing.T, centralMods, decentralMods int64, cluster string) {
-	t.Errorf("Updating Kyma CR by adding %d centralised and %d decentralized modules in cluster '%s'",
+	log("Updating Kyma CR by adding %d centralised and %d decentralized modules in cluster '%s'",
 		centralMods, decentralMods, cluster)
 }
 
 func deleteKymaCR(t *testing.T, cluster string) {
-	t.Errorf("Delete Kyma CR in cluster '%s'", cluster)
+	log("Delete Kyma CR in cluster '%s'", cluster)
 }
 
 func updateKymaCRInvalid(t *testing.T, cluster string) {
-	t.Errorf("Updating Kyma CR with invalid change in cluster '%s'", cluster)
+	log("Updating Kyma CR with invalid change in cluster '%s'", cluster)
 }
 
 func assertModuleCR(t *testing.T, expected int64, cluster string) {
-	t.Errorf("Assert %d module CRs in cluster '%s'", expected, cluster)
+	log("Assert %d module CRs in cluster '%s'", expected, cluster)
 }
 
 func assertModuleCRNotExist(t *testing.T, cluster string) {
@@ -46,7 +53,7 @@ func assertModuleCRNotExist(t *testing.T, cluster string) {
 }
 
 func assertManifestCR(t *testing.T, expected int64, cluster string) {
-	t.Errorf("Assert %d manifest CRs in cluster '%s'", expected, cluster)
+	log("Assert %d manifest CRs in cluster '%s'", expected, cluster)
 }
 
 func assertManifestCRNotExist(t *testing.T, cluster string) {
@@ -54,7 +61,7 @@ func assertManifestCRNotExist(t *testing.T, cluster string) {
 }
 
 func assertModuleDeployed(t *testing.T, expected int64, cluster string) {
-	t.Errorf("Assert %d manifest CRs in cluster '%s'", expected, cluster)
+	log("Assert %d manifest CRs in cluster '%s'", expected, cluster)
 }
 
 func assertModuleUndeployed(t *testing.T, cluster string) {
@@ -62,23 +69,23 @@ func assertModuleUndeployed(t *testing.T, cluster string) {
 }
 
 func assertKymaCRState(t *testing.T, state string, timeout int64) {
-	t.Errorf("Assert Kyma CR is in '%s' state within '%d' sec", state, timeout)
+	log("Assert Kyma CR is in '%s' state within '%d' sec", state, timeout)
 }
 
 func assertKymaCRConditionsUpdated(t *testing.T, cluster string) {
-	t.Errorf("Assert Kyma CR conditions were updated in cluster '%s'", cluster)
+	log("Assert Kyma CR conditions were updated in cluster '%s'", cluster)
 }
 
 func assertKymaCRCopied(t *testing.T, fromCluster, toCluster string) {
-	t.Errorf("Assert Kyma CR copied from '%s' to '%s' cluster", fromCluster, toCluster)
+	log("Assert Kyma CR copied from '%s' to '%s' cluster", fromCluster, toCluster)
 }
 
 func assertKymaCREvent(t *testing.T, severity string) {
-	t.Errorf("Assert Kyma CR contains event with severity '%s'", severity)
+	log("Assert Kyma CR contains event with severity '%s'", severity)
 }
 
 func assertValidatingWebhookLog(t *testing.T, severity string) {
-	t.Errorf("Assert validating Webhook logs '%s'", severity)
+	log("Assert validating Webhook logs '%s'", severity)
 }
 
 func initializeScenarios(sCtx *godog.ScenarioContext) {
@@ -117,6 +124,6 @@ func TestFeatures(testT *gotesting.T) {
 	}
 
 	if suite.Run() != 0 {
-		testT.Errorf("non-zero status returned, failed to run feature tests")
+		testT.Error("non-zero status returned, failed to run feature tests")
 	}
 }
