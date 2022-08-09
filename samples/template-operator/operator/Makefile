@@ -2,14 +2,10 @@
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
 
-IMG_OWNER ?= "jakobmoellersap"
-
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.24.1
 
 ## Tool Versions
-KYMA_VERSION ?= 2.5.0
-COMPONENT_CLI_VERSION ?= latest
 KUSTOMIZE_VERSION ?= v4.5.6
 CONTROLLER_TOOLS_VERSION ?= v0.9.2
 GOLANG_CI_LINT_VERSION ?= v1.46.2
