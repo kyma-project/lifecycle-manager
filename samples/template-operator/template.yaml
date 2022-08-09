@@ -1,0 +1,67 @@
+apiVersion: operator.kyma-project.io/v1alpha1
+kind: ModuleTemplate
+metadata:
+  name: moduletemplate-template
+  namespace: default
+  labels:
+    "operator.kyma-project.io/managed-by": "kyma-operator"
+    "operator.kyma-project.io/controller-name": "manifest"
+    "operator.kyma-project.io/module-name": "template"
+  annotations:
+    "operator.kyma-project.io/module-version": "0.0.0"
+    "operator.kyma-project.io/module-provider": "internal"
+    "operator.kyma-project.io/descriptor-schema-version": "v2"
+    "operator.kyma-project.io/control-signature-name": "null"
+    "operator.kyma-project.io/generated-at": "2022-08-09T06:51:28Z"
+spec:
+  channel: stable
+  data:
+    apiVersion: component.kyma-project.io/v1alpha1
+    kind: Mockup
+    metadata:
+      name: mockup-sample
+    spec:
+      # TODO(user): Add fields here
+  descriptor:
+    component:
+      componentReferences: []
+      name: kyma.project.io/module/template
+      provider: internal
+      repositoryContexts:
+      - baseUrl: op-kcp-registry:56888/unsigned
+        componentNameMapping: urlPath
+        type: ociRegistry
+      resources:
+      - access:
+          digest: sha256:9617c047ae671c98bab154cf570923dac03cbc1e09fdc905584c1216f6e7829f
+          type: localOciBlob
+        name: template-operator
+        relation: local
+        type: helm-chart
+        version: 0.0.0
+      - access:
+          digest: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+          type: localOciBlob
+        name: config
+        relation: local
+        type: yaml
+        version: 0.0.0
+      - access:
+          digest: sha256:a276022c122a84ff40d461518f9bf2770e2e950ede47873b03e4100ee9c8c418
+          type: localOciBlob
+        name: operator
+        relation: local
+        type: operator
+        version: 0.0.0
+      - access:
+          digest: sha256:4807536c82274f6573ddc3ded977deb2f9e20b169da067f450a0028c095fca97
+          type: localOciBlob
+        name: crds
+        relation: local
+        type: crds
+        version: 0.0.0
+      sources: []
+      version: 0.0.0
+    meta:
+      schemaVersion: v2
+    

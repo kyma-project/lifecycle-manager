@@ -19,9 +19,7 @@ metadata:
 spec:
   channel: ${MODULE_TEMPLATE_CHANNEL}
   data:
-    kind: Manifest
-    resource: manifests
-    apiVersion: component.kyma-project.io/v1alpha1
+$(cat $DEFAULT_DATA | sed "s/^/    /g")
   descriptor:
 $(cat $REMOTE_SIGNED_DESCRIPTOR | sed "s/^/    /g")
 EOF
