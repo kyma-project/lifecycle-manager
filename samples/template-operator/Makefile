@@ -92,7 +92,7 @@ module-build: kyma component-cli module-operator-chart ## Build the Module and p
 
 .PHONY: module-default
 module-default:
-	if [ ! -d default.yaml ] cp operator/config/samples/* default.yaml
+	if [ ! -d default.yaml ]; then cp operator/config/samples/* default.yaml; fi
 
 ##@ Tools
 
