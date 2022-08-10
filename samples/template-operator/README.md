@@ -39,12 +39,13 @@ MODULE_REGISTRY ?= op-kcp-registry:56888/unsigned
 # Desired Channel of the Generated Module Template
 MODULE_TEMPLATE_CHANNEL ?= stable
 # Image URL to use all building/pushing image targets
+IMG_REGISTRY ?= op-kcp-registry:56888/operator-images
 IMG ?= $(MODULE_NAME)-operator:$(MODULE_VERSION)
 ```
 
 ## Steps to build and bundle your module:
 
-If not done already, first build and push your operator binary by first adjusting `IMG`if necessary and then executing the `make module-image` command
+If not done already, first build and push your operator binary by adjusting `IMG`if necessary and then executing the `make module-image` command
 
 ```sh
 make module-image
