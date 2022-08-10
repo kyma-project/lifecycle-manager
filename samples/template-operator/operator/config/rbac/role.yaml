@@ -8,7 +8,7 @@ rules:
 - apiGroups:
   - component.kyma-project.io
   resources:
-  - mockups
+  - samples
   verbs:
   - create
   - delete
@@ -20,13 +20,13 @@ rules:
 - apiGroups:
   - component.kyma-project.io
   resources:
-  - mockups/finalizers
+  - samples/finalizers
   verbs:
   - update
 - apiGroups:
   - component.kyma-project.io
   resources:
-  - mockups/status
+  - samples/status
   verbs:
   - get
   - patch

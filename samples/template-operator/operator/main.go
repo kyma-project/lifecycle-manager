@@ -78,11 +78,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.MockupReconciler{
+	if err = (&controllers.SampleReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Mockup")
+		setupLog.Error(err, "unable to create controller", "controller", "Sample")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
