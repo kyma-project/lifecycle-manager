@@ -40,7 +40,7 @@ MODULE_REGISTRY ?= op-kcp-registry:56888/unsigned
 MODULE_TEMPLATE_CHANNEL ?= stable
 # Image URL to use all building/pushing image targets
 IMG_REGISTRY ?= op-kcp-registry:56888/operator-images
-IMG ?= $(MODULE_NAME)-operator:$(MODULE_VERSION)
+IMG ?= $(IMG_REGISTRY)/$(MODULE_NAME)-operator:$(MODULE_VERSION)
 ```
 
 ## Steps to build and bundle your module:
