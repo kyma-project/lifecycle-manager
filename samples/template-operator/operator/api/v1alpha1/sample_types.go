@@ -23,68 +23,68 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// MockupSpec defines the desired state of Mockup
-type MockupSpec struct {
+// SampleSpec defines the desired state of Sample
+type SampleSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of Mockup. Edit mockup_types.go to remove/update
+	// Foo is an example field of Sample. Edit sample_types.go to remove/update
 	Foo string `json:"foo,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error
-type MockupState string
+type SampleState string
 
-// Valid Mockup States.
+// Valid Sample States.
 const (
-	// MockupStateReady signifies Mockup is ready and has been installed successfully.
-	MockupStateReady MockupState = "Ready"
+	// SampleStateReady signifies Sample is ready and has been installed successfully.
+	SampleStateReady SampleState = "Ready"
 
-	// MockupStateProcessing signifies Mockup is reconciling and is in the process of installation. Processing can also
+	// SampleStateProcessing signifies Sample is reconciling and is in the process of installation. Processing can also
 	// signal that the Installation previously encountered an error and is now recovering.
-	MockupStateProcessing MockupState = "Processing"
+	SampleStateProcessing SampleState = "Processing"
 
-	// MockupStateError signifies an error for Mockup. This signifies that the Installation process encountered an error.
+	// SampleStateError signifies an error for Sample. This signifies that the Installation process encountered an error.
 	// Contrary to Processing, it can be expected that this state should change on the next retry.
-	MockupStateError MockupState = "Error"
+	SampleStateError SampleState = "Error"
 
-	// MockupStateDeleting signifies Mockup is being deleted. This is the state that is used when a deletionTimestamp
+	// SampleStateDeleting signifies Sample is being deleted. This is the state that is used when a deletionTimestamp
 	// was detected and Finalizers are picked up.
-	MockupStateDeleting MockupState = "Deleting"
+	SampleStateDeleting SampleState = "Deleting"
 )
 
-// MockupStatus defines the observed state of Mockup
+// SampleStatus defines the observed state of Sample
 // +kubebuilder:subresource:status
-type MockupStatus struct {
+type SampleStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// State signifies current state of Mockup.
+	// State signifies current state of Sample.
 	// Value can be one of ("Ready", "Processing", "Error", "Deleting").
-	State MockupState `json:"state,omitempty"`
+	State SampleState `json:"state,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// Mockup is the Schema for the mockups API
-type Mockup struct {
+// Sample is the Schema for the samples API
+type Sample struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   MockupSpec   `json:"spec,omitempty"`
-	Status MockupStatus `json:"status,omitempty"`
+	Spec   SampleSpec   `json:"spec,omitempty"`
+	Status SampleStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// MockupList contains a list of Mockup
-type MockupList struct {
+// SampleList contains a list of Sample
+type SampleList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Mockup `json:"items"`
+	Items           []Sample `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&Mockup{}, &MockupList{})
+	SchemeBuilder.Register(&Sample{}, &SampleList{})
 }

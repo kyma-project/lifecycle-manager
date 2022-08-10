@@ -1,13 +1,13 @@
-# permissions for end users to view mockups.
+# permissions for end users to view samples.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: mockup-viewer-role
+  name: sample-viewer-role
 rules:
 - apiGroups:
   - component.kyma-project.io
   resources:
-  - mockups
+  - samples
   verbs:
   - get
   - list
@@ -15,6 +15,6 @@ rules:
 - apiGroups:
   - component.kyma-project.io
   resources:
-  - mockups/status
+  - samples/status
   verbs:
   - get

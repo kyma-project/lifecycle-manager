@@ -1,6 +1,6 @@
 apiVersion: component.kyma-project.io/v1alpha1
-kind: Mockup
+kind: Sample
 metadata:
-  name: mockup-sample
+  name: sample-sample
 spec:
   # TODO(user): Add fields here
