@@ -39,7 +39,7 @@ MODULE_REGISTRY ?= op-kcp-registry:56888/unsigned
 # Desired Channel of the Generated Module Template
 MODULE_TEMPLATE_CHANNEL ?= stable
 # Image URL to use all building/pushing image targets
-IMG ?= $(MODULE_NAME)-operator:$(MODULE_VERSION)
+IMG ?= $(IMG_REGISTRY)/$(MODULE_NAME)-operator:$(MODULE_VERSION)
 ```
 
 ## Steps to build and bundle your module:
