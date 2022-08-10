@@ -81,7 +81,7 @@ module-template-build: module-build module-default ## Deploy a Module and create
 
 .PHONY: module-image
 module-image: operator/docker-build operator/docker-push ## Build the Module Image and push it to a registry defined in IMG_REGISTRY
-	echo "build and pushed module image $(IMG)"
+	echo "built and pushed module image $(IMG)"
 
 .PHONY: module-build
 module-build: kyma component-cli module-operator-chart ## Build the Module and push it to a registry defined in MODULE_REGISTRY
