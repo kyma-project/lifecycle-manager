@@ -119,7 +119,7 @@ cd operator
 2. Create API group version and kind for the intended custom resource(s). Please make sure the `group` is set as `component`.
 
 ```
-kubebuilder create api --group component --version v1alpha1 --kind Mockup
+kubebuilder create api --group component --version v1alpha1 --kind Sample
 ```
 
 3. `kubebuilder` will ask to create Resource, input `y`.
@@ -134,7 +134,7 @@ A basic kubebuilder extension with appropriate scaffolding should be setup.
 A custom resource is required to contain a specific set of properties in the Status object, to be tracked by the [kyma-operator](https://github.com/kyma-project/kyma-operator/tree/main/operator).
 This is required to track the current state of the module, represented by this custom resource.
 
-1. Check reference implementation of the [MockupStatus](./api/v1alpha1/mockup_types.go) struct of Mockup custom resource. Similarly `.status.state` property of your custom resource *MUST* contain these state values.
+1. Check reference implementation of the [SampleStatus](./api/v1alpha1/sample_types.go) struct of Sample custom resource. Similarly `.status.state` property of your custom resource *MUST* contain these state values.
 On top, `.status` object could contain other relevant properties as per your requirements.
-2. Next, check method `Reconcile()` inside the [Mockup Controller](./controllers/mockup_controller.go), which demonstrates how `.status.state` properties could be set, depending upon your logic.
+2. Next, check method `Reconcile()` inside the [SampleController](./controllers/sample_controller.go), which demonstrates how `.status.state` properties could be set, depending upon your logic.
 3. The `.status.state` value has a literal sense behind it, so use them appropriately.
