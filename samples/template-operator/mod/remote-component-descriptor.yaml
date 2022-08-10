@@ -1,0 +1,42 @@
+component:
+  componentReferences: []
+  name: kyma.project.io/module/template
+  provider: internal
+  repositoryContexts:
+  - baseUrl: op-kcp-registry:56888/unsigned
+    componentNameMapping: urlPath
+    type: ociRegistry
+  resources:
+  - access:
+      digest: sha256:4ca3dcc19af77a57e0345018985aec0e7bf15a4fb4ae5b1c5392b45ea013c59a
+      type: localOciBlob
+    name: template-operator
+    relation: local
+    type: helm-chart
+    version: 0.0.0
+  - access:
+      digest: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+      type: localOciBlob
+    name: config
+    relation: local
+    type: yaml
+    version: 0.0.0
+  - access:
+      digest: sha256:640bc70b1898349c19f413426f46ca66db2a7482bb0741257a0050197cd68dad
+      type: localOciBlob
+    name: operator
+    relation: local
+    type: operator
+    version: 0.0.0
+  - access:
+      digest: sha256:50de4456b619e0ac1d552b000f56ca2050a4e013cbc0caa8ed1bd8434148f4fc
+      type: localOciBlob
+    name: crds
+    relation: local
+    type: crds
+    version: 0.0.0
+  sources: []
+  version: 0.0.0
+meta:
+  schemaVersion: v2
+

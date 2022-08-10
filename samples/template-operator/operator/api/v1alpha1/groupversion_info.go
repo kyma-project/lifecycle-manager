@@ -15,8 +15,8 @@ limitations under the License.
 */
 
 // Package v1alpha1 contains API Schema definitions for the component v1alpha1 API group
-//+kubebuilder:object:generate=true
-//+groupName=component.kyma-project.io
+// +kubebuilder:object:generate=true
+// +groupName=component.kyma-project.io
 package v1alpha1
 
 import (
