@@ -6,7 +6,7 @@ Additionally, it hides Kubernetes boilerplate code to develop fast and efficient
 
 ## Structure
 
-The template operator contains base scaffolding that is prepared to build a Kyma Module from the various commands in `Makefile`:
+The template operator contains base scaffolding that is prepared to build a Kyma Module from the various commands in `Makefile`.
 
 ```
 Usage:
@@ -27,7 +27,7 @@ Tools
   component-cli    Download & Build kustomize locally if necessary.
 ```
 
-To use the Makefile you will need to adjust your Module Information to make sure that the Makefile knows the correct Remotes / Targets:
+To use the Makefile you will need to adjust your Module information to make sure that the Makefile knows the correct remotes / targets.
 
 ```makefile
 # Module Name used for bundling the OCI Image and later on for referencing in the Kyma Modules
@@ -43,31 +43,31 @@ IMG_REGISTRY ?= op-kcp-registry:56888/operator-images
 IMG ?= $(IMG_REGISTRY)/$(MODULE_NAME)-operator:$(MODULE_VERSION)
 ```
 
-## Steps to build and bundle your module:
+## Build your operator image
 
-If not done already, first build and push your operator binary by adjusting `IMG`if necessary and then executing the `make module-image` command
+If not done already, first build and push your operator binary by adjusting `IMG`if necessary and then executing the `make module-image` command.
 
 ```sh
 make module-image
 ```
 
-This will build the operator image and then push it as the Image defined in `IMG`.
+This will build the operator image and then push it as the image defined in `IMG`.
 
-Now, let's build our module:
+## Build and bundle your module
 
-1. Build and Push the Module and its descriptor with `module-build`:
+1. Build and push the Module and its descriptor with `module-build`.
 
 ```sh
 make module-build
 ```
 
-now there is a `template.yaml`that you can apply to the Control Plane
+Now there is a `template.yaml`that you can apply to the Control Plane.
 
 ```sh
 kubectl apply -f template.yaml
 ```
 
-2. Verify that the module creation succeeded and observe the `mod` folder. It will contain a `component-descriptor.yaml` with a definition of local layers:
+2. Verify that the module creation succeeded and observe the `mod` folder. It will contain a `component-descriptor.yaml` with a definition of local layers.
 
 ```yaml
 component:
@@ -92,17 +92,17 @@ meta:
   schemaVersion: v2
 ```
 
-As you can see the CLI created various layers that are referenced in the `blobs` directory. For more information on layer structure please reference the module creation with `kyma alpha mod create --help`
+As you can see the CLI created various layers that are referenced in the `blobs` directory. For more information on layer structure please reference the module creation with `kyma alpha mod create --help`.
 
-3. Generate a Module-Template for installation in the Control-Plane with
+3. Generate a Module Template for installation in the Control Plane.
 
 ```sh
 make module-template-build
 ```
 
-## Steps to create another api:
+## Create another API
 
-If not done already, first install the `kubebuilder`CLI:
+If not done already, first install the `kubebuilder`CLI.
 
 ```bash
 # download kubebuilder and install locally.
@@ -110,7 +110,7 @@ curl -L -o kubebuilder https://go.kubebuilder.io/dl/latest/$(go env GOOS)/$(go e
 chmod +x kubebuilder && mv kubebuilder /usr/local/bin/
 ```
 
-1. Navigate to the `operator` subproject
+1. Navigate to the `operator` subproject.
 
 ```sh
 cd operator
@@ -124,7 +124,7 @@ kubebuilder create api --group component --version v1alpha1 --kind Sample
 
 3. `kubebuilder` will ask to create Resource, input `y`.
 4. `kubebuilder` will ask to create Controller, input `y`.
-5. Update go dependencies `go mod tidy `
+5. Update go dependencies `go mod tidy`.
 6. Run `make generate` followed by `make manifests`, to generate boilerplate code and CRDs respectively.
 
 A basic kubebuilder extension with appropriate scaffolding should be setup.

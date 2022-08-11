@@ -23,8 +23,10 @@ import (
 	"github.com/kyma-project/manifest-operator/operator/pkg/custom"
 	manifestLib "github.com/kyma-project/manifest-operator/operator/pkg/manifest"
 	"helm.sh/helm/v3/pkg/cli"
+	"helm.sh/helm/v3/pkg/strvals"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -38,6 +40,8 @@ type SampleReconciler struct {
 	Scheme *runtime.Scheme
 	*rest.Config
 }
+
+const deletionFinalizer = "deletion-finalizer"
 
 //+kubebuilder:rbac:groups=component.kyma-project.io,resources=samples,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=component.kyma-project.io,resources=samples/status,verbs=get;update;patch
@@ -76,6 +80,11 @@ func (r *SampleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, r.Status().Update(ctx, sampleResource)
 	}
 
+	// add deletion finalizer
+	if controllerutil.AddFinalizer(sampleResource, deletionFinalizer) {
+		return ctrl.Result{}, r.Client.Update(ctx, sampleResource)
+	}
+
 	switch sampleResource.Status.State {
 	case "":
 		return ctrl.Result{}, r.HandleInitialState(ctx, sampleResource)
@@ -108,7 +117,7 @@ func (r *SampleReconciler) HandleProcessingState(ctx context.Context, sampleReso
 		return err
 	}
 
-	manifestClient, err := r.getManifestClient(logger)
+	manifestClient, err := r.getManifestClient(logger, sampleResource.Spec.ChartFlags)
 	if err != nil {
 		sampleResource.Status.State = v1alpha1.SampleStateError
 		return r.Client.Status().Update(ctx, sampleResource)
@@ -118,10 +127,8 @@ func (r *SampleReconciler) HandleProcessingState(ctx context.Context, sampleReso
 	ready, err := manifestClient.Install(manifestLib.InstallInfo{
 		Ctx: ctx,
 		ChartInfo: &manifestLib.ChartInfo{
-			ChartName:   "nginx-ingress",
-			URL:         "https://helm.nginx.com/stable",
-			RepoName:    "my-chart-repo",
-			ReleaseName: "sampleReleaseName",
+			ChartPath:   sampleResource.Spec.ChartPath,
+			ReleaseName: sampleResource.Spec.ReleaseName,
 		},
 		RemoteInfo: custom.RemoteInfo{
 			// destination cluster rest config
@@ -139,9 +146,9 @@ func (r *SampleReconciler) HandleProcessingState(ctx context.Context, sampleReso
 		},
 		CheckReadyStates: false,
 	})
-
 	if err != nil {
-		return err
+		sampleResource.Status.State = v1alpha1.SampleStateError
+		return r.Client.Status().Update(ctx, sampleResource)
 	}
 	if ready {
 		sampleResource.Status.State = v1alpha1.SampleStateReady
@@ -150,17 +157,19 @@ func (r *SampleReconciler) HandleProcessingState(ctx context.Context, sampleReso
 	return nil
 }
 
-func (r *SampleReconciler) getManifestClient(logger *logr.Logger) (*manifestLib.Operations, error) {
+func (r *SampleReconciler) getManifestClient(logger *logr.Logger, configString string,
+) (*manifestLib.Operations, error) {
+	config := map[string]interface{}{}
+	if err := strvals.ParseInto(configString, config); err != nil {
+		return nil, err
+	}
 	// Example: Prepare manifest library client
-	return manifestLib.NewOperations(logger, r.Config, "sampleReleaseName", cli.New(),
+	return manifestLib.NewOperations(logger, r.Config, "nginx-release-name", cli.New(),
 		map[string]map[string]interface{}{
 			// check --set flags parameter for helm
 			"set": {},
 			// comma separated values of manifest command line flags
-			"flags": {
-				"Namespace":       "sampleNs",
-				"CreateNamespace": true,
-			},
+			"flags": config,
 		})
 }
 
@@ -173,7 +182,7 @@ func (r *SampleReconciler) HandleDeletingState(ctx context.Context, sampleResour
 		return err
 	}
 
-	manifestClient, err := r.getManifestClient(logger)
+	manifestClient, err := r.getManifestClient(logger, sampleResource.Spec.ChartFlags)
 	if err != nil {
 		sampleResource.Status.State = v1alpha1.SampleStateError
 		return r.Client.Status().Update(ctx, sampleResource)
@@ -183,10 +192,8 @@ func (r *SampleReconciler) HandleDeletingState(ctx context.Context, sampleResour
 	readyToBeDeleted, err := manifestClient.Uninstall(manifestLib.InstallInfo{
 		Ctx: ctx,
 		ChartInfo: &manifestLib.ChartInfo{
-			ChartName:   "nginx-ingress",
-			URL:         "https://helm.nginx.com/stable",
-			RepoName:    "my-chart-repo",
-			ReleaseName: "sampleReleaseName",
+			ChartPath:   sampleResource.Spec.ChartPath,
+			ReleaseName: sampleResource.Spec.ReleaseName,
 		},
 		RemoteInfo: custom.RemoteInfo{
 			// destination cluster rest config
@@ -204,9 +211,9 @@ func (r *SampleReconciler) HandleDeletingState(ctx context.Context, sampleResour
 		},
 		CheckReadyStates: false,
 	})
-
 	if err != nil {
-		return err
+		sampleResource.Status.State = v1alpha1.SampleStateError
+		return r.Client.Status().Update(ctx, sampleResource)
 	}
 	if readyToBeDeleted {
 		// Example: If Deleting state, remove Finalizers
