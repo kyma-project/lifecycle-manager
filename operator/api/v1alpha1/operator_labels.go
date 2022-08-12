@@ -23,15 +23,12 @@ const (
 	OperatorName      = "kyma-operator"
 )
 
-func GetMatchingLabelsForModule(module *Module, profile Profile) client.MatchingLabels {
+func GetMatchingLabelsForModule(module *Module) client.MatchingLabels {
 	selector := client.MatchingLabels{
 		ModuleName: module.Name,
 	}
 	if module.ControllerName != "" {
 		selector[ControllerName] = module.ControllerName
-	}
-	if profile != "" {
-		selector[ProfileLabel] = string(profile)
 	}
 	return selector
 }

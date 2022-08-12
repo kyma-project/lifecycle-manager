@@ -34,7 +34,6 @@ func NewTestKyma(name string) *v1alpha1.Kyma {
 		Spec: v1alpha1.KymaSpec{
 			Modules: []v1alpha1.Module{},
 			Channel: v1alpha1.DefaultChannel,
-			Profile: v1alpha1.DefaultProfile,
 		},
 	}
 }

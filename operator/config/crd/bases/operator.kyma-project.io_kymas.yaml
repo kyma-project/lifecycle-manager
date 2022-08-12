@@ -79,13 +79,6 @@ spec:
                   - name
                   type: object
                 type: array
-              profile:
-                description: Profile specifies the desired Profile of the Installation,
-                  usually targeting different resource limitations.
-                enum:
-                - evaluation
-                - production
-                type: string
               sync:
                 description: Active Synchronization Settings
                 properties:
@@ -115,7 +108,6 @@ spec:
                 type: object
             required:
             - channel
-            - profile
             type: object
           status:
             description: KymaStatus defines the observed state of Kyma

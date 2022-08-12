@@ -10,11 +10,12 @@ import (
 
 	"github.com/kyma-project/kyma-operator/operator/pkg/test"
 
-	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	yaml "k8s.io/apimachinery/pkg/util/yaml"
+
+	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 )
 
 var testFiles = filepath.Join("..", "..", "config", "samples", "tests") //nolint:gochecknoglobals
@@ -36,7 +37,7 @@ var _ = Describe("Webhook ValidationCreate", func() {
 			ControllerName: "manifest",
 			Name:           "example-module-name",
 			Channel:        v1alpha1.ChannelStable,
-		}, v1alpha1.ProfileProduction, data)
+		}, data)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(k8sClient.Create(ctx, template)).Should(Succeed())
 		Expect(k8sClient.Delete(ctx, template)).Should(Succeed())
@@ -59,7 +60,7 @@ var _ = Describe("Webhook ValidationCreate", func() {
 			ControllerName: "manifest",
 			Name:           "example-module-name",
 			Channel:        v1alpha1.ChannelStable,
-		}, v1alpha1.ProfileProduction, data)
+		}, data)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(k8sClient.Create(ctx, template)).Error().To(HaveField("ErrStatus.Message",
 			ContainSubstring("is invalid: spec.data.status.state[enum]: Not found: \"Processing\"")))

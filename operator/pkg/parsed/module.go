@@ -2,8 +2,9 @@ package parsed
 
 import (
 	"github.com/go-logr/logr"
-	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 )
 
 type (
@@ -37,7 +38,6 @@ func (m *Module) ApplyLabels(
 		lbls = make(map[string]string)
 	}
 	lbls[v1alpha1.KymaName] = kyma.Name
-	lbls[v1alpha1.ProfileLabel] = string(kyma.Spec.Profile)
 
 	lbls[v1alpha1.ModuleName] = moduleName
 

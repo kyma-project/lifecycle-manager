@@ -5,10 +5,11 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	"github.com/kyma-project/kyma-operator/operator/pkg/index"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	"github.com/kyma-project/kyma-operator/operator/pkg/index"
 )
 
 type TemplateInChannel struct {
@@ -24,7 +25,7 @@ func GetTemplates(ctx context.Context, c client.Reader, kyma *operatorv1alpha1.K
 	templates := make(TemplatesInChannels)
 
 	for _, module := range kyma.Spec.Modules {
-		template, err := LookupTemplate(c, module, kyma.Spec.Channel, kyma.Spec.Profile).WithContext(ctx)
+		template, err := LookupTemplate(c, module, kyma.Spec.Channel).WithContext(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -67,13 +68,12 @@ type Lookup interface {
 }
 
 func LookupTemplate(client client.Reader, module operatorv1alpha1.Module,
-	defaultChannel operatorv1alpha1.Channel, profile operatorv1alpha1.Profile,
+	defaultChannel operatorv1alpha1.Channel,
 ) *ChannelTemplateLookup {
 	return &ChannelTemplateLookup{
 		reader:         client,
 		module:         module,
 		defaultChannel: defaultChannel,
-		profile:        profile,
 	}
 }
 
@@ -81,7 +81,6 @@ type ChannelTemplateLookup struct {
 	reader         client.Reader
 	module         operatorv1alpha1.Module
 	defaultChannel operatorv1alpha1.Channel
-	profile        operatorv1alpha1.Profile
 }
 
 func (c *ChannelTemplateLookup) WithContext(ctx context.Context) (*TemplateInChannel, error) {
@@ -89,7 +88,7 @@ func (c *ChannelTemplateLookup) WithContext(ctx context.Context) (*TemplateInCha
 
 	desiredChannel := c.getDesiredChannel()
 
-	selector := operatorv1alpha1.GetMatchingLabelsForModule(&c.module, c.profile)
+	selector := operatorv1alpha1.GetMatchingLabelsForModule(&c.module)
 
 	if err := c.reader.List(ctx, templateList,
 		selector,
