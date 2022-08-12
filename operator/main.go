@@ -193,7 +193,7 @@ func defineFlagVar() *FlagVar {
 		"This verification key list is used to verify modules against their signature")
 	flag.BoolVar(&flagVar.enableWebhooks, "enable-webhooks", false,
 		"Enabling Validation/Conversion Webhooks.")
-	flag.BoolVar(&flagVar.enableWebhooks, "enable-module-catalog", true,
+	flag.BoolVar(&flagVar.enableModuleCatalog, "enable-module-catalog", true,
 		"Enabling the Module Catalog Synchronization for Introspection of available Modules based on ModuleTemplates.")
 	return flagVar
 }
