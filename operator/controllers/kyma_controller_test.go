@@ -82,6 +82,9 @@ var _ = Describe("Kyma with empty ModuleTemplate", func() {
 
 		By("having updated the Kyma CR state to ready")
 		Eventually(GetKymaState(kyma), 20*time.Second, interval).Should(BeEquivalentTo(string(v1alpha1.StateReady)))
+
+		By("Module Catalog created")
+		Eventually(CatalogExists(controlPlaneClient, kyma), 10*time.Second, interval).Should(Succeed())
 	})
 })
 
@@ -242,6 +245,6 @@ var _ = Describe("Kyma sync into Remote Cluster", func() {
 		}
 
 		By("Remote Module Catalog created")
-		Eventually(RemoteCatalogExists(runtimeClient, kyma), 30*time.Second, interval).Should(Succeed())
+		Eventually(CatalogExists(runtimeClient, kyma), 30*time.Second, interval).Should(Succeed())
 	})
 })
