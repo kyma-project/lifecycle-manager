@@ -74,7 +74,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *ModuleTemplateReconciler) SetupWithManager(
+func (r *ModuleCatalogReconciler) SetupWithManager(
 	mgr ctrl.Manager,
 	options controller.Options,
 ) error {

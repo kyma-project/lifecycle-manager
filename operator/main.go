@@ -85,6 +85,7 @@ type FlagVar struct {
 	clientQPS                                                              float64
 	clientBurst                                                            int
 	enableWebhooks                                                         bool
+	enableModuleCatalog                                                    bool
 }
 
 func main() {
@@ -133,7 +134,10 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 	}
 
 	setupKymaReconciler(mgr, flagVar, intervals, options)
-	setupModuleTemplateReconciler(mgr, flagVar, intervals, options)
+
+	if flagVar.enableModuleCatalog {
+		setupModuleCatalogReconciler(mgr, flagVar, intervals, options)
+	}
 
 	if flagVar.enableWebhooks {
 		if err := (&operatorv1alpha1.ModuleTemplate{}).SetupWebhookWithManager(mgr); err != nil {
@@ -189,6 +193,8 @@ func defineFlagVar() *FlagVar {
 		"This verification key list is used to verify modules against their signature")
 	flag.BoolVar(&flagVar.enableWebhooks, "enable-webhooks", false,
 		"Enabling Validation/Conversion Webhooks.")
+	flag.BoolVar(&flagVar.enableWebhooks, "enable-module-catalog", true,
+		"Enabling the Module Catalog Synchronization for Introspection of available Modules based on ModuleTemplates.")
 	return flagVar
 }
 
@@ -212,13 +218,13 @@ func setupKymaReconciler(
 	}
 }
 
-func setupModuleTemplateReconciler(
+func setupModuleCatalogReconciler(
 	mgr ctrl.Manager,
 	_ *FlagVar,
 	intervals controllers.RequeueIntervals,
 	options controller.Options,
 ) {
-	if err := (&controllers.ModuleTemplateReconciler{
+	if err := (&controllers.ModuleCatalogReconciler{
 		Client:           mgr.GetClient(),
 		EventRecorder:    mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
 		RequeueIntervals: intervals,

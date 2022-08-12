@@ -13,7 +13,7 @@ import (
 	"github.com/kyma-project/kyma-operator/operator/pkg/catalog"
 )
 
-type ModuleTemplateReconciler struct {
+type ModuleCatalogReconciler struct {
 	client.Client
 	record.EventRecorder
 	RequeueIntervals
@@ -25,7 +25,7 @@ const CatalogName = "module-catalog"
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=moduletemplates,verbs=get;list;watch;create;update;patch;onEvent;delete
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=moduletemplates/finalizers,verbs=update
 
-func (r *ModuleTemplateReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *ModuleCatalogReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	logger.Info("Catalog Sync loop starting for", "resource", req.NamespacedName.String())
 
