@@ -7,13 +7,14 @@ import (
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/gardener/component-spec/bindings-go/codec"
 	"github.com/imdario/mergo"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"github.com/kyma-project/kyma-operator/operator/pkg/img"
 	"github.com/kyma-project/kyma-operator/operator/pkg/release"
 	"github.com/kyma-project/kyma-operator/operator/pkg/signature"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type ModuleConversionSettings struct {
@@ -21,6 +22,7 @@ type ModuleConversionSettings struct {
 }
 
 var (
+	ErrTemplateNotFound     = errors.New("template was not found")
 	ErrEmptyRawExtension    = errors.New("raw extension is empty")
 	ErrDefaultConfigParsing = errors.New("defaultConfig could not be parsed")
 )
@@ -50,8 +52,8 @@ func TemplatesToModules(
 	for _, module := range kyma.Spec.Modules {
 		template := templates[module.Name]
 		if template == nil {
-			return nil, fmt.Errorf("could not find module %s for resource %s",
-				module.Name, client.ObjectKeyFromObject(kyma))
+			return nil, fmt.Errorf("could not resolve template for module %s and resource %s: %w",
+				module.Name, client.ObjectKeyFromObject(kyma), ErrTemplateNotFound)
 		}
 
 		var err error

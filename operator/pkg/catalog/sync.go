@@ -56,7 +56,7 @@ func (s *Sync) syncRemote(
 
 func (s *Sync) syncLocal(
 	ctx context.Context,
-	controlPlaneKyma *v1alpha1.Kyma,
+	_ *v1alpha1.Kyma,
 	moduleTemplateList *v1alpha1.ModuleTemplateList,
 ) error {
 	return s.Catalog.CreateOrUpdate(ctx, moduleTemplateList.Items)

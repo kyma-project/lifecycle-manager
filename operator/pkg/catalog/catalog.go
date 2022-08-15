@@ -13,6 +13,8 @@ import (
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 )
 
+var ErrModuleTemplateLabelMissing = errors.New("module template is missing the " + v1alpha1.ModuleName + " label")
+
 type Settings struct {
 	Name      string
 	Namespace string
@@ -27,7 +29,7 @@ type entry struct {
 	TemplateGeneration int64                      `json:"templateGeneration"`
 }
 
-type catalogImpl struct {
+type Impl struct {
 	clnt     client.Client
 	settings Settings
 }
@@ -42,11 +44,11 @@ type Catalog interface {
 func New(
 	clnt client.Client,
 	settings Settings,
-) *catalogImpl {
-	return &catalogImpl{clnt: clnt, settings: settings}
+) *Impl {
+	return &Impl{clnt: clnt, settings: settings}
 }
 
-func (c *catalogImpl) CreateOrUpdate(
+func (c *Impl) CreateOrUpdate(
 	ctx context.Context,
 	moduleTemplates []v1alpha1.ModuleTemplate,
 ) error {
@@ -73,7 +75,7 @@ func (c *catalogImpl) CreateOrUpdate(
 		moduleTemplate := &moduleTemplates[i]
 		moduleName, found := moduleTemplate.GetLabels()[v1alpha1.ModuleName]
 		if !found {
-			return errors.New(v1alpha1.ModuleName + " does not exist on moduletemplate")
+			return ErrModuleTemplateLabelMissing
 		}
 		var yml []byte
 		var err error
@@ -107,7 +109,7 @@ func (c *catalogImpl) CreateOrUpdate(
 	return nil
 }
 
-func (c *catalogImpl) doesModuleTemplateNeedUpdateInCatalog(
+func (c *Impl) doesModuleTemplateNeedUpdateInCatalog(
 	catalog *v1.ConfigMap,
 	template *v1alpha1.ModuleTemplate,
 ) bool {
@@ -119,10 +121,10 @@ func (c *catalogImpl) doesModuleTemplateNeedUpdateInCatalog(
 			return true
 		}
 	}
-	return true
+	return false
 }
 
-func (c *catalogImpl) Delete(
+func (c *Impl) Delete(
 	ctx context.Context,
 ) error {
 	catalog := &v1.ConfigMap{}
@@ -131,10 +133,10 @@ func (c *catalogImpl) Delete(
 	return client.IgnoreNotFound(c.clnt.Delete(ctx, catalog))
 }
 
-func (c *catalogImpl) Client() client.Client {
+func (c *Impl) Client() client.Client {
 	return c.clnt
 }
 
-func (c *catalogImpl) Settings() Settings {
+func (c *Impl) Settings() Settings {
 	return c.settings
 }
