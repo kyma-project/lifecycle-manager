@@ -28,8 +28,14 @@ type SampleSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of Sample. Edit sample_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// ChartPath specifies path to local helm chart
+	ChartPath string `json:"chartPath,omitempty"`
+
+	// ReleaseName specifies release name for helm chart
+	ReleaseName string `json:"releaseName,omitempty"`
+
+	// ChartFlags specifies flags for chart installation
+	ChartFlags string `json:"chartFlags,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error

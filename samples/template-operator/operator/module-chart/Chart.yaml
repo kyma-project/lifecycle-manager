@@ -1,0 +1,6 @@
+apiVersion: v2
+name: sample-chart
+description: A sample chart for template operator
+type: application
+version: 0.0.1
+appVersion: "0.0.1"
