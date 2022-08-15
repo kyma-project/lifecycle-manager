@@ -128,7 +128,7 @@ func (c *catalogImpl) Delete(
 	catalog := &v1.ConfigMap{}
 	catalog.SetName(c.settings.Name)
 	catalog.SetNamespace(c.settings.Namespace)
-	return c.clnt.Delete(ctx, catalog)
+	return client.IgnoreNotFound(c.clnt.Delete(ctx, catalog))
 }
 
 func (c *catalogImpl) Client() client.Client {
