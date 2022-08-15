@@ -89,9 +89,9 @@ func (r *SampleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	case "":
 		return ctrl.Result{}, r.HandleInitialState(ctx, sampleResource)
 	case v1alpha1.SampleStateProcessing:
-		return ctrl.Result{}, r.HandleProcessingState(ctx, sampleResource, &logger)
+		return ctrl.Result{}, r.HandleProcessingState(ctx, sampleResource)
 	case v1alpha1.SampleStateDeleting:
-		return ctrl.Result{}, r.HandleDeletingState(ctx, sampleResource, &logger)
+		return ctrl.Result{}, r.HandleDeletingState(ctx, sampleResource)
 	case v1alpha1.SampleStateError:
 		return ctrl.Result{}, r.HandleErrorState(ctx, sampleResource)
 	case v1alpha1.SampleStateReady:
@@ -109,43 +109,22 @@ func (r *SampleReconciler) HandleInitialState(ctx context.Context, sampleResourc
 	return r.Client.Status().Update(ctx, sampleResource)
 }
 
-func (r *SampleReconciler) HandleProcessingState(ctx context.Context, sampleResource *v1alpha1.Sample, logger *logr.Logger) error {
+func (r *SampleReconciler) HandleProcessingState(ctx context.Context, sampleResource *v1alpha1.Sample) error {
 	// TODO: processing logic here
-
-	sampleObjUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(sampleResource)
-	if err != nil {
-		return err
-	}
-
-	manifestClient, err := r.getManifestClient(logger, sampleResource.Spec.ChartFlags)
+	logger := log.FromContext(ctx)
+	manifestClient, err := r.getManifestClient(&logger, sampleResource.Spec.ChartFlags)
 	if err != nil {
 		sampleResource.Status.State = v1alpha1.SampleStateError
 		return r.Client.Status().Update(ctx, sampleResource)
 	}
 
 	// Use manifest library client to install a sample chart
-	ready, err := manifestClient.Install(manifestLib.InstallInfo{
-		Ctx: ctx,
-		ChartInfo: &manifestLib.ChartInfo{
-			ChartPath:   sampleResource.Spec.ChartPath,
-			ReleaseName: sampleResource.Spec.ReleaseName,
-		},
-		RemoteInfo: custom.RemoteInfo{
-			// destination cluster rest config
-			RemoteConfig: r.Config,
-			// destination cluster rest client
-			RemoteClient: &r.Client,
-		},
-		ResourceInfo: manifestLib.ResourceInfo{
-			// base operator resource to be passed for custom checks
-			BaseResource: &unstructured.Unstructured{Object: sampleObjUnstructured},
-		},
-		CheckFn: func(context.Context, *unstructured.Unstructured, *logr.Logger, custom.RemoteInfo) (bool, error) {
-			// your custom logic here to set ready state
-			return true, nil
-		},
-		CheckReadyStates: false,
-	})
+	installInfo, err := r.PrepareInstallInfo(ctx, sampleResource)
+	if err != nil {
+		return err
+	}
+
+	ready, err := manifestClient.Install(installInfo)
 	if err != nil {
 		sampleResource.Status.State = v1alpha1.SampleStateError
 		return r.Client.Status().Update(ctx, sampleResource)
@@ -173,44 +152,22 @@ func (r *SampleReconciler) getManifestClient(logger *logr.Logger, configString s
 		})
 }
 
-func (r *SampleReconciler) HandleDeletingState(ctx context.Context, sampleResource *v1alpha1.Sample,
-	logger *logr.Logger) error {
+func (r *SampleReconciler) HandleDeletingState(ctx context.Context, sampleResource *v1alpha1.Sample) error {
 	// TODO: deletion logic here
-
-	sampleObjUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(sampleResource)
-	if err != nil {
-		return err
-	}
-
-	manifestClient, err := r.getManifestClient(logger, sampleResource.Spec.ChartFlags)
+	logger := log.FromContext(ctx)
+	manifestClient, err := r.getManifestClient(&logger, sampleResource.Spec.ChartFlags)
 	if err != nil {
 		sampleResource.Status.State = v1alpha1.SampleStateError
 		return r.Client.Status().Update(ctx, sampleResource)
 	}
 
 	// Use manifest library client to install a sample chart
-	readyToBeDeleted, err := manifestClient.Uninstall(manifestLib.InstallInfo{
-		Ctx: ctx,
-		ChartInfo: &manifestLib.ChartInfo{
-			ChartPath:   sampleResource.Spec.ChartPath,
-			ReleaseName: sampleResource.Spec.ReleaseName,
-		},
-		RemoteInfo: custom.RemoteInfo{
-			// destination cluster rest config
-			RemoteConfig: r.Config,
-			// destination cluster rest client
-			RemoteClient: &r.Client,
-		},
-		ResourceInfo: manifestLib.ResourceInfo{
-			// base operator resource to be passed for custom checks
-			BaseResource: &unstructured.Unstructured{Object: sampleObjUnstructured},
-		},
-		CheckFn: func(context.Context, *unstructured.Unstructured, *logr.Logger, custom.RemoteInfo) (bool, error) {
-			// your custom logic here to check is all resources were removed
-			return true, nil
-		},
-		CheckReadyStates: false,
-	})
+	installInfo, err := r.PrepareInstallInfo(ctx, sampleResource)
+	if err != nil {
+		return err
+	}
+
+	readyToBeDeleted, err := manifestClient.Uninstall(installInfo)
 	if err != nil {
 		sampleResource.Status.State = v1alpha1.SampleStateError
 		return r.Client.Status().Update(ctx, sampleResource)
@@ -244,4 +201,34 @@ func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Sample{}).
 		Complete(r)
+}
+
+func (r *SampleReconciler) PrepareInstallInfo(ctx context.Context, sampleResource *v1alpha1.Sample,
+) (manifestLib.InstallInfo, error) {
+	sampleObjUnstructured, err := runtime.DefaultUnstructuredConverter.ToUnstructured(sampleResource)
+	if err != nil {
+		return manifestLib.InstallInfo{}, err
+	}
+	return manifestLib.InstallInfo{
+		Ctx: ctx,
+		ChartInfo: &manifestLib.ChartInfo{
+			ChartPath:   sampleResource.Spec.ChartPath,
+			ReleaseName: sampleResource.Spec.ReleaseName,
+		},
+		RemoteInfo: custom.RemoteInfo{
+			// destination cluster rest config
+			RemoteConfig: r.Config,
+			// destination cluster rest client
+			RemoteClient: &r.Client,
+		},
+		ResourceInfo: manifestLib.ResourceInfo{
+			// base operator resource to be passed for custom checks
+			BaseResource: &unstructured.Unstructured{Object: sampleObjUnstructured},
+		},
+		CheckFn: func(context.Context, *unstructured.Unstructured, *logr.Logger, custom.RemoteInfo) (bool, error) {
+			// your custom logic here to set ready state
+			return true, nil
+		},
+		CheckReadyStates: true,
+	}, nil
 }
