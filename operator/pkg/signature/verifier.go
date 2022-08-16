@@ -20,6 +20,7 @@ import (
 )
 
 var (
+	ErrDecodePEMInSecret  = errors.New("unable to decode pem formatted block in key from secret")
 	ErrPublicKeyWrongType = errors.New("parsed public key is not correct type")
 	ErrNoSignatureFound   = errors.New("no signature was found")
 )
@@ -123,7 +124,7 @@ func CreateRSAVerifierFromSecrets(
 		publicKey := item.Data["key"]
 		block, _ := pem.Decode(publicKey)
 		if block == nil {
-			return nil, errors.New("unable to decode pem formatted block in key from secret")
+			return nil, ErrDecodePEMInSecret
 		}
 		untypedKey, err := x509.ParsePKIXPublicKey(block.Bytes)
 		if err != nil {

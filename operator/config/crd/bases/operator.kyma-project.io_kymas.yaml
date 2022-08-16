@@ -79,13 +79,6 @@ spec:
                   - name
                   type: object
                 type: array
-              profile:
-                description: Profile specifies the desired Profile of the Installation,
-                  usually targeting different resource limitations.
-                enum:
-                - evaluation
-                - production
-                type: string
               sync:
                 description: Active Synchronization Settings
                 properties:
@@ -115,7 +108,6 @@ spec:
                 type: object
             required:
             - channel
-            - profile
             type: object
           status:
             description: KymaStatus defines the observed state of Kyma
@@ -175,12 +167,9 @@ spec:
                       description: Namespace is the current deployed module namespace
                       type: string
                     templateInfo:
-                      description: Additional Information when the condition is bound
-                        to a ModuleTemplate. It contains information about the last
-                        parsing that occurred and will track the state of the parser
-                        ModuleTemplate in Context of the Installation. This will update
-                        when Channel, Profile or the ModuleTemplate used in the Condition
-                        is changed.
+                      description: It contains information about the last parsed ModuleTemplate
+                        in Context of the Installation. This will update when Channel,
+                        Profile or the ModuleTemplate is changed.
                       properties:
                         channel:
                           description: Channel tracks the active Channel of the ModuleTemplate.

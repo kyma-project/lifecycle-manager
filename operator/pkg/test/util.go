@@ -12,8 +12,7 @@ import (
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 )
 
-func ModuleTemplateFactory(sample string, module v1alpha1.Module,
-	profile v1alpha1.Profile, data unstructured.Unstructured,
+func ModuleTemplateFactory(sample string, module v1alpha1.Module, data unstructured.Unstructured,
 ) (*v1alpha1.ModuleTemplate, error) {
 	var moduleTemplate v1alpha1.ModuleTemplate
 	err := readModuleTemplate(module, &moduleTemplate)
@@ -23,7 +22,6 @@ func ModuleTemplateFactory(sample string, module v1alpha1.Module,
 	moduleTemplate.Name = module.Name + "-" + sample
 	moduleTemplate.Labels[v1alpha1.ModuleName] = module.Name
 	moduleTemplate.Labels[v1alpha1.ControllerName] = module.ControllerName
-	moduleTemplate.Labels[v1alpha1.ProfileLabel] = string(profile)
 	moduleTemplate.Spec.Channel = module.Channel
 	switch module.ControllerName {
 	case "manifest":

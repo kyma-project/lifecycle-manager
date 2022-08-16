@@ -140,7 +140,7 @@ var _ = BeforeSuite(func() {
 		},
 	}).SetupWithManager(k8sManager, controller.Options{}, listenerAddr)
 	Expect(err).ToNot(HaveOccurred())
-	err = (&kymacontroller.ModuleTemplateReconciler{
+	err = (&kymacontroller.ModuleCatalogReconciler{
 		Client:           k8sManager.GetClient(),
 		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
 		RequeueIntervals: intervals,

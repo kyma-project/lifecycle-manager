@@ -2,13 +2,20 @@ package release
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/go-logr/logr"
-	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	"github.com/kyma-project/kyma-operator/operator/pkg/index"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	"github.com/kyma-project/kyma-operator/operator/pkg/index"
+)
+
+var (
+	ErrTemplateNotIdentified    = errors.New("no unique template could be identified")
+	ErrNotDefaultChannelAllowed = errors.New("specifying no default channel is not allowed")
 )
 
 type TemplateInChannel struct {
@@ -24,7 +31,7 @@ func GetTemplates(ctx context.Context, c client.Reader, kyma *operatorv1alpha1.K
 	templates := make(TemplatesInChannels)
 
 	for _, module := range kyma.Spec.Modules {
-		template, err := LookupTemplate(c, module, kyma.Spec.Channel, kyma.Spec.Profile).WithContext(ctx)
+		template, err := LookupTemplate(c, module, kyma.Spec.Channel).WithContext(ctx)
 		if err != nil {
 			return nil, err
 		}
@@ -67,13 +74,12 @@ type Lookup interface {
 }
 
 func LookupTemplate(client client.Reader, module operatorv1alpha1.Module,
-	defaultChannel operatorv1alpha1.Channel, profile operatorv1alpha1.Profile,
+	defaultChannel operatorv1alpha1.Channel,
 ) *ChannelTemplateLookup {
 	return &ChannelTemplateLookup{
 		reader:         client,
 		module:         module,
 		defaultChannel: defaultChannel,
-		profile:        profile,
 	}
 }
 
@@ -81,7 +87,6 @@ type ChannelTemplateLookup struct {
 	reader         client.Reader
 	module         operatorv1alpha1.Module
 	defaultChannel operatorv1alpha1.Channel
-	profile        operatorv1alpha1.Profile
 }
 
 func (c *ChannelTemplateLookup) WithContext(ctx context.Context) (*TemplateInChannel, error) {
@@ -89,7 +94,7 @@ func (c *ChannelTemplateLookup) WithContext(ctx context.Context) (*TemplateInCha
 
 	desiredChannel := c.getDesiredChannel()
 
-	selector := operatorv1alpha1.GetMatchingLabelsForModule(&c.module, c.profile)
+	selector := operatorv1alpha1.GetMatchingLabelsForModule(&c.module)
 
 	if err := c.reader.List(ctx, templateList,
 		selector,
@@ -115,7 +120,7 @@ func (c *ChannelTemplateLookup) WithContext(ctx context.Context) (*TemplateInCha
 		}
 
 		if len(templateList.Items) == 0 {
-			return nil, fmt.Errorf("no module template found for module: %s", c.module.Name)
+			return nil, fmt.Errorf("%w: no module template found for module: %s", ErrTemplateNotIdentified, c.module.Name)
 		}
 	}
 
@@ -125,8 +130,8 @@ func (c *ChannelTemplateLookup) WithContext(ctx context.Context) (*TemplateInCha
 	// if the found configMap has no defaultChannel assigned to it set a sensible log output
 	if actualChannel == "" {
 		return nil, fmt.Errorf(
-			"no defaultChannel found on template for module: %s, specifying no defaultChannel is not allowed",
-			c.module.Name)
+			"no default channel found on template for module: %s: %w",
+			c.module.Name, ErrNotDefaultChannelAllowed)
 	}
 
 	const logLevel = 3
@@ -168,6 +173,6 @@ func NewMoreThanOneTemplateCandidateErr(component operatorv1alpha1.Module,
 		candidates[i] = candidate.GetName()
 	}
 
-	return fmt.Errorf("more than one module template found for module: %s, candidates: %v",
-		component.Name, candidates)
+	return fmt.Errorf("%w: more than one module template found for module: %s, candidates: %v",
+		ErrTemplateNotIdentified, component.Name, candidates)
 }

@@ -13,18 +13,13 @@ linters:
     - exhaustruct
     - gci # disable because autofix is not supported https://github.com/golangci/golangci-lint/issues/2591
     - wrapcheck
-    - goerr113
     - bodyclose
     - contextcheck
     - nilerr
-    - noctx
     - rowserrcheck
     - sqlclosecheck
     - structcheck
-    - tparallel
-    - unparam
     - wastedassign
-    - exhaustruct
 linters-settings:
   gci:
     sections:

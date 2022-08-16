@@ -34,7 +34,6 @@ func NewTestKyma(name string) *v1alpha1.Kyma {
 		Spec: v1alpha1.KymaSpec{
 			Modules: []v1alpha1.Module{},
 			Channel: v1alpha1.DefaultChannel,
-			Profile: v1alpha1.DefaultProfile,
 		},
 	}
 }
@@ -177,23 +176,23 @@ func RemoteKyma(remoteClient client.Client, kyma *v1alpha1.Kyma, tester func(*v1
 	}
 }
 
-func getRemoteCatalog(
-	remoteClient client.Client,
+func getCatalog(
+	clnt client.Client,
 	kyma *v1alpha1.Kyma,
 ) (*v1.ConfigMap, error) {
 	catalog := &v1.ConfigMap{}
 	catalog.SetName(controllers.CatalogName)
 	catalog.SetNamespace(kyma.GetNamespace())
-	err := remoteClient.Get(ctx, client.ObjectKeyFromObject(catalog), catalog)
+	err := clnt.Get(ctx, client.ObjectKeyFromObject(catalog), catalog)
 	if err != nil {
 		return nil, err
 	}
 	return catalog, nil
 }
 
-func RemoteCatalogExists(remoteClient client.Client, kyma *v1alpha1.Kyma) func() error {
+func CatalogExists(clnt client.Client, kyma *v1alpha1.Kyma) func() error {
 	return func() error {
-		_, err := getRemoteCatalog(remoteClient, kyma)
+		_, err := getCatalog(clnt, kyma)
 		return err
 	}
 }

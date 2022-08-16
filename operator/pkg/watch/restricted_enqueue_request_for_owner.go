@@ -23,7 +23,10 @@ const (
 	State  = "state"
 )
 
-var ErrStateInvalid = errors.New("state from component object could not be interpreted")
+var (
+	ErrNoUniqueKind = errors.New("multiple kind candidates are invalid")
+	ErrStateInvalid = errors.New("state from component object could not be interpreted")
+)
 
 // EnqueueRequestForOwner enqueues Requests for the Owners of an object.  E.g. the object that created
 // the object that was the source of the Event.
@@ -96,7 +99,8 @@ func (e *RestrictedEnqueueRequestForOwner) parseOwnerTypeGroupKind(scheme *runti
 	}
 	// Expect only 1 kind.  If there is more than one kind this is probably an edge case such as ListOptions.
 	if len(kinds) != 1 {
-		err := fmt.Errorf("expected exactly 1 kind for OwnerType %T, but found %s kinds", e.OwnerType, kinds)
+		err := fmt.Errorf("%w: expected exactly 1 kind for OwnerType %T, but found %s kinds",
+			ErrNoUniqueKind, e.OwnerType, kinds)
 		e.Log.Error(nil, "expected exactly 1 kind for OwnerType", "owner type",
 			fmt.Sprintf("%T", e.OwnerType), "kinds", kinds)
 		return err

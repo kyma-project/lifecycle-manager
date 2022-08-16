@@ -60,8 +60,7 @@ var _ = Describe("Kyma with empty ModuleTemplate", func() {
 
 	BeforeEach(func() {
 		for _, module := range kyma.Spec.Modules {
-			template, err := test.ModuleTemplateFactory("empty", module,
-				v1alpha1.ProfileProduction, unstructured.Unstructured{})
+			template, err := test.ModuleTemplateFactory("empty", module, unstructured.Unstructured{})
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
 			moduleTemplates = append(moduleTemplates, template)
@@ -82,6 +81,9 @@ var _ = Describe("Kyma with empty ModuleTemplate", func() {
 
 		By("having updated the Kyma CR state to ready")
 		Eventually(GetKymaState(kyma), 20*time.Second, interval).Should(BeEquivalentTo(string(v1alpha1.StateReady)))
+
+		By("Module Catalog created")
+		Eventually(CatalogExists(controlPlaneClient, kyma), 10*time.Second, interval).Should(Succeed())
 	})
 })
 
@@ -113,8 +115,7 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 
 	It("module template created", func() {
 		for _, module := range kyma.Spec.Modules {
-			template, err := test.ModuleTemplateFactory("recreate", module,
-				v1alpha1.ProfileProduction, unstructured.Unstructured{})
+			template, err := test.ModuleTemplateFactory("recreate", module, unstructured.Unstructured{})
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
 			moduleTemplates[module.Name] = template
@@ -174,8 +175,7 @@ var _ = Describe("Kyma update Manifest CR", func() {
 
 	BeforeEach(func() {
 		for _, module := range kyma.Spec.Modules {
-			template, err := test.ModuleTemplateFactory("update", module,
-				v1alpha1.ProfileProduction, unstructured.Unstructured{})
+			template, err := test.ModuleTemplateFactory("update", module, unstructured.Unstructured{})
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
 			moduleTemplates = append(moduleTemplates, template)
@@ -224,8 +224,7 @@ var _ = Describe("Kyma sync into Remote Cluster", func() {
 
 	BeforeEach(func() {
 		for _, module := range kyma.Spec.Modules {
-			template, err := test.ModuleTemplateFactory("remote-kyma", module,
-				v1alpha1.ProfileProduction, unstructured.Unstructured{})
+			template, err := test.ModuleTemplateFactory("remote-kyma", module, unstructured.Unstructured{})
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
 			moduleTemplates = append(moduleTemplates, template)
@@ -242,6 +241,6 @@ var _ = Describe("Kyma sync into Remote Cluster", func() {
 		}
 
 		By("Remote Module Catalog created")
-		Eventually(RemoteCatalogExists(runtimeClient, kyma), 30*time.Second, interval).Should(Succeed())
+		Eventually(CatalogExists(runtimeClient, kyma), 30*time.Second, interval).Should(Succeed())
 	})
 })

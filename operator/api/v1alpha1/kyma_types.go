@@ -91,9 +91,6 @@ type KymaSpec struct {
 	// Channel specifies the desired Channel of the Installation, usually targeting different module versions.
 	Channel Channel `json:"channel"`
 
-	// Profile specifies the desired Profile of the Installation, usually targeting different resource limitations.
-	Profile Profile `json:"profile"`
-
 	// Modules specifies the list of modules to be installed
 	Modules []Module `json:"modules,omitempty"`
 
@@ -140,15 +137,6 @@ type KymaStatus struct {
 	// +optional
 	ActiveChannel Channel `json:"activeChannel,omitempty"`
 }
-
-// +kubebuilder:validation:Enum=evaluation;production
-type Profile string
-
-const (
-	DefaultProfile            = ProfileProduction
-	ProfileEvaluation Profile = "evaluation"
-	ProfileProduction Profile = "production"
-)
 
 // Channel is the release channel in which a Kyma Instance is running. It is used for running Kyma Installations
 // in a control plane against different stability levels of our module system. When switching Channel, all modules
