@@ -163,11 +163,12 @@ const (
 	// StateReady signifies specified resource is ready and has been installed successfully.
 	StateReady State = "Ready"
 
-	// StateProcessing signifies specified resource is reconciling and is in the process of installation. Processing can also
-	// signal that the Installation previously encountered an error and is now recovering.
+	// StateProcessing signifies specified resource is reconciling and is in the process of installation.
+	// Processing can also signal that the Installation previously encountered an error and is now recovering.
 	StateProcessing State = "Processing"
 
-	// StateError signifies an error for specified resource. This signifies that the Installation process encountered an error.
+	// StateError signifies an error for specified resource.
+	// This signifies that the Installation process encountered an error.
 	// Contrary to Processing, it can be expected that this state should change on the next retry.
 	StateError State = "Error"
 
@@ -363,6 +364,18 @@ func (kyma *Kyma) UpdateCondition(reason KymaConditionReason,
 	if isNewReason {
 		kyma.Status.Conditions = append(kyma.Status.Conditions, newCondition)
 	}
+}
+
+func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType,
+	reason KymaConditionReason, conditionStatus metav1.ConditionStatus,
+) bool {
+	for _, condition := range kyma.Status.Conditions {
+		if condition.Type == string(conditionType) && condition.Reason == string(reason) &&
+			condition.Status == conditionStatus {
+			return true
+		}
+	}
+	return false
 }
 
 func generateConditionMessage(reason KymaConditionReason, status metav1.ConditionStatus) string {
