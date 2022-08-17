@@ -223,7 +223,7 @@ const (
 // For example:
 // Reason: ModulesIsReady and Status: True means all modules are in ready state.
 // Reason: ModulesIsReady and Status: False means some modules are not in ready state,
-// and the actual state of individual module can be found in related ModuleInfo
+// and the actual state of individual module can be found in related ModuleInfo.
 type KymaConditionReason string
 
 // Extend this list by actual needs.
@@ -321,8 +321,6 @@ func init() {
 	SchemeBuilder.Register(&Kyma{}, &KymaList{})
 }
 
-const NewModuleMessage = "new module"
-
 func (kyma *Kyma) InitModuleConditions() {
 	found := false
 	for _, condition := range kyma.Status.Conditions {
@@ -332,16 +330,19 @@ func (kyma *Kyma) InitModuleConditions() {
 	}
 	if !found {
 		newCondition := metav1.Condition{
-			Type:    string(ConditionTypeReady),
-			Status:  metav1.ConditionFalse,
-			Reason:  string(ConditionReasonModulesIsReady),
-			Message: NewModuleMessage,
+			Type:               string(ConditionTypeReady),
+			Status:             metav1.ConditionFalse,
+			Reason:             string(ConditionReasonModulesIsReady),
+			Message:            generateConditionMessage(ConditionReasonModulesIsReady, metav1.ConditionFalse),
+			LastTransitionTime: metav1.Time{Time: time.Now()},
 		}
 		kyma.Status.Conditions = append(kyma.Status.Conditions, newCondition)
 	}
 }
 
-func (kyma *Kyma) UpdateCondition(reason KymaConditionReason, conditionType KymaConditionType, status metav1.ConditionStatus) {
+func (kyma *Kyma) UpdateCondition(reason KymaConditionReason,
+	conditionType KymaConditionType, status metav1.ConditionStatus,
+) {
 	newCondition := metav1.Condition{
 		Type:               string(conditionType),
 		Status:             status,
@@ -349,16 +350,19 @@ func (kyma *Kyma) UpdateCondition(reason KymaConditionReason, conditionType Kyma
 		Reason:             string(reason),
 		Message:            generateConditionMessage(reason, status),
 	}
+	isNewReason := true
 	for i := range kyma.Status.Conditions {
 		condition := &kyma.Status.Conditions[i]
 		if condition.Reason == string(reason) {
+			isNewReason = false
 			if condition.Status != newCondition.Status || condition.Type != newCondition.Type {
-				condition = &newCondition
-				return
+				*condition = newCondition
 			}
 		}
 	}
-	kyma.Status.Conditions = append(kyma.Status.Conditions, newCondition)
+	if isNewReason {
+		kyma.Status.Conditions = append(kyma.Status.Conditions, newCondition)
+	}
 }
 
 func generateConditionMessage(reason KymaConditionReason, status metav1.ConditionStatus) string {
