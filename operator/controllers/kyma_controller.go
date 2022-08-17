@@ -325,7 +325,7 @@ func (r *KymaReconciler) SyncConditionsWithModuleStates(kyma *v1alpha1.Kyma) {
 			conditionStatus = metav1.ConditionFalse
 		}
 	}
-	kyma.UpdateCondition(conditionReason, v1alpha1.ConditionTypeReady, conditionStatus)
+	kyma.UpdateCondition(conditionReason, conditionStatus)
 }
 
 // CreateOrUpdateModules takes care of using the input module to acquire a new desired state in the control plane.

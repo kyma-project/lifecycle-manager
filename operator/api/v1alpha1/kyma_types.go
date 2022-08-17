@@ -330,39 +330,31 @@ func (kyma *Kyma) InitModuleConditions() {
 		}
 	}
 	if !found {
-		newCondition := metav1.Condition{
-			Type:               string(ConditionTypeReady),
-			Status:             metav1.ConditionFalse,
-			Reason:             string(ConditionReasonModulesIsReady),
-			Message:            generateConditionMessage(ConditionReasonModulesIsReady, metav1.ConditionFalse),
-			LastTransitionTime: metav1.Time{Time: time.Now()},
-		}
-		kyma.Status.Conditions = append(kyma.Status.Conditions, newCondition)
+		builder := NewConditionBuilder()
+		builder.SetStatus(metav1.ConditionFalse)
+		builder.SetReason(ConditionReasonModulesIsReady)
+		newCondition := builder.Build()
+		kyma.Status.Conditions = append(kyma.Status.Conditions, *newCondition)
 	}
 }
 
-func (kyma *Kyma) UpdateCondition(reason KymaConditionReason,
-	conditionType KymaConditionType, status metav1.ConditionStatus,
-) {
-	newCondition := metav1.Condition{
-		Type:               string(conditionType),
-		Status:             status,
-		LastTransitionTime: metav1.Time{Time: time.Now()},
-		Reason:             string(reason),
-		Message:            generateConditionMessage(reason, status),
-	}
+func (kyma *Kyma) UpdateCondition(reason KymaConditionReason, status metav1.ConditionStatus) {
+	builder := NewConditionBuilder()
+	builder.SetReason(reason)
+	builder.SetStatus(status)
+	newCondition := builder.Build()
 	isNewReason := true
 	for i := range kyma.Status.Conditions {
 		condition := &kyma.Status.Conditions[i]
 		if condition.Reason == string(reason) {
 			isNewReason = false
 			if condition.Status != newCondition.Status || condition.Type != newCondition.Type {
-				*condition = newCondition
+				*condition = *newCondition
 			}
 		}
 	}
 	if isNewReason {
-		kyma.Status.Conditions = append(kyma.Status.Conditions, newCondition)
+		kyma.Status.Conditions = append(kyma.Status.Conditions, *newCondition)
 	}
 }
 
@@ -376,16 +368,4 @@ func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType,
 		}
 	}
 	return false
-}
-
-func generateConditionMessage(reason KymaConditionReason, status metav1.ConditionStatus) string {
-	if reason == ConditionReasonModulesIsReady {
-		if status == metav1.ConditionTrue {
-			return "all modules are in ready state"
-		}
-		if status == metav1.ConditionFalse || status == metav1.ConditionUnknown {
-			return "not all modules are in ready state"
-		}
-	}
-	return "modules are in unidentified state"
 }
