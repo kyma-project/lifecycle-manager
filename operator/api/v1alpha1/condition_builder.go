@@ -15,12 +15,14 @@ func NewConditionBuilder() *ConditionBuilder {
 	return &ConditionBuilder{}
 }
 
-func (cb *ConditionBuilder) SetStatus(status metav1.ConditionStatus) {
+func (cb *ConditionBuilder) SetStatus(status metav1.ConditionStatus) *ConditionBuilder {
 	cb.Status = status
+	return cb
 }
 
-func (cb *ConditionBuilder) SetReason(reason KymaConditionReason) {
+func (cb *ConditionBuilder) SetReason(reason KymaConditionReason) *ConditionBuilder {
 	cb.Reason = reason
+	return cb
 }
 
 func (cb *ConditionBuilder) Build() *metav1.Condition {

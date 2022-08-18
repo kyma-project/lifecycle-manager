@@ -331,18 +331,14 @@ func (kyma *Kyma) InitModuleConditions() {
 	}
 	if !found {
 		builder := NewConditionBuilder()
-		builder.SetStatus(metav1.ConditionFalse)
-		builder.SetReason(ConditionReasonModulesIsReady)
-		newCondition := builder.Build()
+		newCondition := builder.SetStatus(metav1.ConditionFalse).SetReason(ConditionReasonModulesIsReady).Build()
 		kyma.Status.Conditions = append(kyma.Status.Conditions, *newCondition)
 	}
 }
 
 func (kyma *Kyma) UpdateCondition(reason KymaConditionReason, status metav1.ConditionStatus) {
 	builder := NewConditionBuilder()
-	builder.SetReason(reason)
-	builder.SetStatus(status)
-	newCondition := builder.Build()
+	newCondition := builder.SetReason(reason).SetStatus(status).Build()
 	isNewReason := true
 	for i := range kyma.Status.Conditions {
 		condition := &kyma.Status.Conditions[i]
