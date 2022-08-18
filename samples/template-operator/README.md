@@ -13,18 +13,19 @@ Usage:
   make <target>
 
 General
-  help             Display this help.
+  help                   Display this help.
 
 Module
   module-operator-chart  Bundle the Module Operator Chart
-  module-image     Build the Module Image and push it to a registry defined in IMG_REGISTRY
-  module-build     Build the Module and push it to a registry defined in MODULE_REGISTRY
-  module-default   Bootstrap the Default CR
+  module-image           Build the Module Image and push it to a registry defined in IMG_REGISTRY
+  module-build           Build the Module and push it to a registry defined in MODULE_REGISTRY
+  module-default         Bootstrap the Default CR
 
 Tools
-  kyma             Download & Build Kyma CLI locally if necessary.
-  kustomize        Download & Build kustomize locally if necessary.
-  component-cli    Download & Build kustomize locally if necessary.
+  kyma                   Download & Build Kyma CLI locally if necessary.
+  kustomize              Download & Build kustomize locally if necessary.
+  component-cli          Download & Build kustomize locally if necessary.
+  grafana-dashboard      Generating Grafana manifests to visualize controller status.
 ```
 
 To use the Makefile you will need to adjust your Module information to make sure that the Makefile knows the correct remotes / targets.

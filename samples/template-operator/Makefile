@@ -127,3 +127,8 @@ COMPONENT_CLI ?= $(LOCALBIN)/component-cli
 component-cli: $(COMPONENT_CLI) ## Download & Build component-cli locally if necessary.
 $(COMPONENT_CLI): $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install github.com/gardener/component-cli/cmd/component-cli@$(COMPONENT_CLI_VERSION)
+
+########## Grafana Dashboard ###########
+.PHONY: grafana-dashboard
+grafana-dashboard: ## Generating Grafana manifests to visualize controller status.
+	cd operator && kubebuilder edit --plugins grafana.kubebuilder.io/v1-alpha
