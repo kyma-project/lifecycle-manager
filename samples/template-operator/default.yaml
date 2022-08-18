@@ -3,4 +3,6 @@ kind: Sample
 metadata:
   name: sample-sample
 spec:
-  # TODO(user): Add fields here
+  chartPath: "./module-chart"
+  releaseName: "nginx-release-name"
+  chartFlags: "Namespace=sample-ns,CreateNamespace=true"
