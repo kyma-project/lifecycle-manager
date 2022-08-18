@@ -34,9 +34,14 @@ spec:
           spec:
             description: SampleSpec defines the desired state of Sample
             properties:
-              foo:
-                description: Foo is an example field of Sample. Edit sample_types.go
-                  to remove/update
+              chartFlags:
+                description: ChartFlags specifies flags for chart installation
+                type: string
+              chartPath:
+                description: ChartPath specifies path to local helm chart
+                type: string
+              releaseName:
+                description: ReleaseName specifies release name for helm chart
                 type: string
             type: object
           status:

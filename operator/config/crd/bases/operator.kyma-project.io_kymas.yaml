@@ -168,8 +168,8 @@ spec:
                       type: string
                     templateInfo:
                       description: It contains information about the last parsed ModuleTemplate
-                        in Context of the Installation. This will update when Channel,
-                        Profile or the ModuleTemplate is changed.
+                        in Context of the Installation. This will update when Channel
+                        or the ModuleTemplate is changed.
                       properties:
                         channel:
                           description: Channel tracks the active Channel of the ModuleTemplate.

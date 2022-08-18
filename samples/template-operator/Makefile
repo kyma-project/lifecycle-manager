@@ -3,12 +3,13 @@ MODULE_NAME ?= template
 # Semantic Module Version used for identifying the build
 MODULE_VERSION ?= 0.0.0
 # Module Registry used for pushing the image
-MODULE_REGISTRY ?= op-kcp-registry:56888/unsigned
+MODULE_REGISTRY_PORT ?= 50092
+MODULE_REGISTRY ?= op-kcp-registry.localhost:$(MODULE_REGISTRY_PORT)/unsigned
 # Desired Channel of the Generated Module Template
 MODULE_TEMPLATE_CHANNEL ?= stable
 
 # Image URL to use all building/pushing image targets
-IMG_REGISTRY ?= op-kcp-registry:56888/operator-images
+IMG_REGISTRY ?= $(MODULE_REGISTRY)/operator-images
 IMG ?= $(IMG_REGISTRY)/$(MODULE_NAME)-operator:$(MODULE_VERSION)
 
 KYMA_VERSION ?= 2dd54fae46e6d2e66ce0419dfbcf6ad789a64c09
@@ -74,21 +75,20 @@ module-operator-chart: operator/manifests kustomize ## Bundle the Module Operato
 	mv $(TEMPLATE_DIR)/templates/apiextensions.k8s.io_v1_customresourcedefinition_* $(TEMPLATE_DIR)/crds
 	MODULE_NAME=$(MODULE_NAME) MODULE_VERSION=$(MODULE_VERSION) $(GEN_CHART) > $(TEMPLATE_DIR)/Chart.yaml
 
-.PHONY: module-template-build 
-module-template-build: module-build module-default ## Deploy a Module and create a ModuleTemplate from a Descriptor and the Default data
-	$(COMPONENT_CLI) ca remote get $(MODULE_REGISTRY) kyma.project.io/module/$(MODULE_NAME) $(MODULE_VERSION) --allow-plain-http > ./mod/remote-component-descriptor.yaml
-	DEFAULT_DATA=default.yaml REMOTE_SIGNED_DESCRIPTOR=./mod/remote-component-descriptor.yaml MODULE_NAME=$(MODULE_NAME) OPERATOR_NAME=kyma-operator MODULE_TEMPLATE_CHANNEL=$(MODULE_TEMPLATE_CHANNEL) MODULE_TEMPLATE=template.yaml $(GEN_MODULE_TEMPLATE)
-
 .PHONY: module-image
 module-image: operator/docker-build operator/docker-push ## Build the Module Image and push it to a registry defined in IMG_REGISTRY
 	echo "built and pushed module image $(IMG)"
 
 .PHONY: module-build
-module-build: kyma component-cli module-operator-chart ## Build the Module and push it to a registry defined in MODULE_REGISTRY
+module-build: component-cli module-operator-chart ## Build the Module and push it to a registry defined in MODULE_REGISTRY
 	$(KYMA) alpha create module kyma.project.io/module/$(MODULE_NAME) $(MODULE_VERSION) . \
 		--registry $(MODULE_REGISTRY) \
 		--insecure \
 		-w
+
+.PHONY: module-template-push
+module-template-push: ## Pushes the ModuleTemplate referencing the Image on MODULE_REGISTRY
+	kubectl apply -f template.yaml
 
 .PHONY: module-default
 module-default:
@@ -103,16 +103,7 @@ $(LOCALBIN):
 
 ########## Kyma CLI ###########
 KYMA_CLI_CHECKOUT_PATH = "/tmp/operator/make-build/kyma-cli"
-KYMA ?= $(LOCALBIN)/kyma
-.PHONY: get-kyma
-get-kyma:
-	if [ ! -d $(KYMA_CLI_CHECKOUT_PATH) ]; then GOBIN=$(LOCALBIN) git clone https://github.com/kyma-project/cli $(KYMA_CLI_CHECKOUT_PATH) -b main --depth 100; fi
-	cd $(KYMA_CLI_CHECKOUT_PATH) && git checkout $(KYMA_VERSION)
-
-.PHONY: kyma
-kyma: get-kyma $(KYMA) ## Download & Build Kyma CLI locally if necessary.
-$(KYMA): $(LOCALBIN)
-	cd $(KYMA_CLI_CHECKOUT_PATH) && make resolve && go build -o $(KYMA) -ldflags '-s -w -X github.com/kyma-project/cli/cmd/kyma/version.Version=$(KYMA_VERSION)' ./cmd 
+KYMA ?= /Users/D067928/SAPDevelop/go/src/github.com/kyma-project/cli/bin/kyma-darwin
 
 ########## Kustomize ###########
 KUSTOMIZE ?= $(LOCALBIN)/kustomize

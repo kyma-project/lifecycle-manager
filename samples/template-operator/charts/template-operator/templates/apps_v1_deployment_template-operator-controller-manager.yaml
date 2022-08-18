@@ -42,7 +42,7 @@ spec:
         - --leader-elect
         command:
         - /manager
-        image: controller:0.0.0
+        image: op-kcp-registry.localhost:50092/unsigned/operator-images/template-operator:0.0.0
         livenessProbe:
           httpGet:
             path: /healthz
