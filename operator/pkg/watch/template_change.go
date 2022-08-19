@@ -3,6 +3,8 @@ package watch
 import (
 	"context"
 
+	k8slabels "k8s.io/apimachinery/pkg/labels"
+
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -15,10 +17,11 @@ import (
 type TemplateChangeHandler struct {
 	client.Reader
 	record.EventRecorder
+	NamespaceScoped bool
 }
 
 func NewTemplateChangeHandler(handlerClient ChangeHandlerClient) *TemplateChangeHandler {
-	return &TemplateChangeHandler{Reader: handlerClient, EventRecorder: handlerClient}
+	return &TemplateChangeHandler{Reader: handlerClient, EventRecorder: handlerClient, NamespaceScoped: false}
 }
 
 func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
@@ -35,7 +38,13 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 		}
 
 		kymas := &v1alpha1.KymaList{}
-		err := h.List(ctx, kymas)
+		listOptions := &client.ListOptions{
+			LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{v1alpha1.ManagedBy: v1alpha1.OperatorName}),
+		}
+		if h.NamespaceScoped {
+			listOptions.Namespace = template.Namespace
+		}
+		err := h.List(ctx, kymas, listOptions)
 		if err != nil {
 			return requests
 		}
@@ -47,13 +56,13 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 		logger := log.FromContext(ctx).WithName("template-change-detection")
 
 		labels := template.GetLabels()
-		controller := labels[v1alpha1.ControllerName]
-		channel := template.Spec.Channel
+		moduleName := labels[v1alpha1.ModuleName]
+		templateChannel := template.Spec.Channel
 
 		for _, kyma := range kymas.Items {
-			globalChannelMatch := kyma.Spec.Channel == channel
+			globalChannelMatch := kyma.Spec.Channel == templateChannel
 
-			if !requeueKyma(kyma, controller, globalChannelMatch, channel) {
+			if !requeueKyma(kyma, moduleName, globalChannelMatch, templateChannel) {
 				continue
 			}
 
@@ -62,8 +71,8 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 				Name:      kyma.GetName(),
 			}
 			logger.WithValues(
-				"controller", controller,
-				"channel", channel,
+				"moduleName", moduleName,
+				"templateChannel", templateChannel,
 				"template", templateNamespacedName.String(),
 			).Info(namespacedNameForKyma.String())
 
@@ -89,12 +98,14 @@ func manageable(template *v1alpha1.ModuleTemplate) bool {
 	return true
 }
 
-func requeueKyma(kyma v1alpha1.Kyma, controller string, globalChannelMatch bool, channel v1alpha1.Channel) bool {
-	for _, component := range kyma.Spec.Modules {
-		if component.Name == controller {
-			// check component level channel on matching component
-			if (component.Channel == "" && globalChannelMatch) ||
-				component.Channel == channel {
+func requeueKyma(kyma v1alpha1.Kyma, moduleName string,
+	globalChannelMatch bool, templateChannel v1alpha1.Channel,
+) bool {
+	for _, module := range kyma.Spec.Modules {
+		if module.Name == moduleName {
+			// check module level channel on matching module
+			if (module.Channel == "" && globalChannelMatch) ||
+				module.Channel == templateChannel {
 				return true
 			}
 		}
