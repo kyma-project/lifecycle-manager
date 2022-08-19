@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/go-logr/logr v1.2.3
-	github.com/kyma-project/manifest-operator/operator v0.0.0-20220805082844-da07889b3c3d
+	github.com/kyma-project/manifest-operator/operator v0.0.0-20220819095354-bf88af0af0ea
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.19.0
 	helm.sh/helm/v3 v3.9.2
