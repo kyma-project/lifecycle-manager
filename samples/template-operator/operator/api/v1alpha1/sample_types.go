@@ -72,6 +72,7 @@ type SampleStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
 
 // Sample is the Schema for the samples API
 type Sample struct {
