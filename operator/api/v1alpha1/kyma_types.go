@@ -322,20 +322,6 @@ func init() {
 	SchemeBuilder.Register(&Kyma{}, &KymaList{})
 }
 
-func (kyma *Kyma) InitModuleConditions() {
-	found := false
-	for _, condition := range kyma.Status.Conditions {
-		if condition.Reason == string(ConditionReasonModulesIsReady) {
-			found = true
-		}
-	}
-	if !found {
-		builder := NewConditionBuilder()
-		newCondition := builder.SetStatus(metav1.ConditionFalse).SetReason(ConditionReasonModulesIsReady).Build()
-		kyma.Status.Conditions = append(kyma.Status.Conditions, *newCondition)
-	}
-}
-
 func (kyma *Kyma) UpdateCondition(reason KymaConditionReason, status metav1.ConditionStatus) {
 	builder := NewConditionBuilder()
 	newCondition := builder.SetReason(reason).SetStatus(status).Build()
@@ -345,12 +331,12 @@ func (kyma *Kyma) UpdateCondition(reason KymaConditionReason, status metav1.Cond
 		if condition.Reason == string(reason) {
 			isNewReason = false
 			if condition.Status != newCondition.Status || condition.Type != newCondition.Type {
-				*condition = *newCondition
+				*condition = newCondition
 			}
 		}
 	}
 	if isNewReason {
-		kyma.Status.Conditions = append(kyma.Status.Conditions, *newCondition)
+		kyma.Status.Conditions = append(kyma.Status.Conditions, newCondition)
 	}
 }
 

@@ -185,7 +185,6 @@ func (r *KymaReconciler) stateHandling(ctx context.Context, kyma *v1alpha1.Kyma)
 }
 
 func (r *KymaReconciler) HandleInitialState(ctx context.Context, kyma *v1alpha1.Kyma) error {
-	kyma.InitModuleConditions()
 	return r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing, "initial state")
 }
 
@@ -316,6 +315,9 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *v1a
 	return nil
 }
 
+// SyncConditionsWithModuleStates runs at both HandleProcessingState and HandleConsistencyChanges.
+// It iterates all moduleInfos, based on all module state, it updates the condition.status with Reason
+// v1alpha1.ConditionReasonModulesIsReady accordingly.
 func (r *KymaReconciler) SyncConditionsWithModuleStates(kyma *v1alpha1.Kyma) {
 	conditionReason := v1alpha1.ConditionReasonModulesIsReady
 	conditionStatus := metav1.ConditionTrue

@@ -25,8 +25,8 @@ func (cb *ConditionBuilder) SetReason(reason KymaConditionReason) *ConditionBuil
 	return cb
 }
 
-func (cb *ConditionBuilder) Build() *metav1.Condition {
-	return &metav1.Condition{
+func (cb *ConditionBuilder) Build() metav1.Condition {
+	return metav1.Condition{
 		Type:               string(ConditionTypeReady),
 		Status:             cb.Status,
 		LastTransitionTime: metav1.Time{Time: time.Now()},
