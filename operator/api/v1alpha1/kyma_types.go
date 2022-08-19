@@ -323,8 +323,7 @@ func init() {
 }
 
 func (kyma *Kyma) UpdateCondition(reason KymaConditionReason, status metav1.ConditionStatus) {
-	builder := NewConditionBuilder()
-	newCondition := builder.SetReason(reason).SetStatus(status).Build()
+	newCondition := NewConditionBuilder().SetReason(reason).SetStatus(status).Build()
 	isNewReason := true
 	for i := range kyma.Status.Conditions {
 		condition := &kyma.Status.Conditions[i]

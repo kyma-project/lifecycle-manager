@@ -11,6 +11,12 @@ type ConditionBuilder struct {
 	Reason KymaConditionReason
 }
 
+const (
+	MessageModuleInReadyState        = "all modules are in ready state"
+	MessageModuleNotInReadyState     = "not all modules are in ready state"
+	MessageModuleInUnidentifiedState = "modules are in unidentified state"
+)
+
 func NewConditionBuilder() *ConditionBuilder {
 	return &ConditionBuilder{}
 }
@@ -36,13 +42,13 @@ func (cb *ConditionBuilder) Build() metav1.Condition {
 }
 
 func (cb *ConditionBuilder) generateMessage() string {
-	if cb.Reason == ConditionReasonModulesIsReady {
+	if cb.Reason == ConditionReasonModulesAreReady {
 		if cb.Status == metav1.ConditionTrue {
-			return "all modules are in ready state"
+			return MessageModuleInReadyState
 		}
 		if cb.Status == metav1.ConditionFalse || cb.Status == metav1.ConditionUnknown {
-			return "not all modules are in ready state"
+			return MessageModuleNotInReadyState
 		}
 	}
-	return "modules are in unidentified state"
+	return MessageModuleInUnidentifiedState
 }

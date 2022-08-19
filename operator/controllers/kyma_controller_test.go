@@ -87,7 +87,7 @@ var _ = Describe("Kyma with empty ModuleTemplate", func() {
 		kymaInCluster, err := GetKyma(controlPlaneClient, kyma)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(kymaInCluster.ContainsCondition(v1alpha1.ConditionTypeReady,
-			v1alpha1.ConditionReasonModulesIsReady, metav1.ConditionTrue)).To(BeTrue())
+			v1alpha1.ConditionReasonModulesAreReady, metav1.ConditionTrue)).To(BeTrue())
 		By("Module Catalog created")
 		Eventually(CatalogExists(controlPlaneClient, kyma), 10*time.Second, interval).Should(Succeed())
 	})
