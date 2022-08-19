@@ -9,7 +9,8 @@ MODULE_REGISTRY ?= op-kcp-registry.localhost:$(MODULE_REGISTRY_PORT)/unsigned
 MODULE_TEMPLATE_CHANNEL ?= stable
 
 # Image URL to use all building/pushing image targets
-IMG_REGISTRY ?= $(MODULE_REGISTRY)/operator-images
+IMG_REGISTRY_PORT ?= $(MODULE_REGISTRY_PORT)
+IMG_REGISTRY ?= op-skr-registry.localhost:$(IMG_REGISTRY_PORT)/unsigned/operator-images
 IMG ?= $(IMG_REGISTRY)/$(MODULE_NAME)-operator:$(MODULE_VERSION)
 
 KYMA_VERSION ?= 2dd54fae46e6d2e66ce0419dfbcf6ad789a64c09

@@ -85,16 +85,18 @@ In `https://github.com/kyma-project/kyma-operator`, `cd samples/template-operato
 
 After this find the Port of your KCP OCI Registry and write it to `MODULE_REGISTRY_PORT`:
 
-### Using a Local Module Registry
+### Using a Local Module/Image Registry
 
 ```
 export MODULE_REGISTRY_PORT=$(docker port op-kcp-registry.localhost 5000/tcp | cut -d ":" -f2)
+export IMG_REGISTRY_PORT=$(docker port op-skr-registry.localhost 5000/tcp | cut -d ":" -f2)
 ```
 
-### Using a Remote Registry
+### Using a Remote Module/Image Registry
 
 ```
-export MODULE_REGISTRY_HOST=your-registry-goes-here.com
+export MODULE_REGISTRY=your-registry-goes-here.com
+export IMG_REGISTRY=your-registry-goes-here.com
 ```
 
 ### Generating and Pushing the Operator Image and Charts
