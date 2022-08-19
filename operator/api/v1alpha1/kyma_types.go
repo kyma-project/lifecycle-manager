@@ -229,7 +229,7 @@ type KymaConditionReason string
 
 // Extend this list by actual needs.
 const (
-	ConditionReasonModulesIsReady KymaConditionReason = "ModulesIsReady"
+	ConditionReasonModulesAreReady KymaConditionReason = "ModulesAreReady"
 )
 
 //+genclient
