@@ -106,8 +106,8 @@ func (kyma *Kyma) AreAllConditionsReadyForKyma() bool {
 	}
 
 	for _, existingCondition := range status.Conditions {
-		if existingCondition.Type == ConditionTypeReady &&
-			existingCondition.Status != ConditionStatusTrue {
+		if existingCondition.Type == string(ConditionTypeReady) &&
+			existingCondition.Status != metav1.ConditionTrue {
 			return false
 		}
 	}
@@ -124,7 +124,7 @@ type KymaStatus struct {
 
 	// List of status conditions to indicate the status of a ServiceInstance.
 	// +optional
-	Conditions []KymaCondition `json:"conditions,omitempty"`
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// Contains essential information about the current deployed module
 	ModuleInfos []ModuleInfo `json:"moduleInfos,omitempty"`
@@ -158,46 +158,24 @@ const (
 // +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error
 type State string
 
-// Valid Kyma States.
+// Valid States.
 const (
-	// StateReady signifies Kyma is ready and has been installed successfully.
+	// StateReady signifies specified resource is ready and has been installed successfully.
 	StateReady State = "Ready"
 
-	// StateProcessing signifies Kyma is reconciling and is in the process of installation. Processing can also
-	// signal that the Installation previously encountered an error and is now recovering.
+	// StateProcessing signifies specified resource is reconciling and is in the process of installation.
+	// Processing can also signal that the Installation previously encountered an error and is now recovering.
 	StateProcessing State = "Processing"
 
-	// StateError signifies an error for Kyma. This signifies that the Installation process encountered an error.
+	// StateError signifies an error for specified resource.
+	// This signifies that the Installation process encountered an error.
 	// Contrary to Processing, it can be expected that this state should change on the next retry.
 	StateError State = "Error"
 
-	// StateDeleting signifies Kyma is being deleted. This is the state that is used when a deletionTimestamp
+	// StateDeleting signifies specified resource is being deleted. This is the state that is used when a deletionTimestamp
 	// was detected and Finalizers are picked up.
 	StateDeleting State = "Deleting"
 )
-
-// KymaCondition describes condition information for Kyma.
-type KymaCondition struct {
-	// Type is used to reflect what type of condition we are dealing with. Most commonly ConditionTypeReady it is used
-	// as extension marker in the future
-	Type KymaConditionType `json:"type"`
-
-	// Status of the Kyma Condition.
-	// Value can be one of ("True", "False", "Unknown").
-	Status KymaConditionStatus `json:"status"`
-
-	// Human-readable message indicating details about the last status transition.
-	// +optional
-	Message string `json:"message,omitempty"`
-
-	// Machine-readable text indicating the reason for the condition's last transition.
-	// +optional
-	Reason string `json:"reason,omitempty"`
-
-	// Timestamp for when Kyma last transitioned from one status to another.
-	// +optional
-	LastTransitionTime *metav1.Time `json:"lastTransitionTime,omitempty"`
-}
 
 type ModuleInfo struct {
 	// Name is the current deployed module name
@@ -213,6 +191,9 @@ type ModuleInfo struct {
 
 	// Namespace is the current deployed module namespace
 	Namespace string `json:"namespace"`
+
+	// status of the condition, one of True, False, Unknown.
+	State State `json:"state"`
 }
 
 type TemplateInfo struct {
@@ -238,18 +219,17 @@ const (
 	ConditionTypeReady KymaConditionType = "Ready"
 )
 
-type KymaConditionStatus string
+// KymaConditionReason is a programmatic identifier indicating the reason for the condition's last transition.
+// By combining of condition status, it explains the current Kyma status for all modules.
+// For example:
+// Reason: ModulesIsReady and Status: True means all modules are in ready state.
+// Reason: ModulesIsReady and Status: False means some modules are not in ready state,
+// and the actual state of individual module can be found in related ModuleInfo.
+type KymaConditionReason string
 
-// Valid KymaCondition Status.
+// Extend this list by actual needs.
 const (
-	// ConditionStatusTrue signifies KymaConditionStatus true.
-	ConditionStatusTrue KymaConditionStatus = "True"
-
-	// ConditionStatusFalse signifies KymaConditionStatus false.
-	ConditionStatusFalse KymaConditionStatus = "False"
-
-	// ConditionStatusUnknown signifies KymaConditionStatus unknown.
-	ConditionStatusUnknown KymaConditionStatus = "Unknown"
+	ConditionReasonModulesAreReady KymaConditionReason = "ModulesAreReady"
 )
 
 //+genclient
@@ -342,57 +322,31 @@ func init() {
 	SchemeBuilder.Register(&Kyma{}, &KymaList{})
 }
 
-const NewModuleMessage = "new module"
-
-func (kyma *Kyma) MatchConditionsToModules() {
-	for _, module := range kyma.Spec.Modules {
-		found := false
-		for _, condition := range kyma.Status.Conditions {
-			if module.Name == condition.Reason {
-				found = true
-			}
-		}
-		if !found {
-			newCondition := KymaCondition{
-				Type:    ConditionTypeReady,
-				Status:  ConditionStatusFalse,
-				Reason:  module.Name,
-				Message: NewModuleMessage,
-			}
-			kyma.Status.Conditions = append(kyma.Status.Conditions, newCondition)
-		}
-	}
-}
-
-type conditionExistsPair struct {
-	condition *KymaCondition
-	exists    bool
-}
-
-// TODO: drop this after condition.Reason != module.Name.
-func (kyma *Kyma) FilterNotExistsConditions() bool {
-	conditionsMap := make(map[string]*conditionExistsPair)
-	updateRequired := false
+func (kyma *Kyma) UpdateCondition(reason KymaConditionReason, status metav1.ConditionStatus) {
+	newCondition := NewConditionBuilder().SetReason(reason).SetStatus(status).Build()
+	isNewReason := true
 	for i := range kyma.Status.Conditions {
 		condition := &kyma.Status.Conditions[i]
-		conditionsMap[condition.Reason] = &conditionExistsPair{exists: false, condition: condition}
-	}
-
-	for i := range kyma.Spec.Modules {
-		module := &kyma.Spec.Modules[i]
-		if _, exists := conditionsMap[module.Name]; exists {
-			conditionsMap[module.Name].exists = true
+		if condition.Reason == string(reason) {
+			isNewReason = false
+			if condition.Status != newCondition.Status || condition.Type != newCondition.Type {
+				*condition = newCondition
+			}
 		}
 	}
+	if isNewReason {
+		kyma.Status.Conditions = append(kyma.Status.Conditions, newCondition)
+	}
+}
 
-	existsModules := make([]KymaCondition, 0)
-	for _, item := range conditionsMap {
-		if item.exists {
-			existsModules = append(existsModules, *item.condition)
-		} else {
-			updateRequired = true
+func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType,
+	reason KymaConditionReason, conditionStatus metav1.ConditionStatus,
+) bool {
+	for _, condition := range kyma.Status.Conditions {
+		if condition.Type == string(conditionType) && condition.Reason == string(reason) &&
+			condition.Status == conditionStatus {
+			return true
 		}
 	}
-	kyma.Status.Conditions = existsModules
-	return updateRequired
+	return false
 }
