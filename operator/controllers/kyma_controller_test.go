@@ -3,6 +3,8 @@ package controllers_test
 import (
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/kyma-project/kyma-operator/operator/pkg/test"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -73,7 +75,6 @@ var _ = Describe("Kyma with empty ModuleTemplate", func() {
 
 		By("having created new conditions in its status")
 		Eventually(GetKymaConditions(kyma), timeout, interval).ShouldNot(BeEmpty())
-
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range moduleTemplates {
 			Eventually(UpdateModuleState(kyma, activeModule, v1alpha1.StateReady), 20*time.Second, interval).Should(Succeed())
@@ -82,6 +83,11 @@ var _ = Describe("Kyma with empty ModuleTemplate", func() {
 		By("having updated the Kyma CR state to ready")
 		Eventually(GetKymaState(kyma), 20*time.Second, interval).Should(BeEquivalentTo(string(v1alpha1.StateReady)))
 
+		By("Kyma status contains expected condition")
+		kymaInCluster, err := GetKyma(controlPlaneClient, kyma)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(kymaInCluster.ContainsCondition(v1alpha1.ConditionTypeReady,
+			v1alpha1.ConditionReasonModulesAreReady, metav1.ConditionTrue)).To(BeTrue())
 		By("Module Catalog created")
 		Eventually(CatalogExists(controlPlaneClient, kyma), 10*time.Second, interval).Should(Succeed())
 	})
