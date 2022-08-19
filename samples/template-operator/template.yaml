@@ -8,7 +8,7 @@ metadata:
     "operator.kyma-project.io/controller-name": "manifest"
     "operator.kyma-project.io/module-name": "template"
   annotations:
-    "operator.kyma-project.io/module-version": "0.0.0"
+    "operator.kyma-project.io/module-version": "0.0.2"
     "operator.kyma-project.io/module-provider": "internal"
     "operator.kyma-project.io/descriptor-schema-version": "v2"
 spec:
@@ -21,33 +21,33 @@ spec:
       name: sample-sample
     spec:
       chartPath: "./module-chart"
-      releaseName: "nginx-release-name"
-      chartFlags: "Namespace=sample-ns,CreateNamespace=true"
+      releaseName: "redis-release"
+      chartFlags: "Namespace=redis,CreateNamespace=true"
   descriptor:
     component:
       componentReferences: []
       name: kyma.project.io/module/template
       provider: internal
       repositoryContexts:
-      - baseUrl: op-kcp-registry.localhost:50092/unsigned
+      - baseUrl: op-kcp-registry.localhost:57323/unsigned
         componentNameMapping: urlPath
         type: ociRegistry
       resources:
       - access:
-          digest: sha256:c9b296450b5bf28d791a523ef350a705516e7888c3a2c85759ec7df39e173fbb
+          digest: sha256:e1f55ebabf15f643a6012ecff52ee239d900eb08e470645133dcbe2178475df9
           type: localOciBlob
         name: template-operator
         relation: local
         type: helm-chart
-        version: 0.0.0
+        version: 0.0.2
       - access:
           digest: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
           type: localOciBlob
         name: config
         relation: local
         type: yaml
-        version: 0.0.0
+        version: 0.0.2
       sources: []
-      version: 0.0.0
+      version: 0.0.2
     meta:
       schemaVersion: v2

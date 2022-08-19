@@ -42,7 +42,7 @@ spec:
         - --leader-elect
         command:
         - /manager
-        image: op-skr-registry.localhost:49748/unsigned/operator-images/template-operator:0.0.0
+        image: op-skr-registry.localhost:55693/unsigned/operator-images/template-operator:0.0.2
         livenessProbe:
           httpGet:
             path: /healthz

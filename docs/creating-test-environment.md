@@ -127,7 +127,7 @@ Before we start reconciling, lets create a secret to access the SKR:
 
 In https://github.com/kyma-project/kyma-operator run
 
-`sh operator/config/samples/secret/k3d-secret-gen.sh`
+`sh config/samples/secret/k3d-secret-gen.sh`
 
 _Note for externally created clusters: You can use KCP_CLUSTER_CTX and SKR_CLUSTER_CTX to adjust your contexts for applying the secret._
 
