@@ -15,7 +15,11 @@ spec:
     singular: sample
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .status.state
+      name: State
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: Sample is the Schema for the samples API

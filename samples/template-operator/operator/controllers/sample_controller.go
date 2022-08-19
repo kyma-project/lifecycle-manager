@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -89,13 +90,13 @@ func (r *SampleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	case "":
 		return ctrl.Result{}, r.HandleInitialState(ctx, sampleResource)
 	case v1alpha1.SampleStateProcessing:
-		return ctrl.Result{}, r.HandleProcessingState(ctx, sampleResource)
+		return ctrl.Result{RequeueAfter: time.Second * 3}, r.HandleProcessingState(ctx, sampleResource)
 	case v1alpha1.SampleStateDeleting:
 		return ctrl.Result{}, r.HandleDeletingState(ctx, sampleResource)
 	case v1alpha1.SampleStateError:
-		return ctrl.Result{}, r.HandleErrorState(ctx, sampleResource)
+		return ctrl.Result{RequeueAfter: time.Second * 3}, r.HandleErrorState(ctx, sampleResource)
 	case v1alpha1.SampleStateReady:
-		return ctrl.Result{}, r.HandleReadyState(ctx, sampleResource)
+		return ctrl.Result{RequeueAfter: time.Second * 3}, r.HandleReadyState(ctx, sampleResource)
 	}
 
 	return ctrl.Result{}, nil
@@ -133,6 +134,7 @@ func (r *SampleReconciler) HandleProcessingState(ctx context.Context, sampleReso
 		sampleResource.Status.State = v1alpha1.SampleStateReady
 		return r.Client.Status().Update(ctx, sampleResource)
 	}
+	// not ready + no error
 	return nil
 }
 
