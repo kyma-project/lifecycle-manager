@@ -96,28 +96,55 @@ After this, build and push the module the module with
 make module-build module-template-push
 ```
 
-Next create a request for kyma installation of the module with
-
-```yaml
-apiVersion: operator.kyma-project.io/v1alpha1
-kind: Kyma
-metadata:
-  name: kyma-sample
-  namespace: default
-spec:
-  channel: stable
-  sync:
-    enabled: true
-  modules:
-    - name: template
-```
-
-and apply it with `kubectl apply -f PATH_TO_KYMA.yaml`
-
-Before we start reconciling, lets create a secret to access your SKR:
+Before we start reconciling, lets create a secret to access the SKR:
 
 In https://github.com/kyma-project/kyma-operator run
 
 `sh operator/config/samples/secret/k3d-secret-gen.sh`
 
 ## Run the operators
+
+In https://github.com/kyma-project/kyma-operator run
+
+```
+make run
+```
+
+In https://github.com/kyma-project/manifest-operator run
+
+```
+make run
+```
+
+## Start the Installation
+
+Create a request for kyma installation of the module with
+
+```
+sh hack/gen-kyma.sh
+kubectl apply -f kyma.yaml
+```
+
+Now try to check your kyma installation progress, e.g. with `k get kyma -n kyma-system -ojsonpath={".items[0].status"} | yq -P`:
+
+```yaml
+conditions:
+  - lastTransitionTime: "2022-08-18T18:10:09Z"
+    message: module is Ready
+    reason: template
+    status: "True"
+    type: Ready
+moduleInfos:
+  - moduleName: template
+    name: templatekyma-sample
+    namespace: kyma-system
+    templateInfo:
+      channel: stable
+      generation: 1
+      gvk:
+        group: component.kyma-project.io
+        kind: Manifest
+        version: v1alpha1
+observedGeneration: 1
+state: Ready
+```
