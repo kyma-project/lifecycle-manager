@@ -92,7 +92,7 @@ module-template-push: ## Pushes the ModuleTemplate referencing the Image on MODU
 
 .PHONY: module-default
 module-default:
-	if [ ! -d default.yaml ]; then cp operator/config/samples/* default.yaml; fi
+	cp operator/config/samples/* default.yaml
 
 ##@ Tools
 

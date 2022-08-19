@@ -2,12 +2,20 @@
 
 ## Setup Control Plane and Runtime Equivalent
 
+### Local Setup
+
 ```sh
 k3d cluster create op-skr --registry-create op-skr-registry.localhost
 k3d cluster create op-kcp --registry-create op-kcp-registry.localhost
 ```
 
-## Make sure the registries are reachable via localhost
+### Use External Clusters
+
+Make sure to have two `KUBECONFIG` compliant client configurations at hand, one for kcp, one for skr
+
+## Setting up your registry
+
+### Make sure the registries are reachable via localhost
 
 Add the following to your `etc/hosts` entry.
 
@@ -31,6 +39,10 @@ Add the following to your `etc/hosts` entry.
 127.0.0.1 op-skr-registry.localhost
 ```
 
+### Using an external Registry
+
+TODO
+
 ## Make sure you are in the Control Plane
 
 ```
@@ -38,6 +50,8 @@ kubectl config use k3d-op-kcp
 ```
 
 ## Install CRDs of Operator Stack
+
+_Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set to the KCP Cluster_
 
 ### Install Manifest Operator CRDs
 
@@ -71,10 +85,19 @@ In `https://github.com/kyma-project/kyma-operator`, `cd samples/template-operato
 
 After this find the Port of your KCP OCI Registry and write it to `MODULE_REGISTRY_PORT`:
 
+### Using a Local Module Registry
+
 ```
 export MODULE_REGISTRY_PORT=$(docker port op-kcp-registry.localhost 5000/tcp | cut -d ":" -f2)
-echo $MODULE_REGISTRY_PORT
 ```
+
+### Using a Remote Registry
+
+```
+export MODULE_REGISTRY_HOST=your-registry-goes-here.com
+```
+
+### Generating and Pushing the Operator Image and Charts
 
 Next generate and push the module image of the operator
 
@@ -82,15 +105,17 @@ Next generate and push the module image of the operator
 make module-operator-chart module-image
 ```
 
+## Use your module and trigger a Kyma Installation
+
+_Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set to the KCP Cluster_
+
 First make sure that the `kyma-system` namespace is created:
 
 ```
 kubectl create ns kyma-system
 ```
 
-## Use your module and trigger a Kyma Installation
-
-After this, build and push the module the module with
+After this, build and push the module the module to the Registry with
 
 ```
 make module-build module-template-push
@@ -102,7 +127,11 @@ In https://github.com/kyma-project/kyma-operator run
 
 `sh operator/config/samples/secret/k3d-secret-gen.sh`
 
+_Note for externally created clusters: You can use KCP_CLUSTER_CTX and SKR_CLUSTER_CTX to adjust your contexts for applying the secret._
+
 ## Run the operators
+
+_Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set to the KCP Cluster_
 
 In https://github.com/kyma-project/kyma-operator run
 
@@ -118,6 +147,8 @@ make run
 
 ## Start the Installation
 
+_Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set to the KCP Cluster_
+
 Create a request for kyma installation of the module with
 
 ```
@@ -125,7 +156,7 @@ sh hack/gen-kyma.sh
 kubectl apply -f kyma.yaml
 ```
 
-Now try to check your kyma installation progress, e.g. with `k get kyma -n kyma-system -ojsonpath={".items[0].status"} | yq -P`:
+Now try to check your kyma installation progress, e.g. with `kubectl get kyma -n kyma-system -ojsonpath={".items[0].status"} | yq -P`:
 
 ```yaml
 conditions:
@@ -148,3 +179,11 @@ moduleInfos:
 observedGeneration: 1
 state: Ready
 ```
+
+Also, you can observe the installation in the runtime by switching the context to the SKR context and then verifying the status.
+
+`kubectl get samples.component.kyma-project.io -n kyma-system -ojsonpath={".items[0].status"} | yq -P`
+
+and it should show `state: Ready`.
+
+You can verify this by checking if the contents of the `module-chart`directry in `template-operator/operator/module-chart`have been installed and parsed correctly.
