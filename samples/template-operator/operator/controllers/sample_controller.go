@@ -140,7 +140,6 @@ func (r *SampleReconciler) HandleProcessingState(ctx context.Context, sampleReso
 		return r.Client.Status().Update(ctx, sampleResource)
 	}
 	// not ready + no error
-	logger.Info("no error and not ready")
 	return nil
 }
 
