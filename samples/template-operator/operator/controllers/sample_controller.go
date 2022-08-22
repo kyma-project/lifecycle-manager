@@ -47,6 +47,10 @@ const deletionFinalizer = "deletion-finalizer"
 //+kubebuilder:rbac:groups=component.kyma-project.io,resources=samples,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=component.kyma-project.io,resources=samples/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=component.kyma-project.io,resources=samples/finalizers,verbs=update
+//+kubebuilder:rbac:groups="",resources=events,verbs=create;patch;get;list;watch
+//+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
+// TODO: dynamically create RBACs! Remove line below.
+//+kubebuilder:rbac:groups="*",resources="*",verbs=get;list;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -127,6 +131,7 @@ func (r *SampleReconciler) HandleProcessingState(ctx context.Context, sampleReso
 
 	ready, err := manifestClient.Install(installInfo)
 	if err != nil {
+		logger.Error(err, "")
 		sampleResource.Status.State = v1alpha1.SampleStateError
 		return r.Client.Status().Update(ctx, sampleResource)
 	}
@@ -171,6 +176,7 @@ func (r *SampleReconciler) HandleDeletingState(ctx context.Context, sampleResour
 
 	readyToBeDeleted, err := manifestClient.Uninstall(installInfo)
 	if err != nil {
+		logger.Error(err, "")
 		sampleResource.Status.State = v1alpha1.SampleStateError
 		return r.Client.Status().Update(ctx, sampleResource)
 	}
