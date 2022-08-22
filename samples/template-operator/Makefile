@@ -10,7 +10,7 @@ MODULE_TEMPLATE_CHANNEL ?= stable
 
 # Credentials used for authenticating into the module registry
 # see `kyma alpha mod create --help for more info`
-MODULE_CREDENTIALS ?= ""
+# MODULE_CREDENTIALS ?= testuser:testpw
 
 # Image URL to use all building/pushing image targets
 IMG_REGISTRY_PORT ?= $(MODULE_REGISTRY_PORT)
@@ -32,7 +32,7 @@ endif
 ifeq (,$(MODULE_CREDENTIALS))
 MODULE_CREATION_FLAGS=--registry $(MODULE_REGISTRY) -w --insecure
 else
-MODULE_CREATION_FLAGS=--registry $(MODULE_REGISTRY) -w -c "$(MODULE_CREDENTIALS)"
+MODULE_CREATION_FLAGS=--registry $(MODULE_REGISTRY) -w -c $(MODULE_CREDENTIALS)
 endif
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.

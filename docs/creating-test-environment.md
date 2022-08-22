@@ -237,13 +237,11 @@ make run
 
 _Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set to the KCP Cluster_
 
-Create a request for kyma installation of the module with
+Create a request for kyma installation of the module in `samples/template-operator` of the kyma-operator with
 
 ```
-
 sh hack/gen-kyma.sh
 kubectl apply -f kyma.yaml
-
 ````
 
 Now try to check your kyma installation progress, e.g. with `kubectl get kyma -n kyma-system -ojsonpath={".items[0].status"} | yq -P`:
