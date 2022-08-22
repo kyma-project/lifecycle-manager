@@ -1,7 +1,7 @@
 # Module Name used for bundling the OCI Image and later on for referencing in the Kyma Modules
 MODULE_NAME ?= template
 # Semantic Module Version used for identifying the build
-MODULE_VERSION ?= 0.0.2
+MODULE_VERSION ?= 0.0.4
 # Module Registry used for pushing the image
 MODULE_REGISTRY_PORT ?= 50092
 MODULE_REGISTRY ?= op-kcp-registry.localhost:$(MODULE_REGISTRY_PORT)/unsigned

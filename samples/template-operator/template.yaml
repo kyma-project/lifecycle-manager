@@ -8,7 +8,7 @@ metadata:
     "operator.kyma-project.io/controller-name": "manifest"
     "operator.kyma-project.io/module-name": "template"
   annotations:
-    "operator.kyma-project.io/module-version": "0.0.2"
+    "operator.kyma-project.io/module-version": "0.0.4"
     "operator.kyma-project.io/module-provider": "internal"
     "operator.kyma-project.io/descriptor-schema-version": "v2"
 spec:
@@ -29,25 +29,25 @@ spec:
       name: kyma.project.io/module/template
       provider: internal
       repositoryContexts:
-      - baseUrl: op-kcp-registry.localhost:57323/unsigned
+      - baseUrl: op-kcp-registry.localhost:54885/unsigned
         componentNameMapping: urlPath
         type: ociRegistry
       resources:
       - access:
-          digest: sha256:e1f55ebabf15f643a6012ecff52ee239d900eb08e470645133dcbe2178475df9
+          digest: sha256:6909531b6d461dbeed33b375075de862f354cf99e69c31ff3558724c49e5461a
           type: localOciBlob
         name: template-operator
         relation: local
         type: helm-chart
-        version: 0.0.2
+        version: 0.0.4
       - access:
           digest: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
           type: localOciBlob
         name: config
         relation: local
         type: yaml
-        version: 0.0.2
+        version: 0.0.4
       sources: []
-      version: 0.0.2
+      version: 0.0.4
     meta:
       schemaVersion: v2

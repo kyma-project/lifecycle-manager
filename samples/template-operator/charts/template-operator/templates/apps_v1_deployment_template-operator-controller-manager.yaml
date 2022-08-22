@@ -40,9 +40,7 @@ spec:
         - --health-probe-bind-address=:8081
         - --metrics-bind-address=127.0.0.1:8080
         - --leader-elect
-        command:
-        - /manager
-        image: op-skr-registry.localhost:55693/unsigned/operator-images/template-operator:0.0.2
+        image: op-skr-registry.localhost:54863/unsigned/operator-images/template-operator:0.0.4
         livenessProbe:
           httpGet:
             path: /healthz
@@ -50,6 +48,8 @@ spec:
           initialDelaySeconds: 15
           periodSeconds: 20
         name: manager
+        ports:
+        - containerPort: 40000
         readinessProbe:
           httpGet:
             path: /readyz
