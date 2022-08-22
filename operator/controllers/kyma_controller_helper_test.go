@@ -10,7 +10,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
@@ -49,24 +48,17 @@ func RegisterDefaultLifecycleForKyma(kyma *v1alpha1.Kyma) {
 
 func IsKymaInState(kyma *v1alpha1.Kyma, state v1alpha1.State) func() bool {
 	return func() bool {
-		kymaFromCluster := &v1alpha1.Kyma{}
-		err := controlPlaneClient.Get(ctx, types.NamespacedName{
-			Name:      kyma.GetName(),
-			Namespace: kyma.GetNamespace(),
-		}, kymaFromCluster)
+		kymaFromCluster, err := GetKyma(controlPlaneClient, kyma)
 		if err != nil || kymaFromCluster.Status.State != state {
 			return false
 		}
-
 		return true
 	}
 }
 
 func GetKymaState(kyma *v1alpha1.Kyma) func() string {
 	return func() string {
-		createdKyma := &v1alpha1.Kyma{}
-		err := controlPlaneClient.Get(ctx,
-			types.NamespacedName{Name: kyma.GetName(), Namespace: kyma.GetNamespace()}, createdKyma)
+		createdKyma, err := GetKyma(controlPlaneClient, kyma)
 		if err != nil {
 			return ""
 		}
@@ -74,13 +66,11 @@ func GetKymaState(kyma *v1alpha1.Kyma) func() string {
 	}
 }
 
-func GetKymaConditions(kyma *v1alpha1.Kyma) func() []v1alpha1.KymaCondition {
-	return func() []v1alpha1.KymaCondition {
-		createdKyma := &v1alpha1.Kyma{}
-		err := controlPlaneClient.Get(ctx,
-			types.NamespacedName{Name: kyma.GetName(), Namespace: kyma.GetNamespace()}, createdKyma)
+func GetKymaConditions(kyma *v1alpha1.Kyma) func() []metav1.Condition {
+	return func() []metav1.Condition {
+		createdKyma, err := GetKyma(controlPlaneClient, kyma)
 		if err != nil {
-			return []v1alpha1.KymaCondition{}
+			return []metav1.Condition{}
 		}
 		return createdKyma.Status.Conditions
 	}
@@ -147,32 +137,22 @@ func getModule(
 	return component, nil
 }
 
-func getRemoteKyma(
-	remoteClient client.Client,
+func GetKyma(
+	testClient client.Client,
 	kyma *v1alpha1.Kyma,
 ) (*v1alpha1.Kyma, error) {
-	remoteKyma := &v1alpha1.Kyma{}
-	err := remoteClient.Get(ctx, client.ObjectKeyFromObject(kyma), remoteKyma)
+	kymaInCluster := &v1alpha1.Kyma{}
+	err := testClient.Get(ctx, client.ObjectKeyFromObject(kyma), kymaInCluster)
 	if err != nil {
 		return nil, err
 	}
-	return remoteKyma, nil
+	return kymaInCluster, nil
 }
 
 func RemoteKymaExists(remoteClient client.Client, kyma *v1alpha1.Kyma) func() error {
 	return func() error {
-		_, err := getRemoteKyma(remoteClient, kyma)
+		_, err := GetKyma(remoteClient, kyma)
 		return err
-	}
-}
-
-func RemoteKyma(remoteClient client.Client, kyma *v1alpha1.Kyma, tester func(*v1alpha1.Kyma) error) func() error {
-	return func() error {
-		remoteKyma, err := getRemoteKyma(remoteClient, kyma)
-		if err != nil {
-			return err
-		}
-		return tester(remoteKyma)
 	}
 }
 

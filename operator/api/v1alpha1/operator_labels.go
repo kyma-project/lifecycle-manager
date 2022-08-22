@@ -6,21 +6,19 @@ import (
 )
 
 const (
-	OperatorPrefix    = "operator.kyma-project.io"
-	ComponentPrefix   = "component.kyma-project.io"
-	Separator         = "/"
-	ControllerName    = OperatorPrefix + Separator + "controller-name"
-	ChannelLabel      = OperatorPrefix + Separator + "channel"
-	ManagedBy         = OperatorPrefix + Separator + "managed-by"
-	Finalizer         = OperatorPrefix + Separator + string(KymaKind)
-	KymaName          = OperatorPrefix + Separator + "kyma-name"
-	LastSync          = OperatorPrefix + Separator + "last-sync"
-	Signature         = OperatorPrefix + Separator + "signature"
-	ModuleName        = OperatorPrefix + Separator + "module-name"
-	ModuleVersion     = OperatorPrefix + Separator + "module-version"
-	ProfileLabel      = OperatorPrefix + Separator + "profile"
-	OverrideTypeLabel = OperatorPrefix + Separator + "override-type"
-	OperatorName      = "kyma-operator"
+	OperatorPrefix  = "operator.kyma-project.io"
+	ComponentPrefix = "component.kyma-project.io"
+	Separator       = "/"
+	ControllerName  = OperatorPrefix + Separator + "controller-name"
+	ChannelLabel    = OperatorPrefix + Separator + "channel"
+	ManagedBy       = OperatorPrefix + Separator + "managed-by"
+	Finalizer       = OperatorPrefix + Separator + string(KymaKind)
+	KymaName        = OperatorPrefix + Separator + "kyma-name"
+	LastSync        = OperatorPrefix + Separator + "last-sync"
+	Signature       = OperatorPrefix + Separator + "signature"
+	ModuleName      = OperatorPrefix + Separator + "module-name"
+	ModuleVersion   = OperatorPrefix + Separator + "module-version"
+	OperatorName    = "kyma-operator"
 )
 
 func GetMatchingLabelsForModule(module *Module) client.MatchingLabels {

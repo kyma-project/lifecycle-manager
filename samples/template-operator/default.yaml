@@ -4,5 +4,5 @@ metadata:
   name: sample-sample
 spec:
   chartPath: "./module-chart"
-  releaseName: "nginx-release-name"
-  chartFlags: "Namespace=sample-ns,CreateNamespace=true"
+  releaseName: "redis-release"
+  chartFlags: "Namespace=redis,CreateNamespace=true"
