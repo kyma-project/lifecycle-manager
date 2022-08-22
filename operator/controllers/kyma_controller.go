@@ -284,6 +284,14 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *v1a
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
 			fmt.Errorf("error while fetching modules during consistency check: %w", err))
 	}
+
+	for _, module := range modules {
+		if module.TemplateOutdated {
+			return r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing,
+				fmt.Sprintf("module template of module %s got updated", module.Name))
+		}
+	}
+
 	r.SyncModuleStatus(ctx, modules)
 	if err != nil {
 		return fmt.Errorf("error while updating component status conditions: %w", err)
@@ -300,13 +308,6 @@ func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *v1a
 	if kyma.Status.ObservedGeneration != kyma.Generation {
 		return r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing,
 			"object updated")
-	}
-
-	for _, module := range modules {
-		if module.TemplateOutdated {
-			return r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing,
-				fmt.Sprintf("module template of module %s got updated", module.Name))
-		}
 	}
 
 	if len(kyma.GetNoLongerExistingModuleInfos()) > 0 {
