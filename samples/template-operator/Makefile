@@ -8,12 +8,13 @@ MODULE_REGISTRY ?= op-kcp-registry.localhost:$(MODULE_REGISTRY_PORT)/unsigned
 # Desired Channel of the Generated Module Template
 MODULE_TEMPLATE_CHANNEL ?= stable
 
+MODULE_CREDENTIALS ?= ""
+
 # Image URL to use all building/pushing image targets
 IMG_REGISTRY_PORT ?= $(MODULE_REGISTRY_PORT)
 IMG_REGISTRY ?= op-skr-registry.localhost:$(IMG_REGISTRY_PORT)/unsigned/operator-images
 IMG ?= $(IMG_REGISTRY)/$(MODULE_NAME)-operator:$(MODULE_VERSION)
 
-KYMA_VERSION ?= 2dd54fae46e6d2e66ce0419dfbcf6ad789a64c09
 COMPONENT_CLI_VERSION ?= latest
 KUSTOMIZE_VERSION ?= v4.5.6
 
@@ -24,11 +25,17 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+ifeq (,$(MODULE_CREDENTIALS))
+MODULE_CREATION_FLAGS=--registry $(MODULE_REGISTRY) -w --insecure
+else
+MODULE_CREATION_FLAGS=--registry $(MODULE_REGISTRY) -w -c $(MODULE_CREDENTIALS)
+endif
+
 # Setting SHELL to bash allows bash commands to be executed by recipes.
-# This is a requirement for 'setup-envtest.sh' in the test target.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
+
 
 .PHONY: all
 all: module-build
@@ -81,11 +88,8 @@ module-image: operator/docker-build operator/docker-push ## Build the Module Ima
 	echo "built and pushed module image $(IMG)"
 
 .PHONY: module-build
-module-build: component-cli module-operator-chart ## Build the Module and push it to a registry defined in MODULE_REGISTRY
-	$(KYMA) alpha create module kyma.project.io/module/$(MODULE_NAME) $(MODULE_VERSION) . \
-		--registry $(MODULE_REGISTRY) \
-		--insecure \
-		-w
+module-build: kyma component-cli module-operator-chart ## Build the Module and push it to a registry defined in MODULE_REGISTRY
+	$(KYMA) alpha create module kyma.project.io/module/$(MODULE_NAME) $(MODULE_VERSION) . $(MODULE_CREATION_FLAGS)
 
 .PHONY: module-template-push
 module-template-push: ## Pushes the ModuleTemplate referencing the Image on MODULE_REGISTRY
@@ -103,8 +107,13 @@ $(LOCALBIN):
 	mkdir -p $(LOCALBIN)
 
 ########## Kyma CLI ###########
-KYMA_CLI_CHECKOUT_PATH = "/tmp/operator/make-build/kyma-cli"
-KYMA ?= /Users/D067928/SAPDevelop/go/src/github.com/kyma-project/cli/bin/kyma-darwin
+KYMA_STABILITY ?= unstable
+
+KYMA ?= $(LOCALBIN)/kyma-$(KYMA_STABILITY)
+kyma: $(KYMA) ## Download kyma locally if necessary.
+$(KYMA):
+	test -f $@ || curl -# -Lo $(KYMA) https://storage.googleapis.com/kyma-cli-$(KYMA_STABILITY)/kyma-darwin 
+	chmod 0100 $(KYMA)
 
 ########## Kustomize ###########
 KUSTOMIZE ?= $(LOCALBIN)/kustomize

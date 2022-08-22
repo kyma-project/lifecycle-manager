@@ -40,7 +40,7 @@ spec:
         - --health-probe-bind-address=:8081
         - --metrics-bind-address=127.0.0.1:8080
         - --leader-elect
-        image: op-skr-registry.localhost:54863/unsigned/operator-images/template-operator:0.0.4
+        image: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/operator-test/operator-images/template-operator:0.0.4
         livenessProbe:
           httpGet:
             path: /healthz
