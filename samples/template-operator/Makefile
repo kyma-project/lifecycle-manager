@@ -8,6 +8,8 @@ MODULE_REGISTRY ?= op-kcp-registry.localhost:$(MODULE_REGISTRY_PORT)/unsigned
 # Desired Channel of the Generated Module Template
 MODULE_TEMPLATE_CHANNEL ?= stable
 
+# Credentials used for authenticating into the module registry
+# see `kyma alpha mod create --help for more info`
 MODULE_CREDENTIALS ?= ""
 
 # Image URL to use all building/pushing image targets
@@ -25,10 +27,12 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+# This will change the flags of the `kyma alpha module create` command in case we spot credentials
+# Otherwise we will assume http-based local registries without authentication (e.g. for k3d)
 ifeq (,$(MODULE_CREDENTIALS))
 MODULE_CREATION_FLAGS=--registry $(MODULE_REGISTRY) -w --insecure
 else
-MODULE_CREATION_FLAGS=--registry $(MODULE_REGISTRY) -w -c $(MODULE_CREDENTIALS)
+MODULE_CREATION_FLAGS=--registry $(MODULE_REGISTRY) -w -c "$(MODULE_CREDENTIALS)"
 endif
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
