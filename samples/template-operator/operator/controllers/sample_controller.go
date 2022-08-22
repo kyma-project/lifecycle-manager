@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -46,6 +47,10 @@ const deletionFinalizer = "deletion-finalizer"
 //+kubebuilder:rbac:groups=component.kyma-project.io,resources=samples,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=component.kyma-project.io,resources=samples/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=component.kyma-project.io,resources=samples/finalizers,verbs=update
+//+kubebuilder:rbac:groups="",resources=events,verbs=create;patch;get;list;watch
+//+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
+// TODO: dynamically create RBACs! Remove line below.
+//+kubebuilder:rbac:groups="*",resources="*",verbs=get;list;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -89,13 +94,13 @@ func (r *SampleReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	case "":
 		return ctrl.Result{}, r.HandleInitialState(ctx, sampleResource)
 	case v1alpha1.SampleStateProcessing:
-		return ctrl.Result{}, r.HandleProcessingState(ctx, sampleResource)
+		return ctrl.Result{RequeueAfter: time.Second * 3}, r.HandleProcessingState(ctx, sampleResource)
 	case v1alpha1.SampleStateDeleting:
 		return ctrl.Result{}, r.HandleDeletingState(ctx, sampleResource)
 	case v1alpha1.SampleStateError:
-		return ctrl.Result{}, r.HandleErrorState(ctx, sampleResource)
+		return ctrl.Result{RequeueAfter: time.Second * 3}, r.HandleErrorState(ctx, sampleResource)
 	case v1alpha1.SampleStateReady:
-		return ctrl.Result{}, r.HandleReadyState(ctx, sampleResource)
+		return ctrl.Result{RequeueAfter: time.Second * 3}, r.HandleReadyState(ctx, sampleResource)
 	}
 
 	return ctrl.Result{}, nil
@@ -126,6 +131,7 @@ func (r *SampleReconciler) HandleProcessingState(ctx context.Context, sampleReso
 
 	ready, err := manifestClient.Install(installInfo)
 	if err != nil {
+		logger.Error(err, "")
 		sampleResource.Status.State = v1alpha1.SampleStateError
 		return r.Client.Status().Update(ctx, sampleResource)
 	}
@@ -133,6 +139,7 @@ func (r *SampleReconciler) HandleProcessingState(ctx context.Context, sampleReso
 		sampleResource.Status.State = v1alpha1.SampleStateReady
 		return r.Client.Status().Update(ctx, sampleResource)
 	}
+	// not ready + no error
 	return nil
 }
 
@@ -169,6 +176,7 @@ func (r *SampleReconciler) HandleDeletingState(ctx context.Context, sampleResour
 
 	readyToBeDeleted, err := manifestClient.Uninstall(installInfo)
 	if err != nil {
+		logger.Error(err, "")
 		sampleResource.Status.State = v1alpha1.SampleStateError
 		return r.Client.Status().Update(ctx, sampleResource)
 	}
