@@ -172,10 +172,10 @@ First make sure that the `kyma-system` namespace is created:
 kubectl create ns kyma-system
 ```
 
-After this, build and push the module template to the Registry with
+After this, build the module and push it to the registry:
 
 ```sh
-make module-build module-template-push
+make module-build
 ```
 
 _Note: If you receive 403 / 401, recreate the `MODULE_CREDENTIALS` variable as it could be that your credentials timed out_
@@ -243,10 +243,10 @@ _Note: The order of installation is important due to cross-dependencies in CRDs_
 In https://github.com/kyma-project/manifest-operator run
 
 ```sh
-make deploy IMG=eu.gcr.io/kyma-project/manifest-operator:PR-67
+make deploy IMG=eu.gcr.io/kyma-project/manifest-operator:PR-73
 ```
 
-_Note: Replace `PR-67` with your desired tag_
+_Note: Replace `PR-73` with your desired tag_
 
 In https://github.com/kyma-project/kyma-operator run
 
@@ -261,6 +261,16 @@ _Note: It could be that you get messages like `no matches for kind "VirtualServi
 ## Start the Installation
 
 _Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set to the KCP Cluster_
+
+First, install the module template in the control-plane to make it available for all Kyma installations:
+
+In `samples/template-operator`, run
+
+```sh
+make module-template-push
+```
+
+to apply the module-template
 
 Create a request for kyma installation of the module in `samples/template-operator` of the kyma-operator with
 
