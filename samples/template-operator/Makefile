@@ -125,3 +125,8 @@ KUSTOMIZE ?= $(LOCALBIN)/kustomize
 kustomize: $(KUSTOMIZE) ## Download & Build kustomize locally if necessary.
 $(KUSTOMIZE): $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/kustomize/kustomize/v4@$(KUSTOMIZE_VERSION)
+
+########## Grafana Dashboard ###########
+.PHONY: grafana-dashboard
+grafana-dashboard: ## Generating Grafana manifests to visualize controller status.
+	cd operator && kubebuilder edit --plugins grafana.kubebuilder.io/v1-alpha
