@@ -49,17 +49,20 @@ const sampleAnnotationValue = "template-operator"
 // SetupWithManager sets up the controller with the Manager.
 func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.Config = mgr.GetConfig()
-	if err := r.Inject(mgr, &v1alpha1.Sample{},
-		declarative.WithResourceLabels(
-			map[string]string{"sampleKey": "sampleValue"},
-		),
-		declarative.WithObjectTransform(transform),
-	); err != nil {
+	if err := r.initReconciler(mgr); err != nil {
 		return err
 	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Sample{}).
 		Complete(r)
+}
+
+func (r *SampleReconciler) initReconciler(mgr ctrl.Manager) error {
+	return r.Inject(mgr, &v1alpha1.Sample{},
+		declarative.WithResourceLabels(map[string]string{"sampleKey": "sampleValue"}),
+		declarative.WithObjectTransform(transform),
+	)
 }
 
 func transform(_ context.Context, _ types.BaseCustomObject, manifestResources *types.ManifestResources) error {
