@@ -17,8 +17,10 @@ limitations under the License.
 package controllers
 
 import (
+	"context"
 	"github.com/kyma-project/kyma-operator/samples/template-operator/api/v1alpha1"
 	"github.com/kyma-project/manifest-operator/operator/pkg/declarative"
+	"github.com/kyma-project/manifest-operator/operator/pkg/types"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -33,7 +35,8 @@ type SampleReconciler struct {
 	*rest.Config
 }
 
-const deletionFinalizer = "deletion-finalizer"
+const sampleAnnotationKey = "owner"
+const sampleAnnotationValue = "template-operator"
 
 //+kubebuilder:rbac:groups=component.kyma-project.io,resources=samples,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=component.kyma-project.io,resources=samples/status,verbs=get;update;patch
@@ -49,10 +52,26 @@ func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	if err := r.Inject(mgr, &v1alpha1.Sample{},
 		declarative.WithResourceLabels(
 			map[string]string{"sampleKey": "sampleValue"},
-		)); err != nil {
+		),
+		declarative.WithObjectTransform(transform),
+	); err != nil {
 		return err
 	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Sample{}).
 		Complete(r)
+}
+
+func transform(_ context.Context, _ types.BaseCustomObject, manifestResources *types.ManifestResources) error {
+	for _, resource := range manifestResources.Items {
+		annotations := resource.GetAnnotations()
+		if annotations == nil {
+			annotations = make(map[string]string, 0)
+		}
+		if annotations[sampleAnnotationKey] == "" {
+			annotations[sampleAnnotationKey] = sampleAnnotationValue
+			resource.SetAnnotations(annotations)
+		}
+	}
+	return nil
 }
