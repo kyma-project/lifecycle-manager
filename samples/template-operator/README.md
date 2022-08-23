@@ -139,3 +139,12 @@ This is required to track the current state of the module, represented by this c
 On top, `.status` object could contain other relevant properties as per your requirements.
 2. Next, check method `Reconcile()` inside the [SampleController](./controllers/sample_controller.go), which demonstrates how `.status.state` properties could be set, depending upon your logic.
 3. The `.status.state` value has a literal sense behind it, so use them appropriately.
+
+## Grafana dashboard
+
+By the following command, two grafana dashboard files with controller related metrics will be generated under `/operator/grafana` folder.
+```
+make grafana-dashboard 
+```
+For how to import dashboard, please read [official grafana guide](https://grafana.com/docs/grafana/latest/dashboards/export-import/#import-dashboard).
+This feature is supported by [kubebuilder grafana plugin](https://book.kubebuilder.io/plugins/grafana-v1-alpha.html).
