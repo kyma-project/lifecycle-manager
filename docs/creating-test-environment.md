@@ -59,38 +59,6 @@ for public registries_
 kubectl config use k3d-op-kcp
 ```
 
-# Installing the Operators
-
-## Install CRDs of Operator Stack
-
-_Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set to the KCP Cluster_
-
-### Install Manifest Operator CRDs
-
-1. Checkout https://github.com/kyma-project/manifest-operator and navigate to the operator: `cd operator`
-2. Run the Installation Command
-
-```sh
-make install
-```
-
-### Install Kyma Operator CRDs
-
-1. Checkout https://github.com/kyma-project/kyma-operator and navigate to the operator: `cd operator`
-2. Run the Installation Command
-
-```sh
-make install
-```
-
-Ensure the CRDs are installed with `kubectl get crds | grep kyma-project.io`:
-
-```
-manifests.component.kyma-project.io        2022-08-18T16:27:21Z
-kymas.operator.kyma-project.io             2022-08-18T16:29:28Z
-moduletemplates.operator.kyma-project.io   2022-08-18T16:29:28Z
-```
-
 # Build your module
 
 In `https://github.com/kyma-project/kyma-operator`, `cd samples/template-operator`
@@ -226,6 +194,36 @@ _Note for externally created clusters: You can use KCP_CLUSTER_CTX and SKR_CLUST
 
 _Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set to the KCP Cluster_
 
+#### Install Manifest Operator CRDs
+
+1. Checkout https://github.com/kyma-project/manifest-operator and navigate to the operator: `cd operator`
+2. Run the Installation Command
+
+```sh
+make install
+```
+
+#### Install Kyma Operator CRDs
+
+1. Checkout https://github.com/kyma-project/kyma-operator and navigate to the operator: `cd operator`
+2. Run the Installation Command
+
+```sh
+make install
+```
+
+Ensure the CRDs are installed with `kubectl get crds | grep kyma-project.io`:
+
+```
+manifests.component.kyma-project.io        2022-08-18T16:27:21Z
+kymas.operator.kyma-project.io             2022-08-18T16:29:28Z
+moduletemplates.operator.kyma-project.io   2022-08-18T16:29:28Z
+```
+
+#### Run the Operators
+
+_Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set to the KCP Cluster_
+
 In https://github.com/kyma-project/kyma-operator run
 
 ```sh
@@ -240,7 +238,25 @@ make run
 
 ### Run in Control Plane
 
-TODO: Fill after first image builds run central build
+_Note: The order of installation is important due to cross-dependencies in CRDs_
+
+In https://github.com/kyma-project/manifest-operator run
+
+```sh
+make deploy IMG=eu.gcr.io/kyma-project/manifest-operator:PR-67
+```
+
+_Note: Replace `PR-67` with your desired tag_
+
+In https://github.com/kyma-project/kyma-operator run
+
+```sh
+make deploy IMG=eu.gcr.io/kyma-project/kyma-operator:PR-122
+```
+
+_Note: Replace `PR-122` with your desired tag_
+
+_Note: It could be that you get messages like `no matches for kind "VirtualService" in version "networking.istio.io/v1beta1"`. This is normal if you install the operators in a cluster without a certain dependency. If you do not need this for your test, you can safely ignore it._
 
 ## Start the Installation
 
