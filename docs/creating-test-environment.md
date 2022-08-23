@@ -55,9 +55,11 @@ for public registries_
 
 ## Make sure you are in the Control Plane
 
-```
+```sh
 kubectl config use k3d-op-kcp
 ```
+
+# Installing the Operators
 
 ## Install CRDs of Operator Stack
 
@@ -68,7 +70,7 @@ _Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set 
 1. Checkout https://github.com/kyma-project/manifest-operator and navigate to the operator: `cd operator`
 2. Run the Installation Command
 
-```
+```sh
 make install
 ```
 
@@ -77,11 +79,11 @@ make install
 1. Checkout https://github.com/kyma-project/kyma-operator and navigate to the operator: `cd operator`
 2. Run the Installation Command
 
-```
+```sh
 make install
 ```
 
-Ensure the CRDs are installed with `k get crds | grep kyma-project.io`:
+Ensure the CRDs are installed with `kubectl get crds | grep kyma-project.io`:
 
 ```
 manifests.component.kyma-project.io        2022-08-18T16:27:21Z
@@ -89,33 +91,33 @@ kymas.operator.kyma-project.io             2022-08-18T16:29:28Z
 moduletemplates.operator.kyma-project.io   2022-08-18T16:29:28Z
 ```
 
-## Build your module
+# Build your module
 
 In `https://github.com/kyma-project/kyma-operator`, `cd samples/template-operator`
 
 After this find the Port of your KCP OCI Registry and write it to `MODULE_REGISTRY_PORT`:
 
-### Using a Local Module/Image Registry
+## Using a Local Module/Image Registry
 
-```
+```sh
 export MODULE_REGISTRY_PORT=$(docker port op-kcp-registry.localhost 5000/tcp | cut -d ":" -f2)
 export IMG_REGISTRY_PORT=$(docker port op-skr-registry.localhost 5000/tcp | cut -d ":" -f2)
 ```
 
-### Using a Remote Module/Image Registry
+## Using a Remote Module/Image Registry
 
 In general its possible to update your registries with 2 environment variables (for the module template, and the operator image):
 
-```
+```sh
 export MODULE_REGISTRY=your-registry-goes-here.com
 export IMG_REGISTRY=your-registry-goes-here.com
 ```
 
-#### Using GCP Artifact Registry
+### Using GCP Artifact Registry
 
 We will be assuming you have a GCP project called `sap-kyma-jellyfish-dev`
 
-##### Creating your Repository
+#### Creating your Repository
 
 We will assume you will be creating and using a Artifact Registry Repository called `operator-test`.
 
@@ -130,7 +132,16 @@ export MODULE_REGISTRY=europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/operat
 export IMG_REGISTRY=$MODULE_REGISTRY/operator-images
 ```
 
-##### Authenticating Locally
+_Note: For `MODULE_REGISTRY` it is important not to define any scheme such as `https://` so that the module generation works correctly, it is appended automatically in the operators based on the environment_
+
+Now, make sure that the Read access to the repository is possible anonymously to make it work with remote clusters (e.g. in gardener)
+
+```sh
+gcloud artifacts repositories add-iam-policy-binding operator-test \
+ --location=europe-west3 --member=allUsers --role=roles/artifactregistry.reader
+```
+
+#### Authenticating Locally
 
 We will assume you will be creating and using a service-account called `operator-test-sa`.
 
@@ -141,7 +152,7 @@ gcloud auth configure-docker \
     europe-west3-docker.pkg.dev
 ```
 
-##### Creating a service Account
+#### Creating a service Account
 
 Creation of a service account is useful for productive purposes
 
@@ -161,53 +172,49 @@ gcloud projects add-iam-policy-binding sap-kyma-jellyfish-dev \
 
 Impersonate the service-account
 
-```
+```sh
 gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com
 ```
 
 Verify your login:
 
-```
+```sh
 gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com | docker login -u oauth2accesstoken --password-stdin https://europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/operator-test
 ```
 
 ```sh
-export MODULE_CREDENTIALS=oauth2accesstoken:[token]
+export MODULE_CREDENTIALS=oauth2accesstoken:$(gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com)
 ```
 
-### Generating and Pushing the Operator Image and Charts
+## Generating and Pushing the Operator Image and Charts
 
 Next generate and push the module image of the operator
 
-`````
-
+```sh
 make module-operator-chart module-image
-
 ```
 
-## Use your module and trigger a Kyma Installation
+# Install Kyma with your Module
 
 _Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set to the KCP Cluster_
 
 First make sure that the `kyma-system` namespace is created:
 
-```
-
+```sh
 kubectl create ns kyma-system
-
 ```
 
 After this, build and push the module template to the Registry with
 
-```
-
+```sh
 make module-build module-template-push
-
 ```
 
-Before we start reconciling, lets create a secret to access the SKR:
+_Note: If you receive 403 / 401, recreate the `MODULE_CREDENTIALS` variable as it could be that your credentials timed out_
 
-In https://github.com/kyma-project/kyma-operator run
+Before we start reconciling, let's create a secret to access the SKR:
+
+In https://github.com/kyma-project/kyma-operator in the `operator` subdirectory, run
 
 `sh config/samples/secret/k3d-secret-gen.sh`
 
@@ -215,23 +222,25 @@ _Note for externally created clusters: You can use KCP_CLUSTER_CTX and SKR_CLUST
 
 ## Run the operators
 
+### Run Locally
+
 _Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set to the KCP Cluster_
 
 In https://github.com/kyma-project/kyma-operator run
 
-```
-
+```sh
 make run
-
 ```
 
 In https://github.com/kyma-project/manifest-operator run
 
-```
-
+```sh
 make run
-
 ```
+
+### Run in Control Plane
+
+TODO
 
 ## Start the Installation
 
@@ -239,10 +248,10 @@ _Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set 
 
 Create a request for kyma installation of the module in `samples/template-operator` of the kyma-operator with
 
-```
+```sh
 sh hack/gen-kyma.sh
 kubectl apply -f kyma.yaml
-````
+```
 
 Now try to check your kyma installation progress, e.g. with `kubectl get kyma -n kyma-system -ojsonpath={".items[0].status"} | yq -P`:
 
@@ -266,7 +275,7 @@ moduleInfos:
         version: v1alpha1
 observedGeneration: 1
 state: Ready
-````
+```
 
 Also, you can observe the installation in the runtime by switching the context to the SKR context and then verifying the status.
 
@@ -278,4 +287,3 @@ You can verify this by checking if the contents of the `module-chart`directry in
 
 You can even check the contents of the deployments that were generated by the deployed operator (assuming the helm chart did not change the name of the resource):
 `kubectl get -f operator/module-chart/templates/deployment.yaml -ojsonpath={".status.conditions"} | yq`
-`````

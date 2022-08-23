@@ -16,7 +16,7 @@ component:
     type: helm-chart
     version: 0.0.4
   - access:
-      filename: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+      filename: sha256:70b0d7ac5080db7a7110c22c04c9796e22b9f807e7b0b2ed07b1bcef58002aa4
       mediaType: application/octet-stream
       type: localFilesystemBlob
     name: config

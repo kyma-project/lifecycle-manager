@@ -29,19 +29,19 @@ spec:
       name: kyma.project.io/module/template
       provider: internal
       repositoryContexts:
-      - baseUrl: op-kcp-registry.localhost:54885/unsigned
+      - baseUrl: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/operator-test
         componentNameMapping: urlPath
         type: ociRegistry
       resources:
       - access:
-          digest: sha256:6909531b6d461dbeed33b375075de862f354cf99e69c31ff3558724c49e5461a
+          digest: sha256:8a8e2022df14c2fd97f49a2eb0736a33a079e2a2ff7ee207419b25604b86c4b9
           type: localOciBlob
         name: template-operator
         relation: local
         type: helm-chart
         version: 0.0.4
       - access:
-          digest: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+          digest: sha256:70b0d7ac5080db7a7110c22c04c9796e22b9f807e7b0b2ed07b1bcef58002aa4
           type: localOciBlob
         name: config
         relation: local
