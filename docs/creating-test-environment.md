@@ -240,7 +240,7 @@ make run
 
 ### Run in Control Plane
 
-TODO
+TODO: Fill after first image builds run central build
 
 ## Start the Installation
 

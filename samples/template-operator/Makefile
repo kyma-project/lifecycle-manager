@@ -92,7 +92,7 @@ module-image: operator/docker-build operator/docker-push ## Build the Module Ima
 	echo "built and pushed module image $(IMG)"
 
 .PHONY: module-build
-module-build: kyma component-cli module-operator-chart ## Build the Module and push it to a registry defined in MODULE_REGISTRY
+module-build: kyma module-operator-chart ## Build the Module and push it to a registry defined in MODULE_REGISTRY
 	$(KYMA) alpha create module kyma.project.io/module/$(MODULE_NAME) $(MODULE_VERSION) . $(MODULE_CREATION_FLAGS)
 
 .PHONY: module-template-push
@@ -125,10 +125,3 @@ KUSTOMIZE ?= $(LOCALBIN)/kustomize
 kustomize: $(KUSTOMIZE) ## Download & Build kustomize locally if necessary.
 $(KUSTOMIZE): $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/kustomize/kustomize/v4@$(KUSTOMIZE_VERSION)
-
-########## Component-CLI ###########
-COMPONENT_CLI ?= $(LOCALBIN)/component-cli
-.PHONY: component-cli
-component-cli: $(COMPONENT_CLI) ## Download & Build component-cli locally if necessary.
-$(COMPONENT_CLI): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install github.com/gardener/component-cli/cmd/component-cli@$(COMPONENT_CLI_VERSION)
