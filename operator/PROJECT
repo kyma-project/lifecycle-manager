@@ -1,6 +1,8 @@
 domain: kyma-project.io
 layout:
 - go.kubebuilder.io/v3
+plugins:
+  grafana.kubebuilder.io/v1-alpha: {}
 projectName: operator
 repo: github.com/kyma-project/kyma-operator/operator
 resources:

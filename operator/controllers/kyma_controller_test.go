@@ -194,6 +194,14 @@ var _ = Describe("Kyma update Manifest CR", func() {
 			Eventually(ModuleExists(kyma, activeModule), timeout, interval).Should(BeTrue())
 		}
 
+		By("reacting to a change of its Modules when they are set to ready")
+		for _, activeModule := range moduleTemplates {
+			Eventually(UpdateModuleState(kyma, activeModule, v1alpha1.StateReady), 20*time.Second, interval).Should(Succeed())
+		}
+
+		By("Kyma CR should be in Ready state")
+		Eventually(GetKymaState(kyma), 20*time.Second, interval).Should(BeEquivalentTo(string(v1alpha1.StateReady)))
+
 		By("Update Module Template spec.data.spec field")
 		valueUpdated := "valueUpdated"
 		for _, activeModule := range moduleTemplates {

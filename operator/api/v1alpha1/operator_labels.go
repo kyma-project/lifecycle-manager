@@ -47,7 +47,7 @@ func (kyma *Kyma) CheckLabelsAndFinalizers() bool {
 	}
 
 	if _, ok := kyma.ObjectMeta.Labels[ManagedBy]; !ok {
-		kyma.ObjectMeta.Labels[ManagedBy] = string(KymaKind)
+		kyma.ObjectMeta.Labels[ManagedBy] = OperatorName
 		updateRequired = true
 	}
 	return updateRequired

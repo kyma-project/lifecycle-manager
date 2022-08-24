@@ -1,17 +1,22 @@
 # Module Name used for bundling the OCI Image and later on for referencing in the Kyma Modules
 MODULE_NAME ?= template
 # Semantic Module Version used for identifying the build
-MODULE_VERSION ?= 0.0.0
+MODULE_VERSION ?= 0.0.4
 # Module Registry used for pushing the image
-MODULE_REGISTRY ?= op-kcp-registry:56888/unsigned
+MODULE_REGISTRY_PORT ?= 50092
+MODULE_REGISTRY ?= op-kcp-registry.localhost:$(MODULE_REGISTRY_PORT)/unsigned
 # Desired Channel of the Generated Module Template
 MODULE_TEMPLATE_CHANNEL ?= stable
 
+# Credentials used for authenticating into the module registry
+# see `kyma alpha mod create --help for more info`
+# MODULE_CREDENTIALS ?= testuser:testpw
+
 # Image URL to use all building/pushing image targets
-IMG_REGISTRY ?= op-kcp-registry:56888/operator-images
+IMG_REGISTRY_PORT ?= $(MODULE_REGISTRY_PORT)
+IMG_REGISTRY ?= op-skr-registry.localhost:$(IMG_REGISTRY_PORT)/unsigned/operator-images
 IMG ?= $(IMG_REGISTRY)/$(MODULE_NAME)-operator:$(MODULE_VERSION)
 
-KYMA_VERSION ?= 2dd54fae46e6d2e66ce0419dfbcf6ad789a64c09
 COMPONENT_CLI_VERSION ?= latest
 KUSTOMIZE_VERSION ?= v4.5.6
 
@@ -22,11 +27,19 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
+# This will change the flags of the `kyma alpha module create` command in case we spot credentials
+# Otherwise we will assume http-based local registries without authentication (e.g. for k3d)
+ifeq (,$(MODULE_CREDENTIALS))
+MODULE_CREATION_FLAGS=--registry $(MODULE_REGISTRY) -w --insecure
+else
+MODULE_CREATION_FLAGS=--registry $(MODULE_REGISTRY) -w -c $(MODULE_CREDENTIALS)
+endif
+
 # Setting SHELL to bash allows bash commands to be executed by recipes.
-# This is a requirement for 'setup-envtest.sh' in the test target.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
+
 
 .PHONY: all
 all: module-build
@@ -74,25 +87,21 @@ module-operator-chart: operator/manifests kustomize ## Bundle the Module Operato
 	mv $(TEMPLATE_DIR)/templates/apiextensions.k8s.io_v1_customresourcedefinition_* $(TEMPLATE_DIR)/crds
 	MODULE_NAME=$(MODULE_NAME) MODULE_VERSION=$(MODULE_VERSION) $(GEN_CHART) > $(TEMPLATE_DIR)/Chart.yaml
 
-.PHONY: module-template-build 
-module-template-build: module-build module-default ## Deploy a Module and create a ModuleTemplate from a Descriptor and the Default data
-	$(COMPONENT_CLI) ca remote get $(MODULE_REGISTRY) kyma.project.io/module/$(MODULE_NAME) $(MODULE_VERSION) --allow-plain-http > ./mod/remote-component-descriptor.yaml
-	DEFAULT_DATA=default.yaml REMOTE_SIGNED_DESCRIPTOR=./mod/remote-component-descriptor.yaml MODULE_NAME=$(MODULE_NAME) OPERATOR_NAME=kyma-operator MODULE_TEMPLATE_CHANNEL=$(MODULE_TEMPLATE_CHANNEL) MODULE_TEMPLATE=template.yaml $(GEN_MODULE_TEMPLATE)
-
 .PHONY: module-image
 module-image: operator/docker-build operator/docker-push ## Build the Module Image and push it to a registry defined in IMG_REGISTRY
 	echo "built and pushed module image $(IMG)"
 
 .PHONY: module-build
-module-build: kyma component-cli module-operator-chart ## Build the Module and push it to a registry defined in MODULE_REGISTRY
-	$(KYMA) alpha create module kyma.project.io/module/$(MODULE_NAME) $(MODULE_VERSION) . \
-		--registry $(MODULE_REGISTRY) \
-		--insecure \
-		-w
+module-build: kyma module-operator-chart ## Build the Module and push it to a registry defined in MODULE_REGISTRY
+	$(KYMA) alpha create module kyma.project.io/module/$(MODULE_NAME) $(MODULE_VERSION) . $(MODULE_CREATION_FLAGS)
+
+.PHONY: module-template-push
+module-template-push: ## Pushes the ModuleTemplate referencing the Image on MODULE_REGISTRY
+	kubectl apply -f template.yaml
 
 .PHONY: module-default
 module-default:
-	if [ ! -d default.yaml ]; then cp operator/config/samples/* default.yaml; fi
+	cp operator/config/samples/* default.yaml
 
 ##@ Tools
 
@@ -102,17 +111,13 @@ $(LOCALBIN):
 	mkdir -p $(LOCALBIN)
 
 ########## Kyma CLI ###########
-KYMA_CLI_CHECKOUT_PATH = "/tmp/operator/make-build/kyma-cli"
-KYMA ?= $(LOCALBIN)/kyma
-.PHONY: get-kyma
-get-kyma:
-	if [ ! -d $(KYMA_CLI_CHECKOUT_PATH) ]; then GOBIN=$(LOCALBIN) git clone https://github.com/kyma-project/cli $(KYMA_CLI_CHECKOUT_PATH) -b main --depth 100; fi
-	cd $(KYMA_CLI_CHECKOUT_PATH) && git checkout $(KYMA_VERSION)
+KYMA_STABILITY ?= unstable
 
-.PHONY: kyma
-kyma: get-kyma $(KYMA) ## Download & Build Kyma CLI locally if necessary.
-$(KYMA): $(LOCALBIN)
-	cd $(KYMA_CLI_CHECKOUT_PATH) && make resolve && go build -o $(KYMA) -ldflags '-s -w -X github.com/kyma-project/cli/cmd/kyma/version.Version=$(KYMA_VERSION)' ./cmd 
+KYMA ?= $(LOCALBIN)/kyma-$(KYMA_STABILITY)
+kyma: $(KYMA) ## Download kyma locally if necessary.
+$(KYMA):
+	test -f $@ || curl -# -Lo $(KYMA) https://storage.googleapis.com/kyma-cli-$(KYMA_STABILITY)/kyma-darwin 
+	chmod 0100 $(KYMA)
 
 ########## Kustomize ###########
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
@@ -121,9 +126,7 @@ kustomize: $(KUSTOMIZE) ## Download & Build kustomize locally if necessary.
 $(KUSTOMIZE): $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/kustomize/kustomize/v4@$(KUSTOMIZE_VERSION)
 
-########## Component-CLI ###########
-COMPONENT_CLI ?= $(LOCALBIN)/component-cli
-.PHONY: component-cli
-component-cli: $(COMPONENT_CLI) ## Download & Build component-cli locally if necessary.
-$(COMPONENT_CLI): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install github.com/gardener/component-cli/cmd/component-cli@$(COMPONENT_CLI_VERSION)
+########## Grafana Dashboard ###########
+.PHONY: grafana-dashboard
+grafana-dashboard: ## Generating Grafana manifests to visualize controller status.
+	cd operator && kubebuilder edit --plugins grafana.kubebuilder.io/v1-alpha

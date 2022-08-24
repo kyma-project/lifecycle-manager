@@ -15,6 +15,7 @@ spec:
       containers:
         - name: redis
           image: redis:5.0.4
+          imagePullPolicy: Always
           command:
             - redis-server
             - "/redis-master/redis.conf"

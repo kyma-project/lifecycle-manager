@@ -3,35 +3,27 @@ component:
   name: kyma.project.io/module/template
   provider: internal
   repositoryContexts:
-    - baseUrl: op-kcp-registry:56888/unsigned
-      componentNameMapping: urlPath
-      type: ociRegistry
+  - baseUrl: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/operator-test
+    componentNameMapping: urlPath
+    type: ociRegistry
   resources:
-    - access:
-        filename: sha256:4ca3dcc19af77a57e0345018985aec0e7bf15a4fb4ae5b1c5392b45ea013c59a
-        mediaType: application/gzip
-        type: localFilesystemBlob
-      name: template-operator
-      relation: local
-      type: helm-chart
-      version: 0.0.0
-    - access:
-        filename: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-        mediaType: application/octet-stream
-        type: localFilesystemBlob
-      name: config
-      relation: local
-      type: yaml
-      version: 0.0.0
-    - access:
-        filename: sha256:50de4456b619e0ac1d552b000f56ca2050a4e013cbc0caa8ed1bd8434148f4fc
-        mediaType: application/gzip
-        type: localFilesystemBlob
-      name: crds
-      relation: local
-      type: crds
-      version: 0.0.0
+  - access:
+      filename: sha256:8a8e2022df14c2fd97f49a2eb0736a33a079e2a2ff7ee207419b25604b86c4b9
+      mediaType: application/gzip
+      type: localFilesystemBlob
+    name: template-operator
+    relation: local
+    type: helm-chart
+    version: 0.0.4
+  - access:
+      filename: sha256:70b0d7ac5080db7a7110c22c04c9796e22b9f807e7b0b2ed07b1bcef58002aa4
+      mediaType: application/octet-stream
+      type: localFilesystemBlob
+    name: config
+    relation: local
+    type: yaml
+    version: 0.0.4
   sources: []
-  version: 0.0.0
+  version: 0.0.4
 meta:
   schemaVersion: v2

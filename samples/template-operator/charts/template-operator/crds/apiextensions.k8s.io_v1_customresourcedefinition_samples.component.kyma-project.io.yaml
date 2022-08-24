@@ -14,7 +14,11 @@ spec:
     singular: sample
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .status.state
+      name: State
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: Sample is the Schema for the samples API
@@ -34,9 +38,14 @@ spec:
           spec:
             description: SampleSpec defines the desired state of Sample
             properties:
-              foo:
-                description: Foo is an example field of Sample. Edit sample_types.go
-                  to remove/update
+              chartFlags:
+                description: ChartFlags specifies flags for chart installation
+                type: string
+              chartPath:
+                description: ChartPath specifies path to local helm chart
+                type: string
+              releaseName:
+                description: ReleaseName specifies release name for helm chart
                 type: string
             type: object
           status:
