@@ -25,5 +25,6 @@ COPY --from=builder /workspace/manager .
 COPY module-chart/ ./module-chart/
 
 USER 65532:65532
+COPY module-chart/ module-chart/
 
 ENTRYPOINT ["/manager"]

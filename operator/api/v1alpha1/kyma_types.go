@@ -185,7 +185,7 @@ type ModuleInfo struct {
 	ModuleName string `json:"moduleName"`
 
 	// It contains information about the last parsed ModuleTemplate in Context of the Installation.
-	// This will update when Channel, Profile or the ModuleTemplate is changed.
+	// This will update when Channel or the ModuleTemplate is changed.
 	// +optional
 	TemplateInfo TemplateInfo `json:"templateInfo"`
 
