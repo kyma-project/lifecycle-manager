@@ -37,10 +37,10 @@ spec:
           metadata:
             type: object
           spec:
-            description: CustomObjectSpec specifies spec for CustomObject.
+            description: Spec specifies spec for CustomObject.
             properties:
               chartFlags:
-                description: ChartFlags specifies comma seperated flags for chart
+                description: ChartFlags specifies comma separated flags for chart
                   installation.
                 type: string
               chartPath:
@@ -50,11 +50,11 @@ spec:
                 description: ReleaseName specifies release name for helm chart.
                 type: string
               setValues:
-                description: SetFlag specifies comma seperated values for --set flag.
+                description: SetFlag specifies comma separated values for --set flag.
                 type: string
             type: object
           status:
-            description: CustomObjectStatus defines the observed state of CustomObject
+            description: Status defines the observed state of CustomObject.
             properties:
               conditions:
                 description: Conditions associated with CustomStatus.
