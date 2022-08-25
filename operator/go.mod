@@ -6,7 +6,7 @@ require (
 	github.com/gardener/component-spec/bindings-go v0.0.65
 	github.com/go-logr/logr v1.2.3
 	github.com/imdario/mergo v0.3.13
-	github.com/kyma-project/kyma-watcher/listener v0.0.0-20220714080306-99a0a5162c8b
+	github.com/kyma-project/runtime-watcher/listener v0.0.0-20220714080306-99a0a5162c8b
 	github.com/kyma-project/manifest-operator/operator v0.0.0-20220726131454-83e937e2eb36
 	github.com/onsi/ginkgo/v2 v2.1.4
 	github.com/onsi/gomega v1.19.0
@@ -51,7 +51,7 @@ require (
 	github.com/invopop/jsonschema v0.5.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kyma-project/kyma-watcher/operator v0.0.0-20220713095302-e33dd55737bd // indirect
+	github.com/kyma-project/runtime-watcher/operator v0.0.0-20220713095302-e33dd55737bd // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
