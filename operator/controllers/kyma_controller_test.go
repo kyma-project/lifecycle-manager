@@ -5,17 +5,17 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kyma-project/kyma-operator/operator/pkg/test"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/test"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/kyma-operator/operator/pkg/parsed"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/parsed"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 )
 
 const (

@@ -3,7 +3,7 @@ package index
 import (
 	"context"
 
-	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

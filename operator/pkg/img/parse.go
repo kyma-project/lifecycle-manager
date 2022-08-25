@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/kyma-operator/operator/pkg/ocmextensions"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/ocmextensions"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 )

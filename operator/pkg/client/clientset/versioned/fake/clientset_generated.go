@@ -18,9 +18,9 @@ limitations under the License.
 package fake
 
 import (
-	clientset "github.com/kyma-project/kyma-operator/operator/pkg/client/clientset/versioned"
-	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/pkg/client/clientset/versioned/typed/operator.kyma-project.io/v1alpha1"
-	fakeoperatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/pkg/client/clientset/versioned/typed/operator.kyma-project.io/v1alpha1/fake"
+	clientset "github.com/kyma-project/lifecycle-manager/operator/pkg/client/clientset/versioned"
+	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/pkg/client/clientset/versioned/typed/operator.kyma-project.io/v1alpha1"
+	fakeoperatorv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/pkg/client/clientset/versioned/typed/operator.kyma-project.io/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"

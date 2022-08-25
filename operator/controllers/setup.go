@@ -13,11 +13,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	"github.com/kyma-project/kyma-operator/operator/pkg/dynamic"
-	"github.com/kyma-project/kyma-operator/operator/pkg/index"
-	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
 	"github.com/kyma-project/kyma-watcher/listener"
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/dynamic"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/index"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/watch"
 )
 
 // SetupWithManager sets up the controller with the Manager.
