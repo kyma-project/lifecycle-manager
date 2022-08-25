@@ -17,7 +17,7 @@ import (
 	"github.com/kyma-project/kyma-operator/operator/pkg/dynamic"
 	"github.com/kyma-project/kyma-operator/operator/pkg/index"
 	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
-	"github.com/kyma-project/kyma-watcher/listener"
+	"github.com/kyma-project/runtime-watcher/kcp/pkg/listener"
 )
 
 // SetupWithManager sets up the controller with the Manager.
