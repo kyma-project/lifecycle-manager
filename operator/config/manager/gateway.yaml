@@ -55,7 +55,7 @@ spec:
       port: 8082
       targetPort: 8082
 ---
-###### manifest operator needs a different label than kyma operator to have a sufficient selector in place
+###### manifest operator needs a different label than lifecycle-manager to have a sufficient selector in place
 #apiVersion: v1
 #kind: Service
 #metadata:

@@ -203,7 +203,7 @@ _Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set 
 make install
 ```
 
-#### Install Kyma Operator CRDs
+#### Install lifecycle-manager CRDs
 
 1. Checkout https://github.com/kyma-project/kyma-operator and navigate to the operator: `cd operator`
 2. Run the Installation Command

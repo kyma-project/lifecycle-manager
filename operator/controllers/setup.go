@@ -28,7 +28,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch(context.TODO())),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
-		// here we define a watch on secrets for the kyma operator so that the cache is picking up changes
+		// here we define a watch on secrets for the lifecycle-manager so that the cache is picking up changes
 		Watches(&source.Kind{Type: &corev1.Secret{}}, handler.Funcs{})
 
 	var dynamicInformers map[string]source.Source
