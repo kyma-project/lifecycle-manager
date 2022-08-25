@@ -61,7 +61,7 @@ kubectl config use k3d-op-kcp
 
 # Build your module
 
-In `https://github.com/kyma-project/kyma-operator`, `cd samples/template-operator`
+In `https://github.com/kyma-project/lifecycle-manager`, `cd samples/template-operator`
 
 After this find the Port of your KCP OCI Registry and write it to `MODULE_REGISTRY_PORT`:
 
@@ -182,7 +182,7 @@ _Note: If you receive 403 / 401, recreate the `MODULE_CREDENTIALS` variable as i
 
 Before we start reconciling, let's create a secret to access the SKR:
 
-In https://github.com/kyma-project/kyma-operator in the `operator` subdirectory, run
+In https://github.com/kyma-project/lifecycle-manager in the `operator` subdirectory, run
 
 `sh config/samples/secret/k3d-secret-gen.sh`
 
@@ -205,7 +205,7 @@ make install
 
 #### Install lifecycle-manager CRDs
 
-1. Checkout https://github.com/kyma-project/kyma-operator and navigate to the operator: `cd operator`
+1. Checkout https://github.com/kyma-project/lifecycle-manager and navigate to the operator: `cd operator`
 2. Run the Installation Command
 
 ```sh
@@ -224,7 +224,7 @@ moduletemplates.operator.kyma-project.io   2022-08-18T16:29:28Z
 
 _Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set to the KCP Cluster_
 
-In https://github.com/kyma-project/kyma-operator run
+In https://github.com/kyma-project/lifecycle-manager run
 
 ```sh
 make run
@@ -248,10 +248,10 @@ make deploy IMG=eu.gcr.io/kyma-project/manifest-operator:PR-73
 
 _Note: Replace `PR-73` with your desired tag_
 
-In https://github.com/kyma-project/kyma-operator run
+In https://github.com/kyma-project/lifecycle-manager run
 
 ```sh
-make deploy IMG=eu.gcr.io/kyma-project/kyma-operator:PR-122
+make deploy IMG=eu.gcr.io/kyma-project/lifecycle-manager:PR-122
 ```
 
 _Note: Replace `PR-122` with your desired tag_
@@ -272,7 +272,7 @@ make module-template-push
 
 to apply the module-template
 
-Create a request for kyma installation of the module in `samples/template-operator` of the kyma-operator with
+Create a request for kyma installation of the module in `samples/template-operator` of the lifecycle-manager with
 
 ```sh
 sh hack/gen-kyma.sh

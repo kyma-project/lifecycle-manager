@@ -24,7 +24,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/kyma-operator/samples/template-operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/samples/template-operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-managerator/operator/pkg/declarative"
 	"github.com/kyma-project/manifest-operator/operator/pkg/types"
 )
