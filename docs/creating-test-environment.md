@@ -15,9 +15,10 @@ Make sure to have two `KUBECONFIG` compliant client configurations at hand, one 
 
 Provision two compliant kyma Clusters with the `kyma-cli`:
 
+`[gardener account kubeconfig]`: the access credential which can be downloaded from [gardener account](https://dashboard.garden.canary.k8s.ondemand.com/account). 
 ```sh
-kyma provision gardener gcp --name op-kcp --project jellyfish -s gcp-jellyfish-secret -c .kube/kubeconfig-garden-jellyfish.yaml
-kyma provision gardener gcp --name op-skr --project jellyfish -s gcp-jellyfish-secret -c .kube/kubeconfig-garden-jellyfish.yaml
+kyma provision gardener gcp --name op-kcp --project [gardener project] -s [secret for gcp] -c [gardener account kubeconfig]
+kyma provision gardener gcp --name op-skr --project [gardener project] -s [secret for gcp] -c [gardener account kubeconfig]
 ```
 
 ## Setting up your registry
