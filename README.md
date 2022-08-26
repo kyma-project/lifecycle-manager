@@ -1,10 +1,10 @@
-# kyma-operator
+# lifecycle-manager
 
 Kyma is the opinionated set of Kubernetes based modular building blocks that includes the necessary capabilities to develop and run enterprise-grade cloud-native applications. Kyma operator is a tool that manages the lifecycle of these components in your cluster.
 
 # Architecture
 
-The architecture of `kyma-operator` and component operators is based on Kubernetes controllers/operators. `kyma-operator` is a meta operator that coordinates and tracks the lifecycle of kyma components by delegating it to component operators.
+The architecture of `lifecycle-manager` and component operators is based on Kubernetes controllers/operators. `lifecycle-manager` is a meta operator that coordinates and tracks the lifecycle of kyma components by delegating it to component operators.
 
 Before you go further please make sure you understand concepts of Kubernetes API and resources. Recommended reading:
 - [Kubebuilder book](https://book.kubebuilder.io/)
@@ -17,9 +17,9 @@ Some architecture decisions were derived from business requirements and experime
 
 ![](docs/assets/kyma-operator-architecture.svg)
 
-`kyma-operator ` manages Clusters through the `Kyma` custom resource (CR). `Kyma` contains a desired state of all components in a cluster for a given Kyma Release. 
+`lifecycle-manager` manages Clusters through the `Kyma` custom resource (CR). `Kyma` contains a desired state of all components in a cluster for a given Kyma Release. 
 
-`kyma-operator` creates component custom resources and updates `Kyma`'s status subresource based on the observed status changes in the component custom resource (similar to a deployment tracking pods). 
+`lifecycle-manager` creates component custom resources and updates `Kyma`'s status subresource based on the observed status changes in the component custom resource (similar to a deployment tracking pods). 
 
 Component operators watch only their own custom resources and reconcile components in the target clusters to the desired state. These states are then aggregated in `Kyma` to reflect the cluster state.
 
