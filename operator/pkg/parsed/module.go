@@ -4,7 +4,7 @@ import (
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 )
 
 type (

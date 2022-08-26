@@ -1,4 +1,4 @@
-module github.com/kyma-project/kyma-operator/operator
+module github.com/kyma-project/lifecycle-manager/operator
 
 go 1.18
 

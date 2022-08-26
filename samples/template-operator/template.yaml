@@ -4,7 +4,7 @@ metadata:
   name: moduletemplate-template
   namespace: kyma-system
   labels:
-    "operator.kyma-project.io/managed-by": "kyma-operator"
+    "operator.kyma-project.io/managed-by": "lifecycle-manager"
     "operator.kyma-project.io/controller-name": "manifest"
     "operator.kyma-project.io/module-name": "template"
   annotations:

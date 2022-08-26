@@ -8,14 +8,14 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/kyma-project/kyma-operator/operator/pkg/test"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/test"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	yaml "k8s.io/apimachinery/pkg/util/yaml"
 
-	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 )
 
 var testFiles = filepath.Join("..", "..", "config", "samples", "tests") //nolint:gochecknoglobals

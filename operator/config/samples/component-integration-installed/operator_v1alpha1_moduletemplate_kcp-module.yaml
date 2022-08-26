@@ -4,7 +4,7 @@ metadata:
   name: moduletemplate-sample-kcp-module
   namespace: default
   labels:
-    "operator.kyma-project.io/managed-by": "kyma-operator"
+    "operator.kyma-project.io/managed-by": "lifecycle-manager"
     "operator.kyma-project.io/controller-name": "kcp-operator"
     "operator.kyma-project.io/module-name": "kcp-module"
     "operator.kyma-project.io/profile": "production"
@@ -68,9 +68,8 @@ spec:
           relation: local
           type: helm-chart
           version: v0.0.48
-      sources: [ ]
+      sources: []
       version: v0.0.48
     meta:
       schemaVersion: v2
     signatures: []
-    

@@ -18,13 +18,15 @@ package controllers
 
 import (
 	"context"
-	"github.com/kyma-project/kyma-operator/samples/template-operator/api/v1alpha1"
-	"github.com/kyma-project/manifest-operator/operator/pkg/declarative"
-	"github.com/kyma-project/manifest-operator/operator/pkg/types"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/samples/template-operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-managerator/operator/pkg/declarative"
+	"github.com/kyma-project/manifest-operator/operator/pkg/types"
 )
 
 // SampleReconciler reconciles a Sample object
@@ -35,8 +37,10 @@ type SampleReconciler struct {
 	*rest.Config
 }
 
-const sampleAnnotationKey = "owner"
-const sampleAnnotationValue = "template-operator"
+const (
+	sampleAnnotationKey   = "owner"
+	sampleAnnotationValue = "template-operator"
+)
 
 //+kubebuilder:rbac:groups=component.kyma-project.io,resources=samples,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=component.kyma-project.io,resources=samples/status,verbs=get;update;patch

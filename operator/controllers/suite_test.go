@@ -41,10 +41,10 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	kymacontroller "github.com/kyma-project/kyma-operator/operator/controllers"
-	"github.com/kyma-project/kyma-operator/operator/pkg/remote"
-	"github.com/kyma-project/kyma-operator/operator/pkg/signature"
+	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	kymacontroller "github.com/kyma-project/lifecycle-manager/operator/controllers"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
 	//+kubebuilder:scaffold:imports
 )
 

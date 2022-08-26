@@ -22,7 +22,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyma-project/kyma-operator/operator/pkg/signature"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
 
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
@@ -43,8 +43,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	"github.com/kyma-project/kyma-operator/operator/controllers"
+	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/controllers"
 	//+kubebuilder:scaffold:imports
 )
 

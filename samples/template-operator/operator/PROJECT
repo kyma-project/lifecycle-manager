@@ -4,7 +4,7 @@ layout:
 plugins:
   grafana.kubebuilder.io/v1-alpha: {}
 projectName: template-operator
-repo: github.com/kyma-project/kyma-operator/samples/template-operator
+repo: github.com/kyma-project/lifecycle-manager/samples/template-operator
 resources:
 - api:
     crdVersion: v1
@@ -13,6 +13,6 @@ resources:
   domain: kyma-project.io
   group: component
   kind: Sample
-  path: github.com/kyma-project/kyma-operator/samples/template-operator/api/v1alpha1
+  path: github.com/kyma-project/lifecycle-manager/samples/template-operator/api/v1alpha1
   version: v1alpha1
 version: "3"

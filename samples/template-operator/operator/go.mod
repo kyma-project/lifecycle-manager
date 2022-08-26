@@ -1,4 +1,4 @@
-module github.com/kyma-project/kyma-operator/samples/template-operator
+module github.com/kyma-project/lifecycle-manager/samples/template-operator
 
 go 1.19
 

@@ -9,7 +9,7 @@ CLI=$(which component-cli)
 
 HOSTS_FILE="/etc/hosts"
 
-OPERATOR_NAME="kyma-operator"
+OPERATOR_NAME="lifecycle-manager"
 
 COMPONENT_ARCHIVE="./example"
 DATA_DIR="./data"

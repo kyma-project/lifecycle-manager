@@ -13,10 +13,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	"github.com/kyma-project/kyma-operator/operator/pkg/dynamic"
-	"github.com/kyma-project/kyma-operator/operator/pkg/index"
-	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/dynamic"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/index"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/watch"
 	"github.com/kyma-project/runtime-watcher/kcp/pkg/listener"
 )
 
@@ -28,7 +28,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch(context.TODO())),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
-		// here we define a watch on secrets for the kyma operator so that the cache is picking up changes
+		// here we define a watch on secrets for the lifecycle-manager so that the cache is picking up changes
 		Watches(&source.Kind{Type: &corev1.Secret{}}, handler.Funcs{})
 
 	var dynamicInformers map[string]source.Source
