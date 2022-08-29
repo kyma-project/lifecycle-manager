@@ -18,15 +18,14 @@ package controllers
 
 import (
 	"context"
-
+	"fmt"
+	"github.com/kyma-project/lifecycle-manager/samples/template-operator/api/v1alpha1"
+	"github.com/kyma-project/module-manager/operator/pkg/declarative"
+	"github.com/kyma-project/module-manager/operator/pkg/types"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/samples/template-operator/api/v1alpha1"
-	"github.com/kyma-project/module-manager/operator/pkg/declarative"
-	"github.com/kyma-project/module-manager/operator/pkg/types"
 )
 
 // SampleReconciler reconciles a Sample object
@@ -62,13 +61,18 @@ func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
+// initReconciler injects the required configuration into the declarative reconciler.
 func (r *SampleReconciler) initReconciler(mgr ctrl.Manager) error {
+	manifestResolver := &ManifestResolver{}
 	return r.Inject(mgr, &v1alpha1.Sample{},
+		declarative.WithManifestResolver(manifestResolver),
 		declarative.WithResourceLabels(map[string]string{"sampleKey": "sampleValue"}),
 		declarative.WithObjectTransform(transform),
+		declarative.WithResourcesReady(true),
 	)
 }
 
+// transform modifies the resources based on some criteria, before installation.
 func transform(_ context.Context, _ types.BaseCustomObject, manifestResources *types.ManifestResources) error {
 	for _, resource := range manifestResources.Items {
 		annotations := resource.GetAnnotations()
@@ -81,4 +85,27 @@ func transform(_ context.Context, _ types.BaseCustomObject, manifestResources *t
 		}
 	}
 	return nil
+}
+
+// ManifestResolver represents the chart information for the passed Sample resource.
+type ManifestResolver struct{}
+
+// Get returns the chart information to be processed.
+func (m *ManifestResolver) Get(obj types.BaseCustomObject) (types.InstallationSpec, error) {
+	sample, valid := obj.(*v1alpha1.Sample)
+	if !valid {
+		return types.InstallationSpec{},
+			fmt.Errorf("invalid type conversion for %s", client.ObjectKeyFromObject(obj))
+	}
+	return types.InstallationSpec{
+		ChartPath:   "./module-chart",
+		ReleaseName: sample.Spec.ReleaseName,
+		ConfigFlags: map[string]interface{}{
+			"Namespace":       "redis",
+			"CreateNamespace": true,
+		},
+		SetFlags: map[string]interface{}{
+			"nameOverride": "custom-name-override",
+		},
+	}, nil
 }

@@ -18,7 +18,6 @@ IMG_REGISTRY ?= op-skr-registry.localhost:$(IMG_REGISTRY_PORT)/unsigned/operator
 IMG ?= $(IMG_REGISTRY)/$(MODULE_NAME)-operator:$(MODULE_VERSION)
 
 COMPONENT_CLI_VERSION ?= latest
-KUSTOMIZE_VERSION ?= v4.5.6
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -92,7 +91,7 @@ module-image: operator/docker-build operator/docker-push ## Build the Module Ima
 	echo "built and pushed module image $(IMG)"
 
 .PHONY: module-build
-module-build: kyma module-operator-chart ## Build the Module and push it to a registry defined in MODULE_REGISTRY
+module-build: kyma module-operator-chart module-default ## Build the Module and push it to a registry defined in MODULE_REGISTRY
 	$(KYMA) alpha create module kyma.project.io/module/$(MODULE_NAME) $(MODULE_VERSION) . $(MODULE_CREATION_FLAGS)
 
 .PHONY: module-template-push
@@ -120,6 +119,7 @@ $(KYMA):
 	chmod 0100 $(KYMA)
 
 ########## Kustomize ###########
+KUSTOMIZE_VERSION ?= v4.5.6
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download & Build kustomize locally if necessary.

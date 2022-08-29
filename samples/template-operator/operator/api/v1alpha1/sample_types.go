@@ -32,15 +32,11 @@ type Sample struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   types.Spec   `json:"spec,omitempty"`
+	Spec   SampleSpec   `json:"spec,omitempty"`
 	Status types.Status `json:"status,omitempty"`
 }
 
 var _ types.CustomObject = &Sample{}
-
-func (s *Sample) GetSpec() types.Spec {
-	return s.Spec
-}
 
 func (s *Sample) GetStatus() types.Status {
 	return s.Status
@@ -55,7 +51,8 @@ func (s *Sample) ComponentName() string {
 }
 
 type SampleSpec struct {
-	types.Spec `json:",inline"`
+	// TODO: Implement spec properties here
+	ReleaseName string `json:"releaseName,omitempty"`
 }
 
 // +kubebuilder:object:root=true
