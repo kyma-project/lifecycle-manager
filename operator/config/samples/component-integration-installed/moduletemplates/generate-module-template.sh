@@ -110,7 +110,7 @@ spec:
   data:
     kind: Manifest
     resource: manifests
-    apiVersion: component.kyma-project.io/v1alpha1
+    apiVersion: operator.kyma-project.io/v1alpha1
   descriptor:
 $(cat ${REMOTE_SIGNED_DESCRIPTOR} | indent 4)
 EOF
