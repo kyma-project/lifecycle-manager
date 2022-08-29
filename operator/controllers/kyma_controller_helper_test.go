@@ -17,7 +17,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/controllers"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/parsed"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/watch"
-	manifestV1alpha1 "github.com/kyma-project/manifest-operator/operator/api/v1alpha1"
+	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 )
 
 func NewTestKyma(name string) *v1alpha1.Kyma {

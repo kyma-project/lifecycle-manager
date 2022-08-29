@@ -6,7 +6,7 @@ require (
 	github.com/gardener/component-spec/bindings-go v0.0.65
 	github.com/go-logr/logr v1.2.3
 	github.com/imdario/mergo v0.3.13
-	github.com/kyma-project/manifest-operator/operator v0.0.0-20220726131454-83e937e2eb36
+	github.com/kyma-project/module-manager/operator v0.0.0-20220829083353-456e50dbee22
 	github.com/kyma-project/runtime-watcher/kcp v0.0.0-20220825135506-9d6877ea9fee
 	github.com/onsi/ginkgo/v2 v2.1.4
 	github.com/onsi/gomega v1.20.0
