@@ -196,7 +196,7 @@ _Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set 
 
 #### Install Manifest Operator CRDs
 
-1. Checkout https://github.com/kyma-project/manifest-operator and navigate to the operator: `cd operator`
+1. Checkout https://github.com/kyma-project/module-manager and navigate to the operator: `cd operator`
 2. Run the Installation Command
 
 ```sh
@@ -230,7 +230,7 @@ In https://github.com/kyma-project/lifecycle-manager run
 make run
 ```
 
-In https://github.com/kyma-project/manifest-operator run
+In https://github.com/kyma-project/module-manager run
 
 ```sh
 make run
@@ -240,10 +240,10 @@ make run
 
 _Note: The order of installation is important due to cross-dependencies in CRDs_
 
-In https://github.com/kyma-project/manifest-operator run
+In https://github.com/kyma-project/module-manager run
 
 ```sh
-make deploy IMG=eu.gcr.io/kyma-project/manifest-operator:PR-73
+make deploy IMG=eu.gcr.io/kyma-project/module-manager:PR-73
 ```
 
 _Note: Replace `PR-73` with your desired tag_
