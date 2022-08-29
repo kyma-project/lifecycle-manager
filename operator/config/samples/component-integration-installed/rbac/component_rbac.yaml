@@ -4,7 +4,7 @@ metadata:
   name: component-role
 rules:
   - apiGroups:
-      - component.kyma-project.io
+      - operator.kyma-project.io
     resources:
       - manifests
     verbs:
@@ -16,13 +16,13 @@ rules:
       - update
       - watch
   - apiGroups:
-      - component.kyma-project.io
+      - operator.kyma-project.io
     resources:
       - manifests/finalizers
     verbs:
       - update
   - apiGroups:
-      - component.kyma-project.io
+      - operator.kyma-project.io
     resources:
       - manifests/status
     verbs:
