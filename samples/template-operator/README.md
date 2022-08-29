@@ -5,8 +5,6 @@ Additionally, it hides Kubernetes boilerplate code to develop fast and efficient
 
 ## Bundling and installation
 
----
-
 ### Makefile structure
 The template operator contains base scaffolding that is prepared to build a Kyma Module from the various commands in `Makefile`.
 
@@ -102,8 +100,6 @@ This will build the operator image and then push it as the image defined in `IMG
 
 ## Implementation
 
----
-
 ### Pre-requisites
 * [kubebuilder](https://book.kubebuilder.io/)
     ```bash
@@ -162,7 +158,6 @@ This feature is supported by [kubebuilder grafana plugin](https://book.kubebuild
 
 ## Abstraction: Reconciliation and Status handling
 
----
 For simple use cases where a `module operator` should install a `module helm chart(s)` and set the state of the corresponding `module CR` accordingly, a declarative approach is useful.
 This approach will enable orchestration of Kubernetes resources so that module owners can concentrate on their specific logic.
 
@@ -243,4 +238,4 @@ Instead of implementing the default reconciler interface, as provided by `kuberb
    ```
 6. Run `make generate` followed by `make manifests`, to generate boilerplate code and CRDs respectively.
 7. Install your module CR on a cluster and run `make run` against the cluster's kubeconfig to start your operator locally. 
-   If everything is setup properly you should see state changes on your module CR, depending upon chart processing 
+   If everything is set up properly you should see state changes on your module CR, depending upon chart processing 
