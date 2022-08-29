@@ -19,7 +19,7 @@ spec:
   data:
     kind: SKRModule2
     resource: skrmodules2
-    apiVersion: component.kyma-project.io/v1alpha1
+    apiVersion: operator.kyma-project.io/v1alpha1
     spec:
       initKey: initValue
   descriptor:
