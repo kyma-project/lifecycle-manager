@@ -18,8 +18,8 @@ limitations under the License.
 package operator
 
 import (
-	internalinterfaces "github.com/kyma-project/kyma-operator/operator/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/kyma-project/kyma-operator/operator/pkg/client/informers/externalversions/operator.kyma-project.io/v1alpha1"
+	internalinterfaces "github.com/kyma-project/lifecycle-manager/operator/pkg/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "github.com/kyma-project/lifecycle-manager/operator/pkg/client/informers/externalversions/operator.kyma-project.io/v1alpha1"
 )
 
 // Interface provides access to each of this group's versions.

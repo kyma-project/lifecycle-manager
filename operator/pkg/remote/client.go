@@ -7,7 +7,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 
 	"github.com/go-logr/logr"
 	v1 "k8s.io/api/core/v1"

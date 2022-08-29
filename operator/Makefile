@@ -1,6 +1,6 @@
 
 # Image URL to use all building/pushing image targets
-APP_NAME = kyma-operator
+APP_NAME = lifecycle-manager
 IMG_REPO := $(DOCKER_PUSH_REPOSITORY)$(DOCKER_PUSH_DIRECTORY)
 IMG_NAME := $(IMG_REPO)/$(APP_NAME)
 IMG := $(IMG_NAME):$(DOCKER_TAG)
@@ -159,3 +159,7 @@ fmt: ## Run go fmt against code.
 lint: ## Run golangci-lint against code.
 	GOBIN=$(LOCALBIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANG_CI_LINT_VERSION)
 	$(LOCALBIN)/golangci-lint run
+
+.PHONY: grafana-dashboard
+grafana-dashboard: ## Generating Grafana manifests to visualize controller status.
+	kubebuilder edit --plugins grafana.kubebuilder.io/v1-alpha

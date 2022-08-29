@@ -28,15 +28,15 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/kyma-project/kyma-operator/operator/pkg/parsed"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/parsed"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 
-	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	"github.com/kyma-project/kyma-operator/operator/pkg/adapter"
-	"github.com/kyma-project/kyma-operator/operator/pkg/remote"
-	"github.com/kyma-project/kyma-operator/operator/pkg/signature"
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/adapter"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
 
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -44,8 +44,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/kyma-project/kyma-operator/operator/pkg/release"
-	"github.com/kyma-project/kyma-operator/operator/pkg/status"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/release"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/status"
 )
 
 var ErrNoComponentSpecified = errors.New("no component specified")

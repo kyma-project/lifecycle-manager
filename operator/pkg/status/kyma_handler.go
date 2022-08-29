@@ -5,13 +5,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/kyma-operator/operator/pkg/parsed"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/parsed"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
+	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/watch"
 )
 
 var ErrTemplateNotFound = errors.New("template not found")

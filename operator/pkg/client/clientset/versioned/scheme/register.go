@@ -18,7 +18,7 @@ limitations under the License.
 package scheme
 
 import (
-	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

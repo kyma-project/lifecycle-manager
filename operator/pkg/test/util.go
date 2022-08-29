@@ -9,7 +9,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/yaml"
 
-	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 )
 
 func ModuleTemplateFactory(sample string, module v1alpha1.Module, data unstructured.Unstructured,

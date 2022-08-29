@@ -1,8 +1,10 @@
 domain: kyma-project.io
 layout:
 - go.kubebuilder.io/v3
+plugins:
+  grafana.kubebuilder.io/v1-alpha: {}
 projectName: operator
-repo: github.com/kyma-project/kyma-operator/operator
+repo: github.com/kyma-project/lifecycle-manager/operator
 resources:
 - api:
     crdVersion: v1
@@ -11,7 +13,7 @@ resources:
   domain: kyma-project.io
   group: operator
   kind: Kyma
-  path: github.com/kyma-project/kyma-operator/operator/api/v1alpha1
+  path: github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1
   version: v1alpha1
 - api:
     crdVersion: v1
@@ -19,7 +21,7 @@ resources:
   domain: kyma-project.io
   group: operator
   kind: ModuleTemplate
-  path: github.com/kyma-project/kyma-operator/operator/api/v1alpha1
+  path: github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1
   version: v1alpha1
   webhooks:
     defaulting: true

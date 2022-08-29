@@ -18,7 +18,7 @@ limitations under the License.
 package fake
 
 import (
-	v1alpha1 "github.com/kyma-project/kyma-operator/operator/pkg/client/clientset/versioned/typed/operator.kyma-project.io/v1alpha1"
+	v1alpha1 "github.com/kyma-project/lifecycle-manager/operator/pkg/client/clientset/versioned/typed/operator.kyma-project.io/v1alpha1"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
 )

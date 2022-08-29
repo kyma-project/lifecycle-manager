@@ -1,7 +1,7 @@
 # template-operator
 
-This documentation serves as a reference to implement a module (component) operator, for integration with the [kyma-operator](https://github.com/kyma-project/kyma-operator/tree/main/operator).
-It utilizes the [kubebuilder](https://book.kubebuilder.io/) framework with some modifications to implement Kubernetes APIs for custom resource definitions (CRDs). 
+This documentation serves as a reference to implement a module (component) operator, for integration with the [lifecycle-manager](https://github.com/kyma-project/lifecycle-manager/tree/main/operator).
+It utilizes the [kubebuilder](https://book.kubebuilder.io/) framework with some modifications to implement Kubernetes APIs for custom resource definitions (CRDs).
 Additionally, it hides Kubernetes boilerplate code to develop fast and efficient control loops in Go.
 
 ## Structure
@@ -13,18 +13,19 @@ Usage:
   make <target>
 
 General
-  help             Display this help.
+  help                   Display this help.
 
 Module
   module-operator-chart  Bundle the Module Operator Chart
-  module-image     Build the Module Image and push it to a registry defined in IMG_REGISTRY
-  module-build     Build the Module and push it to a registry defined in MODULE_REGISTRY
-  module-default   Bootstrap the Default CR
+  module-image           Build the Module Image and push it to a registry defined in IMG_REGISTRY
+  module-build           Build the Module and push it to a registry defined in MODULE_REGISTRY
+  module-default         Bootstrap the Default CR
 
 Tools
-  kyma             Download & Build Kyma CLI locally if necessary.
-  kustomize        Download & Build kustomize locally if necessary.
-  component-cli    Download & Build kustomize locally if necessary.
+  kyma                   Download & Build Kyma CLI locally if necessary.
+  kustomize              Download & Build kustomize locally if necessary.
+  component-cli          Download & Build kustomize locally if necessary.
+  grafana-dashboard      Generating Grafana manifests to visualize controller status.
 ```
 
 To use the Makefile you will need to adjust your Module information to make sure that the Makefile knows the correct remotes / targets.
@@ -75,18 +76,18 @@ component:
   name: kyma.project.io/module/template
   provider: internal
   repositoryContexts:
-  - baseUrl: op-kcp-registry:56888/unsigned
-    componentNameMapping: urlPath
-    type: ociRegistry
+    - baseUrl: op-kcp-registry:56888/unsigned
+      componentNameMapping: urlPath
+      type: ociRegistry
   resources:
-  - access:
-      filename: sha256:4ca3dcc19af77a57e0345018985aec0e7bf15a4fb4ae5b1c5392b45ea013c59a
-      mediaType: application/gzip
-      type: localFilesystemBlob
-    name: template-operator
-    relation: local
-    type: helm-chart
-    version: 0.0.0
+    - access:
+        filename: sha256:4ca3dcc19af77a57e0345018985aec0e7bf15a4fb4ae5b1c5392b45ea013c59a
+        mediaType: application/gzip
+        type: localFilesystemBlob
+      name: template-operator
+      relation: local
+      type: helm-chart
+      version: 0.0.0
   # other layers will be included here
 meta:
   schemaVersion: v2
@@ -131,10 +132,21 @@ A basic kubebuilder extension with appropriate scaffolding should be setup.
 
 ## Status sub-resource for custom resource(s)
 
-A custom resource is required to contain a specific set of properties in the Status object, to be tracked by the [kyma-operator](https://github.com/kyma-project/kyma-operator/tree/main/operator).
+A custom resource is required to contain a specific set of properties in the Status object, to be tracked by the [lifecycle-manager](https://github.com/kyma-project/lifecycle-manager/tree/main/operator).
 This is required to track the current state of the module, represented by this custom resource.
 
-1. Check reference implementation of the [SampleStatus](./api/v1alpha1/sample_types.go) struct of Sample custom resource. Similarly `.status.state` property of your custom resource *MUST* contain these state values.
-On top, `.status` object could contain other relevant properties as per your requirements.
+1. Check reference implementation of the [SampleStatus](./api/v1alpha1/sample_types.go) struct of Sample custom resource. Similarly `.status.state` property of your custom resource _MUST_ contain these state values.
+   On top, `.status` object could contain other relevant properties as per your requirements.
 2. Next, check method `Reconcile()` inside the [SampleController](./controllers/sample_controller.go), which demonstrates how `.status.state` properties could be set, depending upon your logic.
 3. The `.status.state` value has a literal sense behind it, so use them appropriately.
+
+## Grafana dashboard
+
+By the following command, two grafana dashboard files with controller related metrics will be generated under `/operator/grafana` folder.
+
+```
+make grafana-dashboard
+```
+
+For how to import dashboard, please read [official grafana guide](https://grafana.com/docs/grafana/latest/dashboards/export-import/#import-dashboard).
+This feature is supported by [kubebuilder grafana plugin](https://book.kubebuilder.io/plugins/grafana-v1-alpha.html).

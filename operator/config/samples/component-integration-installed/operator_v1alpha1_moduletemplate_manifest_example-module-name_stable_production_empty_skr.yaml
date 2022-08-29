@@ -4,7 +4,7 @@ metadata:
   name: moduletemplate-sample-manifest-skr
   namespace: default
   labels:
-    "operator.kyma-project.io/managed-by": "kyma-operator"
+    "operator.kyma-project.io/managed-by": "lifecycle-manager"
     "operator.kyma-project.io/controller-name": "manifest"
     "operator.kyma-project.io/module-name": "example-module-skr"
     "operator.kyma-project.io/profile": "production"
@@ -31,4 +31,3 @@ spec:
     meta:
       schemaVersion: v2
     signatures: []
-    

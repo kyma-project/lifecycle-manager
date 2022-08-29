@@ -27,10 +27,10 @@ spec:
       securityContext:
         runAsNonRoot: true
       containers:
-      - command:
-        - /manager
-        args:
+      - args:
         - --leader-elect
+        ports:
+        - containerPort: 40000
         image: controller:latest
         name: manager
         securityContext:

@@ -18,7 +18,7 @@ const (
 	Signature       = OperatorPrefix + Separator + "signature"
 	ModuleName      = OperatorPrefix + Separator + "module-name"
 	ModuleVersion   = OperatorPrefix + Separator + "module-version"
-	OperatorName    = "kyma-operator"
+	OperatorName    = "lifecycle-manager"
 )
 
 func GetMatchingLabelsForModule(module *Module) client.MatchingLabels {

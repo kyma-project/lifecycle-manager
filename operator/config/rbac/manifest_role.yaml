@@ -1,0 +1,44 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manager-role-manifest
+rules:
+  - apiGroups:
+      - component.kyma-project.io
+    resources:
+      - manifests
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - component.kyma-project.io
+    resources:
+      - manifests/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - component.kyma-project.io
+    resources:
+      - manifests/status
+    verbs:
+      - get
+      - patch
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: manager-rolebinding-manifest
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: manager-role-manifest
+subjects:
+- kind: ServiceAccount
+  name: controller-manager
+  namespace: system

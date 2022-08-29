@@ -4,7 +4,7 @@ metadata:
   name: moduletemplate-sample-skr-module2
   namespace: default
   labels:
-    "operator.kyma-project.io/managed-by": "kyma-operator"
+    "operator.kyma-project.io/managed-by": "lifecycle-manager"
     "operator.kyma-project.io/controller-name": "manifest"
     "operator.kyma-project.io/module-name": "skr-module2"
     "operator.kyma-project.io/profile": "production"
@@ -68,9 +68,8 @@ spec:
           relation: local
           type: helm-chart
           version: v0.0.53
-      sources: [ ]
+      sources: []
       version: v0.0.53
     meta:
       schemaVersion: v2
     signatures: []
-    

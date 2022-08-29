@@ -22,9 +22,9 @@ import (
 	sync "sync"
 	time "time"
 
-	versioned "github.com/kyma-project/kyma-operator/operator/pkg/client/clientset/versioned"
-	internalinterfaces "github.com/kyma-project/kyma-operator/operator/pkg/client/informers/externalversions/internalinterfaces"
-	operatorkymaprojectio "github.com/kyma-project/kyma-operator/operator/pkg/client/informers/externalversions/operator.kyma-project.io"
+	versioned "github.com/kyma-project/lifecycle-manager/operator/pkg/client/clientset/versioned"
+	internalinterfaces "github.com/kyma-project/lifecycle-manager/operator/pkg/client/informers/externalversions/internalinterfaces"
+	operatorkymaprojectio "github.com/kyma-project/lifecycle-manager/operator/pkg/client/informers/externalversions/operator.kyma-project.io"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
