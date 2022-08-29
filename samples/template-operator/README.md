@@ -237,5 +237,5 @@ Instead of implementing the default reconciler interface, as provided by `kuberb
 	  }
    ```
 6. Run `make generate` followed by `make manifests`, to generate boilerplate code and CRDs respectively.
-7. Install your module CR on a cluster and run `make run` against the cluster's kubeconfig to start your operator locally. 
-   If everything is set up properly you should see state changes on your module CR, depending upon chart processing 
+7. Install your module CR on a cluster and execute `make run` against the cluster's kubeconfig to start your operator locally. 
+   If everything is set up properly you should see state changes on your module CR, depending upon chart processing. 
