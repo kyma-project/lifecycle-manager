@@ -215,7 +215,7 @@ make install
 Ensure the CRDs are installed with `kubectl get crds | grep kyma-project.io`:
 
 ```
-manifests.component.kyma-project.io        2022-08-18T16:27:21Z
+manifests.operator.kyma-project.io        2022-08-18T16:27:21Z
 kymas.operator.kyma-project.io             2022-08-18T16:29:28Z
 moduletemplates.operator.kyma-project.io   2022-08-18T16:29:28Z
 ```
@@ -296,7 +296,7 @@ moduleInfos:
       channel: stable
       generation: 1
       gvk:
-        group: component.kyma-project.io
+        group: operator.kyma-project.io
         kind: Manifest
         version: v1alpha1
 observedGeneration: 1
@@ -305,7 +305,7 @@ state: Ready
 
 Also, you can observe the installation in the runtime by switching the context to the SKR context and then verifying the status.
 
-`kubectl config use-context k3d-op-skr && kubectl get samples.component.kyma-project.io -n kyma-system -ojsonpath={".items[0].status"} | yq -P`
+`kubectl config use-context k3d-op-skr && kubectl get samples.operator.kyma-project.io -n kyma-system -ojsonpath={".items[0].status"} | yq -P`
 
 and it should show `state: Ready`.
 

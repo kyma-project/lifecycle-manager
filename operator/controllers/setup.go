@@ -37,7 +37,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 
 	// This fetches all resources for our component operator CRDs, might become a problem if component operators
 	// create their own CRDs that we dont need to watch
-	if dynamicInformers, err = dynamic.Informers(mgr, []string{v1alpha1.ComponentPrefix}); err != nil {
+	if dynamicInformers, err = dynamic.Informers(mgr, []string{v1alpha1.OperatorPrefix}); err != nil {
 		return fmt.Errorf("error while setting up Dynamic Informers: %w", err)
 	}
 

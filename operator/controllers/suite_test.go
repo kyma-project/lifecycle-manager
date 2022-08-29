@@ -87,7 +87,7 @@ var _ = BeforeSuite(func() {
 
 	controlplaneCrd := &v1.CustomResourceDefinition{}
 	modulePath := filepath.Join("..", "config", "samples", "component-integration-installed",
-		"crd", "component.kyma-project.io_kcpmodules.yaml")
+		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
 	Expect(err).To(BeNil())
 	Expect(moduleFile).ToNot(BeEmpty())
