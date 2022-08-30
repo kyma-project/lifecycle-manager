@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// +groupName=component.kyma-project.io
+// +groupName=operator.kyma-project.io
 package v1
 
 import (

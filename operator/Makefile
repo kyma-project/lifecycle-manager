@@ -1,6 +1,6 @@
 
 # Image URL to use all building/pushing image targets
-APP_NAME = kyma-operator
+APP_NAME = lifecycle-manager
 IMG_REPO := $(DOCKER_PUSH_REPOSITORY)$(DOCKER_PUSH_DIRECTORY)
 IMG_NAME := $(IMG_REPO)/$(APP_NAME)
 IMG := $(IMG_NAME):$(DOCKER_TAG)

@@ -38,7 +38,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - component.kyma-project.io
+  - operator.kyma-project.io
   resources:
   - samples
   verbs:
@@ -50,13 +50,13 @@ rules:
   - update
   - watch
 - apiGroups:
-  - component.kyma-project.io
+  - operator.kyma-project.io
   resources:
   - samples/finalizers
   verbs:
   - update
 - apiGroups:
-  - component.kyma-project.io
+  - operator.kyma-project.io
   resources:
   - samples/status
   verbs:

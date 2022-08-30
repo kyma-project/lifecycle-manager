@@ -41,10 +41,10 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	operatorv1alpha1 "github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	kymacontroller "github.com/kyma-project/kyma-operator/operator/controllers"
-	"github.com/kyma-project/kyma-operator/operator/pkg/remote"
-	"github.com/kyma-project/kyma-operator/operator/pkg/signature"
+	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	kymacontroller "github.com/kyma-project/lifecycle-manager/operator/controllers"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -80,14 +80,14 @@ var _ = BeforeSuite(func() {
 
 	manifestCrd := &v1.CustomResourceDefinition{}
 	res, err := http.DefaultClient.Get(
-		"https://raw.githubusercontent.com/kyma-project/manifest-operator/main/operator/config/crd/bases/component.kyma-project.io_manifests.yaml") //nolint:lll
+		"https://raw.githubusercontent.com/kyma-project/module-manager/main/operator/config/crd/bases/operator.kyma-project.io_manifests.yaml") //nolint:lll
 	Expect(err).NotTo(HaveOccurred())
 	Expect(res.StatusCode).To(BeEquivalentTo(http.StatusOK))
 	Expect(yaml2.NewYAMLOrJSONDecoder(res.Body, 2048).Decode(manifestCrd)).To(Succeed())
 
 	controlplaneCrd := &v1.CustomResourceDefinition{}
 	modulePath := filepath.Join("..", "config", "samples", "component-integration-installed",
-		"crd", "component.kyma-project.io_kcpmodules.yaml")
+		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
 	Expect(err).To(BeNil())
 	Expect(moduleFile).ToNot(BeEmpty())

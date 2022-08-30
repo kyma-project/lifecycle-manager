@@ -2,30 +2,20 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
-  creationTimestamp: null
-  name: skrmodule2s.component.kyma-project.io
+  name: samplecrds.operator.kyma-project.io
 spec:
-  group: component.kyma-project.io
+  group: operator.kyma-project.io
   names:
-    kind: SKRModule2
-    listKind: SKRModule2List
-    plural: skrmodule2s
-    singular: skrmodule2
+    kind: SampleCRD
+    listKind: SampleCRDList
+    plural: samplecrds
+    singular: samplecrd
   scope: Namespaced
   versions:
-  - additionalPrinterColumns:
-    - jsonPath: .status.state
-      name: State
-      type: string
-    - jsonPath: .metadata.creationTimestamp
-      name: Age
-      type: date
-    name: v1alpha1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: SKRModule2 is the Schema for the moduletemplates API.
+        description: SampleCRD is the Schema for a component API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -40,17 +30,21 @@ spec:
           metadata:
             type: object
           spec:
-            description: SKRModuleSpec defines the desired state of SKRModule.
+            description: Spec defines the desired state of Sample CRD.
             properties:
-              initKey:
+              randomkey:
+                description: Its random!
                 type: string
+            required:
+            - randomkey
             type: object
           status:
-            description: SKRModuleStatus defines the observed state of Manifest.
+            description: Status defines the observed state of Sample CRD
             properties:
               state:
+                description: State signifies current state of Sample CRD. Value can be one
+                  of ("Ready", "Processing", "Error", "Deleting").
                 enum:
-                - Processing
                 - Deleting
                 - Ready
                 - Error
@@ -59,4 +53,5 @@ spec:
         type: object
     served: true
     storage: true
-    subresources: {}
+    subresources:
+      status: {}

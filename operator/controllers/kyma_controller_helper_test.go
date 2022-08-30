@@ -12,12 +12,12 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
-	sampleCRDv1alpha1 "github.com/kyma-project/kyma-operator/operator/config/samples/component-integration-installed/crd/v1alpha1" //nolint:lll
-	"github.com/kyma-project/kyma-operator/operator/controllers"
-	"github.com/kyma-project/kyma-operator/operator/pkg/parsed"
-	"github.com/kyma-project/kyma-operator/operator/pkg/watch"
-	manifestV1alpha1 "github.com/kyma-project/manifest-operator/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	sampleCRDv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/config/samples/component-integration-installed/crd/v1alpha1" //nolint:lll
+	"github.com/kyma-project/lifecycle-manager/operator/controllers"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/parsed"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/watch"
+	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 )
 
 func NewTestKyma(name string) *v1alpha1.Kyma {

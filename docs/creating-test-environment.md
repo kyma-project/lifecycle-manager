@@ -61,7 +61,7 @@ kubectl config use k3d-op-kcp
 
 # Build your module
 
-In `https://github.com/kyma-project/kyma-operator`, `cd samples/template-operator`
+In `https://github.com/kyma-project/lifecycle-manager`, `cd samples/template-operator`
 
 After this find the Port of your KCP OCI Registry and write it to `MODULE_REGISTRY_PORT`:
 
@@ -182,7 +182,7 @@ _Note: If you receive 403 / 401, recreate the `MODULE_CREDENTIALS` variable as i
 
 Before we start reconciling, let's create a secret to access the SKR:
 
-In https://github.com/kyma-project/kyma-operator in the `operator` subdirectory, run
+In https://github.com/kyma-project/lifecycle-manager in the `operator` subdirectory, run
 
 `sh config/samples/secret/k3d-secret-gen.sh`
 
@@ -196,16 +196,16 @@ _Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set 
 
 #### Install Manifest Operator CRDs
 
-1. Checkout https://github.com/kyma-project/manifest-operator and navigate to the operator: `cd operator`
+1. Checkout https://github.com/kyma-project/module-manager and navigate to the operator: `cd operator`
 2. Run the Installation Command
 
 ```sh
 make install
 ```
 
-#### Install Kyma Operator CRDs
+#### Install lifecycle-manager CRDs
 
-1. Checkout https://github.com/kyma-project/kyma-operator and navigate to the operator: `cd operator`
+1. Checkout https://github.com/kyma-project/lifecycle-manager and navigate to the operator: `cd operator`
 2. Run the Installation Command
 
 ```sh
@@ -215,7 +215,7 @@ make install
 Ensure the CRDs are installed with `kubectl get crds | grep kyma-project.io`:
 
 ```
-manifests.component.kyma-project.io        2022-08-18T16:27:21Z
+manifests.operator.kyma-project.io        2022-08-18T16:27:21Z
 kymas.operator.kyma-project.io             2022-08-18T16:29:28Z
 moduletemplates.operator.kyma-project.io   2022-08-18T16:29:28Z
 ```
@@ -224,13 +224,13 @@ moduletemplates.operator.kyma-project.io   2022-08-18T16:29:28Z
 
 _Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set to the KCP Cluster_
 
-In https://github.com/kyma-project/kyma-operator run
+In https://github.com/kyma-project/lifecycle-manager run
 
 ```sh
 make run
 ```
 
-In https://github.com/kyma-project/manifest-operator run
+In https://github.com/kyma-project/module-manager run
 
 ```sh
 make run
@@ -240,18 +240,18 @@ make run
 
 _Note: The order of installation is important due to cross-dependencies in CRDs_
 
-In https://github.com/kyma-project/manifest-operator run
+In https://github.com/kyma-project/module-manager run
 
 ```sh
-make deploy IMG=eu.gcr.io/kyma-project/manifest-operator:PR-73
+make deploy IMG=eu.gcr.io/kyma-project/module-manager:PR-73
 ```
 
 _Note: Replace `PR-73` with your desired tag_
 
-In https://github.com/kyma-project/kyma-operator run
+In https://github.com/kyma-project/lifecycle-manager run
 
 ```sh
-make deploy IMG=eu.gcr.io/kyma-project/kyma-operator:PR-122
+make deploy IMG=eu.gcr.io/kyma-project/lifecycle-manager:PR-122
 ```
 
 _Note: Replace `PR-122` with your desired tag_
@@ -272,7 +272,7 @@ make module-template-push
 
 to apply the module-template
 
-Create a request for kyma installation of the module in `samples/template-operator` of the kyma-operator with
+Create a request for kyma installation of the module in `samples/template-operator` of the lifecycle-manager with
 
 ```sh
 sh hack/gen-kyma.sh
@@ -296,7 +296,7 @@ moduleInfos:
       channel: stable
       generation: 1
       gvk:
-        group: component.kyma-project.io
+        group: operator.kyma-project.io
         kind: Manifest
         version: v1alpha1
 observedGeneration: 1
@@ -305,7 +305,7 @@ state: Ready
 
 Also, you can observe the installation in the runtime by switching the context to the SKR context and then verifying the status.
 
-`kubectl config use-context k3d-op-skr && kubectl get samples.component.kyma-project.io -n kyma-system -ojsonpath={".items[0].status"} | yq -P`
+`kubectl config use-context k3d-op-skr && kubectl get samples.operator.kyma-project.io -n kyma-system -ojsonpath={".items[0].status"} | yq -P`
 
 and it should show `state: Ready`.
 

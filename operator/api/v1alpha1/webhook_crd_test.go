@@ -8,14 +8,14 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	"github.com/kyma-project/kyma-operator/operator/pkg/test"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/test"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	yaml "k8s.io/apimachinery/pkg/util/yaml"
 
-	"github.com/kyma-project/kyma-operator/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 )
 
 var testFiles = filepath.Join("..", "..", "config", "samples", "tests") //nolint:gochecknoglobals
@@ -23,12 +23,12 @@ var testFiles = filepath.Join("..", "..", "config", "samples", "tests") //nolint
 var _ = Describe("Webhook ValidationCreate", func() {
 	data := unstructured.Unstructured{}
 	data.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   v1alpha1.ComponentPrefix,
+		Group:   v1alpha1.OperatorPrefix,
 		Version: v1alpha1.Version,
 		Kind:    "SampleCRD",
 	})
 	It("should successfully fetch accept a moduletemplate based on a compliant crd", func() {
-		crd := GetCRD("component.kyma-project.io", "samplecrd")
+		crd := GetCRD(v1alpha1.OperatorPrefix, "samplecrd")
 		Eventually(func() error {
 			return k8sClient.Create(ctx, crd)
 		}, "10s").Should(Succeed())
@@ -46,7 +46,7 @@ var _ = Describe("Webhook ValidationCreate", func() {
 	})
 
 	It("should reject a moduletemplate based on a non-compliant crd", func() {
-		crd := GetCRD("component.kyma-project.io", "samplecrd")
+		crd := GetCRD(v1alpha1.OperatorPrefix, "samplecrd")
 
 		crd.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties["status"].Properties["state"] = v1.JSONSchemaProps{
 			Type: "string",
