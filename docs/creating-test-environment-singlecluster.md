@@ -40,7 +40,7 @@ Add the following to your `/etc/hosts` file:
 127.0.0.1 kubernetes.docker.internal
 
 # Added for Operator Registries
-127.0.0.1 op-kcpskr-registry.localhost
+127.0.0.1 op-kcpskr-registry.localhost op-kcp-registry.localhost op-skr-registry.localhost
 ```
 
 #### 1.3.2 Set registry environment variables
@@ -49,6 +49,34 @@ Add the following to your `/etc/hosts` file:
 export MODULE_REGISTRY_PORT=$(docker port op-kcpskr-registry.localhost 5000/tcp | cut -d ":" -f2)
 export IMG_REGISTRY_PORT=$(docker port op-kcpskr-registry.localhost 5000/tcp | cut -d ":" -f2)
 ```
+
+#### 1.3.3 Web-UI for local container registry
+
+For browsing through the content of the local container registry, run one of these tools
+(both become accessible via http://localhost:8080):
+
+* Crane Operator (http://localhost:8080)
+    ```
+      docker run \
+       -p 8080:80 \
+       --rm \
+       --network=k3d-op-kcpskr \
+       --name=docker_registry_ui \ 
+       -e REGISTRY_HOST=op-kcpskr-registry.localhost \
+       -e REGISTRY_PORT=5000 \
+       -e REGISTRY_PROTOCOL=http \
+       -e ALLOW_REGISTRY_LOGIN=false \
+       -e REGISTRY_ALLOW_DELETE=true \
+       parabuzzle/craneoperator:latest
+    ```
+* Docker Registry Browser (http://localhost:8080)
+    ```docker run \
+        -p 8080:8080 \
+        --rm \
+        --network=k3d-op-kcpskr \
+        --name registry-browser \
+        -e DOCKER_REGISTRY_URL=http://op-kcpskr-registry.localhost:5000 \
+        klausmeyer/docker-registry-browser```
 
 ## 2. External setup
 

@@ -23,7 +23,7 @@ to demonstrate how the bundling to a Kyma module works.
 
 2. Generating and Pushing the Operator Image and Charts
 
-   Next generate and push the module image of the operator (it will use the registry referenced in the `MODULE_REGISTRY` environment variable).
+   Next generate and push the module image of the operator.
 
     ```sh
     make module-operator-chart module-image
@@ -33,7 +33,7 @@ to demonstrate how the bundling to a Kyma module works.
 
 ## 3.1 Pre-requisites
 
-_Note for two cluster mode: set your `KUBECONFIG` to the SKR Cluster context_
+_Note for two cluster mode: set your `KUBECONFIG` to the KCP Cluster context_
 
 First make sure that the `kyma-system` namespace is created:
 
@@ -43,15 +43,20 @@ kubectl create ns kyma-system
 
 Create a secret to access the cluster which acts as SKR:
 
-In https://github.com/kyma-project/lifecycle-manager in the `operator` subdirectory, run
+In https://github.com/kyma-project/lifecycle-manager, run these commands
 
-`sh config/samples/secret/k3d-secret-gen.sh`
+```
+KCP_CLUSTER_CTX=k3d-op-kcpskr
+SKR_CLUSTER_CTX=k3d-op-kcpskr
+chmod 755 ./operator/config/samples/secret/k3d-secret-gen.sh
+./operator/config/samples/secret/k3d-secret-gen.sh
+```
 
 _Note for two cluster mode: You can use KCP_CLUSTER_CTX and SKR_CLUSTER_CTX to adjust your contexts for applying the secret._
 
 ## 3.2 Build and push the module
 
-Run this command to build the module and push it to the registry:
+In https://github.com/kyma-project/lifecycle-manager, switch to subfolder `samples/template-operator` and run this command to build the module and push it to the registry:
 
 ```sh
 make module-build
@@ -115,9 +120,7 @@ _Note: Replace `PR-122` with your desired tag_
 
 _Note: It could be that you get messages like `no matches for kind "VirtualService" in version "networking.istio.io/v1beta1"`. This is normal if you install the operators in a cluster without a certain dependency. If you do not need this for your test, you can safely ignore it._
 
-#### 3.3.3.2 Run on your host
-
-JFYI: for debugging purposes, you can now run an operator also on your local host.
+#### 3.3.3.2 Run on your local host
 
 1. In https://github.com/kyma-project/lifecycle-manager run
 
