@@ -165,6 +165,7 @@ func (r *KymaReconciler) synchronizeRemote(ctx context.Context, kyma *v1alpha1.K
 func (r *KymaReconciler) stateHandling(ctx context.Context, kyma *v1alpha1.Kyma) (ctrl.Result, error) {
 	switch kyma.Status.State {
 	case "":
+
 		return ctrl.Result{}, r.HandleInitialState(ctx, kyma)
 	case v1alpha1.StateProcessing:
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, r.HandleProcessingState(ctx, kyma)
@@ -175,10 +176,10 @@ func (r *KymaReconciler) stateHandling(ctx context.Context, kyma *v1alpha1.Kyma)
 			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Waiting}, nil
 		}
 	case v1alpha1.StateError:
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Waiting}, r.HandleErrorState(ctx, kyma)
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Waiting}, r.HandleProcessingState(ctx, kyma)
 	case v1alpha1.StateReady:
 		// TODO Adjust again
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, r.HandleReadyState(ctx, kyma)
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, r.HandleProcessingState(ctx, kyma)
 	}
 
 	return ctrl.Result{}, nil
@@ -226,7 +227,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	}
 
 	// set ready condition if applicable
-	if kyma.AreAllConditionsReadyForKyma() {
+	if kyma.AreAllConditionsReadyForKyma() && kyma.Status.State != v1alpha1.StateReady {
 		message := fmt.Sprintf("reconciliation of %s finished!", kyma.Name)
 		logger.Info(message)
 		r.Event(kyma, "Normal", "ReconciliationSuccess", message)
@@ -236,7 +237,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 
 	// if the ready condition is not applicable, but we changed the conditions, we still need to issue an update
 	if statusUpdateRequiredFromCreation || statusUpdateRequiredFromSync || statusUpdateRequiredFromDeletion {
-		if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, kyma.Status.State); err != nil {
+		if err := r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing, "updating component conditions"); err != nil {
 			return fmt.Errorf("error while updating status for condition change: %w", err)
 		}
 		return nil
@@ -263,57 +264,6 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1
 	}
 
 	return false, nil
-}
-
-func (r *KymaReconciler) HandleErrorState(ctx context.Context, kyma *v1alpha1.Kyma) error {
-	return r.HandleConsistencyChanges(ctx, kyma)
-}
-
-func (r *KymaReconciler) HandleReadyState(ctx context.Context, kyma *v1alpha1.Kyma) error {
-	return r.HandleConsistencyChanges(ctx, kyma)
-}
-
-func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *v1alpha1.Kyma) error {
-	// condition update on CRs
-
-	var err error
-	var modules parsed.Modules
-	// these are the actual modules
-	modules, err = r.GenerateModulesFromTemplate(ctx, kyma)
-	if err != nil {
-		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
-			fmt.Errorf("error while fetching modules during consistency check: %w", err))
-	}
-
-	for _, module := range modules {
-		if module.TemplateOutdated {
-			return r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing,
-				fmt.Sprintf("module template of module %s got updated", module.Name))
-		}
-	}
-
-	r.SyncModuleStatus(ctx, modules)
-	if err != nil {
-		return fmt.Errorf("error while updating component status conditions: %w", err)
-	}
-	statusUpdateRequired := status.Helper(r).SyncModuleInfo(kyma, modules)
-	r.SyncConditionsWithModuleStates(kyma)
-	// at least one condition changed during the sync
-	if statusUpdateRequired {
-		return r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing,
-			"updating component conditions")
-	}
-
-	// generation change
-	if kyma.Status.ObservedGeneration != kyma.Generation {
-		return r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing,
-			"object updated")
-	}
-
-	if len(kyma.GetNoLongerExistingModuleInfos()) > 0 {
-		return r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing, "some module get deleted")
-	}
-	return nil
 }
 
 // SyncConditionsWithModuleStates runs at both HandleProcessingState and HandleConsistencyChanges.
