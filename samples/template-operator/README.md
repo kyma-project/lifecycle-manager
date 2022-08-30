@@ -20,6 +20,8 @@ Additionally, it hides Kubernetes boilerplate code to develop fast and efficient
 ## Implementation
 
 ### Pre-requisites
+* k8s cluster
+* [kubectl](https://kubernetes.io/docs/tasks/tools/)
 * [kubebuilder](https://book.kubebuilder.io/)
     ```bash
     # you could use one of the following options
@@ -31,7 +33,7 @@ Additionally, it hides Kubernetes boilerplate code to develop fast and efficient
     curl -L -o kubebuilder https://go.kubebuilder.io/dl/latest/$(go env GOOS)/$(go env GOARCH)
     chmod +x kubebuilder && mv kubebuilder /usr/local/bin/
     ```
-* [kubectl](https://kubernetes.io/docs/tasks/tools/)
+
 
 ### Generate kubebuilder operator 
 
@@ -146,7 +148,7 @@ This approach will enable orchestration of Kubernetes resources so that module o
       }
    ```
    
-#### End steps
+#### Final steps
 1. Connect to your cluster and ensure `kubectl` is pointing to the desired cluster.
 2. Run `make generate`, `make manifests` and in the end `make install`, to generate boilerplate code, CRDs and install required resources on your clusterrespectively.
 3. To test locally: install your module CR on a cluster and execute `make run` to start your operator locally.
@@ -160,6 +162,7 @@ This is required to track the current state of the module, represented by this c
 1. Check reference implementation of [Status](https://github.com/kyma-project/module-manager/blob/main/operator/pkg/types/declaritive.go) reference implementation. The `.status.state` field of your custom resource _MUST_ contain one of these state values at all times.
    On top, `.status` object could contain other relevant properties as per your requirements.
 2. The `.status.state` values have literal meaning behind them, so use them appropriately.
+
 
 ## Bundling and installation
 
@@ -253,7 +256,6 @@ This will build the operator image and then push it as the image defined in `IMG
     ```
     
     You can install the necessary module-template CRD from [here](https://raw.githubusercontent.com/kyma-project/lifecycle-manager/main/operator/config/crd/bases/operator.kyma-project.io_moduletemplates.yaml).
-
 
 ## Grafana dashboard
 
