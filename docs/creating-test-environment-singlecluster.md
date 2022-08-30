@@ -56,7 +56,7 @@ For browsing through the content of the local container registry, run one of the
 (both become accessible via http://localhost:8080):
 
 * Crane Operator (http://localhost:8080)
-    ```
+    ```sh
       docker run \
        -p 8080:80 \
        --rm \
@@ -70,7 +70,8 @@ For browsing through the content of the local container registry, run one of the
        parabuzzle/craneoperator:latest
     ```
 * Docker Registry Browser (http://localhost:8080)
-    ```docker run \
+    ```sh
+      docker run \
         -p 8080:8080 \
         --rm \
         --network=k3d-op-kcpskr \
