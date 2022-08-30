@@ -61,7 +61,7 @@ For browsing through the content of the local container registry, run one of the
        -p 8080:80 \
        --rm \
        --network=k3d-op-kcpskr \
-       --name=docker_registry_ui \ 
+       --name=docker_registry_ui \
        -e REGISTRY_HOST=op-kcpskr-registry.localhost \
        -e REGISTRY_PORT=5000 \
        -e REGISTRY_PROTOCOL=http \
