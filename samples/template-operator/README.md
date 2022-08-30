@@ -118,7 +118,7 @@ This will build the operator image and then push it as the image defined in `IMG
    
 2. Initialize `kubebuilder` project. Please make sure domain is set to `component.kyma-project.io`.
     ```sh 
-   kubebuilder init --domain component.kyma-project.io --repo component.kyma-project.io/test-operator --plugins=go/v4-alpha
+   kubebuilder init --domain component.kyma-project.io --repo github.com/kyma-project/test-operator --plugins=go/v4-alpha
     ```
 
 3. Create API group version and kind for the intended custom resource(s). Please make sure the `group` is set as `component`.
@@ -187,7 +187,7 @@ This approach will enable orchestration of Kubernetes resources so that module o
    ```
 
 3. Refer to the [controller implementation](./operator/controllers/sample_controller.go). 
-Instead of implementing the default reconciler interface, as provided by `kuberbuilder`, include the `module-manager` declarative reconciler.
+Instead of implementing the default reconciler interface, as provided by `kubebuilder`, include the `module-manager` declarative reconciler.
    ```go
    // SampleReconciler reconciles a Sample object
    type SampleReconciler struct {
@@ -197,44 +197,46 @@ Instead of implementing the default reconciler interface, as provided by `kuberb
         *rest.Config
    }
    ```
-   Notice there is not `Reconcile()` method implemented in this controller, since the logic is abstracted within the declarative reconciler.
+   Notice there is no `Reconcile()` method implemented in this controller, since the logic is abstracted within the declarative reconciler.
    
 4. As part of reconciler's SetupWithManager() in the Sample CR [controller implementation](./operator/controllers/sample_controller.go), declarative options have been used.
    ```go
    return r.Inject(mgr, &v1alpha1.Sample{},
         declarative.WithManifestResolver(manifestResolver),
-        declarative.WithResourceLabels(map[string]string{"sampleKey": "sampleValue"}),
-        declarative.WithObjectTransform(transform),
+        declarative.WithCustomResourceLabels(map[string]string{"sampleKey": "sampleValue"}),
+        declarative.WithPostRenderTransform(transform),
         declarative.WithResourcesReady(true), 
    )
    ```
    These options can be used modify manifest installation and uninstallation. Some options are applied as a manifest pre-processing step and others as post-processing.
    More details on these steps can be found in the [options documentation](https://github.com/kyma-project/module-manager/blob/main/operator/pkg/declarative/options.go).
 
-5. A manadatory requirement of this reconciler is to provide the option `declarative.WithManifestResolver(manifestResolver)`, as it holds the chart information to be processed by the declarative reconciler. 
+5. A mandatory requirement of this reconciler is to provide the option `declarative.WithManifestResolver(manifestResolver)`, as it holds the chart information to be processed by the declarative reconciler. 
 
    This ManifestResolver should implement `types.ManifestResolver` from the declarative library. 
    E.g. Sample CR [controller implementation](./operator/controllers/sample_controller.go) returns chart information.
    ```go
       // Get returns the chart information to be processed.
-	  func (m *ManifestResolver) Get(obj types.BaseCustomObject) (types.InstallationSpec, error) {
+      func (m *ManifestResolver) Get(obj types.BaseCustomObject) (types.InstallationSpec, error) {
             sample, valid := obj.(*v1alpha1.Sample)
             if !valid {
                 return types.InstallationSpec{},
                 fmt.Errorf("invalid type conversion for %s", client.ObjectKeyFromObject(obj))
             }
-            return types.InstallationSpec{
-                ChartPath:   "./module-chart",
-                ReleaseName: sample.Spec.ReleaseName,
-                ConfigFlags: map[string]interface{}{
-                    "Namespace":       "redis",
-                    "CreateNamespace": true,
-                },
-                SetFlags: map[string]interface{}{
-                    "nameOverride": "custom-name-override",
-                },
+             return types.InstallationSpec{
+                 ChartPath:   chartPath,
+                 ReleaseName: sample.Spec.ReleaseName,
+                 ChartFlags: types.ChartFlags{
+                    ConfigFlags: types.Flags{
+                        "Namespace":       chartNs,
+                        "CreateNamespace": true,
+                    },
+                    SetFlags: types.Flags{
+                        "nameOverride": nameOverride,
+                    },
+                 },
             }, nil
-	  }
+      }
    ```
 6. Run `make generate` followed by `make manifests`, to generate boilerplate code and CRDs respectively.
 7. To test locally: install your module CR on a cluster and execute `make run` against the cluster's kubeconfig to start your operator locally. 
@@ -242,7 +244,7 @@ Instead of implementing the default reconciler interface, as provided by `kuberb
 
 ### RBAC
 Make sure you have appropriate authorizations assigned to you controller binary, before you run in inside a cluster.
-Sample CR [controller implementation](./operator/controllers/sample_controller.go) includes rbac generation (via kuberbuilder) for all resources across all API groups.
+Sample CR [controller implementation](./operator/controllers/sample_controller.go) includes rbac generation (via kubebuilder) for all resources across all API groups.
 This should certainly be adjusted according to the chart manifest resources and reconciliation types.
 
    ```yaml

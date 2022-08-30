@@ -39,6 +39,9 @@ type SampleReconciler struct {
 const (
 	sampleAnnotationKey   = "owner"
 	sampleAnnotationValue = "template-operator"
+	chartPath             = "./module-chart"
+	chartNs               = "redis"
+	nameOverride          = "custom-name-override"
 )
 
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=samples,verbs=get;list;watch;create;update;patch;delete
@@ -67,8 +70,8 @@ func (r *SampleReconciler) initReconciler(mgr ctrl.Manager) error {
 	manifestResolver := &ManifestResolver{}
 	return r.Inject(mgr, &v1alpha1.Sample{},
 		declarative.WithManifestResolver(manifestResolver),
-		declarative.WithResourceLabels(map[string]string{"sampleKey": "sampleValue"}),
-		declarative.WithObjectTransform(transform),
+		declarative.WithCustomResourceLabels(map[string]string{"sampleKey": "sampleValue"}),
+		declarative.WithPostRenderTransform(transform),
 		declarative.WithResourcesReady(true),
 	)
 }
@@ -99,14 +102,16 @@ func (m *ManifestResolver) Get(obj types.BaseCustomObject) (types.InstallationSp
 			fmt.Errorf("invalid type conversion for %s", client.ObjectKeyFromObject(obj))
 	}
 	return types.InstallationSpec{
-		ChartPath:   "./module-chart",
+		ChartPath:   chartPath,
 		ReleaseName: sample.Spec.ReleaseName,
-		ConfigFlags: map[string]interface{}{
-			"Namespace":       "redis",
-			"CreateNamespace": true,
-		},
-		SetFlags: map[string]interface{}{
-			"nameOverride": "custom-name-override",
+		ChartFlags: types.ChartFlags{
+			ConfigFlags: types.Flags{
+				"Namespace":       chartNs,
+				"CreateNamespace": true,
+			},
+			SetFlags: types.Flags{
+				"nameOverride": nameOverride,
+			},
 		},
 	}, nil
 }
