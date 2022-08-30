@@ -237,5 +237,15 @@ Instead of implementing the default reconciler interface, as provided by `kuberb
 	  }
    ```
 6. Run `make generate` followed by `make manifests`, to generate boilerplate code and CRDs respectively.
-7. Install your module CR on a cluster and execute `make run` against the cluster's kubeconfig to start your operator locally. 
+7. To test locally: install your module CR on a cluster and execute `make run` against the cluster's kubeconfig to start your operator locally. 
    If everything is set up properly you should see state changes on your module CR, depending upon chart processing. 
+
+### RBAC
+Make sure you have appropriate authorizations assigned to you controller binary, before you run in inside a cluster.
+Sample CR [controller implementation](./operator/controllers/sample_controller.go) includes rbac generation (via kuberbuilder) for all resources across all API groups.
+This should certainly be adjusted according to the chart manifest resources and reconciliation types.
+
+   ```yaml
+      // TODO: dynamically create RBACs! Remove line below.
+      //+kubebuilder:rbac:groups="*",resources="*",verbs=get;list;create;update;patch;delete
+   ```
