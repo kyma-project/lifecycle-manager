@@ -5,9 +5,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.2
   creationTimestamp: null
-  name: kcpmodules.component.kyma-project.io
+  name: kcpmodules.operator.kyma-project.io
 spec:
-  group: component.kyma-project.io
+  group: operator.kyma-project.io
   names:
     kind: KCPModule
     listKind: KCPModuleList

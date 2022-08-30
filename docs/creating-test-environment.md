@@ -102,21 +102,21 @@ moduletemplates.operator.kyma-project.io   2022-08-18T16:29:28Z
 
 _Note: The order of installation is important due to cross-dependencies in CRDs_
 
-In https://github.com/kyma-project/module-operator run
+In https://github.com/kyma-project/module-manager run
 
 ```sh
 # using local registry
-make docker-build docker-push deploy IMG=$IMG_REGISTRY/module-operator:dev 
+make docker-build docker-push deploy IMG=$IMG_REGISTRY/module-manager:dev 
 
 # using remote registry (replace `PR-73` with your desired tag)
-make deploy IMG=eu.gcr.io/kyma-project/module-operator:PR-73
+make deploy IMG=eu.gcr.io/kyma-project/module-manager:PR-73
 ```
 
 In https://github.com/kyma-project/lifecycle-manager run
 
 ```sh
 # using local registry
-make docker-build docker-push deploy IMG=$IMG_REGISTRY/lifecycle-operator:dev
+make docker-build docker-push deploy IMG=$IMG_REGISTRY/lifecycle-manager:dev
 
 # using remote registry (replace `PR-122` with your desired tag)
 make deploy IMG=eu.gcr.io/kyma-project/lifecycle-manager:PR-122
@@ -132,7 +132,7 @@ _Note: It could be that you get messages like `no matches for kind "VirtualServi
    make run
    ```
 
-2. In https://github.com/kyma-project/manifest-operator run
+2. In https://github.com/kyma-project/module-manager run
 
    ```sh
     make run
@@ -177,7 +177,7 @@ _Note for two cluster mode: Make sure you run the commands with `KUBECONFIG` set
           channel: stable
           generation: 1
           gvk:
-            group: component.kyma-project.io
+            group: operator.kyma-project.io
             kind: Manifest
             version: v1alpha1
     observedGeneration: 1
@@ -188,7 +188,7 @@ _Note for two cluster mode: Make sure you run the commands with `KUBECONFIG` set
 
 You can observe the installation in the runtime by switching the context to the SKR context and then verifying the status.
 
-    `kubectl get samples.component.kyma-project.io -n kyma-system -ojsonpath={".items[0].status"} | yq -P`
+    `kubectl get samples.operator.kyma-project.io -n kyma-system -ojsonpath={".items[0].status"} | yq -P`
 
 and it should show `state: Ready`.
 
