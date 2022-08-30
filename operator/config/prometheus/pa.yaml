@@ -5,7 +5,10 @@ metadata:
   namespace: system
 spec:
   mtls:
-    mode: PERMISSIVE
+    mode: STRICT
+  portLevelMtls:
+    "8080":
+      mode: PERMISSIVE
   selector:
     matchLabels:
       control-plane: controller-manager
