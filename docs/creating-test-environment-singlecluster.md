@@ -76,7 +76,8 @@ For browsing through the content of the local container registry, run one of the
         --network=k3d-op-kcpskr \
         --name registry-browser \
         -e DOCKER_REGISTRY_URL=http://op-kcpskr-registry.localhost:5000 \
-        klausmeyer/docker-registry-browser```
+        klausmeyer/docker-registry-browser
+     ```
 
 ## 2. External setup
 
