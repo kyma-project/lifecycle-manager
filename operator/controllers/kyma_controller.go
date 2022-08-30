@@ -341,20 +341,6 @@ func initModuleFromServer(module *parsed.Module) *unstructured.Unstructured {
 	return &unstructuredFromServer
 }
 
-func (r *KymaReconciler) SyncModuleStatus(ctx context.Context, modules parsed.Modules) {
-	for i := range modules {
-		module := modules[i]
-		unstructuredFromServer := initModuleFromServer(module)
-		err := r.getModule(ctx, unstructuredFromServer)
-		if err != nil {
-			// For error case, the module.Unstructured status will be empty,
-			// and related moduleInfo state will become processing in later steps.
-			continue
-		}
-		module.UpdateModuleFromCluster(unstructuredFromServer)
-	}
-}
-
 func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *v1alpha1.Kyma,
 	module *parsed.Module,
 ) error {
