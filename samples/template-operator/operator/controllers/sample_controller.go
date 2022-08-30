@@ -18,15 +18,14 @@ package controllers
 
 import (
 	"context"
-
+	"fmt"
+	"github.com/kyma-project/lifecycle-manager/samples/template-operator/api/v1alpha1"
+	"github.com/kyma-project/module-manager/operator/pkg/declarative"
+	"github.com/kyma-project/module-manager/operator/pkg/types"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/samples/template-operator/api/v1alpha1"
-	"github.com/kyma-project/module-manager/operator/pkg/declarative"
-	"github.com/kyma-project/module-manager/operator/pkg/types"
 )
 
 // SampleReconciler reconciles a Sample object
@@ -40,6 +39,9 @@ type SampleReconciler struct {
 const (
 	sampleAnnotationKey   = "owner"
 	sampleAnnotationValue = "template-operator"
+	chartPath             = "./module-chart"
+	chartNs               = "redis"
+	nameOverride          = "custom-name-override"
 )
 
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=samples,verbs=get;list;watch;create;update;patch;delete
@@ -47,6 +49,7 @@ const (
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=samples/finalizers,verbs=update
 //+kubebuilder:rbac:groups="",resources=events,verbs=create;patch;get;list;watch
 //+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
+
 // TODO: dynamically create RBACs! Remove line below.
 //+kubebuilder:rbac:groups="*",resources="*",verbs=get;list;create;update;patch;delete
 
@@ -62,13 +65,18 @@ func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
+// initReconciler injects the required configuration into the declarative reconciler.
 func (r *SampleReconciler) initReconciler(mgr ctrl.Manager) error {
+	manifestResolver := &ManifestResolver{}
 	return r.Inject(mgr, &v1alpha1.Sample{},
-		declarative.WithResourceLabels(map[string]string{"sampleKey": "sampleValue"}),
-		declarative.WithObjectTransform(transform),
+		declarative.WithManifestResolver(manifestResolver),
+		declarative.WithCustomResourceLabels(map[string]string{"sampleKey": "sampleValue"}),
+		declarative.WithPostRenderTransform(transform),
+		declarative.WithResourcesReady(true),
 	)
 }
 
+// transform modifies the resources based on some criteria, before installation.
 func transform(_ context.Context, _ types.BaseCustomObject, manifestResources *types.ManifestResources) error {
 	for _, resource := range manifestResources.Items {
 		annotations := resource.GetAnnotations()
@@ -81,4 +89,29 @@ func transform(_ context.Context, _ types.BaseCustomObject, manifestResources *t
 		}
 	}
 	return nil
+}
+
+// ManifestResolver represents the chart information for the passed Sample resource.
+type ManifestResolver struct{}
+
+// Get returns the chart information to be processed.
+func (m *ManifestResolver) Get(obj types.BaseCustomObject) (types.InstallationSpec, error) {
+	sample, valid := obj.(*v1alpha1.Sample)
+	if !valid {
+		return types.InstallationSpec{},
+			fmt.Errorf("invalid type conversion for %s", client.ObjectKeyFromObject(obj))
+	}
+	return types.InstallationSpec{
+		ChartPath:   chartPath,
+		ReleaseName: sample.Spec.ReleaseName,
+		ChartFlags: types.ChartFlags{
+			ConfigFlags: types.Flags{
+				"Namespace":       chartNs,
+				"CreateNamespace": true,
+			},
+			SetFlags: types.Flags{
+				"nameOverride": nameOverride,
+			},
+		},
+	}, nil
 }

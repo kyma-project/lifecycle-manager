@@ -23,7 +23,7 @@ import (
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-// +kubebuilder:object:root=true
+//+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
 
@@ -32,15 +32,11 @@ type Sample struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   types.Spec   `json:"spec,omitempty"`
+	Spec   SampleSpec   `json:"spec,omitempty"`
 	Status types.Status `json:"status,omitempty"`
 }
 
 var _ types.CustomObject = &Sample{}
-
-func (s *Sample) GetSpec() types.Spec {
-	return s.Spec
-}
 
 func (s *Sample) GetStatus() types.Status {
 	return s.Status
@@ -55,7 +51,8 @@ func (s *Sample) ComponentName() string {
 }
 
 type SampleSpec struct {
-	types.Spec `json:",inline"`
+	// TODO: Implement spec properties here
+	ReleaseName string `json:"releaseName,omitempty"`
 }
 
 // +kubebuilder:object:root=true

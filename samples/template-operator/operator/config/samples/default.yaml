@@ -3,6 +3,4 @@ kind: Sample
 metadata:
   name: sample-sample
 spec:
-  chartPath: "./module-chart"
   releaseName: "redis-release"
-  chartFlags: "Namespace=redis,CreateNamespace=true"
