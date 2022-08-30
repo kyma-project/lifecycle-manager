@@ -102,21 +102,25 @@ moduletemplates.operator.kyma-project.io   2022-08-18T16:29:28Z
 
 _Note: The order of installation is important due to cross-dependencies in CRDs_
 
-In https://github.com/kyma-project/manifest-operator run
+In https://github.com/kyma-project/module-operator run
 
 ```sh
-make deploy IMG=eu.gcr.io/kyma-project/manifest-operator:PR-73
-```
+# using local registry
+make docker-build docker-push deploy IMG=$IMG_REGISTRY/module-operator:dev 
 
-_Note: Replace `PR-73` with your desired tag_
+# using remote registry (replace `PR-73` with your desired tag)
+make deploy IMG=eu.gcr.io/kyma-project/module-operator:PR-73
+```
 
 In https://github.com/kyma-project/lifecycle-manager run
 
 ```sh
+# using local registry
+make docker-build docker-push deploy IMG=$IMG_REGISTRY/lifecycle-operator:dev
+
+# using remote registry (replace `PR-122` with your desired tag)
 make deploy IMG=eu.gcr.io/kyma-project/lifecycle-manager:PR-122
 ```
-
-_Note: Replace `PR-122` with your desired tag_
 
 _Note: It could be that you get messages like `no matches for kind "VirtualService" in version "networking.istio.io/v1beta1"`. This is normal if you install the operators in a cluster without a certain dependency. If you do not need this for your test, you can safely ignore it._
 
