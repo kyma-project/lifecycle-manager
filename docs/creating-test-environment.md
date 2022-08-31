@@ -46,8 +46,8 @@ Create a secret to access the cluster which acts as SKR:
 In https://github.com/kyma-project/lifecycle-manager, run these commands
 
 ```
-KCP_CLUSTER_CTX=k3d-op-kcpskr
-SKR_CLUSTER_CTX=k3d-op-kcpskr
+export KCP_CLUSTER_CTX=k3d-op-kcpskr
+export SKR_CLUSTER_CTX=k3d-op-kcpskr
 chmod 755 ./operator/config/samples/secret/k3d-secret-gen.sh
 ./operator/config/samples/secret/k3d-secret-gen.sh
 ```
