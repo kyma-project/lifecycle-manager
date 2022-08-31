@@ -49,7 +49,7 @@ Add the following to your `/etc/hosts` file:
 export MODULE_REGISTRY_PORT=$(docker port op-kcpskr-registry.localhost 5000/tcp | cut -d ":" -f2)
 export IMG_REGISTRY_PORT=$(docker port op-kcpskr-registry.localhost 5000/tcp | cut -d ":" -f2)
 
-export IMG_REGISTRY=op-kcpskr-registry.localhost:$IMG_REGISTRY_PORT/operator-images
+export IMG_REGISTRY=op-kcpskr-registry.localhost:$IMG_REGISTRY_PORT/unsigned/operator-images
 ```
 
 #### 1.3.3 Web-UI for local container registry

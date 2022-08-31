@@ -51,7 +51,7 @@ Add the following to your `/etc/hosts` file:
 export MODULE_REGISTRY_PORT=$(docker port op-kcp-registry.localhost 5000/tcp | cut -d ":" -f2)
 export IMG_REGISTRY_PORT=$(docker port op-skr-registry.localhost 5000/tcp | cut -d ":" -f2)
 
-export IMG_REGISTRY=op-skr-registry.localhost:$IMG_REGISTRY_PORT/operator-images
+export IMG_REGISTRY=op-skr-registry.localhost:$IMG_REGISTRY_PORT/unsigned/operator-images
 ```
 
 ## 2. External setup
