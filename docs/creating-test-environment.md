@@ -188,7 +188,7 @@ _Note for two cluster mode: Make sure you run the commands with `KUBECONFIG` set
 
 You can observe the installation in the runtime by switching the context to the SKR context and then verifying the status.
 
-    `kubectl get samples.operator.kyma-project.io -n kyma-system -ojsonpath={".items[0].status"} | yq -P`
+`kubectl get kymas.operator.kyma-project.io -n kyma-system -ojsonpath={".items[0].status"} | yq -P`
 
 and it should show `state: Ready`.
 
