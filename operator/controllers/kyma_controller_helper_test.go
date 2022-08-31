@@ -15,7 +15,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	sampleCRDv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/config/samples/component-integration-installed/crd/v1alpha1" //nolint:lll
 	"github.com/kyma-project/lifecycle-manager/operator/controllers"
-	"github.com/kyma-project/lifecycle-manager/operator/pkg/parsed"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/watch"
 	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 )
@@ -129,7 +129,7 @@ func getModule(
 	}
 	err := controlPlaneClient.Get(ctx, client.ObjectKey{
 		Namespace: namespace,
-		Name:      parsed.CreateModuleName(moduleTemplate.GetLabels()[v1alpha1.ModuleName], kyma.GetName()),
+		Name:      common.CreateModuleName(moduleTemplate.GetLabels()[v1alpha1.ModuleName], kyma.GetName()),
 	}, component)
 	if err != nil {
 		return nil, err
