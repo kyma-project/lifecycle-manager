@@ -76,34 +76,32 @@ func GetKymaConditions(kymaName string) func() []metav1.Condition {
 	}
 }
 
-func UpdateModuleState(
-	testClient client.Client, kymaName string, moduleTemplate *v1alpha1.ModuleTemplate, state v1alpha1.State,
-) func() error {
+func UpdateModuleState(kymaName string, moduleTemplate *v1alpha1.ModuleTemplate, state v1alpha1.State) func() error {
 	return func() error {
-		component, err := getModule(testClient, kymaName, moduleTemplate)
+		component, err := getModule(kymaName, moduleTemplate)
 		Expect(err).ShouldNot(HaveOccurred())
 		component.Object[watch.Status] = map[string]any{watch.State: string(state)}
 		return k8sManager.GetClient().Status().Update(ctx, component)
 	}
 }
 
-func ModuleExists(testClient client.Client, kymaName string, moduleTemplate *v1alpha1.ModuleTemplate) func() bool {
+func ModuleExists(kymaName string, moduleTemplate *v1alpha1.ModuleTemplate) func() bool {
 	return func() bool {
-		_, err := getModule(testClient, kymaName, moduleTemplate)
+		_, err := getModule(kymaName, moduleTemplate)
 		return err == nil
 	}
 }
 
-func ModuleNotExist(testClient client.Client, kymaName string, moduleTemplate *v1alpha1.ModuleTemplate) func() bool {
+func ModuleNotExist(kymaName string, moduleTemplate *v1alpha1.ModuleTemplate) func() bool {
 	return func() bool {
-		_, err := getModule(testClient, kymaName, moduleTemplate)
+		_, err := getModule(kymaName, moduleTemplate)
 		return k8serrors.IsNotFound(err)
 	}
 }
 
-func SKRModuleExistWithOverwrites(testClient client.Client, kymaName string, moduleTemplate *v1alpha1.ModuleTemplate) func() string {
+func SKRModuleExistWithOverwrites(kymaName string, moduleTemplate *v1alpha1.ModuleTemplate) func() string {
 	return func() string {
-		module, err := getModule(testClient, kymaName, moduleTemplate)
+		module, err := getModule(kymaName, moduleTemplate)
 		Expect(err).ToNot(HaveOccurred())
 		body, err := json.Marshal(module.Object["spec"])
 		Expect(err).ToNot(HaveOccurred())
@@ -119,12 +117,12 @@ func SKRModuleExistWithOverwrites(testClient client.Client, kymaName string, mod
 	}
 }
 
-func getModule(testClient client.Client, kymaName string, moduleTemplate *v1alpha1.ModuleTemplate) (*unstructured.Unstructured, error) {
+func getModule(kymaName string, moduleTemplate *v1alpha1.ModuleTemplate) (*unstructured.Unstructured, error) {
 	component := moduleTemplate.Spec.Data.DeepCopy()
 	if moduleTemplate.Spec.Target == v1alpha1.TargetRemote {
 		component.SetKind("Manifest")
 	}
-	err := testClient.Get(ctx, client.ObjectKey{
+	err := controlPlaneClient.Get(ctx, client.ObjectKey{
 		Namespace: namespace,
 		Name:      parsed.CreateModuleName(moduleTemplate.GetLabels()[v1alpha1.ModuleName], kymaName),
 	}, component)
