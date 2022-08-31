@@ -1,5 +1,8 @@
+# -- Deployment name
+nameOverride: "default-deployment"
 # -- Replicas
 replicas: 1
+# -- Image
 image:
   # -- Image repository
   repository: redis
