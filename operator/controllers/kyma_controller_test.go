@@ -58,17 +58,20 @@ var _ = Describe("Kyma with empty ModuleTemplate", func() {
 
 	It("should result in Kyma becoming Ready", func() {
 		By("checking the state to be Processing")
-		Eventually(GetKymaState(kyma.GetName()), 20*time.Second, interval).Should(BeEquivalentTo(string(v1alpha1.StateProcessing)))
+		Eventually(GetKymaState(kyma.GetName()), 20*time.Second, interval).
+			Should(BeEquivalentTo(string(v1alpha1.StateProcessing)))
 
 		By("having created new conditions in its status")
 		Eventually(GetKymaConditions(kyma.GetName()), timeout, interval).ShouldNot(BeEmpty())
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range moduleTemplates {
-			Eventually(UpdateModuleState(kyma.GetName(), activeModule, v1alpha1.StateReady), 20*time.Second, interval).Should(Succeed())
+			Eventually(UpdateModuleState(kyma.GetName(), activeModule, v1alpha1.StateReady), 20*time.Second, interval).
+				Should(Succeed())
 		}
 
 		By("having updated the Kyma CR state to ready")
-		Eventually(GetKymaState(kyma.GetName()), 20*time.Second, interval).Should(BeEquivalentTo(string(v1alpha1.StateReady)))
+		Eventually(GetKymaState(kyma.GetName()), 20*time.Second, interval).
+			Should(BeEquivalentTo(string(v1alpha1.StateReady)))
 
 		By("Kyma status contains expected condition")
 		kymaInCluster, err := GetKyma(controlPlaneClient, kyma.GetName())
@@ -183,11 +186,13 @@ var _ = Describe("Kyma update Manifest CR", func() {
 
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range moduleTemplates {
-			Eventually(UpdateModuleState(kyma.GetName(), activeModule, v1alpha1.StateReady), 20*time.Second, interval).Should(Succeed())
+			Eventually(UpdateModuleState(kyma.GetName(), activeModule, v1alpha1.StateReady),
+				20*time.Second, interval).Should(Succeed())
 		}
 
 		By("Kyma CR should be in Ready state")
-		Eventually(GetKymaState(kyma.GetName()), 20*time.Second, interval).Should(BeEquivalentTo(string(v1alpha1.StateReady)))
+		Eventually(GetKymaState(kyma.GetName()), 20*time.Second, interval).
+			Should(BeEquivalentTo(string(v1alpha1.StateReady)))
 
 		By("Update Module Template spec.data.spec field")
 		valueUpdated := "valueUpdated"

@@ -71,7 +71,8 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Expect(runtimeClient.Update(ctx, remoteKyma.SetObservedGeneration())).To(Succeed())
 
 		By("skr-module-client created in kcp")
-		Eventually(ModuleExists(kyma.GetName(), moduleTemplates[skrModuleFromClient.Name]), timeout, interval).Should(BeTrue())
+		Eventually(ModuleExists(kyma.GetName(), moduleTemplates[skrModuleFromClient.Name]),
+			timeout, interval).Should(BeTrue())
 	})
 
 	AfterAll(func() {
