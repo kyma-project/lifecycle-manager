@@ -47,12 +47,12 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 
 	It("module template created", func() {
 		for _, module := range kyma.Spec.Modules {
-			template, err := test.ModuleTemplateFactory("remote-recreate", module, unstructured.Unstructured{})
+			template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
 			moduleTemplates[module.Name] = template
 		}
-		template, err := test.ModuleTemplateFactory("remote-recreate", *skrModuleFromClient, unstructured.Unstructured{})
+		template, err := test.ModuleTemplateFactory(*skrModuleFromClient, unstructured.Unstructured{})
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
 		moduleTemplates[skrModuleFromClient.Name] = template
@@ -101,7 +101,7 @@ var _ = Describe("Kyma sync into Remote Cluster", func() {
 
 	BeforeEach(func() {
 		for _, module := range kyma.Spec.Modules {
-			template, err := test.ModuleTemplateFactory("remote-kyma", module, unstructured.Unstructured{})
+			template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
 			moduleTemplates = append(moduleTemplates, template)

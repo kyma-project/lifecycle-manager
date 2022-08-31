@@ -49,7 +49,7 @@ var _ = Describe("Kyma with empty ModuleTemplate", func() {
 
 	BeforeEach(func() {
 		for _, module := range kyma.Spec.Modules {
-			template, err := test.ModuleTemplateFactory("empty", module, unstructured.Unstructured{})
+			template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
 			moduleTemplates = append(moduleTemplates, template)
@@ -108,7 +108,7 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 
 	It("module template created", func() {
 		for _, module := range kyma.Spec.Modules {
-			template, err := test.ModuleTemplateFactory("recreate", module, unstructured.Unstructured{})
+			template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
 			moduleTemplates[module.Name] = template
@@ -168,7 +168,7 @@ var _ = Describe("Kyma update Manifest CR", func() {
 
 	BeforeEach(func() {
 		for _, module := range kyma.Spec.Modules {
-			template, err := test.ModuleTemplateFactory("update", module, unstructured.Unstructured{})
+			template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
 			moduleTemplates = append(moduleTemplates, template)
