@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"errors"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -349,4 +350,41 @@ func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType,
 		}
 	}
 	return false
+}
+
+var ErrTemplateNotFound = errors.New("template not found")
+
+func (kyma *Kyma) GetTemplateInfoByModuleName(
+	moduleName string,
+) (*TemplateInfo, error) {
+	for i := range kyma.Status.ModuleInfos {
+		moduleInfo := &kyma.Status.ModuleInfos[i]
+		if moduleInfo.ModuleName == moduleName {
+			return &moduleInfo.TemplateInfo, nil
+		}
+	}
+	// should not happen
+	return nil, ErrTemplateNotFound
+}
+
+func IsValidState(state string) bool {
+	castedState := State(state)
+	return castedState == StateReady ||
+		castedState == StateProcessing ||
+		castedState == StateDeleting ||
+		castedState == StateError
+}
+
+// SyncConditionsWithModuleStates iterates all moduleInfos, based on all module state,
+// it updates the condition.status with Reason ConditionReasonModulesAreReady accordingly.
+func (kyma *Kyma) SyncConditionsWithModuleStates() {
+	conditionReason := ConditionReasonModulesAreReady
+	conditionStatus := metav1.ConditionTrue
+	for i := range kyma.Status.ModuleInfos {
+		moduleInfo := kyma.Status.ModuleInfos[i]
+		if moduleInfo.State != StateReady {
+			conditionStatus = metav1.ConditionFalse
+		}
+	}
+	kyma.UpdateCondition(conditionReason, conditionStatus)
 }
