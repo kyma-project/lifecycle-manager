@@ -22,19 +22,18 @@ import (
 	"fmt"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	"github.com/kyma-project/lifecycle-manager/operator/pkg/parsed"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/adapter"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/module/common"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/module/parse"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/module/sync"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
 
@@ -163,8 +162,10 @@ func (r *KymaReconciler) synchronizeRemote(ctx context.Context, kyma *v1alpha1.K
 }
 
 func (r *KymaReconciler) stateHandling(ctx context.Context, kyma *v1alpha1.Kyma) (ctrl.Result, error) {
+	log.FromContext(ctx).Info(fmt.Sprintf("handling %s", kyma.Name), "state", string(kyma.Status.State))
 	switch kyma.Status.State {
 	case "":
+
 		return ctrl.Result{}, r.HandleInitialState(ctx, kyma)
 	case v1alpha1.StateProcessing:
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, r.HandleProcessingState(ctx, kyma)
@@ -175,10 +176,9 @@ func (r *KymaReconciler) stateHandling(ctx context.Context, kyma *v1alpha1.Kyma)
 			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Waiting}, nil
 		}
 	case v1alpha1.StateError:
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Waiting}, r.HandleErrorState(ctx, kyma)
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Waiting}, r.HandleProcessingState(ctx, kyma)
 	case v1alpha1.StateReady:
-		// TODO Adjust again
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, r.HandleReadyState(ctx, kyma)
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, r.HandleProcessingState(ctx, kyma)
 	}
 
 	return ctrl.Result{}, nil
@@ -190,10 +190,9 @@ func (r *KymaReconciler) HandleInitialState(ctx context.Context, kyma *v1alpha1.
 
 func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alpha1.Kyma) error {
 	logger := log.FromContext(ctx)
-	logger.Info("processing " + kyma.Name)
 
 	var err error
-	var modules parsed.Modules
+	var modules common.Modules
 	// these are the actual modules
 	modules, err = r.GenerateModulesFromTemplate(ctx, kyma)
 	if err != nil {
@@ -201,7 +200,9 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 			fmt.Errorf("error while fetching modules during processing: %w", err))
 	}
 
-	statusUpdateRequiredFromCreation, err := r.CreateOrUpdateModules(ctx, kyma, modules)
+	sync := sync.New(r)
+
+	statusUpdateRequiredFromModuleSync, err := sync.Sync(ctx, kyma, modules)
 	if err != nil {
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
 			fmt.Errorf("ParsedModule CR creation/update error: %w", err))
@@ -210,14 +211,14 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	// Now we track the conditions: update the status based on their state
 	// technically we could also update the state in the previous step alone determine if we are ready based on this
 
-	statusUpdateRequiredFromSync := status.Helper(r).SyncModuleInfo(kyma, modules)
-	r.SyncConditionsWithModuleStates(kyma)
+	statusUpdateRequiredFromModuleInfoSync := sync.SyncModuleInfo(ctx, kyma, modules)
+	kyma.SyncConditionsWithModuleStates()
 	if err != nil {
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
 			fmt.Errorf("error while syncing conditions during processing: %w", err))
 	}
 
-	statusUpdateRequiredFromDeletion := r.UpdateStatusModuleInfos(ctx, kyma)
+	statusUpdateRequiredFromDeletion := r.UpdateModuleInfos(ctx, kyma)
 	moduleInfos := kyma.GetNoLongerExistingModuleInfos()
 	err = r.DeleteNoLongerExistingModules(ctx, moduleInfos)
 	if err != nil {
@@ -226,7 +227,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	}
 
 	// set ready condition if applicable
-	if kyma.AreAllConditionsReadyForKyma() {
+	if kyma.AreAllConditionsReadyForKyma() && kyma.Status.State != v1alpha1.StateReady {
 		message := fmt.Sprintf("reconciliation of %s finished!", kyma.Name)
 		logger.Info(message)
 		r.Event(kyma, "Normal", "ReconciliationSuccess", message)
@@ -235,8 +236,8 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	}
 
 	// if the ready condition is not applicable, but we changed the conditions, we still need to issue an update
-	if statusUpdateRequiredFromCreation || statusUpdateRequiredFromSync || statusUpdateRequiredFromDeletion {
-		if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, kyma.Status.State); err != nil {
+	if statusUpdateRequiredFromModuleSync || statusUpdateRequiredFromModuleInfoSync || statusUpdateRequiredFromDeletion {
+		if err := r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing, "updating component conditions"); err != nil {
 			return fmt.Errorf("error while updating status for condition change: %w", err)
 		}
 		return nil
@@ -263,193 +264,6 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1
 	}
 
 	return false, nil
-}
-
-func (r *KymaReconciler) HandleErrorState(ctx context.Context, kyma *v1alpha1.Kyma) error {
-	return r.HandleConsistencyChanges(ctx, kyma)
-}
-
-func (r *KymaReconciler) HandleReadyState(ctx context.Context, kyma *v1alpha1.Kyma) error {
-	return r.HandleConsistencyChanges(ctx, kyma)
-}
-
-func (r *KymaReconciler) HandleConsistencyChanges(ctx context.Context, kyma *v1alpha1.Kyma) error {
-	// condition update on CRs
-
-	var err error
-	var modules parsed.Modules
-	// these are the actual modules
-	modules, err = r.GenerateModulesFromTemplate(ctx, kyma)
-	if err != nil {
-		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
-			fmt.Errorf("error while fetching modules during consistency check: %w", err))
-	}
-
-	for _, module := range modules {
-		if module.TemplateOutdated {
-			return r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing,
-				fmt.Sprintf("module template of module %s got updated", module.Name))
-		}
-	}
-
-	r.SyncModuleStatus(ctx, modules)
-	if err != nil {
-		return fmt.Errorf("error while updating component status conditions: %w", err)
-	}
-	statusUpdateRequired := status.Helper(r).SyncModuleInfo(kyma, modules)
-	r.SyncConditionsWithModuleStates(kyma)
-	// at least one condition changed during the sync
-	if statusUpdateRequired {
-		return r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing,
-			"updating component conditions")
-	}
-
-	// generation change
-	if kyma.Status.ObservedGeneration != kyma.Generation {
-		return r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing,
-			"object updated")
-	}
-
-	if len(kyma.GetNoLongerExistingModuleInfos()) > 0 {
-		return r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing, "some module get deleted")
-	}
-	return nil
-}
-
-// SyncConditionsWithModuleStates runs at both HandleProcessingState and HandleConsistencyChanges.
-// It iterates all moduleInfos, based on all module state, it updates the condition.status with Reason
-// v1alpha1.ConditionReasonModulesAreReady accordingly.
-func (r *KymaReconciler) SyncConditionsWithModuleStates(kyma *v1alpha1.Kyma) {
-	conditionReason := v1alpha1.ConditionReasonModulesAreReady
-	conditionStatus := metav1.ConditionTrue
-	for i := range kyma.Status.ModuleInfos {
-		moduleInfo := kyma.Status.ModuleInfos[i]
-		if moduleInfo.State != v1alpha1.StateReady {
-			conditionStatus = metav1.ConditionFalse
-		}
-	}
-	kyma.UpdateCondition(conditionReason, conditionStatus)
-}
-
-// CreateOrUpdateModules takes care of using the input module to acquire a new desired state in the control plane.
-// either the template in the condition is outdated (reflected by a generation change on the template)
-// or the template that is supposed to be applied changed (e.g. because the kyma spec changed)
-// Here we fetch the latest status from the cluster since our module hasn't actually been verified before.
-// This allows us to verify if the module has been present before or not.
-func (r *KymaReconciler) CreateOrUpdateModules(ctx context.Context, kyma *v1alpha1.Kyma,
-	modules parsed.Modules,
-) (bool, error) {
-	baseLogger := log.FromContext(ctx).WithName(client.ObjectKey{Name: kyma.Name, Namespace: kyma.Namespace}.String())
-	for name, module := range modules {
-		logger := module.Logger(baseLogger)
-		create := func() (bool, error) {
-			logger.Info("module not found, attempting to create it...")
-			err := r.CreateModule(ctx, name, kyma, module)
-			if err != nil {
-				return false, err
-			}
-			logger.Info("successfully created module CR")
-			return true, nil
-		}
-		update := func() (bool, error) {
-			if err := r.UpdateModule(ctx, name, kyma, module); err != nil {
-				return false, err
-			}
-			logger.Info("successfully updated module CR")
-			return true, nil
-		}
-
-		unstructuredFromServer := initModuleFromServer(module)
-		err := r.getModule(ctx, unstructuredFromServer)
-		if k8serrors.IsNotFound(err) {
-			return create()
-		} else if err != nil {
-			return false, fmt.Errorf("error occurred while fetching module %s: %w", module.GetName(), err)
-		}
-
-		module.UpdateModuleFromCluster(unstructuredFromServer)
-
-		if module.TemplateOutdated {
-			templateInfo, err := status.Helper(r).GetTemplateInfoForModule(kyma, name)
-			if err != nil {
-				return false, err
-			}
-			if module.StateMismatchedWithTemplateInfo(templateInfo) {
-				return update()
-			}
-		}
-	}
-
-	return false, nil
-}
-
-func initModuleFromServer(module *parsed.Module) *unstructured.Unstructured {
-	unstructuredFromServer := unstructured.Unstructured{}
-	unstructuredFromServer.SetGroupVersionKind(module.Unstructured.GroupVersionKind())
-	unstructuredFromServer.SetNamespace(module.Unstructured.GetNamespace())
-	unstructuredFromServer.SetName(module.Unstructured.GetName())
-	return &unstructuredFromServer
-}
-
-func (r *KymaReconciler) SyncModuleStatus(ctx context.Context, modules parsed.Modules) {
-	for i := range modules {
-		module := modules[i]
-		unstructuredFromServer := initModuleFromServer(module)
-		err := r.getModule(ctx, unstructuredFromServer)
-		if err != nil {
-			// For error case, the module.Unstructured status will be empty,
-			// and related moduleInfo state will become processing in later steps.
-			continue
-		}
-		module.UpdateModuleFromCluster(unstructuredFromServer)
-	}
-}
-
-func (r *KymaReconciler) CreateModule(ctx context.Context, name string, kyma *v1alpha1.Kyma,
-	module *parsed.Module,
-) error {
-	if err := r.setupModule(module, kyma, name); err != nil {
-		return err
-	}
-	// create resource if not found
-	if err := r.Client.Create(ctx, module.Unstructured, &client.CreateOptions{}); err != nil {
-		return fmt.Errorf("error creating custom resource of type %s %w", name, err)
-	}
-
-	return nil
-}
-
-func (r *KymaReconciler) UpdateModule(ctx context.Context, name string, kyma *v1alpha1.Kyma,
-	module *parsed.Module,
-) error {
-	if module.Template.Spec.Target == v1alpha1.TargetControlPlane {
-		return nil
-	}
-
-	if err := r.setupModule(module, kyma, name); err != nil {
-		return err
-	}
-
-	if err := r.Update(ctx, module.Unstructured, &client.UpdateOptions{}); err != nil {
-		return fmt.Errorf("error updating custom resource of type %s %w", name, err)
-	}
-
-	return nil
-}
-
-func (r *KymaReconciler) setupModule(module *parsed.Module, kyma *v1alpha1.Kyma, name string) error {
-	// set labels
-	module.ApplyLabels(kyma, name)
-
-	if module.GetOwnerReferences() == nil {
-		// set owner reference
-		if err := controllerutil.SetControllerReference(kyma, module.Unstructured, r.Scheme()); err != nil {
-			return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w",
-				name, kyma.Name, err)
-		}
-	}
-
-	return nil
 }
 
 func (r *KymaReconciler) TriggerKymaDeletion(ctx context.Context, kyma *v1alpha1.Kyma) error {
@@ -488,7 +302,7 @@ func (r *KymaReconciler) UpdateStatusFromErr(
 	return nil
 }
 
-func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *v1alpha1.Kyma) (parsed.Modules, error) {
+func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *v1alpha1.Kyma) (common.Modules, error) {
 	// fetch templates
 	templates, err := release.GetTemplates(ctx, r, kyma)
 	if err != nil {
@@ -501,8 +315,7 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 	}
 
 	// these are the actual modules
-	modules, err := parsed.TemplatesToModules(kyma, templates,
-		&parsed.ModuleConversionSettings{Verification: verification})
+	modules, err := parse.GenerateModulesFromTemplates(ctx, kyma, templates, verification)
 	if err != nil {
 		return nil, fmt.Errorf("could not convert templates to modules: %w", err)
 	}
@@ -510,7 +323,7 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 	return modules, nil
 }
 
-func (r *KymaReconciler) UpdateStatusModuleInfos(ctx context.Context, kyma *v1alpha1.Kyma) bool {
+func (r *KymaReconciler) UpdateModuleInfos(ctx context.Context, kyma *v1alpha1.Kyma) bool {
 	requireUpdateCondition := false
 	moduleInfoMap := kyma.GetModuleInfoMap()
 	moduleInfos := kyma.GetNoLongerExistingModuleInfos()

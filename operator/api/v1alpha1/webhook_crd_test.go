@@ -33,7 +33,7 @@ var _ = Describe("Webhook ValidationCreate", func() {
 			return k8sClient.Create(ctx, crd)
 		}, "10s").Should(Succeed())
 
-		template, err := test.ModuleTemplateFactory("samplecrd", v1alpha1.Module{
+		template, err := test.ModuleTemplateFactory(v1alpha1.Module{
 			ControllerName: "manifest",
 			Name:           "example-module-name",
 			Channel:        v1alpha1.ChannelStable,
@@ -56,7 +56,7 @@ var _ = Describe("Webhook ValidationCreate", func() {
 		Eventually(func() error {
 			return k8sClient.Create(ctx, crd)
 		}, "10s").Should(Succeed())
-		template, err := test.ModuleTemplateFactory("samplecrd-non-complaint", v1alpha1.Module{
+		template, err := test.ModuleTemplateFactory(v1alpha1.Module{
 			ControllerName: "manifest",
 			Name:           "example-module-name",
 			Channel:        v1alpha1.ChannelStable,

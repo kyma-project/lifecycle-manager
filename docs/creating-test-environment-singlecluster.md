@@ -57,30 +57,30 @@ export IMG_REGISTRY=op-kcpskr-registry.localhost:$IMG_REGISTRY_PORT/unsigned/ope
 For browsing through the content of the local container registry, run one of these tools
 (both become accessible via http://localhost:8080):
 
-* Crane Operator (http://localhost:8080)
-    ```sh
-      docker run \
-       -p 8080:80 \
-       --rm \
-       --network=k3d-op-kcpskr \
-       --name=docker_registry_ui \
-       -e REGISTRY_HOST=op-kcpskr-registry.localhost \
-       -e REGISTRY_PORT=5000 \
-       -e REGISTRY_PROTOCOL=http \
-       -e ALLOW_REGISTRY_LOGIN=false \
-       -e REGISTRY_ALLOW_DELETE=true \
-       parabuzzle/craneoperator:latest
-    ```
-* Docker Registry Browser (http://localhost:8080)
-    ```sh
-      docker run \
-        -p 8080:8080 \
-        --rm \
-        --network=k3d-op-kcpskr \
-        --name registry-browser \
-        -e DOCKER_REGISTRY_URL=http://op-kcpskr-registry.localhost:5000 \
-        klausmeyer/docker-registry-browser
-     ```
+- Crane Operator (http://localhost:8080)
+  ```sh
+    docker run \
+     -p 8080:80 \
+     --rm \
+     --network=k3d-op-kcpskr \
+     --name=docker_registry_ui \
+     -e REGISTRY_HOST=op-kcpskr-registry.localhost \
+     -e REGISTRY_PORT=5000 \
+     -e REGISTRY_PROTOCOL=http \
+     -e ALLOW_REGISTRY_LOGIN=false \
+     -e REGISTRY_ALLOW_DELETE=true \
+     parabuzzle/craneoperator:latest
+  ```
+- Docker Registry Browser (http://localhost:8080)
+  ```sh
+    docker run \
+      -p 8080:8080 \
+      --rm \
+      --network=k3d-op-kcpskr \
+      --name registry-browser \
+      -e DOCKER_REGISTRY_URL=http://op-kcpskr-registry.localhost:5000 \
+      klausmeyer/docker-registry-browser
+  ```
 
 ## 2. External setup
 
@@ -89,6 +89,14 @@ This section describes how a Gardener cluster can be used for testing purposes.
 ### 2.1 Create external cluster using Kyma CLI
 
 Provision a compliant Kyma Clusters with the [`kyma-cli`](https://github.com/kyma-project/cli):
+
+`${gardener_account_kubeconfig}`: the access credential which can be downloaded from [gardener account](https://dashboard.garden.canary.k8s.ondemand.com/account).
+
+```sh
+kyma provision gardener gcp --name op-kcpskr --project ${gardener_project} -s ${gcp_secret} -c ${gardener_account_kubeconfig}
+```
+
+this is how it could like:
 
 ```sh
 kyma provision gardener gcp --name op-kcpskr --project jellyfish -s gcp-jellyfish-secret -c .kube/kubeconfig-garden-jellyfish.yaml

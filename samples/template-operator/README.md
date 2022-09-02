@@ -3,6 +3,167 @@ This documentation serves as a reference to implement a module (component) opera
 It utilizes the [kubebuilder](https://book.kubebuilder.io/) framework with some modifications to implement Kubernetes APIs for custom resource definitions (CRDs).
 Additionally, it hides Kubernetes boilerplate code to develop fast and efficient control loops in Go.
 
+## Contents
+* [Implementation](#implementation)
+  * [Pre-requisites](#pre-requisites)
+  * [Generate kubebuilder operator](#generate-kubebuilder-operator)
+  * [Default (declarative) Reconciliation and Status handling](#default-declarative-reconciliation-and-status-handling)
+  * [Custom Reconciliation and Status handling guidelines](#custom-reconciliation-and-status-handling-guidelines)
+* [Bundling and installation](#bundling-and-installation)
+  * [Makefile structure](#makefile-structure)
+  * [Build module operator image](#build-module-operator-image)
+  * [Build and push your module to the registry](#build-and-push-your-module-to-the-registry)
+* [RBAC](#rbac)
+* [Grafana dashboard](#grafana-dashboard)
+
+
+## Implementation
+
+### Pre-requisites
+* k8s cluster
+* [kubectl](https://kubernetes.io/docs/tasks/tools/)
+* [kubebuilder](https://book.kubebuilder.io/)
+    ```bash
+    # you could use one of the following options
+    
+    # option 1: using brew
+    brew install kubebuilder
+    
+    # option 2: fetch sources directly
+    curl -L -o kubebuilder https://go.kubebuilder.io/dl/latest/$(go env GOOS)/$(go env GOARCH)
+    chmod +x kubebuilder && mv kubebuilder /usr/local/bin/
+    ```
+
+
+### Generate kubebuilder operator 
+
+1. Create a folder and make a directory, e.g. `operator`.
+    ```sh
+    mkdir operator && cd operator
+    ```
+
+2. Initialize `kubebuilder` project. Please make sure domain is set to `operator.kyma-project.io`.
+    ```sh 
+   kubebuilder init --domain operator.kyma-project.io --repo github.com/kyma-project/test-operator --plugins=go/v4-alpha
+    ```
+
+3. Create API group version and kind for the intended custom resource(s). Please make sure the `group` is set as `component`.
+    ```
+    kubebuilder create api --group component --version v1alpha1 --kind Sample
+    ```
+
+4. `kubebuilder` will ask to create Resource, input `y`.
+
+5. `kubebuilder` will ask to create Controller, input `y`.
+
+6. Update go dependencies `go mod tidy`.
+
+7. Run `make generate` followed by `make manifests`, to generate boilerplate code and CRDs respectively.
+
+A basic kubebuilder operator with appropriate scaffolding should be setup.
+
+### Default (declarative) Reconciliation and Status handling
+
+For simple use cases where a `module operator` should install a `module helm chart(s)` and set the state of the corresponding `module CR` accordingly, a declarative approach is useful.
+This approach will enable orchestration of Kubernetes resources so that module owners can concentrate on their specific logic.
+
+#### Steps API definition:
+
+1. Refer to [API definition](./operator/api/v1alpha1/sample_types.go) of `SampleCR` and implement `Status` sub-resource similarly in `./api/<your_api_version>/<cr_name>_types.go`.
+   This `Status` type definition is sourced from the `module-manager` declarative library and contains all valid `.status.state` values as discussed in the previous sections.
+   ```yaml
+    Status types.Status `json:"status,omitempty"`
+   ```
+
+2. Ensure the module CR's API definition implements the `module-manager` declarative library's resource requirements, represented by `types.CustomObject`. Also implement missing interface methods.
+   ```go
+   var _ types.CustomObject = &Sample{}
+
+   func (s *Sample) GetStatus() types.Status {
+        return s.Status
+   }
+   
+   func (s *Sample) SetStatus(status types.Status) {
+        s.Status = status
+   }
+   
+   func (s *Sample) ComponentName() string {
+        return "sample-component-name"
+   }
+   ```
+
+#### Steps controller implementation:
+
+1. Refer to the [controller implementation](./operator/controllers/sample_controller.go).
+   Instead of implementing the default reconciler interface, as provided by `kubebuilder`, include the `module-manager` declarative reconciler in `./controllers/<cr_name>_controller.go`.
+   ```go
+   // SampleReconciler reconciles a Sample object
+   type SampleReconciler struct {
+        declarative.ManifestReconciler
+        client.Client
+        Scheme *runtime.Scheme
+        *rest.Config
+   }
+   ```
+   Notice there is no `Reconcile()` method implemented in this controller, since the logic is abstracted within the declarative reconciler.
+
+2. As part of reconciler's `SetupWithManager()` in the Sample CR [controller implementation](./operator/controllers/sample_controller.go), declarative options have been used.
+   Similarly, implement the required options in your controller.
+   ```go
+   return r.Inject(mgr, &v1alpha1.Sample{},
+        declarative.WithManifestResolver(manifestResolver),
+        declarative.WithCustomResourceLabels(map[string]string{"sampleKey": "sampleValue"}),
+        declarative.WithPostRenderTransform(transform),
+        declarative.WithResourcesReady(true), 
+   )
+   ```
+   These options can be used to modify manifest installation and uninstallation. Some options are applied as a manifest pre-processing step and others as post-processing.
+   More details on these steps can be found in the [options documentation](https://github.com/kyma-project/module-manager/blob/main/operator/pkg/declarative/options.go).
+
+3. A **mandatory** requirement of this reconciler is to provide the option `declarative.WithManifestResolver(manifestResolver)`, as it holds the chart information to be processed by the declarative reconciler.
+
+   This `ManifestResolver` should implement `types.ManifestResolver` from the declarative library. Implement a similar `ManifestResolver` in your controller.
+   E.g. Sample CR [controller implementation](./operator/controllers/sample_controller.go) returns chart information.
+   ```go
+      // Get returns the chart information to be processed.
+      func (m *ManifestResolver) Get(obj types.BaseCustomObject) (types.InstallationSpec, error) {
+            sample, valid := obj.(*v1alpha1.Sample)
+            if !valid {
+                return types.InstallationSpec{},
+                fmt.Errorf("invalid type conversion for %s", client.ObjectKeyFromObject(obj))
+            }
+             return types.InstallationSpec{
+                 ChartPath:   chartPath,
+                 ReleaseName: sample.Spec.ReleaseName,
+                 ChartFlags: types.ChartFlags{
+                    ConfigFlags: types.Flags{
+                        "Namespace":       chartNs,
+                        "CreateNamespace": true,
+                    },
+                    SetFlags: types.Flags{
+                        "nameOverride": nameOverride,
+                    },
+                 },
+            }, nil
+      }
+   ```
+   
+#### Final steps
+1. Connect to your cluster and ensure `kubectl` is pointing to the desired cluster.
+2. Run `make generate`, `make manifests` and in the end `make install`, to generate boilerplate code, CRDs and install required resources on your clusterrespectively.
+3. To test locally: install your module CR on a cluster and execute `make run` to start your operator locally.
+   If everything is set up properly you should see state changes on your module CR, depending upon chart processing.
+
+### Custom Reconciliation and Status handling guidelines
+
+A custom resource is required to contain a specific set of properties in the Status object, to be tracked by the [lifecycle-manager](https://github.com/kyma-project/lifecycle-manager/tree/main/operator).
+This is required to track the current state of the module, represented by this custom resource.
+
+1. Check reference implementation of [Status](https://github.com/kyma-project/module-manager/blob/main/operator/pkg/types/declaritive.go) reference implementation. The `.status.state` field of your custom resource _MUST_ contain one of these state values at all times.
+   On top, `.status` object could contain other relevant properties as per your requirements.
+2. The `.status.state` values have literal meaning behind them, so use them appropriately.
+
+
 ## Bundling and installation
 
 ### Makefile structure
@@ -96,56 +257,7 @@ This will build the operator image and then push it as the image defined in `IMG
     
     You can install the necessary module-template CRD from [here](https://raw.githubusercontent.com/kyma-project/lifecycle-manager/main/operator/config/crd/bases/operator.kyma-project.io_moduletemplates.yaml).
 
-
-
-## Implementation
-
-### Pre-requisites
-* [kubebuilder](https://book.kubebuilder.io/)
-    ```bash
-    # download kubebuilder and install locally.
-    curl -L -o kubebuilder https://go.kubebuilder.io/dl/latest/$(go env GOOS)/$(go env GOARCH)
-    chmod +x kubebuilder && mv kubebuilder /usr/local/bin/
-    ```
-* [kubectl](https://kubernetes.io/docs/tasks/tools/)
-
-### Generate kubebuilder operator with kyma module requirements
-
-1. Create a folder and make a directory, e.g. `operator`.
-    ```sh
-    mkdir operator && cd operator
-    ```
-   
-2. Initialize `kubebuilder` project. Please make sure domain is set to `component.kyma-project.io`.
-    ```sh 
-   kubebuilder init --domain component.kyma-project.io --repo github.com/kyma-project/test-operator --plugins=go/v4-alpha
-    ```
-
-3. Create API group version and kind for the intended custom resource(s). Please make sure the `group` is set as `component`.
-    ```
-    kubebuilder create api --group component --version v1alpha1 --kind Sample
-    ```
-
-4. `kubebuilder` will ask to create Resource, input `y`.
-
-5. `kubebuilder` will ask to create Controller, input `y`.
-
-6. Update go dependencies `go mod tidy`.
-
-7. Run `make generate` followed by `make manifests`, to generate boilerplate code and CRDs respectively.
-
-A basic kubebuilder operator with appropriate scaffolding should be setup.
-
-### Status sub-resource for custom resource(s)
-
-A custom resource is required to contain a specific set of properties in the Status object, to be tracked by the [lifecycle-manager](https://github.com/kyma-project/lifecycle-manager/tree/main/operator).
-This is required to track the current state of the module, represented by this custom resource.
-
-1. Check reference implementation of [Status](https://github.com/kyma-project/module-manager/blob/main/operator/pkg/types/declaritive.go) reference implementation. The `.status.state` field of your custom resource _MUST_ contain one of these state values at all times.
-   On top, `.status` object could contain other relevant properties as per your requirements.
-2. The `.status.state` values have literal meaning behind them, so use them appropriately.
-
-### Grafana dashboard
+## Grafana dashboard
 
 By the following command, two grafana dashboard files with controller related metrics will be generated under `/operator/grafana` folder.
 
@@ -156,93 +268,7 @@ make grafana-dashboard
 For how to import dashboard, please read [official grafana guide](https://grafana.com/docs/grafana/latest/dashboards/export-import/#import-dashboard).
 This feature is supported by [kubebuilder grafana plugin](https://book.kubebuilder.io/plugins/grafana-v1-alpha.html).
 
-## Abstraction: Reconciliation and Status handling
-
-For simple use cases where a `module operator` should install a `module helm chart(s)` and set the state of the corresponding `module CR` accordingly, a declarative approach is useful.
-This approach will enable orchestration of Kubernetes resources so that module owners can concentrate on their specific logic.
-
-### Steps:
-
-1. Refer to [API definition](./operator/api/v1alpha1/sample_types.go) of `SampleCR` and implement `Status` sub-resource similarly.
-   This `Status` type definition is sourced from the `module-manager` declarative library and contains all valid `.status.state` values as discussed in the previous sections.
-   ```yaml
-    Status types.Status `json:"status,omitempty"`
-   ```
-   
-2. Ensure the module CR implements the `module-manager` declarative library's resource requirements, represented by `types.CustomObject`. Also implement missing interface methods.
-   ```go
-   var _ types.CustomObject = &Sample{}
-
-   func (s *Sample) GetStatus() types.Status {
-        return s.Status
-   }
-   
-   func (s *Sample) SetStatus(status types.Status) {
-        s.Status = status
-   }
-   
-   func (s *Sample) ComponentName() string {
-        return "sample-component-name"
-   }
-   ```
-
-3. Refer to the [controller implementation](./operator/controllers/sample_controller.go). 
-Instead of implementing the default reconciler interface, as provided by `kubebuilder`, include the `module-manager` declarative reconciler.
-   ```go
-   // SampleReconciler reconciles a Sample object
-   type SampleReconciler struct {
-        declarative.ManifestReconciler
-        client.Client
-        Scheme *runtime.Scheme
-        *rest.Config
-   }
-   ```
-   Notice there is no `Reconcile()` method implemented in this controller, since the logic is abstracted within the declarative reconciler.
-   
-4. As part of reconciler's SetupWithManager() in the Sample CR [controller implementation](./operator/controllers/sample_controller.go), declarative options have been used.
-   ```go
-   return r.Inject(mgr, &v1alpha1.Sample{},
-        declarative.WithManifestResolver(manifestResolver),
-        declarative.WithCustomResourceLabels(map[string]string{"sampleKey": "sampleValue"}),
-        declarative.WithPostRenderTransform(transform),
-        declarative.WithResourcesReady(true), 
-   )
-   ```
-   These options can be used modify manifest installation and uninstallation. Some options are applied as a manifest pre-processing step and others as post-processing.
-   More details on these steps can be found in the [options documentation](https://github.com/kyma-project/module-manager/blob/main/operator/pkg/declarative/options.go).
-
-5. A mandatory requirement of this reconciler is to provide the option `declarative.WithManifestResolver(manifestResolver)`, as it holds the chart information to be processed by the declarative reconciler. 
-
-   This ManifestResolver should implement `types.ManifestResolver` from the declarative library. 
-   E.g. Sample CR [controller implementation](./operator/controllers/sample_controller.go) returns chart information.
-   ```go
-      // Get returns the chart information to be processed.
-      func (m *ManifestResolver) Get(obj types.BaseCustomObject) (types.InstallationSpec, error) {
-            sample, valid := obj.(*v1alpha1.Sample)
-            if !valid {
-                return types.InstallationSpec{},
-                fmt.Errorf("invalid type conversion for %s", client.ObjectKeyFromObject(obj))
-            }
-             return types.InstallationSpec{
-                 ChartPath:   chartPath,
-                 ReleaseName: sample.Spec.ReleaseName,
-                 ChartFlags: types.ChartFlags{
-                    ConfigFlags: types.Flags{
-                        "Namespace":       chartNs,
-                        "CreateNamespace": true,
-                    },
-                    SetFlags: types.Flags{
-                        "nameOverride": nameOverride,
-                    },
-                 },
-            }, nil
-      }
-   ```
-6. Run `make generate` followed by `make manifests`, to generate boilerplate code and CRDs respectively.
-7. To test locally: install your module CR on a cluster and execute `make run` against the cluster's kubeconfig to start your operator locally. 
-   If everything is set up properly you should see state changes on your module CR, depending upon chart processing. 
-
-### RBAC
+## RBAC
 Make sure you have appropriate authorizations assigned to you controller binary, before you run in inside a cluster.
 Sample CR [controller implementation](./operator/controllers/sample_controller.go) includes rbac generation (via kubebuilder) for all resources across all API groups.
 This should certainly be adjusted according to the chart manifest resources and reconciliation types.

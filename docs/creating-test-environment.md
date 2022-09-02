@@ -20,14 +20,13 @@ to demonstrate how the bundling to a Kyma module works.
 
    In `https://github.com/kyma-project/lifecycle-manager`, `cd samples/template-operator`
 
-
 2. Generating and Pushing the Operator Image and Charts
 
    Next generate and push the module image of the operator.
 
-    ```sh
-    make module-operator-chart module-image
-    ```
+   ```sh
+   make module-operator-chart module-image
+   ```
 
 # 3. Install Kyma with your module
 
@@ -74,9 +73,9 @@ _Note for two cluster mode: set your `KUBECONFIG` to the KCP Cluster context_
 
 2. Run the Installation Command
 
-    ```sh
-    make install
-    ```
+   ```sh
+   make install
+   ```
 
 ### 3.3.2 Install Lifecycle Manager CRDs
 
@@ -84,9 +83,9 @@ _Note for two cluster mode: set your `KUBECONFIG` to the KCP Cluster context_
 
 2. Run the Installation Command
 
-    ```sh
-    make install
-    ```
+   ```sh
+   make install
+   ```
 
 Ensure the CRDs are installed with `kubectl get crds | grep kyma-project.io`:
 
@@ -106,7 +105,7 @@ In https://github.com/kyma-project/module-manager run
 
 ```sh
 # using local registry
-make docker-build docker-push deploy IMG=$IMG_REGISTRY/module-manager:dev 
+make docker-build docker-push deploy IMG=$IMG_REGISTRY/module-manager:dev
 
 # using remote registry (replace `PR-73` with your desired tag)
 make deploy IMG=eu.gcr.io/kyma-project/module-manager:PR-73
@@ -136,7 +135,7 @@ _Note: It could be that you get messages like `no matches for kind "VirtualServi
 
    ```sh
     make run
-    ```
+   ```
 
 ## 3.4 Start the Kyma installation
 
@@ -146,43 +145,42 @@ _Note for two cluster mode: Make sure you run the commands with `KUBECONFIG` set
 
    In `samples/template-operator`, run
 
-    ```sh
-    make module-template-push
-    ```
+   ```sh
+   make module-template-push
+   ```
 
    to apply the module-template.
 
-
 2. Create a request for kyma installation of the module in `samples/template-operator` of the lifecycle-manager with
 
-    ```sh
-    sh hack/gen-kyma.sh
-    kubectl apply -f kyma.yaml
-    ```
+   ```sh
+   sh hack/gen-kyma.sh
+   kubectl apply -f kyma.yaml
+   ```
 
 3. Now try to check your kyma installation progress, e.g. with `kubectl get kyma -n kyma-system -ojsonpath={".items[0].status"} | yq -P`:
 
-    ```yaml
-    conditions:
-      - lastTransitionTime: "2022-08-18T18:10:09Z"
-        message: module is Ready
-        reason: template
-        status: "True"
-        type: Ready
-    moduleInfos:
-      - moduleName: template
-        name: templatekyma-sample
-        namespace: kyma-system
-        templateInfo:
-          channel: stable
-          generation: 1
-          gvk:
-            group: operator.kyma-project.io
-            kind: Manifest
-            version: v1alpha1
-    observedGeneration: 1
-    state: Ready
-    ```
+   ```yaml
+   conditions:
+     - lastTransitionTime: "2022-08-18T18:10:09Z"
+       message: module is Ready
+       reason: template
+       status: "True"
+       type: Ready
+   moduleInfos:
+     - moduleName: template
+       name: templatekyma-sample
+       namespace: kyma-system
+       templateInfo:
+         channel: stable
+         generation: 1
+         gvk:
+           group: operator.kyma-project.io
+           kind: Manifest
+           version: v1alpha1
+   observedGeneration: 1
+   state: Ready
+   ```
 
 ### 3.4.1 Verify the installation
 

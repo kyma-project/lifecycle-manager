@@ -17,7 +17,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/dynamic"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/index"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/watch"
-	"github.com/kyma-project/runtime-watcher/kcp/pkg/listener"
+	"github.com/kyma-project/runtime-watcher/listener"
 )
 
 // SetupWithManager sets up the controller with the Manager.
@@ -52,6 +52,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 	}
 
 	// register listener component
+
 	runnableListener, eventChannel := listener.RegisterListenerComponent(
 		listenerAddr, strings.ToLower(string(v1alpha1.KymaKind)))
 	// watch event channel

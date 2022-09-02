@@ -62,6 +62,15 @@ Make sure to have two `KUBECONFIG` compliant client configurations at hand (one 
 
 Provision two compliant Kyma clusters with the `kyma-cli`:
 
+`${gardener_account_kubeconfig}`: the access credential which can be downloaded from [gardener account](https://dashboard.garden.canary.k8s.ondemand.com/account).
+
+```sh
+kyma provision gardener gcp --name op-kcp --project ${gardener_project} -s ${gcp_secret} -c ${gardener_account_kubeconfig}
+kyma provision gardener gcp --name op-skr --project ${gardener_project} -s ${gcp_secret} -c ${gardener_account_kubeconfig}
+```
+
+this is how it could like:
+
 ```sh
 kyma provision gardener gcp --name op-kcp --project jellyfish -s gcp-jellyfish-secret -c .kube/kubeconfig-garden-jellyfish.yaml
 kyma provision gardener gcp --name op-skr --project jellyfish -s gcp-jellyfish-secret -c .kube/kubeconfig-garden-jellyfish.yaml
