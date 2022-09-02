@@ -11,7 +11,7 @@ metadata:
   name: kyma-sample #change with your kyma name
   namespace: kyma-system
   labels:
-    "operator.kyma-project.io/managed-by": "kyma-operator"
+    "operator.kyma-project.io/managed-by": "lifecycle-manager"
     "operator.kyma-project.io/kyma-name": "kyma-sample"
 type: Opaque
 data:
