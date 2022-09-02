@@ -12,14 +12,13 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 )
 
-func ModuleTemplateFactory(sample string, module v1alpha1.Module, data unstructured.Unstructured,
-) (*v1alpha1.ModuleTemplate, error) {
+func ModuleTemplateFactory(module v1alpha1.Module, data unstructured.Unstructured) (*v1alpha1.ModuleTemplate, error) {
 	var moduleTemplate v1alpha1.ModuleTemplate
 	err := readModuleTemplate(module, &moduleTemplate)
 	if err != nil {
 		return &moduleTemplate, err
 	}
-	moduleTemplate.Name = module.Name + "-" + sample
+	moduleTemplate.Name = module.Name
 	moduleTemplate.Labels[v1alpha1.ModuleName] = module.Name
 	moduleTemplate.Labels[v1alpha1.ControllerName] = module.ControllerName
 	moduleTemplate.Spec.Channel = module.Channel
