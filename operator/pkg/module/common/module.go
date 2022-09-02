@@ -1,4 +1,4 @@
-package parsed
+package common
 
 import (
 	"github.com/go-logr/logr"
@@ -55,12 +55,12 @@ func (m *Module) StateMismatchedWithTemplateInfo(info *v1alpha1.TemplateInfo) bo
 		info.Channel != m.Template.Spec.Channel
 }
 
-// UpdateModuleFromCluster update the module with necessary information (status, ownerReference) from
+// UpdateStatusAndReferencesFromUnstructured update the module with necessary information (status, ownerReference) from
 // current deployed resource.
-func (m *Module) UpdateModuleFromCluster(unstructuredFromServer *unstructured.Unstructured) {
-	m.Unstructured.Object["status"] = unstructuredFromServer.Object["status"]
-	m.Unstructured.SetResourceVersion(unstructuredFromServer.GetResourceVersion())
-	m.Unstructured.SetOwnerReferences(unstructuredFromServer.GetOwnerReferences())
+func (m *Module) UpdateStatusAndReferencesFromUnstructured(unstructured *unstructured.Unstructured) {
+	m.Unstructured.Object["status"] = unstructured.Object["status"]
+	m.Unstructured.SetResourceVersion(unstructured.GetResourceVersion())
+	m.Unstructured.SetOwnerReferences(unstructured.GetOwnerReferences())
 }
 
 func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {
@@ -73,4 +73,16 @@ func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {
 		}
 	}
 	return false
+}
+
+func NewUnstructuredFromModule(module *Module) *unstructured.Unstructured {
+	unstructuredFromServer := unstructured.Unstructured{}
+	unstructuredFromServer.SetGroupVersionKind(module.Unstructured.GroupVersionKind())
+	unstructuredFromServer.SetNamespace(module.Unstructured.GetNamespace())
+	unstructuredFromServer.SetName(module.Unstructured.GetName())
+	return &unstructuredFromServer
+}
+
+func CreateModuleName(moduleName string, kymaName string) string {
+	return moduleName + kymaName
 }
