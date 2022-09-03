@@ -46,9 +46,9 @@ func RegisterDefaultLifecycleForKyma(kyma *v1alpha1.Kyma) {
 	})
 }
 
-func IsKymaInState(kyma *v1alpha1.Kyma, state v1alpha1.State) func() bool {
+func IsKymaInState(kymaName string, state v1alpha1.State) func() bool {
 	return func() bool {
-		kymaFromCluster, err := GetKyma(controlPlaneClient, kyma)
+		kymaFromCluster, err := GetKyma(controlPlaneClient, kymaName)
 		if err != nil || kymaFromCluster.Status.State != state {
 			return false
 		}
@@ -56,9 +56,9 @@ func IsKymaInState(kyma *v1alpha1.Kyma, state v1alpha1.State) func() bool {
 	}
 }
 
-func GetKymaState(kyma *v1alpha1.Kyma) func() string {
+func GetKymaState(kymaName string) func() string {
 	return func() string {
-		createdKyma, err := GetKyma(controlPlaneClient, kyma)
+		createdKyma, err := GetKyma(controlPlaneClient, kymaName)
 		if err != nil {
 			return ""
 		}
@@ -66,9 +66,9 @@ func GetKymaState(kyma *v1alpha1.Kyma) func() string {
 	}
 }
 
-func GetKymaConditions(kyma *v1alpha1.Kyma) func() []metav1.Condition {
+func GetKymaConditions(kymaName string) func() []metav1.Condition {
 	return func() []metav1.Condition {
-		createdKyma, err := GetKyma(controlPlaneClient, kyma)
+		createdKyma, err := GetKyma(controlPlaneClient, kymaName)
 		if err != nil {
 			return []metav1.Condition{}
 		}
@@ -76,34 +76,32 @@ func GetKymaConditions(kyma *v1alpha1.Kyma) func() []metav1.Condition {
 	}
 }
 
-func UpdateModuleState(
-	kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate, state v1alpha1.State,
-) func() error {
+func UpdateModuleState(kymaName string, moduleTemplate *v1alpha1.ModuleTemplate, state v1alpha1.State) func() error {
 	return func() error {
-		component, err := getModule(kyma, moduleTemplate)
+		component, err := getModule(kymaName, moduleTemplate)
 		Expect(err).ShouldNot(HaveOccurred())
 		component.Object[watch.Status] = map[string]any{watch.State: string(state)}
 		return k8sManager.GetClient().Status().Update(ctx, component)
 	}
 }
 
-func ModuleExists(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate) func() bool {
+func ModuleExists(kymaName string, moduleTemplate *v1alpha1.ModuleTemplate) func() bool {
 	return func() bool {
-		_, err := getModule(kyma, moduleTemplate)
+		_, err := getModule(kymaName, moduleTemplate)
 		return err == nil
 	}
 }
 
-func ModuleNotExist(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate) func() bool {
+func ModuleNotExist(kymaName string, moduleTemplate *v1alpha1.ModuleTemplate) func() bool {
 	return func() bool {
-		_, err := getModule(kyma, moduleTemplate)
+		_, err := getModule(kymaName, moduleTemplate)
 		return k8serrors.IsNotFound(err)
 	}
 }
 
-func SKRModuleExistWithOverwrites(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate) func() string {
+func SKRModuleExistWithOverwrites(kymaName string, moduleTemplate *v1alpha1.ModuleTemplate) func() string {
 	return func() string {
-		module, err := getModule(kyma, moduleTemplate)
+		module, err := getModule(kymaName, moduleTemplate)
 		Expect(err).ToNot(HaveOccurred())
 		body, err := json.Marshal(module.Object["spec"])
 		Expect(err).ToNot(HaveOccurred())
@@ -119,17 +117,14 @@ func SKRModuleExistWithOverwrites(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.
 	}
 }
 
-func getModule(
-	kyma *v1alpha1.Kyma,
-	moduleTemplate *v1alpha1.ModuleTemplate,
-) (*unstructured.Unstructured, error) {
+func getModule(kymaName string, moduleTemplate *v1alpha1.ModuleTemplate) (*unstructured.Unstructured, error) {
 	component := moduleTemplate.Spec.Data.DeepCopy()
 	if moduleTemplate.Spec.Target == v1alpha1.TargetRemote {
 		component.SetKind("Manifest")
 	}
 	err := controlPlaneClient.Get(ctx, client.ObjectKey{
 		Namespace: namespace,
-		Name:      common.CreateModuleName(moduleTemplate.GetLabels()[v1alpha1.ModuleName], kyma.GetName()),
+		Name:      common.CreateModuleName(moduleTemplate.GetLabels()[v1alpha1.ModuleName], kymaName),
 	}, component)
 	if err != nil {
 		return nil, err
@@ -139,19 +134,22 @@ func getModule(
 
 func GetKyma(
 	testClient client.Client,
-	kyma *v1alpha1.Kyma,
+	kymaName string,
 ) (*v1alpha1.Kyma, error) {
 	kymaInCluster := &v1alpha1.Kyma{}
-	err := testClient.Get(ctx, client.ObjectKeyFromObject(kyma), kymaInCluster)
+	err := testClient.Get(ctx, client.ObjectKey{
+		Namespace: namespace,
+		Name:      kymaName,
+	}, kymaInCluster)
 	if err != nil {
 		return nil, err
 	}
 	return kymaInCluster, nil
 }
 
-func RemoteKymaExists(remoteClient client.Client, kyma *v1alpha1.Kyma) func() error {
+func RemoteKymaExists(remoteClient client.Client, kymaName string) func() error {
 	return func() error {
-		_, err := GetKyma(remoteClient, kyma)
+		_, err := GetKyma(remoteClient, kymaName)
 		return err
 	}
 }
@@ -175,4 +173,15 @@ func CatalogExists(clnt client.Client, kyma *v1alpha1.Kyma) func() error {
 		_, err := getCatalog(clnt, kyma)
 		return err
 	}
+}
+
+func deleteModule(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate,
+) error {
+	component := moduleTemplate.Spec.Data.DeepCopy()
+	if moduleTemplate.Spec.Target == v1alpha1.TargetRemote {
+		component.SetKind("Manifest")
+	}
+	component.SetNamespace(namespace)
+	component.SetName(common.CreateModuleName(moduleTemplate.GetLabels()[v1alpha1.ModuleName], kyma.GetName()))
+	return controlPlaneClient.Delete(ctx, component)
 }
