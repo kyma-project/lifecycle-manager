@@ -1,6 +1,6 @@
 # lifecycle-manager
 
-Kyma is the opinionated set of Kubernetes based modular building blocks that includes the necessary capabilities to develop and run enterprise-grade cloud-native applications. Kyma operator is a tool that manages the lifecycle of these components in your cluster.
+Kyma is the opinionated set of Kubernetes based modular building blocks that includes the necessary capabilities to develop and run enterprise-grade cloud-native applications. Kyma's `lifecycle-manager` is a tool that manages the lifecycle of these components in your cluster.
 
 # Architecture
 
