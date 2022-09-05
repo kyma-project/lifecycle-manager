@@ -129,6 +129,14 @@ func (r *runnerImpl) setupModule(module *common.Module, kyma *v1alpha1.Kyma, nam
 
 func (r *runnerImpl) SyncModuleInfo(ctx context.Context, kyma *v1alpha1.Kyma, modules common.Modules) bool {
 	moduleInfoMap := kyma.GetModuleInfoMap()
+	statusUpdateRequiredFromUpdate := r.updateModuleInfosFromSpecModules(modules, moduleInfoMap, kyma)
+	statusUpdateRequiredFromDelete := r.deleteNoLongerExistingModuleInfos(ctx, moduleInfoMap, kyma)
+	return statusUpdateRequiredFromUpdate || statusUpdateRequiredFromDelete
+}
+
+func (r *runnerImpl) updateModuleInfosFromSpecModules(modules common.Modules,
+	moduleInfoMap map[string]*v1alpha1.ModuleInfo, kyma *v1alpha1.Kyma,
+) bool {
 	updateRequired := false
 	for _, module := range modules {
 		latestModuleInfo := v1alpha1.ModuleInfo{
@@ -157,8 +165,7 @@ func (r *runnerImpl) SyncModuleInfo(ctx context.Context, kyma *v1alpha1.Kyma, mo
 			kyma.Status.ModuleInfos = append(kyma.Status.ModuleInfos, latestModuleInfo)
 		}
 	}
-	statusUpdateRequiredFromDeletion := r.UpdateModuleInfos(ctx, kyma)
-	return updateRequired || statusUpdateRequiredFromDeletion
+	return updateRequired
 }
 
 func stateFromUnstructured(obj *unstructured.Unstructured) v1alpha1.State {
@@ -172,9 +179,10 @@ func stateFromUnstructured(obj *unstructured.Unstructured) v1alpha1.State {
 	return v1alpha1.StateError
 }
 
-func (r *runnerImpl) UpdateModuleInfos(ctx context.Context, kyma *v1alpha1.Kyma) bool {
+func (r *runnerImpl) deleteNoLongerExistingModuleInfos(ctx context.Context,
+	moduleInfoMap map[string]*v1alpha1.ModuleInfo, kyma *v1alpha1.Kyma,
+) bool {
 	updateRequired := false
-	moduleInfoMap := kyma.GetModuleInfoMap()
 	moduleInfos := kyma.GetNoLongerExistingModuleInfos()
 	if len(moduleInfos) == 0 {
 		return false

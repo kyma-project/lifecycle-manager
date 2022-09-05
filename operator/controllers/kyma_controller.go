@@ -197,18 +197,18 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 			fmt.Errorf("error while fetching modules during processing: %w", err))
 	}
 
-	sync := sync.New(r)
+	runner := sync.New(r)
 
-	statusUpdateRequiredFromModuleSync, err := sync.Sync(ctx, kyma, modules)
+	statusUpdateRequiredFromModuleSync, err := runner.Sync(ctx, kyma, modules)
 	if err != nil {
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
 			fmt.Errorf("ParsedModule CR creation/update error: %w", err))
 	}
 
-	statusUpdateRequiredFromModuleInfoSync := sync.SyncModuleInfo(ctx, kyma, modules)
+	statusUpdateRequiredFromModuleInfoSync := runner.SyncModuleInfo(ctx, kyma, modules)
 
-	moduleInfos := kyma.GetNoLongerExistingModuleInfos()
-	if err := r.DeleteNoLongerExistingModules(ctx, moduleInfos); err != nil {
+	// If module get removed from kyma, the module deletion happens here.
+	if err := r.DeleteNoLongerExistingModules(ctx, kyma); err != nil {
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
 			fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err))
 	}
@@ -311,7 +311,8 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 	return modules, nil
 }
 
-func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, moduleInfos []*v1alpha1.ModuleInfo) error {
+func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma *v1alpha1.Kyma) error {
+	moduleInfos := kyma.GetNoLongerExistingModuleInfos()
 	var err error
 	if len(moduleInfos) == 0 {
 		return nil
