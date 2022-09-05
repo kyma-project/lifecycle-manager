@@ -129,12 +129,12 @@ func (r *runnerImpl) setupModule(module *common.Module, kyma *v1alpha1.Kyma, nam
 
 func (r *runnerImpl) SyncModuleInfo(ctx context.Context, kyma *v1alpha1.Kyma, modules common.Modules) bool {
 	moduleInfoMap := kyma.GetModuleInfoMap()
-	statusUpdateRequiredFromUpdate := r.updateModuleInfosFromSpecModules(modules, moduleInfoMap, kyma)
+	statusUpdateRequiredFromUpdate := r.updateModuleInfosFromExistingModules(modules, moduleInfoMap, kyma)
 	statusUpdateRequiredFromDelete := r.deleteNoLongerExistingModuleInfos(ctx, moduleInfoMap, kyma)
 	return statusUpdateRequiredFromUpdate || statusUpdateRequiredFromDelete
 }
 
-func (r *runnerImpl) updateModuleInfosFromSpecModules(modules common.Modules,
+func (r *runnerImpl) updateModuleInfosFromExistingModules(modules common.Modules,
 	moduleInfoMap map[string]*v1alpha1.ModuleInfo, kyma *v1alpha1.Kyma,
 ) bool {
 	updateRequired := false
