@@ -26,7 +26,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
@@ -61,8 +60,6 @@ type KymaReconciler struct {
 	record.EventRecorder
 	RequeueIntervals
 	signature.VerificationSettings
-	RateQPS   int
-	RateBurst int
 }
 
 //nolint:lll
@@ -200,32 +197,23 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 			fmt.Errorf("error while fetching modules during processing: %w", err))
 	}
 
-	sync := sync.New(r)
+	runner := sync.New(r)
 
-	statusUpdateRequiredFromModuleSync, err := sync.Sync(ctx, kyma, modules)
+	statusUpdateRequiredFromModuleSync, err := runner.Sync(ctx, kyma, modules)
 	if err != nil {
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
 			fmt.Errorf("ParsedModule CR creation/update error: %w", err))
 	}
 
-	// Now we track the conditions: update the status based on their state
-	// technically we could also update the state in the previous step alone determine if we are ready based on this
+	statusUpdateRequiredFromModuleInfoSync := runner.SyncModuleInfo(ctx, kyma, modules)
 
-	statusUpdateRequiredFromModuleInfoSync := sync.SyncModuleInfo(ctx, kyma, modules)
-	kyma.SyncConditionsWithModuleStates()
-	if err != nil {
-		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
-			fmt.Errorf("error while syncing conditions during processing: %w", err))
-	}
-
-	statusUpdateRequiredFromDeletion := r.UpdateModuleInfos(ctx, kyma)
-	moduleInfos := kyma.GetNoLongerExistingModuleInfos()
-	err = r.DeleteNoLongerExistingModules(ctx, moduleInfos)
-	if err != nil {
+	// If module get removed from kyma, the module deletion happens here.
+	if err := r.DeleteNoLongerExistingModules(ctx, kyma); err != nil {
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
 			fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err))
 	}
 
+	kyma.SyncConditionsWithModuleStates()
 	// set ready condition if applicable
 	if kyma.AreAllConditionsReadyForKyma() && kyma.Status.State != v1alpha1.StateReady {
 		message := fmt.Sprintf("reconciliation of %s finished!", kyma.Name)
@@ -236,7 +224,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	}
 
 	// if the ready condition is not applicable, but we changed the conditions, we still need to issue an update
-	if statusUpdateRequiredFromModuleSync || statusUpdateRequiredFromModuleInfoSync || statusUpdateRequiredFromDeletion {
+	if statusUpdateRequiredFromModuleSync || statusUpdateRequiredFromModuleInfoSync {
 		if err := r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing, "updating component conditions"); err != nil {
 			return fmt.Errorf("error while updating status for condition change: %w", err)
 		}
@@ -323,32 +311,8 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 	return modules, nil
 }
 
-func (r *KymaReconciler) UpdateModuleInfos(ctx context.Context, kyma *v1alpha1.Kyma) bool {
-	requireUpdateCondition := false
-	moduleInfoMap := kyma.GetModuleInfoMap()
+func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma *v1alpha1.Kyma) error {
 	moduleInfos := kyma.GetNoLongerExistingModuleInfos()
-	if len(moduleInfos) == 0 {
-		return false
-	}
-	for i := range moduleInfos {
-		moduleInfo := moduleInfos[i]
-		module := unstructured.Unstructured{}
-		module.SetGroupVersionKind(schema.GroupVersionKind{
-			Group:   moduleInfo.TemplateInfo.GroupVersionKind.Group,
-			Version: moduleInfo.TemplateInfo.GroupVersionKind.Version,
-			Kind:    moduleInfo.TemplateInfo.GroupVersionKind.Kind,
-		})
-		err := r.getModule(ctx, &module)
-		if k8serrors.IsNotFound(err) {
-			requireUpdateCondition = true
-			delete(moduleInfoMap, moduleInfo.ModuleName)
-		}
-	}
-	kyma.Status.ModuleInfos = convertToNewModuleInfos(moduleInfoMap)
-	return requireUpdateCondition
-}
-
-func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, moduleInfos []*v1alpha1.ModuleInfo) error {
 	var err error
 	if len(moduleInfos) == 0 {
 		return nil
@@ -364,14 +328,6 @@ func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, modu
 	return nil
 }
 
-func convertToNewModuleInfos(moduleInfoMap map[string]*v1alpha1.ModuleInfo) []v1alpha1.ModuleInfo {
-	newModuleInfos := make([]v1alpha1.ModuleInfo, 0)
-	for _, moduleInfo := range moduleInfoMap {
-		newModuleInfos = append(newModuleInfos, *moduleInfo)
-	}
-	return newModuleInfos
-}
-
 func (r *KymaReconciler) deleteModule(ctx context.Context, moduleInfo *v1alpha1.ModuleInfo) error {
 	module := unstructured.Unstructured{}
 	module.SetNamespace(moduleInfo.Namespace)
@@ -382,8 +338,4 @@ func (r *KymaReconciler) deleteModule(ctx context.Context, moduleInfo *v1alpha1.
 		Kind:    moduleInfo.TemplateInfo.GroupVersionKind.Kind,
 	})
 	return r.Delete(ctx, &module, &client.DeleteOptions{})
-}
-
-func (r *KymaReconciler) getModule(ctx context.Context, module *unstructured.Unstructured) error {
-	return r.Get(ctx, client.ObjectKey{Namespace: module.GetNamespace(), Name: module.GetName()}, module)
 }
