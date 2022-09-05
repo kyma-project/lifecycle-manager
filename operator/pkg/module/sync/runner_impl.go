@@ -6,6 +6,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -51,15 +52,15 @@ func (r *runnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 			return true, nil
 		}
 
-		unstructured := common.NewUnstructuredFromModule(module)
-		err := r.getModule(ctx, unstructured)
+		moduleUnstructured := common.NewUnstructuredFromModule(module)
+		err := r.getModule(ctx, moduleUnstructured)
 		if errors.IsNotFound(err) {
 			return create()
 		} else if err != nil {
 			return false, fmt.Errorf("error occurred while fetching module %s: %w", module.GetName(), err)
 		}
 
-		module.UpdateStatusAndReferencesFromUnstructured(unstructured)
+		module.UpdateStatusAndReferencesFromUnstructured(moduleUnstructured)
 
 		if module.TemplateOutdated {
 			templateInfo, err := kyma.GetTemplateInfoByModuleName(name)
@@ -126,7 +127,7 @@ func (r *runnerImpl) setupModule(module *common.Module, kyma *v1alpha1.Kyma, nam
 	return nil
 }
 
-func (r *runnerImpl) SyncModuleInfo(_ context.Context, kyma *v1alpha1.Kyma, modules common.Modules) bool {
+func (r *runnerImpl) SyncModuleInfo(ctx context.Context, kyma *v1alpha1.Kyma, modules common.Modules) bool {
 	moduleInfoMap := kyma.GetModuleInfoMap()
 	updateRequired := false
 	for _, module := range modules {
@@ -156,7 +157,8 @@ func (r *runnerImpl) SyncModuleInfo(_ context.Context, kyma *v1alpha1.Kyma, modu
 			kyma.Status.ModuleInfos = append(kyma.Status.ModuleInfos, latestModuleInfo)
 		}
 	}
-	return updateRequired
+	statusUpdateRequiredFromDeletion := r.UpdateModuleInfos(ctx, kyma)
+	return updateRequired || statusUpdateRequiredFromDeletion
 }
 
 func stateFromUnstructured(obj *unstructured.Unstructured) v1alpha1.State {
@@ -168,4 +170,37 @@ func stateFromUnstructured(obj *unstructured.Unstructured) v1alpha1.State {
 		return v1alpha1.State(state)
 	}
 	return v1alpha1.StateError
+}
+
+func (r *runnerImpl) UpdateModuleInfos(ctx context.Context, kyma *v1alpha1.Kyma) bool {
+	updateRequired := false
+	moduleInfoMap := kyma.GetModuleInfoMap()
+	moduleInfos := kyma.GetNoLongerExistingModuleInfos()
+	if len(moduleInfos) == 0 {
+		return false
+	}
+	for i := range moduleInfos {
+		moduleInfo := moduleInfos[i]
+		module := unstructured.Unstructured{}
+		module.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   moduleInfo.TemplateInfo.GroupVersionKind.Group,
+			Version: moduleInfo.TemplateInfo.GroupVersionKind.Version,
+			Kind:    moduleInfo.TemplateInfo.GroupVersionKind.Kind,
+		})
+		err := r.getModule(ctx, &module)
+		if errors.IsNotFound(err) {
+			updateRequired = true
+			delete(moduleInfoMap, moduleInfo.ModuleName)
+		}
+	}
+	kyma.Status.ModuleInfos = convertToNewModuleInfos(moduleInfoMap)
+	return updateRequired
+}
+
+func convertToNewModuleInfos(moduleInfoMap map[string]*v1alpha1.ModuleInfo) []v1alpha1.ModuleInfo {
+	newModuleInfos := make([]v1alpha1.ModuleInfo, 0)
+	for _, moduleInfo := range moduleInfoMap {
+		newModuleInfos = append(newModuleInfos, *moduleInfo)
+	}
+	return newModuleInfos
 }
