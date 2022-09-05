@@ -17,11 +17,3 @@ spec:
             host: lifecycle-manager-kyma-event-service
             port:
               number: 8082
-    - match:
-        - uri:
-            regex: \/v.*\/manifest\/event
-      route:
-        - destination:
-            host: operator-manifest-event-service
-            port:
-              number: 2022
