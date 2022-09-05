@@ -14,7 +14,7 @@ spec:
             regex: \/v.*\/kyma\/event
       route:
         - destination:
-            host: operator-kyma-event-service
+            host: lifecycle-manager-kyma-event-service
             port:
               number: 8082
     - match:
