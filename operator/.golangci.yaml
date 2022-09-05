@@ -20,6 +20,7 @@ linters:
     - sqlclosecheck
     - structcheck
     - wastedassign
+    - ifshort
 linters-settings:
   gci:
     sections:
