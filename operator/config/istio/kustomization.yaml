@@ -3,5 +3,6 @@ kind: Component
 
 resources:
 - pa.yaml
+- gateway.yaml
 generatorOptions:
   disableNameSuffixHash: true

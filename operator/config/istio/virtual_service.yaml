@@ -1,0 +1,19 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: kyma-events
+  namespace: operator-system
+spec:
+  gateways:
+    - default/kyma-gateway
+  hosts:
+    - '*'
+  http:
+    - match:
+        - uri:
+            regex: \/v.*\/kyma\/event
+      route:
+        - destination:
+            host: lifecycle-manager-kyma-event-service
+            port:
+              number: 8082

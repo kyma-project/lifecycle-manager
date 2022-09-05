@@ -60,3 +60,16 @@ spec:
             memory: 2Gi
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kyma-event-service
+  namespace: operator-system
+spec:
+  selector:
+    control-plane: controller-manager
+  ports:
+    - protocol: TCP
+      port: 8082
+      targetPort: 8082
