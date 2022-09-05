@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: controller-runtime-metrics-dashboard
-  namespace: kcp-system
+  namespace: system
   labels:
     grafana_dashboard: 1
     app: monitoring-grafana

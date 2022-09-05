@@ -5,11 +5,11 @@ for file in *.json; do
 kind: ConfigMap
 metadata:
   name: "${file%.*}"-dashboard
-  namespace: kcp-system
+  namespace: system
   labels:
     grafana_dashboard: "1"
     app: monitoring-grafana
 data:
   "${file%.*}": |-
-    "$(cat "${file##*/}" | jq -cr)"" > "${file%.*}"-configmap.yaml
+    "$(cat "${file##*/}" | jq -cr)"" > ../config/grafana/"${file%.*}"-configmap.yaml
 done

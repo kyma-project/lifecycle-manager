@@ -27,6 +27,8 @@ components:
   #- ../certmanager
   # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
   #- ../prometheus
+  # [GRAFANA] To generate configmap for provision grafana dashboard
+  - ../grafana
 
 patchesStrategicMerge:
   # Protect the /metrics endpoint by putting it behind auth.
