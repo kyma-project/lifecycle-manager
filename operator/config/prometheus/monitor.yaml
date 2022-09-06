@@ -4,7 +4,7 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   labels:
-    app.kubernetes.io/component: kyma-project.io/lifecycle-manager
+    app.kubernetes.io/component: lifecycle-manager.kyma-project.io
   name: controller-manager-metrics-monitor
   namespace: system
 spec:
@@ -17,4 +17,4 @@ spec:
         insecureSkipVerify: true
   selector:
     matchLabels:
-      app.kubernetes.io/component: kyma-project.io/lifecycle-manager
+      app.kubernetes.io/component: lifecycle-manager.kyma-project.io

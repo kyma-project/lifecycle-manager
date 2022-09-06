@@ -10,4 +10,4 @@ spec:
       protocol: TCP
       targetPort: 9443
   selector:
-    app.kubernetes.io/component: kyma-project.io/lifecycle-manager
+    app.kubernetes.io/component: lifecycle-manager.kyma-project.io
