@@ -11,4 +11,4 @@ spec:
       mode: PERMISSIVE
   selector:
     matchLabels:
-      control-plane: controller-manager
+      app.kubernetes.io/component: lifecycle-manager.kyma-project.io

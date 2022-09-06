@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   labels:
-    app.kubernetes.io/component: kyma-project.io/lifecycle-manager
+    app.kubernetes.io/component: lifecycle-manager.kyma-project.io
   name: system
 ---
 apiVersion: apps/v1
@@ -11,18 +11,18 @@ metadata:
   name: controller-manager
   namespace: system
   labels:
-    app.kubernetes.io/component: kyma-project.io/lifecycle-manager
+    app.kubernetes.io/component: lifecycle-manager.kyma-project.io
 spec:
   selector:
     matchLabels:
-      control-plane: controller-manager
+      app.kubernetes.io/component: lifecycle-manager.kyma-project.io
   replicas: 1
   template:
     metadata:
       annotations:
         kubectl.kubernetes.io/default-container: manager
       labels:
-        control-plane: controller-manager
+        app.kubernetes.io/component: lifecycle-manager.kyma-project.io
     spec:
       securityContext:
         runAsNonRoot: true
@@ -68,7 +68,7 @@ metadata:
   namespace: operator-system
 spec:
   selector:
-    control-plane: controller-manager
+    app.kubernetes.io/component: lifecycle-manager.kyma-project.io
   ports:
     - protocol: TCP
       port: 8082
