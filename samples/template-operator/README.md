@@ -63,7 +63,7 @@ Additionally, it hides Kubernetes boilerplate code to develop fast and efficient
 A basic kubebuilder operator with appropriate scaffolding should be setup.
 
 #### Adjust default config resources
-If the module operator will be deployed under same namespace with other operators, some default manifests resources have to be adjusted according to avoid conflict.
+If the module operator will be deployed under same namespace with other operators, some default manifests resources have to be adjusted accordingly to avoid conflict.
 
 1. Add a common label to default kustomization.yaml, refer to [commonLabels](./operator/config/default/kustomization.yaml).
 
