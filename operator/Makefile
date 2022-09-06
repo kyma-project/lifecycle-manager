@@ -59,6 +59,10 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 vet: ## Run go vet against code.
 	go vet ./...
 
+.PHONY: envtest-dir
+envtest-dir:
+	echo "$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)"
+
 .PHONY: test
 test: manifests test-crd generate fmt vet envtest ## Run tests.
 	ACK_GINKGO_DEPRECATIONS=1.16.5 KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out

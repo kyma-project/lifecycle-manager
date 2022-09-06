@@ -119,9 +119,7 @@ func SKRModuleExistWithOverwrites(kymaName string, moduleTemplate *v1alpha1.Modu
 
 func getModule(kymaName string, moduleTemplate *v1alpha1.ModuleTemplate) (*unstructured.Unstructured, error) {
 	component := moduleTemplate.Spec.Data.DeepCopy()
-	if moduleTemplate.Spec.Target == v1alpha1.TargetRemote {
-		component.SetKind("Manifest")
-	}
+	component.SetKind("Manifest")
 	err := controlPlaneClient.Get(ctx, client.ObjectKey{
 		Namespace: namespace,
 		Name:      common.CreateModuleName(moduleTemplate.GetLabels()[v1alpha1.ModuleName], kymaName),
