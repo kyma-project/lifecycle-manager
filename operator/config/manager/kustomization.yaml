@@ -1,5 +1,5 @@
 apiVersion: kustomize.config.k8s.io/v1alpha1
-kind: Component
+kind: Kustomization
 
 resources:
 - manager.yaml
@@ -11,6 +11,7 @@ configMapGenerator:
 - files:
   - controller_manager_config.yaml
   name: manager-config
+
 images:
 - name: controller
   newName: eu.gcr.io/kyma-project/lifecycle-manager

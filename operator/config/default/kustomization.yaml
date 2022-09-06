@@ -16,8 +16,9 @@ commonLabels:
   app.kubernetes.io/managed-by: kustomize
   app.kubernetes.io/part-of: manual-deployment
 
-components:
+resources:
   - ../manager
+components:
   - ../crd
   - ../rbac
   # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
