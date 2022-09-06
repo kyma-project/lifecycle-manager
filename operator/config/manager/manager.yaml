@@ -15,14 +15,14 @@ metadata:
 spec:
   selector:
     matchLabels:
-      control-plane: controller-manager
+      app.kubernetes.io/component: kyma-project.io/lifecycle-manager
   replicas: 1
   template:
     metadata:
       annotations:
         kubectl.kubernetes.io/default-container: manager
       labels:
-        control-plane: controller-manager
+        app.kubernetes.io/component: kyma-project.io/lifecycle-manager
     spec:
       securityContext:
         runAsNonRoot: true
@@ -68,7 +68,7 @@ metadata:
   namespace: operator-system
 spec:
   selector:
-    control-plane: controller-manager
+    app.kubernetes.io/component: kyma-project.io/lifecycle-manager
   ports:
     - protocol: TCP
       port: 8082
