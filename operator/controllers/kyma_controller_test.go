@@ -98,7 +98,7 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 			Channel:        v1alpha1.ChannelStable,
 		}
 		kcpModule = &v1alpha1.Module{
-			ControllerName: "manifest", // this is a module for KCP that should be installed by manifest operator
+			ControllerName: "manifest", // this is a module for KCP that should be installed by module-manager
 			Name:           "kcp-module",
 			Channel:        v1alpha1.ChannelStable,
 		}
