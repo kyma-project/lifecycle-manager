@@ -69,8 +69,6 @@ If the module operator will be deployed under same namespace with other operator
 
 2. Adjust all resources (e.g: [manager.yaml](./operator/config/manager/manager.yaml), [auth_proxy_service.yaml](./operator/config/rbac/auth_proxy_service.yaml)) which contains label selector use this common label instead of `control-plane: controller-manager`.
    
-
-
 ### Default (declarative) Reconciliation and Status handling
 
 For simple use cases where a `module operator` should install a `module helm chart(s)` and set the state of the corresponding `module CR` accordingly, a declarative approach is useful.
