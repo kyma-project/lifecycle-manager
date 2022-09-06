@@ -9,8 +9,12 @@ namespace: kcp-system
 namePrefix: lifecycle-manager-
 
 # Labels to add to all resources and selectors.
-#commonLabels:
-#  someName: someValue
+commonLabels:
+  app.kubernetes.io/instance: kcp-lifecycle-manager-main
+  app.kubernetes.io/name: kcp-lifecycle-manager
+  app.kubernetes.io/created-by: kustomize
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/part-of: manual-deployment
 
 components:
   - ../manager
