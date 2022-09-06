@@ -9,9 +9,9 @@ namespace: template-operator-system
 namePrefix: template-operator-
 
 # Labels to add to all resources and selectors.
-#commonLabels:
+commonLabels:
 #  someName: someValue
-
+  app.kubernetes.io/component: template-operator.kyma-project.io
 resources:
   - ../manager
 
