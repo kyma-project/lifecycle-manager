@@ -5,7 +5,7 @@ metadata:
   namespace: default
   labels:
     "operator.kyma-project.io/managed-by": "lifecycle-manager"
-    "operator.kyma-project.io/controller-name": "kcp-operator"
+    "operator.kyma-project.io/controller-name": "manifest"
     "operator.kyma-project.io/module-name": "kcp-module"
     "operator.kyma-project.io/profile": "production"
   annotations:

@@ -22,12 +22,6 @@ func ModuleTemplateFactory(module v1alpha1.Module, data unstructured.Unstructure
 	moduleTemplate.Labels[v1alpha1.ModuleName] = module.Name
 	moduleTemplate.Labels[v1alpha1.ControllerName] = module.ControllerName
 	moduleTemplate.Spec.Channel = module.Channel
-	switch module.ControllerName {
-	case "manifest":
-		moduleTemplate.Spec.Target = v1alpha1.TargetRemote
-	default:
-		moduleTemplate.Spec.Target = v1alpha1.TargetControlPlane
-	}
 	if data.GetKind() != "" {
 		moduleTemplate.Spec.Data = data
 	}

@@ -84,19 +84,21 @@ var _ = Describe("Kyma with empty ModuleTemplate", func() {
 })
 
 var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
-	var kyma *v1alpha1.Kyma
+	var (
+		kyma      *v1alpha1.Kyma
+		skrModule *v1alpha1.Module
+		kcpModule *v1alpha1.Module
+	)
 	moduleTemplates := make(map[string]*v1alpha1.ModuleTemplate)
-	var skrModule *v1alpha1.Module
-	var kcpModule *v1alpha1.Module
 	BeforeAll(func() {
 		kyma = NewTestKyma("kyma-test-recreate")
 		skrModule = &v1alpha1.Module{
-			ControllerName: "manifest",
+			ControllerName: "manifest", // this is a module for SKR that should be installed by module-manager
 			Name:           "skr-module",
 			Channel:        v1alpha1.ChannelStable,
 		}
 		kcpModule = &v1alpha1.Module{
-			ControllerName: "kcp-operator",
+			ControllerName: "manifest", // this is a module for KCP that should be installed by module-manager
 			Name:           "kcp-module",
 			Channel:        v1alpha1.ChannelStable,
 		}
