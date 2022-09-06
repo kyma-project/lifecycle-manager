@@ -93,7 +93,7 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 	BeforeAll(func() {
 		kyma = NewTestKyma("kyma-test-recreate")
 		skrModule = &v1alpha1.Module{
-			ControllerName: "manifest", // this is a module for SKR that should be installed by manifest operator
+			ControllerName: "manifest", // this is a module for SKR that should be installed by module-manager
 			Name:           "skr-module",
 			Channel:        v1alpha1.ChannelStable,
 		}
