@@ -2,7 +2,7 @@ apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
   name: kyma-events
-  namespace: operator-system
+  namespace: system
 spec:
   gateways:
     - default/kyma-gateway
