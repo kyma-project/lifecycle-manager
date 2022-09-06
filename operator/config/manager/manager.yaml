@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   labels:
-    control-plane: controller-manager
+    app.kubernetes.io/component: kyma-project.io/lifecycle-manager
   name: system
 ---
 apiVersion: apps/v1
@@ -11,7 +11,7 @@ metadata:
   name: controller-manager
   namespace: system
   labels:
-    control-plane: controller-manager
+    app.kubernetes.io/component: kyma-project.io/lifecycle-manager
 spec:
   selector:
     matchLabels:
