@@ -98,16 +98,14 @@ func NewModule(
 	verification signature.Verification,
 ) (*unstructured.Unstructured, error) {
 	component := template.Spec.Data.DeepCopy()
-	if template.Spec.Target == v1alpha1.TargetRemote {
-		resource := template.Spec.Data.DeepCopy()
-		if err := mergeResourceIntoSpec(resource, component); err != nil {
-			return nil, err
-		}
-		if err := mergeTargetIntoSpec(template.Spec.Target, component); err != nil {
-			return nil, err
-		}
-		component.SetKind("Manifest")
+	resource := template.Spec.Data.DeepCopy()
+	if err := mergeResourceIntoSpec(resource, component); err != nil {
+		return nil, err
 	}
+	if err := mergeTargetIntoSpec(template.Spec.Target, component); err != nil {
+		return nil, err
+	}
+	component.SetKind("Manifest")
 	var descriptor *ocm.ComponentDescriptor
 	var layers img.Layers
 	var err error
