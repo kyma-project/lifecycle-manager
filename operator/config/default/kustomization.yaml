@@ -10,6 +10,7 @@ namePrefix: lifecycle-manager-
 
 # Labels to add to all resources and selectors.
 commonLabels:
+  app.kubernetes.io/component: lifecycle-manager.kyma-project.io
   app.kubernetes.io/instance: kcp-lifecycle-manager-main
   app.kubernetes.io/name: kcp-lifecycle-manager
   app.kubernetes.io/created-by: kustomize
