@@ -12,10 +12,8 @@ namePrefix: lifecycle-manager-
 #commonLabels:
 #  someName: someValue
 
-resources:
-  - ../manager
-
 components:
+  - ../manager
   - ../crd
   - ../rbac
   # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
