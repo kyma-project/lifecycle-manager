@@ -4,5 +4,6 @@ kind: Component
 resources:
 - pa.yaml
 - gateway.yaml
+- virtual_service.yaml
 generatorOptions:
   disableNameSuffixHash: true
