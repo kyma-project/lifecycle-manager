@@ -7,7 +7,7 @@ metadata:
   name: "${file%.*}"-dashboard
   namespace: system
   labels:
-    grafana_dashboard: "1"
+    grafana_dashboard: \"1\"
     app: monitoring-grafana
 data:
   "${file%.*}": |-
