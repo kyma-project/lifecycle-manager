@@ -6,7 +6,3 @@ resources:
 
 generatorOptions:
   disableNameSuffixHash: true
-
-images:
-- name: controller
-  newName: /lifecycle-manager
