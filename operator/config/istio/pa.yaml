@@ -9,6 +9,3 @@ spec:
   portLevelMtls:
     "8080":
       mode: PERMISSIVE
-  selector:
-    matchLabels:
-      app.kubernetes.io/component: lifecycle-manager.kyma-project.io

@@ -15,6 +15,3 @@ spec:
       bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
       tlsConfig:
         insecureSkipVerify: true
-  selector:
-    matchLabels:
-      app.kubernetes.io/component: lifecycle-manager.kyma-project.io
