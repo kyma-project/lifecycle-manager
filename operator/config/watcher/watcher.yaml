@@ -2,13 +2,14 @@
 apiVersion: operator.kyma-project.io/v1alpha1
 kind: Watcher
 metadata:
-  name: watcher
+  name: controller-manager-watcher
+  namespace: system
 spec:
   componentName: lifecycle-manager
   contractVersion: v1
   gvrsToWatch: [] # needs to be removed after removing it in the runtime-WatcherCRD
   serviceInfo:
-    serviceName: lifecycle-manager-event-service
+    serviceName: event-service
     servicePort: 8082
 
 ---
@@ -16,7 +17,10 @@ apiVersion: v1
 kind: Service
 metadata:
   name: event-service
+  namespace: system
 spec:
+  selector:
+    app.kubernetes.io/component: lifecycle-manager.kyma-project.io
   ports:
     - protocol: TCP
       port: 8082
