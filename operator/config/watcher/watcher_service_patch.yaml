@@ -1,4 +1,3 @@
-# labels and selectors will be added using kustomize
 apiVersion: operator.kyma-project.io/v1alpha1
 kind: Watcher
 metadata:
