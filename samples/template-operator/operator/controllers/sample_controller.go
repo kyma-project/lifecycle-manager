@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"time"
 )
 
 // SampleReconciler reconciles a Sample object
@@ -108,6 +109,8 @@ func (m *ManifestResolver) Get(obj types.BaseCustomObject) (types.InstallationSp
 			ConfigFlags: types.Flags{
 				"Namespace":       chartNs,
 				"CreateNamespace": true,
+				"Wait":            true,
+				"Timeout":         30 * time.Second,
 			},
 			SetFlags: types.Flags{
 				"nameOverride": nameOverride,
