@@ -8,8 +8,8 @@ require (
 	github.com/imdario/mergo v0.3.13
 	github.com/kyma-project/module-manager/operator v0.0.0-20220829083353-456e50dbee22
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20220906130847-f238ffbc471f
-	github.com/onsi/ginkgo/v2 v2.1.4
-	github.com/onsi/gomega v1.20.0
+	github.com/onsi/ginkgo/v2 v2.1.6
+	github.com/onsi/gomega v1.20.1
 	go.uber.org/zap v1.23.0
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9
 	gopkg.in/yaml.v3 v3.0.1
@@ -70,7 +70,7 @@ require (
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
 	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
 	golang.org/x/oauth2 v0.0.0-20220722155238-128564f6959c // indirect
-	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f // indirect
+	golang.org/x/sys v0.0.0-20220908164124-27713097b956 // indirect
 	golang.org/x/term v0.0.0-20220722155259-a9ba230a4035 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect

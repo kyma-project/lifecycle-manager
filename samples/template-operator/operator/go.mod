@@ -4,8 +4,8 @@ go 1.19
 
 require (
 	github.com/kyma-project/module-manager/operator v0.0.0-20220830105351-15bbeabccef7
-	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.20.0
+	github.com/onsi/ginkgo/v2 v2.1.6
+	github.com/onsi/gomega v1.20.1
 	k8s.io/apimachinery v0.24.4
 	k8s.io/client-go v0.24.4
 	sigs.k8s.io/controller-runtime v0.12.3
@@ -126,7 +126,7 @@ require (
 	golang.org/x/net v0.0.0-20220812174116-3211cb980234 // indirect
 	golang.org/x/oauth2 v0.0.0-20220808172628-8227340efae7 // indirect
 	golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde // indirect
-	golang.org/x/sys v0.0.0-20220818161305-2296e01440c6 // indirect
+	golang.org/x/sys v0.0.0-20220908164124-27713097b956 // indirect
 	golang.org/x/term v0.0.0-20220722155259-a9ba230a4035 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9 // indirect
