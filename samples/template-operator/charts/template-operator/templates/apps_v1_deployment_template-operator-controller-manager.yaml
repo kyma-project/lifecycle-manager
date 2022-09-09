@@ -1,21 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  labels:
-    control-plane: controller-manager
   name: template-operator-controller-manager
   namespace: template-operator-system
 spec:
   replicas: 1
-  selector:
-    matchLabels:
-      control-plane: controller-manager
   template:
     metadata:
       annotations:
         kubectl.kubernetes.io/default-container: manager
-      labels:
-        control-plane: controller-manager
     spec:
       containers:
       - args:

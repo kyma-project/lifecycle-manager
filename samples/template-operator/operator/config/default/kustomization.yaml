@@ -10,8 +10,10 @@ namePrefix: template-operator-
 
 # Labels to add to all resources and selectors.
 commonLabels:
-#  someName: someValue
   app.kubernetes.io/component: template-operator.kyma-project.io
+
+configurations:
+  - ./commonlabels_override.yaml
 resources:
   - ../manager
 
