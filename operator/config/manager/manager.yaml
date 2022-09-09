@@ -61,15 +61,3 @@ spec:
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: kyma-event-service
-  namespace: operator-system
-spec:
-  selector:
-    app.kubernetes.io/component: lifecycle-manager.kyma-project.io
-  ports:
-    - protocol: TCP
-      port: 8082
-      targetPort: 8082

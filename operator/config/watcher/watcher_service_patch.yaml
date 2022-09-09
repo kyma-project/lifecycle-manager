@@ -1,0 +1,8 @@
+apiVersion: operator.kyma-project.io/v1alpha1
+kind: Watcher
+metadata:
+  name: controller-manager-watcher
+  namespace: system
+spec:
+  serviceInfo:
+    serviceName: lifecycle-manager-event-service
