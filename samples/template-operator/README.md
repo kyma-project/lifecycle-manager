@@ -37,19 +37,19 @@ Additionally, it hides Kubernetes boilerplate code to develop fast and efficient
 
 ### Generate kubebuilder operator 
 
-1. Create a folder and make a directory, e.g. `operator`.
+1. In your project (module operator) root folder make a directory `operator`
     ```sh
     mkdir operator && cd operator
     ```
 
-2. Initialize `kubebuilder` project. Please make sure domain is set to `operator.kyma-project.io`.
+2. Initialize `kubebuilder` project. Please make sure domain is set to `kyma-project.io`.
     ```sh 
-   kubebuilder init --domain operator.kyma-project.io --repo github.com/kyma-project/test-operator --plugins=go/v4-alpha
+   kubebuilder init --domain kyma-project.io --repo github.com/kyma-project/test-operator/operator --project-name=test-operator --plugins=go/v4-alpha
     ```
 
-3. Create API group version and kind for the intended custom resource(s). Please make sure the `group` is set as `component`.
+3. Create API group version and kind for the intended custom resource(s). Please make sure the `group` is set as `operator`.
     ```
-    kubebuilder create api --group component --version v1alpha1 --kind Sample
+    kubebuilder create api --group operator --version v1alpha1 --kind Sample
     ```
 
 4. `kubebuilder` will ask to create Resource, input `y`.
