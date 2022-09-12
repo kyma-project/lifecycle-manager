@@ -39,7 +39,7 @@ Additionally, it hides Kubernetes boilerplate code to develop fast and efficient
 
 1. In your project (module operator) root folder make a directory `operator`
     ```sh
-    mkdir test-operator && cd test-operator
+    mkdir operator && cd operator
     ```
 
 2. Initialize `kubebuilder` project. Please make sure domain is set to `kyma-project.io`.
