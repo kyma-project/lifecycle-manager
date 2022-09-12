@@ -44,7 +44,7 @@ Additionally, it hides Kubernetes boilerplate code to develop fast and efficient
 
 2. Initialize `kubebuilder` project. Please make sure domain is set to `kyma-project.io`.
     ```sh 
-   kubebuilder init --domain kyma-project.io --repo github.com/kyma-project/test-operator/operator --plugins=go/v4-alpha
+   kubebuilder init --domain kyma-project.io --repo github.com/kyma-project/test-operator/operator --project-name=test-operator --plugins=go/v4-alpha
     ```
 
 3. Create API group version and kind for the intended custom resource(s). Please make sure the `group` is set as `operator`.
