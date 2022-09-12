@@ -37,7 +37,7 @@ Additionally, it hides Kubernetes boilerplate code to develop fast and efficient
 
 ### Generate kubebuilder operator 
 
-1. Create a folder and make a directory, e.g. `test-operator`.
+1. In your project (module operator) root folder make a directory `operator`
     ```sh
     mkdir test-operator && cd test-operator
     ```
