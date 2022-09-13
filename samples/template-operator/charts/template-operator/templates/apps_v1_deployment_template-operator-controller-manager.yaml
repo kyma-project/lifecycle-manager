@@ -1,14 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  labels:
+    app.kubernetes.io/component: template-operator.kyma-project.io
   name: template-operator-controller-manager
   namespace: template-operator-system
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: template-operator.kyma-project.io
   template:
     metadata:
       annotations:
         kubectl.kubernetes.io/default-container: manager
+      labels:
+        app.kubernetes.io/component: template-operator.kyma-project.io
     spec:
       containers:
       - args:
