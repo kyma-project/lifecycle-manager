@@ -57,14 +57,14 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 
 	// watch event channel
 	controllerBuilder.Watches(eventChannel, &handler.Funcs{
-		GenericFunc: func(e event.GenericEvent, q workqueue.RateLimitingInterface) {
+		GenericFunc: func(event event.GenericEvent, queue workqueue.RateLimitingInterface) {
 			ctrl.Log.WithName("listener").Info(
 				fmt.Sprintf("event coming from SKR, adding %s to queue",
-					client.ObjectKeyFromObject(e.Object).String()),
+					client.ObjectKeyFromObject(event.Object).String()),
 			)
 
-			q.Add(ctrl.Request{
-				NamespacedName: client.ObjectKeyFromObject(e.Object),
+			queue.Add(ctrl.Request{
+				NamespacedName: client.ObjectKeyFromObject(event.Object),
 			})
 		},
 	})
