@@ -67,7 +67,7 @@ If the module operator will be deployed under same namespace with other operator
 
 1. Add a common label to default kustomization.yaml, refer to [commonLabels](./operator/config/default/kustomization.yaml).
 
-2. Remove label or label selector contains `control-plane: controller-manager`.
+2. Adjust all resources (e.g: [manager.yaml](./operator/config/manager/manager.yaml), [auth_proxy_service.yaml](./operator/config/rbac/auth_proxy_service.yaml)) which contains label selector use this common label instead of `control-plane: controller-manager`.
 
 The commonLabels will add to all resources and selectors by Kustomize, if some resources haven't covered by [builtin commonLabels](https://github.com/kubernetes-sigs/kustomize/blob/master/api/konfig/builtinpluginconsts/commonlabels.go), 
 consider add [configurations override](./operator/config/default/commonlabels_override.yaml). 

@@ -3,6 +3,8 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
+  labels:
+    app.kubernetes.io/component: template-operator.kyma-project.io
   name: controller-manager-metrics-monitor
   namespace: system
 spec:
@@ -13,3 +15,6 @@ spec:
       bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
       tlsConfig:
         insecureSkipVerify: true
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: template-operator.kyma-project.io
