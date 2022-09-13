@@ -17,6 +17,9 @@ commonLabels:
   app.kubernetes.io/managed-by: kustomize
   app.kubernetes.io/part-of: manual-deployment
 
+configurations:
+  - ./commonlabels_override.yaml
+
 resources:
   - ../manager
 components:
