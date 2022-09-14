@@ -297,6 +297,10 @@ func (c *KymaSynchronizationContext) InsertWatcherLabels(ctx context.Context, re
 	ownedByValue := fmt.Sprintf("%s__%s", c.ControlPlaneKyma.Namespace, c.ControlPlaneKyma.Name)
 	watchedByValue := "lifecycle-manager"
 
+	if remoteKyma.Labels == nil {
+		remoteKyma.Labels = make(map[string]string)
+	}
+
 	remoteKyma.Labels["operator.kyma-project.io/owned-by"] = ownedByValue
 	remoteKyma.Labels["operator.kyma-project.io/watched-by"] = watchedByValue
 

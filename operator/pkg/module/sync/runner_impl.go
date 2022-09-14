@@ -18,7 +18,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/watch"
 )
 
-func New(clnt client.Client) Runner { //nolint:ireturn
+func New(clnt client.Client) Runner { 
 	return &runnerImpl{clnt}
 }
 
