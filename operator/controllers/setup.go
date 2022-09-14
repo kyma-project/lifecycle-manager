@@ -20,7 +20,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/dynamic"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/index"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/watch"
-	"github.com/kyma-project/runtime-watcher/listener"
+	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
 )
 
 // SetupWithManager sets up the controller with the Manager.
