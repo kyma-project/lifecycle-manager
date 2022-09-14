@@ -155,6 +155,11 @@ _Note for two cluster mode: Make sure you run the commands with `KUBECONFIG` set
 
    ```sh
    sh hack/gen-kyma.sh
+   
+   # in single cluster setup, us this command:
+   kubectl apply -f kyma.yaml singlecluster
+   
+   # in two cluster setup, use this command:
    kubectl apply -f kyma.yaml
    ```
 
