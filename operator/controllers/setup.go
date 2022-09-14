@@ -3,6 +3,9 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -17,7 +20,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/dynamic"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/index"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/watch"
-	"github.com/kyma-project/runtime-watcher/listener"
+	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
 )
 
 // SetupWithManager sets up the controller with the Manager.
@@ -42,9 +45,6 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 	}
 
 	for _, informer := range dynamicInformers {
-		// controllerBuilder = controllerBuilder.
-		// 	Watches(informer, &handler.Funcs{UpdateFunc: watch.NewComponentChangeHandler(r).Watch(context.TODO())},
-		// 		builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}))
 		controllerBuilder.Watches(informer,
 			&watch.RestrictedEnqueueRequestForOwner{
 				Log: ctrl.Log, OwnerType: &v1alpha1.Kyma{}, IsController: true,
@@ -52,11 +52,22 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 	}
 
 	// register listener component
-
 	runnableListener, eventChannel := listener.RegisterListenerComponent(
 		listenerAddr, strings.ToLower(string(v1alpha1.KymaKind)))
+
 	// watch event channel
-	controllerBuilder.Watches(eventChannel, &handler.EnqueueRequestForObject{})
+	controllerBuilder.Watches(eventChannel, &handler.Funcs{
+		GenericFunc: func(event event.GenericEvent, queue workqueue.RateLimitingInterface) {
+			ctrl.Log.WithName("listener").Info(
+				fmt.Sprintf("event coming from SKR, adding %s to queue",
+					client.ObjectKeyFromObject(event.Object).String()),
+			)
+
+			queue.Add(ctrl.Request{
+				NamespacedName: client.ObjectKeyFromObject(event.Object),
+			})
+		},
+	})
 	// start listener as a manager runnable
 	if err = mgr.Add(runnableListener); err != nil {
 		return err
