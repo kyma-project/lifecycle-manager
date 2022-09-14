@@ -152,7 +152,9 @@ func (r *KymaReconciler) synchronizeRemote(ctx context.Context, kyma *v1alpha1.K
 	if err := syncContext.SynchronizeRemoteKyma(ctx, remoteKyma); err != nil {
 		return fmt.Errorf("could not synchronize remote kyma: %w", err)
 	}
-
+	if err := syncContext.InsertWatcherLabels(ctx, remoteKyma); err != nil {
+		return fmt.Errorf("could not ensure runtime-watcher labels are set: %w", err)
+	}
 	syncContext.ReplaceWithVirtualKyma(kyma, remoteKyma)
 
 	return nil

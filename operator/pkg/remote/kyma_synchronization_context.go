@@ -286,3 +286,20 @@ func GetRemoteObjectKey(kyma *v1alpha1.Kyma) client.ObjectKey {
 	}
 	return client.ObjectKey{Namespace: namespace, Name: name}
 }
+
+func (c *KymaSynchronizationContext) InsertWatcherLabels(ctx context.Context, remoteKyma *v1alpha1.Kyma) error {
+	recorder := adapter.RecorderFromContext(ctx)
+
+	ownedByValue := fmt.Sprintf("%s_%s", c.ControlPlaneKyma.Namespace, c.ControlPlaneKyma.Name)
+	managedByValue := "lifecycle-manager"
+
+	remoteKyma.Labels["operator.kyma-project.io/managed-by"] = managedByValue
+	remoteKyma.Labels["operator.kyma-project.io/owned-by"] = ownedByValue
+
+	err := c.RuntimeClient.Update(ctx, remoteKyma)
+	if err != nil {
+		recorder.Event(c.ControlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma labels")
+		return err
+	}
+	return nil
+}
