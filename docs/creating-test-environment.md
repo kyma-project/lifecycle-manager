@@ -99,7 +99,7 @@ moduletemplates.operator.kyma-project.io   2022-08-18T16:29:28Z
 
 _Note: The order of installation is important due to cross-dependencies in CRDs_
 
-In https://github.com/kyma-project/module-manager run
+In https://github.com/kyma-project/module-manager/operator run
 
 ```sh
 # using local registry
@@ -109,7 +109,7 @@ make docker-build docker-push deploy IMG=$IMG_REGISTRY/module-manager:dev
 make deploy IMG=eu.gcr.io/kyma-project/module-manager:PR-73
 ```
 
-In https://github.com/kyma-project/lifecycle-manager run
+In https://github.com/kyma-project/lifecycle-manager/operator run
 
 ```sh
 # using local registry
