@@ -18,6 +18,9 @@ const (
 	ModuleName     = OperatorPrefix + Separator + "module-name"
 	ModuleVersion  = OperatorPrefix + Separator + "module-version"
 	OperatorName   = "lifecycle-manager"
+	OwnedByLabel   = OperatorPrefix + Separator + "owned-by"
+	OwnedByFormat  = "%s__%s"
+	WatchedByLabel = OperatorPrefix + Separator + "watched-by"
 )
 
 func GetMatchingLabelsForModule(module *Module) client.MatchingLabels {

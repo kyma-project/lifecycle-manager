@@ -227,6 +227,8 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context,
 		return err
 	}
 
+	c.InsertWatcherLabels(remoteKyma)
+
 	if err := c.RuntimeClient.Update(ctx, remoteKyma.SetLastSync()); err != nil {
 		recorder.Event(c.ControlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma last sync annotation")
 		return err
@@ -259,4 +261,16 @@ func (c *KymaSynchronizationContext) ReplaceWithVirtualKyma(kyma *v1alpha1.Kyma,
 	for _, m := range modules {
 		kyma.Spec.Modules = append(kyma.Spec.Modules, m)
 	}
+}
+
+// InsertWatcherLabels inserts labels into the given KymaCR, which are needed to ensure
+// a working e2e-flow for the runtime-watcher.
+func (c *KymaSynchronizationContext) InsertWatcherLabels(remoteKyma *v1alpha1.Kyma) {
+	if remoteKyma.Labels == nil {
+		remoteKyma.Labels = make(map[string]string)
+	}
+
+	remoteKyma.Labels[v1alpha1.OwnedByLabel] = fmt.Sprintf(v1alpha1.OwnedByFormat,
+		c.ControlPlaneKyma.Namespace, c.ControlPlaneKyma.Name)
+	remoteKyma.Labels[v1alpha1.WatchedByLabel] = v1alpha1.OperatorName
 }
