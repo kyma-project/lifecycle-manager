@@ -235,9 +235,7 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context,
 		return err
 	}
 
-	if err := c.InsertWatcherLabels(ctx, remoteKyma); err != nil {
-		return fmt.Errorf("could not ensure runtime-watcher labels are set: %w", err)
-	}
+	c.InsertWatcherLabels(remoteKyma)
 
 	if err := c.RuntimeClient.Update(ctx, remoteKyma.SetLastSync()); err != nil {
 		recorder.Event(c.ControlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma last sync annotation")
@@ -291,23 +289,14 @@ func GetRemoteObjectKey(kyma *v1alpha1.Kyma) client.ObjectKey {
 	return client.ObjectKey{Namespace: namespace, Name: name}
 }
 
-func (c *KymaSynchronizationContext) InsertWatcherLabels(ctx context.Context, remoteKyma *v1alpha1.Kyma) error {
-	recorder := adapter.RecorderFromContext(ctx)
-
-	ownedByValue := fmt.Sprintf("%s__%s", c.ControlPlaneKyma.Namespace, c.ControlPlaneKyma.Name)
-	watchedByValue := "lifecycle-manager"
-
+// InsertWatcherLabels inserts labels into the given KymaCR, which are needed to ensure
+// a working e2e-flow for the runtime-watcher.
+func (c *KymaSynchronizationContext) InsertWatcherLabels(remoteKyma *v1alpha1.Kyma) {
 	if remoteKyma.Labels == nil {
 		remoteKyma.Labels = make(map[string]string)
 	}
 
-	remoteKyma.Labels["operator.kyma-project.io/owned-by"] = ownedByValue
-	remoteKyma.Labels["operator.kyma-project.io/watched-by"] = watchedByValue
-
-	err := c.RuntimeClient.Update(ctx, remoteKyma)
-	if err != nil {
-		recorder.Event(c.ControlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma labels")
-		return err
-	}
-	return nil
+	remoteKyma.Labels["operator.kyma-project.io/owned-by"] = fmt.Sprintf(v1alpha1.OwnerByFormat,
+		c.ControlPlaneKyma.Namespace, c.ControlPlaneKyma.Name)
+	remoteKyma.Labels["operator.kyma-project.io/watched-by"] = v1alpha1.OperatorName
 }
