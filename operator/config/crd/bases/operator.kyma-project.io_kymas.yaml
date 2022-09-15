@@ -88,12 +88,6 @@ spec:
                       the remote cluster based on the strategy and synchronize its
                       state there.
                     type: boolean
-                  namespace:
-                    description: The target namespace, if empty the namespace is reflected
-                      from the control plane Note that cleanup is currently not supported
-                      if you are switching the namespace, so you will manually need
-                      to cleanup old synchronized Kymas
-                    type: string
                   noModuleCopy:
                     default: true
                     description: NoModuleCopy set to true will cause the remote Kyma

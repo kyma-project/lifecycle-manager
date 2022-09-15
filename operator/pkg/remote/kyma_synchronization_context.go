@@ -88,7 +88,7 @@ func DeleteRemotelySyncedKyma(ctx context.Context, controlPlaneClient client.Cli
 		return err
 	}
 
-	remoteKyma, err := GetRemotelySyncedKyma(ctx, runtimeClient, GetRemoteObjectKey(kyma))
+	remoteKyma, err := GetRemotelySyncedKyma(ctx, runtimeClient, client.ObjectKeyFromObject(kyma))
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func RemoveFinalizerFromRemoteKyma(ctx context.Context, controlPlaneClient clien
 		return err
 	}
 
-	remoteKyma, err := GetRemotelySyncedKyma(ctx, runtimeClient, GetRemoteObjectKey(kyma))
+	remoteKyma, err := GetRemotelySyncedKyma(ctx, runtimeClient, client.ObjectKeyFromObject(kyma))
 	if err != nil {
 		return err
 	}
@@ -259,13 +259,4 @@ func (c *KymaSynchronizationContext) ReplaceWithVirtualKyma(kyma *v1alpha1.Kyma,
 	for _, m := range modules {
 		kyma.Spec.Modules = append(kyma.Spec.Modules, m)
 	}
-}
-
-func GetRemoteObjectKey(kyma *v1alpha1.Kyma) client.ObjectKey {
-	name := kyma.Name
-	namespace := kyma.Namespace
-	if kyma.Spec.Sync.Namespace != "" {
-		namespace = kyma.Spec.Sync.Namespace
-	}
-	return client.ObjectKey{Namespace: namespace, Name: name}
 }

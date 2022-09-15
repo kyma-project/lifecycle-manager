@@ -76,11 +76,6 @@ type Sync struct {
 	// Strategy determines the way to lookup the remotely synced kubeconfig, by default it is fetched from a secret
 	Strategy SyncStrategy `json:"strategy,omitempty"`
 
-	// The target namespace, if empty the namespace is reflected from the control plane
-	// Note that cleanup is currently not supported if you are switching the namespace, so you will
-	// manually need to cleanup old synchronized Kymas
-	Namespace string `json:"namespace,omitempty"`
-
 	// +kubebuilder:default:=true
 	// NoModuleCopy set to true will cause the remote Kyma to be initialized without copying over the
 	// module spec of the control plane into the SKR
