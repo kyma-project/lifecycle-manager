@@ -69,6 +69,9 @@ operator/docker-build:
 	IMG=$(IMG) $(MAKE) -C operator/ docker-build
 .PHONY: operator/docker-push
 operator/docker-push:
+ifneq (,$(GCR_DOCKER_PASSWORD))
+	docker login $(IMG_REGISTRY) -u oauth2accesstoken --password $(GCR_DOCKER_PASSWORD)
+endif
 	IMG=$(IMG) $(MAKE) -C operator/ docker-push
 
 
