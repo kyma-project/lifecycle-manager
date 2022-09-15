@@ -18,9 +18,9 @@ const (
 	ModuleName     = OperatorPrefix + Separator + "module-name"
 	ModuleVersion  = OperatorPrefix + Separator + "module-version"
 	OperatorName   = "lifecycle-manager"
-	OwnedByLabel   = "operator.kyma-project.io/owned-by"
+	OwnedByLabel   =  OperatorPrefix + Separator + "owned-by"
 	OwnedByFormat  = "%s__%s"
-	WatchedByLabel = "operator.kyma-project.io/watched-by"
+	WatchedByLabel = OperatorPrefix + Separator + "watched-by"
 )
 
 func GetMatchingLabelsForModule(module *Module) client.MatchingLabels {
