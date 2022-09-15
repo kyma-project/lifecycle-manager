@@ -152,7 +152,6 @@ func (r *KymaReconciler) synchronizeRemote(ctx context.Context, kyma *v1alpha1.K
 	if err := syncContext.SynchronizeRemoteKyma(ctx, remoteKyma); err != nil {
 		return fmt.Errorf("could not synchronize remote kyma: %w", err)
 	}
-
 	syncContext.ReplaceWithVirtualKyma(kyma, remoteKyma)
 
 	return nil
