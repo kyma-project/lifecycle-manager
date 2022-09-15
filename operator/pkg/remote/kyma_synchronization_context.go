@@ -296,7 +296,7 @@ func (c *KymaSynchronizationContext) InsertWatcherLabels(remoteKyma *v1alpha1.Ky
 		remoteKyma.Labels = make(map[string]string)
 	}
 
-	remoteKyma.Labels["operator.kyma-project.io/owned-by"] = fmt.Sprintf(v1alpha1.OwnerByFormat,
+	remoteKyma.Labels[v1alpha1.OwnedByLabel] = fmt.Sprintf(v1alpha1.OwnedByFormat,
 		c.ControlPlaneKyma.Namespace, c.ControlPlaneKyma.Name)
-	remoteKyma.Labels["operator.kyma-project.io/watched-by"] = v1alpha1.OperatorName
+	remoteKyma.Labels[v1alpha1.WatchedByLabel] = v1alpha1.OperatorName
 }
