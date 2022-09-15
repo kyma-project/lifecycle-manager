@@ -74,7 +74,7 @@ var _ = Describe("Kyma with empty ModuleTemplate", func() {
 			Should(BeEquivalentTo(string(v1alpha1.StateReady)))
 
 		By("Kyma status contains expected condition")
-		kymaInCluster, err := GetKyma(controlPlaneClient, kyma.GetName())
+		kymaInCluster, err := GetKyma(controlPlaneClient, kyma.GetName(), false)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(kymaInCluster.ContainsCondition(v1alpha1.ConditionTypeReady,
 			v1alpha1.ConditionReasonModulesAreReady, metav1.ConditionTrue)).To(BeTrue())

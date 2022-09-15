@@ -48,7 +48,7 @@ func RegisterDefaultLifecycleForKyma(kyma *v1alpha1.Kyma) {
 
 func IsKymaInState(kymaName string, state v1alpha1.State) func() bool {
 	return func() bool {
-		kymaFromCluster, err := GetKyma(controlPlaneClient, kymaName)
+		kymaFromCluster, err := GetKyma(controlPlaneClient, kymaName, false)
 		if err != nil || kymaFromCluster.Status.State != state {
 			return false
 		}
@@ -58,7 +58,7 @@ func IsKymaInState(kymaName string, state v1alpha1.State) func() bool {
 
 func GetKymaState(kymaName string) func() string {
 	return func() string {
-		createdKyma, err := GetKyma(controlPlaneClient, kymaName)
+		createdKyma, err := GetKyma(controlPlaneClient, kymaName, false)
 		if err != nil {
 			return ""
 		}
@@ -68,7 +68,7 @@ func GetKymaState(kymaName string) func() string {
 
 func GetKymaConditions(kymaName string) func() []metav1.Condition {
 	return func() []metav1.Condition {
-		createdKyma, err := GetKyma(controlPlaneClient, kymaName)
+		createdKyma, err := GetKyma(controlPlaneClient, kymaName, false)
 		if err != nil {
 			return []metav1.Condition{}
 		}
@@ -133,13 +133,14 @@ func getModule(kymaName string, moduleTemplate *v1alpha1.ModuleTemplate) (*unstr
 func GetKyma(
 	testClient client.Client,
 	kymaName string,
+	clusterScoped bool,
 ) (*v1alpha1.Kyma, error) {
 	kymaInCluster := &v1alpha1.Kyma{}
-	err := testClient.Get(ctx, client.ObjectKey{
-		Namespace: namespace,
-		Name:      kymaName,
-	}, kymaInCluster)
-	if err != nil {
+	objKey := client.ObjectKey{Name: kymaName}
+	if !clusterScoped {
+		objKey.Namespace = namespace
+	}
+	if err := testClient.Get(ctx, objKey, kymaInCluster); err != nil {
 		return nil, err
 	}
 	return kymaInCluster, nil
@@ -147,7 +148,7 @@ func GetKyma(
 
 func RemoteKymaExists(remoteClient client.Client, kymaName string) func() error {
 	return func() error {
-		_, err := GetKyma(remoteClient, kymaName)
+		_, err := GetKyma(remoteClient, kymaName, true)
 		return err
 	}
 }

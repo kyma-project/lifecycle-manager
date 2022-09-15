@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -144,6 +143,10 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 		Name: fmt.Sprintf("%s.%s", plural, v1alpha1.GroupVersion.Group),
 	}, crd)
 
+	// this will ensure that the CRD that is installed on the remote cluster is cluster scoped
+	// this is because we do not allow more than 1 Kyma in a remotely synchronized cluster
+	crd.Spec.Scope = v1extensions.ClusterScoped
+
 	if err != nil {
 		return err
 	}
@@ -175,10 +178,6 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 	remoteKyma := &v1alpha1.Kyma{}
 
 	remoteKyma.Name = kyma.Name
-	remoteKyma.Namespace = c.ControlPlaneKyma.Namespace
-	if c.ControlPlaneKyma.Spec.Sync.Namespace != "" {
-		remoteKyma.Namespace = c.ControlPlaneKyma.Spec.Sync.Namespace
-	}
 
 	err := c.RuntimeClient.Get(ctx, client.ObjectKeyFromObject(remoteKyma), remoteKyma)
 
@@ -195,13 +194,6 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 	}
 
 	if k8serrors.IsNotFound(err) {
-		if err := c.EnsureNamespaceExists(ctx, remoteKyma.Namespace); err != nil {
-			recorder.Event(kyma, "Warning", "RemoteKymaInstallation",
-				fmt.Sprintf("namespace %s could not be synced", remoteKyma.Namespace))
-
-			return nil, err
-		}
-
 		kyma.Spec.DeepCopyInto(&remoteKyma.Spec)
 
 		if kyma.Spec.Sync.NoModuleCopy {
@@ -267,15 +259,6 @@ func (c *KymaSynchronizationContext) ReplaceWithVirtualKyma(kyma *v1alpha1.Kyma,
 	for _, m := range modules {
 		kyma.Spec.Modules = append(kyma.Spec.Modules, m)
 	}
-}
-
-func (c *KymaSynchronizationContext) EnsureNamespaceExists(ctx context.Context, namespace string) error {
-	ns := &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: namespace}}
-	var err error
-	if err = c.RuntimeClient.Get(ctx, client.ObjectKey{Name: namespace}, ns); k8serrors.IsNotFound(err) {
-		return c.RuntimeClient.Create(ctx, ns)
-	}
-	return err
 }
 
 func GetRemoteObjectKey(kyma *v1alpha1.Kyma) client.ObjectKey {
