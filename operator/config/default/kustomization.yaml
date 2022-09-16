@@ -39,6 +39,31 @@ components:
   # [GRAFANA] To generate configmap for provision grafana dashboard
   - ../grafana
 
+patchesJson6902:
+  - target:
+      version: v1
+      kind: ConfigMap
+      name: manager-dashboard
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: kyma-system
+  - target:
+      version: v1
+      kind: ConfigMap
+      name: controller-runtime-metrics-dashboard
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: kyma-system
+  - target:
+      version: v1
+      kind: ConfigMap
+      name: controller-resources-metrics-dashboard
+    patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: kyma-system
 patchesStrategicMerge:
   # Protect the /metrics endpoint by putting it behind auth.
   # If you want your controller-manager to expose the /metrics

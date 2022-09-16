@@ -4,6 +4,6 @@ kind: Component
 resources:
 - controller-resources-metrics-configmap.yaml
 - controller-runtime-metrics-configmap.yaml
-- kcp-dashboard-configmap.yaml
+- manager-configmap.yaml
 generatorOptions:
   disableNameSuffixHash: true
