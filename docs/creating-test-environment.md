@@ -159,7 +159,7 @@ _Note for using Google Artifact Registry: if you use gcloud cli, make sure your 
 
 - To observe the installation in the runtime, switch the context to the SKR context, and verify the status.
 
-  `kubectl get kymas.operator.kyma-project.io -n kyma-system -ojsonpath={".items[0].status"} | yq -P`
+  `kubectl get kyma -n kyma-system -ojsonpath={".items[0].status"} | yq -P`
 
   If you get `state: Ready`, the installation succeeded.
 
