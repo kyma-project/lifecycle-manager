@@ -48,13 +48,13 @@ We will assume you will be [creating and using a service-account](https://kubern
    ```sh
    gcloud iam service-accounts create operator-test-sa \
        --display-name="Operator Test Service Account"
-
-```sh
-gcloud projects add-iam-policy-binding sap-kyma-jellyfish-dev \
-      --member='serviceAccount:operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com' \
-      --role='roles/artifactregistry.reader' \
-      --role='roles/artifactregistry.writer'
-```
+6. To get the necessary permissions, assign roles to your service account.
+   > **TIP:** For details, read [Required roles](https://cloud.google.com/iam/docs/creating-managing-service-accounts#permissions).
+   ```sh
+   gcloud projects add-iam-policy-binding sap-kyma-jellyfish-dev \
+         --member='serviceAccount:operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com' \
+         --role='roles/artifactregistry.reader' \
+         --role='roles/artifactregistry.writer'
 
 Impersonate the service-account
 
