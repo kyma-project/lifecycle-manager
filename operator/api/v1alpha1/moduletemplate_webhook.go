@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"context"
+
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/gardener/component-spec/bindings-go/codec"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -69,7 +70,7 @@ func (r *clusterAwareModuleTemplateValidator) ValidateCreate(ctx context.Context
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (r *clusterAwareModuleTemplateValidator) ValidateUpdate(
-	ctx context.Context, oldObj runtime.Object, newObj runtime.Object,
+	ctx context.Context, oldObj, newObj runtime.Object,
 ) error {
 	moduletemplatelog.Info("validate update", "name", newObj.(*ModuleTemplate).Name)
 	return r.validate(ctx, newObj.(*ModuleTemplate))

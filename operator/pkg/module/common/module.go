@@ -83,6 +83,6 @@ func NewUnstructuredFromModule(module *Module) *unstructured.Unstructured {
 	return &unstructuredFromServer
 }
 
-func CreateModuleName(moduleName string, kymaName string) string {
+func CreateModuleName(moduleName, kymaName string) string {
 	return moduleName + kymaName
 }

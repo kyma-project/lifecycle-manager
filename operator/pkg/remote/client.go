@@ -50,7 +50,7 @@ func (cc *ClusterClient) GetRestConfigFromSecret(ctx context.Context, name, name
 	return restConfig, err
 }
 
-func (cc *ClusterClient) GetConfig(kubeConfig string, explicitPath string) (*rest.Config, error) {
+func (cc *ClusterClient) GetConfig(kubeConfig, explicitPath string) (*rest.Config, error) {
 	if kubeConfig != "" {
 		// parameter string
 		return clientcmd.BuildConfigFromKubeconfigGetter("", func() (*clientcmdapi.Config, error) {

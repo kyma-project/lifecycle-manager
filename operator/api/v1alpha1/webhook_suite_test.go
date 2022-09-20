@@ -20,17 +20,19 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"net"
+	"path/filepath"
+	"testing"
+	"time"
+
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/client-go/rest"
-	"net"
-	"path/filepath"
+
 	ctrl "sigs.k8s.io/controller-runtime"
-	"testing"
-	"time"
 
 	//+kubebuilder:scaffold:imports
 	"k8s.io/apimachinery/pkg/runtime"

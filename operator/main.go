@@ -86,7 +86,6 @@ type FlagVar struct {
 	clientBurst                                                            int
 	enableWebhooks                                                         bool
 	enableModuleCatalog                                                    bool
-	strictModuleTemplateVerification                                       bool
 }
 
 func main() {

@@ -113,7 +113,7 @@ func (e *RestrictedEnqueueRequestForOwner) parseOwnerTypeGroupKind(scheme *runti
 // getOwnerReconcileRequest looks at object and builds a map of reconcile.Request to reconcile
 // owners of object that match e.OwnerType.
 func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequest(
-	oldIfAny client.Object, object client.Object, result map[reconcile.Request]any,
+	oldIfAny, object client.Object, result map[reconcile.Request]any,
 ) {
 	// Iterate through the OwnerReferences looking for a match on Group and Kind against what was requested
 	// by the user
@@ -130,7 +130,7 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequest(
 }
 
 func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequestFromOwnerReference(
-	oldIfAny client.Object, object client.Object,
+	oldIfAny, object client.Object,
 	result map[reconcile.Request]any,
 	ref metav1.OwnerReference,
 	refGV schema.GroupVersion,
