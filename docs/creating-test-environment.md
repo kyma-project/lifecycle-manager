@@ -39,26 +39,21 @@ To demonstrate how the bundling of a Kyma module works, the following example us
 
 Create a Secret to access the cluster which acts as SKR:
 
-In https://github.com/kyma-project/lifecycle-manager, run these commands
+   Go to `https://github.com/kyma-project/lifecycle-manager` and run the following commands:
 
-```
-chmod 755 ./operator/config/samples/secret/k3d-secret-gen.sh
-./operator/config/samples/secret/k3d-secret-gen.sh
-```
+   ```sh
+   chmod 755 ./operator/config/samples/secret/k3d-secret-gen.sh
+   ./operator/config/samples/secret/k3d-secret-gen.sh
 
-_Note for two cluster mode: You can use KCP_CLUSTER_CTX and SKR_CLUSTER_CTX to adjust your contexts for applying the secret._
+   > **NOTE:** In the two-cluster setup, adjust your contexts for applying the secret using KCP_CLUSTER_CTX and SKR_CLUSTER_CTX.
 
-## 3.2 Build and push the module
+4. Build and push the module to the registry.
 
-In https://github.com/kyma-project/lifecycle-manager, switch to subfolder `samples/template-operator` and run this command to build the module and push it to the registry:
+   In `https://github.com/kyma-project/lifecycle-manager`, switch to subfolder `samples/template-operator` and run `make module-build`.
 
-```sh
-make module-build
-```
 
-_Note: If you use a remote registry and you receive 403 / 401, recreate the `MODULE_CREDENTIALS` variable as it could be that your credentials timed out_
+   > **TIP:** If you use a remote registry and you receive a `403` or `401` error, maybe your credentials timed out. To fix this, recreate the `MODULE_CREDENTIALS` variable.
 
-## 3.3 Run the operators
 
 _Note for two cluster mode: set your `KUBECONFIG` to the KCP Cluster context_
 
