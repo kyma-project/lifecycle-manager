@@ -34,6 +34,8 @@ spec:
         image: controller:latest
         ports:
           - containerPort: 8082
+          - containerPort: 8080
+            name: metrics
         name: manager
         securityContext:
           allowPrivilegeEscalation: false
@@ -53,11 +55,11 @@ spec:
         # More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
         resources:
           limits:
-            cpu: 4000m
-            memory: 5Gi
-          requests:
-            cpu: 2000m
+            cpu: 1000m
             memory: 2Gi
+          requests:
+            cpu: 500m
+            memory: 1Gi
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
 ---
