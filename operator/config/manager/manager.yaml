@@ -34,6 +34,9 @@ spec:
         image: controller:latest
         ports:
           - containerPort: 8082
+            name: listener
+          - containerPort: 8080
+            name: metrics
         name: manager
         securityContext:
           allowPrivilegeEscalation: false

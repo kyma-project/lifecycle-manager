@@ -2,7 +2,8 @@ apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
 
 resources:
-- gateway.yaml
-- ap.yaml
+  - metrics_cluster_role_binding.yaml
+  - metrics_role.yaml
+  - metrics_role_binding.yaml
 generatorOptions:
   disableNameSuffixHash: true
