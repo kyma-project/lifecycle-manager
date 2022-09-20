@@ -98,26 +98,20 @@ Create a Secret to access the cluster which acts as SKR:
       make deploy IMG=eu.gcr.io/kyma-project/lifecycle-manager:PR-122
       ```
 
-_Note: It could be that you get messages like `no matches for kind "VirtualService" in version "networking.istio.io/v1beta1"`. This is normal if you install the operators in a cluster without a certain dependency. If you do not need this for your test, you can safely ignore it._
+   > **NOTE:** If you get messages like `no matches for kind "VirtualService" in version "networking.istio.io/v1beta1"`, don't worry. This is normal if you install the operators in a cluster without a certain dependency. If you do not need this dependency for your test, you can safely ignore the warning.
 
-#### 3.3.3.2 Run on your local host
+9. Run the operators on your local host. Due to cross-dependencies in CRDs, install them in the following order:
+   1. In `https://github.com/kyma-project/lifecycle-manager`, run `make run`.
+   2. In `https://github.com/kyma-project/module-manager`, run `make run`.
 
-1. In https://github.com/kyma-project/lifecycle-manager run
 
-   ```sh
-   make run
-   ```
 
-2. In https://github.com/kyma-project/module-manager run
 
-   ```sh
-    make run
-   ```
 
-## 3.4 Start the Kyma installation
+10. Start the Kyma installation.
 
-_Note for two cluster mode: Make sure you run the commands with `KUBECONFIG` set to the KCP Cluster_
 
+_Note for using Google Artifact Registry: if you use gcloud cli, make sure your local docker config (`~/.docker/config.json`) does not contains `gcloud` `credHelpers` entry, (e.g: `"europe-west3-docker.pkg.dev": "gcloud",`), otherwise this might cause authentication issue for module-manager while fetching remote oci image layer.
 1. First, install the module template in the control-plane to make it available for all Kyma installations:
 
    In `samples/template-operator`, run
