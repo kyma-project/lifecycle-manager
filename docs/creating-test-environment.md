@@ -55,26 +55,16 @@ Create a Secret to access the cluster which acts as SKR:
    > **TIP:** If you use a remote registry and you receive a `403` or `401` error, maybe your credentials timed out. To fix this, recreate the `MODULE_CREDENTIALS` variable.
 
 
-_Note for two cluster mode: set your `KUBECONFIG` to the KCP Cluster context_
 
-### 3.3.1 Install Module Manager CRDs
+5. To install the Module Manager CRDs, check out `https://github.com/kyma-project/module-manager`, navigate to the operator `cd operator`, and run `make install`.
 
-1. Checkout https://github.com/kyma-project/module-manager and navigate to the operator: `cd operator`
 
-2. Run the Installation Command
 
-   ```sh
-   make install
-   ```
 
-### 3.3.2 Install Lifecycle Manager CRDs
+6. To install the Lifecycle Manager CRDs, check out `https://github.com/kyma-project/lifecycle-manager`, navigate to the operator `cd operator`, and run `make install`.
 
-1. Checkout https://github.com/kyma-project/lifecycle-manager and navigate to the operator: `cd operator`
 
-2. Run the Installation Command
 
-   ```sh
-   make install
    ```
 
 Ensure the CRDs are installed with `kubectl get crds | grep kyma-project.io`:
