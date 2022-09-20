@@ -198,9 +198,11 @@ func defineFlagVar() *FlagVar {
 	flag.BoolVar(&flagVar.enableWebhooks, "enable-webhooks", false,
 		"Enabling Validation/Conversion Webhooks.")
 	flag.BoolVar(&flagVar.enableModuleCatalog, "enable-module-catalog", true,
-		"Enabling the Module Catalog Synchronization for Introspection of available Modules based on ModuleTemplates.")
+		"Enabling the Module Catalog Synchronization for Introspection of "+
+			"available Modules based on ModuleTemplates.")
 	flag.BoolVar(&flagVar.strictModuleTemplateVerification, "strict-module-template-verification", false,
-		"Enabling the strict Module Template Verification will cause ModuleTemplates to be verified against their CRD interfaces.")
+		"Enabling the strict Module Template Verification will cause ModuleTemplates "+
+			"to be verified against their CRD interfaces.")
 	return flagVar
 }
 
