@@ -42,7 +42,10 @@ type ModuleTemplateWebhookSettings struct {
 	StrictModuleTemplateVerification bool
 }
 
-func (moduleTemplate *ModuleTemplate) SetupWebhookWithManager(mgr ctrl.Manager, settings ModuleTemplateWebhookSettings) error {
+func (moduleTemplate *ModuleTemplate) SetupWebhookWithManager(
+	mgr ctrl.Manager,
+	settings ModuleTemplateWebhookSettings,
+) error {
 	return ctrl.NewWebhookManagedBy(mgr).WithValidator(&clusterAwareModuleTemplateValidator{
 		Client:                           mgr.GetClient(),
 		StrictModuleTemplateVerification: settings.StrictModuleTemplateVerification,
