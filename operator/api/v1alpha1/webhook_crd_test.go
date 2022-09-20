@@ -20,7 +20,8 @@ import (
 
 var testFiles = filepath.Join("..", "..", "config", "samples", "tests") //nolint:gochecknoglobals
 
-var _ = Describe("Webhook ValidationCreate", func() {
+var _ = Describe("Webhook ValidationCreate Strict", func() {
+	SetupWebhook()
 	data := unstructured.Unstructured{}
 	data.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   v1alpha1.OperatorPrefix,
@@ -30,7 +31,7 @@ var _ = Describe("Webhook ValidationCreate", func() {
 	It("should successfully fetch accept a moduletemplate based on a compliant crd", func() {
 		crd := GetCRD(v1alpha1.OperatorPrefix, "samplecrd")
 		Eventually(func() error {
-			return k8sClient.Create(ctx, crd)
+			return k8sClient.Create(webhookServerContext, crd)
 		}, "10s").Should(Succeed())
 
 		template, err := test.ModuleTemplateFactory(v1alpha1.Module{
@@ -39,22 +40,17 @@ var _ = Describe("Webhook ValidationCreate", func() {
 			Channel:        v1alpha1.ChannelStable,
 		}, data)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(k8sClient.Create(ctx, template)).Should(Succeed())
-		Expect(k8sClient.Delete(ctx, template)).Should(Succeed())
+		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
+		Expect(k8sClient.Delete(webhookServerContext, template)).Should(Succeed())
 
-		Expect(k8sClient.Delete(ctx, crd)).Should(Succeed())
+		Expect(k8sClient.Delete(webhookServerContext, crd)).Should(Succeed())
 	})
 
-	It("should reject a moduletemplate based on a non-compliant crd", func() {
-		crd := GetCRD(v1alpha1.OperatorPrefix, "samplecrd")
-
-		crd.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties["status"].Properties["state"] = v1.JSONSchemaProps{
-			Type: "string",
-			Enum: []v1.JSON{},
-		}
+	It("should accept a moduletemplate based on a non-compliant crd in non-strict mode", func() {
+		crd := GetNonCompliantCRD(v1alpha1.OperatorPrefix, "samplecrd")
 
 		Eventually(func() error {
-			return k8sClient.Create(ctx, crd)
+			return k8sClient.Create(webhookServerContext, crd)
 		}, "10s").Should(Succeed())
 		template, err := test.ModuleTemplateFactory(v1alpha1.Module{
 			ControllerName: "manifest",
@@ -62,11 +58,12 @@ var _ = Describe("Webhook ValidationCreate", func() {
 			Channel:        v1alpha1.ChannelStable,
 		}, data)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(k8sClient.Create(ctx, template)).Error().To(HaveField("ErrStatus.Message",
-			ContainSubstring("is invalid: spec.data.status.state[enum]: Not found: \"Processing\"")))
+		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
+		Expect(k8sClient.Delete(webhookServerContext, template)).Should(Succeed())
 
-		Expect(k8sClient.Delete(ctx, crd)).Should(Succeed())
+		Expect(k8sClient.Delete(webhookServerContext, crd)).Should(Succeed())
 	})
+	StopWebhook()
 })
 
 func GetCRD(group, sample string) *v1.CustomResourceDefinition {
@@ -86,4 +83,13 @@ func GetCRD(group, sample string) *v1.CustomResourceDefinition {
 
 	Expect(yaml.Unmarshal(file, &crd)).To(Succeed())
 	return &crd
+}
+
+func GetNonCompliantCRD(group, sample string) *v1.CustomResourceDefinition {
+	crd := GetCRD(group, sample)
+	crd.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties["status"].Properties["state"] = v1.JSONSchemaProps{
+		Type: "string",
+		Enum: []v1.JSON{},
+	}
+	return crd
 }

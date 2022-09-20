@@ -18,13 +18,9 @@ package v1alpha1
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"strings"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/gardener/component-spec/bindings-go/codec"
-	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -38,12 +34,12 @@ import (
 // log is for logging in this package.
 var moduletemplatelog = logf.Log.WithName("moduletemplate-resource") //nolint:gochecknoglobals
 
-func (r *ModuleTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (moduleTemplate *ModuleTemplate) SetupWebhookWithManager(
+	mgr ctrl.Manager,
+) error {
 	return ctrl.NewWebhookManagedBy(mgr).WithValidator(&clusterAwareModuleTemplateValidator{
 		Client: mgr.GetClient(),
-	}).
-		For(r).
-		Complete()
+	}).For(moduleTemplate).Complete()
 }
 
 type clusterAwareModuleTemplateValidator struct {
@@ -58,8 +54,8 @@ type clusterAwareModuleTemplateValidator struct {
 var _ webhook.Defaulter = &ModuleTemplate{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (r *ModuleTemplate) Default() {
-	moduletemplatelog.Info("default", "name", r.Name)
+func (moduleTemplate *ModuleTemplate) Default() {
+	moduletemplatelog.Info("default", "name", moduleTemplate.Name)
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
@@ -74,7 +70,7 @@ func (r *clusterAwareModuleTemplateValidator) ValidateCreate(ctx context.Context
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (r *clusterAwareModuleTemplateValidator) ValidateUpdate(
-	ctx context.Context, oldObj runtime.Object, newObj runtime.Object,
+	ctx context.Context, oldObj, newObj runtime.Object,
 ) error {
 	moduletemplatelog.Info("validate update", "name", newObj.(*ModuleTemplate).Name)
 	return r.validate(ctx, newObj.(*ModuleTemplate))
@@ -86,13 +82,9 @@ func (r *clusterAwareModuleTemplateValidator) ValidateDelete(ctx context.Context
 	return r.validate(ctx, obj.(*ModuleTemplate))
 }
 
-func (r *clusterAwareModuleTemplateValidator) validate(ctx context.Context, template *ModuleTemplate) error {
+func (r *clusterAwareModuleTemplateValidator) validate(_ context.Context, template *ModuleTemplate) error {
 	var allErrs field.ErrorList
 	if err := r.validateDescriptor(template); err != nil {
-		allErrs = append(allErrs, err)
-	}
-
-	if err := r.validateCR(ctx, template); err != nil {
 		allErrs = append(allErrs, err)
 	}
 
@@ -110,75 +102,4 @@ func (r *clusterAwareModuleTemplateValidator) validateDescriptor(template *Modul
 		return field.Invalid(field.NewPath("spec").Child("descriptor"), string(template.Spec.OCMDescriptor.Raw), err.Error())
 	}
 	return nil
-}
-
-func (r *clusterAwareModuleTemplateValidator) validateCR(ctx context.Context, template *ModuleTemplate) *field.Error {
-	gvk := template.Spec.Data.GroupVersionKind()
-	crd := &v1.CustomResourceDefinition{}
-	name := fmt.Sprintf("%ss.%s", strings.ToLower(gvk.Kind), gvk.Group)
-	if err := r.Client.Get(ctx, client.ObjectKey{Name: name}, crd); err != nil {
-		return field.InternalError(field.NewPath("spec").Child("data"), fmt.Errorf("error validating cr: %w", err))
-	}
-	return validateCRDState(field.NewPath("spec").Child("data"), crd)
-}
-
-func validateCRDState(parent *field.Path, crd *v1.CustomResourceDefinition) *field.Error {
-	valid := []string{
-		string(StateProcessing),
-		string(StateDeleting),
-		string(StateReady),
-		string(StateError),
-	}
-	for _, version := range crd.Spec.Versions {
-		schema := version.Schema.OpenAPIV3Schema
-
-		var prop *v1.JSONSchemaProps
-		var err *field.Error
-		prop, err = GetProp(parent, "status", "object", schema.Properties)
-		if err != nil {
-			return err
-		}
-
-		prop, err = GetProp(parent.Child("status"), "state", "string", prop.Properties)
-		if err != nil {
-			return err
-		}
-
-		for _, validState := range valid {
-			found := false
-			for _, enum := range prop.Enum {
-				var stateFromEnum string
-				if err := json.Unmarshal(enum.Raw, &stateFromEnum); err != nil {
-					return field.Invalid(parent.Child("status", "state"), fmt.Sprintf("%v", enum.Raw), "does not contain a valid enum")
-				}
-				if validState == stateFromEnum {
-					found = true
-					break
-				}
-			}
-			if !found {
-				return field.NotFound(parent.Child("status", "state").Key("enum"), validState)
-			}
-		}
-	}
-	return nil
-}
-
-func GetProp(
-	parent *field.Path,
-	key string,
-	desiredType string,
-	props map[string]v1.JSONSchemaProps,
-) (*v1.JSONSchemaProps, *field.Error) {
-	path := parent.Child(key)
-	prop, present := props[key]
-	if !present {
-		return nil, field.NotFound(path, key)
-	}
-
-	if prop.Type != desiredType {
-		return nil, field.TypeInvalid(path, key, fmt.Sprintf("%s is not of type %s", key, desiredType))
-	}
-
-	return &prop, nil
 }

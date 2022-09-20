@@ -140,7 +140,8 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 	}
 
 	if flagVar.enableWebhooks {
-		if err := (&operatorv1alpha1.ModuleTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+		if err := (&operatorv1alpha1.ModuleTemplate{}).
+			SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
 			os.Exit(1)
 		}
@@ -194,7 +195,8 @@ func defineFlagVar() *FlagVar {
 	flag.BoolVar(&flagVar.enableWebhooks, "enable-webhooks", false,
 		"Enabling Validation/Conversion Webhooks.")
 	flag.BoolVar(&flagVar.enableModuleCatalog, "enable-module-catalog", true,
-		"Enabling the Module Catalog Synchronization for Introspection of available Modules based on ModuleTemplates.")
+		"Enabling the Module Catalog Synchronization for Introspection of "+
+			"available Modules based on ModuleTemplates.")
 	return flagVar
 }
 
