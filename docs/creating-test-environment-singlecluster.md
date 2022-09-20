@@ -14,16 +14,14 @@ For information about a test environment with two clusters, read [Set up a test 
 2. Define that `kubectl` uses the K3D cluster:
 
    ```sh
-kubectl config use k3d-op-kcpskr
-```
+   kubectl config use k3d-op-kcpskr
 
-### 1.3 Configure local K3D registry
+3. Configure the local K3D registry.
 
-#### 1.3.1 Make sure the registries are reachable via localhost
+   3.1. To reach the registries using localhost, add the following code to your `/etc/hosts` file:
 
-Add the following to your `/etc/hosts` file:
 
-```/etc/hosts
+      ```/etc/hosts
 ##
 # Host Database
 #
@@ -42,9 +40,9 @@ Add the following to your `/etc/hosts` file:
 127.0.0.1 op-kcpskr-registry.localhost op-kcp-registry.localhost op-skr-registry.localhost
 ```
 
-#### 1.3.2 Set registry environment variables
+   3.2. Set the registry environment variables:
 
-```sh
+      ```sh
 export MODULE_REGISTRY_PORT=$(docker port op-kcpskr-registry.localhost 5000/tcp | cut -d ":" -f2)
 export IMG_REGISTRY_PORT=$(docker port op-kcpskr-registry.localhost 5000/tcp | cut -d ":" -f2)
 
@@ -54,12 +52,11 @@ export KCP_CLUSTER_CTX=k3d-op-kcpskr
 export SKR_CLUSTER_CTX=k3d-op-kcpskr
 ```
 
-#### 1.3.3 Web-UI for local container registry
+   3.3. View the content of your local container registry.
 
-For browsing through the content of the local container registry, run one of these tools
-(both become accessible via http://localhost:8080):
+      For browsing through the content of the local container registry, run one of the following tools. Both are accessible with `http://localhost:8080`.
 
-- Crane Operator (http://localhost:8080)
+      - Crane Operator (http://localhost:8080)
   ```sh
     docker run \
      -p 8080:80 \
