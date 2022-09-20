@@ -20,14 +20,20 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/kyma-project/module-manager/operator/pkg/declarative"
+	"github.com/kyma-project/module-manager/operator/pkg/types"
+	"golang.org/x/time/rate"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/samples/template-operator/api/v1alpha1"
-	"github.com/kyma-project/module-manager/operator/pkg/declarative"
-	"github.com/kyma-project/module-manager/operator/pkg/types"
+
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/ratelimiter"
+	"time"
 )
 
 // SampleReconciler reconciles a Sample object
@@ -56,7 +62,7 @@ const (
 //+kubebuilder:rbac:groups="*",resources="*",verbs="*"
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager, failureBaseDelay, failureMaxDelay time.Duration, frequency, burst int) error {
 	r.Config = mgr.GetConfig()
 	if err := r.initReconciler(mgr); err != nil {
 		return err
@@ -64,6 +70,9 @@ func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Sample{}).
+		WithOptions(controller.Options{
+			RateLimiter: TemplateRateLimiter(failureBaseDelay, failureMaxDelay, frequency, burst),
+		}).
 		Complete(r)
 }
 
@@ -116,4 +125,14 @@ func (m *ManifestResolver) Get(obj types.BaseCustomObject) (types.InstallationSp
 			},
 		},
 	}, nil
+}
+
+// TemplateRateLimiter implements a rate limiter for a client-go.workqueue.  It has
+// both an overall (token bucket) and per-item (exponential) rate limiting.
+func TemplateRateLimiter(failureBaseDelay time.Duration, failureMaxDelay time.Duration,
+	frequency int, burst int,
+) ratelimiter.RateLimiter {
+	return workqueue.NewMaxOfRateLimiter(
+		workqueue.NewItemExponentialFailureRateLimiter(failureBaseDelay, failureMaxDelay),
+		&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(frequency), burst)})
 }
