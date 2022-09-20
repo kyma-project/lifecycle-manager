@@ -4,9 +4,9 @@ In this document, you learn how to set up a test environment with two clusters: 
 For information about a test environment using a single cluster, read [Set up a test environment with a single](creating-test-environment-singlecluster).
 
 
-## 1. Local setup
+## Local cluster setup
 
-### 1.1 Create K3D clusters
+1. Create K3D clusters:
 
 ```sh
 k3d cluster create op-skr --registry-create op-skr-registry.localhost
