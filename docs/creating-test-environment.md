@@ -32,11 +32,10 @@ To demonstrate how the bundling of a Kyma module works, the following example us
 1. If you're using the two-cluster setup, set your `KUBECONFIG` to the KCP Cluster context.
 
 
-First make sure that the `kyma-system` namespace is created:
+2. Create the `kyma-system` Namespace:
 
-```sh
-kubectl create ns kyma-system
-```
+   ```sh
+   kubectl create ns kyma-system
 
 Create a secret to access the cluster which acts as SKR:
 
