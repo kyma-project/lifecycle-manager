@@ -37,7 +37,7 @@ To demonstrate how the bundling of a Kyma module works, the following example us
    ```sh
    kubectl create ns kyma-system
 
-Create a secret to access the cluster which acts as SKR:
+Create a Secret to access the cluster which acts as SKR:
 
 In https://github.com/kyma-project/lifecycle-manager, run these commands
 
