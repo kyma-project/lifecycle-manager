@@ -21,7 +21,7 @@ import (
 var testFiles = filepath.Join("..", "..", "config", "samples", "tests") //nolint:gochecknoglobals
 
 var _ = Describe("Webhook ValidationCreate Strict", func() {
-	SetupWebhook(v1alpha1.ModuleTemplateWebhookSettings{StrictModuleTemplateVerification: true})
+	SetupWebhook()
 	data := unstructured.Unstructured{}
 	data.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   v1alpha1.OperatorPrefix,
@@ -45,26 +45,6 @@ var _ = Describe("Webhook ValidationCreate Strict", func() {
 
 		Expect(k8sClient.Delete(webhookServerContext, crd)).Should(Succeed())
 	})
-
-	It("should reject a moduletemplate based on a non-compliant crd", func() {
-		crd := GetNonCompliantCRD(v1alpha1.OperatorPrefix, "samplecrd")
-
-		Eventually(func() error {
-			return k8sClient.Create(webhookServerContext, crd)
-		}, "10s").Should(Succeed())
-		template, err := test.ModuleTemplateFactory(v1alpha1.Module{
-			ControllerName: "manifest",
-			Name:           "example-module-name",
-			Channel:        v1alpha1.ChannelStable,
-		}, data)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(k8sClient.Create(webhookServerContext, template)).Error().To(HaveField("ErrStatus.Message",
-			ContainSubstring("is invalid: spec.data.status.state[enum]: Not found: \"Processing\"")))
-
-		Expect(k8sClient.Delete(webhookServerContext, crd)).Should(Succeed())
-	})
-	StopWebhook()
-	SetupWebhook(v1alpha1.ModuleTemplateWebhookSettings{StrictModuleTemplateVerification: false})
 
 	It("should accept a moduletemplate based on a non-compliant crd in non-strict mode", func() {
 		crd := GetNonCompliantCRD(v1alpha1.OperatorPrefix, "samplecrd")
@@ -106,7 +86,7 @@ func GetCRD(group, sample string) *v1.CustomResourceDefinition {
 }
 
 func GetNonCompliantCRD(group, sample string) *v1.CustomResourceDefinition {
-	crd := GetCRD(v1alpha1.OperatorPrefix, "samplecrd")
+	crd := GetCRD(group, sample)
 	crd.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties["status"].Properties["state"] = v1.JSONSchemaProps{
 		Type: "string",
 		Enum: []v1.JSON{},

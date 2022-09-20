@@ -100,7 +100,7 @@ func StopWebhook() {
 	})
 }
 
-func SetupWebhook(settings v1alpha1.ModuleTemplateWebhookSettings) {
+func SetupWebhook() {
 	It("setup webhook", func() {
 		webhookServerContext, webhookServerCancel = context.WithCancel(context.TODO())
 
@@ -116,7 +116,7 @@ func SetupWebhook(settings v1alpha1.ModuleTemplateWebhookSettings) {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		err = (&v1alpha1.ModuleTemplate{}).SetupWebhookWithManager(mgr, settings)
+		err = (&v1alpha1.ModuleTemplate{}).SetupWebhookWithManager(mgr)
 		Expect(err).NotTo(HaveOccurred())
 
 		//+kubebuilder:scaffold:webhook
