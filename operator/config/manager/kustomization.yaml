@@ -15,5 +15,5 @@ configMapGenerator:
 
 images:
 - name: controller
-  newName: ghcr.io/ruanxin/kyma-operator
-  newTag: 1.6.0
+  newName: eu.gcr.io/kyma-project/lifecycle-manager
+  newTag: 5ff0336a
