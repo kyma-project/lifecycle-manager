@@ -133,7 +133,7 @@ _Note for using Google Artifact Registry: if you use gcloud cli, make sure your 
    3. Check the progress of your Kyma installation; for example, with `kubectl get kyma -n kyma-system -ojsonpath={".items[0].status"} | yq -P`.
       You should get a result like this:
 
-   ```yaml
+      ```yaml
    conditions:
      - lastTransitionTime: "2022-08-18T18:10:09Z"
        message: module is Ready
@@ -155,11 +155,11 @@ _Note for using Google Artifact Registry: if you use gcloud cli, make sure your 
    state: Ready
    ```
 
-### 3.4.1 Verify the installation
+### Verify the installation
 
-You can observe the installation in the runtime by switching the context to the SKR context and then verifying the status.
+- To observe the installation in the runtime, switch the context to the SKR context, and verify the status.
 
-`kubectl get kymas.operator.kyma-project.io -n kyma-system -ojsonpath={".items[0].status"} | yq -P`
+  `kubectl get kymas.operator.kyma-project.io -n kyma-system -ojsonpath={".items[0].status"} | yq -P`
 
 and it should show `state: Ready`.
 
