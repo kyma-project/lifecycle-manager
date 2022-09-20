@@ -56,18 +56,17 @@ We will assume you will be [creating and using a service-account](https://kubern
          --role='roles/artifactregistry.reader' \
          --role='roles/artifactregistry.writer'
 
-Impersonate the service-account
+7. Impersonate the service account:
 
-```sh
-gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com
-```
+   ```sh
+   gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com
 
-Verify your login:
+8. Verify your login:
 
-```sh
-gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com | docker login -u oauth2accesstoken --password-stdin https://europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/operator-test
-```
+   ```sh
+   gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com | docker login -u oauth2accesstoken --password-stdin https://europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/operator-test
 
-```sh
-export MODULE_CREDENTIALS=oauth2accesstoken:$(gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com)
+export `GCR_DOCKER_PASSWORD` for `operator/docker-push` and `MODULE_CREDENTIALS` for `module-build` make command:
+   ```sh
+   export MODULE_CREDENTIALS=oauth2accesstoken:$(gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com)
 ```
