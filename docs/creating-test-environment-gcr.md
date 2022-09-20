@@ -33,23 +33,21 @@
 
 We will assume you will be [creating and using a service-account](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/) called `operator-test-sa`.
 
-Make sure to authenticate against your registry:
+4. Authenticate against your registry:
 
-```sh
-gcloud auth configure-docker \
-    europe-west3-docker.pkg.dev
-```
+   ```sh
+   gcloud auth configure-docker \
+       europe-west3-docker.pkg.dev
 
-#### Creating a service Account
+### Create a service account in Google Cloud.
 
-Creation of a service account is useful for productive purposes
+5. For productive purposes, create a service account. In this example, call it `operator-test-sa`.
 
-Create a Service Account (for the necessary permissions see https://cloud.google.com/iam/docs/creating-managing-service-accounts#permissions):
 
-```sh
-gcloud iam service-accounts create operator-test-sa \
-    --display-name="Operator Test Service Account"
-```
+
+   ```sh
+   gcloud iam service-accounts create operator-test-sa \
+       --display-name="Operator Test Service Account"
 
 ```sh
 gcloud projects add-iam-policy-binding sap-kyma-jellyfish-dev \
