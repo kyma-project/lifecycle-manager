@@ -1,21 +1,25 @@
-### Using GCP Artifact Registry
+# Create a test environment on Google Container Registry (GCR)
 
-We will be assuming you have a GCP project called `sap-kyma-jellyfish-dev`
+## Prerequisites
 
-#### Creating your Repository
+- You are using GCP Artifact Registry. 
+   The following instructions assume that you have a GCP project called `sap-kyma-jellyfish-dev`. 
 
-We will assume you will be creating and using a Artifact Registry Repository called `operator-test`.
+## Instructions
 
-```sh
-gcloud artifacts repositories create operator-test \
-    --repository-format=docker \
-    --location europe-west3
-```
+### Create your repository
 
-```sh
-export MODULE_REGISTRY=europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/operator-test
-export IMG_REGISTRY=$MODULE_REGISTRY/operator-images
-```
+1. Create an Artifact Registry repository. For this example, call it `operator-test`:
+
+   ```sh
+   gcloud artifacts repositories create operator-test \
+       --repository-format=docker \
+       --location europe-west3
+2. Export environment variables.
+
+   ```sh
+   export MODULE_REGISTRY=europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/operator-test
+   export IMG_REGISTRY=$MODULE_REGISTRY/operator-images
 
 _Note: For `MODULE_REGISTRY` it is important not to define any scheme such as `https://` so that the module generation works correctly, it is appended automatically in the operators based on the environment_
 
