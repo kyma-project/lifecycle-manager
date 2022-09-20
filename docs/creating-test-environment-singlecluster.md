@@ -88,20 +88,18 @@ Learn how to use a Gardener cluster for testing.
 1. Go to the the [Gardener account](https://dashboard.garden.canary.k8s.ondemand.com/account) and download your access credential called `${gardener_account_kubeconfig}`:.
 
 
+2. Provision a compliant remote cluster with the [`kyma-cli`](https://github.com/kyma-project/cli):
+   ```sh
+   kyma provision gardener gcp --name op-kcpskr --project ${gardener_project} -s ${gcp_secret} -c ${gardener_account_kubeconfig}
 
-```sh
-kyma provision gardener gcp --name op-kcpskr --project ${gardener_project} -s ${gcp_secret} -c ${gardener_account_kubeconfig}
-```
+   For example, this could look like `kyma provision gardener gcp --name op-kcpskr --project jellyfish -s gcp-jellyfish-secret -c .kube/kubeconfig-garden-jellyfish.yaml`
 
-this is how it could like:
 
-```sh
-kyma provision gardener gcp --name op-kcpskr --project jellyfish -s gcp-jellyfish-secret -c .kube/kubeconfig-garden-jellyfish.yaml
-```
+2. Create an external registry.
 
-### 2.2 Create external registry
+   When using an external registry, make sure that the Gardener cluster (`op-kcpskr`) can reach your registry.
 
-When using an external registry, make sure that the Gardener cluster (`op-kcpskr`) can reach your registry.
+   You can follow the guide to [set up a GCP-hosted artifact registry (GCR)](creating-test-environment-gcr.md).
 
 _Disclaimer: For private registries, you may have to configure additional settings not covered in this tutorial. This only works out of the box for public registries_
 
