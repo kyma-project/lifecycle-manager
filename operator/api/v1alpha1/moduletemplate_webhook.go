@@ -38,16 +38,20 @@ import (
 // log is for logging in this package.
 var moduletemplatelog = logf.Log.WithName("moduletemplate-resource") //nolint:gochecknoglobals
 
-func (r *ModuleTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
+type ModuleTemplateWebhookSettings struct {
+	StrictModuleTemplateVerification bool
+}
+
+func (moduleTemplate *ModuleTemplate) SetupWebhookWithManager(mgr ctrl.Manager, settings ModuleTemplateWebhookSettings) error {
 	return ctrl.NewWebhookManagedBy(mgr).WithValidator(&clusterAwareModuleTemplateValidator{
-		Client: mgr.GetClient(),
-	}).
-		For(r).
-		Complete()
+		Client:                           mgr.GetClient(),
+		StrictModuleTemplateVerification: settings.StrictModuleTemplateVerification,
+	}).For(moduleTemplate).Complete()
 }
 
 type clusterAwareModuleTemplateValidator struct {
-	Client client.Client
+	Client                           client.Client
+	StrictModuleTemplateVerification bool
 }
 
 // TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -58,8 +62,8 @@ type clusterAwareModuleTemplateValidator struct {
 var _ webhook.Defaulter = &ModuleTemplate{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (r *ModuleTemplate) Default() {
-	moduletemplatelog.Info("default", "name", r.Name)
+func (moduleTemplate *ModuleTemplate) Default() {
+	moduletemplatelog.Info("default", "name", moduleTemplate.Name)
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
@@ -92,8 +96,10 @@ func (r *clusterAwareModuleTemplateValidator) validate(ctx context.Context, temp
 		allErrs = append(allErrs, err)
 	}
 
-	if err := r.validateCR(ctx, template); err != nil {
-		allErrs = append(allErrs, err)
+	if r.StrictModuleTemplateVerification {
+		if err := r.validateCR(ctx, template); err != nil {
+			allErrs = append(allErrs, err)
+		}
 	}
 
 	if len(allErrs) == 0 {

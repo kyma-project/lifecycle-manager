@@ -86,6 +86,7 @@ type FlagVar struct {
 	clientBurst                                                            int
 	enableWebhooks                                                         bool
 	enableModuleCatalog                                                    bool
+	strictModuleTemplateVerification                                       bool
 }
 
 func main() {
@@ -140,7 +141,10 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 	}
 
 	if flagVar.enableWebhooks {
-		if err := (&operatorv1alpha1.ModuleTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+		if err := (&operatorv1alpha1.ModuleTemplate{}).
+			SetupWebhookWithManager(mgr, operatorv1alpha1.ModuleTemplateWebhookSettings{
+				StrictModuleTemplateVerification: flagVar.strictModuleTemplateVerification,
+			}); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
 			os.Exit(1)
 		}
@@ -195,6 +199,8 @@ func defineFlagVar() *FlagVar {
 		"Enabling Validation/Conversion Webhooks.")
 	flag.BoolVar(&flagVar.enableModuleCatalog, "enable-module-catalog", true,
 		"Enabling the Module Catalog Synchronization for Introspection of available Modules based on ModuleTemplates.")
+	flag.BoolVar(&flagVar.strictModuleTemplateVerification, "strict-module-template-verification", false,
+		"Enabling the strict Module Template Verification will cause ModuleTemplates to be verified against their CRD interfaces.")
 	return flagVar
 }
 
