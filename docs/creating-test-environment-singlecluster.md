@@ -101,7 +101,7 @@ Learn how to use a Gardener cluster for testing.
 
    You can follow the guide to [set up a GCP-hosted artifact registry (GCR)](creating-test-environment-gcr.md).
 
-_Disclaimer: For private registries, you may have to configure additional settings not covered in this tutorial. This only works out of the box for public registries_
+_Disclaimer: For private registries, you may have to configure additional settings not covered in this tutorial._
 
 You can follow this guide to [setup a GCP hosted artifact registry (GCR)](creating-test-environment-gcr.md).
 
