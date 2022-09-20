@@ -21,16 +21,15 @@
    export MODULE_REGISTRY=europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/operator-test
    export IMG_REGISTRY=$MODULE_REGISTRY/operator-images
 
-_Note: For `MODULE_REGISTRY` it is important not to define any scheme such as `https://` so that the module generation works correctly, it is appended automatically in the operators based on the environment_
+   > **NOTE:** For `MODULE_REGISTRY`, do not define any scheme such as `https://`, otherwise the module isn't generated properly. The scheme is appended automatically in the operators based on the environment.
 
-Now, make sure that the Read access to the repository is possible anonymously to make it work with remote clusters (e.g. in gardener)
+3. To make it work with remote clusters such as in Gardener, specify that Read access to the repository is possible anonymously:
 
-```sh
-gcloud artifacts repositories add-iam-policy-binding operator-test \
- --location=europe-west3 --member=allUsers --role=roles/artifactregistry.reader
-```
+   ```sh
+   gcloud artifacts repositories add-iam-policy-binding operator-test \
+    --location=europe-west3 --member=allUsers --role=roles/artifactregistry.reader
 
-#### Authenticating Locally
+### Authenticate locally
 
 We will assume you will be creating and using a service-account called `operator-test-sa`.
 
