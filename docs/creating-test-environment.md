@@ -1,38 +1,36 @@
-# 1. Creating the cluster
+# Set up the test environment
 
-You can choose between a single cluster setup or a two cluster setup for testing your Kyma module.
+## Instructions
 
-## 1.1. Single cluster with registry
+### Create the cluster(s) for testing your Kyma module
 
-For using a single cluster which acts as control-plane (KCP) and Kyma runtime (SKR) together, follow the [single cluster setup guide](creating-test-environment-singlecluster.md).
+You can choose between a single-cluster setup or a two-cluster setup.
 
-## 1.2. Two clusters with two Registries
 
-For testing with two clusters, one representing the KCP and another the SKR cluster, follow the [two cluster setup guide](creating-test-environment-twocluster.md).
+- For testing with a single cluster that acts as both control-plane (KCP) and Kyma runtime (SKR), follow the [single cluster setup guide](creating-test-environment-singlecluster.md).
 
-# 2. Build your module
 
-In this example we use our reference implementation for a reconciliation operator
-(see the [`template-operator` in Github](https://github.com/kyma-project/lifecycle-manager/tree/main/samples/template-operator))
-to demonstrate how the bundling to a Kyma module works.
+- For testing with two clusters (with two registries), one acting as the KCP and another as the SKR cluster, follow the [two-cluster setup guide](creating-test-environment-twocluster.md).
 
-1. Switch to Your Operator Folder
+### Build your module
 
-   In `https://github.com/kyma-project/lifecycle-manager`, `cd samples/template-operator`
+To demonstrate how the bundling of a Kyma module works, the following example uses our reference implementation for a reconciliation operator; see the [`template-operator` in Github](https://github.com/kyma-project/lifecycle-manager/tree/main/samples/template-operator)).
 
-2. Generating and Pushing the Operator Image and Charts
+1. Go to your operator folder:
 
-   Next generate and push the module image of the operator.
+   In `https://github.com/kyma-project/lifecycle-manager`, go to `cd samples/template-operator`.
+
+2. Generate and push the module image of the operator and the charts:
+
 
    ```sh
    make module-operator-chart module-image
    ```
 
-# 3. Install Kyma with your module
+### Install Kyma with your module
 
-## 3.1 Pre-requisites
+1. If you're using the two-cluster setup, set your `KUBECONFIG` to the KCP Cluster context.
 
-_Note for two cluster mode: set your `KUBECONFIG` to the KCP Cluster context_
 
 First make sure that the `kyma-system` namespace is created:
 
