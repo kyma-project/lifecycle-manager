@@ -89,7 +89,7 @@ Create a Secret to access the cluster which acts as SKR:
 ```
 
    2. In `https://github.com/kyma-project/lifecycle-manager/operator`, run:
-
+      
       ```sh
       # using local registry
       make docker-build docker-push deploy IMG=$IMG_REGISTRY/lifecycle-manager:dev
@@ -112,29 +112,26 @@ Create a Secret to access the cluster which acts as SKR:
 
 
 _Note for using Google Artifact Registry: if you use gcloud cli, make sure your local docker config (`~/.docker/config.json`) does not contains `gcloud` `credHelpers` entry, (e.g: `"europe-west3-docker.pkg.dev": "gcloud",`), otherwise this might cause authentication issue for module-manager while fetching remote oci image layer.
-1. First, install the module template in the control-plane to make it available for all Kyma installations:
+    1. To make the module template available for all Kyma installations, install it in the control plane.
 
-   In `samples/template-operator`, run
+      To apply the module template, go to `samples/template-operator` and run `make module-template-push`.
 
-   ```sh
-   make module-template-push
-   ```
 
-   to apply the module-template.
 
-2. Create a request for kyma installation of the module in `samples/template-operator` of the lifecycle-manager with
+   2. To create a request for Kyma installation of the module in `samples/template-operator` of the Lifecycle Manager, run:
 
-   ```sh
-   sh hack/gen-kyma.sh
+      ```sh
+      sh hack/gen-kyma.sh
    
-   # in single cluster setup, us this command:
-   kubectl apply -f kyma.yaml singlecluster
+      # in single cluster setup, us this command:
+      kubectl apply -f kyma.yaml singlecluster
    
-   # in two cluster setup, use this command:
-   kubectl apply -f kyma.yaml
-   ```
+      # in two-cluster setup, use this command:
+      kubectl apply -f kyma.yaml
+      ```
 
-3. Now try to check your kyma installation progress, e.g. with `kubectl get kyma -n kyma-system -ojsonpath={".items[0].status"} | yq -P`:
+   3. Check the progress of your Kyma installation; for example, with `kubectl get kyma -n kyma-system -ojsonpath={".items[0].status"} | yq -P`.
+      You should get a result like this:
 
    ```yaml
    conditions:
