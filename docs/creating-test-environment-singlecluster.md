@@ -1,20 +1,19 @@
-# Setup Guide for Single Cluster
+# Set up a test environment with a single cluster
 
-We describe how to setup a single cluster which acts as control-plane (KCP) and Kyma runtime (SKR) equivalent.
+In this document, you learn how to set up a test environment with a single cluster that acts as control plane (KCP) and Kyma runtime (SKR) equivalent; either locally or remotely (based on Gardener). 
+For information about a test environment with two clusters, read [Set up a test environment with two clusters](creating-test-environment-twocluster).
 
-**You can choose between a local cluster setup or a remote cluster (based on Gardener) setup.**
 
-## 1. Local setup
+## Local cluster setup
 
-### 1.1 Create K3D cluster
+1. Create a K3D cluster:
 
-```sh
-k3d cluster create op-kcpskr --registry-create op-kcpskr-registry.localhost
-```
+   ```sh
+   k3d cluster create op-kcpskr --registry-create op-kcpskr-registry.localhost
 
-### 1.2 Make sure `kubectl` is using the K3D cluster
+2. Define that `kubectl` uses the K3D cluster:
 
-```sh
+   ```sh
 kubectl config use k3d-op-kcpskr
 ```
 

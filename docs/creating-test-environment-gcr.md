@@ -69,4 +69,3 @@ We will assume you will be [creating and using a service-account](https://kubern
 export `GCR_DOCKER_PASSWORD` for `operator/docker-push` and `MODULE_CREDENTIALS` for `module-build` make command:
    ```sh
    export MODULE_CREDENTIALS=oauth2accesstoken:$(gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com)
-```
