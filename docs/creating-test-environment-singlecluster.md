@@ -103,11 +103,9 @@ Learn how to use a Gardener cluster for testing.
 
 _Disclaimer: For private registries, you may have to configure additional settings not covered in this tutorial._
 
-You can follow this guide to [setup a GCP hosted artifact registry (GCR)](creating-test-environment-gcr.md).
 
-#### 2.2.1 Set registry environment variables
+3. Set registry environment variables:
 
-```sh
-export MODULE_REGISTRY=your-registry-goes-here.com
-export IMG_REGISTRY=your-registry-goes-here.com
-```
+   ```sh
+   export MODULE_REGISTRY=your-registry-goes-here.com
+   export IMG_REGISTRY=your-registry-goes-here.com

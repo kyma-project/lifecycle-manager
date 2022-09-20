@@ -1,8 +1,8 @@
-# Setup Guide for Two Clusters
+# # Set up a test environment with two clusters
 
-We describe the setup of two clusters. One acts as control-plane (KCP) and another as Kyma runtime (SKR) equivalent.
+In this document, you learn how to set up a test environment with two clusters: One acts as control-plane (KCP) and another as Kyma runtime (SKR) equivalent; either locally or remotely (based on Gardener). 
+For information about a test environment using a single cluster, read [Set up a test environment with a single](creating-test-environment-singlecluster).
 
-**You can choose between a local setup or a external setup (using clusters managed by Gardener).**
 
 ## 1. Local setup
 
