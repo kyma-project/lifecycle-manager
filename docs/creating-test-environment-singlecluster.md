@@ -57,7 +57,7 @@ export SKR_CLUSTER_CTX=k3d-op-kcpskr
       For browsing through the content of the local container registry, run one of the following tools. Both are accessible with `http://localhost:8080`.
 
       - Crane Operator (http://localhost:8080)
-  ```sh
+        ```sh
     docker run \
      -p 8080:80 \
      --rm \
@@ -70,8 +70,8 @@ export SKR_CLUSTER_CTX=k3d-op-kcpskr
      -e REGISTRY_ALLOW_DELETE=true \
      parabuzzle/craneoperator:latest
   ```
-- Docker Registry Browser (http://localhost:8080)
-  ```sh
+      - Docker Registry Browser (http://localhost:8080)
+        ```sh
     docker run \
       -p 8080:8080 \
       --rm \
@@ -81,15 +81,13 @@ export SKR_CLUSTER_CTX=k3d-op-kcpskr
       klausmeyer/docker-registry-browser
   ```
 
-## 2. External setup
+## Remote cluster setup
 
-This section describes how a Gardener cluster can be used for testing purposes.
+Learn how to use a Gardener cluster for testing.
 
-### 2.1 Create external cluster using Kyma CLI
+1. Go to the the [Gardener account](https://dashboard.garden.canary.k8s.ondemand.com/account) and download your access credential called `${gardener_account_kubeconfig}`:.
 
-Provision a compliant Kyma Clusters with the [`kyma-cli`](https://github.com/kyma-project/cli):
 
-`${gardener_account_kubeconfig}`: the access credential which can be downloaded from [gardener account](https://dashboard.garden.canary.k8s.ondemand.com/account).
 
 ```sh
 kyma provision gardener gcp --name op-kcpskr --project ${gardener_project} -s ${gcp_secret} -c ${gardener_account_kubeconfig}
