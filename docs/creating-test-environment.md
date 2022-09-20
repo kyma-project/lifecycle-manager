@@ -65,41 +65,38 @@ Create a Secret to access the cluster which acts as SKR:
 
 
 
-   ```
 
-Ensure the CRDs are installed with `kubectl get crds | grep kyma-project.io`:
+7. To verify that the CRDs are installed, run `kubectl get crds | grep kyma-project.io`.
+   You should get a result similar to this:
 
-```
-manifests.component.kyma-project.io        2022-08-18T16:27:21Z
-kymas.operator.kyma-project.io             2022-08-18T16:29:28Z
-moduletemplates.operator.kyma-project.io   2022-08-18T16:29:28Z
-```
+   manifests.component.kyma-project.io        2022-08-18T16:27:21Z
+   kymas.operator.kyma-project.io             2022-08-18T16:29:28Z
+   moduletemplates.operator.kyma-project.io   2022-08-18T16:29:28Z
 
-### 3.3.3 Run the operators
+8. Deploy and run the operators in the cluster. Due to cross-dependencies in CRDs, install them in the following order:
+   1. In `https://github.com/kyma-project/module-manager/operator run`, run:
 
 #### 3.3.3.1 Deploy and run operators in cluster
 
-_Note: The order of installation is important due to cross-dependencies in CRDs_
 
-In https://github.com/kyma-project/module-manager/operator run
 
-```sh
-# using local registry
-make docker-build docker-push deploy IMG=$IMG_REGISTRY/module-manager:dev
-
-# using remote registry (replace `PR-73` with your desired tag)
-make deploy IMG=eu.gcr.io/kyma-project/module-manager:PR-73
+      ```sh
+      # using local registry
+      make docker-build docker-push deploy IMG=$IMG_REGISTRY/module-manager:dev
+      
+      # using remote registry (replace `PR-73` with your desired tag)
+      make deploy IMG=eu.gcr.io/kyma-project/module-manager:PR-73
 ```
 
-In https://github.com/kyma-project/lifecycle-manager/operator run
+   2. In `https://github.com/kyma-project/lifecycle-manager/operator`, run:
 
-```sh
-# using local registry
-make docker-build docker-push deploy IMG=$IMG_REGISTRY/lifecycle-manager:dev
-
-# using remote registry (replace `PR-122` with your desired tag)
-make deploy IMG=eu.gcr.io/kyma-project/lifecycle-manager:PR-122
-```
+      ```sh
+      # using local registry
+      make docker-build docker-push deploy IMG=$IMG_REGISTRY/lifecycle-manager:dev
+      
+      # using remote registry (replace `PR-122` with your desired tag)
+      make deploy IMG=eu.gcr.io/kyma-project/lifecycle-manager:PR-122
+      ```
 
 _Note: It could be that you get messages like `no matches for kind "VirtualService" in version "networking.istio.io/v1beta1"`. This is normal if you install the operators in a cluster without a certain dependency. If you do not need this for your test, you can safely ignore it._
 
