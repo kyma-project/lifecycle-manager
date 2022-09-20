@@ -31,7 +31,7 @@
 
 ### Authenticate locally
 
-We will assume you will be creating and using a service-account called `operator-test-sa`.
+We will assume you will be [creating and using a service-account](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/) called `operator-test-sa`.
 
 Make sure to authenticate against your registry:
 
