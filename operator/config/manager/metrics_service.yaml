@@ -7,9 +7,10 @@ metadata:
   namespace: system
 spec:
   ports:
-  - name: https-metrics
+  - name: metrics
     port: 8080
     protocol: TCP
+    appProtocol: http
     targetPort: metrics
   selector:
     app.kubernetes.io/component: lifecycle-manager.kyma-project.io
