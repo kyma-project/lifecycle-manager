@@ -17,9 +17,6 @@ commonLabels:
   app.kubernetes.io/managed-by: kustomize
   app.kubernetes.io/part-of: manual-deployment
 
-configurations:
-  - ./commonlabels_override.yaml
-
 resources:
   - ../manager
 components:
@@ -28,7 +25,7 @@ components:
   # [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
   #- ../watcher
   # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
-  #- ../istio
+  - ../istio
   # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
   # crd/kustomization.yaml
   #- ../webhook
