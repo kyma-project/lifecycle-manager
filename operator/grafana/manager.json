@@ -130,7 +130,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Kyma Operator Kube API Request Rate",
+      "title": "Lifecycle Manager Kube API Request Rate",
       "tooltip": {
         "shared": false,
         "sort": 0,
@@ -229,7 +229,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Manifest Operator Memory",
+      "title": "Module Manager Memory",
       "tooltip": {
         "shared": false,
         "sort": 0,
@@ -328,7 +328,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Manifest Operator CPU usage",
+      "title": "Module Manager CPU usage",
       "tooltip": {
         "shared": false,
         "sort": 0,
@@ -468,7 +468,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Manifest Operator Kube API Request Rate",
+      "title": "Module Manager Kube API Request Rate",
       "tooltip": {
         "shared": false,
         "sort": 0,
@@ -558,7 +558,7 @@
           "expr": "process_resident_memory_bytes{job=\"operator-controller-manager-metrics-service\"}",
           "hide": false,
           "interval": "",
-          "legendFormat": "Kyma Operator",
+          "legendFormat": "Lifecycle Manager",
           "refId": "B"
         }
       ],
@@ -566,7 +566,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Kyma Operator Memory",
+      "title": "Lifecycle Manager Memory",
       "tooltip": {
         "shared": false,
         "sort": 0,
@@ -665,7 +665,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Kyma Operator CPU usage",
+      "title": "Lifecycle Manager CPU usage",
       "tooltip": {
         "shared": false,
         "sort": 0,
@@ -819,7 +819,7 @@
           "refId": "C"
         }
       ],
-      "title": "Manifest Operator Controller Runtime Reconcile Success",
+      "title": "Module Manager Controller Runtime Reconcile Success",
       "type": "timeseries"
     },
     {
@@ -928,7 +928,7 @@
           "refId": "C"
         }
       ],
-      "title": "Kyma Operator Controller Runtime Reconcile Success",
+      "title": "Lifecycle Manager Controller Runtime Reconcile Success",
       "type": "timeseries"
     },
     {
@@ -1978,7 +1978,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Lifecycle Manager & Module Manager Test",
+  "title": "Lifecycle Manager & Module Manager",
   "uid": "O3DH7uunk",
   "version": 2
 }

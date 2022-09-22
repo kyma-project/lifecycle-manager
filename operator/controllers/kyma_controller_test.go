@@ -26,9 +26,9 @@ var _ = Describe("Kyma with no ModuleTemplate", func() {
 	kyma := NewTestKyma("no-module-kyma")
 	RegisterDefaultLifecycleForKyma(kyma)
 
-	It("Should result in an error state", func() {
-		By("having transitioned the CR State to Error as there are no modules")
-		Eventually(IsKymaInState(kyma.GetName(), v1alpha1.StateError), timeout, interval).Should(BeTrue())
+	It("Should result in a ready state immediately", func() {
+		By("having transitioned the CR State to Ready as there are no modules")
+		Eventually(IsKymaInState(kyma.GetName(), v1alpha1.StateReady), timeout, interval).Should(BeTrue())
 	})
 
 	When("creating a Kyma CR with Module based on an Empty ModuleTemplate", func() {

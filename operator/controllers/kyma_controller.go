@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -45,8 +44,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/release"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/status"
 )
-
-var ErrNoComponentSpecified = errors.New("no component specified")
 
 type RequeueIntervals struct {
 	Success time.Duration
@@ -124,11 +121,6 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		if err != nil {
 			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
 		}
-	}
-
-	if len(kyma.Spec.Modules) < 1 {
-		return ctrl.Result{}, r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
-			fmt.Errorf("error parsing %s: %w", kyma.Name, ErrNoComponentSpecified))
 	}
 
 	// state handling

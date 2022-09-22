@@ -9,7 +9,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 )
 
-func mergeResourceIntoSpec(resource *unstructured.Unstructured, component *unstructured.Unstructured) error {
+func mergeResourceIntoSpec(resource, component *unstructured.Unstructured) error {
 	if err := mergo.Merge(&component.Object,
 		map[string]any{"spec": map[string]any{"resource": resource}},
 		mergo.WithAppendSlice); err != nil {
