@@ -49,6 +49,7 @@ const (
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=samples/finalizers,verbs=update
 //+kubebuilder:rbac:groups="",resources=events,verbs=create;patch;get;list;watch
 //+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
 
 // TODO: dynamically create RBACs! Remove line below.
 //+kubebuilder:rbac:groups="*",resources="*",verbs=get;list;create;update;patch;delete
