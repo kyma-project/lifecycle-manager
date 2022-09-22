@@ -13,6 +13,9 @@ rules:
   - create
   - get
   - list
+  - onEvent
+  - patch
+  - update
   - watch
 - apiGroups:
   - ""
