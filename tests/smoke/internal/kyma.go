@@ -7,8 +7,7 @@ import (
 )
 
 const (
-	kyma            = "kyma"
-	kymaDownloadURL = "https://storage.googleapis.com/kyma-cli-unstable/kyma-darwin"
+	kyma = "kyma"
 )
 
 var DefaultKymaPath = filepath.Join(testFolder, kyma)
@@ -19,6 +18,7 @@ func SetupKymaCLI() error {
 			return err
 		}
 	}
+
 	if _, err := os.Stat(DefaultKymaPath); os.IsNotExist(err) {
 		if err := download(DefaultKymaPath, kymaDownloadURL); err != nil {
 			return err
