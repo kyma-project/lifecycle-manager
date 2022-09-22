@@ -6,11 +6,3 @@ commonLabels:
   create: true
   version: v1
   kind: ServiceMonitor
-- path: spec/selector/matchLabels
-  create: true
-  version: v1beta1
-  kind: PeerAuthentication
-- path: spec/selector/matchLabels
-  create: true
-  version: v1beta1
-  kind: AuthorizationPolicy
