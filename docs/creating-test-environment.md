@@ -1,316 +1,164 @@
-# Creating the Clusters
+# Set up the test environment
 
-## Setup Control Plane and Runtime Equivalent
+## Instructions
 
-### Local Setup
+### Create the cluster(s) for testing your Kyma module
 
-```sh
-k3d cluster create op-skr --registry-create op-skr-registry.localhost
-k3d cluster create op-kcp --registry-create op-kcp-registry.localhost
-```
+You can choose between a single-cluster setup or a two-cluster setup.
 
-### Use External Clusters (through Kyma CLI)
+- For testing with a single cluster that acts as both control-plane (KCP) and Kyma runtime (SKR), follow the [single cluster setup guide](creating-test-environment-singlecluster.md).
 
-Make sure to have two `KUBECONFIG` compliant client configurations at hand, one for kcp, one for skr.
 
-Provision two compliant kyma Clusters with the `kyma-cli`:
+- For testing with two clusters (with two registries), one acting as the KCP and another as the SKR cluster, follow the [two-cluster setup guide](creating-test-environment-twocluster.md).
 
-`${gardener_account_kubeconfig}`: the access credential which can be downloaded from [gardener account](https://dashboard.garden.canary.k8s.ondemand.com/account). 
-```sh
-kyma provision gardener gcp --name op-kcp --project ${gardener_project} -s ${gcp_secret} -c ${gardener_account_kubeconfig}
-kyma provision gardener gcp --name op-skr --project ${gardener_project} -s ${gcp_secret} -c ${gardener_account_kubeconfig}
-```
+### Build your module
 
-## Setting up your registry
+To demonstrate how the bundling of a Kyma module works, the following example uses our reference implementation for a reconciliation operator; see the [`template-operator` in Github](https://github.com/kyma-project/lifecycle-manager/tree/main/samples/template-operator)).
 
-### Make sure the registries are reachable via localhost (only for local setup)
+1. Go to your operator folder:
 
-Add the following to your `etc/hosts` entry.
+   In `https://github.com/kyma-project/lifecycle-manager`, go to `cd samples/template-operator`.
 
-```/etc/hosts
-##
-# Host Database
-#
-# localhost is used to configure the loopback interface
-# when the system is booting.  Do not change this entry.
-##
-127.0.0.1       localhost
-255.255.255.255 broadcasthost
-::1             localhost
 
-# Added by Docker Desktop
-# To allow the same kube context to work on the host and the container:
-127.0.0.1 kubernetes.docker.internal
+2. Generate and push the module image of the operator and the charts:
 
-# Added for Operator Registries
-127.0.0.1 op-kcp-registry.localhost
-127.0.0.1 op-skr-registry.localhost
-```
+     ```sh
+   make module-operator-chart module-image
+     ```
 
-### Using an external Registry
+### Install Kyma with your module
 
-When using an external registry, make sure that both clusters (`op-kcp` and `op-skr`) can reach your registry.
+1. If you're using the two-cluster setup, set your `KUBECONFIG` to the KCP Cluster context.
 
-_Disclaimer: For private registries, you may have to configure additional settings not covered in this tutorial. This only works out of the box
-for public registries_
 
-## Make sure you are in the Control Plane
+2. Create the `kyma-system` Namespace:
 
-```sh
-kubectl config use k3d-op-kcp
-```
+   ```sh
+   kubectl create ns kyma-system
+   ```
 
-# Build your module
+3. Create a Secret to access the cluster which acts as SKR:
 
-In `https://github.com/kyma-project/lifecycle-manager`, `cd samples/template-operator`
+   Go to `https://github.com/kyma-project/lifecycle-manager` and run the following commands:
 
-After this find the Port of your KCP OCI Registry and write it to `MODULE_REGISTRY_PORT`:
+   ```sh
+   chmod 755 ./operator/config/samples/secret/k3d-secret-gen.sh
+   ./operator/config/samples/secret/k3d-secret-gen.sh
 
-## Using a Local Module/Image Registry
+   > **NOTE:** In the two-cluster setup, adjust your contexts for applying the secret using KCP_CLUSTER_CTX and SKR_CLUSTER_CTX.
 
-```sh
-export MODULE_REGISTRY_PORT=$(docker port op-kcp-registry.localhost 5000/tcp | cut -d ":" -f2)
-export IMG_REGISTRY_PORT=$(docker port op-skr-registry.localhost 5000/tcp | cut -d ":" -f2)
-```
+4. Build and push the module to the registry.
 
-## Using a Remote Module/Image Registry
+   In `https://github.com/kyma-project/lifecycle-manager`, switch to subfolder `samples/template-operator` and run `make module-build`.
 
-In general its possible to update your registries with 2 environment variables (for the module template, and the operator image):
+   > **TIP:** If you use a remote registry and you receive a `403` or `401` error, maybe your credentials timed out. To fix this, recreate the `MODULE_CREDENTIALS` variable.
 
-```sh
-export MODULE_REGISTRY=your-registry-goes-here.com
-export IMG_REGISTRY=your-registry-goes-here.com
-```
+5. To install the Module Manager CRDs, check out `https://github.com/kyma-project/module-manager`, navigate to the operator `cd operator`, and run `make install`.
 
-### Using GCP Artifact Registry
 
-We will be assuming you have a GCP project called `sap-kyma-jellyfish-dev`
+6. To install the Lifecycle Manager CRDs, check out `https://github.com/kyma-project/lifecycle-manager`, navigate to the operator `cd operator`, and run `make install`.
 
-#### Creating your Repository
 
-We will assume you will be creating and using a Artifact Registry Repository called `operator-test`.
+7. To verify that the CRDs are installed, run `kubectl get crds | grep kyma-project.io`. You should get a result similar to this:
 
-```sh
-gcloud artifacts repositories create operator-test \
-    --repository-format=docker \
-    --location europe-west3
-```
+       manifests.component.kyma-project.io        2022-08-18T16:27:21Z
+       kymas.operator.kyma-project.io             2022-08-18T16:29:28Z
+       moduletemplates.operator.kyma-project.io   2022-08-18T16:29:28Z
 
-```sh
-export MODULE_REGISTRY=europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/operator-test
-export IMG_REGISTRY=$MODULE_REGISTRY/operator-images
-```
 
-_Note: For `MODULE_REGISTRY` it is important not to define any scheme such as `https://` so that the module generation works correctly, it is appended automatically in the operators based on the environment_
+8. Deploy and run the operators in the cluster. Due to cross-dependencies in CRDs, install them in the following order:
 
-Now, make sure that the Read access to the repository is possible anonymously to make it work with remote clusters (e.g. in gardener)
+    1. In `https://github.com/kyma-project/module-manager/operator run`, run:
 
-```sh
-gcloud artifacts repositories add-iam-policy-binding operator-test \
- --location=europe-west3 --member=allUsers --role=roles/artifactregistry.reader
-```
+       ```sh
+       # using local registry
+       make docker-build docker-push deploy IMG=$IMG_REGISTRY/module-manager:dev
+       
+       # using remote registry (replace `PR-73` with your desired tag)
+       make deploy IMG=eu.gcr.io/kyma-project/module-manager:PR-73
+       ```
 
-#### Authenticating Locally
+    2. In `https://github.com/kyma-project/lifecycle-manager/operator`, run:
 
-We will assume you will be creating and using a service-account called `operator-test-sa`.
+       ```sh
+       # using local registry
+       make docker-build docker-push deploy IMG=$IMG_REGISTRY/lifecycle-manager:dev
+       
+       # using remote registry (replace `PR-122` with your desired tag)
+       make deploy IMG=eu.gcr.io/kyma-project/lifecycle-manager:PR-122
+       ```
 
-Make sure to authenticate against your registry:
+       > **NOTE:** If you get messages like `no matches for kind "VirtualService" in version "networking.istio.io/v1beta1"`, don't worry. This is normal if you install the operators in a cluster without a certain dependency. If you do not need this dependency for your test, you can safely ignore the warning.
 
-```sh
-gcloud auth configure-docker \
-    europe-west3-docker.pkg.dev
-```
+9. Run the operators on your local host. Due to cross-dependencies in CRDs, install them in the following order:
 
-#### Creating a service Account
+    1. In `https://github.com/kyma-project/lifecycle-manager`, run `make run`.
 
-Creation of a service account is useful for productive purposes
+    2. In `https://github.com/kyma-project/module-manager`, run `make run`.
 
-Create a Service Account (for the necessary permissions see https://cloud.google.com/iam/docs/creating-managing-service-accounts#permissions):
 
-```sh
-gcloud iam service-accounts create operator-test-sa \
-    --display-name="Operator Test Service Account"
-```
+10. Start the Kyma installation.
 
-```sh
-gcloud projects add-iam-policy-binding sap-kyma-jellyfish-dev \
-      --member='serviceAccount:operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com' \
-      --role='roles/artifactregistry.reader' \
-      --role='roles/artifactregistry.writer'
-```
+    _Note for using Google Artifact Registry: if you use gcloud cli, make sure your local docker config (`~/.docker/config.json`) does not contains `gcloud` `credHelpers` entry, (e.g: `"europe-west3-docker.pkg.dev": "gcloud",`), otherwise this might cause authentication issue for module-manager while fetching remote oci image layer._
 
-Impersonate the service-account
 
-```sh
-gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com
-```
+1. To make the module template available for all Kyma installations, install it in the control plane.
 
-Verify your login:
+   To apply the module template, go to `samples/template-operator` and run `make module-template-push`.
 
-```sh
-gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com | docker login -u oauth2accesstoken --password-stdin https://europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/operator-test
-```
 
-```sh
-export MODULE_CREDENTIALS=oauth2accesstoken:$(gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com)
-```
+2. To create a request for Kyma installation of the module in `samples/template-operator` of the Lifecycle Manager, run:
 
-## Generating and Pushing the Operator Image and Charts
+   ```sh
+   sh hack/gen-kyma.sh
 
-Next generate and push the module image of the operator
+   # in single cluster setup, us this command:
+   kubectl apply -f kyma.yaml singlecluster
 
-```sh
-make module-operator-chart module-image
-```
+   # in two-cluster setup, use this command:
+   kubectl apply -f kyma.yaml
+   ```
 
-# Install Kyma with your Module
+3. Check the progress of your Kyma installation; for example, with `kubectl get kyma -n kyma-system -ojsonpath={".items[0].status"} | yq -P`. You should get a result like this:
 
-_Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set to the KCP Cluster_
+   ```yaml
+    conditions:
+      - lastTransitionTime: "2022-08-18T18:10:09Z"
+        message: module is Ready
+        reason: template
+        status: "True"
+        type: Ready
+    moduleInfos:
+      - moduleName: template
+        name: templatekyma-sample
+        namespace: kyma-system
+        templateInfo:
+          channel: stable
+          generation: 1
+          gvk:
+            group: operator.kyma-project.io
+            kind: Manifest
+            version: v1alpha1
+    observedGeneration: 1
+    state: Ready
+    ```
 
-First make sure that the `kyma-system` namespace is created:
+### Verify the installation
 
-```sh
-kubectl create ns kyma-system
-```
+- To observe the installation in the runtime, switch the context to the SKR context, and verify the status.
 
-After this, build the module and push it to the registry:
+  ```sh
+  kubectl get kyma -n kyma-system -ojsonpath={".items[0].status"} | yq -P
+  ```
 
-```sh
-make module-build
-```
+  If you get `state: Ready`, the installation succeeded.
 
-_Note: If you receive 403 / 401, recreate the `MODULE_CREDENTIALS` variable as it could be that your credentials timed out_
 
-Before we start reconciling, let's create a secret to access the SKR:
+- To verify this, go to `template-operator/operator/module-chart` and check if the contents of the `module-chart` directory have been installed and parsed correctly.
 
-In https://github.com/kyma-project/lifecycle-manager in the `operator` subdirectory, run
 
-`sh config/samples/secret/k3d-secret-gen.sh`
+- To check the contents of the deployments that were generated by the deployed operator (assuming the Helm chart did not change the name of the resource), run:
 
-_Note for externally created clusters: You can use KCP_CLUSTER_CTX and SKR_CLUSTER_CTX to adjust your contexts for applying the secret._
-
-## Run the operators
-
-### Run Locally
-
-_Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set to the KCP Cluster_
-
-#### Install Manifest Operator CRDs
-
-1. Checkout https://github.com/kyma-project/module-manager and navigate to the operator: `cd operator`
-2. Run the Installation Command
-
-```sh
-make install
-```
-
-#### Install lifecycle-manager CRDs
-
-1. Checkout https://github.com/kyma-project/lifecycle-manager and navigate to the operator: `cd operator`
-2. Run the Installation Command
-
-```sh
-make install
-```
-
-Ensure the CRDs are installed with `kubectl get crds | grep kyma-project.io`:
-
-```
-manifests.operator.kyma-project.io        2022-08-18T16:27:21Z
-kymas.operator.kyma-project.io             2022-08-18T16:29:28Z
-moduletemplates.operator.kyma-project.io   2022-08-18T16:29:28Z
-```
-
-#### Run the Operators
-
-_Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set to the KCP Cluster_
-
-In https://github.com/kyma-project/lifecycle-manager run
-
-```sh
-make run
-```
-
-In https://github.com/kyma-project/module-manager run
-
-```sh
-make run
-```
-
-### Run in Control Plane
-
-_Note: The order of installation is important due to cross-dependencies in CRDs_
-
-In https://github.com/kyma-project/module-manager run
-
-```sh
-make deploy IMG=eu.gcr.io/kyma-project/module-manager:PR-73
-```
-
-_Note: Replace `PR-73` with your desired tag_
-
-In https://github.com/kyma-project/lifecycle-manager run
-
-```sh
-make deploy IMG=eu.gcr.io/kyma-project/lifecycle-manager:PR-122
-```
-
-_Note: Replace `PR-122` with your desired tag_
-
-_Note: It could be that you get messages like `no matches for kind "VirtualService" in version "networking.istio.io/v1beta1"`. This is normal if you install the operators in a cluster without a certain dependency. If you do not need this for your test, you can safely ignore it._
-
-## Start the Installation
-
-_Note for Remote Clusters: Make sure you run the commands with `KUBECONFIG` set to the KCP Cluster_
-
-First, install the module template in the control-plane to make it available for all Kyma installations:
-
-In `samples/template-operator`, run
-
-```sh
-make module-template-push
-```
-
-to apply the module-template
-
-Create a request for kyma installation of the module in `samples/template-operator` of the lifecycle-manager with
-
-```sh
-sh hack/gen-kyma.sh
-kubectl apply -f kyma.yaml
-```
-
-Now try to check your kyma installation progress, e.g. with `kubectl get kyma -n kyma-system -ojsonpath={".items[0].status"} | yq -P`:
-
-```yaml
-conditions:
-  - lastTransitionTime: "2022-08-18T18:10:09Z"
-    message: module is Ready
-    reason: template
-    status: "True"
-    type: Ready
-moduleInfos:
-  - moduleName: template
-    name: templatekyma-sample
-    namespace: kyma-system
-    templateInfo:
-      channel: stable
-      generation: 1
-      gvk:
-        group: operator.kyma-project.io
-        kind: Manifest
-        version: v1alpha1
-observedGeneration: 1
-state: Ready
-```
-
-Also, you can observe the installation in the runtime by switching the context to the SKR context and then verifying the status.
-
-`kubectl config use-context k3d-op-skr && kubectl get samples.operator.kyma-project.io -n kyma-system -ojsonpath={".items[0].status"} | yq -P`
-
-and it should show `state: Ready`.
-
-You can verify this by checking if the contents of the `module-chart`directry in `template-operator/operator/module-chart`have been installed and parsed correctly.
-
-You can even check the contents of the deployments that were generated by the deployed operator (assuming the helm chart did not change the name of the resource):
-`kubectl get -f operator/module-chart/templates/deployment.yaml -ojsonpath={".status.conditions"} | yq`
+  ```sh
+  `kubectl get -f operator/module-chart/templates/deployment.yaml -ojsonpath={".status.conditions"} | yq`
+  ```
