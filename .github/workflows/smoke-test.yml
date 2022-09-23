@@ -46,4 +46,4 @@ jobs:
           ${{ runner.os }}-golang-
 
     - name: Run Smoke Tests
-      run: go test -v tests/smoke/...
+      run: cd tests/smoke && make test-verbose
