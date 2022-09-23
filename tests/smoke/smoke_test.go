@@ -59,7 +59,7 @@ func TestControllerManagerSpinsUp(t *testing.T) {
 			dep := ControllerManagerDeployment("kcp-system", "lifecycle-manager-controller-manager")
 			// wait for the deployment to finish becoming available
 			err = wait.For(conditions.New(
-				client.Resources()).ResourcesFound(&appsv1.DeploymentList{Items: []appsv1.Deployment{*dep}}),
+				client.Resources()).ResourcesFound(&appsv1.DeploymentList{Items: []appsv1.Deployment{dep}}),
 			)
 			if err != nil {
 				t.Fatal(err)
