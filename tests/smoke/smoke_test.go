@@ -74,7 +74,7 @@ func TestControllerManagerSpinsUp(t *testing.T) {
 			// wait for the deployment to finish becoming available
 			err = wait.For(conditions.New(client.Resources()).DeploymentConditionMatch(dep.DeepCopy(),
 				appsv1.DeploymentAvailable, corev1.ConditionTrue),
-				wait.WithTimeout(time.Minute*1))
+				wait.WithTimeout(time.Minute*2))
 
 			logDeployStatus(t, ctx, client, dep)
 
