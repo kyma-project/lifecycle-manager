@@ -11,10 +11,9 @@ jobs:
     name: "Smoke"
     strategy:
       matrix:
-        k3d: ["v5.4.6"]
         os: [ubuntu-latest]
         provision-type: ["kyma-cli", "kind"]
-
+        
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout
@@ -27,7 +26,7 @@ jobs:
         cache-dependency-path: 'tests/smoke/go.sum'
     
     - name: Set up k3d@${{ matrix.k3d }}
-      run: wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=${{ matrix.k3d }} bash
+      run: wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.4.6 bash
       
     - name: Setup Go caches
       uses: actions/cache@v3
