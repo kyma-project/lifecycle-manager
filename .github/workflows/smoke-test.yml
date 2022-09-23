@@ -26,7 +26,7 @@ jobs:
         cache-dependency-path: 'tests/smoke/go.sum'
     
     - name: Set up k3d@${{ matrix.k3d }}
-      run: go install github.com/k3d-io/k3d/${echo ${{ matrix.k3d }} | cut -d. -f1}@${{ matrix.k3d }}
+      run: wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=${{ matrix.k3d }} bash
       
     - name: Setup Go caches
       uses: actions/cache@v3
