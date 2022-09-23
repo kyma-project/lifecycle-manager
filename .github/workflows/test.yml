@@ -1,4 +1,4 @@
-name: Smoke Tests
+name: Test
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
     branches: [ "main" ]
 
 jobs:
-  kyma-cli-k3d:
-    name: "kyma provision k3d"
+  smoke:
+    name: "Smoke"
     strategy:
       matrix:
         k3d: ["v5.4.6"]
