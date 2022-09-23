@@ -2,6 +2,9 @@ package controllers_test
 
 import (
 	"encoding/json"
+	"math/rand"
+	"strings"
+	"time"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -27,7 +30,7 @@ func NewTestKyma(name string) *v1alpha1.Kyma {
 			Kind:       string(v1alpha1.KymaKind),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      name + RandString(8),
 			Namespace: namespace,
 		},
 		Spec: v1alpha1.KymaSpec{
@@ -35,6 +38,37 @@ func NewTestKyma(name string) *v1alpha1.Kyma {
 			Channel: v1alpha1.DefaultChannel,
 		},
 	}
+}
+
+func NewUniqModuleName() string {
+	return RandString(8)
+}
+
+const letterBytes = "abcdefghijklmnopqrstuvwxyz"
+const (
+	letterIdxBits = 6                    // 6 bits to represent a letter index
+	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
+	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
+)
+
+func RandString(n int) string {
+	sb := strings.Builder{}
+	sb.Grow(n)
+	src := rand.NewSource(time.Now().UnixNano())
+	// A src.Int63() generates 63 random bits, enough for letterIdxMax characters!
+	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
+		if remain == 0 {
+			cache, remain = src.Int63(), letterIdxMax
+		}
+		if idx := int(cache & letterIdxMask); idx < len(letterBytes) {
+			sb.WriteByte(letterBytes[idx])
+			i--
+		}
+		cache >>= letterIdxBits
+		remain--
+	}
+
+	return sb.String()
 }
 
 func RegisterDefaultLifecycleForKyma(kyma *v1alpha1.Kyma) {
