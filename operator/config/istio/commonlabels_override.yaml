@@ -1,0 +1,8 @@
+# This is an extension to builtin commonLabels,
+# reference https://github.com/kubernetes-sigs/kustomize/blob/master/api/konfig/builtinpluginconsts/commonlabels.go
+
+commonLabels:
+- path: spec/selector/matchLabels
+  create: true
+  version: v1beta1
+  kind: AuthorizationPolicy
