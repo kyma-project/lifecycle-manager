@@ -25,7 +25,11 @@ func CreateKymaK3dCluster(clusterName string) env.Func {
 		if err := SetupKymaCLI(); err != nil {
 			return ctx, err
 		}
-		provision := KymaCLI("provision", "k3d", "--name", clusterName, "-p", "8083:80@loadbalancer", "-p", "8443:443@loadbalancer")
+		provision := KymaCLI("provision", "k3d", "--name", clusterName,
+			"-p", "8083:80@loadbalancer",
+			"-p", "8443:443@loadbalancer",
+			"--timeout", "1m",
+		)
 		if err := provision.Run(); err != nil {
 			return nil, err
 		}
