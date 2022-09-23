@@ -82,8 +82,7 @@ func TestControllerManagerSpinsUp(t *testing.T) {
 			_ = client.Resources("kcp-system").List(ctx, &pods)
 			for _, pod := range pods.Items {
 				if marshal, err := yaml.Marshal(&pod.Status); err == nil {
-					t.Logf("%s/%s", pod.Namespace, pod.Name)
-					t.Logf("%s", marshal)
+					t.Logf("Pod Status For %s/%s\n%s", pod.Namespace, pod.Name, marshal)
 				}
 			}
 
