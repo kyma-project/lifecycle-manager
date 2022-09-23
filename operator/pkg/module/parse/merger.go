@@ -21,7 +21,7 @@ func mergeResourceIntoSpec(resource, component *unstructured.Unstructured) error
 // mergeTargetIntoSpec uses a given v1alpha1.Target to set the remote attribute on an unstructured.
 func mergeTargetIntoSpec(remote v1alpha1.Target, component *unstructured.Unstructured) error {
 	if err := mergo.Merge(&component.Object,
-		map[string]any{"remote": ConvertTargetToRemote(remote)},
+		map[string]any{"spec": map[string]any{"remote": ConvertTargetToRemote(remote)}},
 		mergo.WithAppendSlice); err != nil {
 		return fmt.Errorf("error while merging the remote attribute into the spec: %w", err)
 	}
