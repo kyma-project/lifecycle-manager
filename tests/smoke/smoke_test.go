@@ -81,7 +81,7 @@ func TestControllerManagerSpinsUp(t *testing.T) {
 			// wait for the deployment to finish becoming available
 			err = wait.For(conditions.New(client.Resources()).DeploymentConditionMatch(dep.DeepCopy(),
 				appsv1.DeploymentAvailable, corev1.ConditionTrue),
-				wait.WithTimeout(time.Minute*2))
+				wait.WithTimeout(time.Minute*3))
 
 			pods := corev1.PodList{}
 			_ = client.Resources("kcp-system").List(ctx, &pods)
