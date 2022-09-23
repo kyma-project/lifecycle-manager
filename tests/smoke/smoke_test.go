@@ -73,13 +73,13 @@ func TestControllerManagerSpinsUp(t *testing.T) {
 			}
 			dep := ControllerManagerDeployment("kcp-system", "lifecycle-manager-controller-manager")
 			// wait for the deployment to finish becoming available
-			err = wait.For(conditions.New(client.Resources()).DeploymentConditionMatch(dep,
+			err = wait.For(conditions.New(client.Resources()).DeploymentConditionMatch(dep.DeepCopy(),
 				appsv1.DeploymentAvailable, corev1.ConditionTrue),
 				wait.WithTimeout(time.Minute*1))
 			if err != nil {
 				errCheckCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 				defer cancel()
-				if err := client.Resources().Get(errCheckCtx, dep.Name, dep.Namespace, dep); err != nil {
+				if err := client.Resources().Get(errCheckCtx, dep.Name, dep.Namespace, dep.DeepCopy()); err != nil {
 					t.Error(err)
 				}
 				var out io.Writer
@@ -96,7 +96,7 @@ func TestControllerManagerSpinsUp(t *testing.T) {
 	TestEnv.Test(t, depFeature)
 }
 
-func ControllerManagerDeployment(namespace string, name string) *appsv1.Deployment {
+func ControllerManagerDeployment(namespace string, name string) appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace,
 			Labels: map[string]string{"app.kubernetes.io/component": "lifecycle-manager.kyma-project.io"}},
