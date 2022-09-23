@@ -2,20 +2,19 @@ package smoke
 
 import (
 	"context"
-	"encoding/json"
 	"github.com/kyma-project/lifecycle-manager/tests/smoke/internal"
-	"io"
+	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
+	"sigs.k8s.io/e2e-framework/klient"
 	"sigs.k8s.io/e2e-framework/klient/wait"
 	"sigs.k8s.io/e2e-framework/klient/wait/conditions"
 	"sigs.k8s.io/e2e-framework/pkg/env"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/features"
 	"testing"
-	"testing/iotest"
 	"time"
 )
 
@@ -76,24 +75,28 @@ func TestControllerManagerSpinsUp(t *testing.T) {
 			err = wait.For(conditions.New(client.Resources()).DeploymentConditionMatch(dep.DeepCopy(),
 				appsv1.DeploymentAvailable, corev1.ConditionTrue),
 				wait.WithTimeout(time.Minute*1))
+
+			logDeployStatus(t, ctx, client, dep)
+
 			if err != nil {
-				errCheckCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-				defer cancel()
-				if err := client.Resources().Get(errCheckCtx, dep.Name, dep.Namespace, dep.DeepCopy()); err != nil {
-					t.Error(err)
-				}
-				var out io.Writer
-				enc := json.NewEncoder(iotest.NewWriteLogger(dep.Name, out))
-				enc.SetIndent("", "    ")
-				if err := enc.Encode(dep); err != nil {
-					panic(err)
-				}
 				t.Fatal(err)
 			}
+
 			return ctx
 		}).Feature()
 
 	TestEnv.Test(t, depFeature)
+}
+
+func logDeployStatus(t *testing.T, ctx context.Context, client klient.Client, dep appsv1.Deployment) {
+	errCheckCtx, cancelErrCheck := context.WithTimeout(ctx, 5*time.Second)
+	defer cancelErrCheck()
+	if err := client.Resources().Get(errCheckCtx, dep.Name, dep.Namespace, &dep); err != nil {
+		t.Error(err)
+	}
+	if marshal, err := yaml.Marshal(&dep.Status); err == nil {
+		t.Logf("%s", marshal)
+	}
 }
 
 func ControllerManagerDeployment(namespace string, name string) appsv1.Deployment {

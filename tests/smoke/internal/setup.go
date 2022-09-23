@@ -3,6 +3,7 @@ package internal
 import (
 	"bytes"
 	"context"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -22,19 +23,24 @@ type k3dContextKey string
 // kubeconfig file for the config client.
 func CreateKymaK3dCluster(clusterName string) env.Func {
 	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
+		log.Println("Setting up Kyma CLI")
 		if err := SetupKymaCLI(); err != nil {
 			return ctx, err
 		}
-		provision := KymaCLI("provision", "k3d", "--name", clusterName,
+
+		provArgs := []string{"provision", "k3d", "--name", clusterName,
 			"-p", "8083:80@loadbalancer",
 			"-p", "8443:443@loadbalancer",
 			"--timeout", "1m",
-		)
+		}
+		log.Printf("Provisioning Cluster with %s\n", provArgs)
+		provision := KymaCLI(provArgs...)
 		if err := provision.Run(); err != nil {
 			return nil, err
 		}
 
 		kubeconfigFile := filepath.Join(os.TempDir(), "kubeconfig-kyma")
+		log.Println("Merging Kubeconfigs")
 		kubeconfigSync := exec.Command("k3d", "kubeconfig", "merge", clusterName, "-o", kubeconfigFile)
 		if err := kubeconfigSync.Run(); err != nil {
 			return nil, err
@@ -68,13 +74,16 @@ func DestroyKymaK3dCluster(clusterName string) env.Func {
 
 func InstallWithKustomize(kustomizeDir string) env.Func {
 	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
+		log.Printf("Creating kustomize resources")
 		r, err := resources.New(cfg.Client().RESTConfig())
 		if err != nil {
 			return ctx, err
 		}
+		log.Printf("Setting up kustomize")
 		if err := SetupKustomize(); err != nil {
 			return ctx, err
 		}
+		log.Printf("Building with kustomize")
 		manifests, err := BuildWithKustomize(kustomizeDir)
 		if err != nil {
 			return ctx, err
@@ -83,6 +92,7 @@ func InstallWithKustomize(kustomizeDir string) env.Func {
 		if err := decoder.DecodeEach(ctx, bytes.NewReader(manifests), decoder.CreateHandler(r)); err != nil {
 			return ctx, err
 		}
+		log.Printf("Finished building with kustomize")
 		return ctx, nil
 	}
 }
