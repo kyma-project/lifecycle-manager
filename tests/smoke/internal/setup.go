@@ -32,6 +32,7 @@ func CreateKymaK3dCluster(clusterName string) env.Func {
 			"-p", "8083:80@loadbalancer",
 			"-p", "8443:443@loadbalancer",
 			"--timeout", "1m",
+			"--k3d-arg", "--no-rollback",
 		}
 		log.Printf("Provisioning Cluster with %s\n", provArgs)
 		provision := KymaCLI(provArgs...)
