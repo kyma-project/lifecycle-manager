@@ -1,12 +1,10 @@
 package internal
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 )
 
 const (
@@ -22,12 +20,6 @@ func SetupKustomize() error {
 	p := testFolder
 
 	if _, err := os.Stat(kustomizeBin); os.IsNotExist(err) {
-		if runtime.GOOS == "windows" {
-			if _, err := exec.LookPath("bash"); err != nil {
-				return errors.New("\nBash is not installed. To install bash on windows please see http://win-bash.sourceforge.net")
-			}
-		}
-
 		v := os.Getenv(versionEnv)
 		if v == "" {
 			v = DefaultKustomizeVersion

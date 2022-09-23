@@ -2,6 +2,7 @@ package smoke
 
 import (
 	"context"
+	"flag"
 	"github.com/kyma-project/lifecycle-manager/tests/smoke/internal"
 	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
@@ -14,6 +15,7 @@ import (
 	"sigs.k8s.io/e2e-framework/klient/wait/conditions"
 	"sigs.k8s.io/e2e-framework/pkg/env"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
+	"sigs.k8s.io/e2e-framework/pkg/envfuncs"
 	"sigs.k8s.io/e2e-framework/pkg/features"
 	"testing"
 	"time"
@@ -24,6 +26,13 @@ var (
 	ClusterName string
 )
 
+var provisionType *string
+
+func init() {
+	provisionType = flag.String("provision-type", "kyma-cli",
+		"Defines the Provisioning Type")
+}
+
 func TestMain(m *testing.M) {
 	log.Println("setting up test environment from flags")
 	cfg, err := envconf.NewFromFlags()
@@ -31,31 +40,59 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
+	flag.Parse()
+
 	log.Println("creating test environment")
 	TestEnv = env.NewWithConfig(cfg)
-	ClusterName = "kyma"
 
+	switch *provisionType {
+	case "kyma-cli":
+		setupKymaProvisioning("kyma", TestEnv)
+	case "kind":
+		setupKindProvisioning("kind", TestEnv)
+	}
+
+	os.Exit(TestEnv.Run(m))
+}
+
+func setupKindProvisioning(cluster string, testEnv env.Environment) {
 	log.Println("registering setup hooks")
-	TestEnv.Setup(
-		internal.CreateKymaK3dCluster(ClusterName),
+	testEnv.Setup(
+		envfuncs.CreateKindCluster(cluster),
+		internal.InstallWithKustomize(
+			// you could use "github.com/kyma-project/lifecycle-manager//operator/config/default"
+			"../../operator/config/default",
+		),
+		func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
+			labels := cfg.Labels()
+			if labels == nil {
+				labels = make(map[string]string)
+			}
+			labels["test-type.kyma-project.io"] = "smoke"
+			cfg.WithLabels(labels)
+			return ctx, nil
+		},
+	)
+	log.Println("registering finish hooks")
+	testEnv.Finish(envfuncs.DestroyKindCluster(cluster))
+}
+
+func setupKymaProvisioning(cluster string, testEnv env.Environment) {
+	log.Println("registering setup hooks")
+	testEnv.Setup(
+		internal.CreateKymaK3dCluster(cluster),
 		internal.InstallWithKustomize(
 			// you could use "github.com/kyma-project/lifecycle-manager//operator/config/default"
 			"../../operator/config/default",
 		),
 	)
-
 	log.Println("registering finish hooks")
-	TestEnv.Finish(
-		internal.DestroyKymaK3dCluster(ClusterName),
-	)
-
-	os.Exit(TestEnv.Run(m))
+	testEnv.Finish(internal.DestroyKymaK3dCluster(cluster))
 }
 
 func TestControllerManagerSpinsUp(t *testing.T) {
 	depFeature := features.New("appsv1/deployment/controller-manager").
 		WithLabel("app.kubernetes.io/component", "lifecycle-manager.kyma-project.io").
-		WithLabel("provider.kyma-project.io", "kyma-cli").
 		WithLabel("test-type.kyma-project.io", "smoke").
 		Assess("exists", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 			client, err := cfg.NewClient()

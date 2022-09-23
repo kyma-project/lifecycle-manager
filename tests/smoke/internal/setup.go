@@ -44,7 +44,6 @@ func CreateKymaK3dCluster(clusterName string) env.Func {
 		if labels == nil {
 			labels = make(map[string]string)
 		}
-		labels["provider.kyma-project.io"] = "kyma-cli"
 		labels["test-type.kyma-project.io"] = "smoke"
 		cfg.WithLabels(labels)
 

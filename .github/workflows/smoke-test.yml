@@ -13,7 +13,8 @@ jobs:
       matrix:
         k3d: ["v5.4.6"]
         os: [ubuntu-latest]
-        
+        provision-type: ["kyma-cli", "kind"]
+
     runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout
@@ -31,11 +32,6 @@ jobs:
     - name: Setup Go caches
       uses: actions/cache@v3
       with:
-        # In order:
-        # * Module download cache
-        # * Build cache (Linux)
-        # * Build cache (Mac)
-        # * Build cache (Windows)
         path: |
           ~/go/pkg/mod
           ~/.cache/go-build
@@ -46,4 +42,4 @@ jobs:
           ${{ runner.os }}-golang-
 
     - name: Run Smoke Tests
-      run: cd tests/smoke && make test-verbose
+      run: cd tests/smoke && go test smoke_test.go -v -provision-type ${{ matrix.provision-type }}
