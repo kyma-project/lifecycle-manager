@@ -32,7 +32,6 @@ func CreateKymaK3dCluster(clusterName string) env.Func {
 			"-p", "8083:80@loadbalancer",
 			"-p", "8443:443@loadbalancer",
 			"--timeout", "1m",
-			"--workers", "0",
 		}
 		log.Printf("Provisioning Cluster with %s\n", provArgs)
 		provision := KymaCLI(provArgs...)
@@ -69,10 +68,12 @@ func CreateKymaK3dCluster(clusterName string) env.Func {
 // NOTE: this should be used in a Environment.Finish step.
 func DestroyKymaK3dCluster(clusterName string) env.Func {
 	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
+		log.Println("deleting cluster " + clusterName)
 		clusterDelete := exec.Command("k3d", "cluster", "delete", clusterName)
 		if err := clusterDelete.Run(); err != nil {
 			return nil, err
 		}
+		log.Println("deleting registry " + clusterName + "-registry")
 		registryDelete := exec.Command("k3d", "registry", "delete", clusterName+"-registry")
 		if err := registryDelete.Run(); err != nil {
 			return nil, err

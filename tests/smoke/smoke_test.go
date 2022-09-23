@@ -7,6 +7,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"log"
 	"os"
 	"sigs.k8s.io/e2e-framework/klient"
 	"sigs.k8s.io/e2e-framework/klient/wait"
@@ -24,14 +25,17 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	log.Println("setting up test environment from flags")
 	cfg, err := envconf.NewFromFlags()
 	if err != nil {
 		panic(err)
 	}
 
+	log.Println("creating test environment")
 	TestEnv = env.NewWithConfig(cfg)
 	ClusterName = "kyma"
 
+	log.Println("registering setup hooks")
 	TestEnv.Setup(
 		internal.CreateKymaK3dCluster(ClusterName),
 		internal.InstallWithKustomize(
@@ -40,6 +44,7 @@ func TestMain(m *testing.M) {
 		),
 	)
 
+	log.Println("registering finish hooks")
 	TestEnv.Finish(
 		internal.DestroyKymaK3dCluster(ClusterName),
 	)
