@@ -173,4 +173,4 @@ lint: ## Run golangci-lint against code.
 .PHONY: grafana-dashboard
 grafana-dashboard: ## Generating Grafana manifests to visualize controller status.
 	kubebuilder edit --plugins grafana.kubebuilder.io/v1-alpha
-	cd grafana && ./generate-configmap.sh
+	mv grafana/* config/grafana
