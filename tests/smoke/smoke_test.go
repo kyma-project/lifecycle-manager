@@ -50,6 +50,8 @@ func TestMain(m *testing.M) {
 func TestControllerManagerSpinsUp(t *testing.T) {
 	depFeature := features.New("appsv1/deployment/controller-manager").
 		WithLabel("app.kubernetes.io/component", "lifecycle-manager.kyma-project.io").
+		WithLabel("provider.kyma-project.io", "kyma-cli").
+		WithLabel("test-type.kyma-project.io", "smoke").
 		Assess("exists", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 			client, err := cfg.NewClient()
 			if err != nil {
@@ -77,9 +79,7 @@ func TestControllerManagerSpinsUp(t *testing.T) {
 				wait.WithTimeout(time.Minute*2))
 
 			pods := corev1.PodList{}
-			_ = client.Resources("kcp-system").List(ctx, &pods, func(options *metav1.ListOptions) {
-				options.LabelSelector = metav1.SetAsLabelSelector(cfg.Labels()).String()
-			})
+			_ = client.Resources("kcp-system").List(ctx, &pods)
 			for _, pod := range pods.Items {
 				if marshal, err := yaml.Marshal(&pod.Status); err == nil {
 					t.Logf("%s/%s", pod.Namespace, pod.Name)
