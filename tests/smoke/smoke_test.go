@@ -97,7 +97,7 @@ func TestControllerManagerSpinsUp(t *testing.T) {
 }
 
 func ControllerManagerDeployment(namespace string, name string) appsv1.Deployment {
-	return &appsv1.Deployment{
+	return appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace,
 			Labels: map[string]string{"app.kubernetes.io/component": "lifecycle-manager.kyma-project.io"}},
 	}
