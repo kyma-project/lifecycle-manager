@@ -39,6 +39,14 @@ func CreateKymaK3dCluster(clusterName string) env.Func {
 			return nil, err
 		}
 
+		labels := cfg.Labels()
+		if labels == nil {
+			labels = make(map[string]string)
+		}
+		labels["provider.kyma-project.io"] = "kyma-cli"
+		labels["test-type.kyma-project.io"] = "smoke"
+		cfg.WithLabels(labels)
+
 		kubeconfigFile := filepath.Join(os.TempDir(), "kubeconfig-kyma")
 		log.Println("Merging Kubeconfigs")
 		kubeconfigSync := exec.Command("k3d", "kubeconfig", "merge", clusterName, "-o", kubeconfigFile)

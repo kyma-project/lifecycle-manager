@@ -76,6 +76,17 @@ func TestControllerManagerSpinsUp(t *testing.T) {
 				appsv1.DeploymentAvailable, corev1.ConditionTrue),
 				wait.WithTimeout(time.Minute*2))
 
+			pods := corev1.PodList{}
+			_ = client.Resources("kcp-system").List(ctx, &pods, func(options *metav1.ListOptions) {
+				options.LabelSelector = metav1.SetAsLabelSelector(cfg.Labels()).String()
+			})
+			for _, pod := range pods.Items {
+				if marshal, err := yaml.Marshal(&pod.Status); err == nil {
+					t.Logf("%s/%s", pod.Namespace, pod.Name)
+					t.Logf("%s", marshal)
+				}
+			}
+
 			logDeployStatus(t, ctx, client, dep)
 
 			if err != nil {
