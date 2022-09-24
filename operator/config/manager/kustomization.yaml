@@ -1,9 +1,6 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-configurations:
-- commonlabels_override.yaml
-
 resources:
 - manager.yaml
 - metrics_service.yaml
@@ -19,4 +16,4 @@ configMapGenerator:
 images:
 - name: controller
   newName: eu.gcr.io/kyma-project/lifecycle-manager
-  newTag: PR-210
+  newTag: c51b854b

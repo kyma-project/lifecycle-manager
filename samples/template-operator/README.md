@@ -9,6 +9,7 @@ Additionally, it hides Kubernetes boilerplate code to develop fast and efficient
   * [Generate kubebuilder operator](#generate-kubebuilder-operator)
   * [Default (declarative) Reconciliation and Status handling](#default-declarative-reconciliation-and-status-handling)
   * [Custom Reconciliation and Status handling guidelines](#custom-reconciliation-and-status-handling-guidelines)
+  * [Local testing](#local-testing)
 * [Bundling and installation](#bundling-and-installation)
   * [Makefile structure](#makefile-structure)
   * [Build module operator image](#build-module-operator-image)
@@ -62,17 +63,14 @@ Additionally, it hides Kubernetes boilerplate code to develop fast and efficient
 
 A basic kubebuilder operator with appropriate scaffolding should be setup.
 
-#### Adjust default config resources
-If the module operator will be deployed under same namespace with other operators, some default manifests resources have to be adjusted accordingly to avoid conflict.
+#### Optional: Adjust default config resources
+If the module operator will be deployed under same namespace with other operators, differentiate your resources by adding common labels.
 
-1. Add a common label to default kustomization.yaml, refer to [commonLabels](./operator/config/default/kustomization.yaml).
+1. Add `commonLabels` to default `kustomization.yaml`, [reference implementation](./operator/config/default/kustomization.yaml).
 
-2. Adjust all resources (e.g: [manager.yaml](./operator/config/manager/manager.yaml), [auth_proxy_service.yaml](./operator/config/rbac/auth_proxy_service.yaml)) which contains label selector use this common label instead of `control-plane: controller-manager`.
+2. Include all resources (e.g: [manager.yaml](./operator/config/manager/manager.yaml)) which contain label selectors by using `commonLabels`.
 
-The commonLabels will add to all resources and selectors by Kustomize, if some resources haven't covered by [builtin commonLabels](https://github.com/kubernetes-sigs/kustomize/blob/master/api/konfig/builtinpluginconsts/commonlabels.go), 
-consider add [configurations override](./operator/config/default/commonlabels_override.yaml). 
-
-# reference 
+Further reading: [Kustomize built-in commonLabels](https://github.com/kubernetes-sigs/kustomize/blob/master/api/konfig/builtinpluginconsts/commonlabels.go)
    
 ### Default (declarative) Reconciliation and Status handling
 
@@ -104,17 +102,17 @@ This approach will enable orchestration of Kubernetes resources so that module o
    }
    ```
 
-#### Steps controller implementation:
+#### Steps controller implementation
 
 1. Refer to the [controller implementation](./operator/controllers/sample_controller.go).
    Instead of implementing the default reconciler interface, as provided by `kubebuilder`, include the `module-manager` declarative reconciler in `./controllers/<cr_name>_controller.go`.
    ```go
    // SampleReconciler reconciles a Sample object
    type SampleReconciler struct {
-        declarative.ManifestReconciler
+        declarative.ManifestReconciler // declarative reconciler override
+        *rest.Config // required to pass rest config to the declarative library
         client.Client
         Scheme *runtime.Scheme
-        *rest.Config
    }
    ```
    Notice there is no `Reconcile()` method implemented in this controller, since the logic is abstracted within the declarative reconciler.
@@ -160,11 +158,7 @@ This approach will enable orchestration of Kubernetes resources so that module o
       }
    ```
    
-#### Final steps
-1. Connect to your cluster and ensure `kubectl` is pointing to the desired cluster.
-2. Run `make generate`, `make manifests` and in the end `make install`, to generate boilerplate code, CRDs and install required resources on your clusterrespectively.
-3. To test locally: install your module CR on a cluster and execute `make run` to start your operator locally.
-   If everything is set up properly you should see state changes on your module CR, depending upon chart processing.
+4. Run `make generate`, `make manifests` and in the end `make install`, to generate boilerplate code, CRDs and install required resources on your clusterrespectively.
 
 ### Custom Reconciliation and Status handling guidelines
 
@@ -175,6 +169,9 @@ This is required to track the current state of the module, represented by this c
    On top, `.status` object could contain other relevant properties as per your requirements.
 2. The `.status.state` values have literal meaning behind them, so use them appropriately.
 
+### Local testing
+* Connect to your cluster and ensure `kubectl` is pointing to the desired cluster.
+* _Local setup_: install your module CR on a cluster and execute `make run` to start your operator locally.
 
 ## Bundling and installation
 
@@ -219,7 +216,7 @@ IMG ?= $(IMG_REGISTRY)/$(MODULE_NAME)-operator:$(MODULE_VERSION)
 
 ### Build module operator image
 
-Build and push your operator binary by adjusting `IMG`if necessary and then executing the `make module-image` command.
+Build and push your module operator binary by adjusting `IMG`if necessary and then executing the `make module-image` command.
    
 ```sh
 make module-image
@@ -228,13 +225,21 @@ This will build the operator image and then push it as the image defined in `IMG
 
 ### Build and push your module to the registry
 
-1. Build and push the module and its descriptor with `module-build`.
+1. Copy [hack folder](./hack) to your project's root directory
+
+2. Include the module chart represented by `chartPath` from _step 3_ in [Controller implementation](#steps-controller-implementation) above, in your _Dockerfile_.
+    [Reference implementation](https://github.com/kyma-project/lifecycle-manager/blob/main/samples/template-operator/operator/Dockerfile): 
+    ```dockerfile
+    COPY module-chart/ ./module-chart/
+    ```
+
+3. The module operator will be packed in a helm chart and pushed to `MODULE_REGISTRY` using `module-build`.
 
    ```sh
    make module-build
    ```
    
-2. Verify that the module creation succeeded and observe the `mod` folder. It will contain a `component-descriptor.yaml` with a definition of local layers.
+4. Verify that the module creation succeeded and observe the `mod` folder. It will contain a `component-descriptor.yaml` with a definition of local layers.
    
    ```yaml
    component:
@@ -261,7 +266,7 @@ This will build the operator image and then push it as the image defined in `IMG
    
    As you can see the CLI created various layers that are referenced in the `blobs` directory. For more information on layer structure please reference the module creation with `kyma alpha mod create --help`.
 
-3. As a result `template.yaml` should be generated in your root folder, that should be applied in the control plane as the source for module configuration.
+5. As a result `template.yaml` should be generated in your root folder, that should be applied in the control plane as the source for module configuration.
 
     ```sh
     kubectl apply -f template.yaml
