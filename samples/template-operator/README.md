@@ -216,11 +216,23 @@ IMG ?= $(IMG_REGISTRY)/$(MODULE_NAME)-operator:$(MODULE_VERSION)
 
 ### Build module operator image
 
-Build and push your module operator binary by adjusting `IMG`if necessary and then executing the `make module-image` command.
+1. Include the module chart represented by `chartPath` from _step 3_ in [Controller implementation](#steps-controller-implementation) above, in your _Dockerfile_.
+[Reference implementation](https://github.com/kyma-project/lifecycle-manager/blob/main/samples/template-operator/operator/Dockerfile):
+    ```dockerfile
+    COPY module-chart/ ./module-chart/
+    ```
+2. Adjust the _Dockerfile_ args according to the targeted cluster's architecture and OS
+
+   ```dockerfile
+    ARG TARGETOS
+    ARG TARGETARCH
+   ```
+
+2. Build and push your module operator binary by adjusting `IMG`if necessary and then executing the `make module-image` command.
    
-```sh
-make module-image
-```
+    ```sh
+    make module-image
+    ```
 This will build the operator image and then push it as the image defined in `IMG`.
 
 ### Build and push your module to the registry
@@ -292,5 +304,5 @@ This should certainly be adjusted according to the chart manifest resources and 
 
    ```yaml
       // TODO: dynamically create RBACs! Remove line below.
-      //+kubebuilder:rbac:groups="*",resources="*",verbs=get;list;create;update;patch;delete
+      //+kubebuilder:rbac:groups="*",resources="*",verbs="*"
    ```

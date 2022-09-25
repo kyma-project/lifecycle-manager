@@ -32,12 +32,7 @@ rules:
   resources:
   - '*'
   verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
+  - '*'
 - apiGroups:
   - operator.kyma-project.io
   resources:

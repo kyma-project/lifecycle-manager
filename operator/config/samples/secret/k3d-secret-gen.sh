@@ -5,7 +5,8 @@
 
 kubectl config use $SKR_CLUSTER_CTX
 
-echo "apiVersion: v1
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
 kind: Secret
 metadata:
   name: kyma-sample #change with your kyma name
@@ -15,7 +16,8 @@ metadata:
     "operator.kyma-project.io/kyma-name": "kyma-sample"
 type: Opaque
 data:
-  config: $(kubectl config view --raw --minify | sed 's/---//g' | base64)" > ./skr-secret.yaml
+  config: $(cat /Users/D063994/SAPDevelop/go/kubeconfigs/skr.yaml | sed 's/---//g' | base64)"
+EOF
 
 kubectl config use $KCP_CLUSTER_CTX
 

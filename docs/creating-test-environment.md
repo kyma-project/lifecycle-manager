@@ -13,7 +13,7 @@ You can choose between a single-cluster setup or a two-cluster setup.
 
 ### Build your module
 
-To demonstrate how the bundling of a Kyma module works, the following example uses our reference implementation for a reconciliation operator; see the [template-operator](https://github.com/kyma-project/lifecycle-manager/tree/main/samples/template-operator)).
+To demonstrate how the bundling of a Kyma module works, the following example uses our reference implementation for a reconciliation operator; see the [template-operator](https://github.com/kyma-project/lifecycle-manager/tree/main/samples/template-operator).
 
 1. Go to your operator folder:
 
