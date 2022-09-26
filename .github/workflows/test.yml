@@ -36,7 +36,7 @@ jobs:
 
     - name: Set up kustomize V4
       run: |
-        wget -q "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+        wget -qO - "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
         mv kustomize /usr/local/bin/
 
     - name: Run Smoke Tests
