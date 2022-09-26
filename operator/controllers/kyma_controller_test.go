@@ -205,7 +205,8 @@ var _ = Describe("Kyma update Manifest CR", func() {
 		}
 		By("CR updated with new value in spec.resource.spec")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(SKRModuleExistWithOverwrites(kyma.GetName(), activeModule.Name), timeout, interval).Should(Equal(valueUpdated))
+			Eventually(SKRModuleExistWithOverwrites(kyma.GetName(), activeModule.Name),
+				timeout, interval).Should(Equal(valueUpdated))
 		}
 	})
 })
