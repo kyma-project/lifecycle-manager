@@ -76,7 +76,6 @@ operator/docker-push:
 
 TEMPLATE_DIR ?= charts/$(MODULE_NAME)-operator
 GEN_CHART ?= sh hack/gen-chart.sh
-GEN_MODULE_TEMPLATE ?= sh hack/gen-mod-template.sh
 
 .PHONY: module-operator-chart
 module-operator-chart: operator/manifests kustomize ## Bundle the Module Operator Chart
