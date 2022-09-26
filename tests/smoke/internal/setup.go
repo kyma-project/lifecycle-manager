@@ -7,13 +7,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
 	"sigs.k8s.io/e2e-framework/klient/decoder"
 	"sigs.k8s.io/e2e-framework/klient/k8s/resources"
 	"sigs.k8s.io/e2e-framework/pkg/env"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 )
-
-type k3dContextKey string
 
 // CreateKymaK3dCluster returns an env.Func that is used to
 // create a k3d cluster that is then injected in the context
@@ -23,11 +22,6 @@ type k3dContextKey string
 // kubeconfig file for the config client.
 func CreateKymaK3dCluster(clusterName string) env.Func {
 	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
-		log.Println("Setting up Kyma CLI")
-		if err := SetupKymaCLI(); err != nil {
-			return ctx, err
-		}
-
 		provArgs := []string{"provision", "k3d", "--name", clusterName,
 			"-p", "8083:80@loadbalancer",
 			"-p", "8443:443@loadbalancer",
@@ -87,10 +81,6 @@ func InstallWithKustomize(kustomizeDir string) env.Func {
 		log.Printf("Creating kustomize resources")
 		r, err := resources.New(cfg.Client().RESTConfig())
 		if err != nil {
-			return ctx, err
-		}
-		log.Printf("Setting up kustomize")
-		if err := SetupKustomize(); err != nil {
 			return ctx, err
 		}
 		log.Printf("Building with kustomize")

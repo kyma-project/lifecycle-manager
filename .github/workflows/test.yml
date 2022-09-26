@@ -25,10 +25,17 @@ jobs:
         cache: true
         go-version-file: 'tests/smoke/go.mod'
         cache-dependency-path: 'tests/smoke/go.sum'
-    
-    - name: Set up k3d for ${{ matrix.provision-type }}
-      run: wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.4.6 bash
+
+    - name: Set up k3d/kyma for ${{ matrix.provision-type }}
       if: ${{ matrix.provision-type }} == "kyma-cli"
+      run: |
+        wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.4.6 bash
+        wget -q -O - https://storage.googleapis.com/kyma-cli-unstable/kyma-linux
+        chmod +x kyma-darwin
+        mv kyma-darwin /usr/local/bin/kyma
+
+    - name: Set up kustomize V4
+      run: go install sigs.k8s.io/kustomize/kustomize/v4@latest
 
     - name: Run Smoke Tests
       run: cd tests/smoke && go test smoke_test.go -v -provision-type ${{ matrix.provision-type }}
