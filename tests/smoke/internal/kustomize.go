@@ -1,41 +1,76 @@
 package internal
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 )
 
 const (
-	DefaultKustomizeVersion = "4.5.7"
-	versionEnv              = "KUSTOMIZE_VERSION"
+	DefaultKustomizeVersion = "v4.5.7"
 	kustomize               = "kustomize"
-	kustomizeinstaller      = "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
 )
 
 var kustomizeBin = filepath.Join(testFolder, kustomize)
+var kustomizeTar = filepath.Join(testFolder, kustomize+".tar.gz")
 
 func SetupKustomize() error {
-	p := testFolder
+	kustomizeDownloadURL := fmt.Sprintf(
+		"https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/%s/kustomize_%s_%s.tar.gz",
+		DefaultKustomizeVersion, DefaultKustomizeVersion, kustomizeOSTarget)
 
-	if _, err := os.Stat(kustomizeBin); os.IsNotExist(err) {
-		v := os.Getenv(versionEnv)
-		if v == "" {
-			v = DefaultKustomizeVersion
+	if _, err := os.Stat(testFolder); os.IsNotExist(err) {
+		if err := os.MkdirAll(testFolder, perm); err != nil {
+			return err
 		}
-
-		downloadCmd := exec.Command("curl", "-s", kustomizeinstaller)
-		installCmd := exec.Command("bash", "-s", "--", v, p)
-
-		// pipe the downloaded script to the install command
-		_, err := Pipe(downloadCmd, installCmd)
-		if err != nil {
-			return fmt.Errorf("error installing kustomize %w", err)
-		}
-	} else if err != nil {
-		return err
 	}
+
+	if _, err := os.Stat(kustomizeTar); os.IsNotExist(err) {
+		if err := download(kustomizeTar, kustomizeDownloadURL); err != nil {
+			return err
+		}
+
+		kustTarZipped, err := os.Open(kustomizeTar)
+		defer kustTarZipped.Close()
+		if err != nil {
+			return err
+		}
+
+		gzr, err := gzip.NewReader(kustTarZipped)
+		if err != nil {
+			return err
+		}
+		defer gzr.Close()
+		kustTar := tar.NewReader(gzr)
+
+		for {
+			cur, err := kustTar.Next()
+			if err == io.EOF {
+				break
+			} else if err != nil {
+				return err
+			}
+			if cur.Typeflag != tar.TypeReg {
+				continue
+			}
+			data, err := io.ReadAll(kustTar)
+			if err != nil {
+				return err
+			}
+			if err := os.WriteFile(kustomizeBin, data, perm); err != nil {
+				return err
+			}
+		}
+
+		if err := os.Remove(kustTarZipped.Name()); err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -43,33 +78,4 @@ func SetupKustomize() error {
 func BuildWithKustomize(path string) ([]byte, error) {
 	cmd := exec.Command(kustomizeBin, "build", path)
 	return cmd.CombinedOutput()
-}
-
-// Set edits the kustomize file in the given path by setting the given key to the given value in the given resource.
-// Resource can be one of: annotation, buildmetadata, image, label, nameprefix, namespace, namesuffix, replicas.
-func Set(path, resource, key, value string) error {
-	cmd := exec.Command(kustomizeBin, "edit", "set", key)
-	cmd.Path = path
-	return nil
-}
-
-// Pipe runs the src command and pipes its output to the dst commands' input.
-// The output and stderr of dst are returned.
-func Pipe(src, dst *exec.Cmd) (string, error) {
-	var err error
-
-	if dst.Stdin, err = src.StdoutPipe(); err != nil {
-		return "", fmt.Errorf("could not pipe %s to %s: %w", src.Path, dst.Path, err)
-	}
-
-	if err := src.Start(); err != nil {
-		return "", fmt.Errorf("error running %s: %w", src.Path, err)
-	}
-
-	out, err := dst.CombinedOutput()
-
-	if waitErr := src.Wait(); waitErr != nil {
-		return "", fmt.Errorf("%s: %w", err.Error(), waitErr)
-	}
-	return string(out), err
 }
