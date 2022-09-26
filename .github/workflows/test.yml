@@ -35,7 +35,9 @@ jobs:
         mv kyma-linux /usr/local/bin/kyma
 
     - name: Set up kustomize V4
-      run: go install sigs.k8s.io/kustomize/kustomize/v4@latest
+      run: |
+        wget -q "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+        mv kustomize /usr/local/bin/
 
     - name: Run Smoke Tests
       run: cd tests/smoke && go test smoke_test.go -v -provision-type ${{ matrix.provision-type }}
