@@ -40,5 +40,14 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-golang-
 
+    - name: Setup Smoke Test Binary Cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          tests/smoke/test/bin
+        key: ${{ runner.os }}-bins-${{ hashFiles('tests/smoke/test/bin/**') }}
+        restore-keys: |
+          ${{ runner.os }}-bins-
+
     - name: Run Smoke Tests
       run: cd tests/smoke && go test smoke_test.go -v -provision-type ${{ matrix.provision-type }}
