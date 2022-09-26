@@ -24,7 +24,7 @@ You are using GCP Artifact Registry. The following instructions assume that you 
 
    > **NOTE:** For `MODULE_REGISTRY`, do not define any scheme such as `https://`, otherwise the module isn't generated properly. The scheme is appended automatically in the operators based on the environment.
 
-3. To make it work with remote clusters such as in Gardener, specify that Read access to the repository is possible anonymously:
+3. To make it work with remote clusters such as in Gardener, specify that Read access to the repository, if possible anonymously:
 
    ```sh
    gcloud artifacts repositories add-iam-policy-binding operator-test \
@@ -69,7 +69,7 @@ We will assume you will be [creating and using a service-account](https://kubern
    gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com | docker login -u oauth2accesstoken --password-stdin https://europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/operator-test
    ```
 
-   export `GCR_DOCKER_PASSWORD` for `operator/docker-push` and `MODULE_CREDENTIALS` for `module-build` make command:
+   export `MODULE_CREDENTIALS` for `module-build` make command:
 
    ```sh
    export MODULE_CREDENTIALS=oauth2accesstoken:$(gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com)

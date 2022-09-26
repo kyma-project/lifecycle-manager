@@ -19,13 +19,15 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/samples/template-operator/api/v1alpha1"
-	"github.com/kyma-project/module-manager/operator/pkg/declarative"
-	"github.com/kyma-project/module-manager/operator/pkg/types"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/samples/template-operator/api/v1alpha1"
+	"github.com/kyma-project/module-manager/operator/pkg/declarative"
+	"github.com/kyma-project/module-manager/operator/pkg/types"
 )
 
 // SampleReconciler reconciles a Sample object
@@ -51,7 +53,7 @@ const (
 //+kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;patch;delete
 
 // TODO: dynamically create RBACs! Remove line below.
-//+kubebuilder:rbac:groups="*",resources="*",verbs=get;list;create;update;patch;delete
+//+kubebuilder:rbac:groups="*",resources="*",verbs="*"
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager) error {

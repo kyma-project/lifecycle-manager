@@ -16,4 +16,4 @@ configMapGenerator:
 images:
 - name: controller
   newName: eu.gcr.io/kyma-project/lifecycle-manager
-  newTag: c51b854b
+  newTag: PR-211

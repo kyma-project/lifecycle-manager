@@ -76,7 +76,6 @@ operator/docker-push:
 
 TEMPLATE_DIR ?= charts/$(MODULE_NAME)-operator
 GEN_CHART ?= sh hack/gen-chart.sh
-GEN_MODULE_TEMPLATE ?= sh hack/gen-mod-template.sh
 
 .PHONY: module-operator-chart
 module-operator-chart: operator/manifests kustomize ## Bundle the Module Operator Chart
@@ -114,7 +113,7 @@ KYMA_STABILITY ?= unstable
 
 KYMA ?= $(LOCALBIN)/kyma-$(KYMA_STABILITY)
 kyma: $(KYMA) ## Download kyma locally if necessary.
-$(KYMA):
+$(KYMA): $(LOCALBIN)
 	test -f $@ || curl -# -Lo $(KYMA) https://storage.googleapis.com/kyma-cli-$(KYMA_STABILITY)/kyma-darwin 
 	chmod 0100 $(KYMA)
 

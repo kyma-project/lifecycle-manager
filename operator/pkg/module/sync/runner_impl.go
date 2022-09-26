@@ -195,6 +195,8 @@ func (r *runnerImpl) deleteNoLongerExistingModuleInfos(ctx context.Context,
 			Version: moduleInfo.TemplateInfo.GroupVersionKind.Version,
 			Kind:    moduleInfo.TemplateInfo.GroupVersionKind.Kind,
 		})
+		module.SetName(moduleInfo.Name)
+		module.SetNamespace(moduleInfo.Namespace)
 		err := r.getModule(ctx, &module)
 		if errors.IsNotFound(err) {
 			updateRequired = true
