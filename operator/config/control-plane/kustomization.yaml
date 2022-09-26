@@ -1,0 +1,135 @@
+# WARNING: This is a Kustomization that CANNOT run standalone
+# It is meant to be used in conjunction with a control-plane deployment only and has prerequisites that
+# need to be explicitly created externally in a centrally managed place (e.g. the kcp-system).
+# In fact, in order to avoid conflicts, it even explicitly patches out certain configuration elements.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Adds namespace to all resources.
+namespace: kcp-system
+
+namePrefix: klm- #kyma-lifecycle-manager
+# Labels to add to all resources and selectors.
+commonLabels:
+  app.kubernetes.io/instance: kcp-lifecycle-manager
+  app.kubernetes.io/name: lifecycle-manager
+  app.kubernetes.io/created-by: argo-cd
+  app.kubernetes.io/part-of: kcp
+  app.kubernetes.io/managed-by: kustomize
+
+images:
+- name: eu.gcr.io/kyma-project/lifecycle-manager
+
+resources:
+  - ../manager
+  # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'. 'WEBHOOK' components are required.
+  - ../certmanager
+
+components:
+  - ../crd
+  - ../rbac
+  # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
+  - ../istio
+  # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix
+  - ../webhook
+  # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
+  - ../prometheus
+  # [GRAFANA] To enable prometheus monitor, uncomment all sections with 'GRAFANA'.
+  - ../grafana
+
+
+replacements:
+  # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'.
+  - source:
+      name: serving-cert
+      namespace: system
+      group: cert-manager.io
+      version: v1
+      kind: Certificate
+      fieldPath: spec.secretName
+    targets:
+      - select:
+          kind: Deployment
+          group: apps
+          name: controller-manager
+          namespace: system
+          version: v1
+        fieldPaths:
+          - secretName=lifecycle-manager-webhook-server-cert # this makes sure that the deployment uses cert-manager
+
+patchesJson6902:
+  # We patches the Metrics JSONs here as we expect KCP to be watching for grafana dashboards in kyma-system,
+  # not kcp-system as we configure it above for the rest of the kustomization
+  - target:
+      version: v1
+      kind: ConfigMap
+      name: klm-controller-resources-metrics
+    path: patches/metrics_namespace_replace.yaml
+  - target:
+      version: v1
+      kind: ConfigMap
+      name: klm-controller-runtime-metrics
+    path: patches/metrics_namespace_replace.yaml
+  - target:
+      version: v1
+      kind: ConfigMap
+      name: klm-overview
+    path: patches/metrics_namespace_replace.yaml
+
+patchesStrategicMerge:
+  # We expect an istio gateway to be already present in KCP
+  - patches/gateway_delete.yaml
+  # We expect a kcp-system namespace to be already present in KCP
+  - patches/namespace_delete.yaml
+  # For prometheus scraping in KCP, serviceMonitor better enable mTls for communication
+  - patches/service_monitor.yaml
+
+  # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK]
+  - patches/unique_manager_webhook_patch.yaml
+  # patches here are for enabling the conversion webhook for each CRD
+  - patches/enable_webhook_in_kyma_crd.yaml
+  - patches/ebable_webhook_in_moduletemplate_crd.yaml
+
+  # enables webhooks
+  - patches/enable_webhooks_in_deployment.yaml
+
+# [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'.
+# Uncomment 'CERTMANAGER' sections in crd/kustomization.yaml to enable the CA injection in the admission webhooks.
+# 'CERTMANAGER' needs to be enabled to use ca injection
+  - patches/webhook_configuration_cainjection.yaml
+  # patches here are for enabling the CA injection for each CRD
+  - patches/cainjection_in_kymas.yaml
+  - patches/cainjection_in_moduletemplates.yaml
+  # We override the certificate name to ensure that Cert-Manager uses a unique cert in conjunction with other
+  # kubebuilder operators.
+  - patches/unique_certificate_name.yaml
+
+# the following config is for teaching kustomize how to do var substitution
+vars:
+# [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER' prefix.
+- name: CERTIFICATE_NAMESPACE # namespace of the certificate CR
+  objref:
+    kind: Certificate
+    group: cert-manager.io
+    version: v1
+    name: serving-cert # this name should match the one in certificate.yaml
+  fieldref:
+    fieldpath: metadata.namespace
+- name: CERTIFICATE_NAME
+  objref:
+    kind: Certificate
+    group: cert-manager.io
+    version: v1
+    name: serving-cert # this name should match the one in certificate.yaml
+- name: SERVICE_NAMESPACE # namespace of the service
+  objref:
+    kind: Service
+    version: v1
+    name: webhook-service
+  fieldref:
+    fieldpath: metadata.namespace
+- name: SERVICE_NAME
+  objref:
+    kind: Service
+    version: v1
+    name: webhook-service

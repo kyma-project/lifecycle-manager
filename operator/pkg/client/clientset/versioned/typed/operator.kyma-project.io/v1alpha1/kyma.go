@@ -178,7 +178,7 @@ func (c *kymas) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, lis
 		Error()
 }
 
-// Patch applies the patch and returns the patched kyma.
+// Patch applies the patches and returns the patched kyma.
 func (c *kymas) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Kyma, err error) {
 	result = &v1alpha1.Kyma{}
 	err = c.client.Patch(pt).

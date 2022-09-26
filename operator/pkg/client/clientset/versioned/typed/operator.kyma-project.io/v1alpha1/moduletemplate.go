@@ -161,7 +161,7 @@ func (c *moduleTemplates) DeleteCollection(ctx context.Context, opts v1.DeleteOp
 		Error()
 }
 
-// Patch applies the patch and returns the patched moduleTemplate.
+// Patch applies the patches and returns the patched moduleTemplate.
 func (c *moduleTemplates) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.ModuleTemplate, err error) {
 	result = &v1alpha1.ModuleTemplate{}
 	err = c.client.Patch(pt).

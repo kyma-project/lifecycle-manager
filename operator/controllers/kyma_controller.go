@@ -60,13 +60,13 @@ type KymaReconciler struct {
 }
 
 //nolint:lll
-//+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch;create;update;patch;onEvent;delete
-//+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch;create;update;patches;onEvent;delete
+//+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/status,verbs=get;update;patches
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/finalizers,verbs=update
-//+kubebuilder:rbac:groups="",resources=events,verbs=create;patch;get;list;watch
+//+kubebuilder:rbac:groups="",resources=events,verbs=create;patches;get;list;watch
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
-//+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;onEvent;delete
-//+kubebuilder:rbac:groups=operator.kyma-project.io,resources=moduletemplates,verbs=get;list;watch;create;update;patch;onEvent;delete
+//+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patches;onEvent;delete
+//+kubebuilder:rbac:groups=operator.kyma-project.io,resources=moduletemplates,verbs=get;list;watch;create;update;patches;onEvent;delete
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=moduletemplates/finalizers,verbs=update
 //+kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
 

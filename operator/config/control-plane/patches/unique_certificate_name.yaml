@@ -1,0 +1,7 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: serving-cert  # this name should match the one appeared in kustomizeconfig.yaml
+  namespace: system
+spec:
+  secretName: lifecycle-manager-webhook-server-cert # this secret will not be prefixed, since it's not managed by kustomize

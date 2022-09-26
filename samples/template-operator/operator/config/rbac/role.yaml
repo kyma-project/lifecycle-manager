@@ -13,7 +13,7 @@ rules:
   - create
   - get
   - list
-  - patch
+  - patches
   - watch
 - apiGroups:
   - ""
@@ -24,7 +24,7 @@ rules:
   - delete
   - get
   - list
-  - patch
+  - patches
   - update
   - watch
 - apiGroups:
@@ -42,7 +42,7 @@ rules:
   - delete
   - get
   - list
-  - patch
+  - patches
   - update
   - watch
 - apiGroups:
@@ -57,5 +57,5 @@ rules:
   - samples/status
   verbs:
   - get
-  - patch
+  - patches
   - update

@@ -128,7 +128,7 @@ func (c *FakeKymas) DeleteCollection(ctx context.Context, opts v1.DeleteOptions,
 	return err
 }
 
-// Patch applies the patch and returns the patched kyma.
+// Patch applies the patches and returns the patched kyma.
 func (c *FakeKymas) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.Kyma, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(kymasResource, c.ns, name, pt, data, subresources...), &v1alpha1.Kyma{})
