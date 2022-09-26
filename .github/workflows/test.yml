@@ -30,9 +30,9 @@ jobs:
       if: ${{ matrix.provision-type }} == "kyma-cli"
       run: |
         wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.4.6 bash
-        wget -q -O - https://storage.googleapis.com/kyma-cli-unstable/kyma-linux
-        chmod +x kyma-darwin
-        mv kyma-darwin /usr/local/bin/kyma
+        wget https://storage.googleapis.com/kyma-cli-unstable/kyma-linux
+        chmod +x kyma-linux
+        mv kyma-linux /usr/local/bin/kyma
 
     - name: Set up kustomize V4
       run: go install sigs.k8s.io/kustomize/kustomize/v4@latest
