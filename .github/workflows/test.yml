@@ -22,33 +22,13 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
+        cache: true
         go-version-file: 'tests/smoke/go.mod'
         cache-dependency-path: 'tests/smoke/go.sum'
     
     - name: Set up k3d for ${{ matrix.provision-type }}
       run: wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.4.6 bash
       if: ${{ matrix.provision-type }} == "kyma-cli"
-      
-    - name: Setup Go caches
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/go/pkg/mod
-          ~/.cache/go-build
-          ~/Library/Caches/go-build
-          ~\AppData\Local\go-build
-        key: ${{ runner.os }}-golang-${{ matrix.provision-type }}-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-golang-
-
-    - name: Setup Smoke Test Binary Cache
-      uses: actions/cache@v3
-      with:
-        path: |
-          tests/smoke/test/bin
-        key: ${{ runner.os }}-smoke-bins-${{ matrix.provision-type }}-${{ hashFiles('tests/smoke/test/bin/**') }}
-        restore-keys: |
-          ${{ runner.os }}-smoke-bins-
 
     - name: Run Smoke Tests
       run: cd tests/smoke && go test smoke_test.go -v -provision-type ${{ matrix.provision-type }}
