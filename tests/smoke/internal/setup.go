@@ -3,16 +3,16 @@ package internal
 import (
 	"bytes"
 	"context"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+
 	"sigs.k8s.io/e2e-framework/klient/decoder"
 	"sigs.k8s.io/e2e-framework/klient/k8s/resources"
 	"sigs.k8s.io/e2e-framework/pkg/env"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 )
-
-type k3dContextKey string
 
 // CreateKymaK3dCluster returns an env.Func that is used to
 // create a k3d cluster that is then injected in the context
@@ -22,15 +22,27 @@ type k3dContextKey string
 // kubeconfig file for the config client.
 func CreateKymaK3dCluster(clusterName string) env.Func {
 	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
-		if err := SetupKymaCLI(); err != nil {
-			return ctx, err
+		provArgs := []string{"provision", "k3d", "--name", clusterName,
+			"-p", "8083:80@loadbalancer",
+			"-p", "8443:443@loadbalancer",
+			"--timeout", "1m",
+			"--k3d-arg", "--no-rollback",
 		}
-		provision := KymaCLI("provision", "k3d", "--name", clusterName)
+		log.Printf("Provisioning Cluster with %s\n", provArgs)
+		provision := KymaCLI(provArgs...)
 		if err := provision.Run(); err != nil {
 			return nil, err
 		}
 
+		labels := cfg.Labels()
+		if labels == nil {
+			labels = make(map[string]string)
+		}
+		labels["test-type.kyma-project.io"] = "smoke"
+		cfg.WithLabels(labels)
+
 		kubeconfigFile := filepath.Join(os.TempDir(), "kubeconfig-kyma")
+		log.Println("Merging Kubeconfigs")
 		kubeconfigSync := exec.Command("k3d", "kubeconfig", "merge", clusterName, "-o", kubeconfigFile)
 		if err := kubeconfigSync.Run(); err != nil {
 			return nil, err
@@ -50,10 +62,12 @@ func CreateKymaK3dCluster(clusterName string) env.Func {
 // NOTE: this should be used in a Environment.Finish step.
 func DestroyKymaK3dCluster(clusterName string) env.Func {
 	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
+		log.Println("deleting cluster " + clusterName)
 		clusterDelete := exec.Command("k3d", "cluster", "delete", clusterName)
 		if err := clusterDelete.Run(); err != nil {
 			return nil, err
 		}
+		log.Println("deleting registry " + clusterName + "-registry")
 		registryDelete := exec.Command("k3d", "registry", "delete", clusterName+"-registry")
 		if err := registryDelete.Run(); err != nil {
 			return nil, err
@@ -64,13 +78,12 @@ func DestroyKymaK3dCluster(clusterName string) env.Func {
 
 func InstallWithKustomize(kustomizeDir string) env.Func {
 	return func(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
+		log.Printf("Creating kustomize resources")
 		r, err := resources.New(cfg.Client().RESTConfig())
 		if err != nil {
 			return ctx, err
 		}
-		if err := SetupKustomize(); err != nil {
-			return ctx, err
-		}
+		log.Printf("Building with kustomize")
 		manifests, err := BuildWithKustomize(kustomizeDir)
 		if err != nil {
 			return ctx, err
@@ -79,6 +92,7 @@ func InstallWithKustomize(kustomizeDir string) env.Func {
 		if err := decoder.DecodeEach(ctx, bytes.NewReader(manifests), decoder.CreateHandler(r)); err != nil {
 			return ctx, err
 		}
+		log.Printf("Finished building with kustomize")
 		return ctx, nil
 	}
 }
