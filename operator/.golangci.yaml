@@ -21,6 +21,9 @@ linters:
     - structcheck
     - wastedassign
     - ifshort
+    - deadcode
+    - nosnakecase
+    - varcheck
 linters-settings:
   gci:
     sections:
