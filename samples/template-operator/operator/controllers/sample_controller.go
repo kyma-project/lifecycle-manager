@@ -31,9 +31,10 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/samples/template-operator/api/v1alpha1"
 
+	"time"
+
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/ratelimiter"
-	"time"
 )
 
 // SampleReconciler reconciles a Sample object
