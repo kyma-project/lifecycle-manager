@@ -3,13 +3,16 @@ package smoke
 import (
 	"context"
 	"flag"
+	"log"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/kyma-project/lifecycle-manager/tests/smoke/internal"
 	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"log"
-	"os"
 	"sigs.k8s.io/e2e-framework/klient"
 	"sigs.k8s.io/e2e-framework/klient/wait"
 	"sigs.k8s.io/e2e-framework/klient/wait/conditions"
@@ -17,13 +20,10 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/envfuncs"
 	"sigs.k8s.io/e2e-framework/pkg/features"
-	"testing"
-	"time"
 )
 
 var (
-	TestEnv     env.Environment
-	ClusterName string
+	TestEnv env.Environment
 )
 
 var provisionType *string

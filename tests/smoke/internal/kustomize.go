@@ -33,6 +33,8 @@ func SetupKustomize() error {
 		if err != nil {
 			return fmt.Errorf("error installing kustomize %w", err)
 		}
+	} else if err != nil {
+		return err
 	}
 	return nil
 }
