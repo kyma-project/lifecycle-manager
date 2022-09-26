@@ -113,7 +113,7 @@ KYMA_STABILITY ?= unstable
 
 KYMA ?= $(LOCALBIN)/kyma-$(KYMA_STABILITY)
 kyma: $(KYMA) ## Download kyma locally if necessary.
-$(KYMA):
+$(KYMA): $(LOCALBIN)
 	test -f $@ || curl -# -Lo $(KYMA) https://storage.googleapis.com/kyma-cli-$(KYMA_STABILITY)/kyma-darwin 
 	chmod 0100 $(KYMA)
 
