@@ -29,8 +29,8 @@ jobs:
     - name: Set up k3d/kyma for ${{ matrix.provision-type }}
       if: ${{ matrix.provision-type }} == "kyma-cli"
       run: |
-        wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.4.6 bash
-        wget https://storage.googleapis.com/kyma-cli-unstable/kyma-linux
+        go install github.com/k3d-io/k3d/v5@latest
+        wget -q https://storage.googleapis.com/kyma-cli-unstable/kyma-linux
         chmod +x kyma-linux
         mv kyma-linux /usr/local/bin/kyma
 
