@@ -15,7 +15,7 @@ rules:
   - get
   - list
   - onEvent
-  - patches
+  - patch
   - update
   - watch
 - apiGroups:
@@ -26,7 +26,7 @@ rules:
   - create
   - get
   - list
-  - patches
+  - patch
   - watch
 - apiGroups:
   - ""
@@ -54,7 +54,7 @@ rules:
   - get
   - list
   - onEvent
-  - patches
+  - patch
   - update
   - watch
 - apiGroups:
@@ -69,7 +69,7 @@ rules:
   - kymas/status
   verbs:
   - get
-  - patches
+  - patch
   - update
 - apiGroups:
   - operator.kyma-project.io
@@ -81,7 +81,7 @@ rules:
   - get
   - list
   - onEvent
-  - patches
+  - patch
   - update
   - watch
 - apiGroups:

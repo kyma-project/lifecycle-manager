@@ -14,7 +14,7 @@ rules:
   - watch
   - create
   - update
-  - patches
+  - patch
   - delete
 - apiGroups:
   - coordination.k8s.io
@@ -26,7 +26,7 @@ rules:
   - watch
   - create
   - update
-  - patches
+  - patch
   - delete
 - apiGroups:
   - ""
@@ -34,4 +34,4 @@ rules:
   - events
   verbs:
   - create
-  - patches
+  - patch

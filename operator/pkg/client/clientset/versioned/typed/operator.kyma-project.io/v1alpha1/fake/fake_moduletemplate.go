@@ -116,7 +116,7 @@ func (c *FakeModuleTemplates) DeleteCollection(ctx context.Context, opts v1.Dele
 	return err
 }
 
-// Patch applies the patches and returns the patched moduleTemplate.
+// Patch applies the patch and returns the patched moduleTemplate.
 func (c *FakeModuleTemplates) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.ModuleTemplate, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(moduletemplatesResource, c.ns, name, pt, data, subresources...), &v1alpha1.ModuleTemplate{})

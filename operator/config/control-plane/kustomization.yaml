@@ -58,7 +58,7 @@ replacements:
           - secretName=lifecycle-manager-webhook-server-cert # this makes sure that the deployment uses cert-manager
 
 patchesJson6902:
-  # We patches the Metrics JSONs here as we expect KCP to be watching for grafana dashboards in kyma-system,
+  # We patch the Metrics JSONs here as we expect KCP to be watching for grafana dashboards in kyma-system,
   # not kcp-system as we configure it above for the rest of the kustomization
   - target:
       version: v1
@@ -86,7 +86,7 @@ patchesStrategicMerge:
 
   # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK]
   - patches/unique_manager_webhook_patch.yaml
-  # patches here are for enabling the conversion webhook for each CRD
+  # patch here are for enabling the conversion webhook for each CRD
   - patches/enable_webhook_in_kyma_crd.yaml
   - patches/ebable_webhook_in_moduletemplate_crd.yaml
 
@@ -97,7 +97,7 @@ patchesStrategicMerge:
 # Uncomment 'CERTMANAGER' sections in crd/kustomization.yaml to enable the CA injection in the admission webhooks.
 # 'CERTMANAGER' needs to be enabled to use ca injection
   - patches/webhook_configuration_cainjection.yaml
-  # patches here are for enabling the CA injection for each CRD
+  # patch here are for enabling the CA injection for each CRD
   - patches/cainjection_in_kymas.yaml
   - patches/cainjection_in_moduletemplates.yaml
   # We override the certificate name to ensure that Cert-Manager uses a unique cert in conjunction with other

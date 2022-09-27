@@ -12,7 +12,7 @@ rules:
       - delete
       - get
       - list
-      - patches
+      - patch
       - update
       - watch
   - apiGroups:
@@ -27,7 +27,7 @@ rules:
       - manifests/status
     verbs:
       - get
-      - patches
+      - patch
       - update
 ---
 apiVersion: rbac.authorization.k8s.io/v1
