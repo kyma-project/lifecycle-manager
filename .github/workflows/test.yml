@@ -47,7 +47,7 @@ jobs:
           retention-days: 5
           name: dry-run${{ matrix.flavor }}
           path: |
-            dry-run/*.yaml
+            operator/dry-run/*.yaml
 
   smoke:
     needs: [wait-for-img, kustomize]
