@@ -46,15 +46,12 @@ jobs:
         kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
 
     - name: Wait for Image Build to Succeed
-      uses: Sibz/await-status-action@v1.0.2
-      id: wait-for-build
+      uses: rafarlopes/wait-for-commit-status-action@v1
       with:
-        authToken: ${{ secrets.GITHUB_TOKEN }}
-        contexts: ${{ (github.event_name == 'pull_request') && 'pull-build' || 'main-build' }}
-        ref: ${{ github.event.pull_request.head.sha || github.sha }}
-        pollInterval: 5
-        timeout: 240
-        notPresentTimeout: 60
+        # Context for which we should look for the matching status
+        context: ${{ (github.event_name == 'pull_request') && 'pull-build' || 'main-build' }}
+        # The commit sha we should look for the status
+        sha: ${{ github.event.pull_request.head.sha || github.sha }}
 
     - name: Exit If Failing Build Requirement
       if: steps.wait-for-build.outputs.conclusion == 'failure'
