@@ -46,15 +46,13 @@ jobs:
         kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
 
     - name: Wait for Image Build to Succeed
-      uses: rafarlopes/wait-for-commit-status-action@v1
-      env:
-        GITHUB_REPOSITORY: ${{ github.event.repository.name }}
-        token: ${{ secrets.GITHUB_TOKEN }}
+      uses: autotelic/action-wait-for-status-check@v1
       with:
+        token: ${{ secrets.GITHUB_TOKEN }}
         # Context for which we should look for the matching status
-        context: ${{ (github.event_name == 'pull_request') && 'pull-build' || 'main-build' }}
-        # The commit sha we should look for the status
-        sha: ${{ github.event.pull_request.head.sha || github.sha }}
+        statusName: ${{ (github.event_name == 'pull_request') && 'pull-build' || 'main-build' }}
+        timeoutSeconds: 180
+        intervalSeconds: 5
 
     - name: Exit If Failing Build Requirement
       if: steps.wait-for-build.outputs.conclusion == 'failure'
