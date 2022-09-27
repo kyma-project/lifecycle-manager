@@ -48,6 +48,7 @@ jobs:
     - name: Wait for Image Build to Succeed
       uses: rafarlopes/wait-for-commit-status-action@v1
       env:
+        GITHUB_REPOSITORY: ${{ github.event.repository.name }}
         token: ${{ secrets.GITHUB_TOKEN }}
       with:
         # Context for which we should look for the matching status
