@@ -39,5 +39,20 @@ jobs:
         wget -qO - "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
         mv kustomize /usr/local/bin/
 
+    - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
+      if: github.event_name == 'pull_request'
+      run: |
+        cd operator/config/manager && $(KUSTOMIZE) edit set image controller=*:PR-{{ github.event.pull_request.number }}
+        cd ....
+
+    - name: Wait for Image Build to Succeed
+      if: github.event_name == 'pull_request'
+      uses: lewagon/wait-on-check-action@v1.1.2
+      with:
+        ref: ${{ github.ref }}
+        check-name: github.event_name == 'pull_request' && pull-build || main-build
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+        wait-interval: 5
+
     - name: Run Smoke Tests
       run: cd tests/smoke && go test smoke_test.go -v -provision-type ${{ matrix.provision-type }}
