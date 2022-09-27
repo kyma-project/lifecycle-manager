@@ -43,8 +43,7 @@ jobs:
       if: github.event_name == 'pull_request'
       run: |
         cd operator/config/manager
-        kustomize edit set image controller="*:PR-{{ github.event.pull_request.number }}"
-        cd ....
+        kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
 
     - name: Wait for Image Build to Succeed
       if: github.event_name == 'pull_request'
