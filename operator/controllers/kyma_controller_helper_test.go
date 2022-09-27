@@ -2,6 +2,7 @@ package controllers_test
 
 import (
 	"encoding/json"
+	"math/rand"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/watch"
 	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func NewTestKyma(name string) *v1alpha1.Kyma {
@@ -27,7 +29,7 @@ func NewTestKyma(name string) *v1alpha1.Kyma {
 			Kind:       string(v1alpha1.KymaKind),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      name,
+			Name:      name + RandString(8),
 			Namespace: namespace,
 		},
 		Spec: v1alpha1.KymaSpec{
@@ -35,6 +37,20 @@ func NewTestKyma(name string) *v1alpha1.Kyma {
 			Channel: v1alpha1.DefaultChannel,
 		},
 	}
+}
+
+func NewUniqModuleName() string {
+	return RandString(8)
+}
+
+const letterBytes = "abcdefghijklmnopqrstuvwxyz"
+
+func RandString(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[rand.Intn(len(letterBytes))] //nolint:gosec
+	}
+	return string(b)
 }
 
 func RegisterDefaultLifecycleForKyma(kyma *v1alpha1.Kyma) {
@@ -76,32 +92,36 @@ func GetKymaConditions(kymaName string) func() []metav1.Condition {
 	}
 }
 
-func UpdateModuleState(kymaName string, moduleTemplate *v1alpha1.ModuleTemplate, state v1alpha1.State) func() error {
+func UpdateModuleState(kymaName, moduleName string, state v1alpha1.State) func() error {
 	return func() error {
-		component, err := getModule(kymaName, moduleTemplate)
-		Expect(err).ShouldNot(HaveOccurred())
-		component.Object[watch.Status] = map[string]any{watch.State: string(state)}
-		return k8sManager.GetClient().Status().Update(ctx, component)
+		return updateModuleState(kymaName, moduleName, state)
 	}
 }
 
-func ModuleExists(kymaName string, moduleTemplate *v1alpha1.ModuleTemplate) func() bool {
+func updateModuleState(kymaName string, moduleName string, state v1alpha1.State) error {
+	component, err := getModule(kymaName, moduleName)
+	Expect(err).ShouldNot(HaveOccurred())
+	component.Object[watch.Status] = map[string]any{watch.State: string(state)}
+	return k8sManager.GetClient().Status().Update(ctx, component)
+}
+
+func ModuleExists(kymaName, moduleName string) func() bool {
 	return func() bool {
-		_, err := getModule(kymaName, moduleTemplate)
+		_, err := getModule(kymaName, moduleName)
 		return err == nil
 	}
 }
 
-func ModuleNotExist(kymaName string, moduleTemplate *v1alpha1.ModuleTemplate) func() bool {
+func ModuleNotExist(kymaName string, moduleName string) func() bool {
 	return func() bool {
-		_, err := getModule(kymaName, moduleTemplate)
+		_, err := getModule(kymaName, moduleName)
 		return k8serrors.IsNotFound(err)
 	}
 }
 
-func SKRModuleExistWithOverwrites(kymaName string, moduleTemplate *v1alpha1.ModuleTemplate) func() string {
+func SKRModuleExistWithOverwrites(kymaName string, moduleName string) func() string {
 	return func() string {
-		module, err := getModule(kymaName, moduleTemplate)
+		module, err := getModule(kymaName, moduleName)
 		Expect(err).ToNot(HaveOccurred())
 		body, err := json.Marshal(module.Object["spec"])
 		Expect(err).ToNot(HaveOccurred())
@@ -117,12 +137,16 @@ func SKRModuleExistWithOverwrites(kymaName string, moduleTemplate *v1alpha1.Modu
 	}
 }
 
-func getModule(kymaName string, moduleTemplate *v1alpha1.ModuleTemplate) (*unstructured.Unstructured, error) {
-	component := moduleTemplate.Spec.Data.DeepCopy()
-	component.SetKind("Manifest")
+func getModule(kymaName, moduleName string) (*unstructured.Unstructured, error) {
+	component := &unstructured.Unstructured{}
+	component.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   v1alpha1.OperatorPrefix,
+		Version: v1alpha1.Version,
+		Kind:    "Manifest",
+	})
 	err := controlPlaneClient.Get(ctx, client.ObjectKey{
 		Namespace: namespace,
-		Name:      common.CreateModuleName(moduleTemplate.GetLabels()[v1alpha1.ModuleName], kymaName),
+		Name:      common.CreateModuleName(moduleName, kymaName),
 	}, component)
 	if err != nil {
 		return nil, err
