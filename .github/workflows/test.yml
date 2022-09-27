@@ -25,8 +25,17 @@ jobs:
           echo "Image build did not succeed, skipping Smoke Test!"
           exit 1
 
+  kustomize:
+    strategy:
+      matrix:
+        flavor: ["", "-control-plane"]
+    name: "Kustomize (dry-run${{ matrix.flavor }})"
+    runs-on: ubuntu-latest
+    steps:
+      - run: cd operator && make dry-run${{ matrix.flavor }} IMG='*:latest'
+
   smoke:
-    needs: wait-for-img
+    needs: [wait-for-img, kustomize]
     name: "Smoke"
     strategy:
       matrix:
