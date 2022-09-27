@@ -34,7 +34,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          cache: true
       - run: cd operator && make dry-run${{ matrix.flavor }} IMG='*:latest'
+      - name: Archive Manifests
+        uses: actions/upload-artifact@v3
+        with:
+          retention-days: 5
+          name: dry-run${{ matrix.flavor }}
+          path: |
+            dry-run/*.yaml
 
   smoke:
     needs: [wait-for-img, kustomize]
