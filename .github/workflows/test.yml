@@ -50,7 +50,7 @@ jobs:
       id: wait-for-build
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        checkName: ${{ (github.event_name == pull_request) && 'pull-build' || 'main-build' }}
+        checkName: ${{ (github.event_name == 'pull_request') && 'pull-build' || 'main-build' }}
         ref: ${{ github.event.pull_request.head.sha || github.sha }}
         intervalSeconds: 5
         timeoutSeconds: 240
