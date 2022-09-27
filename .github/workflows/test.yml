@@ -46,13 +46,20 @@ jobs:
         kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
 
     - name: Wait for Image Build to Succeed
-      if: github.event_name == 'pull_request'
-      uses: lewagon/wait-on-check-action@v1.1.2
+      uses: fountainhead/action-wait-for-check@v1.0.0
+      id: wait-for-build
       with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        checkName: github.event_name == 'pull_request' && pull-build || main-build
         ref: ${{ github.event.pull_request.head.sha || github.sha }}
-        check-name: github.event_name == 'pull_request' && pull-build || main-build
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
-        wait-interval: 5
+        intervalSeconds: 5
+        timeoutSeconds: 240
+
+    - name: Exit If Failing Build Requirement
+      if: steps.wait-for-build.outputs.conclusion == 'failure'
+      run: |
+        echo "Build of Image did not succeed, skipping Smoke Test!"
+        exit 1
 
     - name: Run Smoke Tests
       run: cd tests/smoke && go test smoke_test.go -v -provision-type ${{ matrix.provision-type }}
