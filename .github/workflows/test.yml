@@ -46,9 +46,10 @@ jobs:
         kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
 
     - name: Wait for Image Build to Succeed
-      uses: cirano-eusebi/wait-for-commit-status-action@v2
-      with:
+      uses: rafarlopes/wait-for-commit-status-action@v1
+      env:
         token: ${{ secrets.GITHUB_TOKEN }}
+      with:
         # Context for which we should look for the matching status
         context: ${{ (github.event_name == 'pull_request') && 'pull-build' || 'main-build' }}
         # The commit sha we should look for the status
