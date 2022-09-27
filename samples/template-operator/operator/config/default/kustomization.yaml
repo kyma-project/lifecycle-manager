@@ -36,11 +36,11 @@ patchesStrategicMerge:
 
 # Mount the controller config file for loading manager configurations
 # through a ComponentConfig type
-#- manager_webhook_patch.yaml
+#- manager_config_patch.yaml
 
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
 # crd/kustomization.yaml
-#- unique_manager_webhook_patch.yaml
+#- manager_webhook_patch.yaml
 
 # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'.
 # Uncomment 'CERTMANAGER' sections in crd/kustomization.yaml to enable the CA injection in the admission webhooks.
