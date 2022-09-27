@@ -73,6 +73,13 @@ dry-run: kustomize manifests
 	mkdir -p dry-run
 	$(KUSTOMIZE) build config/default > dry-run/manifests.yaml
 
+
+.PHONY: dry-run-control-plane
+dry-run-control-plane: kustomize manifests
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	mkdir -p dry-run
+	$(KUSTOMIZE) build config/control-plane > dry-run/manifests.yaml
+
 ##@ Build
 
 .PHONY: build
