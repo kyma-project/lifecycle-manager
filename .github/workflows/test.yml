@@ -46,14 +46,15 @@ jobs:
         kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
 
     - name: Wait for Image Build to Succeed
-      uses: fountainhead/action-wait-for-check@v1.0.0
+      uses: Sibz/await-status-action@v1.0.2
       id: wait-for-build
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        checkName: ${{ (github.event_name == 'pull_request') && 'pull-build' || 'main-build' }}
+        authToken: ${{ secrets.GITHUB_TOKEN }}
+        contexts: ${{ (github.event_name == 'pull_request') && 'pull-build' || 'main-build' }}
         ref: ${{ github.event.pull_request.head.sha || github.sha }}
-        intervalSeconds: 5
-        timeoutSeconds: 240
+        pollInterval: 5
+        timeout: 240
+        notPresentTimeout: 60
 
     - name: Exit If Failing Build Requirement
       if: steps.wait-for-build.outputs.conclusion == 'failure'
