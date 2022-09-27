@@ -42,7 +42,8 @@ jobs:
     - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
       if: github.event_name == 'pull_request'
       run: |
-        cd operator/config/manager && $(KUSTOMIZE) edit set image controller=*:PR-{{ github.event.pull_request.number }}
+        cd operator/config/manager
+        kustomize edit set image controller=*:PR-{{ github.event.pull_request.number }}
         cd ....
 
     - name: Wait for Image Build to Succeed
