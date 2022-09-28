@@ -101,15 +101,10 @@ jobs:
       - name: Run Deploy
         run: kyma alpha deploy --source=local
 
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          cache: true
-          go-version-file: 'tests/smoke/go.mod'
-          cache-dependency-path: 'tests/smoke/go.sum'
-
       - name: Run Smoke Tests
-        run: cd tests/smoke && go test smoke_test.go -v -provision-type external
+        run: |
+          cd $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/tests/smoke
+          go test smoke_test.go -v -provision-type external
 
   smoke:
     needs: [wait-for-img, kustomize]
