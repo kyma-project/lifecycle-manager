@@ -90,8 +90,7 @@ jobs:
       - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
         if: github.event_name == 'pull_request'
         run: |
-          cd $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER
-          cd operator/config/manager
+          cd $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/operator/config/manager
           kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
 
       - name: Run Deploy
