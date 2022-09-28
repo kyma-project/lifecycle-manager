@@ -83,8 +83,8 @@ jobs:
         run: |
           mkdir -p $(go env GOPATH)/src/github.com/{{ .github.repository }}
           mv $GITHUB_WORKSPACE/{{ .github.repository }} $(go env GOPATH)/src/github.com/{{ .github.repository }}
-          mkdir -p $(go env GOPATH)/src/github.com/${{ env.MODULE_MANAGER }}
-          mv $GITHUB_WORKSPACE/${{ env.MODULE_MANAGER }} $(go env GOPATH)/src/github.com/${{ env.MODULE_MANAGER }}
+          mkdir -p $(go env GOPATH)/src/github.com/{{ env.MODULE_MANAGER }}
+          mv $GITHUB_WORKSPACE/{{ env.MODULE_MANAGER }} $(go env GOPATH)/src/github.com/{{ env.MODULE_MANAGER }}
 
       - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
         if: github.event_name == 'pull_request'
