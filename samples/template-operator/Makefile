@@ -95,6 +95,7 @@ module-build: kyma module-operator-chart module-default ## Build the Module and 
 
 .PHONY: module-template-push
 module-template-push: ## Pushes the ModuleTemplate referencing the Image on MODULE_REGISTRY
+	sh hack/local-template.sh
 	kubectl apply -f template.yaml
 
 .PHONY: module-default
