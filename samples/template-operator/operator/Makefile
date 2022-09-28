@@ -74,6 +74,9 @@ docker-build: ## Build docker image with the manager.
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
+ifneq (,$(GCR_DOCKER_PASSWORD))
+	docker login $(IMG_REGISTRY) -u oauth2accesstoken --password $(GCR_DOCKER_PASSWORD)
+endif
 	docker push ${IMG}
 
 ##@ Deployment
