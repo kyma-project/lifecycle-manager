@@ -83,9 +83,11 @@ jobs:
       - name: Move Repos to SRC
         run: |
           mkdir -p $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER
+          ls $GITHUB_WORKSPACE/$LIFECYCLE_MANAGER
           mv $GITHUB_WORKSPACE/$LIFECYCLE_MANAGER/** $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/
           ls $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER
           mkdir -p $(go env GOPATH)/src/github.com/$MODULE_MANAGER
+          ls $GITHUB_WORKSPACE/$MODULE_MANAGER
           mv $GITHUB_WORKSPACE/$MODULE_MANAGER/** $(go env GOPATH)/src/github.com/$MODULE_MANAGER/
           ls $(go env GOPATH)/src/github.com/$MODULE_MANAGER
 
