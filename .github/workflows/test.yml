@@ -90,7 +90,16 @@ jobs:
           chmod +x kyma-linux
           mv kyma-linux /usr/local/bin/kyma
       - name: Run Provision
-        run: kyma provision k3d -p 8083:80@loadbalancer -p 8443:443@loadbalancer --timeout 1m --k3d-arg --no-rollback
+        env:
+          CLUSTER_NAME: "kyma"
+        run: |
+          kyma provision k3d \
+            -p 8083:80@loadbalancer \
+            -p 8443:443@loadbalancer \
+            --timeout 1m \
+            --k3d-arg --no-rollback \
+            --name $CLUSTER_NAME
+          k3d kubeconfig merge $CLUSTER_NAME -o $GITHUB_WORKSPACE/kubeconfig.yaml
       - name: Run Deploy
         run: kyma alpha deploy --source=local
       - name: Inject GOPATH into go Setup
@@ -103,7 +112,7 @@ jobs:
       - name: Run Smoke Tests
         run: |
           cd $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/tests/smoke
-          go test smoke_test.go -v -provision-type external
+          go test smoke_test.go -v -provision-type external --kubeconfig $GITHUB_WORKSPACE/kubeconfig.yaml
 
   smoke:
     needs: [wait-for-img, kustomize]
