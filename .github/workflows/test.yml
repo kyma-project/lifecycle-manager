@@ -5,7 +5,8 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-
+env:
+  MODULE_MANAGER: kyma-project/module-manager
 jobs:
   wait-for-img:
     name: "Wait for Image Build"
@@ -70,25 +71,25 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: ${{ github.repository }}
-          path: lifecycle-manager
+          path: ${{ github.repository }}
       - name: Checkout Module-Manager
         uses: actions/checkout@v3
         with:
-          repository: kyma-project/module-manager
-          path: module-manager
+          repository: $MODULE_MANAGER
+          path: $MODULE_MANAGER
           ref: main
 
       - name: Move Repos to SRC
         run: |
-          mkdir -p $(go env GOPATH)/src/github.com/kyma-project/lifecycle-manager
-          mv $GITHUB_WORKSPACE/lifecycle-manager $(go env GOPATH)/src/github.com/kyma-project/lifecycle-manager
-          mkdir -p $(go env GOPATH)/src/github.com/kyma-project/module-manager
-          mv $GITHUB_WORKSPACE/module-manager $(go env GOPATH)/src/github.com/kyma-project/module-manager
+          mkdir -p $(go env GOPATH)/src/github.com/{{ .github.repository }}
+          mv $GITHUB_WORKSPACE/{{ .github.repository }} $(go env GOPATH)/src/github.com/{{ .github.repository }}
+          mkdir -p $(go env GOPATH)/src/github.com/$MODULE_MANAGER
+          mv $GITHUB_WORKSPACE/$MODULE_MANAGER $(go env GOPATH)/src/github.com/$MODULE_MANAGER
 
       - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
         if: github.event_name == 'pull_request'
         run: |
-          cd $(go env GOPATH)/src/github.com/lifecycle-manager
+          cd $(go env GOPATH)/src/github.com/{{ .github.repository }}
           cd operator/config/manager
           kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
 
