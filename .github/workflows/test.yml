@@ -56,7 +56,6 @@ jobs:
       MODULE_MANAGER: kyma-project/module-manager
       LIFECYCLE_MANAGER: ${{ github.repository }}
     steps:
-
       - name: Checkout Lifecycle-Manager
         uses: actions/checkout@v3
         with:
@@ -66,7 +65,6 @@ jobs:
         run: |
           mkdir -p $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER
           mv $GITHUB_WORKSPACE/$LIFECYCLE_MANAGER/** $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/
-
       - name: Checkout Module-Manager
         uses: actions/checkout@v3
         with:
@@ -77,7 +75,6 @@ jobs:
         run: |
           mkdir -p $(go env GOPATH)/src/github.com/$MODULE_MANAGER
           mv $GITHUB_WORKSPACE/$MODULE_MANAGER/** $(go env GOPATH)/src/github.com/$MODULE_MANAGER/
-
       - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
         if: github.event_name == 'pull_request'
         run: |
@@ -85,30 +82,25 @@ jobs:
           mv kustomize /usr/local/bin/
           cd $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/operator/config/manager
           kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
-
       - name: Set up k3d
         run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.4.6 bash
-
       - name: Set up CLI
         run: |
           wget -q https://storage.googleapis.com/kyma-cli-unstable/kyma-linux
           chmod +x kyma-linux
-          mv kyma-linux /usr/local/bin/kyma      
-
+          mv kyma-linux /usr/local/bin/kyma
       - name: Run Provision
         run: kyma provision k3d -p 8083:80@loadbalancer -p 8443:443@loadbalancer --timeout 1m --k3d-arg --no-rollback
-
       - name: Run Deploy
         run: kyma alpha deploy --source=local
-
       - name: Inject GOPATH into go Setup
         run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
           cache: true
-          go-version-file: ${{ env.GOPATH }}/src/github.com/$LIFECYCLE_MANAGER/tests/smoke/go.mod
-          cache-dependency-path: ${{ env.GOPATH }}/src/github.com/$LIFECYCLE_MANAGER/tests/smoke/go.sum
+          go-version-file: ${{ env.GOPATH }}/src/github.com/${{ env.LIFECYCLE_MANAGER }}/tests/smoke/go.mod
+          cache-dependency-path: ${{ env.GOPATH }}/src/github.com/${{ env.LIFECYCLE_MANAGER }}/tests/smoke/go.sum
       - name: Run Smoke Tests
         run: |
           cd $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/tests/smoke
