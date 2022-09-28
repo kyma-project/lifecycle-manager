@@ -70,18 +70,25 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: ${{ github.repository }}
-          path: go/src/github.com/${{ github.repository }}
+          path: lifecycle-manager
       - name: Checkout Module-Manager
         uses: actions/checkout@v3
         with:
           repository: kyma-project/module-manager
-          path: go/src/github.com/kyma-project/module-manager
+          path: module-manager
           ref: main
+
+      - name: Move Repos to SRC
+        run: |
+          mkdir -p $(go env GOPATH)/src/github.com/kyma-project/lifecycle-manager
+          mv $GITHUB_WORKSPACE/lifecycle-manager $(go env GOPATH)/src/github.com/kyma-project/lifecycle-manager
+          mkdir -p $(go env GOPATH)/src/github.com/kyma-project/module-manager
+          mv $GITHUB_WORKSPACE/module-manager $(go env GOPATH)/src/github.com/kyma-project/module-manager
 
       - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
         if: github.event_name == 'pull_request'
         run: |
-          cd $(go env GOPATH)/src/github.com/${{ github.repository }}
+          cd $(go env GOPATH)/src/github.com/lifecycle-manager
           cd operator/config/manager
           kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
 
