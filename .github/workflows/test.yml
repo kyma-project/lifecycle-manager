@@ -70,7 +70,13 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: ${{ github.repository }}
-          path: $(go env GOPATH)/src/github.com/${{ github.repository }}
+          path: /go/src/github.com/${{ github.repository }}
+      - name: Checkout Module-Manager
+        uses: actions/checkout@v3
+        with:
+          repository: kyma-project/module-manager
+          path: /go/src/github.com/kyma-project/module-manager
+          ref: HEAD
 
       - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
         if: github.event_name == 'pull_request'
@@ -78,13 +84,6 @@ jobs:
           cd $(go env GOPATH)/src/github.com/${{ github.repository }}
           cd operator/config/manager
           kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
-
-      - name: Checkout Module-Manager
-        uses: actions/checkout@v3
-        with:
-          repository: kyma-project/module-manager
-          path: $(go env GOPATH)/src/github.com/kyma-project/module-manager
-          ref: HEAD
 
       - name: Run Deploy
         run: kyma alpha deploy --source=local
