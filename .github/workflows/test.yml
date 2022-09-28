@@ -96,7 +96,7 @@ jobs:
           mv kyma-linux /usr/local/bin/kyma      
 
       - name: Run Provision
-        run: kyma provision k3d
+        run: kyma provision k3d -p 8083:80@loadbalancer -p 8443:443@loadbalancer --timeout 1m --k3d-arg --no-rollback
 
       - name: Run Deploy
         run: kyma alpha deploy --source=local
