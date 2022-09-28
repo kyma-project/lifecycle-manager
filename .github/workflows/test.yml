@@ -66,8 +66,7 @@ jobs:
         uses: actions/setup-go@v3
         with:
           cache: true
-          go-version-file: 'operator/go.mod'
-          cache-dependency-path: 'operator/go.sum'
+          check-latest: true
 
       - name: Checkout Lifecycle-Manager
         uses: actions/checkout@v3
