@@ -82,7 +82,7 @@ jobs:
 
       - name: Move Repos to SRC
         run: |
-          mkdir -p $(go env GOPATH)/src/github.com/
+          mkdir -p $(go env GOPATH)/src/github.com/kyma-project/
           mv $GITHUB_WORKSPACE/* $(go env GOPATH)/src/github.com/kyma-project/
           ls $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER
           ls $(go env GOPATH)/src/github.com/$MODULE_MANAGER
