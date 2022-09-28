@@ -49,6 +49,49 @@ jobs:
           path: |
             operator/dry-run/*.yaml
 
+  cli-integration:
+    needs: [wait-for-img, kustomize]
+    name: "Kyma CLI Integration"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up k3d
+        run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.4.6 bash
+      - name: Set up CLI
+        run: |
+          wget -q https://storage.googleapis.com/kyma-cli-unstable/kyma-linux
+          chmod +x kyma-linux
+          mv kyma-linux /usr/local/bin/kyma
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          cache: true
+          go-version-file: 'operator/go.mod'
+          cache-dependency-path: 'operator/go.sum'
+
+      - name: Checkout Lifecycle-Manager
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ github.repository }}
+          path: $(go env GOPATH)/src/github.com/${{ github.repository }}
+
+      - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
+        if: github.event_name == 'pull_request'
+        run: |
+          cd $(go env GOPATH)/src/github.com/${{ github.repository }}
+          cd operator/config/manager
+          kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
+
+      - name: Checkout Module-Manager
+        uses: actions/checkout@v3
+        with:
+          repository: kyma-project/module-manager
+          path: $(go env GOPATH)/src/github.com/kyma-project/module-manager
+          ref: HEAD
+
+      - name: Run Deploy
+        run: kyma alpha deploy --source=local
+
   smoke:
     needs: [wait-for-img, kustomize]
     name: "Smoke"
