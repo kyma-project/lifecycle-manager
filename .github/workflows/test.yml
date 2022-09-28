@@ -76,7 +76,7 @@ jobs:
         with:
           repository: kyma-project/module-manager
           path: go/src/github.com/kyma-project/module-manager
-          ref: HEAD
+          ref: main
 
       - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
         if: github.event_name == 'pull_request'
