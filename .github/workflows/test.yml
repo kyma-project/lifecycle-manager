@@ -49,6 +49,9 @@ jobs:
             operator/dry-run/*.yaml
 
   cli-integration:
+    strategy:
+      matrix:
+        cli-stability: ["unstable"]
     needs: [wait-for-img, kustomize]
     name: "Kyma CLI Integration"
     runs-on: ubuntu-latest
@@ -86,7 +89,7 @@ jobs:
         run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.4.6 bash
       - name: Set up CLI
         run: |
-          wget -q https://storage.googleapis.com/kyma-cli-unstable/kyma-linux
+          wget -q https://storage.googleapis.com/kyma-cli-${{ matrix.cli-stability }}/kyma-linux
           chmod +x kyma-linux
           mv kyma-linux /usr/local/bin/kyma
       - name: Run Provision
@@ -107,6 +110,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
+          cache: true
           go-version-file: ${{ env.GOPATH }}/src/github.com/${{ env.LIFECYCLE_MANAGER }}/tests/smoke/go.mod
           cache-dependency-path: ${{ env.GOPATH }}/src/github.com/${{ env.LIFECYCLE_MANAGER }}/tests/smoke/go.sum
       - name: Run Smoke Tests
