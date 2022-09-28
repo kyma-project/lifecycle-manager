@@ -107,10 +107,17 @@ jobs:
         run: kyma alpha deploy --source=local
       - name: Inject GOPATH into go Setup
         run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-cli-integration-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-cli-integration-
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          cache: true
           go-version-file: ${{ env.GOPATH }}/src/github.com/${{ env.LIFECYCLE_MANAGER }}/tests/smoke/go.mod
           cache-dependency-path: ${{ env.GOPATH }}/src/github.com/${{ env.LIFECYCLE_MANAGER }}/tests/smoke/go.sum
       - name: Run Smoke Tests
