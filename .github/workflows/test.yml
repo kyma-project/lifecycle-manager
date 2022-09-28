@@ -5,8 +5,6 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-env:
-  MODULE_MANAGER: kyma-project/module-manager
 jobs:
   wait-for-img:
     name: "Wait for Image Build"
@@ -54,6 +52,9 @@ jobs:
     needs: [wait-for-img, kustomize]
     name: "Kyma CLI Integration"
     runs-on: ubuntu-latest
+    env:
+      MODULE_MANAGER: kyma-project/module-manager
+      LIFECYCLE_MANAGER: ${{ github.repository }}
     steps:
       - name: Set up k3d
         run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.4.6 bash
@@ -70,8 +71,8 @@ jobs:
       - name: Checkout Lifecycle-Manager
         uses: actions/checkout@v3
         with:
-          repository: ${{ github.repository }}
-          path: ${{ github.repository }}
+          repository: ${{ env.LIFECYCLE_MANAGER }}
+          path: ${{ env.LIFECYCLE_MANAGER }}
       - name: Checkout Module-Manager
         uses: actions/checkout@v3
         with:
@@ -80,8 +81,6 @@ jobs:
           ref: main
 
       - name: Move Repos to SRC
-        env:
-          LIFECYCLE_MANAGER: ${{ github.repository }}
         run: |
           mkdir -p $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER
           mv $GITHUB_WORKSPACE/{{ github.repository }} $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER
@@ -91,7 +90,7 @@ jobs:
       - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
         if: github.event_name == 'pull_request'
         run: |
-          cd $(go env GOPATH)/src/github.com/{{ .github.repository }}
+          cd $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER
           cd operator/config/manager
           kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
 
