@@ -61,12 +61,10 @@ jobs:
           wget -q https://storage.googleapis.com/kyma-cli-unstable/kyma-linux
           chmod +x kyma-linux
           mv kyma-linux /usr/local/bin/kyma
-
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          cache: true
-          check-latest: true
+      - name: Set up kustomize V4
+        run: |
+          wget -qO - "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          mv kustomize /usr/local/bin/
 
       - name: Checkout Lifecycle-Manager
         uses: actions/checkout@v3
