@@ -72,10 +72,13 @@ var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
 			Eventually(expectedBehavior, timeout, interval).Should(Succeed())
 		},
 		Entry("When ModuleTemplate.Spec.Target not exist deployed, expect Manifest.Spec.remote=false",
-			noCondition(), expectManifestSpecRemoteMatched(kyma.Name, true)),
+			noCondition(),
+			expectManifestSpecRemoteMatched(kyma.Name, true)),
 		Entry("When update ModuleTemplate.Spec.Target=remote, expect Manifest.Spec.remote=true",
-			updateModuleTemplateTarget(kyma.Name, v1alpha1.TargetRemote), expectManifestSpecRemoteMatched(kyma.Name, true)),
+			updateModuleTemplateTarget(kyma.Name, v1alpha1.TargetRemote),
+			expectManifestSpecRemoteMatched(kyma.Name, true)),
 		Entry("When update ModuleTemplate.Spec.Target=control-plane, expect Manifest.Spec.remote=false",
-			updateModuleTemplateTarget(kyma.Name, v1alpha1.TargetControlPlane), expectManifestSpecRemoteMatched(kyma.Name, false)),
+			updateModuleTemplateTarget(kyma.Name, v1alpha1.TargetControlPlane),
+			expectManifestSpecRemoteMatched(kyma.Name, false)),
 	)
 })
