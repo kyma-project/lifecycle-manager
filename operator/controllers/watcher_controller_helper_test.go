@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"time"
 
 	"github.com/onsi/gomega/types"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
@@ -22,11 +21,9 @@ import (
 
 const (
 	defaultBufferSize = 2048
-	updateInterval    = time.Millisecond * 1
-	watcherTimeout    = time.Second * 5
-	standardInterval  = time.Millisecond * 250
 )
 
+//nolint:gochecknoglobals
 var centralComponents = []string{"lifecycle-manager", "module-manager", "compass"}
 
 func deserializeIstioResources() ([]*unstructured.Unstructured, error) {
@@ -139,7 +136,6 @@ func createWatcherCR(moduleName string, statusOnly bool) *v1alpha1.Watcher {
 	}
 }
 
-//nolint:unused
 func isCrDeletionFinished(watcherObjKeys ...client.ObjectKey) func(g Gomega) bool {
 	if len(watcherObjKeys) > 1 {
 		return nil

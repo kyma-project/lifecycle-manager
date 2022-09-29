@@ -16,20 +16,18 @@ func cRSpecsUpdates() func(customIstioClient *custom.IstioClient) {
 	return func(customIstioClient *custom.IstioClient) {
 		watcherList := v1alpha1.WatcherList{}
 		Expect(controlPlaneClient.List(ctx, &watcherList)).To(Succeed())
-		for _, watcherCR := range watcherList.Items {
+		for idx, watcherCR := range watcherList.Items {
 			// update spec
 			watcherCR.Spec.ServiceInfo.Port = 9090
 			watcherCR.Spec.Field = v1alpha1.StatusField
-			Expect(controlPlaneClient.Update(ctx, &watcherCR)).Should(Succeed())
+			Expect(controlPlaneClient.Update(ctx, &watcherList.Items[idx])).Should(Succeed())
 
 			// verify
-			Eventually(watcherCRState(client.ObjectKeyFromObject(&watcherCR)), watcherTimeout, updateInterval).
-				Should(Equal(v1alpha1.WatcherStateProcessing))
-			Eventually(watcherCRState(client.ObjectKeyFromObject(&watcherCR)), watcherTimeout, standardInterval).
-				Should(Equal(v1alpha1.WatcherStateReady))
-			verifyVsRoutes(&watcherCR, customIstioClient, BeTrue())
+			Eventually(watcherCRState(client.ObjectKeyFromObject(&watcherList.Items[idx])),
+				timeout, interval).Should(Equal(v1alpha1.WatcherStateReady))
+			verifyVsRoutes(&watcherList.Items[idx], customIstioClient, BeTrue())
 			Expect(deploy.IsWebhookDeployed(ctx, cfg)).To(BeTrue())
-			Expect(deploy.IsWebhookConfigured(ctx, &watcherCR, cfg)).To(BeTrue())
+			Expect(deploy.IsWebhookConfigured(ctx, &watcherList.Items[idx], cfg)).To(BeTrue())
 		}
 	}
 }
@@ -44,8 +42,7 @@ func oneCRDeleted() func(customIstioClient *custom.IstioClient) {
 		watcherCR := watcherList.Items[watcherCRCount-1]
 		Expect(controlPlaneClient.Delete(ctx, &watcherCR)).To(Succeed())
 
-		//verify
-		Eventually(isCrDeletionFinished(client.ObjectKeyFromObject(&watcherCR)), watcherTimeout, standardInterval).
+		Eventually(isCrDeletionFinished(client.ObjectKeyFromObject(&watcherCR)), timeout, interval).
 			Should(BeTrue())
 		verifyVsRoutes(&watcherCR, customIstioClient, BeFalse())
 		Expect(deploy.IsWebhookDeployed(ctx, cfg)).To(BeTrue())
@@ -64,7 +61,7 @@ func allCRsDeleted() func(customIstioClient *custom.IstioClient) {
 			client.InNamespace(metav1.NamespaceDefault))).To(Succeed())
 
 		// verify
-		Eventually(isCrDeletionFinished(), watcherTimeout, standardInterval).Should(BeTrue())
+		Eventually(isCrDeletionFinished(), timeout, interval).Should(BeTrue())
 		verifyVsRoutes(nil, customIstioClient, BeTrue())
 		Expect(deploy.IsWebhookDeployed(ctx, cfg)).To(BeFalse())
 	}
@@ -106,7 +103,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 			watcherCR := createWatcherCR(component, isEven(idx))
 			Expect(controlPlaneClient.Create(ctx, watcherCR)).To(Succeed())
 			crObjectKey := client.ObjectKeyFromObject(watcherCR)
-			Eventually(watcherCRState(crObjectKey), watcherTimeout, standardInterval).
+			Eventually(watcherCRState(crObjectKey), timeout, interval).
 				Should(Equal(v1alpha1.WatcherStateReady))
 
 			// verify
@@ -119,12 +116,12 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	AfterEach(func() {
 		watcherList := v1alpha1.WatcherList{}
 		Expect(controlPlaneClient.List(ctx, &watcherList)).To(Succeed())
-		for _, watcherCR := range watcherList.Items {
+		for idx := range watcherList.Items {
 			// delete WatcherCR
-			Expect(controlPlaneClient.Delete(ctx, &watcherCR)).To(Succeed())
+			Expect(controlPlaneClient.Delete(ctx, &watcherList.Items[idx])).To(Succeed())
 		}
 		// verify deletion
-		Eventually(isCrDeletionFinished(), watcherTimeout, standardInterval).Should(BeTrue())
+		Eventually(isCrDeletionFinished(), timeout, interval).Should(BeTrue())
 	})
 
 	DescribeTable("given watcherCR reconcile loop",
