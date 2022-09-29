@@ -39,6 +39,7 @@ type WatcherSpec struct {
 	Field FieldName `json:"field"`
 }
 
+// +kubebuilder:validation:Enum=spec;status;
 type FieldName string
 
 const (
@@ -126,6 +127,7 @@ const (
 	WatcherConditionTypeReady WatcherConditionType = "Ready"
 )
 
+// +kubebuilder:validation:Enum=True;False;Unknown;
 type WatcherConditionStatus string
 
 // Valid WatcherConditionStatus.

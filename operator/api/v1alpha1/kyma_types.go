@@ -380,7 +380,8 @@ func IsValidState(state string) bool {
 func (kyma *Kyma) SyncConditionsWithModuleStates() {
 	conditionReason := ConditionReasonModulesAreReady
 	conditionStatus := metav1.ConditionTrue
-	for _, moduleInfo := range kyma.Status.ModuleInfos {
+	for i := range kyma.Status.ModuleInfos {
+		moduleInfo := &kyma.Status.ModuleInfos[i]
 		if moduleInfo.State != StateReady {
 			conditionStatus = metav1.ConditionFalse
 			break
