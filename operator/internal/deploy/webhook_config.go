@@ -11,12 +11,12 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	kyma "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	watcherv1alpha1 "github.com/kyma-project/runtime-watcher/kcp/api/v1alpha1"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
+
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 )
 
 const (
@@ -24,7 +24,7 @@ const (
 	kubeconfigKey                       = "config"
 	servicePathTpl                      = "/validate/%s"
 	webhookNameTpl                      = "%s.operator.kyma-project.io"
-	webhookConfigNameTpl                = "%s-webhook"
+	ReleaseName                         = "skr"
 	specSubresources                    = "*"
 	statusSubresources                  = "*/status"
 	configuredWebhooksDeletionThreshold = 1
@@ -36,15 +36,15 @@ type WatchableConfig struct {
 	StatusOnly bool              `json:"statusOnly"`
 }
 
-func UpdateWebhookConfig(ctx context.Context, chartPath, releaseName string,
-	obj *watcherv1alpha1.Watcher, inClusterCfg *rest.Config, k8sClient client.Client,
+func UpdateWebhookConfig(ctx context.Context, chartPath string,
+	obj *v1alpha1.Watcher, inClusterCfg *rest.Config, k8sClient client.Client,
 ) error {
 	restCfgs, err := getSKRRestConfigs(ctx, k8sClient, inClusterCfg)
 	if err != nil {
 		return err
 	}
 	for _, restCfg := range restCfgs {
-		err = updateWebhookConfigOrInstallSKRChart(ctx, chartPath, releaseName, obj, restCfg, k8sClient)
+		err = updateWebhookConfigOrInstallSKRChart(ctx, chartPath, obj, restCfg)
 		if err != nil {
 			continue
 		}
@@ -53,26 +53,24 @@ func UpdateWebhookConfig(ctx context.Context, chartPath, releaseName string,
 	return err
 }
 
-func RemoveWebhookConfig(ctx context.Context, chartPath, releaseName string,
-	obj *watcherv1alpha1.Watcher, inClusterCfg *rest.Config, k8sClient client.Client,
+func RemoveWebhookConfig(ctx context.Context, chartPath string, obj *v1alpha1.Watcher,
+	inClusterCfg *rest.Config, k8sClient client.Client,
 ) error {
 	restCfgs, err := getSKRRestConfigs(ctx, k8sClient, inClusterCfg)
 	if err != nil {
 		return err
 	}
 	for _, restCfg := range restCfgs {
-		err = removeWebhookConfig(ctx, chartPath, releaseName, obj, restCfg, k8sClient)
+		err = removeWebhookConfig(ctx, obj, restCfg)
 		if err != nil {
 			continue
 		}
 	}
-	// return err so that if err!=nil for at least one SKR, reconciliation will be retriggered after requeue interval
+	// return err so that if err!=nil for at least one SKR, reconciliation will be triggered after requeue interval
 	return err
 }
 
-func IsWebhookConfigured(ctx context.Context, obj *watcherv1alpha1.Watcher, restConfig *rest.Config,
-	releaseName string,
-) bool {
+func IsWebhookConfigured(ctx context.Context, obj *v1alpha1.Watcher, restConfig *rest.Config) bool {
 	remoteClient, err := client.New(restConfig, client.Options{})
 	if err != nil {
 		return false
@@ -80,7 +78,7 @@ func IsWebhookConfigured(ctx context.Context, obj *watcherv1alpha1.Watcher, rest
 	webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
 	err = remoteClient.Get(ctx, client.ObjectKey{
 		Namespace: metav1.NamespaceDefault,
-		Name:      webhookConfigName(releaseName),
+		Name:      resolveWebhookName(),
 	}, webhookConfig)
 	if err != nil {
 		return false
@@ -96,7 +94,7 @@ func IsWebhookConfigured(ctx context.Context, obj *watcherv1alpha1.Watcher, rest
 	return false
 }
 
-func IsWebhookDeployed(ctx context.Context, restConfig *rest.Config, releaseName string) bool {
+func IsWebhookDeployed(ctx context.Context, restConfig *rest.Config) bool {
 	remoteClient, err := client.New(restConfig, client.Options{})
 	if err != nil {
 		return false
@@ -104,21 +102,21 @@ func IsWebhookDeployed(ctx context.Context, restConfig *rest.Config, releaseName
 	webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
 	err = remoteClient.Get(ctx, client.ObjectKey{
 		Namespace: metav1.NamespaceDefault,
-		Name:      webhookConfigName(releaseName),
+		Name:      resolveWebhookName(),
 	}, webhookConfig)
 	return err == nil
 }
 
 func verifyWebhookConfig(
 	webhook admissionv1.ValidatingWebhook,
-	watcherCR *watcherv1alpha1.Watcher,
+	watcherCR *v1alpha1.Watcher,
 ) bool {
 	webhookNameParts := strings.Split(webhook.Name, ".")
 	if len(webhookNameParts) != expectedWebhookNamePartsLength {
 		return false
 	}
 	moduleName := webhookNameParts[0]
-	expectedModuleName, exists := watcherCR.Labels[watcherv1alpha1.ManagedBylabel]
+	expectedModuleName, exists := watcherCR.Labels[v1alpha1.ManagedBylabel]
 	if !exists {
 		return false
 	}
@@ -132,34 +130,35 @@ func verifyWebhookConfig(
 	if !reflect.DeepEqual(webhook.ObjectSelector.MatchLabels, watcherCR.Spec.LabelsToWatch) {
 		return false
 	}
-	if watcherCR.Spec.Field == watcherv1alpha1.StatusField && webhook.Rules[0].Resources[0] != statusSubresources {
+	if watcherCR.Spec.Field == v1alpha1.StatusField && webhook.Rules[0].Resources[0] != statusSubresources {
 		return false
 	}
-	if watcherCR.Spec.Field == watcherv1alpha1.SpecField && webhook.Rules[0].Resources[0] != specSubresources {
+	if watcherCR.Spec.Field == v1alpha1.SpecField && webhook.Rules[0].Resources[0] != specSubresources {
 		return false
 	}
 
 	return true
 }
 
-func updateWebhookConfigOrInstallSKRChart(ctx context.Context, chartPath, releaseName string,
-	obj *watcherv1alpha1.Watcher, restConfig *rest.Config, k8sClient client.Client,
+func updateWebhookConfigOrInstallSKRChart(ctx context.Context, chartPath string,
+	obj *v1alpha1.Watcher, restConfig *rest.Config,
 ) error {
 	remoteClient, err := client.New(restConfig, client.Options{})
 	if err != nil {
 		return err
 	}
+
 	webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
 	err = remoteClient.Get(ctx, client.ObjectKey{
 		Namespace: metav1.NamespaceDefault,
-		Name:      webhookConfigName(releaseName),
+		Name:      resolveWebhookName(),
 	}, webhookConfig)
 	if client.IgnoreNotFound(err) != nil {
 		return err
 	}
 	if kerrors.IsNotFound(err) {
 		// install chart
-		return InstallSKRWebhook(ctx, chartPath, releaseName, obj, restConfig)
+		return InstallSKRWebhook(ctx, chartPath, ReleaseName, obj, restConfig)
 	}
 	// generate webhook config from CR and update webhook config resource
 	if len(webhookConfig.Webhooks) < 1 {
@@ -176,7 +175,7 @@ func updateWebhookConfigOrInstallSKRChart(ctx context.Context, chartPath, releas
 	return remoteClient.Update(ctx, webhookConfig)
 }
 
-func lookupWebhookConfigForCR(webhooks []admissionv1.ValidatingWebhook, obj *watcherv1alpha1.Watcher) int {
+func lookupWebhookConfigForCR(webhooks []admissionv1.ValidatingWebhook, obj *v1alpha1.Watcher) int {
 	cfgIdx := -1
 	for idx, webhook := range webhooks {
 		webhookNameParts := strings.Split(webhook.Name, ".")
@@ -192,7 +191,7 @@ func lookupWebhookConfigForCR(webhooks []admissionv1.ValidatingWebhook, obj *wat
 	return cfgIdx
 }
 
-func generateWebhookConfigForCR(baseCfg admissionv1.ValidatingWebhook, obj *watcherv1alpha1.Watcher,
+func generateWebhookConfigForCR(baseCfg admissionv1.ValidatingWebhook, obj *v1alpha1.Watcher,
 ) admissionv1.ValidatingWebhook {
 	watcherCrWebhookCfg := baseCfg.DeepCopy()
 	moduleName := obj.GetModuleName()
@@ -202,7 +201,7 @@ func generateWebhookConfigForCR(baseCfg admissionv1.ValidatingWebhook, obj *watc
 	}
 	servicePath := fmt.Sprintf(servicePathTpl, moduleName)
 	watcherCrWebhookCfg.ClientConfig.Service.Path = &servicePath
-	if obj.Spec.Field == watcherv1alpha1.StatusField {
+	if obj.Spec.Field == v1alpha1.StatusField {
 		watcherCrWebhookCfg.Rules[0].Resources[0] = statusSubresources
 		return *watcherCrWebhookCfg
 	}
@@ -210,8 +209,7 @@ func generateWebhookConfigForCR(baseCfg admissionv1.ValidatingWebhook, obj *watc
 	return *watcherCrWebhookCfg
 }
 
-func removeWebhookConfig(ctx context.Context, chartPath, releaseName string,
-	obj *watcherv1alpha1.Watcher, restConfig *rest.Config, k8sClient client.Client,
+func removeWebhookConfig(ctx context.Context, obj *v1alpha1.Watcher, restConfig *rest.Config,
 ) error {
 	remoteClient, err := client.New(restConfig, client.Options{})
 	if err != nil {
@@ -220,7 +218,7 @@ func removeWebhookConfig(ctx context.Context, chartPath, releaseName string,
 	webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
 	err = remoteClient.Get(ctx, client.ObjectKey{
 		Namespace: metav1.NamespaceDefault,
-		Name:      webhookConfigName(releaseName),
+		Name:      resolveWebhookName(),
 	}, webhookConfig)
 	if client.IgnoreNotFound(err) != nil {
 		return err
@@ -247,7 +245,7 @@ func removeWebhookConfig(ctx context.Context, chartPath, releaseName string,
 
 func getSKRRestConfigs(ctx context.Context, reader client.Reader, inClusterCfg *rest.Config,
 ) (map[string]*rest.Config, error) {
-	kymaCRs := &kyma.KymaList{}
+	kymaCRs := &v1alpha1.KymaList{}
 	err := reader.List(ctx, kymaCRs)
 	if err != nil {
 		return nil, err
@@ -257,7 +255,7 @@ func getSKRRestConfigs(ctx context.Context, reader client.Reader, inClusterCfg *
 	}
 	restCfgMap := make(map[string]*rest.Config, len(kymaCRs.Items))
 	for _, kymaCr := range kymaCRs.Items {
-		if kymaCr.Spec.Sync.Strategy == kyma.SyncStrategyLocalClient || !kymaCr.Spec.Sync.Enabled {
+		if kymaCr.Spec.Sync.Strategy == v1alpha1.SyncStrategyLocalClient || !kymaCr.Spec.Sync.Enabled {
 			restCfgMap[kymaCr.Name] = inClusterCfg
 			continue
 		}
@@ -276,6 +274,6 @@ func getSKRRestConfigs(ctx context.Context, reader client.Reader, inClusterCfg *
 	return restCfgMap, nil
 }
 
-func webhookConfigName(releaseName string) string {
-	return fmt.Sprintf(webhookConfigNameTpl, releaseName)
+func resolveWebhookName() string {
+	return fmt.Sprintf("%s-webhook", ReleaseName)
 }

@@ -6,17 +6,19 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	modulelib "github.com/kyma-project/module-manager/operator/pkg/manifest"
 	"helm.sh/helm/v3/pkg/cli"
+
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	modulelib "github.com/kyma-project/module-manager/operator/pkg/manifest"
 
 	"k8s.io/client-go/rest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/go-logr/logr"
-	"github.com/kyma-project/module-manager/operator/pkg/custom"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	watcherv1alpha1 "github.com/kyma-project/runtime-watcher/kcp/api/v1alpha1"
+	"github.com/kyma-project/module-manager/operator/pkg/custom"
+
 	k8syaml "sigs.k8s.io/yaml"
 )
 
@@ -28,7 +30,7 @@ const (
 )
 
 func InstallSKRWebhook(ctx context.Context, chartPath, releaseName string,
-	obj *watcherv1alpha1.Watcher, restConfig *rest.Config,
+	obj *v1alpha1.Watcher, restConfig *rest.Config,
 ) error {
 	argsVals, err := generateHelmChartArgsForCR(obj)
 	if err != nil {
@@ -60,7 +62,7 @@ func prepareInstallInfo(chartPath, releaseName string, restConfig *rest.Config, 
 	}
 }
 
-func generateHelmChartArgsForCR(obj *watcherv1alpha1.Watcher) (map[string]interface{}, error) {
+func generateHelmChartArgsForCR(obj *v1alpha1.Watcher) (map[string]interface{}, error) {
 	chartCfg := generateWatchableConfigForCR(obj)
 	bytes, err := k8syaml.Marshal(chartCfg)
 	if err != nil {
@@ -71,8 +73,8 @@ func generateHelmChartArgsForCR(obj *watcherv1alpha1.Watcher) (map[string]interf
 	}, nil
 }
 
-func generateWatchableConfigForCR(obj *watcherv1alpha1.Watcher) map[string]WatchableConfig {
-	statusOnly := obj.Spec.Field == watcherv1alpha1.StatusField
+func generateWatchableConfigForCR(obj *v1alpha1.Watcher) map[string]WatchableConfig {
+	statusOnly := obj.Spec.Field == v1alpha1.StatusField
 	return map[string]WatchableConfig{
 		obj.GetModuleName(): {
 			Labels:     obj.Spec.LabelsToWatch,

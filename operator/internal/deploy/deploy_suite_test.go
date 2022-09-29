@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"testing"
 
-	kyma "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -15,6 +14,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	kyma "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 

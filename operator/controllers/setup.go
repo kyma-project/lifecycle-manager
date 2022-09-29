@@ -24,7 +24,7 @@ import (
 	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
 )
 
-// SetupWithManager sets up the controller with the Manager.
+// SetupWithManager sets up the Kyma controller with the Manager.
 func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options, listenerAddr string) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1alpha1.Kyma{}).WithOptions(options).
 		Watches(
@@ -86,7 +86,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 	return nil
 }
 
-// SetupWithManager sets up the controller with the Manager.
+// SetupWithManager sets up the ModuleCatalog controller with the Manager.
 func (r *ModuleCatalogReconciler) SetupWithManager(
 	mgr ctrl.Manager,
 	options controller.Options,
@@ -94,4 +94,18 @@ func (r *ModuleCatalogReconciler) SetupWithManager(
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Kyma{}).
 		WithOptions(options).Complete(r)
+}
+
+// SetupWithManager sets up the Watcher controller with the Manager.
+func (r *WatcherReconciler) SetupWithManager(
+	mgr ctrl.Manager,
+	options controller.Options,
+) error {
+	if err := r.SetIstioClient(); err != nil {
+		return fmt.Errorf("unable to set istio client for controller watcher %w", err)
+	}
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&v1alpha1.Watcher{}).
+		WithOptions(options).
+		Complete(r)
 }

@@ -96,7 +96,7 @@ type WatcherStatus struct {
 
 // WatcherCondition describes condition information for Watcher.
 type WatcherCondition struct {
-	// Type is used to reflect what type of condition we are dealing with. Most commonly ConditionTypeReady it is used
+	// Type is used to reflect what type of condition we are dealing with. Most commonly WatcherConditionTypeReady it is used
 	// as extension marker in the future
 	Type WatcherConditionType `json:"type"`
 
@@ -121,9 +121,9 @@ type WatcherCondition struct {
 type WatcherConditionType string
 
 const (
-	// ConditionTypeReady represents WatcherConditionType Ready, meaning as soon as its true we will reconcile Watcher
+	// WatcherConditionTypeReady represents WatcherConditionType Ready, meaning as soon as its true we will reconcile Watcher
 	// into WatcherStateReady.
-	ConditionTypeReady WatcherConditionType = "Ready"
+	WatcherConditionTypeReady WatcherConditionType = "Ready"
 )
 
 type WatcherConditionStatus string
@@ -173,14 +173,14 @@ func (w *Watcher) AddOrUpdateReadyCondition(state WatcherConditionStatus, msg st
 	lastTransitionTime := &metav1.Time{Time: time.Now()}
 	if len(w.Status.Conditions) == 0 {
 		w.Status.Conditions = []WatcherCondition{{
-			Type:               ConditionTypeReady,
+			Type:               WatcherConditionTypeReady,
 			Status:             state,
 			Message:            msg,
 			LastTransitionTime: lastTransitionTime,
 		}}
 	}
 	for _, condition := range w.Status.Conditions {
-		if condition.Type == ConditionTypeReady {
+		if condition.Type == WatcherConditionTypeReady {
 			condition.Status = state
 			condition.LastTransitionTime = lastTransitionTime
 		}

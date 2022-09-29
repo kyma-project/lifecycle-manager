@@ -326,12 +326,11 @@ func init() {
 func (kyma *Kyma) UpdateCondition(reason KymaConditionReason, status metav1.ConditionStatus) {
 	newCondition := NewConditionBuilder().SetReason(reason).SetStatus(status).Build()
 	isNewReason := true
-	for i := range kyma.Status.Conditions {
-		condition := &kyma.Status.Conditions[i]
+	for _, condition := range kyma.Status.Conditions {
 		if condition.Reason == string(reason) {
 			isNewReason = false
 			if condition.Status != newCondition.Status || condition.Type != newCondition.Type {
-				*condition = newCondition
+				condition = newCondition
 			}
 		}
 	}
@@ -380,10 +379,10 @@ func IsValidState(state string) bool {
 func (kyma *Kyma) SyncConditionsWithModuleStates() {
 	conditionReason := ConditionReasonModulesAreReady
 	conditionStatus := metav1.ConditionTrue
-	for i := range kyma.Status.ModuleInfos {
-		moduleInfo := kyma.Status.ModuleInfos[i]
+	for _, moduleInfo := range kyma.Status.ModuleInfos {
 		if moduleInfo.State != StateReady {
 			conditionStatus = metav1.ConditionFalse
+			break
 		}
 	}
 	kyma.UpdateCondition(conditionReason, conditionStatus)

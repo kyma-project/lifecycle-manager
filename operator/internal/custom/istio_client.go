@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	watcherv1alpha1 "github.com/kyma-project/runtime-watcher/kcp/api/v1alpha1"
 	istioapi "istio.io/api/networking/v1beta1"
 	istioclientapi "istio.io/client-go/pkg/apis/networking/v1beta1"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 )
 
 const (
@@ -51,7 +52,7 @@ func (c *IstioClient) updateVirtualService(ctx context.Context, virtualService *
 }
 
 func (c *IstioClient) IsListenerHTTPRouteConfigured(ctx context.Context, vsObjectKey client.ObjectKey,
-	obj *watcherv1alpha1.Watcher,
+	obj *v1alpha1.Watcher,
 ) bool {
 	virtualService := c.getVirtualService(ctx, vsObjectKey)
 	if virtualService == nil {
@@ -83,7 +84,7 @@ func (c *IstioClient) IsListenerHTTPRoutesEmpty(ctx context.Context, vsObjectKey
 }
 
 func (c *IstioClient) UpdateVirtualServiceConfig(ctx context.Context, vsObjectKey client.ObjectKey,
-	obj *watcherv1alpha1.Watcher,
+	obj *v1alpha1.Watcher,
 ) error {
 	virtualService := c.getVirtualService(ctx, vsObjectKey)
 	if virtualService == nil {
@@ -106,7 +107,7 @@ func (c *IstioClient) UpdateVirtualServiceConfig(ctx context.Context, vsObjectKe
 }
 
 func (c *IstioClient) RemoveVirtualServiceConfigForCR(ctx context.Context, vsObjectKey client.ObjectKey,
-	obj *watcherv1alpha1.Watcher,
+	obj *v1alpha1.Watcher,
 ) error {
 	virtualService := c.getVirtualService(ctx, vsObjectKey)
 	if virtualService == nil {
@@ -158,7 +159,7 @@ func isRouteConfigEqual(route1 *istioapi.HTTPRoute, route2 *istioapi.HTTPRoute) 
 	return true
 }
 
-func prepareIstioHTTPRouteForCR(obj *watcherv1alpha1.Watcher) *istioapi.HTTPRoute {
+func prepareIstioHTTPRouteForCR(obj *v1alpha1.Watcher) *istioapi.HTTPRoute {
 	return &istioapi.HTTPRoute{
 		Name: obj.GetModuleName(),
 		Match: []*istioapi.HTTPMatchRequest{

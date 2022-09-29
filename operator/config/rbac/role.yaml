@@ -45,6 +45,27 @@ rules:
   - list
   - watch
 - apiGroups:
+  - networking.istio.io
+  resources:
+  - gateways
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - watch
+- apiGroups:
+  - networking.istio.io
+  resources:
+  - virtualservices
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+- apiGroups:
   - operator.kyma-project.io
   resources:
   - kymas
@@ -69,8 +90,10 @@ rules:
   - kymas/status
   verbs:
   - get
+  - list
   - patch
   - update
+  - watch
 - apiGroups:
   - operator.kyma-project.io
   resources:
@@ -89,4 +112,30 @@ rules:
   resources:
   - moduletemplates/finalizers
   verbs:
+  - update
+- apiGroups:
+  - operator.kyma-project.io
+  resources:
+  - watchers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - operator.kyma-project.io
+  resources:
+  - watchers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - operator.kyma-project.io
+  resources:
+  - watchers/status
+  verbs:
+  - get
+  - patch
   - update
