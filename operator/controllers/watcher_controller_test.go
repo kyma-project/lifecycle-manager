@@ -93,7 +93,6 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 		}, createTableEntries([]string{"lifecycle-manager", "module-manager", "compass"}))
 
 	It("should delete service mesh routes and SKR config when one CR is deleted", func() {
-		Skip("")
 		firstToBeRemovedObjKey := client.ObjectKey{
 			Name:      "compass-sample",
 			Namespace: metav1.NamespaceDefault,
@@ -109,12 +108,12 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 			WithPolling(250 * time.Millisecond).
 			Should(BeTrue())
 
-		vsReady, err := customIstioClient.IsListenerHTTPRouteConfigured(ctx, client.ObjectKey{
+		routeReady, err := customIstioClient.IsListenerHTTPRouteConfigured(ctx, client.ObjectKey{
 			Name:      vsName,
 			Namespace: vsNamespace,
 		}, firstToBeRemoved)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(vsReady).To(BeTrue())
+		Expect(routeReady).To(BeFalse())
 
 		// verify webhook config
 		Expect(deploy.IsWebhookDeployed(ctx, cfg)).To(BeTrue())
@@ -122,7 +121,6 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	})
 
 	It("should delete all resources on SKR when all CRs are deleted", func() {
-		Skip("")
 		watchers := &v1alpha1.WatcherList{}
 		Expect(controlPlaneClient.List(ctx, watchers)).To(Succeed())
 		Expect(len(watchers.Items)).To(Equal(2))
