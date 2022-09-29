@@ -1,11 +1,13 @@
 package controllers_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 
 	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -18,15 +20,22 @@ func parseRemoteCRDs(testCrdURLs []string) ([]*apiextv1.CustomResourceDefinition
 		if err != nil {
 			return nil, err
 		}
-		resp, err := http.Get(testCrdURL) //nolint:gosec
+		request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, testCrdURL, nil)
 		if err != nil {
 			return nil, fmt.Errorf("failed pulling content for URL (%s) :%w", testCrdURL, err)
 		}
-		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("failed pulling content for URL (%s) with status code: %d", testCrdURL, resp.StatusCode)
+		client := &http.Client{Timeout: time.Second * 2}
+		response, err := client.Do(request)
+		if err != nil {
+			return nil, err
 		}
-		defer resp.Body.Close()
-		decoder := yaml.NewYAMLOrJSONDecoder(resp.Body, defaultBufferSize)
+		if response.StatusCode != http.StatusOK {
+			//nolint:goerr113
+			return nil, fmt.Errorf("failed pulling content for URL (%s) with status code: %d",
+				testCrdURL, response.StatusCode)
+		}
+		defer response.Body.Close()
+		decoder := yaml.NewYAMLOrJSONDecoder(response.Body, defaultBufferSize)
 		for {
 			crd := &apiextv1.CustomResourceDefinition{}
 			err = decoder.Decode(crd)

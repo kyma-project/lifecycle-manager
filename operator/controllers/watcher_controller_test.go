@@ -1,7 +1,6 @@
 package controllers_test
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
@@ -14,8 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-const ()
 
 var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	var customIstioClient *custom.IstioClient
@@ -58,10 +55,12 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 				Should(Equal(v1alpha1.WatcherStateReady))
 
 			// verify istio config
-			Expect(customIstioClient.IsListenerHTTPRouteConfigured(ctx, client.ObjectKey{
+			routeReady, err := customIstioClient.IsListenerHTTPRouteConfigured(ctx, client.ObjectKey{
 				Name:      vsName,
 				Namespace: vsNamespace,
-			}, watcherCR)).To(BeTrue())
+			}, watcherCR)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(routeReady).To(BeTrue())
 
 			// verify webhook config
 			Expect(deploy.IsWebhookDeployed(ctx, cfg)).To(BeTrue())
@@ -81,10 +80,12 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 				WithPolling(250 * time.Millisecond).
 				Should(Equal(v1alpha1.WatcherStateReady))
 
-			Expect(customIstioClient.IsListenerHTTPRouteConfigured(ctx, client.ObjectKey{
+			routeReady, err = customIstioClient.IsListenerHTTPRouteConfigured(ctx, client.ObjectKey{
 				Name:      vsName,
 				Namespace: vsNamespace,
-			}, currentWatcherCR)).To(BeTrue())
+			}, currentWatcherCR)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(routeReady).To(BeTrue())
 
 			// verify webhook config
 			Expect(deploy.IsWebhookDeployed(ctx, cfg)).To(BeTrue())
@@ -94,7 +95,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	It("should delete service mesh routes and SKR config when one CR is deleted", func() {
 		Skip("")
 		firstToBeRemovedObjKey := client.ObjectKey{
-			Name:      fmt.Sprintf("compass-sample"),
+			Name:      "compass-sample",
 			Namespace: metav1.NamespaceDefault,
 		}
 		firstToBeRemoved := &v1alpha1.Watcher{}
@@ -103,15 +104,17 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 
 		time.Sleep(250 * time.Millisecond)
 
-		Eventually(isCrDeletetionFinished(firstToBeRemovedObjKey)).
+		Eventually(isCrDeletionFinished(firstToBeRemovedObjKey)).
 			WithTimeout(20 * time.Second).
 			WithPolling(250 * time.Millisecond).
 			Should(BeTrue())
 
-		Expect(customIstioClient.IsListenerHTTPRouteConfigured(ctx, client.ObjectKey{
+		vsReady, err := customIstioClient.IsListenerHTTPRouteConfigured(ctx, client.ObjectKey{
 			Name:      vsName,
 			Namespace: vsNamespace,
-		}, firstToBeRemoved)).To(BeFalse())
+		}, firstToBeRemoved)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(vsReady).To(BeTrue())
 
 		// verify webhook config
 		Expect(deploy.IsWebhookDeployed(ctx, cfg)).To(BeTrue())
@@ -130,7 +133,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 
 		time.Sleep(250 * time.Millisecond)
 
-		Eventually(isCrDeletetionFinished()).
+		Eventually(isCrDeletionFinished()).
 			WithTimeout(20 * time.Second).
 			WithPolling(250 * time.Millisecond).
 			Should(BeTrue())
@@ -138,6 +141,13 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 			Name:      vsName,
 			Namespace: vsNamespace,
 		})).To(BeTrue())
+
+		routesReady, err := customIstioClient.IsListenerHTTPRoutesEmpty(ctx, client.ObjectKey{
+			Name:      vsName,
+			Namespace: vsNamespace,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(routesReady).To(BeTrue())
 
 		Expect(deploy.IsWebhookDeployed(ctx, cfg)).To(BeFalse())
 	})

@@ -71,7 +71,7 @@ func createKymaCR(kymaName string) *v1alpha1.Kyma {
 }
 
 func createTableEntries(watcherCRNames []string) []TableEntry {
-	var tableEntries []TableEntry
+	tableEntries := make([]TableEntry, 0)
 	for idx, watcherCRName := range watcherCRNames {
 		entry := Entry(fmt.Sprintf("%s-CR-scenario", watcherCRName),
 			createWatcherCR(watcherCRName, isEven(idx)),
@@ -83,23 +83,6 @@ func createTableEntries(watcherCRNames []string) []TableEntry {
 
 func isEven(idx int) bool {
 	return idx%2 == 0
-}
-
-func isCrDeletetionFinished(watcherObjKeys ...client.ObjectKey) func(g Gomega) bool {
-	if len(watcherObjKeys) > 1 {
-		return nil
-	}
-	if len(watcherObjKeys) == 0 {
-		return func(g Gomega) bool {
-			watchers := &v1alpha1.WatcherList{}
-			err := controlPlaneClient.List(ctx, watchers)
-			return err == nil && len(watchers.Items) == 0
-		}
-	}
-	return func(g Gomega) bool {
-		err := controlPlaneClient.Get(ctx, watcherObjKeys[0], &v1alpha1.Watcher{})
-		return kerrors.IsNotFound(err)
-	}
 }
 
 func watcherCRState(watcherObjKey client.ObjectKey) func(g Gomega) v1alpha1.WatcherState {
@@ -139,5 +122,23 @@ func createWatcherCR(moduleName string, statusOnly bool) *v1alpha1.Watcher {
 			},
 			Field: field,
 		},
+	}
+}
+
+//nolint:unused
+func isCrDeletionFinished(watcherObjKeys ...client.ObjectKey) func(g Gomega) bool {
+	if len(watcherObjKeys) > 1 {
+		return nil
+	}
+	if len(watcherObjKeys) == 0 {
+		return func(g Gomega) bool {
+			watchers := &v1alpha1.WatcherList{}
+			err := controlPlaneClient.List(ctx, watchers)
+			return err == nil && len(watchers.Items) == 0
+		}
+	}
+	return func(g Gomega) bool {
+		err := controlPlaneClient.Get(ctx, watcherObjKeys[0], &v1alpha1.Watcher{})
+		return kerrors.IsNotFound(err)
 	}
 }

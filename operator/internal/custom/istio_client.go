@@ -34,14 +34,14 @@ func NewVersionedIstioClient(cfg *rest.Config) (*IstioClient, error) {
 }
 
 func (c *IstioClient) getVirtualService(ctx context.Context, vsObjectKey client.ObjectKey,
-) *istioclientapi.VirtualService {
+) (*istioclientapi.VirtualService, error) {
 	virtualService, err := c.NetworkingV1beta1().
 		VirtualServices(vsObjectKey.Namespace).
 		Get(ctx, vsObjectKey.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("failed to fetch virtual service %w", err)
 	}
-	return virtualService
+	return virtualService, nil
 }
 
 func (c *IstioClient) updateVirtualService(ctx context.Context, virtualService *istioclientapi.VirtualService) error {
@@ -53,42 +53,42 @@ func (c *IstioClient) updateVirtualService(ctx context.Context, virtualService *
 
 func (c *IstioClient) IsListenerHTTPRouteConfigured(ctx context.Context, vsObjectKey client.ObjectKey,
 	obj *v1alpha1.Watcher,
-) bool {
-	virtualService := c.getVirtualService(ctx, vsObjectKey)
-	if virtualService == nil {
-		return false
+) (bool, error) {
+	virtualService, err := c.getVirtualService(ctx, vsObjectKey)
+	if err != nil {
+		return false, err
 	}
 	if len(virtualService.Spec.Http) == 0 {
-		return false
+		return false, nil
 	}
 
 	for idx, route := range virtualService.Spec.Http {
 		if route.Name == obj.GetModuleName() {
 			istioHTTPRoute := prepareIstioHTTPRouteForCR(obj)
-			return isRouteConfigEqual(virtualService.Spec.Http[idx], istioHTTPRoute)
+			return isRouteConfigEqual(virtualService.Spec.Http[idx], istioHTTPRoute), nil
 		}
 	}
 
-	return false
+	return false, nil
 }
 
-func (c *IstioClient) IsListenerHTTPRoutesEmpty(ctx context.Context, vsObjectKey client.ObjectKey) bool {
-	virtualService := c.getVirtualService(ctx, vsObjectKey)
-	if virtualService == nil {
-		return false
+func (c *IstioClient) IsListenerHTTPRoutesEmpty(ctx context.Context, vsObjectKey client.ObjectKey) (bool, error) {
+	virtualService, err := c.getVirtualService(ctx, vsObjectKey)
+	if err != nil {
+		return false, err
 	}
 	if len(virtualService.Spec.Http) == 0 {
-		return true
+		return true, nil
 	}
-	return false
+	return false, nil
 }
 
 func (c *IstioClient) UpdateVirtualServiceConfig(ctx context.Context, vsObjectKey client.ObjectKey,
 	obj *v1alpha1.Watcher,
 ) error {
-	virtualService := c.getVirtualService(ctx, vsObjectKey)
-	if virtualService == nil {
-		return fmt.Errorf("failed to get virtual service")
+	virtualService, err := c.getVirtualService(ctx, vsObjectKey)
+	if err != nil {
+		return err
 	}
 	// lookup cr config
 	routeIdx := lookupHTTPRouteByName(virtualService.Spec.Http, obj.GetModuleName())
@@ -109,9 +109,9 @@ func (c *IstioClient) UpdateVirtualServiceConfig(ctx context.Context, vsObjectKe
 func (c *IstioClient) RemoveVirtualServiceConfigForCR(ctx context.Context, vsObjectKey client.ObjectKey,
 	obj *v1alpha1.Watcher,
 ) error {
-	virtualService := c.getVirtualService(ctx, vsObjectKey)
-	if virtualService == nil {
-		return fmt.Errorf("failed to get virtual service")
+	virtualService, err := c.getVirtualService(ctx, vsObjectKey)
+	if err != nil {
+		return err
 	}
 	if len(virtualService.Spec.Http) == 0 {
 		// nothing to remove

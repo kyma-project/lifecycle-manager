@@ -82,7 +82,8 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	// check if deletionTimestamp is set, retry until it gets fully deleted
 	if !watcherObj.DeletionTimestamp.IsZero() && watcherObj.Status.State != v1alpha1.WatcherStateDeleting {
 		// if the status is not yet set to deleting, also update the status
-		return ctrl.Result{}, r.updateWatcherCRStatus(ctx, watcherObj, v1alpha1.WatcherStateDeleting, "deletion timestamp set")
+		return ctrl.Result{}, r.updateWatcherCRStatus(ctx, watcherObj, v1alpha1.WatcherStateDeleting,
+			"deletion timestamp set")
 	}
 
 	// check finalizer on native object
@@ -221,6 +222,7 @@ func (r *WatcherReconciler) updateWatcherCRStatus(ctx context.Context, obj *v1al
 }
 
 func (r *WatcherReconciler) SetIstioClient() error {
+	//nolint:goerr113
 	if r.RestConfig == nil {
 		return fmt.Errorf("reconciler rest config is not set")
 	}

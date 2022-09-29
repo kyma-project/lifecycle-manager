@@ -90,7 +90,6 @@ type FlagVar struct {
 	enableWebhooks                                                         bool
 	enableModuleCatalog, enableKcpWatcher                                  bool
 	skrWatcherPath                                                         string
-	skrWatcherRelName                                                      string
 	vsName                                                                 string
 	vsNamespace                                                            string
 }
@@ -145,11 +144,9 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 	if flagVar.enableModuleCatalog {
 		setupModuleCatalogReconciler(mgr, flagVar, intervals, options)
 	}
-
 	if flagVar.enableKcpWatcher {
 		setupKcpWatcherReconciler(mgr, flagVar, intervals, options)
 	}
-
 	if flagVar.enableWebhooks {
 		if err := (&operatorv1alpha1.ModuleTemplate{}).
 			SetupWebhookWithManager(mgr); err != nil {

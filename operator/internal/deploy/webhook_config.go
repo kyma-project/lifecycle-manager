@@ -162,6 +162,7 @@ func updateWebhookConfigOrInstallSKRChart(ctx context.Context, chartPath string,
 	}
 	// generate webhook config from CR and update webhook config resource
 	if len(webhookConfig.Webhooks) < 1 {
+		//nolint:goerr113
 		return fmt.Errorf("failed to get base webhook config")
 	}
 	idx := lookupWebhookConfigForCR(webhookConfig.Webhooks, obj)
@@ -251,6 +252,7 @@ func getSKRRestConfigs(ctx context.Context, reader client.Reader, inClusterCfg *
 		return nil, err
 	}
 	if len(kymaCRs.Items) == 0 {
+		//nolint:goerr113
 		return nil, fmt.Errorf("no kymas found")
 	}
 	restCfgMap := make(map[string]*rest.Config, len(kymaCRs.Items))

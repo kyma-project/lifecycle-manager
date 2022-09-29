@@ -96,8 +96,8 @@ type WatcherStatus struct {
 
 // WatcherCondition describes condition information for Watcher.
 type WatcherCondition struct {
-	// Type is used to reflect what type of condition we are dealing with. Most commonly WatcherConditionTypeReady it is used
-	// as extension marker in the future
+	// Type is used to reflect what type of condition we are dealing with.
+	// Most commonly WatcherConditionTypeReady it is used as extension marker in the future.
 	Type WatcherConditionType `json:"type"`
 
 	// Status of the Watcher Condition.
@@ -121,8 +121,8 @@ type WatcherCondition struct {
 type WatcherConditionType string
 
 const (
-	// WatcherConditionTypeReady represents WatcherConditionType Ready, meaning as soon as its true we will reconcile Watcher
-	// into WatcherStateReady.
+	// WatcherConditionTypeReady represents WatcherConditionType Ready,
+	// meaning as soon as its true we will reconcile Watcher into WatcherStateReady.
 	WatcherConditionTypeReady WatcherConditionType = "Ready"
 )
 

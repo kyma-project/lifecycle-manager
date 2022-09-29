@@ -62,7 +62,6 @@ var (
 	ctx                context.Context      //nolint:gochecknoglobals
 	cancel             context.CancelFunc   //nolint:gochecknoglobals
 	cfg                *rest.Config         //nolint:gochecknoglobals
-	testEnv            *envtest.Environment //nolint:gochecknoglobals
 )
 
 const (

@@ -97,19 +97,21 @@ func installOrRemoveChartOnSKR(ctx context.Context, restConfig *rest.Config, rel
 	if mode == ModeUninstall {
 		uninstalled, err := ops.Uninstall(deployInfo)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to uninstall webhook config: %w", err)
 		}
 		if !uninstalled {
-			return fmt.Errorf("failed to install webhook config")
+			//nolint:goerr113
+			return fmt.Errorf("waiting for skr webhook resources to be deleted")
 		}
 		return nil
 	}
 	installed, err := ops.Install(deployInfo)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to install webhook config: %w", err)
 	}
 	if !installed {
-		return fmt.Errorf("failed to install webhook config")
+		//nolint:goerr113
+		return fmt.Errorf("installed skr webhook resources are not ready")
 	}
 	return nil
 }
