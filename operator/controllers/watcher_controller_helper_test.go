@@ -5,20 +5,29 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
+	"github.com/onsi/gomega/types"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	yaml "k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/internal/custom"
 )
 
-const defaultBufferSize = 2048
+const (
+	defaultBufferSize = 2048
+	updateInterval    = time.Millisecond * 1
+	watcherTimeout    = time.Second * 5
+	standardInterval  = time.Millisecond * 250
+)
+
+var centralComponents = []string{"lifecycle-manager", "module-manager", "compass"}
 
 func deserializeIstioResources() ([]*unstructured.Unstructured, error) {
 	var istioResourcesList []*unstructured.Unstructured
@@ -70,15 +79,20 @@ func createKymaCR(kymaName string) *v1alpha1.Kyma {
 	}
 }
 
-func createTableEntries(watcherCRNames []string) []TableEntry {
-	tableEntries := make([]TableEntry, 0)
-	for idx, watcherCRName := range watcherCRNames {
-		entry := Entry(fmt.Sprintf("%s-CR-scenario", watcherCRName),
-			createWatcherCR(watcherCRName, isEven(idx)),
-		)
-		tableEntries = append(tableEntries, entry)
+func verifyVsRoutes(watcherCR *v1alpha1.Watcher, customIstioClient *custom.IstioClient, matcher types.GomegaMatcher) {
+	vsKey := client.ObjectKey{
+		Name:      vsName,
+		Namespace: vsNamespace,
 	}
-	return tableEntries
+	if watcherCR != nil {
+		routeReady, err := customIstioClient.IsListenerHTTPRouteConfigured(ctx, vsKey, watcherCR)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(routeReady).To(matcher)
+	} else {
+		routesReady, err := customIstioClient.IsListenerHTTPRoutesEmpty(ctx, vsKey)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(routesReady).To(matcher)
+	}
 }
 
 func isEven(idx int) bool {
