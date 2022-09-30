@@ -61,6 +61,7 @@ jobs:
       LIFECYCLE_MANAGER: ${{ github.repository }}
       K3D_VERSION: v5.4.6
       CLUSTER_NAME: "kyma"
+      VERBOSE: false
     steps:
       - name: Checkout Lifecycle-Manager
         uses: actions/checkout@v3
@@ -126,4 +127,4 @@ jobs:
       - name: Run Smoke Tests for ${{ matrix.smoke-run }}
         run: |
           cd $(go env GOPATH)/src/github.com/${{ matrix.smoke-run }}/tests/smoke
-          go test smoke_test.go -v
+          go test smoke_test.go ${{ env.VERBOSE && '-v' || '' }}
