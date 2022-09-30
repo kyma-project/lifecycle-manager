@@ -60,7 +60,6 @@ jobs:
       MODULE_MANAGER: kyma-project/module-manager
       LIFECYCLE_MANAGER: ${{ github.repository }}
       K3D_VERSION: v5.4.6
-      CLUSTER_NAME: "kyma"
       VERBOSE: false
     steps:
       - name: Checkout Lifecycle-Manager
@@ -102,7 +101,7 @@ jobs:
             -p 8443:443@loadbalancer \
             --timeout 1m \
             --k3d-arg --no-rollback \
-            --name $CLUSTER_NAME
+            --name kyma
       - name: Update Kubeconfigs
         run: k3d kubeconfig merge -a -d
       - name: Run Deploy
