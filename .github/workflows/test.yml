@@ -126,4 +126,4 @@ jobs:
       - name: Run Smoke Tests for ${{ matrix.smoke-run }}
         run: |
           cd $(go env GOPATH)/src/github.com/${{ matrix.smoke-run }}/tests/smoke
-          go test smoke_test.go -v --kubeconfig ~/.kube/config
+          go test smoke_test.go -v

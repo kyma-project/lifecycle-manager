@@ -14,6 +14,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/e2e-framework/klient"
+	"sigs.k8s.io/e2e-framework/klient/conf"
 	"sigs.k8s.io/e2e-framework/klient/wait"
 	"sigs.k8s.io/e2e-framework/klient/wait/conditions"
 	"sigs.k8s.io/e2e-framework/pkg/env"
@@ -36,6 +37,11 @@ func TestMain(m *testing.M) {
 
 	flag.Parse()
 	log.Println("creating test environment")
+
+	if cfg.KubeconfigFile() == "" {
+		cfg.WithKubeconfigFile(conf.ResolveKubeConfigFile())
+	}
+	log.Println("using kubeconfig in " + cfg.KubeconfigFile())
 
 	TestEnv = env.NewWithConfig(cfg)
 
