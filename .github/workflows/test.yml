@@ -102,7 +102,8 @@ jobs:
             --timeout 1m \
             --k3d-arg --no-rollback \
             --name $CLUSTER_NAME
-          k3d kubeconfig merge $CLUSTER_NAME -o $GITHUB_WORKSPACE/kubeconfig.yaml
+      - name: Update Kubeconfigs
+        run: k3d kubeconfig merge -a -d
       - name: Run Deploy
         run: kyma alpha deploy --source=local
       - name: Inject GOPATH into go Setup
