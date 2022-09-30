@@ -57,8 +57,8 @@ jobs:
     name: "Kyma CLI - ${{ matrix.cli-stability }} - Integration (Tests of ${{ matrix.smoke-run }})"
     runs-on: ubuntu-latest
     env:
-      MODULE_MANAGER: ${{ github.repository }}
-      LIFECYCLE_MANAGER: kyma-project/lifecycle-manager
+      MODULE_MANAGER: kyma-project/module-manager
+      LIFECYCLE_MANAGER: ${{ github.repository }}
       K3D_VERSION: v5.4.6
       CLUSTER_NAME: "kyma"
     steps:
