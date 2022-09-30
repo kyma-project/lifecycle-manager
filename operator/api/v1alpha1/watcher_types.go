@@ -144,6 +144,8 @@ const (
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
+//+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // Watcher is the Schema for the watchers API.
 type Watcher struct {
@@ -181,7 +183,8 @@ func (w *Watcher) AddOrUpdateReadyCondition(state WatcherConditionStatus, msg st
 			LastTransitionTime: lastTransitionTime,
 		}}
 	}
-	for _, condition := range w.Status.Conditions {
+	for i := range w.Status.Conditions {
+		condition := &w.Status.Conditions[i]
 		if condition.Type == WatcherConditionTypeReady {
 			condition.Status = state
 			condition.LastTransitionTime = lastTransitionTime
