@@ -52,12 +52,15 @@ jobs:
     strategy:
       matrix:
         cli-stability: ["unstable"]
+        smoke-run: [ "${{ github.repository }}" ]
     needs: [wait-for-img, kustomize]
-    name: "Kyma CLI Integration"
+    name: "Kyma CLI - ${{ matrix.cli-stability }} - Integration (Tests of ${{ matrix.smoke-run }})"
     runs-on: ubuntu-latest
     env:
-      MODULE_MANAGER: kyma-project/module-manager
-      LIFECYCLE_MANAGER: ${{ github.repository }}
+      MODULE_MANAGER: ${{ github.repository }}
+      LIFECYCLE_MANAGER: kyma-project/lifecycle-manager
+      K3D_VERSION: v5.4.6
+      CLUSTER_NAME: "kyma"
     steps:
       - name: Checkout Lifecycle-Manager
         uses: actions/checkout@v3
@@ -73,7 +76,6 @@ jobs:
         with:
           repository: ${{ env.MODULE_MANAGER }}
           path: ${{ env.MODULE_MANAGER }}
-          ref: main
       - name: Move Module-Manager
         run: |
           mkdir -p $(go env GOPATH)/src/github.com/$MODULE_MANAGER
@@ -83,18 +85,16 @@ jobs:
         run: |
           wget -qO - "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
           mv kustomize /usr/local/bin/
-          cd $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/operator/config/manager
+          cd $(go env GOPATH)/src/github.com/${{ github.repository }}/operator/config/manager
           kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
       - name: Set up k3d
-        run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.4.6 bash
-      - name: Set up CLI
-        run: |
-          wget -q https://storage.googleapis.com/kyma-cli-${{ matrix.cli-stability }}/kyma-linux
-          chmod +x kyma-linux
-          mv kyma-linux /usr/local/bin/kyma
+        run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
+      - id: kyma
+        uses: jakobmoellersap/kyma-cli-action@v0.0.1-alpha1
+        with:
+          version: ${{ matrix.cli-stability }}
+      - run: ln -s ${{ steps.kyma.outputs.path }} /usr/local/bin/kyma
       - name: Run Provision
-        env:
-          CLUSTER_NAME: "kyma"
         run: |
           kyma provision k3d \
             -p 8083:80@loadbalancer \
@@ -107,23 +107,25 @@ jobs:
         run: kyma alpha deploy --source=local
       - name: Inject GOPATH into go Setup
         run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+
       - uses: actions/cache@v3
+        name: Cache Go Dependencies for Smoke Tests
         with:
           path: |
             ~/go/pkg/mod
             ~/.cache/go-build
-          key: ${{ runner.os }}-go-cli-integration-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-cli-integration-${{ matrix.smoke-run }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
-            ${{ runner.os }}-go-cli-integration-
-      - name: Set up Go
+            ${{ runner.os }}-go-cli-integration-${{ matrix.smoke-run }}
+      - name: Set up Go for ${{ matrix.smoke-run }}
         uses: actions/setup-go@v3
         with:
-          go-version-file: ${{ env.GOPATH }}/src/github.com/${{ env.LIFECYCLE_MANAGER }}/tests/smoke/go.mod
-          cache-dependency-path: ${{ env.GOPATH }}/src/github.com/${{ env.LIFECYCLE_MANAGER }}/tests/smoke/go.sum
-      - name: Run Smoke Tests
+          go-version-file: ${{ env.GOPATH }}/src/github.com/${{ matrix.smoke-run }}/tests/smoke/go.mod
+          cache-dependency-path: ${{ env.GOPATH }}/src/github.com/${{ matrix.smoke-run }}/tests/smoke/go.sum
+      - name: Run Smoke Tests for ${{ matrix.smoke-run }}
         run: |
-          cd $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/tests/smoke
-          go test smoke_test.go -v -provision-type external --kubeconfig $GITHUB_WORKSPACE/kubeconfig.yaml
+          cd $(go env GOPATH)/src/github.com/${{ matrix.smoke-run }}/tests/smoke
+          go test smoke_test.go -v --kubeconfig $GITHUB_WORKSPACE/kubeconfig.yaml
 
   smoke:
     needs: [wait-for-img, kustomize]
