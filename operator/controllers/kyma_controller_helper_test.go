@@ -17,6 +17,7 @@ import (
 	sampleCRDv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/config/samples/component-integration-installed/crd/v1alpha1" //nolint:lll
 	"github.com/kyma-project/lifecycle-manager/operator/controllers"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/module/common"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/test"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/watch"
 	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -53,12 +54,27 @@ func RandString(n int) string {
 	return string(b)
 }
 
+func DeployModuleTemplate(kyma *v1alpha1.Kyma) {
+	for _, module := range kyma.Spec.Modules {
+		template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
+	}
+}
+
 func RegisterDefaultLifecycleForKyma(kyma *v1alpha1.Kyma) {
-	BeforeEach(func() {
+	BeforeAll(func() {
 		Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
+		DeployModuleTemplate(kyma)
 	})
-	AfterEach(func() {
+
+	AfterAll(func() {
 		Expect(controlPlaneClient.Delete(ctx, kyma)).Should(Succeed())
+	})
+
+	BeforeEach(func() {
+		By("get latest kyma CR")
+		Expect(controlPlaneClient.Get(ctx, client.ObjectKey{Name: kyma.Name, Namespace: namespace}, kyma)).Should(Succeed())
 	})
 }
 
@@ -123,18 +139,23 @@ func SKRModuleExistWithOverwrites(kymaName string, moduleName string) func() str
 	return func() string {
 		module, err := getModule(kymaName, moduleName)
 		Expect(err).ToNot(HaveOccurred())
-		body, err := json.Marshal(module.Object["spec"])
-		Expect(err).ToNot(HaveOccurred())
-		manifestSpec := manifestV1alpha1.ManifestSpec{}
-		err = json.Unmarshal(body, &manifestSpec)
-		Expect(err).ToNot(HaveOccurred())
-		body, err = json.Marshal(manifestSpec.Resource.Object["spec"])
+		manifestSpec := UnmarshalManifestSpec(module)
+		body, err := json.Marshal(manifestSpec.Resource.Object["spec"])
 		Expect(err).ToNot(HaveOccurred())
 		skrModuleSpec := sampleCRDv1alpha1.SKRModuleSpec{}
 		err = json.Unmarshal(body, &skrModuleSpec)
 		Expect(err).ToNot(HaveOccurred())
 		return skrModuleSpec.InitKey
 	}
+}
+
+func UnmarshalManifestSpec(module *unstructured.Unstructured) *manifestV1alpha1.ManifestSpec {
+	body, err := json.Marshal(module.Object["spec"])
+	Expect(err).ToNot(HaveOccurred())
+	manifestSpec := manifestV1alpha1.ManifestSpec{}
+	err = json.Unmarshal(body, &manifestSpec)
+	Expect(err).ToNot(HaveOccurred())
+	return &manifestSpec
 }
 
 func getModule(kymaName, moduleName string) (*unstructured.Unstructured, error) {
@@ -169,6 +190,15 @@ func GetKyma(
 	return kymaInCluster, nil
 }
 
+func GetModuleTemplate(name string) (*v1alpha1.ModuleTemplate, error) {
+	moduleTemplateInCluster := &v1alpha1.ModuleTemplate{}
+	err := controlPlaneClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, moduleTemplateInCluster)
+	if err != nil {
+		return nil, err
+	}
+	return moduleTemplateInCluster, nil
+}
+
 func RemoteKymaExists(remoteClient client.Client, kymaName string) func() error {
 	return func() error {
 		_, err := GetKyma(remoteClient, kymaName)
@@ -197,13 +227,17 @@ func CatalogExists(clnt client.Client, kyma *v1alpha1.Kyma) func() error {
 	}
 }
 
-func deleteModule(kyma *v1alpha1.Kyma, moduleTemplate *v1alpha1.ModuleTemplate,
-) error {
-	component := moduleTemplate.Spec.Data.DeepCopy()
-	if moduleTemplate.Spec.Target == v1alpha1.TargetRemote {
-		component.SetKind("Manifest")
+func deleteModule(kymaName, moduleName string) func() error {
+	return func() error {
+		component := &unstructured.Unstructured{}
+		component.SetGroupVersionKind(schema.GroupVersionKind{
+			Group:   v1alpha1.OperatorPrefix,
+			Version: v1alpha1.Version,
+			Kind:    "Manifest",
+		})
+		component.SetNamespace(namespace)
+		component.SetName(common.CreateModuleName(moduleName, kymaName))
+		err := controlPlaneClient.Delete(ctx, component)
+		return client.IgnoreNotFound(err)
 	}
-	component.SetNamespace(namespace)
-	component.SetName(common.CreateModuleName(moduleTemplate.GetLabels()[v1alpha1.ModuleName], kyma.GetName()))
-	return controlPlaneClient.Delete(ctx, component)
 }

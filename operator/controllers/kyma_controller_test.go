@@ -5,15 +5,9 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kyma-project/lifecycle-manager/operator/pkg/test"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 )
 
 const (
@@ -22,7 +16,7 @@ const (
 	interval  = time.Millisecond * 250
 )
 
-var _ = Describe("Kyma with no ModuleTemplate", func() {
+var _ = Describe("Kyma with no ModuleTemplate", Ordered, func() {
 	kyma := NewTestKyma("no-module-kyma")
 	RegisterDefaultLifecycleForKyma(kyma)
 
@@ -30,14 +24,10 @@ var _ = Describe("Kyma with no ModuleTemplate", func() {
 		By("having transitioned the CR State to Ready as there are no modules")
 		Eventually(IsKymaInState(kyma.GetName(), v1alpha1.StateReady), timeout, interval).Should(BeTrue())
 	})
-
-	When("creating a Kyma CR with Module based on an Empty ModuleTemplate", func() {
-	})
 })
 
-var _ = Describe("Kyma with empty ModuleTemplate", func() {
+var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 	kyma := NewTestKyma("empty-module-kyma")
-	RegisterDefaultLifecycleForKyma(kyma)
 
 	kyma.Spec.Modules = append(kyma.Spec.Modules, v1alpha1.Module{
 		ControllerName: "manifest",
@@ -45,16 +35,7 @@ var _ = Describe("Kyma with empty ModuleTemplate", func() {
 		Channel:        v1alpha1.ChannelStable,
 	})
 
-	moduleTemplates := make([]*v1alpha1.ModuleTemplate, 0)
-
-	BeforeEach(func() {
-		for _, module := range kyma.Spec.Modules {
-			template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
-			Expect(err).ShouldNot(HaveOccurred())
-			Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
-			moduleTemplates = append(moduleTemplates, template)
-		}
-	})
+	RegisterDefaultLifecycleForKyma(kyma)
 
 	It("should result in Kyma becoming Ready", func() {
 		By("checking the state to be Processing")
@@ -89,36 +70,19 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 		skrModule *v1alpha1.Module
 		kcpModule *v1alpha1.Module
 	)
-	moduleTemplates := make(map[string]*v1alpha1.ModuleTemplate)
-	BeforeAll(func() {
-		kyma = NewTestKyma("kyma-test-recreate")
-		skrModule = &v1alpha1.Module{
-			ControllerName: "manifest", // this is a module for SKR that should be installed by module-manager
-			Name:           "skr-module",
-			Channel:        v1alpha1.ChannelStable,
-		}
-		kcpModule = &v1alpha1.Module{
-			ControllerName: "manifest", // this is a module for KCP that should be installed by module-manager
-			Name:           "kcp-module",
-			Channel:        v1alpha1.ChannelStable,
-		}
-		kyma.Spec.Modules = append(kyma.Spec.Modules, *skrModule, *kcpModule)
-		Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
-	})
-
-	BeforeEach(func() {
-		By("get latest kyma CR")
-		Expect(controlPlaneClient.Get(ctx, client.ObjectKey{Name: kyma.Name, Namespace: namespace}, kyma)).Should(Succeed())
-	})
-
-	It("module template created", func() {
-		for _, module := range kyma.Spec.Modules {
-			template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
-			Expect(err).ShouldNot(HaveOccurred())
-			Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
-			moduleTemplates[module.Name] = template
-		}
-	})
+	kyma = NewTestKyma("kyma-test-recreate")
+	skrModule = &v1alpha1.Module{
+		ControllerName: "manifest", // this is a module for SKR that should be installed by module-manager
+		Name:           "skr-module",
+		Channel:        v1alpha1.ChannelStable,
+	}
+	kcpModule = &v1alpha1.Module{
+		ControllerName: "manifest", // this is a module for KCP that should be installed by module-manager
+		Name:           "kcp-module",
+		Channel:        v1alpha1.ChannelStable,
+	}
+	kyma.Spec.Modules = append(kyma.Spec.Modules, *skrModule, *kcpModule)
+	RegisterDefaultLifecycleForKyma(kyma)
 
 	It("CR should be recreated after delete", func() {
 		By("CR created")
@@ -126,8 +90,8 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 			Eventually(ModuleExists(kyma.GetName(), activeModule.Name), timeout, interval).Should(BeTrue())
 		}
 		By("Delete CR")
-		for _, activeModule := range moduleTemplates {
-			Expect(deleteModule(kyma, activeModule)).To(Succeed())
+		for _, activeModule := range kyma.Spec.Modules {
+			Eventually(deleteModule(kyma.GetName(), activeModule.Name), timeout, interval).Should(Succeed())
 		}
 
 		By("CR created again")
@@ -153,15 +117,10 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 		By("skr-module exists")
 		Eventually(ModuleExists(kyma.GetName(), skrModule.Name), timeout, interval).Should(BeTrue())
 	})
-
-	AfterAll(func() {
-		Expect(controlPlaneClient.Delete(ctx, kyma)).Should(Succeed())
-	})
 })
 
-var _ = Describe("Kyma update Manifest CR", func() {
+var _ = Describe("Kyma update Manifest CR", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-update")
-	RegisterDefaultLifecycleForKyma(kyma)
 
 	kyma.Spec.Modules = append(kyma.Spec.Modules, v1alpha1.Module{
 		ControllerName: "manifest",
@@ -169,16 +128,7 @@ var _ = Describe("Kyma update Manifest CR", func() {
 		Channel:        v1alpha1.ChannelStable,
 	})
 
-	moduleTemplates := make([]*v1alpha1.ModuleTemplate, 0)
-
-	BeforeEach(func() {
-		for _, module := range kyma.Spec.Modules {
-			template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
-			Expect(err).ShouldNot(HaveOccurred())
-			Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
-			moduleTemplates = append(moduleTemplates, template)
-		}
-	})
+	RegisterDefaultLifecycleForKyma(kyma)
 
 	It("Manifest CR should be updated after module template changed", func() {
 		By("CR created")
@@ -198,9 +148,11 @@ var _ = Describe("Kyma update Manifest CR", func() {
 
 		By("Update Module Template spec.data.spec field")
 		valueUpdated := "valueUpdated"
-		for _, activeModule := range moduleTemplates {
-			activeModule.Spec.Data.Object["spec"] = map[string]any{"initKey": valueUpdated}
-			err := controlPlaneClient.Update(ctx, activeModule)
+		for _, activeModule := range kyma.Spec.Modules {
+			moduleTemplate, err := GetModuleTemplate(activeModule.Name)
+			Expect(err).ToNot(HaveOccurred())
+			moduleTemplate.Spec.Data.Object["spec"] = map[string]any{"initKey": valueUpdated}
+			err = controlPlaneClient.Update(ctx, moduleTemplate)
 			Expect(err).ToNot(HaveOccurred())
 		}
 		By("CR updated with new value in spec.resource.spec")
