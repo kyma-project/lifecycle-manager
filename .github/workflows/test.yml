@@ -5,6 +5,13 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
+    inputs:
+      verbose:
+        description: 'Verbosity of the Test Logs (if applicable)'
+        required: false
+        default: false
+        type: boolean
 jobs:
   wait-for-img:
     name: "Wait for Image Build"
@@ -60,7 +67,6 @@ jobs:
       MODULE_MANAGER: kyma-project/module-manager
       LIFECYCLE_MANAGER: ${{ github.repository }}
       K3D_VERSION: v5.4.6
-      VERBOSE: false
     steps:
       - name: Checkout Lifecycle-Manager
         uses: actions/checkout@v3
@@ -126,4 +132,4 @@ jobs:
       - name: Run Smoke Tests for ${{ matrix.smoke-run }}
         run: |
           cd $(go env GOPATH)/src/github.com/${{ matrix.smoke-run }}/tests/smoke
-          go test smoke_test.go ${{ env.VERBOSE && '-v' || '' }}
+          go test smoke_test.go ${{ inputs.verbose && '-v' || '' }}
