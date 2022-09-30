@@ -6,6 +6,3 @@ resources:
 
 generatorOptions:
   disableNameSuffixHash: true
-
-patchesStrategicMerge:
-  - watcher_service_patch.yaml
