@@ -97,10 +97,6 @@ func (r *runnerImpl) createModule(ctx context.Context, name string, kyma *v1alph
 func (r *runnerImpl) updateModule(ctx context.Context, name string, kyma *v1alpha1.Kyma,
 	module *common.Module,
 ) error {
-	if module.Template.Spec.Target == v1alpha1.TargetControlPlane {
-		return nil
-	}
-
 	if err := r.setupModule(module, kyma, name); err != nil {
 		return err
 	}

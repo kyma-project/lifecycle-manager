@@ -14,7 +14,6 @@ rules:
   - delete
   - get
   - list
-  - onEvent
   - patch
   - update
   - watch
@@ -74,7 +73,6 @@ rules:
   - delete
   - get
   - list
-  - onEvent
   - patch
   - update
   - watch
@@ -103,7 +101,6 @@ rules:
   - delete
   - get
   - list
-  - onEvent
   - patch
   - update
   - watch
