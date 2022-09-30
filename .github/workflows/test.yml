@@ -10,7 +10,7 @@ on:
       verbose:
         description: 'Verbosity of the Test Logs (if applicable)'
         required: false
-        default: false
+        default: true
         type: boolean
 jobs:
   wait-for-img:

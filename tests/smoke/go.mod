@@ -3,12 +3,15 @@ module github.com/kyma-project/lifecycle-manager/tests/smoke
 go 1.19
 
 require (
-	github.com/kyma-project/lifecycle-manager/operator v0.0.0-20220930074956-6267039e7d63
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.25.2
 	k8s.io/apimachinery v0.25.2
 	sigs.k8s.io/e2e-framework v0.0.7
 )
+
+require github.com/kyma-project/lifecycle-manager/operator v0.0.0-20220930074956-6267039e7d63
+
+replace github.com/kyma-project/lifecycle-manager/operator => ../../operator
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
