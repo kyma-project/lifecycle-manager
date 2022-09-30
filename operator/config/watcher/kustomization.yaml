@@ -6,3 +6,11 @@ resources:
 
 generatorOptions:
   disableNameSuffixHash: true
+
+patches:
+  - patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --enable-kcp-watcher
+    target:
+      kind: Deployment
