@@ -56,8 +56,11 @@ func TestControllerManagerSpinsUp(t *testing.T) {
 }
 
 func kymaReady(namespace string, name string) features.Func {
-	return func(ctx context.Context, t *testing.T, config *envconf.Config) context.Context {
-		client := config.Client()
+	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		client, err := cfg.NewClient()
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		var kyma v1alpha1.Kyma
 		if err := wait.For(func() (done bool, err error) {
@@ -75,8 +78,11 @@ func kymaReady(namespace string, name string) features.Func {
 }
 
 func kymaCreate(namespace, name string) features.Func {
-	return func(ctx context.Context, t *testing.T, config *envconf.Config) context.Context {
-		client := config.Client()
+	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		client, err := cfg.NewClient()
+		if err != nil {
+			t.Fatal(err)
+		}
 		kyma := NewTestKyma(namespace, name)
 
 		if err := client.Resources().Create(ctx, kyma); err != nil {
