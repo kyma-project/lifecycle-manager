@@ -77,16 +77,12 @@ func createKymaCR(kymaName string) *v1alpha1.Kyma {
 }
 
 func verifyVsRoutes(watcherCR *v1alpha1.Watcher, customIstioClient *custom.IstioClient, matcher types.GomegaMatcher) {
-	vsKey := client.ObjectKey{
-		Name:      vsName,
-		Namespace: vsNamespace,
-	}
 	if watcherCR != nil {
-		routeReady, err := customIstioClient.IsListenerHTTPRouteConfigured(ctx, vsKey, watcherCR)
+		routeReady, err := customIstioClient.IsListenerHTTPRouteConfigured(ctx, watcherCR)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(routeReady).To(matcher)
 	} else {
-		routesReady, err := customIstioClient.IsListenerHTTPRoutesEmpty(ctx, vsKey)
+		routesReady, err := customIstioClient.IsListenerHTTPRoutesEmpty(ctx)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(routesReady).To(matcher)
 	}

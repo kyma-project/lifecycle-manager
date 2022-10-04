@@ -92,6 +92,7 @@ type FlagVar struct {
 	skrWatcherPath                                                         string
 	vsName                                                                 string
 	vsNamespace                                                            string
+	istioGateway                                                           string
 }
 
 func main() {
@@ -213,6 +214,8 @@ func defineFlagVar() *FlagVar {
 		"The name of the Istio virtual service to be updated.")
 	flag.StringVar(&flagVar.vsNamespace, "virtual-svc-namespace", metav1.NamespaceDefault,
 		"The namespace of the Istio virtual service to be updated.")
+	flag.StringVar(&flagVar.istioGateway, "istio-gateway", "default/kyma-gw",
+		"The namespace/name of the Istio Gateway to be used when configuring the virtual service.")
 	return flagVar
 }
 
@@ -263,6 +266,7 @@ func setupKcpWatcherReconciler(
 		setupLog.Error(err, "failed to read local skr chart")
 	}
 	watcherConfig := &controllers.WatcherConfig{
+		IstioGateway: flagVar.istioGateway,
 		VirtualServiceObjKey: client.ObjectKey{
 			Name:      flagVar.vsName,
 			Namespace: flagVar.vsNamespace,

@@ -49,10 +49,12 @@ type WatcherReconciler struct {
 }
 
 type WatcherConfig struct {
-	// VirtualServiceObjKey represents the object key (name and namespace) of the virtual service resource to be updated
+	// IstioGateway represents the namespace/name of the Istio Gateway to be used when configuring the virtual service.
+	IstioGateway string
+	// VirtualServiceObjKey represents the object key (name and namespace) of the virtual service resource to be updated.
 	VirtualServiceObjKey client.ObjectKey
 	// WebhookChartPath represents the path of the webhook chart
-	// to be installed on SKR clusters upon reconciling watcher CRs
+	// to be installed on SKR clusters upon reconciling watcher CRs.
 	WebhookChartPath string
 }
 
@@ -226,7 +228,7 @@ func (r *WatcherReconciler) SetIstioClient() error {
 	if r.RestConfig == nil {
 		return fmt.Errorf("reconciler rest config is not set")
 	}
-	customIstioClient, err := custom.NewVersionedIstioClient(r.RestConfig)
+	customIstioClient, err := custom.NewVersionedIstioClient(r.RestConfig, r.Config.IstioGateway)
 	r.IstioClient = customIstioClient
 	return err
 }

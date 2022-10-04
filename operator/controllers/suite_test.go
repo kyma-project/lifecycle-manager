@@ -69,6 +69,7 @@ const (
 	istioResourcesFilePath = "../internal/assets/istio-test-resources.yaml"
 	vsName                 = "kcp-events"
 	vsNamespace            = metav1.NamespaceDefault
+	istioGateway           = "default/kcp-gateway"
 )
 
 func TestAPIs(t *testing.T) {
@@ -161,6 +162,7 @@ var _ = BeforeSuite(func() {
 		Scheme:           scheme.Scheme,
 		RequeueIntervals: intervals,
 		Config: &controllers.WatcherConfig{
+			IstioGateway: istioGateway,
 			VirtualServiceObjKey: client.ObjectKey{
 				Name:      vsName,
 				Namespace: vsNamespace,
