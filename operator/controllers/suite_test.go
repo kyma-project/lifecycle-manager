@@ -18,7 +18,6 @@ package controllers_test
 
 import (
 	"context"
-	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -26,6 +25,7 @@ import (
 
 	//nolint:gci
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -42,7 +42,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	kymacontroller "github.com/kyma-project/lifecycle-manager/operator/controllers"
+	"github.com/kyma-project/lifecycle-manager/operator/controllers"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
 	//+kubebuilder:scaffold:imports
@@ -54,7 +54,6 @@ import (
 const listenerAddr = ":8082"
 
 var (
-	_                  *rest.Config
 	controlPlaneClient client.Client        //nolint:gochecknoglobals
 	runtimeClient      client.Client        //nolint:gochecknoglobals
 	k8sManager         manager.Manager      //nolint:gochecknoglobals
@@ -62,12 +61,19 @@ var (
 	runtimeEnv         *envtest.Environment //nolint:gochecknoglobals
 	ctx                context.Context      //nolint:gochecknoglobals
 	cancel             context.CancelFunc   //nolint:gochecknoglobals
+	cfg                *rest.Config         //nolint:gochecknoglobals
+)
+
+const (
+	webhookChartPath       = "../internal/charts/skr-webhook"
+	istioResourcesFilePath = "../internal/assets/istio-test-resources.yaml"
+	vsName                 = "kcp-events"
+	vsNamespace            = metav1.NamespaceDefault
 )
 
 func TestAPIs(t *testing.T) {
 	t.Parallel()
 	RegisterFailHandler(Fail)
-
 	RunSpecs(t, "Controller Suite")
 }
 
@@ -78,13 +84,15 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 
-	manifestCrd := &v1.CustomResourceDefinition{}
-	res, err := http.DefaultClient.Get(
-		"https://raw.githubusercontent.com/kyma-project/module-manager/main/operator/config/crd/bases/operator.kyma-project.io_manifests.yaml") //nolint:lll
+	// manifest CRD
+	// istio CRDs
+	remoteCrds, err := parseRemoteCRDs([]string{
+		"https://raw.githubusercontent.com/kyma-project/module-manager/main/operator/config/crd/bases/operator.kyma-project.io_manifests.yaml", //nolint:lll
+		"https://raw.githubusercontent.com/istio/istio/master/manifests/charts/base/crds/crd-all.gen.yaml",                                     //nolint:lll
+	})
 	Expect(err).NotTo(HaveOccurred())
-	Expect(res.StatusCode).To(BeEquivalentTo(http.StatusOK))
-	Expect(yaml2.NewYAMLOrJSONDecoder(res.Body, 2048).Decode(manifestCrd)).To(Succeed())
 
+	// kcpModule CRD
 	controlplaneCrd := &v1.CustomResourceDefinition{}
 	modulePath := filepath.Join("..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
@@ -95,11 +103,11 @@ var _ = BeforeSuite(func() {
 
 	controlPlaneEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases")},
-		CRDs:                  []*v1.CustomResourceDefinition{manifestCrd, controlplaneCrd},
+		CRDs:                  append([]*v1.CustomResourceDefinition{controlplaneCrd}, remoteCrds...),
 		ErrorIfCRDPathMissing: true,
 	}
 
-	cfg, err := controlPlaneEnv.Start()
+	cfg, err = controlPlaneEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
@@ -122,16 +130,16 @@ var _ = BeforeSuite(func() {
 	k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
 		MetricsBindAddress: metricsBindAddress,
 		Scheme:             scheme.Scheme,
-		NewCache:           kymacontroller.NewCacheFunc(),
+		NewCache:           controllers.NewCacheFunc(),
 	})
 	Expect(err).ToNot(HaveOccurred())
 
-	intervals := kymacontroller.RequeueIntervals{
+	intervals := controllers.RequeueIntervals{
 		Success: 3 * time.Second,
 		Failure: 1 * time.Second,
 		Waiting: 1 * time.Second,
 	}
-	err = (&kymacontroller.KymaReconciler{
+	err = (&controllers.KymaReconciler{
 		Client:           k8sManager.GetClient(),
 		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
 		RequeueIntervals: intervals,
@@ -140,10 +148,25 @@ var _ = BeforeSuite(func() {
 		},
 	}).SetupWithManager(k8sManager, controller.Options{}, listenerAddr)
 	Expect(err).ToNot(HaveOccurred())
-	err = (&kymacontroller.ModuleCatalogReconciler{
+	err = (&controllers.ModuleCatalogReconciler{
 		Client:           k8sManager.GetClient(),
 		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
 		RequeueIntervals: intervals,
+	}).SetupWithManager(k8sManager, controller.Options{})
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&controllers.WatcherReconciler{
+		Client:           k8sManager.GetClient(),
+		RestConfig:       k8sManager.GetConfig(),
+		Scheme:           scheme.Scheme,
+		RequeueIntervals: intervals,
+		Config: &controllers.WatcherConfig{
+			VirtualServiceObjKey: client.ObjectKey{
+				Name:      vsName,
+				Namespace: vsNamespace,
+			},
+			WebhookChartPath: webhookChartPath,
+		},
 	}).SetupWithManager(k8sManager, controller.Options{})
 	Expect(err).ToNot(HaveOccurred())
 
