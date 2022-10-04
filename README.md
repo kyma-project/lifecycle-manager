@@ -25,7 +25,7 @@ spec:
 ```
 
 The creation of the custom resource triggers a reconciliation that creates a Manifest for `istio` based on a [ModuleTemplate](operator/api/v1alpha1/moduletemplate_types.go) found in the cluster.
-When each module operator completes their installation, it reports it's own resource status (`.status.state`). Status changes trigger module-manager to update the manifest of the module.
+When each module operator completes their installation, it reports it's own resource status (`.status.state`). Status changes trigger [Module Manager](https://github.com/kyma-project/module-manager/) to update the manifest of the module.
 Lifecycle Manager then uses this to aggregate and combine the readiness condition of the cluster and determine the installation state or trigger more reconciliation steps.
 
 ## Architecture
@@ -83,7 +83,7 @@ As such, all module interactions are abstracted through the [ModuleTemplate](ope
 
 This abstraction of a template is used for generically deploying instances of a module within a Kyma Runtime at a specific Release Group we call `Channel` (for more information, visit the respective Chapter in the [Concept for Modularization](https://github.com/kyma-project/community/tree/main/concepts/modularization#release-channels)). It contains not only a specification of a Module with it's different components through [OCM Component Descriptors](https://github.com/gardener/component-spec/blob/master/doc/proposal/02-component-descriptor.md).
 
-These serve as small-scale BOM's for all contents included in a module and can be interpreted by Lifecycle Manager and Module Manager
+These serve as small-scale BOM's for all contents included in a module and can be interpreted by Lifecycle Manager and [Module Manager](https://github.com/kyma-project/module-manager/)
 to correctly install a module. (for more information, please have a look at the respective chapter in the [Kyma Modularization Concept](https://github.com/kyma-project/community/tree/main/concepts/modularization#component-descriptor))
 
 ### Versioning and Releasing
