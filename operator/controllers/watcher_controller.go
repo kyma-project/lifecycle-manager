@@ -51,8 +51,6 @@ type WatcherReconciler struct {
 type WatcherConfig struct {
 	// IstioGateway represents the namespace/name of the Istio Gateway to be used when configuring the virtual service.
 	IstioGateway string
-	// VirtualServiceObjKey represents the object key (name and namespace) of the virtual service resource to be updated.
-	VirtualServiceObjKey client.ObjectKey
 	// WebhookChartPath represents the path of the webhook chart
 	// to be installed on SKR clusters upon reconciling watcher CRs.
 	WebhookChartPath string
@@ -121,7 +119,7 @@ func (r *WatcherReconciler) HandleInitialState(ctx context.Context, obj *v1alpha
 func (r *WatcherReconciler) HandleProcessingState(ctx context.Context,
 	logger logr.Logger, obj *v1alpha1.Watcher,
 ) error {
-	err := r.UpdateVirtualServiceConfig(ctx, r.Config.VirtualServiceObjKey, obj)
+	err := r.UpdateVirtualServiceConfig(ctx, obj)
 	if err != nil {
 		updateErr := r.updateWatcherCRStatus(ctx, obj, v1alpha1.WatcherStateError,
 			"failed to create or update service mesh config")
@@ -156,7 +154,7 @@ func (r *WatcherReconciler) HandleProcessingState(ctx context.Context,
 func (r *WatcherReconciler) HandleDeletingState(ctx context.Context, logger logr.Logger,
 	obj *v1alpha1.Watcher,
 ) error {
-	err := r.RemoveVirtualServiceConfigForCR(ctx, r.Config.VirtualServiceObjKey, obj)
+	err := r.RemoveVirtualServiceConfigForCR(ctx, obj)
 	if err != nil {
 		updateErr := r.updateWatcherCRStatus(ctx, obj, v1alpha1.WatcherStateError,
 			"failed to delete service mesh config")

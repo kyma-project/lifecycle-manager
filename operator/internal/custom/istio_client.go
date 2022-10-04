@@ -125,8 +125,7 @@ func (c *IstioClient) IsListenerHTTPRoutesEmpty(ctx context.Context) (bool, erro
 	return false, nil
 }
 
-func (c *IstioClient) UpdateVirtualServiceConfig(ctx context.Context, vsObjectKey client.ObjectKey,
-	obj *v1alpha1.Watcher,
+func (c *IstioClient) UpdateVirtualServiceConfig(ctx context.Context, obj *v1alpha1.Watcher,
 ) error {
 	virtualService, err := c.getOrCreateVirtualService(ctx, obj)
 	if err != nil {
@@ -148,8 +147,7 @@ func (c *IstioClient) UpdateVirtualServiceConfig(ctx context.Context, vsObjectKe
 	return c.updateVirtualService(ctx, virtualService)
 }
 
-func (c *IstioClient) RemoveVirtualServiceConfigForCR(ctx context.Context, vsObjectKey client.ObjectKey,
-	obj *v1alpha1.Watcher,
+func (c *IstioClient) RemoveVirtualServiceConfigForCR(ctx context.Context, obj *v1alpha1.Watcher,
 ) error {
 	virtualService, err := c.getOrCreateVirtualService(ctx, obj)
 	if err != nil {
