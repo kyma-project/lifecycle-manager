@@ -9,6 +9,7 @@ require (
 	sigs.k8s.io/e2e-framework v0.0.7
 )
 
+// this require is immediately overwritten by the replace statement as we use local sources in smoke tests
 require github.com/kyma-project/lifecycle-manager/operator v0.0.0-20220930074956-6267039e7d63
 
 replace github.com/kyma-project/lifecycle-manager/operator => ../../operator
