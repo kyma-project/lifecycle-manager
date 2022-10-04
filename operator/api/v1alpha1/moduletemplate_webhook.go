@@ -19,8 +19,6 @@ package v1alpha1
 import (
 	"context"
 
-	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
-	"github.com/gardener/component-spec/bindings-go/codec"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -97,8 +95,7 @@ func (r *clusterAwareModuleTemplateValidator) validate(_ context.Context, templa
 }
 
 func (r *clusterAwareModuleTemplateValidator) validateDescriptor(template *ModuleTemplate) *field.Error {
-	var descriptor ocm.ComponentDescriptor
-	if err := codec.Decode(template.Spec.OCMDescriptor.Raw, &descriptor); err != nil {
+	if _, err := template.Spec.GetDescriptor(); err != nil {
 		return field.Invalid(field.NewPath("spec").Child("descriptor"), string(template.Spec.OCMDescriptor.Raw), err.Error())
 	}
 	return nil

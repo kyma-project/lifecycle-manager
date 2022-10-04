@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
+	"github.com/gardener/component-spec/bindings-go/codec"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -41,6 +43,23 @@ type ModuleTemplateSpec struct {
 	OCMDescriptor runtime.RawExtension `json:"descriptor,omitempty"`
 
 	Target Target `json:"target"`
+
+	// descriptor is the internal reference holder of the OCI Component once parsed.
+	// it is purposefully not exposed and also excluded from parsers and only used
+	// by GetDescriptor to hold a singleton reference to avoid multiple parse efforts
+	// in the reconciliation loop.
+	descriptor *ocm.ComponentDescriptor `json:"-"`
+}
+
+func (in *ModuleTemplateSpec) GetDescriptor() (*ocm.ComponentDescriptor, error) {
+	if in.descriptor == nil && in.OCMDescriptor.Raw != nil {
+		var descriptor ocm.ComponentDescriptor
+		if err := codec.Decode(in.OCMDescriptor.Raw, &descriptor); err != nil {
+			return nil, err
+		}
+		in.descriptor = &descriptor
+	}
+	return in.descriptor, nil
 }
 
 // +genclient

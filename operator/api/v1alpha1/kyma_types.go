@@ -128,11 +128,7 @@ type KymaStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// Contains essential information about the current deployed module
-	ModuleInfos []ModuleInfo `json:"moduleInfos,omitempty"`
-
-	// Observed generation
-	// +optional
-	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+	ModuleStatus []ModuleStatus `json:"moduleInfos,omitempty"`
 
 	// Active Channel
 	// +optional
@@ -178,7 +174,7 @@ const (
 	StateDeleting State = "Deleting"
 )
 
-type ModuleInfo struct {
+type ModuleStatus struct {
 	// Name is the current deployed module name
 	Name string `json:"name"`
 
@@ -210,6 +206,8 @@ type TemplateInfo struct {
 	// ourselves to any kind of Kind in the code and allows us to work generic on deletion / cleanup of
 	// related resources to a Kyma Installation.
 	GroupVersionKind metav1.GroupVersionKind `json:"gvk,omitempty"`
+
+	Version string `json:"version"`
 }
 
 type KymaConditionType string
@@ -225,7 +223,7 @@ const (
 // For example:
 // Reason: ModulesIsReady and Status: True means all modules are in ready state.
 // Reason: ModulesIsReady and Status: False means some modules are not in ready state,
-// and the actual state of individual module can be found in related ModuleInfo.
+// and the actual state of individual module can be found in related ModuleStatus.
 type KymaConditionReason string
 
 // Extend this list by actual needs.
@@ -248,12 +246,6 @@ type Kyma struct {
 	Status KymaStatus `json:"status,omitempty"`
 }
 
-func (kyma *Kyma) SetObservedGeneration() *Kyma {
-	kyma.Status.ObservedGeneration = kyma.Generation
-
-	return kyma
-}
-
 func (kyma *Kyma) SetActiveChannel() *Kyma {
 	kyma.Status.ActiveChannel = kyma.Spec.Channel
 
@@ -272,15 +264,15 @@ func (kyma *Kyma) SetLastSync() *Kyma {
 }
 
 type moduleInfoExistsPair struct {
-	moduleInfo *ModuleInfo
+	moduleInfo *ModuleStatus
 	exists     bool
 }
 
-func (kyma *Kyma) GetNoLongerExistingModuleInfos() []*ModuleInfo {
+func (kyma *Kyma) GetNoLongerExistingModuleInfos() []*ModuleStatus {
 	moduleInfoMap := make(map[string]*moduleInfoExistsPair)
 
-	for i := range kyma.Status.ModuleInfos {
-		moduleInfo := &kyma.Status.ModuleInfos[i]
+	for i := range kyma.Status.ModuleStatus {
+		moduleInfo := &kyma.Status.ModuleStatus[i]
 		moduleInfoMap[moduleInfo.ModuleName] = &moduleInfoExistsPair{exists: false, moduleInfo: moduleInfo}
 	}
 
@@ -291,7 +283,7 @@ func (kyma *Kyma) GetNoLongerExistingModuleInfos() []*ModuleInfo {
 		}
 	}
 
-	notExistsModules := make([]*ModuleInfo, 0)
+	notExistsModules := make([]*ModuleStatus, 0)
 	for _, item := range moduleInfoMap {
 		if !item.exists {
 			notExistsModules = append(notExistsModules, item.moduleInfo)
@@ -300,10 +292,10 @@ func (kyma *Kyma) GetNoLongerExistingModuleInfos() []*ModuleInfo {
 	return notExistsModules
 }
 
-func (kyma *Kyma) GetModuleInfoMap() map[string]*ModuleInfo {
-	moduleInfoMap := make(map[string]*ModuleInfo)
-	for i := range kyma.Status.ModuleInfos {
-		moduleInfo := &kyma.Status.ModuleInfos[i]
+func (kyma *Kyma) GetModuleInfoMap() map[string]*ModuleStatus {
+	moduleInfoMap := make(map[string]*ModuleStatus)
+	for i := range kyma.Status.ModuleStatus {
+		moduleInfo := &kyma.Status.ModuleStatus[i]
 		moduleInfoMap[moduleInfo.ModuleName] = moduleInfo
 	}
 	return moduleInfoMap
@@ -357,8 +349,8 @@ var ErrTemplateNotFound = errors.New("template not found")
 func (kyma *Kyma) GetTemplateInfoByModuleName(
 	moduleName string,
 ) (*TemplateInfo, error) {
-	for i := range kyma.Status.ModuleInfos {
-		moduleInfo := &kyma.Status.ModuleInfos[i]
+	for i := range kyma.Status.ModuleStatus {
+		moduleInfo := &kyma.Status.ModuleStatus[i]
 		if moduleInfo.ModuleName == moduleName {
 			return &moduleInfo.TemplateInfo, nil
 		}
@@ -380,8 +372,8 @@ func IsValidState(state string) bool {
 func (kyma *Kyma) SyncConditionsWithModuleStates() {
 	conditionReason := ConditionReasonModulesAreReady
 	conditionStatus := metav1.ConditionTrue
-	for i := range kyma.Status.ModuleInfos {
-		moduleInfo := kyma.Status.ModuleInfos[i]
+	for i := range kyma.Status.ModuleStatus {
+		moduleInfo := kyma.Status.ModuleStatus[i]
 		if moduleInfo.State != StateReady {
 			conditionStatus = metav1.ConditionFalse
 		}

@@ -251,6 +251,10 @@ spec:
                           - kind
                           - version
                           type: object
+                        version:
+                          type: string
+                      required:
+                      - version
                       type: object
                   required:
                   - moduleName
@@ -259,10 +263,6 @@ spec:
                   - state
                   type: object
                 type: array
-              observedGeneration:
-                description: Observed generation
-                format: int64
-                type: integer
               state:
                 description: State signifies current state of Kyma. Value can be one
                   of ("Ready", "Processing", "Error", "Deleting").

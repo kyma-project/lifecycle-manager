@@ -3,6 +3,7 @@ module github.com/kyma-project/lifecycle-manager/operator
 go 1.18
 
 require (
+	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/gardener/component-spec/bindings-go v0.0.70
 	github.com/go-logr/logr v1.2.3
 	github.com/imdario/mergo v0.3.13

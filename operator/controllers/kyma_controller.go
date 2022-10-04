@@ -29,20 +29,19 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/adapter"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/channel"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/module/parse"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/module/sync"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/status"
 
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	"github.com/kyma-project/lifecycle-manager/operator/pkg/release"
-	"github.com/kyma-project/lifecycle-manager/operator/pkg/status"
 )
 
 type RequeueIntervals struct {
@@ -283,7 +282,7 @@ func (r *KymaReconciler) UpdateStatusFromErr(
 
 func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *v1alpha1.Kyma) (common.Modules, error) {
 	// fetch templates
-	templates, err := release.GetTemplates(ctx, r, kyma)
+	templates, err := channel.GetTemplates(ctx, r, kyma)
 	if err != nil {
 		return nil, fmt.Errorf("templates could not be fetched: %w", err)
 	}
@@ -294,7 +293,7 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 	}
 
 	// these are the actual modules
-	modules, err := parse.GenerateModulesFromTemplates(ctx, kyma, templates, verification)
+	modules, err := parse.GenerateModulesFromTemplates(kyma, templates, verification)
 	if err != nil {
 		return nil, fmt.Errorf("could not convert templates to modules: %w", err)
 	}
@@ -319,7 +318,7 @@ func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma
 	return nil
 }
 
-func (r *KymaReconciler) deleteModule(ctx context.Context, moduleInfo *v1alpha1.ModuleInfo) error {
+func (r *KymaReconciler) deleteModule(ctx context.Context, moduleInfo *v1alpha1.ModuleStatus) error {
 	module := unstructured.Unstructured{}
 	module.SetNamespace(moduleInfo.Namespace)
 	module.SetName(moduleInfo.Name)

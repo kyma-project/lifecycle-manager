@@ -131,11 +131,11 @@ func (r *runnerImpl) SyncModuleInfo(ctx context.Context, kyma *v1alpha1.Kyma, mo
 }
 
 func (r *runnerImpl) updateModuleInfosFromExistingModules(modules common.Modules,
-	moduleInfoMap map[string]*v1alpha1.ModuleInfo, kyma *v1alpha1.Kyma,
+	moduleInfoMap map[string]*v1alpha1.ModuleStatus, kyma *v1alpha1.Kyma,
 ) bool {
 	updateRequired := false
 	for _, module := range modules {
-		latestModuleInfo := v1alpha1.ModuleInfo{
+		latestModuleInfo := v1alpha1.ModuleStatus{
 			ModuleName: module.Name,
 			Name:       module.Unstructured.GetName(),
 			Namespace:  module.Unstructured.GetNamespace(),
@@ -158,7 +158,7 @@ func (r *runnerImpl) updateModuleInfosFromExistingModules(modules common.Modules
 			*moduleInfo = latestModuleInfo
 		} else {
 			updateRequired = true
-			kyma.Status.ModuleInfos = append(kyma.Status.ModuleInfos, latestModuleInfo)
+			kyma.Status.ModuleStatus = append(kyma.Status.ModuleStatus, latestModuleInfo)
 		}
 	}
 	return updateRequired
@@ -176,7 +176,7 @@ func stateFromUnstructured(obj *unstructured.Unstructured) v1alpha1.State {
 }
 
 func (r *runnerImpl) deleteNoLongerExistingModuleInfos(ctx context.Context,
-	moduleInfoMap map[string]*v1alpha1.ModuleInfo, kyma *v1alpha1.Kyma,
+	moduleInfoMap map[string]*v1alpha1.ModuleStatus, kyma *v1alpha1.Kyma,
 ) bool {
 	updateRequired := false
 	moduleInfos := kyma.GetNoLongerExistingModuleInfos()
@@ -199,12 +199,12 @@ func (r *runnerImpl) deleteNoLongerExistingModuleInfos(ctx context.Context,
 			delete(moduleInfoMap, moduleInfo.ModuleName)
 		}
 	}
-	kyma.Status.ModuleInfos = convertToNewModuleInfos(moduleInfoMap)
+	kyma.Status.ModuleStatus = convertToNewModuleInfos(moduleInfoMap)
 	return updateRequired
 }
 
-func convertToNewModuleInfos(moduleInfoMap map[string]*v1alpha1.ModuleInfo) []v1alpha1.ModuleInfo {
-	newModuleInfos := make([]v1alpha1.ModuleInfo, 0)
+func convertToNewModuleInfos(moduleInfoMap map[string]*v1alpha1.ModuleStatus) []v1alpha1.ModuleStatus {
+	newModuleInfos := make([]v1alpha1.ModuleStatus, 0)
 	for _, moduleInfo := range moduleInfoMap {
 		newModuleInfos = append(newModuleInfos, *moduleInfo)
 	}
