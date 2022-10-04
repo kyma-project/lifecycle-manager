@@ -125,12 +125,12 @@ func (r *runnerImpl) setupModule(module *common.Module, kyma *v1alpha1.Kyma, nam
 
 func (r *runnerImpl) SyncModuleStatus(ctx context.Context, kyma *v1alpha1.Kyma, modules common.Modules) bool {
 	statusMap := kyma.GetModuleStatusMap()
-	statusUpdateRequiredFromUpdate := r.updatemoduleStatussFromExistingModules(modules, statusMap, kyma)
-	statusUpdateRequiredFromDelete := r.deleteNoLongerExistingmoduleStatuss(ctx, statusMap, kyma)
+	statusUpdateRequiredFromUpdate := r.updateModuleStatusFromExistingModules(modules, statusMap, kyma)
+	statusUpdateRequiredFromDelete := r.deleteNoLongerExistingModuleStatus(ctx, statusMap, kyma)
 	return statusUpdateRequiredFromUpdate || statusUpdateRequiredFromDelete
 }
 
-func (r *runnerImpl) updatemoduleStatussFromExistingModules(modules common.Modules,
+func (r *runnerImpl) updateModuleStatusFromExistingModules(modules common.Modules,
 	moduleStatusMap map[string]*v1alpha1.ModuleStatus, kyma *v1alpha1.Kyma,
 ) bool {
 	updateRequired := false
@@ -175,16 +175,16 @@ func stateFromUnstructured(obj *unstructured.Unstructured) v1alpha1.State {
 	return v1alpha1.StateError
 }
 
-func (r *runnerImpl) deleteNoLongerExistingmoduleStatuss(ctx context.Context,
+func (r *runnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context,
 	moduleStatusMap map[string]*v1alpha1.ModuleStatus, kyma *v1alpha1.Kyma,
 ) bool {
 	updateRequired := false
-	moduleStatuss := kyma.GetNoLongerExistingmoduleStatuss()
-	if len(moduleStatuss) == 0 {
+	moduleStatusArr := kyma.GetNoLongerExistingModuleStatus()
+	if len(moduleStatusArr) == 0 {
 		return false
 	}
-	for i := range moduleStatuss {
-		moduleStatus := moduleStatuss[i]
+	for i := range moduleStatusArr {
+		moduleStatus := moduleStatusArr[i]
 		module := unstructured.Unstructured{}
 		module.SetGroupVersionKind(schema.GroupVersionKind{
 			Group:   moduleStatus.TemplateInfo.GroupVersionKind.Group,
@@ -199,14 +199,14 @@ func (r *runnerImpl) deleteNoLongerExistingmoduleStatuss(ctx context.Context,
 			delete(moduleStatusMap, moduleStatus.ModuleName)
 		}
 	}
-	kyma.Status.ModuleStatus = convertToNewmoduleStatuss(moduleStatusMap)
+	kyma.Status.ModuleStatus = convertToNewmoduleStatus(moduleStatusMap)
 	return updateRequired
 }
 
-func convertToNewmoduleStatuss(moduleStatusMap map[string]*v1alpha1.ModuleStatus) []v1alpha1.ModuleStatus {
-	newmoduleStatuss := make([]v1alpha1.ModuleStatus, 0)
+func convertToNewmoduleStatus(moduleStatusMap map[string]*v1alpha1.ModuleStatus) []v1alpha1.ModuleStatus {
+	newModuleStatus := make([]v1alpha1.ModuleStatus, 0)
 	for _, moduleStatus := range moduleStatusMap {
-		newmoduleStatuss = append(newmoduleStatuss, *moduleStatus)
+		newModuleStatus = append(newModuleStatus, *moduleStatus)
 	}
-	return newmoduleStatuss
+	return newModuleStatus
 }

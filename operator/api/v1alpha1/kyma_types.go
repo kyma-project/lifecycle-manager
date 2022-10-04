@@ -128,7 +128,7 @@ type KymaStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// Contains essential information about the current deployed module
-	ModuleStatus []ModuleStatus `json:"moduleStatuss,omitempty"` //TODO change and adapt json
+	ModuleStatus []ModuleStatus `json:"moduleStatus,omitempty"`
 
 	// Active Channel
 	// +optional
@@ -268,7 +268,7 @@ type moduleStatusExistsPair struct {
 	exists       bool
 }
 
-func (kyma *Kyma) GetNoLongerExistingmoduleStatuss() []*ModuleStatus {
+func (kyma *Kyma) GetNoLongerExistingModuleStatus() []*ModuleStatus {
 	moduleStatusMap := make(map[string]*moduleStatusExistsPair)
 
 	for i := range kyma.Status.ModuleStatus {
@@ -367,7 +367,7 @@ func IsValidState(state string) bool {
 		castedState == StateError
 }
 
-// SyncConditionsWithModuleStates iterates all moduleStatuss, based on all module state,
+// SyncConditionsWithModuleStates iterates all moduleStatus, based on all module state,
 // it updates the condition.status with Reason ConditionReasonModulesAreReady accordingly.
 func (kyma *Kyma) SyncConditionsWithModuleStates() {
 	conditionReason := ConditionReasonModulesAreReady

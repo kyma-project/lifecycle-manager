@@ -302,13 +302,13 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 }
 
 func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma *v1alpha1.Kyma) error {
-	moduleStatuss := kyma.GetNoLongerExistingmoduleStatuss()
+	moduleStatus := kyma.GetNoLongerExistingModuleStatus()
 	var err error
-	if len(moduleStatuss) == 0 {
+	if len(moduleStatus) == 0 {
 		return nil
 	}
-	for i := range moduleStatuss {
-		moduleStatus := moduleStatuss[i]
+	for i := range moduleStatus {
+		moduleStatus := moduleStatus[i]
 		err = r.deleteModule(ctx, moduleStatus)
 	}
 

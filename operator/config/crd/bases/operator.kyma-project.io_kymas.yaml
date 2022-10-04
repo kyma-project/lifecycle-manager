@@ -189,7 +189,7 @@ spec:
                   - type
                   type: object
                 type: array
-              moduleStatuss:
+              moduleStatus:
                 description: Contains essential information about the current deployed
                   module
                 items:
