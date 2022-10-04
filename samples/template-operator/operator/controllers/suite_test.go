@@ -22,9 +22,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/samples/template-operator/controllers"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+
+	"github.com/kyma-project/lifecycle-manager/samples/template-operator/controllers"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -42,11 +43,12 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	k8sClient  client.Client        //nolint:gochecknoglobals
-	k8sManager manager.Manager      //nolint:gochecknoglobals
-	testEnv    *envtest.Environment //nolint:gochecknoglobals
-	ctx        context.Context      //nolint:gochecknoglobals
-	cancel     context.CancelFunc   //nolint:gochecknoglobals
+	k8sClient  client.Client                 //nolint:gochecknoglobals
+	k8sManager manager.Manager               //nolint:gochecknoglobals
+	testEnv    *envtest.Environment          //nolint:gochecknoglobals
+	ctx        context.Context               //nolint:gochecknoglobals
+	cancel     context.CancelFunc            //nolint:gochecknoglobals
+	reconciler *controllers.SampleReconciler //nolint:gochecknoglobals
 )
 
 const (
@@ -97,12 +99,12 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
-	watcherReconciler := &controllers.SampleReconciler{
+	reconciler = &controllers.SampleReconciler{
 		Client: k8sManager.GetClient(),
 		Scheme: scheme.Scheme,
 	}
 
-	err = watcherReconciler.SetupWithManager(k8sManager, "../module-chart", rateLimiter)
+	err = reconciler.SetupWithManager(k8sManager, "../busybox", rateLimiter)
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
