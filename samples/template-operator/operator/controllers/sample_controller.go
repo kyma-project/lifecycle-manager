@@ -46,6 +46,13 @@ type SampleReconciler struct {
 	*rest.Config
 }
 
+type RateLimiter struct {
+	Burst           int
+	Frequency       int
+	BaseDelay       time.Duration
+	FailureMaxDelay time.Duration
+}
+
 const (
 	sampleAnnotationKey   = "owner"
 	sampleAnnotationValue = "template-operator"
@@ -63,7 +70,7 @@ const (
 //+kubebuilder:rbac:groups="*",resources="*",verbs="*"
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager, chartPath string, failureBaseDelay, failureMaxDelay time.Duration, frequency, burst int) error {
+func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager, chartPath string, rateLimiter RateLimiter) error {
 	r.Config = mgr.GetConfig()
 	if err := r.initReconciler(mgr, chartPath); err != nil {
 		return err
@@ -72,7 +79,12 @@ func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager, chartPath string, 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Sample{}).
 		WithOptions(controller.Options{
-			RateLimiter: TemplateRateLimiter(failureBaseDelay, failureMaxDelay, frequency, burst),
+			RateLimiter: TemplateRateLimiter(
+				rateLimiter.BaseDelay,
+				rateLimiter.FailureMaxDelay,
+				rateLimiter.Frequency,
+				rateLimiter.Burst,
+			),
 		}).
 		Complete(r)
 }

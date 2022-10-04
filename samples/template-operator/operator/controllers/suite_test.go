@@ -66,6 +66,13 @@ var _ = BeforeSuite(func() {
 	ctx, cancel = context.WithCancel(context.Background())
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
+	rateLimiter := controllers.RateLimiter{
+		Burst:           rateLimiterBurstDefault,
+		Frequency:       rateLimiterFrequencyDefault,
+		BaseDelay:       failureBaseDelayDefault,
+		FailureMaxDelay: failureMaxDelayDefault,
+	}
+
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases")},
@@ -95,7 +102,7 @@ var _ = BeforeSuite(func() {
 		Scheme: scheme.Scheme,
 	}
 
-	err = watcherReconciler.SetupWithManager(k8sManager, "../module-chart", failureBaseDelayDefault, failureMaxDelayDefault, rateLimiterBurstDefault, rateLimiterFrequencyDefault)
+	err = watcherReconciler.SetupWithManager(k8sManager, "../module-chart", rateLimiter)
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {

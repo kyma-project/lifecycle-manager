@@ -76,6 +76,13 @@ func main() {
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
+	ratelimiter := controllers.RateLimiter{
+		Burst:           flagVar.rateLimiterBurst,
+		Frequency:       flagVar.rateLimiterFrequency,
+		BaseDelay:       flagVar.failureBaseDelay,
+		FailureMaxDelay: flagVar.failureMaxDelay,
+	}
+
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
@@ -94,7 +101,7 @@ func main() {
 	if err = (&controllers.SampleReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr, chartPath, flagVar.failureBaseDelay, flagVar.failureMaxDelay, flagVar.rateLimiterFrequency, flagVar.rateLimiterBurst); err != nil {
+	}).SetupWithManager(mgr, chartPath, ratelimiter); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Sample")
 		os.Exit(1)
 	}
