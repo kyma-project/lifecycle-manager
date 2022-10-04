@@ -14,11 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package controllers_test
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
+	"time"
+
+	"github.com/kyma-project/lifecycle-manager/samples/template-operator/controllers"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -36,8 +42,18 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	k8sClient client.Client
-	testEnv   *envtest.Environment
+	k8sClient  client.Client        //nolint:gochecknoglobals
+	k8sManager manager.Manager      //nolint:gochecknoglobals
+	testEnv    *envtest.Environment //nolint:gochecknoglobals
+	ctx        context.Context      //nolint:gochecknoglobals
+	cancel     context.CancelFunc   //nolint:gochecknoglobals
+)
+
+const (
+	rateLimiterBurstDefault     = 200
+	rateLimiterFrequencyDefault = 30
+	failureBaseDelayDefault     = 1 * time.Second
+	failureMaxDelayDefault      = 1000 * time.Second
 )
 
 func TestAPIs(t *testing.T) {
@@ -47,6 +63,7 @@ func TestAPIs(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+	ctx, cancel = context.WithCancel(context.Background())
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
 	By("bootstrapping test environment")
@@ -67,9 +84,30 @@ var _ = BeforeSuite(func() {
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
+
+	k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
+		Scheme: scheme.Scheme,
+	})
+	Expect(err).ToNot(HaveOccurred())
+
+	watcherReconciler := &controllers.SampleReconciler{
+		Client: k8sManager.GetClient(),
+		Scheme: scheme.Scheme,
+	}
+
+	err = watcherReconciler.SetupWithManager(k8sManager, "../module-chart", failureBaseDelayDefault, failureMaxDelayDefault, rateLimiterBurstDefault, rateLimiterFrequencyDefault)
+	Expect(err).ToNot(HaveOccurred())
+
+	go func() {
+		defer GinkgoRecover()
+		err = k8sManager.Start(ctx)
+		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
+	}()
 })
 
 var _ = AfterSuite(func() {
+	By("cancelling the context for the manager to shutdown")
+	cancel()
 	By("tearing down the test environment")
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())

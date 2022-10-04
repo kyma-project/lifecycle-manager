@@ -24,6 +24,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 
+const (
+	SampleKind Kind = "Sample"
+	Version         = "v1alpha1"
+)
+
+type Kind string
+
 var (
 	// GroupVersion is group version used to register these objects
 	GroupVersion = schema.GroupVersion{Group: "operator.kyma-project.io", Version: "v1alpha1"}

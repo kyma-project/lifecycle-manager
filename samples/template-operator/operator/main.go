@@ -47,6 +47,8 @@ const (
 	rateLimiterFrequencyDefault = 30
 	failureBaseDelayDefault     = 1 * time.Second
 	failureMaxDelayDefault      = 1000 * time.Second
+
+	chartPath = "./module-chart"
 )
 
 type FlagVar struct {
@@ -92,7 +94,7 @@ func main() {
 	if err = (&controllers.SampleReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr, flagVar.failureBaseDelay, flagVar.failureMaxDelay, flagVar.rateLimiterFrequency, flagVar.rateLimiterBurst); err != nil {
+	}).SetupWithManager(mgr, chartPath, flagVar.failureBaseDelay, flagVar.failureMaxDelay, flagVar.rateLimiterFrequency, flagVar.rateLimiterBurst); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Sample")
 		os.Exit(1)
 	}

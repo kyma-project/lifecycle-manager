@@ -39,6 +39,7 @@ import (
 
 // SampleReconciler reconciles a Sample object
 type SampleReconciler struct {
+	chartPath string
 	declarative.ManifestReconciler
 	client.Client
 	Scheme *runtime.Scheme
@@ -48,7 +49,6 @@ type SampleReconciler struct {
 const (
 	sampleAnnotationKey   = "owner"
 	sampleAnnotationValue = "template-operator"
-	chartPath             = "./module-chart"
 	chartNs               = "redis"
 	nameOverride          = "custom-name-override"
 )
@@ -63,9 +63,9 @@ const (
 //+kubebuilder:rbac:groups="*",resources="*",verbs="*"
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager, failureBaseDelay, failureMaxDelay time.Duration, frequency, burst int) error {
+func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager, chartPath string, failureBaseDelay, failureMaxDelay time.Duration, frequency, burst int) error {
 	r.Config = mgr.GetConfig()
-	if err := r.initReconciler(mgr); err != nil {
+	if err := r.initReconciler(mgr, chartPath); err != nil {
 		return err
 	}
 
@@ -78,8 +78,8 @@ func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager, failureBaseDelay, 
 }
 
 // initReconciler injects the required configuration into the declarative reconciler.
-func (r *SampleReconciler) initReconciler(mgr ctrl.Manager) error {
-	manifestResolver := &ManifestResolver{}
+func (r *SampleReconciler) initReconciler(mgr ctrl.Manager, chartPath string) error {
+	manifestResolver := &ManifestResolver{chartPath: chartPath}
 	return r.Inject(mgr, &v1alpha1.Sample{},
 		declarative.WithManifestResolver(manifestResolver),
 		declarative.WithCustomResourceLabels(map[string]string{"sampleKey": "sampleValue"}),
@@ -104,7 +104,9 @@ func transform(_ context.Context, _ types.BaseCustomObject, manifestResources *t
 }
 
 // ManifestResolver represents the chart information for the passed Sample resource.
-type ManifestResolver struct{}
+type ManifestResolver struct {
+	chartPath string
+}
 
 // Get returns the chart information to be processed.
 func (m *ManifestResolver) Get(obj types.BaseCustomObject) (types.InstallationSpec, error) {
@@ -114,7 +116,7 @@ func (m *ManifestResolver) Get(obj types.BaseCustomObject) (types.InstallationSp
 			fmt.Errorf("invalid type conversion for %s", client.ObjectKeyFromObject(obj))
 	}
 	return types.InstallationSpec{
-		ChartPath:   chartPath,
+		ChartPath:   m.chartPath,
 		ReleaseName: sample.Spec.ReleaseName,
 		ChartFlags: types.ChartFlags{
 			ConfigFlags: types.Flags{
