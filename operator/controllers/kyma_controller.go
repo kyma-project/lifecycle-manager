@@ -195,7 +195,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 			fmt.Errorf("ParsedModule CR creation/update error: %w", err))
 	}
 
-	statusUpdateRequiredFromModuleInfoSync := runner.SyncModuleInfo(ctx, kyma, modules)
+	statusUpdateRequiredFrommoduleStatusSync := runner.SyncModuleStatus(ctx, kyma, modules)
 
 	// If module get removed from kyma, the module deletion happens here.
 	if err := r.DeleteNoLongerExistingModules(ctx, kyma); err != nil {
@@ -214,7 +214,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	}
 
 	// if the ready condition is not applicable, but we changed the conditions, we still need to issue an update
-	if statusUpdateRequiredFromModuleSync || statusUpdateRequiredFromModuleInfoSync {
+	if statusUpdateRequiredFromModuleSync || statusUpdateRequiredFrommoduleStatusSync {
 		if err := r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing, "updating component conditions"); err != nil {
 			return fmt.Errorf("error while updating status for condition change: %w", err)
 		}
@@ -302,14 +302,14 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 }
 
 func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma *v1alpha1.Kyma) error {
-	moduleInfos := kyma.GetNoLongerExistingModuleInfos()
+	moduleStatuss := kyma.GetNoLongerExistingmoduleStatuss()
 	var err error
-	if len(moduleInfos) == 0 {
+	if len(moduleStatuss) == 0 {
 		return nil
 	}
-	for i := range moduleInfos {
-		moduleInfo := moduleInfos[i]
-		err = r.deleteModule(ctx, moduleInfo)
+	for i := range moduleStatuss {
+		moduleStatus := moduleStatuss[i]
+		err = r.deleteModule(ctx, moduleStatus)
 	}
 
 	if client.IgnoreNotFound(err) != nil {
@@ -318,14 +318,14 @@ func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma
 	return nil
 }
 
-func (r *KymaReconciler) deleteModule(ctx context.Context, moduleInfo *v1alpha1.ModuleStatus) error {
+func (r *KymaReconciler) deleteModule(ctx context.Context, moduleStatus *v1alpha1.ModuleStatus) error {
 	module := unstructured.Unstructured{}
-	module.SetNamespace(moduleInfo.Namespace)
-	module.SetName(moduleInfo.Name)
+	module.SetNamespace(moduleStatus.Namespace)
+	module.SetName(moduleStatus.Name)
 	module.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   moduleInfo.TemplateInfo.GroupVersionKind.Group,
-		Version: moduleInfo.TemplateInfo.GroupVersionKind.Version,
-		Kind:    moduleInfo.TemplateInfo.GroupVersionKind.Kind,
+		Group:   moduleStatus.TemplateInfo.GroupVersionKind.Group,
+		Version: moduleStatus.TemplateInfo.GroupVersionKind.Version,
+		Kind:    moduleStatus.TemplateInfo.GroupVersionKind.Kind,
 	})
 	return r.Delete(ctx, &module, &client.DeleteOptions{})
 }

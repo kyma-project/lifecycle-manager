@@ -49,9 +49,9 @@ func CheckForOutdatedTemplates(logger logr.Logger, k *operatorv1alpha1.Kyma, tem
 	// that all desired templates are still referenced in the latest spec generation
 	for moduleName, moduleTemplate := range templates {
 		for i := range k.Status.ModuleStatus {
-			moduleInfo := &k.Status.ModuleStatus[i]
-			if moduleInfo.ModuleName == moduleName && moduleTemplate != nil {
-				CheckForOutdatedTemplate(logger, moduleTemplate, moduleInfo)
+			moduleStatus := &k.Status.ModuleStatus[i]
+			if moduleStatus.ModuleName == moduleName && moduleTemplate != nil {
+				CheckForOutdatedTemplate(logger, moduleTemplate, moduleStatus)
 			}
 		}
 	}

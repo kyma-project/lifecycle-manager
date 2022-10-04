@@ -128,7 +128,7 @@ type KymaStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// Contains essential information about the current deployed module
-	ModuleStatus []ModuleStatus `json:"moduleInfos,omitempty"`
+	ModuleStatus []ModuleStatus `json:"moduleStatuss,omitempty"` //TODO change and adapt json
 
 	// Active Channel
 	// +optional
@@ -263,42 +263,42 @@ func (kyma *Kyma) SetLastSync() *Kyma {
 	return kyma
 }
 
-type moduleInfoExistsPair struct {
-	moduleInfo *ModuleStatus
-	exists     bool
+type moduleStatusExistsPair struct {
+	moduleStatus *ModuleStatus
+	exists       bool
 }
 
-func (kyma *Kyma) GetNoLongerExistingModuleInfos() []*ModuleStatus {
-	moduleInfoMap := make(map[string]*moduleInfoExistsPair)
+func (kyma *Kyma) GetNoLongerExistingmoduleStatuss() []*ModuleStatus {
+	moduleStatusMap := make(map[string]*moduleStatusExistsPair)
 
 	for i := range kyma.Status.ModuleStatus {
-		moduleInfo := &kyma.Status.ModuleStatus[i]
-		moduleInfoMap[moduleInfo.ModuleName] = &moduleInfoExistsPair{exists: false, moduleInfo: moduleInfo}
+		moduleStatus := &kyma.Status.ModuleStatus[i]
+		moduleStatusMap[moduleStatus.ModuleName] = &moduleStatusExistsPair{exists: false, moduleStatus: moduleStatus}
 	}
 
 	for i := range kyma.Spec.Modules {
 		module := &kyma.Spec.Modules[i]
-		if _, exists := moduleInfoMap[module.Name]; exists {
-			moduleInfoMap[module.Name].exists = true
+		if _, exists := moduleStatusMap[module.Name]; exists {
+			moduleStatusMap[module.Name].exists = true
 		}
 	}
 
 	notExistsModules := make([]*ModuleStatus, 0)
-	for _, item := range moduleInfoMap {
+	for _, item := range moduleStatusMap {
 		if !item.exists {
-			notExistsModules = append(notExistsModules, item.moduleInfo)
+			notExistsModules = append(notExistsModules, item.moduleStatus)
 		}
 	}
 	return notExistsModules
 }
 
-func (kyma *Kyma) GetModuleInfoMap() map[string]*ModuleStatus {
-	moduleInfoMap := make(map[string]*ModuleStatus)
+func (kyma *Kyma) GetModuleStatusMap() map[string]*ModuleStatus {
+	moduleStatusMap := make(map[string]*ModuleStatus)
 	for i := range kyma.Status.ModuleStatus {
-		moduleInfo := &kyma.Status.ModuleStatus[i]
-		moduleInfoMap[moduleInfo.ModuleName] = moduleInfo
+		moduleStatus := &kyma.Status.ModuleStatus[i]
+		moduleStatusMap[moduleStatus.ModuleName] = moduleStatus
 	}
-	return moduleInfoMap
+	return moduleStatusMap
 }
 
 //+kubebuilder:object:root=true
@@ -350,9 +350,9 @@ func (kyma *Kyma) GetTemplateInfoByModuleName(
 	moduleName string,
 ) (*TemplateInfo, error) {
 	for i := range kyma.Status.ModuleStatus {
-		moduleInfo := &kyma.Status.ModuleStatus[i]
-		if moduleInfo.ModuleName == moduleName {
-			return &moduleInfo.TemplateInfo, nil
+		moduleStatus := &kyma.Status.ModuleStatus[i]
+		if moduleStatus.ModuleName == moduleName {
+			return &moduleStatus.TemplateInfo, nil
 		}
 	}
 	// should not happen
@@ -367,14 +367,14 @@ func IsValidState(state string) bool {
 		castedState == StateError
 }
 
-// SyncConditionsWithModuleStates iterates all moduleInfos, based on all module state,
+// SyncConditionsWithModuleStates iterates all moduleStatuss, based on all module state,
 // it updates the condition.status with Reason ConditionReasonModulesAreReady accordingly.
 func (kyma *Kyma) SyncConditionsWithModuleStates() {
 	conditionReason := ConditionReasonModulesAreReady
 	conditionStatus := metav1.ConditionTrue
 	for i := range kyma.Status.ModuleStatus {
-		moduleInfo := kyma.Status.ModuleStatus[i]
-		if moduleInfo.State != StateReady {
+		moduleStatus := kyma.Status.ModuleStatus[i]
+		if moduleStatus.State != StateReady {
 			conditionStatus = metav1.ConditionFalse
 		}
 	}
