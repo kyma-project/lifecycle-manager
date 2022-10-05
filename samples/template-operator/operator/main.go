@@ -21,6 +21,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/kyma-project/module-manager/operator/pkg/types"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -37,18 +39,28 @@ import (
 	//+kubebuilder:scaffold:imports
 )
 
-var (
-	scheme   = runtime.NewScheme()
-	setupLog = ctrl.Log.WithName("setup")
-)
-
 const (
 	rateLimiterBurstDefault     = 200
 	rateLimiterFrequencyDefault = 30
 	failureBaseDelayDefault     = 1 * time.Second
 	failureMaxDelayDefault      = 1000 * time.Second
 
-	chartPath = "./module-chart"
+	chartPath    = "./module-chart"
+	chartNs      = "redis"
+	nameOverride = "custom-name-override"
+)
+
+var (
+	scheme   = runtime.NewScheme()
+	setupLog = ctrl.Log.WithName("setup")
+
+	ConfigFlags = types.Flags{
+		"Namespace":       chartNs,
+		"CreateNamespace": true,
+	}
+	SetFlags = types.Flags{
+		"nameOverride": nameOverride,
+	}
 )
 
 type FlagVar struct {
@@ -101,7 +113,7 @@ func main() {
 	if err = (&controllers.SampleReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr, chartPath, ratelimiter); err != nil {
+	}).SetupWithManager(mgr, chartPath, ConfigFlags, SetFlags, ratelimiter); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Sample")
 		os.Exit(1)
 	}

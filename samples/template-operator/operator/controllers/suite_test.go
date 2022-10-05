@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kyma-project/module-manager/operator/pkg/types"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
@@ -49,6 +51,13 @@ var (
 	ctx        context.Context               //nolint:gochecknoglobals
 	cancel     context.CancelFunc            //nolint:gochecknoglobals
 	reconciler *controllers.SampleReconciler //nolint:gochecknoglobals
+
+	configFlags = types.Flags{
+		"Namespace":                "redis",
+		"CreateNamespace":          true,
+		"DisableOpenAPIValidation": true,
+	}
+	setFlags = types.Flags{}
 )
 
 const (
@@ -104,7 +113,7 @@ var _ = BeforeSuite(func() {
 		Scheme: scheme.Scheme,
 	}
 
-	err = reconciler.SetupWithManager(k8sManager, "../busybox", rateLimiter)
+	err = reconciler.SetupWithManager(k8sManager, "../busybox", configFlags, setFlags, rateLimiter)
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {

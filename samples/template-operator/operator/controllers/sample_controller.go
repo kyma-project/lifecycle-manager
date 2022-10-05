@@ -55,7 +55,11 @@ type RateLimiter struct {
 const (
 	sampleAnnotationKey   = "owner"
 	sampleAnnotationValue = "template-operator"
-	chartNs               = "redis"
+)
+
+var (
+	ConfigFlags types.Flags
+	SetFlags    types.Flags
 )
 
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=samples,verbs=get;list;watch;create;update;patch;delete
@@ -68,7 +72,9 @@ const (
 //+kubebuilder:rbac:groups="*",resources="*",verbs="*"
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager, chartPath string, rateLimiter RateLimiter) error {
+func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager, chartPath string, configFlags, setFlags types.Flags, rateLimiter RateLimiter) error {
+	ConfigFlags = configFlags
+	SetFlags = setFlags
 	r.Config = mgr.GetConfig()
 	if err := r.initReconciler(mgr, chartPath); err != nil {
 		return err
@@ -129,12 +135,8 @@ func (m *ManifestResolver) Get(obj types.BaseCustomObject) (types.InstallationSp
 		ChartPath:   m.chartPath,
 		ReleaseName: sample.Spec.ReleaseName,
 		ChartFlags: types.ChartFlags{
-			ConfigFlags: types.Flags{
-				"Namespace":                chartNs,
-				"CreateNamespace":          true,
-				"DisableOpenAPIValidation": true,
-			},
-			SetFlags: types.Flags{},
+			ConfigFlags: ConfigFlags,
+			SetFlags:    SetFlags,
 		},
 	}, nil
 }

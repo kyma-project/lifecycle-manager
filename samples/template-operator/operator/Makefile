@@ -8,7 +8,7 @@ ENVTEST_K8S_VERSION = 1.24.1
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v4.5.6
 CONTROLLER_TOOLS_VERSION ?= v0.9.2
-GOLANG_CI_LINT_VERSION ?= v1.48.0
+GOLANG_CI_LINT_VERSION ?= v1.50.0
 
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
