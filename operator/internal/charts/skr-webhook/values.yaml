@@ -49,12 +49,8 @@ service:
   contactVersion: v1
 # -- KCP information
 kcp:
-  # -- KCP IP
-  IP: "kcp.ip"
-  # -- KCP Port
-  port: ""
-  # -- KCP protocol
-  protocol: "http"
+  # -- Base URL
+  addr: "kcp-base-url-invalid"
 # -- TLS information
 tls:
   # -- Helm Cert Generation

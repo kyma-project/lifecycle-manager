@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -54,7 +53,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 
 	// register listener component
 	runnableListener, eventChannel := listener.RegisterListenerComponent(
-		listenerAddr, strings.ToLower(string(v1alpha1.KymaKind)))
+		listenerAddr, v1alpha1.OperatorName)
 
 	// watch event channel
 	controllerBuilder.Watches(eventChannel, &handler.Funcs{

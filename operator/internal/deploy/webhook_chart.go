@@ -30,7 +30,7 @@ const (
 )
 
 func InstallSKRWebhook(ctx context.Context, chartPath, releaseName string,
-	obj *v1alpha1.Watcher, restConfig *rest.Config,
+	obj *v1alpha1.Watcher, restConfig *rest.Config, kcpAddr string,
 ) error {
 	argsVals, err := generateHelmChartArgsForCR(obj)
 	if err != nil {
@@ -40,16 +40,19 @@ func InstallSKRWebhook(ctx context.Context, chartPath, releaseName string,
 	if err != nil {
 		return err
 	}
-	skrWatcherInstallInfo := prepareInstallInfo(chartPath, releaseName, restConfig, restClient)
+	skrWatcherInstallInfo := prepareInstallInfo(chartPath, releaseName, restConfig, restClient, kcpAddr)
 	return installOrRemoveChartOnSKR(ctx, restConfig, releaseName, argsVals, skrWatcherInstallInfo, ModeInstall)
 }
 
 func prepareInstallInfo(chartPath, releaseName string, restConfig *rest.Config, restClient client.Client,
-) modulelib.InstallInfo {
+	kcpAddr string) modulelib.InstallInfo {
 	return modulelib.InstallInfo{
 		ChartInfo: &modulelib.ChartInfo{
 			ChartPath:   chartPath,
 			ReleaseName: releaseName,
+			Overrides: map[string]interface{}{
+				"kcp.addr": kcpAddr,
+			},
 		},
 		ClusterInfo: custom.ClusterInfo{
 			Client: restClient,

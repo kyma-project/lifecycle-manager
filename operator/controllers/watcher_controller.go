@@ -46,6 +46,7 @@ type WatcherReconciler struct {
 	Scheme     *runtime.Scheme
 	Config     *WatcherConfig
 	RequeueIntervals
+	KCPAddr string
 }
 
 type WatcherConfig struct {
@@ -129,7 +130,7 @@ func (r *WatcherReconciler) HandleProcessingState(ctx context.Context,
 		return updateErr
 	}
 	err = deploy.UpdateWebhookConfig(ctx, r.Config.WebhookChartPath, obj,
-		r.RestConfig, r.Client)
+		r.RestConfig, r.Client, r.KCPAddr)
 	if err != nil {
 		updateErr := r.updateWatcherCRStatus(ctx, obj, v1alpha1.WatcherStateError, "failed to update SKR config")
 		if updateErr == nil {
