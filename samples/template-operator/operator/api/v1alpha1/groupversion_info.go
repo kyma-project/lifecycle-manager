@@ -26,7 +26,7 @@ import (
 
 const (
 	SampleKind Kind = "Sample"
-	Version         = "v1alpha1"
+	Version    Kind = "v1alpha1"
 )
 
 type Kind string

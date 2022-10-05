@@ -39,7 +39,6 @@ import (
 
 // SampleReconciler reconciles a Sample object
 type SampleReconciler struct {
-	chartPath string
 	declarative.ManifestReconciler
 	client.Client
 	Scheme *runtime.Scheme
@@ -57,7 +56,6 @@ const (
 	sampleAnnotationKey   = "owner"
 	sampleAnnotationValue = "template-operator"
 	chartNs               = "redis"
-	nameOverride          = "custom-name-override"
 )
 
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=samples,verbs=get;list;watch;create;update;patch;delete

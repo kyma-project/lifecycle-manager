@@ -115,7 +115,7 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-	By("cancelling the context for the manager to shutdown")
+	By("canceling the context for the manager to shutdown")
 	cancel()
 	By("tearing down the test environment")
 	err := testEnv.Stop()
