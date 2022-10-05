@@ -19,9 +19,8 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"time"
 
-	"github.com/kyma-project/module-manager/operator/pkg/declarative"
-	"github.com/kyma-project/module-manager/operator/pkg/types"
 	"golang.org/x/time/rate"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -29,9 +28,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/samples/template-operator/api/v1alpha1"
+	"github.com/kyma-project/module-manager/operator/pkg/declarative"
+	"github.com/kyma-project/module-manager/operator/pkg/types"
 
-	"time"
+	"github.com/kyma-project/lifecycle-manager/samples/template-operator/api/v1alpha1"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/ratelimiter"
@@ -132,12 +132,11 @@ func (m *ManifestResolver) Get(obj types.BaseCustomObject) (types.InstallationSp
 		ReleaseName: sample.Spec.ReleaseName,
 		ChartFlags: types.ChartFlags{
 			ConfigFlags: types.Flags{
-				"Namespace":       chartNs,
-				"CreateNamespace": true,
+				"Namespace":                chartNs,
+				"CreateNamespace":          true,
+				"DisableOpenAPIValidation": true,
 			},
-			SetFlags: types.Flags{
-				"nameOverride": nameOverride,
-			},
+			SetFlags: types.Flags{},
 		},
 	}, nil
 }

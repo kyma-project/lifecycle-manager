@@ -1,0 +1,15 @@
+apiVersion: v1
+description: A utility chart to verify clusters and processes
+home: https://www.busybox.net/
+icon: https://www.busybox.net/images/busybox1.png
+keywords:
+- busybox
+- testing
+- sanity check
+- network
+- connectivity
+maintainers:
+- email: john.felten@gmail.com
+  name: John Felten
+name: busybox
+version: 0.1.0
