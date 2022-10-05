@@ -1,21 +1,26 @@
 # Set up the test environment
 
-## Instructions
+## Contents
+* [Provision clusters and OCI registry](#provision-clusters-and-oci-registry)
+* [Create module operator and bundle module](#create-module-operator-and-bundle-module)
+* [Install Kyma and run lifecycle-manager operator](#install-kyma-and-run-lifecycle-manager-operator)
+* [Verify installation](#verify-the-installation)
 
-### Create the cluster(s) for testing your Kyma module
+### Provision clusters and OCI registry
 
-You can choose between a single-cluster setup or a two-cluster setup.
+You can choose between either a single-cluster or a two-cluster setup.
 
-- For testing with a single cluster that acts as both control-plane (KCP) and Kyma runtime (SKR), follow the [single cluster setup guide](creating-test-environment-singlecluster.md).
+- In a **_single cluster setup_**, provision one cluster - as control-plane (KCP) and Kyma runtime (SKR) both.
 
+- In a **_dual cluster setup_**, provision two clusters - one as control-plane (KCP) and the second as runtime (SKR).
 
-- For testing with two clusters (with two registries), one acting as the KCP and another as the SKR cluster, follow the [two-cluster setup guide](creating-test-environment-twocluster.md).
+- Refer [cluster and registry setup](provision-cluster-and-registry.md) for more information.
 
-### Bundle your module
+### Create module operator and bundle module
 
-To bundle your module image and operator, please refer to the detailed information inside [template-operator docs](https://github.com/kyma-project/lifecycle-manager/blob/main/samples/template-operator/README.md#bundling-and-installation).
+To bundle your module image and operator, please refer to the detailed information inside [template-operator docs](../../samples/template-operator/README.md).
 
-### Install Kyma with your module
+### Install Kyma and run lifecycle-manager operator
 
 1. If you're using the two-cluster setup, set your `KUBECONFIG` to the KCP Cluster context.
 
@@ -32,6 +37,7 @@ To bundle your module image and operator, please refer to the detailed informati
    ```sh
    chmod 755 ./operator/config/samples/secret/k3d-secret-gen.sh
    ./operator/config/samples/secret/k3d-secret-gen.sh
+   kubectl apply -f ./operator/config/samples/secret/skr-secret.yaml
    ```
 
    > _**NOTE:**_ In the two-cluster setup, adjust your contexts for applying the secret using KCP_CLUSTER_CTX and SKR_CLUSTER_CTX.
@@ -71,7 +77,7 @@ To bundle your module image and operator, please refer to the detailed informati
 
    3. Check the progress of your Kyma installation; for example, with `kubectl get kyma -n kyma-system -ojsonpath={".items[0].status"} | yq -P`. You should get a result like this:
 
-### Verify the installation
+### Verify installation
 
 - To observe the installation in the runtime, switch the context to the SKR context, and verify the status.
 

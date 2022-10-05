@@ -97,3 +97,6 @@ Traditionally, Kyma was installed with the [Kyma Reconciler](https://github.com/
 While this worked great for smaller and medium scale deliveries, we had trouble to scale and maintain it when put under significant load.
 We chose to replace this with Operator-focused Reconciliation due to various reasons, more details on the reasoning can be found in our [Concept for Operator Reconciliation](https://github.com/kyma-project/community/tree/main/concepts/operator-reconciliation)
 
+### Testing and implementation guide
+- For a detailed cluster and module setup refer to our [test environment guide](docs/developer/creating-test-environment.md)
+- For configuring the lifecycle-manager operator refer to our [developer guide](docs/user/starting-operator-with-webhooks.md)
