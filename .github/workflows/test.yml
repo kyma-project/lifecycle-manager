@@ -5,7 +5,6 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-
 jobs:
   wait-for-img:
     name: "Wait for Image Build"
@@ -49,44 +48,81 @@ jobs:
           path: |
             operator/dry-run/*.yaml
 
-  smoke:
-    needs: [wait-for-img, kustomize]
-    name: "Smoke"
+  cli-integration:
     strategy:
       matrix:
-        os: [ubuntu-latest]
-        provision-type: ["kyma-cli", "kind"]
-        
-    runs-on: ${{ matrix.os }}
+        cli-stability: ["unstable"]
+        smoke-run: [ "${{ github.repository }}" ]
+    needs: [wait-for-img, kustomize]
+    name: "Kyma CLI - ${{ matrix.cli-stability }} - Integration (Tests of ${{ matrix.smoke-run }})"
+    runs-on: ubuntu-latest
+    env:
+      MODULE_MANAGER: kyma-project/module-manager
+      LIFECYCLE_MANAGER: ${{ github.repository }}
+      K3D_VERSION: v5.4.6
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
-      
-    - name: Set up Go
-      uses: actions/setup-go@v3
-      with:
-        cache: true
-        go-version-file: 'tests/smoke/go.mod'
-        cache-dependency-path: 'tests/smoke/go.sum'
+      - name: Checkout Lifecycle-Manager
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ env.LIFECYCLE_MANAGER }}
+          path: ${{ env.LIFECYCLE_MANAGER }}
+      - name: Move Lifecycle-Manager
+        run: |
+          mkdir -p $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER
+          mv $GITHUB_WORKSPACE/$LIFECYCLE_MANAGER/** $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/
+      - name: Checkout Module-Manager
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ env.MODULE_MANAGER }}
+          path: ${{ env.MODULE_MANAGER }}
+      - name: Move Module-Manager
+        run: |
+          mkdir -p $(go env GOPATH)/src/github.com/$MODULE_MANAGER
+          mv $GITHUB_WORKSPACE/$MODULE_MANAGER/** $(go env GOPATH)/src/github.com/$MODULE_MANAGER/
+      - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
+        if: github.event_name == 'pull_request'
+        run: |
+          wget -qO - "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          mv kustomize /usr/local/bin/
+          cd $(go env GOPATH)/src/github.com/${{ github.repository }}/operator/config/manager
+          kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
+      - name: Set up k3d
+        run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
+      - id: kyma
+        uses: jakobmoellersap/kyma-cli-action@v0.0.1-alpha1
+        with:
+          version: ${{ matrix.cli-stability }}
+      - run: ln -s ${{ steps.kyma.outputs.path }} /usr/local/bin/kyma
+      - name: Run Provision
+        run: |
+          kyma provision k3d \
+            -p 8083:80@loadbalancer \
+            -p 8443:443@loadbalancer \
+            --timeout 1m \
+            --k3d-arg --no-rollback \
+            --name kyma
+      - name: Update Kubeconfigs
+        run: k3d kubeconfig merge -a -d
+      - name: Run Deploy
+        run: kyma alpha deploy --source=local
+      - name: Inject GOPATH into go Setup
+        run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
 
-    - name: Set up k3d/kyma for ${{ matrix.provision-type }}
-      if: ${{ matrix.provision-type }} == "kyma-cli"
-      run: |
-        wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=v5.4.6 bash
-        wget -q https://storage.googleapis.com/kyma-cli-unstable/kyma-linux
-        chmod +x kyma-linux
-        mv kyma-linux /usr/local/bin/kyma
-
-    - name: Set up kustomize V4
-      run: |
-        wget -qO - "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
-        mv kustomize /usr/local/bin/
-
-    - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
-      if: github.event_name == 'pull_request'
-      run: |
-        cd operator/config/manager
-        kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
-
-    - name: Run Smoke Tests
-      run: cd tests/smoke && go test smoke_test.go -v -provision-type ${{ matrix.provision-type }}
+      - uses: actions/cache@v3
+        name: Cache Go Dependencies for Smoke Tests
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: ${{ runner.os }}-go-cli-integration-${{ matrix.smoke-run }}-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-cli-integration-${{ matrix.smoke-run }}
+      - name: Set up Go for ${{ matrix.smoke-run }}
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: ${{ env.GOPATH }}/src/github.com/${{ matrix.smoke-run }}/tests/smoke/go.mod
+          cache-dependency-path: ${{ env.GOPATH }}/src/github.com/${{ matrix.smoke-run }}/tests/smoke/go.sum
+      - name: Run Smoke Tests for ${{ matrix.smoke-run }}
+        run: |
+          cd $(go env GOPATH)/src/github.com/${{ matrix.smoke-run }}/tests/smoke
+          go test smoke_test.go -v
