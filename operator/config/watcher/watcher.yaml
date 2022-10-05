@@ -2,7 +2,7 @@ apiVersion: operator.kyma-project.io/v1alpha1
 kind: Watcher
 metadata:
   name: watcher
-  namespace: system
+  namespace: kyma-system
   labels:
     "operator.kyma-project.io/managed-by": "lifecycle-manager"
 spec:
@@ -19,7 +19,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: event-service
-  namespace: system
+  namespace: kyma-system
 spec:
   selector:
     app.kubernetes.io/component: lifecycle-manager.kyma-project.io

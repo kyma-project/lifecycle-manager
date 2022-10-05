@@ -92,6 +92,7 @@ type FlagVar struct {
 	skrWatcherPath                                                         string
 	vsName                                                                 string
 	vsNamespace                                                            string
+	kcpAddr                                                                string
 }
 
 func main() {
@@ -213,6 +214,9 @@ func defineFlagVar() *FlagVar {
 		"The name of the Istio virtual service to be updated.")
 	flag.StringVar(&flagVar.vsNamespace, "virtual-svc-namespace", metav1.NamespaceDefault,
 		"The namespace of the Istio virtual service to be updated.")
+	flag.StringVar(&flagVar.kcpAddr, "kcp-addr", "http://0.0.0.0:80/",
+		"The KCP base URL to issue skr watch events")
+
 	return flagVar
 }
 
@@ -275,6 +279,7 @@ func setupKcpWatcherReconciler(
 		RestConfig:       mgr.GetConfig(),
 		RequeueIntervals: intervals,
 		Config:           watcherConfig,
+		KCPAddr:          flagVar.kcpAddr,
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Watcher")
 		os.Exit(1)

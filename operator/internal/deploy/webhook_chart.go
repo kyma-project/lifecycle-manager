@@ -30,9 +30,9 @@ const (
 )
 
 func InstallSKRWebhook(ctx context.Context, chartPath, releaseName string,
-	obj *v1alpha1.Watcher, restConfig *rest.Config,
+	obj *v1alpha1.Watcher, restConfig *rest.Config, kcpAddr string,
 ) error {
-	argsVals, err := generateHelmChartArgsForCR(obj)
+	argsVals, err := generateHelmChartArgsForCR(obj, kcpAddr)
 	if err != nil {
 		return err
 	}
@@ -62,13 +62,14 @@ func prepareInstallInfo(chartPath, releaseName string, restConfig *rest.Config, 
 	}
 }
 
-func generateHelmChartArgsForCR(obj *v1alpha1.Watcher) (map[string]interface{}, error) {
+func generateHelmChartArgsForCR(obj *v1alpha1.Watcher, kcpAddr string) (map[string]interface{}, error) {
 	chartCfg := generateWatchableConfigForCR(obj)
 	bytes, err := k8syaml.Marshal(chartCfg)
 	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
+		"kcp.addr":      kcpAddr,
 		customConfigKey: string(bytes),
 	}, nil
 }
