@@ -206,7 +206,7 @@ func defineFlagVar() *FlagVar {
 	flag.BoolVar(&flagVar.enableModuleCatalog, "enable-module-catalog", true,
 		"Enabling the Module Catalog Synchronization for Introspection of "+
 			"available Modules based on ModuleTemplates.")
-	flag.BoolVar(&flagVar.enableKcpWatcher, "enable-kcp-watcher", true,
+	flag.BoolVar(&flagVar.enableKcpWatcher, "enable-kcp-watcher", false,
 		"Enabling KCP Watcher to reconcile Watcher CRs created by KCP run operators")
 	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "./internal/skr/chart/skr-webhook",
 		"The path to the skr watcher chart.")

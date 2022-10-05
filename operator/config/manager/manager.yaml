@@ -31,7 +31,6 @@ spec:
         - /manager
         args:
         - --leader-elect
-        - --skr-watcher-path=/skr-webhook
         image: controller:latest
         ports:
           - containerPort: 8082

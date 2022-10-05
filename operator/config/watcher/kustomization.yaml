@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
 
 resources:
-- watcher.yaml
+- operator_v1alpha1_watcher.yaml
 
 generatorOptions:
   disableNameSuffixHash: true
@@ -11,6 +11,21 @@ patches:
   - patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --enable-kcp-watcher
+        value: --enable-kcp-watcher      
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --skr-watcher-path=/skr-webhook      
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --requeue-success-interval=5m      
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --requeue-waiting-interval=5m      
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --requeue-failure-interval=5m
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --kcp-addr=34.76.239.193:80
     target:
       kind: Deployment

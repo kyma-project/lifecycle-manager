@@ -211,7 +211,8 @@ func (r *WatcherReconciler) updateWatcherCRStatus(ctx context.Context, obj *v1al
 	state v1alpha1.WatcherState, msg string,
 ) error {
 	obj.Status.State = state
-	switch state { //nolint:exhaustive
+	//nolint:exhaustive
+	switch state {
 	case v1alpha1.WatcherStateReady:
 		obj.AddOrUpdateReadyCondition(v1alpha1.ConditionStatusTrue, msg)
 	case "":
