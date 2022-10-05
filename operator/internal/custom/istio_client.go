@@ -17,7 +17,7 @@ import (
 
 const (
 	firstElementIdx    = 0
-	contractVersion    = "1"
+	contractVersion    = "v1"
 	virtualServiceName = "kcp-events"
 	gatewayName        = "lifecycle-manager-gateway"
 )
@@ -195,7 +195,7 @@ func prepareIstioHTTPRouteForCR(obj *v1alpha1.Watcher) *istioapi.HTTPRoute {
 			{
 				Uri: &istioapi.StringMatch{
 					MatchType: &istioapi.StringMatch_Prefix{ //nolint:nosnakecase
-						Prefix: fmt.Sprintf("/v%s/%s/event", contractVersion, obj.GetModuleName()),
+						Prefix: fmt.Sprintf("/%s/%s/event", contractVersion, obj.GetModuleName()),
 					},
 				},
 			},
