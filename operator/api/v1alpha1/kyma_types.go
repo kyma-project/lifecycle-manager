@@ -25,10 +25,6 @@ import (
 
 type OverrideType string
 
-const (
-	OverrideTypeHelmValues = "helm-values"
-)
-
 type (
 	Overrides []Override
 	Override  struct {
@@ -43,6 +39,12 @@ type Modules []Module
 type Module struct {
 	// Name is a unique identifier of the module.
 	// It is used together with KymaName, ChannelLabel, ProfileLabel label to resolve a ModuleTemplate.
+	//
+	// WARNING: Module-Names are restricted in length based on naming generation strategy!
+	// By default, this means that the length of Name and .metadata.name of Kyma combined must be <= 252 Characters
+	// This is because the naming strategy aggregates Kyma and Module into a format of "kyma-name-module-name"
+	// For more info on the 253 total character limit, see
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names
 	Name string `json:"name"`
 
 	// ControllerName is able to set the controller used for reconciliation of the module. It can be used
@@ -142,9 +144,14 @@ type KymaStatus struct {
 // +kubebuilder:validation:Enum=rapid;regular;stable
 type Channel string
 
+//goland:noinspection ALL
 const (
 	DefaultChannel = ChannelStable
+	// ChannelFast is meant as a fast track channel that will always be equal or close to the main codeline.
+	// Alias for ChannelRapid.
+	ChannelFast Channel = "fast"
 	// ChannelRapid is meant as a fast track channel that will always be equal or close to the main codeline.
+	// Alias for ChannelFast.
 	ChannelRapid Channel = "rapid"
 	// ChannelRegular is meant as the next best Ugrade path and a median between "bleeding edge" and stability.
 	ChannelRegular Channel = "regular"
@@ -228,7 +235,8 @@ type KymaConditionReason string
 
 // Extend this list by actual needs.
 const (
-	ConditionReasonModulesAreReady KymaConditionReason = "ModulesAreReady"
+	ConditionReasonModulesAreReady      KymaConditionReason = "ModulesAreReady"
+	ConditionReasonModuleCatalogIsReady KymaConditionReason = "ModuleCatalogIsReady"
 )
 
 //+genclient
@@ -316,8 +324,14 @@ func init() {
 }
 
 func (kyma *Kyma) UpdateCondition(reason KymaConditionReason, status metav1.ConditionStatus) {
-	newCondition := NewConditionBuilder().SetReason(reason).SetStatus(status).Build()
+	newCondition := NewConditionBuilder().
+		SetReason(reason).
+		SetStatus(status).
+		SetObservedGeneration(kyma.GetGeneration()).
+		Build()
+
 	isNewReason := true
+
 	for i := range kyma.Status.Conditions {
 		condition := &kyma.Status.Conditions[i]
 		if condition.Reason == string(reason) {
@@ -327,6 +341,7 @@ func (kyma *Kyma) UpdateCondition(reason KymaConditionReason, status metav1.Cond
 			}
 		}
 	}
+
 	if isNewReason {
 		kyma.Status.Conditions = append(kyma.Status.Conditions, newCondition)
 	}

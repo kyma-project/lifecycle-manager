@@ -46,7 +46,7 @@ func GenerateModulesFromTemplates(
 	modules, err := templatesToModules(kyma, templates,
 		&ModuleConversionSettings{Verification: verification})
 	if err != nil {
-		return nil, fmt.Errorf("could not convert templates to modules: %w", err)
+		return nil, fmt.Errorf("cannot convert templates: %w", err)
 	}
 
 	return modules, nil

@@ -57,7 +57,7 @@ func (r *runnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 		if errors.IsNotFound(err) {
 			return create()
 		} else if err != nil {
-			return false, fmt.Errorf("error occurred while fetching module %s: %w", module.GetName(), err)
+			return false, fmt.Errorf("cannot get module %s: %w", module.GetName(), err)
 		}
 
 		module.UpdateStatusAndReferencesFromUnstructured(moduleUnstructured)
@@ -135,7 +135,8 @@ func (r *runnerImpl) updateModuleStatusFromExistingModules(modules common.Module
 ) bool {
 	updateRequired := false
 	for _, module := range modules {
-		latestmoduleStatus := v1alpha1.ModuleStatus{
+		descriptor, _ := module.Template.Spec.GetDescriptor()
+		latestModuleStatus := v1alpha1.ModuleStatus{
 			ModuleName: module.Name,
 			Name:       module.Unstructured.GetName(),
 			Namespace:  module.Unstructured.GetNamespace(),
@@ -147,18 +148,19 @@ func (r *runnerImpl) updateModuleStatusFromExistingModules(modules common.Module
 					Version: module.GroupVersionKind().Version,
 					Kind:    module.GroupVersionKind().Kind,
 				},
+				Version: descriptor.Version,
 			},
 			State: stateFromUnstructured(module.Unstructured),
 		}
 		moduleStatus, exists := moduleStatusMap[module.Name]
 		if exists {
-			if moduleStatus.State != latestmoduleStatus.State {
+			if moduleStatus.State != latestModuleStatus.State {
 				updateRequired = true
 			}
-			*moduleStatus = latestmoduleStatus
+			*moduleStatus = latestModuleStatus
 		} else {
 			updateRequired = true
-			kyma.Status.ModuleStatus = append(kyma.Status.ModuleStatus, latestmoduleStatus)
+			kyma.Status.ModuleStatus = append(kyma.Status.ModuleStatus, latestModuleStatus)
 		}
 	}
 	return updateRequired

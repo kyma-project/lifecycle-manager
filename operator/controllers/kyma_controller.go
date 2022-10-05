@@ -44,6 +44,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+type EventErrorType string
+
+const ModuleReconciliationError EventErrorType = "ModuleReconciliationError"
+
 type RequeueIntervals struct {
 	Success time.Duration
 	Failure time.Duration
@@ -74,7 +78,7 @@ type KymaReconciler struct {
 
 func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
-	logger.Info("Reconciliation loop starting for", "resource", req.NamespacedName.String())
+	logger.Info("reconciling modules", "resource", req.NamespacedName.String())
 
 	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
 
@@ -134,14 +138,17 @@ func (r *KymaReconciler) synchronizeRemote(ctx context.Context, kyma *v1alpha1.K
 	}
 	syncContext, err := remote.InitializeKymaSynchronizationContext(ctx, r.Client, kyma)
 	if err != nil {
-		return fmt.Errorf("could not initialize remote context before updating remote kyma: %w", err)
+		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
+			fmt.Errorf("remote sync initialization failed: %w", err))
 	}
 	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx)
 	if err != nil {
-		return fmt.Errorf("could not fetch kyma updating remote kyma: %w", err)
+		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
+			fmt.Errorf("could not fetch kyma updating remote kyma: %w", err))
 	}
 	if err := syncContext.SynchronizeRemoteKyma(ctx, remoteKyma); err != nil {
-		return fmt.Errorf("could not synchronize remote kyma: %w", err)
+		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
+			fmt.Errorf("could not synchronize remote kyma: %w", err))
 	}
 	syncContext.ReplaceWithVirtualKyma(kyma, remoteKyma)
 
@@ -149,7 +156,7 @@ func (r *KymaReconciler) synchronizeRemote(ctx context.Context, kyma *v1alpha1.K
 }
 
 func (r *KymaReconciler) stateHandling(ctx context.Context, kyma *v1alpha1.Kyma) (ctrl.Result, error) {
-	log.FromContext(ctx).Info(fmt.Sprintf("handling %s", kyma.Name), "state", string(kyma.Status.State))
+	log.FromContext(ctx).Info("syncing state", "state", string(kyma.Status.State))
 	switch kyma.Status.State {
 	case "":
 
@@ -192,10 +199,10 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	statusUpdateRequiredFromModuleSync, err := runner.Sync(ctx, kyma, modules)
 	if err != nil {
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
-			fmt.Errorf("ParsedModule CR creation/update error: %w", err))
+			fmt.Errorf("sync failed: %w", err))
 	}
 
-	statusUpdateRequiredFrommoduleStatusSync := runner.SyncModuleStatus(ctx, kyma, modules)
+	statusUpdateRequiredFromModuleStatusSync := runner.SyncModuleStatus(ctx, kyma, modules)
 
 	// If module get removed from kyma, the module deletion happens here.
 	if err := r.DeleteNoLongerExistingModules(ctx, kyma); err != nil {
@@ -214,7 +221,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	}
 
 	// if the ready condition is not applicable, but we changed the conditions, we still need to issue an update
-	if statusUpdateRequiredFromModuleSync || statusUpdateRequiredFrommoduleStatusSync {
+	if statusUpdateRequiredFromModuleSync || statusUpdateRequiredFromModuleStatusSync {
 		if err := r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing, "updating component conditions"); err != nil {
 			return fmt.Errorf("error while updating status for condition change: %w", err)
 		}
@@ -276,7 +283,7 @@ func (r *KymaReconciler) UpdateStatusFromErr(
 	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state); err != nil {
 		return fmt.Errorf("error while updating status to %s: %w", state, err)
 	}
-	r.Event(kyma, "Warning", "StatusUpdate", err.Error())
+	r.Event(kyma, "Warning", string(ModuleReconciliationError), err.Error())
 	return nil
 }
 
@@ -295,7 +302,7 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 	// these are the actual modules
 	modules, err := parse.GenerateModulesFromTemplates(kyma, templates, verification)
 	if err != nil {
-		return nil, fmt.Errorf("could not convert templates to modules: %w", err)
+		return nil, fmt.Errorf("cannot generate modules: %w", err)
 	}
 
 	return modules, nil

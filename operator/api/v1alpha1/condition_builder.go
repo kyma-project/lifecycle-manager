@@ -7,14 +7,16 @@ import (
 )
 
 type ConditionBuilder struct {
-	Status metav1.ConditionStatus
-	Reason KymaConditionReason
+	Status             metav1.ConditionStatus
+	Reason             KymaConditionReason
+	ObservedGeneration int64
 }
 
 const (
-	MessageModuleInReadyState        = "all modules are in ready state"
-	MessageModuleNotInReadyState     = "not all modules are in ready state"
-	MessageModuleInUnidentifiedState = "modules are in unidentified state"
+	MessageModuleInReadyState       = "all modules are in ready state"
+	MessageModuleNotInReadyState    = "not all modules are in ready state"
+	MessageModuleCatalogIsSynced    = "module catalog is synchronized"
+	MessageModuleCatalogIsOutOfSync = "module catalog is out of sync and needs to be resynchronized"
 )
 
 func NewConditionBuilder() *ConditionBuilder {
@@ -31,6 +33,11 @@ func (cb *ConditionBuilder) SetReason(reason KymaConditionReason) *ConditionBuil
 	return cb
 }
 
+func (cb *ConditionBuilder) SetObservedGeneration(observedGeneration int64) *ConditionBuilder {
+	cb.ObservedGeneration = observedGeneration
+	return cb
+}
+
 func (cb *ConditionBuilder) Build() metav1.Condition {
 	return metav1.Condition{
 		Type:               string(ConditionTypeReady),
@@ -38,17 +45,35 @@ func (cb *ConditionBuilder) Build() metav1.Condition {
 		LastTransitionTime: metav1.Time{Time: time.Now()},
 		Reason:             string(cb.Reason),
 		Message:            cb.generateMessage(),
+		ObservedGeneration: cb.ObservedGeneration,
 	}
 }
 
 func (cb *ConditionBuilder) generateMessage() string {
-	if cb.Reason == ConditionReasonModulesAreReady {
-		if cb.Status == metav1.ConditionTrue {
+	switch cb.Reason {
+	case ConditionReasonModulesAreReady:
+		switch cb.Status {
+		case metav1.ConditionTrue:
 			return MessageModuleInReadyState
-		}
-		if cb.Status == metav1.ConditionFalse || cb.Status == metav1.ConditionUnknown {
+		case metav1.ConditionUnknown:
+			fallthrough
+		case metav1.ConditionFalse:
+			fallthrough
+		default:
 			return MessageModuleNotInReadyState
 		}
+	case ConditionReasonModuleCatalogIsReady:
+		switch cb.Status {
+		case metav1.ConditionTrue:
+			return MessageModuleCatalogIsSynced
+		case metav1.ConditionUnknown:
+			fallthrough
+		case metav1.ConditionFalse:
+			fallthrough
+		default:
+			return MessageModuleCatalogIsOutOfSync
+		}
+	default:
+		return "no detailed message available as reason is unknown to API"
 	}
-	return MessageModuleInUnidentifiedState
 }

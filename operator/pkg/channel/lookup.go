@@ -26,7 +26,9 @@ type ModuleTemplate struct {
 
 type ModuleTemplatesByModuleName map[string]*ModuleTemplate
 
-func GetTemplates(ctx context.Context, c client.Reader, kyma *operatorv1alpha1.Kyma) (ModuleTemplatesByModuleName, error) {
+func GetTemplates(
+	ctx context.Context, c client.Reader, kyma *operatorv1alpha1.Kyma,
+) (ModuleTemplatesByModuleName, error) {
 	logger := log.FromContext(ctx)
 	templates := make(ModuleTemplatesByModuleName)
 
@@ -73,6 +75,10 @@ func CheckForOutdatedTemplate(
 		"previousTemplateChannel", moduleStatus.TemplateInfo.Channel,
 	)
 
+	// generation skews always have to be handled. We are not in need of checking downgrades here,
+	// since these are catched by our validating webhook. We do not support downgrades of Versions
+	// in ModuleTemplates, meaning the only way the generation can be changed is by changing the target
+	// channel (valid change) or a version increase
 	if moduleTemplate.GetGeneration() != moduleStatus.TemplateInfo.Generation {
 		checkLog.Info("outdated ModuleTemplate: generation skew")
 		moduleTemplate.Outdated = true
@@ -105,6 +111,13 @@ func CheckForOutdatedTemplate(
 			"newVersion", versionInStatus.String(),
 		)
 
+		// channel skews have to be handled with more detail. If a channel is changed this means
+		// that the downstream kyma might have changed its target channel for the module, meaning
+		// the old moduleStatus is reflecting the previous desired state.
+		// when increasing channel stability, this means we could potentially have a downgrade
+		// of module versions here (fast: v2.0.0 get downgraded to stable: v1.0.0). In this
+		// case we want to suspend updating the module until we reach v2.0.0 in stable, since downgrades
+		// are not supported. To circumvent this, a module can be uninstalled and then reinstalled in the old channel.
 		if versionInStatus.GreaterThan(versionInTemplate) {
 			checkLog.Info("ignore channel skew, as a higher version of the module was previously installed")
 			return

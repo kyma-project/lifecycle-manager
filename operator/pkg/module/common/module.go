@@ -1,6 +1,8 @@
 package common
 
 import (
+	"fmt"
+
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -55,8 +57,8 @@ func (m *Module) StateMismatchedWithTemplateInfo(info *v1alpha1.TemplateInfo) bo
 		info.Channel != m.Template.Spec.Channel
 }
 
-// UpdateStatusAndReferencesFromUnstructured update the module with necessary information (status, ownerReference) from
-// current deployed resource.
+// UpdateStatusAndReferencesFromUnstructured updates the module with necessary information (status, ownerReference) from
+// current deployed resource (from Unstructured).
 func (m *Module) UpdateStatusAndReferencesFromUnstructured(unstructured *unstructured.Unstructured) {
 	m.Unstructured.Object["status"] = unstructured.Object["status"]
 	m.Unstructured.SetResourceVersion(unstructured.GetResourceVersion())
@@ -84,5 +86,5 @@ func NewUnstructuredFromModule(module *Module) *unstructured.Unstructured {
 }
 
 func CreateModuleName(moduleName, kymaName string) string {
-	return moduleName + kymaName
+	return fmt.Sprintf("%s-%s", kymaName, moduleName)
 }

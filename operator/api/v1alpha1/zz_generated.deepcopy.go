@@ -242,13 +242,6 @@ func (in *ModuleTemplateList) DeepCopyObject() runtime.Object {
 func (in *ModuleTemplateSpec) DeepCopyInto(out *ModuleTemplateSpec) {
 	*out = *in
 	in.Data.DeepCopyInto(&out.Data)
-	if in.Overrides != nil {
-		in, out := &in.Overrides, &out.Overrides
-		*out = make(Overrides, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
-		}
-	}
 	in.OCMDescriptor.DeepCopyInto(&out.OCMDescriptor)
 	if in.descriptor != nil {
 		in, out := &in.descriptor, &out.descriptor
