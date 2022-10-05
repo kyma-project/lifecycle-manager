@@ -78,7 +78,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 		kymaSample = createKymaCR(kymaName)
 
 		// create istio resources
-		customIstioClient, err = custom.NewVersionedIstioClient(cfg, istioGateway)
+		customIstioClient, err = custom.NewVersionedIstioClient(cfg)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(controlPlaneClient.Create(ctx, kymaSample)).To(Succeed())
 		istioResources, err = deserializeIstioResources()

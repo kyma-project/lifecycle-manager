@@ -49,8 +49,6 @@ type WatcherReconciler struct {
 }
 
 type WatcherConfig struct {
-	// IstioGateway represents the namespace/name of the Istio Gateway to be used when configuring the virtual service.
-	IstioGateway string
 	// WebhookChartPath represents the path of the webhook chart
 	// to be installed on SKR clusters upon reconciling watcher CRs.
 	WebhookChartPath string
@@ -97,16 +95,17 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	case "":
 		return ctrl.Result{}, r.HandleInitialState(ctx, watcherObj)
 	case v1alpha1.WatcherStateProcessing:
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Waiting},
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure},
 			r.HandleProcessingState(ctx, logger, watcherObj)
 	case v1alpha1.WatcherStateDeleting:
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Waiting}, r.HandleDeletingState(ctx, logger, watcherObj)
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Waiting},
+			r.HandleDeletingState(ctx, logger, watcherObj)
 	case v1alpha1.WatcherStateError:
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure},
-			r.HandleErrorState(ctx, watcherObj)
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Waiting},
+			r.HandleProcessingState(ctx, logger, watcherObj)
 	case v1alpha1.WatcherStateReady:
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success},
-			r.HandleReadyState(ctx, logger, watcherObj)
+			r.HandleProcessingState(ctx, logger, watcherObj)
 	}
 
 	return ctrl.Result{}, nil
@@ -190,22 +189,6 @@ func (r *WatcherReconciler) HandleDeletingState(ctx context.Context, logger logr
 	return nil
 }
 
-func (r *WatcherReconciler) HandleErrorState(ctx context.Context, obj *v1alpha1.Watcher) error {
-	return r.updateWatcherCRStatus(ctx, obj, v1alpha1.WatcherStateProcessing, "observed generation change")
-}
-
-func (r *WatcherReconciler) HandleReadyState(ctx context.Context, logger logr.Logger,
-	obj *v1alpha1.Watcher,
-) error {
-	if obj.Generation != obj.Status.ObservedGeneration {
-		logger.Info("observed generation change for watcher cr")
-		return r.updateWatcherCRStatus(ctx, obj,
-			v1alpha1.WatcherStateProcessing, "observed generation change")
-	}
-
-	return nil
-}
-
 func (r *WatcherReconciler) updateWatcherCRStatus(ctx context.Context, obj *v1alpha1.Watcher,
 	state v1alpha1.WatcherState, msg string,
 ) error {
@@ -226,7 +209,7 @@ func (r *WatcherReconciler) SetIstioClient() error {
 	if r.RestConfig == nil {
 		return fmt.Errorf("reconciler rest config is not set")
 	}
-	customIstioClient, err := custom.NewVersionedIstioClient(r.RestConfig, r.Config.IstioGateway)
+	customIstioClient, err := custom.NewVersionedIstioClient(r.RestConfig)
 	r.IstioClient = customIstioClient
 	return err
 }

@@ -87,7 +87,6 @@ type FlagVar struct {
 	enableWebhooks                                                         bool
 	enableModuleCatalog, enableKcpWatcher                                  bool
 	skrWatcherPath                                                         string
-	istioGateway                                                           string
 }
 
 func main() {
@@ -201,12 +200,10 @@ func defineFlagVar() *FlagVar {
 	flag.BoolVar(&flagVar.enableModuleCatalog, "enable-module-catalog", true,
 		"Enabling the Module Catalog Synchronization for Introspection of "+
 			"available Modules based on ModuleTemplates.")
-	flag.BoolVar(&flagVar.enableKcpWatcher, "enable-kcp-watcher", true,
+	flag.BoolVar(&flagVar.enableKcpWatcher, "enable-kcp-watcher", false,
 		"Enabling KCP Watcher to reconcile Watcher CRs created by KCP run operators")
-	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "./internal/skr/chart/skr-webhook",
+	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "skr-webhook",
 		"The path to the skr watcher chart.")
-	flag.StringVar(&flagVar.istioGateway, "istio-gateway", "default/kyma-gw",
-		"The namespace/name of the Istio Gateway to be used when configuring the virtual service.")
 	return flagVar
 }
 
@@ -257,7 +254,6 @@ func setupKcpWatcherReconciler(
 		setupLog.Error(err, "failed to read local skr chart")
 	}
 	watcherConfig := &controllers.WatcherConfig{
-		IstioGateway:     flagVar.istioGateway,
 		WebhookChartPath: flagVar.skrWatcherPath,
 	}
 	if err := (&controllers.WatcherReconciler{

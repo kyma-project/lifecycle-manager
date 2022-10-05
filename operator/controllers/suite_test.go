@@ -66,7 +66,6 @@ var (
 const (
 	webhookChartPath       = "../internal/charts/skr-webhook"
 	istioResourcesFilePath = "../internal/assets/istio-test-resources.yaml"
-	istioGateway           = "default/kcp-gateway"
 )
 
 func TestAPIs(t *testing.T) {
@@ -159,7 +158,6 @@ var _ = BeforeSuite(func() {
 		Scheme:           scheme.Scheme,
 		RequeueIntervals: intervals,
 		Config: &controllers.WatcherConfig{
-			IstioGateway:     istioGateway,
 			WebhookChartPath: webhookChartPath,
 		},
 	}).SetupWithManager(k8sManager, controller.Options{})

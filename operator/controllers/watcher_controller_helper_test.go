@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/onsi/gomega/types"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -145,6 +145,6 @@ func isCrDeletionFinished(watcherObjKeys ...client.ObjectKey) func(g Gomega) boo
 	}
 	return func(g Gomega) bool {
 		err := controlPlaneClient.Get(ctx, watcherObjKeys[0], &v1alpha1.Watcher{})
-		return kerrors.IsNotFound(err)
+		return apierrors.IsNotFound(err)
 	}
 }

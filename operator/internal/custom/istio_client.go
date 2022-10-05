@@ -3,12 +3,11 @@ package custom
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	istioapi "istio.io/api/networking/v1beta1"
 	istioclientapi "istio.io/client-go/pkg/apis/networking/v1beta1"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -20,29 +19,20 @@ const (
 	firstElementIdx    = 0
 	contractVersion    = "1"
 	virtualServiceName = "kcp-events"
+	gatewayName        = "lifecycle-manager-gateway"
 )
 
 type IstioClient struct {
 	istioclient.Interface
-	// IstioGateway string
-	IstioGateway client.ObjectKey
 }
 
-func NewVersionedIstioClient(cfg *rest.Config, istioGw string) (*IstioClient, error) {
-	gwStrings := strings.Split(istioGw, "/")
-	if len(gwStrings) != 2 {
-		return nil, fmt.Errorf("error validating gateway config: expected (namespace/name), got: (%s)", istioGw)
-	}
+func NewVersionedIstioClient(cfg *rest.Config) (*IstioClient, error) {
 	cs, err := istioclient.NewForConfig(cfg)
 	if err != nil {
 		return nil, err
 	}
 	return &IstioClient{
 		Interface: cs,
-		IstioGateway: client.ObjectKey{
-			Namespace: gwStrings[0],
-			Name:      gwStrings[1],
-		},
 	}, nil
 }
 
@@ -51,12 +41,12 @@ func (c *IstioClient) getOrCreateVirtualService(ctx context.Context, obj *v1alph
 	var err error
 	var virtualService *istioclientapi.VirtualService
 	virtualService, err = c.NetworkingV1beta1().
-		VirtualServices(c.IstioGateway.Namespace).
+		VirtualServices(metav1.NamespaceDefault).
 		Get(ctx, virtualServiceName, metav1.GetOptions{})
 	if client.IgnoreNotFound(err) != nil {
 		return nil, fmt.Errorf("failed to fetch virtual service %w", err)
 	}
-	if kerrors.IsNotFound(err) {
+	if apierrors.IsNotFound(err) {
 		virtualService, err = c.createVirtualService(ctx, obj)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create virtual service %w", err)
@@ -67,21 +57,20 @@ func (c *IstioClient) getOrCreateVirtualService(ctx context.Context, obj *v1alph
 
 func (c *IstioClient) createVirtualService(ctx context.Context, obj *v1alpha1.Watcher,
 ) (*istioclientapi.VirtualService, error) {
-
 	_, err := c.NetworkingV1beta1().
-		Gateways(c.IstioGateway.Namespace).
-		Get(ctx, c.IstioGateway.Name, metav1.GetOptions{})
+		Gateways(metav1.NamespaceDefault).
+		Get(ctx, gatewayName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error getting configured istio gateway: %w", err)
 	}
 	virtualSvc := &istioclientapi.VirtualService{}
 	virtualSvc.SetName(virtualServiceName)
-	virtualSvc.SetNamespace(c.IstioGateway.Namespace)
-	virtualSvc.Spec.Gateways = append(virtualSvc.Spec.Gateways, c.IstioGateway.Name)
+	virtualSvc.SetNamespace(metav1.NamespaceDefault)
+	virtualSvc.Spec.Gateways = append(virtualSvc.Spec.Gateways, gatewayName)
 	istioHTTPRoute := prepareIstioHTTPRouteForCR(obj)
 	virtualSvc.Spec.Http = append(virtualSvc.Spec.Http, istioHTTPRoute)
 	return c.NetworkingV1beta1().
-		VirtualServices(c.IstioGateway.Namespace).
+		VirtualServices(metav1.NamespaceDefault).
 		Create(ctx, virtualSvc, metav1.CreateOptions{})
 }
 
