@@ -27,13 +27,13 @@ type ModuleTemplate struct {
 type ModuleTemplatesByModuleName map[string]*ModuleTemplate
 
 func GetTemplates(
-	ctx context.Context, c client.Reader, kyma *operatorv1alpha1.Kyma,
+	ctx context.Context, client client.Reader, kyma *operatorv1alpha1.Kyma,
 ) (ModuleTemplatesByModuleName, error) {
 	logger := log.FromContext(ctx)
 	templates := make(ModuleTemplatesByModuleName)
 
 	for _, module := range kyma.Spec.Modules {
-		template, err := NewTemplateLookup(c, module, kyma.Spec.Channel).WithContext(ctx)
+		template, err := NewTemplateLookup(client, module, kyma.Spec.Channel).WithContext(ctx)
 		if err != nil {
 			return nil, err
 		}
