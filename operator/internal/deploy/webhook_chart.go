@@ -3,7 +3,9 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"net"
 
+	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"helm.sh/helm/v3/pkg/cli"
@@ -25,18 +27,29 @@ import (
 type Mode string
 
 const (
-	ModeInstall   = Mode("install")
-	ModeUninstall = Mode("uninstall")
+	ModeInstall                         = Mode("install")
+	ModeUninstall                       = Mode("uninstall")
+	customConfigKey                     = "modules"
+	kubeconfigKey                       = "config"
+	servicePathTpl                      = "/validate/%s"
+	webhookNameTpl                      = "%s.operator.kyma-project.io"
+	ReleaseName                         = "skr"
+	specSubresources                    = "*"
+	statusSubresources                  = "*/status"
+	configuredWebhooksDeletionThreshold = 1
+	expectedWebhookNamePartsLength      = 4
+	istioSytemNs                        = "istio-system"
+	ingressServiceName                  = "istio-ingressgateway"
 )
 
 func InstallSKRWebhook(ctx context.Context, chartPath, releaseName string,
 	obj *v1alpha1.Watcher, restConfig *rest.Config, kcpAddr string,
 ) error {
-	argsVals, err := generateHelmChartArgsForCR(obj, kcpAddr)
+	restClient, err := client.New(restConfig, client.Options{})
 	if err != nil {
 		return err
 	}
-	restClient, err := client.New(restConfig, client.Options{})
+	argsVals, err := generateHelmChartArgsForCR(ctx, obj, kcpAddr, restClient)
 	if err != nil {
 		return err
 	}
@@ -62,14 +75,19 @@ func prepareInstallInfo(chartPath, releaseName string, restConfig *rest.Config, 
 	}
 }
 
-func generateHelmChartArgsForCR(obj *v1alpha1.Watcher, kcpAddr string) (map[string]interface{}, error) {
+func generateHelmChartArgsForCR(ctx context.Context, obj *v1alpha1.Watcher, kcpAddr string,
+	restClient client.Client) (map[string]interface{}, error) {
+	resolvedKcpAddr, err := resolveKcpAddr(ctx, kcpAddr, restClient)
+	if err != nil {
+		return nil, err
+	}
 	chartCfg := generateWatchableConfigForCR(obj)
 	bytes, err := k8syaml.Marshal(chartCfg)
 	if err != nil {
 		return nil, err
 	}
 	return map[string]interface{}{
-		"kcp.addr":      kcpAddr,
+		"kcp.addr":      resolvedKcpAddr,
 		customConfigKey: string(bytes),
 	}, nil
 }
@@ -115,4 +133,25 @@ func installOrRemoveChartOnSKR(ctx context.Context, restConfig *rest.Config, rel
 		return fmt.Errorf("installed skr webhook resources are not ready")
 	}
 	return nil
+}
+
+func resolveKcpAddr(ctx context.Context, kcpAddr string, restClient client.Client) (string, error) {
+	if kcpAddr == "" {
+		// as fallback get external IP from the ISTIO load balancer external IP
+		loadBalancerService := &v1.Service{}
+		if err := restClient.Get(ctx, client.ObjectKey{Name: ingressServiceName, Namespace: istioSytemNs},
+			loadBalancerService); err != nil {
+			return "", err
+		}
+		ip := loadBalancerService.Status.LoadBalancer.Ingress[0].IP
+		var port int32
+		for _, loadBalancerPort := range loadBalancerService.Spec.Ports {
+			if loadBalancerPort.Name == "http2" {
+				port = loadBalancerPort.Port
+				break
+			}
+		}
+		kcpAddr = net.JoinHostPort(ip, string(port))
+	}
+	return kcpAddr, nil
 }

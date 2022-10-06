@@ -24,8 +24,5 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --requeue-failure-interval=5m
-      - op: add
-        path: /spec/template/spec/containers/0/args/-
-        value: --kcp-addr=34.76.239.193:80
     target:
       kind: Deployment

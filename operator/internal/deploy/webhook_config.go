@@ -19,17 +19,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 )
 
-const (
-	customConfigKey                     = "modules"
-	kubeconfigKey                       = "config"
-	servicePathTpl                      = "/validate/%s"
-	webhookNameTpl                      = "%s.operator.kyma-project.io"
-	ReleaseName                         = "skr"
-	specSubresources                    = "*"
-	statusSubresources                  = "*/status"
-	configuredWebhooksDeletionThreshold = 1
-	expectedWebhookNamePartsLength      = 4
-)
+const ()
 
 type WatchableConfig struct {
 	Labels     map[string]string `json:"labels"`
