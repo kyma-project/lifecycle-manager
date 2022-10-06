@@ -22,9 +22,6 @@ import (
 	"strings"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
 
 	"go.uber.org/zap/zapcore"
@@ -90,8 +87,6 @@ type FlagVar struct {
 	enableWebhooks                                                         bool
 	enableModuleCatalog, enableKcpWatcher                                  bool
 	skrWatcherPath                                                         string
-	vsName                                                                 string
-	vsNamespace                                                            string
 	kcpAddr                                                                string
 }
 
@@ -208,15 +203,10 @@ func defineFlagVar() *FlagVar {
 			"available Modules based on ModuleTemplates.")
 	flag.BoolVar(&flagVar.enableKcpWatcher, "enable-kcp-watcher", false,
 		"Enabling KCP Watcher to reconcile Watcher CRs created by KCP run operators")
-	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "./internal/skr/chart/skr-webhook",
+	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "skr-webhook",
 		"The path to the skr watcher chart.")
-	flag.StringVar(&flagVar.vsName, "virtual-svc-name", "kcp-events",
-		"The name of the Istio virtual service to be updated.")
-	flag.StringVar(&flagVar.vsNamespace, "virtual-svc-namespace", metav1.NamespaceDefault,
-		"The namespace of the Istio virtual service to be updated.")
 	flag.StringVar(&flagVar.kcpAddr, "kcp-addr", "http://0.0.0.0:80/",
 		"The KCP base URL to issue skr watch events")
-
 	return flagVar
 }
 
@@ -267,10 +257,6 @@ func setupKcpWatcherReconciler(
 		setupLog.Error(err, "failed to read local skr chart")
 	}
 	watcherConfig := &controllers.WatcherConfig{
-		VirtualServiceObjKey: client.ObjectKey{
-			Name:      flagVar.vsName,
-			Namespace: flagVar.vsNamespace,
-		},
 		WebhookChartPath: flagVar.skrWatcherPath,
 	}
 	if err := (&controllers.WatcherReconciler{

@@ -101,7 +101,7 @@ func (r *WatcherReconciler) SetupWithManager(
 	options controller.Options,
 ) error {
 	if err := r.SetIstioClient(); err != nil {
-		return fmt.Errorf("unable to set istio client for controller watcher %w", err)
+		return fmt.Errorf("unable to set istio client for controller watcher: %w", err)
 	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Watcher{}).

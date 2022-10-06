@@ -1,7 +1,7 @@
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway
 metadata:
-  name: kcp-gateway
+  name: lifecycle-manager-gateway
   namespace: default
 spec:
   selector:
@@ -13,15 +13,4 @@ spec:
         name: http
         number: 80
         protocol: HTTP
----
-apiVersion: networking.istio.io/v1beta1
-kind: VirtualService
-metadata:
-  name: kcp-events
-  namespace: default
-spec:
-  gateways:
-    - kcp-gateway
-  hosts:
-    - "*"
 ---

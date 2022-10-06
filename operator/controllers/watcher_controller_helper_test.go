@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/onsi/gomega/types"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -77,16 +77,12 @@ func createKymaCR(kymaName string) *v1alpha1.Kyma {
 }
 
 func verifyVsRoutes(watcherCR *v1alpha1.Watcher, customIstioClient *custom.IstioClient, matcher types.GomegaMatcher) {
-	vsKey := client.ObjectKey{
-		Name:      vsName,
-		Namespace: vsNamespace,
-	}
 	if watcherCR != nil {
-		routeReady, err := customIstioClient.IsListenerHTTPRouteConfigured(ctx, vsKey, watcherCR)
+		routeReady, err := customIstioClient.IsListenerHTTPRouteConfigured(ctx, watcherCR)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(routeReady).To(matcher)
 	} else {
-		routesReady, err := customIstioClient.IsListenerHTTPRoutesEmpty(ctx, vsKey)
+		routesReady, err := customIstioClient.IsListenerHTTPRoutesEmpty(ctx)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(routesReady).To(matcher)
 	}
@@ -149,6 +145,6 @@ func isCrDeletionFinished(watcherObjKeys ...client.ObjectKey) func(g Gomega) boo
 	}
 	return func(g Gomega) bool {
 		err := controlPlaneClient.Get(ctx, watcherObjKeys[0], &v1alpha1.Watcher{})
-		return kerrors.IsNotFound(err)
+		return apierrors.IsNotFound(err)
 	}
 }
