@@ -49,6 +49,7 @@ spec:
                   It has to be provided at any given time.
                 enum:
                 - rapid
+                - fast
                 - regular
                 - stable
                 type: string

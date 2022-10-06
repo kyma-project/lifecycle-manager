@@ -7,11 +7,8 @@ import (
 	"path/filepath"
 
 	"github.com/Masterminds/semver/v3"
-	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
-	"github.com/gardener/component-spec/bindings-go/codec"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/test"
@@ -85,9 +82,9 @@ var _ = Describe("Webhook ValidationCreate Strict", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
 
-		ModifyDescriptor(template, ModifyDescriptorVersion(func(version *semver.Version) string {
+		Expect(template.Spec.ModifyDescriptor(v1alpha1.ModifyDescriptorVersion(func(version *semver.Version) string {
 			return fmt.Sprintf("v%v.%v.%v", version.Major(), version.Minor(), version.Patch()-1)
-		}))
+		}))).ToNot(HaveOccurred())
 
 		err = k8sClient.Update(webhookServerContext, template)
 
@@ -136,28 +133,4 @@ func GetNonCompliantCRD(group, sample string) *v1.CustomResourceDefinition {
 		Enum: []v1.JSON{},
 	}
 	return crd
-}
-
-func ModifyDescriptor(template *v1alpha1.ModuleTemplate, modify func(descriptor *ocm.ComponentDescriptor)) {
-	descriptor, err := template.Spec.GetDescriptor()
-	Expect(err).ToNot(HaveOccurred())
-
-	modify(descriptor)
-
-	encodedDescriptor, err := codec.Encode(descriptor)
-	Expect(err).ToNot(HaveOccurred())
-
-	template.Spec.OCMDescriptor = runtime.RawExtension{Raw: encodedDescriptor}
-}
-
-func ModifyDescriptorVersion(modify func(version *semver.Version) string) func(descriptor *ocm.ComponentDescriptor) {
-	return func(descriptor *ocm.ComponentDescriptor) {
-		semVersion, err := semver.NewVersion(descriptor.Version)
-		Expect(err).ToNot(HaveOccurred())
-		newVersion := modify(semVersion)
-		descriptor.Version = newVersion
-		for i := range descriptor.Resources {
-			descriptor.Resources[i].Version = newVersion
-		}
-	}
 }

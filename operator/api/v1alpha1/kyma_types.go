@@ -141,7 +141,7 @@ type KymaStatus struct {
 // in a control plane against different stability levels of our module system. When switching Channel, all modules
 // will be recalculated based on new templates. If you did not configure a ModuleTemplate for the new channel, the Kyma
 // will abort the installation.
-// +kubebuilder:validation:Enum=rapid;regular;stable
+// +kubebuilder:validation:Enum=rapid;fast;regular;stable
 type Channel string
 
 //goland:noinspection ALL
@@ -201,6 +201,12 @@ type ModuleStatus struct {
 }
 
 type TemplateInfo struct {
+	// Name is the current name of the template resource referenced
+	Name string `json:"name"`
+
+	// Namespace is the namespace of the template
+	Namespace string `json:"namespace"`
+
 	// Generation tracks the active Generation of the ModuleTemplate. In Case it changes, the new Generation will differ
 	// from the one tracked in TemplateInfo and thus trigger a new reconciliation with a newly parser ModuleTemplate
 	Generation int64 `json:"generation,omitempty"`

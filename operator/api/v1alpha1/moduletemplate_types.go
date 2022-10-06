@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/Masterminds/semver/v3"
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/gardener/component-spec/bindings-go/codec"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -76,6 +77,43 @@ func (in *ModuleTemplateSpec) GetDescriptor() (*ocm.ComponentDescriptor, error) 
 		in.descriptor = &descriptor
 	}
 	return in.descriptor, nil
+}
+
+func (in *ModuleTemplateSpec) ModifyDescriptor(modify func(descriptor *ocm.ComponentDescriptor) error) error {
+	descriptor, err := in.GetDescriptor()
+	if err != nil {
+		return err
+	}
+
+	if err := modify(descriptor); err != nil {
+		return err
+	}
+
+	encodedDescriptor, err := codec.Encode(descriptor)
+	if err != nil {
+		return err
+	}
+
+	in.OCMDescriptor = runtime.RawExtension{Raw: encodedDescriptor}
+	in.descriptor = nil
+	return nil
+}
+
+func ModifyDescriptorVersion(
+	modify func(version *semver.Version) string,
+) func(descriptor *ocm.ComponentDescriptor) error {
+	return func(descriptor *ocm.ComponentDescriptor) error {
+		semVersion, err := semver.NewVersion(descriptor.Version)
+		if err != nil {
+			return err
+		}
+		newVersion := modify(semVersion)
+		descriptor.Version = newVersion
+		for i := range descriptor.Resources {
+			descriptor.Resources[i].Version = newVersion
+		}
+		return nil
+	}
 }
 
 // ModuleTemplate is a representation of a Template used for creating Module Instances within the Module Lifecycle.

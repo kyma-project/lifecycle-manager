@@ -47,6 +47,7 @@ spec:
                   usually targeting different module versions.
                 enum:
                 - rapid
+                - fast
                 - regular
                 - stable
                 type: string
@@ -61,6 +62,7 @@ spec:
                         based on the new resolved resources.
                       enum:
                       - rapid
+                      - fast
                       - regular
                       - stable
                       type: string
@@ -122,6 +124,7 @@ spec:
                 description: Active Channel
                 enum:
                 - rapid
+                - fast
                 - regular
                 - stable
                 type: string
@@ -229,6 +232,7 @@ spec:
                             ModuleTemplate, which is why we need to reconcile.
                           enum:
                           - rapid
+                          - fast
                           - regular
                           - stable
                           type: string
@@ -257,9 +261,18 @@ spec:
                           - kind
                           - version
                           type: object
+                        name:
+                          description: Name is the current name of the template resource
+                            referenced
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the template
+                          type: string
                         version:
                           type: string
                       required:
+                      - name
+                      - namespace
                       - version
                       type: object
                   required:

@@ -141,6 +141,8 @@ func (r *runnerImpl) updateModuleStatusFromExistingModules(modules common.Module
 			Name:       module.Unstructured.GetName(),
 			Namespace:  module.Unstructured.GetNamespace(),
 			TemplateInfo: v1alpha1.TemplateInfo{
+				Name:       module.Template.Name,
+				Namespace:  module.Template.Namespace,
 				Channel:    module.Template.Spec.Channel,
 				Generation: module.Template.Generation,
 				GroupVersionKind: metav1.GroupVersionKind{
