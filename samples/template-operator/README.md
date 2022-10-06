@@ -281,7 +281,7 @@ This will build the operator image and then push it as the image defined in `IMG
 5. As a result `template.yaml` should be generated in your root folder, that should be applied in the control plane as the source for module configuration.
 
     ```sh
-    kubectl apply -f template.yaml
+    make module-template-push
     ```
     
     You can install the necessary module-template CRD from [here](https://raw.githubusercontent.com/kyma-project/lifecycle-manager/main/operator/config/crd/bases/operator.kyma-project.io_moduletemplates.yaml).

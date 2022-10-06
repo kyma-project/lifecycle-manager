@@ -8,7 +8,7 @@ image:
   # -- Image name
   name: "runtime-watcher-skr"
   # -- Image tag
-  tag: "PR-78"
+  tag: "latest"
   # -- Image pull policy
   pullPolicy: "Always"
 # -- Image pull secrets
@@ -49,12 +49,8 @@ service:
   contactVersion: v1
 # -- KCP information
 kcp:
-  # -- KCP IP
-  IP: "kcp.ip"
-  # -- KCP Port
-  port: ""
-  # -- KCP protocol
-  protocol: "http"
+  # -- Base URL
+  addr: "kcp-base-url-invalid"
 # -- TLS information
 tls:
   # -- Helm Cert Generation

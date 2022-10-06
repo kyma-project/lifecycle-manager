@@ -19,32 +19,20 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 )
 
-const (
-	customConfigKey                     = "modules"
-	kubeconfigKey                       = "config"
-	servicePathTpl                      = "/validate/%s"
-	webhookNameTpl                      = "%s.operator.kyma-project.io"
-	ReleaseName                         = "skr"
-	specSubresources                    = "*"
-	statusSubresources                  = "*/status"
-	configuredWebhooksDeletionThreshold = 1
-	expectedWebhookNamePartsLength      = 4
-)
-
 type WatchableConfig struct {
 	Labels     map[string]string `json:"labels"`
 	StatusOnly bool              `json:"statusOnly"`
 }
 
 func UpdateWebhookConfig(ctx context.Context, chartPath string,
-	obj *v1alpha1.Watcher, inClusterCfg *rest.Config, k8sClient client.Client,
+	obj *v1alpha1.Watcher, inClusterCfg *rest.Config, k8sClient client.Client, kcpAddr string,
 ) error {
 	restCfgs, err := getSKRRestConfigs(ctx, k8sClient, inClusterCfg)
 	if err != nil {
 		return err
 	}
 	for _, restCfg := range restCfgs {
-		err = updateWebhookConfigOrInstallSKRChart(ctx, chartPath, obj, restCfg)
+		err = updateWebhookConfigOrInstallSKRChart(ctx, chartPath, obj, restCfg, kcpAddr)
 		if err != nil {
 			continue
 		}
@@ -141,7 +129,7 @@ func verifyWebhookConfig(
 }
 
 func updateWebhookConfigOrInstallSKRChart(ctx context.Context, chartPath string,
-	obj *v1alpha1.Watcher, restConfig *rest.Config,
+	obj *v1alpha1.Watcher, restConfig *rest.Config, kcpAddr string,
 ) error {
 	remoteClient, err := client.New(restConfig, client.Options{})
 	if err != nil {
@@ -158,7 +146,7 @@ func updateWebhookConfigOrInstallSKRChart(ctx context.Context, chartPath string,
 	}
 	if apierrors.IsNotFound(err) {
 		// install chart
-		return InstallSKRWebhook(ctx, chartPath, ReleaseName, obj, restConfig)
+		return InstallSKRWebhook(ctx, chartPath, ReleaseName, obj, restConfig, kcpAddr)
 	}
 	// generate webhook config from CR and update webhook config resource
 	if len(webhookConfig.Webhooks) < 1 {

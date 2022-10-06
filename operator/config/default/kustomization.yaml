@@ -23,7 +23,7 @@ components:
   - ../crd
   - ../rbac
   # [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
-  #- ../watcher
+  - ../watcher
   # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
   #- ../istio
   # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
@@ -35,8 +35,6 @@ components:
   #- ../prometheus
   # [GRAFANA] To generate configmap for provision grafana dashboard
   #- ../grafana
-  # [Load Test] To generate default prometheus operator related resources for load testing
-  #- ../load_test
 
 # Mount the controller config file for loading manager configurations
 # through a ComponentConfig type

@@ -87,6 +87,7 @@ type FlagVar struct {
 	enableWebhooks                                                         bool
 	enableModuleCatalog, enableKcpWatcher                                  bool
 	skrWatcherPath                                                         string
+	kcpAddr                                                                string
 }
 
 func main() {
@@ -204,6 +205,8 @@ func defineFlagVar() *FlagVar {
 		"Enabling KCP Watcher to reconcile Watcher CRs created by KCP run operators")
 	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "skr-webhook",
 		"The path to the skr watcher chart.")
+	flag.StringVar(&flagVar.kcpAddr, "kcp-addr", "http://0.0.0.0:80/",
+		"The KCP base URL to issue skr watch events")
 	return flagVar
 }
 
@@ -262,6 +265,7 @@ func setupKcpWatcherReconciler(
 		RestConfig:       mgr.GetConfig(),
 		RequeueIntervals: intervals,
 		Config:           watcherConfig,
+		KCPAddr:          flagVar.kcpAddr,
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Watcher")
 		os.Exit(1)
