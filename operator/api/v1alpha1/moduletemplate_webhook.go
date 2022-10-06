@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/Masterminds/semver/v3"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -84,19 +85,21 @@ func (r *clusterAwareModuleTemplateValidator) ValidateDelete(ctx context.Context
 func (r *clusterAwareModuleTemplateValidator) validate(
 	_ context.Context, oldTemplate, newTemplate *ModuleTemplate,
 ) error {
-	var allErrs field.ErrorList
-
 	newDescriptor, err := newTemplate.Spec.GetDescriptor()
 	if err != nil {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec").Child("descriptor"),
-			string(newTemplate.Spec.OCMDescriptor.Raw), err.Error()))
+		return apierrors.NewInvalid(
+			schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
+			newTemplate.Name, field.ErrorList{field.Invalid(field.NewPath("spec").Child("descriptor"),
+				string(newTemplate.Spec.OCMDescriptor.Raw), err.Error())})
 	}
 
 	newVersion, err := semver.NewVersion(newDescriptor.Version)
 	if err != nil {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec").Child("descriptor").
-			Child("version"),
-			string(newTemplate.Spec.OCMDescriptor.Raw), err.Error()))
+		return apierrors.NewInvalid(
+			schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
+			newTemplate.Name, field.ErrorList{field.Invalid(field.NewPath("spec").Child("descriptor").
+				Child("version"),
+				string(newTemplate.Spec.OCMDescriptor.Raw), err.Error())})
 	}
 
 	if oldTemplate != nil {
@@ -104,16 +107,17 @@ func (r *clusterAwareModuleTemplateValidator) validate(
 		oldDescriptor, _ := oldTemplate.Spec.GetDescriptor()
 		oldVersion, _ := semver.NewVersion(oldDescriptor.Version)
 		if newVersion.LessThan(oldVersion) {
-			allErrs = append(allErrs, field.Invalid(field.NewPath("spec").Child("descriptor").
-				Child("version"),
-				string(newTemplate.Spec.OCMDescriptor.Raw), "version of descriptor can never be downgraded"))
+			return apierrors.NewInvalid(
+				schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
+				newTemplate.Name, field.ErrorList{field.Invalid(field.NewPath("spec").Child("descriptor").
+					Child("version"),
+					newVersion.String(), fmt.Sprintf(
+						"version of templates can never be decremented (previously %s)",
+						oldVersion,
+					),
+				)})
 		}
 	}
 
-	if len(allErrs) == 0 {
-		return nil
-	}
-	return apierrors.NewInvalid(
-		schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
-		newTemplate.Name, allErrs)
+	return nil
 }

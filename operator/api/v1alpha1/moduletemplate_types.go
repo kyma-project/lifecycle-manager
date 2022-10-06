@@ -54,7 +54,7 @@ type ModuleTemplateSpec struct {
 	// (e.g. by updating the controller binary linked in a chart referenced in the descriptor)
 	//
 	//+kubebuilder:pruning:PreserveUnknownFields
-	OCMDescriptor runtime.RawExtension `json:"descriptor,omitempty"`
+	OCMDescriptor runtime.RawExtension `json:"descriptor"`
 
 	// Target describes where the Module should later on be installed if parsed correctly. It is used as installation
 	// hint by downstream controllers to determine which client implementation to use for working with the Module
@@ -78,10 +78,13 @@ func (in *ModuleTemplateSpec) GetDescriptor() (*ocm.ComponentDescriptor, error) 
 	return in.descriptor, nil
 }
 
+// ModuleTemplate is a representation of a Template used for creating Module Instances within the Module Lifecycle.
+// It is generally loosely defined within the Kubernetes Specification, however it has a strict enforcement of
+// OCM guidelines as it serves an active role in maintaining a list of available Modules within a cluster.
+//
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// ModuleTemplate is the Schema for the moduletemplates API.
 type ModuleTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -98,6 +101,7 @@ type ModuleTemplateList struct {
 	Items           []ModuleTemplate `json:"items"`
 }
 
+// Target serves as a potential Installation Hint for the Controller to determine which Client to use for installation.
 // +kubebuilder:validation:Enum=control-plane;remote
 type Target string
 
