@@ -1,16 +1,16 @@
 # Set up the test environment
 
-## Contents
+### Contents
 * [Provision clusters and OCI registry](#provision-clusters-and-oci-registry)
 * [Create module operator and bundle module](#create-module-operator-and-bundle-module)
 * [Install Kyma and run lifecycle-manager operator](#install-kyma-and-run-lifecycle-manager-operator)
-* [Verify installation](#verify-the-installation)
+* [Verify installation](#verify-installation)
 
 ### Provision clusters and OCI registry
 
 You can choose between either a single-cluster or a two-cluster setup.
 
-- In a **_single cluster setup_**, provision one cluster - as control-plane (KCP) and Kyma runtime (SKR) both.
+- In a **_single cluster setup_**, provision one cluster - since both control-plane (KCP) and Kyma runtime (SKR) are served from one cluster.
 
 - In a **_dual cluster setup_**, provision two clusters - one as control-plane (KCP) and the second as runtime (SKR).
 

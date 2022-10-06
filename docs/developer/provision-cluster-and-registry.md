@@ -9,37 +9,41 @@ For a dual cluster setup, with control plane (KCP) and Kyma runtime (SKR); creat
 1. Create a `k3d` cluster:
 
    ```sh
-   k3d cluster create op-kcpskr --registry-create op-kcpskr-registry.localhost:0.0.0.0:8888
-
-2. Define that `kubectl` uses the `k3d` cluster:
-
-   ```sh
-   kubectl config use k3d-op-kcpskr
-
-3. Configure the local `k3d` registry.
-
-   3.1. To reach the registries using `localhost`, add the following code to your `/etc/hosts` file:
-
-   ```
-   # Added for Operator Registries
-   127.0.0.1 op-kcpskr-registry.localhost
-   ```
-
-   3.2. Set the registry environment variables:
-
-   ```sh
-   # pointing to KCP registry in dual cluster mode
-   # pointing to common registry in single cluster mode
-   export MODULE_REGISTRY=op-kcpskr-registry.localhost:8888/unsigned 
+   k3d cluster create op-kcp --registry-create op-kcp-registry.localhost:0.0.0.0:8888
    
-   # pointing to SKR registry in dual cluster mode
-   # pointing to common registry in single cluster mode              
-   export IMG_REGISTRY=op-kcpskr-registry.localhost:8888/unsigned/operator-images
+   # also add for dual cluster mode only
+   k3d cluster create op-skr --registry-create op-skr-registry.localhost:0.0.0.0:8888
    ```
+2. Configure the local `k3d` registry. 
+   1. To reach the registries using `localhost`, add the following code to your `/etc/hosts` file:
 
-   3.3. View the content of your local container registry.
+      ```sh
+      # Added for Operator Registries
+      127.0.0.1 op-kcp-registry.localhost
+   
+      # also add for dual cluster mode only
+      127.0.0.1 op-skr-registry.localhost
+      ```
 
-   For browsing through the content of the local container registry, `http://op-kcpskr-registry.localhost:8888/v2/_catalog?n=100`.
+   2. Set the module operator registry environment variables:
+
+      ```sh
+      export MODULE_REGISTRY=op-kcp-registry.localhost:8888/unsigned 
+      ```
+   3. Set the module module image registry environment variables:
+      
+      In **_single cluster mode_**:
+      ```sh
+      # pointing to SKR registry in dual cluster mode  
+      export IMG_REGISTRY=op-kcp-registry.localhost:8888/unsigned/operator-images
+      ```
+      In **_dual cluster mode_**:
+      ```sh
+      # pointing to SKR registry in dual cluster mode
+      export IMG_REGISTRY=op-skr-registry.localhost:8888/unsigned/operator-images
+      ```
+
+3. View the content of your local container registry. For browsing through the content of the local container registry, e.g. `http://op-kcp-registry.localhost:8888/v2/_catalog?n=100`.
 
 
 ## Remote cluster setup
