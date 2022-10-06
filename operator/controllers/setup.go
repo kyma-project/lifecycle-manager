@@ -17,9 +17,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/operator/pkg/dynamic"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/index"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/watch"
+	moduleManagerV1lpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
 )
 
@@ -34,23 +34,13 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 		// here we define a watch on secrets for the lifecycle-manager so that the cache is picking up changes
 		Watches(&source.Kind{Type: &corev1.Secret{}}, handler.Funcs{})
 
-	var dynamicInformers map[string]source.Source
-
 	var err error
 
-	// This fetches all resources for our component operator CRDs, might become a problem if component operators
-	// create their own CRDs that we dont need to watch
-	if dynamicInformers, err = dynamic.Informers(mgr, []string{v1alpha1.OperatorPrefix}); err != nil {
-		return fmt.Errorf("error while setting up Dynamic Informers: %w", err)
-	}
-
-	for _, informer := range dynamicInformers {
-		controllerBuilder.Watches(informer,
-			&watch.RestrictedEnqueueRequestForOwner{
-				Log: ctrl.Log, OwnerType: &v1alpha1.Kyma{}, IsController: true,
-			})
-	}
-
+	controllerBuilder.Watches(&source.Kind{
+		Type: &moduleManagerV1lpha1.Manifest{},
+	}, &watch.RestrictedEnqueueRequestForOwner{
+		Log: ctrl.Log, OwnerType: &v1alpha1.Kyma{}, IsController: true,
+	})
 	// register listener component
 	runnableListener, eventChannel := listener.RegisterListenerComponent(
 		listenerAddr, v1alpha1.OperatorName)

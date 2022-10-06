@@ -20,6 +20,15 @@ commonLabels:
   app.kubernetes.io/managed-by: kustomize
   app.kubernetes.io/part-of: manual-deployment
 
+patchesJson6902:
+  # We patch the Metrics JSONs here as we expect KCP to be watching for grafana dashboards in kyma-system,
+  # not kcp-system as we configure it above for the rest of the kustomization
+  - target:
+      version: v1beta1
+      kind: Gateway
+      name: lifecycle-manager-kyma-gateway
+    path: patches/gateway_namespace_replace.yaml
+
 components:
   - ../crd
   - ../rbac

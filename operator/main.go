@@ -45,6 +45,7 @@ import (
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/controllers"
+	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -71,6 +72,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(v1extensions.AddToScheme(scheme))
+	utilruntime.Must(moduleManagerV1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
