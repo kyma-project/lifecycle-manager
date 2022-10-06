@@ -7,6 +7,7 @@ import (
 	istioapi "istio.io/api/networking/v1beta1"
 	istioclientapi "istio.io/client-go/pkg/apis/networking/v1beta1"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -15,8 +16,10 @@ import (
 )
 
 const (
-	firstElementIdx = 0
-	contractVersion = "1"
+	firstElementIdx    = 0
+	contractVersion    = "v1"
+	virtualServiceName = "kcp-events"
+	gatewayName        = "lifecycle-manager-gateway"
 )
 
 type IstioClient struct {
@@ -33,15 +36,42 @@ func NewVersionedIstioClient(cfg *rest.Config) (*IstioClient, error) {
 	}, nil
 }
 
-func (c *IstioClient) getVirtualService(ctx context.Context, vsObjectKey client.ObjectKey,
+func (c *IstioClient) getOrCreateVirtualService(ctx context.Context, obj *v1alpha1.Watcher,
 ) (*istioclientapi.VirtualService, error) {
-	virtualService, err := c.NetworkingV1beta1().
-		VirtualServices(vsObjectKey.Namespace).
-		Get(ctx, vsObjectKey.Name, metav1.GetOptions{})
-	if err != nil {
+	var err error
+	var virtualService *istioclientapi.VirtualService
+	virtualService, err = c.NetworkingV1beta1().
+		VirtualServices(metav1.NamespaceDefault).
+		Get(ctx, virtualServiceName, metav1.GetOptions{})
+	if client.IgnoreNotFound(err) != nil {
 		return nil, fmt.Errorf("failed to fetch virtual service %w", err)
 	}
+	if apierrors.IsNotFound(err) {
+		virtualService, err = c.createVirtualService(ctx, obj)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create virtual service %w", err)
+		}
+	}
 	return virtualService, nil
+}
+
+func (c *IstioClient) createVirtualService(ctx context.Context, obj *v1alpha1.Watcher,
+) (*istioclientapi.VirtualService, error) {
+	_, err := c.NetworkingV1beta1().
+		Gateways(metav1.NamespaceDefault).
+		Get(ctx, gatewayName, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error getting configured istio gateway: %w", err)
+	}
+	virtualSvc := &istioclientapi.VirtualService{}
+	virtualSvc.SetName(virtualServiceName)
+	virtualSvc.SetNamespace(metav1.NamespaceDefault)
+	virtualSvc.Spec.Gateways = append(virtualSvc.Spec.Gateways, gatewayName)
+	istioHTTPRoute := prepareIstioHTTPRouteForCR(obj)
+	virtualSvc.Spec.Http = append(virtualSvc.Spec.Http, istioHTTPRoute)
+	return c.NetworkingV1beta1().
+		VirtualServices(metav1.NamespaceDefault).
+		Create(ctx, virtualSvc, metav1.CreateOptions{})
 }
 
 func (c *IstioClient) updateVirtualService(ctx context.Context, virtualService *istioclientapi.VirtualService) error {
@@ -51,10 +81,9 @@ func (c *IstioClient) updateVirtualService(ctx context.Context, virtualService *
 	return err
 }
 
-func (c *IstioClient) IsListenerHTTPRouteConfigured(ctx context.Context, vsObjectKey client.ObjectKey,
-	obj *v1alpha1.Watcher,
+func (c *IstioClient) IsListenerHTTPRouteConfigured(ctx context.Context, obj *v1alpha1.Watcher,
 ) (bool, error) {
-	virtualService, err := c.getVirtualService(ctx, vsObjectKey)
+	virtualService, err := c.getOrCreateVirtualService(ctx, obj)
 	if err != nil {
 		return false, err
 	}
@@ -72,8 +101,10 @@ func (c *IstioClient) IsListenerHTTPRouteConfigured(ctx context.Context, vsObjec
 	return false, nil
 }
 
-func (c *IstioClient) IsListenerHTTPRoutesEmpty(ctx context.Context, vsObjectKey client.ObjectKey) (bool, error) {
-	virtualService, err := c.getVirtualService(ctx, vsObjectKey)
+func (c *IstioClient) IsListenerHTTPRoutesEmpty(ctx context.Context) (bool, error) {
+	virtualService, err := c.NetworkingV1beta1().
+		VirtualServices(metav1.NamespaceDefault).
+		Get(ctx, virtualServiceName, metav1.GetOptions{})
 	if err != nil {
 		return false, err
 	}
@@ -83,10 +114,9 @@ func (c *IstioClient) IsListenerHTTPRoutesEmpty(ctx context.Context, vsObjectKey
 	return false, nil
 }
 
-func (c *IstioClient) UpdateVirtualServiceConfig(ctx context.Context, vsObjectKey client.ObjectKey,
-	obj *v1alpha1.Watcher,
+func (c *IstioClient) UpdateVirtualServiceConfig(ctx context.Context, obj *v1alpha1.Watcher,
 ) error {
-	virtualService, err := c.getVirtualService(ctx, vsObjectKey)
+	virtualService, err := c.getOrCreateVirtualService(ctx, obj)
 	if err != nil {
 		return err
 	}
@@ -106,10 +136,9 @@ func (c *IstioClient) UpdateVirtualServiceConfig(ctx context.Context, vsObjectKe
 	return c.updateVirtualService(ctx, virtualService)
 }
 
-func (c *IstioClient) RemoveVirtualServiceConfigForCR(ctx context.Context, vsObjectKey client.ObjectKey,
-	obj *v1alpha1.Watcher,
+func (c *IstioClient) RemoveVirtualServiceConfigForCR(ctx context.Context, obj *v1alpha1.Watcher,
 ) error {
-	virtualService, err := c.getVirtualService(ctx, vsObjectKey)
+	virtualService, err := c.getOrCreateVirtualService(ctx, obj)
 	if err != nil {
 		return err
 	}
@@ -166,7 +195,7 @@ func prepareIstioHTTPRouteForCR(obj *v1alpha1.Watcher) *istioapi.HTTPRoute {
 			{
 				Uri: &istioapi.StringMatch{
 					MatchType: &istioapi.StringMatch_Prefix{ //nolint:nosnakecase
-						Prefix: fmt.Sprintf("/v%s/%s/event", contractVersion, obj.GetModuleName()),
+						Prefix: fmt.Sprintf("/%s/%s/event", contractVersion, obj.GetModuleName()),
 					},
 				},
 			},

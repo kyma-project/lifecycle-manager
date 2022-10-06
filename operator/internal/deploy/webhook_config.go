@@ -12,7 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	admissionv1 "k8s.io/api/admissionregistration/v1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 
@@ -156,7 +156,7 @@ func updateWebhookConfigOrInstallSKRChart(ctx context.Context, chartPath string,
 	if client.IgnoreNotFound(err) != nil {
 		return err
 	}
-	if kerrors.IsNotFound(err) {
+	if apierrors.IsNotFound(err) {
 		// install chart
 		return InstallSKRWebhook(ctx, chartPath, ReleaseName, obj, restConfig)
 	}
@@ -224,7 +224,7 @@ func removeWebhookConfig(ctx context.Context, obj *v1alpha1.Watcher, restConfig 
 	if client.IgnoreNotFound(err) != nil {
 		return err
 	}
-	if kerrors.IsNotFound(err) {
+	if apierrors.IsNotFound(err) {
 		return nil
 	}
 	numberOfWebhooks := len(webhookConfig.Webhooks)

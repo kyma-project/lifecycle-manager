@@ -25,7 +25,6 @@ import (
 
 	//nolint:gci
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -67,8 +66,6 @@ var (
 const (
 	webhookChartPath       = "../internal/charts/skr-webhook"
 	istioResourcesFilePath = "../internal/assets/istio-test-resources.yaml"
-	vsName                 = "kcp-events"
-	vsNamespace            = metav1.NamespaceDefault
 )
 
 func TestAPIs(t *testing.T) {
@@ -161,10 +158,6 @@ var _ = BeforeSuite(func() {
 		Scheme:           scheme.Scheme,
 		RequeueIntervals: intervals,
 		Config: &controllers.WatcherConfig{
-			VirtualServiceObjKey: client.ObjectKey{
-				Name:      vsName,
-				Namespace: vsNamespace,
-			},
 			WebhookChartPath: webhookChartPath,
 		},
 	}).SetupWithManager(k8sManager, controller.Options{})
