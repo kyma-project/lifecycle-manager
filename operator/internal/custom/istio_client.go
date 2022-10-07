@@ -51,7 +51,6 @@ func (c *IstioClient) getVirtualService(ctx context.Context) (*istioclientapi.Vi
 			Err:        fmt.Errorf("failed to fetch virtual service %w", err),
 			IsNotFound: false,
 		}
-
 	}
 	if apierrors.IsNotFound(err) {
 		return nil, &customClientErr{
