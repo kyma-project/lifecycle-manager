@@ -16,6 +16,7 @@ func cRSpecsUpdates() func(customIstioClient *custom.IstioClient) {
 	return func(customIstioClient *custom.IstioClient) {
 		watcherList := v1alpha1.WatcherList{}
 		Expect(controlPlaneClient.List(ctx, &watcherList)).To(Succeed())
+		Expect(watcherList.Items).NotTo(BeEmpty())
 		for idx, watcherCR := range watcherList.Items {
 			// update spec
 			watcherCR.Spec.ServiceInfo.Port = 9090
@@ -86,6 +87,12 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 		for _, istioResource := range istioResources {
 			Expect(controlPlaneClient.Create(ctx, istioResource)).To(Succeed())
 		}
+		loadBalancerService := createLoadBalancer()
+		err := controlPlaneClient.Create(ctx, loadBalancerService)
+		Expect(err).To(BeNil())
+		Expect(controlPlaneClient.Get(ctx, client.ObjectKey{Name: ingressServiceName, Namespace: istioSytemNs},
+			loadBalancerService)).To(Succeed())
+		Expect(loadBalancerService.Status.LoadBalancer.Ingress).NotTo(BeEmpty())
 	})
 
 	AfterAll(func() {

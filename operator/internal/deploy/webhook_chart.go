@@ -143,7 +143,10 @@ func resolveKcpAddr(ctx context.Context, kcpAddr string, restClient client.Clien
 			loadBalancerService); err != nil {
 			return "", err
 		}
-		ip := loadBalancerService.Status.LoadBalancer.Ingress[0].IP
+		// if len(loadBalancerService.Status.LoadBalancer.Ingress) == 0 {
+		// 	return "", fmt.Errorf("load balancer service external ip is not assigned")
+		// }
+		externalIP := loadBalancerService.Status.LoadBalancer.Ingress[0].IP
 		var port int32
 		for _, loadBalancerPort := range loadBalancerService.Spec.Ports {
 			if loadBalancerPort.Name == "http2" {
@@ -151,7 +154,7 @@ func resolveKcpAddr(ctx context.Context, kcpAddr string, restClient client.Clien
 				break
 			}
 		}
-		kcpAddr = net.JoinHostPort(ip, string(port))
+		kcpAddr = net.JoinHostPort(externalIP, string(port))
 	}
 	return kcpAddr, nil
 }

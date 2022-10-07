@@ -88,3 +88,4 @@ out.txt
 **/dry-run
 **/bin
 **/go.work
+**/go.work.sum
