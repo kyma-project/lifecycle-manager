@@ -36,18 +36,11 @@ To bundle your module image and operator, please refer to the detailed informati
 
 
    ```sh
-# single-cluster setup
    chmod 755 ./operator/config/samples/secret/k3d-secret-gen.sh
    ./operator/config/samples/secret/k3d-secret-gen.sh
    ```
 
-   ```sh
-# dual-cluster setup
-   chmod 755 ./operator/config/samples/secret/k3d-secret-gen.sh
-   ./operator/config/samples/secret/k3d-secret-gen.sh -d
-   ```
-
-   > _**NOTE:**_ In the **single-cluster setup**, adjust your contexts for applying the secret using KCP_CLUSTER_CTX and SKR_CLUSTER_CTX.
+   > _**NOTE:**_ In the **single-cluster setup**, adjust your contexts for applying the secret using `KCP_CLUSTER_CTX` and `SKR_CLUSTER_CTX` - both should point to the same cluster.
 
 4. To install the Module Manager CRDs, check out `https://github.com/kyma-project/module-manager`, navigate to the operator `cd operator`, and run `make install`.
 
@@ -82,7 +75,32 @@ To bundle your module image and operator, please refer to the detailed informati
       kubectl apply -f kyma.yaml
       ```
 
-   3. Check the progress of your Kyma installation; for example, with `kubectl get kyma -n kyma-system -ojsonpath={".items[0].status"} | yq -P`. You should get a result like this:
+   3. Check the progress of your Kyma installation with:
+      ```sh
+      kubectl get kyma -n kyma-system -ojsonpath={".items[0].status"} | yq -P
+      ```
+      You should get results like this:
+      ```yaml
+             conditions:
+               - lastTransitionTime: "2022-08-18T18:10:09Z"
+                 message: module is Ready
+                 reason: template
+                 status: "True"
+                 type: Ready
+             moduleInfos:
+               - moduleName: template
+                 name: templatekyma-sample
+                 namespace: kyma-system
+                 templateInfo:
+                   channel: stable
+                   generation: 1
+                   gvk:
+                     group: operator.kyma-project.io
+                     kind: Manifest
+                     version: v1alpha1
+             observedGeneration: 1
+             state: Ready
+             ```
 
 ### Verify installation
 
