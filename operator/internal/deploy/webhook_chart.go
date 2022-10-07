@@ -51,13 +51,13 @@ var (
 )
 
 func InstallSKRWebhook(ctx context.Context, chartPath, releaseName string,
-	obj *v1alpha1.Watcher, restConfig *rest.Config, kcpClient client.Client, kcpAddr string,
+	obj *v1alpha1.Watcher, restConfig *rest.Config, kcpClient client.Client,
 ) error {
 	restClient, err := client.New(restConfig, client.Options{})
 	if err != nil {
 		return err
 	}
-	argsVals, err := generateHelmChartArgsForCR(ctx, obj, kcpAddr, kcpClient)
+	argsVals, err := generateHelmChartArgsForCR(ctx, obj, kcpClient)
 	if err != nil {
 		return err
 	}
@@ -83,8 +83,7 @@ func prepareInstallInfo(chartPath, releaseName string, restConfig *rest.Config, 
 	}
 }
 
-func generateHelmChartArgsForCR(ctx context.Context, obj *v1alpha1.Watcher, _ string,
-	kcpClient client.Client,
+func generateHelmChartArgsForCR(ctx context.Context, obj *v1alpha1.Watcher, kcpClient client.Client,
 ) (map[string]interface{}, error) {
 	resolvedKcpAddr, err := resolveKcpAddr(ctx, kcpClient)
 	if err != nil {
@@ -150,10 +149,10 @@ func installOrRemoveChartOnSKR(ctx context.Context, restConfig *rest.Config, rel
 	return nil
 }
 
-func resolveKcpAddr(ctx context.Context, restClient client.Client) (string, error) {
+func resolveKcpAddr(ctx context.Context, kcpClient client.Client) (string, error) {
 	// as fallback get external IP from the ISTIO load balancer external IP
 	loadBalancerService := &v1.Service{}
-	if err := restClient.Get(ctx, client.ObjectKey{Name: ingressServiceName, Namespace: istioSytemNs},
+	if err := kcpClient.Get(ctx, client.ObjectKey{Name: ingressServiceName, Namespace: istioSytemNs},
 		loadBalancerService); err != nil {
 		return "", err
 	}
