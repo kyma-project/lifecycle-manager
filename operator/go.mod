@@ -1,6 +1,6 @@
 module github.com/kyma-project/lifecycle-manager/operator
 
-go 1.18
+go 1.19
 
 require (
 	github.com/gardener/component-spec/bindings-go v0.0.70
