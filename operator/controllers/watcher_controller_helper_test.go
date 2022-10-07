@@ -69,15 +69,6 @@ func createLoadBalancer() *corev1.Service {
 				},
 			},
 		},
-		Status: corev1.ServiceStatus{
-			LoadBalancer: corev1.LoadBalancerStatus{
-				Ingress: []corev1.LoadBalancerIngress{
-					{
-						IP: "10.10.10.167",
-					},
-				},
-			},
-		},
 	}
 }
 
