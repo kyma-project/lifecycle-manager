@@ -26,7 +26,9 @@ import (
 )
 
 // SetupWithManager sets up the Kyma controller with the Manager.
-func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options, listenerAddr string) error {
+func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
+	options controller.Options, listenerAddr string,
+) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1alpha1.Kyma{}).WithOptions(options).
 		Watches(
 			&source.Kind{Type: &v1alpha1.ModuleTemplate{}},
@@ -62,18 +64,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 		listenerAddr, v1alpha1.OperatorName)
 
 	// watch event channel
-	controllerBuilder.Watches(eventChannel, &handler.Funcs{
-		GenericFunc: func(event event.GenericEvent, queue workqueue.RateLimitingInterface) {
-			ctrl.Log.WithName("listener").Info(
-				fmt.Sprintf("event coming from SKR, adding %s to queue",
-					client.ObjectKeyFromObject(event.Object).String()),
-			)
-
-			queue.Add(ctrl.Request{
-				NamespacedName: client.ObjectKeyFromObject(event.Object),
-			})
-		},
-	})
+	r.watchEventChannel(controllerBuilder, eventChannel)
 	// start listener as a manager runnable
 	if err = mgr.Add(runnableListener); err != nil {
 		return err
@@ -89,6 +80,21 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 	}
 
 	return nil
+}
+
+func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, eventChannel *source.Channel) {
+	controllerBuilder.Watches(eventChannel, &handler.Funcs{
+		GenericFunc: func(event event.GenericEvent, queue workqueue.RateLimitingInterface) {
+			ctrl.Log.WithName("listener").Info(
+				fmt.Sprintf("event coming from SKR, adding %s to queue",
+					client.ObjectKeyFromObject(event.Object).String()),
+			)
+
+			queue.Add(ctrl.Request{
+				NamespacedName: client.ObjectKeyFromObject(event.Object),
+			})
+		},
+	})
 }
 
 // SetupWithManager sets up the ModuleCatalog controller with the Manager.

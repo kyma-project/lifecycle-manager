@@ -32,7 +32,7 @@ func UpdateWebhookConfig(ctx context.Context, chartPath string,
 		return err
 	}
 	for _, restCfg := range restCfgs {
-		err = updateWebhookConfigOrInstallSKRChart(ctx, chartPath, obj, restCfg, kcpAddr)
+		err = updateWebhookConfigOrInstallSKRChart(ctx, chartPath, obj, restCfg, k8sClient, kcpAddr)
 		if err != nil {
 			continue
 		}
@@ -129,7 +129,7 @@ func verifyWebhookConfig(
 }
 
 func updateWebhookConfigOrInstallSKRChart(ctx context.Context, chartPath string,
-	obj *v1alpha1.Watcher, restConfig *rest.Config, kcpAddr string,
+	obj *v1alpha1.Watcher, restConfig *rest.Config, kcpClient client.Client, kcpAddr string,
 ) error {
 	remoteClient, err := client.New(restConfig, client.Options{})
 	if err != nil {
@@ -146,7 +146,7 @@ func updateWebhookConfigOrInstallSKRChart(ctx context.Context, chartPath string,
 	}
 	if apierrors.IsNotFound(err) {
 		// install chart
-		return InstallSKRWebhook(ctx, chartPath, ReleaseName, obj, restConfig, kcpAddr)
+		return InstallSKRWebhook(ctx, chartPath, ReleaseName, obj, restConfig, kcpClient, kcpAddr)
 	}
 	// generate webhook config from CR and update webhook config resource
 	if len(webhookConfig.Webhooks) < 1 {
