@@ -130,6 +130,13 @@ func installOrRemoveChartOnSKR(ctx context.Context, restConfig *rest.Config, rel
 	}
 	if !installed {
 		//nolint:goerr113
+		return fmt.Errorf("installed skr webhook resources have not been installed")
+	}
+	ready, err := ops.VerifyResources(deployInfo)
+	if err != nil {
+		return fmt.Errorf("failed to verify webhook resources: %w", err)
+	}
+	if !ready {
 		return fmt.Errorf("installed skr webhook resources are not ready")
 	}
 	return nil
