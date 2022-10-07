@@ -20,7 +20,9 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/dynamic"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/index"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/watch"
+	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // SetupWithManager sets up the Kyma controller with the Manager.
@@ -38,9 +40,13 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 
 	var err error
 
-	// This fetches all resources for our component operator CRDs, might become a problem if component operators
-	// create their own CRDs that we dont need to watch
-	if dynamicInformers, err = dynamic.Informers(mgr, []string{v1alpha1.OperatorPrefix}); err != nil {
+	if dynamicInformers, err = dynamic.GetDynamicInformerSources([]v1.APIResource{
+		{
+			Name:    moduleManagerV1alpha1.ManifestKind,
+			Group:   moduleManagerV1alpha1.GroupVersion.Group,
+			Version: moduleManagerV1alpha1.GroupVersion.Version,
+		},
+	}, mgr); err != nil {
 		return fmt.Errorf("error while setting up Dynamic Informers: %w", err)
 	}
 
