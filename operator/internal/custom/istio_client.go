@@ -19,7 +19,7 @@ const (
 	firstElementIdx    = 0
 	contractVersion    = "v1"
 	virtualServiceName = "kcp-events"
-	gatewayName        = "lifecycle-manager-gateway"
+	gatewayName        = "lifecycle-manager-kyma-gateway"
 )
 
 type IstioClient struct {
@@ -67,6 +67,7 @@ func (c *IstioClient) createVirtualService(ctx context.Context, obj *v1alpha1.Wa
 	virtualSvc.SetName(virtualServiceName)
 	virtualSvc.SetNamespace(metav1.NamespaceDefault)
 	virtualSvc.Spec.Gateways = append(virtualSvc.Spec.Gateways, gatewayName)
+	virtualSvc.Spec.Hosts = append(virtualSvc.Spec.Hosts, "*")
 	istioHTTPRoute := prepareIstioHTTPRouteForCR(obj)
 	virtualSvc.Spec.Http = append(virtualSvc.Spec.Http, istioHTTPRoute)
 	return c.NetworkingV1beta1().
