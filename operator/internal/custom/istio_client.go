@@ -62,25 +62,6 @@ func (c *IstioClient) getVirtualService(ctx context.Context) (*istioclientapi.Vi
 	return virtualService, nil
 }
 
-func (c *IstioClient) getOrCreateVirtualService(ctx context.Context, obj *v1alpha1.Watcher,
-) (*istioclientapi.VirtualService, error) {
-	var err error
-	var virtualService *istioclientapi.VirtualService
-	virtualService, err = c.NetworkingV1beta1().
-		VirtualServices(metav1.NamespaceDefault).
-		Get(ctx, virtualServiceName, metav1.GetOptions{})
-	if client.IgnoreNotFound(err) != nil {
-		return nil, fmt.Errorf("failed to fetch virtual service %w", err)
-	}
-	if apierrors.IsNotFound(err) {
-		virtualService, err = c.createVirtualService(ctx, obj)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create virtual service %w", err)
-		}
-	}
-	return virtualService, nil
-}
-
 func (c *IstioClient) createVirtualService(ctx context.Context, obj *v1alpha1.Watcher,
 ) (*istioclientapi.VirtualService, error) {
 	_, err := c.NetworkingV1beta1().
