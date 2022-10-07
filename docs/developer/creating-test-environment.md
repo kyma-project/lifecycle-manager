@@ -18,7 +18,7 @@ You can choose between either a single-cluster or a two-cluster setup.
 
 ### Create module operator and bundle module
 
-To bundle your module image and operator, please refer to the detailed information inside [template-operator docs](../../samples/template-operator/README.md).
+To bundle your module image and operator, please refer to the detailed information inside [template-operator docs](../../samples/template-operator/README.md#bundling-and-installation).
 
 ### Install Kyma and run lifecycle-manager operator
 
@@ -32,19 +32,26 @@ To bundle your module image and operator, please refer to the detailed informati
 
 3. Create a Secret to access the cluster which acts as SKR:
 
-   Go to `https://github.com/kyma-project/lifecycle-manager` and run the following commands:
+   Go to `https://github.com/kyma-project/lifecycle-manager` and run the following commands, to create a secret and apply it to the KCP Cluster:
+
 
    ```sh
+# single-cluster setup
    chmod 755 ./operator/config/samples/secret/k3d-secret-gen.sh
    ./operator/config/samples/secret/k3d-secret-gen.sh
-   kubectl apply -f ./operator/config/samples/secret/skr-secret.yaml
    ```
 
-   > _**NOTE:**_ In the two-cluster setup, adjust your contexts for applying the secret using KCP_CLUSTER_CTX and SKR_CLUSTER_CTX.
+   ```sh
+# dual-cluster setup
+   chmod 755 ./operator/config/samples/secret/k3d-secret-gen.sh
+   ./operator/config/samples/secret/k3d-secret-gen.sh -d
+   ```
+
+   > _**NOTE:**_ In the **single-cluster setup**, adjust your contexts for applying the secret using KCP_CLUSTER_CTX and SKR_CLUSTER_CTX.
 
 4. To install the Module Manager CRDs, check out `https://github.com/kyma-project/module-manager`, navigate to the operator `cd operator`, and run `make install`.
 
-5. Run [module-manager](https://github.com/kyma-project/module-manager/operator) and [lifecycle-manager](https://github.com/kyma-project/lifecycle-manager/operator) in this order.
+5. Run [module-manager](https://github.com/kyma-project/module-manager/tree/main/operator) and [lifecycle-manager](https://github.com/kyma-project/lifecycle-manager/tree/main/operator) in this order.
    * local: run following commands against your cluster's kubeconfig
    ```makefile
     make install
@@ -63,7 +70,7 @@ To bundle your module image and operator, please refer to the detailed informati
 
     >_**NOTE:**_ for using Google Artifact Registry: if you use gcloud cli, make sure your local docker config (`~/.docker/config.json`) does not contains `gcloud` `credHelpers` entry, (e.g: `"europe-west3-docker.pkg.dev": "gcloud",`), otherwise this might cause authentication issue for module-manager while fetching remote oci image layer.
 
-   1. Make sure required module templates prepared as part of [Bundle your module](#bundle-your-module) are pushed to the KCP cluster. 
+   1. Make sure required module templates prepared as part of [Bundle your module](#create-module-operator-and-bundle-module) are pushed to the KCP cluster. 
 
    2. To create a request for Kyma installation of the module in `samples/template-operator` of the Lifecycle Manager, run:
 

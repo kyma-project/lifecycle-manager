@@ -2,6 +2,7 @@
 : "${KCP_CLUSTER_CTX:=k3d-op-kcp}"
 : "${SKR_CLUSTER_CTX:=k3d-op-skr}"
 
+
 kubectl config use $SKR_CLUSTER_CTX
 
 echo "apiVersion: v1
@@ -19,4 +20,5 @@ data:
 kubectl config use $KCP_CLUSTER_CTX
 
 kubectl apply -f ./skr-secret.yaml
+
 rm ./skr-secret.yaml
