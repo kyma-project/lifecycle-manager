@@ -57,6 +57,9 @@ func createLoadBalancer() *corev1.Service {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ingressServiceName,
 			Namespace: istioSytemNs,
+			Labels: map[string]string{
+				"app": "istio-ingressgateway",
+			},
 		},
 		Spec: corev1.ServiceSpec{
 			Type: corev1.ServiceTypeLoadBalancer,
@@ -106,9 +109,9 @@ func verifyVsRoutes(watcherCR *v1alpha1.Watcher, customIstioClient *custom.Istio
 		Expect(err).ToNot(HaveOccurred())
 		Expect(routeReady).To(matcher)
 	} else {
-		routesReady, err := customIstioClient.IsListenerHTTPRoutesEmpty(ctx)
+		vsDeleted, err := customIstioClient.IsVsDeleted(ctx)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(routesReady).To(matcher)
+		Expect(vsDeleted).To(matcher)
 	}
 }
 

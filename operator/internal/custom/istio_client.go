@@ -108,17 +108,14 @@ func (c *IstioClient) IsListenerHTTPRouteConfigured(ctx context.Context, obj *v1
 	return false, nil
 }
 
-func (c *IstioClient) IsListenerHTTPRoutesEmpty(ctx context.Context) (bool, error) {
-	virtualService, err := c.NetworkingV1beta1().
+func (c *IstioClient) IsVsDeleted(ctx context.Context) (bool, error) {
+	_, err := c.NetworkingV1beta1().
 		VirtualServices(metav1.NamespaceDefault).
 		Get(ctx, virtualServiceName, metav1.GetOptions{})
-	if err != nil {
-		return false, err
-	}
-	if len(virtualService.Spec.Http) == 0 {
+	if apierrors.IsNotFound(err) {
 		return true, nil
 	}
-	return false, nil
+	return false, err
 }
 
 func (c *IstioClient) UpdateVirtualServiceConfig(ctx context.Context, obj *v1alpha1.Watcher,
