@@ -34,12 +34,10 @@ To bundle your module image and operator, please refer to the detailed informati
 
    Go to `https://github.com/kyma-project/lifecycle-manager` and run the following commands, to create a secret and apply it to the KCP Cluster:
 
-
    ```sh
    chmod 755 ./operator/config/samples/secret/k3d-secret-gen.sh
    ./operator/config/samples/secret/k3d-secret-gen.sh
    ```
-
    > _**NOTE:**_ In the **single-cluster setup**, adjust your contexts for applying the secret using `KCP_CLUSTER_CTX` and `SKR_CLUSTER_CTX` - both should point to the same cluster.
 
 4. To install the Module Manager CRDs, check out `https://github.com/kyma-project/module-manager`, navigate to the operator `cd operator`, and run `make install`.

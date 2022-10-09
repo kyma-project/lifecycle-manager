@@ -32,23 +32,23 @@ You are using GCP Artifact Registry. The following instructions assume that you 
 
 ### Authenticate locally
 
-We will assume you will be [creating and using a service-account](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/) called `operator-test-sa`.
+Under the assumption you're [creating and using a service-account](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/) called `operator-test-sa`.
 
-4. Authenticate against your registry:
+1. Authenticate against your registry:
 
    ```sh
    gcloud auth configure-docker \
        europe-west3-docker.pkg.dev
 
-### Create a service account in Google Cloud.
+### Create a service account in Google Cloud
 
-5. For productive purposes, create a service account. In this example, call it `operator-test-sa`.
+1. For productive purposes, create a service account. In this example, call it `operator-test-sa`.
 
    ```sh
    gcloud iam service-accounts create operator-test-sa \
        --display-name="Operator Test Service Account"
 
-6. To get the necessary permissions, assign roles to your service account.
+2. To get the necessary permissions, assign roles to your service account.
 
    > **TIP:** For details, read [Required roles](https://cloud.google.com/iam/docs/creating-managing-service-accounts#permissions).
 
@@ -58,12 +58,12 @@ We will assume you will be [creating and using a service-account](https://kubern
          --role='roles/artifactregistry.reader' \
          --role='roles/artifactregistry.writer'
 
-7. Impersonate the service account:
+3. Impersonate the service account:
 
    ```sh
    gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com
 
-8. Verify your login:
+4. Verify your login:
 
    ```sh
    gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com | docker login -u oauth2accesstoken --password-stdin https://europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/operator-test
