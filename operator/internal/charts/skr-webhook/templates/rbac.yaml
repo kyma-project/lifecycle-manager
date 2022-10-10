@@ -1,0 +1,33 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{.Release.Name}}-webhook-sa
+  namespace: {{.Release.Namespace}}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  namespace: {{.Release.Namespace}}
+  name: kyma-reader
+rules:
+- apiGroups: ["operator.kyma-project.io"] # "" indicates the core API group
+  resources: ["*"]
+  verbs: ["get", "watch", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: read-kymas
+  namespace: {{.Release.Namespace}}
+subjects:
+# You can specify more than one "subject"
+- kind: ServiceAccount
+  name: {{.Release.Name}}-webhook-sa
+  namespace: {{.Release.Namespace}}
+roleRef:
+  # "roleRef" specifies the binding to a Role / ClusterRole
+  kind: ClusterRole #this must be Role or ClusterRole
+  name: kyma-reader # this must match the name of the Role or ClusterRole you wish to bind to
+  apiGroup: rbac.authorization.k8s.io
+---

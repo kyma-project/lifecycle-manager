@@ -1,0 +1,101 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{.Release.Name}}-webhook
+  namespace: {{.Release.Namespace}}
+spec:
+  selector:
+    #selector for deployment labels (key, values)
+    app: skr-webhook
+  ports:
+    - port: {{.Values.service.port}}
+      targetPort: watcher-port
+      name: webhook
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{.Release.Name}}-webhook
+  namespace: {{.Release.Namespace}}
+  labels:
+    app: skr-webhook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: skr-webhook
+  template:
+    metadata:
+      labels:
+        app: skr-webhook
+    spec:
+      serviceAccountName: {{.Release.Name}}-webhook-sa
+      containers:
+        - name: server
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: WEBHOOK_PORT
+              value: "{{.Values.service.targetPort}}"
+            - name: TLS_SERVER
+              value: "{{.Values.tls.webhookServer}}"
+            - name: TLS_CALLBACK
+              value: "{{.Values.tls.callback}}"
+            - name: TLS_KEY
+              value: "/app/etc/ssl/tls.key"
+            - name: TLS_CERT
+              value: "/app/etc/ssl/tls.crt"
+            - name: CA_CERT
+              value: "/app/etc/ssl/ca.crt"
+            - name: KCP_ADDR
+              value: "{{.Values.kcpAddr}}"
+            - name: KCP_CONTRACT
+              value: {{.Values.service.contactVersion}}
+            - name: WEBHOOK_SIDE_CAR
+              value: {{ if eq .Values.sidecar true }} "true" {{ else }} "false" {{ end }}
+          image: "{{.Values.image.repository}}/{{.Values.image.name}}:{{.Values.image.tag}}"
+          imagePullPolicy: {{.Values.image.pullPolicy}}
+          volumeMounts:
+          - name: ssl
+            mountPath: /app/etc/ssl
+          - name: request
+            mountPath: /tmp
+          resources:
+            requests:
+              memory: {{.Values.resources.requests.memory}}
+              cpu: {{.Values.resources.requests.cpu}}
+            limits:
+              memory: {{.Values.resources.limits.memory}}
+              cpu: {{.Values.resources.requests.cpu}}
+          ports:
+            - containerPort: {{.Values.service.targetPort}}
+              name: watcher-port
+        {{- if eq .Values.sidecar true }}
+        - name: request-sidecar
+          image: alpine
+          command:
+            - /bin/sh
+            - "-c"
+            - "sleep 60m"
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: request
+              mountPath: /tmp
+        {{- end }}
+      volumes:
+      - name: ssl
+        secret:
+          secretName: {{.Release.Name}}-webhook-tls
+          items:
+          - key: tls.key
+            path: tls.key
+          - key: tls.crt
+            path: tls.crt
+          - key: ca.crt
+            path: ca.crt
+      - name: request
+        emptyDir: {}

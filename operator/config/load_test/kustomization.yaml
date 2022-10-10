@@ -20,6 +20,18 @@ commonLabels:
   app.kubernetes.io/managed-by: kustomize
   app.kubernetes.io/part-of: manual-deployment
 
+patchesJson6902:
+  - target:
+      version: v1beta1
+      kind: Gateway
+      name: lifecycle-manager-kyma-gateway
+    path: patches/gateway_namespace_replace.yaml
+
+patchesStrategicMerge:
+  # We expect an istio gateway to be already present in KCP
+  - patches/adjust_resources_in_deployment.yaml
+  - patches/inject_istio_sidecar_in_deployment.yaml
+
 components:
   - ../crd
   - ../rbac

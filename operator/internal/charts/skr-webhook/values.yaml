@@ -1,0 +1,74 @@
+# -- Side car to mount admission review
+sidecar: true
+# -- Replicas
+replicas: 1
+image: 
+  # -- Image repository
+  repository: "eu.gcr.io/kyma-project"
+  # -- Image name
+  name: "runtime-watcher-skr"
+  # -- Image tag
+  tag: "latest"
+  # -- Image pull policy
+  pullPolicy: "Always"
+# -- Image pull secrets
+imagePullSecrets: []
+# -- Pod security content
+podSecurityContext: {}
+# -- Node selector
+nodeSelector: {}
+# -- Affinity settings
+affinity: {}
+# -- Tolerations
+tolerations: []
+# -- Priority class
+priorityClassName: ""
+# -- Security context
+securityContext: {}
+# -- Resources
+resources:
+  limits:
+    # -- Memory limit
+    memory: 200Mi
+    # -- CPU limit
+    cpu: 0.1
+  requests:
+    # -- Memory request
+    memory: 20Mi
+    # -- CPU request
+    cpu: 0.01
+# -- Service port
+service:
+  # -- Service type
+  type: ClusterIP
+  # -- Service port
+  port: 443
+  # -- Target port
+  targetPort: 8443
+  # -- Target port
+  contactVersion: v1
+# -- KCP information
+kcpAddr: "kcp-base-url-invalid"
+
+# -- TLS information
+tls:
+  # -- Helm Cert Generation
+  helmCertGen: "true"
+  # -- CA Cert (base64 encoded)
+  caCert: ""
+  # -- Client Cert (base64 encoded)
+  clientCert: ""
+  # -- Client Key (base64 encoded)
+  clientKey: ""
+  # -- TLS webhook server
+  webhookServer: "true"
+  # -- TLS callback to KCP
+  callback: "false"
+# -- Module list
+modules: |-
+  lifecycle-manager:
+    statusOnly: false
+    labels:
+      app: kyma 
+  module-manager:
+    statusOnly: true

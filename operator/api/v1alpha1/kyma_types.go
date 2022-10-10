@@ -381,9 +381,10 @@ func (kyma *Kyma) SyncConditionsWithModuleStates() {
 	conditionReason := ConditionReasonModulesAreReady
 	conditionStatus := metav1.ConditionTrue
 	for i := range kyma.Status.ModuleInfos {
-		moduleInfo := kyma.Status.ModuleInfos[i]
+		moduleInfo := &kyma.Status.ModuleInfos[i]
 		if moduleInfo.State != StateReady {
 			conditionStatus = metav1.ConditionFalse
+			break
 		}
 	}
 	kyma.UpdateCondition(conditionReason, conditionStatus)
