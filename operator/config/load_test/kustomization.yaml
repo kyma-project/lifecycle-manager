@@ -20,6 +20,13 @@ commonLabels:
   app.kubernetes.io/managed-by: kustomize
   app.kubernetes.io/part-of: manual-deployment
 
+patchesJson6902:
+  - target:
+      version: v1beta1
+      kind: Gateway
+      name: klm-lifecycle-manager-kyma-gateway
+    path: patches/gateway_name_ns_replace.yaml
+
 patchesStrategicMerge:
   - patches/adjust_resources_in_deployment.yaml
 
