@@ -66,8 +66,10 @@ func createLoadBalancer() error {
 		return err
 	}
 
-	return k8sClient.Get(ctx, client.ObjectKey{Name: deploy.IngressServiceName,
-		Namespace: deploy.IstioSytemNs}, loadBalancerService)
+	return k8sClient.Get(ctx, client.ObjectKey{
+		Name:      deploy.IngressServiceName,
+		Namespace: deploy.IstioSytemNs,
+	}, loadBalancerService)
 }
 
 var _ = Describe("deploy watcher", Ordered, func() {

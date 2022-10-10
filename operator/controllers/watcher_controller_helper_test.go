@@ -89,8 +89,10 @@ func createLoadBalancer() error {
 		return err
 	}
 
-	return controlPlaneClient.Get(ctx, client.ObjectKey{Name: deploy.IngressServiceName,
-		Namespace: deploy.IstioSytemNs}, loadBalancerService)
+	return controlPlaneClient.Get(ctx, client.ObjectKey{
+		Name:      deploy.IngressServiceName,
+		Namespace: deploy.IstioSytemNs,
+	}, loadBalancerService)
 }
 
 func createKymaCR(kymaName string) *v1alpha1.Kyma {
