@@ -46,7 +46,6 @@ type WatcherReconciler struct {
 	Scheme     *runtime.Scheme
 	Config     *WatcherConfig
 	RequeueIntervals
-	KCPAddr string
 }
 
 type WatcherConfig struct {
@@ -129,7 +128,7 @@ func (r *WatcherReconciler) HandleProcessingState(ctx context.Context,
 		return updateErr
 	}
 	err = deploy.UpdateWebhookConfig(ctx, r.Config.WebhookChartPath, obj,
-		r.RestConfig, r.Client, r.KCPAddr)
+		r.RestConfig, r.Client)
 	if err != nil {
 		updateErr := r.updateWatcherCRStatus(ctx, obj, v1alpha1.WatcherStateError, "failed to update SKR config")
 		if updateErr == nil {
@@ -154,6 +153,7 @@ func (r *WatcherReconciler) HandleProcessingState(ctx context.Context,
 func (r *WatcherReconciler) HandleDeletingState(ctx context.Context, logger logr.Logger,
 	obj *v1alpha1.Watcher,
 ) error {
+	// remove virtual service
 	err := r.RemoveVirtualServiceConfigForCR(ctx, obj)
 	if err != nil {
 		updateErr := r.updateWatcherCRStatus(ctx, obj, v1alpha1.WatcherStateError,
@@ -163,6 +163,8 @@ func (r *WatcherReconciler) HandleDeletingState(ctx context.Context, logger logr
 		}
 		return updateErr
 	}
+
+	// remove webhook config
 	err = deploy.RemoveWebhookConfig(ctx, r.Config.WebhookChartPath, obj,
 		r.RestConfig, r.Client)
 	if err != nil {
@@ -172,19 +174,16 @@ func (r *WatcherReconciler) HandleDeletingState(ctx context.Context, logger logr
 		}
 		return updateErr
 	}
-	updated := controllerutil.RemoveFinalizer(obj, watcherFinalizer)
-	if !updated {
-		return r.updateWatcherCRStatus(ctx, obj, v1alpha1.WatcherStateError, "failed to remove finalizer")
+
+	// if finalizers was removed - return
+	if updated := controllerutil.RemoveFinalizer(obj, watcherFinalizer); !updated {
+		return nil
 	}
-	err = r.Update(ctx, obj)
-	if err != nil {
-		msg := "failed to update watcher cr"
+
+	if err = r.Update(ctx, obj); err != nil {
+		msg := "failed to remove finalizer"
 		logger.Error(err, msg)
-		updateErr := r.updateWatcherCRStatus(ctx, obj, v1alpha1.WatcherStateError, msg)
-		if updateErr == nil {
-			return err
-		}
-		return updateErr
+		return err
 	}
 	logger.Info("deletion state handling was successful")
 	return nil

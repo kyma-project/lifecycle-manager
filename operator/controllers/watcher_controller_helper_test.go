@@ -7,9 +7,11 @@ import (
 	"os"
 
 	"github.com/onsi/gomega/types"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -20,7 +22,9 @@ import (
 )
 
 const (
-	defaultBufferSize = 2048
+	defaultBufferSize  = 2048
+	istioSytemNs       = "istio-system"
+	ingressServiceName = "istio-ingressgateway"
 )
 
 //nolint:gochecknoglobals
@@ -46,6 +50,29 @@ func deserializeIstioResources() ([]*unstructured.Unstructured, error) {
 		}
 	}
 	return istioResourcesList, nil
+}
+
+func createLoadBalancer() *corev1.Service {
+	return &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      ingressServiceName,
+			Namespace: istioSytemNs,
+			Labels: map[string]string{
+				"app": "istio-ingressgateway",
+			},
+		},
+		Spec: corev1.ServiceSpec{
+			Type: corev1.ServiceTypeLoadBalancer,
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "http2",
+					Protocol:   corev1.ProtocolTCP,
+					Port:       80,
+					TargetPort: intstr.FromInt(8080),
+				},
+			},
+		},
+	}
 }
 
 func createKymaCR(kymaName string) *v1alpha1.Kyma {
@@ -82,9 +109,9 @@ func verifyVsRoutes(watcherCR *v1alpha1.Watcher, customIstioClient *custom.Istio
 		Expect(err).ToNot(HaveOccurred())
 		Expect(routeReady).To(matcher)
 	} else {
-		routesReady, err := customIstioClient.IsListenerHTTPRoutesEmpty(ctx)
+		vsDeleted, err := customIstioClient.IsVsDeleted(ctx)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(routesReady).To(matcher)
+		Expect(vsDeleted).To(matcher)
 	}
 }
 

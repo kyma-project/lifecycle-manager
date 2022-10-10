@@ -48,9 +48,8 @@ service:
   # -- Target port
   contactVersion: v1
 # -- KCP information
-kcp:
-  # -- Base URL
-  addr: "kcp-base-url-invalid"
+kcpAddr: "kcp-base-url-invalid"
+
 # -- TLS information
 tls:
   # -- Helm Cert Generation
