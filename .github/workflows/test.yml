@@ -109,12 +109,14 @@ jobs:
             -k $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/operator/config/default \
             -k $(go env GOPATH)/src/github.com/$MODULE_MANAGER/operator/config/default
 
+      - name: Inject GOPATH into go Setup
+        run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+
       - name: Set up Go for ${{ matrix.smoke-run }}
         uses: actions/setup-go@v3
         with:
-          cache: true
-          go-version-file: "${{ env.GOPATH }}/src/github.com/${{ matrix.smoke-run }}/tests/smoke/go.mod"
-          cache-dependency-path: "${{ env.GOPATH }}/src/github.com/${{ matrix.smoke-run }}/tests/smoke/go.sum"
+          go-version-file: ${{ env.GOPATH }}/src/github.com/${{ matrix.smoke-run }}/tests/smoke/go.mod
+          cache-dependency-path: ${{ env.GOPATH }}/src/github.com/${{ matrix.smoke-run }}/tests/smoke/go.sum
       - name: Run Smoke Tests for ${{ matrix.smoke-run }}
         run: |
           cd $(go env GOPATH)/src/github.com/${{ matrix.smoke-run }}/tests/smoke
