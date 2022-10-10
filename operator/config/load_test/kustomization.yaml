@@ -20,6 +20,11 @@ commonLabels:
   app.kubernetes.io/managed-by: kustomize
   app.kubernetes.io/part-of: manual-deployment
 
+patchesStrategicMerge:
+  # We expect an istio gateway to be already present in KCP
+  - patches/adjust_resources_in_deployment.yaml
+  - patches/inject_istio_sidecar_in_deployment.yaml
+
 components:
   - ../crd
   - ../rbac
