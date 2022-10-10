@@ -9,7 +9,7 @@ generatorOptions:
 
 # Adds namespace to all resources.
 namespace: kcp-system
-namePrefix: lifecycle-manager-
+namePrefix: klm-
 
 # Labels to add to all resources and selectors.
 commonLabels:
@@ -20,17 +20,16 @@ commonLabels:
   app.kubernetes.io/managed-by: kustomize
   app.kubernetes.io/part-of: manual-deployment
 
-patchesJson6902:
-  - target:
-      version: v1beta1
-      kind: Gateway
-      name: lifecycle-manager-kyma-gateway
-    path: patches/gateway_namespace_replace.yaml
-
 patchesStrategicMerge:
-  # We expect an istio gateway to be already present in KCP
   - patches/adjust_resources_in_deployment.yaml
-  - patches/inject_istio_sidecar_in_deployment.yaml
+
+patches:
+  - patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --max-concurrent-reconciles=20
+    target:
+      kind: Deployment
 
 components:
   - ../crd

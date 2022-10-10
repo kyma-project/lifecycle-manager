@@ -1,7 +1,8 @@
+# Use this Gateway for setup with watcher enabled if there is no istio gateway configured
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway
 metadata:
-  name: kyma-gateway
+  name: lifecycle-manager-kyma-gateway
   namespace: default
 spec:
   selector:

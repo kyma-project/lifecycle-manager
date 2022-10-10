@@ -10,6 +10,7 @@ spec:
         - operation:
             paths:
               - /metrics
+              - /v1*
   selector:
     matchLabels:
       app.kubernetes.io/component: lifecycle-manager.kyma-project.io
