@@ -2,6 +2,17 @@
 
 Kyma is the opinionated set of Kubernetes based modular building blocks that includes the necessary capabilities to develop and run enterprise-grade cloud-native applications. Kyma's Lifecycle Manager (or `lifecycle-manager` in various technical references) is a tool that manages the lifecycle of these components in your cluster.
 
+### Contents
+* [How it works](#how-it-works)
+  * [Example](#example)
+* [Architecture](#architecture)
+  * [Stability](#stability)
+* [Deployment / Delivery models](#deployment--delivery-models)
+  * [Release Lifecycles for Modules](#release-lifecycles-for-modules)
+  * [Versioning and Releasing](#versioning-and-releasing)
+  * [Comparison to the Old Reconciler](#comparison-to-the-old-reconciler)
+* [Testing and implementation guide](#testing-and-implementation-guide)
+
 ## How it works
 
 Lifecycle Manager manages Clusters through the [Kyma Custom Resource](operator/api/v1alpha1/kyma_types.go), which contains a desired state of all modules in a cluster.
@@ -76,7 +87,7 @@ This means that, depending on your environment you might be running lifecycle-ma
 For local development, as well as for testing and verification purposes in integration testing, we recommend to use single-cluster mode. For E2E Testing,
 and testing of scalability as well as remote reconciliation, we recommend the use of a separate control-plane cluster.
 
-## Separate Release Lifecycles for Modules and their Managers (Modularization)
+### Release Lifecycles for Modules 
 
 Teams providing module operators should work (and release) independently from lifecycle-manager. In other words, lifecycle-manager should not have hard-coded dependencies to any module operator. 
 As such, all module interactions are abstracted through the [ModuleTemplate](operator/api/v1alpha1/moduletemplate_types.go).
@@ -97,6 +108,7 @@ Traditionally, Kyma was installed with the [Kyma Reconciler](https://github.com/
 While this worked great for smaller and medium scale deliveries, we had trouble to scale and maintain it when put under significant load.
 We chose to replace this with Operator-focused Reconciliation due to various reasons, more details on the reasoning can be found in our [Concept for Operator Reconciliation](https://github.com/kyma-project/community/tree/main/concepts/operator-reconciliation)
 
-### Testing and implementation guide
+## Testing and implementation guide
+
 - For a detailed cluster and module setup refer to our [test environment guide](docs/developer/creating-test-environment.md)
 - For configuring the lifecycle-manager operator refer to our [developer guide](docs/user/starting-operator-with-webhooks.md)
