@@ -63,21 +63,13 @@ jobs:
     steps:
       - name: Checkout Lifecycle-Manager
         uses: actions/checkout@v3
-        with:
-          repository: ${{ env.LIFECYCLE_MANAGER }}
-          path: ${{ env.LIFECYCLE_MANAGER }}
-      - name: Checkout Module-Manager
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ env.MODULE_MANAGER }}
-          path: ${{ env.MODULE_MANAGER }}
 
       - if: github.event_name == 'pull_request'
         name: Override Kustomize Controller Image TAG in Pull Request to PR Image
         run: |
           wget -qO - "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
           mv kustomize /usr/local/bin/
-          cd ${{ env.LIFECYCLE_MANAGER }}/operator/config/manager
+          cd operator/config/manager
           kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
 
       - name: Set up k3d
@@ -103,7 +95,9 @@ jobs:
 
       - name: Run Deploy
         run: |
-          kyma alpha deploy
+          kyma alpha deploy \
+            -k operator/config/default \
+            -k https://github.com/kyma-project/module-manager/operator/config/default@main
 
       - uses: actions/cache@v3
         name: Cache Go Dependencies for Smoke Tests
@@ -118,10 +112,10 @@ jobs:
       - name: Set up Go for ${{ matrix.smoke-run }}
         uses: actions/setup-go@v3
         with:
-          go-version-file: ${{ matrix.smoke-run }}/tests/smoke/go.mod
-          cache-dependency-path: ${{ matrix.smoke-run }}/tests/smoke/go.sum
+          go-version-file: tests/smoke/go.mod
+          cache-dependency-path: tests/smoke/go.sum
 
       - name: Run Smoke Tests for ${{ matrix.smoke-run }}
         run: |
-          cd ${{ matrix.smoke-run }}/tests/smoke
+          cd tests/smoke
           go test smoke_test.go -v
