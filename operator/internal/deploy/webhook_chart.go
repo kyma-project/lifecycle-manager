@@ -40,8 +40,8 @@ const (
 	statusSubresources                  = "*/status"
 	configuredWebhooksDeletionThreshold = 1
 	expectedWebhookNamePartsLength      = 4
-	istioSytemNs                        = "istio-system"
-	ingressServiceName                  = "istio-ingressgateway"
+	IstioSytemNs                        = "istio-system"
+	IngressServiceName                  = "istio-ingressgateway"
 )
 
 var (
@@ -152,7 +152,7 @@ func installOrRemoveChartOnSKR(ctx context.Context, restConfig *rest.Config, rel
 func resolveKcpAddr(ctx context.Context, kcpClient client.Client) (string, error) {
 	// as fallback get external IP from the ISTIO load balancer external IP
 	loadBalancerService := &v1.Service{}
-	if err := kcpClient.Get(ctx, client.ObjectKey{Name: ingressServiceName, Namespace: istioSytemNs},
+	if err := kcpClient.Get(ctx, client.ObjectKey{Name: IngressServiceName, Namespace: IstioSytemNs},
 		loadBalancerService); err != nil {
 		return "", err
 	}

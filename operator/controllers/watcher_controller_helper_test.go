@@ -19,12 +19,11 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/custom"
+	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
 )
 
 const (
-	defaultBufferSize  = 2048
-	istioSytemNs       = "istio-system"
-	ingressServiceName = "istio-ingressgateway"
+	defaultBufferSize = 2048
 )
 
 //nolint:gochecknoglobals
@@ -52,13 +51,13 @@ func deserializeIstioResources() ([]*unstructured.Unstructured, error) {
 	return istioResourcesList, nil
 }
 
-func createLoadBalancer() *corev1.Service {
-	return &corev1.Service{
+func createLoadBalancer() error {
+	loadBalancerService := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ingressServiceName,
-			Namespace: istioSytemNs,
+			Name:      deploy.IngressServiceName,
+			Namespace: deploy.IstioSytemNs,
 			Labels: map[string]string{
-				"app": "istio-ingressgateway",
+				"app": deploy.IngressServiceName,
 			},
 		},
 		Spec: corev1.ServiceSpec{
@@ -73,6 +72,25 @@ func createLoadBalancer() *corev1.Service {
 			},
 		},
 	}
+
+	if err := controlPlaneClient.Create(ctx, loadBalancerService); err != nil {
+		return err
+	}
+	loadBalancerService.Status = corev1.ServiceStatus{
+		LoadBalancer: corev1.LoadBalancerStatus{
+			Ingress: []corev1.LoadBalancerIngress{
+				{
+					IP: "10.10.10.167",
+				},
+			},
+		},
+	}
+	if err := controlPlaneClient.Status().Update(ctx, loadBalancerService); err != nil {
+		return err
+	}
+
+	return controlPlaneClient.Get(ctx, client.ObjectKey{Name: deploy.IngressServiceName,
+		Namespace: deploy.IstioSytemNs}, loadBalancerService)
 }
 
 func createKymaCR(kymaName string) *v1alpha1.Kyma {

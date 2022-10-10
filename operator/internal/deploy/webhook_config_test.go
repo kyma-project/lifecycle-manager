@@ -6,6 +6,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -15,8 +18,57 @@ import (
 
 const (
 	webhookChartPath = "../charts/skr-webhook"
-	releaseName      = "watcher"
 )
+
+func createLoadBalancer() error {
+	istioNs := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: deploy.IstioSytemNs,
+		},
+	}
+	if err := k8sClient.Create(ctx, istioNs); err != nil {
+		return err
+	}
+	loadBalancerService := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      deploy.IngressServiceName,
+			Namespace: deploy.IstioSytemNs,
+			Labels: map[string]string{
+				"app": deploy.IngressServiceName,
+			},
+		},
+		Spec: corev1.ServiceSpec{
+			Type: corev1.ServiceTypeLoadBalancer,
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "http2",
+					Protocol:   corev1.ProtocolTCP,
+					Port:       80,
+					TargetPort: intstr.FromInt(8080),
+				},
+			},
+		},
+	}
+
+	if err := k8sClient.Create(ctx, loadBalancerService); err != nil {
+		return err
+	}
+	loadBalancerService.Status = corev1.ServiceStatus{
+		LoadBalancer: corev1.LoadBalancerStatus{
+			Ingress: []corev1.LoadBalancerIngress{
+				{
+					IP: "10.10.10.167",
+				},
+			},
+		},
+	}
+	if err := k8sClient.Status().Update(ctx, loadBalancerService); err != nil {
+		return err
+	}
+
+	return k8sClient.Get(ctx, client.ObjectKey{Name: deploy.IngressServiceName,
+		Namespace: deploy.IstioSytemNs}, loadBalancerService)
+}
 
 var _ = Describe("deploy watcher", Ordered, func() {
 	ctx := context.TODO()
@@ -50,6 +102,7 @@ var _ = Describe("deploy watcher", Ordered, func() {
 		kymaName := "kyma-sample"
 		kymaSample = createKymaCR(kymaName)
 		Expect(k8sClient.Create(ctx, kymaSample)).To(Succeed())
+		Expect(createLoadBalancer()).To(Succeed())
 	})
 
 	AfterAll(func() {
