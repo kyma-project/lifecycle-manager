@@ -2,8 +2,10 @@ package deploy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
+	"strconv"
 
 	v1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -42,14 +44,20 @@ const (
 	ingressServiceName                  = "istio-ingressgateway"
 )
 
+var (
+	ErrSKRWebhookAreNotReady         = errors.New("installed skr webhook resources are not ready")
+	ErrSKRWebhookHasNotBeenInstalled = errors.New("installed skr webhook resources have not been installed")
+	ErrLoadBalancerIPIsNotAssigned   = errors.New("load balancer service external ip is not assigned")
+)
+
 func InstallSKRWebhook(ctx context.Context, chartPath, releaseName string,
-	obj *v1alpha1.Watcher, restConfig *rest.Config, kcpAddr string,
+	obj *v1alpha1.Watcher, restConfig *rest.Config, kcpClient client.Client,
 ) error {
 	restClient, err := client.New(restConfig, client.Options{})
 	if err != nil {
 		return err
 	}
-	argsVals, err := generateHelmChartArgsForCR(ctx, obj, kcpAddr, restClient)
+	argsVals, err := generateHelmChartArgsForCR(ctx, obj, kcpClient)
 	if err != nil {
 		return err
 	}
@@ -75,9 +83,9 @@ func prepareInstallInfo(chartPath, releaseName string, restConfig *rest.Config, 
 	}
 }
 
-func generateHelmChartArgsForCR(ctx context.Context, obj *v1alpha1.Watcher, kcpAddr string,
-	restClient client.Client) (map[string]interface{}, error) {
-	resolvedKcpAddr, err := resolveKcpAddr(ctx, kcpAddr, restClient)
+func generateHelmChartArgsForCR(ctx context.Context, obj *v1alpha1.Watcher, kcpClient client.Client,
+) (map[string]interface{}, error) {
+	resolvedKcpAddr, err := resolveKcpAddr(ctx, kcpClient)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +95,7 @@ func generateHelmChartArgsForCR(ctx context.Context, obj *v1alpha1.Watcher, kcpA
 		return nil, err
 	}
 	return map[string]interface{}{
-		"kcp.addr":      resolvedKcpAddr,
+		"kcpAddr":       resolvedKcpAddr,
 		customConfigKey: string(bytes),
 	}, nil
 }
@@ -106,7 +114,7 @@ func installOrRemoveChartOnSKR(ctx context.Context, restConfig *rest.Config, rel
 	argsVals map[string]interface{}, deployInfo modulelib.InstallInfo, mode Mode,
 ) error {
 	logger := logf.FromContext(ctx)
-	args := make(map[string]map[string]interface{}, 1)
+	args := make(map[string]map[string]interface{}, 0)
 	args["set"] = argsVals
 	ops, err := modulelib.NewOperations(&logger, restConfig, releaseName,
 		&cli.EnvSettings{}, args, nil)
@@ -129,29 +137,35 @@ func installOrRemoveChartOnSKR(ctx context.Context, restConfig *rest.Config, rel
 		return fmt.Errorf("failed to install webhook config: %w", err)
 	}
 	if !installed {
-		//nolint:goerr113
-		return fmt.Errorf("installed skr webhook resources are not ready")
+		return ErrSKRWebhookHasNotBeenInstalled
+	}
+	ready, err := ops.VerifyResources(deployInfo)
+	if err != nil {
+		return fmt.Errorf("failed to verify webhook resources: %w", err)
+	}
+	if !ready {
+		return ErrSKRWebhookAreNotReady
 	}
 	return nil
 }
 
-func resolveKcpAddr(ctx context.Context, kcpAddr string, restClient client.Client) (string, error) {
-	if kcpAddr == "" {
-		// as fallback get external IP from the ISTIO load balancer external IP
-		loadBalancerService := &v1.Service{}
-		if err := restClient.Get(ctx, client.ObjectKey{Name: ingressServiceName, Namespace: istioSytemNs},
-			loadBalancerService); err != nil {
-			return "", err
-		}
-		ip := loadBalancerService.Status.LoadBalancer.Ingress[0].IP
-		var port int32
-		for _, loadBalancerPort := range loadBalancerService.Spec.Ports {
-			if loadBalancerPort.Name == "http2" {
-				port = loadBalancerPort.Port
-				break
-			}
-		}
-		kcpAddr = net.JoinHostPort(ip, string(port))
+func resolveKcpAddr(ctx context.Context, kcpClient client.Client) (string, error) {
+	// as fallback get external IP from the ISTIO load balancer external IP
+	loadBalancerService := &v1.Service{}
+	if err := kcpClient.Get(ctx, client.ObjectKey{Name: ingressServiceName, Namespace: istioSytemNs},
+		loadBalancerService); err != nil {
+		return "", err
 	}
-	return kcpAddr, nil
+	if len(loadBalancerService.Status.LoadBalancer.Ingress) == 0 {
+		return "", ErrLoadBalancerIPIsNotAssigned
+	}
+	externalIP := loadBalancerService.Status.LoadBalancer.Ingress[0].IP
+	var port int32
+	for _, loadBalancerPort := range loadBalancerService.Spec.Ports {
+		if loadBalancerPort.Name == "http2" {
+			port = loadBalancerPort.Port
+			break
+		}
+	}
+	return net.JoinHostPort(externalIP, strconv.Itoa(int(port))), nil
 }

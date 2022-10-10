@@ -58,14 +58,14 @@ var _ = Describe("deploy watcher", Ordered, func() {
 	})
 
 	It("deploys watcher helm chart with correct webhook config", func() {
-		err := deploy.UpdateWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, "")
+		err := deploy.UpdateWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(deploy.IsWebhookConfigured(ctx, watcherCR, testEnv.Config)).To(BeTrue())
 	})
 
 	It("updates webhook config when helm chart is already installed", func() {
 		watcherCR.Spec.Field = v1alpha1.SpecField
-		err := deploy.UpdateWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, "")
+		err := deploy.UpdateWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(deploy.IsWebhookConfigured(ctx, watcherCR, testEnv.Config)).To(BeTrue())
 	})

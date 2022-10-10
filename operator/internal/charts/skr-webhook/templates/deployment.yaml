@@ -52,7 +52,7 @@ spec:
             - name: CA_CERT
               value: "/app/etc/ssl/ca.crt"
             - name: KCP_ADDR
-              value: "{{.Values.kcp.addr}}"
+              value: "{{.Values.kcpAddr}}"
             - name: KCP_CONTRACT
               value: {{.Values.service.contactVersion}}
             - name: WEBHOOK_SIDE_CAR
