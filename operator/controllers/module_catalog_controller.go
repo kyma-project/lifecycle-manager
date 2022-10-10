@@ -4,6 +4,7 @@ import (
 	"context"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -19,7 +20,9 @@ type ModuleCatalogReconciler struct {
 	RequeueIntervals
 }
 
-const CatalogName = "module-catalog"
+const (
+	CatalogName = "module-catalog"
+)
 
 //nolint:lll
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=moduletemplates,verbs=get;list;watch;create;update;patch;delete
@@ -28,8 +31,7 @@ const CatalogName = "module-catalog"
 func (r *ModuleCatalogReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	logger.Info("Catalog Sync loop starting for", "resource", req.NamespacedName.String())
-
-	catalogSync := catalog.NewSync(r.Client, catalog.Settings{
+	catalogSync := catalog.NewSync(r.Client, r.EventRecorder, catalog.Settings{
 		Namespace: req.Namespace,
 		Name:      CatalogName,
 	})
@@ -55,6 +57,15 @@ func (r *ModuleCatalogReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	if err := catalogSync.Run(ctx, kyma, moduleTemplateList); err != nil {
+		kyma.UpdateCondition(v1alpha1.ConditionReasonModuleCatalogIsReady, metav1.ConditionFalse)
+		if err := r.Status().Update(ctx, kyma); err != nil {
+			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
+		}
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
+	}
+
+	kyma.UpdateCondition(v1alpha1.ConditionReasonModuleCatalogIsReady, metav1.ConditionTrue)
+	if err := r.Status().Update(ctx, kyma); err != nil {
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
 	}
 

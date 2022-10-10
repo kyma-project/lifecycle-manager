@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
@@ -12,10 +13,11 @@ import (
 
 type Sync struct {
 	Catalog
+	record.EventRecorder
 }
 
-func NewSync(client client.Client, settings Settings) *Sync {
-	return &Sync{Catalog: New(client, settings)}
+func NewSync(client client.Client, recorder record.EventRecorder, settings Settings) *Sync {
+	return &Sync{Catalog: New(client, settings), EventRecorder: recorder}
 }
 
 func (s *Sync) Cleanup(
@@ -31,13 +33,16 @@ func (s *Sync) Run(
 ) error {
 	if kyma.Spec.Sync.Enabled {
 		if err := s.syncRemote(ctx, kyma, moduleTemplateList); err != nil {
+			s.Event(kyma, "Warning", "RemoteCatalogSyncError", err.Error())
 			return err
 		}
 	} else {
 		if err := s.syncLocal(ctx, kyma, moduleTemplateList); err != nil {
+			s.Event(kyma, "Warning", "LocalCatalogSyncError", err.Error())
 			return err
 		}
 	}
+	s.Event(kyma, "Normal", "CatalogSync", "catalog synced")
 	return nil
 }
 
@@ -48,7 +53,9 @@ func (s *Sync) syncRemote(
 ) error {
 	syncContext, err := remote.InitializeKymaSynchronizationContext(ctx, s.Catalog.Client(), controlPlaneKyma)
 	if err != nil {
-		return fmt.Errorf("could not initialize remote context before updating remote kyma: %w", err)
+		err = fmt.Errorf("catalog sync failed: %w", err)
+		s.Event(controlPlaneKyma, "Warning", "CatalogSyncError", err.Error())
+		return err
 	}
 
 	return New(syncContext.RuntimeClient, s.Catalog.Settings()).CreateOrUpdate(ctx, moduleTemplateList.Items)

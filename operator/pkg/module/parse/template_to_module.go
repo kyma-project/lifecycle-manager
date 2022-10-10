@@ -1,13 +1,13 @@
 package parse
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/gardener/component-spec/bindings-go/codec"
 	"github.com/imdario/mergo"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/channel"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -15,7 +15,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/img"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/module/common"
-	"github.com/kyma-project/lifecycle-manager/operator/pkg/release"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
 )
 
@@ -41,16 +40,13 @@ func Decode(ext runtime.RawExtension) (*ocm.ComponentDescriptor, error) {
 }
 
 func GenerateModulesFromTemplates(
-	ctx context.Context,
-	kyma *v1alpha1.Kyma,
-	templates release.TemplatesInChannels,
-	verification signature.Verification,
+	kyma *v1alpha1.Kyma, templates channel.ModuleTemplatesByModuleName, verification signature.Verification,
 ) (common.Modules, error) {
 	// these are the actual modules
 	modules, err := templatesToModules(kyma, templates,
 		&ModuleConversionSettings{Verification: verification})
 	if err != nil {
-		return nil, fmt.Errorf("could not convert templates to modules: %w", err)
+		return nil, fmt.Errorf("cannot convert templates: %w", err)
 	}
 
 	return modules, nil
@@ -58,7 +54,7 @@ func GenerateModulesFromTemplates(
 
 func templatesToModules(
 	kyma *v1alpha1.Kyma,
-	templates release.TemplatesInChannels,
+	templates channel.ModuleTemplatesByModuleName,
 	settings *ModuleConversionSettings,
 ) (common.Modules, error) {
 	// First, we fetch the module spec from the template and use it to resolve it into an arbitrary object

@@ -18,9 +18,9 @@ package v1alpha1
 
 import (
 	"context"
+	"fmt"
 
-	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
-	"github.com/gardener/component-spec/bindings-go/codec"
+	"github.com/Masterminds/semver/v3"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -65,7 +65,7 @@ func (moduleTemplate *ModuleTemplate) Default() {
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (r *clusterAwareModuleTemplateValidator) ValidateCreate(ctx context.Context, obj runtime.Object) error {
 	moduletemplatelog.Info("validate create", "name", obj.(*ModuleTemplate).Name)
-	return r.validate(ctx, obj.(*ModuleTemplate))
+	return r.validate(ctx, nil, obj.(*ModuleTemplate))
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
@@ -73,33 +73,51 @@ func (r *clusterAwareModuleTemplateValidator) ValidateUpdate(
 	ctx context.Context, oldObj, newObj runtime.Object,
 ) error {
 	moduletemplatelog.Info("validate update", "name", newObj.(*ModuleTemplate).Name)
-	return r.validate(ctx, newObj.(*ModuleTemplate))
+	return r.validate(ctx, oldObj.(*ModuleTemplate), newObj.(*ModuleTemplate))
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (r *clusterAwareModuleTemplateValidator) ValidateDelete(ctx context.Context, obj runtime.Object) error {
 	moduletemplatelog.Info("validate delete", "name", obj.(*ModuleTemplate).Name)
-	return r.validate(ctx, obj.(*ModuleTemplate))
+	return r.validate(ctx, nil, obj.(*ModuleTemplate))
 }
 
-func (r *clusterAwareModuleTemplateValidator) validate(_ context.Context, template *ModuleTemplate) error {
-	var allErrs field.ErrorList
-	if err := r.validateDescriptor(template); err != nil {
-		allErrs = append(allErrs, err)
+func (r *clusterAwareModuleTemplateValidator) validate(
+	_ context.Context, oldTemplate, newTemplate *ModuleTemplate,
+) error {
+	newDescriptor, err := newTemplate.Spec.GetDescriptor()
+	if err != nil {
+		return apierrors.NewInvalid(
+			schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
+			newTemplate.Name, field.ErrorList{field.Invalid(field.NewPath("spec").Child("descriptor"),
+				string(newTemplate.Spec.OCMDescriptor.Raw), err.Error())})
 	}
 
-	if len(allErrs) == 0 {
-		return nil
+	newVersion, err := semver.NewVersion(newDescriptor.Version)
+	if err != nil {
+		return apierrors.NewInvalid(
+			schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
+			newTemplate.Name, field.ErrorList{field.Invalid(field.NewPath("spec").Child("descriptor").
+				Child("version"),
+				string(newTemplate.Spec.OCMDescriptor.Raw), err.Error())})
 	}
-	return apierrors.NewInvalid(
-		schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
-		template.Name, allErrs)
-}
 
-func (r *clusterAwareModuleTemplateValidator) validateDescriptor(template *ModuleTemplate) *field.Error {
-	var descriptor ocm.ComponentDescriptor
-	if err := codec.Decode(template.Spec.OCMDescriptor.Raw, &descriptor); err != nil {
-		return field.Invalid(field.NewPath("spec").Child("descriptor"), string(template.Spec.OCMDescriptor.Raw), err.Error())
+	if oldTemplate != nil {
+		// the old descriptor has to be valid since it otherwise would not have been submitted
+		oldDescriptor, _ := oldTemplate.Spec.GetDescriptor()
+		oldVersion, _ := semver.NewVersion(oldDescriptor.Version)
+		if newVersion.LessThan(oldVersion) {
+			return apierrors.NewInvalid(
+				schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
+				newTemplate.Name, field.ErrorList{field.Invalid(field.NewPath("spec").Child("descriptor").
+					Child("version"),
+					newVersion.String(), fmt.Sprintf(
+						"version of templates can never be decremented (previously %s)",
+						oldVersion,
+					),
+				)})
+		}
 	}
+
 	return nil
 }

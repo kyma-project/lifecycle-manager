@@ -15,7 +15,7 @@ type Runner interface {
 		modules common.Modules,
 	) (bool, error)
 
-	SyncModuleInfo(
+	SyncModuleStatus(
 		ctx context.Context,
 		kyma *v1alpha1.Kyma,
 		modules common.Modules,
