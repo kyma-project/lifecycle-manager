@@ -7,7 +7,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -88,22 +87,8 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 		for _, istioResource := range istioResources {
 			Expect(controlPlaneClient.Create(ctx, istioResource)).To(Succeed())
 		}
-		loadBalancerService := createLoadBalancer()
-		Expect(controlPlaneClient.Create(ctx, loadBalancerService)).To(Succeed())
 
-		loadBalancerService.Status = corev1.ServiceStatus{
-			LoadBalancer: corev1.LoadBalancerStatus{
-				Ingress: []corev1.LoadBalancerIngress{
-					{
-						IP: "10.10.10.167",
-					},
-				},
-			},
-		}
-		Expect(controlPlaneClient.Status().Update(ctx, loadBalancerService))
-		Expect(controlPlaneClient.Get(ctx, client.ObjectKey{Name: ingressServiceName, Namespace: istioSytemNs},
-			loadBalancerService)).To(Succeed())
-		Expect(loadBalancerService.Status.LoadBalancer.Ingress).NotTo(BeEmpty())
+		Expect(createLoadBalancer()).To(Succeed())
 	})
 
 	AfterAll(func() {
