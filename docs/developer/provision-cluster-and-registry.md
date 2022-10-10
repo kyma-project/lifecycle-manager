@@ -50,7 +50,7 @@ For a dual cluster setup, with control plane (KCP) and Kyma runtime (SKR); creat
 
 Learn how to use a Gardener cluster for testing.
 
-1. Go to the the [Gardener account](https://dashboard.garden.canary.k8s.ondemand.com/account) and download your `Access Kubeconfig`.
+1. Go to the [Gardener account](https://dashboard.garden.canary.k8s.ondemand.com/account) and download your `Access Kubeconfig`.
 
 2. Provision a compliant remote cluster with the [`kyma-cli`](https://github.com/kyma-project/cli):
 
