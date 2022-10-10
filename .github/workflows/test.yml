@@ -110,8 +110,8 @@ jobs:
       - name: Set up Go for ${{ matrix.smoke-run }}
         uses: actions/setup-go@v3
         with:
-          go-version-file: tests/smoke/go.mod
-          cache-dependency-path: tests/smoke/go.sum
+          go-version-file: $GITHUB_WORKSPACE/tests/smoke/go.mod
+          cache-dependency-path: $GITHUB_WORKSPACE/tests/smoke/go.sum
 
       - name: Run Smoke Tests for ${{ matrix.smoke-run }}
         run: |
