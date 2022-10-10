@@ -1,0 +1,6 @@
+- op: replace
+  path: /metadata/namespace
+  value: default
+- op: replace
+  path: /metadata/name
+  value: lifecycle-manager-kyma-gateway
