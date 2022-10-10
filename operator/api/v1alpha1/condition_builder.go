@@ -56,24 +56,20 @@ func (cb *ConditionBuilder) generateMessage() string {
 		case metav1.ConditionTrue:
 			return MessageModuleInReadyState
 		case metav1.ConditionUnknown:
-			fallthrough
 		case metav1.ConditionFalse:
-			fallthrough
-		default:
-			return MessageModuleNotInReadyState
 		}
+
+		return MessageModuleNotInReadyState
 	case ConditionReasonModuleCatalogIsReady:
 		switch cb.Status {
 		case metav1.ConditionTrue:
 			return MessageModuleCatalogIsSynced
 		case metav1.ConditionUnknown:
-			fallthrough
 		case metav1.ConditionFalse:
-			fallthrough
-		default:
-			return MessageModuleCatalogIsOutOfSync
 		}
-	default:
-		return "no detailed message available as reason is unknown to API"
+
+		return MessageModuleCatalogIsOutOfSync
 	}
+
+	return "no detailed message available as reason is unknown to API"
 }
