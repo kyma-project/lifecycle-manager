@@ -106,11 +106,8 @@ jobs:
       - name: Run Deploy
         run: |
           kyma alpha deploy \
-            -k $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/ \
-            -k $(go env GOPATH)/src/github.com/$MODULE_MANAGER/
-
-      - name: Inject GOPATH into go Setup
-        run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+            -k $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/operator/config/default \
+            -k $(go env GOPATH)/src/github.com/$MODULE_MANAGER/operator/config/default
 
       - uses: actions/cache@v3
         name: Cache Go Dependencies for Smoke Tests
