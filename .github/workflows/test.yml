@@ -103,8 +103,7 @@ jobs:
 
       - name: Run Deploy
         run: |
-          kyma alpha deploy \
-            -k ./${{ env.MODULE_MANAGER }}/operator/config/default
+          kyma alpha deploy
 
       - uses: actions/cache@v3
         name: Cache Go Dependencies for Smoke Tests
