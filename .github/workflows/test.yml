@@ -51,7 +51,7 @@ jobs:
   cli-integration:
     strategy:
       matrix:
-        cli-stability: ["unstable"]
+        cli-stability: ["main"]
         smoke-run: [ "${{ github.repository }}" ]
     needs: [wait-for-img, kustomize]
     name: "Kyma CLI - ${{ matrix.cli-stability }} - Integration (Tests of ${{ matrix.smoke-run }})"
