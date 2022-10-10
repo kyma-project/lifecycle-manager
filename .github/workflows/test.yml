@@ -104,8 +104,8 @@ jobs:
       - name: Run Deploy
         run: |
           kyma alpha deploy \
-            -k ${{ env.LIFECYCLE_MANAGER }}/operator/config/default \
-            -k ${{ env.MODULE_MANAGER }}/operator/config/default
+            -k ${{ env.GITHUB_WORKSPACE }}/${{ env.LIFECYCLE_MANAGER }}/operator/config/default \
+            -k ${{ env.GITHUB_WORKSPACE }}/${{ env.MODULE_MANAGER }}/operator/config/default
 
       - uses: actions/cache@v3
         name: Cache Go Dependencies for Smoke Tests
@@ -120,10 +120,10 @@ jobs:
       - name: Set up Go for ${{ matrix.smoke-run }}
         uses: actions/setup-go@v3
         with:
-          go-version-file: ${{ matrix.smoke-run }}/tests/smoke/go.mod
-          cache-dependency-path: ${{ matrix.smoke-run }}/tests/smoke/go.sum
+          go-version-file: ${{ env.GITHUB_WORKSPACE }}/${{ matrix.smoke-run }}/tests/smoke/go.mod
+          cache-dependency-path: ${{ env.GITHUB_WORKSPACE }}/${{ matrix.smoke-run }}/tests/smoke/go.sum
 
       - name: Run Smoke Tests for ${{ matrix.smoke-run }}
         run: |
-          cd ${{ matrix.smoke-run }}/tests/smoke
+          cd ${{ env.GITHUB_WORKSPACE }}/${{ matrix.smoke-run }}/tests/smoke
           go test smoke_test.go -v
