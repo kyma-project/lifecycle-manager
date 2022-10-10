@@ -45,6 +45,7 @@ import (
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/controllers"
+	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -71,6 +72,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(v1extensions.AddToScheme(scheme))
+	utilruntime.Must(moduleManagerV1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -85,7 +87,8 @@ type FlagVar struct {
 	clientQPS                                                              float64
 	clientBurst                                                            int
 	enableWebhooks                                                         bool
-	enableModuleCatalog                                                    bool
+	enableModuleCatalog, enableKcpWatcher                                  bool
+	skrWatcherPath                                                         string
 }
 
 func main() {
@@ -138,7 +141,9 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 	if flagVar.enableModuleCatalog {
 		setupModuleCatalogReconciler(mgr, flagVar, intervals, options)
 	}
-
+	if flagVar.enableKcpWatcher {
+		setupKcpWatcherReconciler(mgr, flagVar, intervals, options)
+	}
 	if flagVar.enableWebhooks {
 		if err := (&operatorv1alpha1.ModuleTemplate{}).
 			SetupWebhookWithManager(mgr); err != nil {
@@ -197,6 +202,10 @@ func defineFlagVar() *FlagVar {
 	flag.BoolVar(&flagVar.enableModuleCatalog, "enable-module-catalog", true,
 		"Enabling the Module Catalog Synchronization for Introspection of "+
 			"available Modules based on ModuleTemplates.")
+	flag.BoolVar(&flagVar.enableKcpWatcher, "enable-kcp-watcher", false,
+		"Enabling KCP Watcher to reconcile Watcher CRs created by KCP run operators")
+	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "skr-webhook",
+		"The path to the skr watcher chart.")
 	return flagVar
 }
 
@@ -232,6 +241,31 @@ func setupModuleCatalogReconciler(
 		RequeueIntervals: intervals,
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ModuleTemplate")
+		os.Exit(1)
+	}
+}
+
+func setupKcpWatcherReconciler(
+	mgr ctrl.Manager,
+	flagVar *FlagVar,
+	intervals controllers.RequeueIntervals,
+	options controller.Options,
+) {
+	fileInfo, err := os.Stat(flagVar.skrWatcherPath)
+	if err != nil || !fileInfo.IsDir() {
+		setupLog.Error(err, "failed to read local skr chart")
+	}
+	watcherConfig := &controllers.WatcherConfig{
+		WebhookChartPath: flagVar.skrWatcherPath,
+	}
+	if err := (&controllers.WatcherReconciler{
+		Client:           mgr.GetClient(),
+		Scheme:           mgr.GetScheme(),
+		RestConfig:       mgr.GetConfig(),
+		RequeueIntervals: intervals,
+		Config:           watcherConfig,
+	}).SetupWithManager(mgr, options); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Watcher")
 		os.Exit(1)
 	}
 }

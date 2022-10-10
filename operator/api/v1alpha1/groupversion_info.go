@@ -29,6 +29,7 @@ import (
 const (
 	KymaKind           Kind = "Kyma"
 	ModuleTemplateKind Kind = "ModuleTemplate"
+	WatcherKind        Kind = "Watcher"
 	Version                 = "v1alpha1"
 )
 

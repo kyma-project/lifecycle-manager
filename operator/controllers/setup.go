@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -21,11 +20,15 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/dynamic"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/index"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/watch"
+	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options, listenerAddr string) error {
+// SetupWithManager sets up the Kyma controller with the Manager.
+func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
+	options controller.Options, listenerAddr string,
+) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1alpha1.Kyma{}).WithOptions(options).
 		Watches(
 			&source.Kind{Type: &v1alpha1.ModuleTemplate{}},
@@ -39,9 +42,13 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 
 	var err error
 
-	// This fetches all resources for our component operator CRDs, might become a problem if component operators
-	// create their own CRDs that we dont need to watch
-	if dynamicInformers, err = dynamic.Informers(mgr, []string{v1alpha1.OperatorPrefix}); err != nil {
+	if dynamicInformers, err = dynamic.GetDynamicInformerSources([]v1.APIResource{
+		{
+			Name:    moduleManagerV1alpha1.ManifestKind,
+			Group:   moduleManagerV1alpha1.GroupVersion.Group,
+			Version: moduleManagerV1alpha1.GroupVersion.Version,
+		},
+	}, mgr); err != nil {
 		return fmt.Errorf("error while setting up Dynamic Informers: %w", err)
 	}
 
@@ -54,21 +61,10 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 
 	// register listener component
 	runnableListener, eventChannel := listener.RegisterListenerComponent(
-		listenerAddr, strings.ToLower(string(v1alpha1.KymaKind)))
+		listenerAddr, v1alpha1.OperatorName)
 
 	// watch event channel
-	controllerBuilder.Watches(eventChannel, &handler.Funcs{
-		GenericFunc: func(event event.GenericEvent, queue workqueue.RateLimitingInterface) {
-			ctrl.Log.WithName("listener").Info(
-				fmt.Sprintf("event coming from SKR, adding %s to queue",
-					client.ObjectKeyFromObject(event.Object).String()),
-			)
-
-			queue.Add(ctrl.Request{
-				NamespacedName: client.ObjectKeyFromObject(event.Object),
-			})
-		},
-	})
+	r.watchEventChannel(controllerBuilder, eventChannel)
 	// start listener as a manager runnable
 	if err = mgr.Add(runnableListener); err != nil {
 		return err
@@ -86,7 +82,22 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 	return nil
 }
 
-// SetupWithManager sets up the controller with the Manager.
+func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, eventChannel *source.Channel) {
+	controllerBuilder.Watches(eventChannel, &handler.Funcs{
+		GenericFunc: func(event event.GenericEvent, queue workqueue.RateLimitingInterface) {
+			ctrl.Log.WithName("listener").Info(
+				fmt.Sprintf("event coming from SKR, adding %s to queue",
+					client.ObjectKeyFromObject(event.Object).String()),
+			)
+
+			queue.Add(ctrl.Request{
+				NamespacedName: client.ObjectKeyFromObject(event.Object),
+			})
+		},
+	})
+}
+
+// SetupWithManager sets up the ModuleCatalog controller with the Manager.
 func (r *ModuleCatalogReconciler) SetupWithManager(
 	mgr ctrl.Manager,
 	options controller.Options,
@@ -94,4 +105,18 @@ func (r *ModuleCatalogReconciler) SetupWithManager(
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Kyma{}).
 		WithOptions(options).Complete(r)
+}
+
+// SetupWithManager sets up the Watcher controller with the Manager.
+func (r *WatcherReconciler) SetupWithManager(
+	mgr ctrl.Manager,
+	options controller.Options,
+) error {
+	if err := r.SetIstioClient(); err != nil {
+		return fmt.Errorf("unable to set istio client for controller watcher: %w", err)
+	}
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&v1alpha1.Watcher{}).
+		WithOptions(options).
+		Complete(r)
 }

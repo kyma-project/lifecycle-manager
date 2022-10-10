@@ -1,20 +1,21 @@
 apiVersion: operator.kyma-project.io/v1alpha1
 kind: Watcher
 metadata:
-  name: controller-manager-watcher
+  name: watcher
   namespace: system
   labels:
     "operator.kyma-project.io/managed-by": "lifecycle-manager"
 spec:
   labelsToWatch:
-    "watched-by": "lifecycle-manager"
+    "operator.kyma-project.io/watched-by": "lifecycle-manager"
   field: "spec"
   serviceInfo:
-    name: event-service
+    name: lifecycle-manager-event-service
     port: 8082
-    namespace: system
+    namespace: kcp-system
 
 ---
+
 apiVersion: v1
 kind: Service
 metadata:

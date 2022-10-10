@@ -15,6 +15,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	sampleCRDv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/config/samples/component-integration-installed/crd/v1alpha1" //nolint:lll
 	"github.com/kyma-project/lifecycle-manager/operator/controllers"
@@ -22,7 +24,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/test"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/watch"
 	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 func NewTestKyma(name string) *v1alpha1.Kyma {
