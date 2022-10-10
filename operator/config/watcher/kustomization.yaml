@@ -17,12 +17,12 @@ patches:
         value: --skr-watcher-path=/skr-webhook      
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --requeue-success-interval=5m      
+        value: --requeue-success-interval=5m     
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --requeue-waiting-interval=5m      
+        value: --requeue-waiting-interval=5s      
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --requeue-failure-interval=5m
+        value: --requeue-failure-interval=5s
     target:
       kind: Deployment
