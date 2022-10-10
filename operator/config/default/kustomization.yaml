@@ -23,7 +23,7 @@ components:
   - ../crd
   - ../rbac
   # [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
-  - ../watcher
+  #- ../watcher
   # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
   #- ../istio
   # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
