@@ -219,7 +219,7 @@ IMG ?= $(IMG_REGISTRY)/$(MODULE_NAME)-operator:$(MODULE_VERSION)
 1. Include the module chart represented by `chartPath` from _step 3_ in [Controller implementation](#steps-controller-implementation) above, in your _Dockerfile_.
 [Reference implementation](https://github.com/kyma-project/lifecycle-manager/blob/main/samples/template-operator/operator/Dockerfile):
     ```dockerfile
-    COPY module-chart/ ./module-chart/
+    COPY module-chart/ module-chart/
     ```
 2. Adjust the _Dockerfile_ args according to the targeted cluster's architecture and OS
 
@@ -228,7 +228,7 @@ IMG ?= $(IMG_REGISTRY)/$(MODULE_NAME)-operator:$(MODULE_VERSION)
     ARG TARGETARCH
    ```
 
-2. Build and push your module operator binary by adjusting `IMG`if necessary and then executing the `make module-image` command.
+3. Build and push your module operator binary by adjusting `IMG`if necessary and then executing the `make module-image` command.
    
     ```sh
     make module-image
@@ -239,19 +239,13 @@ This will build the operator image and then push it as the image defined in `IMG
 
 1. Copy [hack folder](./hack) to your project's root directory
 
-2. Include the module chart represented by `chartPath` from _step 3_ in [Controller implementation](#steps-controller-implementation) above, in your _Dockerfile_.
-    [Reference implementation](https://github.com/kyma-project/lifecycle-manager/blob/main/samples/template-operator/operator/Dockerfile): 
-    ```dockerfile
-    COPY module-chart/ ./module-chart/
-    ```
-
-3. The module operator will be packed in a helm chart and pushed to `MODULE_REGISTRY` using `module-build`.
+2. The module operator will be packed in a helm chart and pushed to `MODULE_REGISTRY` using `module-build`.
 
    ```sh
    make module-build
    ```
    
-4. Verify that the module creation succeeded and observe the `mod` folder. It will contain a `component-descriptor.yaml` with a definition of local layers.
+3. Verify that the module creation succeeded and observe the `mod` folder. It will contain a `component-descriptor.yaml` with a definition of local layers.
    
    ```yaml
    component:
@@ -278,7 +272,7 @@ This will build the operator image and then push it as the image defined in `IMG
    
    As you can see the CLI created various layers that are referenced in the `blobs` directory. For more information on layer structure please reference the module creation with `kyma alpha mod create --help`.
 
-5. As a result `template.yaml` should be generated in your root folder, that should be applied in the control plane as the source for module configuration.
+4. As a result `template.yaml` should be generated in your root folder, that should be applied in the control plane as the source for module configuration.
 
     ```sh
     make module-template-push
