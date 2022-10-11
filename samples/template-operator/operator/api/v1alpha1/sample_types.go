@@ -64,6 +64,6 @@ type SampleList struct {
 	Items           []Sample `json:"items"`
 }
 
-func init() {
+func init() { //nolint:gochecknoinits
 	SchemeBuilder.Register(&Sample{}, &SampleList{})
 }

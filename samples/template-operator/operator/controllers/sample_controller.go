@@ -19,15 +19,22 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"golang.org/x/time/rate"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/samples/template-operator/api/v1alpha1"
 	"github.com/kyma-project/module-manager/operator/pkg/declarative"
 	"github.com/kyma-project/module-manager/operator/pkg/types"
+
+	"github.com/kyma-project/lifecycle-manager/samples/template-operator/api/v1alpha1"
+
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/ratelimiter"
 )
 
 // SampleReconciler reconciles a Sample object
@@ -38,12 +45,21 @@ type SampleReconciler struct {
 	*rest.Config
 }
 
+type RateLimiter struct {
+	Burst           int
+	Frequency       int
+	BaseDelay       time.Duration
+	FailureMaxDelay time.Duration
+}
+
 const (
 	sampleAnnotationKey   = "owner"
 	sampleAnnotationValue = "template-operator"
-	chartPath             = "./module-chart"
-	chartNs               = "redis"
-	nameOverride          = "custom-name-override"
+)
+
+var (
+	ConfigFlags types.Flags
+	SetFlags    types.Flags
 )
 
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=samples,verbs=get;list;watch;create;update;patch;delete
@@ -56,20 +72,30 @@ const (
 //+kubebuilder:rbac:groups="*",resources="*",verbs="*"
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager, chartPath string, configFlags, setFlags types.Flags, rateLimiter RateLimiter) error {
+	ConfigFlags = configFlags
+	SetFlags = setFlags
 	r.Config = mgr.GetConfig()
-	if err := r.initReconciler(mgr); err != nil {
+	if err := r.initReconciler(mgr, chartPath); err != nil {
 		return err
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Sample{}).
+		WithOptions(controller.Options{
+			RateLimiter: TemplateRateLimiter(
+				rateLimiter.BaseDelay,
+				rateLimiter.FailureMaxDelay,
+				rateLimiter.Frequency,
+				rateLimiter.Burst,
+			),
+		}).
 		Complete(r)
 }
 
 // initReconciler injects the required configuration into the declarative reconciler.
-func (r *SampleReconciler) initReconciler(mgr ctrl.Manager) error {
-	manifestResolver := &ManifestResolver{}
+func (r *SampleReconciler) initReconciler(mgr ctrl.Manager, chartPath string) error {
+	manifestResolver := &ManifestResolver{chartPath: chartPath}
 	return r.Inject(mgr, &v1alpha1.Sample{},
 		declarative.WithManifestResolver(manifestResolver),
 		declarative.WithCustomResourceLabels(map[string]string{"sampleKey": "sampleValue"}),
@@ -94,7 +120,9 @@ func transform(_ context.Context, _ types.BaseCustomObject, manifestResources *t
 }
 
 // ManifestResolver represents the chart information for the passed Sample resource.
-type ManifestResolver struct{}
+type ManifestResolver struct {
+	chartPath string
+}
 
 // Get returns the chart information to be processed.
 func (m *ManifestResolver) Get(obj types.BaseCustomObject) (types.InstallationSpec, error) {
@@ -104,16 +132,21 @@ func (m *ManifestResolver) Get(obj types.BaseCustomObject) (types.InstallationSp
 			fmt.Errorf("invalid type conversion for %s", client.ObjectKeyFromObject(obj))
 	}
 	return types.InstallationSpec{
-		ChartPath:   chartPath,
+		ChartPath:   m.chartPath,
 		ReleaseName: sample.Spec.ReleaseName,
 		ChartFlags: types.ChartFlags{
-			ConfigFlags: types.Flags{
-				"Namespace":       chartNs,
-				"CreateNamespace": true,
-			},
-			SetFlags: types.Flags{
-				"nameOverride": nameOverride,
-			},
+			ConfigFlags: ConfigFlags,
+			SetFlags:    SetFlags,
 		},
 	}, nil
+}
+
+// TemplateRateLimiter implements a rate limiter for a client-go.workqueue.  It has
+// both an overall (token bucket) and per-item (exponential) rate limiting.
+func TemplateRateLimiter(failureBaseDelay time.Duration, failureMaxDelay time.Duration,
+	frequency int, burst int,
+) ratelimiter.RateLimiter {
+	return workqueue.NewMaxOfRateLimiter(
+		workqueue.NewItemExponentialFailureRateLimiter(failureBaseDelay, failureMaxDelay),
+		&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(frequency), burst)})
 }

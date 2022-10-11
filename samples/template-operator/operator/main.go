@@ -19,6 +19,9 @@ package main
 import (
 	"flag"
 	"os"
+	"time"
+
+	"github.com/kyma-project/module-manager/operator/pkg/types"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -36,12 +39,41 @@ import (
 	//+kubebuilder:scaffold:imports
 )
 
+const (
+	rateLimiterBurstDefault     = 200
+	rateLimiterFrequencyDefault = 30
+	failureBaseDelayDefault     = 1 * time.Second
+	failureMaxDelayDefault      = 1000 * time.Second
+
+	chartPath    = "./module-chart"
+	chartNs      = "redis"
+	nameOverride = "custom-name-override"
+)
+
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
+
+	ConfigFlags = types.Flags{
+		"Namespace":       chartNs,
+		"CreateNamespace": true,
+	}
+	SetFlags = types.Flags{
+		"nameOverride": nameOverride,
+	}
 )
 
-func init() {
+type FlagVar struct {
+	metricsAddr          string
+	enableLeaderElection bool
+	probeAddr            string
+	failureBaseDelay     time.Duration
+	failureMaxDelay      time.Duration
+	rateLimiterFrequency int
+	rateLimiterBurst     int
+}
+
+func init() { //nolint:gochecknoinits
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(componentv1alpha1.AddToScheme(scheme))
@@ -49,28 +81,28 @@ func init() {
 }
 
 func main() {
-	var metricsAddr string
-	var enableLeaderElection bool
-	var probeAddr string
-	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
-	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
-	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
+	flagVar := defineFlagVar()
 	opts := zap.Options{
 		Development: true,
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
+	ratelimiter := controllers.RateLimiter{
+		Burst:           flagVar.rateLimiterBurst,
+		Frequency:       flagVar.rateLimiterFrequency,
+		BaseDelay:       flagVar.failureBaseDelay,
+		FailureMaxDelay: flagVar.failureMaxDelay,
+	}
+
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
+		MetricsBindAddress:     flagVar.metricsAddr,
 		Port:                   9443,
-		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         enableLeaderElection,
+		HealthProbeBindAddress: flagVar.probeAddr,
+		LeaderElection:         flagVar.enableLeaderElection,
 		LeaderElectionID:       "76223278.kyma-project.io",
 	})
 	if err != nil {
@@ -81,7 +113,7 @@ func main() {
 	if err = (&controllers.SampleReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManager(mgr, chartPath, ConfigFlags, SetFlags, ratelimiter); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Sample")
 		os.Exit(1)
 	}
@@ -101,4 +133,22 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func defineFlagVar() *FlagVar {
+	flagVar := new(FlagVar)
+	flag.StringVar(&flagVar.metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
+	flag.StringVar(&flagVar.probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
+	flag.BoolVar(&flagVar.enableLeaderElection, "leader-elect", false,
+		"Enable leader election for controller manager. "+
+			"Enabling this will ensure there is only one active controller manager.")
+	flag.IntVar(&flagVar.rateLimiterBurst, "rate-limiter-burst", rateLimiterBurstDefault,
+		"Indicates the burst value for the bucket rate limiter.")
+	flag.IntVar(&flagVar.rateLimiterFrequency, "rate-limiter-frequency", rateLimiterFrequencyDefault,
+		"Indicates the bucket rate limiter frequency, signifying no. of events per second.")
+	flag.DurationVar(&flagVar.failureBaseDelay, "failure-base-delay", failureBaseDelayDefault,
+		"Indicates the failure base delay in seconds for rate limiter.")
+	flag.DurationVar(&flagVar.failureMaxDelay, "failure-max-delay", failureMaxDelayDefault,
+		"Indicates the failure max delay in seconds")
+	return flagVar
 }
