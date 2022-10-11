@@ -10,5 +10,14 @@ resources:
 generatorOptions:
   disableNameSuffixHash: true
 
-patchesStrategicMerge:
-  - patches/istio_namespace_labels.yaml
+patches:
+  - patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: default
+    target:
+      kind: Gateway
+  - target:
+      version: v1
+      kind: Namespace
+    path: patches/istio_namespace_labels.yaml
