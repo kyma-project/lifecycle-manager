@@ -60,9 +60,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 		templateChannel := template.Spec.Channel
 
 		for _, kyma := range kymas.Items {
-			globalChannelMatch := kyma.Spec.Channel == templateChannel
-
-			if !requeueKyma(kyma, moduleName, globalChannelMatch, templateChannel) {
+			if !requeueKyma(kyma, moduleName, templateChannel) {
 				continue
 			}
 
@@ -70,11 +68,15 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 				Namespace: kyma.GetNamespace(),
 				Name:      kyma.GetName(),
 			}
+
 			logger.WithValues(
 				"moduleName", moduleName,
 				"templateChannel", templateChannel,
 				"template", templateNamespacedName.String(),
-			).Info(namespacedNameForKyma.String())
+				"kyma", namespacedNameForKyma.String(),
+			).Info(
+				"Kyma CR instance is scheduled for reconciliation because a relevant ModuleTemplate changed",
+			)
 
 			requests = append(requests, reconcile.Request{NamespacedName: namespacedNameForKyma})
 		}
@@ -98,9 +100,9 @@ func manageable(template *v1alpha1.ModuleTemplate) bool {
 	return true
 }
 
-func requeueKyma(kyma v1alpha1.Kyma, moduleName string,
-	globalChannelMatch bool, templateChannel v1alpha1.Channel,
-) bool {
+func requeueKyma(kyma v1alpha1.Kyma, moduleName string, templateChannel v1alpha1.Channel) bool {
+	globalChannelMatch := kyma.Spec.Channel == templateChannel
+
 	for _, module := range kyma.Spec.Modules {
 		if module.Name == moduleName {
 			// check module level channel on matching module

@@ -230,7 +230,7 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context,
 
 	remoteKyma.Status = c.ControlPlaneKyma.Status
 
-	if err := c.RuntimeClient.Status().Update(ctx, remoteKyma.SetObservedGeneration()); err != nil {
+	if err := c.RuntimeClient.Status().Update(ctx, remoteKyma); err != nil {
 		recorder.Event(c.ControlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
 		return err
 	}

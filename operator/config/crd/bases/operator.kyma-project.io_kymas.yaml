@@ -47,6 +47,7 @@ spec:
                   usually targeting different module versions.
                 enum:
                 - rapid
+                - fast
                 - regular
                 - stable
                 type: string
@@ -61,6 +62,7 @@ spec:
                         based on the new resolved resources.
                       enum:
                       - rapid
+                      - fast
                       - regular
                       - stable
                       type: string
@@ -71,9 +73,15 @@ spec:
                         templated Modules to split workload.
                       type: string
                     name:
-                      description: Name is a unique identifier of the module. It is
-                        used together with KymaName, ChannelLabel, ProfileLabel label
-                        to resolve a ModuleTemplate.
+                      description: "Name is a unique identifier of the module. It
+                        is used together with KymaName, ChannelLabel, ProfileLabel
+                        label to resolve a ModuleTemplate. \n WARNING: Module-Names
+                        are restricted in length based on naming generation strategy!
+                        By default, this means that the length of Name and .metadata.name
+                        of Kyma combined must be <= 252 Characters This is because
+                        the naming strategy aggregates Kyma and Module into a format
+                        of \"kyma-name-module-name\" For more info on the 253 total
+                        character limit, see https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names"
                       type: string
                   required:
                   - name
@@ -116,6 +124,7 @@ spec:
                 description: Active Channel
                 enum:
                 - rapid
+                - fast
                 - regular
                 - stable
                 type: string
@@ -189,7 +198,7 @@ spec:
                   - type
                   type: object
                 type: array
-              moduleInfos:
+              moduleStatus:
                 description: Contains essential information about the current deployed
                   module
                 items:
@@ -223,6 +232,7 @@ spec:
                             ModuleTemplate, which is why we need to reconcile.
                           enum:
                           - rapid
+                          - fast
                           - regular
                           - stable
                           type: string
@@ -251,6 +261,19 @@ spec:
                           - kind
                           - version
                           type: object
+                        name:
+                          description: Name is the current name of the template resource
+                            referenced
+                          type: string
+                        namespace:
+                          description: Namespace is the namespace of the template
+                          type: string
+                        version:
+                          type: string
+                      required:
+                      - name
+                      - namespace
+                      - version
                       type: object
                   required:
                   - moduleName
@@ -259,10 +282,6 @@ spec:
                   - state
                   type: object
                 type: array
-              observedGeneration:
-                description: Observed generation
-                format: int64
-                type: integer
               state:
                 description: State signifies current state of Kyma. Value can be one
                   of ("Ready", "Processing", "Error", "Deleting").

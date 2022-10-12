@@ -36,7 +36,7 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 	default:
 	}
 
-	if err := k.Update(ctx, kyma.SetObservedGeneration()); err != nil {
+	if err := k.Update(ctx, kyma); err != nil {
 		return fmt.Errorf("status could not be updated: %w", err)
 	}
 

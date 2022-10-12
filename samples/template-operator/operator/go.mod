@@ -6,6 +6,7 @@ require (
 	github.com/kyma-project/module-manager/operator v0.0.0-20220926065043-5db2334f200d
 	github.com/onsi/ginkgo/v2 v2.1.6
 	github.com/onsi/gomega v1.20.1
+	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9
 	k8s.io/apimachinery v0.24.4
 	k8s.io/client-go v0.24.4
 	sigs.k8s.io/controller-runtime v0.12.3
@@ -128,7 +129,6 @@ require (
 	golang.org/x/sys v0.0.0-20220908164124-27713097b956 // indirect
 	golang.org/x/term v0.0.0-20220722155259-a9ba230a4035 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.2.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220817144833-d7fd3f11b9b1 // indirect

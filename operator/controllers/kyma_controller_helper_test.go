@@ -2,6 +2,8 @@ package controllers_test
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"math/rand"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -55,7 +57,7 @@ func RandString(n int) string {
 	return string(b)
 }
 
-func DeployModuleTemplate(kyma *v1alpha1.Kyma) {
+func DeployModuleTemplates(kyma *v1alpha1.Kyma) {
 	for _, module := range kyma.Spec.Modules {
 		template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
 		Expect(err).ShouldNot(HaveOccurred())
@@ -63,10 +65,22 @@ func DeployModuleTemplate(kyma *v1alpha1.Kyma) {
 	}
 }
 
+func DeleteModuleTemplates(kyma *v1alpha1.Kyma) {
+	for _, module := range kyma.Spec.Modules {
+		template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(controlPlaneClient.Delete(ctx, template)).To(Succeed())
+	}
+}
+
 func RegisterDefaultLifecycleForKyma(kyma *v1alpha1.Kyma) {
 	BeforeAll(func() {
 		Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
-		DeployModuleTemplate(kyma)
+		DeployModuleTemplates(kyma)
+	})
+
+	AfterAll(func() {
+		DeleteModuleTemplates(kyma)
 	})
 
 	AfterAll(func() {
@@ -241,4 +255,34 @@ func deleteModule(kymaName, moduleName string) func() error {
 		err := controlPlaneClient.Delete(ctx, component)
 		return client.IgnoreNotFound(err)
 	}
+}
+
+func UpdateKymaModuleChannels(kymaName string, channel v1alpha1.Channel) error {
+	kyma, err := GetKyma(controlPlaneClient, kymaName)
+	if err != nil {
+		return err
+	}
+	for i := range kyma.Spec.Modules {
+		kyma.Spec.Modules[i].Channel = channel
+	}
+	if err := controlPlaneClient.Update(ctx, kyma); err != nil {
+		return err
+	}
+	return nil
+}
+
+var ErrTemplateInfoChannelMismatch = errors.New("mismatch in template info channel")
+
+func TemplateInfosMatchChannel(kymaName string, channel v1alpha1.Channel) error {
+	kyma, err := GetKyma(controlPlaneClient, kymaName)
+	if err != nil {
+		return err
+	}
+	for i := range kyma.Status.ModuleStatus {
+		if kyma.Status.ModuleStatus[i].TemplateInfo.Channel != channel {
+			return fmt.Errorf("%w: %s should be %s",
+				ErrTemplateInfoChannelMismatch, kyma.Status.ModuleStatus[i].TemplateInfo.Channel, channel)
+		}
+	}
+	return nil
 }

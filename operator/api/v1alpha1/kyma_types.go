@@ -25,10 +25,6 @@ import (
 
 type OverrideType string
 
-const (
-	OverrideTypeHelmValues = "helm-values"
-)
-
 type (
 	Overrides []Override
 	Override  struct {
@@ -43,6 +39,12 @@ type Modules []Module
 type Module struct {
 	// Name is a unique identifier of the module.
 	// It is used together with KymaName, ChannelLabel, ProfileLabel label to resolve a ModuleTemplate.
+	//
+	// WARNING: Module-Names are restricted in length based on naming generation strategy!
+	// By default, this means that the length of Name and .metadata.name of Kyma combined must be <= 252 Characters
+	// This is because the naming strategy aggregates Kyma and Module into a format of "kyma-name-module-name"
+	// For more info on the 253 total character limit, see
+	// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names
 	Name string `json:"name"`
 
 	// ControllerName is able to set the controller used for reconciliation of the module. It can be used
@@ -128,11 +130,7 @@ type KymaStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// Contains essential information about the current deployed module
-	ModuleInfos []ModuleInfo `json:"moduleInfos,omitempty"`
-
-	// Observed generation
-	// +optional
-	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+	ModuleStatus []ModuleStatus `json:"moduleStatus,omitempty"`
 
 	// Active Channel
 	// +optional
@@ -143,12 +141,17 @@ type KymaStatus struct {
 // in a control plane against different stability levels of our module system. When switching Channel, all modules
 // will be recalculated based on new templates. If you did not configure a ModuleTemplate for the new channel, the Kyma
 // will abort the installation.
-// +kubebuilder:validation:Enum=rapid;regular;stable
+// +kubebuilder:validation:Enum=rapid;fast;regular;stable
 type Channel string
 
+//goland:noinspection ALL
 const (
 	DefaultChannel = ChannelStable
+	// ChannelFast is meant as a fast track channel that will always be equal or close to the main codeline.
+	// Alias for ChannelRapid.
+	ChannelFast Channel = "fast"
 	// ChannelRapid is meant as a fast track channel that will always be equal or close to the main codeline.
+	// Alias for ChannelFast.
 	ChannelRapid Channel = "rapid"
 	// ChannelRegular is meant as the next best Ugrade path and a median between "bleeding edge" and stability.
 	ChannelRegular Channel = "regular"
@@ -178,7 +181,7 @@ const (
 	StateDeleting State = "Deleting"
 )
 
-type ModuleInfo struct {
+type ModuleStatus struct {
 	// Name is the current deployed module name
 	Name string `json:"name"`
 
@@ -198,6 +201,12 @@ type ModuleInfo struct {
 }
 
 type TemplateInfo struct {
+	// Name is the current name of the template resource referenced
+	Name string `json:"name"`
+
+	// Namespace is the namespace of the template
+	Namespace string `json:"namespace"`
+
 	// Generation tracks the active Generation of the ModuleTemplate. In Case it changes, the new Generation will differ
 	// from the one tracked in TemplateInfo and thus trigger a new reconciliation with a newly parser ModuleTemplate
 	Generation int64 `json:"generation,omitempty"`
@@ -210,6 +219,8 @@ type TemplateInfo struct {
 	// ourselves to any kind of Kind in the code and allows us to work generic on deletion / cleanup of
 	// related resources to a Kyma Installation.
 	GroupVersionKind metav1.GroupVersionKind `json:"gvk,omitempty"`
+
+	Version string `json:"version"`
 }
 
 type KymaConditionType string
@@ -225,12 +236,13 @@ const (
 // For example:
 // Reason: ModulesIsReady and Status: True means all modules are in ready state.
 // Reason: ModulesIsReady and Status: False means some modules are not in ready state,
-// and the actual state of individual module can be found in related ModuleInfo.
+// and the actual state of individual module can be found in related ModuleStatus.
 type KymaConditionReason string
 
 // Extend this list by actual needs.
 const (
-	ConditionReasonModulesAreReady KymaConditionReason = "ModulesAreReady"
+	ConditionReasonModulesAreReady      KymaConditionReason = "ModulesAreReady"
+	ConditionReasonModuleCatalogIsReady KymaConditionReason = "ModuleCatalogIsReady"
 )
 
 //+genclient
@@ -246,12 +258,6 @@ type Kyma struct {
 
 	Spec   KymaSpec   `json:"spec,omitempty"`
 	Status KymaStatus `json:"status,omitempty"`
-}
-
-func (kyma *Kyma) SetObservedGeneration() *Kyma {
-	kyma.Status.ObservedGeneration = kyma.Generation
-
-	return kyma
 }
 
 func (kyma *Kyma) SetActiveChannel() *Kyma {
@@ -271,42 +277,42 @@ func (kyma *Kyma) SetLastSync() *Kyma {
 	return kyma
 }
 
-type moduleInfoExistsPair struct {
-	moduleInfo *ModuleInfo
-	exists     bool
+type moduleStatusExistsPair struct {
+	moduleStatus *ModuleStatus
+	exists       bool
 }
 
-func (kyma *Kyma) GetNoLongerExistingModuleInfos() []*ModuleInfo {
-	moduleInfoMap := make(map[string]*moduleInfoExistsPair)
+func (kyma *Kyma) GetNoLongerExistingModuleStatus() []*ModuleStatus {
+	moduleStatusMap := make(map[string]*moduleStatusExistsPair)
 
-	for i := range kyma.Status.ModuleInfos {
-		moduleInfo := &kyma.Status.ModuleInfos[i]
-		moduleInfoMap[moduleInfo.ModuleName] = &moduleInfoExistsPair{exists: false, moduleInfo: moduleInfo}
+	for i := range kyma.Status.ModuleStatus {
+		moduleStatus := &kyma.Status.ModuleStatus[i]
+		moduleStatusMap[moduleStatus.ModuleName] = &moduleStatusExistsPair{exists: false, moduleStatus: moduleStatus}
 	}
 
 	for i := range kyma.Spec.Modules {
 		module := &kyma.Spec.Modules[i]
-		if _, exists := moduleInfoMap[module.Name]; exists {
-			moduleInfoMap[module.Name].exists = true
+		if _, exists := moduleStatusMap[module.Name]; exists {
+			moduleStatusMap[module.Name].exists = true
 		}
 	}
 
-	notExistsModules := make([]*ModuleInfo, 0)
-	for _, item := range moduleInfoMap {
+	notExistsModules := make([]*ModuleStatus, 0)
+	for _, item := range moduleStatusMap {
 		if !item.exists {
-			notExistsModules = append(notExistsModules, item.moduleInfo)
+			notExistsModules = append(notExistsModules, item.moduleStatus)
 		}
 	}
 	return notExistsModules
 }
 
-func (kyma *Kyma) GetModuleInfoMap() map[string]*ModuleInfo {
-	moduleInfoMap := make(map[string]*ModuleInfo)
-	for i := range kyma.Status.ModuleInfos {
-		moduleInfo := &kyma.Status.ModuleInfos[i]
-		moduleInfoMap[moduleInfo.ModuleName] = moduleInfo
+func (kyma *Kyma) GetModuleStatusMap() map[string]*ModuleStatus {
+	moduleStatusMap := make(map[string]*ModuleStatus)
+	for i := range kyma.Status.ModuleStatus {
+		moduleStatus := &kyma.Status.ModuleStatus[i]
+		moduleStatusMap[moduleStatus.ModuleName] = moduleStatus
 	}
-	return moduleInfoMap
+	return moduleStatusMap
 }
 
 //+kubebuilder:object:root=true
@@ -324,8 +330,14 @@ func init() {
 }
 
 func (kyma *Kyma) UpdateCondition(reason KymaConditionReason, status metav1.ConditionStatus) {
-	newCondition := NewConditionBuilder().SetReason(reason).SetStatus(status).Build()
+	newCondition := NewConditionBuilder().
+		SetReason(reason).
+		SetStatus(status).
+		SetObservedGeneration(kyma.GetGeneration()).
+		Build()
+
 	isNewReason := true
+
 	for i := range kyma.Status.Conditions {
 		condition := &kyma.Status.Conditions[i]
 		if condition.Reason == string(reason) {
@@ -335,6 +347,7 @@ func (kyma *Kyma) UpdateCondition(reason KymaConditionReason, status metav1.Cond
 			}
 		}
 	}
+
 	if isNewReason {
 		kyma.Status.Conditions = append(kyma.Status.Conditions, newCondition)
 	}
@@ -357,10 +370,10 @@ var ErrTemplateNotFound = errors.New("template not found")
 func (kyma *Kyma) GetTemplateInfoByModuleName(
 	moduleName string,
 ) (*TemplateInfo, error) {
-	for i := range kyma.Status.ModuleInfos {
-		moduleInfo := &kyma.Status.ModuleInfos[i]
-		if moduleInfo.ModuleName == moduleName {
-			return &moduleInfo.TemplateInfo, nil
+	for i := range kyma.Status.ModuleStatus {
+		moduleStatus := &kyma.Status.ModuleStatus[i]
+		if moduleStatus.ModuleName == moduleName {
+			return &moduleStatus.TemplateInfo, nil
 		}
 	}
 	// should not happen
@@ -375,14 +388,14 @@ func IsValidState(state string) bool {
 		castedState == StateError
 }
 
-// SyncConditionsWithModuleStates iterates all moduleInfos, based on all module state,
+// SyncConditionsWithModuleStates iterates all moduleStatus, based on all module state,
 // it updates the condition.status with Reason ConditionReasonModulesAreReady accordingly.
 func (kyma *Kyma) SyncConditionsWithModuleStates() {
 	conditionReason := ConditionReasonModulesAreReady
 	conditionStatus := metav1.ConditionTrue
-	for i := range kyma.Status.ModuleInfos {
-		moduleInfo := &kyma.Status.ModuleInfos[i]
-		if moduleInfo.State != StateReady {
+	for i := range kyma.Status.ModuleStatus {
+		moduleStatus := &kyma.Status.ModuleStatus[i]
+		if moduleStatus.State != StateReady {
 			conditionStatus = metav1.ConditionFalse
 			break
 		}

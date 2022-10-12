@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	ErrModuleNumberMismatch = errors.New("Spec.Modules number not match with Status.ModuleInfos")
-	ErrModuleInfoNotInReady = errors.New("moduleInfo not in ready state")
+	ErrModuleNumberMismatch   = errors.New("Spec.Modules number not match with Status.ModuleStatus")
+	ErrModuleStatusNotInReady = errors.New("moduleStatus not in ready state")
 )
 
 func noCondition() func() error {
@@ -20,28 +20,28 @@ func noCondition() func() error {
 	}
 }
 
-func expectCorrectNumberOfModuleInfo(kymaName string) func() error {
+func expectCorrectNumberOfmoduleStatus(kymaName string) func() error {
 	return func() error {
 		createdKyma, err := GetKyma(controlPlaneClient, kymaName)
 		if err != nil {
 			return err
 		}
-		if len(createdKyma.Spec.Modules) == len(createdKyma.Status.ModuleInfos) {
+		if len(createdKyma.Spec.Modules) == len(createdKyma.Status.ModuleStatus) {
 			return nil
 		}
 		return ErrModuleNumberMismatch
 	}
 }
 
-func expectModuleInfoStateBecomeReady(kymaName string) func() error {
+func expectmoduleStatusStateBecomeReady(kymaName string) func() error {
 	return func() error {
 		createdKyma, err := GetKyma(controlPlaneClient, kymaName)
 		if err != nil {
 			return err
 		}
-		for _, moduleInfo := range createdKyma.Status.ModuleInfos {
-			if moduleInfo.State != v1alpha1.StateReady {
-				return fmt.Errorf("%w: %s", ErrModuleInfoNotInReady, moduleInfo.Name)
+		for _, moduleStatus := range createdKyma.Status.ModuleStatus {
+			if moduleStatus.State != v1alpha1.StateReady {
+				return fmt.Errorf("%w: %s", ErrModuleStatusNotInReady, moduleStatus.Name)
 			}
 		}
 		return nil
@@ -68,7 +68,7 @@ func removeModule(kymaName string) func() error {
 		createdKyma, err := GetKyma(controlPlaneClient, kymaName)
 		Expect(err).ShouldNot(HaveOccurred())
 		createdKyma.Spec.Modules = v1alpha1.Modules{}
-		return controlPlaneClient.Update(ctx, createdKyma.SetObservedGeneration())
+		return controlPlaneClient.Update(ctx, createdKyma)
 	}
 }
 
@@ -83,16 +83,16 @@ var _ = Describe("Test Kyma CR", Ordered, func() {
 
 	RegisterDefaultLifecycleForKyma(kyma)
 
-	DescribeTable("Test ModuleInfo",
+	DescribeTable("Test ModuleStatus",
 		func(givenCondition func() error, expectedBehavior func() error) {
 			Eventually(givenCondition, timeout, interval).Should(Succeed())
 			Eventually(expectedBehavior, timeout, interval).Should(Succeed())
 		},
-		Entry("When deploy module, expect number of ModuleInfo matches spec.modules",
-			noCondition(), expectCorrectNumberOfModuleInfo(kyma.Name)),
-		Entry("When module state become ready, expect ModuleInfo state become ready",
-			updateAllModuleState(kyma.Name, v1alpha1.StateReady), expectModuleInfoStateBecomeReady(kyma.Name)),
-		Entry("When remove module in spec, expect number of ModuleInfo matches spec.modules",
-			removeModule(kyma.Name), expectCorrectNumberOfModuleInfo(kyma.Name)),
+		Entry("When deploy module, expect number of ModuleStatus matches spec.modules",
+			noCondition(), expectCorrectNumberOfmoduleStatus(kyma.Name)),
+		Entry("When module state become ready, expect ModuleStatus state become ready",
+			updateAllModuleState(kyma.Name, v1alpha1.StateReady), expectmoduleStatusStateBecomeReady(kyma.Name)),
+		Entry("When remove module in spec, expect number of ModuleStatus matches spec.modules",
+			removeModule(kyma.Name), expectCorrectNumberOfmoduleStatus(kyma.Name)),
 	)
 })

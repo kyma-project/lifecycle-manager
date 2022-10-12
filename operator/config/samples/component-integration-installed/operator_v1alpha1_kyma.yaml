@@ -6,8 +6,6 @@ metadata:
 spec:
   channel: stable
   sync:
-    enabled: true
+    enabled: false
   modules:
-    - name: skr-module
-    - name: skr-module2
     - name: kcp-module
