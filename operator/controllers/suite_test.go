@@ -158,7 +158,9 @@ var _ = BeforeSuite(func() {
 		Scheme:           scheme.Scheme,
 		RequeueIntervals: intervals,
 		Config: &controllers.WatcherConfig{
-			WebhookChartPath: webhookChartPath,
+			WebhookChartPath:       webhookChartPath,
+			SkrWebhookMemoryLimits: "200Mi",
+			SkrWebhookCPULimits:    "1",
 		},
 	}).SetupWithManager(k8sManager, controller.Options{})
 	Expect(err).ToNot(HaveOccurred())

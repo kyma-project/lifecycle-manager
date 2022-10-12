@@ -24,15 +24,16 @@ type WatchableConfig struct {
 	StatusOnly bool              `json:"statusOnly"`
 }
 
-func UpdateWebhookConfig(ctx context.Context, chartPath string,
-	obj *v1alpha1.Watcher, inClusterCfg *rest.Config, k8sClient client.Client,
+func UpdateWebhookConfig(ctx context.Context, chartPath string, obj *v1alpha1.Watcher, inClusterCfg *rest.Config,
+	k8sClient client.Client, skrWebhookMemoryLimits string, skrWebhookCPULimits string,
 ) error {
 	restCfgs, err := getSKRRestConfigs(ctx, k8sClient, inClusterCfg)
 	if err != nil {
 		return err
 	}
 	for _, restCfg := range restCfgs {
-		err = updateWebhookConfigOrInstallSKRChart(ctx, chartPath, obj, restCfg, k8sClient)
+		err = updateWebhookConfigOrInstallSKRChart(ctx, chartPath, obj, restCfg, k8sClient,
+			skrWebhookMemoryLimits, skrWebhookCPULimits)
 		if err != nil {
 			continue
 		}
@@ -41,7 +42,7 @@ func UpdateWebhookConfig(ctx context.Context, chartPath string,
 	return err
 }
 
-func RemoveWebhookConfig(ctx context.Context, chartPath string, obj *v1alpha1.Watcher,
+func RemoveWebhookConfig(ctx context.Context, obj *v1alpha1.Watcher,
 	inClusterCfg *rest.Config, k8sClient client.Client,
 ) error {
 	restCfgs, err := getSKRRestConfigs(ctx, k8sClient, inClusterCfg)
@@ -128,8 +129,8 @@ func verifyWebhookConfig(
 	return true
 }
 
-func updateWebhookConfigOrInstallSKRChart(ctx context.Context, chartPath string,
-	obj *v1alpha1.Watcher, restConfig *rest.Config, kcpClient client.Client,
+func updateWebhookConfigOrInstallSKRChart(ctx context.Context, chartPath string, obj *v1alpha1.Watcher,
+	restConfig *rest.Config, kcpClient client.Client, skrWebhookMemoryLimits string, skrWebhookCPULimits string,
 ) error {
 	remoteClient, err := client.New(restConfig, client.Options{})
 	if err != nil {
@@ -146,7 +147,8 @@ func updateWebhookConfigOrInstallSKRChart(ctx context.Context, chartPath string,
 	}
 	if apierrors.IsNotFound(err) {
 		// install chart
-		return InstallSKRWebhook(ctx, chartPath, ReleaseName, obj, restConfig, kcpClient)
+		return InstallSKRWebhook(ctx, chartPath, ReleaseName, obj, restConfig, kcpClient,
+			skrWebhookMemoryLimits, skrWebhookCPULimits)
 	}
 	// generate webhook config from CR and update webhook config resource
 	if len(webhookConfig.Webhooks) < 1 {

@@ -69,8 +69,8 @@ spec:
               memory: {{.Values.resources.requests.memory}}
               cpu: {{.Values.resources.requests.cpu}}
             limits:
-              memory: {{.Values.resources.limits.memory}}
-              cpu: {{.Values.resources.requests.cpu}}
+              memory: {{.Values.resourcesLimitsMemory}}
+              cpu: {{.Values.resourcesLimitsCPU}}
           ports:
             - containerPort: {{.Values.service.targetPort}}
               name: watcher-port

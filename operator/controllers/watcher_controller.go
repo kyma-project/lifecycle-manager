@@ -51,7 +51,9 @@ type WatcherReconciler struct {
 type WatcherConfig struct {
 	// WebhookChartPath represents the path of the webhook chart
 	// to be installed on SKR clusters upon reconciling watcher CRs.
-	WebhookChartPath string
+	WebhookChartPath       string
+	SkrWebhookMemoryLimits string
+	SkrWebhookCPULimits    string
 }
 
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=watchers,verbs=get;list;watch;create;update;patch;delete
@@ -128,7 +130,7 @@ func (r *WatcherReconciler) HandleProcessingState(ctx context.Context,
 		return updateErr
 	}
 	err = deploy.UpdateWebhookConfig(ctx, r.Config.WebhookChartPath, obj,
-		r.RestConfig, r.Client)
+		r.RestConfig, r.Client, r.Config.SkrWebhookMemoryLimits, r.Config.SkrWebhookCPULimits)
 	if err != nil {
 		updateErr := r.updateWatcherCRStatus(ctx, obj, v1alpha1.WatcherStateError, "failed to update SKR config")
 		if updateErr == nil {
@@ -165,8 +167,7 @@ func (r *WatcherReconciler) HandleDeletingState(ctx context.Context, logger logr
 	}
 
 	// remove webhook config
-	err = deploy.RemoveWebhookConfig(ctx, r.Config.WebhookChartPath, obj,
-		r.RestConfig, r.Client)
+	err = deploy.RemoveWebhookConfig(ctx, obj, r.RestConfig, r.Client)
 	if err != nil {
 		updateErr := r.updateWatcherCRStatus(ctx, obj, v1alpha1.WatcherStateError, "failed to delete SKR config")
 		if updateErr == nil {
