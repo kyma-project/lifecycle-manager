@@ -40,7 +40,10 @@ patches:
         value: --skr-webhook-memory-limits=2000Mi      
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --skr-webhook-cpu-limits=1000m
+        value: --skr-webhook-cpu-limits=1000m      
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --enable-module-catalog=false
     target:
       kind: Deployment
 
