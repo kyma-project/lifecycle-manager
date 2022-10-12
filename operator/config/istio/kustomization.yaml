@@ -11,12 +11,6 @@ generatorOptions:
   disableNameSuffixHash: true
 
 patches:
-  - patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: default
-    target:
-      kind: Gateway
   - target:
       version: v1
       kind: Namespace
