@@ -17,8 +17,21 @@ commonLabels:
   app.kubernetes.io/managed-by: kustomize
   app.kubernetes.io/part-of: manual-deployment
 
+patchesJson6902:
+  - target:
+      version: v1alpha1
+      kind: Watcher
+      name: watcher
+    path: patches/watcher_service_patch.yaml
+  - target:
+      kind: Gateway
+      version: v1beta1
+      name: kyma-gateway
+    path: patches/watcher_gateway_patch.yaml
+
 resources:
   - ../manager
+
 components:
   - ../crd
   - ../rbac
