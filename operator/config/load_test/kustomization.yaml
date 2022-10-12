@@ -26,6 +26,11 @@ patchesJson6902:
       kind: Gateway
       name: klm-lifecycle-manager-kyma-gateway
     path: patches/gateway_name_ns_replace.yaml
+  - target:
+      version: v1alpha1
+      kind: Watcher
+      name: watcher
+    path: patches/watcher_service_patch.yaml
 
 patchesStrategicMerge:
   - patches/adjust_resources_in_deployment.yaml
