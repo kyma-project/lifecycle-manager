@@ -193,15 +193,20 @@ func (r *WatcherReconciler) updateWatcherCRStatus(ctx context.Context, obj *v1al
 	state v1alpha1.WatcherState, msg string,
 ) error {
 	obj.Status.State = state
-	
+
 	switch state {
 	case v1alpha1.WatcherStateReady:
 		obj.AddOrUpdateReadyCondition(v1alpha1.ConditionStatusTrue, msg)
 	case "":
 		obj.AddOrUpdateReadyCondition(v1alpha1.ConditionStatusUnknown, msg)
-	default:
+	case v1alpha1.WatcherStateProcessing:
+		obj.AddOrUpdateReadyCondition(v1alpha1.ConditionStatusFalse, msg)
+	case v1alpha1.WatcherStateDeleting:
+		obj.AddOrUpdateReadyCondition(v1alpha1.ConditionStatusFalse, msg)
+	case v1alpha1.WatcherStateError:
 		obj.AddOrUpdateReadyCondition(v1alpha1.ConditionStatusFalse, msg)
 	}
+
 	return r.Status().Update(ctx, obj.SetObservedGeneration())
 }
 
