@@ -45,12 +45,13 @@ const (
 )
 
 var (
-	ErrSKRWebhookAreNotReady         = errors.New("installed skr webhook resources are not ready")
-	ErrSKRWebhookHasNotBeenInstalled = errors.New("installed skr webhook resources have not been installed")
+	ErrSKRWebhookNotReady            = errors.New("installed skr webhook resources are not ready")
+	ErrSKRWebhookHasNotBeenInstalled = errors.New("skr webhook resources have not been installed")
+	ErrSKRWebhookWasNotRemoved       = errors.New("installed skr webhook resources were not removed")
 	ErrLoadBalancerIPIsNotAssigned   = errors.New("load balancer service external ip is not assigned")
 )
 
-func InstallSKRWebhook(ctx context.Context, chartPath, releaseName string,
+func installSKRWebhook(ctx context.Context, chartPath, releaseName string,
 	obj *v1alpha1.Watcher, restConfig *rest.Config, kcpClient client.Client,
 ) error {
 	restClient, err := client.New(restConfig, client.Options{})
@@ -63,6 +64,21 @@ func InstallSKRWebhook(ctx context.Context, chartPath, releaseName string,
 	}
 	skrWatcherInstallInfo := prepareInstallInfo(chartPath, releaseName, restConfig, restClient)
 	return installOrRemoveChartOnSKR(ctx, restConfig, releaseName, argsVals, skrWatcherInstallInfo, ModeInstall)
+}
+
+func removeSKRWebhook(ctx context.Context, chartPath, releaseName string,
+	obj *v1alpha1.Watcher, restConfig *rest.Config, kcpClient client.Client,
+) error {
+	restClient, err := client.New(restConfig, client.Options{})
+	if err != nil {
+		return err
+	}
+	argsVals, err := generateHelmChartArgsForCR(ctx, obj, kcpClient)
+	if err != nil {
+		return err
+	}
+	skrWatcherInstallInfo := prepareInstallInfo(chartPath, releaseName, restConfig, restClient)
+	return installOrRemoveChartOnSKR(ctx, restConfig, releaseName, argsVals, skrWatcherInstallInfo, ModeUninstall)
 }
 
 func prepareInstallInfo(chartPath, releaseName string, restConfig *rest.Config, restClient client.Client,
@@ -127,8 +143,14 @@ func installOrRemoveChartOnSKR(ctx context.Context, restConfig *rest.Config, rel
 			return fmt.Errorf("failed to uninstall webhook config: %w", err)
 		}
 		if !uninstalled {
-			//nolint:goerr113
-			return fmt.Errorf("waiting for skr webhook resources to be deleted")
+			return ErrSKRWebhookWasNotRemoved
+		}
+		ready, err := ops.VerifyResources(deployInfo)
+		if err != nil {
+			return fmt.Errorf("failed to verify webhook resources: %w", err)
+		}
+		if ready {
+			return ErrSKRWebhookWasNotRemoved
 		}
 		return nil
 	}
@@ -144,13 +166,13 @@ func installOrRemoveChartOnSKR(ctx context.Context, restConfig *rest.Config, rel
 		return fmt.Errorf("failed to verify webhook resources: %w", err)
 	}
 	if !ready {
-		return ErrSKRWebhookAreNotReady
+		return ErrSKRWebhookNotReady
 	}
 	return nil
 }
 
 func resolveKcpAddr(ctx context.Context, kcpClient client.Client) (string, error) {
-	// as fallback get external IP from the ISTIO load balancer external IP
+	// Get external IP from the ISTIO load balancer external IP
 	loadBalancerService := &v1.Service{}
 	if err := kcpClient.Get(ctx, client.ObjectKey{Name: IngressServiceName, Namespace: IstioSytemNs},
 		loadBalancerService); err != nil {
