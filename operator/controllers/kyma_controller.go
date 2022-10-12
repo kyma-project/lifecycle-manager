@@ -206,7 +206,8 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	statusUpdateRequiredFromModuleStatusSync := runner.SyncModuleStatus(ctx, kyma, modules)
 
 	// If module get removed from kyma, the module deletion happens here.
-	if err := r.DeleteNoLongerExistingModules(ctx, kyma); err != nil {
+	statusUpdateRequiredFromDeletion, err := r.DeleteNoLongerExistingModules(ctx, kyma)
+	if err != nil {
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
 			fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err))
 	}
@@ -222,7 +223,9 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	}
 
 	// if the ready condition is not applicable, but we changed the conditions, we still need to issue an update
-	if statusUpdateRequiredFromModuleSync || statusUpdateRequiredFromModuleStatusSync {
+	if statusUpdateRequiredFromModuleSync ||
+		statusUpdateRequiredFromModuleStatusSync ||
+		statusUpdateRequiredFromDeletion {
 		if err := r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing, "updating component conditions"); err != nil {
 			return fmt.Errorf("error while updating status for condition change: %w", err)
 		}
@@ -309,11 +312,11 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 	return modules, nil
 }
 
-func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma *v1alpha1.Kyma) error {
+func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error) {
 	moduleStatus := kyma.GetNoLongerExistingModuleStatus()
 	var err error
 	if len(moduleStatus) == 0 {
-		return nil
+		return false, nil
 	}
 	for i := range moduleStatus {
 		moduleStatus := moduleStatus[i]
@@ -321,9 +324,9 @@ func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma
 	}
 
 	if client.IgnoreNotFound(err) != nil {
-		return fmt.Errorf("error deleting module %w", err)
+		return true, fmt.Errorf("error deleting module %w", err)
 	}
-	return nil
+	return true, nil
 }
 
 func (r *KymaReconciler) deleteModule(ctx context.Context, moduleStatus *v1alpha1.ModuleStatus) error {

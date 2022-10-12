@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -159,17 +159,14 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequestFromOwnerRefe
 	}
 
 	if oldIfAny != nil {
-		componentOld, okOld := oldIfAny.(*unstructured.Unstructured)
-		componentNew, okNew := object.(*unstructured.Unstructured)
+		componentOld, okOld := oldIfAny.(*manifestV1alpha1.Manifest)
+		componentNew, okNew := object.(*manifestV1alpha1.Manifest)
 
 		if err != nil || !okNew || !okOld {
 			e.Log.Error(err, "error getting owner")
 		}
 
-		oldState := extractState(componentOld, e.Log)
-		newState := extractState(componentNew, e.Log)
-
-		if oldState.(string) != newState.(string) {
+		if componentOld.Status.State != componentNew.Status.State {
 			result[request] = ref
 		}
 		return
@@ -211,21 +208,4 @@ var _ inject.Mapper = &RestrictedEnqueueRequestForOwner{}
 func (e *RestrictedEnqueueRequestForOwner) InjectMapper(m meta.RESTMapper) error {
 	e.mapper = m
 	return nil
-}
-
-func extractState(component *unstructured.Unstructured, logger logr.Logger) interface{} {
-	var state interface{}
-
-	var ok bool
-
-	if component.Object[Status] != nil {
-		state, ok = component.Object[Status].(map[string]interface{})[State]
-		if !ok {
-			logger.Error(ErrStateInvalid, "missing state")
-		}
-	} else {
-		state = ""
-	}
-
-	return state
 }
