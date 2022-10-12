@@ -174,9 +174,6 @@ informer-gen: ## Download informer-gen
 lister-gen: ## Download lister-gen
 	GOBIN=$(LOCALBIN) go install k8s.io/code-generator/cmd/lister-gen@v0.23.4
 
-.PHONY: resolve
-resolve: ## Run go mod tidy against code.
-	go mod tidy
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
