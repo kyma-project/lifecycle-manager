@@ -63,7 +63,7 @@ func installSKRWebhook(ctx context.Context, chartPath, releaseName string, obj *
 		return err
 	}
 	skrWatcherInstallInfo := prepareInstallInfo(chartPath, releaseName, restConfig, restClient)
-	return installOrRemoveChartOnSKR(ctx, restConfig, releaseName, argsVals, skrWatcherInstallInfo, ModeUninstall)
+	return installOrRemoveChartOnSKR(ctx, restConfig, releaseName, argsVals, skrWatcherInstallInfo, ModeInstall)
 }
 
 func removeSKRWebhook(ctx context.Context, chartPath, releaseName string,
