@@ -66,8 +66,10 @@ func createLoadBalancer() error {
 		return err
 	}
 
-	return k8sClient.Get(ctx, client.ObjectKey{Name: deploy.IngressServiceName,
-		Namespace: deploy.IstioSytemNs}, loadBalancerService)
+	return k8sClient.Get(ctx, client.ObjectKey{
+		Name:      deploy.IngressServiceName,
+		Namespace: deploy.IstioSytemNs,
+	}, loadBalancerService)
 }
 
 var _ = Describe("deploy watcher", Ordered, func() {
@@ -111,20 +113,20 @@ var _ = Describe("deploy watcher", Ordered, func() {
 	})
 
 	It("deploys watcher helm chart with correct webhook config", func() {
-		err := deploy.UpdateWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient)
+		err := deploy.UpdateWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, "500Mi", "1")
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(deploy.IsWebhookConfigured(ctx, watcherCR, testEnv.Config)).To(BeTrue())
 	})
 
 	It("updates webhook config when helm chart is already installed", func() {
 		watcherCR.Spec.Field = v1alpha1.SpecField
-		err := deploy.UpdateWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient)
+		err := deploy.UpdateWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, "500Mi", "1")
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(deploy.IsWebhookConfigured(ctx, watcherCR, testEnv.Config)).To(BeTrue())
 	})
 
 	It("removes webhook config resource from SKR cluster when last cr is deleted", func() {
-		err := deploy.RemoveWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient)
+		err := deploy.RemoveWebhookConfig(ctx, watcherCR, testEnv.Config, k8sClient)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(deploy.IsWebhookDeployed(ctx, testEnv.Config)).To(BeFalse())
 	})

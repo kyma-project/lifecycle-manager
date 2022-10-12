@@ -34,7 +34,13 @@ patches:
   - patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --max-concurrent-reconciles=20
+        value: --max-concurrent-reconciles=20           
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --skr-webhook-memory-limits=2000Mi      
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --skr-webhook-cpu-limits=1000m
     target:
       kind: Deployment
 
