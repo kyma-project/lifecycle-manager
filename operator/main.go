@@ -89,6 +89,8 @@ type FlagVar struct {
 	enableWebhooks                                                         bool
 	enableModuleCatalog, enableKcpWatcher                                  bool
 	skrWatcherPath                                                         string
+	skrWebhookMemoryLimits                                                 string
+	skrWebhookCPULimits                                                    string
 }
 
 func main() {
@@ -206,6 +208,10 @@ func defineFlagVar() *FlagVar {
 		"Enabling KCP Watcher to reconcile Watcher CRs created by KCP run operators")
 	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "skr-webhook",
 		"The path to the skr watcher chart.")
+	flag.StringVar(&flagVar.skrWebhookMemoryLimits, "skr-webhook-memory-limits", "200Mi",
+		"The resources.limits.memory for skr webhook.")
+	flag.StringVar(&flagVar.skrWebhookCPULimits, "skr-webhook-cpu-limits", "0.1",
+		"The resources.limits.cpu for skr webhook.")
 	return flagVar
 }
 
@@ -256,7 +262,9 @@ func setupKcpWatcherReconciler(
 		setupLog.Error(err, "failed to read local skr chart")
 	}
 	watcherConfig := &controllers.WatcherConfig{
-		WebhookChartPath: flagVar.skrWatcherPath,
+		WebhookChartPath:       flagVar.skrWatcherPath,
+		SkrWebhookMemoryLimits: flagVar.skrWebhookMemoryLimits,
+		SkrWebhookCPULimits:    flagVar.skrWebhookCPULimits,
 	}
 	if err := (&controllers.WatcherReconciler{
 		Client:           mgr.GetClient(),

@@ -26,12 +26,9 @@ priorityClassName: ""
 # -- Security context
 securityContext: {}
 # -- Resources
+resourcesLimitsMemory: 200Mi
+resourcesLimitsCPU: 0.1
 resources:
-  limits:
-    # -- Memory limit
-    memory: 200Mi
-    # -- CPU limit
-    cpu: 0.1
   requests:
     # -- Memory request
     memory: 20Mi

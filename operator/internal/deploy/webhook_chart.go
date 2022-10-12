@@ -51,19 +51,19 @@ var (
 	ErrLoadBalancerIPIsNotAssigned   = errors.New("load balancer service external ip is not assigned")
 )
 
-func installSKRWebhook(ctx context.Context, chartPath, releaseName string,
-	obj *v1alpha1.Watcher, restConfig *rest.Config, kcpClient client.Client,
+func installSKRWebhook(ctx context.Context, chartPath, releaseName string, obj *v1alpha1.Watcher,
+	restConfig *rest.Config, kcpClient client.Client, skrWebhookMemoryLimits, skrWebhookCPULimits string,
 ) error {
 	restClient, err := client.New(restConfig, client.Options{})
 	if err != nil {
 		return err
 	}
-	argsVals, err := generateHelmChartArgsForCR(ctx, obj, kcpClient)
+	argsVals, err := generateHelmChartArgsForCR(ctx, obj, kcpClient, skrWebhookMemoryLimits, skrWebhookCPULimits)
 	if err != nil {
 		return err
 	}
 	skrWatcherInstallInfo := prepareInstallInfo(chartPath, releaseName, restConfig, restClient)
-	return installOrRemoveChartOnSKR(ctx, restConfig, releaseName, argsVals, skrWatcherInstallInfo, ModeInstall)
+	return installOrRemoveChartOnSKR(ctx, restConfig, releaseName, argsVals, skrWatcherInstallInfo, ModeUninstall)
 }
 
 func removeSKRWebhook(ctx context.Context, chartPath, releaseName string,
@@ -100,6 +100,7 @@ func prepareInstallInfo(chartPath, releaseName string, restConfig *rest.Config, 
 }
 
 func generateHelmChartArgsForCR(ctx context.Context, obj *v1alpha1.Watcher, kcpClient client.Client,
+	skrWebhookMemoryLimits string, skrWebhookCPULimits string,
 ) (map[string]interface{}, error) {
 	resolvedKcpAddr, err := resolveKcpAddr(ctx, kcpClient)
 	if err != nil {
@@ -111,8 +112,10 @@ func generateHelmChartArgsForCR(ctx context.Context, obj *v1alpha1.Watcher, kcpC
 		return nil, err
 	}
 	return map[string]interface{}{
-		"kcpAddr":       resolvedKcpAddr,
-		customConfigKey: string(bytes),
+		"kcpAddr":               resolvedKcpAddr,
+		"resourcesLimitsMemory": skrWebhookMemoryLimits,
+		"resourcesLimitsCPU":    skrWebhookCPULimits,
+		customConfigKey:         string(bytes),
 	}, nil
 }
 

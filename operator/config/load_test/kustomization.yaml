@@ -26,6 +26,11 @@ patchesJson6902:
       kind: Gateway
       name: klm-lifecycle-manager-kyma-gateway
     path: patches/gateway_name_ns_replace.yaml
+  - target:
+      version: v1alpha1
+      kind: Watcher
+      name: watcher
+    path: patches/watcher_service_patch.yaml
 
 patchesStrategicMerge:
   - patches/adjust_resources_in_deployment.yaml
@@ -34,7 +39,16 @@ patches:
   - patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --max-concurrent-reconciles=20
+        value: --max-concurrent-reconciles=20           
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --skr-webhook-memory-limits=2000Mi      
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --skr-webhook-cpu-limits=1000m      
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --enable-module-catalog=false
     target:
       kind: Deployment
 
