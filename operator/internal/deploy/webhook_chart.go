@@ -68,12 +68,13 @@ func installSKRWebhook(ctx context.Context, chartPath, releaseName string, obj *
 
 func removeSKRWebhook(ctx context.Context, chartPath, releaseName string,
 	obj *v1alpha1.Watcher, restConfig *rest.Config, kcpClient client.Client,
+	skrWebhookMemoryLimits, skrWebhookCPULimits string,
 ) error {
 	restClient, err := client.New(restConfig, client.Options{})
 	if err != nil {
 		return err
 	}
-	argsVals, err := generateHelmChartArgsForCR(ctx, obj, kcpClient)
+	argsVals, err := generateHelmChartArgsForCR(ctx, obj, kcpClient, skrWebhookMemoryLimits, skrWebhookCPULimits)
 	if err != nil {
 		return err
 	}

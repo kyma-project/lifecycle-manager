@@ -126,7 +126,7 @@ var _ = Describe("deploy watcher", Ordered, func() {
 	})
 
 	It("removes webhook config resource from SKR cluster when last cr is deleted", func() {
-		err := deploy.RemoveWebhookConfig(ctx, watcherCR, testEnv.Config, k8sClient)
+		err := deploy.RemoveWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, "500Mi", "1")
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(deploy.IsWebhookDeployed(ctx, testEnv.Config)).To(BeFalse())
 	})

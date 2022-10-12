@@ -42,15 +42,15 @@ func UpdateWebhookConfig(ctx context.Context, chartPath string, obj *v1alpha1.Wa
 	return err
 }
 
-func RemoveWebhookConfig(ctx context.Context, obj *v1alpha1.Watcher,
-	inClusterCfg *rest.Config, k8sClient client.Client,
+func RemoveWebhookConfig(ctx context.Context, chartPath string, obj *v1alpha1.Watcher, inClusterCfg *rest.Config,
+	k8sClient client.Client, skrWebhookMemoryLimits string, skrWebhookCPULimits string,
 ) error {
 	restCfgs, err := getSKRRestConfigs(ctx, k8sClient, inClusterCfg)
 	if err != nil {
 		return err
 	}
 	for _, restCfg := range restCfgs {
-		err = removeWebhookConfig(ctx, chartPath, obj, restCfg, k8sClient)
+		err = removeWebhookConfigOrUninstallChart(ctx, chartPath, ReleaseName, obj, restCfg, k8sClient, skrWebhookMemoryLimits, skrWebhookCPULimits)
 		if err != nil {
 			continue
 		}
@@ -200,8 +200,9 @@ func generateWebhookConfigForCR(baseCfg admissionv1.ValidatingWebhook, obj *v1al
 	return *watcherCrWebhookCfg
 }
 
-func removeWebhookConfig(ctx context.Context, chartPath string, obj *v1alpha1.Watcher,
-	restConfig *rest.Config, kcpClient client.Client,
+func removeWebhookConfigOrUninstallChart(ctx context.Context, chartPath, releaseName string,
+	obj *v1alpha1.Watcher, restConfig *rest.Config, kcpClient client.Client,
+	skrWebhookMemoryLimits, skrWebhookCPULimits string,
 ) error {
 	remoteClient, err := client.New(restConfig, client.Options{})
 	if err != nil {
@@ -222,7 +223,7 @@ func removeWebhookConfig(ctx context.Context, chartPath string, obj *v1alpha1.Wa
 	if numberOfWebhooks <= configuredWebhooksDeletionThreshold {
 		// this watcher CR is the latest CR configured on the SKR webhook
 		// uninstall the webhook chart
-		return removeSKRWebhook(ctx, chartPath, ReleaseName, obj, restConfig, kcpClient)
+		return removeSKRWebhook(ctx, chartPath, ReleaseName, obj, restConfig, kcpClient, skrWebhookMemoryLimits, skrWebhookCPULimits)
 	}
 	cfgIdx := lookupWebhookConfigForCR(webhookConfig.Webhooks, obj)
 	if cfgIdx != -1 {

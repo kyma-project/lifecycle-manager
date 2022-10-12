@@ -167,7 +167,8 @@ func (r *WatcherReconciler) HandleDeletingState(ctx context.Context, logger logr
 	}
 
 	// remove webhook config
-	err = deploy.RemoveWebhookConfig(ctx, obj, r.RestConfig, r.Client)
+	err = deploy.RemoveWebhookConfig(ctx, r.Config.WebhookChartPath, obj,
+		r.RestConfig, r.Client, r.Config.SkrWebhookMemoryLimits, r.Config.SkrWebhookCPULimits)
 	if err != nil {
 		updateErr := r.updateWatcherCRStatus(ctx, obj, v1alpha1.WatcherStateError, "failed to delete SKR config")
 		if updateErr == nil {
