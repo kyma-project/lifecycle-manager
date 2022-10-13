@@ -18,16 +18,30 @@ commonLabels:
   app.kubernetes.io/part-of: manual-deployment
 
 patchesJson6902:
-  - target:
+  - patch: |-
+      - op: replace
+        path: /spec/serviceInfo/name
+        value: lifecycle-manager-event-service
+      - op: replace
+        path: /spec/serviceInfo/namespace
+        value: kcp-system
+    target:
+      group: operator.kyma-project.io
       version: v1alpha1
       kind: Watcher
       name: watcher
-    path: patches/watcher_service_patch.yaml
-  - target:
-      kind: Gateway
+  - patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: default
+      - op: replace
+        path: /metadata/name
+        value: lifecycle-manager-kyma-gateway
+    target:
+      group: networking.istio.io
       version: v1beta1
+      kind: Gateway
       name: kyma-gateway
-    path: patches/watcher_gateway_patch.yaml
 
 resources:
   - ../manager
