@@ -1,3 +1,0 @@
-- op: replace
-  path: /spec/serviceInfo/name
-  value: lifecycle-manager-event-service
