@@ -14,10 +14,11 @@ import (
 type Sync struct {
 	Catalog
 	record.EventRecorder
+	*remote.ClientCache
 }
 
-func NewSync(client client.Client, recorder record.EventRecorder, settings Settings) *Sync {
-	return &Sync{Catalog: New(client, settings), EventRecorder: recorder}
+func NewSync(client client.Client, recorder record.EventRecorder, cache *remote.ClientCache, settings Settings) *Sync {
+	return &Sync{Catalog: New(client, settings), EventRecorder: recorder, ClientCache: cache}
 }
 
 func (s *Sync) Cleanup(
@@ -51,7 +52,9 @@ func (s *Sync) syncRemote(
 	controlPlaneKyma *v1alpha1.Kyma,
 	moduleTemplateList *v1alpha1.ModuleTemplateList,
 ) error {
-	syncContext, err := remote.InitializeKymaSynchronizationContext(ctx, s.Catalog.Client(), controlPlaneKyma)
+	syncContext, err := remote.InitializeKymaSynchronizationContext(
+		ctx, s.Catalog.Client(), controlPlaneKyma, s.ClientCache,
+	)
 	if err != nil {
 		err = fmt.Errorf("catalog sync failed: %w", err)
 		s.Event(controlPlaneKyma, "Warning", "CatalogSyncError", err.Error())

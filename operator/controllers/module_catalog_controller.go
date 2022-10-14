@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
@@ -18,6 +19,7 @@ type ModuleCatalogReconciler struct {
 	client.Client
 	record.EventRecorder
 	RequeueIntervals
+	RemoteClientCache *remote.ClientCache
 }
 
 const (
@@ -31,7 +33,7 @@ const (
 func (r *ModuleCatalogReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	logger.Info("Catalog Sync loop starting for", "resource", req.NamespacedName.String())
-	catalogSync := catalog.NewSync(r.Client, r.EventRecorder, catalog.Settings{
+	catalogSync := catalog.NewSync(r.Client, r.EventRecorder, r.RemoteClientCache, catalog.Settings{
 		Namespace: req.Namespace,
 		Name:      CatalogName,
 	})

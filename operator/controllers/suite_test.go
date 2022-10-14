@@ -138,6 +138,9 @@ var _ = BeforeSuite(func() {
 		Failure: 1 * time.Second,
 		Waiting: 1 * time.Second,
 	}
+
+	remoteClientCache := remote.NewClientCache()
+
 	err = (&controllers.KymaReconciler{
 		Client:           k8sManager.GetClient(),
 		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
@@ -145,12 +148,14 @@ var _ = BeforeSuite(func() {
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
 		},
+		RemoteClientCache: remoteClientCache,
 	}).SetupWithManager(k8sManager, controller.Options{}, listenerAddr)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.ModuleCatalogReconciler{
-		Client:           k8sManager.GetClient(),
-		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		RequeueIntervals: intervals,
+		Client:            k8sManager.GetClient(),
+		EventRecorder:     k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		RequeueIntervals:  intervals,
+		RemoteClientCache: remoteClientCache,
 	}).SetupWithManager(k8sManager, controller.Options{})
 	Expect(err).ToNot(HaveOccurred())
 

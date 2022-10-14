@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
 
 	"go.uber.org/zap/zapcore"
@@ -107,6 +108,7 @@ func main() {
 	setupManager(flagVar, controllers.NewCacheFunc(), scheme)
 }
 
+//nolint:funlen
 func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *runtime.Scheme) {
 	config := ctrl.GetConfigOrDie()
 	config.QPS = float32(flagVar.clientQPS)
@@ -138,10 +140,12 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		MaxConcurrentReconciles: flagVar.maxConcurrentReconciles,
 	}
 
-	setupKymaReconciler(mgr, flagVar, intervals, options)
+	remoteClientCache := remote.NewClientCache()
+
+	setupKymaReconciler(mgr, remoteClientCache, flagVar, intervals, options)
 
 	if flagVar.enableModuleCatalog {
-		setupModuleCatalogReconciler(mgr, flagVar, intervals, options)
+		setupModuleCatalogReconciler(mgr, remoteClientCache, flagVar, intervals, options)
 	}
 	if flagVar.enableKcpWatcher {
 		setupKcpWatcherReconciler(mgr, flagVar, intervals, options)
@@ -217,14 +221,16 @@ func defineFlagVar() *FlagVar {
 
 func setupKymaReconciler(
 	mgr ctrl.Manager,
+	remoteClientCache *remote.ClientCache,
 	flagVar *FlagVar,
 	intervals controllers.RequeueIntervals,
 	options controller.Options,
 ) {
 	if err := (&controllers.KymaReconciler{
-		Client:           mgr.GetClient(),
-		EventRecorder:    mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		RequeueIntervals: intervals,
+		Client:            mgr.GetClient(),
+		EventRecorder:     mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		RemoteClientCache: remoteClientCache,
+		RequeueIntervals:  intervals,
 		VerificationSettings: signature.VerificationSettings{
 			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
 			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
@@ -237,14 +243,16 @@ func setupKymaReconciler(
 
 func setupModuleCatalogReconciler(
 	mgr ctrl.Manager,
+	remoteClientCache *remote.ClientCache,
 	_ *FlagVar,
 	intervals controllers.RequeueIntervals,
 	options controller.Options,
 ) {
 	if err := (&controllers.ModuleCatalogReconciler{
-		Client:           mgr.GetClient(),
-		EventRecorder:    mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		RequeueIntervals: intervals,
+		Client:            mgr.GetClient(),
+		RemoteClientCache: remoteClientCache,
+		EventRecorder:     mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		RequeueIntervals:  intervals,
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ModuleTemplate")
 		os.Exit(1)
