@@ -22,8 +22,9 @@ import (
 )
 
 const (
-	webhookConfigNameTpl        = "%s-webhook"
-	serviceAccountNameTpl       = "%s-webhook-sa"
+	webhookConfigNameTpl  = "%s-webhook"
+	serviceAccountNameTpl = "%s-webhook-sa"
+	//nolint:gosec
 	secretNameTpl               = "%s-webhook-tls"
 	serviceAndDeploymentNameTpl = "%s-webhook"
 	clusterRoleName             = "kyma-reader"
