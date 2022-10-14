@@ -115,20 +115,24 @@ var _ = Describe("deploy watcher", Ordered, func() {
 	It("deploys watcher helm chart with correct webhook config", func() {
 		err := deploy.UpdateWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, "500Mi", "1")
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(deploy.IsWebhookConfigured(ctx, watcherCR, testEnv.Config)).To(BeTrue())
+		webhookCfg, err := deploy.GetDeployedWebhook(ctx, testEnv.Config)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(deploy.IsWebhookConfigured(watcherCR, webhookCfg)).To(BeTrue())
 	})
 
 	It("updates webhook config when helm chart is already installed", func() {
 		watcherCR.Spec.Field = v1alpha1.SpecField
 		err := deploy.UpdateWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, "500Mi", "1")
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(deploy.IsWebhookConfigured(ctx, watcherCR, testEnv.Config)).To(BeTrue())
+		webhookCfg, err := deploy.GetDeployedWebhook(ctx, testEnv.Config)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(deploy.IsWebhookConfigured(watcherCR, webhookCfg)).To(BeTrue())
 	})
 
-	It("removes webhook config resource from SKR cluster when last cr is deleted", func() {
+	It("removes watcher helm chart from SKR cluster when last cr is deleted", func() {
 		err := deploy.RemoveWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, "500Mi", "1")
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(deploy.IsWebhookDeployed(ctx, testEnv.Config)).To(BeFalse())
+		Expect(deploy.IsChartRemoved(ctx, k8sClient)).To(BeTrue())
 	})
 })
 

@@ -6,7 +6,9 @@ import (
 	"reflect"
 	"strings"
 
-	v1 "k8s.io/api/core/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -17,6 +19,15 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+)
+
+const (
+	webhookConfigNameTpl        = "%s-webhook"
+	serviceAccountNameTpl       = "%s-webhook-sa"
+	secretNameTpl               = "%s-webhook-tls"
+	serviceAndDeploymentNameTpl = "%s-webhook"
+	clusterRoleName             = "kyma-reader"
+	clusterRoleBindingName      = "read-kymas"
 )
 
 type WatchableConfig struct {
@@ -60,19 +71,7 @@ func RemoveWebhookConfig(ctx context.Context, chartPath string, obj *v1alpha1.Wa
 	return err
 }
 
-func IsWebhookConfigured(ctx context.Context, obj *v1alpha1.Watcher, restConfig *rest.Config) bool {
-	remoteClient, err := client.New(restConfig, client.Options{})
-	if err != nil {
-		return false
-	}
-	webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
-	err = remoteClient.Get(ctx, client.ObjectKey{
-		Namespace: metav1.NamespaceDefault,
-		Name:      resolveWebhookName(),
-	}, webhookConfig)
-	if err != nil {
-		return false
-	}
+func IsWebhookConfigured(obj *v1alpha1.Watcher, webhookConfig *admissionv1.ValidatingWebhookConfiguration) bool {
 	if len(webhookConfig.Webhooks) < 1 {
 		return false
 	}
@@ -84,17 +83,71 @@ func IsWebhookConfigured(ctx context.Context, obj *v1alpha1.Watcher, restConfig 
 	return false
 }
 
-func IsWebhookDeployed(ctx context.Context, restConfig *rest.Config) bool {
+func GetDeployedWebhook(ctx context.Context, restConfig *rest.Config,
+) (*admissionv1.ValidatingWebhookConfiguration, error) {
 	remoteClient, err := client.New(restConfig, client.Options{})
 	if err != nil {
-		return false
+		return nil, err
 	}
 	webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
 	err = remoteClient.Get(ctx, client.ObjectKey{
 		Namespace: metav1.NamespaceDefault,
-		Name:      resolveWebhookName(),
+		Name:      resolveSKRChartResourceName(webhookConfigNameTpl),
 	}, webhookConfig)
-	return err == nil
+	if err != nil {
+		return nil, err
+	}
+	return webhookConfig, nil
+}
+
+func IsChartRemoved(ctx context.Context, k8sClient client.Client) bool {
+	err := k8sClient.Get(ctx, client.ObjectKey{
+		Namespace: metav1.NamespaceDefault,
+		Name:      resolveSKRChartResourceName(webhookConfigNameTpl),
+	}, &admissionv1.ValidatingWebhookConfiguration{})
+	if !apierrors.IsNotFound(err) {
+		return false
+	}
+	err = k8sClient.Get(ctx, client.ObjectKey{
+		Namespace: metav1.NamespaceDefault,
+		Name:      resolveSKRChartResourceName(secretNameTpl),
+	}, &corev1.Secret{})
+	if !apierrors.IsNotFound(err) {
+		return false
+	}
+	err = k8sClient.Get(ctx, client.ObjectKey{
+		Namespace: metav1.NamespaceDefault,
+		Name:      resolveSKRChartResourceName(serviceAndDeploymentNameTpl),
+	}, &appsv1.Deployment{})
+	if !apierrors.IsNotFound(err) {
+		return false
+	}
+	err = k8sClient.Get(ctx, client.ObjectKey{
+		Namespace: metav1.NamespaceDefault,
+		Name:      resolveSKRChartResourceName(serviceAndDeploymentNameTpl),
+	}, &corev1.Service{})
+	if !apierrors.IsNotFound(err) {
+		return false
+	}
+	err = k8sClient.Get(ctx, client.ObjectKey{
+		Namespace: metav1.NamespaceDefault,
+		Name:      resolveSKRChartResourceName(serviceAccountNameTpl),
+	}, &corev1.ServiceAccount{})
+	if !apierrors.IsNotFound(err) {
+		return false
+	}
+	err = k8sClient.Get(ctx, client.ObjectKey{
+		Namespace: metav1.NamespaceDefault,
+		Name:      clusterRoleName,
+	}, &rbacv1.ClusterRole{})
+	if !apierrors.IsNotFound(err) {
+		return false
+	}
+	err = k8sClient.Get(ctx, client.ObjectKey{
+		Namespace: metav1.NamespaceDefault,
+		Name:      clusterRoleBindingName,
+	}, &rbacv1.ClusterRoleBinding{})
+	return apierrors.IsNotFound(err)
 }
 
 func verifyWebhookConfig(
@@ -141,7 +194,7 @@ func updateWebhookConfigOrInstallSKRChart(ctx context.Context, chartPath string,
 	webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
 	err = remoteClient.Get(ctx, client.ObjectKey{
 		Namespace: metav1.NamespaceDefault,
-		Name:      resolveWebhookName(),
+		Name:      resolveSKRChartResourceName(webhookConfigNameTpl),
 	}, webhookConfig)
 	if client.IgnoreNotFound(err) != nil {
 		return err
@@ -213,7 +266,7 @@ func removeWebhookConfigOrUninstallChart(ctx context.Context, chartPath string,
 	webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
 	err = remoteClient.Get(ctx, client.ObjectKey{
 		Namespace: metav1.NamespaceDefault,
-		Name:      resolveWebhookName(),
+		Name:      resolveSKRChartResourceName(webhookConfigNameTpl),
 	}, webhookConfig)
 	if client.IgnoreNotFound(err) != nil {
 		return err
@@ -256,7 +309,7 @@ func getSKRRestConfigs(ctx context.Context, reader client.Reader, inClusterCfg *
 			restCfgMap[kymaCr.Name] = inClusterCfg
 			continue
 		}
-		secret := &v1.Secret{}
+		secret := &corev1.Secret{}
 		//nolint:gosec
 		err = reader.Get(ctx, client.ObjectKeyFromObject(&kymaCr), secret)
 		if err != nil {
@@ -271,6 +324,6 @@ func getSKRRestConfigs(ctx context.Context, reader client.Reader, inClusterCfg *
 	return restCfgMap, nil
 }
 
-func resolveWebhookName() string {
-	return fmt.Sprintf("%s-webhook", ReleaseName)
+func resolveSKRChartResourceName(resourceNameTpl string) string {
+	return fmt.Sprintf(resourceNameTpl, ReleaseName)
 }
