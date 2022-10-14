@@ -7,22 +7,14 @@ import (
 	"net"
 	"strconv"
 
-	v1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"helm.sh/helm/v3/pkg/cli"
-
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	modulelib "github.com/kyma-project/module-manager/operator/pkg/manifest"
-
-	"k8s.io/client-go/rest"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-
-	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
 	"github.com/kyma-project/module-manager/operator/pkg/custom"
-
+	modulelib "github.com/kyma-project/module-manager/operator/pkg/manifest"
+	"github.com/kyma-project/module-manager/operator/pkg/types"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	k8syaml "sigs.k8s.io/yaml"
 )
 
@@ -62,8 +54,8 @@ func installSKRWebhook(ctx context.Context, chartPath, releaseName string, obj *
 	if err != nil {
 		return err
 	}
-	skrWatcherInstallInfo := prepareInstallInfo(chartPath, releaseName, restConfig, restClient)
-	return installOrRemoveChartOnSKR(ctx, restConfig, releaseName, argsVals, skrWatcherInstallInfo, ModeInstall)
+	skrWatcherInstallInfo := prepareInstallInfo(chartPath, releaseName, restConfig, restClient, argsVals)
+	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeInstall)
 }
 
 func removeSKRWebhook(ctx context.Context, chartPath, releaseName string,
@@ -78,24 +70,24 @@ func removeSKRWebhook(ctx context.Context, chartPath, releaseName string,
 	if err != nil {
 		return err
 	}
-	skrWatcherInstallInfo := prepareInstallInfo(chartPath, releaseName, restConfig, restClient)
-	return installOrRemoveChartOnSKR(ctx, restConfig, releaseName, argsVals, skrWatcherInstallInfo, ModeUninstall)
+	skrWatcherInstallInfo := prepareInstallInfo(chartPath, releaseName, restConfig, restClient, argsVals)
+	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeUninstall)
 }
 
 func prepareInstallInfo(chartPath, releaseName string, restConfig *rest.Config, restClient client.Client,
+	argsVals map[string]interface{},
 ) modulelib.InstallInfo {
 	return modulelib.InstallInfo{
 		ChartInfo: &modulelib.ChartInfo{
 			ChartPath:   chartPath,
 			ReleaseName: releaseName,
+			Flags: types.ChartFlags{
+				SetFlags: argsVals,
+			},
 		},
 		ClusterInfo: custom.ClusterInfo{
 			Client: restClient,
 			Config: restConfig,
-		},
-		CheckFn: func(ctx context.Context, u *unstructured.Unstructured, logger *logr.Logger, info custom.ClusterInfo,
-		) (bool, error) {
-			return true, nil
 		},
 	}
 }
@@ -130,26 +122,18 @@ func generateWatchableConfigForCR(obj *v1alpha1.Watcher) map[string]WatchableCon
 	}
 }
 
-func installOrRemoveChartOnSKR(ctx context.Context, restConfig *rest.Config, releaseName string,
-	argsVals map[string]interface{}, deployInfo modulelib.InstallInfo, mode Mode,
+func installOrRemoveChartOnSKR(ctx context.Context, deployInfo modulelib.InstallInfo, mode Mode,
 ) error {
 	logger := logf.FromContext(ctx)
-	args := make(map[string]map[string]interface{}, 0)
-	args["set"] = argsVals
-	ops, err := modulelib.NewOperations(&logger, restConfig, releaseName,
-		&cli.EnvSettings{}, args, nil)
-	if err != nil {
-		return err
-	}
 	if mode == ModeUninstall {
-		uninstalled, err := ops.Uninstall(deployInfo)
+		uninstalled, err := modulelib.UninstallChart(&logger, deployInfo, nil)
 		if err != nil {
 			return fmt.Errorf("failed to uninstall webhook config: %w", err)
 		}
 		if !uninstalled {
 			return ErrSKRWebhookWasNotRemoved
 		}
-		ready, err := ops.VerifyResources(deployInfo)
+		ready, err := modulelib.ConsistencyCheck(&logger, deployInfo, nil)
 		if err != nil {
 			return fmt.Errorf("failed to verify webhook resources: %w", err)
 		}
@@ -158,14 +142,14 @@ func installOrRemoveChartOnSKR(ctx context.Context, restConfig *rest.Config, rel
 		}
 		return nil
 	}
-	installed, err := ops.Install(deployInfo)
+	installed, err := modulelib.InstallChart(&logger, deployInfo, nil)
 	if err != nil {
 		return fmt.Errorf("failed to install webhook config: %w", err)
 	}
 	if !installed {
 		return ErrSKRWebhookHasNotBeenInstalled
 	}
-	ready, err := ops.VerifyResources(deployInfo)
+	ready, err := modulelib.ConsistencyCheck(&logger, deployInfo, nil)
 	if err != nil {
 		return fmt.Errorf("failed to verify webhook resources: %w", err)
 	}

@@ -242,7 +242,7 @@ func generateWebhookConfigForCR(baseCfg admissionv1.ValidatingWebhook, obj *v1al
 	watcherCrWebhookCfg := baseCfg.DeepCopy()
 	moduleName := obj.GetModuleName()
 	watcherCrWebhookCfg.Name = fmt.Sprintf(webhookNameTpl, moduleName)
-	//fixme: if LabelsToWatch is nil: make sure that ObjectSelector is nil
+	// fixme: if LabelsToWatch is nil: make sure that ObjectSelector is nil
 	if obj.Spec.LabelsToWatch != nil {
 		watcherCrWebhookCfg.ObjectSelector.MatchLabels = obj.Spec.LabelsToWatch
 	}
