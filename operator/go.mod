@@ -7,14 +7,13 @@ require (
 	github.com/gardener/component-spec/bindings-go v0.0.70
 	github.com/go-logr/logr v1.2.3
 	github.com/imdario/mergo v0.3.13
-	github.com/kyma-project/module-manager/operator v0.0.0-20220928153707-ed047199bfbd
-	github.com/kyma-project/runtime-watcher/listener v0.0.0-20220923072604-2f126b1419f6
+	github.com/kyma-project/module-manager/operator v0.0.0-20221012124236-333327b5d7ad
+	github.com/kyma-project/runtime-watcher/listener v0.0.0-20221006112208-0dd54057307c
 	github.com/onsi/ginkgo/v2 v2.1.6
 	github.com/onsi/gomega v1.20.1
 	go.uber.org/zap v1.23.0
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af
 	gopkg.in/yaml.v3 v3.0.1
-	helm.sh/helm/v3 v3.9.4
 	istio.io/api v0.0.0-20220927144349-95d2a2fe2144
 	istio.io/client-go v1.15.1
 	k8s.io/api v0.25.2
@@ -147,8 +146,9 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	helm.sh/helm/v3 v3.9.4 // indirect
 	k8s.io/apiserver v0.25.2 // indirect
-	k8s.io/cli-runtime v0.24.3 // indirect
+	k8s.io/cli-runtime v0.25.0 // indirect
 	k8s.io/component-base v0.25.2 // indirect
 	k8s.io/klog/v2 v2.80.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220928191237-829ce0c27909 // indirect
@@ -156,7 +156,7 @@ require (
 	k8s.io/utils v0.0.0-20220922133306-665eaaec4324 // indirect
 	oras.land/oras-go v1.2.0 // indirect
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
-	sigs.k8s.io/kustomize/api v0.11.5 // indirect
-	sigs.k8s.io/kustomize/kyaml v0.13.7 // indirect
+	sigs.k8s.io/kustomize/api v0.12.1 // indirect
+	sigs.k8s.io/kustomize/kyaml v0.13.9 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 )

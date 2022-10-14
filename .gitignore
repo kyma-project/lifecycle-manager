@@ -78,7 +78,7 @@ out.txt
 .workspace
 
 # ignore vscode delve debug binary
-*/__debug_bin
+**/__debug_bin
 
 .run/
 /operator/config/crd/bases/operator.kyma-project.io*

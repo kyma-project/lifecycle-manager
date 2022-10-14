@@ -27,8 +27,9 @@ func cRSpecsUpdates() func(customIstioClient *custom.IstioClient) {
 			Eventually(watcherCRState(client.ObjectKeyFromObject(&watcherList.Items[idx])),
 				timeout, interval).Should(Equal(v1alpha1.WatcherStateReady))
 			verifyVsRoutes(&watcherList.Items[idx], customIstioClient, BeTrue())
-			Expect(deploy.IsWebhookDeployed(ctx, cfg)).To(BeTrue())
-			Expect(deploy.IsWebhookConfigured(ctx, &watcherList.Items[idx], cfg)).To(BeTrue())
+			webhookCfg, err := deploy.GetDeployedWebhook(ctx, cfg)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(deploy.IsWebhookConfigured(&watcherList.Items[idx], webhookCfg)).To(BeTrue())
 		}
 	}
 }
@@ -46,8 +47,9 @@ func oneCRDeleted() func(customIstioClient *custom.IstioClient) {
 		Eventually(isCrDeletionFinished(client.ObjectKeyFromObject(&watcherCR)), timeout, interval).
 			Should(BeTrue())
 		verifyVsRoutes(&watcherCR, customIstioClient, BeFalse())
-		Expect(deploy.IsWebhookDeployed(ctx, cfg)).To(BeTrue())
-		Expect(deploy.IsWebhookConfigured(ctx, &watcherCR, cfg)).To(BeFalse())
+		webhookCfg, err := deploy.GetDeployedWebhook(ctx, cfg)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(deploy.IsWebhookConfigured(&watcherCR, webhookCfg)).To(BeFalse())
 	}
 }
 
@@ -64,7 +66,7 @@ func allCRsDeleted() func(customIstioClient *custom.IstioClient) {
 		// verify
 		Eventually(isCrDeletionFinished(), timeout, interval).Should(BeTrue())
 		verifyVsRoutes(nil, customIstioClient, BeTrue())
-		Expect(deploy.IsWebhookDeployed(ctx, cfg)).To(BeFalse())
+		Expect(deploy.IsChartRemoved(ctx, controlPlaneClient)).To(BeTrue())
 	}
 }
 
@@ -111,8 +113,9 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 
 			// verify
 			verifyVsRoutes(watcherCR, customIstioClient, BeTrue())
-			Expect(deploy.IsWebhookDeployed(ctx, cfg)).To(BeTrue())
-			Expect(deploy.IsWebhookConfigured(ctx, watcherCR, cfg)).To(BeTrue())
+			webhookCfg, err := deploy.GetDeployedWebhook(ctx, cfg)
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(deploy.IsWebhookConfigured(watcherCR, webhookCfg)).To(BeTrue())
 		}
 	})
 
