@@ -60,6 +60,7 @@ type KymaReconciler struct {
 	record.EventRecorder
 	RequeueIntervals
 	signature.VerificationSettings
+	RemoteClientCache *remote.ClientCache
 }
 
 //nolint:lll
@@ -137,7 +138,7 @@ func (r *KymaReconciler) synchronizeRemote(ctx context.Context, kyma *v1alpha1.K
 	if kyma.Status.State == v1alpha1.StateDeleting {
 		return nil
 	}
-	syncContext, err := remote.InitializeKymaSynchronizationContext(ctx, r.Client, kyma)
+	syncContext, err := remote.InitializeKymaSynchronizationContext(ctx, r.Client, kyma, r.RemoteClientCache)
 	if err != nil {
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
 			fmt.Errorf("remote sync initialization failed: %w", err))
@@ -239,7 +240,7 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1
 	logger := log.FromContext(ctx)
 
 	if kyma.Spec.Sync.Enabled {
-		if err := remote.RemoveFinalizerFromRemoteKyma(ctx, r, kyma); client.IgnoreNotFound(err) != nil {
+		if err := remote.RemoveFinalizerFromRemoteKyma(ctx, r, r.RemoteClientCache, kyma); client.IgnoreNotFound(err) != nil {
 			return false, fmt.Errorf("error while trying to remove finalizer from remote: %w", err)
 		}
 		logger.Info("removed remote finalizer",
@@ -262,7 +263,9 @@ func (r *KymaReconciler) TriggerKymaDeletion(ctx context.Context, kyma *v1alpha1
 		Name:      kyma.GetName(),
 	}.String()
 	if kyma.Spec.Sync.Enabled {
-		if err := remote.DeleteRemotelySyncedKyma(ctx, r.Client, kyma); client.IgnoreNotFound(err) != nil {
+		if err := remote.DeleteRemotelySyncedKyma(
+			ctx, r.Client, r.RemoteClientCache, kyma,
+		); client.IgnoreNotFound(err) != nil {
 			logger.Info(namespacedName + " could not be deleted remotely!")
 			return fmt.Errorf("error occurred while trying to delete remotely synced kyma: %w", err)
 		}
