@@ -63,6 +63,9 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --enable-module-catalog=false
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --pprof=true
     target:
       kind: Deployment
 

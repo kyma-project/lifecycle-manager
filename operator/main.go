@@ -18,12 +18,15 @@ package main
 
 import (
 	"flag"
+	"net/http"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
+
+	_ "net/http/pprof"
 
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
@@ -92,6 +95,8 @@ type FlagVar struct {
 	skrWatcherPath                                                         string
 	skrWebhookMemoryLimits                                                 string
 	skrWebhookCPULimits                                                    string
+	pprof                                                                  bool
+	pprofAddr                                                              string
 }
 
 func main() {
@@ -105,6 +110,15 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	if flagVar.pprof {
+		go func() {
+			if err := http.ListenAndServe(flagVar.pprofAddr, nil); err != nil {
+				setupLog.Error(err, "error starting pprof server")
+			}
+		}()
+	}
+
 	setupManager(flagVar, controllers.NewCacheFunc(), scheme)
 }
 
@@ -181,6 +195,8 @@ func defineFlagVar() *FlagVar {
 		"The address the probe endpoint binds to.")
 	flag.StringVar(&flagVar.listenerAddr, "skr-listener-bind-address", ":8082",
 		"The address the skr listener endpoint binds to.")
+	flag.StringVar(&flagVar.pprofAddr, "pprof-bind-address", ":8083",
+		"The address the pprof endpoint binds to.")
 	flag.IntVar(&flagVar.maxConcurrentReconciles, "max-concurrent-reconciles", 1,
 		"The maximum number of concurrent Reconciles which can be run.")
 	flag.BoolVar(&flagVar.enableLeaderElection, "leader-elect", false,
@@ -216,6 +232,8 @@ func defineFlagVar() *FlagVar {
 		"The resources.limits.memory for skr webhook.")
 	flag.StringVar(&flagVar.skrWebhookCPULimits, "skr-webhook-cpu-limits", "0.1",
 		"The resources.limits.cpu for skr webhook.")
+	flag.BoolVar(&flagVar.pprof, "pprof", false,
+		"Wether to start up a pprof server.")
 	return flagVar
 }
 
