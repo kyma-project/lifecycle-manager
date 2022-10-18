@@ -6,21 +6,22 @@ import (
 )
 
 const (
-	OperatorPrefix = "operator.kyma-project.io"
-	Separator      = "/"
-	ControllerName = OperatorPrefix + Separator + "controller-name"
-	ChannelLabel   = OperatorPrefix + Separator + "channel"
-	ManagedBy      = OperatorPrefix + Separator + "managed-by"
-	Finalizer      = OperatorPrefix + Separator + string(KymaKind)
-	KymaName       = OperatorPrefix + Separator + "kyma-name"
-	LastSync       = OperatorPrefix + Separator + "last-sync"
-	Signature      = OperatorPrefix + Separator + "signature"
-	ModuleName     = OperatorPrefix + Separator + "module-name"
-	ModuleVersion  = OperatorPrefix + Separator + "module-version"
-	OperatorName   = "lifecycle-manager"
-	OwnedByLabel   = OperatorPrefix + Separator + "owned-by"
-	OwnedByFormat  = "%s__%s"
-	WatchedByLabel = OperatorPrefix + Separator + "watched-by"
+	OperatorPrefix     = "operator.kyma-project.io"
+	Separator          = "/"
+	ControllerName     = OperatorPrefix + Separator + "controller-name"
+	ChannelLabel       = OperatorPrefix + Separator + "channel"
+	ManagedBy          = OperatorPrefix + Separator + "managed-by"
+	Finalizer          = OperatorPrefix + Separator + string(KymaKind)
+	KymaName           = OperatorPrefix + Separator + "kyma-name"
+	LastSync           = OperatorPrefix + Separator + "last-sync"
+	LastSyncGeneration = OperatorPrefix + Separator + "last-sync-generation"
+	Signature          = OperatorPrefix + Separator + "signature"
+	ModuleName         = OperatorPrefix + Separator + "module-name"
+	ModuleVersion      = OperatorPrefix + Separator + "module-version"
+	OperatorName       = "lifecycle-manager"
+	OwnedByLabel       = OperatorPrefix + Separator + "owned-by"
+	OwnedByFormat      = "%s__%s"
+	WatchedByLabel     = OperatorPrefix + Separator + "watched-by"
 )
 
 func GetMatchingLabelsForModule(module *Module) client.MatchingLabels {

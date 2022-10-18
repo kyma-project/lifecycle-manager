@@ -22,10 +22,6 @@ type ModuleCatalogReconciler struct {
 	RemoteClientCache *remote.ClientCache
 }
 
-const (
-	CatalogName = "module-catalog"
-)
-
 //nolint:lll
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=moduletemplates,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=moduletemplates/finalizers,verbs=update
@@ -33,10 +29,7 @@ const (
 func (r *ModuleCatalogReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	logger.Info("Catalog Sync loop starting for", "resource", req.NamespacedName.String())
-	catalogSync := catalog.NewSync(r.Client, r.EventRecorder, r.RemoteClientCache, catalog.Settings{
-		Namespace: req.Namespace,
-		Name:      CatalogName,
-	})
+	catalogSync := catalog.NewSync(r.Client, r.EventRecorder, r.RemoteClientCache, catalog.Settings{})
 
 	// check if kyma resource exists
 	kyma := &v1alpha1.Kyma{}

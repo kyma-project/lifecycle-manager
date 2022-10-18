@@ -86,6 +86,7 @@ func (r *ModuleCatalogReconciler) SetupWithManager(
 ) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Kyma{}).
+		Named("module-catalog").
 		WithOptions(options).Complete(r)
 }
 
@@ -99,6 +100,7 @@ func (r *WatcherReconciler) SetupWithManager(
 	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Watcher{}).
+		Named("watcher").
 		WithOptions(options).
 		Complete(r)
 }

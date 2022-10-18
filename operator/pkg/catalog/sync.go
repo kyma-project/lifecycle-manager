@@ -18,7 +18,7 @@ type Sync struct {
 }
 
 func NewSync(client client.Client, recorder record.EventRecorder, cache *remote.ClientCache, settings Settings) *Sync {
-	return &Sync{Catalog: New(client, settings), EventRecorder: recorder, ClientCache: cache}
+	return &Sync{Catalog: New(client, client, settings), EventRecorder: recorder, ClientCache: cache}
 }
 
 func (s *Sync) Cleanup(
@@ -61,13 +61,15 @@ func (s *Sync) syncRemote(
 		return err
 	}
 
-	return New(syncContext.RuntimeClient, s.Catalog.Settings()).CreateOrUpdate(ctx, moduleTemplateList.Items)
+	return New(syncContext.RuntimeClient, syncContext.ControlPlaneClient, s.Catalog.Settings()).
+		CreateOrUpdate(ctx, moduleTemplateList)
 }
 
+// syncLocal is a noop since all ModuleTemplates already exist in Control-Plane.
 func (s *Sync) syncLocal(
-	ctx context.Context,
+	_ context.Context,
 	_ *v1alpha1.Kyma,
-	moduleTemplateList *v1alpha1.ModuleTemplateList,
+	_ *v1alpha1.ModuleTemplateList,
 ) error {
-	return s.Catalog.CreateOrUpdate(ctx, moduleTemplateList.Items)
+	return nil
 }
