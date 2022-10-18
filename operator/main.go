@@ -19,14 +19,13 @@ package main
 import (
 	"flag"
 	"net/http"
+	"net/http/pprof"
 	"os"
 	"strings"
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
-
-	_ "net/http/pprof"
 
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
@@ -64,6 +63,7 @@ const (
 	defaultRequeueWaitingInterval = 3 * time.Second
 	defaultClientQPS              = 150
 	defaultClientBurst            = 150
+	defaultPprofServerTimeout     = 90 * time.Second
 )
 
 var (
@@ -97,6 +97,7 @@ type FlagVar struct {
 	skrWebhookCPULimits                                                    string
 	pprof                                                                  bool
 	pprofAddr                                                              string
+	pprofServerTimeout                                                     time.Duration
 }
 
 func main() {
@@ -112,14 +113,30 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	if flagVar.pprof {
-		go func() {
-			if err := http.ListenAndServe(flagVar.pprofAddr, nil); err != nil {
-				setupLog.Error(err, "error starting pprof server")
-			}
-		}()
+		go pprofStartServer(flagVar.pprofAddr, flagVar.pprofServerTimeout)
 	}
 
 	setupManager(flagVar, controllers.NewCacheFunc(), scheme)
+}
+
+func pprofStartServer(addr string, timeout time.Duration) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
+	server := &http.Server{
+		Addr:         addr,
+		Handler:      mux,
+		ReadTimeout:  timeout,
+		WriteTimeout: timeout,
+	}
+
+	if err := server.ListenAndServe(); err != nil {
+		setupLog.Error(err, "error starting pprof server")
+	}
 }
 
 //nolint:funlen
@@ -234,6 +251,8 @@ func defineFlagVar() *FlagVar {
 		"The resources.limits.cpu for skr webhook.")
 	flag.BoolVar(&flagVar.pprof, "pprof", false,
 		"Wether to start up a pprof server.")
+	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
+		"Timeout of Read / Write for the pprof server.")
 	return flagVar
 }
 
