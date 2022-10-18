@@ -37,6 +37,23 @@ func NewVersionedIstioClient(cfg *rest.Config) (*IstioClient, error) {
 	}, nil
 }
 
+func (c *IstioClient) ConfigureVirtualService(ctx context.Context, watchers []v1alpha1.Watcher) error {
+	var err error
+	var customErr *customClientErr
+	var virtualService *istioclientapi.VirtualService
+	virtualService, customErr = c.getVirtualService(ctx)
+	if customErr != nil && customErr.IsNotFound {
+		_, err = c.createVirtualService(ctx, watchers...)
+		if err != nil {
+			return fmt.Errorf("failed to create virtual service %w", err)
+		}
+		return nil
+	}
+
+	virtualService.Spec.Http = prepareIstioHTTPRoutes(watchers...)
+	return c.updateVirtualService(ctx, virtualService)
+}
+
 type customClientErr struct {
 	Err        error
 	IsNotFound bool
@@ -61,8 +78,11 @@ func (c *IstioClient) getVirtualService(ctx context.Context) (*istioclientapi.Vi
 	return virtualService, nil
 }
 
-func (c *IstioClient) createVirtualService(ctx context.Context, obj *v1alpha1.Watcher,
+func (c *IstioClient) createVirtualService(ctx context.Context, watchers ...v1alpha1.Watcher,
 ) (*istioclientapi.VirtualService, error) {
+	if len(watchers) == 0 {
+		return nil, nil
+	}
 	_, err := c.NetworkingV1beta1().
 		Gateways(metav1.NamespaceDefault).
 		Get(ctx, gatewayName, metav1.GetOptions{})
@@ -74,8 +94,7 @@ func (c *IstioClient) createVirtualService(ctx context.Context, obj *v1alpha1.Wa
 	virtualSvc.SetNamespace(metav1.NamespaceDefault)
 	virtualSvc.Spec.Gateways = append(virtualSvc.Spec.Gateways, gatewayName)
 	virtualSvc.Spec.Hosts = append(virtualSvc.Spec.Hosts, "*")
-	istioHTTPRoute := prepareIstioHTTPRouteForCR(obj)
-	virtualSvc.Spec.Http = append(virtualSvc.Spec.Http, istioHTTPRoute)
+	virtualSvc.Spec.Http = prepareIstioHTTPRoutes(watchers...)
 	return c.NetworkingV1beta1().
 		VirtualServices(metav1.NamespaceDefault).
 		Create(ctx, virtualSvc, metav1.CreateOptions{})
@@ -125,7 +144,7 @@ func (c *IstioClient) UpdateVirtualServiceConfig(ctx context.Context, obj *v1alp
 	var virtualService *istioclientapi.VirtualService
 	virtualService, customErr = c.getVirtualService(ctx)
 	if customErr != nil && customErr.IsNotFound {
-		_, err = c.createVirtualService(ctx, obj)
+		_, err = c.createVirtualService(ctx, *obj)
 		if err != nil {
 			return fmt.Errorf("failed to create virtual service %w", err)
 		}
@@ -199,6 +218,17 @@ func isRouteConfigEqual(route1 *istioapi.HTTPRoute, route2 *istioapi.HTTPRoute) 
 	}
 
 	return true
+}
+
+func prepareIstioHTTPRoutes(watchers ...v1alpha1.Watcher) []*istioapi.HTTPRoute {
+	if len(watchers) == 0 {
+		return nil
+	}
+	var httpRoutes []*istioapi.HTTPRoute
+	for _, watcher := range watchers {
+		httpRoutes = append(httpRoutes, prepareIstioHTTPRouteForCR(&watcher))
+	}
+	return httpRoutes
 }
 
 func prepareIstioHTTPRouteForCR(obj *v1alpha1.Watcher) *istioapi.HTTPRoute {

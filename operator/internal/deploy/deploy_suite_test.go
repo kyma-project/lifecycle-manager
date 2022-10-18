@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	kyma "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -27,9 +28,10 @@ func TestAPIs(t *testing.T) {
 }
 
 var (
-	ctx       context.Context      //nolint:gochecknoglobals
-	testEnv   *envtest.Environment //nolint:gochecknoglobals
-	k8sClient client.Client        //nolint:gochecknoglobals
+	ctx        context.Context         //nolint:gochecknoglobals
+	testEnv    *envtest.Environment    //nolint:gochecknoglobals
+	k8sClient  client.Client           //nolint:gochecknoglobals
+	webhookMgr *deploy.SKRChartManager //nolint:gochecknoglobals
 )
 
 var _ = BeforeSuite(func() {
@@ -62,6 +64,12 @@ var _ = BeforeSuite(func() {
 	k8sClient, err = client.New(cfg, client.Options{})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
+
+	Expect(deploy.CreateLoadBalancer(ctx, k8sClient)).To(Succeed())
+
+	webhookMgr, err = deploy.NewSKRChartManager(ctx, k8sClient, webhookChartPath, memoryLimits, cpuLimits)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(webhookMgr).NotTo(BeNil())
 })
 
 var _ = AfterSuite(func() {
