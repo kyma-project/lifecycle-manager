@@ -250,7 +250,7 @@ func defineFlagVar() *FlagVar {
 	flag.StringVar(&flagVar.skrWebhookCPULimits, "skr-webhook-cpu-limits", "0.1",
 		"The resources.limits.cpu for skr webhook.")
 	flag.BoolVar(&flagVar.pprof, "pprof", false,
-		"Wether to start up a pprof server.")
+		"Whether to start up a pprof server.")
 	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
 		"Timeout of Read / Write for the pprof server.")
 	return flagVar
