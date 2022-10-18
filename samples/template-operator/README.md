@@ -124,7 +124,8 @@ This approach will enable orchestration of Kubernetes resources so that module o
         declarative.WithManifestResolver(manifestResolver),
         declarative.WithCustomResourceLabels(map[string]string{"sampleKey": "sampleValue"}),
         declarative.WithPostRenderTransform(transform),
-        declarative.WithResourcesReady(true), 
+        declarative.WithResourcesReady(true),
+        declarative.WithFinalizer(sampleFinalizer),
    )
    ```
    These options can be used to modify manifest installation and uninstallation. Some options are applied as a manifest pre-processing step and others as post-processing.

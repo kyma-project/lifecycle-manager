@@ -55,6 +55,7 @@ type RateLimiter struct {
 const (
 	sampleAnnotationKey   = "owner"
 	sampleAnnotationValue = "template-operator"
+	sampleFinalizer       = "sample-finalizer"
 )
 
 var (
@@ -101,6 +102,7 @@ func (r *SampleReconciler) initReconciler(mgr ctrl.Manager, chartPath string) er
 		declarative.WithCustomResourceLabels(map[string]string{"sampleKey": "sampleValue"}),
 		declarative.WithPostRenderTransform(transform),
 		declarative.WithResourcesReady(true),
+		declarative.WithFinalizer(sampleFinalizer),
 	)
 }
 
