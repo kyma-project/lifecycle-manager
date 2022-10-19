@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-logr/logr"
+
 	"golang.org/x/time/rate"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -127,7 +129,7 @@ type ManifestResolver struct {
 }
 
 // Get returns the chart information to be processed.
-func (m *ManifestResolver) Get(obj types.BaseCustomObject) (types.InstallationSpec, error) {
+func (m *ManifestResolver) Get(obj types.BaseCustomObject, logger logr.Logger) (types.InstallationSpec, error) {
 	sample, valid := obj.(*v1alpha1.Sample)
 	if !valid {
 		return types.InstallationSpec{},
