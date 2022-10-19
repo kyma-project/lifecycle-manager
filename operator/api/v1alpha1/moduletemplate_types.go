@@ -17,6 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"strconv"
+	"time"
+
 	"github.com/Masterminds/semver/v3"
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/gardener/component-spec/bindings-go/codec"
@@ -151,4 +154,28 @@ const (
 //nolint:gochecknoinits
 func init() {
 	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{})
+}
+
+func (in *ModuleTemplate) SetLastSync() *ModuleTemplate {
+	lastSyncDate := time.Now().Format(time.RFC3339)
+
+	if in.Annotations == nil {
+		in.Annotations = make(map[string]string)
+	}
+
+	in.Annotations[LastSync] = lastSyncDate
+
+	return in
+}
+
+func (in *ModuleTemplate) SetLastSyncGeneration() *ModuleTemplate {
+	lastSyncGeneration := strconv.Itoa(int(in.GetGeneration()))
+
+	if in.Annotations == nil {
+		in.Annotations = make(map[string]string)
+	}
+
+	in.Annotations[LastSyncGeneration] = lastSyncGeneration
+
+	return in
 }

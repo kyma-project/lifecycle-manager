@@ -3,12 +3,11 @@ package controllers_test
 import (
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/test"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 )
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
@@ -93,6 +92,6 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		Expect(remoteKyma.Spec.Modules).To(BeEmpty())
 
 		By("Remote Module Catalog created")
-		Eventually(CatalogExists(runtimeClient, kyma), 30*time.Second, interval).Should(Succeed())
+		Eventually(ModuleTemplatesExist(runtimeClient, kyma), 30*time.Second, interval).Should(Succeed())
 	})
 })

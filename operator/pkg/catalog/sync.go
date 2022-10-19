@@ -12,19 +12,14 @@ import (
 )
 
 type Sync struct {
-	Catalog
+	client.Client
+	Settings
 	record.EventRecorder
 	*remote.ClientCache
 }
 
 func NewSync(client client.Client, recorder record.EventRecorder, cache *remote.ClientCache, settings Settings) *Sync {
-	return &Sync{Catalog: New(client, client, settings), EventRecorder: recorder, ClientCache: cache}
-}
-
-func (s *Sync) Cleanup(
-	ctx context.Context,
-) error {
-	return s.Catalog.Delete(ctx)
+	return &Sync{Client: client, EventRecorder: recorder, ClientCache: cache, Settings: settings}
 }
 
 func (s *Sync) Run(
@@ -37,13 +32,8 @@ func (s *Sync) Run(
 			s.Event(kyma, "Warning", "RemoteCatalogSyncError", err.Error())
 			return err
 		}
-	} else {
-		if err := s.syncLocal(ctx, kyma, moduleTemplateList); err != nil {
-			s.Event(kyma, "Warning", "LocalCatalogSyncError", err.Error())
-			return err
-		}
+		s.Event(kyma, "Normal", "CatalogSync", "catalog synced")
 	}
-	s.Event(kyma, "Normal", "CatalogSync", "catalog synced")
 	return nil
 }
 
@@ -53,7 +43,7 @@ func (s *Sync) syncRemote(
 	moduleTemplateList *v1alpha1.ModuleTemplateList,
 ) error {
 	syncContext, err := remote.InitializeKymaSynchronizationContext(
-		ctx, s.Catalog.Client(), controlPlaneKyma, s.ClientCache,
+		ctx, s.Client, controlPlaneKyma, s.ClientCache,
 	)
 	if err != nil {
 		err = fmt.Errorf("catalog sync failed: %w", err)
@@ -61,15 +51,6 @@ func (s *Sync) syncRemote(
 		return err
 	}
 
-	return New(syncContext.RuntimeClient, syncContext.ControlPlaneClient, s.Catalog.Settings()).
+	return NewRemoteCatalog(syncContext.RuntimeClient, syncContext.ControlPlaneClient, s.Settings).
 		CreateOrUpdate(ctx, moduleTemplateList)
-}
-
-// syncLocal is a noop since all ModuleTemplates already exist in Control-Plane.
-func (s *Sync) syncLocal(
-	_ context.Context,
-	_ *v1alpha1.Kyma,
-	_ *v1alpha1.ModuleTemplateList,
-) error {
-	return nil
 }

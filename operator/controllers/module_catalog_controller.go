@@ -29,7 +29,12 @@ type ModuleCatalogReconciler struct {
 func (r *ModuleCatalogReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	logger.Info("Catalog Sync loop starting for", "resource", req.NamespacedName.String())
-	catalogSync := catalog.NewSync(r.Client, r.EventRecorder, r.RemoteClientCache, catalog.Settings{})
+
+	ForceCatalogSSA := true
+
+	catalogSync := catalog.NewSync(r.Client, r.EventRecorder, r.RemoteClientCache, catalog.Settings{
+		SSAPatchOptions: &client.PatchOptions{FieldManager: "catalog-sync", Force: &ForceCatalogSSA},
+	})
 
 	// check if kyma resource exists
 	kyma := &v1alpha1.Kyma{}
@@ -39,7 +44,6 @@ func (r *ModuleCatalogReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		// on deleted requests.
 		if k8serrors.IsNotFound(err) {
 			logger.Info(req.NamespacedName.String() + " got deleted!")
-			return ctrl.Result{}, catalogSync.Cleanup(ctx)
 		}
 
 		return ctrl.Result{}, err //nolint:wrapcheck

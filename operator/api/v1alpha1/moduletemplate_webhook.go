@@ -34,12 +34,12 @@ import (
 // log is for logging in this package.
 var moduletemplatelog = logf.Log.WithName("moduletemplate-resource") //nolint:gochecknoglobals
 
-func (moduleTemplate *ModuleTemplate) SetupWebhookWithManager(
+func (in *ModuleTemplate) SetupWebhookWithManager(
 	mgr ctrl.Manager,
 ) error {
 	return ctrl.NewWebhookManagedBy(mgr).WithValidator(&clusterAwareModuleTemplateValidator{
 		Client: mgr.GetClient(),
-	}).For(moduleTemplate).Complete()
+	}).For(in).Complete()
 }
 
 type clusterAwareModuleTemplateValidator struct {
@@ -54,8 +54,8 @@ type clusterAwareModuleTemplateValidator struct {
 var _ webhook.Defaulter = &ModuleTemplate{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
-func (moduleTemplate *ModuleTemplate) Default() {
-	moduletemplatelog.Info("default", "name", moduleTemplate.Name)
+func (in *ModuleTemplate) Default() {
+	moduletemplatelog.Info("default", "name", in.Name)
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
