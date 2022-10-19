@@ -79,17 +79,6 @@ func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, e
 	})
 }
 
-// SetupWithManager sets up the ModuleCatalog controller with the Manager.
-func (r *ModuleCatalogReconciler) SetupWithManager(
-	mgr ctrl.Manager,
-	options controller.Options,
-) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.Kyma{}).
-		Named("module-catalog").
-		WithOptions(options).Complete(r)
-}
-
 // SetupWithManager sets up the Watcher controller with the Manager.
 func (r *WatcherReconciler) SetupWithManager(
 	mgr ctrl.Manager,

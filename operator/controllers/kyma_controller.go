@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/catalog"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -61,6 +62,7 @@ type KymaReconciler struct {
 	RequeueIntervals
 	signature.VerificationSettings
 	RemoteClientCache *remote.ClientCache
+	ModuleCatalogSync bool
 }
 
 //nolint:lll
@@ -153,6 +155,25 @@ func (r *KymaReconciler) synchronizeRemote(ctx context.Context, kyma *v1alpha1.K
 			fmt.Errorf("could not synchronize remote kyma: %w", err))
 	}
 	syncContext.ReplaceWithVirtualKyma(kyma, remoteKyma)
+
+	if !r.ModuleCatalogSync {
+		return nil
+	}
+
+	moduleTemplateList := &v1alpha1.ModuleTemplateList{}
+	if err := r.List(ctx, moduleTemplateList, &client.ListOptions{}); err != nil {
+		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
+			fmt.Errorf("could not aggregate module templates: %w", err))
+	}
+
+	ForceCatalogSSA := true
+
+	if err := catalog.NewRemoteCatalog(syncContext.RuntimeClient, syncContext.ControlPlaneClient, catalog.Settings{
+		SSAPatchOptions: &client.PatchOptions{FieldManager: "catalog-sync", Force: &ForceCatalogSSA},
+	}).CreateOrUpdate(ctx, moduleTemplateList); err != nil {
+		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
+			fmt.Errorf("could not synchronize catalog: %w", err))
+	}
 
 	return nil
 }

@@ -30,8 +30,6 @@ type RemoteCatalog struct {
 type Catalog interface {
 	CreateOrUpdate(ctx context.Context, moduleTemplateList *v1alpha1.ModuleTemplateList) error
 	Delete(ctx context.Context) error
-	Client() client.Client
-	Settings() Settings
 }
 
 // NewRemoteCatalog uses 2 Clients to create a Catalog in a remote Cluster.
@@ -150,6 +148,8 @@ func (*RemoteCatalog) CalculateDiffs(
 		if remote.Annotations == nil {
 			remote.Annotations = make(map[string]string)
 		}
+		remote.SetResourceVersion("")
+		remote.SetUID("")
 
 		// if there is a template in controlPlane and remote, but the generation is outdated, we need to
 		// update it
@@ -196,14 +196,6 @@ func (c *RemoteCatalog) Delete(
 		}
 	}
 	return nil
-}
-
-func (c *RemoteCatalog) Client() client.Client {
-	return c.runtimeClient
-}
-
-func (c *RemoteCatalog) Settings() Settings {
-	return c.settings
 }
 
 func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, plural string) error {

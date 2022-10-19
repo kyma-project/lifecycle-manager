@@ -139,7 +139,6 @@ func pprofStartServer(addr string, timeout time.Duration) {
 	}
 }
 
-//nolint:funlen
 func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *runtime.Scheme) {
 	config := ctrl.GetConfigOrDie()
 	config.QPS = float32(flagVar.clientQPS)
@@ -175,9 +174,6 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 
 	setupKymaReconciler(mgr, remoteClientCache, flagVar, intervals, options)
 
-	if flagVar.enableModuleCatalog {
-		setupModuleCatalogReconciler(mgr, remoteClientCache, flagVar, intervals, options)
-	}
 	if flagVar.enableKcpWatcher {
 		setupKcpWatcherReconciler(mgr, flagVar, intervals, options)
 	}
@@ -272,26 +268,9 @@ func setupKymaReconciler(
 			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
 			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
 		},
+		ModuleCatalogSync: flagVar.enableModuleCatalog,
 	}).SetupWithManager(mgr, options, flagVar.listenerAddr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
-		os.Exit(1)
-	}
-}
-
-func setupModuleCatalogReconciler(
-	mgr ctrl.Manager,
-	remoteClientCache *remote.ClientCache,
-	_ *FlagVar,
-	intervals controllers.RequeueIntervals,
-	options controller.Options,
-) {
-	if err := (&controllers.ModuleCatalogReconciler{
-		Client:            mgr.GetClient(),
-		RemoteClientCache: remoteClientCache,
-		EventRecorder:     mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		RequeueIntervals:  intervals,
-	}).SetupWithManager(mgr, options); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "ModuleTemplate")
 		os.Exit(1)
 	}
 }
