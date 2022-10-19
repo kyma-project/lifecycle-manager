@@ -146,7 +146,7 @@ func (r *KymaReconciler) synchronizeRemote(ctx context.Context, kyma *v1alpha1.K
 	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx)
 	if err != nil {
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
-			fmt.Errorf("could not fetch kyma updating remote kyma: %w", err))
+			fmt.Errorf("could not create or fetch remote kyma: %w", err))
 	}
 	if err := syncContext.SynchronizeRemoteKyma(ctx, remoteKyma); err != nil {
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
