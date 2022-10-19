@@ -68,5 +68,5 @@ func (r *ModuleCatalogReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
 	}
 
-	return ctrl.Result{}, nil
+	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
 }

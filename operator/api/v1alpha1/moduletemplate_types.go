@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"strconv"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
@@ -164,18 +163,6 @@ func (in *ModuleTemplate) SetLastSync() *ModuleTemplate {
 	}
 
 	in.Annotations[LastSync] = lastSyncDate
-
-	return in
-}
-
-func (in *ModuleTemplate) SetLastSyncGeneration() *ModuleTemplate {
-	lastSyncGeneration := strconv.Itoa(int(in.GetGeneration()))
-
-	if in.Annotations == nil {
-		in.Annotations = make(map[string]string)
-	}
-
-	in.Annotations[LastSyncGeneration] = lastSyncGeneration
 
 	return in
 }

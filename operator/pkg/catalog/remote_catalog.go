@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"strconv"
-	"time"
 
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -19,8 +18,7 @@ import (
 )
 
 type Settings struct {
-	SSAPatchOptions  *client.PatchOptions
-	ForceUpdateAfter time.Duration
+	SSAPatchOptions *client.PatchOptions
 }
 
 type RemoteCatalog struct {
@@ -71,13 +69,10 @@ func (c *RemoteCatalog) CreateOrUpdate(
 		return err
 	}
 
-	diffApply, diffDelete := c.CalculateDiffs(
-		moduleTemplatesRuntime, moduleTemplatesControlPlane, c.settings.ForceUpdateAfter,
-	)
+	diffApply, diffDelete := c.CalculateDiffs(moduleTemplatesRuntime, moduleTemplatesControlPlane)
 
 	for _, diff := range diffApply {
 		diff.SetLastSync()
-		diff.SetLastSyncGeneration()
 
 		var buf bytes.Buffer
 		if err := json.NewEncoder(&buf).Encode(diff); err != nil {
@@ -114,7 +109,6 @@ func (c *RemoteCatalog) CreateOrUpdate(
 // This can be used to cover cases in which the runtime is outdated because it was modified after creation.
 func (*RemoteCatalog) CalculateDiffs(
 	runtimeList *v1alpha1.ModuleTemplateList, controlPlaneList *v1alpha1.ModuleTemplateList,
-	forceDiffAfter time.Duration,
 ) ([]*v1alpha1.ModuleTemplate, []*v1alpha1.ModuleTemplate) {
 	// these are various ModuleTemplate references which we will either have to create, update or delete from
 	// the remote
@@ -133,16 +127,11 @@ func (*RemoteCatalog) CalculateDiffs(
 	for i := range controlPlaneList.Items {
 		controlPlane := &controlPlaneList.Items[i]
 		existingOnControlPlane[controlPlane.Namespace+controlPlane.Name] = i
-
-		// we reset resource version and uid as we want to create new objects from control Plane diffs
-		controlPlane.SetResourceVersion("")
-		controlPlane.SetUID("")
-
-		controlPlane.ObjectMeta.SetManagedFields([]metav1.ManagedFieldsEntry{})
-
 		// if the controlPlane Template does not exist in the remote, we already know we need to create it
 		// in the runtime
 		if _, exists := existingOnRemote[controlPlane.Namespace+controlPlane.Name]; !exists {
+			prepareControlPlaneTemplateForRuntime(controlPlane)
+
 			diffToApply = append(diffToApply, controlPlane)
 		}
 	}
@@ -157,18 +146,40 @@ func (*RemoteCatalog) CalculateDiffs(
 			continue
 		}
 		remote.ObjectMeta.SetManagedFields([]metav1.ManagedFieldsEntry{})
+
+		if remote.Annotations == nil {
+			remote.Annotations = make(map[string]string)
+		}
+
 		// if there is a template in controlPlane and remote, but the generation is outdated, we need to
 		// update it
-		remoteSyncedGen, _ := strconv.Atoi(remote.Annotations[v1alpha1.LastSyncGeneration])
-		if int64(remoteSyncedGen) != (&controlPlaneList.Items[controlPlaneIndex]).GetGeneration() {
+		controlPlaneSyncedGen, _ := strconv.Atoi(remote.Annotations[v1alpha1.LastSyncGenerationControlPlane])
+		controlPlaneGen := (&controlPlaneList.Items[controlPlaneIndex]).GetGeneration()
+		runtimeSyncedGen, _ := strconv.Atoi(remote.Annotations[v1alpha1.LastSyncGenerationRuntime])
+
+		if int64(controlPlaneSyncedGen) != controlPlaneGen {
+			remote.Annotations[v1alpha1.LastSyncGenerationControlPlane] = strconv.Itoa(int(controlPlaneGen))
 			diffToApply = append(diffToApply, remote)
-		}
-		remoteSyncedTime, _ := time.Parse(time.RFC3339, remote.Annotations[v1alpha1.LastSync])
-		if remoteSyncedTime.Add(forceDiffAfter).Before(time.Now()) {
+		} else if int64(runtimeSyncedGen) != remote.GetGeneration() {
+			remote.Annotations[v1alpha1.LastSyncGenerationRuntime] = strconv.Itoa(int(remote.GetGeneration()))
 			diffToApply = append(diffToApply, remote)
 		}
 	}
 	return diffToApply, diffToDelete
+}
+
+func prepareControlPlaneTemplateForRuntime(controlPlane *v1alpha1.ModuleTemplate) {
+	// we reset resource version and uid as we want to create new objects from control Plane diffs
+	controlPlane.SetResourceVersion("")
+	controlPlane.SetUID("")
+
+	controlPlane.ObjectMeta.SetManagedFields([]metav1.ManagedFieldsEntry{})
+
+	if controlPlane.Annotations == nil {
+		controlPlane.Annotations = make(map[string]string)
+	}
+	controlPlane.Annotations[v1alpha1.LastSyncGenerationControlPlane] = strconv.Itoa(int(controlPlane.GetGeneration()))
+	controlPlane.Annotations[v1alpha1.LastSyncGenerationRuntime] = strconv.Itoa(1)
 }
 
 func (c *RemoteCatalog) Delete(
