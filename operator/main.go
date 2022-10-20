@@ -18,10 +18,13 @@ package main
 
 import (
 	"flag"
+	"net/http"
+	"net/http/pprof"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
 
 	"go.uber.org/zap/zapcore"
@@ -60,6 +63,7 @@ const (
 	defaultRequeueWaitingInterval = 3 * time.Second
 	defaultClientQPS              = 150
 	defaultClientBurst            = 150
+	defaultPprofServerTimeout     = 90 * time.Second
 )
 
 var (
@@ -91,6 +95,9 @@ type FlagVar struct {
 	skrWatcherPath                                                         string
 	skrWebhookMemoryLimits                                                 string
 	skrWebhookCPULimits                                                    string
+	pprof                                                                  bool
+	pprofAddr                                                              string
+	pprofServerTimeout                                                     time.Duration
 }
 
 func main() {
@@ -104,9 +111,35 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	if flagVar.pprof {
+		go pprofStartServer(flagVar.pprofAddr, flagVar.pprofServerTimeout)
+	}
+
 	setupManager(flagVar, controllers.NewCacheFunc(), scheme)
 }
 
+func pprofStartServer(addr string, timeout time.Duration) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
+	server := &http.Server{
+		Addr:         addr,
+		Handler:      mux,
+		ReadTimeout:  timeout,
+		WriteTimeout: timeout,
+	}
+
+	if err := server.ListenAndServe(); err != nil {
+		setupLog.Error(err, "error starting pprof server")
+	}
+}
+
+//nolint:funlen
 func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *runtime.Scheme) {
 	config := ctrl.GetConfigOrDie()
 	config.QPS = float32(flagVar.clientQPS)
@@ -138,10 +171,12 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		MaxConcurrentReconciles: flagVar.maxConcurrentReconciles,
 	}
 
-	setupKymaReconciler(mgr, flagVar, intervals, options)
+	remoteClientCache := remote.NewClientCache()
+
+	setupKymaReconciler(mgr, remoteClientCache, flagVar, intervals, options)
 
 	if flagVar.enableModuleCatalog {
-		setupModuleCatalogReconciler(mgr, flagVar, intervals, options)
+		setupModuleCatalogReconciler(mgr, remoteClientCache, flagVar, intervals, options)
 	}
 	if flagVar.enableKcpWatcher {
 		setupKcpWatcherReconciler(mgr, flagVar, intervals, options)
@@ -177,6 +212,8 @@ func defineFlagVar() *FlagVar {
 		"The address the probe endpoint binds to.")
 	flag.StringVar(&flagVar.listenerAddr, "skr-listener-bind-address", ":8082",
 		"The address the skr listener endpoint binds to.")
+	flag.StringVar(&flagVar.pprofAddr, "pprof-bind-address", ":8083",
+		"The address the pprof endpoint binds to.")
 	flag.IntVar(&flagVar.maxConcurrentReconciles, "max-concurrent-reconciles", 1,
 		"The maximum number of concurrent Reconciles which can be run.")
 	flag.BoolVar(&flagVar.enableLeaderElection, "leader-elect", false,
@@ -212,19 +249,25 @@ func defineFlagVar() *FlagVar {
 		"The resources.limits.memory for skr webhook.")
 	flag.StringVar(&flagVar.skrWebhookCPULimits, "skr-webhook-cpu-limits", "0.1",
 		"The resources.limits.cpu for skr webhook.")
+	flag.BoolVar(&flagVar.pprof, "pprof", false,
+		"Whether to start up a pprof server.")
+	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
+		"Timeout of Read / Write for the pprof server.")
 	return flagVar
 }
 
 func setupKymaReconciler(
 	mgr ctrl.Manager,
+	remoteClientCache *remote.ClientCache,
 	flagVar *FlagVar,
 	intervals controllers.RequeueIntervals,
 	options controller.Options,
 ) {
 	if err := (&controllers.KymaReconciler{
-		Client:           mgr.GetClient(),
-		EventRecorder:    mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		RequeueIntervals: intervals,
+		Client:            mgr.GetClient(),
+		EventRecorder:     mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		RemoteClientCache: remoteClientCache,
+		RequeueIntervals:  intervals,
 		VerificationSettings: signature.VerificationSettings{
 			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
 			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
@@ -237,14 +280,16 @@ func setupKymaReconciler(
 
 func setupModuleCatalogReconciler(
 	mgr ctrl.Manager,
+	remoteClientCache *remote.ClientCache,
 	_ *FlagVar,
 	intervals controllers.RequeueIntervals,
 	options controller.Options,
 ) {
 	if err := (&controllers.ModuleCatalogReconciler{
-		Client:           mgr.GetClient(),
-		EventRecorder:    mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		RequeueIntervals: intervals,
+		Client:            mgr.GetClient(),
+		RemoteClientCache: remoteClientCache,
+		EventRecorder:     mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		RequeueIntervals:  intervals,
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ModuleTemplate")
 		os.Exit(1)

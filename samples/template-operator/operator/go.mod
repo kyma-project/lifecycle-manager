@@ -3,12 +3,13 @@ module github.com/kyma-project/lifecycle-manager/samples/template-operator
 go 1.19
 
 require (
-	github.com/kyma-project/module-manager/operator v0.0.0-20220926065043-5db2334f200d
+	github.com/kyma-project/module-manager/operator v0.0.0-20221019063139-49a0297f2770
 	github.com/onsi/ginkgo/v2 v2.1.6
 	github.com/onsi/gomega v1.20.1
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9
-	k8s.io/apimachinery v0.24.4
-	k8s.io/client-go v0.24.4
+	k8s.io/api v0.25.0
+	k8s.io/apimachinery v0.25.0
+	k8s.io/client-go v0.25.0
 	sigs.k8s.io/controller-runtime v0.12.3
 )
 
@@ -138,11 +139,10 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v3 v3.9.4 // indirect
-	k8s.io/api v0.24.4 // indirect
-	k8s.io/apiextensions-apiserver v0.24.4 // indirect
-	k8s.io/apiserver v0.24.4 // indirect
-	k8s.io/cli-runtime v0.24.4 // indirect
-	k8s.io/component-base v0.24.4 // indirect
+	k8s.io/apiextensions-apiserver v0.25.0 // indirect
+	k8s.io/apiserver v0.25.0 // indirect
+	k8s.io/cli-runtime v0.25.0 // indirect
+	k8s.io/component-base v0.25.0 // indirect
 	k8s.io/klog/v2 v2.70.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220803164354-a70c9af30aea // indirect
 	k8s.io/kubectl v0.24.4 // indirect

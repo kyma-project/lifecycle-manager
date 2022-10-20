@@ -24,9 +24,9 @@ import (
 )
 
 var (
-	TestEnv env.Environment
+	TestEnv                  env.Environment
 	ControllerDeploymentName = "lifecycle-manager-controller-manager"
-	KCP = "kcp-system"
+	KCP                      = "kcp-system"
 )
 
 func TestMain(m *testing.M) {
@@ -53,7 +53,6 @@ func TestControllerManagerSpinsUp(t *testing.T) {
 		WithLabel("test-type.kyma-project.io", "smoke").
 		Assess("exists", deploymentExists(KCP, ControllerDeploymentName)).
 		Assess("available", deploymentAvailable(KCP, ControllerDeploymentName)).
-		Assess("kyma creation", kymaCreate(KCP, "default-kyma")).
 		Assess("kyma readiness", kymaReady(KCP, "default-kyma")).
 		Feature()
 
@@ -85,31 +84,6 @@ func kymaReady(namespace string, name string) features.Func {
 	}
 }
 
-func kymaCreate(namespace, name string) features.Func {
-	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-		r, err := resources.New(cfg.Client().RESTConfig())
-		if err != nil {
-			t.Fatal(err)
-		}
-		if err := v1alpha1.AddToScheme(r.GetScheme()); err != nil {
-			t.Fatal(err)
-		}
-
-		kyma := NewTestKyma(namespace, name)
-
-		if err := r.Create(ctx, kyma); err != nil {
-			t.Fatal(err)
-		}
-
-		if err := wait.For(conditions.New(r).ResourcesFound(&v1alpha1.KymaList{Items: []v1alpha1.Kyma{*kyma}}),
-		); err != nil {
-			t.Fatal(err)
-		}
-
-		return ctx
-	}
-}
-
 func deploymentAvailable(namespace, name string) features.Func {
 	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 		client, err := cfg.NewClient()
@@ -128,7 +102,6 @@ func deploymentAvailable(namespace, name string) features.Func {
 		if err != nil {
 			t.Fatal(err)
 		}
-
 
 		pods := corev1.PodList{}
 		_ = client.Resources(namespace).List(ctx, &pods, func(options *metav1.ListOptions) {

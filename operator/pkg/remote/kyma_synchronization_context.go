@@ -33,8 +33,14 @@ type KymaSynchronizationContext struct {
 }
 
 func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, key client.ObjectKey,
-	strategy v1alpha1.SyncStrategy,
+	strategy v1alpha1.SyncStrategy, cache *ClientCache,
 ) (client.Client, error) {
+	remoteClient := cache.Get(ClientCacheID(key))
+
+	if remoteClient != nil {
+		return remoteClient, nil
+	}
+
 	clusterClient := ClusterClient{
 		DefaultClient: controlPlaneClient,
 		Logger:        log.FromContext(ctx),
@@ -61,10 +67,11 @@ func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, key 
 		return nil, err
 	}
 
-	remoteClient, err := client.New(restConfig, client.Options{Scheme: controlPlaneClient.Scheme()})
+	remoteClient, err = client.New(restConfig, client.Options{Scheme: controlPlaneClient.Scheme()})
 	if err != nil {
 		return nil, err
 	}
+	cache.Set(ClientCacheID(key), remoteClient)
 
 	return remoteClient, nil
 }
@@ -80,11 +87,11 @@ func GetRemotelySyncedKyma(ctx context.Context, runtimeClient client.Client,
 	return remoteKyma, nil
 }
 
-func DeleteRemotelySyncedKyma(ctx context.Context, controlPlaneClient client.Client,
-	kyma *v1alpha1.Kyma,
+func DeleteRemotelySyncedKyma(
+	ctx context.Context, controlPlaneClient client.Client, cache *ClientCache, kyma *v1alpha1.Kyma,
 ) error {
 	runtimeClient, err := NewRemoteClient(ctx, controlPlaneClient, client.ObjectKeyFromObject(kyma),
-		kyma.Spec.Sync.Strategy)
+		kyma.Spec.Sync.Strategy, cache)
 	if err != nil {
 		return err
 	}
@@ -97,11 +104,11 @@ func DeleteRemotelySyncedKyma(ctx context.Context, controlPlaneClient client.Cli
 	return runtimeClient.Delete(ctx, remoteKyma)
 }
 
-func RemoveFinalizerFromRemoteKyma(ctx context.Context, controlPlaneClient client.Client,
-	kyma *v1alpha1.Kyma,
+func RemoveFinalizerFromRemoteKyma(
+	ctx context.Context, controlPlaneClient client.Client, cache *ClientCache, kyma *v1alpha1.Kyma,
 ) error {
 	runtimeClient, err := NewRemoteClient(ctx, controlPlaneClient, client.ObjectKeyFromObject(kyma),
-		kyma.Spec.Sync.Strategy)
+		kyma.Spec.Sync.Strategy, cache)
 	if err != nil {
 		return err
 	}
@@ -117,10 +124,10 @@ func RemoveFinalizerFromRemoteKyma(ctx context.Context, controlPlaneClient clien
 }
 
 func InitializeKymaSynchronizationContext(ctx context.Context, controlPlaneClient client.Client,
-	controlPlaneKyma *v1alpha1.Kyma,
+	controlPlaneKyma *v1alpha1.Kyma, cache *ClientCache,
 ) (*KymaSynchronizationContext, error) {
 	runtimeClient, err := NewRemoteClient(ctx, controlPlaneClient, client.ObjectKeyFromObject(controlPlaneKyma),
-		controlPlaneKyma.Spec.Sync.Strategy)
+		controlPlaneKyma.Spec.Sync.Strategy, cache)
 	if err != nil {
 		return nil, err
 	}

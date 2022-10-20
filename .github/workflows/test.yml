@@ -91,6 +91,7 @@ jobs:
       - id: kyma
         uses: jakobmoellersap/kyma-cli-action@v0.0.1-alpha1
         with:
+          cache: false
           version: ${{ matrix.cli-stability }}
       - run: ln -s ${{ steps.kyma.outputs.path }} /usr/local/bin/kyma
       - name: Run Provision
@@ -104,19 +105,14 @@ jobs:
       - name: Update Kubeconfigs
         run: k3d kubeconfig merge -a -d
       - name: Run Deploy
-        run: kyma alpha deploy --source=local
+        run: |
+          kyma alpha deploy \
+            -k $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/operator/config/default \
+            -k $(go env GOPATH)/src/github.com/$MODULE_MANAGER/operator/config/default
+
       - name: Inject GOPATH into go Setup
         run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
 
-      - uses: actions/cache@v3
-        name: Cache Go Dependencies for Smoke Tests
-        with:
-          path: |
-            ~/go/pkg/mod
-            ~/.cache/go-build
-          key: ${{ runner.os }}-go-cli-integration-${{ matrix.smoke-run }}-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-cli-integration-${{ matrix.smoke-run }}
       - name: Set up Go for ${{ matrix.smoke-run }}
         uses: actions/setup-go@v3
         with:
