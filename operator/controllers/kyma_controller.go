@@ -63,7 +63,6 @@ type KymaReconciler struct {
 	RequeueIntervals
 	signature.VerificationSettings
 	RemoteClientCache *remote.ClientCache
-	ModuleCatalogSync bool
 }
 
 //nolint:lll
@@ -168,7 +167,7 @@ func (r *KymaReconciler) syncRemote(ctx context.Context, syncContext *remote.Kym
 }
 
 func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, syncContext *remote.KymaSynchronizationContext) error {
-	if !r.ModuleCatalogSync {
+	if !syncContext.ControlPlaneKyma.Spec.Sync.ModuleCatalog {
 		return nil
 	}
 

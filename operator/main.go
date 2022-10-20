@@ -91,7 +91,7 @@ type FlagVar struct {
 	clientQPS                                                              float64
 	clientBurst                                                            int
 	enableWebhooks                                                         bool
-	enableModuleCatalog, enableKcpWatcher                                  bool
+	enableKcpWatcher                                                       bool
 	skrWatcherPath                                                         string
 	skrWebhookMemoryLimits                                                 string
 	skrWebhookCPULimits                                                    string
@@ -235,9 +235,6 @@ func defineFlagVar() *FlagVar {
 		"This verification key list is used to verify modules against their signature")
 	flag.BoolVar(&flagVar.enableWebhooks, "enable-webhooks", false,
 		"Enabling Validation/Conversion Webhooks.")
-	flag.BoolVar(&flagVar.enableModuleCatalog, "enable-module-catalog", true,
-		"Enabling the Module Catalog Synchronization for Introspection of "+
-			"available Modules based on ModuleTemplates.")
 	flag.BoolVar(&flagVar.enableKcpWatcher, "enable-kcp-watcher", false,
 		"Enabling KCP Watcher to reconcile Watcher CRs created by KCP run operators")
 	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "skr-webhook",
@@ -269,7 +266,6 @@ func setupKymaReconciler(
 			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
 			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
 		},
-		ModuleCatalogSync: flagVar.enableModuleCatalog,
 	}).SetupWithManager(mgr, options, flagVar.listenerAddr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)

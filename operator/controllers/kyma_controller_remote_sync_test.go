@@ -93,5 +93,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("Remote Module Catalog created")
 		Eventually(ModuleTemplatesExist(runtimeClient, kyma), 30*time.Second, interval).Should(Succeed())
+		Expect(remoteKyma.ContainsCondition(v1alpha1.ConditionTypeReady,
+			v1alpha1.ConditionReasonModuleCatalogIsReady)).To(BeTrue())
 	})
 })
