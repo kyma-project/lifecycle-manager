@@ -108,22 +108,23 @@ func (r *WatcherReconciler) ConfigureWatchersForSKR(ctx context.Context,
 	}
 
 	if err := r.ConfigureVirtualService(ctx, watcherList.Items); err != nil {
-		updateErr := r.UpdateWatchersStatusesToError(ctx, logger, watcherList, "error configuring istio resources")
-		if updateErr == nil {
-			return err
-		}
-		return updateErr
+		//updateErr := r.UpdateWatchersStatusesToError(ctx, logger, watcherList, "error configuring istio resources")
+		//if updateErr == nil {
+		//	return err
+		//}
+		return err
 	}
 
 	if err := r.InstallWebhookChart(ctx, watcherList, kyma, r.RestConfig); err != nil {
-		updateErr := r.UpdateWatchersStatusesToError(ctx, logger, watcherList, "error configuring webhook chart resources")
-		if updateErr == nil {
-			return err
-		}
-		return updateErr
+		//updateErr := r.UpdateWatchersStatusesToError(ctx, logger, watcherList, "error configuring webhook chart resources")
+		//if updateErr == nil {
+		//	return err
+		//}
+		return err
 	}
+	return nil
 
-	return r.UpdateWatchersStatusesToReady(ctx, logger, watcherList, "watcher configured successfully")
+	//return r.UpdateWatchersStatusesToReady(ctx, logger, watcherList, "watcher configured successfully")
 }
 
 func (r *WatcherReconciler) UpdateWatchersStatusesToReady(ctx context.Context, logger logr.Logger, watcherList *v1alpha1.WatcherList, msg string) error {
