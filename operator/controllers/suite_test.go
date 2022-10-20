@@ -43,6 +43,7 @@ import (
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/controllers"
+	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
 	//+kubebuilder:scaffold:imports
@@ -153,6 +154,8 @@ var _ = BeforeSuite(func() {
 		RequeueIntervals: intervals,
 	}).SetupWithManager(k8sManager, controller.Options{})
 	Expect(err).ToNot(HaveOccurred())
+
+	Expect(deploy.CreateLoadBalancer(ctx, controlPlaneClient)).To(Succeed())
 
 	err = (&controllers.WatcherReconciler{
 		Client:           k8sManager.GetClient(),

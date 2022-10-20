@@ -55,7 +55,6 @@ var _ = Describe("configure istio virtual service", Ordered, func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(routeReady).To(BeTrue())
 		}
-
 	})
 })
 

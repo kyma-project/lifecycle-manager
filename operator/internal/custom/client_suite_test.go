@@ -24,7 +24,7 @@ func TestAPIs(t *testing.T) {
 	t.Parallel()
 	RegisterFailHandler(Fail)
 
-	RunSpecs(t, "Webhook Deploy Suite")
+	RunSpecs(t, "Custom istio client Suite")
 }
 
 var (

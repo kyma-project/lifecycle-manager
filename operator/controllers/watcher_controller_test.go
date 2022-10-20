@@ -1,142 +1,87 @@
 package controllers_test
 
 import (
+	"time"
+
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/custom"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func cRSpecsUpdates() func(customIstioClient *custom.IstioClient) {
-	return func(customIstioClient *custom.IstioClient) {
-		watcherList := v1alpha1.WatcherList{}
-		Expect(controlPlaneClient.List(ctx, &watcherList)).To(Succeed())
-		Expect(watcherList.Items).NotTo(BeEmpty())
-		for idx, watcherCR := range watcherList.Items {
-			// update spec
-			watcherCR.Spec.ServiceInfo.Port = 9090
-			watcherCR.Spec.Field = v1alpha1.StatusField
-			Expect(controlPlaneClient.Update(ctx, &watcherList.Items[idx])).Should(Succeed())
+var _ = Describe("Watcher reconciler scenarios", Ordered, func() {
 
-			// verify
-			Eventually(watcherCRState(client.ObjectKeyFromObject(&watcherList.Items[idx])),
-				timeout, interval).Should(Equal(v1alpha1.WatcherStateReady))
-			verifyVsRoutes(&watcherList.Items[idx], customIstioClient, BeTrue())
-			webhookCfg, err := deploy.GetDeployedWebhook(ctx, cfg)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(deploy.IsWebhookConfigured(&watcherList.Items[idx], webhookCfg)).To(BeTrue())
-		}
-	}
-}
-
-func oneCRDeleted() func(customIstioClient *custom.IstioClient) {
-	return func(customIstioClient *custom.IstioClient) {
-		// delete
-		watcherList := v1alpha1.WatcherList{}
-		Expect(controlPlaneClient.List(ctx, &watcherList)).To(Succeed())
-		watcherCRCount := len(watcherList.Items)
-		Expect(watcherCRCount).To(Equal(len(centralComponents)))
-		watcherCR := watcherList.Items[watcherCRCount-1]
-		Expect(controlPlaneClient.Delete(ctx, &watcherCR)).To(Succeed())
-
-		Eventually(isCrDeletionFinished(client.ObjectKeyFromObject(&watcherCR)), timeout, interval).
-			Should(BeTrue())
-		verifyVsRoutes(&watcherCR, customIstioClient, BeFalse())
-		webhookCfg, err := deploy.GetDeployedWebhook(ctx, cfg)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(deploy.IsWebhookConfigured(&watcherCR, webhookCfg)).To(BeFalse())
-	}
-}
-
-func allCRsDeleted() func(customIstioClient *custom.IstioClient) {
-	return func(customIstioClient *custom.IstioClient) {
-		// delete all
-		watcherList := v1alpha1.WatcherList{}
-		Expect(controlPlaneClient.List(ctx, &watcherList)).To(Succeed())
-		watcherCRCount := len(watcherList.Items)
-		Expect(watcherCRCount).To(Equal(len(centralComponents)))
-		Expect(controlPlaneClient.DeleteAllOf(ctx, &v1alpha1.Watcher{},
-			client.InNamespace(metav1.NamespaceDefault))).To(Succeed())
-
-		// verify
-		Eventually(isCrDeletionFinished(), timeout, interval).Should(BeTrue())
-		verifyVsRoutes(nil, customIstioClient, BeTrue())
-		Expect(deploy.IsChartRemoved(ctx, controlPlaneClient)).To(BeTrue())
-	}
-}
-
-var _ = Describe("Watcher CR scenarios", Ordered, func() {
-	var customIstioClient *custom.IstioClient
 	var err error
-	kymaSample := &v1alpha1.Kyma{}
+	var kymaSample *v1alpha1.Kyma
+	var watchers []v1alpha1.Watcher
+	var customIstioClient *custom.IstioClient
 	var istioResources []*unstructured.Unstructured
 	BeforeAll(func() {
-		// create kyma resource
-		kymaName := "kyma-sample"
-		kymaSample = createKymaCR(kymaName)
-
-		// create istio resources
 		customIstioClient, err = custom.NewVersionedIstioClient(cfg)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(controlPlaneClient.Create(ctx, kymaSample)).To(Succeed())
+		for idx, component := range centralComponents {
+			watcher := createWatcherCR(component, isEven(idx))
+			watchers = append(watchers, *watcher)
+			Expect(controlPlaneClient.Create(ctx, watcher)).To(Succeed())
+		}
+
 		istioResources, err = deserializeIstioResources()
 		Expect(err).NotTo(HaveOccurred())
 		for _, istioResource := range istioResources {
 			Expect(controlPlaneClient.Create(ctx, istioResource)).To(Succeed())
 		}
-
-		Expect(createLoadBalancer()).To(Succeed())
 	})
 
 	AfterAll(func() {
-		// clean up kyma CR
-		Expect(controlPlaneClient.Delete(ctx, kymaSample)).To(Succeed())
 		// clean up istio resources
 		for _, istioResource := range istioResources {
 			Expect(controlPlaneClient.Delete(ctx, istioResource)).To(Succeed())
 		}
 	})
 
-	BeforeEach(func() {
-		// create WatcherCRs
-		for idx, component := range centralComponents {
-			watcherCR := createWatcherCR(component, isEven(idx))
-			Expect(controlPlaneClient.Create(ctx, watcherCR)).To(Succeed())
-			crObjectKey := client.ObjectKeyFromObject(watcherCR)
-			Eventually(watcherCRState(crObjectKey), timeout, interval).
-				Should(Equal(v1alpha1.WatcherStateReady))
+	It("configures the KCP virtual service and installs skr chart when kyma is enqueued", func() {
 
-			// verify
-			verifyVsRoutes(watcherCR, customIstioClient, BeTrue())
+		kymaSample = deploy.CreateKymaCR("kyma-sample")
+		Expect(controlPlaneClient.Create(ctx, kymaSample)).To(Succeed())
+		for idx, watcher := range watchers {
+			Eventually(watcherCRState(client.ObjectKeyFromObject(&watchers[idx])),
+				30*time.Second, interval).Should(Equal(v1alpha1.WatcherStateReady))
+			routeReady, err := customIstioClient.IsListenerHTTPRouteConfigured(ctx, &watcher)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(routeReady).To(BeTrue())
 			webhookCfg, err := deploy.GetDeployedWebhook(ctx, cfg)
-			Expect(err).ShouldNot(HaveOccurred())
-			Expect(deploy.IsWebhookConfigured(watcherCR, webhookCfg)).To(BeTrue())
+			Expect(err).NotTo(HaveOccurred())
+			Expect(deploy.IsWebhookConfigured(&watchers[idx], webhookCfg)).To(BeTrue())
 		}
 	})
-
-	AfterEach(func() {
-		watcherList := v1alpha1.WatcherList{}
-		Expect(controlPlaneClient.List(ctx, &watcherList)).To(Succeed())
-		for idx := range watcherList.Items {
-			// delete WatcherCR
-			Expect(controlPlaneClient.Delete(ctx, &watcherList.Items[idx])).To(Succeed())
+	It("configures the KCP virtual service and re-installs skr chart when watcher list is updated", func() {
+		//remove one watcher CR
+		//enqueue kyma
+		kymaSample2 := deploy.CreateKymaCR("kyma-sample-2")
+		Expect(controlPlaneClient.Create(ctx, kymaSample2)).To(Succeed())
+		for idx, watcher := range watchers {
+			Eventually(watcherCRState(client.ObjectKeyFromObject(&watchers[idx])),
+				timeout, interval).Should(Equal(v1alpha1.WatcherStateReady))
+			routeReady, err := customIstioClient.IsListenerHTTPRouteConfigured(ctx, &watcher)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(routeReady).To(BeTrue())
+			webhookCfg, err := deploy.GetDeployedWebhook(ctx, cfg)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(deploy.IsWebhookConfigured(&watchers[idx], webhookCfg)).To(BeTrue())
 		}
-		// verify deletion
-		Eventually(isCrDeletionFinished(), timeout, interval).Should(BeTrue())
 	})
-
-	DescribeTable("given watcherCR reconcile loop",
-		func(testCase func(customIstioClient *custom.IstioClient)) {
-			testCase(customIstioClient)
-		},
-		[]TableEntry{
-			Entry("when watcherCR specs are updated", cRSpecsUpdates()),
-			Entry("when one WatcherCR is deleted", oneCRDeleted()),
-			Entry("when all WatcherCRs are deleted", allCRsDeleted()),
-		})
+	It("configures the KCP virtual service and removes skr chart when kyma is deleted", func() {
+		Expect(controlPlaneClient.Delete(ctx, kymaSample)).To(Succeed())
+		for idx, watcher := range watchers {
+			Eventually(watcherCRState(client.ObjectKeyFromObject(&watchers[idx])),
+				timeout, interval).Should(Equal(v1alpha1.WatcherStateReady))
+			routeReady, err := customIstioClient.IsListenerHTTPRouteConfigured(ctx, &watcher)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(routeReady).To(BeTrue())
+		}
+		Eventually(deploy.IsChartRemoved(ctx, controlPlaneClient), timeout, interval).Should(BeTrue())
+	})
 })

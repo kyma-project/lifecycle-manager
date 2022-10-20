@@ -67,7 +67,7 @@ var _ = BeforeSuite(func() {
 
 	Expect(deploy.CreateLoadBalancer(ctx, k8sClient)).To(Succeed())
 
-	webhookMgr, err = deploy.NewSKRChartManager(ctx, k8sClient, webhookChartPath, memoryLimits, cpuLimits)
+	webhookMgr, err = deploy.NewSKRChartManager(cfg, webhookChartPath, memoryLimits, cpuLimits)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(webhookMgr).NotTo(BeNil())
 })

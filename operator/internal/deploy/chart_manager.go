@@ -5,6 +5,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -19,9 +20,14 @@ type SKRChartManager struct {
 	KcpAddr                string
 }
 
-func NewSKRChartManager(ctx context.Context, kcpClient client.Client,
+func NewSKRChartManager(cfg *rest.Config,
 	chartPath, memoryLimits, cpuLimits string,
 ) (*SKRChartManager, error) {
+	ctx := context.TODO()
+	kcpClient, err := client.New(cfg, client.Options{})
+	if err != nil {
+		return nil, err
+	}
 	mgr := &SKRChartManager{
 		kcpClient:              kcpClient,
 		WebhookChartPath:       chartPath,
@@ -56,12 +62,27 @@ func (m *SKRChartManager) InstallWebhookChart(ctx context.Context,
 }
 
 func (m *SKRChartManager) RemoveWebhookChart(ctx context.Context,
-	watcherList *v1alpha1.WatcherList, kyma *v1alpha1.Kyma, inClusterCfg *rest.Config,
+	watcherList *v1alpha1.WatcherList, kymaObjKey client.ObjectKey, inClusterCfg *rest.Config,
 ) error {
-	skrCfg, err := m.getSKRClientFromKyma(ctx, kyma, inClusterCfg)
+	secret := &corev1.Secret{}
+	//nolint:gosec
+	err := m.kcpClient.Get(ctx, kymaObjKey, secret)
+	if client.IgnoreNotFound(err) != nil {
+		return err
+	}
+	if apierrors.IsNotFound(err) {
+		return m.removeSKRChart(ctx, watcherList, inClusterCfg)
+	}
+	skrCfg, err := clientcmd.RESTConfigFromKubeConfig(secret.Data[kubeconfigKey])
 	if err != nil {
 		return err
 	}
+	return m.removeSKRChart(ctx, watcherList, skrCfg)
+}
+
+func (m *SKRChartManager) removeSKRChart(ctx context.Context,
+	watcherList *v1alpha1.WatcherList, skrCfg *rest.Config,
+) error {
 	skrClient, err := client.New(skrCfg, client.Options{})
 	if err != nil {
 		return err

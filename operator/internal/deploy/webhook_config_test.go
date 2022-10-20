@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -89,7 +90,7 @@ var _ = Describe("deploy watcher", Ordered, func() {
 	})
 
 	It("webhook manager removes watcher helm chart from SKR cluster when watcher list is empty", func() {
-		err := webhookMgr.RemoveWebhookChart(ctx, &v1alpha1.WatcherList{Items: []v1alpha1.Watcher{}}, kymaSample, testEnv.Config)
+		err := webhookMgr.RemoveWebhookChart(ctx, &v1alpha1.WatcherList{Items: []v1alpha1.Watcher{}}, client.ObjectKeyFromObject(kymaSample), testEnv.Config)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(deploy.IsChartRemoved(ctx, k8sClient)).To(BeTrue())
 	})

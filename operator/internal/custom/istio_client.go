@@ -42,7 +42,7 @@ func (c *IstioClient) ConfigureVirtualService(ctx context.Context, watchers []v1
 	var customErr *customClientErr
 	var virtualService *istioclientapi.VirtualService
 	virtualService, customErr = c.getVirtualService(ctx)
-	if customErr != nil && customErr.IsNotFound {
+	if customErr != nil {
 		_, err = c.createVirtualService(ctx, watchers...)
 		if err != nil {
 			return fmt.Errorf("failed to create virtual service %w", err)
@@ -221,10 +221,16 @@ func isRouteConfigEqual(route1 *istioapi.HTTPRoute, route2 *istioapi.HTTPRoute) 
 }
 
 func prepareIstioHTTPRoutes(watchers ...v1alpha1.Watcher) []*istioapi.HTTPRoute {
-	if len(watchers) == 0 {
+	numberOfWatchers := len(watchers)
+	if numberOfWatchers == 0 {
 		return nil
 	}
-	var httpRoutes []*istioapi.HTTPRoute
+	if numberOfWatchers == 1 {
+		return []*istioapi.HTTPRoute{
+			prepareIstioHTTPRouteForCR(&watchers[0]),
+		}
+	}
+	httpRoutes := make([]*istioapi.HTTPRoute, len(watchers))
 	for _, watcher := range watchers {
 		httpRoutes = append(httpRoutes, prepareIstioHTTPRouteForCR(&watcher))
 	}

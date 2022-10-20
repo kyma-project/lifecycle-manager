@@ -95,10 +95,13 @@ func (r *WatcherReconciler) SetupWithManager(
 	options controller.Options,
 ) error {
 	if err := r.SetIstioClient(); err != nil {
-		return fmt.Errorf("unable to set istio client for controller watcher: %w", err)
+		return fmt.Errorf("unable to set istio client for watcher controller: %w", err)
+	}
+	if err := r.SetSKRChartManager(); err != nil {
+		return fmt.Errorf("unable to set chart manager for watcher controller: %w", err)
 	}
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.Watcher{}).
+		For(&v1alpha1.Kyma{}).
 		WithOptions(options).
 		Complete(r)
 }
