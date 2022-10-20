@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 
+	remotecontext "github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -32,13 +33,12 @@ type Catalog interface {
 	Delete(ctx context.Context) error
 }
 
-// NewRemoteCatalog uses 2 Clients to create a Catalog in a remote Cluster.
+// NewRemoteCatalog uses 2 Clients from a Sync Context to create a Catalog in a remote Cluster.
 func NewRemoteCatalog(
-	runtimeClient client.Client,
-	controlPlaneClient client.Client,
+	ctx *remotecontext.KymaSynchronizationContext,
 	settings Settings,
 ) *RemoteCatalog {
-	return &RemoteCatalog{runtimeClient: runtimeClient, controlPlaneClient: controlPlaneClient, settings: settings}
+	return &RemoteCatalog{runtimeClient: ctx.RuntimeClient, controlPlaneClient: ctx.ControlPlaneClient, settings: settings}
 }
 
 // CreateOrUpdate first lists all currently available moduleTemplates in the Runtime.
@@ -99,12 +99,8 @@ func (c *RemoteCatalog) CreateOrUpdate(
 //
 // By default, a template is deemed as necessary for apply with SSA to the runtime when
 // 1. it does not exist in the controlPlane
-// 2. it exists but has a mismatching generation in the control-plane (the control plane version got updated)
-// 3. the forceDiffAfter duration is reached since the last synchronization
-//
-// The forceDiffAfter duration determines after which time a ModuleTemplate is force-synchronized, even
-// if the comparison strategy determines that the Template is not outdated.
-// This can be used to cover cases in which the runtime is outdated because it was modified after creation.
+// 2. it exists but has a mismatching generation in the control-plane (the control plane spec got updated)
+// 3. it exists but has a mismatching generation in the runtime (the runtime spec got updated).
 func (*RemoteCatalog) CalculateDiffs(
 	runtimeList *v1alpha1.ModuleTemplateList, controlPlaneList *v1alpha1.ModuleTemplateList,
 ) ([]*v1alpha1.ModuleTemplate, []*v1alpha1.ModuleTemplate) {
@@ -148,8 +144,6 @@ func (*RemoteCatalog) CalculateDiffs(
 		if remote.Annotations == nil {
 			remote.Annotations = make(map[string]string)
 		}
-		remote.SetResourceVersion("")
-		remote.SetUID("")
 
 		// if there is a template in controlPlane and remote, but the generation is outdated, we need to
 		// update it

@@ -128,10 +128,11 @@ func pprofStartServer(addr string, timeout time.Duration) {
 	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 
 	server := &http.Server{
-		Addr:         addr,
-		Handler:      mux,
-		ReadTimeout:  timeout,
-		WriteTimeout: timeout,
+		Addr:              addr,
+		Handler:           mux,
+		ReadTimeout:       timeout,
+		ReadHeaderTimeout: timeout,
+		WriteTimeout:      timeout,
 	}
 
 	if err := server.ListenAndServe(); err != nil {

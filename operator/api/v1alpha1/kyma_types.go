@@ -354,12 +354,18 @@ func (kyma *Kyma) UpdateCondition(reason KymaConditionReason, status metav1.Cond
 }
 
 func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType,
-	reason KymaConditionReason, conditionStatus metav1.ConditionStatus,
+	reason KymaConditionReason, conditionStatus ...metav1.ConditionStatus,
 ) bool {
 	for _, condition := range kyma.Status.Conditions {
-		if condition.Type == string(conditionType) && condition.Reason == string(reason) &&
-			condition.Status == conditionStatus {
-			return true
+		reasonTypeMatch := condition.Type == string(conditionType) && condition.Reason == string(reason)
+		if len(conditionStatus) > 0 {
+			for i := range conditionStatus {
+				if reasonTypeMatch && condition.Status == conditionStatus[i] {
+					return true
+				}
+			}
+		} else {
+			return reasonTypeMatch
 		}
 	}
 	return false

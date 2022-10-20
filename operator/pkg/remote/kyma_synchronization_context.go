@@ -27,9 +27,18 @@ var (
 )
 
 type KymaSynchronizationContext struct {
-	ControlPlaneClient client.Client
-	RuntimeClient      client.Client
-	ControlPlaneKyma   *v1alpha1.Kyma
+	ControlPlaneClient   client.Client
+	RuntimeClient        client.Client
+	ControlPlaneKyma     *v1alpha1.Kyma
+	statusUpdateRequired bool
+}
+
+func (c *KymaSynchronizationContext) RequiresStatusUpdateInControlPlane() bool {
+	return c.statusUpdateRequired
+}
+
+func (c *KymaSynchronizationContext) RequireStatusUpdateInControlPlane() {
+	c.statusUpdateRequired = true
 }
 
 func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, key client.ObjectKey,
@@ -182,7 +191,7 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 	remoteKyma := &v1alpha1.Kyma{}
 
 	remoteKyma.Name = kyma.Name
-	remoteKyma.Namespace = c.ControlPlaneKyma.Namespace
+	remoteKyma.Namespace = kyma.Namespace
 	if c.ControlPlaneKyma.Spec.Sync.Namespace != "" {
 		remoteKyma.Namespace = c.ControlPlaneKyma.Spec.Sync.Namespace
 	}
