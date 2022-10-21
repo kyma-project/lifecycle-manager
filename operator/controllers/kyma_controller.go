@@ -182,11 +182,11 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, syncContext *rem
 		return fmt.Errorf("could not aggregate module templates for module catalog sync: %w", err)
 	}
 
-	ForceCatalogSSA := true
+	force := true
 
 	if err := catalog.NewRemoteCatalog(
 		syncContext, catalog.Settings{
-			SSAPatchOptions: &client.PatchOptions{FieldManager: "catalog-sync", Force: &ForceCatalogSSA},
+			SSAPatchOptions: &client.PatchOptions{FieldManager: "catalog-sync", Force: &force},
 		},
 	).CreateOrUpdate(ctx, moduleTemplateList); err != nil {
 		return fmt.Errorf("could not synchronize remote module catalog: %w", err)
@@ -284,7 +284,20 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1
 	logger := log.FromContext(ctx)
 
 	if kyma.Spec.Sync.Enabled {
-		if err := remote.RemoveFinalizerFromRemoteKyma(ctx, r, r.RemoteClientCache, kyma); client.IgnoreNotFound(err) != nil {
+		syncContext, err := remote.InitializeKymaSynchronizationContext(ctx, r.Client, kyma, r.RemoteClientCache)
+		if err != nil {
+			return false, fmt.Errorf("remote sync initialization failed: %w", err)
+		}
+		force := true
+		if err := catalog.NewRemoteCatalog(
+			syncContext, catalog.Settings{
+				SSAPatchOptions: &client.PatchOptions{FieldManager: "catalog-sync", Force: &force},
+			},
+		).Cleanup(ctx); err != nil {
+			return false, fmt.Errorf("could not delete remote module catalog: %w", err)
+		}
+		r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
+		if err := remote.RemoveFinalizerFromRemoteKyma(ctx, kyma, syncContext); client.IgnoreNotFound(err) != nil {
 			return false, fmt.Errorf("error while trying to remove finalizer from remote: %w", err)
 		}
 		logger.Info("removed remote finalizer",

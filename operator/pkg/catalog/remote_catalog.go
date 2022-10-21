@@ -238,3 +238,20 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 	// })
 	return nil
 }
+
+func (c *RemoteCatalog) Cleanup(ctx context.Context) error {
+	moduleTemplatesRuntime := &v1alpha1.ModuleTemplateList{}
+	err := c.runtimeClient.List(ctx, moduleTemplatesRuntime)
+	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster, then no cleanup is necessary
+	if meta.IsNoMatchError(err) {
+		return nil
+	}
+
+	for i := range moduleTemplatesRuntime.Items {
+		if err := c.runtimeClient.Delete(ctx, &moduleTemplatesRuntime.Items[i]); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

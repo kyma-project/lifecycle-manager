@@ -114,22 +114,16 @@ func DeleteRemotelySyncedKyma(
 }
 
 func RemoveFinalizerFromRemoteKyma(
-	ctx context.Context, controlPlaneClient client.Client, cache *ClientCache, kyma *v1alpha1.Kyma,
+	ctx context.Context, kyma *v1alpha1.Kyma, syncContext *KymaSynchronizationContext,
 ) error {
-	runtimeClient, err := NewRemoteClient(ctx, controlPlaneClient, client.ObjectKeyFromObject(kyma),
-		kyma.Spec.Sync.Strategy, cache)
-	if err != nil {
-		return err
-	}
-
-	remoteKyma, err := GetRemotelySyncedKyma(ctx, runtimeClient, GetRemoteObjectKey(kyma))
+	remoteKyma, err := GetRemotelySyncedKyma(ctx, syncContext.RuntimeClient, GetRemoteObjectKey(kyma))
 	if err != nil {
 		return err
 	}
 
 	controllerutil.RemoveFinalizer(remoteKyma, v1alpha1.Finalizer)
 
-	return runtimeClient.Update(ctx, remoteKyma)
+	return syncContext.RuntimeClient.Update(ctx, remoteKyma)
 }
 
 func InitializeKymaSynchronizationContext(ctx context.Context, controlPlaneClient client.Client,
