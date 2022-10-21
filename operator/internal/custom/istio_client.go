@@ -55,7 +55,7 @@ func (c *IstioClient) ConfigureVirtualService(ctx context.Context, watchers []v1
 		}
 		return nil
 	}
-
+	//TODO: verify route doesn't exist already
 	virtualService.Spec.Http = prepareIstioHTTPRoutes(watchers...)
 	return c.updateVirtualService(ctx, virtualService)
 }
@@ -124,7 +124,7 @@ func (c *IstioClient) IsListenerHTTPRouteConfigured(ctx context.Context, obj *v1
 	}
 
 	for idx, route := range virtualService.Spec.Http {
-		if route.Name == obj.GetModuleName() {
+		if route.Name == client.ObjectKeyFromObject(obj).String() {
 			istioHTTPRoute := prepareIstioHTTPRouteForCR(obj)
 			return isRouteConfigEqual(virtualService.Spec.Http[idx], istioHTTPRoute), nil
 		}
@@ -157,7 +157,7 @@ func (c *IstioClient) UpdateVirtualServiceConfig(ctx context.Context, obj *v1alp
 		return nil
 	}
 	// lookup cr config
-	routeIdx := lookupHTTPRouteByName(virtualService.Spec.Http, obj.GetModuleName())
+	routeIdx := lookupHTTPRouteByObjectKey(virtualService.Spec.Http, client.ObjectKeyFromObject(obj))
 	if routeIdx != -1 {
 		istioHTTPRoute := prepareIstioHTTPRouteForCR(obj)
 		if isRouteConfigEqual(virtualService.Spec.Http[routeIdx], istioHTTPRoute) {
@@ -172,7 +172,7 @@ func (c *IstioClient) UpdateVirtualServiceConfig(ctx context.Context, obj *v1alp
 	return c.updateVirtualService(ctx, virtualService)
 }
 
-func (c *IstioClient) RemoveVirtualServiceConfigForCR(ctx context.Context, obj *v1alpha1.Watcher,
+func (c *IstioClient) RemoveVirtualServiceConfigForCR(ctx context.Context, watcherObjKey client.ObjectKey,
 ) error {
 	virtualService, customErr := c.getVirtualService(ctx)
 	if customErr != nil {
@@ -185,22 +185,23 @@ func (c *IstioClient) RemoveVirtualServiceConfigForCR(ctx context.Context, obj *
 			Delete(ctx, virtualServiceName, metav1.DeleteOptions{})
 	}
 
-	routeIdx := lookupHTTPRouteByName(virtualService.Spec.Http, obj.GetModuleName())
-	if routeIdx != -1 {
-		l := len(virtualService.Spec.Http)
-		copy(virtualService.Spec.Http[routeIdx:], virtualService.Spec.Http[routeIdx+1:])
-		virtualService.Spec.Http[l-1] = nil
-		virtualService.Spec.Http = virtualService.Spec.Http[:l-1]
+	routeIdx := lookupHTTPRouteByObjectKey(virtualService.Spec.Http, watcherObjKey)
+	if routeIdx == -1 {
+		return nil
 	}
+	l := len(virtualService.Spec.Http)
+	copy(virtualService.Spec.Http[routeIdx:], virtualService.Spec.Http[routeIdx+1:])
+	virtualService.Spec.Http[l-1] = nil
+	virtualService.Spec.Http = virtualService.Spec.Http[:l-1]
 	return c.updateVirtualService(ctx, virtualService)
 }
 
-func lookupHTTPRouteByName(routes []*istioapi.HTTPRoute, name string) int {
+func lookupHTTPRouteByObjectKey(routes []*istioapi.HTTPRoute, watcherObjKey client.ObjectKey) int {
 	if len(routes) == 0 {
 		return -1
 	}
 	for idx, route := range routes {
-		if route.Name == name {
+		if route.Name == watcherObjKey.String() {
 			return idx
 		}
 	}
@@ -236,7 +237,7 @@ func prepareIstioHTTPRoutes(watchers ...v1alpha1.Watcher) []*istioapi.HTTPRoute 
 
 func prepareIstioHTTPRouteForCR(obj *v1alpha1.Watcher) *istioapi.HTTPRoute {
 	return &istioapi.HTTPRoute{
-		Name: obj.GetModuleName(),
+		Name: client.ObjectKeyFromObject(obj).String(),
 		Match: []*istioapi.HTTPMatchRequest{
 			{
 				Uri: &istioapi.StringMatch{

@@ -150,6 +150,11 @@ var _ = BeforeSuite(func() {
 			EnableVerification: false,
 		},
 		RemoteClientCache: remoteClientCache,
+		SkrChartConfig: &controllers.SkrChartConfig{
+			WebhookChartPath:       webhookChartPath,
+			SkrWebhookMemoryLimits: "200Mi",
+			SkrWebhookCPULimits:    "1",
+		},
 	}).SetupWithManager(k8sManager, controller.Options{}, listenerAddr)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.ModuleCatalogReconciler{
@@ -167,11 +172,6 @@ var _ = BeforeSuite(func() {
 		RestConfig:       k8sManager.GetConfig(),
 		Scheme:           scheme.Scheme,
 		RequeueIntervals: intervals,
-		Config: &controllers.WatcherConfig{
-			WebhookChartPath:       webhookChartPath,
-			SkrWebhookMemoryLimits: "200Mi",
-			SkrWebhookCPULimits:    "1",
-		},
 	}).SetupWithManager(k8sManager, controller.Options{})
 	Expect(err).ToNot(HaveOccurred())
 

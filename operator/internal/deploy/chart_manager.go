@@ -2,92 +2,71 @@ package deploy
 
 import (
 	"context"
-
+	"errors"
+	"fmt"
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
+	modulelib "github.com/kyma-project/module-manager/operator/pkg/manifest"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
+	"net"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	k8syaml "sigs.k8s.io/yaml"
+	"strconv"
 )
 
 type SKRChartManager struct {
-	kcpClient              client.Client
 	WebhookChartPath       string
 	SkrWebhookMemoryLimits string
 	SkrWebhookCPULimits    string
 	KcpAddr                string
 }
 
-func NewSKRChartManager(cfg *rest.Config,
-	chartPath, memoryLimits, cpuLimits string,
-) (*SKRChartManager, error) {
-	ctx := context.TODO()
-	kcpClient, err := client.New(cfg, client.Options{})
-	if err != nil {
-		return nil, err
-	}
+func NewSKRChartManager(chartPath, memoryLimits, cpuLimits string) (*SKRChartManager, error) {
 	mgr := &SKRChartManager{
-		kcpClient:              kcpClient,
 		WebhookChartPath:       chartPath,
 		SkrWebhookMemoryLimits: memoryLimits,
 		SkrWebhookCPULimits:    cpuLimits,
 	}
-	kcpAddr, err := resolveKcpAddr(ctx, kcpClient)
-	if err != nil {
-		return nil, err
-	}
-	mgr.KcpAddr = kcpAddr
+
 	return mgr, nil
 }
 
-func (m *SKRChartManager) InstallWebhookChart(ctx context.Context,
-	watcherList *v1alpha1.WatcherList, kyma *v1alpha1.Kyma, inClusterCfg *rest.Config,
-) error {
-	skrCfg, err := m.getSKRClientFromKyma(ctx, kyma, inClusterCfg)
+func (m *SKRChartManager) InstallWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
+	remoteClientCache *remote.ClientCache, kcpClient client.Client) error {
+	skrClient, err := remote.NewRemoteClient(ctx, kcpClient, client.ObjectKeyFromObject(kyma),
+		kyma.Spec.Sync.Strategy, remoteClientCache)
 	if err != nil {
 		return err
 	}
-	skrClient, err := client.New(skrCfg, client.Options{})
+	skrCfg, err := remote.GetRemoteRestConfig(ctx, kcpClient, client.ObjectKeyFromObject(kyma),
+		kyma.Spec.Sync.Strategy)
 	if err != nil {
 		return err
 	}
-	argsVals, err := m.generateHelmChartArgs(ctx, watcherList)
+	argsVals, err := m.generateHelmChartArgs(ctx, kcpClient)
 	if err != nil {
 		return err
 	}
+	//TODO: verify webhook configuration with watchers' configuration before re-installing the chart
+	//TODO: make sure that validating-webhook-config resource is in sync with the secret configuration
 	skrWatcherInstallInfo := prepareInstallInfo(m.WebhookChartPath, ReleaseName, skrCfg, skrClient, argsVals)
 	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeInstall)
 }
 
-func (m *SKRChartManager) RemoveWebhookChart(ctx context.Context,
-	watcherList *v1alpha1.WatcherList, kymaObjKey client.ObjectKey, inClusterCfg *rest.Config,
-) error {
-	secret := &corev1.Secret{}
-	//nolint:gosec
-	err := m.kcpClient.Get(ctx, kymaObjKey, secret)
-	if client.IgnoreNotFound(err) != nil {
-		return err
-	}
-	if apierrors.IsNotFound(err) {
-		return m.removeSKRChart(ctx, watcherList, inClusterCfg)
-	}
-	skrCfg, err := clientcmd.RESTConfigFromKubeConfig(secret.Data[kubeconfigKey])
+func (m *SKRChartManager) RemoveWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
+	remoteClientCache *remote.ClientCache, kcpClient client.Client) error {
+	skrClient, err := remote.NewRemoteClient(ctx, kcpClient, client.ObjectKeyFromObject(kyma),
+		kyma.Spec.Sync.Strategy, remoteClientCache)
 	if err != nil {
 		return err
 	}
-	return m.removeSKRChart(ctx, watcherList, skrCfg)
-}
-
-func (m *SKRChartManager) removeSKRChart(ctx context.Context,
-	watcherList *v1alpha1.WatcherList, skrCfg *rest.Config,
-) error {
-	skrClient, err := client.New(skrCfg, client.Options{})
+	skrCfg, err := remote.GetRemoteRestConfig(ctx, kcpClient, client.ObjectKeyFromObject(kyma),
+		kyma.Spec.Sync.Strategy)
 	if err != nil {
 		return err
 	}
-	argsVals, err := m.generateHelmChartArgs(ctx, watcherList)
+	argsVals, err := m.generateHelmChartArgs(ctx, kcpClient)
 	if err != nil {
 		return err
 	}
@@ -95,48 +74,55 @@ func (m *SKRChartManager) removeSKRChart(ctx context.Context,
 	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeUninstall)
 }
 
-func (m *SKRChartManager) getSKRClientFromKyma(ctx context.Context, kyma *v1alpha1.Kyma, kcpCfg *rest.Config,
-) (*rest.Config, error) {
-
-	if kyma.Spec.Sync.Strategy == v1alpha1.SyncStrategyLocalClient || !kyma.Spec.Sync.Enabled {
-		return kcpCfg, nil
+func (m *SKRChartManager) generateHelmChartArgs(ctx context.Context, kcpClient client.Client) (map[string]interface{}, error) {
+	watcherList := &v1alpha1.WatcherList{}
+	if err := kcpClient.List(ctx, watcherList, &client.ListOptions{}); err != nil {
+		return nil, fmt.Errorf("error listing watcher resources: %w", err)
 	}
-	secret := &corev1.Secret{}
-	//nolint:gosec
-	err := m.kcpClient.Get(ctx, client.ObjectKeyFromObject(kyma), secret)
-	if err != nil {
-		return nil, err
-	}
-	restCfg, err := clientcmd.RESTConfigFromKubeConfig(secret.Data[kubeconfigKey])
-	if err != nil {
-		return nil, err
-	}
-	return restCfg, nil
-
-}
-
-func (m *SKRChartManager) generateHelmChartArgs(ctx context.Context,
-	watcherList *v1alpha1.WatcherList,
-) (map[string]interface{}, error) {
 	if len(watcherList.Items) == 0 {
-		return map[string]interface{}{
-			"kcpAddr":               m.KcpAddr,
-			"resourcesLimitsMemory": m.SkrWebhookMemoryLimits,
-			"resourcesLimitsCPU":    m.SkrWebhookCPULimits,
-			customConfigKey:         "",
-		}, nil
+		return nil, errors.New("found 0 watcher resources, expected at least 1")
 	}
 	chartCfg := generateWatchableConfigs(watcherList)
 	bytes, err := k8syaml.Marshal(chartCfg)
 	if err != nil {
 		return nil, err
 	}
+
+	kcpAddr, err := m.resolveKcpAddr(ctx, kcpClient)
+	if err != nil {
+		return nil, err
+	}
 	return map[string]interface{}{
-		"kcpAddr":               m.KcpAddr,
+		"kcpAddr":               kcpAddr,
 		"resourcesLimitsMemory": m.SkrWebhookMemoryLimits,
 		"resourcesLimitsCPU":    m.SkrWebhookCPULimits,
 		customConfigKey:         string(bytes),
 	}, nil
+}
+
+func (m *SKRChartManager) resolveKcpAddr(ctx context.Context, kcpClient client.Client) (string, error) {
+	if m.KcpAddr != "" {
+		return m.KcpAddr, nil
+	}
+	// Get external IP from the ISTIO load balancer external IP
+	loadBalancerService := &corev1.Service{}
+	if err := kcpClient.Get(ctx, client.ObjectKey{Name: IngressServiceName, Namespace: IstioSytemNs},
+		loadBalancerService); err != nil {
+		return "", err
+	}
+	if len(loadBalancerService.Status.LoadBalancer.Ingress) == 0 {
+		return "", ErrLoadBalancerIPIsNotAssigned
+	}
+	externalIP := loadBalancerService.Status.LoadBalancer.Ingress[0].IP
+	var port int32
+	for _, loadBalancerPort := range loadBalancerService.Spec.Ports {
+		if loadBalancerPort.Name == "http2" {
+			port = loadBalancerPort.Port
+			break
+		}
+	}
+	m.KcpAddr = net.JoinHostPort(externalIP, strconv.Itoa(int(port)))
+	return m.KcpAddr, nil
 }
 
 func generateWatchableConfigs(watcherList *v1alpha1.WatcherList) map[string]WatchableConfig {
@@ -150,4 +136,42 @@ func generateWatchableConfigs(watcherList *v1alpha1.WatcherList) map[string]Watc
 	}
 	return chartCfg
 
+}
+
+func installOrRemoveChartOnSKR(ctx context.Context, deployInfo modulelib.InstallInfo, mode Mode,
+) error {
+	logger := logf.FromContext(ctx)
+	if mode == ModeUninstall {
+		uninstalled, err := modulelib.UninstallChart(&logger, deployInfo, nil)
+		if err != nil {
+			return fmt.Errorf("failed to uninstall webhook config: %w", err)
+		}
+		if !uninstalled {
+			return ErrSKRWebhookWasNotRemoved
+		}
+		ready, err := modulelib.ConsistencyCheck(&logger, deployInfo, nil)
+		if err != nil {
+			return fmt.Errorf("failed to verify webhook resources: %w", err)
+		}
+		if ready {
+			return ErrSKRWebhookWasNotRemoved
+		}
+		return nil
+	}
+
+	installed, err := modulelib.InstallChart(&logger, deployInfo, nil)
+	if err != nil {
+		return fmt.Errorf("failed to install webhook config: %w", err)
+	}
+	if !installed {
+		return ErrSKRWebhookHasNotBeenInstalled
+	}
+	ready, err := modulelib.ConsistencyCheck(&logger, deployInfo, nil)
+	if err != nil {
+		return fmt.Errorf("failed to verify webhook resources: %w", err)
+	}
+	if !ready {
+		return ErrSKRWebhookNotReady
+	}
+	return nil
 }

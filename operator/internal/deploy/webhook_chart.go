@@ -4,36 +4,36 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
-	"strconv"
-
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"github.com/kyma-project/module-manager/operator/pkg/custom"
 	modulelib "github.com/kyma-project/module-manager/operator/pkg/manifest"
 	"github.com/kyma-project/module-manager/operator/pkg/types"
-	v1 "k8s.io/api/core/v1"
+	admissionv1 "k8s.io/api/admissionregistration/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
+	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	k8syaml "sigs.k8s.io/yaml"
+	"strings"
 )
 
 type Mode string
 
 const (
-	ModeInstall                         = Mode("install")
-	ModeUninstall                       = Mode("uninstall")
-	customConfigKey                     = "modules"
-	kubeconfigKey                       = "config"
-	servicePathTpl                      = "/validate/%s"
-	webhookNameTpl                      = "%s.operator.kyma-project.io"
-	ReleaseName                         = "skr"
-	specSubresources                    = "*"
-	statusSubresources                  = "*/status"
-	configuredWebhooksDeletionThreshold = 1
-	expectedWebhookNamePartsLength      = 4
-	IstioSytemNs                        = "istio-system"
-	IngressServiceName                  = "istio-ingressgateway"
+	ModeInstall                    = Mode("install")
+	ModeUninstall                  = Mode("uninstall")
+	customConfigKey                = "modules"
+	servicePathTpl                 = "/validate/%s"
+	ReleaseName                    = "skr"
+	specSubresources               = "*"
+	statusSubresources             = "*/status"
+	expectedWebhookNamePartsLength = 4
+	IstioSytemNs                   = "istio-system"
+	IngressServiceName             = "istio-ingressgateway"
+	webhookConfigNameTpl           = "%s-webhook"
+	deploymentNameTpl              = "%s-webhook"
 )
 
 var (
@@ -43,35 +43,105 @@ var (
 	ErrLoadBalancerIPIsNotAssigned   = errors.New("load balancer service external ip is not assigned")
 )
 
-func installSKRWebhook(ctx context.Context, chartPath, releaseName string, obj *v1alpha1.Watcher,
-	restConfig *rest.Config, kcpClient client.Client, skrWebhookMemoryLimits, skrWebhookCPULimits string,
-) error {
-	restClient, err := client.New(restConfig, client.Options{})
-	if err != nil {
-		return err
-	}
-	argsVals, err := generateHelmChartArgsForCR(ctx, obj, kcpClient, skrWebhookMemoryLimits, skrWebhookCPULimits)
-	if err != nil {
-		return err
-	}
-	skrWatcherInstallInfo := prepareInstallInfo(chartPath, releaseName, restConfig, restClient, argsVals)
-	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeInstall)
+type WatchableConfig struct {
+	Labels     map[string]string `json:"labels"`
+	StatusOnly bool              `json:"statusOnly"`
 }
 
-func removeSKRWebhook(ctx context.Context, chartPath, releaseName string,
-	obj *v1alpha1.Watcher, restConfig *rest.Config, kcpClient client.Client,
-	skrWebhookMemoryLimits, skrWebhookCPULimits string,
-) error {
-	restClient, err := client.New(restConfig, client.Options{})
-	if err != nil {
-		return err
+func IsWebhookConfigured(obj *v1alpha1.Watcher, webhookConfig *admissionv1.ValidatingWebhookConfiguration) bool {
+	if len(webhookConfig.Webhooks) < 1 {
+		return false
 	}
-	argsVals, err := generateHelmChartArgsForCR(ctx, obj, kcpClient, skrWebhookMemoryLimits, skrWebhookCPULimits)
-	if err != nil {
-		return err
+	idx := lookupWebhookConfigForCR(webhookConfig.Webhooks, obj)
+	if idx != -1 {
+		// TODO: replace with deepequal?
+		return verifyWebhookConfig(webhookConfig.Webhooks[idx], obj)
 	}
-	skrWatcherInstallInfo := prepareInstallInfo(chartPath, releaseName, restConfig, restClient, argsVals)
-	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeUninstall)
+	return false
+}
+
+func GetDeployedWebhook(ctx context.Context, restConfig *rest.Config,
+) (*admissionv1.ValidatingWebhookConfiguration, error) {
+	remoteClient, err := client.New(restConfig, client.Options{})
+	if err != nil {
+		return nil, err
+	}
+	webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
+	err = remoteClient.Get(ctx, client.ObjectKey{
+		Namespace: metav1.NamespaceDefault,
+		Name:      resolveSKRChartResourceName(webhookConfigNameTpl),
+	}, webhookConfig)
+	if err != nil {
+		return nil, err
+	}
+	return webhookConfig, nil
+}
+
+func (m *SKRChartManager) IsSkrChartRemoved(ctx context.Context, kyma *v1alpha1.Kyma,
+	remoteClientCache *remote.ClientCache, kcpClient client.Client) bool {
+	skrClient, err := remote.NewRemoteClient(ctx, kcpClient, client.ObjectKeyFromObject(kyma),
+		kyma.Spec.Sync.Strategy, remoteClientCache)
+	if err != nil {
+		return false
+	}
+	err = skrClient.Get(ctx, client.ObjectKey{
+		Namespace: metav1.NamespaceDefault,
+		Name:      resolveSKRChartResourceName(deploymentNameTpl),
+	}, &appsv1.Deployment{})
+	return apierrors.IsNotFound(err)
+}
+
+func verifyWebhookConfig(
+	webhook admissionv1.ValidatingWebhook,
+	watcherCR *v1alpha1.Watcher,
+) bool {
+	webhookNameParts := strings.Split(webhook.Name, ".")
+	if len(webhookNameParts) != expectedWebhookNamePartsLength {
+		return false
+	}
+	moduleName := webhookNameParts[0]
+	expectedModuleName, exists := watcherCR.Labels[v1alpha1.ManagedBylabel]
+	if !exists {
+		return false
+	}
+	if moduleName != expectedModuleName {
+		return false
+	}
+	if *webhook.ClientConfig.Service.Path != fmt.Sprintf(servicePathTpl, moduleName) {
+		return false
+	}
+
+	if !reflect.DeepEqual(webhook.ObjectSelector.MatchLabels, watcherCR.Spec.LabelsToWatch) {
+		return false
+	}
+	if watcherCR.Spec.Field == v1alpha1.StatusField && webhook.Rules[0].Resources[0] != statusSubresources {
+		return false
+	}
+	if watcherCR.Spec.Field == v1alpha1.SpecField && webhook.Rules[0].Resources[0] != specSubresources {
+		return false
+	}
+
+	return true
+}
+
+func lookupWebhookConfigForCR(webhooks []admissionv1.ValidatingWebhook, obj *v1alpha1.Watcher) int {
+	cfgIdx := -1
+	for idx, webhook := range webhooks {
+		webhookNameParts := strings.Split(webhook.Name, ".")
+		if len(webhookNameParts) == 0 {
+			continue
+		}
+		moduleName := webhookNameParts[0]
+		objModuleName := obj.GetModuleName()
+		if moduleName == objModuleName {
+			return idx
+		}
+	}
+	return cfgIdx
+}
+
+func resolveSKRChartResourceName(resourceNameTpl string) string {
+	return fmt.Sprintf(resourceNameTpl, ReleaseName)
 }
 
 func prepareInstallInfo(chartPath, releaseName string, restConfig *rest.Config, restClient client.Client,
@@ -90,92 +160,4 @@ func prepareInstallInfo(chartPath, releaseName string, restConfig *rest.Config, 
 			Config: restConfig,
 		},
 	}
-}
-
-func generateHelmChartArgsForCR(ctx context.Context, obj *v1alpha1.Watcher, kcpClient client.Client,
-	skrWebhookMemoryLimits string, skrWebhookCPULimits string,
-) (map[string]interface{}, error) {
-	resolvedKcpAddr, err := resolveKcpAddr(ctx, kcpClient)
-	if err != nil {
-		return nil, err
-	}
-	chartCfg := generateWatchableConfigForCR(obj)
-	bytes, err := k8syaml.Marshal(chartCfg)
-	if err != nil {
-		return nil, err
-	}
-	return map[string]interface{}{
-		"kcpAddr":               resolvedKcpAddr,
-		"resourcesLimitsMemory": skrWebhookMemoryLimits,
-		"resourcesLimitsCPU":    skrWebhookCPULimits,
-		customConfigKey:         string(bytes),
-	}, nil
-}
-
-func generateWatchableConfigForCR(obj *v1alpha1.Watcher) map[string]WatchableConfig {
-	statusOnly := obj.Spec.Field == v1alpha1.StatusField
-	return map[string]WatchableConfig{
-		obj.GetModuleName(): {
-			Labels:     obj.Spec.LabelsToWatch,
-			StatusOnly: statusOnly,
-		},
-	}
-}
-
-func installOrRemoveChartOnSKR(ctx context.Context, deployInfo modulelib.InstallInfo, mode Mode,
-) error {
-	logger := logf.FromContext(ctx)
-	if mode == ModeUninstall {
-		uninstalled, err := modulelib.UninstallChart(&logger, deployInfo, nil)
-		if err != nil {
-			return fmt.Errorf("failed to uninstall webhook config: %w", err)
-		}
-		if !uninstalled {
-			return ErrSKRWebhookWasNotRemoved
-		}
-		ready, err := modulelib.ConsistencyCheck(&logger, deployInfo, nil)
-		if err != nil {
-			return fmt.Errorf("failed to verify webhook resources: %w", err)
-		}
-		if ready {
-			return ErrSKRWebhookWasNotRemoved
-		}
-		return nil
-	}
-	installed, err := modulelib.InstallChart(&logger, deployInfo, nil)
-	if err != nil {
-		return fmt.Errorf("failed to install webhook config: %w", err)
-	}
-	if !installed {
-		return ErrSKRWebhookHasNotBeenInstalled
-	}
-	ready, err := modulelib.ConsistencyCheck(&logger, deployInfo, nil)
-	if err != nil {
-		return fmt.Errorf("failed to verify webhook resources: %w", err)
-	}
-	if !ready {
-		return ErrSKRWebhookNotReady
-	}
-	return nil
-}
-
-func resolveKcpAddr(ctx context.Context, kcpClient client.Client) (string, error) {
-	// Get external IP from the ISTIO load balancer external IP
-	loadBalancerService := &v1.Service{}
-	if err := kcpClient.Get(ctx, client.ObjectKey{Name: IngressServiceName, Namespace: IstioSytemNs},
-		loadBalancerService); err != nil {
-		return "", err
-	}
-	if len(loadBalancerService.Status.LoadBalancer.Ingress) == 0 {
-		return "", ErrLoadBalancerIPIsNotAssigned
-	}
-	externalIP := loadBalancerService.Status.LoadBalancer.Ingress[0].IP
-	var port int32
-	for _, loadBalancerPort := range loadBalancerService.Spec.Ports {
-		if loadBalancerPort.Name == "http2" {
-			port = loadBalancerPort.Port
-			break
-		}
-	}
-	return net.JoinHostPort(externalIP, strconv.Itoa(int(port))), nil
 }

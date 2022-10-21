@@ -263,9 +263,20 @@ func setupKymaReconciler(
 	intervals controllers.RequeueIntervals,
 	options controller.Options,
 ) {
+	fileInfo, err := os.Stat(flagVar.skrWatcherPath)
+	if err != nil || !fileInfo.IsDir() {
+		setupLog.Error(err, "failed to read local skr chart")
+	}
+	skrChartConfig := &controllers.SkrChartConfig{
+		WebhookChartPath:       flagVar.skrWatcherPath,
+		SkrWebhookMemoryLimits: flagVar.skrWebhookMemoryLimits,
+		SkrWebhookCPULimits:    flagVar.skrWebhookCPULimits,
+	}
 	if err := (&controllers.KymaReconciler{
 		Client:            mgr.GetClient(),
 		EventRecorder:     mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		KcpRestConfig:     mgr.GetConfig(),
+		SkrChartConfig:    skrChartConfig,
 		RemoteClientCache: remoteClientCache,
 		RequeueIntervals:  intervals,
 		VerificationSettings: signature.VerificationSettings{
@@ -306,17 +317,11 @@ func setupKcpWatcherReconciler(
 	if err != nil || !fileInfo.IsDir() {
 		setupLog.Error(err, "failed to read local skr chart")
 	}
-	watcherConfig := &controllers.WatcherConfig{
-		WebhookChartPath:       flagVar.skrWatcherPath,
-		SkrWebhookMemoryLimits: flagVar.skrWebhookMemoryLimits,
-		SkrWebhookCPULimits:    flagVar.skrWebhookCPULimits,
-	}
 	if err := (&controllers.WatcherReconciler{
 		Client:           mgr.GetClient(),
 		Scheme:           mgr.GetScheme(),
 		RestConfig:       mgr.GetConfig(),
 		RequeueIntervals: intervals,
-		Config:           watcherConfig,
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Watcher")
 		os.Exit(1)

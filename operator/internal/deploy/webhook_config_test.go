@@ -3,11 +3,8 @@ package deploy_test
 import (
 	"context"
 	"fmt"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
@@ -51,38 +48,40 @@ var _ = Describe("deploy watcher", Ordered, func() {
 	BeforeAll(func() {
 		kymaSample = deploy.CreateKymaCR("kyma-sample")
 		Expect(k8sClient.Create(ctx, kymaSample)).To(Succeed())
+		Expect(k8sClient.Create(ctx, watcherCR)).To(Succeed())
 	})
 
 	AfterAll(func() {
 		// clean up kyma CR
 		Expect(k8sClient.Delete(ctx, kymaSample)).To(Succeed())
+		Expect(k8sClient.Delete(ctx, watcherCR)).To(Succeed())
 	})
 
-	It("deploys watcher helm chart with correct webhook config", func() {
-		err := deploy.UpdateWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, memoryLimits, cpuLimits)
-		Expect(err).ShouldNot(HaveOccurred())
-		webhookCfg, err := deploy.GetDeployedWebhook(ctx, testEnv.Config)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(deploy.IsWebhookConfigured(watcherCR, webhookCfg)).To(BeTrue())
-	})
-
-	It("updates webhook config when helm chart is already installed", func() {
-		watcherCR.Spec.Field = v1alpha1.SpecField
-		err := deploy.UpdateWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, memoryLimits, cpuLimits)
-		Expect(err).ShouldNot(HaveOccurred())
-		webhookCfg, err := deploy.GetDeployedWebhook(ctx, testEnv.Config)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(deploy.IsWebhookConfigured(watcherCR, webhookCfg)).To(BeTrue())
-	})
-
-	It("removes watcher helm chart from SKR cluster when last cr is deleted", func() {
-		err := deploy.RemoveWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, memoryLimits, cpuLimits)
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(deploy.IsChartRemoved(ctx, k8sClient)).To(BeTrue())
-	})
+	//It("deploys watcher helm chart with correct webhook config", func() {
+	//	err := deploy.UpdateWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, memoryLimits, cpuLimits)
+	//	Expect(err).ShouldNot(HaveOccurred())
+	//	webhookCfg, err := deploy.GetDeployedWebhook(ctx, testEnv.Config)
+	//	Expect(err).NotTo(HaveOccurred())
+	//	Expect(deploy.IsWebhookConfigured(watcherCR, webhookCfg)).To(BeTrue())
+	//})
+	//
+	//It("updates webhook config when helm chart is already installed", func() {
+	//	watcherCR.Spec.Field = v1alpha1.SpecField
+	//	err := deploy.UpdateWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, memoryLimits, cpuLimits)
+	//	Expect(err).ShouldNot(HaveOccurred())
+	//	webhookCfg, err := deploy.GetDeployedWebhook(ctx, testEnv.Config)
+	//	Expect(err).NotTo(HaveOccurred())
+	//	Expect(deploy.IsWebhookConfigured(watcherCR, webhookCfg)).To(BeTrue())
+	//})
+	//
+	//It("removes watcher helm chart from SKR cluster when last cr is deleted", func() {
+	//	err := deploy.RemoveWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, memoryLimits, cpuLimits)
+	//	Expect(err).ShouldNot(HaveOccurred())
+	//	Expect(apierrors.IsNotFound(webhookMgr.IsSkrChartRemoved(ctx, kymaSample, remoteClientCache))).To(BeTrue())
+	//})
 
 	It("webhook manager installs watcher helm chart with correct webhook config", func() {
-		err := webhookMgr.InstallWebhookChart(ctx, &v1alpha1.WatcherList{Items: []v1alpha1.Watcher{*watcherCR}}, kymaSample, testEnv.Config)
+		err := webhookMgr.InstallWebhookChart(ctx, kymaSample, remoteClientCache, k8sClient)
 		Expect(err).ShouldNot(HaveOccurred())
 		webhookCfg, err := deploy.GetDeployedWebhook(ctx, testEnv.Config)
 		Expect(err).NotTo(HaveOccurred())
@@ -90,8 +89,8 @@ var _ = Describe("deploy watcher", Ordered, func() {
 	})
 
 	It("webhook manager removes watcher helm chart from SKR cluster when watcher list is empty", func() {
-		err := webhookMgr.RemoveWebhookChart(ctx, &v1alpha1.WatcherList{Items: []v1alpha1.Watcher{}}, client.ObjectKeyFromObject(kymaSample), testEnv.Config)
+		err := webhookMgr.RemoveWebhookChart(ctx, kymaSample, remoteClientCache, k8sClient)
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(deploy.IsChartRemoved(ctx, k8sClient)).To(BeTrue())
+		Expect(webhookMgr.IsSkrChartRemoved(ctx, kymaSample, remoteClientCache, k8sClient)).To(BeTrue())
 	})
 })

@@ -6,14 +6,10 @@ import (
 	"io"
 	"os"
 
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	. "github.com/onsi/gomega"
-
-	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 )
 
 const (
@@ -47,15 +43,6 @@ func deserializeIstioResources() ([]*unstructured.Unstructured, error) {
 
 func isEven(idx int) bool {
 	return idx%2 == 0
-}
-
-func watcherCRState(watcherObjKey client.ObjectKey) func(g Gomega) v1alpha1.WatcherState {
-	return func(g Gomega) v1alpha1.WatcherState {
-		watcherCR := &v1alpha1.Watcher{}
-		err := controlPlaneClient.Get(ctx, watcherObjKey, watcherCR)
-		g.Expect(err).NotTo(HaveOccurred())
-		return watcherCR.Status.State
-	}
 }
 
 func createWatcherCR(moduleName string, statusOnly bool) *v1alpha1.Watcher {

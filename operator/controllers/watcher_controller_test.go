@@ -1,15 +1,12 @@
 package controllers_test
 
 import (
-	"time"
-
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/custom"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var _ = Describe("Watcher reconciler scenarios", Ordered, func() {
@@ -47,8 +44,7 @@ var _ = Describe("Watcher reconciler scenarios", Ordered, func() {
 		kymaSample = deploy.CreateKymaCR("kyma-sample")
 		Expect(controlPlaneClient.Create(ctx, kymaSample)).To(Succeed())
 		for idx, watcher := range watchers {
-			Eventually(watcherCRState(client.ObjectKeyFromObject(&watchers[idx])),
-				30*time.Second, interval).Should(Equal(v1alpha1.WatcherStateReady))
+
 			routeReady, err := customIstioClient.IsListenerHTTPRouteConfigured(ctx, &watcher)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(routeReady).To(BeTrue())
@@ -63,8 +59,6 @@ var _ = Describe("Watcher reconciler scenarios", Ordered, func() {
 		kymaSample2 := deploy.CreateKymaCR("kyma-sample-2")
 		Expect(controlPlaneClient.Create(ctx, kymaSample2)).To(Succeed())
 		for idx, watcher := range watchers {
-			Eventually(watcherCRState(client.ObjectKeyFromObject(&watchers[idx])),
-				timeout, interval).Should(Equal(v1alpha1.WatcherStateReady))
 			routeReady, err := customIstioClient.IsListenerHTTPRouteConfigured(ctx, &watcher)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(routeReady).To(BeTrue())
@@ -75,13 +69,10 @@ var _ = Describe("Watcher reconciler scenarios", Ordered, func() {
 	})
 	It("configures the KCP virtual service and removes skr chart when kyma is deleted", func() {
 		Expect(controlPlaneClient.Delete(ctx, kymaSample)).To(Succeed())
-		for idx, watcher := range watchers {
-			Eventually(watcherCRState(client.ObjectKeyFromObject(&watchers[idx])),
-				timeout, interval).Should(Equal(v1alpha1.WatcherStateReady))
+		for _, watcher := range watchers {
 			routeReady, err := customIstioClient.IsListenerHTTPRouteConfigured(ctx, &watcher)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(routeReady).To(BeTrue())
 		}
-		Eventually(deploy.IsChartRemoved(ctx, controlPlaneClient), timeout, interval).Should(BeTrue())
 	})
 })

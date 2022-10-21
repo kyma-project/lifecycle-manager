@@ -57,6 +57,10 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 			"make sure you installed all CRDs: %w", err)
 	}
 
+	if err := r.SetSKRChartManager(); err != nil {
+		return fmt.Errorf("unable to set chart manager for watcher controller: %w", err)
+	}
+
 	if err := controllerBuilder.Complete(r); err != nil {
 		return fmt.Errorf("error occurred while building controller: %w", err)
 	}
@@ -97,11 +101,8 @@ func (r *WatcherReconciler) SetupWithManager(
 	if err := r.SetIstioClient(); err != nil {
 		return fmt.Errorf("unable to set istio client for watcher controller: %w", err)
 	}
-	if err := r.SetSKRChartManager(); err != nil {
-		return fmt.Errorf("unable to set chart manager for watcher controller: %w", err)
-	}
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.Kyma{}).
+		For(&v1alpha1.Watcher{}).
 		WithOptions(options).
 		Complete(r)
 }

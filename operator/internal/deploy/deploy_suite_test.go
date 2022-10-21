@@ -2,6 +2,7 @@ package deploy_test
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"net/http"
 	"testing"
 
@@ -28,10 +29,11 @@ func TestAPIs(t *testing.T) {
 }
 
 var (
-	ctx        context.Context         //nolint:gochecknoglobals
-	testEnv    *envtest.Environment    //nolint:gochecknoglobals
-	k8sClient  client.Client           //nolint:gochecknoglobals
-	webhookMgr *deploy.SKRChartManager //nolint:gochecknoglobals
+	ctx               context.Context         //nolint:gochecknoglobals
+	testEnv           *envtest.Environment    //nolint:gochecknoglobals
+	k8sClient         client.Client           //nolint:gochecknoglobals
+	webhookMgr        *deploy.SKRChartManager //nolint:gochecknoglobals
+	remoteClientCache *remote.ClientCache     //nolint:gochecknoglobals
 )
 
 var _ = BeforeSuite(func() {
@@ -67,9 +69,11 @@ var _ = BeforeSuite(func() {
 
 	Expect(deploy.CreateLoadBalancer(ctx, k8sClient)).To(Succeed())
 
-	webhookMgr, err = deploy.NewSKRChartManager(cfg, webhookChartPath, memoryLimits, cpuLimits)
+	webhookMgr, err = deploy.NewSKRChartManager(webhookChartPath, memoryLimits, cpuLimits)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(webhookMgr).NotTo(BeNil())
+
+	remoteClientCache = remote.NewClientCache()
 })
 
 var _ = AfterSuite(func() {

@@ -19,6 +19,8 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
+	"k8s.io/client-go/rest"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -54,6 +56,14 @@ type RequeueIntervals struct {
 	Waiting time.Duration
 }
 
+type SkrChartConfig struct {
+	// WebhookChartPath represents the path of the webhook chart
+	// to be installed on SKR clusters upon reconciling kyma CRs.
+	WebhookChartPath       string
+	SkrWebhookMemoryLimits string
+	SkrWebhookCPULimits    string
+}
+
 // KymaReconciler reconciles a Kyma object.
 type KymaReconciler struct {
 	client.Client
@@ -61,6 +71,9 @@ type KymaReconciler struct {
 	RequeueIntervals
 	signature.VerificationSettings
 	RemoteClientCache *remote.ClientCache
+	*deploy.SKRChartManager
+	SkrChartConfig *SkrChartConfig
+	KcpRestConfig  *rest.Config
 }
 
 //nolint:lll
@@ -223,6 +236,11 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 		return r.UpdateStatus(ctx, kyma, v1alpha1.StateReady, message)
 	}
 
+	if err := r.InstallWebhookChart(ctx, kyma, r.RemoteClientCache, r.Client); err != nil {
+		return err
+	}
+	logger.V(1).Info("successfully installed skr chart!")
+
 	// if the ready condition is not applicable, but we changed the conditions, we still need to issue an update
 	if statusUpdateRequiredFromModuleSync ||
 		statusUpdateRequiredFromModuleStatusSync ||
@@ -238,6 +256,14 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 
 func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error) {
 	logger := log.FromContext(ctx)
+
+	if err := r.RemoveWebhookChart(ctx, kyma, r.RemoteClientCache, r.Client); client.IgnoreNotFound(err) != nil {
+		return false, fmt.Errorf(": %w", err)
+	}
+
+	if chartRemoved := r.IsSkrChartRemoved(ctx, kyma, r.RemoteClientCache, r.Client); !chartRemoved {
+		return true, nil
+	}
 
 	if kyma.Spec.Sync.Enabled {
 		if err := remote.RemoveFinalizerFromRemoteKyma(ctx, r, r.RemoteClientCache, kyma); client.IgnoreNotFound(err) != nil {
@@ -342,4 +368,15 @@ func (r *KymaReconciler) deleteModule(ctx context.Context, moduleStatus *v1alpha
 		Kind:    moduleStatus.TemplateInfo.GroupVersionKind.Kind,
 	})
 	return r.Delete(ctx, &module, &client.DeleteOptions{})
+}
+
+func (r *KymaReconciler) SetSKRChartManager() error {
+	//nolint:goerr113
+	if r.SkrChartConfig == nil || r.KcpRestConfig == nil {
+		return fmt.Errorf("watcher config is not set")
+	}
+	chartMgr, err := deploy.NewSKRChartManager(r.SkrChartConfig.WebhookChartPath,
+		r.SkrChartConfig.SkrWebhookMemoryLimits, r.SkrChartConfig.SkrWebhookCPULimits)
+	r.SKRChartManager = chartMgr
+	return err
 }
