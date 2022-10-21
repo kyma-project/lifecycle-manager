@@ -369,8 +369,8 @@ func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType,
 					return true
 				}
 			}
-		} else {
-			return reasonTypeMatch
+		} else if reasonTypeMatch {
+			return true
 		}
 	}
 	return false
