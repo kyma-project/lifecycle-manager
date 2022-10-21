@@ -74,7 +74,7 @@ type ModuleTemplateSpec struct {
 func (in *ModuleTemplateSpec) GetDescriptor() (*ocm.ComponentDescriptor, error) {
 	if in.descriptor == nil && in.OCMDescriptor.Raw != nil {
 		var descriptor ocm.ComponentDescriptor
-		if err := codec.Decode(in.OCMDescriptor.Raw, &descriptor); err != nil {
+		if err := codec.Decode(in.OCMDescriptor.Raw, &descriptor, codec.DisableValidation(true)); err != nil {
 			return nil, err
 		}
 		in.descriptor = &descriptor
