@@ -73,6 +73,7 @@ func (c *RemoteCatalog) CreateOrUpdate(
 		diff.SetLastSync()
 
 		var buf bytes.Buffer
+
 		if err := json.NewEncoder(&buf).Encode(diff); err != nil {
 			return err
 		}
@@ -101,6 +102,15 @@ func (c *RemoteCatalog) CreateOrUpdate(
 // 1. it does not exist in the controlPlane
 // 2. it exists but has a mismatching generation in the control-plane (the control plane spec got updated)
 // 3. it exists but has a mismatching generation in the runtime (the runtime spec got updated).
+//
+// The Diff of the Spec is tracked with two annotations.
+// A change in the remote spec advances the last sync gen of the remote
+// to the remote generation + 1 during the diff since the expected apply
+// would increment the generation.
+// This saves an additional API Server call to update the generation in the annotation
+// as we already know the spec will change. It also saves us the use of any special status field.
+// If for some reason the generation is incremented multiple times in between the current and the next reconciliation
+// it can simply jump multiple generations by always basing it on the latest generation of the remote.
 func (*RemoteCatalog) CalculateDiffs(
 	runtimeList *v1alpha1.ModuleTemplateList, controlPlaneList *v1alpha1.ModuleTemplateList,
 ) ([]*v1alpha1.ModuleTemplate, []*v1alpha1.ModuleTemplate) {
@@ -153,9 +163,11 @@ func (*RemoteCatalog) CalculateDiffs(
 
 		if int64(controlPlaneSyncedGen) != controlPlaneGen {
 			remote.Annotations[v1alpha1.LastSyncGenerationControlPlane] = strconv.Itoa(int(controlPlaneGen))
+			(&controlPlaneList.Items[controlPlaneIndex]).Spec.DeepCopyInto(&remote.Spec)
 			diffToApply = append(diffToApply, remote)
 		} else if int64(runtimeSyncedGen) != remote.GetGeneration() {
-			remote.Annotations[v1alpha1.LastSyncGenerationRuntime] = strconv.Itoa(int(remote.GetGeneration()))
+			(&controlPlaneList.Items[controlPlaneIndex]).Spec.DeepCopyInto(&remote.Spec)
+			remote.Annotations[v1alpha1.LastSyncGenerationRuntime] = strconv.Itoa(int(remote.GetGeneration() + 1))
 			diffToApply = append(diffToApply, remote)
 		}
 	}

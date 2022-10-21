@@ -57,6 +57,7 @@ type ModuleTemplateSpec struct {
 	// (e.g. by updating the controller binary linked in a chart referenced in the descriptor)
 	//
 	//+kubebuilder:pruning:PreserveUnknownFields
+	//+structType=atomic
 	OCMDescriptor runtime.RawExtension `json:"descriptor"`
 
 	// Target describes where the Module should later on be installed if parsed correctly. It is used as installation

@@ -5,11 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strconv"
 
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-
+	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -227,6 +228,85 @@ func ModuleTemplatesExist(clnt client.Client, kyma *v1alpha1.Kyma) func() error 
 				return err
 			}
 			if err := clnt.Get(ctx, client.ObjectKeyFromObject(template), template); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
+}
+
+func ModuleTemplatesLastSyncGenMatches(clnt client.Client, kyma *v1alpha1.Kyma) func() bool {
+	return func() bool {
+		for _, module := range kyma.Spec.Modules {
+			template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
+			if err != nil {
+				return false
+			}
+			if err := clnt.Get(ctx, client.ObjectKeyFromObject(template), template); err != nil {
+				return false
+			}
+			if template.GetAnnotations() == nil {
+				return false
+			}
+			if strconv.FormatInt(template.GetGeneration(), 10) !=
+				template.GetAnnotations()[v1alpha1.LastSyncGenerationRuntime] {
+				return false
+			}
+		}
+
+		return true
+	}
+}
+
+func ModuleTemplatesLabelsCountMatch(
+	clnt client.Client, kyma *v1alpha1.Kyma, count int,
+) func() bool {
+	return func() bool {
+		for _, module := range kyma.Spec.Modules {
+			template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
+			if err != nil {
+				return false
+			}
+			if err := clnt.Get(ctx, client.ObjectKeyFromObject(template), template); err != nil {
+				return false
+			}
+
+			descriptor, err := template.Spec.GetDescriptor()
+			if err != nil {
+				return false
+			}
+
+			if len(descriptor.GetLabels()) != count {
+				return false
+			}
+		}
+		return true
+	}
+}
+
+func ModifyModuleTemplateSpecThroughLabels(clnt client.Client, kyma *v1alpha1.Kyma, labels []ocm.Label) func() error {
+	return func() error {
+		for _, module := range kyma.Spec.Modules {
+			template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
+			if err != nil {
+				return err
+			}
+
+			if err := clnt.Get(ctx, client.ObjectKeyFromObject(template), template); err != nil {
+				return err
+			}
+
+			err = template.Spec.ModifyDescriptor(
+				func(descriptor *ocm.ComponentDescriptor) error {
+					descriptor.SetLabels(labels)
+					return nil
+				})
+			if err != nil {
+				return err
+			}
+
+			if err := runtimeClient.Update(ctx, template); err != nil {
 				return err
 			}
 		}
