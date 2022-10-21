@@ -33,7 +33,7 @@ func Decode(ext runtime.RawExtension) (*ocm.ComponentDescriptor, error) {
 		return nil, ErrEmptyRawExtension
 	}
 	var descriptor ocm.ComponentDescriptor
-	if err := codec.Decode(ext.Raw, &descriptor); err != nil {
+	if err := codec.Decode(ext.Raw, &descriptor, codec.DisableValidation(true)); err != nil {
 		return nil, err
 	}
 	return &descriptor, nil
