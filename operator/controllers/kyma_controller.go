@@ -73,8 +73,7 @@ type KymaReconciler struct {
 	signature.VerificationSettings
 	RemoteClientCache *remote.ClientCache
 	*deploy.SKRChartManager
-	SkrChartConfig *SkrChartConfig
-	KcpRestConfig  *rest.Config
+	KcpRestConfig *rest.Config
 }
 
 //nolint:lll
@@ -371,14 +370,13 @@ func (r *KymaReconciler) deleteModule(ctx context.Context, moduleStatus *v1alpha
 	return r.Delete(ctx, &module, &client.DeleteOptions{})
 }
 
-func (r *KymaReconciler) SetSKRChartManager() error {
+func (r *KymaReconciler) SetSKRChartManager(skrChartConfig *SkrChartConfig) error {
 	//nolint:goerr113
-	if r.SkrChartConfig == nil || r.KcpRestConfig == nil {
-		return fmt.Errorf("watcher config is not set")
+	if skrChartConfig == nil {
+		return fmt.Errorf("skr chart config is not set")
 	}
-	chartMgr, err := deploy.NewSKRChartManager(r.SkrChartConfig.WebhookChartPath,
-		r.SkrChartConfig.SkrWebhookMemoryLimits, r.SkrChartConfig.SkrWebhookCPULimits,
-		r.SkrChartConfig.EnableWebhookPreInstallCheck)
-	r.SKRChartManager = chartMgr
-	return err
+	r.SKRChartManager = deploy.NewSKRChartManager(skrChartConfig.WebhookChartPath,
+		skrChartConfig.SkrWebhookMemoryLimits, skrChartConfig.SkrWebhookCPULimits,
+		skrChartConfig.EnableWebhookPreInstallCheck)
+	return nil
 }

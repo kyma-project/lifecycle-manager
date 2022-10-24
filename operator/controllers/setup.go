@@ -24,8 +24,8 @@ import (
 )
 
 // SetupWithManager sets up the Kyma controller with the Manager.
-func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
-	options controller.Options, listenerAddr string,
+func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options, listenerAddr string,
+	skrChartConfig *SkrChartConfig,
 ) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1alpha1.Kyma{}).WithOptions(options).
 		Watches(
@@ -57,7 +57,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 			"make sure you installed all CRDs: %w", err)
 	}
 
-	if err := r.SetSKRChartManager(); err != nil {
+	if err := r.SetSKRChartManager(skrChartConfig); err != nil {
 		return fmt.Errorf("unable to set chart manager for watcher controller: %w", err)
 	}
 

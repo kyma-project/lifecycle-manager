@@ -23,15 +23,13 @@ type SKRChartManager struct {
 	enableWebhookPreInstallCheck bool
 }
 
-func NewSKRChartManager(chartPath, memoryLimits, cpuLimits string, enableWebhookPreInstallCheck bool) (*SKRChartManager, error) {
-	mgr := &SKRChartManager{
+func NewSKRChartManager(chartPath, memoryLimits, cpuLimits string, enableWebhookPreInstallCheck bool) *SKRChartManager {
+	return &SKRChartManager{
 		WebhookChartPath:             chartPath,
 		SkrWebhookMemoryLimits:       memoryLimits,
 		SkrWebhookCPULimits:          cpuLimits,
 		enableWebhookPreInstallCheck: enableWebhookPreInstallCheck,
 	}
-
-	return mgr, nil
 }
 
 func (m *SKRChartManager) InstallWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,

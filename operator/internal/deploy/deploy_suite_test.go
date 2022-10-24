@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	apiextv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	yaml "k8s.io/apimachinery/pkg/util/yaml"
+	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -47,7 +47,7 @@ var _ = BeforeSuite(func() {
 	Expect(resp.StatusCode).To(Equal(http.StatusOK))
 	defer resp.Body.Close()
 	kymaCrd := &apiextv1.CustomResourceDefinition{}
-	err = yaml.NewYAMLOrJSONDecoder(resp.Body, 2048).Decode(kymaCrd)
+	err = k8syaml.NewYAMLOrJSONDecoder(resp.Body, 2048).Decode(kymaCrd)
 	Expect(err).ToNot(HaveOccurred())
 
 	By("bootstrapping test environment for webhook deployment tests")
@@ -69,7 +69,7 @@ var _ = BeforeSuite(func() {
 
 	Expect(deploy.CreateLoadBalancer(ctx, k8sClient)).To(Succeed())
 
-	webhookMgr, err = deploy.NewSKRChartManager(webhookChartPath, memoryLimits, cpuLimits)
+	webhookMgr = deploy.NewSKRChartManager(webhookChartPath, memoryLimits, cpuLimits, true)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(webhookMgr).NotTo(BeNil())
 

@@ -280,14 +280,13 @@ func setupKymaReconciler(
 		Client:            mgr.GetClient(),
 		EventRecorder:     mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
 		KcpRestConfig:     mgr.GetConfig(),
-		SkrChartConfig:    skrChartConfig,
 		RemoteClientCache: remoteClientCache,
 		RequeueIntervals:  intervals,
 		VerificationSettings: signature.VerificationSettings{
 			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
 			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
 		},
-	}).SetupWithManager(mgr, options, flagVar.listenerAddr); err != nil {
+	}).SetupWithManager(mgr, options, flagVar.listenerAddr, skrChartConfig); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}

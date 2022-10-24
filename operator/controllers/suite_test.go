@@ -141,7 +141,11 @@ var _ = BeforeSuite(func() {
 	}
 
 	remoteClientCache := remote.NewClientCache()
-
+	skrChartCfg := &controllers.SkrChartConfig{
+		WebhookChartPath:       webhookChartPath,
+		SkrWebhookMemoryLimits: "200Mi",
+		SkrWebhookCPULimits:    "1",
+	}
 	err = (&controllers.KymaReconciler{
 		Client:           k8sManager.GetClient(),
 		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
@@ -150,12 +154,7 @@ var _ = BeforeSuite(func() {
 			EnableVerification: false,
 		},
 		RemoteClientCache: remoteClientCache,
-		SkrChartConfig: &controllers.SkrChartConfig{
-			WebhookChartPath:       webhookChartPath,
-			SkrWebhookMemoryLimits: "200Mi",
-			SkrWebhookCPULimits:    "1",
-		},
-	}).SetupWithManager(k8sManager, controller.Options{}, listenerAddr)
+	}).SetupWithManager(k8sManager, controller.Options{}, listenerAddr, skrChartCfg)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.ModuleCatalogReconciler{
 		Client:            k8sManager.GetClient(),
