@@ -282,6 +282,7 @@ func setupKymaReconciler(
 		KcpRestConfig:     mgr.GetConfig(),
 		RemoteClientCache: remoteClientCache,
 		RequeueIntervals:  intervals,
+		EnableKcpWatcher:  flagVar.enableKcpWatcher,
 		VerificationSettings: signature.VerificationSettings{
 			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
 			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),

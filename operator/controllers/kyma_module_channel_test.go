@@ -6,6 +6,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/controllers/test_helper"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/test"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -13,7 +14,7 @@ import (
 )
 
 var _ = Describe("Switching of a Channel leading to an Upgrade", Ordered, func() {
-	kyma := NewTestKyma("empty-module-kyma")
+	kyma := test_helper.NewTestKyma("empty-module-kyma")
 
 	kyma.Spec.Modules = append(kyma.Spec.Modules, v1alpha1.Module{
 		ControllerName: "manifest",

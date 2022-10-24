@@ -1,18 +1,21 @@
-package controllers_test
+package controllers_with_watcher_test
 
 import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"os"
+
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/custom"
 	. "github.com/onsi/gomega"
-	"io"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"os"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -49,7 +52,7 @@ func isEven(idx int) bool {
 	return idx%2 == 0
 }
 
-func createWatcherCR(moduleName string, statusOnly bool) *v1alpha1.Watcher {
+func createWatcherCR(managerInstanceName string, statusOnly bool) *v1alpha1.Watcher {
 	field := v1alpha1.SpecField
 	if statusOnly {
 		field = v1alpha1.StatusField
@@ -60,50 +63,22 @@ func createWatcherCR(moduleName string, statusOnly bool) *v1alpha1.Watcher {
 			APIVersion: v1alpha1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-sample", moduleName),
+			Name:      fmt.Sprintf("%s-sample", managerInstanceName),
 			Namespace: metav1.NamespaceDefault,
 			Labels: map[string]string{
-				v1alpha1.ManagedBylabel: moduleName,
+				v1alpha1.ManagedBylabel: managerInstanceName,
 			},
 		},
 		Spec: v1alpha1.WatcherSpec{
 			ServiceInfo: v1alpha1.Service{
 				Port:      8082,
-				Name:      fmt.Sprintf("%s-svc", moduleName),
+				Name:      fmt.Sprintf("%s-svc", managerInstanceName),
 				Namespace: metav1.NamespaceDefault,
 			},
 			LabelsToWatch: map[string]string{
-				fmt.Sprintf("%s-watchable", moduleName): "true",
+				fmt.Sprintf("%s-watchable", managerInstanceName): "true",
 			},
 			Field: field,
-		},
-	}
-}
-
-func createKymaCR(kymaName string) *v1alpha1.Kyma {
-	return &v1alpha1.Kyma{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       string(v1alpha1.KymaKind),
-			APIVersion: v1alpha1.GroupVersion.String(),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      kymaName,
-			Namespace: metav1.NamespaceDefault,
-		},
-		Spec: v1alpha1.KymaSpec{
-			Channel: v1alpha1.ChannelStable,
-			Modules: []v1alpha1.Module{
-				{
-					Name: "sample-skr-module",
-				},
-				{
-					Name: "sample-kcp-module",
-				},
-			},
-			Sync: v1alpha1.Sync{
-				Enabled:  false,
-				Strategy: v1alpha1.SyncStrategyLocalClient,
-			},
 		},
 	}
 }

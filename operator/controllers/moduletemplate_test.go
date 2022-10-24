@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/controllers/test_helper"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -56,11 +57,11 @@ func updateModuleTemplateTarget(kymaName string, target v1alpha1.Target) func() 
 }
 
 var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
-	kyma := NewTestKyma("kyma")
+	kyma := test_helper.NewTestKyma("kyma")
 
 	kyma.Spec.Modules = append(kyma.Spec.Modules, v1alpha1.Module{
 		ControllerName: "manifest",
-		Name:           NewUniqModuleName(),
+		Name:           test_helper.NewUniqModuleName(),
 		Channel:        v1alpha1.ChannelStable,
 	})
 

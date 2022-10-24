@@ -6,6 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/controllers/test_helper"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -17,7 +18,7 @@ const (
 )
 
 var _ = Describe("Kyma with no ModuleTemplate", Ordered, func() {
-	kyma := NewTestKyma("no-module-kyma")
+	kyma := test_helper.NewTestKyma("no-module-kyma")
 	RegisterDefaultLifecycleForKyma(kyma)
 
 	It("Should result in a ready state immediately", func() {
@@ -27,7 +28,7 @@ var _ = Describe("Kyma with no ModuleTemplate", Ordered, func() {
 })
 
 var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
-	kyma := NewTestKyma("empty-module-kyma")
+	kyma := test_helper.NewTestKyma("empty-module-kyma")
 
 	kyma.Spec.Modules = append(kyma.Spec.Modules, v1alpha1.Module{
 		ControllerName: "manifest",
@@ -70,7 +71,7 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 		skrModule *v1alpha1.Module
 		kcpModule *v1alpha1.Module
 	)
-	kyma = NewTestKyma("kyma-test-recreate")
+	kyma = test_helper.NewTestKyma("kyma-test-recreate")
 	skrModule = &v1alpha1.Module{
 		ControllerName: "manifest", // this is a module for SKR that should be installed by module-manager
 		Name:           "skr-module",
@@ -120,7 +121,7 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 })
 
 var _ = Describe("Kyma update Manifest CR", Ordered, func() {
-	kyma := NewTestKyma("kyma-test-update")
+	kyma := test_helper.NewTestKyma("kyma-test-update")
 
 	kyma.Spec.Modules = append(kyma.Spec.Modules, v1alpha1.Module{
 		ControllerName: "manifest",

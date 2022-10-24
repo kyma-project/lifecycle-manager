@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers_test
+package controllers_with_watcher_test
 
 import (
 	"context"
@@ -42,10 +42,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/operator/controllers"
-	"github.com/kyma-project/lifecycle-manager/operator/controllers/test_helper"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
+	//+kubebuilder:scaffold:imports
+	"github.com/kyma-project/lifecycle-manager/operator/controllers"
+	"github.com/kyma-project/lifecycle-manager/operator/controllers/test_helper"
+	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -65,7 +67,8 @@ var (
 )
 
 const (
-	webhookChartPath = "../internal/charts/skr-webhook"
+	webhookChartPath       = "../../internal/charts/skr-webhook"
+	istioResourcesFilePath = "../../internal/assets/istio-test-resources.yaml"
 )
 
 func TestAPIs(t *testing.T) {
@@ -85,12 +88,13 @@ var _ = BeforeSuite(func() {
 	// istio CRDs
 	remoteCrds, err := test_helper.ParseRemoteCRDs([]string{
 		"https://raw.githubusercontent.com/kyma-project/module-manager/main/operator/config/crd/bases/operator.kyma-project.io_manifests.yaml", //nolint:lll
+		"https://raw.githubusercontent.com/istio/istio/master/manifests/charts/base/crds/crd-all.gen.yaml",                                     //nolint:lll
 	})
 	Expect(err).NotTo(HaveOccurred())
 
 	// kcpModule CRD
 	controlplaneCrd := &v1.CustomResourceDefinition{}
-	modulePath := filepath.Join("..", "config", "samples", "component-integration-installed",
+	modulePath := filepath.Join("..", "..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
 	Expect(err).To(BeNil())
@@ -98,7 +102,7 @@ var _ = BeforeSuite(func() {
 	Expect(yaml2.Unmarshal(moduleFile, &controlplaneCrd)).To(Succeed())
 
 	controlPlaneEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases")},
+		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
 		CRDs:                  append([]*v1.CustomResourceDefinition{controlplaneCrd}, remoteCrds...),
 		ErrorIfCRDPathMissing: true,
 	}
@@ -147,7 +151,7 @@ var _ = BeforeSuite(func() {
 		Client:           k8sManager.GetClient(),
 		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
 		RequeueIntervals: intervals,
-		EnableKcpWatcher: false,
+		EnableKcpWatcher: true,
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
 		},
@@ -159,6 +163,16 @@ var _ = BeforeSuite(func() {
 		EventRecorder:     k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
 		RequeueIntervals:  intervals,
 		RemoteClientCache: remoteClientCache,
+	}).SetupWithManager(k8sManager, controller.Options{})
+	Expect(err).ToNot(HaveOccurred())
+
+	Expect(deploy.CreateLoadBalancer(ctx, controlPlaneClient)).To(Succeed())
+
+	err = (&controllers.WatcherReconciler{
+		Client:           k8sManager.GetClient(),
+		RestConfig:       k8sManager.GetConfig(),
+		Scheme:           scheme.Scheme,
+		RequeueIntervals: intervals,
 	}).SetupWithManager(k8sManager, controller.Options{})
 	Expect(err).ToNot(HaveOccurred())
 

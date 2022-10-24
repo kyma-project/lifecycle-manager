@@ -75,7 +75,8 @@ type KymaReconciler struct {
 	signature.VerificationSettings
 	RemoteClientCache *remote.ClientCache
 	*deploy.SKRChartManager
-	KcpRestConfig *rest.Config
+	KcpRestConfig    *rest.Config
+	EnableKcpWatcher bool
 }
 
 //nolint:lll
@@ -123,7 +124,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, fmt.Errorf(
 				"could not update kyma status after triggering deletion: %w", err)
 		}
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{}, nil
 	}
 
 	// check finalizer
@@ -227,11 +228,13 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 		return r.UpdateStatusFromErr(ctx, kyma, v1alpha1.StateError,
 			fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err))
 	}
-
-	statusUpdateRequiredFromSKRWebhookSync, err := r.InstallWebhookChart(ctx, kyma, r.RemoteClientCache, r.Client)
-	if err != nil {
-		kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
-		return err
+	statusUpdateRequiredFromSKRWebhookSync := false
+	if r.EnableKcpWatcher {
+		if statusUpdateRequiredFromSKRWebhookSync, err = r.InstallWebhookChart(ctx, kyma,
+			r.RemoteClientCache, r.Client); err != nil {
+			kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
+			return err
+		}
 	}
 	kyma.SyncConditionsWithModuleStates()
 	// set ready condition if applicable
@@ -259,13 +262,14 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 
 func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error) {
 	logger := log.FromContext(ctx)
+	if r.EnableKcpWatcher {
+		if err := r.RemoveWebhookChart(ctx, kyma, r.RemoteClientCache, r.Client); client.IgnoreNotFound(err) != nil {
+			return false, fmt.Errorf(": %w", err)
+		}
 
-	if err := r.RemoveWebhookChart(ctx, kyma, r.RemoteClientCache, r.Client); client.IgnoreNotFound(err) != nil {
-		return false, fmt.Errorf(": %w", err)
-	}
-
-	if chartRemoved := r.IsSkrChartRemoved(ctx, kyma, r.RemoteClientCache, r.Client); !chartRemoved {
-		return true, nil
+		if chartRemoved := r.IsSkrChartRemoved(ctx, kyma, r.RemoteClientCache, r.Client); !chartRemoved {
+			return true, nil
+		}
 	}
 
 	if kyma.Spec.Sync.Enabled {

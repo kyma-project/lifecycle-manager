@@ -9,6 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/controllers/test_helper"
 )
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
@@ -19,7 +20,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Name:           "skr-module-sync-client",
 		Channel:        v1alpha1.ChannelStable,
 	}
-	kyma = NewTestKyma("kyma-remote-sync")
+	kyma = test_helper.NewTestKyma("kyma-remote-sync")
 	skrModule = &v1alpha1.Module{
 		ControllerName: "manifest",
 		Name:           "skr-module-sync",
@@ -61,7 +62,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 })
 
 var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
-	kyma := NewTestKyma("kyma-test-remote-skr")
+	kyma := test_helper.NewTestKyma("kyma-test-remote-skr")
 
 	kyma.Spec.Sync = v1alpha1.Sync{
 		Enabled:      true,

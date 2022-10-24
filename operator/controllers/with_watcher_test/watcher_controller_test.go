@@ -1,13 +1,21 @@
-package controllers_test
+package controllers_with_watcher_test
 
 import (
+	"time"
+
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/controllers/test_helper"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/custom"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+const (
+	timeout  = time.Second * 10
+	interval = time.Millisecond * 250
 )
 
 func cRSpecsUpdates() func(customIstioClient *custom.IstioClient) {
@@ -67,8 +75,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	var istioResources []*unstructured.Unstructured
 	BeforeAll(func() {
 		// create kyma resource
-		kymaName := "kyma-sample"
-		kymaSample = createKymaCR(kymaName)
+		kymaSample = test_helper.NewTestKyma("kyma-sample")
 
 		// create istio resources
 		customIstioClient, err = custom.NewVersionedIstioClient(cfg)
@@ -79,7 +86,6 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 		for _, istioResource := range istioResources {
 			Expect(controlPlaneClient.Create(ctx, istioResource)).To(Succeed())
 		}
-
 	})
 
 	AfterAll(func() {

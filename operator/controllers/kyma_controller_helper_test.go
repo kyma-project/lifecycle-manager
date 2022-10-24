@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/rand"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -25,37 +24,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/watch"
 	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 )
-
-func NewTestKyma(name string) *v1alpha1.Kyma {
-	return &v1alpha1.Kyma{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: v1alpha1.GroupVersion.String(),
-			Kind:       string(v1alpha1.KymaKind),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name + RandString(8),
-			Namespace: namespace,
-		},
-		Spec: v1alpha1.KymaSpec{
-			Modules: []v1alpha1.Module{},
-			Channel: v1alpha1.DefaultChannel,
-		},
-	}
-}
-
-func NewUniqModuleName() string {
-	return RandString(8)
-}
-
-const letterBytes = "abcdefghijklmnopqrstuvwxyz"
-
-func RandString(n int) string {
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))] //nolint:gosec
-	}
-	return string(b)
-}
 
 func DeployModuleTemplates(kyma *v1alpha1.Kyma) {
 	for _, module := range kyma.Spec.Modules {

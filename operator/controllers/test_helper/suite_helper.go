@@ -1,4 +1,4 @@
-package controllers_test
+package test_helper
 
 import (
 	"context"
@@ -13,7 +13,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
-func parseRemoteCRDs(testCrdURLs []string) ([]*apiextv1.CustomResourceDefinition, error) {
+const (
+	defaultBufferSize = 2048
+)
+
+func ParseRemoteCRDs(testCrdURLs []string) ([]*apiextv1.CustomResourceDefinition, error) {
 	var crds []*apiextv1.CustomResourceDefinition
 	for _, testCrdURL := range testCrdURLs {
 		_, err := url.Parse(testCrdURL)
