@@ -25,12 +25,12 @@ For a dual cluster setup, with control plane (KCP) and Kyma runtime (SKR); creat
       127.0.0.1 op-skr-registry.localhost
       ```
 
-   2. Set the module operator registry environment variables:
+   2. Use the module operator registry:
 
       ```sh
       export MODULE_REGISTRY=op-kcp-registry.localhost:8888/unsigned 
       ```
-   3. Set the module module image registry environment variables:
+   3. Use the module image registry:
       
       In **_single cluster mode_**:
       ```sh
@@ -70,10 +70,3 @@ Learn how to use a Gardener cluster for testing.
    You can follow the guide to [set up a GCP-hosted artifact registry (GCR)](prepare-gcr-registry.md).
 
    _Disclaimer: For private registries, you may have to configure additional settings not covered in this tutorial._
-
-4. Set registry environment variables:
-
-   ```sh
-   export MODULE_REGISTRY=your-registry-goes-here.com
-   export IMG_REGISTRY=your-registry-goes-here.com
-   ```
