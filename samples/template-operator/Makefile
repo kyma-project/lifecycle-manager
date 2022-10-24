@@ -94,20 +94,6 @@ deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
-##@ Module
-
-.PHONY: module-image
-module-image: docker-build docker-push ## Build the Module Image and push it to a registry defined in IMG_REGISTRY
-	echo "built and pushed module image $(IMG)"
-
-.PHONY: module-build
-module-build: manifests kyma ## Build the Module and push it to a registry defined in MODULE_REGISTRY TODO change kyma cli path
-	/Users/D067928/SAPDevelop/go/src/github.com/kyma-project/cli/bin/kyma-darwin alpha create module kyma.project.io/module/$(MODULE_NAME) $(MODULE_VERSION) . $(MODULE_CREATION_FLAGS)
-
-.PHONY: module-template-push
-module-template-push: ## Pushes the ModuleTemplate referencing the Image on MODULE_REGISTRY
-	kubectl apply -f template.yaml
-
 ##@ Tools
 
 ## Location to install dependencies to
