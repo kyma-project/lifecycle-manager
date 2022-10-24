@@ -3,6 +3,7 @@ package deploy_test
 import (
 	"context"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
+	"k8s.io/client-go/rest"
 	"net/http"
 	"testing"
 
@@ -16,7 +17,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	kyma "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	lifecyclemgrapi "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
 	//+kubebuilder:scaffold:imports
 )
@@ -30,8 +31,12 @@ func TestAPIs(t *testing.T) {
 
 var (
 	ctx               context.Context         //nolint:gochecknoglobals
-	testEnv           *envtest.Environment    //nolint:gochecknoglobals
-	k8sClient         client.Client           //nolint:gochecknoglobals
+	kcpTestEnv        *envtest.Environment    //nolint:gochecknoglobals
+	skrTestEnv        *envtest.Environment    //nolint:gochecknoglobals
+	skrCfg            *rest.Config            //nolint:gochecknoglobals
+	kcpCfg            *rest.Config            //nolint:gochecknoglobals
+	kcpClient         client.Client           //nolint:gochecknoglobals
+	skrClient         client.Client           //nolint:gochecknoglobals
 	webhookMgr        *deploy.SKRChartManager //nolint:gochecknoglobals
 	remoteClientCache *remote.ClientCache     //nolint:gochecknoglobals
 )
@@ -49,34 +54,62 @@ var _ = BeforeSuite(func() {
 	kymaCrd := &apiextv1.CustomResourceDefinition{}
 	err = k8syaml.NewYAMLOrJSONDecoder(resp.Body, 2048).Decode(kymaCrd)
 	Expect(err).ToNot(HaveOccurred())
+	resp, err = http.Get("https://raw.githubusercontent.com/kyma-project/lifecycle-manager/" +
+		"main/operator/config/crd/bases/operator.kyma-project.io_watchers.yaml")
+	Expect(err).ToNot(HaveOccurred())
+	Expect(resp.StatusCode).To(Equal(http.StatusOK))
+	defer resp.Body.Close()
+	watcherCrd := &apiextv1.CustomResourceDefinition{}
+	err = k8syaml.NewYAMLOrJSONDecoder(resp.Body, 2048).Decode(watcherCrd)
+	Expect(err).ToNot(HaveOccurred())
 
 	By("bootstrapping test environment for webhook deployment tests")
-	testEnv = &envtest.Environment{
-		CRDs: []*apiextv1.CustomResourceDefinition{kymaCrd},
+	kcpTestEnv = &envtest.Environment{
+		CRDs: []*apiextv1.CustomResourceDefinition{kymaCrd, watcherCrd},
 	}
 
-	cfg, err := testEnv.Start()
+	kcpCfg, err := kcpTestEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
-	Expect(cfg).NotTo(BeNil())
+	Expect(kcpCfg).NotTo(BeNil())
 
-	Expect(kyma.AddToScheme(scheme.Scheme)).To(Succeed())
+	Expect(lifecyclemgrapi.AddToScheme(scheme.Scheme)).To(Succeed())
 
 	//+kubebuilder:scaffold:scheme
 
-	k8sClient, err = client.New(cfg, client.Options{})
+	kcpClient, err = client.New(kcpCfg, client.Options{})
 	Expect(err).NotTo(HaveOccurred())
-	Expect(k8sClient).NotTo(BeNil())
+	Expect(kcpClient).NotTo(BeNil())
 
-	Expect(deploy.CreateLoadBalancer(ctx, k8sClient)).To(Succeed())
+	Expect(deploy.CreateLoadBalancer(ctx, kcpClient)).To(Succeed())
 
 	webhookMgr = deploy.NewSKRChartManager(webhookChartPath, memoryLimits, cpuLimits, true)
 	Expect(err).NotTo(HaveOccurred())
 	Expect(webhookMgr).NotTo(BeNil())
 
 	remoteClientCache = remote.NewClientCache()
+	skrEnv := &envtest.Environment{
+		ErrorIfCRDPathMissing: true,
+	}
+	skrCfg, err := skrEnv.Start()
+	Expect(skrCfg).NotTo(BeNil())
+	Expect(err).NotTo(HaveOccurred())
+
+	var authUser *envtest.AuthenticatedUser
+	authUser, err = skrEnv.AddUser(envtest.User{
+		Name:   "skr-admin-account",
+		Groups: []string{"system:masters"},
+	}, skrCfg)
+	Expect(err).NotTo(HaveOccurred())
+
+	remote.LocalClient = func() *rest.Config {
+		return authUser.Config()
+	}
+
+	skrClient, err = client.New(authUser.Config(), client.Options{Scheme: kcpClient.Scheme()})
+	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
-	Expect(testEnv.Stop()).To(Succeed())
+	Expect(kcpTestEnv.Stop()).To(Succeed())
 })

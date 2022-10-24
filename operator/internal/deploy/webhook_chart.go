@@ -60,14 +60,16 @@ func IsWebhookConfigured(obj *v1alpha1.Watcher, webhookConfig *admissionv1.Valid
 	return false
 }
 
-func GetDeployedWebhook(ctx context.Context, restConfig *rest.Config,
+func GetDeployedWebhook(ctx context.Context, kyma *v1alpha1.Kyma,
+	remoteClientCache *remote.ClientCache, kcpClient client.Client,
 ) (*admissionv1.ValidatingWebhookConfiguration, error) {
-	remoteClient, err := client.New(restConfig, client.Options{})
+	skrClient, err := remote.NewRemoteClient(ctx, kcpClient, client.ObjectKeyFromObject(kyma),
+		kyma.Spec.Sync.Strategy, remoteClientCache)
 	if err != nil {
 		return nil, err
 	}
 	webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
-	err = remoteClient.Get(ctx, client.ObjectKey{
+	err = skrClient.Get(ctx, client.ObjectKey{
 		Namespace: metav1.NamespaceDefault,
 		Name:      resolveSKRChartResourceName(webhookConfigNameTpl),
 	}, webhookConfig)
@@ -78,7 +80,8 @@ func GetDeployedWebhook(ctx context.Context, restConfig *rest.Config,
 }
 
 func (m *SKRChartManager) IsSkrChartRemoved(ctx context.Context, kyma *v1alpha1.Kyma,
-	remoteClientCache *remote.ClientCache, kcpClient client.Client) bool {
+	remoteClientCache *remote.ClientCache, kcpClient client.Client,
+) bool {
 	skrClient, err := remote.NewRemoteClient(ctx, kcpClient, client.ObjectKeyFromObject(kyma),
 		kyma.Spec.Sync.Strategy, remoteClientCache)
 	if err != nil {
