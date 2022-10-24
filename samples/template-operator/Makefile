@@ -132,7 +132,7 @@ module-image: docker-build docker-push ## Build the Module Image and push it to 
 	echo "built and pushed module image $(IMG)"
 
 .PHONY: module-build
-module-build: kyma ## Build the Module and push it to a registry defined in MODULE_REGISTRY TODO change kyma cli path
+module-build: manifests kyma ## Build the Module and push it to a registry defined in MODULE_REGISTRY TODO change kyma cli path
 	/Users/D067928/SAPDevelop/go/src/github.com/kyma-project/cli/bin/kyma-darwin alpha create module kyma.project.io/module/$(MODULE_NAME) $(MODULE_VERSION) . $(MODULE_CREATION_FLAGS)
 
 .PHONY: module-template-push

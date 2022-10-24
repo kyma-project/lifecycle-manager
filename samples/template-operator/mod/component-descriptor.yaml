@@ -1,0 +1,29 @@
+component:
+  componentReferences: []
+  name: kyma.project.io/module/template
+  provider: internal
+  repositoryContexts:
+  - baseUrl: op-kcp-registry.localhost:8888/unsigned
+    componentNameMapping: urlPath
+    type: ociRegistry
+  resources:
+  - access:
+      filename: sha256:67c4598be5daf9f7d7d482970964f5801d557f274e727cbfa0bd86afc00c998e
+      mediaType: application/gzip
+      type: localFilesystemBlob
+    name: template-operator
+    relation: local
+    type: helm-chart
+    version: 0.0.4
+  - access:
+      filename: sha256:db86408caca4c94250d8291aa79655b84146f9cc45e0da49f05a52b3722d74a0
+      mediaType: application/octet-stream
+      type: localFilesystemBlob
+    name: config
+    relation: local
+    type: yaml
+    version: 0.0.4
+  sources: []
+  version: 0.0.4
+meta:
+  schemaVersion: v2
