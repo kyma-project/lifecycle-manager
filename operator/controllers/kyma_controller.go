@@ -19,9 +19,10 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
 	"k8s.io/client-go/rest"
-	"time"
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
@@ -39,6 +40,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/status"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -226,6 +228,11 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 			fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err))
 	}
 
+	statusUpdateRequiredFromSKRWebhookSync, err := r.InstallWebhookChart(ctx, kyma, r.RemoteClientCache, r.Client)
+	if err != nil {
+		kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
+		return err
+	}
 	kyma.SyncConditionsWithModuleStates()
 	// set ready condition if applicable
 	if kyma.AreAllConditionsReadyForKyma() && kyma.Status.State != v1alpha1.StateReady {
@@ -236,15 +243,11 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 		return r.UpdateStatus(ctx, kyma, v1alpha1.StateReady, message)
 	}
 
-	if err := r.InstallWebhookChart(ctx, kyma, r.RemoteClientCache, r.Client); err != nil {
-		return err
-	}
-	logger.V(1).Info("successfully installed skr chart!")
-
 	// if the ready condition is not applicable, but we changed the conditions, we still need to issue an update
 	if statusUpdateRequiredFromModuleSync ||
 		statusUpdateRequiredFromModuleStatusSync ||
-		statusUpdateRequiredFromDeletion {
+		statusUpdateRequiredFromDeletion ||
+		statusUpdateRequiredFromSKRWebhookSync {
 		if err := r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing, "updating component conditions"); err != nil {
 			return fmt.Errorf("error while updating status for condition change: %w", err)
 		}
