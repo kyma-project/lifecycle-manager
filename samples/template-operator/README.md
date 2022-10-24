@@ -12,7 +12,6 @@ Additionally, it hides Kubernetes boilerplate code to develop fast and efficient
   * [Custom Reconciliation and Status handling guidelines](#custom-reconciliation-and-status-handling-guidelines)
   * [Local testing](#local-testing)
 * [Bundling and installation](#bundling-and-installation)
-  * [Enhancing a native Makefile of new kubebuilder projects for Module Bundling Workflows](#enhancing-a-native-makefile-of-new-kubebuilder-projects-for-module-bundling-workflows)
   * [Grafana dashboard for simplified Controller Observability](#grafana-dashboard-for-simplified-controller-observability)
   * [RBAC](#rbac)
   * [Build module operator image](#prepare--build-module-operator-image)
@@ -66,6 +65,7 @@ In case you are planning to migrate a pre-existing module within Kyma, please fa
     curl -L -o kubebuilder https://go.kubebuilder.io/dl/latest/$(go env GOOS)/$(go env GOARCH)
     chmod +x kubebuilder && mv kubebuilder /usr/local/bin/
     ```
+* [kyma CLI](https://github.com/kyma-project/cli#installation)
 
 ### Generate kubebuilder operator
 
@@ -199,129 +199,6 @@ This is required to track the current state of the module, represented by this c
 
 ## Bundling and installation
 
-### Enhanced Makefile structure
-The template operator contains base scaffolding that is prepared to build a Kyma Module from the various commands in `Makefile`.
-
-It is a slightly adjusted Makefile, that contains special instructions on how to build and bundle Kyma Modules from
-Kubebuilder projects together with the kyma CLI. We highly encourage you get inspired by this Makefile to implement
-your own automations as it pushes the entry barrier for building modules much lower.
-
-Here you can see the commands supported with the enhanced Makefile.
-
-```
-Usage:
-  make <target>
-
-General
-  help             Display this help.
-
-Development
-  manifests        Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-  generate         Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-  test             Run tests.
-
-Build
-  build            Build manager binary.
-  run              Run a controller from your host.
-  docker-build     Build docker image with the manager.
-  docker-push      Push docker image with the manager.
-
-Deployment
-  install          Install CRDs into the K8s cluster specified in ~/.kube/config.
-  uninstall        Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
-  deploy           Deploy controller to the K8s cluster specified in ~/.kube/config.
-  undeploy         Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
-
-Module
-  module-image     Build the Module Image and push it to a registry defined in IMG_REGISTRY
-  module-build     Build the Module and push it to a registry defined in MODULE_REGISTRY TODO change kyma cli path
-  module-template-push  Pushes the ModuleTemplate referencing the Image on MODULE_REGISTRY
-
-Tools
-  kustomize        Download & Build kustomize locally if necessary.
-  controller-gen   Download & Build controller-gen locally if necessary.
-  envtest          Download & Build envtest-setup locally if necessary.
-  kyma             Download kyma locally if necessary.
-
-Checks
-  fmt              Run go fmt against code.
-  vet              Run go vet against code.
-  lint             Download & Build & Run golangci-lint against code.
-```
-
-### Enhancing a native Makefile of new kubebuilder projects for Module Bundling Workflows
-
-To use your own Operator like Template Operator, you will need to adjust your Makefile with some additional Steps:
-
-Replace the placeholder IMG variable in the Old Makefile with a more sophisticated setup, allowing you to configure not only registry settings for the operator binary,
-but also for the Module later on.
-
-1. Replace the naturally generated `IMG` environment variable for the controller image of kubebuilder
-    ```makefile
-    # Image URL to use all building/pushing image targets
-    IMG ?= controller:latest
-    ```
-    
-    with
-    
-    ```makefile
-    # Module Name used for bundling the OCI Image and later on for referencing in the Kyma Modules
-    MODULE_NAME ?= template
-    # Semantic Module Version used for identifying the build
-    MODULE_VERSION ?= 0.0.4
-    # Module Registry used for pushing the image
-    MODULE_REGISTRY_PORT ?= 8888
-    MODULE_REGISTRY ?= op-kcp-registry.localhost:$(MODULE_REGISTRY_PORT)/unsigned
-    # Desired Channel of the Generated Module Template
-    MODULE_TEMPLATE_CHANNEL ?= stable
-    
-    # Credentials used for authenticating into the module registry
-    # see `kyma alpha mod create --help for more info`
-    # MODULE_CREDENTIALS ?= testuser:testpw
-    
-    # Image URL to use all building/pushing image targets
-    IMG_REGISTRY_PORT ?= $(MODULE_REGISTRY_PORT)
-    IMG_REGISTRY ?= op-skr-registry.localhost:$(IMG_REGISTRY_PORT)/unsigned/operator-images
-    IMG ?= $(IMG_REGISTRY)/$(MODULE_NAME)-operator:$(MODULE_VERSION)
-    
-    # This will change the flags of the `kyma alpha module create` command in case we spot credentials
-    # Otherwise we will assume http-based local registries without authentication (e.g. for k3d)
-    ifeq (,$(MODULE_CREDENTIALS))
-    MODULE_CREATION_FLAGS=--registry $(MODULE_REGISTRY) -w --insecure
-    else
-    MODULE_CREATION_FLAGS=--registry $(MODULE_REGISTRY) -w -c $(MODULE_CREDENTIALS)
-    endif
-    ```
-
-2. Next, create an additional section with commands for module bundling and processing before `##@ Tools`:
-    ```makefile
-    ##@ Module
-    
-    .PHONY: module-image
-    module-image: docker-build docker-push ## Build the Module Image and push it to a registry defined in IMG_REGISTRY
-        echo "built and pushed module image $(IMG)"
-    
-    .PHONY: module-build
-    module-build: kyma ## Build the Module and push it to a registry defined in MODULE_REGISTRY TODO change kyma cli path
-        /Users/D067928/SAPDevelop/go/src/github.com/kyma-project/cli/bin/kyma-darwin alpha create module kyma.project.io/module/$(MODULE_NAME) $(MODULE_VERSION) . $(MODULE_CREATION_FLAGS)
-    
-    .PHONY: module-template-push
-    module-template-push: ## Pushes the ModuleTemplate referencing the Image on MODULE_REGISTRY
-        kubectl apply -f template.yaml
-    ```
-
-3. Last but not least, introduce a new tool dependency that is able to fetch the kyma CLI under `##@ Tools`:
-    ```makefile
-    ########## Kyma CLI ###########
-    KYMA_STABILITY ?= unstable
-    
-    KYMA ?= $(LOCALBIN)/kyma-$(KYMA_STABILITY)
-    kyma: $(KYMA) ## Download kyma locally if necessary.
-    $(KYMA): $(LOCALBIN)
-        test -f $@ || curl -# -Lo $(KYMA) https://storage.googleapis.com/kyma-cli-$(KYMA_STABILITY)/kyma-darwin
-        chmod +x $(KYMA)
-    ```
-
 ### Grafana dashboard for simplified Controller Observability
 
 You can extend the Operator further by using automated dashboard generation for grafana with this enhancement:
@@ -366,23 +243,36 @@ _WARNING: This step requires the working OCI Registry from our [Pre-requisites](
     ARG TARGETARCH
    ```
 
-3. Build and push your module operator binary by adjusting `IMG` if necessary (take a look at the Makefile Preparation in the previous sections for more Details) and then executing the `make module-image` command.
-   
+3. Build and push your module operator binary by adjusting `IMG` if necessary and then executing the `make module-image` command.
+   Assuming your Operator Image has the following base settings:
+   * hosted at `op-kcp-registry.localhost:8888/unsigned/operator-images` 
+   * controller image name is `template-operator`
+   * controller image has version `0.0.1`
+   You can run the following command
     ```sh
-    make module-image
+    make docker-build docker-push IMG="op-kcp-registry.localhost:8888/unsigned/operator-images/template-operator:0.0.1"
     ```
    
 This will build the operator image and then push it as the image defined in `IMG`.
 
 ### Build and push your module to the registry
 
-_WARNING: This step requires the working OCI Registry and Cluster from our [Pre-requisites](#pre-requisites)_
+_WARNING: This step requires the working OCI Registry, Cluster and Kyma CLI from our [Pre-requisites](#pre-requisites)_
 
-1. The module operator will be packed in a helm chart and pushed to `MODULE_REGISTRY` using `module-build`.
-
+1. The module operator will be packed in a (dummy) helm chart and we will now push our Module.
+   Assuming the settings from [Prepare & Build module operator image](#prepare--build-module-operator-image), and assuming the following module settings:
+   * hosted at `op-kcp-registry.localhost:8888/unsigned`
+   * generated for channel `stable`
+   * module has version `0.0.1`
+   * module name is `template`
+   * using an insecure (http instead of https for registry communication), local k3d registry on your machine
+   * uses Kyma CLI in `$PATH` under `kyma`
+   
    ```sh
-   make module-build
+   kyma alpha create module kyma-project.io/module/template 0.0.1 . -w --insecure
    ```
+   
+   _WARNING: For external registries (e.g. Google Container/Artifact Registry), never use insecure. Instead specify credentials. More details can be found in the help documentation of the CLI_
    
    In certain cases (e.g. for demos, testing or in CI), it might make sense to run the `ModuleTemplate` in "control-plane" mode.
    What this means is that instead of expecting separate control-plane and runtime clusters, we will target a single cluster that holds all infrastructure for the operators and modules.
@@ -429,7 +319,7 @@ _WARNING: This step requires the working OCI Registry and Cluster from our [Pre-
    After this the module will be available for consumption based on the module name configured with the label `operator.kyma-project.io/module-name` on the ModuleTemplate.
    
    ```sh
-   make module-template-push
+   kubectl apply -f template.yaml
    ```
 
    * _WARNING: Depending on your setup against either a k3d cluster/registry, you will need to run the script in `hack/local-template.sh` before pushing the ModuleTemplate to have proper registry setup. (This is necessary for k3d clusters due to port-mapping issues in the cluster that the operators cannot reuse, please take a look at the [relevant issue for more details](https://github.com/kyma-project/module-manager/issues/136#issuecomment-1279542587))_

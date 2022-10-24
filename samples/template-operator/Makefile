@@ -1,38 +1,7 @@
-# Module Name used for bundling the OCI Image and later on for referencing in the Kyma Modules
-MODULE_NAME ?= template
-# Semantic Module Version used for identifying the build
-MODULE_VERSION ?= 0.0.4
-# Module Registry used for pushing the image
-MODULE_REGISTRY_PORT ?= 8888
-MODULE_REGISTRY ?= op-kcp-registry.localhost:$(MODULE_REGISTRY_PORT)/unsigned
-# Desired Channel of the Generated Module Template
-MODULE_TEMPLATE_CHANNEL ?= stable
-
-# Credentials used for authenticating into the module registry
-# see `kyma alpha mod create --help for more info`
-# MODULE_CREDENTIALS ?= testuser:testpw
-
 # Image URL to use all building/pushing image targets
-IMG_REGISTRY_PORT ?= $(MODULE_REGISTRY_PORT)
-IMG_REGISTRY ?= op-skr-registry.localhost:$(IMG_REGISTRY_PORT)/unsigned/operator-images
-IMG ?= $(IMG_REGISTRY)/$(MODULE_NAME)-operator:$(MODULE_VERSION)
-
-# This will change the flags of the `kyma alpha module create` command in case we spot credentials
-# Otherwise we will assume http-based local registries without authentication (e.g. for k3d)
-ifeq (,$(MODULE_CREDENTIALS))
-MODULE_CREATION_FLAGS=--registry $(MODULE_REGISTRY) -w --insecure
-else
-MODULE_CREATION_FLAGS=--registry $(MODULE_REGISTRY) -w -c $(MODULE_CREDENTIALS)
-endif
-
+IMG ?= controller:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.24.1
-
-## Tool Versions
-KUSTOMIZE_VERSION ?= v4.5.7
-CONTROLLER_TOOLS_VERSION ?= v0.10.0
-GOLANG_CI_LINT_VERSION ?= v1.50.1
-
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -166,15 +135,6 @@ ENVTEST ?= $(LOCALBIN)/setup-envtest
 envtest: $(ENVTEST) ## Download & Build envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
-
-########## Kyma CLI ###########
-KYMA_STABILITY ?= unstable
-
-KYMA ?= $(LOCALBIN)/kyma-$(KYMA_STABILITY)
-kyma: $(KYMA) ## Download kyma locally if necessary.
-$(KYMA): $(LOCALBIN)
-	test -f $@ || curl -# -Lo $(KYMA) https://storage.googleapis.com/kyma-cli-$(KYMA_STABILITY)/kyma-darwin
-	chmod +x $(KYMA)
 
 ##@ Checks
 

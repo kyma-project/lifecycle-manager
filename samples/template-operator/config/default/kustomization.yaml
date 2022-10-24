@@ -83,5 +83,5 @@ components:
 
 images:
 - name: controller
-  newName: op-kcp-registry.localhost:8888/unsigned/kyma.project.io/module/template-operator
-  newTag: 0.0.4
+  newName: kyma-project.io/module/template-operator
+  newTag: 0.0.1
