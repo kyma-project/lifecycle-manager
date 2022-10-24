@@ -1,9 +1,10 @@
 # template-operator
-This documentation serves as a reference to implement a module (component) operator, for integration with the [lifecycle-manager](https://github.com/kyma-project/lifecycle-manager/tree/main/operator).
+This documentation and template serve as a reference to implement a module (component) operator, for integration with the [lifecycle-manager](https://github.com/kyma-project/lifecycle-manager/tree/main/operator).
 It utilizes the [kubebuilder](https://book.kubebuilder.io/) framework with some modifications to implement Kubernetes APIs for custom resource definitions (CRDs).
 Additionally, it hides Kubernetes boilerplate code to develop fast and efficient control loops in Go.
 
 ## Contents
+* [Understanding Module Development in Kyma](#understanding-module-development-in-kyma)
 * [Implementation](#implementation)
   * [Pre-requisites](#pre-requisites)
   * [Generate kubebuilder operator](#generate-kubebuilder-operator)
@@ -12,11 +13,33 @@ Additionally, it hides Kubernetes boilerplate code to develop fast and efficient
   * [Local testing](#local-testing)
 * [Bundling and installation](#bundling-and-installation)
   * [Makefile structure](#makefile-structure)
-  * [Build module operator image](#build-module-operator-image)
+  * [Build module operator image](#prepare--build-module-operator-image)
   * [Build and push your module to the registry](#build-and-push-your-module-to-the-registry)
 * [RBAC](#rbac)
 * [Grafana dashboard](#grafana-dashboard)
+* [Registering your Module within the Control-Plane](#registering-your-module-within-the-control-plane)
 
+## Understanding Module Development in Kyma 
+
+Before going in-depth, make sure you are familiar with:
+
+- [Modularization in Kyma](https://github.com/kyma-project/community/tree/main/concepts/modularization)
+- [Operator Pattern in Kubernetes](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
+
+This Guide serves as comprehensive Step-By-Step tutorial on how to properly create a module from scratch by using an operator that is installing a Helm Chart. 
+Note that while other approaches are encouraged, there is no dedicated guide available yet and these will follow with sufficient requests and adoption of Kyma modularization.
+
+Every Kyma Module using an Operator follows 5 basic Principles:
+
+- Declared as available for use in a release channel through the `ModuleTemplate` Custom Resource in the Control-Plane
+- Declared as desired State within the `Kyma` Custom Resource in Runtime or Control-Plane
+- Installed / Managed in the Runtime by Module-Manager through the `Manifest` Custom Resource in the Control-Plane
+- Owns at least 1 CRD that is able to define the Contract that can configure its Behavior
+- Is operating on at most 1 Runtime at every given time
+
+Release channels let customers try new modules and features early, and decide when the updates should be applied. For more info, see the [relevant Documentation in our Modularization Overview](https://github.com/kyma-project/community/tree/main/concepts/modularization#release-channels).
+
+In case you are planning to migrate a pre-existing module within Kyma, please familiarize yourself with the [Transition Plan for existing Modules](https://github.com/kyma-project/community/blob/main/concepts/modularization/transition.md)
 
 ## Implementation
 
@@ -36,50 +59,42 @@ Additionally, it hides Kubernetes boilerplate code to develop fast and efficient
     ```
 
 
-### Generate kubebuilder operator 
+### Generate kubebuilder operator
 
-1. In your project (module operator) root folder make a directory `operator`
-    ```sh
-    mkdir operator && cd operator
-    ```
-
-2. Initialize `kubebuilder` project. Please make sure domain is set to `kyma-project.io`.
-    ```sh 
+1. Initialize `kubebuilder` project. Please make sure domain is set to `kyma-project.io`.
+    ```shell
    kubebuilder init --domain kyma-project.io --repo github.com/kyma-project/test-operator/operator --project-name=test-operator --plugins=go/v4-alpha
     ```
 
-3. Create API group version and kind for the intended custom resource(s). Please make sure the `group` is set as `operator`.
+2. Create API group version and kind for the intended custom resource(s). Please make sure the `group` is set as `operator`.
+    ```shell
+    kubebuilder create api --group operator --version v1alpha1 --kind Sample --resource --controller --make
     ```
-    kubebuilder create api --group operator --version v1alpha1 --kind Sample
-    ```
 
-4. `kubebuilder` will ask to create Resource, input `y`.
-
-5. `kubebuilder` will ask to create Controller, input `y`.
-
-6. Update go dependencies `go mod tidy`.
-
-7. Run `make generate` followed by `make manifests`, to generate boilerplate code and CRDs respectively.
+3. Run `make manifests`, to generate CRDs respectively.
 
 A basic kubebuilder operator with appropriate scaffolding should be setup.
 
 #### Optional: Adjust default config resources
 If the module operator will be deployed under same namespace with other operators, differentiate your resources by adding common labels.
 
-1. Add `commonLabels` to default `kustomization.yaml`, [reference implementation](./operator/config/default/kustomization.yaml).
+1. Add `commonLabels` to default `kustomization.yaml`, [reference implementation](config/default/kustomization.yaml).
 
-2. Include all resources (e.g: [manager.yaml](./operator/config/manager/manager.yaml)) which contain label selectors by using `commonLabels`.
+2. Include all resources (e.g: [manager.yaml](config/manager/manager.yaml)) which contain label selectors by using `commonLabels`.
 
 Further reading: [Kustomize built-in commonLabels](https://github.com/kubernetes-sigs/kustomize/blob/master/api/konfig/builtinpluginconsts/commonlabels.go)
    
 ### Default (declarative) Reconciliation and Status handling
+
+_Warning: This declarative approach to reconciliation is inherited from the [kubebuilder declarative pattern](https://github.com/kubernetes-sigs/kubebuilder-declarative-pattern).
+It is meant to ease development for newcomers to controller implementations and provides easy to use best-practices for simple use cases. For more complex scenarios, **DO NOT USE** our declarative pattern but build your own reconciliation loop._
 
 For simple use cases where a `module operator` should install a `module helm chart(s)` and set the state of the corresponding `module CR` accordingly, a declarative approach is useful.
 This approach will enable orchestration of Kubernetes resources so that module owners can concentrate on their specific logic.
 
 #### Steps API definition:
 
-1. Refer to [API definition](./operator/api/v1alpha1/sample_types.go) of `SampleCR` and implement `Status` sub-resource similarly in `./api/<your_api_version>/<cr_name>_types.go`.
+1. Refer to [API definition](api/v1alpha1/sample_types.go) of `SampleCR` and implement `Status` sub-resource similarly in `./api/<your_api_version>/<cr_name>_types.go`.
    This `Status` type definition is sourced from the `module-manager` declarative library and contains all valid `.status.state` values as discussed in the previous sections.
    ```yaml
     Status types.Status `json:"status,omitempty"`
@@ -104,7 +119,7 @@ This approach will enable orchestration of Kubernetes resources so that module o
 
 #### Steps controller implementation
 
-1. Refer to the [controller implementation](./operator/controllers/sample_controller.go).
+1. Refer to the [controller implementation](controllers/sample_controller.go).
    Instead of implementing the default reconciler interface, as provided by `kubebuilder`, include the `module-manager` declarative reconciler in `./controllers/<cr_name>_controller.go`.
    ```go
    // SampleReconciler reconciles a Sample object
@@ -117,7 +132,7 @@ This approach will enable orchestration of Kubernetes resources so that module o
    ```
    Notice there is no `Reconcile()` method implemented in this controller, since the logic is abstracted within the declarative reconciler.
 
-2. As part of reconciler's `SetupWithManager()` in the Sample CR [controller implementation](./operator/controllers/sample_controller.go), declarative options have been used.
+2. As part of reconciler's `SetupWithManager()` in the Sample CR [controller implementation](controllers/sample_controller.go), declarative options have been used.
    Similarly, implement the required options in your controller.
    ```go
    return r.Inject(mgr, &v1alpha1.Sample{},
@@ -134,7 +149,7 @@ This approach will enable orchestration of Kubernetes resources so that module o
 3. A **mandatory** requirement of this reconciler is to provide the option `declarative.WithManifestResolver(manifestResolver)`, as it holds the chart information to be processed by the declarative reconciler.
 
    This `ManifestResolver` should implement `types.ManifestResolver` from the declarative library. Implement a similar `ManifestResolver` in your controller.
-   E.g. Sample CR [controller implementation](./operator/controllers/sample_controller.go) returns chart information.
+   E.g. Sample CR [controller implementation](controllers/sample_controller.go) returns chart information.
    ```go
       // Get returns the chart information to be processed.
       func (m *ManifestResolver) Get(obj types.BaseCustomObject) (types.InstallationSpec, error) {
@@ -159,7 +174,7 @@ This approach will enable orchestration of Kubernetes resources so that module o
       }
    ```
    
-4. Run `make generate`, `make manifests` and in the end `make install`, to generate boilerplate code, CRDs and install required resources on your clusterrespectively.
+4. Run `make generate manifests install`, to generate boilerplate code, CRDs and install required resources on your cluster respectively.
 
 ### Custom Reconciliation and Status handling guidelines
 
@@ -176,52 +191,141 @@ This is required to track the current state of the module, represented by this c
 
 ## Bundling and installation
 
-### Makefile structure
+### Enhanced Makefile structure
 The template operator contains base scaffolding that is prepared to build a Kyma Module from the various commands in `Makefile`.
+
+It is a slightly adjusted Makefile, that contains special instructions on how to build and bundle Kyma Modules from
+Kubebuilder projects together with the kyma CLI. We highly encourage you get inspired by this Makefile to implement
+your own automations as it pushes the entry barrier for building modules much lower.
+
+Here you can see the commands supported with the enhanced Makefile.
 
 ```
 Usage:
   make <target>
 
 General
-  help                   Display this help.
+  help             Display this help.
+
+Development
+  manifests        Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
+  generate         Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+  test             Run tests.
+
+Build
+  build            Build manager binary.
+  run              Run a controller from your host.
+  docker-build     Build docker image with the manager.
+  docker-push      Push docker image with the manager.
+
+Deployment
+  install          Install CRDs into the K8s cluster specified in ~/.kube/config.
+  uninstall        Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
+  deploy           Deploy controller to the K8s cluster specified in ~/.kube/config.
+  undeploy         Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 
 Module
-  module-operator-chart  Bundle the Module Operator Chart
-  module-image           Build the Module Image and push it to a registry defined in IMG_REGISTRY
-  module-build           Build the Module and push it to a registry defined in MODULE_REGISTRY
-  module-default         Bootstrap the Default CR
+  module-image     Build the Module Image and push it to a registry defined in IMG_REGISTRY
+  module-build     Build the Module and push it to a registry defined in MODULE_REGISTRY TODO change kyma cli path
+  module-template-push  Pushes the ModuleTemplate referencing the Image on MODULE_REGISTRY
 
 Tools
-  kyma                   Download & Build Kyma CLI locally if necessary.
-  kustomize              Download & Build kustomize locally if necessary.
-  component-cli          Download & Build kustomize locally if necessary.
-  grafana-dashboard      Generating Grafana manifests to visualize controller status.
+  kustomize        Download & Build kustomize locally if necessary.
+  controller-gen   Download & Build controller-gen locally if necessary.
+  envtest          Download & Build envtest-setup locally if necessary.
+  kyma             Download kyma locally if necessary.
+
+Checks
+  fmt              Run go fmt against code.
+  vet              Run go vet against code.
+  lint             Download & Build & Run golangci-lint against code.
 ```
 
-To use the Makefile you will need to adjust your Module information to make sure that the Makefile knows the correct remotes / targets.
+### Enhancing a native Makefile of new kubebuilder projects for Module Bundling Workflows
 
-```makefile
-# Module Name used for bundling the OCI Image and later on for referencing in the Kyma Modules
-MODULE_NAME ?= template
-# Semantic Module Version used for identifying the build
-MODULE_VERSION ?= 0.0.0
-# Module Registry used for pushing the image
-MODULE_REGISTRY ?= kcp-registry.localhost:61370/unsigned
-# Desired Channel of the Generated Module Template
-MODULE_TEMPLATE_CHANNEL ?= stable
-# Image URL to use all building/pushing image targets
-IMG_REGISTRY ?= kcp-registry.localhost:61370/operator-images
-IMG ?= $(IMG_REGISTRY)/$(MODULE_NAME)-operator:$(MODULE_VERSION)
-```
+To use your own Operator like Template Operator, you will need to adjust your Makefile with some additional Steps:
 
-### Build module operator image
+Replace the placeholder IMG variable in the Old Makefile with a more sophisticated setup, allowing you to configure not only registry settings for the operator binary,
+but also for the Module later on.
+
+The default settings listed below use the values referencing registries, that
+are setup if you use our [Guide on Cluster and OCI Registry Provisioning for the Operator Infrastructure](../../docs/developer/provision-cluster-and-registry.md).
+We highly recommend you to use this guide in case you want to setup a Test Environment.
+
+1. Replace the naturally generated `IMG` environment variable for the controller image of kubebuilder
+    ```makefile
+    # Image URL to use all building/pushing image targets
+    IMG ?= controller:latest
+    ```
+    
+    with
+    
+    ```makefile
+    # Module Name used for bundling the OCI Image and later on for referencing in the Kyma Modules
+    MODULE_NAME ?= template
+    # Semantic Module Version used for identifying the build
+    MODULE_VERSION ?= 0.0.4
+    # Module Registry used for pushing the image
+    MODULE_REGISTRY_PORT ?= 8888
+    MODULE_REGISTRY ?= op-kcp-registry.localhost:$(MODULE_REGISTRY_PORT)/unsigned
+    # Desired Channel of the Generated Module Template
+    MODULE_TEMPLATE_CHANNEL ?= stable
+    
+    # Credentials used for authenticating into the module registry
+    # see `kyma alpha mod create --help for more info`
+    # MODULE_CREDENTIALS ?= testuser:testpw
+    
+    # Image URL to use all building/pushing image targets
+    IMG_REGISTRY_PORT ?= $(MODULE_REGISTRY_PORT)
+    IMG_REGISTRY ?= op-skr-registry.localhost:$(IMG_REGISTRY_PORT)/unsigned/operator-images
+    IMG ?= $(IMG_REGISTRY)/$(MODULE_NAME)-operator:$(MODULE_VERSION)
+    
+    # This will change the flags of the `kyma alpha module create` command in case we spot credentials
+    # Otherwise we will assume http-based local registries without authentication (e.g. for k3d)
+    ifeq (,$(MODULE_CREDENTIALS))
+    MODULE_CREATION_FLAGS=--registry $(MODULE_REGISTRY) -w --insecure
+    else
+    MODULE_CREATION_FLAGS=--registry $(MODULE_REGISTRY) -w -c $(MODULE_CREDENTIALS)
+    endif
+    ```
+
+2. Next, create an additional section with commands for module bundling and processing before `##@ Tools`:
+    ```makefile
+    ##@ Module
+    
+    .PHONY: module-image
+    module-image: docker-build docker-push ## Build the Module Image and push it to a registry defined in IMG_REGISTRY
+        echo "built and pushed module image $(IMG)"
+    
+    .PHONY: module-build
+    module-build: kyma ## Build the Module and push it to a registry defined in MODULE_REGISTRY TODO change kyma cli path
+        /Users/D067928/SAPDevelop/go/src/github.com/kyma-project/cli/bin/kyma-darwin alpha create module kyma.project.io/module/$(MODULE_NAME) $(MODULE_VERSION) . $(MODULE_CREATION_FLAGS)
+    
+    .PHONY: module-template-push
+    module-template-push: ## Pushes the ModuleTemplate referencing the Image on MODULE_REGISTRY
+        kubectl apply -f template.yaml
+    ```
+
+3. Last but not least, introduce a new tool dependency that is able to fetch the kyma CLI under `##@ Tools`:
+    ```makefile
+    ########## Kyma CLI ###########
+    KYMA_STABILITY ?= unstable
+    
+    KYMA ?= $(LOCALBIN)/kyma-$(KYMA_STABILITY)
+    kyma: $(KYMA) ## Download kyma locally if necessary.
+    $(KYMA): $(LOCALBIN)
+        test -f $@ || curl -# -Lo $(KYMA) https://storage.googleapis.com/kyma-cli-$(KYMA_STABILITY)/kyma-darwin
+        chmod +x $(KYMA)
+    ```
+
+### Prepare & Build module operator image
 
 1. Include the module chart represented by `chartPath` from _step 3_ in [Controller implementation](#steps-controller-implementation) above, in your _Dockerfile_.
 [Reference implementation](https://github.com/kyma-project/lifecycle-manager/blob/main/samples/template-operator/operator/Dockerfile):
     ```dockerfile
     COPY module-chart/ module-chart/
-    ```
+    ``` 
+
 2. Adjust the _Dockerfile_ args according to the targeted cluster's architecture and OS
 
    ```dockerfile
@@ -229,24 +333,23 @@ IMG ?= $(IMG_REGISTRY)/$(MODULE_NAME)-operator:$(MODULE_VERSION)
     ARG TARGETARCH
    ```
 
-3. Build and push your module operator binary by adjusting `IMG`if necessary and then executing the `make module-image` command.
+3. Build and push your module operator binary by adjusting `IMG` if necessary (take a look at the Makefile Preparation in the previous sections for more Details) and then executing the `make module-image` command.
    
     ```sh
     make module-image
     ```
+   
 This will build the operator image and then push it as the image defined in `IMG`.
 
 ### Build and push your module to the registry
 
-1. Copy [hack folder](./hack) to your project's root directory
-
-2. The module operator will be packed in a helm chart and pushed to `MODULE_REGISTRY` using `module-build`.
+1. The module operator will be packed in a helm chart and pushed to `MODULE_REGISTRY` using `module-build`.
 
    ```sh
    make module-build
    ```
    
-3. Verify that the module creation succeeded and observe the `mod` folder. It will contain a `component-descriptor.yaml` with a definition of local layers.
+2. Verify that the module creation succeeded and observe the `mod` folder. It will contain a `component-descriptor.yaml` with a definition of local layers.
    
    ```yaml
    component:
@@ -273,13 +376,15 @@ This will build the operator image and then push it as the image defined in `IMG
    
    As you can see the CLI created various layers that are referenced in the `blobs` directory. For more information on layer structure please reference the module creation with `kyma alpha mod create --help`.
 
-4. As a result `template.yaml` should be generated in your root folder, that should be applied in the control plane as the source for module configuration.
+3. As a result `template.yaml` should be generated in your root folder, that should be applied in the control plane as the source for module configuration.
+   
+   ```sh
+   make module-template-push
+   ```
 
-    ```sh
-    make module-template-push
-    ```
-    
-    You can install the necessary module-template CRD from [here](https://raw.githubusercontent.com/kyma-project/lifecycle-manager/main/operator/config/crd/bases/operator.kyma-project.io_moduletemplates.yaml).
+   _WARNING: Depending on your setup against either a k3d cluster/registry, you will need to run the script in `hack/local-template.sh` before pushing the ModuleTemplate to have proper registry setup. (This is necessary for k3d clusters due to port-mapping issues in the cluster that the operators cannot reuse, please take a look at the [relevant issue for more details](https://github.com/kyma-project/module-manager/issues/136#issuecomment-1279542587))_
+
+   You can install the necessary module-template CRD from [here](https://raw.githubusercontent.com/kyma-project/lifecycle-manager/main/operator/config/crd/bases/operator.kyma-project.io_moduletemplates.yaml) if not already installed in your cluster.
 
 ## Grafana dashboard
 
@@ -294,10 +399,16 @@ This feature is supported by [kubebuilder grafana plugin](https://book.kubebuild
 
 ## RBAC
 Make sure you have appropriate authorizations assigned to you controller binary, before you run in inside a cluster.
-Sample CR [controller implementation](./operator/controllers/sample_controller.go) includes rbac generation (via kubebuilder) for all resources across all API groups.
+Sample CR [controller implementation](controllers/sample_controller.go) includes rbac generation (via kubebuilder) for all resources across all API groups.
 This should certainly be adjusted according to the chart manifest resources and reconciliation types.
 
    ```yaml
       // TODO: dynamically create RBACs! Remove line below.
       //+kubebuilder:rbac:groups="*",resources="*",verbs="*"
    ```
+
+## Registering your Module within the Control-Plane
+
+For global usage of your module, the generated `template.yaml` from [Build and push your module to the registry](#build-and-push-your-module-to-the-registry) needs to be registered in our control-plane.
+This relates to [Phase 2 of the Module Transition Plane](https://github.com/kyma-project/community/blob/main/concepts/modularization/transition.md#phase-2---first-module-managed-by-kyma-operator-integrated-with-keb). Please be patient until we can provide you with a stable guide on how to properly integrate your template.yaml
+with an automated test flow into the central Control-Plane Offering.

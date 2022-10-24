@@ -3,6 +3,7 @@ module github.com/kyma-project/lifecycle-manager/samples/template-operator
 go 1.19
 
 require (
+	github.com/go-logr/logr v1.2.3
 	github.com/kyma-project/module-manager/operator v0.0.0-20221019063139-49a0297f2770
 	github.com/onsi/ginkgo/v2 v2.1.6
 	github.com/onsi/gomega v1.20.1
@@ -50,7 +51,6 @@ require (
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/go-errors/errors v1.4.2 // indirect
 	github.com/go-gorp/gorp/v3 v3.0.2 // indirect
-	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/zapr v1.2.3 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
