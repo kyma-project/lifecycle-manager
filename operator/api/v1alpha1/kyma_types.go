@@ -239,12 +239,6 @@ const (
 // and the actual state of individual module can be found in related ModuleStatus.
 type KymaConditionReason string
 
-// Extend this list by actual needs.
-const (
-	ConditionReasonModulesAreReady      KymaConditionReason = "ModulesAreReady"
-	ConditionReasonModuleCatalogIsReady KymaConditionReason = "ModuleCatalogIsReady"
-)
-
 //+genclient
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status

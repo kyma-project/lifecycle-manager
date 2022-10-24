@@ -4,15 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"strconv"
+
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	modulelib "github.com/kyma-project/module-manager/operator/pkg/manifest"
 	corev1 "k8s.io/api/core/v1"
-	"net"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	k8syaml "sigs.k8s.io/yaml"
-	"strconv"
 )
 
 type SKRChartManager struct {
@@ -33,28 +36,35 @@ func NewSKRChartManager(chartPath, memoryLimits, cpuLimits string, enableWebhook
 }
 
 func (m *SKRChartManager) InstallWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
-	remoteClientCache *remote.ClientCache, kcpClient client.Client) error {
+	remoteClientCache *remote.ClientCache, kcpClient client.Client,
+) (bool, error) {
 	skrClient, err := remote.NewRemoteClient(ctx, kcpClient, client.ObjectKeyFromObject(kyma),
 		kyma.Spec.Sync.Strategy, remoteClientCache)
 	if err != nil {
-		return err
+		return true, err
 	}
 	skrCfg, err := remote.GetRemoteRestConfig(ctx, kcpClient, client.ObjectKeyFromObject(kyma),
 		kyma.Spec.Sync.Strategy)
 	if err != nil {
-		return err
+		return true, err
 	}
 	argsVals, err := m.generateHelmChartArgs(ctx, kcpClient)
 	if err != nil {
-		return err
+		return true, err
 	}
 	// TODO: make sure that validating-webhook-config resource is in sync with the secret configuration
 	skrWatcherInstallInfo := prepareInstallInfo(m.WebhookChartPath, ReleaseName, skrCfg, skrClient, argsVals)
-	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeInstall, m.enableWebhookPreInstallCheck)
+
+	if err := installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeInstall, m.enableWebhookPreInstallCheck); err != nil {
+		return true, err
+	}
+	kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionTrue)
+	return false, nil
 }
 
 func (m *SKRChartManager) RemoveWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
-	remoteClientCache *remote.ClientCache, kcpClient client.Client) error {
+	remoteClientCache *remote.ClientCache, kcpClient client.Client,
+) error {
 	skrClient, err := remote.NewRemoteClient(ctx, kcpClient, client.ObjectKeyFromObject(kyma),
 		kyma.Spec.Sync.Strategy, remoteClientCache)
 	if err != nil {
