@@ -25,7 +25,6 @@ import (
 
 	"golang.org/x/time/rate"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -44,7 +43,6 @@ type SampleReconciler struct {
 	declarative.ManifestReconciler
 	client.Client
 	Scheme *runtime.Scheme
-	*rest.Config
 }
 
 type RateLimiter struct {
@@ -78,7 +76,6 @@ var (
 func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager, chartPath string, configFlags, setFlags types.Flags, rateLimiter RateLimiter) error {
 	ConfigFlags = configFlags
 	SetFlags = setFlags
-	r.Config = mgr.GetConfig()
 	if err := r.initReconciler(mgr, chartPath); err != nil {
 		return err
 	}

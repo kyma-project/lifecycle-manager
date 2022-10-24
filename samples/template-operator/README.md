@@ -17,7 +17,8 @@ Additionally, it hides Kubernetes boilerplate code to develop fast and efficient
   * [Build module operator image](#prepare--build-module-operator-image)
   * [Build and push your module to the registry](#build-and-push-your-module-to-the-registry)
 * [Using your Module in the Lifecycle Manager Ecosystem](#using-your-module-in-the-lifecycle-manager-ecosystem)
-  * [Creating your own Kyma Runtime Custom Resource](#creating-your-own-kyma-runtime-custom-resource)
+  * [Deploying Kyma Infrastructure Operators with `kyma alpha deploy`](#deploying-the-kyma-infrastructure-operators-with-kyma-alpha-deploy)
+  * [Deploying a `ModuleTemplate` into the control-plane](#deploying-a-moduletemplate-into-the-control-plane)
   * [Debugging the Operator Ecosystem](#debugging-the-operator-ecosystem)
   * [Registering your Module within the Control-Plane](#registering-your-module-within-the-control-plane)
 
@@ -66,6 +67,7 @@ In case you are planning to migrate a pre-existing module within Kyma, please fa
     chmod +x kubebuilder && mv kubebuilder /usr/local/bin/
     ```
 * [kyma CLI](https://github.com/kyma-project/cli#installation)
+* A HELM Chart to install from your control-loop (if you do not have one ready, feel free to use the stateless redis chart from this sample)
 
 ### Generate kubebuilder operator
 
@@ -97,105 +99,234 @@ Further reading: [Kustomize built-in commonLabels](https://github.com/kubernetes
 _Warning: This declarative approach to reconciliation is inherited from the [kubebuilder declarative pattern](https://github.com/kubernetes-sigs/kubebuilder-declarative-pattern).
 It is meant to ease development for newcomers to controller implementations and provides easy to use best-practices for simple use cases. For more complex scenarios, **DO NOT USE** our declarative pattern but build your own reconciliation loop._
 
-For simple use cases where a `module operator` should install a `module helm chart(s)` and set the state of the corresponding `module CR` accordingly, a declarative approach is useful.
+For simple use cases where an operator should install one or many helm chart(s) and set the state of the corresponding Custom Resource accordingly, a declarative approach is useful for abstracting (sometimes heavy) boilerplate.
 This approach will enable orchestration of Kubernetes resources so that module owners can concentrate on their specific logic.
+
+To make use of our declarative library, simply import it with
+
+```shell
+go get github.com/kyma-project/module-manager/operator@latest
+```
 
 #### Steps API definition:
 
 1. Refer to [API definition](api/v1alpha1/sample_types.go) of `SampleCR` and implement `Status` sub-resource similarly in `./api/<your_api_version>/<cr_name>_types.go`.
    This `Status` type definition is sourced from the `module-manager` declarative library and contains all valid `.status.state` values as discussed in the previous sections.
-   ```yaml
-    Status types.Status `json:"status,omitempty"`
+   You can embed it into your existing status object:
+   ```go
+    package v1alpha1
+    import (
+        "github.com/kyma-project/module-manager/operator/pkg/types"
+        metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+    )
+    // Sample is the Schema for the samples API
+    type Sample struct {
+    metav1.TypeMeta   `json:",inline"`
+    metav1.ObjectMeta `json:"metadata,omitempty"`
+    
+        Spec   SampleSpec   `json:"spec,omitempty"`
+        Status types.Status `json:"status,omitempty"`
+    }
    ```
 
-2. Ensure the module CR's API definition implements the `module-manager` declarative library's resource requirements, represented by `types.CustomObject`. Also implement missing interface methods.
+2. Ensure the module CR's API definition implements the `module-manager` declarative library's resource `.status` interface requirements, represented by `types.CustomObject`. Also implement missing interface methods.
    ```go
-   var _ types.CustomObject = &Sample{}
-
-   func (s *Sample) GetStatus() types.Status {
-        return s.Status
-   }
-   
-   func (s *Sample) SetStatus(status types.Status) {
-        s.Status = status
-   }
-   
-   func (s *Sample) ComponentName() string {
+    package v1alpha1
+    import (
+        "github.com/kyma-project/module-manager/operator/pkg/types"
+        metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+    )
+    // Sample is the Schema for the samples API
+    type Sample struct {
+    metav1.TypeMeta   `json:",inline"`
+    metav1.ObjectMeta `json:"metadata,omitempty"`
+    
+        Spec   SampleSpec   `json:"spec,omitempty"`
+        Status types.Status `json:"status,omitempty"`
+    }
+    func (in *Sample) GetStatus() types.Status {
+        return in.Status
+    }
+    
+    func (in *Sample) SetStatus(status types.Status) {
+        in.Status = status
+    }
+    
+    func (in *Sample) ComponentName() string {
         return "sample-component-name"
-   }
+    }
    ```
 
 #### Steps controller implementation
 
 1. Refer to the [controller implementation](controllers/sample_controller.go).
    Instead of implementing the default reconciler interface, as provided by `kubebuilder`, include the `module-manager` declarative reconciler in `./controllers/<cr_name>_controller.go`.
-   ```go
-   // SampleReconciler reconciles a Sample object
-   type SampleReconciler struct {
-        declarative.ManifestReconciler // declarative reconciler override
-        *rest.Config // required to pass rest config to the declarative library
+    ```go
+    package controllers
+
+    import (
+	    "github.com/kyma-project/module-manager/operator/pkg/declarative"
+	    "sigs.k8s.io/controller-runtime/pkg/client"
+	    "k8s.io/apimachinery/pkg/runtime"
+    )
+
+    // SampleReconciler reconciles a Sample object
+    type SampleReconciler struct {
+        declarative.ManifestReconciler // this handles declarative manifest reconciliation
         client.Client
         Scheme *runtime.Scheme
-   }
-   ```
-   Notice there is no `Reconcile()` method implemented in this controller, since the logic is abstracted within the declarative reconciler.
+    }
+    ```
+   _WARNING: Notice there is no `Reconcile()` method implemented in our referenced controller, since the logic is abstracted within the declarative reconciler.
+   If you add `declarative.ManifestReconciler` into a plain controller, the declarative `Reconcile` method would be overwritten, so make sure to delete the old method in case you want to use the default logic._
+   
+   Now, you will still be left with some steps to make our reconciler run with our declarative setup.
 
-2. As part of reconciler's `SetupWithManager()` in the Sample CR [controller implementation](controllers/sample_controller.go), declarative options have been used.
-   Similarly, implement the required options in your controller.
+2. As part of the controller's `SetupWithManager()` in the Sample CR [controller implementation](controllers/sample_controller.go), we now have to tell the declarative reconciler how to reconcile the object.
+   For this, we need to inject the necessary information about the declarative intention on what to reconcile with `Inject(...)`.
+
+   In its most simple form, the new Setup could look like this (assuming all the settings from above were used):
+
    ```go
-   return r.Inject(mgr, &v1alpha1.Sample{},
-        declarative.WithManifestResolver(manifestResolver),
-        declarative.WithCustomResourceLabels(map[string]string{"sampleKey": "sampleValue"}),
-        declarative.WithPostRenderTransform(transform),
-        declarative.WithResourcesReady(true),
-        declarative.WithFinalizer(sampleFinalizer),
-   )
+    package controllers
+    import (
+	    "github.com/kyma-project/module-manager/operator/pkg/declarative"
+        metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	    "sigs.k8s.io/controller-runtime/pkg/client"
+	    ctrl "sigs.k8s.io/controller-runtime"
+	    "k8s.io/apimachinery/pkg/runtime"
+   
+	    operatorv1alpha1 "github.com/kyma-project/test-operator/operator/api/v1alpha1"
+    )
+   
+    // SampleReconciler reconciles a Sample object
+    type SampleReconciler struct {
+      declarative.ManifestReconciler
+      client.Client
+      Scheme *runtime.Scheme
+    }
+   
+    // SetupWithManager sets up the controller with the Manager.
+    func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager) error {
+    if err := r.Inject(
+      mgr, &operatorv1alpha1.Sample{},
+      declarative.WithCustomResourceLabels(map[string]string{"sampleKey": "sampleValue"}),
+      declarative.WithResourcesReady(true),
+      declarative.WithFinalizer("sample-finalizer"), 
+    ); err != nil {
+      return err
+    }
+    
+    return ctrl.NewControllerManagedBy(mgr).
+	    For(&operatorv1alpha1.Sample{}).
+	    Complete(r)
+    }
    ```
    These options can be used to modify manifest installation and uninstallation. Some options are applied as a manifest pre-processing step and others as post-processing.
-   More details on these steps can be found in the [options documentation](https://github.com/kyma-project/module-manager/blob/main/operator/pkg/declarative/options.go).
+   More details on these steps can be found in the [options documentation](https://github.com/kyma-project/module-manager/blob/main/operator/pkg/declarative/options.go) or in the reference implementation.
 
 3. A **mandatory** requirement of this reconciler is to provide the option `declarative.WithManifestResolver(manifestResolver)`, as it holds the chart information to be processed by the declarative reconciler.
-
+   _WARNING: At this point in time, we will assume you have a chart that you want to install with your operator ready under `./module-chart`. If not already done, copy your charts from the [Pre-requisites](#pre-requisites)_
    This `ManifestResolver` should implement `types.ManifestResolver` from the declarative library. Implement a similar `ManifestResolver` in your controller.
-   E.g. Sample CR [controller implementation](controllers/sample_controller.go) returns chart information.
-   ```go
-      // Get returns the chart information to be processed.
-      func (m *ManifestResolver) Get(obj types.BaseCustomObject) (types.InstallationSpec, error) {
-            sample, valid := obj.(*v1alpha1.Sample)
-            if !valid {
-                return types.InstallationSpec{},
-                fmt.Errorf("invalid type conversion for %s", client.ObjectKeyFromObject(obj))
-            }
-             return types.InstallationSpec{
-                 ChartPath:   chartPath,
-                 ReleaseName: sample.Spec.ReleaseName,
-                 ChartFlags: types.ChartFlags{
-                    ConfigFlags: types.Flags{
-                        "Namespace":       chartNs,
-                        "CreateNamespace": true,
-                    },
-                    SetFlags: types.Flags{
-                        "nameOverride": nameOverride,
-                    },
-                 },
-            }, nil
-      }
-   ```
+   E.g. Sample CR [controller implementation](controllers/sample_controller.go) returns chart information for a stateless redis installation.
+
+   A simple possible Manifest Resolver installing a chart from `./module-chart` in namespace `default` with the `--set` flag `nameOverride=custom-name-override` could look like this:
+    ```go
+    package controllers
+    import (
+	    "fmt"
+	    "github.com/go-logr/logr"
+	    "github.com/kyma-project/module-manager/operator/pkg/declarative"
+	    "github.com/kyma-project/module-manager/operator/pkg/types"
+        metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	    "sigs.k8s.io/controller-runtime/pkg/client"
+	    ctrl "sigs.k8s.io/controller-runtime"
+	    "k8s.io/apimachinery/pkg/runtime"
    
-4. Run `make generate manifests install`, to generate boilerplate code, CRDs and install required resources on your cluster respectively.
+	    operatorv1alpha1 "github.com/kyma-project/test-operator/operator/api/v1alpha1"
+    )
+    var defaultResolver = &ManifestResolver{
+        chartPath: "./module-chart",
+        configFlags: types.Flags{
+		  "Namespace":       "redis", // can be omitted if namespace is pre-existing
+		  "CreateNamespace": true, // can be omitted if namespace is pre-existing
+        },
+        setFlags: types.Flags{
+            "nameOverride": "custom-name-override",
+        },
+    }
+    
+    // ManifestResolver represents the chart information for the passed Sample resource.
+    type ManifestResolver struct {
+        chartPath   string
+        setFlags    types.Flags
+        configFlags types.Flags
+    }
+    
+    // Get returns the chart information to be processed.
+    func (m *ManifestResolver) Get(obj types.BaseCustomObject, _ logr.Logger) (types.InstallationSpec, error) {
+        sample, valid := obj.(*operatorv1alpha1.Sample)
+        if !valid {
+            return types.InstallationSpec{},
+                fmt.Errorf("invalid type conversion for %s", client.ObjectKeyFromObject(obj))
+        }
+        return types.InstallationSpec{
+            ChartPath:   m.chartPath,
+            ReleaseName: sample.Spec.Foo,
+            ChartFlags: types.ChartFlags{
+                ConfigFlags: m.configFlags,
+                SetFlags:    m.setFlags,
+            },
+        }, nil
+    }
+   
+    // SampleReconciler reconciles a Sample object
+    type SampleReconciler struct {
+      declarative.ManifestReconciler
+      client.Client
+      Scheme *runtime.Scheme
+    }
+   
+    // SetupWithManager sets up the controller with the Manager.
+    func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager) error {
+    if err := r.Inject(
+      mgr, &operatorv1alpha1.Sample{},
+      // Note that now, we need to add it to the Injection so that it's picked up by the declarative reconciler with `declarative.WithManifestResolver(defaultResolver)`
+	  declarative.WithManifestResolver(defaultResolver),
+      declarative.WithCustomResourceLabels(map[string]string{"sampleKey": "sampleValue"}),
+      declarative.WithResourcesReady(true),
+      declarative.WithFinalizer("sample-finalizer"), 
+    ); err != nil {
+      return err
+    }
+    
+    return ctrl.NewControllerManagedBy(mgr).
+	    For(&operatorv1alpha1.Sample{}).
+	    Complete(r)
+    }
+    ```
+4. Run `make generate manifests`, to generate boilerplate code and manifests.
 
 ### Custom Reconciliation and Status handling guidelines
 
 A custom resource is required to contain a specific set of properties in the Status object, to be tracked by the [lifecycle-manager](https://github.com/kyma-project/lifecycle-manager/tree/main/operator).
 This is required to track the current state of the module, represented by this custom resource.
 
-1. Check reference implementation of [Status](https://github.com/kyma-project/module-manager/blob/main/operator/pkg/types/declaritive.go) reference implementation. The `.status.state` field of your custom resource _MUST_ contain one of these state values at all times.
+1. Check the reference implementation of [Status](https://github.com/kyma-project/module-manager/blob/main/operator/pkg/types/declaritive.go) reference implementation. The `.status.state` field of your custom resource _MUST_ contain one of these state values at all times.
    On top, `.status` object could contain other relevant properties as per your requirements.
 2. The `.status.state` values have literal meaning behind them, so use them appropriately.
 
+In case you choose to not use the declarative option (as described in [this step](#default-declarative-reconciliation-and-status-handling)), you can use this contract as a base for your own state reconciliation.
+Note however, that you need to be careful in designing your reconciliation loop and we recommend getting started with our declarative pattern first.
+
 ### Local testing
 * Connect to your cluster and ensure `kubectl` is pointing to the desired cluster.
+* Install CRDs with `make install`
+  _WARNING: This installs a CRD on your cluster, so create your cluster before running the `install` command. See [Pre-requisites](#pre-requisites) for details on the cluster setup._
 * _Local setup_: install your module CR on a cluster and execute `make run` to start your operator locally.
+
+_WARNING: Note that while `make run` fully runs your controller against the cluster, it is not feasible to compare it to a productive operator.
+This is mainly because it runs with a client configured with privileges derived from your `KUBECONFIG` environment variable. For in-cluster configuration, see our [Guide on RBAC Management](#rbac).
 
 ## Bundling and installation
 
@@ -225,6 +356,7 @@ package controllers
 //+kubebuilder:rbac:groups="*",resources="*",verbs="*"
 ```
 
+_WARNING: Do not forget to run `make manifests` after this adjustment for it to take effect!_
 
 ### Prepare & Build module operator image
 
@@ -233,17 +365,16 @@ _WARNING: This step requires the working OCI Registry from our [Pre-requisites](
 1. Include the module chart represented by `chartPath` from _step 3_ in [Controller implementation](#steps-controller-implementation) above, in your _Dockerfile_.
 [Reference implementation](https://github.com/kyma-project/lifecycle-manager/blob/main/samples/template-operator/operator/Dockerfile):
     ```dockerfile
+    FROM gcr.io/distroless/static:nonroot
+    WORKDIR /
     COPY module-chart/ module-chart/
+    COPY --from=builder /workspace/manager .
+    USER 65532:65532
+    
+    ENTRYPOINT ["/manager"]
     ``` 
 
-2. Adjust the _Dockerfile_ args according to the targeted cluster's architecture and OS
-
-   ```dockerfile
-    ARG TARGETOS
-    ARG TARGETARCH
-   ```
-
-3. Build and push your module operator binary by adjusting `IMG` if necessary and running the inbuilt kubebuilder commands.
+2. Build and push your module operator binary by adjusting `IMG` if necessary and running the inbuilt kubebuilder commands.
    Assuming your Operator Image has the following base settings:
    * hosted at `op-kcp-registry.localhost:8888/unsigned/operator-images` 
    * controller image name is `template-operator`
@@ -253,7 +384,7 @@ _WARNING: This step requires the working OCI Registry from our [Pre-requisites](
 
    You can run the following command
     ```sh
-    make docker-build docker-push IMG="op-kcp-registry.localhost:8888/unsigned/operator-images/template-operator:0.0.1"
+    make docker-build docker-push IMG="op-kcp-registry.localhost:8888/unsigned/kyma-project.io/module/sample-operator:0.0.1"
     ```
    
 This will build the operator image and then push it as the image defined in `IMG`.
@@ -262,19 +393,48 @@ This will build the operator image and then push it as the image defined in `IMG
 
 _WARNING: This step requires the working OCI Registry, Cluster and Kyma CLI from our [Pre-requisites](#pre-requisites)_
 
-1. The module operator will be packed in a (dummy) helm chart and we will now push our Module.
-   Assuming the settings from [Prepare & Build module operator image](#prepare--build-module-operator-image), and assuming the following module settings:
+1. The module operator manifests from the `default` kustomization (not the controller image) will now be bundled and pushed.
+   Assuming the settings from [Prepare & Build module operator image](#prepare--build-module-operator-image) for single-cluster mode, and assuming the following module settings:
    * hosted at `op-kcp-registry.localhost:8888/unsigned`
    * generated for channel `stable`
    * module has version `0.0.1`
    * module name is `template`
    * using an insecure (http instead of https for registry communication), local k3d registry on your machine
    * uses Kyma CLI in `$PATH` under `kyma`
-   
-   Run
+   * a simple `config.yaml` is present for module configuration with the content
+     ```yaml
+     # Samples Config
+     configs:
+     ```
+     _WARNING: Even though this file is empty, it is mandatory for the command to succeed as it will be bundled as layer!
+     kubebuilder projects by default to not have such a file (it is introduced by modularization) and you will need to create one on your own if not already done._ 
+   * the default sample under `config/samples/operator_v1alpha1_sample.yaml` has been adjusted to be a valid CR by setting the default generated `Foo` field instead of a TODO.
+     ```yaml
+     apiVersion: operator.kyma-project.io/v1alpha1
+     kind: Sample
+     metadata:
+       name: sample-sample
+     spec:
+       foo: bar
+     ```
+     _WARNING: The settings above reflect your default configuration for a module. If you want to change this you will have to manually adjust it to different configurations_
+   * The `.gitignore` has been adjusted and following ignores were added
+     ```gitignore
+     # kyma module cache
+     mod
+     # generated dummy charts
+     charts
+     # kyma generated by scripts or local testing
+     kyma.yaml
+     # template generated by kyma create module
+     template.yaml
+     ```
+     This is not mandatory, but strongly recommended.
+
+   Now, run
 
    ```sh
-   kyma alpha create module kyma-project.io/module/template 0.0.1 . -w --insecure
+   kyma alpha create module kyma-project.io/module/sample 0.0.1 . -w --insecure --registry op-kcp-registry.localhost:8888/unsigned
    ```
    
    _WARNING: For external registries (e.g. Google Container/Artifact Registry), never use insecure. Instead specify credentials. More details can be found in the help documentation of the CLI_
@@ -294,75 +454,96 @@ _WARNING: This step requires the working OCI Registry, Cluster and Kyma CLI from
    ```
 
 2. Verify that the module creation succeeded and observe the `mod` folder. It will contain a `component-descriptor.yaml` with a definition of local layers.
-   
-   ```yaml
-   component:
-     componentReferences: []
-     name: kyma.project.io/module/template
-     provider: internal
-     repositoryContexts:
-       - baseUrl: op-kcp-registry:56888/unsigned
-         componentNameMapping: urlPath
-         type: ociRegistry
-     resources:
-       - access:
-           filename: sha256:4ca3dcc19af77a57e0345018985aec0e7bf15a4fb4ae5b1c5392b45ea013c59a
-           mediaType: application/gzip
-           type: localFilesystemBlob
-         name: template-operator
-         relation: local
-         type: helm-chart
-         version: 0.0.0
-     # other layers will be included here
-   meta:
-     schemaVersion: v2
-   ```
+    ```yaml
+    component:
+      componentReferences: []
+      name: kyma-project.io/module/sample
+      provider: internal
+      repositoryContexts:
+      - baseUrl: op-kcp-registry.localhost:8888/unsigned
+        componentNameMapping: urlPath
+        type: ociRegistry
+      resources:
+      - access:
+          filename: sha256:fafc3be538f68a786f3b8ef39bd741805314253f81cf4a5880395dcecf599ef5
+          mediaType: application/gzip
+          type: localFilesystemBlob
+        name: sample-operator
+        relation: local
+        type: helm-chart
+        version: 0.0.1
+      - access:
+          filename: sha256:db86408caca4c94250d8291aa79655b84146f9cc45e0da49f05a52b3722d74a0
+          mediaType: application/octet-stream
+          type: localFilesystemBlob
+        name: config
+        relation: local
+        type: yaml
+        version: 0.0.1
+      sources: []
+      version: 0.0.1
+    meta:
+      schemaVersion: v2
+    ```
    
    As you can see the CLI created various layers that are referenced in the `blobs` directory. For more information on layer structure please reference the module creation with `kyma alpha mod create --help`.
-
-3. Now run the command for creating the ModuleTemplate in the Cluster.
-   After this the module will be available for consumption based on the module name configured with the label `operator.kyma-project.io/module-name` on the ModuleTemplate.
    
-   ```sh
-   kubectl apply -f template.yaml
-   ```
-
-   * _WARNING: Depending on your setup against either a k3d cluster/registry, you will need to run the script in `hack/local-template.sh` before pushing the ModuleTemplate to have proper registry setup. (This is necessary for k3d clusters due to port-mapping issues in the cluster that the operators cannot reuse, please take a look at the [relevant issue for more details](https://github.com/kyma-project/module-manager/issues/136#issuecomment-1279542587))_
-
-   * Depending on the state of your target cluster, it can happen that the namespace that the template is in must still be created.
-
-   * You can install the necessary module-template CRD from [here](https://raw.githubusercontent.com/kyma-project/lifecycle-manager/main/operator/config/crd/bases/operator.kyma-project.io_moduletemplates.yaml) if not already installed in your cluster.
-
-
 ## Using your Module in the Lifecycle Manager Ecosystem
 
-### Creating your own Kyma Runtime Custom Resource
+### Deploying Kyma Infrastructure Operators with `kyma alpha deploy`
 
 _WARNING: This step requires the working OCI Registry and Cluster from our [Pre-requisites](#pre-requisites)_
 
 Now that everything is prepared in a cluster of your choosing, you are free to reference the module within any `Kyma` Custom Resource in the Cluster that you prepared earlier.
 
-For our Template-Operator, you could generate a Kyma Resource in `kyma.yaml` with this:
+Deploy the Lifecycle Manager & Module Manager to the control-plane cluster with
 
 ```shell
-cat <<EOF > kyma.yaml
-apiVersion: operator.kyma-project.io/v1alpha1
-kind: Kyma
-metadata:
-  name: kyma-sample
-  namespace: $(yq '.metadata.namespace' template.yaml)
+kyma alpha deploy
+```
+
+_WARNING: For single-cluster mode, module manager needs additional privileges to work in the cluster as it usually does not need to access all resource types within the control-plane.
+This can be fixed by editing the necessary ClusterRole with `kubectl edit clusterrole module-manager-manager-role` with the following adjustment:_
+```yaml
+- apiGroups:                                                                                                                                                  
+  - "*"                                                                                                                                                       
+  resources:                                                                                                                                                  
+  - "*"                                                                                                                                                       
+  verbs:                                                                                                                                                      
+  - "*"
+```
+
+_Note that this is very hard to properly protect against privilege escalation in single-cluster mode, which is one of the reasons we heavily discourage it for productive use_
+
+### Deploying a `ModuleTemplate` into the control-plane
+
+Now run the command for creating the ModuleTemplate in the Cluster.
+After this the module will be available for consumption based on the module name configured with the label `operator.kyma-project.io/module-name` on the ModuleTemplate.
+
+_WARNING: Depending on your setup against either a k3d cluster/registry, you will need to run the script in `hack/local-template.sh` before pushing the ModuleTemplate to have proper registry setup.
+(This is necessary for k3d clusters due to port-mapping issues in the cluster that the operators cannot reuse, please take a look at the [relevant issue for more details](https://github.com/kyma-project/module-manager/issues/136#issuecomment-1279542587))_
+
+```sh
+kubectl apply -f template.yaml
+```
+
+For single-cluster mode, you could use the existing Kyma Resource generated for the control-plane in `kyma.yaml` with this:
+
+```shell
+kubectl patch kyma default-kyma -n kcp-system --type='json' -p='[{"op": "add", "path": "/spec/modules", "value": [{"name": "sample" }] }]'
+```
+
+And then add your module into `.spec.modules` based on the `"operator.kyma-project.io/module-name": "sample"` label that was generated in `template.yaml`:
+
+```yaml
 spec:
-  channel: $(yq '.spec.channel' template.yaml)
-  sync:
-    enabled: false
   modules:
-    - name: $(yq '.metadata.labels | with_entries(select(.key == "operator.kyma-project.io/module-name")) | .[]' template.yaml)
-EOF
+  - name: sample
 ```
 
 Note that of course, you can adjust the Kyma CR based on your testing scenario. For example, if you are running a Dual-Cluster Setup, you might want to enable the synchronization of the Kyma Resource into the Runtime for E2E configurability.
 
-To get started with the installation, simply run `kubectl apply -f kyma.yaml` and the installation should start almost immediately.
+The installation should start almost immediately.
 
 ### Debugging the Operator Ecosystem
 
@@ -371,18 +552,18 @@ For this very reason here is a small help to debug any module developed via this
 
 1. Verify the Kyma Installation state is ready by verifying all conditions
    ```shell
-    JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}' \
-    && kubectl get kyma -o jsonpath="$JSONPATH" | grep "Ready=True"
+    JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.reason}:{@.status};{end}{end}' \
+    && kubectl get kyma -o jsonpath="$JSONPATH" -n kcp-system
    ```
 2. Verify the Manifest Installation state is ready by verifying all conditions
    ```shell
     JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}' \
-    && kubectl get manifest -o jsonpath="$JSONPATH" | grep "Ready=True"
+    && kubectl get manifest -o jsonpath="$JSONPATH"-n kcp-system
    ```
 3. Depending on your issue, either observe the Deployment logs from either `lifecycle-manager` and/or `module-manager`. Make sure that no errors occur.
 
-Usually the issue is related to either RBAC Configuration (for troubleshooting minimum privileges for the controllers, see our dedicated [RBAC](#rbac) section), or a misconfiguration of the `ModuleTemplate`.
-In the later case, make sure that you are aware if you are running within a single cluster or with a separate control-plane, and watch out for any Steps with `WARNING` attached to them and retry with a freshly provisioned cluster.
+Usually the issue is related to either RBAC Configuration (for troubleshooting minimum privileges for the controllers, see our dedicated [RBAC](#rbac) section), a malconfigured Image and/or Module Registry or a misconfiguration of the `ModuleTemplate`.
+In the last case, make sure that you are aware if you are running within a single cluster or with a separate control-plane, and watch out for any Steps with `WARNING` attached to them and retry with a freshly provisioned cluster.
 For cluster provisioning, please make sure to follow our recommendations for Clusters mentioned in our [Pre-requisites](#pre-requisites) for this guide.
 
 Lastly, if you are still unsure, please feel free to open an Issue and describe what's going on, and we will be happy to help you out with more detailed information.

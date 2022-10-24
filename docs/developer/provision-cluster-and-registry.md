@@ -9,10 +9,10 @@ For a dual cluster setup, with control plane (KCP) and Kyma runtime (SKR); creat
 1. Create a `k3d` cluster:
 
    ```sh
-   k3d cluster create op-kcp --registry-create op-kcp-registry.localhost:0.0.0.0:8888
+   k3d cluster create op-kcp --registry-create op-kcp-registry.localhost:8888
    
    # also add for dual cluster mode only
-   k3d cluster create op-skr --registry-create op-skr-registry.localhost:0.0.0.0:8888
+   k3d cluster create op-skr --registry-create op-skr-registry.localhost:8888
    ```
 2. Configure the local `k3d` registry. 
    1. To reach the registries using `localhost`, add the following code to your `/etc/hosts` file:

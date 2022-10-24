@@ -1,14 +1,17 @@
 component:
   componentReferences: []
-  name: kyma-project.io/module/template
+  name: kyma-project.io/module/sample
   provider: internal
-  repositoryContexts: []
+  repositoryContexts:
+  - baseUrl: op-kcp-registry.localhost:5000/unsigned
+    componentNameMapping: urlPath
+    type: ociRegistry
   resources:
   - access:
-      filename: sha256:e5df58bb4c6d1e269af5fb27f170e09c4523eab581f2fdfd6a72b5932e147aa3
+      filename: sha256:2dd783cc8dab86a84a7f3be1a05859d7bb265e94ec3fd72558fa0d4fbd1ce375
       mediaType: application/gzip
       type: localFilesystemBlob
-    name: template-operator
+    name: sample-operator
     relation: local
     type: helm-chart
     version: 0.0.1
