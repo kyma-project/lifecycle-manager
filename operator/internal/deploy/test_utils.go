@@ -10,11 +10,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
-	MemoryLimits = "500Mi"
-	CpuLimits    = "1"
-)
-
 func CreateKymaCR(kymaName string) *v1alpha1.Kyma {
 	return &v1alpha1.Kyma{
 		TypeMeta: metav1.TypeMeta{

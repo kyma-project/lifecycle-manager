@@ -32,11 +32,7 @@ func TestAPIs(t *testing.T) {
 var (
 	ctx               context.Context         //nolint:gochecknoglobals
 	kcpTestEnv        *envtest.Environment    //nolint:gochecknoglobals
-	skrTestEnv        *envtest.Environment    //nolint:gochecknoglobals
-	skrCfg            *rest.Config            //nolint:gochecknoglobals
-	kcpCfg            *rest.Config            //nolint:gochecknoglobals
 	kcpClient         client.Client           //nolint:gochecknoglobals
-	skrClient         client.Client           //nolint:gochecknoglobals
 	webhookMgr        *deploy.SKRChartManager //nolint:gochecknoglobals
 	remoteClientCache *remote.ClientCache     //nolint:gochecknoglobals
 )
@@ -48,9 +44,11 @@ var _ = BeforeSuite(func() {
 	By("preparing required CRDs")
 	resp, err := http.Get("https://raw.githubusercontent.com/kyma-project/lifecycle-manager/" +
 		"main/operator/config/crd/bases/operator.kyma-project.io_kymas.yaml")
+	defer func() {
+		Expect(resp.Body.Close()).To(Succeed())
+	}()
 	Expect(err).ToNot(HaveOccurred())
 	Expect(resp.StatusCode).To(Equal(http.StatusOK))
-	defer resp.Body.Close()
 	kymaCrd := &apiextv1.CustomResourceDefinition{}
 	err = k8syaml.NewYAMLOrJSONDecoder(resp.Body, 2048).Decode(kymaCrd)
 	Expect(err).ToNot(HaveOccurred())
@@ -58,7 +56,6 @@ var _ = BeforeSuite(func() {
 		"main/operator/config/crd/bases/operator.kyma-project.io_watchers.yaml")
 	Expect(err).ToNot(HaveOccurred())
 	Expect(resp.StatusCode).To(Equal(http.StatusOK))
-	defer resp.Body.Close()
 	watcherCrd := &apiextv1.CustomResourceDefinition{}
 	err = k8syaml.NewYAMLOrJSONDecoder(resp.Body, 2048).Decode(watcherCrd)
 	Expect(err).ToNot(HaveOccurred())
@@ -105,7 +102,6 @@ var _ = BeforeSuite(func() {
 		return authUser.Config()
 	}
 
-	skrClient, err = client.New(authUser.Config(), client.Options{Scheme: kcpClient.Scheme()})
 	Expect(err).NotTo(HaveOccurred())
 })
 

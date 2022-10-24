@@ -37,7 +37,6 @@ const (
 )
 
 var (
-	ErrSKRWebhookNotReady            = errors.New("installed skr webhook resources are not ready")
 	ErrSKRWebhookHasNotBeenInstalled = errors.New("skr webhook resources have not been installed")
 	ErrSKRWebhookWasNotRemoved       = errors.New("installed skr webhook resources were not removed")
 	ErrLoadBalancerIPIsNotAssigned   = errors.New("load balancer service external ip is not assigned")
