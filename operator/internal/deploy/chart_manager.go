@@ -16,17 +16,19 @@ import (
 )
 
 type SKRChartManager struct {
-	WebhookChartPath       string
-	SkrWebhookMemoryLimits string
-	SkrWebhookCPULimits    string
-	KcpAddr                string
+	WebhookChartPath             string
+	SkrWebhookMemoryLimits       string
+	SkrWebhookCPULimits          string
+	KcpAddr                      string
+	enableWebhookPreInstallCheck bool
 }
 
-func NewSKRChartManager(chartPath, memoryLimits, cpuLimits string) (*SKRChartManager, error) {
+func NewSKRChartManager(chartPath, memoryLimits, cpuLimits string, enableWebhookPreInstallCheck bool) (*SKRChartManager, error) {
 	mgr := &SKRChartManager{
-		WebhookChartPath:       chartPath,
-		SkrWebhookMemoryLimits: memoryLimits,
-		SkrWebhookCPULimits:    cpuLimits,
+		WebhookChartPath:             chartPath,
+		SkrWebhookMemoryLimits:       memoryLimits,
+		SkrWebhookCPULimits:          cpuLimits,
+		enableWebhookPreInstallCheck: enableWebhookPreInstallCheck,
 	}
 
 	return mgr, nil
@@ -48,10 +50,9 @@ func (m *SKRChartManager) InstallWebhookChart(ctx context.Context, kyma *v1alpha
 	if err != nil {
 		return err
 	}
-	//TODO: verify webhook configuration with watchers' configuration before re-installing the chart
-	//TODO: make sure that validating-webhook-config resource is in sync with the secret configuration
+	// TODO: make sure that validating-webhook-config resource is in sync with the secret configuration
 	skrWatcherInstallInfo := prepareInstallInfo(m.WebhookChartPath, ReleaseName, skrCfg, skrClient, argsVals)
-	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeInstall)
+	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeInstall, m.enableWebhookPreInstallCheck)
 }
 
 func (m *SKRChartManager) RemoveWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
@@ -71,7 +72,7 @@ func (m *SKRChartManager) RemoveWebhookChart(ctx context.Context, kyma *v1alpha1
 		return err
 	}
 	skrWatcherInstallInfo := prepareInstallInfo(m.WebhookChartPath, ReleaseName, skrCfg, skrClient, argsVals)
-	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeUninstall)
+	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeUninstall, m.enableWebhookPreInstallCheck)
 }
 
 func (m *SKRChartManager) generateHelmChartArgs(ctx context.Context, kcpClient client.Client) (map[string]interface{}, error) {
@@ -135,11 +136,9 @@ func generateWatchableConfigs(watcherList *v1alpha1.WatcherList) map[string]Watc
 		}
 	}
 	return chartCfg
-
 }
 
-func installOrRemoveChartOnSKR(ctx context.Context, deployInfo modulelib.InstallInfo, mode Mode,
-) error {
+func installOrRemoveChartOnSKR(ctx context.Context, deployInfo modulelib.InstallInfo, mode Mode, enableWebhookPreInstallCheck bool) error {
 	logger := logf.FromContext(ctx)
 	if mode == ModeUninstall {
 		uninstalled, err := modulelib.UninstallChart(&logger, deployInfo, nil)
@@ -149,29 +148,26 @@ func installOrRemoveChartOnSKR(ctx context.Context, deployInfo modulelib.Install
 		if !uninstalled {
 			return ErrSKRWebhookWasNotRemoved
 		}
+
+		return nil
+	}
+	if enableWebhookPreInstallCheck {
+		// TODO: verify webhook configuration with watchers' configuration before re-installing the chart
 		ready, err := modulelib.ConsistencyCheck(&logger, deployInfo, nil)
 		if err != nil {
 			return fmt.Errorf("failed to verify webhook resources: %w", err)
 		}
 		if ready {
-			return ErrSKRWebhookWasNotRemoved
+			logger.V(1).Info("chart resources already installed, nothing to do!")
+			return nil
 		}
-		return nil
 	}
-
 	installed, err := modulelib.InstallChart(&logger, deployInfo, nil)
 	if err != nil {
 		return fmt.Errorf("failed to install webhook config: %w", err)
 	}
 	if !installed {
 		return ErrSKRWebhookHasNotBeenInstalled
-	}
-	ready, err := modulelib.ConsistencyCheck(&logger, deployInfo, nil)
-	if err != nil {
-		return fmt.Errorf("failed to verify webhook resources: %w", err)
-	}
-	if !ready {
-		return ErrSKRWebhookNotReady
 	}
 	return nil
 }

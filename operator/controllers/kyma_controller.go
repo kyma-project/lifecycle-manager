@@ -59,9 +59,10 @@ type RequeueIntervals struct {
 type SkrChartConfig struct {
 	// WebhookChartPath represents the path of the webhook chart
 	// to be installed on SKR clusters upon reconciling kyma CRs.
-	WebhookChartPath       string
-	SkrWebhookMemoryLimits string
-	SkrWebhookCPULimits    string
+	WebhookChartPath             string
+	SkrWebhookMemoryLimits       string
+	SkrWebhookCPULimits          string
+	EnableWebhookPreInstallCheck bool
 }
 
 // KymaReconciler reconciles a Kyma object.
@@ -121,7 +122,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, fmt.Errorf(
 				"could not update kyma status after triggering deletion: %w", err)
 		}
-		return ctrl.Result{}, nil
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	// check finalizer
@@ -376,7 +377,8 @@ func (r *KymaReconciler) SetSKRChartManager() error {
 		return fmt.Errorf("watcher config is not set")
 	}
 	chartMgr, err := deploy.NewSKRChartManager(r.SkrChartConfig.WebhookChartPath,
-		r.SkrChartConfig.SkrWebhookMemoryLimits, r.SkrChartConfig.SkrWebhookCPULimits)
+		r.SkrChartConfig.SkrWebhookMemoryLimits, r.SkrChartConfig.SkrWebhookCPULimits,
+		r.SkrChartConfig.EnableWebhookPreInstallCheck)
 	r.SKRChartManager = chartMgr
 	return err
 }

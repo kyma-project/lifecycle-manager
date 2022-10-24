@@ -55,7 +55,7 @@ func (c *IstioClient) ConfigureVirtualService(ctx context.Context, watchers []v1
 		}
 		return nil
 	}
-	//TODO: verify route doesn't exist already
+	// TODO: verify route doesn't exist already
 	virtualService.Spec.Http = prepareIstioHTTPRoutes(watchers...)
 	return c.updateVirtualService(ctx, virtualService)
 }

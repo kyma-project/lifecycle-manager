@@ -95,6 +95,7 @@ type FlagVar struct {
 	skrWatcherPath                                                         string
 	skrWebhookMemoryLimits                                                 string
 	skrWebhookCPULimits                                                    string
+	enableWebhookPreInstallCheck                                           bool
 	pprof                                                                  bool
 	pprofAddr                                                              string
 	pprofServerTimeout                                                     time.Duration
@@ -249,6 +250,8 @@ func defineFlagVar() *FlagVar {
 		"The resources.limits.memory for skr webhook.")
 	flag.StringVar(&flagVar.skrWebhookCPULimits, "skr-webhook-cpu-limits", "0.1",
 		"The resources.limits.cpu for skr webhook.")
+	flag.BoolVar(&flagVar.enableWebhookPreInstallCheck, "enable-webhook-pre-install-check", false,
+		"Whether to execute webhook pre-install check.")
 	flag.BoolVar(&flagVar.pprof, "pprof", false,
 		"Whether to start up a pprof server.")
 	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
@@ -268,9 +271,10 @@ func setupKymaReconciler(
 		setupLog.Error(err, "failed to read local skr chart")
 	}
 	skrChartConfig := &controllers.SkrChartConfig{
-		WebhookChartPath:       flagVar.skrWatcherPath,
-		SkrWebhookMemoryLimits: flagVar.skrWebhookMemoryLimits,
-		SkrWebhookCPULimits:    flagVar.skrWebhookCPULimits,
+		WebhookChartPath:             flagVar.skrWatcherPath,
+		SkrWebhookMemoryLimits:       flagVar.skrWebhookMemoryLimits,
+		SkrWebhookCPULimits:          flagVar.skrWebhookCPULimits,
+		EnableWebhookPreInstallCheck: flagVar.enableWebhookPreInstallCheck,
 	}
 	if err := (&controllers.KymaReconciler{
 		Client:            mgr.GetClient(),
