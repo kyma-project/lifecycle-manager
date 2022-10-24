@@ -243,11 +243,14 @@ _WARNING: This step requires the working OCI Registry from our [Pre-requisites](
     ARG TARGETARCH
    ```
 
-3. Build and push your module operator binary by adjusting `IMG` if necessary and then executing the `make module-image` command.
+3. Build and push your module operator binary by adjusting `IMG` if necessary and running the inbuilt kubebuilder commands.
    Assuming your Operator Image has the following base settings:
    * hosted at `op-kcp-registry.localhost:8888/unsigned/operator-images` 
    * controller image name is `template-operator`
    * controller image has version `0.0.1`
+
+   Run
+
    You can run the following command
     ```sh
     make docker-build docker-push IMG="op-kcp-registry.localhost:8888/unsigned/operator-images/template-operator:0.0.1"
@@ -268,6 +271,8 @@ _WARNING: This step requires the working OCI Registry, Cluster and Kyma CLI from
    * using an insecure (http instead of https for registry communication), local k3d registry on your machine
    * uses Kyma CLI in `$PATH` under `kyma`
    
+   Run
+
    ```sh
    kyma alpha create module kyma-project.io/module/template 0.0.1 . -w --insecure
    ```
