@@ -12,12 +12,15 @@ Additionally, it hides Kubernetes boilerplate code to develop fast and efficient
   * [Custom Reconciliation and Status handling guidelines](#custom-reconciliation-and-status-handling-guidelines)
   * [Local testing](#local-testing)
 * [Bundling and installation](#bundling-and-installation)
-  * [Makefile structure](#makefile-structure)
+  * [Enhancing a native Makefile of new kubebuilder projects for Module Bundling Workflows](#enhancing-a-native-makefile-of-new-kubebuilder-projects-for-module-bundling-workflows)
+  * [Grafana dashboard for simplified Controller Observability](#grafana-dashboard-for-simplified-controller-observability)
+  * [RBAC](#rbac)
   * [Build module operator image](#prepare--build-module-operator-image)
   * [Build and push your module to the registry](#build-and-push-your-module-to-the-registry)
-* [RBAC](#rbac)
-* [Grafana dashboard](#grafana-dashboard)
-* [Registering your Module within the Control-Plane](#registering-your-module-within-the-control-plane)
+* [Using your Module in the Lifecycle Manager Ecosystem](#using-your-module-in-the-lifecycle-manager-ecosystem)
+  * [Creating your own Kyma Runtime Custom Resource](#creating-your-own-kyma-runtime-custom-resource)
+  * [Debugging the Operator Ecosystem](#debugging-the-operator-ecosystem)
+  * [Registering your Module within the Control-Plane](#registering-your-module-within-the-control-plane)
 
 ## Understanding Module Development in Kyma 
 
@@ -44,7 +47,13 @@ In case you are planning to migrate a pre-existing module within Kyma, please fa
 ## Implementation
 
 ### Pre-requisites
-* k8s cluster
+
+* A provisioned Kubernetes Cluster and OCI Registry
+
+  _WARNING: For all use cases in the guide, you will need a cluster for end-to-end testing outside your envtest Integration Test suite.
+  In addition, the default settings used in the guide use standard values coming from our guides for cluster provisioning.
+  Thus, we HIGHLY RECOMMEND you should use our [Guide on Cluster and OCI Registry Provisioning for the Operator Infrastructure](../../docs/developer/provision-cluster-and-registry.md) for a smooth development process.
+  This is a good alternative if you do not want to use an entire control-plane infrastructure and still want to properly test your operators._
 * [kubectl](https://kubernetes.io/docs/tasks/tools/)
 * [kubebuilder](https://book.kubebuilder.io/)
     ```bash
@@ -57,7 +66,6 @@ In case you are planning to migrate a pre-existing module within Kyma, please fa
     curl -L -o kubebuilder https://go.kubebuilder.io/dl/latest/$(go env GOOS)/$(go env GOARCH)
     chmod +x kubebuilder && mv kubebuilder /usr/local/bin/
     ```
-
 
 ### Generate kubebuilder operator
 
@@ -248,10 +256,6 @@ To use your own Operator like Template Operator, you will need to adjust your Ma
 Replace the placeholder IMG variable in the Old Makefile with a more sophisticated setup, allowing you to configure not only registry settings for the operator binary,
 but also for the Module later on.
 
-The default settings listed below use the values referencing registries, that
-are setup if you use our [Guide on Cluster and OCI Registry Provisioning for the Operator Infrastructure](../../docs/developer/provision-cluster-and-registry.md).
-We highly recommend you to use this guide in case you want to setup a Test Environment.
-
 1. Replace the naturally generated `IMG` environment variable for the controller image of kubebuilder
     ```makefile
     # Image URL to use all building/pushing image targets
@@ -318,7 +322,36 @@ We highly recommend you to use this guide in case you want to setup a Test Envir
         chmod +x $(KYMA)
     ```
 
+### Grafana dashboard for simplified Controller Observability
+
+You can extend the Operator further by using automated dashboard generation for grafana with this enhancement:
+
+By the following command, two grafana dashboard files with controller related metrics will be generated under `/grafana` folder.
+
+```shell
+kubebuilder edit --plugins grafana.kubebuilder.io/v1-alpha
+```
+
+For how to import the dashboard, please read [official grafana guide](https://grafana.com/docs/grafana/latest/dashboards/export-import/#import-dashboard).
+This feature is supported by [kubebuilder grafana plugin](https://book.kubebuilder.io/plugins/grafana-v1-alpha.html).
+
+### RBAC
+Make sure you have appropriate authorizations assigned to you controller binary, before you run it inside a cluster (not locally with `make run`).
+The Sample CR [controller implementation](controllers/sample_controller.go) includes rbac generation (via kubebuilder) for all resources across all API groups.
+This should be adjusted according to the chart manifest resources and reconciliation types.
+
+A simple Test RBAC Adjustment can be made to your controller in case you want to delay the engineering of necessary RBACs for your controller to a later stage of development:
+
+```go
+package controllers
+// TODO: dynamically create RBACs! Remove line below.
+//+kubebuilder:rbac:groups="*",resources="*",verbs="*"
+```
+
+
 ### Prepare & Build module operator image
+
+_WARNING: This step requires the working OCI Registry from our [Pre-requisites](#pre-requisites)_
 
 1. Include the module chart represented by `chartPath` from _step 3_ in [Controller implementation](#steps-controller-implementation) above, in your _Dockerfile_.
 [Reference implementation](https://github.com/kyma-project/lifecycle-manager/blob/main/samples/template-operator/operator/Dockerfile):
@@ -343,12 +376,28 @@ This will build the operator image and then push it as the image defined in `IMG
 
 ### Build and push your module to the registry
 
+_WARNING: This step requires the working OCI Registry and Cluster from our [Pre-requisites](#pre-requisites)_
+
 1. The module operator will be packed in a helm chart and pushed to `MODULE_REGISTRY` using `module-build`.
 
    ```sh
    make module-build
    ```
    
+   In certain cases (e.g. for demos, testing or in CI), it might make sense to run the `ModuleTemplate` in "control-plane" mode.
+   What this means is that instead of expecting separate control-plane and runtime clusters, we will target a single cluster that holds all infrastructure for the operators and modules.
+
+   To make a setup work that depends on single-cluster mode you will need to adjust the generated `template.yaml` to install the module in the control-plane.
+   To do this edit the field `.spec.target` in the generated `template.yaml` to `control-plane`:
+
+   ```yaml
+   apiVersion: operator.kyma-project.io/v1alpha1
+   kind: ModuleTemplate
+   #...
+   spec:
+     target: control-plane
+   ```
+
 2. Verify that the module creation succeeded and observe the `mod` folder. It will contain a `component-descriptor.yaml` with a definition of local layers.
    
    ```yaml
@@ -376,38 +425,74 @@ This will build the operator image and then push it as the image defined in `IMG
    
    As you can see the CLI created various layers that are referenced in the `blobs` directory. For more information on layer structure please reference the module creation with `kyma alpha mod create --help`.
 
-3. As a result `template.yaml` should be generated in your root folder, that should be applied in the control plane as the source for module configuration.
+3. Now run the command for creating the ModuleTemplate in the Cluster.
+   After this the module will be available for consumption based on the module name configured with the label `operator.kyma-project.io/module-name` on the ModuleTemplate.
    
    ```sh
    make module-template-push
    ```
 
-   _WARNING: Depending on your setup against either a k3d cluster/registry, you will need to run the script in `hack/local-template.sh` before pushing the ModuleTemplate to have proper registry setup. (This is necessary for k3d clusters due to port-mapping issues in the cluster that the operators cannot reuse, please take a look at the [relevant issue for more details](https://github.com/kyma-project/module-manager/issues/136#issuecomment-1279542587))_
+   * _WARNING: Depending on your setup against either a k3d cluster/registry, you will need to run the script in `hack/local-template.sh` before pushing the ModuleTemplate to have proper registry setup. (This is necessary for k3d clusters due to port-mapping issues in the cluster that the operators cannot reuse, please take a look at the [relevant issue for more details](https://github.com/kyma-project/module-manager/issues/136#issuecomment-1279542587))_
 
-   You can install the necessary module-template CRD from [here](https://raw.githubusercontent.com/kyma-project/lifecycle-manager/main/operator/config/crd/bases/operator.kyma-project.io_moduletemplates.yaml) if not already installed in your cluster.
+   * Depending on the state of your target cluster, it can happen that the namespace that the template is in must still be created.
 
-## Grafana dashboard
+   * You can install the necessary module-template CRD from [here](https://raw.githubusercontent.com/kyma-project/lifecycle-manager/main/operator/config/crd/bases/operator.kyma-project.io_moduletemplates.yaml) if not already installed in your cluster.
 
-By the following command, two grafana dashboard files with controller related metrics will be generated under `/operator/grafana` folder.
+
+## Using your Module in the Lifecycle Manager Ecosystem
+
+### Creating your own Kyma Runtime Custom Resource
+
+_WARNING: This step requires the working OCI Registry and Cluster from our [Pre-requisites](#pre-requisites)_
+
+Now that everything is prepared in a cluster of your choosing, you are free to reference the module within any `Kyma` Custom Resource in the Cluster that you prepared earlier.
+
+For our Template-Operator, you could generate a Kyma Resource in `kyma.yaml` with this:
 
 ```shell
-make grafana-dashboard
+cat <<EOF > kyma.yaml
+apiVersion: operator.kyma-project.io/v1alpha1
+kind: Kyma
+metadata:
+  name: kyma-sample
+  namespace: $(yq '.metadata.namespace' template.yaml)
+spec:
+  channel: $(yq '.spec.channel' template.yaml)
+  sync:
+    enabled: false
+  modules:
+    - name: $(yq '.metadata.labels | with_entries(select(.key == "operator.kyma-project.io/module-name")) | .[]' template.yaml)
+EOF
 ```
 
-For how to import dashboard, please read [official grafana guide](https://grafana.com/docs/grafana/latest/dashboards/export-import/#import-dashboard).
-This feature is supported by [kubebuilder grafana plugin](https://book.kubebuilder.io/plugins/grafana-v1-alpha.html).
+Note that of course, you can adjust the Kyma CR based on your testing scenario. For example, if you are running a Dual-Cluster Setup, you might want to enable the synchronization of the Kyma Resource into the Runtime for E2E configurability.
 
-## RBAC
-Make sure you have appropriate authorizations assigned to you controller binary, before you run in inside a cluster.
-Sample CR [controller implementation](controllers/sample_controller.go) includes rbac generation (via kubebuilder) for all resources across all API groups.
-This should certainly be adjusted according to the chart manifest resources and reconciliation types.
+To get started with the installation, simply run `kubectl apply -f kyma.yaml` and the installation should start almost immediately.
 
-   ```yaml
-      // TODO: dynamically create RBACs! Remove line below.
-      //+kubebuilder:rbac:groups="*",resources="*",verbs="*"
+### Debugging the Operator Ecosystem
+
+Of course, the operator ecosystem around Kyma is highly complex. So complex in fact, that it might become troublesome to debug issues in case your module is not installed.
+For this very reason here is a small help to debug any module developed via this guide.
+
+1. Verify the Kyma Installation state is ready by verifying all conditions
+   ```shell
+    JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}' \
+    && kubectl get kyma -o jsonpath="$JSONPATH" | grep "Ready=True"
    ```
+2. Verify the Manifest Installation state is ready by verifying all conditions
+   ```shell
+    JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}' \
+    && kubectl get manifest -o jsonpath="$JSONPATH" | grep "Ready=True"
+   ```
+3. Depending on your issue, either observe the Deployment logs from either `lifecycle-manager` and/or `module-manager`. Make sure that no errors occur.
 
-## Registering your Module within the Control-Plane
+Usually the issue is related to either RBAC Configuration (for troubleshooting minimum privileges for the controllers, see our dedicated [RBAC](#rbac) section), or a misconfiguration of the `ModuleTemplate`.
+In the later case, make sure that you are aware if you are running within a single cluster or with a separate control-plane, and watch out for any Steps with `WARNING` attached to them and retry with a freshly provisioned cluster.
+For cluster provisioning, please make sure to follow our recommendations for Clusters mentioned in our [Pre-requisites](#pre-requisites) for this guide.
+
+Lastly, if you are still unsure, please feel free to open an Issue and describe what's going on, and we will be happy to help you out with more detailed information.
+
+### Registering your Module within the Control-Plane
 
 For global usage of your module, the generated `template.yaml` from [Build and push your module to the registry](#build-and-push-your-module-to-the-registry) needs to be registered in our control-plane.
 This relates to [Phase 2 of the Module Transition Plane](https://github.com/kyma-project/community/blob/main/concepts/modularization/transition.md#phase-2---first-module-managed-by-kyma-operator-integrated-with-keb). Please be patient until we can provide you with a stable guide on how to properly integrate your template.yaml
