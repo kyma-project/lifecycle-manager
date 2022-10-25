@@ -13,10 +13,8 @@ const (
 	ManagedBy      = OperatorPrefix + Separator + "managed-by"
 	Finalizer      = OperatorPrefix + Separator + string(KymaKind)
 	KymaName       = OperatorPrefix + Separator + "kyma-name"
-	LastSync       = OperatorPrefix + Separator + "last-sync"
 	Signature      = OperatorPrefix + Separator + "signature"
 	ModuleName     = OperatorPrefix + Separator + "module-name"
-	ModuleVersion  = OperatorPrefix + Separator + "module-version"
 	OperatorName   = "lifecycle-manager"
 	OwnedByLabel   = OperatorPrefix + Separator + "owned-by"
 	OwnedByFormat  = "%s__%s"

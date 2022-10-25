@@ -5,11 +5,9 @@ import (
 	"fmt"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
-	"github.com/gardener/component-spec/bindings-go/codec"
 	"github.com/imdario/mergo"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/channel"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
@@ -27,17 +25,6 @@ var (
 	ErrEmptyRawExtension    = errors.New("raw extension is empty")
 	ErrDefaultConfigParsing = errors.New("defaultConfig could not be parsed")
 )
-
-func Decode(ext runtime.RawExtension) (*ocm.ComponentDescriptor, error) {
-	if len(ext.Raw) == 0 {
-		return nil, ErrEmptyRawExtension
-	}
-	var descriptor ocm.ComponentDescriptor
-	if err := codec.Decode(ext.Raw, &descriptor); err != nil {
-		return nil, err
-	}
-	return &descriptor, nil
-}
 
 func GenerateModulesFromTemplates(
 	kyma *v1alpha1.Kyma, templates channel.ModuleTemplatesByModuleName, verification signature.Verification,
@@ -106,7 +93,7 @@ func NewModule(
 	var layers img.Layers
 	var err error
 
-	if descriptor, err = Decode(template.Spec.OCMDescriptor); err != nil {
+	if descriptor, err = template.Spec.GetDescriptor(); err != nil {
 		return nil, fmt.Errorf("could not decode the descriptor: %w", err)
 	}
 
