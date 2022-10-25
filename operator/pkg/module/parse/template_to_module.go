@@ -91,7 +91,7 @@ func NewManifestFromTemplate(
 	var layers img.Layers
 	var err error
 
-	if descriptor, err = template.Spec.GetDescriptor(); err != nil {
+	if descriptor, err = template.Spec.GetUnsafeDescriptor(); err != nil {
 		return nil, fmt.Errorf("could not decode the descriptor: %w", err)
 	}
 

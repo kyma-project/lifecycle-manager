@@ -274,7 +274,7 @@ func ModuleTemplatesLabelsCountMatch(
 				return err
 			}
 
-			descriptor, err := template.Spec.GetDescriptor()
+			descriptor, err := template.Spec.GetUnsafeDescriptor()
 			if err != nil {
 				return err
 			}

@@ -133,7 +133,7 @@ func (r *runnerImpl) updateModuleStatusFromExistingModules(modules common.Module
 ) bool {
 	updateRequired := false
 	for _, module := range modules {
-		descriptor, _ := module.Template.Spec.GetDescriptor()
+		descriptor, _ := module.Template.Spec.GetUnsafeDescriptor()
 		latestModuleStatus := v1alpha1.ModuleStatus{
 			ModuleName: module.Name,
 			Name:       module.Manifest.GetName(),
