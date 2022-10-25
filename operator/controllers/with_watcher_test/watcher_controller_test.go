@@ -100,33 +100,6 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 
 	})
 
-	//BeforeEach(func() {
-	//	// create WatcherCRs
-	//	for idx, component := range centralComponents {
-	//		watcherCR := createWatcherCR(component, isEven(idx))
-	//		Expect(controlPlaneClient.Create(ctx, watcherCR)).To(Succeed())
-	//
-	//		// verify
-	//		Eventually(isCrVsConfigured(ctx, customIstioClient, watcherCR)).Should(BeTrue())
-	//	}
-	//})
-
-	//AfterEach(func() {
-	//	for idx, component := range centralComponents {
-	//		watcherCR := &v1alpha1.Watcher{}
-	//		err := controlPlaneClient.Get(ctx, client.ObjectKey{
-	//			Name:      fmt.Sprintf("%s-sample", component),
-	//			Namespace: metav1.NamespaceDefault,
-	//		}, watcherCR)
-	//		if apierrors.IsNotFound(err) && idx == crToDeleteIdx {
-	//			continue
-	//		}
-	//		Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
-	//
-	//		Expect(controlPlaneClient.Delete(ctx, watcherCR)).To(Succeed())
-	//	}
-	//
-	//})
 
 	DescribeTable("given watcherCR reconcile loop",
 		func(testCase func(customIstioClient *custom.IstioClient)) {
