@@ -6,13 +6,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/controllers/test_helper"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
-	"github.com/kyma-project/lifecycle-manager/operator/pkg/test"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
@@ -39,22 +37,21 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Namespace:    namespace,
 		NoModuleCopy: true,
 	}
-	RegisterWatcherForKymaReconciler(watcherCrForKyma)
-	RegisterDefaultLifecycleForKyma(kyma)
+	RegisterDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma)
 
 	It("kyma reconciler installs watcher helm chart with correct webhook config", func() {
 		webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
-		Eventually(isWebhookDeployed(ctx, runtimeClient, webhookConfig), timeout, interval).
+		Eventually(isWebhookDeployed(suiteCtx, runtimeClient, webhookConfig), timeout, interval).
 			Should(Succeed())
-		Expect(IsWebhookConfigured(watcherCrForKyma, webhookConfig)).To(BeTrue())
-		Eventually(IsKymaInState(kyma.GetName(), v1alpha1.StateReady), timeout, interval).Should(BeTrue())
+		Expect(isWebhookConfigured(watcherCrForKyma, webhookConfig)).To(BeTrue())
+		Eventually(test_helper.IsKymaInState(suiteCtx, controlPlaneClient, kyma.GetName(), v1alpha1.StateReady), timeout, interval).Should(BeTrue())
 	})
 
 	It("webhook manager removes watcher helm chart from SKR cluster when kyma is deleted", func() {
 		latestKyma := &v1alpha1.Kyma{}
-		Expect(controlPlaneClient.Get(ctx, client.ObjectKeyFromObject(kyma), latestKyma)).To(Succeed())
-		Expect(controlPlaneClient.Delete(ctx, latestKyma)).To(Succeed())
-		Eventually(getSkrChartDeployment(ctx, runtimeClient), timeout, interval).
+		Expect(controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(kyma), latestKyma)).To(Succeed())
+		Expect(controlPlaneClient.Delete(suiteCtx, latestKyma)).To(Succeed())
+		Eventually(getSkrChartDeployment(suiteCtx, runtimeClient), timeout, interval).
 			Should(Succeed())
 	})
 })
@@ -79,7 +76,7 @@ func isWebhookDeployed(ctx context.Context, skrClient client.Client,
 	}
 }
 
-func IsWebhookConfigured(watcher *v1alpha1.Watcher, webhookConfig *admissionv1.ValidatingWebhookConfiguration) bool {
+func isWebhookConfigured(watcher *v1alpha1.Watcher, webhookConfig *admissionv1.ValidatingWebhookConfiguration) bool {
 	if len(webhookConfig.Webhooks) < 1 {
 		return false
 	}
@@ -129,73 +126,23 @@ func verifyWebhookConfig(
 	return true
 }
 
-func RegisterWatcherForKymaReconciler(watcher *v1alpha1.Watcher) {
-
+func RegisterDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1alpha1.Watcher) {
 	BeforeAll(func() {
-		Expect(controlPlaneClient.Create(ctx, watcher)).To(Succeed())
-	})
-	AfterAll(func() {
-		Expect(controlPlaneClient.Delete(ctx, watcher)).To(Succeed())
-	})
-}
-
-func DeployModuleTemplates(kyma *v1alpha1.Kyma) {
-	for _, module := range kyma.Spec.Modules {
-		template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
-	}
-}
-
-func DeleteModuleTemplates(kyma *v1alpha1.Kyma) {
-	for _, module := range kyma.Spec.Modules {
-		template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(controlPlaneClient.Delete(ctx, template)).To(Succeed())
-	}
-}
-
-func RegisterDefaultLifecycleForKyma(kyma *v1alpha1.Kyma) {
-	BeforeAll(func() {
-		Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
-		DeployModuleTemplates(kyma)
+		Expect(controlPlaneClient.Create(suiteCtx, watcher)).To(Succeed())
+		Expect(controlPlaneClient.Create(suiteCtx, kyma)).Should(Succeed())
+		test_helper.DeployModuleTemplates(suiteCtx, controlPlaneClient, kyma)
 	})
 
 	AfterAll(func() {
-		DeleteModuleTemplates(kyma)
-	})
-
-	AfterAll(func() {
-		Expect(controlPlaneClient.Delete(ctx, kyma)).Should(Succeed())
+		Expect(controlPlaneClient.Delete(suiteCtx, watcher)).To(Succeed())
+		test_helper.DeleteModuleTemplates(suiteCtx, controlPlaneClient, kyma)
+		Expect(controlPlaneClient.Delete(suiteCtx, kyma)).Should(Succeed())
 	})
 
 	BeforeEach(func() {
 		By("get latest kyma CR")
-		Expect(controlPlaneClient.Get(ctx, client.ObjectKey{Name: kyma.Name, Namespace: namespace}, kyma)).Should(Succeed())
+		Expect(controlPlaneClient.Get(suiteCtx, client.ObjectKey{
+			Name: kyma.Name, Namespace: metav1.NamespaceDefault,
+		}, kyma)).Should(Succeed())
 	})
-}
-
-func GetKyma(
-	testClient client.Client,
-	kymaName string,
-) (*v1alpha1.Kyma, error) {
-	kymaInCluster := &v1alpha1.Kyma{}
-	err := testClient.Get(ctx, client.ObjectKey{
-		Namespace: namespace,
-		Name:      kymaName,
-	}, kymaInCluster)
-	if err != nil {
-		return nil, err
-	}
-	return kymaInCluster, nil
-}
-
-func IsKymaInState(kymaName string, state v1alpha1.State) func() bool {
-	return func() bool {
-		kymaFromCluster, err := GetKyma(controlPlaneClient, kymaName)
-		if err != nil || kymaFromCluster.Status.State != state {
-			return false
-		}
-		return true
-	}
 }

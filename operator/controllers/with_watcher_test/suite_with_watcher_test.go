@@ -65,7 +65,7 @@ var (
 	k8sManager         manager.Manager              //nolint:gochecknoglobals
 	controlPlaneEnv    *envtest.Environment         //nolint:gochecknoglobals
 	runtimeEnv         *envtest.Environment         //nolint:gochecknoglobals
-	ctx                context.Context              //nolint:gochecknoglobals
+	suiteCtx           context.Context              //nolint:gochecknoglobals
 	cancel             context.CancelFunc           //nolint:gochecknoglobals
 	cfg                *rest.Config                 //nolint:gochecknoglobals
 	istioResources     []*unstructured.Unstructured //nolint:gochecknoglobals
@@ -84,7 +84,7 @@ func TestAPIs(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	ctx, cancel = context.WithCancel(context.TODO())
+	suiteCtx, cancel = context.WithCancel(context.TODO())
 	logger := zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true))
 	logf.SetLogger(logger)
 
@@ -172,11 +172,11 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager, controller.Options{})
 	Expect(err).ToNot(HaveOccurred())
 
-	Expect(createLoadBalancer(ctx, controlPlaneClient)).To(Succeed())
+	Expect(createLoadBalancer(suiteCtx, controlPlaneClient)).To(Succeed())
 	istioResources, err = deserializeIstioResources()
 	Expect(err).NotTo(HaveOccurred())
 	for _, istioResource := range istioResources {
-		Expect(controlPlaneClient.Create(ctx, istioResource)).To(Succeed())
+		Expect(controlPlaneClient.Create(suiteCtx, istioResource)).To(Succeed())
 	}
 
 	err = (&controllers.WatcherReconciler{
@@ -191,7 +191,7 @@ var _ = BeforeSuite(func() {
 
 	go func() {
 		defer GinkgoRecover()
-		err = k8sManager.Start(ctx)
+		err = k8sManager.Start(suiteCtx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
 })
@@ -200,7 +200,7 @@ var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	// clean up istio resources
 	for _, istioResource := range istioResources {
-		Expect(controlPlaneClient.Delete(ctx, istioResource)).To(Succeed())
+		Expect(controlPlaneClient.Delete(suiteCtx, istioResource)).To(Succeed())
 	}
 	// cancel environment context
 	cancel()

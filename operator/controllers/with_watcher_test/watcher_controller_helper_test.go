@@ -88,7 +88,7 @@ func listTestWatcherCrs(kcpClient client.Client) []*v1alpha1.Watcher {
 	watchers := make([]*v1alpha1.Watcher, 0)
 	for _, component := range centralComponents {
 		watcherCR := &v1alpha1.Watcher{}
-		err := kcpClient.Get(ctx, client.ObjectKey{
+		err := kcpClient.Get(suiteCtx, client.ObjectKey{
 			Name:      fmt.Sprintf("%s-sample", component),
 			Namespace: metav1.NamespaceDefault,
 		}, watcherCR)
@@ -112,7 +112,7 @@ func isCrDeletionFinished(watcherObjKeys ...client.ObjectKey) func(g Gomega) boo
 		}
 	}
 	return func(g Gomega) bool {
-		err := controlPlaneClient.Get(ctx, watcherObjKeys[0], &v1alpha1.Watcher{})
+		err := controlPlaneClient.Get(suiteCtx, watcherObjKeys[0], &v1alpha1.Watcher{})
 		return apierrors.IsNotFound(err)
 	}
 }
