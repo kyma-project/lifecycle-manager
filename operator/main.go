@@ -257,7 +257,7 @@ func defineFlagVar() *FlagVar {
 		"Whether to start up a pprof server.")
 	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
 		"Timeout of Read / Write for the pprof server.")
-	flag.IntVar(&flagVar.rateLimiterBurst, "rate-limiter-rateLimiterBurstDefault", rateLimiterBurstDefault,
+	flag.IntVar(&flagVar.rateLimiterBurst, "rate-limiter-burst", rateLimiterBurstDefault,
 		"Indicates the rateLimiterBurstDefault value for the bucket rate limiter.")
 	flag.IntVar(&flagVar.rateLimiterFrequency, "rate-limiter-frequency", rateLimiterFrequencyDefault,
 		"Indicates the bucket rate limiter frequency, signifying no. of events per second.")
