@@ -19,18 +19,18 @@ import (
 )
 
 type SKRChartManager struct {
-	WebhookChartPath             string
-	SkrWebhookMemoryLimits       string
-	SkrWebhookCPULimits          string
-	KcpAddr                      string
+	webhookChartPath             string
+	skrWebhookMemoryLimits       string
+	skrWebhookCPULimits          string
+	kcpAddr                      string
 	enableWebhookPreInstallCheck bool
 }
 
 func NewSKRChartManager(chartPath, memoryLimits, cpuLimits string, enableWebhookPreInstallCheck bool) *SKRChartManager {
 	return &SKRChartManager{
-		WebhookChartPath:             chartPath,
-		SkrWebhookMemoryLimits:       memoryLimits,
-		SkrWebhookCPULimits:          cpuLimits,
+		webhookChartPath:             chartPath,
+		skrWebhookMemoryLimits:       memoryLimits,
+		skrWebhookCPULimits:          cpuLimits,
 		enableWebhookPreInstallCheck: enableWebhookPreInstallCheck,
 	}
 }
@@ -53,7 +53,7 @@ func (m *SKRChartManager) InstallWebhookChart(ctx context.Context, kyma *v1alpha
 		return true, err
 	}
 	// TODO: make sure that validating-webhook-config resource is in sync with the secret configuration
-	skrWatcherInstallInfo := prepareInstallInfo(m.WebhookChartPath, ReleaseName, skrCfg, skrClient, argsVals)
+	skrWatcherInstallInfo := prepareInstallInfo(m.webhookChartPath, ReleaseName, skrCfg, skrClient, argsVals)
 
 	if err := installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeInstall, m.enableWebhookPreInstallCheck); err != nil {
 		return true, err
@@ -79,7 +79,7 @@ func (m *SKRChartManager) RemoveWebhookChart(ctx context.Context, kyma *v1alpha1
 	if err != nil {
 		return err
 	}
-	skrWatcherInstallInfo := prepareInstallInfo(m.WebhookChartPath, ReleaseName, skrCfg, skrClient, argsVals)
+	skrWatcherInstallInfo := prepareInstallInfo(m.webhookChartPath, ReleaseName, skrCfg, skrClient, argsVals)
 	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeUninstall, m.enableWebhookPreInstallCheck)
 }
 
@@ -103,15 +103,15 @@ func (m *SKRChartManager) generateHelmChartArgs(ctx context.Context, kcpClient c
 	}
 	return map[string]interface{}{
 		"kcpAddr":               kcpAddr,
-		"resourcesLimitsMemory": m.SkrWebhookMemoryLimits,
-		"resourcesLimitsCPU":    m.SkrWebhookCPULimits,
+		"resourcesLimitsMemory": m.skrWebhookMemoryLimits,
+		"resourcesLimitsCPU":    m.skrWebhookCPULimits,
 		customConfigKey:         string(bytes),
 	}, nil
 }
 
 func (m *SKRChartManager) resolveKcpAddr(ctx context.Context, kcpClient client.Client) (string, error) {
-	if m.KcpAddr != "" {
-		return m.KcpAddr, nil
+	if m.kcpAddr != "" {
+		return m.kcpAddr, nil
 	}
 	// Get external IP from the ISTIO load balancer external IP
 	loadBalancerService := &corev1.Service{}
@@ -130,8 +130,8 @@ func (m *SKRChartManager) resolveKcpAddr(ctx context.Context, kcpClient client.C
 			break
 		}
 	}
-	m.KcpAddr = net.JoinHostPort(externalIP, strconv.Itoa(int(port)))
-	return m.KcpAddr, nil
+	m.kcpAddr = net.JoinHostPort(externalIP, strconv.Itoa(int(port)))
+	return m.kcpAddr, nil
 }
 
 func generateWatchableConfigs(watcherList *v1alpha1.WatcherList) map[string]WatchableConfig {

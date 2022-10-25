@@ -2,7 +2,6 @@ package custom
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	istioapi "istio.io/api/networking/v1beta1"
@@ -24,8 +23,6 @@ const (
 	gatewayName         = "lifecycle-manager-kyma-gateway"
 )
 
-var ErrNoWatcherExist = errors.New("no watcher cr exists")
-
 type IstioClient struct {
 	istioclient.Interface
 }
@@ -38,26 +35,6 @@ func NewVersionedIstioClient(cfg *rest.Config) (*IstioClient, error) {
 	return &IstioClient{
 		Interface: cs,
 	}, nil
-}
-
-func (c *IstioClient) ConfigureVirtualService(ctx context.Context, watchers []v1alpha1.Watcher) error {
-	var err error
-	var customErr *customClientErr
-	var virtualService *istioclientapi.VirtualService
-	if len(watchers) == 0 {
-		return ErrNoWatcherExist
-	}
-	virtualService, customErr = c.getVirtualService(ctx)
-	if customErr != nil {
-		_, err = c.createVirtualService(ctx, watchers...)
-		if err != nil {
-			return fmt.Errorf("failed to create virtual service %w", err)
-		}
-		return nil
-	}
-	// TODO: verify route doesn't exist already
-	virtualService.Spec.Http = prepareIstioHTTPRoutes(watchers...)
-	return c.updateVirtualService(ctx, virtualService)
 }
 
 type customClientErr struct {
