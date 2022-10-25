@@ -259,29 +259,32 @@ func ModuleTemplatesLastSyncGenMatches(clnt client.Client, kyma *v1alpha1.Kyma) 
 	}
 }
 
+var ErrModuleTemplateDescriptorLabelCountMismatch = errors.New("label count in descriptor does not match")
+
 func ModuleTemplatesLabelsCountMatch(
 	clnt client.Client, kyma *v1alpha1.Kyma, count int,
-) func() bool {
-	return func() bool {
+) func() error {
+	return func() error {
 		for _, module := range kyma.Spec.Modules {
 			template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
 			if err != nil {
-				return false
+				return err
 			}
 			if err := clnt.Get(ctx, client.ObjectKeyFromObject(template), template); err != nil {
-				return false
+				return err
 			}
 
 			descriptor, err := template.Spec.GetDescriptor()
 			if err != nil {
-				return false
+				return err
 			}
 
 			if len(descriptor.GetLabels()) != count {
-				return false
+				return fmt.Errorf("expected %v but got %v labels: %w", count,
+					len(descriptor.GetLabels()), ErrModuleTemplateDescriptorLabelCountMismatch)
 			}
 		}
-		return true
+		return nil
 	}
 }
 

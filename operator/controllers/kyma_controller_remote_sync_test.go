@@ -103,7 +103,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			ocm.Labels{ocm.Label{Name: "test", Value: json.RawMessage(`{"foo":"bar"}`)}}), timeout, interval).Should(Succeed())
 
 		By("verifying the discovered override and checking the resetted label")
-		Eventually(ModuleTemplatesLabelsCountMatch(runtimeClient, kyma, 0), timeout, interval).Should(BeTrue())
+		Eventually(ModuleTemplatesLabelsCountMatch(runtimeClient, kyma, 0), timeout, interval).Should(Succeed())
 		Eventually(ModuleTemplatesLastSyncGenMatches(runtimeClient, kyma), timeout, interval).Should(BeTrue())
 	})
 })

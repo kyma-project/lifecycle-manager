@@ -293,7 +293,7 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1
 			syncContext, catalog.Settings{
 				SSAPatchOptions: &client.PatchOptions{FieldManager: "catalog-sync", Force: &force},
 			},
-		).Cleanup(ctx); err != nil {
+		).Delete(ctx); err != nil {
 			return false, fmt.Errorf("could not delete remote module catalog: %w", err)
 		}
 		r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))

@@ -197,7 +197,8 @@ func (c *RemoteCatalog) Delete(
 		return err
 	}
 	for i := range moduleTemplatesRuntime.Items {
-		if err := c.runtimeClient.Delete(ctx, &moduleTemplatesRuntime.Items[i]); err != nil {
+		if err := c.runtimeClient.Delete(ctx, &moduleTemplatesRuntime.Items[i]); err != nil &&
+			!k8serrors.IsNotFound(err) {
 			return err
 		}
 	}
@@ -230,27 +231,6 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 
 	if err != nil {
 		return err
-	}
-
-	// crd.SetResourceVersion(crdFromRuntime.GetResourceVersion())
-	// return c.runtimeClient.Update(ctx, &v1extensions.CustomResourceDefinition{
-	// 	ObjectMeta: v1.ObjectMeta{Name: crd.Name, Namespace: crd.Namespace}, Spec: crd.Spec,
-	// })
-	return nil
-}
-
-func (c *RemoteCatalog) Cleanup(ctx context.Context) error {
-	moduleTemplatesRuntime := &v1alpha1.ModuleTemplateList{}
-	err := c.runtimeClient.List(ctx, moduleTemplatesRuntime)
-	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster, then no cleanup is necessary
-	if meta.IsNoMatchError(err) {
-		return nil
-	}
-
-	for i := range moduleTemplatesRuntime.Items {
-		if err := c.runtimeClient.Delete(ctx, &moduleTemplatesRuntime.Items[i]); err != nil {
-			return err
-		}
 	}
 
 	return nil
