@@ -17,7 +17,7 @@ Additionally, it hides Kubernetes boilerplate code to develop fast and efficient
   * [Build module operator image](#prepare--build-module-operator-image)
   * [Build and push your module to the registry](#build-and-push-your-module-to-the-registry)
 * [Using your Module in the Lifecycle Manager Ecosystem](#using-your-module-in-the-lifecycle-manager-ecosystem)
-  * [Deploying Kyma Infrastructure Operators with `kyma alpha deploy`](#deploying-the-kyma-infrastructure-operators-with-kyma-alpha-deploy)
+  * [Deploying Kyma Infrastructure Operators with `kyma alpha deploy`](#deploying-kyma-infrastructure-operators-with-kyma-alpha-deploy)
   * [Deploying a `ModuleTemplate` into the control-plane](#deploying-a-moduletemplate-into-the-control-plane)
   * [Debugging the Operator Ecosystem](#debugging-the-operator-ecosystem)
   * [Registering your Module within the control-plane](#registering-your-module-within-the-control-plane)
