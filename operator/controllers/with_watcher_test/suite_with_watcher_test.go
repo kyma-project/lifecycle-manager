@@ -125,7 +125,7 @@ var _ = BeforeSuite(func() {
 
 	metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
 	if !found {
-		metricsBindAddress = ":8080"
+		metricsBindAddress = ":8081"
 	}
 
 	k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
@@ -185,6 +185,7 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
+
 	cancel()
 
 	err := controlPlaneEnv.Stop()

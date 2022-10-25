@@ -21,6 +21,7 @@ import (
 
 const (
 	defaultBufferSize = 2048
+	crToDeleteIdx     = 2
 )
 
 //nolint:gochecknoglobals
@@ -83,15 +84,31 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1alpha1.Watc
 	}
 }
 
+func listTestWatcherCrs(kcpClient client.Client) []*v1alpha1.Watcher {
+	watchers := make([]*v1alpha1.Watcher, 0)
+	for _, component := range centralComponents {
+		watcherCR := &v1alpha1.Watcher{}
+		err := kcpClient.Get(ctx, client.ObjectKey{
+			Name:      fmt.Sprintf("%s-sample", component),
+			Namespace: metav1.NamespaceDefault,
+		}, watcherCR)
+		if err != nil {
+			continue
+		}
+
+		watchers = append(watchers, watcherCR)
+	}
+	return watchers
+}
+
 func isCrDeletionFinished(watcherObjKeys ...client.ObjectKey) func(g Gomega) bool {
 	if len(watcherObjKeys) > 1 {
 		return nil
 	}
 	if len(watcherObjKeys) == 0 {
 		return func(g Gomega) bool {
-			watchers := &v1alpha1.WatcherList{}
-			err := controlPlaneClient.List(ctx, watchers)
-			return err == nil && len(watchers.Items) == 0
+			watchers := listTestWatcherCrs(controlPlaneClient)
+			return len(watchers) == 0
 		}
 	}
 	return func(g Gomega) bool {

@@ -8,7 +8,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/internal/custom"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -20,17 +19,16 @@ const (
 
 func cRSpecsUpdates() func(customIstioClient *custom.IstioClient) {
 	return func(customIstioClient *custom.IstioClient) {
-		watcherList := v1alpha1.WatcherList{}
-		Expect(controlPlaneClient.List(ctx, &watcherList)).To(Succeed())
-		Expect(watcherList.Items).NotTo(BeEmpty())
-		for idx, watcherCR := range watcherList.Items {
+		watcherCrs := listTestWatcherCrs(controlPlaneClient)
+		Expect(watcherCrs).NotTo(BeEmpty())
+		for _, watcherCR := range watcherCrs {
 			// update spec
 			watcherCR.Spec.ServiceInfo.Port = 9090
 			watcherCR.Spec.Field = v1alpha1.StatusField
-			Expect(controlPlaneClient.Update(ctx, &watcherList.Items[idx])).Should(Succeed())
+			Expect(controlPlaneClient.Update(ctx, watcherCR)).Should(Succeed())
 
 			// verify
-			Eventually(isCrVsConfigured(ctx, customIstioClient, &watcherList.Items[idx])).Should(BeTrue())
+			Eventually(isCrVsConfigured(ctx, customIstioClient, watcherCR)).Should(BeTrue())
 
 		}
 	}
@@ -39,29 +37,25 @@ func cRSpecsUpdates() func(customIstioClient *custom.IstioClient) {
 func oneCRDeleted() func(customIstioClient *custom.IstioClient) {
 	return func(customIstioClient *custom.IstioClient) {
 		// delete
-		watcherList := v1alpha1.WatcherList{}
-		Expect(controlPlaneClient.List(ctx, &watcherList)).To(Succeed())
-		watcherCRCount := len(watcherList.Items)
-		Expect(watcherCRCount).To(Equal(len(centralComponents)))
-		watcherCR := watcherList.Items[watcherCRCount-1]
-		Expect(controlPlaneClient.Delete(ctx, &watcherCR)).To(Succeed())
+		watcherCrs := listTestWatcherCrs(controlPlaneClient)
+		watcherCR := watcherCrs[crToDeleteIdx]
+		Expect(controlPlaneClient.Delete(ctx, watcherCR)).To(Succeed())
 
-		Eventually(isCrDeletionFinished(client.ObjectKeyFromObject(&watcherCR)), timeout, interval).
+		Eventually(isCrDeletionFinished(client.ObjectKeyFromObject(watcherCR)), timeout, interval).
 			Should(BeTrue())
-		Eventually(isCrVsConfigured(ctx, customIstioClient, &watcherCR)).Should(BeFalse())
+		Eventually(isCrVsConfigured(ctx, customIstioClient, watcherCR)).Should(BeFalse())
 	}
 }
 
 func allCRsDeleted() func(customIstioClient *custom.IstioClient) {
 	return func(customIstioClient *custom.IstioClient) {
 		// delete all
-		watcherList := v1alpha1.WatcherList{}
-		Expect(controlPlaneClient.List(ctx, &watcherList)).To(Succeed())
-		watcherCRCount := len(watcherList.Items)
-		Expect(watcherCRCount).To(Equal(len(centralComponents)))
-		Expect(controlPlaneClient.DeleteAllOf(ctx, &v1alpha1.Watcher{},
-			client.InNamespace(metav1.NamespaceDefault))).To(Succeed())
-
+		watcherCrs := listTestWatcherCrs(controlPlaneClient)
+		watcherCRCount := len(watcherCrs)
+		Expect(watcherCRCount).To(Equal(len(centralComponents) - 1))
+		for _, watcherCr := range watcherCrs {
+			Expect(controlPlaneClient.Delete(ctx, watcherCr)).To(Succeed())
+		}
 		// verify
 		Eventually(isCrDeletionFinished(), timeout, interval).Should(BeTrue())
 		Eventually(isVsRemoved(ctx, customIstioClient)).Should(BeTrue())
@@ -86,18 +80,6 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 		for _, istioResource := range istioResources {
 			Expect(controlPlaneClient.Create(ctx, istioResource)).To(Succeed())
 		}
-	})
-
-	AfterAll(func() {
-		// clean up kyma CR
-		Expect(controlPlaneClient.Delete(ctx, kymaSample)).To(Succeed())
-		// clean up istio resources
-		for _, istioResource := range istioResources {
-			Expect(controlPlaneClient.Delete(ctx, istioResource)).To(Succeed())
-		}
-	})
-
-	BeforeEach(func() {
 		// create WatcherCRs
 		for idx, component := range centralComponents {
 			watcherCR := createWatcherCR(component, isEven(idx))
@@ -108,16 +90,43 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 		}
 	})
 
-	AfterEach(func() {
-		watcherList := v1alpha1.WatcherList{}
-		Expect(controlPlaneClient.List(ctx, &watcherList)).To(Succeed())
-		for idx := range watcherList.Items {
-			// delete WatcherCR
-			Expect(controlPlaneClient.Delete(ctx, &watcherList.Items[idx])).To(Succeed())
+	AfterAll(func() {
+		// clean up kyma CR
+		Expect(controlPlaneClient.Delete(ctx, kymaSample)).To(Succeed())
+		// clean up istio resources
+		for _, istioResource := range istioResources {
+			Expect(controlPlaneClient.Delete(ctx, istioResource)).To(Succeed())
 		}
-		// verify deletion
-		Eventually(isCrDeletionFinished(), timeout, interval).Should(BeTrue())
+
 	})
+
+	//BeforeEach(func() {
+	//	// create WatcherCRs
+	//	for idx, component := range centralComponents {
+	//		watcherCR := createWatcherCR(component, isEven(idx))
+	//		Expect(controlPlaneClient.Create(ctx, watcherCR)).To(Succeed())
+	//
+	//		// verify
+	//		Eventually(isCrVsConfigured(ctx, customIstioClient, watcherCR)).Should(BeTrue())
+	//	}
+	//})
+
+	//AfterEach(func() {
+	//	for idx, component := range centralComponents {
+	//		watcherCR := &v1alpha1.Watcher{}
+	//		err := controlPlaneClient.Get(ctx, client.ObjectKey{
+	//			Name:      fmt.Sprintf("%s-sample", component),
+	//			Namespace: metav1.NamespaceDefault,
+	//		}, watcherCR)
+	//		if apierrors.IsNotFound(err) && idx == crToDeleteIdx {
+	//			continue
+	//		}
+	//		Expect(client.IgnoreNotFound(err)).NotTo(HaveOccurred())
+	//
+	//		Expect(controlPlaneClient.Delete(ctx, watcherCR)).To(Succeed())
+	//	}
+	//
+	//})
 
 	DescribeTable("given watcherCR reconcile loop",
 		func(testCase func(customIstioClient *custom.IstioClient)) {
