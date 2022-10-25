@@ -13,8 +13,6 @@ import (
 
 const (
 	namespace = "default"
-	//timeout   = time.Second * 10
-	//interval  = time.Millisecond * 250
 )
 
 var _ = Describe("Kyma with no ModuleTemplate", Ordered, func() {

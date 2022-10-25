@@ -63,7 +63,7 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	watcherObj := &v1alpha1.Watcher{}
 	if err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, watcherObj); err != nil {
 		logger.Info(fmt.Sprintf("failed to get reconciliation object: %s", req.NamespacedName.String()))
-		return ctrl.Result{}, err
+		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	// check if deletionTimestamp is set, retry until it gets fully deleted

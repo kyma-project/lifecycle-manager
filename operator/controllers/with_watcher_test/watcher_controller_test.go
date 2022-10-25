@@ -8,7 +8,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/internal/custom"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -49,7 +48,7 @@ func oneCRDeleted() func(customIstioClient *custom.IstioClient) {
 
 func allCRsDeleted() func(customIstioClient *custom.IstioClient) {
 	return func(customIstioClient *custom.IstioClient) {
-		// delete all
+		// delete all remaining CRs
 		watcherCrs := listTestWatcherCrs(controlPlaneClient)
 		watcherCRCount := len(watcherCrs)
 		Expect(watcherCRCount).To(Equal(len(centralComponents) - 1))
@@ -66,20 +65,13 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	var customIstioClient *custom.IstioClient
 	var err error
 	kymaSample := &v1alpha1.Kyma{}
-	var istioResources []*unstructured.Unstructured
 	BeforeAll(func() {
 		// create kyma resource
 		kymaSample = test_helper.NewTestKyma("kyma-sample")
 
-		// create istio resources
 		customIstioClient, err = custom.NewVersionedIstioClient(cfg)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(controlPlaneClient.Create(ctx, kymaSample)).To(Succeed())
-		istioResources, err = deserializeIstioResources()
-		Expect(err).NotTo(HaveOccurred())
-		for _, istioResource := range istioResources {
-			Expect(controlPlaneClient.Create(ctx, istioResource)).To(Succeed())
-		}
 		// create WatcherCRs
 		for idx, component := range centralComponents {
 			watcherCR := createWatcherCR(component, isEven(idx))
@@ -93,13 +85,8 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	AfterAll(func() {
 		// clean up kyma CR
 		Expect(controlPlaneClient.Delete(ctx, kymaSample)).To(Succeed())
-		// clean up istio resources
-		for _, istioResource := range istioResources {
-			Expect(controlPlaneClient.Delete(ctx, istioResource)).To(Succeed())
-		}
 
 	})
-
 
 	DescribeTable("given watcherCR reconcile loop",
 		func(testCase func(customIstioClient *custom.IstioClient)) {

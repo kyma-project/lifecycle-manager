@@ -18,6 +18,7 @@ package controllers_with_watcher_test
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"os"
 	"path/filepath"
 	"testing"
@@ -56,14 +57,15 @@ import (
 const listenerAddr = ":8082"
 
 var (
-	controlPlaneClient client.Client        //nolint:gochecknoglobals
-	runtimeClient      client.Client        //nolint:gochecknoglobals
-	k8sManager         manager.Manager      //nolint:gochecknoglobals
-	controlPlaneEnv    *envtest.Environment //nolint:gochecknoglobals
-	runtimeEnv         *envtest.Environment //nolint:gochecknoglobals
-	ctx                context.Context      //nolint:gochecknoglobals
-	cancel             context.CancelFunc   //nolint:gochecknoglobals
-	cfg                *rest.Config         //nolint:gochecknoglobals
+	controlPlaneClient client.Client                //nolint:gochecknoglobals
+	runtimeClient      client.Client                //nolint:gochecknoglobals
+	k8sManager         manager.Manager              //nolint:gochecknoglobals
+	controlPlaneEnv    *envtest.Environment         //nolint:gochecknoglobals
+	runtimeEnv         *envtest.Environment         //nolint:gochecknoglobals
+	ctx                context.Context              //nolint:gochecknoglobals
+	cancel             context.CancelFunc           //nolint:gochecknoglobals
+	cfg                *rest.Config                 //nolint:gochecknoglobals
+	istioResources     []*unstructured.Unstructured //nolint:gochecknoglobals
 )
 
 const (
@@ -167,6 +169,11 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	Expect(deploy.CreateLoadBalancer(ctx, controlPlaneClient)).To(Succeed())
+	istioResources, err = deserializeIstioResources()
+	Expect(err).NotTo(HaveOccurred())
+	for _, istioResource := range istioResources {
+		Expect(controlPlaneClient.Create(ctx, istioResource)).To(Succeed())
+	}
 
 	err = (&controllers.WatcherReconciler{
 		Client:           k8sManager.GetClient(),
@@ -185,7 +192,11 @@ var _ = BeforeSuite(func() {
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
-
+	// clean up istio resources
+	for _, istioResource := range istioResources {
+		Expect(controlPlaneClient.Delete(ctx, istioResource)).To(Succeed())
+	}
+	// cancel environment context
 	cancel()
 
 	err := controlPlaneEnv.Stop()
