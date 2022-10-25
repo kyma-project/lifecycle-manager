@@ -62,18 +62,9 @@ Under the assumption you're [creating and using a service-account](https://kuber
 
    ```sh
    gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com
-
-4. Adjust the `docker-push` command in `Makefile`
-   ```makefile
-   .PHONY: docker-push
-   docker-push: ## Push docker image with the manager.
-   ifneq (,$(GCR_DOCKER_PASSWORD))
-     docker login $(IMG_REGISTRY) -u oauth2accesstoken --password $(GCR_DOCKER_PASSWORD)
-   endif
-   docker push ${IMG}
    ```
 
-5. Verify your login:
+4. Verify your login:
 
    ```sh
    gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com | docker login -u oauth2accesstoken --password-stdin https://europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/operator-test
@@ -83,7 +74,16 @@ Under the assumption you're [creating and using a service-account](https://kuber
    export GCR_DOCKER_PASSWORD=$(gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com)
    ```
    
-   Use the following setup in conjunction with the kyma CLI:
+5. Adjust the `docker-push` command in `Makefile`
+   ```makefile
+   .PHONY: docker-push
+   docker-push: ## Push docker image with the manager.
+   ifneq (,$(GCR_DOCKER_PASSWORD))
+     docker login $(IMG_REGISTRY) -u oauth2accesstoken --password $(GCR_DOCKER_PASSWORD)
+   endif
+   docker push ${IMG}
+   ```
+6. Use the following setup in conjunction with the kyma CLI:
    ```sh
    kyma alpha create module kyma-project.io/module/template 0.0.1 . -w -c oauth2accesstoken:$GCR_DOCKER_PASSWORD
    ```

@@ -20,7 +20,7 @@ Additionally, it hides Kubernetes boilerplate code to develop fast and efficient
   * [Deploying Kyma Infrastructure Operators with `kyma alpha deploy`](#deploying-the-kyma-infrastructure-operators-with-kyma-alpha-deploy)
   * [Deploying a `ModuleTemplate` into the control-plane](#deploying-a-moduletemplate-into-the-control-plane)
   * [Debugging the Operator Ecosystem](#debugging-the-operator-ecosystem)
-  * [Registering your Module within the Control-Plane](#registering-your-module-within-the-control-plane)
+  * [Registering your Module within the control-plane](#registering-your-module-within-the-control-plane)
 
 ## Understanding Module Development in Kyma 
 
@@ -34,15 +34,15 @@ Note that while other approaches are encouraged, there is no dedicated guide ava
 
 Every Kyma Module using an Operator follows 5 basic Principles:
 
-- Declared as available for use in a release channel through the `ModuleTemplate` Custom Resource in the Control-Plane
-- Declared as desired State within the `Kyma` Custom Resource in Runtime or Control-Plane
-- Installed / Managed in the Runtime by Module-Manager through the `Manifest` Custom Resource in the Control-Plane
-- Owns at least 1 CRD that is able to define the Contract that can configure its Behavior
-- Is operating on at most 1 Runtime at every given time
+- Declared as available for use in a release channel through the `ModuleTemplate` Custom Resource in the control-plane
+- Declared as desired state within the `Kyma` Custom Resource in runtime or control-plane
+- Installed / managed in the runtime by [Module-Manager](https://github.com/kyma-project/module-manager/tree/main/) through a `Manifest` custom resource in the control-plane
+- Owns at least 1 Custom Resource Definition that defines the contract and configures its behaviour
+- Is operating on at most 1 runtime at every given time
 
-Release channels let customers try new modules and features early, and decide when the updates should be applied. For more info, see the [relevant Documentation in our Modularization Overview](https://github.com/kyma-project/community/tree/main/concepts/modularization#release-channels).
+Release channels let customers try new modules and features early, and decide when the updates should be applied. For more info, see the [release channels documentation in our Modularization overview](https://github.com/kyma-project/community/tree/main/concepts/modularization#release-channels).
 
-In case you are planning to migrate a pre-existing module within Kyma, please familiarize yourself with the [Transition Plan for existing Modules](https://github.com/kyma-project/community/blob/main/concepts/modularization/transition.md)
+In case you are planning to migrate a pre-existing module within Kyma, please familiarize yourself with the [transition plan for existing modules](https://github.com/kyma-project/community/blob/main/concepts/modularization/transition.md)
 
 ## Implementation
 
@@ -50,10 +50,10 @@ In case you are planning to migrate a pre-existing module within Kyma, please fa
 
 * A provisioned Kubernetes Cluster and OCI Registry
 
-  _WARNING: For all use cases in the guide, you will need a cluster for end-to-end testing outside your envtest Integration Test suite.
-  In addition, the default settings used in the guide use standard values coming from our guides for cluster provisioning.
-  Thus, we HIGHLY RECOMMEND you should use our [Guide on Cluster and OCI Registry Provisioning for the Operator Infrastructure](../../docs/developer/provision-cluster-and-registry.md) for a smooth development process.
-  This is a good alternative if you do not want to use an entire control-plane infrastructure and still want to properly test your operators._
+  _WARNING: For all use cases in the guide, you will need a cluster for end-to-end testing outside your [envtest](https://book.kubebuilder.io/reference/envtest.html) integration test suite.
+  In addition, the default settings used in this guide are taken over from our [cluster and OCI registry provisioning guide](../../docs/developer/provision-cluster-and-registry.md).
+  This guide is HIGHLY RECOMMENDED to be followed for a smooth development process.
+  This is a good alternative if you do not want to use an entire control-plane infrastructure and still want to properly test your operators.__
 * [kubectl](https://kubernetes.io/docs/tasks/tools/)
 * [kubebuilder](https://book.kubebuilder.io/)
     ```bash
@@ -97,7 +97,7 @@ Further reading: [Kustomize built-in commonLabels](https://github.com/kubernetes
 ### Default (declarative) Reconciliation and Status handling
 
 _Warning: This declarative approach to reconciliation is inherited from the [kubebuilder declarative pattern](https://github.com/kubernetes-sigs/kubebuilder-declarative-pattern).
-It is meant to ease development for newcomers to controller implementations and provides easy to use best-practices for simple use cases. For more complex scenarios, **DO NOT USE** our declarative pattern but build your own reconciliation loop._
+It eases the controller implementation effort of developers, covering simple use cases based on best practices . For more complex scenarios, **DO NOT USE** our declarative pattern but build your own reconciliation loop instead.__
 
 For simple use cases where an operator should install one or many helm chart(s) and set the state of the corresponding Custom Resource accordingly, a declarative approach is useful for abstracting (sometimes heavy) boilerplate.
 This approach will enable orchestration of Kubernetes resources so that module owners can concentrate on their specific logic.
@@ -542,7 +542,7 @@ spec:
   - name: sample
 ```
 
-Note that of course, you can adjust the Kyma CR based on your testing scenario. For example, if you are running a Dual-Cluster Setup, you might want to enable the synchronization of the Kyma Resource into the Runtime for E2E configurability.
+Note that of course, you can adjust the Kyma CR based on your testing scenario. For example, if you are running a Dual-Cluster Setup, you might want to enable the synchronization of the Kyma Resource into the runtime for E2E configurability.
 
 The installation should start immediately.
 
@@ -569,8 +569,8 @@ For cluster provisioning, please make sure to follow our recommendations for Clu
 
 Lastly, if you are still unsure, please feel free to open an Issue and describe what's going on, and we will be happy to help you out with more detailed information.
 
-### Registering your Module within the Control-Plane
+### Registering your Module within the control-plane
 
 For global usage of your module, the generated `template.yaml` from [Build and push your module to the registry](#build-and-push-your-module-to-the-registry) needs to be registered in our control-plane.
 This relates to [Phase 2 of the Module Transition Plane](https://github.com/kyma-project/community/blob/main/concepts/modularization/transition.md#phase-2---first-module-managed-by-kyma-operator-integrated-with-keb). Please be patient until we can provide you with a stable guide on how to properly integrate your template.yaml
-with an automated test flow into the central Control-Plane Offering.
+with an automated test flow into the central control-plane Offering.
