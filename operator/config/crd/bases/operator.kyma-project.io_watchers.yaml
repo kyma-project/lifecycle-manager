@@ -16,9 +16,6 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .status.state
-      name: State
-      type: string
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
@@ -78,67 +75,7 @@ spec:
             - labelsToWatch
             - serviceInfo
             type: object
-          status:
-            description: WatcherStatus defines the observed state of Watcher.
-            properties:
-              conditions:
-                description: List of status conditions to indicate the status of a
-                  Watcher.
-                items:
-                  description: WatcherCondition describes condition information for
-                    Watcher.
-                  properties:
-                    lastTransitionTime:
-                      description: Timestamp for when Watcher last transitioned from
-                        one status to another.
-                      format: date-time
-                      type: string
-                    message:
-                      description: Human-readable message indicating details about
-                        the last status transition.
-                      type: string
-                    reason:
-                      description: Machine-readable text indicating the reason for
-                        the condition's last transition.
-                      type: string
-                    status:
-                      description: Status of the Watcher Condition. Value can be one
-                        of ("True", "False", "Unknown").
-                      enum:
-                      - "True"
-                      - "False"
-                      - Unknown
-                      type: string
-                    type:
-                      description: Type is used to reflect what type of condition
-                        we are dealing with. Most commonly WatcherConditionTypeReady
-                        it is used as extension marker in the future.
-                      enum:
-                      - Ready
-                      type: string
-                  required:
-                  - status
-                  - type
-                  type: object
-                type: array
-              observedGeneration:
-                description: ObservedGeneration
-                format: int64
-                type: integer
-              state:
-                description: State signifies current state of a Watcher. Value can
-                  be one of ("Ready", "Processing", "Error", "Deleting")
-                enum:
-                - Processing
-                - Deleting
-                - Ready
-                - Error
-                type: string
-            required:
-            - state
-            type: object
         type: object
     served: true
     storage: true
-    subresources:
-      status: {}
+    subresources: {}
