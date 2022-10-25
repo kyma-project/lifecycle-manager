@@ -234,7 +234,7 @@ func defineFlagVar() *FlagVar {
 			"if the operator decides that it needs to wait for a certain state to update before it can proceed "+
 			"(e.g. because of pending finalizers in the deletion process)")
 	flag.Float64Var(&flagVar.clientQPS, "k8s-client-qps", defaultClientQPS, "kubernetes client QPS")
-	flag.IntVar(&flagVar.clientBurst, "k8s-client-rateLimiterBurstDefault", defaultClientBurst, "kubernetes client Burst")
+	flag.IntVar(&flagVar.clientBurst, "k8s-client-burs", defaultClientBurst, "kubernetes client Burst")
 	flag.StringVar(&flagVar.moduleVerificationKeyFilePath, "module-verification-key-file", "",
 		"This verification key is used to verify modules against their signature")
 	flag.StringVar(&flagVar.moduleVerificationKeyFilePath, "module-verification-signature-names",
