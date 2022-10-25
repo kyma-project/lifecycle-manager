@@ -27,9 +27,18 @@ var (
 )
 
 type KymaSynchronizationContext struct {
-	ControlPlaneClient client.Client
-	RuntimeClient      client.Client
-	ControlPlaneKyma   *v1alpha1.Kyma
+	ControlPlaneClient   client.Client
+	RuntimeClient        client.Client
+	ControlPlaneKyma     *v1alpha1.Kyma
+	statusUpdateRequired bool
+}
+
+func (c *KymaSynchronizationContext) RequiresStatusUpdateInControlPlane() bool {
+	return c.statusUpdateRequired
+}
+
+func (c *KymaSynchronizationContext) RequireStatusUpdateInControlPlane() {
+	c.statusUpdateRequired = true
 }
 
 func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, key client.ObjectKey, strategy v1alpha1.SyncStrategy, cache *ClientCache) (client.Client, error) {
@@ -110,22 +119,16 @@ func DeleteRemotelySyncedKyma(
 }
 
 func RemoveFinalizerFromRemoteKyma(
-	ctx context.Context, controlPlaneClient client.Client, cache *ClientCache, kyma *v1alpha1.Kyma,
+	ctx context.Context, kyma *v1alpha1.Kyma, syncContext *KymaSynchronizationContext,
 ) error {
-	runtimeClient, err := NewRemoteClient(ctx, controlPlaneClient, client.ObjectKeyFromObject(kyma),
-		kyma.Spec.Sync.Strategy, cache)
-	if err != nil {
-		return err
-	}
-
-	remoteKyma, err := GetRemotelySyncedKyma(ctx, runtimeClient, GetRemoteObjectKey(kyma))
+	remoteKyma, err := GetRemotelySyncedKyma(ctx, syncContext.RuntimeClient, GetRemoteObjectKey(kyma))
 	if err != nil {
 		return err
 	}
 
 	controllerutil.RemoveFinalizer(remoteKyma, v1alpha1.Finalizer)
 
-	return runtimeClient.Update(ctx, remoteKyma)
+	return syncContext.RuntimeClient.Update(ctx, remoteKyma)
 }
 
 func InitializeKymaSynchronizationContext(ctx context.Context, controlPlaneClient client.Client,
@@ -187,7 +190,7 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(ctx context.Context
 	remoteKyma := &v1alpha1.Kyma{}
 
 	remoteKyma.Name = kyma.Name
-	remoteKyma.Namespace = c.ControlPlaneKyma.Namespace
+	remoteKyma.Namespace = kyma.Namespace
 	if c.ControlPlaneKyma.Spec.Sync.Namespace != "" {
 		remoteKyma.Namespace = c.ControlPlaneKyma.Spec.Sync.Namespace
 	}

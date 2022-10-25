@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"time"
+
 	"github.com/Masterminds/semver/v3"
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/gardener/component-spec/bindings-go/codec"
@@ -55,6 +57,7 @@ type ModuleTemplateSpec struct {
 	// (e.g. by updating the controller binary linked in a chart referenced in the descriptor)
 	//
 	//+kubebuilder:pruning:PreserveUnknownFields
+	//+structType=atomic
 	OCMDescriptor runtime.RawExtension `json:"descriptor"`
 
 	// Target describes where the Module should later on be installed if parsed correctly. It is used as installation
@@ -71,7 +74,7 @@ type ModuleTemplateSpec struct {
 func (in *ModuleTemplateSpec) GetDescriptor() (*ocm.ComponentDescriptor, error) {
 	if in.descriptor == nil && in.OCMDescriptor.Raw != nil {
 		var descriptor ocm.ComponentDescriptor
-		if err := codec.Decode(in.OCMDescriptor.Raw, &descriptor); err != nil {
+		if err := codec.Decode(in.OCMDescriptor.Raw, &descriptor, codec.DisableValidation(true)); err != nil {
 			return nil, err
 		}
 		in.descriptor = &descriptor
@@ -151,4 +154,16 @@ const (
 //nolint:gochecknoinits
 func init() {
 	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{})
+}
+
+func (in *ModuleTemplate) SetLastSync() *ModuleTemplate {
+	lastSyncDate := time.Now().Format(time.RFC3339)
+
+	if in.Annotations == nil {
+		in.Annotations = make(map[string]string)
+	}
+
+	in.Annotations[LastSync] = lastSyncDate
+
+	return in
 }

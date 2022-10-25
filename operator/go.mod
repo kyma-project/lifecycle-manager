@@ -13,7 +13,6 @@ require (
 	github.com/onsi/gomega v1.20.1
 	go.uber.org/zap v1.23.0
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af
-	gopkg.in/yaml.v3 v3.0.1
 	istio.io/api v0.0.0-20220927144349-95d2a2fe2144
 	istio.io/client-go v1.15.1
 	k8s.io/api v0.25.2
@@ -146,6 +145,7 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v3 v3.9.4 // indirect
 	k8s.io/apiserver v0.25.2 // indirect
 	k8s.io/cli-runtime v0.25.0 // indirect
