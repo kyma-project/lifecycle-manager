@@ -18,7 +18,10 @@ package controllers_with_watcher_test
 
 import (
 	"context"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"os"
 	"path/filepath"
 	"testing"
@@ -66,6 +69,7 @@ var (
 	cancel             context.CancelFunc           //nolint:gochecknoglobals
 	cfg                *rest.Config                 //nolint:gochecknoglobals
 	istioResources     []*unstructured.Unstructured //nolint:gochecknoglobals
+	remoteClientCache  *remote.ClientCache          //nolint:gochecknoglobals
 )
 
 const (
@@ -143,7 +147,7 @@ var _ = BeforeSuite(func() {
 		Waiting: 1 * time.Second,
 	}
 
-	remoteClientCache := remote.NewClientCache()
+	remoteClientCache = remote.NewClientCache()
 	skrChartCfg := &controllers.SkrChartConfig{
 		WebhookChartPath:       webhookChartPath,
 		SkrWebhookMemoryLimits: "200Mi",
@@ -168,7 +172,7 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager, controller.Options{})
 	Expect(err).ToNot(HaveOccurred())
 
-	Expect(deploy.CreateLoadBalancer(ctx, controlPlaneClient)).To(Succeed())
+	Expect(createLoadBalancer(ctx, controlPlaneClient)).To(Succeed())
 	istioResources, err = deserializeIstioResources()
 	Expect(err).NotTo(HaveOccurred())
 	for _, istioResource := range istioResources {
@@ -228,4 +232,56 @@ func NewSKRCluster() (client.Client, *envtest.Environment) {
 	Expect(err).NotTo(HaveOccurred())
 
 	return skrClient, skrEnv
+}
+
+func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
+	istioNs := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: deploy.IstioSytemNs,
+		},
+	}
+	if err := k8sClient.Create(ctx, istioNs); err != nil {
+		return err
+	}
+	loadBalancerService := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      deploy.IngressServiceName,
+			Namespace: deploy.IstioSytemNs,
+			Labels: map[string]string{
+				"app": deploy.IngressServiceName,
+			},
+		},
+		Spec: corev1.ServiceSpec{
+			Type: corev1.ServiceTypeLoadBalancer,
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "http2",
+					Protocol:   corev1.ProtocolTCP,
+					Port:       80,
+					TargetPort: intstr.FromInt(8080),
+				},
+			},
+		},
+	}
+
+	if err := k8sClient.Create(ctx, loadBalancerService); err != nil {
+		return err
+	}
+	loadBalancerService.Status = corev1.ServiceStatus{
+		LoadBalancer: corev1.LoadBalancerStatus{
+			Ingress: []corev1.LoadBalancerIngress{
+				{
+					IP: "10.10.10.167",
+				},
+			},
+		},
+	}
+	if err := k8sClient.Status().Update(ctx, loadBalancerService); err != nil {
+		return err
+	}
+
+	return k8sClient.Get(ctx, client.ObjectKey{
+		Name:      deploy.IngressServiceName,
+		Namespace: deploy.IstioSytemNs,
+	}, loadBalancerService)
 }
