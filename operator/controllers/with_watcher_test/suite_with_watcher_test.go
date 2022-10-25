@@ -184,7 +184,9 @@ var _ = BeforeSuite(func() {
 		RestConfig:       k8sManager.GetConfig(),
 		Scheme:           scheme.Scheme,
 		RequeueIntervals: intervals,
-	}).SetupWithManager(k8sManager, controller.Options{})
+	}).SetupWithManager(k8sManager, controller.Options{
+		MaxConcurrentReconciles: 1,
+	})
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {

@@ -321,6 +321,9 @@ func setupKcpWatcherReconciler(
 	if err != nil || !fileInfo.IsDir() {
 		setupLog.Error(err, "failed to read local skr chart")
 	}
+	// set MaxConcurrentReconciles to 1 to avoid concurrent writes on
+	// the Istio virtual service resource the WatcherReconciler is managing
+	options.MaxConcurrentReconciles = 1
 	if err := (&controllers.WatcherReconciler{
 		Client:           mgr.GetClient(),
 		Scheme:           mgr.GetScheme(),
