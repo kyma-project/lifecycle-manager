@@ -26,10 +26,11 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
-
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -155,6 +156,7 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		LeaderElection:         flagVar.enableLeaderElection,
 		LeaderElectionID:       "893110f7.kyma-project.io",
 		NewCache:               newCacheFunc,
+		NewClient:              NewClient,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -190,7 +192,6 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		}
 	}
 	//+kubebuilder:scaffold:builder
-
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
 		os.Exit(1)
@@ -203,6 +204,25 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func NewClient(
+	cache cache.Cache,
+	config *rest.Config,
+	options client.Options,
+	uncachedObjects ...client.Object,
+) (client.Client, error) {
+	clnt, err := client.New(config, options)
+	if err != nil {
+		return nil, err
+	}
+	return client.NewDelegatingClient(
+		client.NewDelegatingClientInput{
+			CacheReader:     cache,
+			Client:          clnt,
+			UncachedObjects: uncachedObjects,
+		},
+	)
 }
 
 func defineFlagVar() *FlagVar {

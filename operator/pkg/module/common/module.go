@@ -4,9 +4,8 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 )
 
 type (
@@ -15,7 +14,7 @@ type (
 		Name             string
 		Template         *v1alpha1.ModuleTemplate
 		TemplateOutdated bool
-		*unstructured.Unstructured
+		*manifestV1alpha1.Manifest
 	}
 )
 
@@ -35,7 +34,7 @@ func (m *Module) ApplyLabels(
 	kyma *v1alpha1.Kyma,
 	moduleName string,
 ) {
-	lbls := m.Unstructured.GetLabels()
+	lbls := m.GetLabels()
 	if lbls == nil {
 		lbls = make(map[string]string)
 	}
@@ -49,7 +48,7 @@ func (m *Module) ApplyLabels(
 	}
 	lbls[v1alpha1.ChannelLabel] = string(m.Template.Spec.Channel)
 
-	m.Unstructured.SetLabels(lbls)
+	m.SetLabels(lbls)
 }
 
 func (m *Module) StateMismatchedWithTemplateInfo(info *v1alpha1.TemplateInfo) bool {
@@ -59,17 +58,17 @@ func (m *Module) StateMismatchedWithTemplateInfo(info *v1alpha1.TemplateInfo) bo
 
 // UpdateStatusAndReferencesFromUnstructured updates the module with necessary information (status, ownerReference) from
 // current deployed resource (from Unstructured).
-func (m *Module) UpdateStatusAndReferencesFromUnstructured(unstructured *unstructured.Unstructured) {
-	m.Unstructured.Object["status"] = unstructured.Object["status"]
-	m.Unstructured.SetResourceVersion(unstructured.GetResourceVersion())
-	m.Unstructured.SetOwnerReferences(unstructured.GetOwnerReferences())
+func (m *Module) UpdateStatusAndReferencesFromUnstructured(unstructured *manifestV1alpha1.Manifest) {
+	m.Status = unstructured.Status
+	m.SetResourceVersion(unstructured.GetResourceVersion())
+	m.SetOwnerReferences(unstructured.GetOwnerReferences())
 }
 
 func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {
-	if m.Unstructured.GetOwnerReferences() == nil {
+	if m.GetOwnerReferences() == nil {
 		return false
 	}
-	for _, owner := range m.Unstructured.GetOwnerReferences() {
+	for _, owner := range m.GetOwnerReferences() {
 		if owner.Name == ownerName {
 			return true
 		}
@@ -77,12 +76,12 @@ func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {
 	return false
 }
 
-func NewUnstructuredFromModule(module *Module) *unstructured.Unstructured {
-	unstructuredFromServer := unstructured.Unstructured{}
-	unstructuredFromServer.SetGroupVersionKind(module.Unstructured.GroupVersionKind())
-	unstructuredFromServer.SetNamespace(module.Unstructured.GetNamespace())
-	unstructuredFromServer.SetName(module.Unstructured.GetName())
-	return &unstructuredFromServer
+func NewFromModule(module *Module) *manifestV1alpha1.Manifest {
+	fromServer := manifestV1alpha1.Manifest{}
+	fromServer.SetGroupVersionKind(module.GroupVersionKind())
+	fromServer.SetNamespace(module.GetNamespace())
+	fromServer.SetName(module.GetName())
+	return &fromServer
 }
 
 func CreateModuleName(moduleName, kymaName string) string {
