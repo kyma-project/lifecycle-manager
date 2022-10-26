@@ -42,15 +42,6 @@ func (r *runnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 			logger.Info("successfully created module CR")
 			return true, nil
 		}
-
-		update := func() (bool, error) {
-			if err := r.updateModule(ctx, name, kyma, module); err != nil {
-				return false, err
-			}
-			logger.Info("successfully updated module CR")
-			return true, nil
-		}
-
 		manifest := common.NewFromModule(module)
 		err := r.getModule(ctx, manifest)
 		if errors.IsNotFound(err) {
@@ -58,8 +49,19 @@ func (r *runnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 		} else if err != nil {
 			return false, fmt.Errorf("cannot get module %s: %w", module.GetName(), err)
 		}
-
 		module.UpdateStatusAndReferencesFromUnstructured(manifest)
+	}
+
+	for name := range modules {
+		module := modules[name]
+		logger := module.Logger(baseLogger)
+		update := func() (bool, error) {
+			if err := r.updateModule(ctx, name, kyma, module); err != nil {
+				return false, err
+			}
+			logger.Info("successfully updated module CR")
+			return true, nil
+		}
 
 		moduleStatus, err := kyma.GetModuleStatusByModuleName(name)
 		if err != nil {
@@ -131,7 +133,8 @@ func (r *runnerImpl) updateModuleStatusFromExistingModules(modules common.Module
 	moduleStatusMap map[string]*v1alpha1.ModuleStatus, kyma *v1alpha1.Kyma,
 ) bool {
 	updateRequired := false
-	for _, module := range modules {
+	for name := range modules {
+		module := modules[name]
 		descriptor, _ := module.Template.Spec.GetUnsafeDescriptor()
 		latestModuleStatus := v1alpha1.ModuleStatus{
 			ModuleName: module.Name,
