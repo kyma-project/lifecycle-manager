@@ -11,13 +11,13 @@ patches:
   - patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --enable-kcp-watcher      
+        value: --enable-kcp-watcher=false
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --skr-watcher-path=/skr-webhook      
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --requeue-success-interval=5m     
+        value: --requeue-success-interval=20m     
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --requeue-waiting-interval=5s      

@@ -53,16 +53,19 @@ patches:
   - patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --max-concurrent-reconciles=20           
+        value: --max-concurrent-reconciles=50
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --rate-limiter-burst=2000
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --rate-limiter-frequency=2000           
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --skr-webhook-memory-limits=2000Mi      
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --skr-webhook-cpu-limits=1000m      
-      - op: add
-        path: /spec/template/spec/containers/0/args/-
-        value: --enable-module-catalog=false
+        value: --skr-webhook-cpu-limits=1000m
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --pprof=true
