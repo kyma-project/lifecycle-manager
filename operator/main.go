@@ -224,7 +224,7 @@ func defineFlagVar() *FlagVar {
 		"determines the duration after which a failing reconciliation is retried and "+
 			"enqueued for a next try at recovering (e.g. because an Remote Synchronization Interaction failed)")
 	flag.DurationVar(&flagVar.requeueWaitingInterval, "requeue-waiting-interval", defaultRequeueWaitingInterval,
-		"etermines the duration after which a pending reconciliation is requeued "+
+		"determines the duration after which a pending reconciliation is requeued "+
 			"if the operator decides that it needs to wait for a certain state to update before it can proceed "+
 			"(e.g. because of pending finalizers in the deletion process)")
 	flag.Float64Var(&flagVar.clientQPS, "k8s-client-qps", defaultClientQPS, "kubernetes client QPS")

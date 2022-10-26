@@ -52,7 +52,7 @@ func (m *SKRChartManager) InstallWebhookChart(ctx context.Context, kyma *v1alpha
 	if err != nil {
 		return true, err
 	}
-	// TODO: make sure that validating-webhook-config resource is in sync with the secret configuration
+	// TODO(khlifi411): make sure that validating-webhook-config resource is in sync with the secret configuration
 	skrWatcherInstallInfo := prepareInstallInfo(m.webhookChartPath, ReleaseName, skrCfg, skrClient, argsVals)
 
 	if err := installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeInstall, m.enableWebhookPreInstallCheck); err != nil {
@@ -160,7 +160,7 @@ func installOrRemoveChartOnSKR(ctx context.Context, deployInfo modulelib.Install
 		return nil
 	}
 	if enableWebhookPreInstallCheck {
-		// TODO: verify webhook configuration with watchers' configuration before re-installing the chart
+		// TODO(khlifi411): verify webhook configuration with watchers' configuration before re-installing the chart
 		ready, err := modulelib.ConsistencyCheck(&logger, deployInfo, nil)
 		if err != nil {
 			return fmt.Errorf("failed to verify webhook resources: %w", err)

@@ -48,7 +48,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	It("CR add from client should be synced in both clusters", func() {
 		By("Remote Kyma created")
 		Eventually(RemoteKymaExists(runtimeClient, kyma.GetName()), 30*time.Second, interval).Should(Succeed())
-		remoteKyma, err := GetKyma(runtimeClient, kyma.GetName())
+		remoteKyma, err := test_helper.GetKyma(ctx, runtimeClient, kyma.GetName())
 		Expect(err).ShouldNot(HaveOccurred())
 
 		By("add skr-module-client to remoteKyma.spec.modules")
@@ -91,7 +91,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		}
 
 		By("No spec.module in remote Kyma")
-		remoteKyma, err := GetKyma(runtimeClient, kyma.GetName())
+		remoteKyma, err := test_helper.GetKyma(ctx, runtimeClient, kyma.GetName())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(remoteKyma.Spec.Modules).To(BeEmpty())
 

@@ -23,7 +23,7 @@ func noCondition() func() error {
 
 func expectCorrectNumberOfmoduleStatus(kymaName string) func() error {
 	return func() error {
-		createdKyma, err := GetKyma(controlPlaneClient, kymaName)
+		createdKyma, err := test_helper.GetKyma(ctx, controlPlaneClient, kymaName)
 		if err != nil {
 			return err
 		}
@@ -36,7 +36,7 @@ func expectCorrectNumberOfmoduleStatus(kymaName string) func() error {
 
 func expectmoduleStatusStateBecomeReady(kymaName string) func() error {
 	return func() error {
-		createdKyma, err := GetKyma(controlPlaneClient, kymaName)
+		createdKyma, err := test_helper.GetKyma(ctx, controlPlaneClient, kymaName)
 		if err != nil {
 			return err
 		}
@@ -51,7 +51,7 @@ func expectmoduleStatusStateBecomeReady(kymaName string) func() error {
 
 func updateAllModuleState(kymaName string, state v1alpha1.State) func() error {
 	return func() error {
-		createdKyma, err := GetKyma(controlPlaneClient, kymaName)
+		createdKyma, err := test_helper.GetKyma(ctx, controlPlaneClient, kymaName)
 		if err != nil {
 			return err
 		}
@@ -66,7 +66,7 @@ func updateAllModuleState(kymaName string, state v1alpha1.State) func() error {
 
 func removeModule(kymaName string) func() error {
 	return func() error {
-		createdKyma, err := GetKyma(controlPlaneClient, kymaName)
+		createdKyma, err := test_helper.GetKyma(ctx, controlPlaneClient, kymaName)
 		Expect(err).ShouldNot(HaveOccurred())
 		createdKyma.Spec.Modules = v1alpha1.Modules{}
 		return controlPlaneClient.Update(ctx, createdKyma)

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/operator/controllers/test_helper"
 	"strconv"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
@@ -24,30 +25,14 @@ import (
 	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 )
 
-func DeployModuleTemplates(kyma *v1alpha1.Kyma) {
-	for _, module := range kyma.Spec.Modules {
-		template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
-	}
-}
-
-func DeleteModuleTemplates(kyma *v1alpha1.Kyma) {
-	for _, module := range kyma.Spec.Modules {
-		template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(controlPlaneClient.Delete(ctx, template)).To(Succeed())
-	}
-}
-
 func RegisterDefaultLifecycleForKyma(kyma *v1alpha1.Kyma) {
 	BeforeAll(func() {
 		Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
-		DeployModuleTemplates(kyma)
+		test_helper.DeployModuleTemplates(ctx, controlPlaneClient, kyma)
 	})
 
 	AfterAll(func() {
-		DeleteModuleTemplates(kyma)
+		test_helper.DeleteModuleTemplates(ctx, controlPlaneClient, kyma)
 	})
 
 	AfterAll(func() {
@@ -60,19 +45,9 @@ func RegisterDefaultLifecycleForKyma(kyma *v1alpha1.Kyma) {
 	})
 }
 
-func IsKymaInState(kymaName string, state v1alpha1.State) func() bool {
-	return func() bool {
-		kymaFromCluster, err := GetKyma(controlPlaneClient, kymaName)
-		if err != nil || kymaFromCluster.Status.State != state {
-			return false
-		}
-		return true
-	}
-}
-
 func GetKymaState(kymaName string) func() string {
 	return func() string {
-		createdKyma, err := GetKyma(controlPlaneClient, kymaName)
+		createdKyma, err := test_helper.GetKyma(ctx, controlPlaneClient, kymaName)
 		if err != nil {
 			return ""
 		}
@@ -82,7 +57,7 @@ func GetKymaState(kymaName string) func() string {
 
 func GetKymaConditions(kymaName string) func() []metav1.Condition {
 	return func() []metav1.Condition {
-		createdKyma, err := GetKyma(controlPlaneClient, kymaName)
+		createdKyma, err := test_helper.GetKyma(ctx, controlPlaneClient, kymaName)
 		if err != nil {
 			return []metav1.Condition{}
 		}
@@ -157,21 +132,6 @@ func getModule(kymaName, moduleName string) (*unstructured.Unstructured, error) 
 	return component, nil
 }
 
-func GetKyma(
-	testClient client.Client,
-	kymaName string,
-) (*v1alpha1.Kyma, error) {
-	kymaInCluster := &v1alpha1.Kyma{}
-	err := testClient.Get(ctx, client.ObjectKey{
-		Namespace: namespace,
-		Name:      kymaName,
-	}, kymaInCluster)
-	if err != nil {
-		return nil, err
-	}
-	return kymaInCluster, nil
-}
-
 func GetModuleTemplate(name string) (*v1alpha1.ModuleTemplate, error) {
 	moduleTemplateInCluster := &v1alpha1.ModuleTemplate{}
 	err := controlPlaneClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, moduleTemplateInCluster)
@@ -183,7 +143,7 @@ func GetModuleTemplate(name string) (*v1alpha1.ModuleTemplate, error) {
 
 func RemoteKymaExists(remoteClient client.Client, kymaName string) func() error {
 	return func() error {
-		_, err := GetKyma(remoteClient, kymaName)
+		_, err := test_helper.GetKyma(ctx, remoteClient, kymaName)
 		return err
 	}
 }
@@ -302,7 +262,7 @@ func deleteModule(kymaName, moduleName string) func() error {
 }
 
 func UpdateKymaModuleChannels(kymaName string, channel v1alpha1.Channel) error {
-	kyma, err := GetKyma(controlPlaneClient, kymaName)
+	kyma, err := test_helper.GetKyma(ctx, controlPlaneClient, kymaName)
 	if err != nil {
 		return err
 	}
@@ -318,7 +278,7 @@ func UpdateKymaModuleChannels(kymaName string, channel v1alpha1.Channel) error {
 var ErrTemplateInfoChannelMismatch = errors.New("mismatch in template info channel")
 
 func TemplateInfosMatchChannel(kymaName string, channel v1alpha1.Channel) error {
-	kyma, err := GetKyma(controlPlaneClient, kymaName)
+	kyma, err := test_helper.GetKyma(ctx, controlPlaneClient, kymaName)
 	if err != nil {
 		return err
 	}
