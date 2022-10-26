@@ -25,6 +25,7 @@ import (
 
 	"golang.org/x/time/rate"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -43,6 +44,7 @@ type SampleReconciler struct {
 	declarative.ManifestReconciler
 	client.Client
 	Scheme *runtime.Scheme
+	*rest.Config
 }
 
 type RateLimiter struct {
@@ -56,11 +58,9 @@ const (
 	sampleAnnotationKey   = "owner"
 	sampleAnnotationValue = "template-operator"
 	sampleFinalizer       = "sample-finalizer"
-)
-
-var (
-	ConfigFlags types.Flags
-	SetFlags    types.Flags
+	chartNs               = "redis"
+	nameOverride          = "custom-name-override"
+	chartPath             = "./module-chart"
 )
 
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=samples,verbs=get;list;watch;create;update;patch;delete
@@ -73,10 +73,9 @@ var (
 //+kubebuilder:rbac:groups="*",resources="*",verbs="*"
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager, chartPath string, configFlags, setFlags types.Flags, rateLimiter RateLimiter) error {
-	ConfigFlags = configFlags
-	SetFlags = setFlags
-	if err := r.initReconciler(mgr, chartPath); err != nil {
+func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager, rateLimiter RateLimiter) error {
+	r.Config = mgr.GetConfig()
+	if err := r.initReconciler(mgr); err != nil {
 		return err
 	}
 
@@ -94,7 +93,7 @@ func (r *SampleReconciler) SetupWithManager(mgr ctrl.Manager, chartPath string, 
 }
 
 // initReconciler injects the required configuration into the declarative reconciler.
-func (r *SampleReconciler) initReconciler(mgr ctrl.Manager, chartPath string) error {
+func (r *SampleReconciler) initReconciler(mgr ctrl.Manager) error {
 	manifestResolver := &ManifestResolver{chartPath: chartPath}
 	return r.Inject(mgr, &v1alpha1.Sample{},
 		declarative.WithManifestResolver(manifestResolver),
@@ -136,8 +135,13 @@ func (m *ManifestResolver) Get(obj types.BaseCustomObject, logger logr.Logger) (
 		ChartPath:   m.chartPath,
 		ReleaseName: sample.Spec.ReleaseName,
 		ChartFlags: types.ChartFlags{
-			ConfigFlags: ConfigFlags,
-			SetFlags:    SetFlags,
+			ConfigFlags: types.Flags{
+				"Namespace":       chartNs,
+				"CreateNamespace": true,
+			},
+			SetFlags: types.Flags{
+				"nameOverride": nameOverride,
+			},
 		},
 	}, nil
 }

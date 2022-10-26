@@ -75,18 +75,23 @@ type Sync struct {
 	Enabled bool `json:"enabled,omitempty"`
 
 	// +kubebuilder:default:=secret
-	// Strategy determines the way to lookup the remotely synced kubeconfig, by default it is fetched from a secret
+	// Strategy determines the way to look up the remotely synced kubeconfig, by default it is fetched from a secret
 	Strategy SyncStrategy `json:"strategy,omitempty"`
 
 	// The target namespace, if empty the namespace is reflected from the control plane
 	// Note that cleanup is currently not supported if you are switching the namespace, so you will
-	// manually need to cleanup old synchronized Kymas
+	// manually need to clean up old synchronized Kymas
 	Namespace string `json:"namespace,omitempty"`
 
 	// +kubebuilder:default:=true
 	// NoModuleCopy set to true will cause the remote Kyma to be initialized without copying over the
 	// module spec of the control plane into the SKR
 	NoModuleCopy bool `json:"noModuleCopy,omitempty"`
+
+	// +kubebuilder:default:=true
+	// ModuleCatalog set to true will cause a copy of all ModuleTemplate in the cluster
+	// to be synchronized for discovery purposes
+	ModuleCatalog bool `json:"moduleCatalog,omitempty"`
 }
 
 // KymaSpec defines the desired state of Kyma.
@@ -354,11 +359,17 @@ func (kyma *Kyma) UpdateCondition(reason KymaConditionReason, status metav1.Cond
 }
 
 func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType,
-	reason KymaConditionReason, conditionStatus metav1.ConditionStatus,
+	reason KymaConditionReason, conditionStatus ...metav1.ConditionStatus,
 ) bool {
 	for _, condition := range kyma.Status.Conditions {
-		if condition.Type == string(conditionType) && condition.Reason == string(reason) &&
-			condition.Status == conditionStatus {
+		reasonTypeMatch := condition.Type == string(conditionType) && condition.Reason == string(reason)
+		if len(conditionStatus) > 0 {
+			for i := range conditionStatus {
+				if reasonTypeMatch && condition.Status == conditionStatus[i] {
+					return true
+				}
+			}
+		} else if reasonTypeMatch {
 			return true
 		}
 	}

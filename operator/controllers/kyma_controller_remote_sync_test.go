@@ -1,14 +1,15 @@
 package controllers_test
 
 import (
+	"encoding/json"
 	"time"
 
+	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/test"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 )
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
@@ -93,6 +94,16 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		Expect(remoteKyma.Spec.Modules).To(BeEmpty())
 
 		By("Remote Module Catalog created")
-		Eventually(CatalogExists(runtimeClient, kyma), 30*time.Second, interval).Should(Succeed())
+		Eventually(ModuleTemplatesExist(runtimeClient, kyma), 30*time.Second, interval).Should(Succeed())
+		Expect(remoteKyma.ContainsCondition(v1alpha1.ConditionTypeReady,
+			v1alpha1.ConditionReasonModuleCatalogIsReady)).To(BeTrue())
+
+		By("updating a module template in the remote cluster to simulate unwanted modification")
+		Eventually(ModifyModuleTemplateSpecThroughLabels(runtimeClient, kyma,
+			ocm.Labels{ocm.Label{Name: "test", Value: json.RawMessage(`{"foo":"bar"}`)}}), timeout, interval).Should(Succeed())
+
+		By("verifying the discovered override and checking the resetted label")
+		Eventually(ModuleTemplatesLabelsCountMatch(runtimeClient, kyma, 0), timeout, interval).Should(Succeed())
+		Eventually(ModuleTemplatesLastSyncGenMatches(runtimeClient, kyma), timeout, interval).Should(BeTrue())
 	})
 })

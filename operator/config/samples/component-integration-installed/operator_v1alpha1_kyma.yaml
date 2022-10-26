@@ -2,10 +2,10 @@ apiVersion: operator.kyma-project.io/v1alpha1
 kind: Kyma
 metadata:
   name: kyma-sample
-  namespace: default
+  namespace: kyma-system
 spec:
   channel: stable
   sync:
-    enabled: false
+    enabled: true
   modules:
     - name: kcp-module

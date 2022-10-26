@@ -53,10 +53,10 @@ import (
 )
 
 const (
-	baseDelay                     = 100 * time.Millisecond
-	maxDelay                      = 1000 * time.Second
-	limit                         = rate.Limit(30)
-	burst                         = 200
+	failureBaseDelayDefault       = 100 * time.Millisecond
+	failureMaxDelayDefault        = 1000 * time.Second
+	rateLimiterFrequencyDefault   = 30
+	rateLimiterBurstDefault       = 200
 	port                          = 9443
 	defaultRequeueSuccessInterval = 20 * time.Second
 	defaultRequeueFailureInterval = 10 * time.Second
@@ -91,13 +91,15 @@ type FlagVar struct {
 	clientQPS                                                              float64
 	clientBurst                                                            int
 	enableWebhooks                                                         bool
-	enableModuleCatalog, enableKcpWatcher                                  bool
+	enableKcpWatcher                                                       bool
 	skrWatcherPath                                                         string
 	skrWebhookMemoryLimits                                                 string
 	skrWebhookCPULimits                                                    string
 	pprof                                                                  bool
 	pprofAddr                                                              string
 	pprofServerTimeout                                                     time.Duration
+	failureBaseDelay, failureMaxDelay                                      time.Duration
+	rateLimiterBurst, rateLimiterFrequency                                 int
 }
 
 func main() {
@@ -128,10 +130,11 @@ func pprofStartServer(addr string, timeout time.Duration) {
 	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
 
 	server := &http.Server{
-		Addr:         addr,
-		Handler:      mux,
-		ReadTimeout:  timeout,
-		WriteTimeout: timeout,
+		Addr:              addr,
+		Handler:           mux,
+		ReadTimeout:       timeout,
+		ReadHeaderTimeout: timeout,
+		WriteTimeout:      timeout,
 	}
 
 	if err := server.ListenAndServe(); err != nil {
@@ -139,7 +142,6 @@ func pprofStartServer(addr string, timeout time.Duration) {
 	}
 }
 
-//nolint:funlen
 func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *runtime.Scheme) {
 	config := ctrl.GetConfigOrDie()
 	config.QPS = float32(flagVar.clientQPS)
@@ -166,8 +168,10 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 	}
 	options := controller.Options{
 		RateLimiter: workqueue.NewMaxOfRateLimiter(
-			workqueue.NewItemExponentialFailureRateLimiter(baseDelay, maxDelay),
-			&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(limit, burst)}),
+			workqueue.NewItemExponentialFailureRateLimiter(flagVar.failureBaseDelay, flagVar.failureMaxDelay),
+			&workqueue.BucketRateLimiter{
+				Limiter: rate.NewLimiter(rate.Limit(flagVar.rateLimiterFrequency), flagVar.rateLimiterBurst),
+			}),
 		MaxConcurrentReconciles: flagVar.maxConcurrentReconciles,
 	}
 
@@ -175,9 +179,6 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 
 	setupKymaReconciler(mgr, remoteClientCache, flagVar, intervals, options)
 
-	if flagVar.enableModuleCatalog {
-		setupModuleCatalogReconciler(mgr, remoteClientCache, flagVar, intervals, options)
-	}
 	if flagVar.enableKcpWatcher {
 		setupKcpWatcherReconciler(mgr, flagVar, intervals, options)
 	}
@@ -238,9 +239,6 @@ func defineFlagVar() *FlagVar {
 		"This verification key list is used to verify modules against their signature")
 	flag.BoolVar(&flagVar.enableWebhooks, "enable-webhooks", false,
 		"Enabling Validation/Conversion Webhooks.")
-	flag.BoolVar(&flagVar.enableModuleCatalog, "enable-module-catalog", true,
-		"Enabling the Module Catalog Synchronization for Introspection of "+
-			"available Modules based on ModuleTemplates.")
 	flag.BoolVar(&flagVar.enableKcpWatcher, "enable-kcp-watcher", false,
 		"Enabling KCP Watcher to reconcile Watcher CRs created by KCP run operators")
 	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "skr-webhook",
@@ -253,6 +251,14 @@ func defineFlagVar() *FlagVar {
 		"Whether to start up a pprof server.")
 	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
 		"Timeout of Read / Write for the pprof server.")
+	flag.IntVar(&flagVar.rateLimiterBurst, "rate-limiter-burst", rateLimiterBurstDefault,
+		"Indicates the rateLimiterBurstDefault value for the bucket rate limiter.")
+	flag.IntVar(&flagVar.rateLimiterFrequency, "rate-limiter-frequency", rateLimiterFrequencyDefault,
+		"Indicates the bucket rate limiter frequency, signifying no. of events per second.")
+	flag.DurationVar(&flagVar.failureBaseDelay, "failure-base-delay", failureBaseDelayDefault,
+		"Indicates the failure base delay in seconds for rate limiter.")
+	flag.DurationVar(&flagVar.failureMaxDelay, "failure-max-delay", failureMaxDelayDefault,
+		"Indicates the failure max delay in seconds")
 	return flagVar
 }
 
@@ -274,24 +280,6 @@ func setupKymaReconciler(
 		},
 	}).SetupWithManager(mgr, options, flagVar.listenerAddr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
-		os.Exit(1)
-	}
-}
-
-func setupModuleCatalogReconciler(
-	mgr ctrl.Manager,
-	remoteClientCache *remote.ClientCache,
-	_ *FlagVar,
-	intervals controllers.RequeueIntervals,
-	options controller.Options,
-) {
-	if err := (&controllers.ModuleCatalogReconciler{
-		Client:            mgr.GetClient(),
-		RemoteClientCache: remoteClientCache,
-		EventRecorder:     mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		RequeueIntervals:  intervals,
-	}).SetupWithManager(mgr, options); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "ModuleTemplate")
 		os.Exit(1)
 	}
 }

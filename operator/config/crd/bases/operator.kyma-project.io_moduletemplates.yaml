@@ -78,6 +78,7 @@ spec:
                   modules (e.g. by updating the controller binary linked in a chart
                   referenced in the descriptor)"
                 type: object
+                x-kubernetes-map-type: atomic
                 x-kubernetes-preserve-unknown-fields: true
               target:
                 description: Target describes where the Module should later on be

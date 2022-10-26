@@ -5,12 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"strconv"
 
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-
+	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	v1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -19,7 +19,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	sampleCRDv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/config/samples/component-integration-installed/crd/v1alpha1" //nolint:lll
-	"github.com/kyma-project/lifecycle-manager/operator/controllers"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/test"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/watch"
@@ -221,24 +220,101 @@ func RemoteKymaExists(remoteClient client.Client, kymaName string) func() error 
 	}
 }
 
-func getCatalog(
-	clnt client.Client,
-	kyma *v1alpha1.Kyma,
-) (*v1.ConfigMap, error) {
-	catalog := &v1.ConfigMap{}
-	catalog.SetName(controllers.CatalogName)
-	catalog.SetNamespace(kyma.GetNamespace())
-	err := clnt.Get(ctx, client.ObjectKeyFromObject(catalog), catalog)
-	if err != nil {
-		return nil, err
+func ModuleTemplatesExist(clnt client.Client, kyma *v1alpha1.Kyma) func() error {
+	return func() error {
+		for _, module := range kyma.Spec.Modules {
+			template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
+			if err != nil {
+				return err
+			}
+			if err := clnt.Get(ctx, client.ObjectKeyFromObject(template), template); err != nil {
+				return err
+			}
+		}
+
+		return nil
 	}
-	return catalog, nil
 }
 
-func CatalogExists(clnt client.Client, kyma *v1alpha1.Kyma) func() error {
+func ModuleTemplatesLastSyncGenMatches(clnt client.Client, kyma *v1alpha1.Kyma) func() bool {
+	return func() bool {
+		for _, module := range kyma.Spec.Modules {
+			template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
+			if err != nil {
+				return false
+			}
+			if err := clnt.Get(ctx, client.ObjectKeyFromObject(template), template); err != nil {
+				return false
+			}
+			if template.GetAnnotations() == nil {
+				return false
+			}
+			if strconv.FormatInt(template.GetGeneration(), 10) !=
+				template.GetAnnotations()[v1alpha1.LastSyncGenerationRuntime] {
+				return false
+			}
+		}
+
+		return true
+	}
+}
+
+var ErrModuleTemplateDescriptorLabelCountMismatch = errors.New("label count in descriptor does not match")
+
+func ModuleTemplatesLabelsCountMatch(
+	clnt client.Client, kyma *v1alpha1.Kyma, count int,
+) func() error {
 	return func() error {
-		_, err := getCatalog(clnt, kyma)
-		return err
+		for _, module := range kyma.Spec.Modules {
+			template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
+			if err != nil {
+				return err
+			}
+			if err := clnt.Get(ctx, client.ObjectKeyFromObject(template), template); err != nil {
+				return err
+			}
+
+			descriptor, err := template.Spec.GetDescriptor()
+			if err != nil {
+				return err
+			}
+
+			if len(descriptor.GetLabels()) != count {
+				return fmt.Errorf("expected %v but got %v labels: %w", count,
+					len(descriptor.GetLabels()), ErrModuleTemplateDescriptorLabelCountMismatch)
+			}
+		}
+		return nil
+	}
+}
+
+func ModifyModuleTemplateSpecThroughLabels(clnt client.Client, kyma *v1alpha1.Kyma, labels []ocm.Label) func() error {
+	return func() error {
+		for _, module := range kyma.Spec.Modules {
+			template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
+			if err != nil {
+				return err
+			}
+
+			if err := clnt.Get(ctx, client.ObjectKeyFromObject(template), template); err != nil {
+				return err
+			}
+
+			err = template.Spec.ModifyDescriptor(
+				func(descriptor *ocm.ComponentDescriptor) error {
+					descriptor.SetLabels(labels)
+					return nil
+				})
+			if err != nil {
+				return err
+			}
+
+			if err := runtimeClient.Update(ctx, template); err != nil {
+				return err
+			}
+		}
+
+		return nil
 	}
 }
 

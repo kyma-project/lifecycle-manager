@@ -43,7 +43,6 @@ spec:
                 type: string
             type: object
           status:
-            description: Status defines the observed state of CustomObject.
             properties:
               conditions:
                 description: Conditions associated with CustomStatus.

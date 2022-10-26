@@ -151,13 +151,6 @@ var _ = BeforeSuite(func() {
 		RemoteClientCache: remoteClientCache,
 	}).SetupWithManager(k8sManager, controller.Options{}, listenerAddr)
 	Expect(err).ToNot(HaveOccurred())
-	err = (&controllers.ModuleCatalogReconciler{
-		Client:            k8sManager.GetClient(),
-		EventRecorder:     k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		RequeueIntervals:  intervals,
-		RemoteClientCache: remoteClientCache,
-	}).SetupWithManager(k8sManager, controller.Options{})
-	Expect(err).ToNot(HaveOccurred())
 
 	err = (&controllers.WatcherReconciler{
 		Client:           k8sManager.GetClient(),

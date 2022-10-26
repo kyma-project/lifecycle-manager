@@ -96,11 +96,17 @@ spec:
                       the remote cluster based on the strategy and synchronize its
                       state there.
                     type: boolean
+                  moduleCatalog:
+                    default: true
+                    description: ModuleCatalog set to true will cause a copy of all
+                      ModuleTemplate in the cluster to be synchronized for discovery
+                      purposes
+                    type: boolean
                   namespace:
                     description: The target namespace, if empty the namespace is reflected
                       from the control plane Note that cleanup is currently not supported
                       if you are switching the namespace, so you will manually need
-                      to cleanup old synchronized Kymas
+                      to clean up old synchronized Kymas
                     type: string
                   noModuleCopy:
                     default: true
@@ -110,7 +116,7 @@ spec:
                     type: boolean
                   strategy:
                     default: secret
-                    description: Strategy determines the way to lookup the remotely
+                    description: Strategy determines the way to look up the remotely
                       synced kubeconfig, by default it is fetched from a secret
                     type: string
                 type: object

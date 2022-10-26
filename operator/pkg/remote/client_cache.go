@@ -37,3 +37,7 @@ func (cache *ClientCache) Get(key ClientCacheID) client.Client {
 func (cache *ClientCache) Set(key ClientCacheID, value client.Client) {
 	cache.internal.Store(key, value)
 }
+
+func (cache *ClientCache) Del(key client.ObjectKey) {
+	cache.internal.Delete(key)
+}

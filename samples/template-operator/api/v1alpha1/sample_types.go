@@ -17,8 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/kyma-project/module-manager/operator/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kyma-project/module-manager/operator/pkg/types"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -33,17 +34,22 @@ type Sample struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   SampleSpec   `json:"spec,omitempty"`
-	Status types.Status `json:"status,omitempty"`
+	Status SampleStatus `json:"status,omitempty"`
+}
+
+type SampleStatus struct {
+	types.Status `json:",inline"`
+	// add other fields to status subresource here
 }
 
 var _ types.CustomObject = &Sample{}
 
 func (s *Sample) GetStatus() types.Status {
-	return s.Status
+	return s.Status.Status
 }
 
 func (s *Sample) SetStatus(status types.Status) {
-	s.Status = status
+	s.Status.Status = status
 }
 
 func (s *Sample) ComponentName() string {
