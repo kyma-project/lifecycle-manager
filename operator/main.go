@@ -65,6 +65,7 @@ const (
 	defaultClientQPS              = 150
 	defaultClientBurst            = 150
 	defaultPprofServerTimeout     = 90 * time.Second
+	defaultCacheSyncTimeout       = 2 * time.Minute
 )
 
 var (
@@ -101,6 +102,7 @@ type FlagVar struct {
 	pprofServerTimeout                                                     time.Duration
 	failureBaseDelay, failureMaxDelay                                      time.Duration
 	rateLimiterBurst, rateLimiterFrequency                                 int
+	cacheSyncTimeout                                                       time.Duration
 }
 
 func main() {
@@ -175,6 +177,7 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 				Limiter: rate.NewLimiter(rate.Limit(flagVar.rateLimiterFrequency), flagVar.rateLimiterBurst),
 			}),
 		MaxConcurrentReconciles: flagVar.maxConcurrentReconciles,
+		CacheSyncTimeout:        flagVar.cacheSyncTimeout,
 	}
 
 	remoteClientCache := remote.NewClientCache()
@@ -279,6 +282,8 @@ func defineFlagVar() *FlagVar {
 		"Indicates the failure base delay in seconds for rate limiter.")
 	flag.DurationVar(&flagVar.failureMaxDelay, "failure-max-delay", failureMaxDelayDefault,
 		"Indicates the failure max delay in seconds")
+	flag.DurationVar(&flagVar.cacheSyncTimeout, "cache-sync-timeout", defaultCacheSyncTimeout,
+		"Indicates the cache sync timeout in seconds")
 	return flagVar
 }
 
