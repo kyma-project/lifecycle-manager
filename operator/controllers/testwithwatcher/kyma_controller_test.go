@@ -3,6 +3,9 @@ package controllers_with_watcher_test
 import (
 	"context"
 	"fmt"
+	"reflect"
+	"strings"
+
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
@@ -11,9 +14,8 @@ import (
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"reflect"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 const (
@@ -26,9 +28,7 @@ const (
 )
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
-	var kyma *v1alpha1.Kyma
-
-	kyma = testhelper.NewTestKyma("kyma-remote-sync")
+	kyma := testhelper.NewTestKyma("kyma-remote-sync")
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
 
 	kyma.Spec.Sync = v1alpha1.Sync{
@@ -44,15 +44,15 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Eventually(isWebhookDeployed(suiteCtx, runtimeClient, webhookConfig), timeout, interval).
 			Should(Succeed())
 		Expect(isWebhookConfigured(watcherCrForKyma, webhookConfig)).To(BeTrue())
-		Eventually(testhelper.IsKymaInState(suiteCtx, controlPlaneClient, kyma.GetName(), v1alpha1.StateReady), timeout, interval).Should(BeTrue())
+		Eventually(testhelper.IsKymaInState(suiteCtx, controlPlaneClient, kyma.GetName(), v1alpha1.StateReady),
+			timeout, interval).Should(BeTrue())
 	})
 
 	It("webhook manager removes watcher helm chart from SKR cluster when kyma is deleted", func() {
 		latestKyma := &v1alpha1.Kyma{}
 		Expect(controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(kyma), latestKyma)).To(Succeed())
 		Expect(controlPlaneClient.Delete(suiteCtx, latestKyma)).To(Succeed())
-		Eventually(getSkrChartDeployment(suiteCtx, runtimeClient), timeout, interval).
-			Should(Succeed())
+		Eventually(getSkrChartDeployment(suiteCtx, runtimeClient), timeout, interval).Should(Succeed())
 	})
 })
 
@@ -102,6 +102,7 @@ func lookupWebhookConfigForCR(webhooks []admissionv1.ValidatingWebhook, watcher 
 	}
 	return cfgIdx
 }
+
 func verifyWebhookConfig(
 	webhook admissionv1.ValidatingWebhook,
 	watcherCR *v1alpha1.Watcher,

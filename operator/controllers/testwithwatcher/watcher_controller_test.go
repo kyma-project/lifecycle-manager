@@ -28,7 +28,6 @@ func cRSpecsUpdates() func(customIstioClient *custom.IstioClient) {
 
 			// verify
 			Eventually(isCrVsConfigured(suiteCtx, customIstioClient, watcherCR)).Should(BeTrue())
-
 		}
 	}
 }
@@ -85,7 +84,6 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	AfterAll(func() {
 		// clean up kyma CR
 		Expect(controlPlaneClient.Delete(suiteCtx, kymaSample)).To(Succeed())
-
 	})
 
 	DescribeTable("given watcherCR reconcile loop",

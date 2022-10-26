@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"github.com/kyma-project/module-manager/operator/pkg/custom"
@@ -32,6 +33,7 @@ var (
 	ErrSKRWebhookHasNotBeenInstalled = errors.New("skr webhook resources have not been installed")
 	ErrSKRWebhookWasNotRemoved       = errors.New("installed skr webhook resources were not removed")
 	ErrLoadBalancerIPIsNotAssigned   = errors.New("load balancer service external ip is not assigned")
+	ErrFoundZeroWatchers             = errors.New("found 0 watcher resources, expected at least 1")
 )
 
 type WatchableConfig struct {

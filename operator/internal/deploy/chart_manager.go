@@ -2,7 +2,6 @@ package deploy
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -54,8 +53,8 @@ func (m *SKRChartManager) InstallWebhookChart(ctx context.Context, kyma *v1alpha
 	}
 	// TODO(khlifi411): make sure that validating-webhook-config resource is in sync with the secret configuration
 	skrWatcherInstallInfo := prepareInstallInfo(m.webhookChartPath, ReleaseName, skrCfg, skrClient, argsVals)
-
-	if err := installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeInstall, m.enableWebhookPreInstallCheck); err != nil {
+	err = installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeInstall, m.enableWebhookPreInstallCheck)
+	if err != nil {
 		return true, err
 	}
 	kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionTrue)
@@ -83,13 +82,15 @@ func (m *SKRChartManager) RemoveWebhookChart(ctx context.Context, kyma *v1alpha1
 	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeUninstall, m.enableWebhookPreInstallCheck)
 }
 
-func (m *SKRChartManager) generateHelmChartArgs(ctx context.Context, kcpClient client.Client) (map[string]interface{}, error) {
+func (m *SKRChartManager) generateHelmChartArgs(ctx context.Context,
+	kcpClient client.Client,
+) (map[string]interface{}, error) {
 	watcherList := &v1alpha1.WatcherList{}
 	if err := kcpClient.List(ctx, watcherList, &client.ListOptions{}); err != nil {
 		return nil, fmt.Errorf("error listing watcher resources: %w", err)
 	}
 	if len(watcherList.Items) == 0 {
-		return nil, errors.New("found 0 watcher resources, expected at least 1")
+		return nil, ErrFoundZeroWatchers
 	}
 	chartCfg := generateWatchableConfigs(watcherList)
 	bytes, err := k8syaml.Marshal(chartCfg)
@@ -146,7 +147,9 @@ func generateWatchableConfigs(watcherList *v1alpha1.WatcherList) map[string]Watc
 	return chartCfg
 }
 
-func installOrRemoveChartOnSKR(ctx context.Context, deployInfo modulelib.InstallInfo, mode Mode, enableWebhookPreInstallCheck bool) error {
+func installOrRemoveChartOnSKR(ctx context.Context, deployInfo modulelib.InstallInfo, mode Mode,
+	enableWebhookPreInstallCheck bool,
+) error {
 	logger := logf.FromContext(ctx)
 	if mode == ModeUninstall {
 		uninstalled, err := modulelib.UninstallChart(&logger, deployInfo, nil)

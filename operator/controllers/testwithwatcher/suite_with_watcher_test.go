@@ -18,14 +18,14 @@ package controllers_with_watcher_test
 
 import (
 	"context"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 	//nolint:gci
@@ -48,6 +48,7 @@ import (
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
+
 	//+kubebuilder:scaffold:imports
 	"github.com/kyma-project/lifecycle-manager/operator/controllers"
 	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper"

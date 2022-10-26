@@ -61,10 +61,10 @@ func (c *IstioClient) getVirtualService(ctx context.Context) (*istioclientapi.Vi
 	return virtualService, nil
 }
 
-func (c *IstioClient) createVirtualService(ctx context.Context, watchers ...v1alpha1.Watcher,
+func (c *IstioClient) createVirtualService(ctx context.Context, watcher *v1alpha1.Watcher,
 ) (*istioclientapi.VirtualService, error) {
-	if len(watchers) == 0 {
-		return nil, nil
+	if watcher == nil {
+		return &istioclientapi.VirtualService{}, nil
 	}
 	_, err := c.NetworkingV1beta1().
 		Gateways(metav1.NamespaceDefault).
@@ -77,7 +77,9 @@ func (c *IstioClient) createVirtualService(ctx context.Context, watchers ...v1al
 	virtualSvc.SetNamespace(metav1.NamespaceDefault)
 	virtualSvc.Spec.Gateways = append(virtualSvc.Spec.Gateways, gatewayName)
 	virtualSvc.Spec.Hosts = append(virtualSvc.Spec.Hosts, "*")
-	virtualSvc.Spec.Http = prepareIstioHTTPRoutes(watchers...)
+	virtualSvc.Spec.Http = []*istioapi.HTTPRoute{
+		prepareIstioHTTPRouteForCR(watcher),
+	}
 	return c.NetworkingV1beta1().
 		VirtualServices(metav1.NamespaceDefault).
 		Create(ctx, virtualSvc, metav1.CreateOptions{})
@@ -120,31 +122,31 @@ func (c *IstioClient) IsVsDeleted(ctx context.Context) (bool, error) {
 	return false, err
 }
 
-func (c *IstioClient) UpdateVirtualServiceConfig(ctx context.Context, obj *v1alpha1.Watcher,
+func (c *IstioClient) UpdateVirtualServiceConfig(ctx context.Context, watcher *v1alpha1.Watcher,
 ) error {
 	var err error
 	var customErr *customClientErr
 	var virtualService *istioclientapi.VirtualService
 	virtualService, customErr = c.getVirtualService(ctx)
 	if customErr != nil && customErr.IsNotFound {
-		_, err = c.createVirtualService(ctx, *obj)
+		_, err = c.createVirtualService(ctx, watcher)
 		if err != nil {
 			return fmt.Errorf("failed to create virtual service %w", err)
 		}
 		return nil
 	}
 	// lookup cr config
-	routeIdx := lookupHTTPRouteByObjectKey(virtualService.Spec.Http, client.ObjectKeyFromObject(obj))
+	routeIdx := lookupHTTPRouteByObjectKey(virtualService.Spec.Http, client.ObjectKeyFromObject(watcher))
 	if routeIdx != -1 {
-		istioHTTPRoute := prepareIstioHTTPRouteForCR(obj)
+		istioHTTPRoute := prepareIstioHTTPRouteForCR(watcher)
 		if isRouteConfigEqual(virtualService.Spec.Http[routeIdx], istioHTTPRoute) {
 			return nil
 		}
-		virtualService.Spec.Http[routeIdx] = prepareIstioHTTPRouteForCR(obj)
+		virtualService.Spec.Http[routeIdx] = prepareIstioHTTPRouteForCR(watcher)
 		return c.updateVirtualService(ctx, virtualService)
 	}
 	// if route doesn't exist already append it to the route list
-	istioHTTPRoute := prepareIstioHTTPRouteForCR(obj)
+	istioHTTPRoute := prepareIstioHTTPRouteForCR(watcher)
 	virtualService.Spec.Http = append(virtualService.Spec.Http, istioHTTPRoute)
 	return c.updateVirtualService(ctx, virtualService)
 }
@@ -202,14 +204,6 @@ func isRouteConfigEqual(route1 *istioapi.HTTPRoute, route2 *istioapi.HTTPRoute) 
 	}
 
 	return true
-}
-
-func prepareIstioHTTPRoutes(watchers ...v1alpha1.Watcher) []*istioapi.HTTPRoute {
-	httpRoutes := make([]*istioapi.HTTPRoute, 0)
-	for _, watcher := range watchers {
-		httpRoutes = append(httpRoutes, prepareIstioHTTPRouteForCR(&watcher))
-	}
-	return httpRoutes
 }
 
 func prepareIstioHTTPRouteForCR(obj *v1alpha1.Watcher) *istioapi.HTTPRoute {

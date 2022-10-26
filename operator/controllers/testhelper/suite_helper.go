@@ -15,6 +15,7 @@ import (
 
 const (
 	defaultBufferSize = 2048
+	httpClientTimeout = 2 * time.Second
 )
 
 func ParseRemoteCRDs(testCrdURLs []string) ([]*apiextv1.CustomResourceDefinition, error) {
@@ -28,7 +29,7 @@ func ParseRemoteCRDs(testCrdURLs []string) ([]*apiextv1.CustomResourceDefinition
 		if err != nil {
 			return nil, fmt.Errorf("failed pulling content for URL (%s) :%w", testCrdURL, err)
 		}
-		client := &http.Client{Timeout: time.Second * 2}
+		client := &http.Client{Timeout: httpClientTimeout}
 		response, err := client.Do(request)
 		if err != nil {
 			return nil, err

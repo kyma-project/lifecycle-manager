@@ -2,30 +2,34 @@ package testhelper
 
 import (
 	"context"
+	"math/rand"
+
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/test"
+
+	//nolint:stylecheck,revive
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"math/rand"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
-	namespace = "default"
+	randomStringLength = 8
+	letterBytes        = "abcdefghijklmnopqrstuvwxyz"
 )
-const letterBytes = "abcdefghijklmnopqrstuvwxyz"
 
 func NewTestKyma(name string) *v1alpha1.Kyma {
 	return &v1alpha1.Kyma{
-		TypeMeta: v1.TypeMeta{
+		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1alpha1.GroupVersion.String(),
 			Kind:       string(v1alpha1.KymaKind),
 		},
-		ObjectMeta: v1.ObjectMeta{
-			Name:      name + RandString(8),
-			Namespace: namespace,
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name + RandString(randomStringLength),
+			Namespace: metav1.NamespaceDefault,
 		},
 		Spec: v1alpha1.KymaSpec{
 			Modules: []v1alpha1.Module{},
@@ -35,7 +39,7 @@ func NewTestKyma(name string) *v1alpha1.Kyma {
 }
 
 func NewUniqModuleName() string {
-	return RandString(8)
+	return RandString(randomStringLength)
 }
 
 func RandString(n int) string {
@@ -65,7 +69,7 @@ func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 func GetKyma(ctx context.Context, testClient client.Client, kymaName string) (*v1alpha1.Kyma, error) {
 	kymaInCluster := &v1alpha1.Kyma{}
 	err := testClient.Get(ctx, client.ObjectKey{
-		Namespace: v1.NamespaceDefault,
+		Namespace: metav1.NamespaceDefault,
 		Name:      kymaName,
 	}, kymaInCluster)
 	if err != nil {

@@ -41,8 +41,9 @@ func (c *KymaSynchronizationContext) RequireStatusUpdateInControlPlane() {
 	c.statusUpdateRequired = true
 }
 
-func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, key client.ObjectKey, strategy v1alpha1.SyncStrategy, cache *ClientCache) (client.Client, error) {
-
+func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, key client.ObjectKey,
+	strategy v1alpha1.SyncStrategy, cache *ClientCache,
+) (client.Client, error) {
 	remoteClient := cache.Get(ClientCacheID(key))
 	if remoteClient != nil {
 		return remoteClient, nil
@@ -63,7 +64,8 @@ func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, key 
 }
 
 func GetRemoteRestConfig(ctx context.Context, controlPlaneClient client.Client, key client.ObjectKey,
-	strategy v1alpha1.SyncStrategy) (*rest.Config, error) {
+	strategy v1alpha1.SyncStrategy,
+) (*rest.Config, error) {
 	var err error
 	var restConfig *rest.Config
 
