@@ -29,7 +29,8 @@ func (r *runnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 	modules common.Modules,
 ) (bool, error) {
 	baseLogger := log.FromContext(ctx).WithName(client.ObjectKey{Name: kyma.Name, Namespace: kyma.Namespace}.String())
-	for name, module := range modules {
+	for name := range modules {
+		module := modules[name]
 		logger := module.Logger(baseLogger)
 
 		create := func() (bool, error) {
