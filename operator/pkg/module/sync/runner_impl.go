@@ -60,14 +60,12 @@ func (r *runnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 
 		module.UpdateStatusAndReferencesFromUnstructured(manifest)
 
-		if module.TemplateOutdated {
-			templateInfo, err := kyma.GetTemplateInfoByModuleName(name)
-			if err != nil {
-				return false, err
-			}
-			if module.StateMismatchedWithTemplateInfo(templateInfo) {
-				return update()
-			}
+		moduleStatus, err := kyma.GetModuleStatusByModuleName(name)
+		if err != nil {
+			return false, err
+		}
+		if module.StateMismatchedWithModuleStatus(moduleStatus) {
+			return update()
 		}
 	}
 
@@ -138,15 +136,16 @@ func (r *runnerImpl) updateModuleStatusFromExistingModules(modules common.Module
 			ModuleName: module.Name,
 			Name:       module.Manifest.GetName(),
 			Namespace:  module.Manifest.GetNamespace(),
+			Generation: module.Manifest.GetGeneration(),
 			TemplateInfo: v1alpha1.TemplateInfo{
 				Name:       module.Template.Name,
 				Namespace:  module.Template.Namespace,
 				Channel:    module.Template.Spec.Channel,
 				Generation: module.Template.Generation,
 				GroupVersionKind: metav1.GroupVersionKind{
-					Group:   module.GroupVersionKind().Group,
-					Version: module.GroupVersionKind().Version,
-					Kind:    module.GroupVersionKind().Kind,
+					Group:   manifestV1alpha1.GroupVersionKind.Group,
+					Version: manifestV1alpha1.GroupVersionKind.Version,
+					Kind:    manifestV1alpha1.GroupVersionKind.Kind,
 				},
 				Version: descriptor.Version,
 			},
