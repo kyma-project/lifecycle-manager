@@ -215,7 +215,8 @@ go get github.com/kyma-project/module-manager/operator@latest
       mgr, &operatorv1alpha1.Sample{},
       declarative.WithCustomResourceLabels(map[string]string{"sampleKey": "sampleValue"}),
       declarative.WithResourcesReady(true),
-      declarative.WithFinalizer("sample-finalizer"), 
+      declarative.WithFinalizer("sample-finalizer"),
+      declarative.WithDefaultResolver(),
     ); err != nil {
       return err
     }
@@ -234,7 +235,7 @@ go get github.com/kyma-project/module-manager/operator@latest
 3. A **mandatory** requirement of this reconciler is to provide the source of chart installation. This can be described using either of these options:
 
    * `declarative.WithManifestResolver(manifestResolver)`: `Get()` of `types.ManifestResolver` must return an object of `types.InstallationSpec` type. Using this option you can add custom logic in `Get()` additionally. 
-   * `declarative.WithDefaultResolver(manifestResolver)`: Sample CR's `.spec` field should implement `types.InstallationSpec` type
+   * `declarative.WithDefaultResolver()`: Sample CR's `.spec` field should implement `types.InstallationSpec` type
 
    _WARNING: At this point in time, we will assume you have a chart that you want to install with your operator ready under `./module-chart`. If not already done, copy your charts from the [Pre-requisites](#pre-requisites)_
 
@@ -426,7 +427,7 @@ _WARNING: This step requires the working OCI Registry, Cluster and Kyma CLI from
      configs:
      ```
      _WARNING: Even though this file is empty, it is mandatory for the command to succeed as it will be bundled as layer!
-     kubebuilder projects by default to not have such a file (it is introduced by modularization) and you will need to create one on your own if not already done._ 
+     kubebuilder projects by default do not have such a file (it is introduced by modularization) and you will need to create one on your own if not already done._ 
    * the default sample under `config/samples/operator_v1alpha1_sample.yaml` has been adjusted to be a valid CR by setting the default generated `Foo` field instead of a TODO.
 
      ```yaml
