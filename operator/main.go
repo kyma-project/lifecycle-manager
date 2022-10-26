@@ -53,10 +53,10 @@ import (
 )
 
 const (
-	baseDelay                     = 100 * time.Millisecond
-	maxDelay                      = 1000 * time.Second
-	limit                         = rate.Limit(30)
-	burst                         = 200
+	failureBaseDelayDefault       = 100 * time.Millisecond
+	failureMaxDelayDefault        = 1000 * time.Second
+	rateLimiterFrequencyDefault   = 30
+	rateLimiterBurstDefault       = 200
 	port                          = 9443
 	defaultRequeueSuccessInterval = 20 * time.Second
 	defaultRequeueFailureInterval = 10 * time.Second
@@ -98,6 +98,8 @@ type FlagVar struct {
 	pprof                                                                  bool
 	pprofAddr                                                              string
 	pprofServerTimeout                                                     time.Duration
+	failureBaseDelay, failureMaxDelay                                      time.Duration
+	rateLimiterBurst, rateLimiterFrequency                                 int
 }
 
 func main() {
@@ -166,8 +168,10 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 	}
 	options := controller.Options{
 		RateLimiter: workqueue.NewMaxOfRateLimiter(
-			workqueue.NewItemExponentialFailureRateLimiter(baseDelay, maxDelay),
-			&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(limit, burst)}),
+			workqueue.NewItemExponentialFailureRateLimiter(flagVar.failureBaseDelay, flagVar.failureMaxDelay),
+			&workqueue.BucketRateLimiter{
+				Limiter: rate.NewLimiter(rate.Limit(flagVar.rateLimiterFrequency), flagVar.rateLimiterBurst),
+			}),
 		MaxConcurrentReconciles: flagVar.maxConcurrentReconciles,
 	}
 
@@ -247,6 +251,14 @@ func defineFlagVar() *FlagVar {
 		"Whether to start up a pprof server.")
 	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
 		"Timeout of Read / Write for the pprof server.")
+	flag.IntVar(&flagVar.rateLimiterBurst, "rate-limiter-burst", rateLimiterBurstDefault,
+		"Indicates the rateLimiterBurstDefault value for the bucket rate limiter.")
+	flag.IntVar(&flagVar.rateLimiterFrequency, "rate-limiter-frequency", rateLimiterFrequencyDefault,
+		"Indicates the bucket rate limiter frequency, signifying no. of events per second.")
+	flag.DurationVar(&flagVar.failureBaseDelay, "failure-base-delay", failureBaseDelayDefault,
+		"Indicates the failure base delay in seconds for rate limiter.")
+	flag.DurationVar(&flagVar.failureMaxDelay, "failure-max-delay", failureMaxDelayDefault,
+		"Indicates the failure max delay in seconds")
 	return flagVar
 }
 
