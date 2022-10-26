@@ -64,6 +64,7 @@ func (m *Module) UpdateStatusAndReferencesFromUnstructured(unstructured *manifes
 	m.Status = unstructured.Status
 	m.SetResourceVersion(unstructured.GetResourceVersion())
 	m.SetOwnerReferences(unstructured.GetOwnerReferences())
+	m.SetGeneration(unstructured.GetGeneration())
 }
 
 func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {
