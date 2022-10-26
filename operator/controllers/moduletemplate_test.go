@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/operator/controllers/test_helper"
+	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -13,7 +13,7 @@ var ErrManifestRemoteIsNotMatch = errors.New("Manifest.Spec.Remote is not match"
 
 func expectManifestSpecRemoteMatched(kymaName string, remoteFlag bool) func() error {
 	return func() error {
-		createdKyma, err := test_helper.GetKyma(ctx, controlPlaneClient, kymaName)
+		createdKyma, err := testhelper.GetKyma(ctx, controlPlaneClient, kymaName)
 		if err != nil {
 			return err
 		}
@@ -37,7 +37,7 @@ func expectManifestSpecRemoteMatched(kymaName string, remoteFlag bool) func() er
 
 func updateModuleTemplateTarget(kymaName string, target v1alpha1.Target) func() error {
 	return func() error {
-		createdKyma, err := test_helper.GetKyma(ctx, controlPlaneClient, kymaName)
+		createdKyma, err := testhelper.GetKyma(ctx, controlPlaneClient, kymaName)
 		if err != nil {
 			return err
 		}
@@ -57,11 +57,11 @@ func updateModuleTemplateTarget(kymaName string, target v1alpha1.Target) func() 
 }
 
 var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
-	kyma := test_helper.NewTestKyma("kyma")
+	kyma := testhelper.NewTestKyma("kyma")
 
 	kyma.Spec.Modules = append(kyma.Spec.Modules, v1alpha1.Module{
 		ControllerName: "manifest",
-		Name:           test_helper.NewUniqModuleName(),
+		Name:           testhelper.NewUniqModuleName(),
 		Channel:        v1alpha1.ChannelStable,
 	})
 

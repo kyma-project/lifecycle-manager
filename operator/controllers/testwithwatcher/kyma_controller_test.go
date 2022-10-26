@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/operator/controllers/test_helper"
+	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -28,7 +28,7 @@ const (
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
 	var kyma *v1alpha1.Kyma
 
-	kyma = test_helper.NewTestKyma("kyma-remote-sync")
+	kyma = testhelper.NewTestKyma("kyma-remote-sync")
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
 
 	kyma.Spec.Sync = v1alpha1.Sync{
@@ -44,7 +44,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Eventually(isWebhookDeployed(suiteCtx, runtimeClient, webhookConfig), timeout, interval).
 			Should(Succeed())
 		Expect(isWebhookConfigured(watcherCrForKyma, webhookConfig)).To(BeTrue())
-		Eventually(test_helper.IsKymaInState(suiteCtx, controlPlaneClient, kyma.GetName(), v1alpha1.StateReady), timeout, interval).Should(BeTrue())
+		Eventually(testhelper.IsKymaInState(suiteCtx, controlPlaneClient, kyma.GetName(), v1alpha1.StateReady), timeout, interval).Should(BeTrue())
 	})
 
 	It("webhook manager removes watcher helm chart from SKR cluster when kyma is deleted", func() {
@@ -130,12 +130,12 @@ func RegisterDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1
 	BeforeAll(func() {
 		Expect(controlPlaneClient.Create(suiteCtx, watcher)).To(Succeed())
 		Expect(controlPlaneClient.Create(suiteCtx, kyma)).Should(Succeed())
-		test_helper.DeployModuleTemplates(suiteCtx, controlPlaneClient, kyma)
+		testhelper.DeployModuleTemplates(suiteCtx, controlPlaneClient, kyma)
 	})
 
 	AfterAll(func() {
 		Expect(controlPlaneClient.Delete(suiteCtx, watcher)).To(Succeed())
-		test_helper.DeleteModuleTemplates(suiteCtx, controlPlaneClient, kyma)
+		testhelper.DeleteModuleTemplates(suiteCtx, controlPlaneClient, kyma)
 		Expect(controlPlaneClient.Delete(suiteCtx, kyma)).Should(Succeed())
 	})
 

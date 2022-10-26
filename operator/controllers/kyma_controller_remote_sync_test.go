@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/operator/controllers/test_helper"
+	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper"
 )
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
@@ -22,7 +22,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Name:           "skr-module-sync-client",
 		Channel:        v1alpha1.ChannelStable,
 	}
-	kyma = test_helper.NewTestKyma("kyma-remote-sync")
+	kyma = testhelper.NewTestKyma("kyma-remote-sync")
 	skrModule = &v1alpha1.Module{
 		ControllerName: "manifest",
 		Name:           "skr-module-sync",
@@ -48,7 +48,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	It("CR add from client should be synced in both clusters", func() {
 		By("Remote Kyma created")
 		Eventually(RemoteKymaExists(runtimeClient, kyma.GetName()), 30*time.Second, interval).Should(Succeed())
-		remoteKyma, err := test_helper.GetKyma(ctx, runtimeClient, kyma.GetName())
+		remoteKyma, err := testhelper.GetKyma(ctx, runtimeClient, kyma.GetName())
 		Expect(err).ShouldNot(HaveOccurred())
 
 		By("add skr-module-client to remoteKyma.spec.modules")
@@ -64,7 +64,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 })
 
 var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
-	kyma := test_helper.NewTestKyma("kyma-test-remote-skr")
+	kyma := testhelper.NewTestKyma("kyma-test-remote-skr")
 
 	kyma.Spec.Sync = v1alpha1.Sync{
 		Enabled:      true,
@@ -91,7 +91,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		}
 
 		By("No spec.module in remote Kyma")
-		remoteKyma, err := test_helper.GetKyma(ctx, runtimeClient, kyma.GetName())
+		remoteKyma, err := testhelper.GetKyma(ctx, runtimeClient, kyma.GetName())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(remoteKyma.Spec.Modules).To(BeEmpty())
 

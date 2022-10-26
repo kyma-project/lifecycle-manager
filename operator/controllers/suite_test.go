@@ -43,7 +43,7 @@ import (
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/controllers"
-	"github.com/kyma-project/lifecycle-manager/operator/controllers/test_helper"
+	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
 )
@@ -83,7 +83,7 @@ var _ = BeforeSuite(func() {
 
 	// manifest CRD
 	// istio CRDs
-	remoteCrds, err := test_helper.ParseRemoteCRDs([]string{
+	remoteCrds, err := testhelper.ParseRemoteCRDs([]string{
 		"https://raw.githubusercontent.com/kyma-project/module-manager/main/operator/config/crd/bases/operator.kyma-project.io_manifests.yaml", //nolint:lll
 	})
 	Expect(err).NotTo(HaveOccurred())

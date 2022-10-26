@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/operator/controllers/test_helper"
+	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/custom"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -67,7 +67,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	kymaSample := &v1alpha1.Kyma{}
 	BeforeAll(func() {
 		// create kyma resource
-		kymaSample = test_helper.NewTestKyma("kyma-sample")
+		kymaSample = testhelper.NewTestKyma("kyma-sample")
 
 		customIstioClient, err = custom.NewVersionedIstioClient(cfg)
 		Expect(err).ToNot(HaveOccurred())
