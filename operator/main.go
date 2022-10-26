@@ -156,7 +156,7 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		LeaderElection:         flagVar.enableLeaderElection,
 		LeaderElectionID:       "893110f7.kyma-project.io",
 		NewCache:               newCacheFunc,
-		NewClient:              NewClientWithUnstructuredCaching,
+		NewClient:              NewClient,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -206,7 +206,7 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 	}
 }
 
-func NewClientWithUnstructuredCaching(
+func NewClient(
 	cache cache.Cache,
 	config *rest.Config,
 	options client.Options,
@@ -221,8 +221,6 @@ func NewClientWithUnstructuredCaching(
 			CacheReader:     cache,
 			Client:          clnt,
 			UncachedObjects: uncachedObjects,
-			// This enables caching for unstructured.Unstructured
-			CacheUnstructured: true,
 		},
 	)
 }

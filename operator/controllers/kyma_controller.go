@@ -22,11 +22,8 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/catalog"
+	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
@@ -390,13 +387,8 @@ func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma
 }
 
 func (r *KymaReconciler) deleteModule(ctx context.Context, moduleStatus *v1alpha1.ModuleStatus) error {
-	module := unstructured.Unstructured{}
-	module.SetNamespace(moduleStatus.Namespace)
-	module.SetName(moduleStatus.Name)
-	module.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   moduleStatus.TemplateInfo.GroupVersionKind.Group,
-		Version: moduleStatus.TemplateInfo.GroupVersionKind.Version,
-		Kind:    moduleStatus.TemplateInfo.GroupVersionKind.Kind,
-	})
-	return r.Delete(ctx, &module, &client.DeleteOptions{})
+	manifest := manifestV1alpha1.Manifest{}
+	manifest.SetNamespace(moduleStatus.Namespace)
+	manifest.SetName(moduleStatus.Name)
+	return r.Delete(ctx, &manifest, &client.DeleteOptions{})
 }
