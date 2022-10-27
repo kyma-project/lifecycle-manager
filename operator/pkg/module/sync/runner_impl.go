@@ -32,8 +32,10 @@ func (r *runnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 	for name := range modules {
 		module := modules[name]
 		logger := module.Logger(baseLogger)
+		manifest := common.NewFromModule(module)
+		err := r.getModule(ctx, manifest)
 
-		create := func() (bool, error) {
+		if errors.IsNotFound(err) {
 			logger.Info("module not found, attempting to create it...")
 			err := r.createModule(ctx, name, kyma, module)
 			if err != nil {
@@ -41,34 +43,27 @@ func (r *runnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 			}
 			logger.Info("successfully created module CR")
 			return true, nil
-		}
-		manifest := common.NewFromModule(module)
-		err := r.getModule(ctx, manifest)
-		if errors.IsNotFound(err) {
-			return create()
 		} else if err != nil {
 			return false, fmt.Errorf("cannot get module %s: %w", module.GetName(), err)
 		}
+
 		module.UpdateStatusAndReferencesFromUnstructured(manifest)
 	}
 
 	for name := range modules {
 		module := modules[name]
 		logger := module.Logger(baseLogger)
-		update := func() (bool, error) {
+		moduleStatus, err := kyma.GetModuleStatusByModuleName(name)
+		if err != nil {
+			return false, err
+		}
+
+		if module.StateMismatchedWithModuleStatus(moduleStatus) {
 			if err := r.updateModule(ctx, name, kyma, module); err != nil {
 				return false, err
 			}
 			logger.Info("successfully updated module CR")
 			return true, nil
-		}
-
-		moduleStatus, err := kyma.GetModuleStatusByModuleName(name)
-		if err != nil {
-			return false, err
-		}
-		if module.StateMismatchedWithModuleStatus(moduleStatus) {
-			return update()
 		}
 	}
 

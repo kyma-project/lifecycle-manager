@@ -170,15 +170,7 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		Failure: flagVar.requeueFailureInterval,
 		Waiting: flagVar.requeueWaitingInterval,
 	}
-	options := controller.Options{
-		RateLimiter: workqueue.NewMaxOfRateLimiter(
-			workqueue.NewItemExponentialFailureRateLimiter(flagVar.failureBaseDelay, flagVar.failureMaxDelay),
-			&workqueue.BucketRateLimiter{
-				Limiter: rate.NewLimiter(rate.Limit(flagVar.rateLimiterFrequency), flagVar.rateLimiterBurst),
-			}),
-		MaxConcurrentReconciles: flagVar.maxConcurrentReconciles,
-		CacheSyncTimeout:        flagVar.cacheSyncTimeout,
-	}
+	options := controllerOptionsFromFlagVar(flagVar)
 
 	remoteClientCache := remote.NewClientCache()
 
@@ -206,6 +198,19 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
+	}
+}
+
+func controllerOptionsFromFlagVar(flagVar *FlagVar) controller.Options {
+	return controller.Options{
+		RateLimiter: workqueue.NewMaxOfRateLimiter(
+			workqueue.NewItemExponentialFailureRateLimiter(flagVar.failureBaseDelay, flagVar.failureMaxDelay),
+			&workqueue.BucketRateLimiter{
+				Limiter: rate.NewLimiter(rate.Limit(flagVar.rateLimiterFrequency), flagVar.rateLimiterBurst),
+			},
+		),
+		MaxConcurrentReconciles: flagVar.maxConcurrentReconciles,
+		CacheSyncTimeout:        flagVar.cacheSyncTimeout,
 	}
 }
 

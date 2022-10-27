@@ -18,7 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	sampleCRDv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/config/samples/component-integration-installed/crd/v1alpha1" //nolint:lll
+	sampleCRDv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/config/samples/component-integration-installed/crd/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/test"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/watch"
