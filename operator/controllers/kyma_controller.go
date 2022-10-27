@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -50,6 +51,8 @@ import (
 type EventErrorType string
 
 const ModuleReconciliationError EventErrorType = "ModuleReconciliationError"
+
+var ErrSkrChartConfigNotSet = errors.New("skr chart config is not set")
 
 type RequeueIntervals struct {
 	Success time.Duration
@@ -428,9 +431,8 @@ func (r *KymaReconciler) deleteModule(ctx context.Context, moduleStatus *v1alpha
 }
 
 func (r *KymaReconciler) SetSKRChartManager(skrChartConfig *SkrChartConfig) error {
-	//nolint:goerr113
 	if skrChartConfig == nil {
-		return fmt.Errorf("skr chart config is not set")
+		return ErrSkrChartConfigNotSet
 	}
 	r.SKRChartManager = deploy.NewSKRChartManager(skrChartConfig.WebhookChartPath,
 		skrChartConfig.SkrWebhookMemoryLimits, skrChartConfig.SkrWebhookCPULimits,
