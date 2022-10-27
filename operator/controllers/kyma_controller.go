@@ -308,7 +308,8 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1
 			return false, fmt.Errorf(": %w", err)
 		}
 
-		if chartRemoved := r.IsSkrChartRemoved(ctx, kyma, r.RemoteClientCache, r.Client); !chartRemoved {
+		if !r.IsSkrChartRemoved(ctx, kyma, r.RemoteClientCache, r.Client) {
+			logger.V(1).Info("removing SKR chart in progress...")
 			return true, nil
 		}
 	}
