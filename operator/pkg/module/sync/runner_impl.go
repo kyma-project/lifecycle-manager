@@ -30,10 +30,13 @@ func (r *runnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 	modules common.Modules,
 ) (bool, error) {
 	baseLogger := log.FromContext(ctx).WithName(client.ObjectKey{Name: kyma.Name, Namespace: kyma.Namespace}.String())
-	for name, module := range modules {
+	for name := range modules {
+		module := modules[name]
 		logger := module.Logger(baseLogger)
+		manifest := common.NewFromModule(module)
+		err := r.getModule(ctx, manifest)
 
-		create := func() (bool, error) {
+		if errors.IsNotFound(err) {
 			logger.Info("module not found, attempting to create it...")
 			err := r.createModule(ctx, name, kyma, module)
 			if err != nil {
@@ -41,34 +44,27 @@ func (r *runnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 			}
 			logger.Info("successfully created module CR")
 			return true, nil
-		}
-
-		update := func() (bool, error) {
-			if err := r.updateModule(ctx, name, kyma, module); err != nil {
-				return false, err
-			}
-			logger.Info("successfully updated module CR")
-			return true, nil
-		}
-
-		manifest := common.NewFromModule(module)
-		err := r.getModule(ctx, manifest)
-		if errors.IsNotFound(err) {
-			return create()
 		} else if err != nil {
 			return false, fmt.Errorf("cannot get module %s: %w", module.GetName(), err)
 		}
 
 		module.UpdateStatusAndReferencesFromUnstructured(manifest)
+	}
 
-		if module.TemplateOutdated {
-			templateInfo, err := kyma.GetTemplateInfoByModuleName(name)
-			if err != nil {
+	for name := range modules {
+		module := modules[name]
+		logger := module.Logger(baseLogger)
+		moduleStatus, err := kyma.GetModuleStatusByModuleName(name)
+		if err != nil {
+			return false, err
+		}
+
+		if module.StateMismatchedWithModuleStatus(moduleStatus) {
+			if err := r.updateModule(ctx, name, kyma, module); err != nil {
 				return false, err
 			}
-			if module.StateMismatchedWithTemplateInfo(templateInfo) {
-				return update()
-			}
+			logger.Info("successfully updated module CR")
+			return true, nil
 		}
 	}
 
@@ -133,21 +129,23 @@ func (r *runnerImpl) updateModuleStatusFromExistingModules(modules common.Module
 	moduleStatusMap map[string]*v1alpha1.ModuleStatus, kyma *v1alpha1.Kyma,
 ) bool {
 	updateRequired := false
-	for _, module := range modules {
-		descriptor, _ := module.Template.Spec.GetDescriptor()
+	for name := range modules {
+		module := modules[name]
+		descriptor, _ := module.Template.Spec.GetUnsafeDescriptor()
 		latestModuleStatus := v1alpha1.ModuleStatus{
 			ModuleName: module.Name,
 			Name:       module.Manifest.GetName(),
 			Namespace:  module.Manifest.GetNamespace(),
+			Generation: module.Manifest.GetGeneration(),
 			TemplateInfo: v1alpha1.TemplateInfo{
 				Name:       module.Template.Name,
 				Namespace:  module.Template.Namespace,
 				Channel:    module.Template.Spec.Channel,
 				Generation: module.Template.Generation,
 				GroupVersionKind: metav1.GroupVersionKind{
-					Group:   module.GroupVersionKind().Group,
-					Version: module.GroupVersionKind().Version,
-					Kind:    module.GroupVersionKind().Kind,
+					Group:   manifestV1alpha1.GroupVersionKind.Group,
+					Version: manifestV1alpha1.GroupVersionKind.Version,
+					Kind:    manifestV1alpha1.GroupVersionKind.Kind,
 				},
 				Version: descriptor.Version,
 			},

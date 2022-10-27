@@ -65,6 +65,7 @@ const (
 	defaultClientQPS              = 150
 	defaultClientBurst            = 150
 	defaultPprofServerTimeout     = 90 * time.Second
+	defaultCacheSyncTimeout       = 2 * time.Minute
 )
 
 var (
@@ -102,6 +103,7 @@ type FlagVar struct {
 	pprofServerTimeout                                                     time.Duration
 	failureBaseDelay, failureMaxDelay                                      time.Duration
 	rateLimiterBurst, rateLimiterFrequency                                 int
+	cacheSyncTimeout                                                       time.Duration
 }
 
 func main() {
@@ -169,14 +171,7 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		Failure: flagVar.requeueFailureInterval,
 		Waiting: flagVar.requeueWaitingInterval,
 	}
-	options := controller.Options{
-		RateLimiter: workqueue.NewMaxOfRateLimiter(
-			workqueue.NewItemExponentialFailureRateLimiter(flagVar.failureBaseDelay, flagVar.failureMaxDelay),
-			&workqueue.BucketRateLimiter{
-				Limiter: rate.NewLimiter(rate.Limit(flagVar.rateLimiterFrequency), flagVar.rateLimiterBurst),
-			}),
-		MaxConcurrentReconciles: flagVar.maxConcurrentReconciles,
-	}
+	options := controllerOptionsFromFlagVar(flagVar)
 
 	remoteClientCache := remote.NewClientCache()
 
@@ -204,6 +199,19 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
+	}
+}
+
+func controllerOptionsFromFlagVar(flagVar *FlagVar) controller.Options {
+	return controller.Options{
+		RateLimiter: workqueue.NewMaxOfRateLimiter(
+			workqueue.NewItemExponentialFailureRateLimiter(flagVar.failureBaseDelay, flagVar.failureMaxDelay),
+			&workqueue.BucketRateLimiter{
+				Limiter: rate.NewLimiter(rate.Limit(flagVar.rateLimiterFrequency), flagVar.rateLimiterBurst),
+			},
+		),
+		MaxConcurrentReconciles: flagVar.maxConcurrentReconciles,
+		CacheSyncTimeout:        flagVar.cacheSyncTimeout,
 	}
 }
 
@@ -282,6 +290,8 @@ func defineFlagVar() *FlagVar {
 		"Indicates the failure base delay in seconds for rate limiter.")
 	flag.DurationVar(&flagVar.failureMaxDelay, "failure-max-delay", failureMaxDelayDefault,
 		"Indicates the failure max delay in seconds")
+	flag.DurationVar(&flagVar.cacheSyncTimeout, "cache-sync-timeout", defaultCacheSyncTimeout,
+		"Indicates the cache sync timeout in seconds")
 	return flagVar
 }
 

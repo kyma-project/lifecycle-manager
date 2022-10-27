@@ -53,7 +53,7 @@ patches:
   - patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --max-concurrent-reconciles=50
+        value: --max-concurrent-reconciles=100
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --rate-limiter-burst=2000
@@ -68,7 +68,10 @@ patches:
         value: --skr-webhook-cpu-limits=1000m
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --pprof=true
+        value: --pprof=true      
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --cache-sync-timeout=4m
     target:
       kind: Deployment
 

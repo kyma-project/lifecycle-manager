@@ -22,6 +22,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/gardener/component-spec/bindings-go/codec"
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1/codec/unsafe"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -66,15 +67,26 @@ type ModuleTemplateSpec struct {
 
 	// descriptor is the internal reference holder of the OCMDescriptor once parsed.
 	// it is purposefully not exposed and also excluded from parsers and only used
-	// by GetDescriptor to hold a singleton reference to avoid multiple parse efforts
+	// by GetUnsafeDescriptor to hold a singleton reference to avoid multiple parse efforts
 	// in the reconciliation loop.
 	descriptor *ocm.ComponentDescriptor `json:"-"`
+}
+
+func (in *ModuleTemplateSpec) GetUnsafeDescriptor() (*ocm.ComponentDescriptor, error) {
+	if in.descriptor == nil && in.OCMDescriptor.Raw != nil {
+		var descriptor ocm.ComponentDescriptor
+		if err := unsafe.DecodeV2(in.OCMDescriptor.Raw, &descriptor); err != nil {
+			return nil, err
+		}
+		in.descriptor = &descriptor
+	}
+	return in.descriptor, nil
 }
 
 func (in *ModuleTemplateSpec) GetDescriptor() (*ocm.ComponentDescriptor, error) {
 	if in.descriptor == nil && in.OCMDescriptor.Raw != nil {
 		var descriptor ocm.ComponentDescriptor
-		if err := codec.Decode(in.OCMDescriptor.Raw, &descriptor, codec.DisableValidation(true)); err != nil {
+		if err := codec.Decode(in.OCMDescriptor.Raw, &descriptor); err != nil {
 			return nil, err
 		}
 		in.descriptor = &descriptor
@@ -83,7 +95,7 @@ func (in *ModuleTemplateSpec) GetDescriptor() (*ocm.ComponentDescriptor, error) 
 }
 
 func (in *ModuleTemplateSpec) ModifyDescriptor(modify func(descriptor *ocm.ComponentDescriptor) error) error {
-	descriptor, err := in.GetDescriptor()
+	descriptor, err := in.GetUnsafeDescriptor()
 	if err != nil {
 		return err
 	}
@@ -92,7 +104,7 @@ func (in *ModuleTemplateSpec) ModifyDescriptor(modify func(descriptor *ocm.Compo
 		return err
 	}
 
-	encodedDescriptor, err := codec.Encode(descriptor)
+	encodedDescriptor, err := unsafe.EncodeV2(descriptor)
 	if err != nil {
 		return err
 	}

@@ -193,6 +193,11 @@ type ModuleStatus struct {
 	// ModuleName is the unique identifier of the module.
 	ModuleName string `json:"moduleName"`
 
+	// Generation tracks the active Generation of the Module. In case the tracked Module spec changes,
+	// the new Generation will differ from the one tracked in the cluster and thus trigger a reconciliation
+	// based on the original content of ModuleTemplate
+	Generation int64 `json:"generation,omitempty"`
+
 	// It contains information about the last parsed ModuleTemplate in Context of the Installation.
 	// This will update when Channel or the ModuleTemplate is changed.
 	// +optional
@@ -212,7 +217,7 @@ type TemplateInfo struct {
 	// Namespace is the namespace of the template
 	Namespace string `json:"namespace"`
 
-	// Generation tracks the active Generation of the ModuleTemplate. In Case it changes, the new Generation will differ
+	// Generation tracks the active Generation of the ModuleTemplate. In case it changes, the new Generation will differ
 	// from the one tracked in TemplateInfo and thus trigger a new reconciliation with a newly parser ModuleTemplate
 	Generation int64 `json:"generation,omitempty"`
 
@@ -370,19 +375,17 @@ func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType,
 	return false
 }
 
-var ErrTemplateNotFound = errors.New("template not found")
+var ErrModuleStatusNotFound = errors.New("module status not found")
 
-func (kyma *Kyma) GetTemplateInfoByModuleName(
-	moduleName string,
-) (*TemplateInfo, error) {
+func (kyma *Kyma) GetModuleStatusByModuleName(moduleName string) (*ModuleStatus, error) {
 	for i := range kyma.Status.ModuleStatus {
 		moduleStatus := &kyma.Status.ModuleStatus[i]
 		if moduleStatus.ModuleName == moduleName {
-			return &moduleStatus.TemplateInfo, nil
+			return moduleStatus, nil
 		}
 	}
 	// should not happen
-	return nil, ErrTemplateNotFound
+	return nil, ErrModuleStatusNotFound
 }
 
 func IsValidState(state string) bool {

@@ -51,9 +51,11 @@ func (m *Module) ApplyLabels(
 	m.SetLabels(lbls)
 }
 
-func (m *Module) StateMismatchedWithTemplateInfo(info *v1alpha1.TemplateInfo) bool {
-	return info.Generation != m.Template.GetGeneration() ||
-		info.Channel != m.Template.Spec.Channel
+func (m *Module) StateMismatchedWithModuleStatus(moduleStatus *v1alpha1.ModuleStatus) bool {
+	templateStatusMismatch := m.TemplateOutdated &&
+		(moduleStatus.TemplateInfo.Generation != m.Template.GetGeneration() ||
+			moduleStatus.TemplateInfo.Channel != m.Template.Spec.Channel)
+	return templateStatusMismatch || moduleStatus.Generation != m.GetGeneration()
 }
 
 // UpdateStatusAndReferencesFromUnstructured updates the module with necessary information (status, ownerReference) from
@@ -62,6 +64,7 @@ func (m *Module) UpdateStatusAndReferencesFromUnstructured(unstructured *manifes
 	m.Status = unstructured.Status
 	m.SetResourceVersion(unstructured.GetResourceVersion())
 	m.SetOwnerReferences(unstructured.GetOwnerReferences())
+	m.SetGeneration(unstructured.GetGeneration())
 }
 
 func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {
