@@ -10,9 +10,8 @@ const (
 )
 
 const (
-	ConfigLayer  LayerName = "config"
-	CRDsLayer    LayerName = "crds"
-	InstallLayer LayerName = "installs"
+	ConfigLayer LayerName = "config"
+	CRDsLayer   LayerName = "crds"
 )
 
 type LayerRepresentation interface {

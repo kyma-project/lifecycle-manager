@@ -1,3 +1,6 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
 # Adds namespace to all resources.
 namespace: template-operator-system
 
@@ -13,13 +16,13 @@ commonLabels:
   app.kubernetes.io/component: template-operator.kyma-project.io
 
 configurations:
-  - ./commonlabels_override.yaml
+- commonlabels_override.yaml
 resources:
-  - ../manager
+- ../manager
 
 components:
-  - ../crd
-  - ../rbac
+- ../crd
+- ../rbac
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
 # crd/kustomization.yaml
 #- ../webhook
@@ -28,7 +31,8 @@ components:
 # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
 #- ../prometheus
 
-patchesStrategicMerge:
+
+# patchesStrategicMerge:
 # Protect the /metrics endpoint by putting it behind auth.
 # If you want your controller-manager to expose the /metrics
 # endpoint w/o any authn/z, please comment the following line.
@@ -36,19 +40,19 @@ patchesStrategicMerge:
 
 # Mount the controller config file for loading manager configurations
 # through a ComponentConfig type
-#- manager_config_patch.yaml
+# - manager_config_patch.yaml
 
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
 # crd/kustomization.yaml
-#- manager_webhook_patch.yaml
+# - manager_webhook_patch.yaml
 
 # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'.
 # Uncomment 'CERTMANAGER' sections in crd/kustomization.yaml to enable the CA injection in the admission webhooks.
 # 'CERTMANAGER' needs to be enabled to use ca injection
-#- webhookcainjection_patch.yaml
+# - webhookcainjection_patch.yaml
 
 # the following config is for teaching kustomize how to do var substitution
-vars:
+# vars:
 # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER' prefix.
 #- name: CERTIFICATE_NAMESPACE # namespace of the certificate CR
 #  objref:
@@ -76,3 +80,8 @@ vars:
 #    kind: Service
 #    version: v1
 #    name: webhook-service
+
+images:
+- name: controller
+  newName: op-kcp-registry.localhost:5000/unsigned/kyma-project.io/module/sample-operator
+  newTag: 0.0.1

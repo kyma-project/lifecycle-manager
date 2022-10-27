@@ -26,10 +26,11 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
-
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -53,10 +54,10 @@ import (
 )
 
 const (
-	baseDelay                     = 100 * time.Millisecond
-	maxDelay                      = 1000 * time.Second
-	limit                         = rate.Limit(30)
-	burst                         = 200
+	failureBaseDelayDefault       = 100 * time.Millisecond
+	failureMaxDelayDefault        = 1000 * time.Second
+	rateLimiterFrequencyDefault   = 30
+	rateLimiterBurstDefault       = 200
 	port                          = 9443
 	defaultRequeueSuccessInterval = 20 * time.Second
 	defaultRequeueFailureInterval = 10 * time.Second
@@ -99,6 +100,8 @@ type FlagVar struct {
 	pprof                                                                  bool
 	pprofAddr                                                              string
 	pprofServerTimeout                                                     time.Duration
+	failureBaseDelay, failureMaxDelay                                      time.Duration
+	rateLimiterBurst, rateLimiterFrequency                                 int
 }
 
 func main() {
@@ -154,6 +157,7 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		LeaderElection:         flagVar.enableLeaderElection,
 		LeaderElectionID:       "893110f7.kyma-project.io",
 		NewCache:               newCacheFunc,
+		NewClient:              NewClient,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -167,8 +171,10 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 	}
 	options := controller.Options{
 		RateLimiter: workqueue.NewMaxOfRateLimiter(
-			workqueue.NewItemExponentialFailureRateLimiter(baseDelay, maxDelay),
-			&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(limit, burst)}),
+			workqueue.NewItemExponentialFailureRateLimiter(flagVar.failureBaseDelay, flagVar.failureMaxDelay),
+			&workqueue.BucketRateLimiter{
+				Limiter: rate.NewLimiter(rate.Limit(flagVar.rateLimiterFrequency), flagVar.rateLimiterBurst),
+			}),
 		MaxConcurrentReconciles: flagVar.maxConcurrentReconciles,
 	}
 
@@ -187,7 +193,6 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		}
 	}
 	//+kubebuilder:scaffold:builder
-
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
 		os.Exit(1)
@@ -200,6 +205,25 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func NewClient(
+	cache cache.Cache,
+	config *rest.Config,
+	options client.Options,
+	uncachedObjects ...client.Object,
+) (client.Client, error) {
+	clnt, err := client.New(config, options)
+	if err != nil {
+		return nil, err
+	}
+	return client.NewDelegatingClient(
+		client.NewDelegatingClientInput{
+			CacheReader:     cache,
+			Client:          clnt,
+			UncachedObjects: uncachedObjects,
+		},
+	)
 }
 
 func defineFlagVar() *FlagVar {
@@ -250,6 +274,14 @@ func defineFlagVar() *FlagVar {
 		"Whether to start up a pprof server.")
 	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
 		"Timeout of Read / Write for the pprof server.")
+	flag.IntVar(&flagVar.rateLimiterBurst, "rate-limiter-burst", rateLimiterBurstDefault,
+		"Indicates the rateLimiterBurstDefault value for the bucket rate limiter.")
+	flag.IntVar(&flagVar.rateLimiterFrequency, "rate-limiter-frequency", rateLimiterFrequencyDefault,
+		"Indicates the bucket rate limiter frequency, signifying no. of events per second.")
+	flag.DurationVar(&flagVar.failureBaseDelay, "failure-base-delay", failureBaseDelayDefault,
+		"Indicates the failure base delay in seconds for rate limiter.")
+	flag.DurationVar(&flagVar.failureMaxDelay, "failure-max-delay", failureMaxDelayDefault,
+		"Indicates the failure max delay in seconds")
 	return flagVar
 }
 

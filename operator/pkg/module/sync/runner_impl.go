@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -15,7 +14,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/module/common"
-	"github.com/kyma-project/lifecycle-manager/operator/pkg/watch"
 )
 
 //nolint:ireturn
@@ -53,15 +51,15 @@ func (r *runnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 			return true, nil
 		}
 
-		moduleUnstructured := common.NewUnstructuredFromModule(module)
-		err := r.getModule(ctx, moduleUnstructured)
+		manifest := common.NewFromModule(module)
+		err := r.getModule(ctx, manifest)
 		if errors.IsNotFound(err) {
 			return create()
 		} else if err != nil {
 			return false, fmt.Errorf("cannot get module %s: %w", module.GetName(), err)
 		}
 
-		module.UpdateStatusAndReferencesFromUnstructured(moduleUnstructured)
+		module.UpdateStatusAndReferencesFromUnstructured(manifest)
 
 		if module.TemplateOutdated {
 			templateInfo, err := kyma.GetTemplateInfoByModuleName(name)
@@ -77,7 +75,7 @@ func (r *runnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 	return false, nil
 }
 
-func (r *runnerImpl) getModule(ctx context.Context, module *unstructured.Unstructured) error {
+func (r *runnerImpl) getModule(ctx context.Context, module *manifestV1alpha1.Manifest) error {
 	return r.Get(ctx, client.ObjectKey{Namespace: module.GetNamespace(), Name: module.GetName()}, module)
 }
 
@@ -88,7 +86,7 @@ func (r *runnerImpl) createModule(ctx context.Context, name string, kyma *v1alph
 		return err
 	}
 	// create resource if not found
-	if err := r.Client.Create(ctx, module.Unstructured, &client.CreateOptions{}); err != nil {
+	if err := r.Client.Create(ctx, module.Manifest, &client.CreateOptions{}); err != nil {
 		return fmt.Errorf("error creating custom resource of type %s %w", name, err)
 	}
 
@@ -102,7 +100,7 @@ func (r *runnerImpl) updateModule(ctx context.Context, name string, kyma *v1alph
 		return err
 	}
 
-	if err := r.Update(ctx, module.Unstructured, &client.UpdateOptions{}); err != nil {
+	if err := r.Update(ctx, module.Manifest, &client.UpdateOptions{}); err != nil {
 		return fmt.Errorf("error updating custom resource of type %s %w", name, err)
 	}
 
@@ -115,7 +113,7 @@ func (r *runnerImpl) setupModule(module *common.Module, kyma *v1alpha1.Kyma, nam
 
 	if module.GetOwnerReferences() == nil {
 		// set owner reference
-		if err := controllerutil.SetControllerReference(kyma, module.Unstructured, r.Scheme()); err != nil {
+		if err := controllerutil.SetControllerReference(kyma, module.Manifest, r.Scheme()); err != nil {
 			return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w",
 				name, kyma.Name, err)
 		}
@@ -139,8 +137,8 @@ func (r *runnerImpl) updateModuleStatusFromExistingModules(modules common.Module
 		descriptor, _ := module.Template.Spec.GetDescriptor()
 		latestModuleStatus := v1alpha1.ModuleStatus{
 			ModuleName: module.Name,
-			Name:       module.Unstructured.GetName(),
-			Namespace:  module.Unstructured.GetNamespace(),
+			Name:       module.Manifest.GetName(),
+			Namespace:  module.Manifest.GetNamespace(),
 			TemplateInfo: v1alpha1.TemplateInfo{
 				Name:       module.Template.Name,
 				Namespace:  module.Template.Namespace,
@@ -153,7 +151,7 @@ func (r *runnerImpl) updateModuleStatusFromExistingModules(modules common.Module
 				},
 				Version: descriptor.Version,
 			},
-			State: stateFromUnstructured(module.Unstructured),
+			State: stateFromManifest(module.Manifest),
 		}
 		moduleStatus, exists := moduleStatusMap[module.Name]
 		if exists {
@@ -169,15 +167,12 @@ func (r *runnerImpl) updateModuleStatusFromExistingModules(modules common.Module
 	return updateRequired
 }
 
-func stateFromUnstructured(obj *unstructured.Unstructured) v1alpha1.State {
-	state, found, err := unstructured.NestedString(obj.Object, watch.Status, watch.State)
-	if !found {
+func stateFromManifest(obj *manifestV1alpha1.Manifest) v1alpha1.State {
+	state := v1alpha1.State(obj.Status.State)
+	if state == "" {
 		return v1alpha1.StateProcessing
 	}
-	if err == nil && v1alpha1.IsValidState(state) {
-		return v1alpha1.State(state)
-	}
-	return v1alpha1.StateError
+	return state
 }
 
 func (r *runnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context,
@@ -190,12 +185,7 @@ func (r *runnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context,
 	}
 	for i := range moduleStatusArr {
 		moduleStatus := moduleStatusArr[i]
-		module := unstructured.Unstructured{}
-		module.SetGroupVersionKind(schema.GroupVersionKind{
-			Group:   moduleStatus.TemplateInfo.GroupVersionKind.Group,
-			Version: moduleStatus.TemplateInfo.GroupVersionKind.Version,
-			Kind:    moduleStatus.TemplateInfo.GroupVersionKind.Kind,
-		})
+		module := manifestV1alpha1.Manifest{}
 		module.SetName(moduleStatus.Name)
 		module.SetNamespace(moduleStatus.Namespace)
 		err := r.getModule(ctx, &module)

@@ -1,13 +1,15 @@
 package parse
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
-	"github.com/imdario/mergo"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/channel"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
+	"github.com/kyma-project/module-manager/operator/pkg/types"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
@@ -22,7 +24,6 @@ type ModuleConversionSettings struct {
 
 var (
 	ErrTemplateNotFound     = errors.New("template was not found")
-	ErrEmptyRawExtension    = errors.New("raw extension is empty")
 	ErrDefaultConfigParsing = errors.New("defaultConfig could not be parsed")
 )
 
@@ -48,7 +49,7 @@ func templatesToModules(
 	// (since we do not know which module we are dealing with)
 	modules := make(common.Modules)
 
-	var component *unstructured.Unstructured
+	var manifest *manifestV1alpha1.Manifest
 
 	for _, module := range kyma.Spec.Modules {
 		template := templates[module.Name]
@@ -62,33 +63,30 @@ func templatesToModules(
 		template.ModuleTemplate.Spec.Data.SetName(common.CreateModuleName(module.Name, kyma.Name))
 		template.ModuleTemplate.Spec.Data.SetNamespace(kyma.GetNamespace())
 
-		if component, err = NewModule(template.ModuleTemplate, settings.Verification); err != nil {
+		if manifest, err = NewManifestFromTemplate(template.ModuleTemplate, settings.Verification); err != nil {
 			return nil, err
 		}
 		modules[module.Name] = &common.Module{
 			Name:             module.Name,
 			Template:         template.ModuleTemplate,
 			TemplateOutdated: template.Outdated,
-			Unstructured:     component,
+			Manifest:         manifest,
 		}
 	}
 
 	return modules, nil
 }
 
-func NewModule(
+func NewManifestFromTemplate(
 	template *v1alpha1.ModuleTemplate,
 	verification signature.Verification,
-) (*unstructured.Unstructured, error) {
-	component := template.Spec.Data.DeepCopy()
-	resource := template.Spec.Data.DeepCopy()
-	if err := mergeResourceIntoSpec(resource, component); err != nil {
-		return nil, err
-	}
-	if err := mergeTargetIntoSpec(template.Spec.Target, component); err != nil {
-		return nil, err
-	}
-	component.SetKind("Manifest")
+) (*manifestV1alpha1.Manifest, error) {
+	manifest := &manifestV1alpha1.Manifest{}
+	manifest.SetName(template.Spec.Data.GetName())
+	manifest.SetNamespace(template.Spec.Data.GetNamespace())
+	manifest.Spec.Remote = ConvertTargetToRemote(template.Spec.Target)
+	template.Spec.Data.DeepCopyInto(&manifest.Spec.Resource)
+
 	var descriptor *ocm.ComponentDescriptor
 	var layers img.Layers
 	var err error
@@ -105,54 +103,63 @@ func NewModule(
 		return nil, fmt.Errorf("could not parse descriptor: %w", err)
 	}
 
-	if err := translateLayersAndMergeIntoUnstructured(component, layers); err != nil {
+	if err := translateLayersAndMergeIntoManifest(manifest, layers); err != nil {
 		return nil, fmt.Errorf("could not translate layers and merge them: %w", err)
 	}
 
-	return component, nil
+	return manifest, nil
 }
 
-func translateLayersAndMergeIntoUnstructured(
-	object *unstructured.Unstructured, layers img.Layers,
+func translateLayersAndMergeIntoManifest(
+	manifest *manifestV1alpha1.Manifest, layers img.Layers,
 ) error {
 	for _, layer := range layers {
-		if err := translateLayerIntoSpec(object, layer); err != nil {
+		if err := insertLayerIntoManifest(manifest, layer); err != nil {
 			return fmt.Errorf("error in layer %s: %w", layer.LayerName, err)
 		}
 	}
 	return nil
 }
 
-func translateLayerIntoSpec(
-	component *unstructured.Unstructured, layer img.Layer,
+func insertLayerIntoManifest(
+	manifest *manifestV1alpha1.Manifest, layer img.Layer,
 ) error {
-	var merge any
-	var err error
-	if layer.LayerName == img.CRDsLayer || layer.LayerName == img.ConfigLayer {
+	switch layer.LayerName {
+	case img.CRDsLayer:
+		fallthrough
+	case img.ConfigLayer:
 		ociImage, ok := layer.LayerRepresentation.(*img.OCI)
 		if !ok {
 			return fmt.Errorf("%w: not an OCIImage", ErrDefaultConfigParsing)
 		}
-		merge = map[string]any{string(layer.LayerName): ociImage.ToGenericRepresentation()}
-	} else {
-		if merge, err = mergeInstalls(layer); err != nil {
-			return err
+		manifest.Spec.Config = types.ImageSpec{
+			Repo: ociImage.Repo,
+			Name: ociImage.Name,
+			Ref:  ociImage.Ref,
+			Type: img.OCIRepresentationType,
 		}
-	}
-	if err := mergo.Merge(&component.Object, map[string]any{"spec": merge}, mergo.WithAppendSlice); err != nil {
-		return fmt.Errorf("error while merging the layer representation into the spec: %w", err)
+	default:
+		installRaw, err := json.Marshal(layer.ToGenericRepresentation())
+		if err != nil {
+			return fmt.Errorf("error while merging the generic install representation: %w", err)
+		}
+		manifest.Spec.Installs = append(
+			manifest.Spec.Installs, manifestV1alpha1.InstallInfo{
+				Source: runtime.RawExtension{Raw: installRaw},
+				Name:   string(layer.LayerName),
+			})
 	}
 
 	return nil
 }
 
-func mergeInstalls(layer img.Layer) (any, error) {
-	install := map[string]any{"name": string(layer.LayerName)}
-	source := map[string]any{"source": layer.LayerRepresentation.ToGenericRepresentation()}
-
-	if err := mergo.Merge(&install, &source); err != nil {
-		return nil, fmt.Errorf("error while merging the generic install representation: %w", err)
+func ConvertTargetToRemote(remote v1alpha1.Target) bool {
+	var isRemoteInstall bool
+	switch remote {
+	case v1alpha1.TargetControlPlane:
+		isRemoteInstall = false
+	case v1alpha1.TargetRemote:
+		isRemoteInstall = true
 	}
-	merge := map[string]any{string(img.InstallLayer): []map[string]any{install}}
-	return merge, nil
+	return isRemoteInstall
 }
