@@ -6,7 +6,6 @@ require (
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/gardener/component-spec/bindings-go v0.0.70
 	github.com/go-logr/logr v1.2.3
-	github.com/imdario/mergo v0.3.13
 	github.com/kyma-project/module-manager/operator v0.0.0-20221017152046-7690d9d91ca4
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20221006112208-0dd54057307c
 	github.com/onsi/ginkgo/v2 v2.1.6
@@ -82,6 +81,7 @@ require (
 	github.com/gregjones/httpcache v0.0.0-20190611155906-901d90724c79 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/iancoleman/orderedmap v0.2.0 // indirect
+	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/invopop/jsonschema v0.5.0 // indirect
 	github.com/jmoiron/sqlx v1.3.5 // indirect

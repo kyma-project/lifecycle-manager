@@ -209,6 +209,13 @@ spec:
                   module
                 items:
                   properties:
+                    generation:
+                      description: Generation tracks the active Generation of the
+                        Module. In case the tracked Module spec changes, the new Generation
+                        will differ from the one tracked in the cluster and thus trigger
+                        a reconciliation based on the original content of ModuleTemplate
+                      format: int64
+                      type: integer
                     moduleName:
                       description: ModuleName is the unique identifier of the module.
                       type: string
@@ -244,7 +251,7 @@ spec:
                           type: string
                         generation:
                           description: Generation tracks the active Generation of
-                            the ModuleTemplate. In Case it changes, the new Generation
+                            the ModuleTemplate. In case it changes, the new Generation
                             will differ from the one tracked in TemplateInfo and thus
                             trigger a new reconciliation with a newly parser ModuleTemplate
                           format: int64
