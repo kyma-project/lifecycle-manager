@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"time"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
@@ -103,6 +104,7 @@ func (m *SKRChartManager) generateHelmChartArgs(ctx context.Context,
 		return nil, err
 	}
 	return map[string]interface{}{
+		"triggerLabel": time.Now().Format(time.RFC3339),
 		"kcpAddr":               kcpAddr,
 		"resourcesLimitsMemory": m.skrWebhookMemoryLimits,
 		"resourcesLimitsCPU":    m.skrWebhookCPULimits,
