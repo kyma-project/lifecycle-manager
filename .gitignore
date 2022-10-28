@@ -89,3 +89,6 @@ out.txt
 **/bin
 **/go.work
 **/go.work.sum
+
+# ignore .pem key files
+**/*.pem
