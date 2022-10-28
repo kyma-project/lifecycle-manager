@@ -20,13 +20,14 @@ import (
 type Mode string
 
 const (
-	ModeInstall        = Mode("install")
-	ModeUninstall      = Mode("uninstall")
-	customConfigKey    = "modules"
-	ReleaseName        = "skr"
-	IstioSytemNs       = "istio-system"
-	IngressServiceName = "istio-ingressgateway"
-	DeploymentNameTpl  = "%s-webhook"
+	ModeInstall            = Mode("install")
+	ModeUninstall          = Mode("uninstall")
+	customConfigKey        = "modules"
+	ReleaseName            = "skr"
+	IstioSytemNs           = "istio-system"
+	IngressServiceName     = "istio-ingressgateway"
+	DeploymentNameTpl      = "%s-webhook"
+	triggerLabelTimeFormat = "200601021504050700"
 )
 
 var (
