@@ -104,7 +104,7 @@ func (m *SKRChartManager) generateHelmChartArgs(ctx context.Context,
 		return nil, err
 	}
 	return map[string]interface{}{
-		"triggerLabel": time.Now().Format(time.RFC3339),
+		"triggerLabel":          time.Now().Format(triggerLabelTimeFormat),
 		"kcpAddr":               kcpAddr,
 		"resourcesLimitsMemory": m.skrWebhookMemoryLimits,
 		"resourcesLimitsCPU":    m.skrWebhookCPULimits,
