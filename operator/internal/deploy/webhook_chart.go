@@ -7,15 +7,16 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	"github.com/kyma-project/module-manager/operator/pkg/custom"
-	modulelib "github.com/kyma-project/module-manager/operator/pkg/manifest"
-	"github.com/kyma-project/module-manager/operator/pkg/types"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	k8syaml "sigs.k8s.io/yaml"
+
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	"github.com/kyma-project/module-manager/operator/pkg/custom"
+	modulelib "github.com/kyma-project/module-manager/operator/pkg/manifest"
+	"github.com/kyma-project/module-manager/operator/pkg/types"
 )
 
 type Mode string
@@ -126,14 +127,14 @@ func installOrRemoveChartOnSKR(ctx context.Context, deployInfo modulelib.Install
 ) error {
 	logger := logf.FromContext(ctx)
 	if mode == ModeUninstall {
-		uninstalled, err := modulelib.UninstallChart(&logger, deployInfo, nil)
+		uninstalled, err := modulelib.UninstallChart(&logger, deployInfo, nil, nil)
 		if err != nil {
 			return fmt.Errorf("failed to uninstall webhook config: %w", err)
 		}
 		if !uninstalled {
 			return ErrSKRWebhookWasNotRemoved
 		}
-		ready, err := modulelib.ConsistencyCheck(&logger, deployInfo, nil)
+		ready, err := modulelib.ConsistencyCheck(&logger, deployInfo, nil, nil)
 		if err != nil {
 			return fmt.Errorf("failed to verify webhook resources: %w", err)
 		}
@@ -142,14 +143,14 @@ func installOrRemoveChartOnSKR(ctx context.Context, deployInfo modulelib.Install
 		}
 		return nil
 	}
-	installed, err := modulelib.InstallChart(&logger, deployInfo, nil)
+	installed, err := modulelib.InstallChart(&logger, deployInfo, nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to install webhook config: %w", err)
 	}
 	if !installed {
 		return ErrSKRWebhookHasNotBeenInstalled
 	}
-	ready, err := modulelib.ConsistencyCheck(&logger, deployInfo, nil)
+	ready, err := modulelib.ConsistencyCheck(&logger, deployInfo, nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to verify webhook resources: %w", err)
 	}
