@@ -6,10 +6,7 @@ import (
 	"reflect"
 	"strings"
 
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	rbacv1 "k8s.io/api/rbac/v1"
-
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -22,13 +19,13 @@ import (
 )
 
 const (
-	webhookConfigNameTpl  = "%s-webhook"
-	serviceAccountNameTpl = "%s-webhook-sa"
+	WebhookConfigNameTpl  = "%s-webhook"
+	ServiceAccountNameTpl = "%s-webhook-sa"
 	//nolint:gosec
-	secretNameTpl               = "%s-webhook-tls"
-	serviceAndDeploymentNameTpl = "%s-webhook"
-	clusterRoleName             = "kyma-reader"
-	clusterRoleBindingName      = "read-kymas"
+	SecretNameTpl               = "%s-webhook-tls"
+	ServiceAndDeploymentNameTpl = "%s-webhook"
+	ClusterRoleName             = "kyma-reader"
+	ClusterRoleBindingName      = "read-kymas"
 )
 
 type WatchableConfig struct {
@@ -93,62 +90,12 @@ func GetDeployedWebhook(ctx context.Context, restConfig *rest.Config,
 	webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
 	err = remoteClient.Get(ctx, client.ObjectKey{
 		Namespace: metav1.NamespaceDefault,
-		Name:      resolveSKRChartResourceName(webhookConfigNameTpl),
+		Name:      ResolveSKRChartResourceName(WebhookConfigNameTpl),
 	}, webhookConfig)
 	if err != nil {
 		return nil, err
 	}
 	return webhookConfig, nil
-}
-
-func IsChartRemoved(ctx context.Context, k8sClient client.Client) bool {
-	err := k8sClient.Get(ctx, client.ObjectKey{
-		Namespace: metav1.NamespaceDefault,
-		Name:      resolveSKRChartResourceName(webhookConfigNameTpl),
-	}, &admissionv1.ValidatingWebhookConfiguration{})
-	if !apierrors.IsNotFound(err) {
-		return false
-	}
-	err = k8sClient.Get(ctx, client.ObjectKey{
-		Namespace: metav1.NamespaceDefault,
-		Name:      resolveSKRChartResourceName(secretNameTpl),
-	}, &corev1.Secret{})
-	if !apierrors.IsNotFound(err) {
-		return false
-	}
-	err = k8sClient.Get(ctx, client.ObjectKey{
-		Namespace: metav1.NamespaceDefault,
-		Name:      resolveSKRChartResourceName(serviceAndDeploymentNameTpl),
-	}, &appsv1.Deployment{})
-	if !apierrors.IsNotFound(err) {
-		return false
-	}
-	err = k8sClient.Get(ctx, client.ObjectKey{
-		Namespace: metav1.NamespaceDefault,
-		Name:      resolveSKRChartResourceName(serviceAndDeploymentNameTpl),
-	}, &corev1.Service{})
-	if !apierrors.IsNotFound(err) {
-		return false
-	}
-	err = k8sClient.Get(ctx, client.ObjectKey{
-		Namespace: metav1.NamespaceDefault,
-		Name:      resolveSKRChartResourceName(serviceAccountNameTpl),
-	}, &corev1.ServiceAccount{})
-	if !apierrors.IsNotFound(err) {
-		return false
-	}
-	err = k8sClient.Get(ctx, client.ObjectKey{
-		Namespace: metav1.NamespaceDefault,
-		Name:      clusterRoleName,
-	}, &rbacv1.ClusterRole{})
-	if !apierrors.IsNotFound(err) {
-		return false
-	}
-	err = k8sClient.Get(ctx, client.ObjectKey{
-		Namespace: metav1.NamespaceDefault,
-		Name:      clusterRoleBindingName,
-	}, &rbacv1.ClusterRoleBinding{})
-	return apierrors.IsNotFound(err)
 }
 
 func verifyWebhookConfig(
@@ -195,7 +142,7 @@ func updateWebhookConfigOrInstallSKRChart(ctx context.Context, chartPath string,
 	webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
 	err = remoteClient.Get(ctx, client.ObjectKey{
 		Namespace: metav1.NamespaceDefault,
-		Name:      resolveSKRChartResourceName(webhookConfigNameTpl),
+		Name:      ResolveSKRChartResourceName(WebhookConfigNameTpl),
 	}, webhookConfig)
 	if client.IgnoreNotFound(err) != nil {
 		return err
@@ -267,7 +214,7 @@ func removeWebhookConfigOrUninstallChart(ctx context.Context, chartPath string,
 	webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
 	err = remoteClient.Get(ctx, client.ObjectKey{
 		Namespace: metav1.NamespaceDefault,
-		Name:      resolveSKRChartResourceName(webhookConfigNameTpl),
+		Name:      ResolveSKRChartResourceName(WebhookConfigNameTpl),
 	}, webhookConfig)
 	if client.IgnoreNotFound(err) != nil {
 		return err
@@ -325,6 +272,6 @@ func getSKRRestConfigs(ctx context.Context, reader client.Reader, inClusterCfg *
 	return restCfgMap, nil
 }
 
-func resolveSKRChartResourceName(resourceNameTpl string) string {
+func ResolveSKRChartResourceName(resourceNameTpl string) string {
 	return fmt.Sprintf(resourceNameTpl, ReleaseName)
 }

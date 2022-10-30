@@ -1,13 +1,17 @@
 package controllers_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"os"
 
 	"github.com/onsi/gomega/types"
+	admissionv1 "k8s.io/api/admissionregistration/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -154,10 +158,6 @@ func createWatcherCR(moduleName string, statusOnly bool) *v1alpha1.Watcher {
 		field = v1alpha1.StatusField
 	}
 	return &v1alpha1.Watcher{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       string(v1alpha1.WatcherKind),
-			APIVersion: v1alpha1.GroupVersion.String(),
-		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-sample", moduleName),
 			Namespace: metav1.NamespaceDefault,
@@ -192,6 +192,58 @@ func isCrDeletionFinished(watcherObjKeys ...client.ObjectKey) func(g Gomega) boo
 	}
 	return func(g Gomega) bool {
 		err := controlPlaneClient.Get(ctx, watcherObjKeys[0], &v1alpha1.Watcher{})
+		return apierrors.IsNotFound(err)
+	}
+}
+
+func isChartRemoved(ctx context.Context, k8sClient client.Client) func(g Gomega) bool {
+	return func(g Gomega) bool {
+		err := k8sClient.Get(ctx, client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookConfigNameTpl),
+		}, &admissionv1.ValidatingWebhookConfiguration{})
+		if !apierrors.IsNotFound(err) {
+			return false
+		}
+		err = k8sClient.Get(ctx, client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      deploy.ResolveSKRChartResourceName(deploy.SecretNameTpl),
+		}, &corev1.Secret{})
+		if !apierrors.IsNotFound(err) {
+			return false
+		}
+		err = k8sClient.Get(ctx, client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      deploy.ResolveSKRChartResourceName(deploy.ServiceAndDeploymentNameTpl),
+		}, &appsv1.Deployment{})
+		if !apierrors.IsNotFound(err) {
+			return false
+		}
+		err = k8sClient.Get(ctx, client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      deploy.ResolveSKRChartResourceName(deploy.ServiceAndDeploymentNameTpl),
+		}, &corev1.Service{})
+		if !apierrors.IsNotFound(err) {
+			return false
+		}
+		err = k8sClient.Get(ctx, client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      deploy.ResolveSKRChartResourceName(deploy.ServiceAccountNameTpl),
+		}, &corev1.ServiceAccount{})
+		if !apierrors.IsNotFound(err) {
+			return false
+		}
+		err = k8sClient.Get(ctx, client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      deploy.ClusterRoleName,
+		}, &rbacv1.ClusterRole{})
+		if !apierrors.IsNotFound(err) {
+			return false
+		}
+		err = k8sClient.Get(ctx, client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      deploy.ClusterRoleBindingName,
+		}, &rbacv1.ClusterRoleBinding{})
 		return apierrors.IsNotFound(err)
 	}
 }

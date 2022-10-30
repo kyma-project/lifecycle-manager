@@ -3,10 +3,15 @@ package deploy_test
 import (
 	"context"
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	admissionv1 "k8s.io/api/admissionregistration/v1"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -18,6 +23,8 @@ import (
 
 const (
 	webhookChartPath = "../charts/skr-webhook"
+	timeout          = time.Second * 10
+	interval         = time.Millisecond * 250
 )
 
 func createLoadBalancer() error {
@@ -132,7 +139,7 @@ var _ = Describe("deploy watcher", Ordered, func() {
 	It("removes watcher helm chart from SKR cluster when last cr is deleted", func() {
 		err := deploy.RemoveWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, "500Mi", "1")
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(deploy.IsChartRemoved(ctx, k8sClient)).To(BeTrue())
+		Eventually(isChartRemoved(ctx, k8sClient), timeout, interval).Should(BeTrue())
 	})
 })
 
@@ -161,5 +168,57 @@ func createKymaCR(kymaName string) *v1alpha1.Kyma {
 				Strategy: v1alpha1.SyncStrategyLocalClient,
 			},
 		},
+	}
+}
+
+func isChartRemoved(ctx context.Context, k8sClient client.Client) func(g Gomega) bool {
+	return func(g Gomega) bool {
+		err := k8sClient.Get(ctx, client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookConfigNameTpl),
+		}, &admissionv1.ValidatingWebhookConfiguration{})
+		if !apierrors.IsNotFound(err) {
+			return false
+		}
+		err = k8sClient.Get(ctx, client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      deploy.ResolveSKRChartResourceName(deploy.SecretNameTpl),
+		}, &corev1.Secret{})
+		if !apierrors.IsNotFound(err) {
+			return false
+		}
+		err = k8sClient.Get(ctx, client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      deploy.ResolveSKRChartResourceName(deploy.ServiceAndDeploymentNameTpl),
+		}, &appsv1.Deployment{})
+		if !apierrors.IsNotFound(err) {
+			return false
+		}
+		err = k8sClient.Get(ctx, client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      deploy.ResolveSKRChartResourceName(deploy.ServiceAndDeploymentNameTpl),
+		}, &corev1.Service{})
+		if !apierrors.IsNotFound(err) {
+			return false
+		}
+		err = k8sClient.Get(ctx, client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      deploy.ResolveSKRChartResourceName(deploy.ServiceAccountNameTpl),
+		}, &corev1.ServiceAccount{})
+		if !apierrors.IsNotFound(err) {
+			return false
+		}
+		err = k8sClient.Get(ctx, client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      deploy.ClusterRoleName,
+		}, &rbacv1.ClusterRole{})
+		if !apierrors.IsNotFound(err) {
+			return false
+		}
+		err = k8sClient.Get(ctx, client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      deploy.ClusterRoleBindingName,
+		}, &rbacv1.ClusterRoleBinding{})
+		return apierrors.IsNotFound(err)
 	}
 }

@@ -66,7 +66,7 @@ func allCRsDeleted() func(customIstioClient *custom.IstioClient) {
 		// verify
 		Eventually(isCrDeletionFinished(), timeout, interval).Should(BeTrue())
 		verifyVsRoutes(nil, customIstioClient, BeTrue())
-		Expect(deploy.IsChartRemoved(ctx, controlPlaneClient)).To(BeTrue())
+		Eventually(isChartRemoved(ctx, controlPlaneClient), timeout, interval).Should(BeTrue())
 	}
 }
 
