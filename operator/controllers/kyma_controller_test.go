@@ -23,8 +23,8 @@ var _ = Describe("Kyma with no ModuleTemplate", Ordered, func() {
 
 	It("Should result in a ready state immediately", func() {
 		By("having transitioned the CR State to Ready as there are no modules")
-		Eventually(testhelper.IsKymaInState(ctx, controlPlaneClient, kyma.GetName(), v1alpha1.StateReady),
-			timeout, interval).Should(BeTrue())
+		Eventually(KymaInState(kyma.GetName(), v1alpha1.StateReady),
+			timeout, interval).Should(Succeed())
 	})
 })
 

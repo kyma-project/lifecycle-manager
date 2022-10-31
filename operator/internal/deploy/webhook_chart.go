@@ -52,13 +52,13 @@ func (m *SKRChartManager) IsSkrChartRemoved(ctx context.Context, kyma *v1alpha1.
 	}
 	err = skrClient.Get(ctx, client.ObjectKey{
 		Namespace: metav1.NamespaceDefault,
-		Name:      ResolveSKRChartResourceName(DeploymentNameTpl),
+		Name:      ResolveSKRChartResourceName(),
 	}, &appsv1.Deployment{})
 	return apierrors.IsNotFound(err)
 }
 
-func ResolveSKRChartResourceName(resourceNameTpl string) string {
-	return fmt.Sprintf(resourceNameTpl, ReleaseName)
+func ResolveSKRChartResourceName() string {
+	return fmt.Sprintf(DeploymentNameTpl, ReleaseName)
 }
 
 func prepareInstallInfo(chartPath, releaseName string, restConfig *rest.Config, restClient client.Client,

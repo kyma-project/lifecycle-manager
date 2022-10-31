@@ -15,12 +15,6 @@ var (
 	ErrModuleStatusNotInReady = errors.New("moduleStatus not in ready state")
 )
 
-func noCondition() func() error {
-	return func() error {
-		return nil
-	}
-}
-
 func expectCorrectNumberOfmoduleStatus(kymaName string) func() error {
 	return func() error {
 		createdKyma, err := testhelper.GetKyma(ctx, controlPlaneClient, kymaName)
@@ -90,7 +84,7 @@ var _ = Describe("Test Kyma CR", Ordered, func() {
 			Eventually(expectedBehavior, timeout, interval).Should(Succeed())
 		},
 		Entry("When deploy module, expect number of ModuleStatus matches spec.modules",
-			noCondition(), expectCorrectNumberOfmoduleStatus(kyma.Name)),
+			testhelper.NoCondition(), expectCorrectNumberOfmoduleStatus(kyma.Name)),
 		Entry("When module state become ready, expect ModuleStatus state become ready",
 			updateAllModuleState(kyma.Name, v1alpha1.StateReady), expectmoduleStatusStateBecomeReady(kyma.Name)),
 		Entry("When remove module in spec, expect number of ModuleStatus matches spec.modules",

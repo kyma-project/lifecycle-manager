@@ -52,7 +52,7 @@ var _ = Describe("Switching of a Channel leading to an Upgrade", Ordered, func()
 		},
 		Entry(
 			"When kyma is deployed in stable channel, expect ModuleStatus to be in stable channel",
-			noCondition(),
+			testhelper.NoCondition(),
 			expectEveryModuleStatusToHaveChannel(kyma.Name, v1alpha1.ChannelStable),
 		),
 		Entry(

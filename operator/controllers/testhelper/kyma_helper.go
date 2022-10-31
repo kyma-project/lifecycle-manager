@@ -2,6 +2,7 @@ package testhelper
 
 import (
 	"context"
+	"errors"
 	"math/rand"
 
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/test"
@@ -20,6 +21,8 @@ const (
 	randomStringLength = 8
 	letterBytes        = "abcdefghijklmnopqrstuvwxyz"
 )
+
+var ErrUnexpectedKymaState = errors.New("Unexpected Kyma CR state")
 
 func NewTestKyma(name string) *v1alpha1.Kyma {
 	return &v1alpha1.Kyma{
@@ -61,8 +64,9 @@ func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1alpha1.Kyma) {
 	for _, module := range kyma.Spec.Modules {
 		template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(kcpClient.Delete(ctx, template)).To(Succeed())
+		Expect(err).Should(Succeed())
+		err = kcpClient.Delete(ctx, template)
+		Expect(client.IgnoreNotFound(err)).Should(Succeed())
 	}
 }
 
@@ -78,12 +82,23 @@ func GetKyma(ctx context.Context, testClient client.Client, kymaName string) (*v
 	return kymaInCluster, nil
 }
 
-func IsKymaInState(ctx context.Context, kcpClient client.Client, kymaName string, state v1alpha1.State) func() bool {
-	return func() bool {
-		kymaFromCluster, err := GetKyma(ctx, kcpClient, kymaName)
-		if err != nil || kymaFromCluster.Status.State != state {
-			return false
-		}
-		return true
+func DeleteKyma(ctx context.Context, testClient client.Client, kyma *v1alpha1.Kyma) error {
+	return testClient.Delete(ctx, kyma)
+}
+
+func KymaInState(ctx context.Context, kcpClient client.Client, kymaName string, state v1alpha1.State) error {
+	kymaFromCluster, err := GetKyma(ctx, kcpClient, kymaName)
+	if err != nil {
+		return err
+	}
+	if kymaFromCluster.Status.State != state {
+		return ErrUnexpectedKymaState
+	}
+	return nil
+}
+
+func NoCondition() func() error {
+	return func() error {
+		return nil
 	}
 }

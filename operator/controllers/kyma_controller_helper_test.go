@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strconv"
 
-
 	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
@@ -54,6 +53,12 @@ func GetKymaState(kymaName string) func() string {
 			return ""
 		}
 		return string(createdKyma.Status.State)
+	}
+}
+
+func KymaInState(kymaName string, expectState v1alpha1.State) func() error {
+	return func() error {
+		return testhelper.KymaInState(ctx, controlPlaneClient, kymaName, expectState)
 	}
 }
 

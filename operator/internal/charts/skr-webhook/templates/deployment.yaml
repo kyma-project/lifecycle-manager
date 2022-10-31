@@ -30,7 +30,7 @@ spec:
     metadata:
       labels:
         app: skr-webhook
-        triggerLabel: {{ .Values.triggerLabel }}
+        triggerLabel: "{{ .Values.triggerLabel }}"
     spec:
       serviceAccountName: {{.Release.Name}}-webhook-sa
       containers:
@@ -90,7 +90,7 @@ spec:
       volumes:
       - name: ssl
         secret:
-          secretName: {{.Release.Name}}-webhook-tls
+          secretName: {{.Release.Name}}-webhook
           items:
           - key: tls.key
             path: tls.key
