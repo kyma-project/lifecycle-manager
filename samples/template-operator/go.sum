@@ -626,6 +626,8 @@ github.com/kyma-project/module-manager/operator v0.0.0-20221019063139-49a0297f27
 github.com/kyma-project/module-manager/operator v0.0.0-20221019063139-49a0297f2770/go.mod h1:Xf8fuJcSQcvvmf/aD6h+3k2et6sEywqfjNWl6uTDgv0=
 github.com/kyma-project/module-manager/operator v0.0.0-20221026074920-7cb3b8f6f21b h1:WOT41TxUA6I0pinw3snhDZxZ1aYatpCgs7ShNcsi8bQ=
 github.com/kyma-project/module-manager/operator v0.0.0-20221026074920-7cb3b8f6f21b/go.mod h1:N0kmS8pTNXq+7/Bdr6vfogmw03H+uYMCauTQ6U6+kA0=
+github.com/kyma-project/module-manager/operator v0.0.0-20221031152637-c1668e8dcd6c h1:lDNM+pZBfum9NWEz2dpy/VrvwZax+QgIB2gm2x1Lf+A=
+github.com/kyma-project/module-manager/operator v0.0.0-20221031152637-c1668e8dcd6c/go.mod h1:N0kmS8pTNXq+7/Bdr6vfogmw03H+uYMCauTQ6U6+kA0=
 github.com/kyma-project/runtime-watcher/listener v0.0.0-20221006112208-0dd54057307c h1:x6Kmcx9+TnhXKEhbtJR+/VO6A3a6PeENaYCwpQCHw2A=
 github.com/kyma-project/runtime-watcher/listener v0.0.0-20221006112208-0dd54057307c/go.mod h1:VmhxfJ8LfnkIUsN/+nbFVQaotq0WzRayrJ4Nhqojv8g=
 github.com/kyoh86/exportloopref v0.1.8/go.mod h1:1tUcJeiioIs7VWe5gcOObrux3lb66+sBqGZrRkMwPgg=

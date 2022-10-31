@@ -43,18 +43,6 @@ var (
 	ErrLoadBalancerIPIsNotAssigned   = errors.New("load balancer service external ip is not assigned")
 )
 
-type HelmClientCache struct{}
-
-func (h *HelmClientCache) Get(key client.ObjectKey) moduleLibTypes.HelmClient {
-	return nil
-}
-
-func (h *HelmClientCache) Set(key client.ObjectKey, helmClient moduleLibTypes.HelmClient) {
-}
-
-func (h *HelmClientCache) Delete(key client.ObjectKey) {
-}
-
 func installSKRWebhook(ctx context.Context, chartPath, releaseName string, obj *v1alpha1.Watcher,
 	restConfig *rest.Config, kcpClient client.Client, skrWebhookMemoryLimits, skrWebhookCPULimits string,
 ) error {
@@ -139,7 +127,7 @@ func installOrRemoveChartOnSKR(ctx context.Context, deployInfo moduleLib.Install
 ) error {
 	logger := logf.FromContext(ctx)
 	if mode == ModeUninstall {
-		uninstalled, err := moduleLib.UninstallChart(&logger, deployInfo, nil, &HelmClientCache{})
+		uninstalled, err := moduleLib.UninstallChart(&logger, deployInfo, nil, nil)
 		if err != nil {
 			return fmt.Errorf("failed to uninstall webhook config: %w", err)
 		}
@@ -148,14 +136,14 @@ func installOrRemoveChartOnSKR(ctx context.Context, deployInfo moduleLib.Install
 		}
 		return nil
 	}
-	installed, err := moduleLib.InstallChart(&logger, deployInfo, nil, &HelmClientCache{})
+	installed, err := moduleLib.InstallChart(&logger, deployInfo, nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to install webhook config: %w", err)
 	}
 	if !installed {
 		return ErrSKRWebhookHasNotBeenInstalled
 	}
-	ready, err := moduleLib.ConsistencyCheck(&logger, deployInfo, nil, &HelmClientCache{})
+	ready, err := moduleLib.ConsistencyCheck(&logger, deployInfo, nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to verify webhook resources: %w", err)
 	}

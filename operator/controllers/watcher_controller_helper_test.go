@@ -196,8 +196,8 @@ func isCrDeletionFinished(watcherObjKeys ...client.ObjectKey) func(g Gomega) boo
 	}
 }
 
-func isChartRemoved(ctx context.Context, k8sClient client.Client) func(g Gomega) bool {
-	return func(g Gomega) bool {
+func isChartRemoved(ctx context.Context, k8sClient client.Client) func() bool {
+	return func() bool {
 		err := k8sClient.Get(ctx, client.ObjectKey{
 			Namespace: metav1.NamespaceDefault,
 			Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookConfigNameTpl),
