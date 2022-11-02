@@ -14,7 +14,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
-	"github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
+	. "github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 )
 
 const webhookChartPath = "../charts/skr-webhook"
@@ -62,22 +62,22 @@ var _ = Describe("deploy watcher", Ordered, func() {
 	kymaSample := &v1alpha1.Kyma{}
 	BeforeAll(func() {
 		kymaName := "kyma-sample"
-		kymaSample = testutils.CreateKymaCR(kymaName)
+		kymaSample = CreateKymaCR(kymaName)
 		Expect(createIstioNs()).To(Succeed())
 		Expect(k8sClient.Create(ctx, kymaSample)).To(Succeed())
-		Expect(testutils.CreateLoadBalancer(ctx, k8sClient)).To(Succeed())
+		Expect(CreateLoadBalancer(ctx, k8sClient)).To(Succeed())
 	})
 
 	BeforeEach(func() {
 		// clean rendered manifest
-		Expect(os.RemoveAll(filepath.Join(webhookChartPath, testutils.RenderedManifestDir))).ShouldNot(HaveOccurred())
+		Expect(os.RemoveAll(filepath.Join(webhookChartPath, RenderedManifestDir))).ShouldNot(HaveOccurred())
 	})
 
 	AfterAll(func() {
 		// clean up kyma CR
 		Expect(k8sClient.Delete(ctx, kymaSample)).To(Succeed())
 		// clean rendered manifest
-		Expect(os.RemoveAll(filepath.Join(webhookChartPath, testutils.RenderedManifestDir))).ShouldNot(HaveOccurred())
+		Expect(os.RemoveAll(filepath.Join(webhookChartPath, RenderedManifestDir))).ShouldNot(HaveOccurred())
 	})
 
 	It("deploys watcher helm chart with correct webhook config", func() {
@@ -100,6 +100,6 @@ var _ = Describe("deploy watcher", Ordered, func() {
 	It("removes watcher helm chart from SKR cluster when last cr is deleted", func() {
 		err := deploy.RemoveWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, "500Mi", "1")
 		Expect(err).ShouldNot(HaveOccurred())
-		Eventually(testutils.IsChartRemoved(ctx, k8sClient), testutils.Timeout, testutils.Interval).Should(BeTrue())
+		Eventually(IsChartRemoved(ctx, k8sClient), Timeout, Interval).Should(BeTrue())
 	})
 })

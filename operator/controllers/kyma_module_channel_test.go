@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
+	. "github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/test"
 )
 
@@ -33,22 +33,22 @@ var _ = Describe("Switching of a Channel leading to an Upgrade", Ordered, func()
 	It(
 		"should create kyma with standard modules in stable normally", func() {
 			Expect(controlPlaneClient.Create(ctx, kyma)).ToNot(HaveOccurred())
-			Eventually(GetKymaState(kyma.Name), 5*time.Second, testutils.Interval).
+			Eventually(GetKymaState(kyma.Name), 5*time.Second, Interval).
 				Should(BeEquivalentTo(string(v1alpha1.StateProcessing)))
 			for _, module := range kyma.Spec.Modules {
 				Eventually(
 					UpdateModuleState(kyma.GetName(), module.Name, v1alpha1.StateReady), 20*time.Second,
-					testutils.Interval).Should(Succeed())
+					Interval).Should(Succeed())
 			}
-			Eventually(GetKymaState(kyma.Name), 5*time.Second, testutils.Interval).
+			Eventually(GetKymaState(kyma.Name), 5*time.Second, Interval).
 				Should(BeEquivalentTo(string(v1alpha1.StateReady)))
 		},
 	)
 
 	DescribeTable(
 		"Test Channel Status", func(givenCondition func() error, expectedBehavior func() error) {
-			Eventually(givenCondition, testutils.Timeout, testutils.Interval).Should(Succeed())
-			Eventually(expectedBehavior, testutils.Timeout, testutils.Interval).Should(Succeed())
+			Eventually(givenCondition, Timeout, Interval).Should(Succeed())
+			Eventually(expectedBehavior, Timeout, Interval).Should(Succeed())
 		},
 		Entry(
 			"When kyma is deployed in stable channel, expect ModuleStatus to be in stable channel",
@@ -70,7 +70,7 @@ var _ = Describe("Switching of a Channel leading to an Upgrade", Ordered, func()
 	It(
 		"should lead to kyma being ready in the end of the channel switch", func() {
 			By("having updated the Kyma CR state to ready")
-			Eventually(GetKymaState(kyma.Name), 20*time.Second, testutils.Interval).
+			Eventually(GetKymaState(kyma.Name), 20*time.Second, Interval).
 				Should(BeEquivalentTo(string(v1alpha1.StateReady)))
 		},
 	)
