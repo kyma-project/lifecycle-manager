@@ -3,7 +3,7 @@ module github.com/kyma-project/lifecycle-manager/samples/template-operator
 go 1.19
 
 require (
-	github.com/kyma-project/module-manager/operator v0.0.0-20221026074920-7cb3b8f6f21b
+	github.com/kyma-project/module-manager/operator v0.0.0-20221031152637-c1668e8dcd6c
 	github.com/onsi/ginkgo/v2 v2.1.6
 	github.com/onsi/gomega v1.20.1
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9

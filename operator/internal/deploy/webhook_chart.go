@@ -7,15 +7,15 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	"github.com/kyma-project/module-manager/operator/pkg/custom"
-	modulelib "github.com/kyma-project/module-manager/operator/pkg/manifest"
-	"github.com/kyma-project/module-manager/operator/pkg/types"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	k8syaml "sigs.k8s.io/yaml"
+
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	moduleLib "github.com/kyma-project/module-manager/operator/pkg/manifest"
+	moduleLibTypes "github.com/kyma-project/module-manager/operator/pkg/types"
 )
 
 type Mode string
@@ -54,7 +54,7 @@ func installSKRWebhook(ctx context.Context, chartPath, releaseName string, obj *
 	if err != nil {
 		return err
 	}
-	skrWatcherInstallInfo := prepareInstallInfo(chartPath, releaseName, restConfig, restClient, argsVals)
+	skrWatcherInstallInfo := prepareInstallInfo(ctx, chartPath, releaseName, restConfig, restClient, argsVals)
 	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeInstall)
 }
 
@@ -70,22 +70,23 @@ func removeSKRWebhook(ctx context.Context, chartPath, releaseName string,
 	if err != nil {
 		return err
 	}
-	skrWatcherInstallInfo := prepareInstallInfo(chartPath, releaseName, restConfig, restClient, argsVals)
+	skrWatcherInstallInfo := prepareInstallInfo(ctx, chartPath, releaseName, restConfig, restClient, argsVals)
 	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeUninstall)
 }
 
-func prepareInstallInfo(chartPath, releaseName string, restConfig *rest.Config, restClient client.Client,
-	argsVals map[string]interface{},
-) modulelib.InstallInfo {
-	return modulelib.InstallInfo{
-		ChartInfo: &modulelib.ChartInfo{
+func prepareInstallInfo(ctx context.Context, chartPath, releaseName string, restConfig *rest.Config,
+	restClient client.Client, argsVals map[string]interface{},
+) moduleLib.InstallInfo {
+	return moduleLib.InstallInfo{
+		Ctx: ctx,
+		ChartInfo: &moduleLib.ChartInfo{
 			ChartPath:   chartPath,
 			ReleaseName: releaseName,
-			Flags: types.ChartFlags{
+			Flags: moduleLibTypes.ChartFlags{
 				SetFlags: argsVals,
 			},
 		},
-		ClusterInfo: custom.ClusterInfo{
+		ClusterInfo: moduleLibTypes.ClusterInfo{
 			Client: restClient,
 			Config: restConfig,
 		},
@@ -122,34 +123,27 @@ func generateWatchableConfigForCR(obj *v1alpha1.Watcher) map[string]WatchableCon
 	}
 }
 
-func installOrRemoveChartOnSKR(ctx context.Context, deployInfo modulelib.InstallInfo, mode Mode,
+func installOrRemoveChartOnSKR(ctx context.Context, deployInfo moduleLib.InstallInfo, mode Mode,
 ) error {
 	logger := logf.FromContext(ctx)
 	if mode == ModeUninstall {
-		uninstalled, err := modulelib.UninstallChart(&logger, deployInfo, nil)
+		uninstalled, err := moduleLib.UninstallChart(&logger, deployInfo, nil, nil)
 		if err != nil {
 			return fmt.Errorf("failed to uninstall webhook config: %w", err)
 		}
 		if !uninstalled {
 			return ErrSKRWebhookWasNotRemoved
 		}
-		ready, err := modulelib.ConsistencyCheck(&logger, deployInfo, nil)
-		if err != nil {
-			return fmt.Errorf("failed to verify webhook resources: %w", err)
-		}
-		if ready {
-			return ErrSKRWebhookWasNotRemoved
-		}
 		return nil
 	}
-	installed, err := modulelib.InstallChart(&logger, deployInfo, nil)
+	installed, err := moduleLib.InstallChart(&logger, deployInfo, nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to install webhook config: %w", err)
 	}
 	if !installed {
 		return ErrSKRWebhookHasNotBeenInstalled
 	}
-	ready, err := modulelib.ConsistencyCheck(&logger, deployInfo, nil)
+	ready, err := moduleLib.ConsistencyCheck(&logger, deployInfo, nil, nil)
 	if err != nil {
 		return fmt.Errorf("failed to verify webhook resources: %w", err)
 	}

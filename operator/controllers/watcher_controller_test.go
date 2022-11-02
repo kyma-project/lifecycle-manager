@@ -1,9 +1,13 @@
 package controllers_test
 
 import (
+	"os"
+	"path/filepath"
+
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/custom"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
+	. "github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -25,7 +29,7 @@ func cRSpecsUpdates() func(customIstioClient *custom.IstioClient) {
 
 			// verify
 			Eventually(watcherCRState(client.ObjectKeyFromObject(&watcherList.Items[idx])),
-				timeout, interval).Should(Equal(v1alpha1.WatcherStateReady))
+				Timeout, Interval).Should(Equal(v1alpha1.WatcherStateReady))
 			verifyVsRoutes(&watcherList.Items[idx], customIstioClient, BeTrue())
 			webhookCfg, err := deploy.GetDeployedWebhook(ctx, cfg)
 			Expect(err).NotTo(HaveOccurred())
@@ -44,8 +48,7 @@ func oneCRDeleted() func(customIstioClient *custom.IstioClient) {
 		watcherCR := watcherList.Items[watcherCRCount-1]
 		Expect(controlPlaneClient.Delete(ctx, &watcherCR)).To(Succeed())
 
-		Eventually(isCrDeletionFinished(client.ObjectKeyFromObject(&watcherCR)), timeout, interval).
-			Should(BeTrue())
+		Eventually(isCrDeletionFinished(client.ObjectKeyFromObject(&watcherCR)), Timeout, Interval).Should(BeTrue())
 		verifyVsRoutes(&watcherCR, customIstioClient, BeFalse())
 		webhookCfg, err := deploy.GetDeployedWebhook(ctx, cfg)
 		Expect(err).NotTo(HaveOccurred())
@@ -64,9 +67,9 @@ func allCRsDeleted() func(customIstioClient *custom.IstioClient) {
 			client.InNamespace(metav1.NamespaceDefault))).To(Succeed())
 
 		// verify
-		Eventually(isCrDeletionFinished(), timeout, interval).Should(BeTrue())
+		Eventually(isCrDeletionFinished(), Timeout, Interval).Should(BeTrue())
 		verifyVsRoutes(nil, customIstioClient, BeTrue())
-		Expect(deploy.IsChartRemoved(ctx, controlPlaneClient)).To(BeTrue())
+		Eventually(IsChartRemoved(ctx, controlPlaneClient), Timeout, Interval).Should(BeTrue())
 	}
 }
 
@@ -78,7 +81,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	BeforeAll(func() {
 		// create kyma resource
 		kymaName := "kyma-sample"
-		kymaSample = createKymaCR(kymaName)
+		kymaSample = CreateKymaCR(kymaName)
 
 		// create istio resources
 		customIstioClient, err = custom.NewVersionedIstioClient(cfg)
@@ -90,7 +93,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 			Expect(controlPlaneClient.Create(ctx, istioResource)).To(Succeed())
 		}
 
-		Expect(createLoadBalancer()).To(Succeed())
+		Expect(CreateLoadBalancer(ctx, controlPlaneClient)).To(Succeed())
 	})
 
 	AfterAll(func() {
@@ -100,16 +103,19 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 		for _, istioResource := range istioResources {
 			Expect(controlPlaneClient.Delete(ctx, istioResource)).To(Succeed())
 		}
+		// clean rendered manifest
+		Expect(os.RemoveAll(filepath.Join(webhookChartPath, RenderedManifestDir))).ShouldNot(HaveOccurred())
 	})
 
 	BeforeEach(func() {
+		// clean rendered manifest
+		Expect(os.RemoveAll(filepath.Join(webhookChartPath, RenderedManifestDir))).ShouldNot(HaveOccurred())
 		// create WatcherCRs
 		for idx, component := range centralComponents {
 			watcherCR := createWatcherCR(component, isEven(idx))
 			Expect(controlPlaneClient.Create(ctx, watcherCR)).To(Succeed())
 			crObjectKey := client.ObjectKeyFromObject(watcherCR)
-			Eventually(watcherCRState(crObjectKey), timeout, interval).
-				Should(Equal(v1alpha1.WatcherStateReady))
+			Eventually(watcherCRState(crObjectKey), Timeout, Interval).Should(Equal(v1alpha1.WatcherStateReady))
 
 			// verify
 			verifyVsRoutes(watcherCR, customIstioClient, BeTrue())
@@ -127,7 +133,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 			Expect(controlPlaneClient.Delete(ctx, &watcherList.Items[idx])).To(Succeed())
 		}
 		// verify deletion
-		Eventually(isCrDeletionFinished(), timeout, interval).Should(BeTrue())
+		Eventually(isCrDeletionFinished(), Timeout, Interval).Should(BeTrue())
 	})
 
 	DescribeTable("given watcherCR reconcile loop",

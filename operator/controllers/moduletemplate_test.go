@@ -4,6 +4,8 @@ import (
 	"errors"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	. "github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -68,8 +70,8 @@ var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
 
 	DescribeTable("Test ModuleTemplate.Spec.Target",
 		func(givenCondition func() error, expectedBehavior func() error) {
-			Eventually(givenCondition, timeout, interval).Should(Succeed())
-			Eventually(expectedBehavior, timeout, interval).Should(Succeed())
+			Eventually(givenCondition, Timeout, Interval).Should(Succeed())
+			Eventually(expectedBehavior, Timeout, Interval).Should(Succeed())
 		},
 		Entry("When ModuleTemplate.Spec.Target not exist deployed, expect Manifest.Spec.remote=false",
 			noCondition(),

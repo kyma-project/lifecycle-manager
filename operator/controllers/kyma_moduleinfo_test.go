@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	. "github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 )
 
 var (
@@ -85,8 +87,8 @@ var _ = Describe("Test Kyma CR", Ordered, func() {
 
 	DescribeTable("Test ModuleStatus",
 		func(givenCondition func() error, expectedBehavior func() error) {
-			Eventually(givenCondition, timeout, interval).Should(Succeed())
-			Eventually(expectedBehavior, timeout, interval).Should(Succeed())
+			Eventually(givenCondition, Timeout, Interval).Should(Succeed())
+			Eventually(expectedBehavior, Timeout, Interval).Should(Succeed())
 		},
 		Entry("When deploy module, expect number of ModuleStatus matches spec.modules",
 			noCondition(), expectCorrectNumberOfmoduleStatus(kyma.Name)),
