@@ -302,9 +302,11 @@ func setupKymaReconciler(
 	intervals controllers.RequeueIntervals,
 	options controller.Options,
 ) {
-	fileInfo, err := os.Stat(flagVar.skrWatcherPath)
-	if err != nil || !fileInfo.IsDir() {
-		setupLog.Error(err, "failed to read local skr chart")
+	if flagVar.enableKcpWatcher {
+		fileInfo, err := os.Stat(flagVar.skrWatcherPath)
+		if err != nil || !fileInfo.IsDir() {
+			setupLog.Error(err, "failed to read local skr chart")
+		}
 	}
 	skrChartConfig := &controllers.SkrChartConfig{
 		WebhookChartPath:             flagVar.skrWatcherPath,
@@ -335,10 +337,6 @@ func setupKcpWatcherReconciler(
 	intervals controllers.RequeueIntervals,
 	options controller.Options,
 ) {
-	fileInfo, err := os.Stat(flagVar.skrWatcherPath)
-	if err != nil || !fileInfo.IsDir() {
-		setupLog.Error(err, "failed to read local skr chart")
-	}
 	// set MaxConcurrentReconciles to 1 to avoid concurrent writes on
 	// the Istio virtual service resource the WatcherReconciler is managing
 	options.MaxConcurrentReconciles = 1

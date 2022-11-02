@@ -42,7 +42,7 @@ type WatchableConfig struct {
 	StatusOnly bool              `json:"statusOnly"`
 }
 
-func (m *SKRChartManager) IsSkrChartRemoved(ctx context.Context, kyma *v1alpha1.Kyma,
+func (m *SKRWebhookChartManager) IsSkrChartRemoved(ctx context.Context, kyma *v1alpha1.Kyma,
 	remoteClientCache *remote.ClientCache, kcpClient client.Client,
 ) bool {
 	skrClient, err := remote.NewRemoteClient(ctx, kcpClient, client.ObjectKeyFromObject(kyma),

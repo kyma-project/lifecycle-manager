@@ -1,4 +1,4 @@
-package controllers_with_watcher_test
+package withwatcher_test
 
 import (
 	"time"

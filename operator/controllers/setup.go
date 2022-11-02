@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
 
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -57,9 +58,12 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 			"make sure you installed all CRDs: %w", err)
 	}
 
-	if err := r.SetSKRChartManager(skrChartConfig); err != nil {
-		return fmt.Errorf("unable to set chart manager for watcher controller: %w", err)
+	if skrChartConfig == nil {
+		return fmt.Errorf("unable to set chart manager for watcher controller: %w", ErrSkrChartConfigNotSet)
 	}
+	r.SKRWebhookChartManager = deploy.NewSKRWebhookChartManager(skrChartConfig.WebhookChartPath,
+		skrChartConfig.SkrWebhookMemoryLimits, skrChartConfig.SkrWebhookCPULimits,
+		skrChartConfig.EnableWebhookPreInstallCheck)
 
 	if err := controllerBuilder.Complete(r); err != nil {
 		return fmt.Errorf("error occurred while building controller: %w", err)

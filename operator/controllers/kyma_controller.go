@@ -76,7 +76,7 @@ type KymaReconciler struct {
 	RequeueIntervals
 	signature.VerificationSettings
 	RemoteClientCache *remote.ClientCache
-	*deploy.SKRChartManager
+	*deploy.SKRWebhookChartManager
 	KcpRestConfig    *rest.Config
 	EnableKcpWatcher bool
 }
@@ -428,14 +428,4 @@ func (r *KymaReconciler) deleteModule(ctx context.Context, moduleStatus *v1alpha
 	manifest.SetNamespace(moduleStatus.Namespace)
 	manifest.SetName(moduleStatus.Name)
 	return r.Delete(ctx, &manifest, &client.DeleteOptions{})
-}
-
-func (r *KymaReconciler) SetSKRChartManager(skrChartConfig *SkrChartConfig) error {
-	if skrChartConfig == nil {
-		return ErrSkrChartConfigNotSet
-	}
-	r.SKRChartManager = deploy.NewSKRChartManager(skrChartConfig.WebhookChartPath,
-		skrChartConfig.SkrWebhookMemoryLimits, skrChartConfig.SkrWebhookCPULimits,
-		skrChartConfig.EnableWebhookPreInstallCheck)
-	return nil
 }

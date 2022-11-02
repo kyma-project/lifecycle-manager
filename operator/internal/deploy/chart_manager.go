@@ -18,7 +18,7 @@ import (
 	k8syaml "sigs.k8s.io/yaml"
 )
 
-type SKRChartManager struct {
+type SKRWebhookChartManager struct {
 	webhookChartPath             string
 	skrWebhookMemoryLimits       string
 	skrWebhookCPULimits          string
@@ -26,8 +26,10 @@ type SKRChartManager struct {
 	enableWebhookPreInstallCheck bool
 }
 
-func NewSKRChartManager(chartPath, memoryLimits, cpuLimits string, enableWebhookPreInstallCheck bool) *SKRChartManager {
-	return &SKRChartManager{
+func NewSKRWebhookChartManager(chartPath, memoryLimits, cpuLimits string,
+	enableWebhookPreInstallCheck bool,
+) *SKRWebhookChartManager {
+	return &SKRWebhookChartManager{
 		webhookChartPath:             chartPath,
 		skrWebhookMemoryLimits:       memoryLimits,
 		skrWebhookCPULimits:          cpuLimits,
@@ -35,7 +37,7 @@ func NewSKRChartManager(chartPath, memoryLimits, cpuLimits string, enableWebhook
 	}
 }
 
-func (m *SKRChartManager) InstallWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
+func (m *SKRWebhookChartManager) InstallWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
 	remoteClientCache *remote.ClientCache, kcpClient client.Client,
 ) (bool, error) {
 	skrClient, err := remote.NewRemoteClient(ctx, kcpClient, client.ObjectKeyFromObject(kyma),
@@ -62,7 +64,7 @@ func (m *SKRChartManager) InstallWebhookChart(ctx context.Context, kyma *v1alpha
 	return false, nil
 }
 
-func (m *SKRChartManager) RemoveWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
+func (m *SKRWebhookChartManager) RemoveWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
 	remoteClientCache *remote.ClientCache, kcpClient client.Client,
 ) error {
 	skrClient, err := remote.NewRemoteClient(ctx, kcpClient, client.ObjectKeyFromObject(kyma),
@@ -83,7 +85,7 @@ func (m *SKRChartManager) RemoveWebhookChart(ctx context.Context, kyma *v1alpha1
 	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeUninstall, m.enableWebhookPreInstallCheck)
 }
 
-func (m *SKRChartManager) generateHelmChartArgs(ctx context.Context,
+func (m *SKRWebhookChartManager) generateHelmChartArgs(ctx context.Context,
 	kcpClient client.Client,
 ) (map[string]interface{}, error) {
 	watcherList := &v1alpha1.WatcherList{}
@@ -112,7 +114,7 @@ func (m *SKRChartManager) generateHelmChartArgs(ctx context.Context,
 	}, nil
 }
 
-func (m *SKRChartManager) resolveKcpAddr(ctx context.Context, kcpClient client.Client) (string, error) {
+func (m *SKRWebhookChartManager) resolveKcpAddr(ctx context.Context, kcpClient client.Client) (string, error) {
 	if m.kcpAddr != "" {
 		return m.kcpAddr, nil
 	}

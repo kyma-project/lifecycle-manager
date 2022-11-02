@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -35,6 +36,8 @@ import (
 const (
 	watcherFinalizer = "operator.kyma-project.io/watcher"
 )
+
+var ErrRestConfigIsNotSet = errors.New("reconciler rest config is not set")
 
 // WatcherReconciler reconciles a Watcher object.
 type WatcherReconciler struct {
@@ -59,7 +62,7 @@ type WatcherReconciler struct {
 // move the current state of the cluster closer to the desired state.
 func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx).WithName(req.NamespacedName.String())
-	logger.Info("Reconciliation loop starting for", "resource", req.NamespacedName.String())
+	logger.Info("Reconciliation loop starting")
 
 	watcherObj := &v1alpha1.Watcher{}
 	if err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, watcherObj); err != nil {
@@ -71,26 +74,35 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if !watcherObj.DeletionTimestamp.IsZero() {
 		err := r.RemoveVirtualServiceConfigForCR(ctx, req.NamespacedName)
 		if err != nil {
-			return ctrl.Result{}, err
+			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
 		}
 		controllerutil.RemoveFinalizer(watcherObj, watcherFinalizer)
-		return ctrl.Result{}, r.Update(ctx, watcherObj)
+		err = r.Update(ctx, watcherObj)
+		if err != nil {
+			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
+		}
+		return ctrl.Result{}, nil
 	}
 
 	// check finalizer on native object
 	if !controllerutil.ContainsFinalizer(watcherObj, watcherFinalizer) {
 		controllerutil.AddFinalizer(watcherObj, watcherFinalizer)
-		return ctrl.Result{}, r.Update(ctx, watcherObj)
+		err := r.Update(ctx, watcherObj)
+		if err != nil {
+			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
+		}
+		return ctrl.Result{}, nil
 	}
-
-	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure},
-		r.UpdateVirtualServiceConfig(ctx, watcherObj)
+	err := r.UpdateVirtualServiceConfig(ctx, watcherObj)
+	if err != nil {
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
+	}
+	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
 }
 
 func (r *WatcherReconciler) SetIstioClient() error {
-	//nolint:goerr113
 	if r.RestConfig == nil {
-		return fmt.Errorf("reconciler rest config is not set")
+		return ErrRestConfigIsNotSet
 	}
 	customIstioClient, err := custom.NewVersionedIstioClient(r.RestConfig)
 	r.IstioClient = customIstioClient
