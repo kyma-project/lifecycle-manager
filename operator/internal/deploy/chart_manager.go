@@ -19,20 +19,20 @@ import (
 )
 
 type SKRWebhookChartManager struct {
-	webhookChartPath             string
-	skrWebhookMemoryLimits       string
-	skrWebhookCPULimits          string
+	config                       ManagerConfig
 	kcpAddr                      string
 	enableWebhookPreInstallCheck bool
 }
 
-func NewSKRWebhookChartManager(chartPath, memoryLimits, cpuLimits string,
-	enableWebhookPreInstallCheck bool,
-) *SKRWebhookChartManager {
+type ManagerConfig struct {
+	WebhookChartPath       string
+	SkrWebhookMemoryLimits string
+	SkrWebhookCPULimits    string
+}
+
+func NewSKRWebhookChartManager(config ManagerConfig, enableWebhookPreInstallCheck bool) *SKRWebhookChartManager {
 	return &SKRWebhookChartManager{
-		webhookChartPath:             chartPath,
-		skrWebhookMemoryLimits:       memoryLimits,
-		skrWebhookCPULimits:          cpuLimits,
+		config:                       config,
 		enableWebhookPreInstallCheck: enableWebhookPreInstallCheck,
 	}
 }
@@ -55,7 +55,7 @@ func (m *SKRWebhookChartManager) InstallWebhookChart(ctx context.Context, kyma *
 		return true, err
 	}
 	// TODO(khlifi411): make sure that validating-webhook-config resource is in sync with the secret configuration
-	skrWatcherInstallInfo := prepareInstallInfo(m.webhookChartPath, ReleaseName, skrCfg, skrClient, argsVals)
+	skrWatcherInstallInfo := prepareInstallInfo(m.config.WebhookChartPath, ReleaseName, skrCfg, skrClient, argsVals)
 	err = installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeInstall, m.enableWebhookPreInstallCheck)
 	if err != nil {
 		return true, err
@@ -81,7 +81,7 @@ func (m *SKRWebhookChartManager) RemoveWebhookChart(ctx context.Context, kyma *v
 	if err != nil {
 		return err
 	}
-	skrWatcherInstallInfo := prepareInstallInfo(m.webhookChartPath, ReleaseName, skrCfg, skrClient, argsVals)
+	skrWatcherInstallInfo := prepareInstallInfo(m.config.WebhookChartPath, ReleaseName, skrCfg, skrClient, argsVals)
 	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeUninstall, m.enableWebhookPreInstallCheck)
 }
 
@@ -108,8 +108,8 @@ func (m *SKRWebhookChartManager) generateHelmChartArgs(ctx context.Context,
 	return map[string]interface{}{
 		"triggerLabel":          time.Now().Format(triggerLabelTimeFormat),
 		"kcpAddr":               kcpAddr,
-		"resourcesLimitsMemory": m.skrWebhookMemoryLimits,
-		"resourcesLimitsCPU":    m.skrWebhookCPULimits,
+		"resourcesLimitsMemory": m.config.SkrWebhookMemoryLimits,
+		"resourcesLimitsCPU":    m.config.SkrWebhookCPULimits,
 		customConfigKey:         string(bytes),
 	}, nil
 }

@@ -61,15 +61,22 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 	if skrChartConfig == nil {
 		return fmt.Errorf("unable to set chart manager for watcher controller: %w", ErrSkrChartConfigNotSet)
 	}
-	r.SKRWebhookChartManager = deploy.NewSKRWebhookChartManager(skrChartConfig.WebhookChartPath,
-		skrChartConfig.SkrWebhookMemoryLimits, skrChartConfig.SkrWebhookCPULimits,
-		skrChartConfig.EnableWebhookPreInstallCheck)
+	mgrCfg := deployChartConfig(skrChartConfig)
+	r.SKRWebhookChartManager = deploy.NewSKRWebhookChartManager(mgrCfg, skrChartConfig.EnableWebhookPreInstallCheck)
 
 	if err := controllerBuilder.Complete(r); err != nil {
 		return fmt.Errorf("error occurred while building controller: %w", err)
 	}
 
 	return nil
+}
+
+func deployChartConfig(skrChartConfig *SkrChartConfig) deploy.ManagerConfig {
+	return deploy.ManagerConfig{
+		WebhookChartPath:       skrChartConfig.WebhookChartPath,
+		SkrWebhookMemoryLimits: skrChartConfig.SkrWebhookMemoryLimits,
+		SkrWebhookCPULimits:    skrChartConfig.SkrWebhookCPULimits,
+	}
 }
 
 func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, eventChannel *source.Channel) {
