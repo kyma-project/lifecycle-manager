@@ -2,6 +2,7 @@ package testutils
 
 import (
 	"context"
+	"time"
 
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -14,6 +15,14 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
+)
+
+const (
+	RenderedManifestDir = "manifest"
+	Timeout             = time.Second * 10
+	Interval            = time.Millisecond * 250
+	defaultHTTPPort     = 80
+	servicePort         = 8080
 )
 
 func IsChartRemoved(ctx context.Context, k8sClient client.Client) func() bool {
@@ -83,8 +92,8 @@ func CreateLoadBalancer(ctx context.Context, controlPlaneClient client.Client) e
 				{
 					Name:       "http2",
 					Protocol:   corev1.ProtocolTCP,
-					Port:       80,
-					TargetPort: intstr.FromInt(8080),
+					Port:       defaultHTTPPort,
+					TargetPort: intstr.FromInt(servicePort),
 				},
 			},
 		},

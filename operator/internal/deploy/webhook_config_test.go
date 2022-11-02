@@ -3,10 +3,13 @@ package deploy_test
 import (
 	"context"
 	"fmt"
-	"time"
+	"os"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
@@ -14,11 +17,20 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 )
 
-const (
-	webhookChartPath = "../charts/skr-webhook"
-	timeout          = time.Second * 10
-	interval         = time.Millisecond * 250
-)
+const webhookChartPath = "../charts/skr-webhook"
+
+func createIstioNs() error {
+	istioNs := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: deploy.IstioSytemNs,
+		},
+	}
+	if err := k8sClient.Create(ctx, istioNs); err != nil && !errors.IsAlreadyExists(err) {
+		return err
+	}
+
+	return nil
+}
 
 var _ = Describe("deploy watcher", Ordered, func() {
 	ctx := context.TODO()
@@ -51,13 +63,21 @@ var _ = Describe("deploy watcher", Ordered, func() {
 	BeforeAll(func() {
 		kymaName := "kyma-sample"
 		kymaSample = testutils.CreateKymaCR(kymaName)
+		Expect(createIstioNs()).To(Succeed())
 		Expect(k8sClient.Create(ctx, kymaSample)).To(Succeed())
 		Expect(testutils.CreateLoadBalancer(ctx, k8sClient)).To(Succeed())
+	})
+
+	BeforeEach(func() {
+		// clean rendered manifest
+		Expect(os.RemoveAll(filepath.Join(webhookChartPath, testutils.RenderedManifestDir))).ShouldNot(HaveOccurred())
 	})
 
 	AfterAll(func() {
 		// clean up kyma CR
 		Expect(k8sClient.Delete(ctx, kymaSample)).To(Succeed())
+		// clean rendered manifest
+		Expect(os.RemoveAll(filepath.Join(webhookChartPath, testutils.RenderedManifestDir))).ShouldNot(HaveOccurred())
 	})
 
 	It("deploys watcher helm chart with correct webhook config", func() {
@@ -80,6 +100,6 @@ var _ = Describe("deploy watcher", Ordered, func() {
 	It("removes watcher helm chart from SKR cluster when last cr is deleted", func() {
 		err := deploy.RemoveWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, "500Mi", "1")
 		Expect(err).ShouldNot(HaveOccurred())
-		Eventually(testutils.IsChartRemoved(ctx, k8sClient), timeout, interval).Should(BeTrue())
+		Eventually(testutils.IsChartRemoved(ctx, k8sClient), testutils.Timeout, testutils.Interval).Should(BeTrue())
 	})
 })

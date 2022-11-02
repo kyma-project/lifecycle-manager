@@ -1,6 +1,9 @@
 package controllers_test
 
 import (
+	"os"
+	"path/filepath"
+
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/custom"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
@@ -26,7 +29,7 @@ func cRSpecsUpdates() func(customIstioClient *custom.IstioClient) {
 
 			// verify
 			Eventually(watcherCRState(client.ObjectKeyFromObject(&watcherList.Items[idx])),
-				timeout, interval).Should(Equal(v1alpha1.WatcherStateReady))
+				testutils.Timeout, testutils.Interval).Should(Equal(v1alpha1.WatcherStateReady))
 			verifyVsRoutes(&watcherList.Items[idx], customIstioClient, BeTrue())
 			webhookCfg, err := deploy.GetDeployedWebhook(ctx, cfg)
 			Expect(err).NotTo(HaveOccurred())
@@ -45,7 +48,7 @@ func oneCRDeleted() func(customIstioClient *custom.IstioClient) {
 		watcherCR := watcherList.Items[watcherCRCount-1]
 		Expect(controlPlaneClient.Delete(ctx, &watcherCR)).To(Succeed())
 
-		Eventually(isCrDeletionFinished(client.ObjectKeyFromObject(&watcherCR)), timeout, interval).
+		Eventually(isCrDeletionFinished(client.ObjectKeyFromObject(&watcherCR)), testutils.Timeout, testutils.Interval).
 			Should(BeTrue())
 		verifyVsRoutes(&watcherCR, customIstioClient, BeFalse())
 		webhookCfg, err := deploy.GetDeployedWebhook(ctx, cfg)
@@ -65,9 +68,9 @@ func allCRsDeleted() func(customIstioClient *custom.IstioClient) {
 			client.InNamespace(metav1.NamespaceDefault))).To(Succeed())
 
 		// verify
-		Eventually(isCrDeletionFinished(), timeout, interval).Should(BeTrue())
+		Eventually(isCrDeletionFinished(), testutils.Timeout, testutils.Interval).Should(BeTrue())
 		verifyVsRoutes(nil, customIstioClient, BeTrue())
-		Eventually(testutils.IsChartRemoved(ctx, controlPlaneClient), timeout, interval).Should(BeTrue())
+		Eventually(testutils.IsChartRemoved(ctx, controlPlaneClient), testutils.Timeout, testutils.Interval).Should(BeTrue())
 	}
 }
 
@@ -101,15 +104,19 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 		for _, istioResource := range istioResources {
 			Expect(controlPlaneClient.Delete(ctx, istioResource)).To(Succeed())
 		}
+		// clean rendered manifest
+		Expect(os.RemoveAll(filepath.Join(webhookChartPath, testutils.RenderedManifestDir))).ShouldNot(HaveOccurred())
 	})
 
 	BeforeEach(func() {
+		// clean rendered manifest
+		Expect(os.RemoveAll(filepath.Join(webhookChartPath, testutils.RenderedManifestDir))).ShouldNot(HaveOccurred())
 		// create WatcherCRs
 		for idx, component := range centralComponents {
 			watcherCR := createWatcherCR(component, isEven(idx))
 			Expect(controlPlaneClient.Create(ctx, watcherCR)).To(Succeed())
 			crObjectKey := client.ObjectKeyFromObject(watcherCR)
-			Eventually(watcherCRState(crObjectKey), timeout, interval).
+			Eventually(watcherCRState(crObjectKey), testutils.Timeout, testutils.Interval).
 				Should(Equal(v1alpha1.WatcherStateReady))
 
 			// verify
@@ -128,7 +135,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 			Expect(controlPlaneClient.Delete(ctx, &watcherList.Items[idx])).To(Succeed())
 		}
 		// verify deletion
-		Eventually(isCrDeletionFinished(), timeout, interval).Should(BeTrue())
+		Eventually(isCrDeletionFinished(), testutils.Timeout, testutils.Interval).Should(BeTrue())
 	})
 
 	DescribeTable("given watcherCR reconcile loop",
