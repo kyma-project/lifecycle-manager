@@ -89,3 +89,6 @@ out.txt
 **/bin
 **/go.work
 **/go.work.sum
+
+# rendered manifest
+**/manifest.yaml

@@ -4,6 +4,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/custom"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
+	"github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -66,7 +67,7 @@ func allCRsDeleted() func(customIstioClient *custom.IstioClient) {
 		// verify
 		Eventually(isCrDeletionFinished(), timeout, interval).Should(BeTrue())
 		verifyVsRoutes(nil, customIstioClient, BeTrue())
-		Eventually(isChartRemoved(ctx, controlPlaneClient), timeout, interval).Should(BeTrue())
+		Eventually(testutils.IsChartRemoved(ctx, controlPlaneClient), timeout, interval).Should(BeTrue())
 	}
 }
 
@@ -78,7 +79,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	BeforeAll(func() {
 		// create kyma resource
 		kymaName := "kyma-sample"
-		kymaSample = createKymaCR(kymaName)
+		kymaSample = testutils.CreateKymaCR(kymaName)
 
 		// create istio resources
 		customIstioClient, err = custom.NewVersionedIstioClient(cfg)
@@ -90,7 +91,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 			Expect(controlPlaneClient.Create(ctx, istioResource)).To(Succeed())
 		}
 
-		Expect(createLoadBalancer()).To(Succeed())
+		Expect(testutils.CreateLoadBalancer(ctx, controlPlaneClient)).To(Succeed())
 	})
 
 	AfterAll(func() {
