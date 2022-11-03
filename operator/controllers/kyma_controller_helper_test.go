@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strconv"
 
-
 	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"

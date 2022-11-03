@@ -57,7 +57,7 @@ generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and
 
 .PHONY: vet
 vet: ## Run go vet against code.
-	go vet ./...
+	go vet -tags testing ./...
 
 .PHONY: envtest-dir
 envtest-dir:
@@ -65,7 +65,7 @@ envtest-dir:
 
 .PHONY: test
 test: manifests test-crd generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test -tags testing ./... -coverprofile cover.out
 
 .PHONY: dry-run
 dry-run: kustomize manifests
