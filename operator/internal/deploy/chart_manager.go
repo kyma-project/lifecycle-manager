@@ -33,7 +33,7 @@ type DisabledSKRWebhookChartManager struct{}
 //nolint:ireturn
 func ResolveSKRWebhookChartManager(isWatcherEnabled bool, skrConfigs ...*SkrChartConfig,
 ) (SKRWebhookChartManager, error) {
-	if isWatcherEnabled && len(skrConfigs) != 0 {
+	if isWatcherEnabled && len(skrConfigs) != 1 {
 		return nil, ErrExpectedExactlyOneSKRConfig
 	}
 	if !isWatcherEnabled {
