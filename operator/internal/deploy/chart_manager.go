@@ -65,23 +65,18 @@ func (m *SKRWebhookChartManager) InstallWebhookChart(ctx context.Context, kyma *
 }
 
 func (m *SKRWebhookChartManager) RemoveWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
-	remoteClientCache *remote.ClientCache, kcpClient client.Client,
+	syncCtx *remote.KymaSynchronizationContext,
 ) error {
-	skrClient, err := remote.NewRemoteClient(ctx, kcpClient, client.ObjectKeyFromObject(kyma),
-		kyma.Spec.Sync.Strategy, remoteClientCache)
-	if err != nil {
-		return err
-	}
-	skrCfg, err := remote.GetRemoteRestConfig(ctx, kcpClient, client.ObjectKeyFromObject(kyma),
+	skrCfg, err := remote.GetRemoteRestConfig(ctx, syncCtx.ControlPlaneClient, client.ObjectKeyFromObject(kyma),
 		kyma.Spec.Sync.Strategy)
 	if err != nil {
 		return err
 	}
-	argsVals, err := m.generateHelmChartArgs(ctx, kcpClient)
+	argsVals, err := m.generateHelmChartArgs(ctx, syncCtx.ControlPlaneClient)
 	if err != nil {
 		return err
 	}
-	skrWatcherInstallInfo := prepareInstallInfo(m.config.WebhookChartPath, ReleaseName, skrCfg, skrClient, argsVals)
+	skrWatcherInstallInfo := prepareInstallInfo(m.config.WebhookChartPath, ReleaseName, skrCfg, syncCtx.RuntimeClient, argsVals)
 	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeUninstall, m.enableWebhookPreInstallCheck)
 }
 

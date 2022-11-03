@@ -273,7 +273,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 			fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err))
 	}
 	statusUpdateRequiredFromSKRWebhookSync := false
-	if r.EnableKcpWatcher {
+	if r.EnableKcpWatcher && kyma.Spec.Sync.Enabled {
 		if statusUpdateRequiredFromSKRWebhookSync, err = r.InstallWebhookChart(ctx, kyma,
 			r.RemoteClientCache, r.Client); err != nil {
 			kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
@@ -290,11 +290,10 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 		return r.UpdateStatusWithEvent(ctx, kyma, v1alpha1.StateReady, message)
 	}
 
+	isStatusUpdateRequired := statusUpdateRequiredFromModuleSync || statusUpdateRequiredFromModuleStatusSync ||
+		statusUpdateRequiredFromDeletion || statusUpdateRequiredFromSKRWebhookSync
 	// if the ready condition is not applicable, but we changed the conditions, we still need to issue an update
-	if statusUpdateRequiredFromModuleSync ||
-		statusUpdateRequiredFromModuleStatusSync ||
-		statusUpdateRequiredFromDeletion ||
-		statusUpdateRequiredFromSKRWebhookSync {
+	if isStatusUpdateRequired {
 		if err := r.UpdateStatusWithEvent(ctx, kyma, v1alpha1.StateProcessing, "updating component conditions"); err != nil {
 			return fmt.Errorf("error while updating status for condition change: %w", err)
 		}
@@ -306,21 +305,16 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 
 func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error) {
 	logger := log.FromContext(ctx)
-	if r.EnableKcpWatcher {
-		if err := r.RemoveWebhookChart(ctx, kyma, r.RemoteClientCache, r.Client); client.IgnoreNotFound(err) != nil {
-			return false, fmt.Errorf(": %w", err)
-		}
-
-		if !r.IsSkrChartRemoved(ctx, kyma, r.RemoteClientCache, r.Client) {
-			logger.V(1).Info("removing SKR chart in progress...")
-			return true, nil
-		}
-	}
 
 	if kyma.Spec.Sync.Enabled {
 		syncContext, err := remote.InitializeKymaSynchronizationContext(ctx, r.Client, kyma, r.RemoteClientCache)
 		if err != nil {
 			return false, fmt.Errorf("remote sync initialization failed: %w", err)
+		}
+		if r.EnableKcpWatcher {
+			if err := r.RemoveWebhookChart(ctx, kyma, syncContext); err != nil {
+				return true, nil
+			}
 		}
 		force := true
 		if err := catalog.NewRemoteCatalog(
