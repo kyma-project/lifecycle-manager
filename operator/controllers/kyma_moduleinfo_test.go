@@ -3,9 +3,10 @@ package controllers_test
 import (
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper" //nolint:typecheck
+	//nolint:typecheck
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -23,7 +24,7 @@ func noCondition() func() error {
 
 func expectCorrectNumberOfmoduleStatus(kymaName string) func() error {
 	return func() error {
-		createdKyma, err := testhelper.GetKyma(ctx, controlPlaneClient, kymaName)
+		createdKyma, err := testutils.GetKyma(ctx, controlPlaneClient, kymaName)
 		if err != nil {
 			return err
 		}
@@ -36,7 +37,7 @@ func expectCorrectNumberOfmoduleStatus(kymaName string) func() error {
 
 func expectmoduleStatusStateBecomeReady(kymaName string) func() error {
 	return func() error {
-		createdKyma, err := testhelper.GetKyma(ctx, controlPlaneClient, kymaName)
+		createdKyma, err := testutils.GetKyma(ctx, controlPlaneClient, kymaName)
 		if err != nil {
 			return err
 		}
@@ -51,7 +52,7 @@ func expectmoduleStatusStateBecomeReady(kymaName string) func() error {
 
 func updateAllModuleState(kymaName string, state v1alpha1.State) func() error {
 	return func() error {
-		createdKyma, err := testhelper.GetKyma(ctx, controlPlaneClient, kymaName)
+		createdKyma, err := testutils.GetKyma(ctx, controlPlaneClient, kymaName)
 		if err != nil {
 			return err
 		}
@@ -66,7 +67,7 @@ func updateAllModuleState(kymaName string, state v1alpha1.State) func() error {
 
 func removeModule(kymaName string) func() error {
 	return func() error {
-		createdKyma, err := testhelper.GetKyma(ctx, controlPlaneClient, kymaName)
+		createdKyma, err := testutils.GetKyma(ctx, controlPlaneClient, kymaName)
 		Expect(err).ShouldNot(HaveOccurred())
 		createdKyma.Spec.Modules = v1alpha1.Modules{}
 		return controlPlaneClient.Update(ctx, createdKyma)
@@ -74,11 +75,11 @@ func removeModule(kymaName string) func() error {
 }
 
 var _ = Describe("Test Kyma CR", Ordered, func() {
-	kyma := testhelper.NewTestKyma("kyma")
+	kyma := testutils.NewTestKyma("kyma")
 
 	kyma.Spec.Modules = append(kyma.Spec.Modules, v1alpha1.Module{
 		ControllerName: "manifest",
-		Name:           testhelper.NewUniqModuleName(),
+		Name:           testutils.NewUniqModuleName(),
 		Channel:        v1alpha1.ChannelStable,
 	})
 
@@ -86,8 +87,8 @@ var _ = Describe("Test Kyma CR", Ordered, func() {
 
 	DescribeTable("Test ModuleStatus",
 		func(givenCondition func() error, expectedBehavior func() error) {
-			Eventually(givenCondition, testhelper.Timeout, testhelper.Interval).Should(Succeed())
-			Eventually(expectedBehavior, testhelper.Timeout, testhelper.Interval).Should(Succeed())
+			Eventually(givenCondition, testutils.Timeout, testutils.Interval).Should(Succeed())
+			Eventually(expectedBehavior, testutils.Timeout, testutils.Interval).Should(Succeed())
 		},
 		Entry("When deploy module, expect number of ModuleStatus matches spec.modules",
 			noCondition(), expectCorrectNumberOfmoduleStatus(kyma.Name)),

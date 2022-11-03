@@ -2,9 +2,10 @@ package controllers_test
 
 import (
 	"errors"
+	"github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper" //nolint:typecheck
+	//nolint:typecheck
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -13,7 +14,7 @@ var ErrManifestRemoteIsNotMatch = errors.New("Manifest.Spec.Remote is not match"
 
 func expectManifestSpecRemoteMatched(kymaName string, remoteFlag bool) func() error {
 	return func() error {
-		createdKyma, err := testhelper.GetKyma(ctx, controlPlaneClient, kymaName)
+		createdKyma, err := testutils.GetKyma(ctx, controlPlaneClient, kymaName)
 		if err != nil {
 			return err
 		}
@@ -37,7 +38,7 @@ func expectManifestSpecRemoteMatched(kymaName string, remoteFlag bool) func() er
 
 func updateModuleTemplateTarget(kymaName string, target v1alpha1.Target) func() error {
 	return func() error {
-		createdKyma, err := testhelper.GetKyma(ctx, controlPlaneClient, kymaName)
+		createdKyma, err := testutils.GetKyma(ctx, controlPlaneClient, kymaName)
 		if err != nil {
 			return err
 		}
@@ -57,11 +58,11 @@ func updateModuleTemplateTarget(kymaName string, target v1alpha1.Target) func() 
 }
 
 var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
-	kyma := testhelper.NewTestKyma("kyma")
+	kyma := testutils.NewTestKyma("kyma")
 
 	kyma.Spec.Modules = append(kyma.Spec.Modules, v1alpha1.Module{
 		ControllerName: "manifest",
-		Name:           testhelper.NewUniqModuleName(),
+		Name:           testutils.NewUniqModuleName(),
 		Channel:        v1alpha1.ChannelStable,
 	})
 
@@ -69,8 +70,8 @@ var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
 
 	DescribeTable("Test ModuleTemplate.Spec.Target",
 		func(givenCondition func() error, expectedBehavior func() error) {
-			Eventually(givenCondition, testhelper.Timeout, testhelper.Interval).Should(Succeed())
-			Eventually(expectedBehavior, testhelper.Timeout, testhelper.Interval).Should(Succeed())
+			Eventually(givenCondition, testutils.Timeout, testutils.Interval).Should(Succeed())
+			Eventually(expectedBehavior, testutils.Timeout, testutils.Interval).Should(Succeed())
 		},
 		Entry("When ModuleTemplate.Spec.Target not exist deployed, expect Manifest.Spec.remote=false",
 			noCondition(),

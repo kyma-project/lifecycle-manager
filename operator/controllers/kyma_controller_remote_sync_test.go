@@ -2,6 +2,7 @@ package controllers_test
 
 import (
 	"encoding/json"
+	"github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper" //nolint:typecheck
+	//nolint:typecheck
 )
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
@@ -23,7 +24,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Name:           "skr-module-sync-client",
 		Channel:        v1alpha1.ChannelStable,
 	}
-	kyma = testhelper.NewTestKyma("kyma-remote-sync")
+	kyma = testutils.NewTestKyma("kyma-remote-sync")
 	skrModule = &v1alpha1.Module{
 		ControllerName: "manifest",
 		Name:           "skr-module-sync",
@@ -48,24 +49,24 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 
 	It("CR add from client should be synced in both clusters", func() {
 		By("Remote Kyma created")
-		Eventually(RemoteKymaExists(runtimeClient, kyma.GetName()), 30*time.Second, testhelper.Interval).Should(Succeed())
-		remoteKyma, err := testhelper.GetKyma(ctx, runtimeClient, kyma.GetName())
+		Eventually(RemoteKymaExists(runtimeClient, kyma.GetName()), 30*time.Second, testutils.Interval).Should(Succeed())
+		remoteKyma, err := testutils.GetKyma(ctx, runtimeClient, kyma.GetName())
 		Expect(err).ShouldNot(HaveOccurred())
 
 		By("add skr-module-client to remoteKyma.spec.modules")
 		remoteKyma.Spec.Modules = []v1alpha1.Module{
 			*skrModuleFromClient,
 		}
-		Eventually(runtimeClient.Update(ctx, remoteKyma), testhelper.Timeout, testhelper.Interval).Should(Succeed())
+		Eventually(runtimeClient.Update(ctx, remoteKyma), testutils.Timeout, testutils.Interval).Should(Succeed())
 
 		By("skr-module-client created in kcp")
 		Eventually(ModuleExists(kyma.GetName(), skrModuleFromClient.Name),
-			testhelper.Timeout, testhelper.Interval).Should(BeTrue())
+			testutils.Timeout, testutils.Interval).Should(BeTrue())
 	})
 })
 
 var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
-	kyma := testhelper.NewTestKyma("kyma-test-remote-skr")
+	kyma := testutils.NewTestKyma("kyma-test-remote-skr")
 
 	kyma.Spec.Sync = v1alpha1.Sync{
 		Enabled:      true,
@@ -84,29 +85,29 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 	It("Kyma CR should be synchronized in both clusters", func() {
 		By("Remote Kyma created")
-		Eventually(RemoteKymaExists(runtimeClient, kyma.GetName()), 30*time.Second, testhelper.Interval).Should(Succeed())
+		Eventually(RemoteKymaExists(runtimeClient, kyma.GetName()), 30*time.Second, testutils.Interval).Should(Succeed())
 
 		By("CR created in kcp")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ModuleExists(kyma.GetName(), activeModule.Name), testhelper.Timeout, testhelper.Interval).Should(BeTrue())
+			Eventually(ModuleExists(kyma.GetName(), activeModule.Name), testutils.Timeout, testutils.Interval).Should(BeTrue())
 		}
 
 		By("No spec.module in remote Kyma")
-		remoteKyma, err := testhelper.GetKyma(ctx, runtimeClient, kyma.GetName())
+		remoteKyma, err := testutils.GetKyma(ctx, runtimeClient, kyma.GetName())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(remoteKyma.Spec.Modules).To(BeEmpty())
 
 		By("Remote Module Catalog created")
-		Eventually(ModuleTemplatesExist(runtimeClient, kyma), 30*time.Second, testhelper.Interval).Should(Succeed())
+		Eventually(ModuleTemplatesExist(runtimeClient, kyma), 30*time.Second, testutils.Interval).Should(Succeed())
 		Expect(remoteKyma.ContainsCondition(v1alpha1.ConditionTypeReady,
 			v1alpha1.ConditionReasonModuleCatalogIsReady)).To(BeTrue())
 
 		By("updating a module template in the remote cluster to simulate unwanted modification")
 		Eventually(ModifyModuleTemplateSpecThroughLabels(runtimeClient, kyma,
-			ocm.Labels{ocm.Label{Name: "test", Value: json.RawMessage(`{"foo":"bar"}`)}}), testhelper.Timeout, testhelper.Interval).Should(Succeed())
+			ocm.Labels{ocm.Label{Name: "test", Value: json.RawMessage(`{"foo":"bar"}`)}}), testutils.Timeout, testutils.Interval).Should(Succeed())
 
 		By("verifying the discovered override and checking the resetted label")
-		Eventually(ModuleTemplatesLabelsCountMatch(runtimeClient, kyma, 0), testhelper.Timeout, testhelper.Interval).Should(Succeed())
-		Eventually(ModuleTemplatesLastSyncGenMatches(runtimeClient, kyma), testhelper.Timeout, testhelper.Interval).Should(BeTrue())
+		Eventually(ModuleTemplatesLabelsCountMatch(runtimeClient, kyma, 0), testutils.Timeout, testutils.Interval).Should(Succeed())
+		Eventually(ModuleTemplatesLastSyncGenMatches(runtimeClient, kyma), testutils.Timeout, testutils.Interval).Should(BeTrue())
 	})
 })

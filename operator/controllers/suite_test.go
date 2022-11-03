@@ -19,6 +19,7 @@ package controllers_test
 import (
 	"context"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
+	"github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 	"os"
 	"path/filepath"
 	"testing"
@@ -44,7 +45,7 @@ import (
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/controllers"
-	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper" //nolint:typecheck
+	//nolint:typecheck
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
 )
@@ -84,7 +85,7 @@ var _ = BeforeSuite(func() {
 
 	// manifest CRD
 	// istio CRDs
-	remoteCrds, err := testhelper.ParseRemoteCRDs([]string{
+	remoteCrds, err := testutils.ParseRemoteCRDs([]string{
 		"https://raw.githubusercontent.com/kyma-project/module-manager/main/operator/config/crd/bases/operator.kyma-project.io_manifests.yaml", //nolint:lll
 	})
 	Expect(err).NotTo(HaveOccurred())
