@@ -99,12 +99,3 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
 }
-
-func (r *WatcherReconciler) SetIstioClient() error {
-	if r.RestConfig == nil {
-		return ErrRestConfigIsNotSet
-	}
-	customIstioClient, err := custom.NewVersionedIstioClient(r.RestConfig)
-	r.IstioClient = customIstioClient
-	return err
-}

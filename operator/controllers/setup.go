@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/operator/internal/custom"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
 
 	"k8s.io/client-go/util/workqueue"
@@ -99,7 +100,13 @@ func (r *WatcherReconciler) SetupWithManager(
 	mgr ctrl.Manager,
 	options controller.Options,
 ) error {
-	if err := r.SetIstioClient(); err != nil {
+
+	if r.RestConfig == nil {
+		return ErrRestConfigIsNotSet
+	}
+	var err error
+	r.IstioClient, err = custom.NewVersionedIstioClient(r.RestConfig)
+	if err != nil {
 		return fmt.Errorf("unable to set istio client for watcher controller: %w", err)
 	}
 	return ctrl.NewControllerManagedBy(mgr).
