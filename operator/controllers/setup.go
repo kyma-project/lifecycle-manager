@@ -5,8 +5,6 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/operator/internal/custom"
-	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
-
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -27,9 +25,7 @@ import (
 )
 
 // SetupWithManager sets up the Kyma controller with the Manager.
-func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options, listenerAddr string,
-	skrChartConfig *deploy.SkrChartConfig,
-) error {
+func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options, listenerAddr string) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1alpha1.Kyma{}).WithOptions(options).
 		Watches(
 			&source.Kind{Type: &v1alpha1.ModuleTemplate{}},
@@ -59,11 +55,6 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 		return fmt.Errorf("error while setting up ModuleTemplate Channel Field Indexer, "+
 			"make sure you installed all CRDs: %w", err)
 	}
-
-	if skrChartConfig == nil {
-		return fmt.Errorf("unable to set chart manager for watcher controller: %w", ErrSkrChartConfigNotSet)
-	}
-	r.SKRWebhookChartManager = deploy.NewSKRWebhookChartManager(skrChartConfig)
 
 	if err := controllerBuilder.Complete(r); err != nil {
 		return fmt.Errorf("error occurred while building controller: %w", err)

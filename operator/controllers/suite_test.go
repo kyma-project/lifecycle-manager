@@ -18,12 +18,12 @@ package controllers_test
 
 import (
 	"context"
-	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
-	"github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
 
 	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 	//nolint:gci
@@ -45,7 +45,7 @@ import (
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/controllers"
-	//nolint:typecheck
+	. "github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
 )
@@ -66,10 +66,6 @@ var (
 	cfg                *rest.Config         //nolint:gochecknoglobals
 )
 
-const (
-	webhookChartPath = "../internal/charts/skr-webhook"
-)
-
 func TestAPIs(t *testing.T) {
 	t.Parallel()
 	RegisterFailHandler(Fail)
@@ -85,7 +81,7 @@ var _ = BeforeSuite(func() {
 
 	// manifest CRD
 	// istio CRDs
-	remoteCrds, err := testutils.ParseRemoteCRDs([]string{
+	remoteCrds, err := ParseRemoteCRDs([]string{
 		"https://raw.githubusercontent.com/kyma-project/module-manager/main/operator/config/crd/bases/operator.kyma-project.io_manifests.yaml", //nolint:lll
 	})
 	Expect(err).NotTo(HaveOccurred())
@@ -140,21 +136,16 @@ var _ = BeforeSuite(func() {
 	}
 
 	remoteClientCache := remote.NewClientCache()
-	skrChartCfg := &deploy.SkrChartConfig{
-		WebhookChartPath:       webhookChartPath,
-		SkrWebhookMemoryLimits: "200Mi",
-		SkrWebhookCPULimits:    "1",
-	}
 	err = (&controllers.KymaReconciler{
-		Client:           k8sManager.GetClient(),
-		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		RequeueIntervals: intervals,
-		EnableKcpWatcher: false,
+		Client:                 k8sManager.GetClient(),
+		EventRecorder:          k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		RequeueIntervals:       intervals,
+		SKRWebhookChartManager: &deploy.DisabledSKRWebhookChartManager{},
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
 		},
 		RemoteClientCache: remoteClientCache,
-	}).SetupWithManager(k8sManager, controller.Options{}, listenerAddr, skrChartCfg)
+	}).SetupWithManager(k8sManager, controller.Options{}, listenerAddr)
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {

@@ -316,18 +316,22 @@ func setupKymaReconciler(
 		SkrWebhookCPULimits:          flagVar.skrWebhookCPULimits,
 		EnableWebhookPreInstallCheck: flagVar.enableWebhookPreInstallCheck,
 	}
+	skrWebhookChartManager, err := deploy.ResolveSKRWebhookChartManager(flagVar.enableKcpWatcher, skrChartConfig)
+	if err != nil {
+		setupLog.Error(err, "failed to resolve SKR chart manager")
+	}
 	if err := (&controllers.KymaReconciler{
-		Client:            mgr.GetClient(),
-		EventRecorder:     mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		KcpRestConfig:     mgr.GetConfig(),
-		RemoteClientCache: remoteClientCache,
-		RequeueIntervals:  intervals,
-		EnableKcpWatcher:  flagVar.enableKcpWatcher,
+		Client:                 mgr.GetClient(),
+		EventRecorder:          mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		KcpRestConfig:          mgr.GetConfig(),
+		RemoteClientCache:      remoteClientCache,
+		SKRWebhookChartManager: skrWebhookChartManager,
+		RequeueIntervals:       intervals,
 		VerificationSettings: signature.VerificationSettings{
 			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
 			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
 		},
-	}).SetupWithManager(mgr, options, flagVar.listenerAddr, skrChartConfig); err != nil {
+	}).SetupWithManager(mgr, options, flagVar.listenerAddr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}

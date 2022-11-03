@@ -18,7 +18,6 @@ package withwatcher_test
 
 import (
 	"context"
-	"github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 	"os"
 	"path/filepath"
 	"testing"
@@ -53,8 +52,8 @@ import (
 
 	//+kubebuilder:scaffold:imports
 	"github.com/kyma-project/lifecycle-manager/operator/controllers"
-	//nolint:typecheck
 	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
+	. "github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -95,7 +94,7 @@ var _ = BeforeSuite(func() {
 
 	// manifest CRD
 	// istio CRDs
-	remoteCrds, err := testutils.ParseRemoteCRDs([]string{
+	remoteCrds, err := ParseRemoteCRDs([]string{
 		"https://raw.githubusercontent.com/kyma-project/module-manager/main/operator/config/crd/bases/operator.kyma-project.io_manifests.yaml", //nolint:lll
 		"https://raw.githubusercontent.com/istio/istio/master/manifests/charts/base/crds/crd-all.gen.yaml",                                     //nolint:lll
 	})
@@ -157,15 +156,15 @@ var _ = BeforeSuite(func() {
 		SkrWebhookCPULimits:    "1",
 	}
 	err = (&controllers.KymaReconciler{
-		Client:           k8sManager.GetClient(),
-		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		RequeueIntervals: intervals,
-		EnableKcpWatcher: true,
+		Client:                 k8sManager.GetClient(),
+		EventRecorder:          k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		RequeueIntervals:       intervals,
+		SKRWebhookChartManager: deploy.NewEnabledSKRWebhookChartManager(skrChartCfg),
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
 		},
 		RemoteClientCache: remoteClientCache,
-	}).SetupWithManager(k8sManager, controller.Options{}, listenerAddr, skrChartCfg)
+	}).SetupWithManager(k8sManager, controller.Options{}, listenerAddr)
 	Expect(err).ToNot(HaveOccurred())
 
 	Expect(createLoadBalancer(suiteCtx, controlPlaneClient)).To(Succeed())

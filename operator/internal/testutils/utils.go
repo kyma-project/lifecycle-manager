@@ -4,19 +4,22 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/operator/pkg/test"
-	"github.com/onsi/gomega"
 	"io"
-	v12 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/util/yaml"
 	"math/rand"
 	"net/http"
 	"net/url"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/test"
+	"github.com/onsi/gomega"
+
+	v12 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/yaml"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (

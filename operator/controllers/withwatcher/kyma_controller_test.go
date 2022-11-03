@@ -3,13 +3,13 @@ package withwatcher_test
 import (
 	"context"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 	"reflect"
 	"strings"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	//nolint:typecheck
+
 	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
+	. "github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
@@ -28,7 +28,7 @@ const (
 )
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
-	kyma := testutils.NewTestKyma("kyma-remote-sync")
+	kyma := NewTestKyma("kyma-remote-sync")
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
 
 	kyma.Spec.Sync = v1alpha1.Sync{
@@ -44,7 +44,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Eventually(isWebhookDeployed(suiteCtx, runtimeClient, webhookConfig), timeout, interval).
 			Should(Succeed())
 		Expect(isWebhookConfigured(watcherCrForKyma, webhookConfig)).To(BeTrue())
-		Eventually(testutils.IsKymaInState(suiteCtx, controlPlaneClient, kyma.GetName(), v1alpha1.StateReady),
+		Eventually(IsKymaInState(suiteCtx, controlPlaneClient, kyma.GetName(), v1alpha1.StateReady),
 			timeout, interval).Should(BeTrue())
 	})
 
@@ -131,12 +131,12 @@ func RegisterDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1
 	BeforeAll(func() {
 		Expect(controlPlaneClient.Create(suiteCtx, watcher)).To(Succeed())
 		Expect(controlPlaneClient.Create(suiteCtx, kyma)).Should(Succeed())
-		testutils.DeployModuleTemplates(suiteCtx, controlPlaneClient, kyma)
+		DeployModuleTemplates(suiteCtx, controlPlaneClient, kyma)
 	})
 
 	AfterAll(func() {
 		Expect(controlPlaneClient.Delete(suiteCtx, watcher)).To(Succeed())
-		testutils.DeleteModuleTemplates(suiteCtx, controlPlaneClient, kyma)
+		DeleteModuleTemplates(suiteCtx, controlPlaneClient, kyma)
 		Expect(controlPlaneClient.Delete(suiteCtx, kyma)).Should(Succeed())
 	})
 

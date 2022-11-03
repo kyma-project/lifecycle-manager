@@ -2,6 +2,7 @@ package deploy
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -18,18 +19,62 @@ import (
 	k8syaml "sigs.k8s.io/yaml"
 )
 
-type SKRWebhookChartManager struct {
+var ExpectedExactlyOneSKRConfigErr = errors.New("expected exactly one SKR config")
+
+type SKRWebhookChartManager interface {
+	InstallWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
+		remoteClientCache *remote.ClientCache, kcpClient client.Client) (bool, error)
+	RemoveWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
+		syncCtx *remote.KymaSynchronizationContext) error
+}
+
+type DisabledSKRWebhookChartManager struct{}
+
+func ResolveSKRWebhookChartManager(isWatcherEnabled bool, skrConfigs ...*SkrChartConfig,
+) (SKRWebhookChartManager, error) {
+	if isWatcherEnabled && len(skrConfigs) != 0 {
+		return nil, ExpectedExactlyOneSKRConfigErr
+	}
+	if !isWatcherEnabled {
+		return &DisabledSKRWebhookChartManager{}, nil
+	}
+
+	return NewEnabledSKRWebhookChartManager(skrConfigs[0]), nil
+}
+
+func (m *DisabledSKRWebhookChartManager) InstallWebhookChart(_ context.Context, _ *v1alpha1.Kyma,
+	_ *remote.ClientCache, _ client.Client,
+) (bool, error) {
+	return false, nil
+}
+
+func (m *DisabledSKRWebhookChartManager) RemoveWebhookChart(_ context.Context, _ *v1alpha1.Kyma,
+	_ *remote.KymaSynchronizationContext,
+) error {
+	return nil
+}
+
+type EnabledSKRWebhookChartManager struct {
 	config  *SkrChartConfig
 	kcpAddr string
 }
 
-func NewSKRWebhookChartManager(config *SkrChartConfig) *SKRWebhookChartManager {
-	return &SKRWebhookChartManager{
+type SkrChartConfig struct {
+	// WebhookChartPath represents the path of the webhook chart
+	// to be installed on SKR clusters upon reconciling kyma CRs.
+	WebhookChartPath             string
+	SkrWebhookMemoryLimits       string
+	SkrWebhookCPULimits          string
+	EnableWebhookPreInstallCheck bool
+}
+
+func NewEnabledSKRWebhookChartManager(config *SkrChartConfig) *EnabledSKRWebhookChartManager {
+	return &EnabledSKRWebhookChartManager{
 		config: config,
 	}
 }
 
-func (m *SKRWebhookChartManager) InstallWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
+func (m *EnabledSKRWebhookChartManager) InstallWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
 	remoteClientCache *remote.ClientCache, kcpClient client.Client,
 ) (bool, error) {
 	skrClient, err := remote.NewRemoteClient(ctx, kcpClient, client.ObjectKeyFromObject(kyma),
@@ -56,7 +101,7 @@ func (m *SKRWebhookChartManager) InstallWebhookChart(ctx context.Context, kyma *
 	return false, nil
 }
 
-func (m *SKRWebhookChartManager) RemoveWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
+func (m *EnabledSKRWebhookChartManager) RemoveWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
 	syncCtx *remote.KymaSynchronizationContext,
 ) error {
 	skrCfg, err := remote.GetRemoteRestConfig(ctx, syncCtx.ControlPlaneClient, client.ObjectKeyFromObject(kyma),
@@ -73,7 +118,7 @@ func (m *SKRWebhookChartManager) RemoveWebhookChart(ctx context.Context, kyma *v
 	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeUninstall, m.config.EnableWebhookPreInstallCheck)
 }
 
-func (m *SKRWebhookChartManager) generateHelmChartArgs(ctx context.Context,
+func (m *EnabledSKRWebhookChartManager) generateHelmChartArgs(ctx context.Context,
 	kcpClient client.Client,
 ) (map[string]interface{}, error) {
 	watcherList := &v1alpha1.WatcherList{}
@@ -102,7 +147,7 @@ func (m *SKRWebhookChartManager) generateHelmChartArgs(ctx context.Context,
 	}, nil
 }
 
-func (m *SKRWebhookChartManager) resolveKcpAddr(ctx context.Context, kcpClient client.Client) (string, error) {
+func (m *EnabledSKRWebhookChartManager) resolveKcpAddr(ctx context.Context, kcpClient client.Client) (string, error) {
 	if m.kcpAddr != "" {
 		return m.kcpAddr, nil
 	}
@@ -173,13 +218,4 @@ func installOrRemoveChartOnSKR(ctx context.Context, deployInfo modulelib.Install
 		return ErrSKRWebhookHasNotBeenInstalled
 	}
 	return nil
-}
-
-type SkrChartConfig struct {
-	// WebhookChartPath represents the path of the webhook chart
-	// to be installed on SKR clusters upon reconciling kyma CRs.
-	WebhookChartPath             string
-	SkrWebhookMemoryLimits       string
-	SkrWebhookCPULimits          string
-	EnableWebhookPreInstallCheck bool
 }
