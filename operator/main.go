@@ -333,8 +333,11 @@ func setupKymaReconciler(
 }
 
 func setupKcpWatcherReconciler(mgr ctrl.Manager, intervals controllers.RequeueIntervals, options controller.Options) {
-	// set MaxConcurrentReconciles to 1 to avoid concurrent writes on
-	// the Istio virtual service resource the WatcherReconciler is managing
+	// Set MaxConcurrentReconciles to 1 to avoid concurrent writes on
+	// the Istio virtual service resource the WatcherReconciler is managing.
+	// In total, we probably only have 20 watcher CRs, one worker can sufficiently handle it,
+	// and we don't have to deal with concurrent write to virtual service.
+	// although eventually the write operation will succeed.
 	options.MaxConcurrentReconciles = 1
 	if err := (&controllers.WatcherReconciler{
 		Client:           mgr.GetClient(),
