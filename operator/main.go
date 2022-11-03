@@ -45,12 +45,14 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/controllers"
 	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
+	"github.com/go-logr/logr"
+	"github.com/go-logr/zapr"
+	"go.uber.org/zap"
 )
 
 const (
@@ -107,21 +109,25 @@ type FlagVar struct {
 
 func main() {
 	flagVar := defineFlagVar()
-
-	opts := zap.Options{
-		Development: true,
-		Level:       zapcore.DebugLevel,
-	}
-	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
-
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+	ctrl.SetLogger(configLogger())
 
 	if flagVar.pprof {
 		go pprofStartServer(flagVar.pprofAddr, flagVar.pprofServerTimeout)
 	}
 
 	setupManager(flagVar, controllers.NewCacheFunc(), scheme)
+}
+
+func configLogger() logr.Logger {
+	atomicLevel := zap.NewAtomicLevel()
+	atomicLevel.SetLevel(zap.DebugLevel)
+	encoderConfig := zap.NewProductionEncoderConfig()
+	encoderConfig.TimeKey = "timestamp"
+	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	zapLog := zap.New(zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), zapcore.Lock(os.Stdout), atomicLevel))
+	logger := zapr.NewLogger(zapLog)
+	return logger
 }
 
 func pprofStartServer(addr string, timeout time.Duration) {
