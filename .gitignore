@@ -93,3 +93,6 @@ out.txt
 
 # ignore .pem key files
 **/*.pem
+
+# rendered manifest
+**/manifest.yaml

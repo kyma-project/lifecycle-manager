@@ -5,16 +5,16 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
-	"github.com/kyma-project/module-manager/operator/pkg/custom"
-	modulelib "github.com/kyma-project/module-manager/operator/pkg/manifest"
-	"github.com/kyma-project/module-manager/operator/pkg/types"
 	appsv1 "k8s.io/api/apps/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
+	moduleLib "github.com/kyma-project/module-manager/operator/pkg/manifest"
+	moduleLibTypes "github.com/kyma-project/module-manager/operator/pkg/types"
 )
 
 type Mode string
@@ -61,18 +61,19 @@ func ResolveSKRChartResourceName(resourceNameTpl string) string {
 	return fmt.Sprintf(resourceNameTpl, ReleaseName)
 }
 
-func prepareInstallInfo(chartPath, releaseName string, restConfig *rest.Config, restClient client.Client,
-	argsVals map[string]interface{},
-) modulelib.InstallInfo {
-	return modulelib.InstallInfo{
-		ChartInfo: &modulelib.ChartInfo{
+func prepareInstallInfo(ctx context.Context, chartPath, releaseName string, restConfig *rest.Config,
+	restClient client.Client, argsVals map[string]interface{},
+) moduleLib.InstallInfo {
+	return moduleLib.InstallInfo{
+		Ctx: ctx,
+		ChartInfo: &moduleLib.ChartInfo{
 			ChartPath:   chartPath,
 			ReleaseName: releaseName,
-			Flags: types.ChartFlags{
+			Flags: moduleLibTypes.ChartFlags{
 				SetFlags: argsVals,
 			},
 		},
-		ClusterInfo: custom.ClusterInfo{
+		ClusterInfo: moduleLibTypes.ClusterInfo{
 			Client: restClient,
 			Config: restConfig,
 		},
