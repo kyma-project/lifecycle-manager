@@ -6,7 +6,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper"
+	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper" //nolint:typecheck
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/test"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

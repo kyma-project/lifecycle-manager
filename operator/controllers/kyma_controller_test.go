@@ -6,7 +6,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper"
+	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper" //nolint:typecheck
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )

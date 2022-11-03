@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper"
+	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper" //nolint:typecheck
 	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

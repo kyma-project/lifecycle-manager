@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+
 	"github.com/kyma-project/lifecycle-manager/operator/internal/custom"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
 
@@ -91,7 +92,6 @@ func (r *WatcherReconciler) SetupWithManager(
 	mgr ctrl.Manager,
 	options controller.Options,
 ) error {
-
 	if r.RestConfig == nil {
 		return ErrRestConfigIsNotSet
 	}

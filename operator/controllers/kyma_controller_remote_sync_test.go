@@ -12,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper"
+	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper" //nolint:typecheck
 )
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {

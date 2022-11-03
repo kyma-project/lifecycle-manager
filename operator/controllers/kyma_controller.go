@@ -297,13 +297,13 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error) {
 	logger := log.FromContext(ctx)
 
-	if kyma.Spec.Sync.Enabled {
+	if kyma.Spec.Sync.Enabled { //nolint:nestif
 		syncContext, err := remote.InitializeKymaSynchronizationContext(ctx, r.Client, kyma, r.RemoteClientCache)
 		if err != nil {
 			return false, fmt.Errorf("remote sync initialization failed: %w", err)
 		}
 		if r.EnableKcpWatcher {
-			if err := r.RemoveWebhookChart(ctx, kyma, syncContext); err != nil {
+			if err = r.RemoveWebhookChart(ctx, kyma, syncContext); err != nil {
 				return true, nil
 			}
 		}

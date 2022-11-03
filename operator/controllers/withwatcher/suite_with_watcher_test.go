@@ -52,7 +52,7 @@ import (
 
 	//+kubebuilder:scaffold:imports
 	"github.com/kyma-project/lifecycle-manager/operator/controllers"
-	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper"
+	"github.com/kyma-project/lifecycle-manager/operator/controllers/testhelper" //nolint:typecheck
 	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
 )
 

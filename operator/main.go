@@ -18,12 +18,13 @@ package main
 
 import (
 	"flag"
-	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
 	"net/http"
 	"net/http/pprof"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
 
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
