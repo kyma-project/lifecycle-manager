@@ -42,7 +42,7 @@ func RegisterDefaultLifecycleForKyma(kyma *v1alpha1.Kyma) {
 
 	BeforeEach(func() {
 		By("get latest kyma CR")
-		Expect(controlPlaneClient.Get(ctx, client.ObjectKey{Name: kyma.Name, Namespace: namespace}, kyma)).Should(Succeed())
+		Expect(controlPlaneClient.Get(ctx, client.ObjectKey{Name: kyma.Name, Namespace: metav1.NamespaceDefault}, kyma)).Should(Succeed())
 	})
 }
 
@@ -124,7 +124,7 @@ func getModule(kymaName, moduleName string) (*unstructured.Unstructured, error) 
 		Kind:    "Manifest",
 	})
 	err := controlPlaneClient.Get(ctx, client.ObjectKey{
-		Namespace: namespace,
+		Namespace: metav1.NamespaceDefault,
 		Name:      common.CreateModuleName(moduleName, kymaName),
 	}, component)
 	if err != nil {
@@ -135,7 +135,7 @@ func getModule(kymaName, moduleName string) (*unstructured.Unstructured, error) 
 
 func GetModuleTemplate(name string) (*v1alpha1.ModuleTemplate, error) {
 	moduleTemplateInCluster := &v1alpha1.ModuleTemplate{}
-	err := controlPlaneClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, moduleTemplateInCluster)
+	err := controlPlaneClient.Get(ctx, client.ObjectKey{Namespace: metav1.NamespaceDefault, Name: name}, moduleTemplateInCluster)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +255,7 @@ func deleteModule(kymaName, moduleName string) func() error {
 			Version: v1alpha1.Version,
 			Kind:    "Manifest",
 		})
-		component.SetNamespace(namespace)
+		component.SetNamespace(metav1.NamespaceDefault)
 		component.SetName(common.CreateModuleName(moduleName, kymaName))
 		err := controlPlaneClient.Delete(ctx, component)
 		return client.IgnoreNotFound(err)

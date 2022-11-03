@@ -11,12 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-const (
-	namespace = "default"
-	timeout   = time.Second * 10
-	interval  = time.Millisecond * 250
-)
-
 var _ = Describe("Kyma with no ModuleTemplate", Ordered, func() {
 	kyma := testhelper.NewTestKyma("no-module-kyma")
 	RegisterDefaultLifecycleForKyma(kyma)
@@ -24,7 +18,7 @@ var _ = Describe("Kyma with no ModuleTemplate", Ordered, func() {
 	It("Should result in a ready state immediately", func() {
 		By("having transitioned the CR State to Ready as there are no modules")
 		Eventually(testhelper.IsKymaInState(ctx, controlPlaneClient, kyma.GetName(), v1alpha1.StateReady),
-			timeout, interval).Should(BeTrue())
+			testhelper.Timeout, testhelper.Interval).Should(BeTrue())
 	})
 })
 
@@ -41,19 +35,19 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 
 	It("should result in Kyma becoming Ready", func() {
 		By("checking the state to be Processing")
-		Eventually(GetKymaState(kyma.GetName()), 20*time.Second, interval).
+		Eventually(GetKymaState(kyma.GetName()), 20*time.Second, testhelper.Interval).
 			Should(BeEquivalentTo(string(v1alpha1.StateProcessing)))
 
 		By("having created new conditions in its status")
-		Eventually(GetKymaConditions(kyma.GetName()), timeout, interval).ShouldNot(BeEmpty())
+		Eventually(GetKymaConditions(kyma.GetName()), testhelper.Timeout, testhelper.Interval).ShouldNot(BeEmpty())
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateModuleState(kyma.GetName(), activeModule.Name, v1alpha1.StateReady),
-				20*time.Second, interval).Should(Succeed())
+				20*time.Second, testhelper.Interval).Should(Succeed())
 		}
 
 		By("having updated the Kyma CR state to ready")
-		Eventually(GetKymaState(kyma.GetName()), 20*time.Second, interval).
+		Eventually(GetKymaState(kyma.GetName()), 20*time.Second, testhelper.Interval).
 			Should(BeEquivalentTo(string(v1alpha1.StateReady)))
 
 		By("Kyma status contains expected condition")
@@ -62,7 +56,7 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 		Expect(kymaInCluster.ContainsCondition(v1alpha1.ConditionTypeReady,
 			v1alpha1.ConditionReasonModulesAreReady, metav1.ConditionTrue)).To(BeTrue())
 		By("Module Catalog created")
-		Eventually(ModuleTemplatesExist(controlPlaneClient, kyma), 10*time.Second, interval).Should(Succeed())
+		Eventually(ModuleTemplatesExist(controlPlaneClient, kyma), 10*time.Second, testhelper.Interval).Should(Succeed())
 		kymaInCluster, err = testhelper.GetKyma(ctx, controlPlaneClient, kyma.GetName())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(kymaInCluster.ContainsCondition(v1alpha1.ConditionTypeReady,
@@ -93,23 +87,23 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 	It("CR should be recreated after delete", func() {
 		By("CR created")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ModuleExists(kyma.GetName(), activeModule.Name), timeout, interval).Should(BeTrue())
+			Eventually(ModuleExists(kyma.GetName(), activeModule.Name), testhelper.Timeout, testhelper.Interval).Should(BeTrue())
 		}
 		By("Delete CR")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(deleteModule(kyma.GetName(), activeModule.Name), timeout, interval).Should(Succeed())
+			Eventually(deleteModule(kyma.GetName(), activeModule.Name), testhelper.Timeout, testhelper.Interval).Should(Succeed())
 		}
 
 		By("CR created again")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ModuleExists(kyma.GetName(), activeModule.Name), timeout, interval).Should(BeTrue())
+			Eventually(ModuleExists(kyma.GetName(), activeModule.Name), testhelper.Timeout, testhelper.Interval).Should(BeTrue())
 		}
 	})
 
 	It("CR should be deleted after removed from kyma.spec.modules", func() {
 		By("CR created")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ModuleExists(kyma.GetName(), activeModule.Name), timeout, interval).Should(BeTrue())
+			Eventually(ModuleExists(kyma.GetName(), activeModule.Name), testhelper.Timeout, testhelper.Interval).Should(BeTrue())
 		}
 		By("Remove kcp-module from kyma.spec.modules")
 		kyma.Spec.Modules = []v1alpha1.Module{
@@ -118,10 +112,10 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 		Expect(controlPlaneClient.Update(ctx, kyma)).To(Succeed())
 
 		By("kcp-module deleted")
-		Eventually(ModuleNotExist(kyma.GetName(), kcpModule.Name), timeout, interval).Should(BeTrue())
+		Eventually(ModuleNotExist(kyma.GetName(), kcpModule.Name), testhelper.Timeout, testhelper.Interval).Should(BeTrue())
 
 		By("skr-module exists")
-		Eventually(ModuleExists(kyma.GetName(), skrModule.Name), timeout, interval).Should(BeTrue())
+		Eventually(ModuleExists(kyma.GetName(), skrModule.Name), testhelper.Timeout, testhelper.Interval).Should(BeTrue())
 	})
 })
 
@@ -139,17 +133,17 @@ var _ = Describe("Kyma update Manifest CR", Ordered, func() {
 	It("Manifest CR should be updated after module template changed", func() {
 		By("CR created")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ModuleExists(kyma.GetName(), activeModule.Name), timeout, interval).Should(BeTrue())
+			Eventually(ModuleExists(kyma.GetName(), activeModule.Name), testhelper.Timeout, testhelper.Interval).Should(BeTrue())
 		}
 
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateModuleState(kyma.GetName(), activeModule.Name, v1alpha1.StateReady),
-				20*time.Second, interval).Should(Succeed())
+				20*time.Second, testhelper.Interval).Should(Succeed())
 		}
 
 		By("Kyma CR should be in Ready state")
-		Eventually(GetKymaState(kyma.GetName()), 20*time.Second, interval).
+		Eventually(GetKymaState(kyma.GetName()), 20*time.Second, testhelper.Interval).
 			Should(BeEquivalentTo(string(v1alpha1.StateReady)))
 
 		By("Update Module Template spec.data.spec field")
@@ -164,7 +158,7 @@ var _ = Describe("Kyma update Manifest CR", Ordered, func() {
 		By("CR updated with new value in spec.resource.spec")
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(SKRModuleExistWithOverwrites(kyma.GetName(), activeModule.Name),
-				timeout, interval).Should(Equal(valueUpdated))
+				testhelper.Timeout, testhelper.Interval).Should(Equal(valueUpdated))
 		}
 	})
 })

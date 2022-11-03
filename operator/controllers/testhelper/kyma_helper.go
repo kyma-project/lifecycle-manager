@@ -5,6 +5,7 @@ package testhelper
 import (
 	"context"
 	"math/rand"
+	"time"
 
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/test"
 
@@ -21,6 +22,8 @@ import (
 const (
 	randomStringLength = 8
 	letterBytes        = "abcdefghijklmnopqrstuvwxyz"
+	Timeout            = time.Second * 10
+	Interval           = time.Millisecond * 250
 )
 
 func NewTestKyma(name string) *v1alpha1.Kyma {

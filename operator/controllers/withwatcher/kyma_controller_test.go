@@ -19,7 +19,6 @@ import (
 )
 
 const (
-	namespace                      = "default"
 	webhookConfigNameTpl           = "%s-webhook"
 	servicePathTpl                 = "/validate/%s"
 	specSubresources               = "*"
@@ -34,7 +33,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	kyma.Spec.Sync = v1alpha1.Sync{
 		Enabled:      true,
 		Strategy:     v1alpha1.SyncStrategyLocalClient,
-		Namespace:    namespace,
+		Namespace:    metav1.NamespaceDefault,
 		NoModuleCopy: true,
 	}
 	RegisterDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma)

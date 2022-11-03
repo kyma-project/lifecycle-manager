@@ -69,8 +69,8 @@ var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
 
 	DescribeTable("Test ModuleTemplate.Spec.Target",
 		func(givenCondition func() error, expectedBehavior func() error) {
-			Eventually(givenCondition, timeout, interval).Should(Succeed())
-			Eventually(expectedBehavior, timeout, interval).Should(Succeed())
+			Eventually(givenCondition, testhelper.Timeout, testhelper.Interval).Should(Succeed())
+			Eventually(expectedBehavior, testhelper.Timeout, testhelper.Interval).Should(Succeed())
 		},
 		Entry("When ModuleTemplate.Spec.Target not exist deployed, expect Manifest.Spec.remote=false",
 			noCondition(),
