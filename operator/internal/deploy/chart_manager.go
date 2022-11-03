@@ -19,7 +19,7 @@ import (
 	k8syaml "sigs.k8s.io/yaml"
 )
 
-var ExpectedExactlyOneSKRConfigErr = errors.New("expected exactly one SKR config")
+var ErrExpectedExactlyOneSKRConfig = errors.New("expected exactly one SKR config")
 
 type SKRWebhookChartManager interface {
 	InstallWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
@@ -30,10 +30,11 @@ type SKRWebhookChartManager interface {
 
 type DisabledSKRWebhookChartManager struct{}
 
+//nolint:ireturn
 func ResolveSKRWebhookChartManager(isWatcherEnabled bool, skrConfigs ...*SkrChartConfig,
 ) (SKRWebhookChartManager, error) {
 	if isWatcherEnabled && len(skrConfigs) != 0 {
-		return nil, ExpectedExactlyOneSKRConfigErr
+		return nil, ErrExpectedExactlyOneSKRConfig
 	}
 	if !isWatcherEnabled {
 		return &DisabledSKRWebhookChartManager{}, nil
