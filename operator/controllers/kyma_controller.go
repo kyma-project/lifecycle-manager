@@ -60,15 +60,6 @@ type RequeueIntervals struct {
 	Waiting time.Duration
 }
 
-type SkrChartConfig struct {
-	// WebhookChartPath represents the path of the webhook chart
-	// to be installed on SKR clusters upon reconciling kyma CRs.
-	WebhookChartPath             string
-	SkrWebhookMemoryLimits       string
-	SkrWebhookCPULimits          string
-	EnableWebhookPreInstallCheck bool
-}
-
 // KymaReconciler reconciles a Kyma object.
 type KymaReconciler struct {
 	client.Client

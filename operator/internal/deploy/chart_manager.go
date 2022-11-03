@@ -19,21 +19,13 @@ import (
 )
 
 type SKRWebhookChartManager struct {
-	config                       ManagerConfig
-	kcpAddr                      string
-	enableWebhookPreInstallCheck bool
+	config  *SkrChartConfig
+	kcpAddr string
 }
 
-type ManagerConfig struct {
-	WebhookChartPath       string
-	SkrWebhookMemoryLimits string
-	SkrWebhookCPULimits    string
-}
-
-func NewSKRWebhookChartManager(config ManagerConfig, enableWebhookPreInstallCheck bool) *SKRWebhookChartManager {
+func NewSKRWebhookChartManager(config *SkrChartConfig) *SKRWebhookChartManager {
 	return &SKRWebhookChartManager{
-		config:                       config,
-		enableWebhookPreInstallCheck: enableWebhookPreInstallCheck,
+		config: config,
 	}
 }
 
@@ -56,7 +48,7 @@ func (m *SKRWebhookChartManager) InstallWebhookChart(ctx context.Context, kyma *
 	}
 	// TODO(khlifi411): make sure that validating-webhook-config resource is in sync with the secret configuration
 	skrWatcherInstallInfo := prepareInstallInfo(m.config.WebhookChartPath, ReleaseName, skrCfg, skrClient, argsVals)
-	err = installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeInstall, m.enableWebhookPreInstallCheck)
+	err = installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeInstall, m.config.EnableWebhookPreInstallCheck)
 	if err != nil {
 		return true, err
 	}
@@ -76,8 +68,9 @@ func (m *SKRWebhookChartManager) RemoveWebhookChart(ctx context.Context, kyma *v
 	if err != nil {
 		return err
 	}
-	skrWatcherInstallInfo := prepareInstallInfo(m.config.WebhookChartPath, ReleaseName, skrCfg, syncCtx.RuntimeClient, argsVals)
-	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeUninstall, m.enableWebhookPreInstallCheck)
+	skrWatcherInstallInfo := prepareInstallInfo(m.config.WebhookChartPath, ReleaseName, skrCfg,
+		syncCtx.RuntimeClient, argsVals)
+	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeUninstall, m.config.EnableWebhookPreInstallCheck)
 }
 
 func (m *SKRWebhookChartManager) generateHelmChartArgs(ctx context.Context,
@@ -180,4 +173,13 @@ func installOrRemoveChartOnSKR(ctx context.Context, deployInfo modulelib.Install
 		return ErrSKRWebhookHasNotBeenInstalled
 	}
 	return nil
+}
+
+type SkrChartConfig struct {
+	// WebhookChartPath represents the path of the webhook chart
+	// to be installed on SKR clusters upon reconciling kyma CRs.
+	WebhookChartPath             string
+	SkrWebhookMemoryLimits       string
+	SkrWebhookCPULimits          string
+	EnableWebhookPreInstallCheck bool
 }

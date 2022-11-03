@@ -18,6 +18,7 @@ package controllers_test
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
 	"os"
 	"path/filepath"
 	"testing"
@@ -138,7 +139,7 @@ var _ = BeforeSuite(func() {
 	}
 
 	remoteClientCache := remote.NewClientCache()
-	skrChartCfg := &controllers.SkrChartConfig{
+	skrChartCfg := &deploy.SkrChartConfig{
 		WebhookChartPath:       webhookChartPath,
 		SkrWebhookMemoryLimits: "200Mi",
 		SkrWebhookCPULimits:    "1",

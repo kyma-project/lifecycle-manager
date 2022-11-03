@@ -18,6 +18,7 @@ package main
 
 import (
 	"flag"
+	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -178,7 +179,7 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 	setupKymaReconciler(mgr, remoteClientCache, flagVar, intervals, options)
 
 	if flagVar.enableKcpWatcher {
-		setupKcpWatcherReconciler(mgr, flagVar, intervals, options)
+		setupKcpWatcherReconciler(mgr, intervals, options)
 	}
 	if flagVar.enableWebhooks {
 		if err := (&operatorv1alpha1.ModuleTemplate{}).
@@ -308,7 +309,7 @@ func setupKymaReconciler(
 			setupLog.Error(err, "failed to read local skr chart")
 		}
 	}
-	skrChartConfig := &controllers.SkrChartConfig{
+	skrChartConfig := &deploy.SkrChartConfig{
 		WebhookChartPath:             flagVar.skrWatcherPath,
 		SkrWebhookMemoryLimits:       flagVar.skrWebhookMemoryLimits,
 		SkrWebhookCPULimits:          flagVar.skrWebhookCPULimits,
@@ -331,12 +332,7 @@ func setupKymaReconciler(
 	}
 }
 
-func setupKcpWatcherReconciler(
-	mgr ctrl.Manager,
-	flagVar *FlagVar,
-	intervals controllers.RequeueIntervals,
-	options controller.Options,
-) {
+func setupKcpWatcherReconciler(mgr ctrl.Manager, intervals controllers.RequeueIntervals, options controller.Options) {
 	// set MaxConcurrentReconciles to 1 to avoid concurrent writes on
 	// the Istio virtual service resource the WatcherReconciler is managing
 	options.MaxConcurrentReconciles = 1

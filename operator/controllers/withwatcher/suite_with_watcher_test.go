@@ -150,7 +150,7 @@ var _ = BeforeSuite(func() {
 	}
 
 	remoteClientCache = remote.NewClientCache()
-	skrChartCfg := &controllers.SkrChartConfig{
+	skrChartCfg := &deploy.SkrChartConfig{
 		WebhookChartPath:       webhookChartPath,
 		SkrWebhookMemoryLimits: "200Mi",
 		SkrWebhookCPULimits:    "1",

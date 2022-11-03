@@ -27,7 +27,7 @@ import (
 
 // SetupWithManager sets up the Kyma controller with the Manager.
 func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options, listenerAddr string,
-	skrChartConfig *SkrChartConfig,
+	skrChartConfig *deploy.SkrChartConfig,
 ) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1alpha1.Kyma{}).WithOptions(options).
 		Watches(
@@ -62,22 +62,13 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 	if skrChartConfig == nil {
 		return fmt.Errorf("unable to set chart manager for watcher controller: %w", ErrSkrChartConfigNotSet)
 	}
-	mgrCfg := deployChartConfig(skrChartConfig)
-	r.SKRWebhookChartManager = deploy.NewSKRWebhookChartManager(mgrCfg, skrChartConfig.EnableWebhookPreInstallCheck)
+	r.SKRWebhookChartManager = deploy.NewSKRWebhookChartManager(skrChartConfig)
 
 	if err := controllerBuilder.Complete(r); err != nil {
 		return fmt.Errorf("error occurred while building controller: %w", err)
 	}
 
 	return nil
-}
-
-func deployChartConfig(skrChartConfig *SkrChartConfig) deploy.ManagerConfig {
-	return deploy.ManagerConfig{
-		WebhookChartPath:       skrChartConfig.WebhookChartPath,
-		SkrWebhookMemoryLimits: skrChartConfig.SkrWebhookMemoryLimits,
-		SkrWebhookCPULimits:    skrChartConfig.SkrWebhookCPULimits,
-	}
 }
 
 func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, eventChannel *source.Channel) {
