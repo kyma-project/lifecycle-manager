@@ -120,13 +120,16 @@ func main() {
 }
 
 func configLogger() logr.Logger {
+	// The following settings is based on kyma community Improvement of log messages usability
+	// https://github.com/kyma-project/community/blob/main/concepts/observability-consistent-logging/improvement-of-log-messages-usability.md#log-structure
 	atomicLevel := zap.NewAtomicLevel()
-	atomicLevel.SetLevel(zap.DebugLevel)
 	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.TimeKey = "timestamp"
-	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
-	zapLog := zap.New(zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), zapcore.Lock(os.Stdout), atomicLevel))
-	logger := zapr.NewLogger(zapLog)
+	encoderConfig.TimeKey = "date"
+	encoderConfig.EncodeTime = zapcore.RFC3339NanoTimeEncoder
+	encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
+	core := zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), zapcore.Lock(os.Stdout), atomicLevel)
+	zapLog := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
+	logger := zapr.NewLogger(zapLog.With(zap.Namespace("context")))
 	return logger
 }
 

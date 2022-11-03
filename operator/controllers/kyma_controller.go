@@ -21,13 +21,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/operator/pkg/catalog"
-	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/adapter"
+	"github.com/kyma-project/lifecycle-manager/operator/pkg/catalog"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/channel"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/module/parse"
@@ -35,6 +31,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/status"
+	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -79,7 +77,7 @@ type KymaReconciler struct {
 
 func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
-	logger.Info("reconciling modules", "resource", req.NamespacedName.String())
+	logger.Info("reconciling modules")
 
 	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
 
@@ -89,7 +87,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		// we'll ignore not-found errors, since they can't be fixed by an immediate
 		// requeue (we'll need to wait for a new notification), and we can get them
 		// on deleted requests.
-		logger.Info(req.NamespacedName.String() + " got deleted!")
+		logger.Info("Deleted successfully!")
 
 		return ctrl.Result{}, client.IgnoreNotFound(err) //nolint:wrapcheck
 	}
@@ -257,10 +255,9 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	kyma.SyncConditionsWithModuleStates()
 	// set ready condition if applicable
 	if kyma.AreAllConditionsReadyForKyma() && kyma.Status.State != v1alpha1.StateReady {
-		message := fmt.Sprintf("reconciliation of %s finished!", kyma.Name)
+		message := fmt.Sprint("Reconciliation finished!")
 		logger.Info(message)
 		r.Event(kyma, "Normal", "ReconciliationSuccess", message)
-
 		return r.UpdateStatusWithEvent(ctx, kyma, v1alpha1.StateReady, message)
 	}
 
@@ -297,8 +294,7 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1
 		if err := remote.RemoveFinalizerFromRemoteKyma(ctx, kyma, syncContext); client.IgnoreNotFound(err) != nil {
 			return false, fmt.Errorf("error while trying to remove finalizer from remote: %w", err)
 		}
-		logger.Info("removed remote finalizer",
-			"resource", client.ObjectKeyFromObject(kyma))
+		logger.Info("removed remote finalizer")
 	}
 
 	controllerutil.RemoveFinalizer(kyma, v1alpha1.Finalizer)
@@ -312,18 +308,14 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1
 
 func (r *KymaReconciler) TriggerKymaDeletion(ctx context.Context, kyma *v1alpha1.Kyma) error {
 	logger := log.FromContext(ctx)
-	namespacedName := types.NamespacedName{
-		Namespace: kyma.GetNamespace(),
-		Name:      kyma.GetName(),
-	}.String()
 	if kyma.Spec.Sync.Enabled {
 		if err := remote.DeleteRemotelySyncedKyma(
 			ctx, r.Client, r.RemoteClientCache, kyma,
 		); client.IgnoreNotFound(err) != nil {
-			logger.Info(namespacedName + " could not be deleted remotely!")
+			logger.Error(err, "Failed to be deleted remotely!")
 			return fmt.Errorf("error occurred while trying to delete remotely synced kyma: %w", err)
 		}
-		logger.Info(namespacedName + " got deleted remotely!")
+		logger.Info("Successfully deleted remotely!")
 	}
 	return nil
 }
