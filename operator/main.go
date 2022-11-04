@@ -125,7 +125,7 @@ func configLogger() logr.Logger {
 	atomicLevel := zap.NewAtomicLevel()
 	encoderConfig := zap.NewProductionEncoderConfig()
 	encoderConfig.TimeKey = "date"
-	encoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
+	encoderConfig.EncodeTime = zapcore.RFC3339NanoTimeEncoder
 	encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
 	core := zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), zapcore.Lock(os.Stdout), atomicLevel)
 	zapLog := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
