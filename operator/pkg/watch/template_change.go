@@ -53,7 +53,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 			Namespace: template.GetNamespace(),
 			Name:      template.GetName(),
 		}
-		logger := log.FromContext(ctx).WithName("template-change-detection")
+		logger := log.FromContext(ctx)
 
 		labels := template.GetLabels()
 		moduleName := labels[v1alpha1.ModuleName]

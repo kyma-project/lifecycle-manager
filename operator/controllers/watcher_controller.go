@@ -69,13 +69,13 @@ type WatcherConfig struct {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := log.FromContext(ctx).WithName(req.NamespacedName.String())
-	logger.Info("Reconciliation loop starting for", "resource", req.NamespacedName.String())
+	logger := log.FromContext(ctx)
+	logger.Info("Reconciliation loop start")
 
 	watcherObj := &v1alpha1.Watcher{}
 	err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, watcherObj)
 	if err != nil {
-		logger.Info(fmt.Sprintf("failed to get reconciliation object: %s", req.NamespacedName.String()))
+		logger.Error(err, "Failed to get reconciliation object")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
