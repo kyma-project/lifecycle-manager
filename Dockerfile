@@ -21,8 +21,8 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager main.go
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
+COPY skr-webhook skr-webhook/
 COPY --from=builder /workspace/manager .
-COPY config/skr-webhook config/skr-webhook
 USER 65532:65532
 
 ENTRYPOINT ["/manager"]
