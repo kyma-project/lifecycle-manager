@@ -255,7 +255,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	kyma.SyncConditionsWithModuleStates()
 	// set ready condition if applicable
 	if kyma.AreAllConditionsReadyForKyma() && kyma.Status.State != v1alpha1.StateReady {
-		message := fmt.Sprint("Reconciliation finished!")
+		const message = "Reconciliation finished!"
 		logger.Info(message)
 		r.Event(kyma, "Normal", "ReconciliationSuccess", message)
 		return r.UpdateStatusWithEvent(ctx, kyma, v1alpha1.StateReady, message)

@@ -121,6 +121,7 @@ func main() {
 
 func configLogger() logr.Logger {
 	// The following settings is based on kyma community Improvement of log messages usability
+	//nolint:lll
 	// https://github.com/kyma-project/community/blob/main/concepts/observability-consistent-logging/improvement-of-log-messages-usability.md#log-structure
 	atomicLevel := zap.NewAtomicLevel()
 	encoderConfig := zap.NewProductionEncoderConfig()
