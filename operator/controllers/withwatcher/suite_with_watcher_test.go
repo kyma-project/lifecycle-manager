@@ -75,7 +75,7 @@ var (
 )
 
 const (
-	webhookChartPath       = "../../internal/charts/skr-webhook"
+	webhookChartPath       = "../../charts/skr-webhook"
 	istioResourcesFilePath = "../../internal/assets/istio-test-resources.yaml"
 )
 
