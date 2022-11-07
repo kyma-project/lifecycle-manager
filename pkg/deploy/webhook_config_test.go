@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	deploy2 "github.com/kyma-project/lifecycle-manager/pkg/deploy"
+	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -24,7 +24,7 @@ const (
 func createIstioNs() error {
 	istioNs := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: deploy2.IstioSytemNs,
+			Name: deploy.IstioSytemNs,
 		},
 	}
 	if err := k8sClient.Create(ctx, istioNs); err != nil && !errors.IsAlreadyExists(err) {
@@ -83,24 +83,24 @@ var _ = Describe("deploy watcher", Ordered, func() {
 	})
 
 	It("deploys watcher helm chart with correct webhook config", func() {
-		err := deploy2.UpdateWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, "500Mi", "1")
+		err := deploy.UpdateWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, "500Mi", "1")
 		Expect(err).ShouldNot(HaveOccurred())
-		webhookCfg, err := deploy2.GetDeployedWebhook(ctx, testEnv.Config)
+		webhookCfg, err := deploy.GetDeployedWebhook(ctx, testEnv.Config)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(deploy2.IsWebhookConfigured(watcherCR, webhookCfg)).To(BeTrue())
+		Expect(deploy.IsWebhookConfigured(watcherCR, webhookCfg)).To(BeTrue())
 	})
 
 	It("updates webhook config when helm chart is already installed", func() {
 		watcherCR.Spec.Field = v1alpha1.SpecField
-		err := deploy2.UpdateWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, "500Mi", "1")
+		err := deploy.UpdateWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, "500Mi", "1")
 		Expect(err).ShouldNot(HaveOccurred())
-		webhookCfg, err := deploy2.GetDeployedWebhook(ctx, testEnv.Config)
+		webhookCfg, err := deploy.GetDeployedWebhook(ctx, testEnv.Config)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(deploy2.IsWebhookConfigured(watcherCR, webhookCfg)).To(BeTrue())
+		Expect(deploy.IsWebhookConfigured(watcherCR, webhookCfg)).To(BeTrue())
 	})
 
 	It("removes watcher helm chart from SKR cluster when last cr is deleted", func() {
-		err := deploy2.RemoveWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, "500Mi", "1")
+		err := deploy.RemoveWebhookConfig(ctx, webhookChartPath, watcherCR, testEnv.Config, k8sClient, "500Mi", "1")
 		Expect(err).ShouldNot(HaveOccurred())
 		Eventually(IsChartRemoved(ctx, k8sClient), Timeout, Interval).Should(BeTrue())
 	})

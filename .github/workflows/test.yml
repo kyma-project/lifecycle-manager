@@ -54,7 +54,7 @@ jobs:
         cli-stability: ["unstable"]
         smoke-run: [ "${{ github.repository }}" ]
     needs: [wait-for-img, kustomize]
-    name: "Kyma CLI - ${{ matrix.cli-stability }} - Integration (Tests of ${{ matrix.smoke_test-run }})"
+    name: "Kyma CLI - ${{ matrix.cli-stability }} - Integration (Tests of ${{ matrix.smoke-run }})"
     runs-on: ubuntu-latest
     env:
       MODULE_MANAGER: kyma-project/module-manager
