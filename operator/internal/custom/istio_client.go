@@ -19,21 +19,23 @@ const (
 	firstElementIdx     = 0
 	vsDeletionThreshold = 1
 	contractVersion     = "v1"
-	virtualServiceName  = "kcp-events"
-	gatewayName         = "lifecycle-manager-kyma-gateway"
 )
 
 type IstioClient struct {
 	istioclient.Interface
+	virtualServiceName string
+	gatewayName        string
 }
 
-func NewVersionedIstioClient(cfg *rest.Config) (*IstioClient, error) {
+func NewVersionedIstioClient(cfg *rest.Config, virtualServiceName, gatewayName string) (*IstioClient, error) {
 	cs, err := istioclient.NewForConfig(cfg)
 	if err != nil {
 		return nil, err
 	}
 	return &IstioClient{
-		Interface: cs,
+		Interface:          cs,
+		virtualServiceName: virtualServiceName,
+		gatewayName:        gatewayName,
 	}, nil
 }
 
@@ -45,7 +47,7 @@ type customClientErr struct {
 func (c *IstioClient) getVirtualService(ctx context.Context) (*istioclientapi.VirtualService, *customClientErr) {
 	virtualService, err := c.NetworkingV1beta1().
 		VirtualServices(metav1.NamespaceDefault).
-		Get(ctx, virtualServiceName, metav1.GetOptions{})
+		Get(ctx, c.virtualServiceName, metav1.GetOptions{})
 	if client.IgnoreNotFound(err) != nil {
 		return nil, &customClientErr{
 			Err:        fmt.Errorf("failed to fetch virtual service %w", err),
@@ -68,14 +70,14 @@ func (c *IstioClient) createVirtualService(ctx context.Context, watcher *v1alpha
 	}
 	_, err := c.NetworkingV1beta1().
 		Gateways(metav1.NamespaceDefault).
-		Get(ctx, gatewayName, metav1.GetOptions{})
+		Get(ctx, c.gatewayName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error getting configured istio gateway: %w", err)
 	}
 	virtualSvc := &istioclientapi.VirtualService{}
-	virtualSvc.SetName(virtualServiceName)
+	virtualSvc.SetName(c.virtualServiceName)
 	virtualSvc.SetNamespace(metav1.NamespaceDefault)
-	virtualSvc.Spec.Gateways = append(virtualSvc.Spec.Gateways, gatewayName)
+	virtualSvc.Spec.Gateways = append(virtualSvc.Spec.Gateways, c.gatewayName)
 	virtualSvc.Spec.Hosts = append(virtualSvc.Spec.Hosts, "*")
 	virtualSvc.Spec.Http = []*istioapi.HTTPRoute{
 		prepareIstioHTTPRouteForCR(watcher),
@@ -115,7 +117,7 @@ func (c *IstioClient) IsListenerHTTPRouteConfigured(ctx context.Context, obj *v1
 func (c *IstioClient) IsVsDeleted(ctx context.Context) (bool, error) {
 	_, err := c.NetworkingV1beta1().
 		VirtualServices(metav1.NamespaceDefault).
-		Get(ctx, virtualServiceName, metav1.GetOptions{})
+		Get(ctx, c.virtualServiceName, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
 		return true, nil
 	}
@@ -161,7 +163,7 @@ func (c *IstioClient) RemoveVirtualServiceConfigForCR(ctx context.Context, watch
 		// last http route is being deleted: remove the virtual service resource
 		return c.NetworkingV1beta1().
 			VirtualServices(metav1.NamespaceDefault).
-			Delete(ctx, virtualServiceName, metav1.DeleteOptions{})
+			Delete(ctx, c.virtualServiceName, metav1.DeleteOptions{})
 	}
 
 	routeIdx := lookupHTTPRouteByObjectKey(virtualService.Spec.Http, watcherObjKey)

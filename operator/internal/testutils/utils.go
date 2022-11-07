@@ -25,6 +25,8 @@ import (
 const (
 	randomStringLength = 8
 	letterBytes        = "abcdefghijklmnopqrstuvwxyz"
+	defaultBufferSize  = 2048
+	httpClientTimeout  = 2 * time.Second
 	Timeout            = time.Second * 10
 	Interval           = time.Millisecond * 250
 )
@@ -95,11 +97,6 @@ func IsKymaInState(ctx context.Context, kcpClient client.Client, kymaName string
 		return true
 	}
 }
-
-const (
-	defaultBufferSize = 2048
-	httpClientTimeout = 2 * time.Second
-)
 
 func ParseRemoteCRDs(testCrdURLs []string) ([]*v12.CustomResourceDefinition, error) {
 	var crds []*v12.CustomResourceDefinition

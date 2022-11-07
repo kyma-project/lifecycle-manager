@@ -1,19 +1,12 @@
 package withwatcher_test
 
 import (
-	"time"
-
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/internal/custom"
 	. "github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-)
-
-const (
-	timeout  = time.Second * 10
-	interval = time.Millisecond * 250
 )
 
 func cRSpecsUpdates() func(customIstioClient *custom.IstioClient) {
@@ -39,7 +32,7 @@ func oneCRDeleted() func(customIstioClient *custom.IstioClient) {
 		watcherCR := watcherCrs[crToDeleteIdx]
 		Expect(controlPlaneClient.Delete(suiteCtx, watcherCR)).To(Succeed())
 
-		Eventually(isCrDeletionFinished(client.ObjectKeyFromObject(watcherCR)), timeout, interval).
+		Eventually(isCrDeletionFinished(client.ObjectKeyFromObject(watcherCR)), Timeout, Interval).
 			Should(BeTrue())
 		Eventually(isCrVsConfigured(suiteCtx, customIstioClient, watcherCR)).Should(BeFalse())
 	}
@@ -55,7 +48,7 @@ func allCRsDeleted() func(customIstioClient *custom.IstioClient) {
 			Expect(controlPlaneClient.Delete(suiteCtx, watcherCr)).To(Succeed())
 		}
 		// verify
-		Eventually(isCrDeletionFinished(), timeout, interval).Should(BeTrue())
+		Eventually(isCrDeletionFinished(), Timeout, Interval).Should(BeTrue())
 		Eventually(isVsRemoved(suiteCtx, customIstioClient)).Should(BeTrue())
 	}
 }
@@ -68,7 +61,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 		// create kyma resource
 		kymaSample = NewTestKyma("kyma-sample")
 
-		customIstioClient, err = custom.NewVersionedIstioClient(cfg)
+		customIstioClient, err = custom.NewVersionedIstioClient(cfg, virtualServiceName, gatewayName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(controlPlaneClient.Create(suiteCtx, kymaSample)).To(Succeed())
 		// create WatcherCRs
