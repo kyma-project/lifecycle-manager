@@ -39,7 +39,7 @@ jobs:
           cache: true
           go-version-file: 'go.mod'
           cache-dependency-path: 'go.sum'
-      - run: cd operator && make dry-run${{ matrix.flavor }} IMG='*:latest'
+      - run: make dry-run${{ matrix.flavor }} IMG='*:latest'
       - name: Archive Manifests
         uses: actions/upload-artifact@v3
         with:
