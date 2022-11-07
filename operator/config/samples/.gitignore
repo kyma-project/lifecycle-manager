@@ -1,6 +1,0 @@
-**/secret-gardener-k8s.yaml
-**/*.pem
-**/*component-descriptor*.yaml
-**/*generated*
-**/example
-**/*secret*

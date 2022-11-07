@@ -330,7 +330,7 @@ go get github.com/kyma-project/module-manager/operator@latest
 
 ### Custom reconciliation and status handling guidelines
 
-A custom resource is required to contain a specific set of properties in the Status object, to be tracked by the [lifecycle-manager](https://github.com/kyma-project/lifecycle-manager/tree/main/operator).
+A custom resource is required to contain a specific set of properties in the Status object, to be tracked by the [lifecycle-manager](https://github.com/kyma-project/lifecycle-manager/tree/main).
 This is required to track the current state of the module, represented by this custom resource.
 
 1. Check the reference implementation of [Status](https://github.com/kyma-project/module-manager/blob/main/operator/pkg/types/declaritive.go) reference implementation. The `.status.state` field of your custom resource _MUST_ contain one of these state values at all times.
@@ -520,7 +520,7 @@ _WARNING: This step requires the working OCI Registry and Cluster from our [Pre-
 
 Now that everything is prepared in a cluster of your choice, you are free to reference the module within any `Kyma` custom resource in your Control Plane cluster.
 
-Deploy the [Lifecycle Manager](https://github.com/kyma-project/lifecycle-manager/tree/main/operator) & [Module Manager](https://github.com/kyma-project/module-manager/tree/main/operator) to the Control Plane cluster with:
+Deploy the [Lifecycle Manager](https://github.com/kyma-project/lifecycle-manager/tree/main) & [Module Manager](https://github.com/kyma-project/module-manager/tree/main/operator) to the Control Plane cluster with:
 
 ```shell
 kyma alpha deploy

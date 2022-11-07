@@ -28,24 +28,20 @@ To bundle your module image and operator, please refer to the detailed informati
    Go to `https://github.com/kyma-project/lifecycle-manager` and run the following commands, to create a secret and apply it to the KCP Cluster:
 
    ```sh
-   chmod 755 ./operator/config/samples/secret/k3d-secret-gen.sh
-   ./operator/config/samples/secret/k3d-secret-gen.sh
+   chmod 755 ./config/samples/secret/k3d-secret-gen.sh
+   ./config/samples/secret/k3d-secret-gen.sh
    ```
 
 2. Create the `kyma-system` Namespace:
 
-   ```sh
-   kubectl create ns kyma-system
-   ```
-
-3. Run [module-manager](https://github.com/kyma-project/module-manager/tree/main/operator) and [lifecycle-manager](https://github.com/kyma-project/lifecycle-manager/tree/main/operator) in this order.
+5. Run [module-manager](https://github.com/kyma-project/module-manager/tree/main/operator) and [lifecycle-manager](https://github.com/kyma-project/lifecycle-manager/tree/main) in this order.
    * local: run following commands against your cluster's kubeconfig
-   ```makefile
+   ```shell
     make install
     make run
    ```
    * in-cluster
-   ```makefile
+   ```shell
    # for local registry adjust IMG value accordingly
    # using remote registry (replace `latest` with your desired tag)
    make deploy IMG=eu.gcr.io/kyma-project/module-manager:latest

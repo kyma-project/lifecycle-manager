@@ -37,8 +37,8 @@ jobs:
         uses: actions/setup-go@v3
         with:
           cache: true
-          go-version-file: 'operator/go.mod'
-          cache-dependency-path: 'operator/go.sum'
+          go-version-file: 'go.mod'
+          cache-dependency-path: 'go.sum'
       - run: cd operator && make dry-run${{ matrix.flavor }} IMG='*:latest'
       - name: Archive Manifests
         uses: actions/upload-artifact@v3
@@ -46,7 +46,7 @@ jobs:
           retention-days: 5
           name: dry-run${{ matrix.flavor }}
           path: |
-            operator/dry-run/*.yaml
+            dry-run/*.yaml
 
   cli-integration:
     strategy:
@@ -54,7 +54,7 @@ jobs:
         cli-stability: ["unstable"]
         smoke-run: [ "${{ github.repository }}" ]
     needs: [wait-for-img, kustomize]
-    name: "Kyma CLI - ${{ matrix.cli-stability }} - Integration (Tests of ${{ matrix.smoke-run }})"
+    name: "Kyma CLI - ${{ matrix.cli-stability }} - Integration (Tests of ${{ matrix.smoke_test-run }})"
     runs-on: ubuntu-latest
     env:
       MODULE_MANAGER: kyma-project/module-manager
@@ -84,7 +84,7 @@ jobs:
         run: |
           wget -qO - "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
           mv kustomize /usr/local/bin/
-          cd $(go env GOPATH)/src/github.com/${{ github.repository }}/operator/config/manager
+          cd $(go env GOPATH)/src/github.com/${{ github.repository }}/config/manager
           kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
       - name: Set up k3d
         run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
@@ -107,18 +107,13 @@ jobs:
       - name: Run Deploy
         run: |
           kyma alpha deploy \
-            -k $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/operator/config/default \
+            -k $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/config/default \
             -k $(go env GOPATH)/src/github.com/$MODULE_MANAGER/operator/config/default
 
       - name: Inject GOPATH into go Setup
         run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
 
-      - name: Set up Go for ${{ matrix.smoke-run }}
-        uses: actions/setup-go@v3
-        with:
-          go-version-file: ${{ env.GOPATH }}/src/github.com/${{ matrix.smoke-run }}/tests/smoke/go.mod
-          cache-dependency-path: ${{ env.GOPATH }}/src/github.com/${{ matrix.smoke-run }}/tests/smoke/go.sum
-      - name: Run Smoke Tests for ${{ matrix.smoke-run }}
+      - name: Run Smoke Tests for ${{ matrix.smoke_test-run }}
         run: |
           cd $(go env GOPATH)/src/github.com/${{ matrix.smoke-run }}/tests/smoke
-          go test smoke_test.go -v
+          make test-verbose

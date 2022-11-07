@@ -51,7 +51,7 @@ Temporary Items
 .apdisk
 
 # Binaries
-operator/bin/*
+bin/*
 
 # Vendor
 vendor/
@@ -81,12 +81,12 @@ out.txt
 **/__debug_bin
 
 .run/
-/operator/config/crd/bases/operator.kyma-project.io*
+/config/crd/bases/operator.kyma-project.io*
 .test.env
 **/**.code-workspace
 
 **/dry-run
-**/bin
+bin
 **/go.work
 **/go.work.sum
 
