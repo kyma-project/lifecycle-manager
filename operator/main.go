@@ -99,7 +99,6 @@ type FlagVar struct {
 	skrWatcherPath                                                         string
 	skrWebhookMemoryLimits                                                 string
 	skrWebhookCPULimits                                                    string
-	enableWebhookPreInstallCheck                                           bool
 	virtualServiceName                                                     string
 	gatewayName                                                            string
 	pprof                                                                  bool
@@ -280,8 +279,6 @@ func defineFlagVar() *FlagVar {
 		"The resources.limits.memory for skr webhook.")
 	flag.StringVar(&flagVar.skrWebhookCPULimits, "skr-webhook-cpu-limits", "0.1",
 		"The resources.limits.cpu for skr webhook.")
-	flag.BoolVar(&flagVar.enableWebhookPreInstallCheck, "enable-webhook-pre-install-check", false,
-		"Whether to execute webhook pre-install check.")
 	flag.StringVar(&flagVar.virtualServiceName, "virtual-svc-name", "kcp-events",
 		"Name of the virtual service resource to be reconciled by the watcher control loop.")
 	flag.StringVar(&flagVar.virtualServiceName, "gateway-name", "lifecycle-manager-kyma-gateway",
@@ -317,10 +314,9 @@ func setupKymaReconciler(
 		}
 	}
 	skrChartConfig := &deploy.SkrChartConfig{
-		WebhookChartPath:             flagVar.skrWatcherPath,
-		SkrWebhookMemoryLimits:       flagVar.skrWebhookMemoryLimits,
-		SkrWebhookCPULimits:          flagVar.skrWebhookCPULimits,
-		EnableWebhookPreInstallCheck: flagVar.enableWebhookPreInstallCheck,
+		WebhookChartPath:       flagVar.skrWatcherPath,
+		SkrWebhookMemoryLimits: flagVar.skrWebhookMemoryLimits,
+		SkrWebhookCPULimits:    flagVar.skrWebhookCPULimits,
 	}
 	skrWebhookChartManager, err := deploy.ResolveSKRWebhookChartManager(flagVar.enableKcpWatcher, skrChartConfig)
 	if err != nil {

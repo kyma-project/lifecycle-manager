@@ -63,10 +63,9 @@ type EnabledSKRWebhookChartManager struct {
 type SkrChartConfig struct {
 	// WebhookChartPath represents the path of the webhook chart
 	// to be installed on SKR clusters upon reconciling kyma CRs.
-	WebhookChartPath             string
-	SkrWebhookMemoryLimits       string
-	SkrWebhookCPULimits          string
-	EnableWebhookPreInstallCheck bool
+	WebhookChartPath       string
+	SkrWebhookMemoryLimits string
+	SkrWebhookCPULimits    string
 }
 
 func NewEnabledSKRWebhookChartManager(config *SkrChartConfig) *EnabledSKRWebhookChartManager {
@@ -94,7 +93,7 @@ func (m *EnabledSKRWebhookChartManager) InstallWebhookChart(ctx context.Context,
 	}
 	// TODO(khlifi411): make sure that validating-webhook-config resource is in sync with the secret configuration
 	skrWatcherInstallInfo := prepareInstallInfo(ctx, m.config.WebhookChartPath, ReleaseName, skrCfg, skrClient, argsVals)
-	err = installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeInstall, m.config.EnableWebhookPreInstallCheck)
+	err = installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeInstall)
 	if err != nil {
 		return true, err
 	}
@@ -116,7 +115,7 @@ func (m *EnabledSKRWebhookChartManager) RemoveWebhookChart(ctx context.Context, 
 	}
 	skrWatcherInstallInfo := prepareInstallInfo(ctx, m.config.WebhookChartPath, ReleaseName, skrCfg,
 		syncCtx.RuntimeClient, argsVals)
-	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeUninstall, m.config.EnableWebhookPreInstallCheck)
+	return installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeUninstall)
 }
 
 func (m *EnabledSKRWebhookChartManager) generateHelmChartArgs(ctx context.Context,
@@ -185,9 +184,7 @@ func generateWatchableConfigs(watcherList *v1alpha1.WatcherList) map[string]Watc
 	return chartCfg
 }
 
-func installOrRemoveChartOnSKR(ctx context.Context, deployInfo modulelib.InstallInfo, mode Mode,
-	enableWebhookPreInstallCheck bool,
-) error {
+func installOrRemoveChartOnSKR(ctx context.Context, deployInfo modulelib.InstallInfo, mode Mode) error {
 	logger := logf.FromContext(ctx)
 	if mode == ModeUninstall {
 		uninstalled, err := modulelib.UninstallChart(&logger, deployInfo, nil, nil)
@@ -200,16 +197,14 @@ func installOrRemoveChartOnSKR(ctx context.Context, deployInfo modulelib.Install
 
 		return nil
 	}
-	if enableWebhookPreInstallCheck {
-		// TODO(khlifi411): verify webhook configuration with watchers' configuration before re-installing the chart
-		ready, err := modulelib.ConsistencyCheck(&logger, deployInfo, nil, nil)
-		if err != nil {
-			return fmt.Errorf("failed to verify webhook resources: %w", err)
-		}
-		if ready {
-			logger.V(1).Info("chart resources already installed, nothing to do!")
-			return nil
-		}
+	// TODO(khlifi411): verify webhook configuration with watchers' configuration before re-installing the chart
+	ready, err := modulelib.ConsistencyCheck(&logger, deployInfo, nil, nil)
+	if err != nil {
+		return fmt.Errorf("failed to verify webhook resources: %w", err)
+	}
+	if ready {
+		logger.V(1).Info("chart resources already installed, nothing to do!")
+		return nil
 	}
 	installed, err := modulelib.InstallChart(&logger, deployInfo, nil, nil)
 	if err != nil {
