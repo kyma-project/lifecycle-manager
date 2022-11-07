@@ -22,7 +22,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager main.go
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
 COPY --from=builder /workspace/manager .
-COPY --from=builder /workspace/config/skr-webhook ./skr-webhook
+COPY config/skr-webhook ./config/skr-webhook
 USER 65532:65532
 
 ENTRYPOINT ["/manager"]
