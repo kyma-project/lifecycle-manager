@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	webhookChartPath = "../skr-webhook"
+	webhookChartPath = "../../skr-webhook"
 )
 
 func createIstioNs() error {
