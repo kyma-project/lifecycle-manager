@@ -114,7 +114,7 @@ var _ = BeforeSuite(func() {
 		Scheme: scheme.Scheme,
 	}
 
-	err = reconciler.SetupWithManager(k8sManager, chartPath, configFlags, setFlags, rateLimiter)
+	err = reconciler.SetupWithManager(k8sManager, rateLimiter)
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
