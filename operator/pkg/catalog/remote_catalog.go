@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"strconv"
 
 	remotecontext "github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -151,25 +150,8 @@ func (*RemoteCatalog) CalculateDiffs(
 		}
 		remote.ObjectMeta.SetManagedFields([]metav1.ManagedFieldsEntry{})
 
-		if remote.Annotations == nil {
-			remote.Annotations = make(map[string]string)
-		}
-
-		// if there is a template in controlPlane and remote, but the generation is outdated, we need to
-		// update it
-		controlPlaneSyncedGen, _ := strconv.Atoi(remote.Annotations[v1alpha1.LastSyncGenerationControlPlane])
-		controlPlaneGen := (&controlPlaneList.Items[controlPlaneIndex]).GetGeneration()
-		runtimeSyncedGen, _ := strconv.Atoi(remote.Annotations[v1alpha1.LastSyncGenerationRuntime])
-
-		if int64(controlPlaneSyncedGen) != controlPlaneGen {
-			remote.Annotations[v1alpha1.LastSyncGenerationControlPlane] = strconv.Itoa(int(controlPlaneGen))
-			(&controlPlaneList.Items[controlPlaneIndex]).Spec.DeepCopyInto(&remote.Spec)
-			diffToApply = append(diffToApply, remote)
-		} else if int64(runtimeSyncedGen) != remote.GetGeneration() {
-			(&controlPlaneList.Items[controlPlaneIndex]).Spec.DeepCopyInto(&remote.Spec)
-			remote.Annotations[v1alpha1.LastSyncGenerationRuntime] = strconv.Itoa(int(remote.GetGeneration() + 1))
-			diffToApply = append(diffToApply, remote)
-		}
+		(&controlPlaneList.Items[controlPlaneIndex]).Spec.DeepCopyInto(&remote.Spec)
+		diffToApply = append(diffToApply, remote)
 	}
 	return diffToApply, diffToDelete
 }
@@ -180,12 +162,6 @@ func prepareControlPlaneTemplateForRuntime(controlPlane *v1alpha1.ModuleTemplate
 	controlPlane.SetUID("")
 
 	controlPlane.ObjectMeta.SetManagedFields([]metav1.ManagedFieldsEntry{})
-
-	if controlPlane.Annotations == nil {
-		controlPlane.Annotations = make(map[string]string)
-	}
-	controlPlane.Annotations[v1alpha1.LastSyncGenerationControlPlane] = strconv.Itoa(int(controlPlane.GetGeneration()))
-	controlPlane.Annotations[v1alpha1.LastSyncGenerationRuntime] = strconv.Itoa(1)
 }
 
 func (c *RemoteCatalog) Delete(
