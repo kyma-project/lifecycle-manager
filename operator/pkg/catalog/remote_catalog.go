@@ -115,7 +115,7 @@ func (*RemoteCatalog) CalculateDiffs(
 ) ([]*v1alpha1.ModuleTemplate, []*v1alpha1.ModuleTemplate) {
 	// these are various ModuleTemplate references which we will either have to create, update or delete from
 	// the remote
-	var diffToApply []*v1alpha1.ModuleTemplate
+	diffToApply := make([]*v1alpha1.ModuleTemplate, 0, len(runtimeList.Items))
 	var diffToDelete []*v1alpha1.ModuleTemplate
 
 	// now lets start using two frequency maps to discover diffs
