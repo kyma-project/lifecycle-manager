@@ -18,7 +18,7 @@ You can choose between either a single-cluster or a two-cluster setup.
 
 ### Create module operator and bundle module
 
-To bundle your module image and operator, please refer to the detailed information inside [template-operator docs](../../samples/template-operator/README.md#bundling-and-installation).
+To bundle your module image and operator, please refer to the detailed information inside [template-operator docs](../../../template-operator/README.md#bundling-and-installation).
 
 ### Create Kyma custom resource
 
