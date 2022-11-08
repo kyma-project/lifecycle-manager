@@ -136,7 +136,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 }
 
 func (r *KymaReconciler) CtrlErr(ctx context.Context, kyma *v1alpha1.Kyma, err error) (ctrl.Result, error) {
-	return ctrl.Result{},
+	return ctrl.Result{Requeue: true},
 		r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError, err)
 }
 
@@ -198,18 +198,17 @@ func (r *KymaReconciler) stateHandling(ctx context.Context, kyma *v1alpha1.Kyma)
 	log.FromContext(ctx).Info("syncing state", "state", string(kyma.Status.State))
 	switch kyma.Status.State {
 	case "":
-
 		return ctrl.Result{}, r.HandleInitialState(ctx, kyma)
 	case v1alpha1.StateProcessing:
-		return ctrl.Result{}, r.HandleProcessingState(ctx, kyma)
+		return ctrl.Result{Requeue: true}, r.HandleProcessingState(ctx, kyma)
 	case v1alpha1.StateDeleting:
 		if dependentsDeleting, err := r.HandleDeletingState(ctx, kyma); err != nil {
 			return ctrl.Result{}, err
 		} else if dependentsDeleting {
-			return ctrl.Result{}, nil
+			return ctrl.Result{Requeue: true}, nil
 		}
 	case v1alpha1.StateError:
-		return ctrl.Result{}, r.HandleProcessingState(ctx, kyma)
+		return ctrl.Result{Requeue: true}, r.HandleProcessingState(ctx, kyma)
 	case v1alpha1.StateReady:
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, r.HandleProcessingState(ctx, kyma)
 	}
