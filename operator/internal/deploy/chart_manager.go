@@ -70,7 +70,6 @@ type SkrChartConfig struct {
 }
 
 func NewEnabledSKRWebhookChartManager(config *SkrChartConfig) *EnabledSKRWebhookChartManager {
-
 	return &EnabledSKRWebhookChartManager{
 		cache:  NewSKRChartClientCache(),
 		config: config,

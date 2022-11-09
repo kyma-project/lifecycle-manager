@@ -51,6 +51,7 @@ import (
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/controllers"
 	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
+
 	//+kubebuilder:scaffold:imports
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
