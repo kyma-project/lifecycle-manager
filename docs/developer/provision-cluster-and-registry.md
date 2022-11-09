@@ -25,25 +25,20 @@ For a dual cluster setup, with control plane (KCP) and Kyma runtime (SKR); creat
       127.0.0.1 op-skr-registry.localhost
       ```
 
-   2. Use the module operator registry:
-
-      ```sh
-      export MODULE_REGISTRY=op-kcp-registry.localhost:8888/unsigned 
-      ```
-   3. Use the module image registry:
+3. Set `IMG` environment variable for `docker-build` and `docker-push` commands, to make sure images are accessible by local k3d clusters.
       
-      In **_single cluster mode_**:
-      ```sh
-      # pointing to SKR registry in dual cluster mode  
-      export IMG_REGISTRY=op-kcp-registry.localhost:8888/unsigned/operator-images
-      ```
-      In **_dual cluster mode_**:
-      ```sh
-      # pointing to SKR registry in dual cluster mode
-      export IMG_REGISTRY=op-skr-registry.localhost:8888/unsigned/operator-images
-      ```
+   In **_single cluster mode_**:
+   ```sh
+   # pointing to KCP registry in dual cluster mode  
+   export IMG=op-kcp-registry.localhost:8888/unsigned/operator-images
+   ```
+   In **_dual cluster mode_**:
+   ```sh
+   # pointing to SKR registry in dual cluster mode
+   export IMG=op-skr-registry.localhost:8888/unsigned/operator-images
+   ```
 
-3. View the content of your local container registry. For browsing through the content of the local container registry, e.g. `http://op-kcp-registry.localhost:8888/v2/_catalog?n=100`.
+4. After pushing your image, verify the content. For browsing through the content of the local container registry, e.g. `http://op-kcp-registry.localhost:8888/v2/_catalog?n=100`.
 
 
 ## Remote cluster setup
@@ -70,3 +65,11 @@ Learn how to use a Gardener cluster for testing.
    You can follow the guide to [set up a GCP-hosted artifact registry (GCR)](prepare-gcr-registry.md).
 
    _Disclaimer: For private registries, you may have to configure additional settings not covered in this tutorial._
+
+4. Set `IMG` environment variable for `docker-build` and `docker-push` commands.
+   ```sh
+   # this an example
+   # sap-kyma-jellyfish-dev is the GCP project
+   # operator-test is the artifact registry
+   export IMG=europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/operator-test
+   ```

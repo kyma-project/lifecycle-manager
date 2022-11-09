@@ -1,9 +1,9 @@
-# Set up the test environment
+# Set up test environment for local testing
 
 ### Contents
 * [Provision clusters and OCI registry](#provision-clusters-and-oci-registry)
 * [Create module operator and bundle module](#create-module-operator-and-bundle-module)
-* [Install Kyma and run lifecycle-manager operator](#install-kyma-and-run-lifecycle-manager-operator)
+* [Create Kyma custom resource](#create-kyma-custom-resource)
 * [Verify installation](#verify-installation)
 
 ### Provision clusters and OCI registry
@@ -20,17 +20,10 @@ You can choose between either a single-cluster or a two-cluster setup.
 
 To bundle your module image and operator, please refer to the detailed information inside [template-operator docs](../../samples/template-operator/README.md#bundling-and-installation).
 
-### Install Kyma and run lifecycle-manager operator
+### Create Kyma custom resource
 
 1. If you're using the two-cluster setup, set your `KUBECONFIG` to the KCP Cluster context.
-
-2. Create the `kyma-system` Namespace:
-
-   ```sh
-   kubectl create ns kyma-system
-   ```
-
-3. Create a Secret to access the cluster which acts as SKR:
+   Next, create a `Secret` to access the SKR cluster from KCP:
 
    Go to `https://github.com/kyma-project/lifecycle-manager` and run the following commands, to create a secret and apply it to the KCP Cluster:
 
@@ -38,11 +31,14 @@ To bundle your module image and operator, please refer to the detailed informati
    chmod 755 ./operator/config/samples/secret/k3d-secret-gen.sh
    ./operator/config/samples/secret/k3d-secret-gen.sh
    ```
-   > _**NOTE:**_ In the **single-cluster setup**, adjust your contexts for applying the secret using `KCP_CLUSTER_CTX` and `SKR_CLUSTER_CTX` - both should point to the same cluster.
 
-4. To install the Module Manager CRDs, check out `https://github.com/kyma-project/module-manager`, navigate to the operator `cd operator`, and run `make install`.
+2. Create the `kyma-system` Namespace:
 
-5. Run [module-manager](https://github.com/kyma-project/module-manager/tree/main/operator) and [lifecycle-manager](https://github.com/kyma-project/lifecycle-manager/tree/main/operator) in this order.
+   ```sh
+   kubectl create ns kyma-system
+   ```
+
+3. Run [module-manager](https://github.com/kyma-project/module-manager/tree/main/operator) and [lifecycle-manager](https://github.com/kyma-project/lifecycle-manager/tree/main/operator) in this order.
    * local: run following commands against your cluster's kubeconfig
    ```makefile
     make install
@@ -51,61 +47,47 @@ To bundle your module image and operator, please refer to the detailed informati
    * in-cluster
    ```makefile
    # for local registry adjust IMG value accordingly
-   # using remote registry (replace `PR-73` with your desired tag)
-   make deploy IMG=eu.gcr.io/kyma-project/module-manager:PR-73
+   # using remote registry (replace `latest` with your desired tag)
+   make deploy IMG=eu.gcr.io/kyma-project/module-manager:latest
    ```
 
-   > _**NOTE:**_ If you get messages like `no matches for kind "VirtualService" in version "networking.istio.io/v1beta1"`, don't worry. This is normal if you install the operators in a cluster without a certain dependency. If you do not need this dependency for your test, you can safely ignore the warning.
+   > _**NOTE:**_ Ignore dependency errors like `no matches for kind "VirtualService" in version "networking.istio.io/v1beta1"`, if it is irrelevant for your test setup.
+   For using Google Artifact Registry: if you use `gcloud` cli, make sure your local docker config (`~/.docker/config.json`) does not contains `gcloud` `credHelpers` entry, (e.g: `"europe-west3-docker.pkg.dev": "gcloud",`), otherwise this might cause authentication issue for module-manager while fetching remote oci image layer.
 
-6. Start the Kyma installation.
+4. Start the Kyma installation.
 
-    >_**NOTE:**_ for using Google Artifact Registry: if you use gcloud cli, make sure your local docker config (`~/.docker/config.json`) does not contains `gcloud` `credHelpers` entry, (e.g: `"europe-west3-docker.pkg.dev": "gcloud",`), otherwise this might cause authentication issue for module-manager while fetching remote oci image layer.
+   1. Make sure required module templates are prepared and pushed to the KCP cluster, as described in the [bundle your module](#create-module-operator-and-bundle-module) section. 
 
-   1. Make sure required module templates prepared as part of [Bundle your module](#create-module-operator-and-bundle-module) are pushed to the KCP cluster. 
-
-   2. To create a request for Kyma installation of the module in `samples/template-operator` of the Lifecycle Manager, run:
-
+   2. Create a Kyma custom resource specifying the module corresponding to the label value `operator.kyma-project.io/module-name"` of your Module Template.
+   
       ```sh
-      sh hack/gen-kyma.sh
-
       # for a single cluster setup set .spec.sync.enabled = false
-      # in two-cluster setup, use this command:
-      kubectl apply -f kyma.yaml
+      cat <<EOF | kubectl apply -f -
+      apiVersion: operator.kyma-project.io/v1alpha1
+      kind: Kyma
+      metadata:
+         name: my-kyma
+         namespace: kyma-system
+      spec:
+         sync:
+            enabled: true
+         channel: stable
+         modules:
+         - name: sample
+      EOF 
       ```
-
-   3. Check the progress of your Kyma installation with:
+   
+   3. Check the progress of your Kyma CR installation. The success indicator `.status.state` should be set to `Ready`.
       ```sh
-      kubectl get kyma -n kyma-system -ojsonpath={".items[0].status"} | yq -P
+       kubectl get kyma -n kyma-system -ojsonpath={".items[0].status"} | yq -P
       ```
-      You should get results like this:
-      ```yaml
-             conditions:
-               - lastTransitionTime: "2022-08-18T18:10:09Z"
-                 message: module is Ready
-                 reason: template
-                 status: "True"
-                 type: Ready
-             moduleInfos:
-               - moduleName: template
-                 name: templatekyma-sample
-                 namespace: kyma-system
-                 templateInfo:
-                   channel: stable
-                   generation: 1
-                   gvk:
-                     group: operator.kyma-project.io
-                     kind: Manifest
-                     version: v1alpha1
-             observedGeneration: 1
-             state: Ready
-             ```
+      
 
 ### Verify installation
 
-- To observe the installation in the runtime, switch the context to the SKR context, and verify the status.
+To observe the installation in the runtime, switch the context to the SKR context, and verify the status.
 
   ```sh
   kubectl get kyma -n kyma-system -ojsonpath={".items[0].status"} | yq -P
   ```
-
-  If you get `.status.state: Ready`, the installation succeeded.
+  The success indicator `.status.state` should be set to `Ready`, consistent with the KCP state.

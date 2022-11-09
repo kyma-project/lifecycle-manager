@@ -15,16 +15,7 @@ You are using GCP Artifact Registry. The following instructions assume that you 
        --repository-format=docker \
        --location europe-west3
 
-2. Use the created registries.
-
-   ```sh
-   export MODULE_REGISTRY=europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/operator-test
-   export IMG_REGISTRY=$MODULE_REGISTRY/operator-images
-   ```
-
-   > **NOTE:** For `MODULE_REGISTRY`, do not define any scheme such as `https://`, otherwise the module isn't generated properly. The scheme is appended automatically in the operators based on the environment.
-
-3. To make it work with remote clusters such as in Gardener, specify that Read access to the repository, if possible anonymously:
+2. To make it work with remote clusters such as in Gardener, specify that Read access to the repository, if possible anonymously:
 
    ```sh
    gcloud artifacts repositories add-iam-policy-binding operator-test \
