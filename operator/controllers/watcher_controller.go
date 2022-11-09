@@ -19,7 +19,6 @@ package controllers
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -66,7 +65,7 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	watcherObj := &v1alpha1.Watcher{}
 	if err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, watcherObj); err != nil {
-		logger.Info(fmt.Sprintf("failed to get reconciliation object: %s", req.NamespacedName.String()))
+		logger.Error(err, "Failed to get reconciliation object")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
