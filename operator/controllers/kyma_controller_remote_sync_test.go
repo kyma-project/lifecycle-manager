@@ -106,6 +106,5 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("verifying the discovered override and checking the resetted label")
 		Eventually(ModuleTemplatesLabelsCountMatch(runtimeClient, kyma, 0), Timeout, Interval).Should(Succeed())
-		Eventually(ModuleTemplatesLastSyncGenMatches(runtimeClient, kyma), Timeout, Interval).Should(BeTrue())
 	})
 })
