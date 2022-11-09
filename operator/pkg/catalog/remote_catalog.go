@@ -133,8 +133,7 @@ func (*RemoteCatalog) CalculateDiffs(
 		// if the controlPlane Template does not exist in the remote, we already know we need to create it
 		// in the runtime
 		if _, exists := existingOnRemote[controlPlane.Namespace+controlPlane.Name]; !exists {
-			prepareControlPlaneTemplateForRuntime(controlPlane)
-
+			prepareForSSA(controlPlane)
 			diffToApply = append(diffToApply, controlPlane)
 		}
 	}
@@ -148,20 +147,17 @@ func (*RemoteCatalog) CalculateDiffs(
 			diffToDelete = append(diffToDelete, remote)
 			continue
 		}
-		remote.ObjectMeta.SetManagedFields([]metav1.ManagedFieldsEntry{})
-
+		prepareForSSA(remote)
 		(&controlPlaneList.Items[controlPlaneIndex]).Spec.DeepCopyInto(&remote.Spec)
 		diffToApply = append(diffToApply, remote)
 	}
 	return diffToApply, diffToDelete
 }
 
-func prepareControlPlaneTemplateForRuntime(controlPlane *v1alpha1.ModuleTemplate) {
-	// we reset resource version and uid as we want to create new objects from control Plane diffs
-	controlPlane.SetResourceVersion("")
-	controlPlane.SetUID("")
-
-	controlPlane.ObjectMeta.SetManagedFields([]metav1.ManagedFieldsEntry{})
+func prepareForSSA(moduleTemplate *v1alpha1.ModuleTemplate) {
+	moduleTemplate.SetResourceVersion("")
+	moduleTemplate.SetUID("")
+	moduleTemplate.SetManagedFields([]metav1.ManagedFieldsEntry{})
 }
 
 func (c *RemoteCatalog) Delete(
