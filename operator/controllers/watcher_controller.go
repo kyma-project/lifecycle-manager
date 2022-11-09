@@ -73,12 +73,12 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if !watcherObj.DeletionTimestamp.IsZero() {
 		err := r.RemoveVirtualServiceConfigForCR(ctx, req.NamespacedName)
 		if err != nil {
-			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
+			return ctrl.Result{Requeue: true}, err
 		}
 		controllerutil.RemoveFinalizer(watcherObj, watcherFinalizer)
 		err = r.Update(ctx, watcherObj)
 		if err != nil {
-			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
+			return ctrl.Result{Requeue: true}, err
 		}
 		return ctrl.Result{}, nil
 	}
@@ -88,13 +88,13 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		controllerutil.AddFinalizer(watcherObj, watcherFinalizer)
 		err := r.Update(ctx, watcherObj)
 		if err != nil {
-			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
+			return ctrl.Result{Requeue: true}, err
 		}
 		return ctrl.Result{}, nil
 	}
 	err := r.UpdateVirtualServiceConfig(ctx, watcherObj)
 	if err != nil {
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure}, err
+		return ctrl.Result{Requeue: true}, err
 	}
-	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
+	return ctrl.Result{Requeue: true}, nil
 }

@@ -65,8 +65,6 @@ const (
 	rateLimiterBurstDefault       = 200
 	port                          = 9443
 	defaultRequeueSuccessInterval = 20 * time.Second
-	defaultRequeueFailureInterval = 10 * time.Second
-	defaultRequeueWaitingInterval = 3 * time.Second
 	defaultClientQPS              = 150
 	defaultClientBurst            = 150
 	defaultPprofServerTimeout     = 90 * time.Second
@@ -93,7 +91,7 @@ type FlagVar struct {
 	probeAddr                                                              string
 	listenerAddr                                                           string
 	maxConcurrentReconciles                                                int
-	requeueSuccessInterval, requeueFailureInterval, requeueWaitingInterval time.Duration
+	requeueSuccessInterval time.Duration
 	moduleVerificationKeyFilePath, moduleVerificationSignatureNames        string
 	clientQPS                                                              float64
 	clientBurst                                                            int
@@ -182,8 +180,6 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 
 	intervals := controllers.RequeueIntervals{
 		Success: flagVar.requeueSuccessInterval,
-		Failure: flagVar.requeueFailureInterval,
-		Waiting: flagVar.requeueWaitingInterval,
 	}
 	options := controllerOptionsFromFlagVar(flagVar)
 
@@ -192,7 +188,7 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 	setupKymaReconciler(mgr, remoteClientCache, flagVar, intervals, options)
 
 	if flagVar.enableKcpWatcher {
-		setupKcpWatcherReconciler(mgr, intervals, options, nil)
+		setupKcpWatcherReconciler(mgr, intervals, options, flagVar)
 	}
 	if flagVar.enableWebhooks {
 		if err := (&operatorv1alpha1.ModuleTemplate{}).
@@ -266,13 +262,6 @@ func defineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.requeueSuccessInterval, "requeue-success-interval", defaultRequeueSuccessInterval,
 		"determines the duration after which an already successfully reconciled Kyma is enqueued for checking "+
 			"if it's still in a consistent state.")
-	flag.DurationVar(&flagVar.requeueFailureInterval, "requeue-failure-interval", defaultRequeueFailureInterval,
-		"determines the duration after which a failing reconciliation is retried and "+
-			"enqueued for a next try at recovering (e.g. because an Remote Synchronization Interaction failed)")
-	flag.DurationVar(&flagVar.requeueWaitingInterval, "requeue-waiting-interval", defaultRequeueWaitingInterval,
-		"determines the duration after which a pending reconciliation is requeued "+
-			"if the operator decides that it needs to wait for a certain state to update before it can proceed "+
-			"(e.g. because of pending finalizers in the deletion process)")
 	flag.Float64Var(&flagVar.clientQPS, "k8s-client-qps", defaultClientQPS, "kubernetes client QPS")
 	flag.IntVar(&flagVar.clientBurst, "k8s-client-burst", defaultClientBurst, "kubernetes client Burst")
 	flag.StringVar(&flagVar.moduleVerificationKeyFilePath, "module-verification-key-file", "",
