@@ -97,13 +97,13 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	case "":
 		return ctrl.Result{}, r.HandleInitialState(ctx, watcherObj)
 	case v1alpha1.WatcherStateProcessing:
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Failure},
+		return ctrl.Result{Requeue: true},
 			r.HandleProcessingState(ctx, logger, watcherObj)
 	case v1alpha1.WatcherStateDeleting:
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Waiting},
+		return ctrl.Result{Requeue: true},
 			r.HandleDeletingState(ctx, logger, watcherObj)
 	case v1alpha1.WatcherStateError:
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Waiting},
+		return ctrl.Result{Requeue: true},
 			r.HandleProcessingState(ctx, logger, watcherObj)
 	case v1alpha1.WatcherStateReady:
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success},
