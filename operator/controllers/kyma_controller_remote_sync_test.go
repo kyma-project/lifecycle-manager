@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"time"
 
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
