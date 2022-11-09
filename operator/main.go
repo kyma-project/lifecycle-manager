@@ -86,28 +86,28 @@ func init() {
 }
 
 type FlagVar struct {
-	metricsAddr                                                            string
-	enableLeaderElection                                                   bool
-	probeAddr                                                              string
-	listenerAddr                                                           string
-	maxConcurrentReconciles                                                int
-	requeueSuccessInterval time.Duration
-	moduleVerificationKeyFilePath, moduleVerificationSignatureNames        string
-	clientQPS                                                              float64
-	clientBurst                                                            int
-	enableWebhooks                                                         bool
-	enableKcpWatcher                                                       bool
-	skrWatcherPath                                                         string
-	skrWebhookMemoryLimits                                                 string
-	skrWebhookCPULimits                                                    string
-	virtualServiceName                                                     string
-	gatewayName                                                            string
-	pprof                                                                  bool
-	pprofAddr                                                              string
-	pprofServerTimeout                                                     time.Duration
-	failureBaseDelay, failureMaxDelay                                      time.Duration
-	rateLimiterBurst, rateLimiterFrequency                                 int
-	cacheSyncTimeout                                                       time.Duration
+	metricsAddr                                                     string
+	enableLeaderElection                                            bool
+	probeAddr                                                       string
+	listenerAddr                                                    string
+	maxConcurrentReconciles                                         int
+	requeueSuccessInterval                                          time.Duration
+	moduleVerificationKeyFilePath, moduleVerificationSignatureNames string
+	clientQPS                                                       float64
+	clientBurst                                                     int
+	enableWebhooks                                                  bool
+	enableKcpWatcher                                                bool
+	skrWatcherPath                                                  string
+	skrWebhookMemoryLimits                                          string
+	skrWebhookCPULimits                                             string
+	virtualServiceName                                              string
+	gatewayName                                                     string
+	pprof                                                           bool
+	pprofAddr                                                       string
+	pprofServerTimeout                                              time.Duration
+	failureBaseDelay, failureMaxDelay                               time.Duration
+	rateLimiterBurst, rateLimiterFrequency                          int
+	cacheSyncTimeout                                                time.Duration
 }
 
 func main() {

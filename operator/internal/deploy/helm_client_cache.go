@@ -11,7 +11,6 @@ type SkrChartClientCache struct {
 	cache *sync.Map
 }
 
-
 func NewSKRChartClientCache() *SkrChartClientCache {
 	return &SkrChartClientCache{
 		cache: &sync.Map{},
