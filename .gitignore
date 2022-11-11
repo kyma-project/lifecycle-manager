@@ -21,7 +21,8 @@
 atlassian-ide-plugin.xml
 
 ## VSCode
-.vscode
+**/*.vscode
+**/*.devcontainer*
 
 ### OSX template
 *.DS_Store
@@ -89,6 +90,9 @@ out.txt
 bin
 **/go.work
 **/go.work.sum
+
+# ignore .pem key files
+**/*.pem
 
 # rendered manifest
 **/manifest.yaml

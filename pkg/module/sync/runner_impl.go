@@ -16,16 +16,16 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 )
 
-func New(clnt client.Client) Runner { //nolint:ireturn
-	return &runnerImpl{clnt}
+func New(clnt client.Client) *RunnerImpl {
+	return &RunnerImpl{clnt}
 }
 
-type runnerImpl struct {
+type RunnerImpl struct {
 	client.Client
 }
 
 // Sync implements Runner.Sync.
-func (r *runnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
+func (r *RunnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 	modules common.Modules,
 ) (bool, error) {
 	baseLogger := log.FromContext(ctx).WithName(client.ObjectKey{Name: kyma.Name, Namespace: kyma.Namespace}.String())
@@ -70,11 +70,11 @@ func (r *runnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 	return false, nil
 }
 
-func (r *runnerImpl) getModule(ctx context.Context, module *manifestV1alpha1.Manifest) error {
+func (r *RunnerImpl) getModule(ctx context.Context, module *manifestV1alpha1.Manifest) error {
 	return r.Get(ctx, client.ObjectKey{Namespace: module.GetNamespace(), Name: module.GetName()}, module)
 }
 
-func (r *runnerImpl) createModule(ctx context.Context, name string, kyma *v1alpha1.Kyma,
+func (r *RunnerImpl) createModule(ctx context.Context, name string, kyma *v1alpha1.Kyma,
 	module *common.Module,
 ) error {
 	if err := r.setupModule(module, kyma, name); err != nil {
@@ -88,7 +88,7 @@ func (r *runnerImpl) createModule(ctx context.Context, name string, kyma *v1alph
 	return nil
 }
 
-func (r *runnerImpl) updateModule(ctx context.Context, name string, kyma *v1alpha1.Kyma,
+func (r *RunnerImpl) updateModule(ctx context.Context, name string, kyma *v1alpha1.Kyma,
 	module *common.Module,
 ) error {
 	if err := r.setupModule(module, kyma, name); err != nil {
@@ -102,7 +102,7 @@ func (r *runnerImpl) updateModule(ctx context.Context, name string, kyma *v1alph
 	return nil
 }
 
-func (r *runnerImpl) setupModule(module *common.Module, kyma *v1alpha1.Kyma, name string) error {
+func (r *RunnerImpl) setupModule(module *common.Module, kyma *v1alpha1.Kyma, name string) error {
 	// set labels
 	module.ApplyLabels(kyma, name)
 
@@ -117,14 +117,14 @@ func (r *runnerImpl) setupModule(module *common.Module, kyma *v1alpha1.Kyma, nam
 	return nil
 }
 
-func (r *runnerImpl) SyncModuleStatus(ctx context.Context, kyma *v1alpha1.Kyma, modules common.Modules) bool {
+func (r *RunnerImpl) SyncModuleStatus(ctx context.Context, kyma *v1alpha1.Kyma, modules common.Modules) bool {
 	statusMap := kyma.GetModuleStatusMap()
 	statusUpdateRequiredFromUpdate := r.updateModuleStatusFromExistingModules(modules, statusMap, kyma)
 	statusUpdateRequiredFromDelete := r.deleteNoLongerExistingModuleStatus(ctx, statusMap, kyma)
 	return statusUpdateRequiredFromUpdate || statusUpdateRequiredFromDelete
 }
 
-func (r *runnerImpl) updateModuleStatusFromExistingModules(modules common.Modules,
+func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Modules,
 	moduleStatusMap map[string]*v1alpha1.ModuleStatus, kyma *v1alpha1.Kyma,
 ) bool {
 	updateRequired := false
@@ -172,7 +172,7 @@ func stateFromManifest(obj *manifestV1alpha1.Manifest) v1alpha1.State {
 	return state
 }
 
-func (r *runnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context,
+func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context,
 	moduleStatusMap map[string]*v1alpha1.ModuleStatus, kyma *v1alpha1.Kyma,
 ) bool {
 	updateRequired := false

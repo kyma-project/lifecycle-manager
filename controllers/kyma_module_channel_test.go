@@ -70,7 +70,7 @@ var _ = Describe("Switching of a Channel leading to an Upgrade", Ordered, func()
 	It(
 		"should lead to kyma being ready in the end of the channel switch", func() {
 			By("having updated the Kyma CR state to ready")
-			Eventually(GetKymaState(kyma.Name), 20*time.Second, Interval).
+			Eventually(GetKymaState(kyma.Name), 20*time.Second, Timeout).
 				Should(BeEquivalentTo(string(v1alpha1.StateReady)))
 		},
 	)

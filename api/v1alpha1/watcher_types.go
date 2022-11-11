@@ -17,8 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"time"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -143,8 +141,6 @@ const (
 )
 
 //+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // Watcher is the Schema for the watchers API.
@@ -156,14 +152,6 @@ type Watcher struct {
 
 	// +kubebuilder:validation:Optional
 	Spec WatcherSpec `json:"spec"`
-
-	// +kubebuilder:validation:Optional
-	Status WatcherStatus `json:"status"`
-}
-
-func (w *Watcher) SetObservedGeneration() *Watcher {
-	w.Status.ObservedGeneration = w.Generation
-	return w
 }
 
 func (w *Watcher) GetModuleName() string {
@@ -171,25 +159,6 @@ func (w *Watcher) GetModuleName() string {
 		return ""
 	}
 	return w.Labels[ManagedBylabel]
-}
-
-func (w *Watcher) AddOrUpdateReadyCondition(state WatcherConditionStatus, msg string) {
-	lastTransitionTime := &metav1.Time{Time: time.Now()}
-	if len(w.Status.Conditions) == 0 {
-		w.Status.Conditions = []WatcherCondition{{
-			Type:               WatcherConditionTypeReady,
-			Status:             state,
-			Message:            msg,
-			LastTransitionTime: lastTransitionTime,
-		}}
-	}
-	for i := range w.Status.Conditions {
-		condition := &w.Status.Conditions[i]
-		if condition.Type == WatcherConditionTypeReady {
-			condition.Status = state
-			condition.LastTransitionTime = lastTransitionTime
-		}
-	}
 }
 
 //+kubebuilder:object:root=true

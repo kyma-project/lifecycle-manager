@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -31,7 +33,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	kyma.Spec.Sync = v1alpha1.Sync{
 		Enabled:      true,
 		Strategy:     v1alpha1.SyncStrategyLocalClient,
-		Namespace:    namespace,
+		Namespace:    metav1.NamespaceDefault,
 		NoModuleCopy: true,
 	}
 	kyma.Spec.Modules = append(kyma.Spec.Modules, *skrModule)
@@ -47,7 +49,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	It("CR add from client should be synced in both clusters", func() {
 		By("Remote Kyma created")
 		Eventually(RemoteKymaExists(runtimeClient, kyma.GetName()), 30*time.Second, Interval).Should(Succeed())
-		remoteKyma, err := GetKyma(runtimeClient, kyma.GetName())
+		remoteKyma, err := GetKyma(ctx, runtimeClient, kyma.GetName())
 		Expect(err).ShouldNot(HaveOccurred())
 
 		By("add skr-module-client to remoteKyma.spec.modules")
@@ -57,7 +59,8 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Eventually(runtimeClient.Update(ctx, remoteKyma), Timeout, Interval).Should(Succeed())
 
 		By("skr-module-client created in kcp")
-		Eventually(ModuleExists(kyma.GetName(), skrModuleFromClient.Name), Timeout, Interval).Should(BeTrue())
+		Eventually(ModuleExists(kyma.GetName(), skrModuleFromClient.Name),
+			Timeout, Interval).Should(BeTrue())
 	})
 })
 
@@ -67,7 +70,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma.Spec.Sync = v1alpha1.Sync{
 		Enabled:      true,
 		Strategy:     v1alpha1.SyncStrategyLocalClient,
-		Namespace:    namespace,
+		Namespace:    metav1.NamespaceDefault,
 		NoModuleCopy: true,
 	}
 
@@ -90,7 +93,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		}
 
 		By("No spec.module in remote Kyma")
-		remoteKyma, err := GetKyma(runtimeClient, kyma.GetName())
+		remoteKyma, err := GetKyma(ctx, runtimeClient, kyma.GetName())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(remoteKyma.Spec.Modules).To(BeEmpty())
 
@@ -101,8 +104,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("updating a module template in the remote cluster to simulate unwanted modification")
 		Eventually(ModifyModuleTemplateSpecThroughLabels(runtimeClient, kyma,
-			ocm.Labels{ocm.Label{Name: "test", Value: json.RawMessage(`{"foo":"bar"}`)}}), Timeout,
-			Interval).Should(Succeed())
+			ocm.Labels{ocm.Label{Name: "test", Value: json.RawMessage(`{"foo":"bar"}`)}}), Timeout, Interval).Should(Succeed())
 
 		By("verifying the discovered override and checking the resetted label")
 		Eventually(ModuleTemplatesLabelsCountMatch(runtimeClient, kyma, 0), Timeout, Interval).Should(Succeed())

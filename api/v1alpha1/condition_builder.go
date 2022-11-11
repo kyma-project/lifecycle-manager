@@ -17,6 +17,15 @@ const (
 	MessageModuleNotInReadyState    = "not all modules are in ready state"
 	MessageModuleCatalogIsSynced    = "module catalog is synchronized"
 	MessageModuleCatalogIsOutOfSync = "module catalog is out of sync and needs to be resynchronized"
+	MessageSKRWebhookIsSynced       = "skrwebhook is synchronized"
+	MessageSKRWebhookIsOutOfSync    = "skrwebhook is out of sync and needs to be resynchronized"
+)
+
+// Extend this list by actual needs.
+const (
+	ConditionReasonModulesAreReady      KymaConditionReason = "ModulesAreReady"
+	ConditionReasonModuleCatalogIsReady KymaConditionReason = "ModuleCatalogIsReady"
+	ConditionReasonSKRWebhookIsReady    KymaConditionReason = "SKRWebhookIsReady"
 )
 
 func NewConditionBuilder() *ConditionBuilder {
@@ -69,6 +78,15 @@ func (cb *ConditionBuilder) generateMessage() string {
 		}
 
 		return MessageModuleCatalogIsOutOfSync
+	case ConditionReasonSKRWebhookIsReady:
+		switch cb.Status {
+		case metav1.ConditionTrue:
+			return MessageSKRWebhookIsSynced
+		case metav1.ConditionUnknown:
+		case metav1.ConditionFalse:
+		}
+
+		return MessageSKRWebhookIsOutOfSync
 	}
 
 	return "no detailed message available as reason is unknown to API"

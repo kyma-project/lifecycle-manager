@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"go.uber.org/zap/zapcore"
@@ -49,6 +50,7 @@ import (
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
+
 	//+kubebuilder:scaffold:imports
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
@@ -97,6 +99,8 @@ type FlagVar struct {
 	skrWatcherPath                                                  string
 	skrWebhookMemoryLimits                                          string
 	skrWebhookCPULimits                                             string
+	virtualServiceName                                              string
+	gatewayName                                                     string
 	pprof                                                           bool
 	pprofAddr                                                       string
 	pprofServerTimeout                                              time.Duration
@@ -183,7 +187,7 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 	setupKymaReconciler(mgr, remoteClientCache, flagVar, intervals, options)
 
 	if flagVar.enableKcpWatcher {
-		setupKcpWatcherReconciler(mgr, flagVar, intervals, options)
+		setupKcpWatcherReconciler(mgr, intervals, options, flagVar)
 	}
 	if flagVar.enableWebhooks {
 		if err := (&operatorv1alpha1.ModuleTemplate{}).
@@ -268,12 +272,16 @@ func defineFlagVar() *FlagVar {
 		"Enabling Validation/Conversion Webhooks.")
 	flag.BoolVar(&flagVar.enableKcpWatcher, "enable-kcp-watcher", false,
 		"Enabling KCP Watcher to reconcile Watcher CRs created by KCP run operators")
-	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "skr-webhook",
+	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "charts/skr-webhook",
 		"The path to the skr watcher chart.")
 	flag.StringVar(&flagVar.skrWebhookMemoryLimits, "skr-webhook-memory-limits", "200Mi",
 		"The resources.limits.memory for skr webhook.")
 	flag.StringVar(&flagVar.skrWebhookCPULimits, "skr-webhook-cpu-limits", "0.1",
 		"The resources.limits.cpu for skr webhook.")
+	flag.StringVar(&flagVar.virtualServiceName, "virtual-svc-name", "kcp-events",
+		"Name of the virtual service resource to be reconciled by the watcher control loop.")
+	flag.StringVar(&flagVar.virtualServiceName, "gateway-name", "lifecycle-manager-kyma-gateway",
+		"Name of the gateway resource that the virtual service will use.")
 	flag.BoolVar(&flagVar.pprof, "pprof", false,
 		"Whether to start up a pprof server.")
 	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
@@ -298,11 +306,28 @@ func setupKymaReconciler(
 	intervals controllers.RequeueIntervals,
 	options controller.Options,
 ) {
+	if flagVar.enableKcpWatcher {
+		watcherChartDirInfo, err := os.Stat(flagVar.skrWatcherPath)
+		if err != nil || !watcherChartDirInfo.IsDir() {
+			setupLog.Error(err, "failed to read local skr chart")
+		}
+	}
+	skrChartConfig := &deploy.SkrChartConfig{
+		WebhookChartPath:       flagVar.skrWatcherPath,
+		SkrWebhookMemoryLimits: flagVar.skrWebhookMemoryLimits,
+		SkrWebhookCPULimits:    flagVar.skrWebhookCPULimits,
+	}
+	skrWebhookChartManager, err := deploy.ResolveSKRWebhookChartManager(flagVar.enableKcpWatcher, skrChartConfig)
+	if err != nil {
+		setupLog.Error(err, "failed to resolve SKR chart manager")
+	}
 	if err := (&controllers.KymaReconciler{
-		Client:            mgr.GetClient(),
-		EventRecorder:     mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		RemoteClientCache: remoteClientCache,
-		RequeueIntervals:  intervals,
+		Client:                 mgr.GetClient(),
+		EventRecorder:          mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		KcpRestConfig:          mgr.GetConfig(),
+		RemoteClientCache:      remoteClientCache,
+		SKRWebhookChartManager: skrWebhookChartManager,
+		RequeueIntervals:       intervals,
 		VerificationSettings: signature.VerificationSettings{
 			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
 			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
@@ -313,28 +338,21 @@ func setupKymaReconciler(
 	}
 }
 
-func setupKcpWatcherReconciler(
-	mgr ctrl.Manager,
+func setupKcpWatcherReconciler(mgr ctrl.Manager, intervals controllers.RequeueIntervals, options controller.Options,
 	flagVar *FlagVar,
-	intervals controllers.RequeueIntervals,
-	options controller.Options,
 ) {
-	fileInfo, err := os.Stat(flagVar.skrWatcherPath)
-	if err != nil || !fileInfo.IsDir() {
-		setupLog.Error(err, "failed to read local skr chart")
-	}
-	watcherConfig := &controllers.WatcherConfig{
-		WebhookChartPath:       flagVar.skrWatcherPath,
-		SkrWebhookMemoryLimits: flagVar.skrWebhookMemoryLimits,
-		SkrWebhookCPULimits:    flagVar.skrWebhookCPULimits,
-	}
+	// Set MaxConcurrentReconciles to 1 to avoid concurrent writes on
+	// the Istio virtual service resource the WatcherReconciler is managing.
+	// In total, we probably only have 20 watcher CRs, one worker can sufficiently handle it,
+	// and we don't have to deal with concurrent write to virtual service.
+	// although eventually the write operation will succeed.
+	options.MaxConcurrentReconciles = 1
 	if err := (&controllers.WatcherReconciler{
 		Client:           mgr.GetClient(),
 		Scheme:           mgr.GetScheme(),
 		RestConfig:       mgr.GetConfig(),
 		RequeueIntervals: intervals,
-		Config:           watcherConfig,
-	}).SetupWithManager(mgr, options); err != nil {
+	}).SetupWithManager(mgr, options, flagVar.virtualServiceName, flagVar.gatewayName); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Watcher")
 		os.Exit(1)
 	}

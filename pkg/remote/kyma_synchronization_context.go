@@ -45,20 +45,34 @@ func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, key 
 	strategy v1alpha1.SyncStrategy, cache *ClientCache,
 ) (client.Client, error) {
 	remoteClient := cache.Get(ClientCacheID(key))
-
 	if remoteClient != nil {
 		return remoteClient, nil
 	}
+
+	restConfig, err := GetRemoteRestConfig(ctx, controlPlaneClient, key, strategy)
+	if err != nil {
+		return nil, err
+	}
+
+	remoteClient, err = client.New(restConfig, client.Options{Scheme: controlPlaneClient.Scheme()})
+	if err != nil {
+		return nil, err
+	}
+	cache.Set(ClientCacheID(key), remoteClient)
+
+	return remoteClient, nil
+}
+
+func GetRemoteRestConfig(ctx context.Context, controlPlaneClient client.Client, key client.ObjectKey,
+	strategy v1alpha1.SyncStrategy,
+) (*rest.Config, error) {
+	var err error
+	var restConfig *rest.Config
 
 	clusterClient := ClusterClient{
 		DefaultClient: controlPlaneClient,
 		Logger:        log.FromContext(ctx),
 	}
-
-	var restConfig *rest.Config
-
-	var err error
-
 	switch strategy {
 	case v1alpha1.SyncStrategyLocalClient:
 		if LocalClient != nil {
@@ -75,14 +89,7 @@ func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, key 
 	if err != nil {
 		return nil, err
 	}
-
-	remoteClient, err = client.New(restConfig, client.Options{Scheme: controlPlaneClient.Scheme()})
-	if err != nil {
-		return nil, err
-	}
-	cache.Set(ClientCacheID(key), remoteClient)
-
-	return remoteClient, nil
+	return restConfig, err
 }
 
 func GetRemotelySyncedKyma(ctx context.Context, runtimeClient client.Client,
