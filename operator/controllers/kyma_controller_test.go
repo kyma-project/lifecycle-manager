@@ -3,18 +3,12 @@ package controllers_test
 import (
 	"time"
 
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	. "github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
-)
-
-const (
-	namespace = v1.NamespaceDefault
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Kyma with no ModuleTemplate", Ordered, func() {
@@ -23,7 +17,8 @@ var _ = Describe("Kyma with no ModuleTemplate", Ordered, func() {
 
 	It("Should result in a ready state immediately", func() {
 		By("having transitioned the CR State to Ready as there are no modules")
-		Eventually(IsKymaInState(kyma.GetName(), v1alpha1.StateReady), Timeout, Interval).Should(BeTrue())
+		Eventually(IsKymaInState(ctx, controlPlaneClient, kyma.GetName(), v1alpha1.StateReady),
+			Timeout, Interval).Should(BeTrue())
 	})
 })
 
@@ -47,8 +42,8 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 		Eventually(GetKymaConditions(kyma.GetName()), Timeout, Interval).ShouldNot(BeEmpty())
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(UpdateModuleState(kyma.GetName(), activeModule.Name, v1alpha1.StateReady), 20*time.Second,
-				Interval).Should(Succeed())
+			Eventually(UpdateModuleState(kyma.GetName(), activeModule.Name, v1alpha1.StateReady),
+				20*time.Second, Interval).Should(Succeed())
 		}
 
 		By("having updated the Kyma CR state to ready")
@@ -56,13 +51,13 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 			Should(BeEquivalentTo(string(v1alpha1.StateReady)))
 
 		By("Kyma status contains expected condition")
-		kymaInCluster, err := GetKyma(controlPlaneClient, kyma.GetName())
+		kymaInCluster, err := GetKyma(ctx, controlPlaneClient, kyma.GetName())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(kymaInCluster.ContainsCondition(v1alpha1.ConditionTypeReady,
 			v1alpha1.ConditionReasonModulesAreReady, metav1.ConditionTrue)).To(BeTrue())
 		By("Module Catalog created")
 		Eventually(ModuleTemplatesExist(controlPlaneClient, kyma), 10*time.Second, Interval).Should(Succeed())
-		kymaInCluster, err = GetKyma(controlPlaneClient, kyma.GetName())
+		kymaInCluster, err = GetKyma(ctx, controlPlaneClient, kyma.GetName())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(kymaInCluster.ContainsCondition(v1alpha1.ConditionTypeReady,
 			v1alpha1.ConditionReasonModuleCatalogIsReady)).To(BeFalse())

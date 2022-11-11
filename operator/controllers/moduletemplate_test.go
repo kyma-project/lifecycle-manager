@@ -5,7 +5,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	. "github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -14,7 +13,7 @@ var ErrManifestRemoteIsNotMatch = errors.New("Manifest.Spec.Remote is not match"
 
 func expectManifestSpecRemoteMatched(kymaName string, remoteFlag bool) func() error {
 	return func() error {
-		createdKyma, err := GetKyma(controlPlaneClient, kymaName)
+		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName)
 		if err != nil {
 			return err
 		}
@@ -38,7 +37,7 @@ func expectManifestSpecRemoteMatched(kymaName string, remoteFlag bool) func() er
 
 func updateModuleTemplateTarget(kymaName string, target v1alpha1.Target) func() error {
 	return func() error {
-		createdKyma, err := GetKyma(controlPlaneClient, kymaName)
+		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName)
 		if err != nil {
 			return err
 		}

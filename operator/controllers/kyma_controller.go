@@ -18,8 +18,15 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
+	"k8s.io/client-go/rest"
+
+	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/adapter"
@@ -31,8 +38,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/status"
-	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -45,6 +50,8 @@ type EventErrorType string
 
 const ModuleReconciliationError EventErrorType = "ModuleReconciliationError"
 
+var ErrSkrChartConfigNotSet = errors.New("skr chart config is not set")
+
 type RequeueIntervals struct {
 	Success time.Duration
 }
@@ -56,6 +63,8 @@ type KymaReconciler struct {
 	RequeueIntervals
 	signature.VerificationSettings
 	RemoteClientCache *remote.ClientCache
+	deploy.SKRWebhookChartManager
+	KcpRestConfig *rest.Config
 }
 
 //nolint:lll
@@ -248,7 +257,14 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 		return r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError,
 			fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err))
 	}
-
+	statusUpdateRequiredFromSKRWebhookSync := false
+	if kyma.Spec.Sync.Enabled {
+		if statusUpdateRequiredFromSKRWebhookSync, err = r.InstallWebhookChart(ctx, kyma,
+			r.RemoteClientCache, r.Client); err != nil {
+			kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
+			return err
+		}
+	}
 	kyma.SyncConditionsWithModuleStates()
 	// set ready condition if applicable
 	if kyma.AreAllConditionsReadyForKyma() && kyma.Status.State != v1alpha1.StateReady {
@@ -258,10 +274,10 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 		return r.UpdateStatusWithEvent(ctx, kyma, v1alpha1.StateReady, message)
 	}
 
+	isStatusUpdateRequired := statusUpdateRequiredFromModuleSync || statusUpdateRequiredFromModuleStatusSync ||
+		statusUpdateRequiredFromDeletion || statusUpdateRequiredFromSKRWebhookSync
 	// if the ready condition is not applicable, but we changed the conditions, we still need to issue an update
-	if statusUpdateRequiredFromModuleSync ||
-		statusUpdateRequiredFromModuleStatusSync ||
-		statusUpdateRequiredFromDeletion {
+	if isStatusUpdateRequired {
 		if err := r.UpdateStatusWithEvent(ctx, kyma, v1alpha1.StateProcessing, "updating component conditions"); err != nil {
 			return fmt.Errorf("error while updating status for condition change: %w", err)
 		}
@@ -278,6 +294,9 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1
 		syncContext, err := remote.InitializeKymaSynchronizationContext(ctx, r.Client, kyma, r.RemoteClientCache)
 		if err != nil {
 			return false, fmt.Errorf("remote sync initialization failed: %w", err)
+		}
+		if err = r.RemoveWebhookChart(ctx, kyma, syncContext); err != nil {
+			return true, nil
 		}
 		force := true
 		if err := catalog.NewRemoteCatalog(

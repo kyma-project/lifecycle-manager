@@ -5,13 +5,12 @@ import (
 	"time"
 
 	"github.com/Masterminds/semver/v3"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	. "github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/test"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 var _ = Describe("Switching of a Channel leading to an Upgrade", Ordered, func() {
@@ -70,7 +69,7 @@ var _ = Describe("Switching of a Channel leading to an Upgrade", Ordered, func()
 	It(
 		"should lead to kyma being ready in the end of the channel switch", func() {
 			By("having updated the Kyma CR state to ready")
-			Eventually(GetKymaState(kyma.Name), 20*time.Second, Interval).
+			Eventually(GetKymaState(kyma.Name), 20*time.Second, Timeout).
 				Should(BeEquivalentTo(string(v1alpha1.StateReady)))
 		},
 	)

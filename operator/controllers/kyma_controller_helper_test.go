@@ -4,7 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math/rand"
+
+	. "github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	. "github.com/onsi/ginkgo/v2"
@@ -24,61 +25,14 @@ import (
 	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 )
 
-func NewTestKyma(name string) *v1alpha1.Kyma {
-	return &v1alpha1.Kyma{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: v1alpha1.GroupVersion.String(),
-			Kind:       string(v1alpha1.KymaKind),
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      name + RandString(8),
-			Namespace: namespace,
-		},
-		Spec: v1alpha1.KymaSpec{
-			Modules: []v1alpha1.Module{},
-			Channel: v1alpha1.DefaultChannel,
-		},
-	}
-}
-
-func NewUniqModuleName() string {
-	return RandString(8)
-}
-
-const letterBytes = "abcdefghijklmnopqrstuvwxyz"
-
-func RandString(n int) string {
-	b := make([]byte, n)
-	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))] //nolint:gosec
-	}
-	return string(b)
-}
-
-func DeployModuleTemplates(kyma *v1alpha1.Kyma) {
-	for _, module := range kyma.Spec.Modules {
-		template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
-	}
-}
-
-func DeleteModuleTemplates(kyma *v1alpha1.Kyma) {
-	for _, module := range kyma.Spec.Modules {
-		template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
-		Expect(err).ShouldNot(HaveOccurred())
-		Expect(controlPlaneClient.Delete(ctx, template)).To(Succeed())
-	}
-}
-
 func RegisterDefaultLifecycleForKyma(kyma *v1alpha1.Kyma) {
 	BeforeAll(func() {
 		Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
-		DeployModuleTemplates(kyma)
+		DeployModuleTemplates(ctx, controlPlaneClient, kyma)
 	})
 
 	AfterAll(func() {
-		DeleteModuleTemplates(kyma)
+		DeleteModuleTemplates(ctx, controlPlaneClient, kyma)
 	})
 
 	AfterAll(func() {
@@ -87,23 +41,16 @@ func RegisterDefaultLifecycleForKyma(kyma *v1alpha1.Kyma) {
 
 	BeforeEach(func() {
 		By("get latest kyma CR")
-		Expect(controlPlaneClient.Get(ctx, client.ObjectKey{Name: kyma.Name, Namespace: namespace}, kyma)).Should(Succeed())
+		Expect(controlPlaneClient.Get(ctx, client.ObjectKey{
+			Name:      kyma.Name,
+			Namespace: metav1.NamespaceDefault,
+		}, kyma)).Should(Succeed())
 	})
-}
-
-func IsKymaInState(kymaName string, state v1alpha1.State) func() bool {
-	return func() bool {
-		kymaFromCluster, err := GetKyma(controlPlaneClient, kymaName)
-		if err != nil || kymaFromCluster.Status.State != state {
-			return false
-		}
-		return true
-	}
 }
 
 func GetKymaState(kymaName string) func() string {
 	return func() string {
-		createdKyma, err := GetKyma(controlPlaneClient, kymaName)
+		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName)
 		if err != nil {
 			return ""
 		}
@@ -113,7 +60,7 @@ func GetKymaState(kymaName string) func() string {
 
 func GetKymaConditions(kymaName string) func() []metav1.Condition {
 	return func() []metav1.Condition {
-		createdKyma, err := GetKyma(controlPlaneClient, kymaName)
+		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName)
 		if err != nil {
 			return []metav1.Condition{}
 		}
@@ -179,7 +126,7 @@ func getModule(kymaName, moduleName string) (*unstructured.Unstructured, error) 
 		Kind:    "Manifest",
 	})
 	err := controlPlaneClient.Get(ctx, client.ObjectKey{
-		Namespace: namespace,
+		Namespace: metav1.NamespaceDefault,
 		Name:      common.CreateModuleName(moduleName, kymaName),
 	}, component)
 	if err != nil {
@@ -188,24 +135,10 @@ func getModule(kymaName, moduleName string) (*unstructured.Unstructured, error) 
 	return component, nil
 }
 
-func GetKyma(
-	testClient client.Client,
-	kymaName string,
-) (*v1alpha1.Kyma, error) {
-	kymaInCluster := &v1alpha1.Kyma{}
-	err := testClient.Get(ctx, client.ObjectKey{
-		Namespace: namespace,
-		Name:      kymaName,
-	}, kymaInCluster)
-	if err != nil {
-		return nil, err
-	}
-	return kymaInCluster, nil
-}
-
 func GetModuleTemplate(name string) (*v1alpha1.ModuleTemplate, error) {
 	moduleTemplateInCluster := &v1alpha1.ModuleTemplate{}
-	err := controlPlaneClient.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, moduleTemplateInCluster)
+	err := controlPlaneClient.Get(ctx, client.ObjectKey{Namespace: metav1.NamespaceDefault, Name: name},
+		moduleTemplateInCluster)
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +147,7 @@ func GetModuleTemplate(name string) (*v1alpha1.ModuleTemplate, error) {
 
 func RemoteKymaExists(remoteClient client.Client, kymaName string) func() error {
 	return func() error {
-		_, err := GetKyma(remoteClient, kymaName)
+		_, err := GetKyma(ctx, remoteClient, kymaName)
 		return err
 	}
 }
@@ -302,7 +235,7 @@ func deleteModule(kymaName, moduleName string) func() error {
 			Version: v1alpha1.Version,
 			Kind:    "Manifest",
 		})
-		component.SetNamespace(namespace)
+		component.SetNamespace(metav1.NamespaceDefault)
 		component.SetName(common.CreateModuleName(moduleName, kymaName))
 		err := controlPlaneClient.Delete(ctx, component)
 		return client.IgnoreNotFound(err)
@@ -310,7 +243,7 @@ func deleteModule(kymaName, moduleName string) func() error {
 }
 
 func UpdateKymaModuleChannels(kymaName string, channel v1alpha1.Channel) error {
-	kyma, err := GetKyma(controlPlaneClient, kymaName)
+	kyma, err := GetKyma(ctx, controlPlaneClient, kymaName)
 	if err != nil {
 		return err
 	}
@@ -326,7 +259,7 @@ func UpdateKymaModuleChannels(kymaName string, channel v1alpha1.Channel) error {
 var ErrTemplateInfoChannelMismatch = errors.New("mismatch in template info channel")
 
 func TemplateInfosMatchChannel(kymaName string, channel v1alpha1.Channel) error {
-	kyma, err := GetKyma(controlPlaneClient, kymaName)
+	kyma, err := GetKyma(ctx, controlPlaneClient, kymaName)
 	if err != nil {
 		return err
 	}

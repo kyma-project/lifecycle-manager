@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers_test
+package withwatcher_test
 
 import (
 	"context"
@@ -23,7 +23,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 	//nolint:gci
@@ -44,10 +47,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/operator/controllers"
-	. "github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/signature"
+
+	//+kubebuilder:scaffold:imports
+	"github.com/kyma-project/lifecycle-manager/operator/controllers"
+	"github.com/kyma-project/lifecycle-manager/operator/internal/deploy"
+	. "github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -56,14 +62,23 @@ import (
 const listenerAddr = ":8082"
 
 var (
-	controlPlaneClient client.Client        //nolint:gochecknoglobals
-	runtimeClient      client.Client        //nolint:gochecknoglobals
-	k8sManager         manager.Manager      //nolint:gochecknoglobals
-	controlPlaneEnv    *envtest.Environment //nolint:gochecknoglobals
-	runtimeEnv         *envtest.Environment //nolint:gochecknoglobals
-	ctx                context.Context      //nolint:gochecknoglobals
-	cancel             context.CancelFunc   //nolint:gochecknoglobals
-	cfg                *rest.Config         //nolint:gochecknoglobals
+	controlPlaneClient client.Client                //nolint:gochecknoglobals
+	runtimeClient      client.Client                //nolint:gochecknoglobals
+	k8sManager         manager.Manager              //nolint:gochecknoglobals
+	controlPlaneEnv    *envtest.Environment         //nolint:gochecknoglobals
+	runtimeEnv         *envtest.Environment         //nolint:gochecknoglobals
+	suiteCtx           context.Context              //nolint:gochecknoglobals
+	cancel             context.CancelFunc           //nolint:gochecknoglobals
+	cfg                *rest.Config                 //nolint:gochecknoglobals
+	istioResources     []*unstructured.Unstructured //nolint:gochecknoglobals
+	remoteClientCache  *remote.ClientCache          //nolint:gochecknoglobals
+)
+
+const (
+	webhookChartPath       = "../../charts/skr-webhook"
+	istioResourcesFilePath = "../../internal/assets/istio-test-resources.yaml"
+	virtualServiceName     = "kcp-events"
+	gatewayName            = "lifecycle-manager-kyma-gateway"
 )
 
 func TestAPIs(t *testing.T) {
@@ -73,7 +88,7 @@ func TestAPIs(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	ctx, cancel = context.WithCancel(context.TODO())
+	suiteCtx, cancel = context.WithCancel(context.TODO())
 	logger := zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true))
 	logf.SetLogger(logger)
 
@@ -83,12 +98,13 @@ var _ = BeforeSuite(func() {
 	// istio CRDs
 	remoteCrds, err := ParseRemoteCRDs([]string{
 		"https://raw.githubusercontent.com/kyma-project/module-manager/main/operator/config/crd/bases/operator.kyma-project.io_manifests.yaml", //nolint:lll
+		"https://raw.githubusercontent.com/istio/istio/master/manifests/charts/base/crds/crd-all.gen.yaml",                                     //nolint:lll
 	})
 	Expect(err).NotTo(HaveOccurred())
 
 	// kcpModule CRD
 	controlplaneCrd := &v1.CustomResourceDefinition{}
-	modulePath := filepath.Join("..", "config", "samples", "component-integration-installed",
+	modulePath := filepath.Join("..", "..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
 	Expect(err).To(BeNil())
@@ -96,7 +112,7 @@ var _ = BeforeSuite(func() {
 	Expect(yaml2.Unmarshal(moduleFile, &controlplaneCrd)).To(Succeed())
 
 	controlPlaneEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases")},
+		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
 		CRDs:                  append([]*v1.CustomResourceDefinition{controlplaneCrd}, remoteCrds...),
 		ErrorIfCRDPathMissing: true,
 	}
@@ -119,7 +135,7 @@ var _ = BeforeSuite(func() {
 
 	metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
 	if !found {
-		metricsBindAddress = ":8080"
+		metricsBindAddress = ":8081"
 	}
 
 	k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
@@ -133,12 +149,17 @@ var _ = BeforeSuite(func() {
 		Success: 3 * time.Second,
 	}
 
-	remoteClientCache := remote.NewClientCache()
+	remoteClientCache = remote.NewClientCache()
+	skrChartCfg := &deploy.SkrChartConfig{
+		WebhookChartPath:       webhookChartPath,
+		SkrWebhookMemoryLimits: "200Mi",
+		SkrWebhookCPULimits:    "1",
+	}
 	err = (&controllers.KymaReconciler{
 		Client:                 k8sManager.GetClient(),
 		EventRecorder:          k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
 		RequeueIntervals:       intervals,
-		SKRWebhookChartManager: &deploy.DisabledSKRWebhookChartManager{},
+		SKRWebhookChartManager: deploy.NewEnabledSKRWebhookChartManager(skrChartCfg),
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
 		},
@@ -146,15 +167,37 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager, controller.Options{}, listenerAddr)
 	Expect(err).ToNot(HaveOccurred())
 
+	Expect(createLoadBalancer(suiteCtx, controlPlaneClient)).To(Succeed())
+	istioResources, err = deserializeIstioResources()
+	Expect(err).NotTo(HaveOccurred())
+	for _, istioResource := range istioResources {
+		Expect(controlPlaneClient.Create(suiteCtx, istioResource)).To(Succeed())
+	}
+
+	err = (&controllers.WatcherReconciler{
+		Client:           k8sManager.GetClient(),
+		RestConfig:       k8sManager.GetConfig(),
+		Scheme:           scheme.Scheme,
+		RequeueIntervals: intervals,
+	}).SetupWithManager(k8sManager, controller.Options{
+		MaxConcurrentReconciles: 1,
+	}, virtualServiceName, gatewayName)
+	Expect(err).ToNot(HaveOccurred())
+
 	go func() {
 		defer GinkgoRecover()
-		err = k8sManager.Start(ctx)
+		err = k8sManager.Start(suiteCtx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
 })
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
+	// clean up istio resources
+	for _, istioResource := range istioResources {
+		Expect(controlPlaneClient.Delete(suiteCtx, istioResource)).To(Succeed())
+	}
+	// cancel environment context
 	cancel()
 
 	err := controlPlaneEnv.Stop()
@@ -186,4 +229,56 @@ func NewSKRCluster() (client.Client, *envtest.Environment) {
 	Expect(err).NotTo(HaveOccurred())
 
 	return skrClient, skrEnv
+}
+
+func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
+	istioNs := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: deploy.IstioSytemNs,
+		},
+	}
+	if err := k8sClient.Create(ctx, istioNs); err != nil {
+		return err
+	}
+	loadBalancerService := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      deploy.IngressServiceName,
+			Namespace: deploy.IstioSytemNs,
+			Labels: map[string]string{
+				"app": deploy.IngressServiceName,
+			},
+		},
+		Spec: corev1.ServiceSpec{
+			Type: corev1.ServiceTypeLoadBalancer,
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "http2",
+					Protocol:   corev1.ProtocolTCP,
+					Port:       80,
+					TargetPort: intstr.FromInt(8080),
+				},
+			},
+		},
+	}
+
+	if err := k8sClient.Create(ctx, loadBalancerService); err != nil {
+		return err
+	}
+	loadBalancerService.Status = corev1.ServiceStatus{
+		LoadBalancer: corev1.LoadBalancerStatus{
+			Ingress: []corev1.LoadBalancerIngress{
+				{
+					IP: "10.10.10.167",
+				},
+			},
+		},
+	}
+	if err := k8sClient.Status().Update(ctx, loadBalancerService); err != nil {
+		return err
+	}
+
+	return k8sClient.Get(ctx, client.ObjectKey{
+		Name:      deploy.IngressServiceName,
+		Namespace: deploy.IstioSytemNs,
+	}, loadBalancerService)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/operator/internal/custom"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -24,9 +25,7 @@ import (
 )
 
 // SetupWithManager sets up the Kyma controller with the Manager.
-func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
-	options controller.Options, listenerAddr string,
-) error {
+func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options, listenerAddr string) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1alpha1.Kyma{}).WithOptions(options).
 		Watches(
 			&source.Kind{Type: &v1alpha1.ModuleTemplate{}},
@@ -80,12 +79,16 @@ func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, e
 }
 
 // SetupWithManager sets up the Watcher controller with the Manager.
-func (r *WatcherReconciler) SetupWithManager(
-	mgr ctrl.Manager,
-	options controller.Options,
+func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options,
+	virtualServiceName, gatewayName string,
 ) error {
-	if err := r.SetIstioClient(); err != nil {
-		return fmt.Errorf("unable to set istio client for controller watcher: %w", err)
+	if r.RestConfig == nil {
+		return ErrRestConfigIsNotSet
+	}
+	var err error
+	r.IstioClient, err = custom.NewVersionedIstioClient(r.RestConfig, virtualServiceName, gatewayName)
+	if err != nil {
+		return fmt.Errorf("unable to set istio client for watcher controller: %w", err)
 	}
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Watcher{}).
