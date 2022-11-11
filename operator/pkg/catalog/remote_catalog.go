@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"strconv"
 
 	remotecontext "github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -116,7 +115,7 @@ func (*RemoteCatalog) CalculateDiffs(
 ) ([]*v1alpha1.ModuleTemplate, []*v1alpha1.ModuleTemplate) {
 	// these are various ModuleTemplate references which we will either have to create, update or delete from
 	// the remote
-	var diffToApply []*v1alpha1.ModuleTemplate
+	diffToApply := make([]*v1alpha1.ModuleTemplate, 0, len(runtimeList.Items))
 	var diffToDelete []*v1alpha1.ModuleTemplate
 
 	// now lets start using two frequency maps to discover diffs
@@ -134,8 +133,7 @@ func (*RemoteCatalog) CalculateDiffs(
 		// if the controlPlane Template does not exist in the remote, we already know we need to create it
 		// in the runtime
 		if _, exists := existingOnRemote[controlPlane.Namespace+controlPlane.Name]; !exists {
-			prepareControlPlaneTemplateForRuntime(controlPlane)
-
+			prepareForSSA(controlPlane)
 			diffToApply = append(diffToApply, controlPlane)
 		}
 	}
@@ -149,43 +147,17 @@ func (*RemoteCatalog) CalculateDiffs(
 			diffToDelete = append(diffToDelete, remote)
 			continue
 		}
-		remote.ObjectMeta.SetManagedFields([]metav1.ManagedFieldsEntry{})
-
-		if remote.Annotations == nil {
-			remote.Annotations = make(map[string]string)
-		}
-
-		// if there is a template in controlPlane and remote, but the generation is outdated, we need to
-		// update it
-		controlPlaneSyncedGen, _ := strconv.Atoi(remote.Annotations[v1alpha1.LastSyncGenerationControlPlane])
-		controlPlaneGen := (&controlPlaneList.Items[controlPlaneIndex]).GetGeneration()
-		runtimeSyncedGen, _ := strconv.Atoi(remote.Annotations[v1alpha1.LastSyncGenerationRuntime])
-
-		if int64(controlPlaneSyncedGen) != controlPlaneGen {
-			remote.Annotations[v1alpha1.LastSyncGenerationControlPlane] = strconv.Itoa(int(controlPlaneGen))
-			(&controlPlaneList.Items[controlPlaneIndex]).Spec.DeepCopyInto(&remote.Spec)
-			diffToApply = append(diffToApply, remote)
-		} else if int64(runtimeSyncedGen) != remote.GetGeneration() {
-			(&controlPlaneList.Items[controlPlaneIndex]).Spec.DeepCopyInto(&remote.Spec)
-			remote.Annotations[v1alpha1.LastSyncGenerationRuntime] = strconv.Itoa(int(remote.GetGeneration() + 1))
-			diffToApply = append(diffToApply, remote)
-		}
+		prepareForSSA(remote)
+		(&controlPlaneList.Items[controlPlaneIndex]).Spec.DeepCopyInto(&remote.Spec)
+		diffToApply = append(diffToApply, remote)
 	}
 	return diffToApply, diffToDelete
 }
 
-func prepareControlPlaneTemplateForRuntime(controlPlane *v1alpha1.ModuleTemplate) {
-	// we reset resource version and uid as we want to create new objects from control Plane diffs
-	controlPlane.SetResourceVersion("")
-	controlPlane.SetUID("")
-
-	controlPlane.ObjectMeta.SetManagedFields([]metav1.ManagedFieldsEntry{})
-
-	if controlPlane.Annotations == nil {
-		controlPlane.Annotations = make(map[string]string)
-	}
-	controlPlane.Annotations[v1alpha1.LastSyncGenerationControlPlane] = strconv.Itoa(int(controlPlane.GetGeneration()))
-	controlPlane.Annotations[v1alpha1.LastSyncGenerationRuntime] = strconv.Itoa(1)
+func prepareForSSA(moduleTemplate *v1alpha1.ModuleTemplate) {
+	moduleTemplate.SetResourceVersion("")
+	moduleTemplate.SetUID("")
+	moduleTemplate.SetManagedFields([]metav1.ManagedFieldsEntry{})
 }
 
 func (c *RemoteCatalog) Delete(

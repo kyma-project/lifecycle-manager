@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
 
 	. "github.com/kyma-project/lifecycle-manager/operator/internal/testutils"
 
@@ -166,29 +165,6 @@ func ModuleTemplatesExist(clnt client.Client, kyma *v1alpha1.Kyma) func() error 
 		}
 
 		return nil
-	}
-}
-
-func ModuleTemplatesLastSyncGenMatches(clnt client.Client, kyma *v1alpha1.Kyma) func() bool {
-	return func() bool {
-		for _, module := range kyma.Spec.Modules {
-			template, err := test.ModuleTemplateFactory(module, unstructured.Unstructured{})
-			if err != nil {
-				return false
-			}
-			if err := clnt.Get(ctx, client.ObjectKeyFromObject(template), template); err != nil {
-				return false
-			}
-			if template.GetAnnotations() == nil {
-				return false
-			}
-			if strconv.FormatInt(template.GetGeneration(), 10) !=
-				template.GetAnnotations()[v1alpha1.LastSyncGenerationRuntime] {
-				return false
-			}
-		}
-
-		return true
 	}
 }
 
