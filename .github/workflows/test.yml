@@ -15,7 +15,7 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           # Context for which we should look for the matching status
-          statusName: ${{ (github.event_name == 'pull_request') && 'pull-build' || 'main-build' }}
+          statusName: ${{ (github.event_name == 'pull_request') && 'pull-lifecycle-mgr-build' || 'main-lifecycle-mgr-build' }}
           timeoutSeconds: 300 # 5 mins due to flakiness of build speed in prow
           intervalSeconds: 10
       - name: Exit If Failing Build Requirement
