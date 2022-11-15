@@ -32,7 +32,7 @@ func oneCRDeleted() func(customIstioClient *custom.IstioClient) {
 		watcherCR := watcherCrs[crToDeleteIdx]
 		Expect(controlPlaneClient.Delete(suiteCtx, watcherCR)).To(Succeed())
 
-		Eventually(isCrDeletionFinished(client.ObjectKeyFromObject(watcherCR)), Timeout, Interval).
+		Eventually(isWatcherCrDeletionFinished(client.ObjectKeyFromObject(watcherCR)), Timeout, Interval).
 			Should(BeTrue())
 		Eventually(isCrVsConfigured(suiteCtx, customIstioClient, watcherCR)).Should(BeFalse())
 	}
@@ -48,7 +48,7 @@ func allCRsDeleted() func(customIstioClient *custom.IstioClient) {
 			Expect(controlPlaneClient.Delete(suiteCtx, watcherCr)).To(Succeed())
 		}
 		// verify
-		Eventually(isCrDeletionFinished(), Timeout, Interval).Should(BeTrue())
+		Eventually(isWatcherCrDeletionFinished(), Timeout, Interval).Should(BeTrue())
 		Eventually(isVsRemoved(suiteCtx, customIstioClient)).Should(BeTrue())
 	}
 }
@@ -56,14 +56,9 @@ func allCRsDeleted() func(customIstioClient *custom.IstioClient) {
 var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	var customIstioClient *custom.IstioClient
 	var err error
-	kymaSample := &v1alpha1.Kyma{}
 	BeforeAll(func() {
-		// create kyma resource
-		kymaSample = NewTestKyma("kyma-sample")
-
 		customIstioClient, err = custom.NewVersionedIstioClient(cfg, virtualServiceName, gatewayName)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(controlPlaneClient.Create(suiteCtx, kymaSample)).To(Succeed())
 		// create WatcherCRs
 		for idx, component := range centralComponents {
 			watcherCR := createWatcherCR(component, isEven(idx))
@@ -72,11 +67,6 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 			// verify
 			Eventually(isCrVsConfigured(suiteCtx, customIstioClient, watcherCR)).Should(BeTrue())
 		}
-	})
-
-	AfterAll(func() {
-		// clean up kyma CR
-		Expect(controlPlaneClient.Delete(suiteCtx, kymaSample)).To(Succeed())
 	})
 
 	DescribeTable("given watcherCR reconcile loop",

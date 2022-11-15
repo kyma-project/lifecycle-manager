@@ -11,9 +11,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/operator/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/operator/pkg/remote"
 	modulelib "github.com/kyma-project/module-manager/operator/pkg/manifest"
+	moduletypes "github.com/kyma-project/module-manager/operator/pkg/types"
 	corev1 "k8s.io/api/core/v1"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	k8syaml "sigs.k8s.io/yaml"
@@ -56,7 +57,7 @@ func (m *DisabledSKRWebhookChartManager) RemoveWebhookChart(_ context.Context, _
 }
 
 type EnabledSKRWebhookChartManager struct {
-	cache   *SkrChartClientCache
+	cache   moduletypes.RendererCache
 	config  *SkrChartConfig
 	kcpAddr string
 }
@@ -71,7 +72,7 @@ type SkrChartConfig struct {
 
 func NewEnabledSKRWebhookChartManager(config *SkrChartConfig) *EnabledSKRWebhookChartManager {
 	return &EnabledSKRWebhookChartManager{
-		cache:  NewSKRChartClientCache(),
+		cache:  modulelib.NewRendererCache(),
 		config: config,
 	}
 }
@@ -79,12 +80,13 @@ func NewEnabledSKRWebhookChartManager(config *SkrChartConfig) *EnabledSKRWebhook
 func (m *EnabledSKRWebhookChartManager) InstallWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
 	remoteClientCache *remote.ClientCache, kcpClient client.Client,
 ) (bool, error) {
-	skrClient, err := remote.NewRemoteClient(ctx, kcpClient, client.ObjectKeyFromObject(kyma),
+	kymaObjKey := client.ObjectKeyFromObject(kyma)
+	skrClient, err := remote.NewRemoteClient(ctx, kcpClient, kymaObjKey,
 		kyma.Spec.Sync.Strategy, remoteClientCache)
 	if err != nil {
 		return true, err
 	}
-	skrCfg, err := remote.GetRemoteRestConfig(ctx, kcpClient, client.ObjectKeyFromObject(kyma),
+	skrCfg, err := remote.GetRemoteRestConfig(ctx, kcpClient, kymaObjKey,
 		kyma.Spec.Sync.Strategy)
 	if err != nil {
 		return true, err
@@ -94,7 +96,8 @@ func (m *EnabledSKRWebhookChartManager) InstallWebhookChart(ctx context.Context,
 		return true, err
 	}
 	// TODO(khlifi411): make sure that validating-webhook-config resource is in sync with the secret configuration
-	skrWatcherInstallInfo := prepareInstallInfo(ctx, m.config.WebhookChartPath, ReleaseName, skrCfg, skrClient, argsVals)
+	skrWatcherInstallInfo := prepareInstallInfo(ctx, m.config.WebhookChartPath,
+		skrCfg, skrClient, argsVals, kymaObjKey)
 	err = m.installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeInstall)
 	if err != nil {
 		return true, err
@@ -106,7 +109,8 @@ func (m *EnabledSKRWebhookChartManager) InstallWebhookChart(ctx context.Context,
 func (m *EnabledSKRWebhookChartManager) RemoveWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
 	syncCtx *remote.KymaSynchronizationContext,
 ) error {
-	skrCfg, err := remote.GetRemoteRestConfig(ctx, syncCtx.ControlPlaneClient, client.ObjectKeyFromObject(kyma),
+	kymaObjKey := client.ObjectKeyFromObject(kyma)
+	skrCfg, err := remote.GetRemoteRestConfig(ctx, syncCtx.ControlPlaneClient, kymaObjKey,
 		kyma.Spec.Sync.Strategy)
 	if err != nil {
 		return err
@@ -115,25 +119,26 @@ func (m *EnabledSKRWebhookChartManager) RemoveWebhookChart(ctx context.Context, 
 	if err != nil {
 		return err
 	}
-	skrWatcherInstallInfo := prepareInstallInfo(ctx, m.config.WebhookChartPath, ReleaseName, skrCfg,
-		syncCtx.RuntimeClient, argsVals)
+	skrWatcherInstallInfo := prepareInstallInfo(ctx, m.config.WebhookChartPath, skrCfg,
+		syncCtx.RuntimeClient, argsVals, kymaObjKey)
 	return m.installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeUninstall)
 }
 
 func (m *EnabledSKRWebhookChartManager) generateHelmChartArgs(ctx context.Context,
 	kcpClient client.Client,
 ) (map[string]interface{}, error) {
+	customConfigValue := ""
 	watcherList := &v1alpha1.WatcherList{}
 	if err := kcpClient.List(ctx, watcherList, &client.ListOptions{}); err != nil {
 		return nil, fmt.Errorf("error listing watcher resources: %w", err)
 	}
-	if len(watcherList.Items) == 0 {
-		return nil, ErrFoundZeroWatchers
-	}
-	chartCfg := generateWatchableConfigs(watcherList)
-	bytes, err := k8syaml.Marshal(chartCfg)
-	if err != nil {
-		return nil, err
+	if len(watcherList.Items) != 0 {
+		chartCfg := generateWatchableConfigs(watcherList)
+		bytes, err := k8syaml.Marshal(chartCfg)
+		if err != nil {
+			return nil, err
+		}
+		customConfigValue = string(bytes)
 	}
 
 	kcpAddr, err := m.resolveKcpAddr(ctx, kcpClient)
@@ -145,7 +150,7 @@ func (m *EnabledSKRWebhookChartManager) generateHelmChartArgs(ctx context.Contex
 		"kcpAddr":               kcpAddr,
 		"resourcesLimitsMemory": m.config.SkrWebhookMemoryLimits,
 		"resourcesLimitsCPU":    m.config.SkrWebhookCPULimits,
-		customConfigKey:         string(bytes),
+		customConfigKey:         customConfigValue,
 	}, nil
 }
 
@@ -175,7 +180,7 @@ func (m *EnabledSKRWebhookChartManager) resolveKcpAddr(ctx context.Context, kcpC
 }
 
 func generateWatchableConfigs(watcherList *v1alpha1.WatcherList) map[string]WatchableConfig {
-	chartCfg := make(map[string]WatchableConfig, len(watcherList.Items))
+	chartCfg := make(map[string]WatchableConfig, 0)
 	for _, watcher := range watcherList.Items {
 		statusOnly := watcher.Spec.Field == v1alpha1.StatusField
 		chartCfg[watcher.GetModuleName()] = WatchableConfig{
@@ -187,35 +192,31 @@ func generateWatchableConfigs(watcherList *v1alpha1.WatcherList) map[string]Watc
 }
 
 func (m *EnabledSKRWebhookChartManager) installOrRemoveChartOnSKR(ctx context.Context,
-	deployInfo modulelib.InstallInfo, mode Mode,
+	deployInfo moduletypes.InstallInfo, mode Mode,
 ) error {
 	logger := logf.FromContext(ctx)
 	if mode == ModeUninstall {
-		uninstalled, err := modulelib.UninstallChart(&logger, deployInfo, nil, nil)
+		uninstalled, err := modulelib.UninstallChart(&logger, deployInfo, nil, m.cache)
 		if err != nil {
 			return fmt.Errorf("failed to uninstall webhook config: %w", err)
 		}
 		if !uninstalled {
 			return ErrSKRWebhookWasNotRemoved
 		}
-
+		logger.Info("successfully uninstalled webhook chart", "release-name", deployInfo.ChartInfo.ReleaseName)
 		return nil
 	}
-	// TODO(khlifi411): verify webhook configuration with watchers' configuration before re-installing the chart
-	ready, err := modulelib.ConsistencyCheck(&logger, deployInfo, nil, nil)
-	if err != nil {
-		return fmt.Errorf("failed to verify webhook resources: %w", err)
-	}
-	if ready {
-		logger.V(1).Info("chart resources already installed, nothing to do!")
-		return nil
-	}
-	installed, err := modulelib.InstallChart(&logger, deployInfo, nil, nil)
+	// TODO(khlifi411): verify webhook configuration with watchers' configuration
+	// before re-installing the chart to avoid re-installing the same chart with the same configuration
+	installed, err := modulelib.InstallChart(&logger, deployInfo, nil, m.cache)
 	if err != nil {
 		return fmt.Errorf("failed to install webhook config: %w", err)
 	}
 	if !installed {
 		return ErrSKRWebhookHasNotBeenInstalled
 	}
+	logger.Info("successfully installed webhook chart", "release-name", deployInfo.ChartInfo.ReleaseName)
+	logger.V(1).Info("following modules were installed",
+		"modules", deployInfo.ChartInfo.Flags.SetFlags[customConfigKey])
 	return nil
 }

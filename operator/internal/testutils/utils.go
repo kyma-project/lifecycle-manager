@@ -38,7 +38,7 @@ func NewTestKyma(name string) *v1alpha1.Kyma {
 			Kind:       string(v1alpha1.KymaKind),
 		},
 		ObjectMeta: v1.ObjectMeta{
-			Name:      name + RandString(randomStringLength),
+			Name:      fmt.Sprintf("%s-%s", name, randString(randomStringLength)),
 			Namespace: v1.NamespaceDefault,
 		},
 		Spec: v1alpha1.KymaSpec{
@@ -49,10 +49,10 @@ func NewTestKyma(name string) *v1alpha1.Kyma {
 }
 
 func NewUniqModuleName() string {
-	return RandString(randomStringLength)
+	return randString(randomStringLength)
 }
 
-func RandString(n int) string {
+func randString(n int) string {
 	b := make([]byte, n)
 	for i := range b {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))] //nolint:gosec

@@ -95,13 +95,12 @@ func listTestWatcherCrs(kcpClient client.Client) []*v1alpha1.Watcher {
 		if err != nil {
 			continue
 		}
-
 		watchers = append(watchers, watcherCR)
 	}
 	return watchers
 }
 
-func isCrDeletionFinished(watcherObjKeys ...client.ObjectKey) func(g Gomega) bool {
+func isWatcherCrDeletionFinished(watcherObjKeys ...client.ObjectKey) func(g Gomega) bool {
 	if len(watcherObjKeys) > 1 {
 		return nil
 	}

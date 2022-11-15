@@ -163,7 +163,7 @@ func prepareForSSA(moduleTemplate *v1alpha1.ModuleTemplate) {
 func (c *RemoteCatalog) Delete(
 	ctx context.Context,
 ) error {
-	var moduleTemplatesRuntime *v1alpha1.ModuleTemplateList
+	moduleTemplatesRuntime := &v1alpha1.ModuleTemplateList{}
 	err := c.runtimeClient.List(ctx, moduleTemplatesRuntime)
 	if err != nil {
 		return err
