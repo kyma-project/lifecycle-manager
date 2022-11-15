@@ -1,6 +1,0 @@
-apiVersion: operator.kyma-project.io/v1alpha1
-kind: Sample
-metadata:
-  name: sample-sample
-spec:
-  releaseName: "redis-release"
