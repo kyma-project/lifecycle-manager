@@ -61,12 +61,6 @@ jobs:
       LIFECYCLE_MANAGER: ${{ github.repository }}
       K3D_VERSION: v5.4.6
     steps:
-      - uses: actions/setup-go@v3
-        with:
-          go-version-file: 'go.mod'
-          cache-dependency-path: 'go.sum'
-          check-latest: true
-          cache: true
       - name: Checkout Lifecycle-Manager
         uses: actions/checkout@v3
         with:
@@ -118,7 +112,11 @@ jobs:
 
       - name: Inject GOPATH into go Setup
         run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-
+      - name: Set up Go for ${{ matrix.smoke-run }}
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: ${{ env.GOPATH }}/src/github.com/${{ matrix.smoke-run }}/go.mod
+          cache-dependency-path: ${{ env.GOPATH }}/src/github.com/${{ matrix.smoke-run }}/go.sum
       - name: Run Smoke Tests for ${{ matrix.smoke_test-run }}
         run: |
           cd $(go env GOPATH)/src/github.com/${{ matrix.smoke-run }}/tests/smoke_test
