@@ -82,7 +82,6 @@ out.txt
 **/__debug_bin
 
 .run/
-/config/crd/bases/operator.kyma-project.io*
 .test.env
 **/**.code-workspace
 
