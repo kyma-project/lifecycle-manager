@@ -117,7 +117,6 @@ jobs:
         with:
           go-version-file: ${{ env.GOPATH }}/src/github.com/${{ matrix.smoke-run }}/go.mod
           cache-dependency-path: ${{ env.GOPATH }}/src/github.com/${{ matrix.smoke-run }}/go.sum
-          cache: true
       - name: Run Smoke Tests for ${{ matrix.smoke_test-run }}
         run: |
           cd $(go env GOPATH)/src/github.com/${{ matrix.smoke-run }}/tests/smoke_test
