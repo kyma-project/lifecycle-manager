@@ -34,7 +34,7 @@ To bundle your module image and operator, please refer to the detailed informati
 
 2. Create the `kyma-system` Namespace:
 
-5. Run [module-manager](https://github.com/kyma-project/module-manager/tree/main/operator) and [lifecycle-manager](https://github.com/kyma-project/lifecycle-manager/tree/main) in this order.
+3. Run [module-manager](https://github.com/kyma-project/module-manager/tree/main/operator) and [lifecycle-manager](https://github.com/kyma-project/lifecycle-manager/tree/main) in this order.
    * local: run following commands against your cluster's kubeconfig
    ```shell
     make install
