@@ -5,7 +5,6 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-    paths: [ ".github/workflows/test.yaml" ]
 jobs:
   wait-for-img:
     name: "Wait for Image Build"
