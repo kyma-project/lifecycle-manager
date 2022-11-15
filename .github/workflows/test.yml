@@ -61,6 +61,12 @@ jobs:
       LIFECYCLE_MANAGER: ${{ github.repository }}
       K3D_VERSION: v5.4.6
     steps:
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: 'go.mod'
+          cache-dependency-path: 'go.sum'
+          check-latest: true
+          cache: true
       - name: Checkout Lifecycle-Manager
         uses: actions/checkout@v3
         with:
