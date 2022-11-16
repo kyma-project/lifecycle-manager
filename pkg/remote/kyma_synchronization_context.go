@@ -133,8 +133,8 @@ func RemoveFinalizerFromRemoteKyma(
 	return syncContext.RuntimeClient.Update(ctx, remoteKyma)
 }
 
-func InitializeKymaSynchronizationContext(ctx context.Context, controlPlaneClient client.Client,
-	controlPlaneKyma *v1alpha1.Kyma, cache *ClientCache,
+func InitializeKymaSynchronizationContext(
+	ctx context.Context, controlPlaneKyma *v1alpha1.Kyma, controlPlaneClient client.Client, cache *ClientCache,
 ) (*KymaSynchronizationContext, error) {
 	runtimeClient, err := NewRemoteClient(ctx, controlPlaneClient, client.ObjectKeyFromObject(controlPlaneKyma),
 		controlPlaneKyma.Spec.Sync.Strategy, cache)
@@ -148,7 +148,41 @@ func InitializeKymaSynchronizationContext(ctx context.Context, controlPlaneClien
 		ControlPlaneKyma:   controlPlaneKyma,
 	}
 
+	if err := sync.ensureRemoteNamespaceExists(ctx); err != nil {
+		return nil, err
+	}
+
 	return sync, nil
+}
+
+// ensureRemoteNamespaceExists tries to ensure existence of a namespace for synchronization based on
+// 1. name of namespace if controlPlaneKyma.spec.sync.namespace is set
+// 2. name of controlPlaneKyma.namespace
+// in this order.
+func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Context) error {
+	namespace := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{Name: c.ControlPlaneKyma.GetNamespace()},
+	}
+
+	if c.ControlPlaneKyma.Spec.Sync.Namespace != "" {
+		namespace.SetName(c.ControlPlaneKyma.Spec.Sync.Namespace)
+	}
+
+	err := c.RuntimeClient.Get(ctx, client.ObjectKeyFromObject(namespace), namespace)
+
+	if k8serrors.IsNotFound(err) {
+		log.FromContext(ctx).Info(
+			"remote namespace for synchronization not found, attempting to create it",
+			"namespace", namespace.GetName(),
+		)
+		err = c.RuntimeClient.Create(ctx, namespace)
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to ensure remote namespace exists: %w", err)
+	}
+
+	return nil
 }
 
 func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plural string) error {
