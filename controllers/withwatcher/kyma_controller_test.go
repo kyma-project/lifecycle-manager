@@ -131,7 +131,7 @@ func verifyWebhookConfig(
 	Expect(len(webhookNameParts)).To(Equal(expectedWebhookNamePartsLength))
 
 	moduleName := webhookNameParts[0]
-	expectedModuleName, exists := watcherCR.Labels[v1alpha1.ManagedBylabel]
+	expectedModuleName, exists := watcherCR.Labels[v1alpha1.ManagedBy]
 	Expect(exists).To(BeTrue())
 	Expect(moduleName).To(Equal(expectedModuleName))
 	Expect(*webhook.ClientConfig.Service.Path).To(Equal(fmt.Sprintf(servicePathTpl, moduleName)))

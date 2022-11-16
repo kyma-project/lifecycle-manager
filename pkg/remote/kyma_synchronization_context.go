@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -164,8 +165,13 @@ func InitializeKymaSynchronizationContext(
 // in this order.
 func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Context) error {
 	namespace := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{Name: c.ControlPlaneKyma.GetNamespace()},
-		TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        c.ControlPlaneKyma.GetNamespace(),
+			Labels:      map[string]string{v1alpha1.ManagedBy: v1alpha1.OperatorName},
+			Annotations: map[string]string{v1alpha1.LastSync: time.Now().Format(time.RFC3339)},
+		},
+		// setting explicit type meta is required for SSA on Namespaces
+		TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
 	}
 	if c.ControlPlaneKyma.Spec.Sync.Namespace != "" {
 		namespace.SetName(c.ControlPlaneKyma.Spec.Sync.Namespace)
