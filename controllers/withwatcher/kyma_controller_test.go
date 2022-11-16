@@ -2,6 +2,7 @@ package withwatcher_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -31,6 +32,11 @@ const (
 	specSubresources               = "*"
 	statusSubresources             = "*/status"
 	expectedWebhookNamePartsLength = 4
+)
+
+var (
+	ErrExpectedAtLeastOneWebhook       = errors.New("expected at least one webhook configured")
+	ErrWebhookConfigForWatcherNotFound = errors.New("webhook config matching Watcher CR not found")
 )
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
@@ -176,26 +182,17 @@ func getSkrChartDeployment(ctx context.Context, skrClient client.Client, kymaObj
 	}
 }
 
-// func isWebhookDeployed(ctx context.Context, skrClient client.Client,
-//	webhookConfig *admissionv1.ValidatingWebhookConfiguration,
-//) func() error {
-//	return func() error {
-//		return skrClient.Get(ctx, client.ObjectKey{
-//			Namespace: metav1.NamespaceDefault,
-//			Name:      deploy.ResolveSKRChartResourceName(webhookConfigNameTpl),
-//		}, webhookConfig)
-//	}
-//}
-
 func isWebhookConfigured(watcher *v1alpha1.Watcher, webhookConfig *admissionv1.ValidatingWebhookConfiguration,
 	kymaName string,
 ) error {
 	if len(webhookConfig.Webhooks) < 1 {
-		return fmt.Errorf("Expected at least one webhook configured: (kyma=%s, webconfig=%s)", kymaName, webhookConfig.Name)
+		return fmt.Errorf("%w: (kyma=%s, webconfig=%s)", ErrExpectedAtLeastOneWebhook,
+			kymaName, webhookConfig.Name)
 	}
 	idx := lookupWebhookConfigForCR(webhookConfig.Webhooks, watcher)
 	if idx == -1 {
-		return fmt.Errorf("Webhook config matching Watcher CR not found: (kyma=%s, webconfig=%s)", kymaName, webhookConfig.Name)
+		return fmt.Errorf("%w: (kyma=%s, webconfig=%s)", ErrWebhookConfigForWatcherNotFound,
+			kymaName, webhookConfig.Name)
 	}
 	return verifyWebhookConfig(webhookConfig.Webhooks[idx], watcher)
 }

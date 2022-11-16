@@ -16,8 +16,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 )
 
-//nolint:ireturn
-func New(clnt client.Client) Runner {
+func New(clnt client.Client) *RunnerImpl {
 	return &RunnerImpl{clnt}
 }
 

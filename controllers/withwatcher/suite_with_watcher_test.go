@@ -61,8 +61,6 @@ import (
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
-const listenerAddr = ":8082"
-
 var (
 	controlPlaneClient client.Client                //nolint:gochecknoglobals
 	runtimeClient      client.Client                //nolint:gochecknoglobals
@@ -77,6 +75,7 @@ var (
 )
 
 const (
+	listenerAddr           = ":8082"
 	webhookChartPath       = "../../skr-webhook"
 	istioResourcesFilePath = "../../config/samples/tests/istio-test-resources.yaml"
 	virtualServiceName     = "kcp-events"
