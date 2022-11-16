@@ -2,8 +2,9 @@ package controllers_test
 
 import (
 	"fmt"
-	"github.com/Masterminds/semver/v3"
 	"time"
+
+	"github.com/Masterminds/semver/v3"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	modulelabels "github.com/kyma-project/module-manager/operator/pkg/labels"
 	moduletypes "github.com/kyma-project/module-manager/operator/pkg/types"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -42,6 +43,7 @@ type WatchableConfig struct {
 func ResolveSKRChartResourceName(resourceNameTpl string, kymaObjKey client.ObjectKey) string {
 	return fmt.Sprintf(resourceNameTpl, skrChartReleaseName(kymaObjKey))
 }
+
 func skrChartReleaseName(kymaObjKey client.ObjectKey) string {
 	return fmt.Sprintf(releaseNameTpl, kymaObjKey.Namespace, kymaObjKey.Name)
 }
@@ -67,6 +69,7 @@ func prepareInstallInfo(ctx context.Context, chartPath string, restConfig *rest.
 		},
 	}
 }
+
 func cachingKeyBaseResource(kymaObjKey client.ObjectKey) *unstructured.Unstructured {
 	baseRes := &unstructured.Unstructured{}
 	baseRes.SetLabels(map[string]string{

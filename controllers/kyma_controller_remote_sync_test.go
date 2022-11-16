@@ -10,7 +10,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	//"github.com/kyma-project/lifecycle-manager/pkg/test"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

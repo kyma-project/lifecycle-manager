@@ -3,12 +3,13 @@ package withwatcher_test
 import (
 	"context"
 	"fmt"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
+
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 
@@ -140,6 +141,7 @@ func isWatcherCrLabelUpdated(watcherObjKey client.ObjectKey, labelKey, expectedL
 		return expectedLabelValue == labelValue
 	}
 }
+
 func isKymaCrDeletionFinished(kymaObjKey client.ObjectKey) func() bool {
 	return func() bool {
 		err := controlPlaneClient.Get(suiteCtx, kymaObjKey, &v1alpha1.Kyma{})
@@ -174,7 +176,7 @@ func getSkrChartDeployment(ctx context.Context, skrClient client.Client, kymaObj
 	}
 }
 
-//func isWebhookDeployed(ctx context.Context, skrClient client.Client,
+// func isWebhookDeployed(ctx context.Context, skrClient client.Client,
 //	webhookConfig *admissionv1.ValidatingWebhookConfiguration,
 //) func() error {
 //	return func() error {

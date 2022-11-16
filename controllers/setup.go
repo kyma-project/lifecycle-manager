@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 
 	"k8s.io/client-go/util/workqueue"

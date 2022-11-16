@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	moduletypes "github.com/kyma-project/module-manager/operator/pkg/types"
 	"net"
 	"strconv"
 	"time"
+
+	moduletypes "github.com/kyma-project/module-manager/operator/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
