@@ -1,6 +1,7 @@
 package remote
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -10,6 +11,8 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -162,23 +165,24 @@ func InitializeKymaSynchronizationContext(
 func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Context) error {
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{Name: c.ControlPlaneKyma.GetNamespace()},
+		TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
 	}
-
 	if c.ControlPlaneKyma.Spec.Sync.Namespace != "" {
 		namespace.SetName(c.ControlPlaneKyma.Spec.Sync.Namespace)
 	}
 
-	err := c.RuntimeClient.Get(ctx, client.ObjectKeyFromObject(namespace), namespace)
-
-	if k8serrors.IsNotFound(err) {
-		log.FromContext(ctx).Info(
-			"remote namespace for synchronization not found, attempting to create it",
-			"namespace", namespace.GetName(),
-		)
-		err = c.RuntimeClient.Create(ctx, namespace)
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(namespace); err != nil {
+		return err
 	}
 
-	if err != nil {
+	patch := client.RawPatch(types.ApplyPatchType, buf.Bytes())
+	force := true
+	fieldManager := "kyma-sync-context"
+
+	if err := c.RuntimeClient.Patch(
+		ctx, namespace, patch, &client.PatchOptions{Force: &force, FieldManager: fieldManager},
+	); err != nil {
 		return fmt.Errorf("failed to ensure remote namespace exists: %w", err)
 	}
 
