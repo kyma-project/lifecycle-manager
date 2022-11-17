@@ -78,11 +78,14 @@ func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 	}
 }
 
-func GetKyma(ctx context.Context, testClient client.Client, kymaName string) (*v1alpha1.Kyma, error) {
+func GetKyma(ctx context.Context, testClient client.Client, name, namespace string) (*v1alpha1.Kyma, error) {
 	kymaInCluster := &v1alpha1.Kyma{}
+	if namespace == "" {
+		namespace = v1.NamespaceDefault
+	}
 	err := testClient.Get(ctx, client.ObjectKey{
-		Namespace: v1.NamespaceDefault,
-		Name:      kymaName,
+		Namespace: namespace,
+		Name:      name,
 	}, kymaInCluster)
 	if err != nil {
 		return nil, err
@@ -92,7 +95,7 @@ func GetKyma(ctx context.Context, testClient client.Client, kymaName string) (*v
 
 func IsKymaInState(ctx context.Context, kcpClient client.Client, kymaName string, state v1alpha1.State) func() bool {
 	return func() bool {
-		kymaFromCluster, err := GetKyma(ctx, kcpClient, kymaName)
+		kymaFromCluster, err := GetKyma(ctx, kcpClient, kymaName, "")
 		if err != nil || kymaFromCluster.Status.State != state {
 			return false
 		}

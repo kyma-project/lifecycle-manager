@@ -48,8 +48,9 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 
 	It("CR add from client should be synced in both clusters", func() {
 		By("Remote Kyma created")
-		Eventually(RemoteKymaExists(runtimeClient, kyma.GetName()), 30*time.Second, Interval).Should(Succeed())
-		remoteKyma, err := GetKyma(ctx, runtimeClient, kyma.GetName())
+		Eventually(KymaExists(runtimeClient, kyma.GetName(), kyma.Spec.Sync.Namespace), 30*time.Second, Interval).
+			Should(Succeed())
+		remoteKyma, err := GetKyma(ctx, runtimeClient, kyma.GetName(), kyma.Spec.Sync.Namespace)
 		Expect(err).ShouldNot(HaveOccurred())
 
 		By("add skr-module-client to remoteKyma.spec.modules")
@@ -70,7 +71,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma.Spec.Sync = v1alpha1.Sync{
 		Enabled:      true,
 		Strategy:     v1alpha1.SyncStrategyLocalClient,
-		Namespace:    metav1.NamespaceDefault,
+		Namespace:    "sync-namespace",
 		NoModuleCopy: true,
 	}
 
@@ -85,7 +86,8 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 	It("Kyma CR should be synchronized in both clusters", func() {
 		By("Remote Kyma created")
-		Eventually(RemoteKymaExists(runtimeClient, kyma.GetName()), 30*time.Second, Interval).Should(Succeed())
+		Eventually(KymaExists(runtimeClient, kyma.GetName(), kyma.Spec.Sync.Namespace), 30*time.Second, Interval).
+			Should(Succeed())
 
 		By("CR created in kcp")
 		for _, activeModule := range kyma.Spec.Modules {
@@ -93,20 +95,22 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		}
 
 		By("No spec.module in remote Kyma")
-		remoteKyma, err := GetKyma(ctx, runtimeClient, kyma.GetName())
+		remoteKyma, err := GetKyma(ctx, runtimeClient, kyma.GetName(), kyma.Spec.Sync.Namespace)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(remoteKyma.Spec.Modules).To(BeEmpty())
 
 		By("Remote Module Catalog created")
-		Eventually(ModuleTemplatesExist(runtimeClient, kyma), 30*time.Second, Interval).Should(Succeed())
+		Eventually(ModuleTemplatesExist(runtimeClient, kyma, true), 30*time.Second, Interval).Should(Succeed())
 		Expect(remoteKyma.ContainsCondition(v1alpha1.ConditionTypeReady,
 			v1alpha1.ConditionReasonModuleCatalogIsReady)).To(BeTrue())
 
 		By("updating a module template in the remote cluster to simulate unwanted modification")
 		Eventually(ModifyModuleTemplateSpecThroughLabels(runtimeClient, kyma,
-			ocm.Labels{ocm.Label{Name: "test", Value: json.RawMessage(`{"foo":"bar"}`)}}), Timeout, Interval).Should(Succeed())
+			ocm.Labels{ocm.Label{Name: "test", Value: json.RawMessage(`{"foo":"bar"}`)}},
+			true), Timeout, Interval).Should(Succeed())
 
 		By("verifying the discovered override and checking the resetted label")
-		Eventually(ModuleTemplatesLabelsCountMatch(runtimeClient, kyma, 0), Timeout, Interval).Should(Succeed())
+		Eventually(ModuleTemplatesLabelsCountMatch(
+			runtimeClient, kyma, 0, true), Timeout, Interval).Should(Succeed())
 	})
 })
