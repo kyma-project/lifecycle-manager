@@ -177,7 +177,7 @@ func (c *RemoteCatalog) Delete(
 	ctx context.Context,
 ) error {
 	syncContext := remotecontext.SyncContextFromContext(ctx)
-	var moduleTemplatesRuntime *v1alpha1.ModuleTemplateList
+	moduleTemplatesRuntime := &v1alpha1.ModuleTemplateList{Items: []v1alpha1.ModuleTemplate{}}
 	err := syncContext.RuntimeClient.List(ctx, moduleTemplatesRuntime)
 	if err != nil {
 		return err
