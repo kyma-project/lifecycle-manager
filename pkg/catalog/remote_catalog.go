@@ -23,9 +23,7 @@ type Settings struct {
 }
 
 type RemoteCatalog struct {
-	runtimeClient      client.Client
-	controlPlaneClient client.Client
-	settings           Settings
+	settings Settings
 }
 
 type Catalog interface {
@@ -33,12 +31,21 @@ type Catalog interface {
 	Delete(ctx context.Context) error
 }
 
+func NewRemoteCatalogFromKyma(kyma *v1alpha1.Kyma) *RemoteCatalog {
+	force := true
+	return NewRemoteCatalog(
+		Settings{
+			SSAPatchOptions: &client.PatchOptions{FieldManager: "catalog-sync", Force: &force},
+			Namespace:       kyma.Spec.Sync.Namespace,
+		},
+	)
+}
+
 // NewRemoteCatalog uses 2 Clients from a Sync Context to create a Catalog in a remote Cluster.
 func NewRemoteCatalog(
-	ctx *remotecontext.KymaSynchronizationContext,
 	settings Settings,
 ) *RemoteCatalog {
-	return &RemoteCatalog{runtimeClient: ctx.RuntimeClient, controlPlaneClient: ctx.ControlPlaneClient, settings: settings}
+	return &RemoteCatalog{settings: settings}
 }
 
 // CreateOrUpdate first lists all currently available moduleTemplates in the Runtime.
@@ -52,15 +59,16 @@ func (c *RemoteCatalog) CreateOrUpdate(
 	ctx context.Context,
 	moduleTemplatesControlPlane *v1alpha1.ModuleTemplateList,
 ) error {
+	syncContext := remotecontext.SyncContextFromContext(ctx)
 	moduleTemplatesRuntime := &v1alpha1.ModuleTemplateList{}
-	err := c.runtimeClient.List(ctx, moduleTemplatesRuntime)
+	err := syncContext.RuntimeClient.List(ctx, moduleTemplatesRuntime)
 
 	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster, then we create it
 	if meta.IsNoMatchError(err) {
 		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1alpha1.ModuleTemplateKind.Plural()); err != nil {
 			return err
 		}
-		err = c.runtimeClient.List(ctx, moduleTemplatesRuntime)
+		err = syncContext.RuntimeClient.List(ctx, moduleTemplatesRuntime)
 	}
 
 	if err != nil {
@@ -79,7 +87,7 @@ func (c *RemoteCatalog) CreateOrUpdate(
 		}
 		patch := client.RawPatch(types.ApplyPatchType, buf.Bytes())
 
-		if err := c.runtimeClient.Patch(
+		if err := syncContext.RuntimeClient.Patch(
 			ctx, diff, patch, c.settings.SSAPatchOptions,
 		); err != nil {
 			return fmt.Errorf("could not apply module template diff: %w", err)
@@ -87,7 +95,7 @@ func (c *RemoteCatalog) CreateOrUpdate(
 	}
 
 	for _, diff := range diffDelete {
-		if err := c.runtimeClient.Delete(ctx, diff); err != nil {
+		if err := syncContext.RuntimeClient.Delete(ctx, diff); err != nil {
 			return fmt.Errorf("could not delete module template from diff: %w", err)
 		}
 	}
@@ -168,13 +176,14 @@ func (c *RemoteCatalog) prepareForSSA(moduleTemplate *v1alpha1.ModuleTemplate) {
 func (c *RemoteCatalog) Delete(
 	ctx context.Context,
 ) error {
+	syncContext := remotecontext.SyncContextFromContext(ctx)
 	var moduleTemplatesRuntime *v1alpha1.ModuleTemplateList
-	err := c.runtimeClient.List(ctx, moduleTemplatesRuntime)
+	err := syncContext.RuntimeClient.List(ctx, moduleTemplatesRuntime)
 	if err != nil {
 		return err
 	}
 	for i := range moduleTemplatesRuntime.Items {
-		if err := c.runtimeClient.Delete(ctx, &moduleTemplatesRuntime.Items[i]); err != nil &&
+		if err := syncContext.RuntimeClient.Delete(ctx, &moduleTemplatesRuntime.Items[i]); err != nil &&
 			!k8serrors.IsNotFound(err) {
 			return err
 		}
@@ -185,8 +194,11 @@ func (c *RemoteCatalog) Delete(
 func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, plural string) error {
 	crd := &v1extensions.CustomResourceDefinition{}
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
+
+	syncContext := remotecontext.SyncContextFromContext(ctx)
+
 	var err error
-	err = c.controlPlaneClient.Get(ctx, client.ObjectKey{
+	err = syncContext.ControlPlaneClient.Get(ctx, client.ObjectKey{
 		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
 		// name changes, this also has to be adjusted here. We can think of making this configurable later
 		Name: fmt.Sprintf("%s.%s", plural, v1alpha1.GroupVersion.Group),
@@ -196,12 +208,12 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 		return err
 	}
 
-	err = c.runtimeClient.Get(ctx, client.ObjectKey{
+	err = syncContext.RuntimeClient.Get(ctx, client.ObjectKey{
 		Name: fmt.Sprintf("%s.%s", plural, v1alpha1.GroupVersion.Group),
 	}, crdFromRuntime)
 
 	if k8serrors.IsNotFound(err) {
-		return c.runtimeClient.Create(ctx, &v1extensions.CustomResourceDefinition{
+		return syncContext.RuntimeClient.Create(ctx, &v1extensions.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{Name: crd.Name, Namespace: crd.Namespace}, Spec: crd.Spec,
 		})
 	}
