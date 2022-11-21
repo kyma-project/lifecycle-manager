@@ -9,10 +9,11 @@ import (
 
 	moduletypes "github.com/kyma-project/module-manager/operator/pkg/types"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	modulelib "github.com/kyma-project/module-manager/operator/pkg/manifest"
-	corev1 "k8s.io/api/core/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -96,7 +97,7 @@ func (m *EnabledSKRWebhookChartManager) InstallWebhookChart(ctx context.Context,
 	}
 	skrWatcherInstallInfo := prepareInstallInfo(ctx, m.config.WebhookChartPath, skrCfg, syncContext.RuntimeClient,
 		chartArgsValues, kymaObjKey)
-	installed, err := modulelib.InstallChart(&logger, skrWatcherInstallInfo, nil, m.cache)
+	installed, err := modulelib.InstallChart(logger, skrWatcherInstallInfo, nil, m.cache)
 	if err != nil {
 		return true, fmt.Errorf("failed to install webhook config: %w", err)
 	}
@@ -127,7 +128,7 @@ func (m *EnabledSKRWebhookChartManager) RemoveWebhookChart(ctx context.Context,
 	}
 	skrWatcherInstallInfo := prepareInstallInfo(ctx, m.config.WebhookChartPath, skrCfg,
 		syncContext.RuntimeClient, argsVals, kymaObjKey)
-	uninstalled, err := modulelib.UninstallChart(&logger, skrWatcherInstallInfo, nil, m.cache)
+	uninstalled, err := modulelib.UninstallChart(logger, skrWatcherInstallInfo, nil, m.cache)
 	if err != nil {
 		return fmt.Errorf("failed to uninstall webhook config: %w", err)
 	}
