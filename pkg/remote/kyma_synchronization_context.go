@@ -1,15 +1,19 @@
 package remote
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -133,8 +137,8 @@ func RemoveFinalizerFromRemoteKyma(
 	return syncContext.RuntimeClient.Update(ctx, remoteKyma)
 }
 
-func InitializeKymaSynchronizationContext(ctx context.Context, controlPlaneClient client.Client,
-	controlPlaneKyma *v1alpha1.Kyma, cache *ClientCache,
+func InitializeKymaSynchronizationContext(
+	ctx context.Context, controlPlaneKyma *v1alpha1.Kyma, controlPlaneClient client.Client, cache *ClientCache,
 ) (*KymaSynchronizationContext, error) {
 	runtimeClient, err := NewRemoteClient(ctx, controlPlaneClient, client.ObjectKeyFromObject(controlPlaneKyma),
 		controlPlaneKyma.Spec.Sync.Strategy, cache)
@@ -148,7 +152,47 @@ func InitializeKymaSynchronizationContext(ctx context.Context, controlPlaneClien
 		ControlPlaneKyma:   controlPlaneKyma,
 	}
 
+	if err := sync.ensureRemoteNamespaceExists(ctx); err != nil {
+		return nil, err
+	}
+
 	return sync, nil
+}
+
+// ensureRemoteNamespaceExists tries to ensure existence of a namespace for synchronization based on
+// 1. name of namespace if controlPlaneKyma.spec.sync.namespace is set
+// 2. name of controlPlaneKyma.namespace
+// in this order.
+func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Context) error {
+	namespace := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        c.ControlPlaneKyma.GetNamespace(),
+			Labels:      map[string]string{v1alpha1.ManagedBy: v1alpha1.OperatorName},
+			Annotations: map[string]string{v1alpha1.LastSync: time.Now().Format(time.RFC3339)},
+		},
+		// setting explicit type meta is required for SSA on Namespaces
+		TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
+	}
+	if c.ControlPlaneKyma.Spec.Sync.Namespace != "" {
+		namespace.SetName(c.ControlPlaneKyma.Spec.Sync.Namespace)
+	}
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(namespace); err != nil {
+		return err
+	}
+
+	patch := client.RawPatch(types.ApplyPatchType, buf.Bytes())
+	force := true
+	fieldManager := "kyma-sync-context"
+
+	if err := c.RuntimeClient.Patch(
+		ctx, namespace, patch, &client.PatchOptions{Force: &force, FieldManager: fieldManager},
+	); err != nil {
+		return fmt.Errorf("failed to ensure remote namespace exists: %w", err)
+	}
+
+	return nil
 }
 
 func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plural string) error {

@@ -61,10 +61,10 @@ spec:
           image: "{{.Values.image.repository}}/{{.Values.image.name}}:{{.Values.image.tag}}"
           imagePullPolicy: {{.Values.image.pullPolicy}}
           volumeMounts:
-            - name: ssl
-              mountPath: /app/etc/ssl
-            - name: request
-              mountPath: /tmp
+          - name: ssl
+            mountPath: /app/etc/ssl
+          - name: request
+            mountPath: /tmp
           resources:
             requests:
               memory: {{.Values.resources.requests.memory}}
@@ -88,15 +88,15 @@ spec:
               mountPath: /tmp
         {{- end }}
       volumes:
-        - name: ssl
-          secret:
-            secretName: {{.Release.Name}}-webhook-tls
-            items:
-              - key: tls.key
-                path: tls.key
-              - key: tls.crt
-                path: tls.crt
-              - key: ca.crt
-                path: ca.crt
-        - name: request
-          emptyDir: { }
+      - name: ssl
+        secret:
+          secretName: {{.Release.Name}}-webhook-tls
+          items:
+          - key: tls.key
+            path: tls.key
+          - key: tls.crt
+            path: tls.crt
+          - key: ca.crt
+            path: ca.crt
+      - name: request
+        emptyDir: {}

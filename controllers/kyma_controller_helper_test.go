@@ -49,7 +49,7 @@ func RegisterDefaultLifecycleForKyma(kyma *v1alpha1.Kyma) {
 
 func GetKymaState(kymaName string) func() string {
 	return func() string {
-		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName)
+		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 		if err != nil {
 			return ""
 		}
@@ -59,7 +59,7 @@ func GetKymaState(kymaName string) func() string {
 
 func GetKymaConditions(kymaName string) func() []metav1.Condition {
 	return func() []metav1.Condition {
-		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName)
+		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 		if err != nil {
 			return []metav1.Condition{}
 		}
@@ -136,29 +136,30 @@ func getModule(kymaName, moduleName string) (*unstructured.Unstructured, error) 
 
 func GetModuleTemplate(name string) (*v1alpha1.ModuleTemplate, error) {
 	moduleTemplateInCluster := &v1alpha1.ModuleTemplate{}
-	err := controlPlaneClient.Get(ctx, client.ObjectKey{Namespace: metav1.NamespaceDefault, Name: name},
-		moduleTemplateInCluster)
+	moduleTemplateInCluster.SetNamespace(metav1.NamespaceDefault)
+	moduleTemplateInCluster.SetName(name)
+	err := getModuleTemplate(controlPlaneClient, moduleTemplateInCluster, nil, false)
 	if err != nil {
 		return nil, err
 	}
 	return moduleTemplateInCluster, nil
 }
 
-func RemoteKymaExists(remoteClient client.Client, kymaName string) func() error {
+func KymaExists(remoteClient client.Client, name, namespace string) func() error {
 	return func() error {
-		_, err := GetKyma(ctx, remoteClient, kymaName)
+		_, err := GetKyma(ctx, remoteClient, name, namespace)
 		return err
 	}
 }
 
-func ModuleTemplatesExist(clnt client.Client, kyma *v1alpha1.Kyma) func() error {
+func ModuleTemplatesExist(clnt client.Client, kyma *v1alpha1.Kyma, remote bool) func() error {
 	return func() error {
 		for _, module := range kyma.Spec.Modules {
 			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
 			if err != nil {
 				return err
 			}
-			if err := clnt.Get(ctx, client.ObjectKeyFromObject(template), template); err != nil {
+			if err := getModuleTemplate(clnt, template, kyma, remote); err != nil {
 				return err
 			}
 		}
@@ -170,7 +171,7 @@ func ModuleTemplatesExist(clnt client.Client, kyma *v1alpha1.Kyma) func() error 
 var ErrModuleTemplateDescriptorLabelCountMismatch = errors.New("label count in descriptor does not match")
 
 func ModuleTemplatesLabelsCountMatch(
-	clnt client.Client, kyma *v1alpha1.Kyma, count int,
+	clnt client.Client, kyma *v1alpha1.Kyma, count int, remote bool,
 ) func() error {
 	return func() error {
 		for _, module := range kyma.Spec.Modules {
@@ -178,7 +179,7 @@ func ModuleTemplatesLabelsCountMatch(
 			if err != nil {
 				return err
 			}
-			if err := clnt.Get(ctx, client.ObjectKeyFromObject(template), template); err != nil {
+			if err := getModuleTemplate(clnt, template, kyma, remote); err != nil {
 				return err
 			}
 
@@ -197,7 +198,12 @@ func ModuleTemplatesLabelsCountMatch(
 	}
 }
 
-func ModifyModuleTemplateSpecThroughLabels(clnt client.Client, kyma *v1alpha1.Kyma, labels []ocm.Label) func() error {
+func ModifyModuleTemplateSpecThroughLabels(
+	clnt client.Client,
+	kyma *v1alpha1.Kyma,
+	labels []ocm.Label,
+	remote bool,
+) func() error {
 	return func() error {
 		for _, module := range kyma.Spec.Modules {
 			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
@@ -205,7 +211,7 @@ func ModifyModuleTemplateSpecThroughLabels(clnt client.Client, kyma *v1alpha1.Ky
 				return err
 			}
 
-			if err := clnt.Get(ctx, client.ObjectKeyFromObject(template), template); err != nil {
+			if err := getModuleTemplate(clnt, template, kyma, remote); err != nil {
 				return err
 			}
 
@@ -227,6 +233,13 @@ func ModifyModuleTemplateSpecThroughLabels(clnt client.Client, kyma *v1alpha1.Ky
 	}
 }
 
+func getModuleTemplate(clnt client.Client, template *v1alpha1.ModuleTemplate, kyma *v1alpha1.Kyma, remote bool) error {
+	if remote && kyma.Spec.Sync.Namespace != "" {
+		template.SetNamespace(kyma.Spec.Sync.Namespace)
+	}
+	return clnt.Get(ctx, client.ObjectKeyFromObject(template), template)
+}
+
 func deleteModule(kymaName, moduleName string) func() error {
 	return func() error {
 		component := &unstructured.Unstructured{}
@@ -243,7 +256,7 @@ func deleteModule(kymaName, moduleName string) func() error {
 }
 
 func UpdateKymaModuleChannels(kymaName string, channel v1alpha1.Channel) error {
-	kyma, err := GetKyma(ctx, controlPlaneClient, kymaName)
+	kyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 	if err != nil {
 		return err
 	}
@@ -259,7 +272,7 @@ func UpdateKymaModuleChannels(kymaName string, channel v1alpha1.Channel) error {
 var ErrTemplateInfoChannelMismatch = errors.New("mismatch in template info channel")
 
 func TemplateInfosMatchChannel(kymaName string, channel v1alpha1.Channel) error {
-	kyma, err := GetKyma(ctx, controlPlaneClient, kymaName)
+	kyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 	if err != nil {
 		return err
 	}

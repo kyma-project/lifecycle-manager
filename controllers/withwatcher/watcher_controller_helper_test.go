@@ -72,7 +72,7 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1alpha1.Watc
 			Name:      fmt.Sprintf("%s-sample", managerInstanceName),
 			Namespace: metav1.NamespaceDefault,
 			Labels: map[string]string{
-				v1alpha1.ManagedBylabel: managerInstanceName,
+				v1alpha1.ManagedBy: managerInstanceName,
 			},
 		},
 		Spec: v1alpha1.WatcherSpec{

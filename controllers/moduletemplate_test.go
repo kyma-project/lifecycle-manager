@@ -13,7 +13,7 @@ var ErrManifestRemoteIsNotMatch = errors.New("Manifest.Spec.Remote is not match"
 
 func expectManifestSpecRemoteMatched(kymaName string, remoteFlag bool) func() error {
 	return func() error {
-		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName)
+		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 		if err != nil {
 			return err
 		}
@@ -37,7 +37,7 @@ func expectManifestSpecRemoteMatched(kymaName string, remoteFlag bool) func() er
 
 func updateModuleTemplateTarget(kymaName string, target v1alpha1.Target) func() error {
 	return func() error {
-		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName)
+		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 		if err != nil {
 			return err
 		}

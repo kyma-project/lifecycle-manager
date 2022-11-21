@@ -251,7 +251,7 @@ func verifyWebhookConfig(
 		return fmt.Errorf("%w: (webhook=%s)", errors.New("webhook name dot separated parts number mismatch"), webhook.Name)
 	}
 	moduleName := webhookNameParts[0]
-	expectedModuleName, exists := watcherCR.Labels[v1alpha1.ManagedBylabel]
+	expectedModuleName, exists := watcherCR.Labels[v1alpha1.ManagedBy]
 	if !exists {
 		return fmt.Errorf("%w: (labels=%v)", errors.New("managed-by label not found"), watcherCR.Labels)
 	}

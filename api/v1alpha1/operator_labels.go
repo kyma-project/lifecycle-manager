@@ -10,14 +10,19 @@ const (
 	Separator      = "/"
 	ControllerName = OperatorPrefix + Separator + "controller-name"
 	ChannelLabel   = OperatorPrefix + Separator + "channel"
-	ManagedBy      = OperatorPrefix + Separator + "managed-by"
-	Finalizer      = OperatorPrefix + Separator + string(KymaKind)
-	KymaName       = OperatorPrefix + Separator + "kyma-name"
-	Signature      = OperatorPrefix + Separator + "signature"
-	ModuleName     = OperatorPrefix + Separator + "module-name"
-	OperatorName   = "lifecycle-manager"
-	OwnedByLabel   = OperatorPrefix + Separator + "owned-by"
-	OwnedByFormat  = "%s__%s"
+	// ManagedBy defines the controller managing the resource.
+	ManagedBy    = OperatorPrefix + Separator + "managed-by"
+	Finalizer    = OperatorPrefix + Separator + string(KymaKind)
+	KymaName     = OperatorPrefix + Separator + "kyma-name"
+	Signature    = OperatorPrefix + Separator + "signature"
+	ModuleName   = OperatorPrefix + Separator + "module-name"
+	OperatorName = "lifecycle-manager"
+	// OwnedByLabel defines the resource managing the resource. Differing from ManagedBy in that it does not reference
+	// controllers.
+	OwnedByLabel  = OperatorPrefix + Separator + "owned-by"
+	OwnedByFormat = "%s__%s"
+	// WatchedByLabel defines a redirect to a controller that should be getting a notification
+	// if this resource is changed.
 	WatchedByLabel = OperatorPrefix + Separator + "watched-by"
 )
 

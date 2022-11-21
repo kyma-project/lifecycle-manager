@@ -17,6 +17,8 @@ import (
 )
 
 type Settings struct {
+	// this namespace flag can be used to override the namespace in which all ModuleTemplates should be applied.
+	Namespace       string
 	SSAPatchOptions *client.PatchOptions
 }
 
@@ -109,7 +111,7 @@ func (c *RemoteCatalog) CreateOrUpdate(
 // as we already know the spec will change. It also saves us the use of any special status field.
 // If for some reason the generation is incremented multiple times in between the current and the next reconciliation
 // it can simply jump multiple generations by always basing it on the latest generation of the remote.
-func (*RemoteCatalog) CalculateDiffs(
+func (c *RemoteCatalog) CalculateDiffs(
 	runtimeList *v1alpha1.ModuleTemplateList, controlPlaneList *v1alpha1.ModuleTemplateList,
 ) ([]*v1alpha1.ModuleTemplate, []*v1alpha1.ModuleTemplate) {
 	// these are various ModuleTemplate references which we will either have to create, update or delete from
@@ -132,7 +134,7 @@ func (*RemoteCatalog) CalculateDiffs(
 		// if the controlPlane Template does not exist in the remote, we already know we need to create it
 		// in the runtime
 		if _, exists := existingOnRemote[controlPlane.Namespace+controlPlane.Name]; !exists {
-			prepareForSSA(controlPlane)
+			c.prepareForSSA(controlPlane)
 			diffToApply = append(diffToApply, controlPlane)
 		}
 	}
@@ -146,17 +148,21 @@ func (*RemoteCatalog) CalculateDiffs(
 			diffToDelete = append(diffToDelete, remote)
 			continue
 		}
-		prepareForSSA(remote)
+		c.prepareForSSA(remote)
 		(&controlPlaneList.Items[controlPlaneIndex]).Spec.DeepCopyInto(&remote.Spec)
 		diffToApply = append(diffToApply, remote)
 	}
 	return diffToApply, diffToDelete
 }
 
-func prepareForSSA(moduleTemplate *v1alpha1.ModuleTemplate) {
+func (c *RemoteCatalog) prepareForSSA(moduleTemplate *v1alpha1.ModuleTemplate) {
 	moduleTemplate.SetResourceVersion("")
 	moduleTemplate.SetUID("")
 	moduleTemplate.SetManagedFields([]metav1.ManagedFieldsEntry{})
+
+	if c.settings.Namespace != "" {
+		moduleTemplate.SetNamespace(c.settings.Namespace)
+	}
 }
 
 func (c *RemoteCatalog) Delete(

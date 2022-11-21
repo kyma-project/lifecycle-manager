@@ -121,7 +121,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	var syncCtx *remote.KymaSynchronizationContext
 	if kyma.Spec.Sync.Enabled {
 		var err error
-		syncCtx, err = remote.InitializeKymaSynchronizationContext(ctx, r.Client, kyma, r.RemoteClientCache)
+		syncCtx, err = remote.InitializeKymaSynchronizationContext(ctx, kyma, r.Client, r.RemoteClientCache)
 		if err != nil {
 			return r.CtrlErr(ctx, kyma, fmt.Errorf("remote sync initialization failed: %w", err))
 		}
@@ -187,6 +187,7 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, syncContext *rem
 	if err := catalog.NewRemoteCatalog(
 		syncContext, catalog.Settings{
 			SSAPatchOptions: &client.PatchOptions{FieldManager: "catalog-sync", Force: &force},
+			Namespace:       syncContext.ControlPlaneKyma.Spec.Sync.Namespace,
 		},
 	).CreateOrUpdate(ctx, moduleTemplateList); err != nil {
 		return fmt.Errorf("could not synchronize remote module catalog: %w", err)
@@ -301,6 +302,7 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1
 		if err := catalog.NewRemoteCatalog(
 			syncCtx, catalog.Settings{
 				SSAPatchOptions: &client.PatchOptions{FieldManager: "catalog-sync", Force: &force},
+				Namespace:       syncCtx.ControlPlaneKyma.Spec.Sync.Namespace,
 			},
 		).Delete(ctx); err != nil {
 			return false, fmt.Errorf("could not delete remote module catalog: %w", err)
