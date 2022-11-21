@@ -18,7 +18,7 @@ func InitializeSyncContext(
 ) (context.Context, error) {
 	syncContext, err := InitializeKymaSynchronizationContext(ctx, kyma, controlPlaneClient, cache)
 	if err != nil {
-		return nil, err
+		return ctx, err
 	}
 	return context.WithValue(ctx, syncContextKey, syncContext), err
 }
