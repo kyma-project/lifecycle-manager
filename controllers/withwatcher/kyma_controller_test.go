@@ -27,11 +27,11 @@ import (
 )
 
 const (
-	webhookConfigNameTpl           = "%s-webhook"
 	servicePathTpl                 = "/validate/%s"
 	specSubresources               = "*"
 	statusSubresources             = "*/status"
 	expectedWebhookNamePartsLength = 4
+	dummyCaBundleData              = "amVsbHlmaXNoLXdhcy1oZXJl"
 )
 
 var (
@@ -39,7 +39,8 @@ var (
 	ErrWebhookConfigForWatcherNotFound = errors.New("webhook config matching Watcher CR not found")
 )
 
-var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
+var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, Serial, func() {
+	webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
 	kyma := NewTestKyma("kyma-remote-sync")
 	kyma.Spec.Sync = v1alpha1.Sync{
 		Enabled:      true,
@@ -47,6 +48,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Namespace:    metav1.NamespaceDefault,
 		NoModuleCopy: true,
 	}
+	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
 	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma)
 
@@ -54,43 +56,70 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		By("waiting for skr webhook condition to be ready")
 		Eventually(IsSKRWebhookConditionReasonReady(suiteCtx, controlPlaneClient, kyma.Name),
 			Timeout, Interval).Should(BeTrue())
-		webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
 		By("waiting for webhook configuration to be deployed in the remote cluster")
 		Eventually(runtimeClient.Get(suiteCtx, client.ObjectKey{
 			Namespace: metav1.NamespaceDefault,
-			Name:      deploy.ResolveSKRChartResourceName(webhookConfigNameTpl, client.ObjectKeyFromObject(kyma)),
+			Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookConfigNameTpl, kymaObjKey),
 		}, webhookConfig), Timeout, Interval).Should(Succeed())
 		Expect(isWebhookConfigured(watcherCrForKyma, webhookConfig, kyma.Name)).To(Succeed())
 	})
 
-	It("kyma reconciler installs watcher helm chart with correct webhook config when watcher specs are updated",
-		func() {
-			labelKey := "new-key"
-			labelValue := "new-value"
-			watcherCrForKyma.Spec.LabelsToWatch[labelKey] = labelValue
-			Expect(controlPlaneClient.Update(suiteCtx, watcherCrForKyma)).To(Succeed())
-			By("waiting for watcher CR labelsToWatch to be updated")
-			Eventually(isWatcherCrLabelUpdated(client.ObjectKeyFromObject(watcherCrForKyma),
-				labelKey, labelValue), Timeout, Interval).Should(BeTrue())
-			By("updating kyma channel to trigger its reconciliation")
-			kyma.Spec.Channel = v1alpha1.ChannelFast
-			Expect(controlPlaneClient.Update(suiteCtx, kyma)).To(Succeed())
-			By("waiting for the kyma update event to be processed")
-			time.Sleep(2 * time.Second)
-			By("waiting for skr webhook condition to be ready")
-			Eventually(IsSKRWebhookConditionReasonReady(suiteCtx, controlPlaneClient, kyma.Name),
-				Timeout, Interval).Should(BeTrue())
-			webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
-			Expect(runtimeClient.Get(suiteCtx, client.ObjectKey{
-				Namespace: metav1.NamespaceDefault,
-				Name:      deploy.ResolveSKRChartResourceName(webhookConfigNameTpl, client.ObjectKeyFromObject(kyma)),
-			}, webhookConfig)).To(Succeed())
-			Expect(isWebhookConfigured(watcherCrForKyma, webhookConfig, kyma.Name)).To(Succeed())
-		})
+	It("kyma reconciler re-installs watcher helm chart when webhook CA bundle is not consistent", func() {
+		By("updating webhook config with corrupt CA bundle data")
+		Expect(webhookConfig.Webhooks).NotTo(BeEmpty())
+		webhookConfig.Webhooks[0].ClientConfig.CABundle = []byte(dummyCaBundleData)
+		By("updating kyma channel to trigger its reconciliation")
+		kyma.Spec.Channel = v1alpha1.ChannelRapid
+		Expect(controlPlaneClient.Update(suiteCtx, kyma)).To(Succeed())
+		By("waiting for the kyma update event to be processed")
+		time.Sleep(2 * time.Second)
+		By("waiting for skr webhook condition to be ready")
+		Eventually(IsSKRWebhookConditionReasonReady(suiteCtx, controlPlaneClient, kyma.Name),
+			Timeout, Interval).Should(BeTrue())
+		Expect(deploy.CheckWebhookCABundleConsistency(suiteCtx, runtimeClient, kymaObjKey)).To(Succeed())
+	})
+
+	It("Watcher helm chart caching works as expected", func() {
+		labelKey := "new-key"
+		labelValue := "new-value"
+		watcherCrForKyma.Spec.LabelsToWatch[labelKey] = labelValue
+		Expect(controlPlaneClient.Update(suiteCtx, watcherCrForKyma)).To(Succeed())
+		By("waiting for watcher CR labelsToWatch to be updated")
+		Eventually(isWatcherCrLabelUpdated(client.ObjectKeyFromObject(watcherCrForKyma),
+			labelKey, labelValue), Timeout, Interval).Should(BeTrue())
+		By("updating kyma channel to trigger its reconciliation")
+		kyma.Spec.Channel = v1alpha1.ChannelFast
+		Expect(controlPlaneClient.Update(suiteCtx, kyma)).To(Succeed())
+		By("waiting for the kyma update event to be processed")
+		time.Sleep(2 * time.Second)
+		By("waiting for skr webhook condition to be ready")
+		Eventually(IsSKRWebhookConditionReasonReady(suiteCtx, controlPlaneClient, kyma.Name),
+			Timeout, Interval).Should(BeTrue())
+		Expect(runtimeClient.Get(suiteCtx, client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookConfigNameTpl, kymaObjKey),
+		}, webhookConfig)).To(Succeed())
+		Expect(isWebhookConfigured(watcherCrForKyma, webhookConfig, kyma.Name)).To(Succeed())
+
+		caBundleValueBeforeUpdate := webhookConfig.Webhooks[0].ClientConfig.CABundle
+		By("updating kyma channel to trigger its reconciliation")
+		kyma.Spec.Channel = v1alpha1.ChannelRapid
+		Expect(controlPlaneClient.Update(suiteCtx, kyma)).To(Succeed())
+		By("waiting for the kyma update event to be processed")
+		time.Sleep(2 * time.Second)
+		By("waiting for skr webhook condition to be ready")
+		Eventually(IsSKRWebhookConditionReasonReady(suiteCtx, controlPlaneClient, kyma.Name),
+			Timeout, Interval).Should(BeTrue())
+		Expect(runtimeClient.Get(suiteCtx, client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookConfigNameTpl, kymaObjKey),
+		}, webhookConfig)).To(Succeed())
+		Expect(string(webhookConfig.Webhooks[0].ClientConfig.CABundle)).To(Equal(string(caBundleValueBeforeUpdate)))
+	})
 
 	It("webhook manager removes watcher helm chart from SKR cluster when kyma is deleted", func() {
 		Expect(controlPlaneClient.Delete(suiteCtx, kyma)).To(Succeed())
-		Eventually(getSkrChartDeployment(suiteCtx, runtimeClient, client.ObjectKeyFromObject(kyma)), Timeout, Interval).
+		Eventually(getSkrChartDeployment(suiteCtx, runtimeClient, kymaObjKey), Timeout, Interval).
 			ShouldNot(Succeed())
 		Eventually(isKymaCrDeletionFinished(client.ObjectKeyFromObject(kyma)), Timeout, Interval).
 			Should(BeTrue())
@@ -217,20 +246,35 @@ func verifyWebhookConfig(
 	webhook admissionv1.ValidatingWebhook,
 	watcherCR *v1alpha1.Watcher,
 ) error {
-	// TODO(khlifi411): refactor: return errors instead of using gomega's Expect
 	webhookNameParts := strings.Split(webhook.Name, ".")
-	Expect(len(webhookNameParts)).To(Equal(expectedWebhookNamePartsLength))
+	if len(webhookNameParts) != expectedWebhookNamePartsLength {
+		return fmt.Errorf("%w: (webhook=%s)", errors.New("webhook name dot separated parts number mismatch"), webhook.Name)
+	}
 	moduleName := webhookNameParts[0]
 	expectedModuleName, exists := watcherCR.Labels[v1alpha1.ManagedBylabel]
-	Expect(exists).To(BeTrue())
-	Expect(moduleName).To(Equal(expectedModuleName))
-	Expect(*webhook.ClientConfig.Service.Path).To(Equal(fmt.Sprintf(servicePathTpl, moduleName)))
-	Expect(reflect.DeepEqual(webhook.ObjectSelector.MatchLabels, watcherCR.Spec.LabelsToWatch)).To(BeTrue())
-	if watcherCR.Spec.Field == v1alpha1.StatusField {
-		Expect(webhook.Rules[0].Resources[0]).To(Equal(statusSubresources))
+	if !exists {
+		return fmt.Errorf("%w: (labels=%v)", errors.New("managed-by label not found"), watcherCR.Labels)
 	}
-	if watcherCR.Spec.Field == v1alpha1.SpecField {
-		Expect(webhook.Rules[0].Resources[0]).To(Equal(specSubresources))
+	if moduleName != expectedModuleName {
+		return fmt.Errorf("%w: (expected=%s, got=%s)", errors.New("module name mismatch"),
+			expectedModuleName, moduleName)
+	}
+	expectedSvcPath := fmt.Sprintf(servicePathTpl, moduleName)
+	if *webhook.ClientConfig.Service.Path != expectedSvcPath {
+		return fmt.Errorf("%w: (expected=%s, got=%s)", errors.New("service path mismatch"),
+			expectedSvcPath, *webhook.ClientConfig.Service.Path)
+	}
+	if !reflect.DeepEqual(webhook.ObjectSelector.MatchLabels, watcherCR.Spec.LabelsToWatch) {
+		return fmt.Errorf("%w: (expected=%v, got=%v)", errors.New("watch labels mismatch"),
+			watcherCR.Spec.LabelsToWatch, webhook.ObjectSelector.MatchLabels)
+	}
+	if watcherCR.Spec.Field == v1alpha1.StatusField && webhook.Rules[0].Resources[0] != statusSubresources {
+		return fmt.Errorf("%w: (expected=%s, got=%s)", errors.New("status subresources mismatch"),
+			statusSubresources, webhook.Rules[0].Resources[0])
+	}
+	if watcherCR.Spec.Field == v1alpha1.SpecField && webhook.Rules[0].Resources[0] != specSubresources {
+		return fmt.Errorf("%w: (expected=%s, got=%s)", errors.New("spec subresources mismatch"),
+			specSubresources, webhook.Rules[0].Resources[0])
 	}
 	return nil
 }

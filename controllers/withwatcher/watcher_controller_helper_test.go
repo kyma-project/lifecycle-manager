@@ -34,7 +34,12 @@ func deserializeIstioResources() ([]*unstructured.Unstructured, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func(file io.ReadCloser) {
+		err := file.Close()
+		if err != nil {
+			logger.Error(err, "failed to close test resources", "path", istioResourcesFilePath)
+		}
+	}(file)
 	decoder := yaml.NewYAMLOrJSONDecoder(file, defaultBufferSize)
 	for {
 		istioResource := &unstructured.Unstructured{}

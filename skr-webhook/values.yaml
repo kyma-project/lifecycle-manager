@@ -4,11 +4,11 @@ sidecar: true
 replicas: 1
 image:
   # -- Image repository
-  repository: "eu.gcr.io/kyma-project"
+  repository: "europe-docker.pkg.dev/kyma-project/dev"
   # -- Image name
   name: "runtime-watcher-skr"
   # -- Image tag
-  tag: "latest"
+  tag: "PR-80"
   # -- Image pull policy
   pullPolicy: "Always"
 # -- Image pull secrets

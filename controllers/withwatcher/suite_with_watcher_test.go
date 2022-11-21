@@ -23,6 +23,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-logr/logr"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -72,6 +74,7 @@ var (
 	cfg                *rest.Config                 //nolint:gochecknoglobals
 	istioResources     []*unstructured.Unstructured //nolint:gochecknoglobals
 	remoteClientCache  *remote.ClientCache          //nolint:gochecknoglobals
+	logger             logr.Logger                  //nolint:gochecknoglobals
 )
 
 const (
@@ -90,7 +93,7 @@ func TestAPIs(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	suiteCtx, cancel = context.WithCancel(context.TODO())
-	logger := zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true))
+	logger = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true))
 	logf.SetLogger(logger)
 
 	By("bootstrapping test environment")

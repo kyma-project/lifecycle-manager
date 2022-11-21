@@ -30,6 +30,7 @@ spec:
     metadata:
       labels:
         app: skr-webhook
+        operator.kyma-project.io/pod-restart-trigger: {{uuidv4}}
     spec:
       serviceAccountName: {{.Release.Name}}-webhook-sa
       containers:
@@ -98,4 +99,4 @@ spec:
               - key: ca.crt
                 path: ca.crt
         - name: request
-          emptyDir: {}
+          emptyDir: { }
