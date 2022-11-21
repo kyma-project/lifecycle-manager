@@ -37,6 +37,13 @@ const (
 var (
 	ErrExpectedAtLeastOneWebhook       = errors.New("expected at least one webhook configured")
 	ErrWebhookConfigForWatcherNotFound = errors.New("webhook config matching Watcher CR not found")
+	ErrWebhookNamePartsNumberMismatch  = errors.New("webhook name dot separated parts number mismatch")
+	ErrManagedByLabelNotFound          = errors.New("managed-by label not found")
+	ErrModuleNameMismatch              = errors.New("module name mismatch")
+	ErrSvcPathMismatch                 = errors.New("service path mismatch")
+	ErrWatchLabelsMismatch             = errors.New("watch labels mismatch")
+	ErrStatusSubResourcesMismatch      = errors.New("status sub-resources mismatch")
+	ErrSpecSubResourcesMismatch        = errors.New("spec sub-resources mismatch")
 )
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, Serial, func() {
@@ -54,7 +61,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, S
 
 	It("kyma reconciler installs watcher helm chart with correct webhook config", func() {
 		By("waiting for skr webhook condition to be ready")
-		Eventually(IsSKRWebhookConditionReasonReady(suiteCtx, controlPlaneClient, kyma.Name),
+		Eventually(IsSKRWebhookConditionReasonReady(suiteCtx, controlPlaneClient, kymaObjKey),
 			Timeout, Interval).Should(BeTrue())
 		By("waiting for webhook configuration to be deployed in the remote cluster")
 		Eventually(runtimeClient.Get(suiteCtx, client.ObjectKey{
@@ -74,7 +81,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, S
 		By("waiting for the kyma update event to be processed")
 		time.Sleep(2 * time.Second)
 		By("waiting for skr webhook condition to be ready")
-		Eventually(IsSKRWebhookConditionReasonReady(suiteCtx, controlPlaneClient, kyma.Name),
+		Eventually(IsSKRWebhookConditionReasonReady(suiteCtx, controlPlaneClient, kymaObjKey),
 			Timeout, Interval).Should(BeTrue())
 		Expect(deploy.CheckWebhookCABundleConsistency(suiteCtx, runtimeClient, kymaObjKey)).To(Succeed())
 	})
@@ -93,7 +100,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, S
 		By("waiting for the kyma update event to be processed")
 		time.Sleep(2 * time.Second)
 		By("waiting for skr webhook condition to be ready")
-		Eventually(IsSKRWebhookConditionReasonReady(suiteCtx, controlPlaneClient, kyma.Name),
+		Eventually(IsSKRWebhookConditionReasonReady(suiteCtx, controlPlaneClient, kymaObjKey),
 			Timeout, Interval).Should(BeTrue())
 		Expect(runtimeClient.Get(suiteCtx, client.ObjectKey{
 			Namespace: metav1.NamespaceDefault,
@@ -108,7 +115,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, S
 		By("waiting for the kyma update event to be processed")
 		time.Sleep(2 * time.Second)
 		By("waiting for skr webhook condition to be ready")
-		Eventually(IsSKRWebhookConditionReasonReady(suiteCtx, controlPlaneClient, kyma.Name),
+		Eventually(IsSKRWebhookConditionReasonReady(suiteCtx, controlPlaneClient, kymaObjKey),
 			Timeout, Interval).Should(BeTrue())
 		Expect(runtimeClient.Get(suiteCtx, client.ObjectKey{
 			Namespace: metav1.NamespaceDefault,
@@ -184,9 +191,11 @@ func isKymaCrDeletionFinished(kymaObjKey client.ObjectKey) func() bool {
 	}
 }
 
-func IsSKRWebhookConditionReasonReady(ctx context.Context, kcpClient client.Client, kymaName string) func() bool {
+func IsSKRWebhookConditionReasonReady(ctx context.Context, kcpClient client.Client,
+	kymaObjKey client.ObjectKey,
+) func() bool {
 	return func() bool {
-		kymaFromCluster, err := GetKyma(ctx, kcpClient, kymaName)
+		kymaFromCluster, err := GetKyma(ctx, kcpClient, kymaObjKey.Name, kymaObjKey.Namespace)
 		if err != nil {
 			return false
 		}
@@ -248,32 +257,32 @@ func verifyWebhookConfig(
 ) error {
 	webhookNameParts := strings.Split(webhook.Name, ".")
 	if len(webhookNameParts) != expectedWebhookNamePartsLength {
-		return fmt.Errorf("%w: (webhook=%s)", errors.New("webhook name dot separated parts number mismatch"), webhook.Name)
+		return fmt.Errorf("%w: (webhook=%s)", ErrWebhookNamePartsNumberMismatch, webhook.Name)
 	}
 	moduleName := webhookNameParts[0]
 	expectedModuleName, exists := watcherCR.Labels[v1alpha1.ManagedBy]
 	if !exists {
-		return fmt.Errorf("%w: (labels=%v)", errors.New("managed-by label not found"), watcherCR.Labels)
+		return fmt.Errorf("%w: (labels=%v)", ErrManagedByLabelNotFound, watcherCR.Labels)
 	}
 	if moduleName != expectedModuleName {
-		return fmt.Errorf("%w: (expected=%s, got=%s)", errors.New("module name mismatch"),
+		return fmt.Errorf("%w: (expected=%s, got=%s)", ErrModuleNameMismatch,
 			expectedModuleName, moduleName)
 	}
 	expectedSvcPath := fmt.Sprintf(servicePathTpl, moduleName)
 	if *webhook.ClientConfig.Service.Path != expectedSvcPath {
-		return fmt.Errorf("%w: (expected=%s, got=%s)", errors.New("service path mismatch"),
+		return fmt.Errorf("%w: (expected=%s, got=%s)", ErrSvcPathMismatch,
 			expectedSvcPath, *webhook.ClientConfig.Service.Path)
 	}
 	if !reflect.DeepEqual(webhook.ObjectSelector.MatchLabels, watcherCR.Spec.LabelsToWatch) {
-		return fmt.Errorf("%w: (expected=%v, got=%v)", errors.New("watch labels mismatch"),
+		return fmt.Errorf("%w: (expected=%v, got=%v)", ErrWatchLabelsMismatch,
 			watcherCR.Spec.LabelsToWatch, webhook.ObjectSelector.MatchLabels)
 	}
 	if watcherCR.Spec.Field == v1alpha1.StatusField && webhook.Rules[0].Resources[0] != statusSubresources {
-		return fmt.Errorf("%w: (expected=%s, got=%s)", errors.New("status subresources mismatch"),
+		return fmt.Errorf("%w: (expected=%s, got=%s)", ErrStatusSubResourcesMismatch,
 			statusSubresources, webhook.Rules[0].Resources[0])
 	}
 	if watcherCR.Spec.Field == v1alpha1.SpecField && webhook.Rules[0].Resources[0] != specSubresources {
-		return fmt.Errorf("%w: (expected=%s, got=%s)", errors.New("spec subresources mismatch"),
+		return fmt.Errorf("%w: (expected=%s, got=%s)", ErrSpecSubResourcesMismatch,
 			specSubresources, webhook.Rules[0].Resources[0])
 	}
 	return nil
