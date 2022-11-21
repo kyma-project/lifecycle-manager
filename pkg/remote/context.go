@@ -9,7 +9,7 @@ import (
 )
 
 // syncContextKey is a singleton key.
-var syncContextKey = "sync-context-key" //nolint:gochecknoglobals
+var syncContextKey = struct{}{} //nolint:gochecknoglobals
 
 var ErrIsNoSyncContext = errors.New("the given value is not a pointer to a kyma synchronization context")
 
