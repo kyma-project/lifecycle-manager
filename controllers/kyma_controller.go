@@ -103,7 +103,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		if ctx, err = remote.InitializeSyncContext(ctx, kyma, r.Client, r.RemoteClientCache); err != nil {
 			err := fmt.Errorf("initializing sync context failed: %w", err)
 			r.Event(kyma, "Warning", string(SyncContextError), err.Error())
-			return ctrl.Result{}, err
+			return r.CtrlErr(ctx, kyma, err)
 		}
 	}
 
@@ -308,7 +308,9 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1
 
 		r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
 		if err := remote.RemoveFinalizerFromRemoteKyma(ctx, kyma); client.IgnoreNotFound(err) != nil {
-			return false, fmt.Errorf("error while trying to remove finalizer from remote: %w", err)
+			err := fmt.Errorf("error while trying to remove finalizer from remote: %w", err)
+			r.Event(kyma, "Warning", string(DeletionError), err.Error())
+			return false, err
 		}
 
 		logger.Info("removed remote finalizer")
@@ -317,7 +319,9 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1
 	controllerutil.RemoveFinalizer(kyma, v1alpha1.Finalizer)
 
 	if err := r.Update(ctx, kyma); err != nil {
-		return false, fmt.Errorf("error while trying to udpate kyma during deletion: %w", err)
+		err := fmt.Errorf("error while trying to udpate kyma during deletion: %w", err)
+		r.Event(kyma, "Warning", string(DeletionError), err.Error())
+		return false, err
 	}
 
 	return false, nil
