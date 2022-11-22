@@ -3,6 +3,7 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"net"
 	"strconv"
 
@@ -11,7 +12,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	modulelib "github.com/kyma-project/module-manager/operator/pkg/manifest"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,8 +21,8 @@ import (
 )
 
 type SKRWebhookChartManager interface {
-	Install(ctx context.Context, syncContext *remote.KymaSynchronizationContext) (bool, error)
-	Remove(ctx context.Context, syncContext *remote.KymaSynchronizationContext) error
+	Install(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error)
+	Remove(ctx context.Context, kyma *v1alpha1.Kyma) error
 }
 
 type SKRWebhookChartManagerImpl struct {
@@ -46,11 +46,10 @@ func NewSKRWebhookChartManagerImpl(config *SkrChartConfig) *SKRWebhookChartManag
 	}
 }
 
-func (m *SKRWebhookChartManagerImpl) Install(ctx context.Context,
-	syncContext *remote.KymaSynchronizationContext,
-) (bool, error) {
+func (m *SKRWebhookChartManagerImpl) Install(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error) {
 	logger := logf.FromContext(ctx)
-	kymaObjKey := client.ObjectKeyFromObject(syncContext.ControlPlaneKyma)
+	kymaObjKey := client.ObjectKeyFromObject(kyma)
+	syncContext := remote.SyncContextFromContext(ctx)
 	chartArgsValues, err := m.generateHelmChartArgs(ctx, syncContext.ControlPlaneClient)
 	if err != nil {
 		return true, err
@@ -64,7 +63,7 @@ func (m *SKRWebhookChartManagerImpl) Install(ctx context.Context,
 	if !installed {
 		return true, ErrSKRWebhookNotInstalled
 	}
-	syncContext.ControlPlaneKyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionTrue)
+	kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionTrue)
 	logger.Info("successfully installed webhook chart",
 		"release-name", skrWatcherInstallInfo.ChartInfo.ReleaseName)
 	logger.V(1).Info("following modules were installed",
@@ -72,17 +71,16 @@ func (m *SKRWebhookChartManagerImpl) Install(ctx context.Context,
 	return false, nil
 }
 
-func (m *SKRWebhookChartManagerImpl) Remove(ctx context.Context,
-	syncContext *remote.KymaSynchronizationContext,
-) error {
+func (m *SKRWebhookChartManagerImpl) Remove(ctx context.Context, kyma *v1alpha1.Kyma) error {
 	logger := logf.FromContext(ctx)
-	kymaObjKey := client.ObjectKeyFromObject(syncContext.ControlPlaneKyma)
+	kymaObjKey := client.ObjectKeyFromObject(kyma)
+	syncContext := remote.SyncContextFromContext(ctx)
 	argsVals, err := m.generateHelmChartArgs(ctx, syncContext.ControlPlaneClient)
 	if err != nil {
 		return err
 	}
-	skrWatcherInstallInfo := prepareInstallInfo(ctx, m.config.WebhookChartPath, syncContext.RuntimeRestConfig,
-		syncContext.RuntimeClient, argsVals, kymaObjKey)
+	skrWatcherInstallInfo := prepareInstallInfo(ctx, m.config.WebhookChartPath,
+		syncContext.RuntimeRestConfig, syncContext.RuntimeClient, argsVals, kymaObjKey)
 	uninstalled, err := modulelib.UninstallChart(logger, skrWatcherInstallInfo, nil, m.cache)
 	if err != nil {
 		return fmt.Errorf("failed to uninstall webhook config: %w", err)
