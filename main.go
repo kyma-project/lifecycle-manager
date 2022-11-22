@@ -48,6 +48,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
@@ -281,7 +282,7 @@ func defineFlagVar() *FlagVar {
 		"The resources.limits.cpu for skr webhook.")
 	flag.StringVar(&flagVar.virtualServiceName, "virtual-svc-name", "kcp-events",
 		"Name of the virtual service resource to be reconciled by the watcher control loop.")
-	flag.StringVar(&flagVar.gatewaySelector, "gateway-selector", "operator.kyma-project.io/gateway=default",
+	flag.StringVar(&flagVar.gatewaySelector, "gateway-selector", v1alpha1.DefaultIstioGatewaySelector,
 		"Name of the gateway resource that the virtual service will use.")
 	flag.BoolVar(&flagVar.pprof, "pprof", false,
 		"Whether to start up a pprof server.")

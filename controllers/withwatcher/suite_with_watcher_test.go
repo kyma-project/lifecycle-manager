@@ -46,6 +46,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
@@ -79,7 +80,7 @@ const (
 	webhookChartPath       = "../../skr-webhook"
 	istioResourcesFilePath = "../../config/samples/tests/istio-test-resources.yaml"
 	virtualServiceName     = "kcp-events"
-	gatewaySelector        = "operator.kyma-project.io/gateway=default"
+	gatewaySelector        = v1alpha1.DefaultIstioGatewaySelector
 )
 
 func TestAPIs(t *testing.T) {

@@ -24,6 +24,8 @@ const (
 	// WatchedByLabel defines a redirect to a controller that should be getting a notification
 	// if this resource is changed.
 	WatchedByLabel = OperatorPrefix + Separator + "watched-by"
+	//DefaultIstioGatewaySelector defines a default label selector for a Gateway to configure a VirtualService for the Watcher
+	DefaultIstioGatewaySelector = OperatorPrefix + Separator + "default-gateway"
 )
 
 func GetMatchingLabelsForModule(module *Module) client.MatchingLabels {
