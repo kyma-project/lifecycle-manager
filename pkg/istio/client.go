@@ -82,7 +82,7 @@ func (c *Client) CreateVirtualService(ctx context.Context, watcher *v1alpha1.Wat
 	virtualSvc.SetName(c.virtualServiceName)
 	virtualSvc.SetNamespace(metav1.NamespaceDefault)
 	if gateway != nil {
-		gwKey := apitypes.NamespacedName{Namespace: gateway.Namespace, Name: gateway.Name}
+		gwKey := client.ObjectKeyFromObject(gateway)
 		virtualSvc.Spec.Gateways = append(virtualSvc.Spec.Gateways, gwKey.String())
 	}
 	virtualSvc.Spec.Hosts = append(virtualSvc.Spec.Hosts, "*")
@@ -113,7 +113,7 @@ func (c *Client) lookupGateway(ctx context.Context) (*istioclientapi.Gateway, er
 	}
 
 	if len(gateways.Items) > 1 {
-		gwKey := apitypes.NamespacedName{Namespace: gateways.Items[0].Namespace, Name: gateways.Items[0].Name}
+		gwKey := client.ObjectKeyFromObject(gateways.Items[0])
 		c.logger.Info("Warning: More than one matching Istio gateways found. Selecting the first one", "labelSelector", c.gatewaySelector, "match count", len(gateways.Items), "selected", gwKey.String())
 	}
 
