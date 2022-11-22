@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
@@ -26,7 +27,9 @@ import (
 )
 
 // SetupWithManager sets up the Kyma controller with the Manager.
-func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options, listenerAddr string) error {
+func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
+	options controller.Options, listenerAddr string, enableDomainNameVerification bool,
+) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1alpha1.Kyma{}).WithOptions(options).
 		Watches(
 			&source.Kind{Type: &v1alpha1.ModuleTemplate{}},
@@ -41,15 +44,28 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 			Log: ctrl.Log, OwnerType: &v1alpha1.Kyma{}, IsController: true,
 		})
 
-	// Verifier used to verify incoming listener requests
-	reqVerifier := security.NewRequestVerifier(mgr.GetClient())
+	var runnableListener *listener.SKREventListener
+	var eventChannel *source.Channel
+	if enableDomainNameVerification {
+		// Verifier used to verify incoming listener requests
+		reqVerifier := security.NewRequestVerifier(mgr.GetClient())
 
-	// register listener component
-	runnableListener, eventChannel := listener.RegisterListenerComponent(
-		listenerAddr,
-		v1alpha1.OperatorName,
-		reqVerifier.Verify,
-	)
+		// register listener component incl. domain name verification
+		runnableListener, eventChannel = listener.RegisterListenerComponent(
+			listenerAddr,
+			v1alpha1.OperatorName,
+			reqVerifier.Verify,
+		)
+	} else {
+		// register listener component
+		runnableListener, eventChannel = listener.RegisterListenerComponent(
+			listenerAddr,
+			v1alpha1.OperatorName,
+			func(r *http.Request) error {
+				return nil
+			},
+		)
+	}
 
 	// watch event channel
 	r.watchEventChannel(controllerBuilder, eventChannel)
