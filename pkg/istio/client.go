@@ -10,7 +10,6 @@ import (
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -164,7 +163,7 @@ func (c *Client) UpdateVirtualServiceConfig(ctx context.Context, watcher *v1alph
 	var virtualService *istioclientapi.VirtualService
 	virtualService, customErr = c.getVirtualService(ctx)
 	if customErr != nil && customErr.IsNotFound {
-		_, err = c.CreateVirtualService(ctx, watcher)
+		_, err = c.createVirtualService(ctx, watcher)
 		if err != nil {
 			return fmt.Errorf("failed to create virtual service %w", err)
 		}
