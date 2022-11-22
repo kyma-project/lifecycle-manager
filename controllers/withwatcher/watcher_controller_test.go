@@ -53,7 +53,7 @@ func allCRsDeleted() func(customIstioClient *istio.Client) {
 	}
 }
 
-var _ = Describe("Watcher CR scenarios", Ordered, Serial, func() {
+var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	var customIstioClient *istio.Client
 	var err error
 	BeforeAll(func() {

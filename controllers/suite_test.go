@@ -23,8 +23,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
-
 	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 
 	//nolint:gci
@@ -137,10 +135,9 @@ var _ = BeforeSuite(func() {
 
 	remoteClientCache := remote.NewClientCache()
 	err = (&controllers.KymaReconciler{
-		Client:                 k8sManager.GetClient(),
-		EventRecorder:          k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		RequeueIntervals:       intervals,
-		SKRWebhookChartManager: &deploy.DisabledSKRWebhookChartManager{},
+		Client:           k8sManager.GetClient(),
+		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		RequeueIntervals: intervals,
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
 		},

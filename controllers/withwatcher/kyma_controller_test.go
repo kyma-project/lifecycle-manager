@@ -1,6 +1,7 @@
 package withwatcher_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -9,6 +10,8 @@ import (
 	"reflect"
 	"strings"
 	"time"
+
+	corev1 "k8s.io/api/core/v1"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -32,6 +35,7 @@ const (
 	statusSubresources             = "*/status"
 	expectedWebhookNamePartsLength = 4
 	dummyCaBundleData              = "amVsbHlmaXNoLXdhcy1oZXJl"
+	caCertificateSecretKey         = "ca.crt"
 )
 
 var (
@@ -46,7 +50,7 @@ var (
 	ErrSpecSubResourcesMismatch        = errors.New("spec sub-resources mismatch")
 )
 
-var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, Serial, func() {
+var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
 	webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
 	kyma := NewTestKyma("kyma-remote-sync")
 	kyma.Spec.Sync = v1alpha1.Sync{
@@ -66,7 +70,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, S
 		By("waiting for webhook configuration to be deployed in the remote cluster")
 		Eventually(runtimeClient.Get(suiteCtx, client.ObjectKey{
 			Namespace: metav1.NamespaceDefault,
-			Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookConfigNameTpl, kymaObjKey),
+			Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
 		}, webhookConfig), Timeout, Interval).Should(Succeed())
 		Expect(isWebhookConfigured(watcherCrForKyma, webhookConfig, kyma.Name)).To(Succeed())
 	})
@@ -75,6 +79,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, S
 		By("updating webhook config with corrupt CA bundle data")
 		Expect(webhookConfig.Webhooks).NotTo(BeEmpty())
 		webhookConfig.Webhooks[0].ClientConfig.CABundle = []byte(dummyCaBundleData)
+		Expect(runtimeClient.Update(suiteCtx, webhookConfig)).To(Succeed())
 		By("updating kyma channel to trigger its reconciliation")
 		kyma.Spec.Channel = v1alpha1.ChannelRapid
 		Expect(controlPlaneClient.Update(suiteCtx, kyma)).To(Succeed())
@@ -83,7 +88,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, S
 		By("waiting for skr webhook condition to be ready")
 		Eventually(IsSKRWebhookConditionReasonReady(suiteCtx, controlPlaneClient, kymaObjKey),
 			Timeout, Interval).Should(BeTrue())
-		Expect(deploy.CheckWebhookCABundleConsistency(suiteCtx, runtimeClient, kymaObjKey)).To(Succeed())
+		Expect(checkWebhookCABundleConsistency(suiteCtx, runtimeClient, kymaObjKey)).To(Succeed())
 	})
 
 	It("Watcher helm chart caching works as expected", func() {
@@ -104,7 +109,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, S
 			Timeout, Interval).Should(BeTrue())
 		Expect(runtimeClient.Get(suiteCtx, client.ObjectKey{
 			Namespace: metav1.NamespaceDefault,
-			Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookConfigNameTpl, kymaObjKey),
+			Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
 		}, webhookConfig)).To(Succeed())
 		Expect(isWebhookConfigured(watcherCrForKyma, webhookConfig, kyma.Name)).To(Succeed())
 
@@ -119,7 +124,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, S
 			Timeout, Interval).Should(BeTrue())
 		Expect(runtimeClient.Get(suiteCtx, client.ObjectKey{
 			Namespace: metav1.NamespaceDefault,
-			Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookConfigNameTpl, kymaObjKey),
+			Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
 		}, webhookConfig)).To(Succeed())
 		Expect(string(webhookConfig.Webhooks[0].ClientConfig.CABundle)).To(Equal(string(caBundleValueBeforeUpdate)))
 	})
@@ -215,7 +220,7 @@ func getSkrChartDeployment(ctx context.Context, skrClient client.Client, kymaObj
 	return func() error {
 		return skrClient.Get(ctx, client.ObjectKey{
 			Namespace: metav1.NamespaceDefault,
-			Name:      deploy.ResolveSKRChartResourceName(deploy.DeploymentNameTpl, kymaObjKey),
+			Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
 		}, &appsv1.Deployment{})
 	}
 }
@@ -284,6 +289,31 @@ func verifyWebhookConfig(
 	if watcherCR.Spec.Field == v1alpha1.SpecField && webhook.Rules[0].Resources[0] != specSubresources {
 		return fmt.Errorf("%w: (expected=%s, got=%s)", ErrSpecSubResourcesMismatch,
 			specSubresources, webhook.Rules[0].Resources[0])
+	}
+	return nil
+}
+
+func checkWebhookCABundleConsistency(ctx context.Context, skrClient client.Client, kymaObjKey client.ObjectKey) error {
+	webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
+	err := skrClient.Get(ctx, client.ObjectKey{
+		Namespace: metav1.NamespaceDefault,
+		Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
+	}, webhookConfig)
+	if err != nil {
+		return fmt.Errorf("error getting webhook config: %w", err)
+	}
+	tlsSecret := &corev1.Secret{}
+	err = skrClient.Get(ctx, client.ObjectKey{
+		Namespace: metav1.NamespaceDefault,
+		Name:      deploy.ResolveSKRChartResourceName("%s-webhook-tls", kymaObjKey),
+	}, tlsSecret)
+	if err != nil {
+		return fmt.Errorf("error getting tls secret: %w", err)
+	}
+	for _, webhook := range webhookConfig.Webhooks {
+		if !bytes.Equal(webhook.ClientConfig.CABundle, tlsSecret.Data[caCertificateSecretKey]) {
+			return deploy.ErrCABundleAndCaCertMismatchFound
+		}
 	}
 	return nil
 }

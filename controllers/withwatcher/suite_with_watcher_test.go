@@ -164,7 +164,7 @@ var _ = BeforeSuite(func() {
 		Client:                 k8sManager.GetClient(),
 		EventRecorder:          k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
 		RequeueIntervals:       intervals,
-		SKRWebhookChartManager: deploy.NewEnabledSKRWebhookChartManager(skrChartCfg),
+		SKRWebhookChartManager: deploy.NewSKRWebhookChartManagerImpl(skrChartCfg),
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
 		},

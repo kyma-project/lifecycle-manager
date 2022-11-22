@@ -59,9 +59,9 @@ type KymaReconciler struct {
 	record.EventRecorder
 	RequeueIntervals
 	signature.VerificationSettings
-	RemoteClientCache *remote.ClientCache
-	deploy.SKRWebhookChartManager
-	KcpRestConfig *rest.Config
+	RemoteClientCache      *remote.ClientCache
+	SKRWebhookChartManager deploy.SKRWebhookChartManager
+	KcpRestConfig          *rest.Config
 }
 
 //nolint:lll
@@ -93,10 +93,18 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		logger.Info("Deleted successfully!")
 		return ctrl.Result{}, client.IgnoreNotFound(err) //nolint:wrapcheck
 	}
-
+	// create a remote synchronization context
+	var syncContext *remote.KymaSynchronizationContext
+	if kyma.Spec.Sync.Enabled {
+		var err error
+		syncContext, err = remote.InitializeKymaSynchronizationContext(ctx, kyma, r.Client, r.RemoteClientCache)
+		if err != nil {
+			return r.CtrlErr(ctx, kyma, fmt.Errorf("remote sync initialization failed: %w", err))
+		}
+	}
 	// check if deletionTimestamp is set, retry until it gets fully deleted
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != v1alpha1.StateDeleting {
-		if err := r.TriggerKymaDeletion(ctx, kyma); err != nil {
+		if err := r.TriggerRemoteKymaDeletion(ctx, syncContext); err != nil {
 			return r.CtrlErr(ctx, kyma, err)
 		}
 		// if the status is not yet set to deleting, also update the status
@@ -108,7 +116,6 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 		return ctrl.Result{}, nil
 	}
-
 	// check finalizer
 	if kyma.CheckLabelsAndFinalizers() {
 		if err := r.Update(ctx, kyma); err != nil {
@@ -116,15 +123,8 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 		return ctrl.Result{}, nil
 	}
-
-	// create a remote synchronization context, and update the remote kyma with the state of the control plane
-	var syncContext *remote.KymaSynchronizationContext
-	if kyma.Spec.Sync.Enabled {
-		var err error
-		syncContext, err = remote.InitializeKymaSynchronizationContext(ctx, kyma, r.Client, r.RemoteClientCache)
-		if err != nil {
-			return r.CtrlErr(ctx, kyma, fmt.Errorf("remote sync initialization failed: %w", err))
-		}
+	// update the remote kyma with the state of the control plane
+	if syncContext != nil {
 		if err := r.syncRemote(ctx, syncContext); err != nil {
 			return r.CtrlErr(ctx, kyma, fmt.Errorf("could not synchronize remote kyma: %w", err))
 		}
@@ -135,9 +135,8 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			return ctrl.Result{}, r.Status().Update(ctx, kyma)
 		}
 	}
-
 	// state handling
-	return r.stateHandling(ctx, kyma, syncContext)
+	return r.stateHandling(ctx, syncContext, kyma)
 }
 
 func (r *KymaReconciler) CtrlErr(ctx context.Context, kyma *v1alpha1.Kyma, err error) (ctrl.Result, error) {
@@ -203,25 +202,25 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, syncContext *rem
 	return nil
 }
 
-func (r *KymaReconciler) stateHandling(ctx context.Context, kyma *v1alpha1.Kyma,
-	syncContext *remote.KymaSynchronizationContext,
+func (r *KymaReconciler) stateHandling(ctx context.Context, syncContext *remote.KymaSynchronizationContext,
+	kyma *v1alpha1.Kyma,
 ) (ctrl.Result, error) {
 	log.FromContext(ctx).Info("syncing state", "state", string(kyma.Status.State))
 	switch kyma.Status.State {
 	case "":
 		return ctrl.Result{}, r.HandleInitialState(ctx, kyma)
 	case v1alpha1.StateProcessing:
-		return ctrl.Result{Requeue: true}, r.HandleProcessingState(ctx, kyma, syncContext)
+		return ctrl.Result{Requeue: true}, r.HandleProcessingState(ctx, syncContext, kyma)
 	case v1alpha1.StateDeleting:
-		if dependentsDeleting, err := r.HandleDeletingState(ctx, kyma, syncContext); err != nil {
+		if dependentsDeleting, err := r.HandleDeletingState(ctx, syncContext, kyma); err != nil {
 			return ctrl.Result{}, err
 		} else if dependentsDeleting {
 			return ctrl.Result{Requeue: true}, nil
 		}
 	case v1alpha1.StateError:
-		return ctrl.Result{Requeue: true}, r.HandleProcessingState(ctx, kyma, syncContext)
+		return ctrl.Result{Requeue: true}, r.HandleProcessingState(ctx, syncContext, kyma)
 	case v1alpha1.StateReady:
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, r.HandleProcessingState(ctx, kyma, syncContext)
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, r.HandleProcessingState(ctx, syncContext, kyma)
 	}
 
 	return ctrl.Result{}, nil
@@ -231,8 +230,8 @@ func (r *KymaReconciler) HandleInitialState(ctx context.Context, kyma *v1alpha1.
 	return r.UpdateStatusWithEvent(ctx, kyma, v1alpha1.StateProcessing, "initial state")
 }
 
-func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alpha1.Kyma,
-	syncContext *remote.KymaSynchronizationContext,
+func (r *KymaReconciler) HandleProcessingState(ctx context.Context, syncContext *remote.KymaSynchronizationContext,
+	kyma *v1alpha1.Kyma,
 ) error {
 	logger := log.FromContext(ctx)
 	var err error
@@ -261,8 +260,8 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 			fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err))
 	}
 	statusUpdateRequiredFromSKRWebhookSync := false
-	if kyma.Spec.Sync.Enabled && syncContext != nil {
-		if statusUpdateRequiredFromSKRWebhookSync, err = r.InstallWebhookChart(ctx, syncContext); err != nil {
+	if kyma.Spec.Sync.Enabled && syncContext != nil && r.SKRWebhookChartManager != nil {
+		if statusUpdateRequiredFromSKRWebhookSync, err = r.SKRWebhookChartManager.Install(ctx, syncContext); err != nil {
 			kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
 			return err
 		}
@@ -289,13 +288,13 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	return nil
 }
 
-func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1.Kyma,
-	syncContext *remote.KymaSynchronizationContext,
+func (r *KymaReconciler) HandleDeletingState(ctx context.Context, syncContext *remote.KymaSynchronizationContext,
+	kyma *v1alpha1.Kyma,
 ) (bool, error) {
 	logger := log.FromContext(ctx)
 
-	if kyma.Spec.Sync.Enabled && syncContext != nil {
-		if err := r.RemoveWebhookChart(ctx, syncContext); err != nil {
+	if kyma.Spec.Sync.Enabled && syncContext != nil && r.SKRWebhookChartManager != nil {
+		if err := r.SKRWebhookChartManager.Remove(ctx, syncContext); err != nil {
 			return true, nil
 		}
 		force := true
@@ -323,12 +322,12 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1
 	return false, nil
 }
 
-func (r *KymaReconciler) TriggerKymaDeletion(ctx context.Context, kyma *v1alpha1.Kyma) error {
-	logger := log.FromContext(ctx)
-	if kyma.Spec.Sync.Enabled {
-		if err := remote.DeleteRemotelySyncedKyma(
-			ctx, r.Client, r.RemoteClientCache, kyma,
-		); client.IgnoreNotFound(err) != nil {
+func (r *KymaReconciler) TriggerRemoteKymaDeletion(ctx context.Context,
+	syncContext *remote.KymaSynchronizationContext,
+) error {
+	if syncContext != nil {
+		logger := log.FromContext(ctx)
+		if err := remote.DeleteRemotelySyncedKyma(ctx, syncContext); client.IgnoreNotFound(err) != nil {
 			logger.Error(err, "Failed to be deleted remotely!")
 			return fmt.Errorf("error occurred while trying to delete remotely synced kyma: %w", err)
 		}
