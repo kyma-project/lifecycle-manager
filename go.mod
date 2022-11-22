@@ -2,6 +2,8 @@ module github.com/kyma-project/lifecycle-manager
 
 go 1.19
 
+replace github.com/kyma-project/runtime-watcher/listener => /Users/I545056/go/src/github.com/kyma-project/runtime-watcher/listener
+
 require (
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/gardener/component-spec/bindings-go v0.0.70

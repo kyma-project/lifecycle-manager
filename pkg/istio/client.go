@@ -19,6 +19,8 @@ const (
 	firstElementIdx     = 0
 	vsDeletionThreshold = 1
 	contractVersion     = "v1"
+	prefixFormat        = "/%s/%s/event"
+	vsHost              = "*" // TODO: Needs to be changed to a valid hostname scheme!!!
 )
 
 type Client struct {
@@ -66,7 +68,7 @@ func (c *Client) getVirtualService(ctx context.Context) (*istioclientapi.Virtual
 func (c *Client) createVirtualService(ctx context.Context, watcher *v1alpha1.Watcher,
 ) (*istioclientapi.VirtualService, error) {
 	if watcher == nil {
-		return &istioclientapi.VirtualService{}, nil
+		return nil, nil
 	}
 	_, err := c.NetworkingV1beta1().
 		Gateways(metav1.NamespaceDefault).
@@ -78,7 +80,7 @@ func (c *Client) createVirtualService(ctx context.Context, watcher *v1alpha1.Wat
 	virtualSvc.SetName(c.virtualServiceName)
 	virtualSvc.SetNamespace(metav1.NamespaceDefault)
 	virtualSvc.Spec.Gateways = append(virtualSvc.Spec.Gateways, c.gatewayName)
-	virtualSvc.Spec.Hosts = append(virtualSvc.Spec.Hosts, "*")
+	virtualSvc.Spec.Hosts = append(virtualSvc.Spec.Hosts, vsHost)
 	virtualSvc.Spec.Http = []*istioapi.HTTPRoute{
 		prepareIstioHTTPRouteForCR(watcher),
 	}
@@ -215,7 +217,7 @@ func prepareIstioHTTPRouteForCR(obj *v1alpha1.Watcher) *istioapi.HTTPRoute {
 			{
 				Uri: &istioapi.StringMatch{
 					MatchType: &istioapi.StringMatch_Prefix{ //nolint:nosnakecase
-						Prefix: fmt.Sprintf("/%s/%s/event", contractVersion, obj.GetModuleName()),
+						Prefix: fmt.Sprintf(prefixFormat, contractVersion, obj.GetModuleName()),
 					},
 				},
 			},

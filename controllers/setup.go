@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
+	"github.com/kyma-project/lifecycle-manager/pkg/security"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -40,9 +41,14 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 			Log: ctrl.Log, OwnerType: &v1alpha1.Kyma{}, IsController: true,
 		})
 
+	// Verifier used to verify incoming listener requests
+	reqVerifier := security.NewRequestVerifier(mgr.GetClient())
+
 	// register listener component
 	runnableListener, eventChannel := listener.RegisterListenerComponent(
-		listenerAddr, v1alpha1.OperatorName,
+		listenerAddr,
+		v1alpha1.OperatorName,
+		reqVerifier.Verify,
 	)
 
 	// watch event channel

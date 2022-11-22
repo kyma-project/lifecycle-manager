@@ -280,7 +280,7 @@ func defineFlagVar() *FlagVar {
 		"The resources.limits.cpu for skr webhook.")
 	flag.StringVar(&flagVar.virtualServiceName, "virtual-svc-name", "kcp-events",
 		"Name of the virtual service resource to be reconciled by the watcher control loop.")
-	flag.StringVar(&flagVar.virtualServiceName, "gateway-name", "lifecycle-manager-kyma-gateway",
+	flag.StringVar(&flagVar.gatewayName, "gateway-name", "lifecycle-manager-kyma-gateway",
 		"Name of the gateway resource that the virtual service will use.")
 	flag.BoolVar(&flagVar.pprof, "pprof", false,
 		"Whether to start up a pprof server.")
