@@ -6,6 +6,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -61,7 +62,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 		// create kyma resource
 		kymaSample = NewTestKyma("kyma-sample")
 
-		customIstioClient, err = istio.NewVersionedIstioClient(cfg, virtualServiceName, gatewayName)
+		customIstioClient, err = istio.NewVersionedIstioClient(cfg, virtualServiceName, gatewaySelector, ctrl.Log.WithName("istioClient"))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(controlPlaneClient.Create(suiteCtx, kymaSample)).To(Succeed())
 		// create WatcherCRs

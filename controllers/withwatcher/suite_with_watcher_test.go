@@ -79,7 +79,7 @@ const (
 	webhookChartPath       = "../../skr-webhook"
 	istioResourcesFilePath = "../../config/samples/tests/istio-test-resources.yaml"
 	virtualServiceName     = "kcp-events"
-	gatewayName            = "lifecycle-manager-kyma-gateway"
+	gatewaySelector        = "operator.kyma-project.io/gateway=default"
 )
 
 func TestAPIs(t *testing.T) {
@@ -184,7 +184,7 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(
 		k8sManager, controller.Options{
 			MaxConcurrentReconciles: 1,
-		}, virtualServiceName, gatewayName,
+		}, virtualServiceName, gatewaySelector,
 	)
 	Expect(err).ToNot(HaveOccurred())
 

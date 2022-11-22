@@ -101,7 +101,7 @@ type FlagVar struct {
 	skrWebhookMemoryLimits                                          string
 	skrWebhookCPULimits                                             string
 	virtualServiceName                                              string
-	gatewayName                                                     string
+	gatewaySelector                                                 string
 	pprof                                                           bool
 	pprofAddr                                                       string
 	pprofServerTimeout                                              time.Duration
@@ -281,7 +281,7 @@ func defineFlagVar() *FlagVar {
 		"The resources.limits.cpu for skr webhook.")
 	flag.StringVar(&flagVar.virtualServiceName, "virtual-svc-name", "kcp-events",
 		"Name of the virtual service resource to be reconciled by the watcher control loop.")
-	flag.StringVar(&flagVar.virtualServiceName, "gateway-name", "lifecycle-manager-kyma-gateway",
+	flag.StringVar(&flagVar.gatewaySelector, "gateway-selector", "operator.kyma-project.io/gateway=default",
 		"Name of the gateway resource that the virtual service will use.")
 	flag.BoolVar(&flagVar.pprof, "pprof", false,
 		"Whether to start up a pprof server.")
@@ -353,7 +353,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, intervals controllers.RequeueIn
 		Scheme:           mgr.GetScheme(),
 		RestConfig:       mgr.GetConfig(),
 		RequeueIntervals: intervals,
-	}).SetupWithManager(mgr, options, flagVar.virtualServiceName, flagVar.gatewayName); err != nil {
+	}).SetupWithManager(mgr, options, flagVar.virtualServiceName, flagVar.gatewaySelector); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Watcher")
 		os.Exit(1)
 	}

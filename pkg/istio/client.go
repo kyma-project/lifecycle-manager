@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	istioapi "istio.io/api/networking/v1beta1"
 	istioclientapi "istio.io/client-go/pkg/apis/networking/v1beta1"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apitypes "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -24,10 +26,11 @@ const (
 type Client struct {
 	istioclient.Interface
 	virtualServiceName string
-	gatewayName        string
+	gatewaySelector    string
+	logger             logr.Logger
 }
 
-func NewVersionedIstioClient(cfg *rest.Config, virtualServiceName, gatewayName string) (*Client, error) {
+func NewVersionedIstioClient(cfg *rest.Config, virtualServiceName, gatewaySelector string, logger logr.Logger) (*Client, error) {
 	cs, err := istioclient.NewForConfig(cfg)
 	if err != nil {
 		return nil, err
@@ -35,7 +38,8 @@ func NewVersionedIstioClient(cfg *rest.Config, virtualServiceName, gatewayName s
 	return &Client{
 		Interface:          cs,
 		virtualServiceName: virtualServiceName,
-		gatewayName:        gatewayName,
+		gatewaySelector:    gatewaySelector,
+		logger:             logger,
 	}, nil
 }
 
@@ -63,28 +67,57 @@ func (c *Client) getVirtualService(ctx context.Context) (*istioclientapi.Virtual
 	return virtualService, nil
 }
 
-func (c *Client) createVirtualService(ctx context.Context, watcher *v1alpha1.Watcher,
+func (c *Client) CreateVirtualService(ctx context.Context, watcher *v1alpha1.Watcher,
 ) (*istioclientapi.VirtualService, error) {
 	if watcher == nil {
 		return &istioclientapi.VirtualService{}, nil
 	}
-	_, err := c.NetworkingV1beta1().
-		Gateways(metav1.NamespaceDefault).
-		Get(ctx, c.gatewayName, metav1.GetOptions{})
+
+	gateway, err := c.lookupGateway(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("error getting configured istio gateway: %w", err)
+		return nil, err
 	}
+
 	virtualSvc := &istioclientapi.VirtualService{}
 	virtualSvc.SetName(c.virtualServiceName)
 	virtualSvc.SetNamespace(metav1.NamespaceDefault)
-	virtualSvc.Spec.Gateways = append(virtualSvc.Spec.Gateways, c.gatewayName)
+	if gateway != nil {
+		gwKey := apitypes.NamespacedName{Namespace: gateway.Namespace, Name: gateway.Name}
+		virtualSvc.Spec.Gateways = append(virtualSvc.Spec.Gateways, gwKey.String())
+	}
 	virtualSvc.Spec.Hosts = append(virtualSvc.Spec.Hosts, "*")
 	virtualSvc.Spec.Http = []*istioapi.HTTPRoute{
 		prepareIstioHTTPRouteForCR(watcher),
 	}
+
 	return c.NetworkingV1beta1().
 		VirtualServices(metav1.NamespaceDefault).
 		Create(ctx, virtualSvc, metav1.CreateOptions{})
+}
+
+func (c *Client) lookupGateway(ctx context.Context) (*istioclientapi.Gateway, error) {
+	lo := metav1.ListOptions{
+		LabelSelector: c.gatewaySelector,
+	}
+	gateways, err := c.NetworkingV1beta1().
+		Gateways(metav1.NamespaceAll).
+		List(ctx, lo)
+
+	if err != nil {
+		return nil, fmt.Errorf("error looking up Istio gateway with label %q: %w", c.gatewaySelector, err)
+	}
+
+	if len(gateways.Items) == 0 {
+		c.logger.Info("Warning: No matching Istio gateways found", "labelSelector", c.gatewaySelector)
+		return nil, nil
+	}
+
+	if len(gateways.Items) > 1 {
+		gwKey := apitypes.NamespacedName{Namespace: gateways.Items[0].Namespace, Name: gateways.Items[0].Name}
+		c.logger.Info("Warning: More than one matching Istio gateways found. Selecting the first one", "labelSelector", c.gatewaySelector, "match count", len(gateways.Items), "selected", gwKey.String())
+	}
+
+	return gateways.Items[0], nil
 }
 
 func (c *Client) updateVirtualService(ctx context.Context, virtualService *istioclientapi.VirtualService) error {
@@ -131,7 +164,7 @@ func (c *Client) UpdateVirtualServiceConfig(ctx context.Context, watcher *v1alph
 	var virtualService *istioclientapi.VirtualService
 	virtualService, customErr = c.getVirtualService(ctx)
 	if customErr != nil && customErr.IsNotFound {
-		_, err = c.createVirtualService(ctx, watcher)
+		_, err = c.CreateVirtualService(ctx, watcher)
 		if err != nil {
 			return fmt.Errorf("failed to create virtual service %w", err)
 		}
