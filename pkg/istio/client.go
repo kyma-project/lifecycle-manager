@@ -68,7 +68,7 @@ func (c *Client) getVirtualService(ctx context.Context) (*istioclientapi.Virtual
 func (c *Client) createVirtualService(ctx context.Context, watcher *v1alpha1.Watcher,
 ) (*istioclientapi.VirtualService, error) {
 	if watcher == nil {
-		return nil, nil
+		return &istioclientapi.VirtualService{}, nil
 	}
 	_, err := c.NetworkingV1beta1().
 		Gateways(metav1.NamespaceDefault).
