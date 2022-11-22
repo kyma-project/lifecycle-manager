@@ -67,7 +67,7 @@ func (c *Client) getVirtualService(ctx context.Context) (*istioclientapi.Virtual
 	return virtualService, nil
 }
 
-func (c *Client) CreateVirtualService(ctx context.Context, watcher *v1alpha1.Watcher,
+func (c *Client) createVirtualService(ctx context.Context, watcher *v1alpha1.Watcher,
 ) (*istioclientapi.VirtualService, error) {
 	if watcher == nil {
 		return &istioclientapi.VirtualService{}, nil
