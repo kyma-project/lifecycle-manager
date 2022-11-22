@@ -64,7 +64,6 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	logger := log.FromContext(ctx).WithName(req.NamespacedName.String())
 	logger.Info("Reconciliation loop starting")
 
-	logger.Info("********************\nAAAAAAA\n********************")
 	watcherObj := &v1alpha1.Watcher{}
 	if err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, watcherObj); err != nil {
 		logger.Error(err, "Failed to get reconciliation object")
@@ -94,7 +93,7 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		}
 		return ctrl.Result{}, nil
 	}
-	logger.Info("********************\nUpdating VirtualService\n********************")
+
 	err := r.IstioClient.UpdateVirtualServiceConfig(ctx, watcherObj)
 	if err != nil {
 		return ctrl.Result{Requeue: true}, err
