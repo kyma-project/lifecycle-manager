@@ -27,19 +27,21 @@ type SKRWebhookChartManager interface {
 
 type SKRWebhookChartManagerImpl struct {
 	cache   moduletypes.RendererCache
-	config  *SkrChartConfig
+	config  *SkrChartManagerConfig
 	kcpAddr string
 }
 
-type SkrChartConfig struct {
+type SkrChartManagerConfig struct {
 	// WebhookChartPath represents the path of the webhook chart
 	// to be installed on SKR clusters upon reconciling kyma CRs.
-	WebhookChartPath       string
-	SkrWebhookMemoryLimits string
-	SkrWebhookCPULimits    string
+	WebhookChartPath        string
+	SkrWebhookMemoryLimits  string
+	SkrWebhookCPULimits     string
+	IstioNamespace          string
+	IstioIngressServiceName string
 }
 
-func NewSKRWebhookChartManagerImpl(config *SkrChartConfig) *SKRWebhookChartManagerImpl {
+func NewSKRWebhookChartManagerImpl(config *SkrChartManagerConfig) *SKRWebhookChartManagerImpl {
 	return &SKRWebhookChartManagerImpl{
 		cache:  modulelib.NewRendererCache(),
 		config: config,
@@ -75,12 +77,12 @@ func (m *SKRWebhookChartManagerImpl) Remove(ctx context.Context, kyma *v1alpha1.
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
-	argsVals, err := m.generateHelmChartArgs(ctx, syncContext.ControlPlaneClient)
+	argsValues, err := m.generateHelmChartArgs(ctx, syncContext.ControlPlaneClient)
 	if err != nil {
 		return err
 	}
 	skrWatcherInstallInfo := prepareInstallInfo(ctx, m.config.WebhookChartPath,
-		syncContext.RuntimeRestConfig, syncContext.RuntimeClient, argsVals, kymaObjKey)
+		syncContext.RuntimeRestConfig, syncContext.RuntimeClient, argsValues, kymaObjKey)
 	uninstalled, err := modulelib.UninstallChart(logger, skrWatcherInstallInfo, nil, m.cache)
 	if err != nil {
 		return fmt.Errorf("failed to uninstall webhook config: %w", err)
@@ -129,8 +131,10 @@ func (m *SKRWebhookChartManagerImpl) resolveKcpAddr(ctx context.Context, kcpClie
 	}
 	// Get external IP from the ISTIO load balancer external IP
 	loadBalancerService := &corev1.Service{}
-	if err := kcpClient.Get(ctx, client.ObjectKey{Name: IngressServiceName, Namespace: IstioSytemNs},
-		loadBalancerService); err != nil {
+	if err := kcpClient.Get(ctx, client.ObjectKey{
+		Name:      m.config.IstioIngressServiceName,
+		Namespace: m.config.IstioNamespace,
+	}, loadBalancerService); err != nil {
 		return "", err
 	}
 	if len(loadBalancerService.Status.LoadBalancer.Ingress) == 0 {

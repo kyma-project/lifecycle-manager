@@ -99,6 +99,8 @@ type FlagVar struct {
 	skrWatcherPath                                                  string
 	skrWebhookMemoryLimits                                          string
 	skrWebhookCPULimits                                             string
+	istioNamespace                                                  string
+	istioIngressServiceName                                         string
 	virtualServiceName                                              string
 	gatewayName                                                     string
 	pprof                                                           bool
@@ -244,7 +246,7 @@ func NewClient(
 }
 
 func defineFlagVar() *FlagVar {
-	flagVar := new(FlagVar)
+	flagVar := &FlagVar{}
 	flag.StringVar(&flagVar.metricsAddr, "metrics-bind-address", ":8080",
 		"The address the metric endpoint binds to.")
 	flag.StringVar(&flagVar.probeAddr, "health-probe-bind-address", ":8081",
@@ -278,6 +280,10 @@ func defineFlagVar() *FlagVar {
 		"The resources.limits.memory for skr webhook.")
 	flag.StringVar(&flagVar.skrWebhookCPULimits, "skr-webhook-cpu-limits", "0.1",
 		"The resources.limits.cpu for skr webhook.")
+	flag.StringVar(&flagVar.istioNamespace, "istio-namespace", "istio-system",
+		"The namespace where istio is configured to use for the load-balancer service used by the gateway.")
+	flag.StringVar(&flagVar.istioIngressServiceName, "istio-ingress-svc-name", "istio-ingressgateway",
+		"The name of the load-balancer service that istio uses for handling its gateway traffic.")
 	flag.StringVar(&flagVar.virtualServiceName, "virtual-svc-name", "kcp-events",
 		"Name of the virtual service resource to be reconciled by the watcher control loop.")
 	flag.StringVar(&flagVar.virtualServiceName, "gateway-name", "lifecycle-manager-kyma-gateway",
@@ -312,10 +318,12 @@ func setupKymaReconciler(
 		if err != nil || !watcherChartDirInfo.IsDir() {
 			setupLog.Error(err, "failed to read local skr chart")
 		}
-		skrChartConfig := &deploy.SkrChartConfig{
-			WebhookChartPath:       flagVar.skrWatcherPath,
-			SkrWebhookMemoryLimits: flagVar.skrWebhookMemoryLimits,
-			SkrWebhookCPULimits:    flagVar.skrWebhookCPULimits,
+		skrChartConfig := &deploy.SkrChartManagerConfig{
+			WebhookChartPath:        flagVar.skrWatcherPath,
+			SkrWebhookMemoryLimits:  flagVar.skrWebhookMemoryLimits,
+			SkrWebhookCPULimits:     flagVar.skrWebhookCPULimits,
+			IstioNamespace:          flagVar.istioNamespace,
+			IstioIngressServiceName: flagVar.istioIngressServiceName,
 		}
 		skrWebhookChartManager = deploy.NewSKRWebhookChartManagerImpl(skrChartConfig)
 	}

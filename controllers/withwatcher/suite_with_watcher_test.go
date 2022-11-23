@@ -83,6 +83,8 @@ const (
 	istioResourcesFilePath = "../../config/samples/tests/istio-test-resources.yaml"
 	virtualServiceName     = "kcp-events"
 	gatewayName            = "lifecycle-manager-kyma-gateway"
+	istioSytemNs           = "istio-system"
+	ingressServiceName     = "istio-ingressgateway"
 )
 
 func TestAPIs(t *testing.T) {
@@ -155,10 +157,12 @@ var _ = BeforeSuite(func() {
 	}
 
 	remoteClientCache = remote.NewClientCache()
-	skrChartCfg := &deploy.SkrChartConfig{
-		WebhookChartPath:       webhookChartPath,
-		SkrWebhookMemoryLimits: "200Mi",
-		SkrWebhookCPULimits:    "1",
+	skrChartCfg := &deploy.SkrChartManagerConfig{
+		WebhookChartPath:        webhookChartPath,
+		SkrWebhookMemoryLimits:  "200Mi",
+		SkrWebhookCPULimits:     "1",
+		IstioNamespace:          istioSytemNs,
+		IstioIngressServiceName: ingressServiceName,
 	}
 	err = (&controllers.KymaReconciler{
 		Client:                 k8sManager.GetClient(),
@@ -241,7 +245,7 @@ func NewSKRCluster() (client.Client, *envtest.Environment) {
 func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 	istioNs := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: deploy.IstioSytemNs,
+			Name: istioSytemNs,
 		},
 	}
 	if err := k8sClient.Create(ctx, istioNs); err != nil {
@@ -249,10 +253,10 @@ func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 	}
 	loadBalancerService := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      deploy.IngressServiceName,
-			Namespace: deploy.IstioSytemNs,
+			Name:      ingressServiceName,
+			Namespace: istioSytemNs,
 			Labels: map[string]string{
-				"app": deploy.IngressServiceName,
+				"app": ingressServiceName,
 			},
 		},
 		Spec: corev1.ServiceSpec{
@@ -285,7 +289,7 @@ func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 	}
 
 	return k8sClient.Get(ctx, client.ObjectKey{
-		Name:      deploy.IngressServiceName,
-		Namespace: deploy.IstioSytemNs,
+		Name:      ingressServiceName,
+		Namespace: istioSytemNs,
 	}, loadBalancerService)
 }

@@ -32,8 +32,8 @@ var (
 
 type KymaSynchronizationContext struct {
 	ControlPlaneClient client.Client
-	RuntimeClient     client.Client
-	RuntimeRestConfig *rest.Config
+	RuntimeClient      client.Client
+	RuntimeRestConfig  *rest.Config
 }
 
 func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, key client.ObjectKey,
