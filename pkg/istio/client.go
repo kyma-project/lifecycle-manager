@@ -11,6 +11,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
@@ -24,18 +25,20 @@ const (
 
 type Client struct {
 	istioclient.Interface
+	eventRecorder      record.EventRecorder
 	virtualServiceName string
 	gatewaySelector    string
 	logger             logr.Logger
 }
 
-func NewVersionedIstioClient(cfg *rest.Config, virtualServiceName, gatewaySelector string, logger logr.Logger) (*Client, error) {
+func NewVersionedIstioClient(cfg *rest.Config, virtualServiceName, gatewaySelector string, recorder record.EventRecorder, logger logr.Logger) (*Client, error) {
 	cs, err := istioclient.NewForConfig(cfg)
 	if err != nil {
 		return nil, err
 	}
 	return &Client{
 		Interface:          cs,
+		eventRecorder:      recorder,
 		virtualServiceName: virtualServiceName,
 		gatewaySelector:    gatewaySelector,
 		logger:             logger,
@@ -72,7 +75,7 @@ func (c *Client) createVirtualService(ctx context.Context, watcher *v1alpha1.Wat
 		return &istioclientapi.VirtualService{}, nil
 	}
 
-	gateway, err := c.lookupGateway(ctx)
+	gateway, err := c.lookupGateway(ctx, watcher)
 	if err != nil {
 		return nil, err
 	}
@@ -80,6 +83,7 @@ func (c *Client) createVirtualService(ctx context.Context, watcher *v1alpha1.Wat
 	virtualSvc := &istioclientapi.VirtualService{}
 	virtualSvc.SetName(c.virtualServiceName)
 	virtualSvc.SetNamespace(metav1.NamespaceDefault)
+	//TODO: this nil check is probably redundant
 	if gateway != nil {
 		gwKey := client.ObjectKeyFromObject(gateway)
 		virtualSvc.Spec.Gateways = append(virtualSvc.Spec.Gateways, gwKey.String())
@@ -94,7 +98,7 @@ func (c *Client) createVirtualService(ctx context.Context, watcher *v1alpha1.Wat
 		Create(ctx, virtualSvc, metav1.CreateOptions{})
 }
 
-func (c *Client) lookupGateway(ctx context.Context) (*istioclientapi.Gateway, error) {
+func (c *Client) lookupGateway(ctx context.Context, watcher *v1alpha1.Watcher) (*istioclientapi.Gateway, error) {
 	lo := metav1.ListOptions{
 		LabelSelector: c.gatewaySelector,
 	}
@@ -107,13 +111,14 @@ func (c *Client) lookupGateway(ctx context.Context) (*istioclientapi.Gateway, er
 	}
 
 	if len(gateways.Items) == 0 {
-		c.logger.Info("Warning: No matching Istio gateways found", "labelSelector", c.gatewaySelector)
-		return nil, nil
+		c.eventRecorder.Event(watcher, "Warning", "WatcherGatewayNotFound", "Watcher: Gateway for the VirtualService not found")
+		return nil, fmt.Errorf("Can't find Istio Gateway matching the selector %q", c.gatewaySelector)
 	}
 
 	if len(gateways.Items) > 1 {
 		gwKey := client.ObjectKeyFromObject(gateways.Items[0])
-		c.logger.Info("Warning: More than one matching Istio gateways found. Selecting the first one", "labelSelector", c.gatewaySelector, "match count", len(gateways.Items), "selected", gwKey.String())
+		c.eventRecorder.Event(watcher, "Warning", "WatcherMultipleGatewaysFound", fmt.Sprintf("Watcher: Found multiple matching Istio Gateways for the VirtualService. Selecting %s", gwKey.String()))
+		c.logger.Info("Warning: Found multiple matching Istio gateways. Selecting the first one", "labelSelector", c.gatewaySelector, "match count", len(gateways.Items), "selected", gwKey.String())
 	}
 
 	return gateways.Items[0], nil

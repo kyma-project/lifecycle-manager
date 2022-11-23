@@ -62,7 +62,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 		// create kyma resource
 		kymaSample = NewTestKyma("kyma-sample")
 
-		customIstioClient, err = istio.NewVersionedIstioClient(cfg, virtualServiceName, gatewaySelector, ctrl.Log.WithName("istioClient"))
+		customIstioClient, err = istio.NewVersionedIstioClient(cfg, virtualServiceName, gatewaySelector, k8sManager.GetEventRecorderFor(v1alpha1.WatcherControllerName), ctrl.Log.WithName("istioClient"))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(controlPlaneClient.Create(suiteCtx, kymaSample)).To(Succeed())
 		// create WatcherCRs

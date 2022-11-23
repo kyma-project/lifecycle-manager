@@ -88,14 +88,14 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 		return ErrRestConfigIsNotSet
 	}
 	var err error
-	r.IstioClient, err = istio.NewVersionedIstioClient(r.RestConfig, virtualServiceName, gatewaySelector, ctrl.Log.WithName("istioClient"))
+	r.IstioClient, err = istio.NewVersionedIstioClient(r.RestConfig, virtualServiceName, gatewaySelector, r.EventRecorder, ctrl.Log.WithName("istioClient"))
 	if err != nil {
 		return fmt.Errorf("unable to set istio client for watcher controller: %w", err)
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Watcher{}).
-		Named("watcher").
+		Named(v1alpha1.WatcherControllerName).
 		WithOptions(options).
 		Complete(r)
 }

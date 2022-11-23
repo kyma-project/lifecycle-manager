@@ -351,11 +351,12 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, intervals controllers.RequeueIn
 	options.MaxConcurrentReconciles = 1
 	if err := (&controllers.WatcherReconciler{
 		Client:           mgr.GetClient(),
+		EventRecorder:    mgr.GetEventRecorderFor(operatorv1alpha1.WatcherControllerName),
 		Scheme:           mgr.GetScheme(),
 		RestConfig:       mgr.GetConfig(),
 		RequeueIntervals: intervals,
 	}).SetupWithManager(mgr, options, flagVar.virtualServiceName, flagVar.gatewaySelector); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Watcher")
+		setupLog.Error(err, "unable to create controller", "controller", operatorv1alpha1.WatcherControllerName)
 		os.Exit(1)
 	}
 }
