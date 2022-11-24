@@ -405,6 +405,8 @@ github.com/kyma-project/module-manager/operator v0.0.0-20221031152637-c1668e8dcd
 github.com/kyma-project/module-manager/operator v0.0.0-20221031152637-c1668e8dcd6c/go.mod h1:N0kmS8pTNXq+7/Bdr6vfogmw03H+uYMCauTQ6U6+kA0=
 github.com/kyma-project/runtime-watcher/listener v0.0.0-20221019063139-e95df66a4347 h1:C3GFSXx6Q01PsV26ucMsAQGHPQRBdzxV2tYmZl/aKfU=
 github.com/kyma-project/runtime-watcher/listener v0.0.0-20221019063139-e95df66a4347/go.mod h1:VmhxfJ8LfnkIUsN/+nbFVQaotq0WzRayrJ4Nhqojv8g=
+github.com/kyma-project/runtime-watcher/listener v0.0.0-20221124100141-ad3bcec60a2f h1:wrP36MnslLDv59FGJvzXpeFvL658jmqNjW4OJ8Qi8GU=
+github.com/kyma-project/runtime-watcher/listener v0.0.0-20221124100141-ad3bcec60a2f/go.mod h1:VmhxfJ8LfnkIUsN/+nbFVQaotq0WzRayrJ4Nhqojv8g=
 github.com/lann/builder v0.0.0-20180802200727-47ae307949d0 h1:SOEGU9fKiNWd/HOJuq6+3iTQz8KNCLtVX6idSoTLdUw=
 github.com/lann/builder v0.0.0-20180802200727-47ae307949d0/go.mod h1:dXGbAdH5GtBTC4WfIxhKZfyBF/HBFgRZSWwZ9g/He9o=
 github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0 h1:P6pPBnrTSX3DEVR4fDembhRWSsG5rVo6hYhAB/ADZrk=

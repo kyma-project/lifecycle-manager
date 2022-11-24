@@ -2,15 +2,13 @@ module github.com/kyma-project/lifecycle-manager
 
 go 1.19
 
-replace github.com/kyma-project/runtime-watcher/listener => /Users/I545056/go/src/github.com/kyma-project/runtime-watcher/listener
-
 require (
 	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/gardener/component-spec/bindings-go v0.0.70
 	github.com/go-logr/logr v1.2.3
 	github.com/go-logr/zapr v1.2.3
 	github.com/kyma-project/module-manager/operator v0.0.0-20221031152637-c1668e8dcd6c
-	github.com/kyma-project/runtime-watcher/listener v0.0.0-20221019063139-e95df66a4347
+	github.com/kyma-project/runtime-watcher/listener v0.0.0-20221124100141-ad3bcec60a2f
 	github.com/onsi/ginkgo/v2 v2.1.6
 	github.com/onsi/gomega v1.20.1
 	go.uber.org/zap v1.23.0
