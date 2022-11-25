@@ -33,7 +33,8 @@ type SetupUpSetting struct {
 
 // SetupWithManager sets up the Kyma controller with the Manager.
 func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
-	options controller.Options, settings SetupUpSetting) error {
+	options controller.Options, settings SetupUpSetting,
+) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1alpha1.Kyma{}).WithOptions(options).
 		Watches(
 			&source.Kind{Type: &v1alpha1.ModuleTemplate{}},

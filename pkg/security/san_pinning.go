@@ -49,8 +49,8 @@ type RequestVerifier struct {
 	log    logr.Logger
 }
 
-func NewRequestVerifier(client client.Client) RequestVerifier {
-	return RequestVerifier{
+func NewRequestVerifier(client client.Client) *RequestVerifier {
+	return &RequestVerifier{
 		Client: client,
 		log:    ctrl.Log.WithName("request–verifier"),
 	}
@@ -144,8 +144,10 @@ func (v *RequestVerifier) getDomain(request *http.Request) (string, error) {
 	}
 	domain, ok := kymaCR.Annotations[shootDomainKey]
 	if !ok {
-		return "", fmt.Errorf("KymaCR '%s' does not have annotation `%s`",
-			watcherEvent.Owner.String(), shootDomainKey)
+		return "", AnnotationMissingError{
+			KymaCR:     watcherEvent.Owner.String(),
+			Annotation: shootDomainKey,
+		}
 	}
 	return domain, nil
 }
@@ -158,4 +160,13 @@ func contains[E net.IP | *url.URL | string](arr []E, s string) bool {
 		}
 	}
 	return false
+}
+
+type AnnotationMissingError struct {
+	KymaCR     string
+	Annotation string
+}
+
+func (e AnnotationMissingError) Error() string {
+	return fmt.Sprintf("KymaCR '%s' does not have annotation `%s`", e.KymaCR, e.Annotation)
 }
