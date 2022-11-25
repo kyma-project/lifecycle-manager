@@ -2,7 +2,6 @@ package security
 
 import (
 	"bytes"
-	"context"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
@@ -26,7 +25,8 @@ import (
 )
 
 const (
-	debugLogLevel = 2
+	debugLogLevel    = 2
+	requestSizeLimit = 16000 //limits request to 16 KB request body size
 
 	xfccHeader           = "X-Forwarded-Client-Cert"
 	headerValueSeparator = ";"
@@ -42,11 +42,6 @@ var (
 	errPemDecode     = errors.New("failed to decode PEM block")
 	errEmptyCert     = errors.New("empty certificate")
 	errHeaderMissing = fmt.Errorf("request does not contain '%s' header", xfccHeader)
-
-	// Error templates.
-	errXFCCParse          = "failed to parse PEM block into x509 certificate: %w"
-	errDecodeURL          = "could not decode certificate URL format: %w"
-	errAnnotationsMissing = "KymaCR '%s' does not have annotation `%s`"
 )
 
 type RequestVerifier struct {
@@ -57,14 +52,14 @@ type RequestVerifier struct {
 func NewRequestVerifier(client client.Client) RequestVerifier {
 	return RequestVerifier{
 		Client: client,
-		log:    ctrl.Log.WithName("listener"),
+		log:    ctrl.Log.WithName("request–verifier"),
 	}
 }
 
 // Verify verifies the given request by fetching the KymaCR given in the request payload
 // and comparing the SAN(subject alternative name) of the certificate with the SKR-domain of the KymaCR.
 // If the request can be verified 'nil' will be returned.
-func (v RequestVerifier) Verify(request *http.Request) error {
+func (v *RequestVerifier) Verify(request *http.Request) error {
 	certificate, err := v.getCertificateFromHeader(request)
 	if err != nil {
 		return err
@@ -75,9 +70,9 @@ func (v RequestVerifier) Verify(request *http.Request) error {
 		return err
 	}
 
-	if containsURI(certificate.URIs, domain) ||
-		containsDNS(certificate.DNSNames, domain) ||
-		containsIP(certificate.IPAddresses, domain) {
+	if contains(certificate.URIs, domain) ||
+		contains(certificate.DNSNames, domain) ||
+		contains(certificate.IPAddresses, domain) {
 		v.log.V(debugLogLevel).Info("Received request verified")
 		return nil
 	}
@@ -85,7 +80,7 @@ func (v RequestVerifier) Verify(request *http.Request) error {
 }
 
 // getCertificateFromHeader extracts the XFCC header and pareses it into a valid x509 certificate.
-func (v RequestVerifier) getCertificateFromHeader(r *http.Request) (*x509.Certificate, error) {
+func (v *RequestVerifier) getCertificateFromHeader(r *http.Request) (*x509.Certificate, error) {
 	// Fetch XFCC-Header data
 	xfccValue, ok := r.Header[xfccHeader]
 	if !ok {
@@ -108,7 +103,7 @@ func (v RequestVerifier) getCertificateFromHeader(r *http.Request) (*x509.Certif
 	// Decode URL-format
 	decodedValue, err := url.QueryUnescape(cert)
 	if err != nil {
-		return nil, fmt.Errorf(errDecodeURL, err) //nolint:goerr113
+		return nil, fmt.Errorf("could not decode certificate URL format: %w", err)
 	}
 	decodedValue = strings.Trim(decodedValue, "\"")
 
@@ -119,9 +114,9 @@ func (v RequestVerifier) getCertificateFromHeader(r *http.Request) (*x509.Certif
 	}
 	certificate, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return nil, fmt.Errorf(errXFCCParse, err) //nolint:goerr113
+		return nil, fmt.Errorf("failed to parse PEM block into x509 certificate: %w", err)
 	}
-	v.log.V(debugLogLevel).Info("X-Forwarded-Client-Certificate",
+	v.log.V(debugLogLevel).Info(xfccHeader,
 		"certificate", certificate)
 
 	return certificate, nil
@@ -129,10 +124,10 @@ func (v RequestVerifier) getCertificateFromHeader(r *http.Request) (*x509.Certif
 
 // getDomain fetches the KymaCR, mentioned in the requests body, and returns the value of the SKR-Domain annotation.
 func (v *RequestVerifier) getDomain(request *http.Request) (string, error) {
-	body, err := io.ReadAll(request.Body)
-	if err != nil {
-		return "", err
-	}
+
+	limitedReader := &io.LimitedReader{R: request.Body, N: requestSizeLimit}
+	body, err := io.ReadAll(limitedReader)
+
 	defer request.Body.Close()
 	request.Body = io.NopCloser(bytes.NewBuffer(body))
 
@@ -142,40 +137,20 @@ func (v *RequestVerifier) getDomain(request *http.Request) (string, error) {
 		return "", err
 	}
 	var kymaCR v1alpha1.Kyma
-	if err := v.Client.Get(context.TODO(), watcherEvent.Owner, &kymaCR); err != nil {
+	if err := v.Client.Get(request.Context(), watcherEvent.Owner, &kymaCR); err != nil {
 		return "", err
 	}
 	domain, ok := kymaCR.Annotations[shootDomainKey]
 	if !ok {
-		return "", fmt.Errorf(errAnnotationsMissing, watcherEvent.Owner.String(), shootDomainKey) //nolint:goerr113
+		return "", fmt.Errorf("KymaCR '%s' does not have annotation `%s`", watcherEvent.Owner.String(), shootDomainKey) //nolint:goerr113
 	}
 	return domain, nil
 }
 
-// containsDNS checks if given DNS is present in slice.
-func containsDNS(s []string, dns string) bool {
-	for _, v := range s {
-		if v == dns {
-			return true
-		}
-	}
-	return false
-}
-
-// containsURI checks if given URI is present in slice.
-func containsURI(s []*url.URL, uri string) bool {
-	for _, v := range s {
-		if v.String() == uri {
-			return true
-		}
-	}
-	return false
-}
-
-// containsIP checks if given IP is present in slice.
-func containsIP(s []net.IP, ip string) bool {
-	for _, v := range s {
-		if v.String() == ip {
+// contains checks if given string is present in slice.
+func contains[E net.IP | *url.URL | string](arr []E, s string) bool {
+	for i := range arr {
+		if fmt.Sprintf("%s", arr[i]) == s {
 			return true
 		}
 	}

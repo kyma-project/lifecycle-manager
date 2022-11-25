@@ -297,8 +297,8 @@ func defineFlagVar() *FlagVar {
 		"Indicates the failure max delay in seconds")
 	flag.DurationVar(&flagVar.cacheSyncTimeout, "cache-sync-timeout", defaultCacheSyncTimeout,
 		"Indicates the cache sync timeout in seconds")
-	flag.BoolVar(&flagVar.enableDomainNameVerification, "enable-domain-name-pinning", false,
-		"Enabling verification of incomeing listener request by comparing SAN with KymaCR-SKR-domain")
+	flag.BoolVar(&flagVar.enableDomainNameVerification, "enable-domain-name-pinning", true,
+		"Enabling verification of incoming listener request by comparing SAN with KymaCR-SKR-domain")
 	return flagVar
 }
 
@@ -335,7 +335,10 @@ func setupKymaReconciler(
 			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
 			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
 		},
-	}).SetupWithManager(mgr, options, flagVar.listenerAddr, flagVar.enableDomainNameVerification); err != nil {
+	}).SetupWithManager(mgr, options, controllers.SetupUpSetting{
+		ListenerAddr:                 flagVar.listenerAddr,
+		EnableDomainNameVerification: flagVar.enableDomainNameVerification,
+	}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}

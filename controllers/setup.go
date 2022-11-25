@@ -26,10 +26,14 @@ import (
 	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
 )
 
+type SetupUpSetting struct {
+	ListenerAddr                 string
+	EnableDomainNameVerification bool
+}
+
 // SetupWithManager sets up the Kyma controller with the Manager.
 func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
-	options controller.Options, listenerAddr string, enableDomainNameVerification bool,
-) error {
+	options controller.Options, settings SetupUpSetting) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1alpha1.Kyma{}).WithOptions(options).
 		Watches(
 			&source.Kind{Type: &v1alpha1.ModuleTemplate{}},
@@ -46,26 +50,22 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 
 	var runnableListener *listener.SKREventListener
 	var eventChannel *source.Channel
-	if enableDomainNameVerification {
-		// Verifier used to verify incoming listener requests
-		reqVerifier := security.NewRequestVerifier(mgr.GetClient())
+	var verifyFunc listener.Verify
 
-		// register listener component incl. domain name verification
-		runnableListener, eventChannel = listener.RegisterListenerComponent(
-			listenerAddr,
-			v1alpha1.OperatorName,
-			reqVerifier.Verify,
-		)
+	if settings.EnableDomainNameVerification {
+		// Verifier used to verify incoming listener requests
+		verifyFunc = security.NewRequestVerifier(mgr.GetClient()).Verify
 	} else {
-		// register listener component
-		runnableListener, eventChannel = listener.RegisterListenerComponent(
-			listenerAddr,
-			v1alpha1.OperatorName,
-			func(r *http.Request) error {
-				return nil
-			},
-		)
+		verifyFunc = func(r *http.Request) error {
+			return nil
+		}
 	}
+	// register listener component incl. domain name verification
+	runnableListener, eventChannel = listener.RegisterListenerComponent(
+		settings.ListenerAddr,
+		v1alpha1.OperatorName,
+		verifyFunc,
+	)
 
 	// watch event channel
 	r.watchEventChannel(controllerBuilder, eventChannel)
