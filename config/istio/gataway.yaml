@@ -13,17 +13,17 @@ spec:
     istio: ingressgateway # use istio default controller
   servers:
     - hosts:
-        - '*'
+        - '*.kyma.ondemand.com'
       port:
         name: http
-        number: 80
+        number: 8080
         protocol: HTTP
     # [mTLS] Uncomment following part if mTLS should be used
     #- hosts:
-    #    - '*'
+    #    - '*.kyma.ondemand.com'
     #  port:
     #    name: https
-    #    number: 443
+    #    number: 8443
     #    protocol: HTTPS
     #  tls:
     #    credentialName: <reference to secret containing ca.crt, tls.cert and tls.key>

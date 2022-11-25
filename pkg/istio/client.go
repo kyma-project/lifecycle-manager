@@ -20,7 +20,7 @@ const (
 	vsDeletionThreshold = 1
 	contractVersion     = "v1"
 	prefixFormat        = "/%s/%s/event"
-	vsHost              = "*" // TODO: Needs to be changed to a valid hostname scheme!!!
+	vsHost              = "*.kyma.ondemand.com"
 )
 
 type Client struct {

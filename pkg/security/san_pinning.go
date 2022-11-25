@@ -26,7 +26,7 @@ import (
 
 const (
 	debugLogLevel    = 2
-	requestSizeLimit = 16000 //limits request to 16 KB request body size
+	requestSizeLimit = 16000
 
 	xfccHeader           = "X-Forwarded-Client-Cert"
 	headerValueSeparator = ";"
@@ -124,9 +124,11 @@ func (v *RequestVerifier) getCertificateFromHeader(r *http.Request) (*x509.Certi
 
 // getDomain fetches the KymaCR, mentioned in the requests body, and returns the value of the SKR-Domain annotation.
 func (v *RequestVerifier) getDomain(request *http.Request) (string, error) {
-
 	limitedReader := &io.LimitedReader{R: request.Body, N: requestSizeLimit}
 	body, err := io.ReadAll(limitedReader)
+	if err != nil {
+		return "", err
+	}
 
 	defer request.Body.Close()
 	request.Body = io.NopCloser(bytes.NewBuffer(body))
@@ -142,7 +144,8 @@ func (v *RequestVerifier) getDomain(request *http.Request) (string, error) {
 	}
 	domain, ok := kymaCR.Annotations[shootDomainKey]
 	if !ok {
-		return "", fmt.Errorf("KymaCR '%s' does not have annotation `%s`", watcherEvent.Owner.String(), shootDomainKey) //nolint:goerr113
+		return "", fmt.Errorf("KymaCR '%s' does not have annotation `%s`",
+			watcherEvent.Owner.String(), shootDomainKey)
 	}
 	return domain, nil
 }
