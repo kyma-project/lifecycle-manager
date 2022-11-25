@@ -79,7 +79,7 @@ var _ = Describe("Switching of a Channel leading to an Upgrade", Ordered, func()
 
 func SetupModuleTemplateSetsForKyma(kyma *v1alpha1.Kyma) func() {
 	return func() {
-		By("creating decremented ModuleTemplate set in stable")
+		By("creating decremented ModuleTemplate set in regular")
 		for _, module := range kyma.Spec.Modules {
 			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
 			By("decrementing the module template from the factory in the patch of the semantic version")
@@ -110,7 +110,7 @@ func SetupModuleTemplateSetsForKyma(kyma *v1alpha1.Kyma) func() {
 
 func CleanupModuleTemplateSetsForKyma(kyma *v1alpha1.Kyma) func() {
 	return func() {
-		By("Cleaning up decremented ModuleTemplate set in stable")
+		By("Cleaning up decremented ModuleTemplate set in regular")
 		for _, module := range kyma.Spec.Modules {
 			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
 			Expect(err).ShouldNot(HaveOccurred())
