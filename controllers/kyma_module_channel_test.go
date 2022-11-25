@@ -31,7 +31,7 @@ var _ = Describe("Switching of a Channel leading to an Upgrade", Ordered, func()
 	AfterAll(CleanupModuleTemplateSetsForKyma(kyma))
 
 	It(
-		"should create kyma with standard modules in stable normally", func() {
+		"should create kyma with standard modules in regular normally", func() {
 			Expect(controlPlaneClient.Create(ctx, kyma)).ToNot(HaveOccurred())
 			Eventually(GetKymaState(kyma.Name), 5*time.Second, Interval).
 				Should(BeEquivalentTo(string(v1alpha1.StateProcessing)))
@@ -51,7 +51,7 @@ var _ = Describe("Switching of a Channel leading to an Upgrade", Ordered, func()
 			Eventually(expectedBehavior, Timeout, Interval).Should(Succeed())
 		},
 		Entry(
-			"When kyma is deployed in stable channel, expect ModuleStatus to be in stable channel",
+			"When kyma is deployed in regular channel, expect ModuleStatus to be in regular channel",
 			noCondition(),
 			expectEveryModuleStatusToHaveChannel(kyma.Name, v1alpha1.ChannelRegular),
 		),
@@ -61,7 +61,7 @@ var _ = Describe("Switching of a Channel leading to an Upgrade", Ordered, func()
 			expectEveryModuleStatusToHaveChannel(kyma.Name, v1alpha1.ChannelFast),
 		),
 		Entry(
-			"When all modules are reverted to stable channel, expect ModuleStatus to stay in fast channel",
+			"When all modules are reverted to regular channel, expect ModuleStatus to stay in fast channel",
 			whenUpdatingEveryModuleChannel(kyma.Name, v1alpha1.ChannelRegular),
 			expectEveryModuleStatusToHaveChannel(kyma.Name, v1alpha1.ChannelFast),
 		),
