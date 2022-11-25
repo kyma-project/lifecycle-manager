@@ -21,6 +21,8 @@ spec:
     # [mTLS] Uncomment following part if mTLS should be used
     #- hosts:
     #    - '*.kyma.ondemand.com'
+    #    - '*.k8s-hana.ondemand.com'
+    #    - '*.kyma.cloud.sap'
     #  port:
     #    name: https
     #    number: 8443
