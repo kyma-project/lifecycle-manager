@@ -146,7 +146,7 @@ type KymaStatus struct {
 // in a control plane against different stability levels of our module system. When switching Channel, all modules
 // will be recalculated based on new templates. If you did not configure a ModuleTemplate for the new channel, the Kyma
 // will abort the installation.
-// +kubebuilder:validation:Enum=rapid;fast;regular;stable
+// +kubebuilder:validation:Enum=alpha;fast;regular
 type Channel string
 
 //goland:noinspection GoUnusedConst
