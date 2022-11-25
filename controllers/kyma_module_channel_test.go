@@ -20,7 +20,7 @@ var _ = Describe("Switching of a Channel leading to an Upgrade", Ordered, func()
 		kyma.Spec.Modules, v1alpha1.Module{
 			ControllerName: "manifest",
 			Name:           "channel-switch",
-			Channel:        v1alpha1.ChannelStable,
+			Channel:        v1alpha1.ChannelRegular,
 		})
 
 	AfterAll(func() {
@@ -53,7 +53,7 @@ var _ = Describe("Switching of a Channel leading to an Upgrade", Ordered, func()
 		Entry(
 			"When kyma is deployed in stable channel, expect ModuleStatus to be in stable channel",
 			noCondition(),
-			expectEveryModuleStatusToHaveChannel(kyma.Name, v1alpha1.ChannelStable),
+			expectEveryModuleStatusToHaveChannel(kyma.Name, v1alpha1.ChannelRegular),
 		),
 		Entry(
 			"When all modules are updated to fast channel, expect ModuleStatus to update to fast channel",
@@ -62,7 +62,7 @@ var _ = Describe("Switching of a Channel leading to an Upgrade", Ordered, func()
 		),
 		Entry(
 			"When all modules are reverted to stable channel, expect ModuleStatus to stay in fast channel",
-			whenUpdatingEveryModuleChannel(kyma.Name, v1alpha1.ChannelStable),
+			whenUpdatingEveryModuleChannel(kyma.Name, v1alpha1.ChannelRegular),
 			expectEveryModuleStatusToHaveChannel(kyma.Name, v1alpha1.ChannelFast),
 		),
 	)

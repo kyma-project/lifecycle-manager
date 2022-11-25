@@ -21,13 +21,13 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	skrModuleFromClient := &v1alpha1.Module{
 		ControllerName: "manifest",
 		Name:           "skr-module-sync-client",
-		Channel:        v1alpha1.ChannelStable,
+		Channel:        v1alpha1.ChannelRegular,
 	}
 	kyma = NewTestKyma("kyma-remote-sync")
 	skrModule = &v1alpha1.Module{
 		ControllerName: "manifest",
 		Name:           "skr-module-sync",
-		Channel:        v1alpha1.ChannelStable,
+		Channel:        v1alpha1.ChannelRegular,
 	}
 
 	kyma.Spec.Sync = v1alpha1.Sync{
@@ -79,7 +79,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		kyma.Spec.Modules, v1alpha1.Module{
 			ControllerName: "manifest",
 			Name:           "skr-remote-module",
-			Channel:        v1alpha1.ChannelStable,
+			Channel:        v1alpha1.ChannelRegular,
 		})
 
 	RegisterDefaultLifecycleForKyma(kyma)

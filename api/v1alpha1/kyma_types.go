@@ -149,19 +149,15 @@ type KymaStatus struct {
 // +kubebuilder:validation:Enum=rapid;fast;regular;stable
 type Channel string
 
-//goland:noinspection ALL
+//goland:noinspection GoUnusedConst
 const (
-	DefaultChannel = ChannelStable
-	// ChannelFast is meant as a fast track channel that will always be equal or close to the main codeline.
-	// Alias for ChannelRapid.
+	DefaultChannel = ChannelRegular
+	// ChannelAlpha is meant as a fast track channel that will always be equal or close to the main codeline.
+	ChannelAlpha Channel = "alpha"
+	// ChannelFast is meant as the next best upgrade path and a median between "bleeding edge" and stability.
 	ChannelFast Channel = "fast"
-	// ChannelRapid is meant as a fast track channel that will always be equal or close to the main codeline.
-	// Alias for ChannelFast.
-	ChannelRapid Channel = "rapid"
-	// ChannelRegular is meant as the next best Ugrade path and a median between "bleeding edge" and stability.
+	// ChannelRegular is meant as a reference point and should be used for productive installations.
 	ChannelRegular Channel = "regular"
-	// ChannelStable is meant as a reference point and should be used for productive installations.
-	ChannelStable Channel = "stable"
 )
 
 // +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error
