@@ -22,7 +22,7 @@ const (
 	prefixFormat        = "/%s/%s/event"
 )
 
-var vsHosts = []string{"*.kyma.ondemand.com", "*.k8s-hana.ondemand.com", "*.kyma.cloud.sap"}
+var vsHost = "listener.kyma.cloud.sap"
 
 type Client struct {
 	istioclient.Interface
@@ -81,7 +81,7 @@ func (c *Client) createVirtualService(ctx context.Context, watcher *v1alpha1.Wat
 	virtualSvc.SetName(c.virtualServiceName)
 	virtualSvc.SetNamespace(metav1.NamespaceDefault)
 	virtualSvc.Spec.Gateways = append(virtualSvc.Spec.Gateways, c.gatewayName)
-	virtualSvc.Spec.Hosts = append(virtualSvc.Spec.Hosts, vsHosts...)
+	virtualSvc.Spec.Hosts = append(virtualSvc.Spec.Hosts, vsHost)
 	virtualSvc.Spec.Http = []*istioapi.HTTPRoute{
 		prepareIstioHTTPRouteForCR(watcher),
 	}

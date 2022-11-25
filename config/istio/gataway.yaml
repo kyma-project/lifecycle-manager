@@ -13,16 +13,14 @@ spec:
     istio: ingressgateway # use istio default controller
   servers:
     - hosts:
-        - '*.kyma.ondemand.com'
+        - 'listener.kyma.cloud.sap'
       port:
         name: http
         number: 8080
         protocol: HTTP
     # [mTLS] Uncomment following part if mTLS should be used
     #- hosts:
-    #    - '*.kyma.ondemand.com'
-    #    - '*.k8s-hana.ondemand.com'
-    #    - '*.kyma.cloud.sap'
+    #    - 'listener.kyma.cloud.sap'
     #  port:
     #    name: https
     #    number: 8443
