@@ -4,7 +4,7 @@ metadata:
   name: kyma-sample
   namespace: kyma-system
 spec:
-  channel: stable
+  channel: regular
   sync:
     enabled: true
   modules:
