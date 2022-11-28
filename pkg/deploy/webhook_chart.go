@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	moduleLib "github.com/kyma-project/module-manager/operator/pkg/manifest"
-	moduleLibTypes "github.com/kyma-project/module-manager/operator/pkg/types"
+	moduleTypes "github.com/kyma-project/module-manager/pkg/types"
 )
 
 type Mode string
@@ -43,17 +43,21 @@ func ResolveSKRChartResourceName(resourceNameTpl string) string {
 
 func prepareInstallInfo(ctx context.Context, chartPath, releaseName string, restConfig *rest.Config,
 	restClient client.Client, argsVals map[string]interface{},
-) moduleLib.InstallInfo {
-	return moduleLib.InstallInfo{
+) moduleTypes.InstallInfo {
+	return moduleTypes.InstallInfo{
 		Ctx: ctx,
-		ChartInfo: &moduleLib.ChartInfo{
+		ResourceInfo: moduleTypes.ResourceInfo{
+			// TODO: replace by a meaningful resource
+			BaseResource: &unstructured.Unstructured{},
+		},
+		ChartInfo: &moduleTypes.ChartInfo{
 			ChartPath:   chartPath,
 			ReleaseName: releaseName,
-			Flags: moduleLibTypes.ChartFlags{
+			Flags: moduleTypes.ChartFlags{
 				SetFlags: argsVals,
 			},
 		},
-		ClusterInfo: moduleLibTypes.ClusterInfo{
+		ClusterInfo: moduleTypes.ClusterInfo{
 			Client: restClient,
 			Config: restConfig,
 		},

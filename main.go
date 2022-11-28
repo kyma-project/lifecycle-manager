@@ -24,14 +24,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
+	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -49,7 +50,7 @@ import (
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
-	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
+	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 
 	//+kubebuilder:scaffold:imports
 	"github.com/go-logr/logr"

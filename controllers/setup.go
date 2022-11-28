@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -20,7 +21,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/index"
 	"github.com/kyma-project/lifecycle-manager/pkg/watch"
-	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
+	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
 )
 
