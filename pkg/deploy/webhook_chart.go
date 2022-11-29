@@ -1,19 +1,23 @@
 package deploy
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	admissionv1 "k8s.io/api/admissionregistration/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	modulelabels "github.com/kyma-project/module-manager/operator/pkg/labels"
-	moduletypes "github.com/kyma-project/module-manager/operator/pkg/types"
+	modulelabels "github.com/kyma-project/module-manager/pkg/labels"
+	moduletypes "github.com/kyma-project/module-manager/pkg/types"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	k8syaml "sigs.k8s.io/yaml"
 )
 
 type Mode string
@@ -23,6 +27,7 @@ const (
 	WebhookCfgAndDeploymentNameTpl = "%s-webhook"
 	releaseNameTpl                 = "%s-%s-skr"
 	staticWatcherConfigName        = "static-watcher-config-name"
+	caCertificateSecretKey         = "ca.crt"
 )
 
 var (
@@ -87,4 +92,38 @@ func watcherCachingBaseResource(kymaObjKey client.ObjectKey) *unstructured.Unstr
 	baseRes.SetNamespace(metav1.NamespaceDefault)
 	baseRes.SetName(staticWatcherConfigName)
 	return baseRes
+}
+
+func CheckWebhookCABundleConsistency(ctx context.Context, skrClient client.Client, kymaObjKey client.ObjectKey,
+) error {
+	webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
+	err := skrClient.Get(ctx, client.ObjectKey{
+		Namespace: metav1.NamespaceDefault,
+		Name:      ResolveSKRChartResourceName(WebhookCfgAndDeploymentNameTpl, kymaObjKey),
+	}, webhookConfig)
+	if err != nil {
+		return fmt.Errorf("error getting webhook config: %w", err)
+	}
+	tlsSecret := &corev1.Secret{}
+	err = skrClient.Get(ctx, client.ObjectKey{
+		Namespace: metav1.NamespaceDefault,
+		Name:      ResolveSKRChartResourceName("%s-webhook-tls", kymaObjKey),
+	}, tlsSecret)
+	if err != nil {
+		return fmt.Errorf("error getting tls secret: %w", err)
+	}
+	for _, webhook := range webhookConfig.Webhooks {
+		if !bytes.Equal(webhook.ClientConfig.CABundle, tlsSecret.Data[caCertificateSecretKey]) {
+			return ErrCABundleAndCaCertMismatchFound
+		}
+	}
+	return nil
+}
+
+func prettyPrintSetFlags(stringifiedConfig interface{}) string {
+	jsonBytes, err := k8syaml.YAMLToJSON([]byte(stringifiedConfig.(string)))
+	if err != nil {
+		return stringifiedConfig.(string)
+	}
+	return string(jsonBytes)
 }

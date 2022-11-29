@@ -49,7 +49,7 @@ import (
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
-	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
+	modulemanagerv1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
 
 	//+kubebuilder:scaffold:imports
 	"github.com/go-logr/logr"
@@ -80,7 +80,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(v1extensions.AddToScheme(scheme))
-	utilruntime.Must(moduleManagerV1alpha1.AddToScheme(scheme))
+	utilruntime.Must(modulemanagerv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 

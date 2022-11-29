@@ -24,7 +24,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
 	"k8s.io/client-go/rest"
 
-	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
+	manifestv1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
@@ -265,8 +265,8 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	statusUpdateRequiredFromSKRWebhookSync := false
 	if kyma.Spec.Sync.Enabled && r.SKRWebhookChartManager != nil {
 		if statusUpdateRequiredFromSKRWebhookSync, err = r.SKRWebhookChartManager.Install(ctx, kyma); err != nil {
-			kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
-			return err
+			return r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError,
+				fmt.Errorf("error while installing SKR webhook: %w", err))
 		}
 	}
 	kyma.SyncConditionsWithModuleStates()
@@ -400,7 +400,7 @@ func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma
 }
 
 func (r *KymaReconciler) deleteModule(ctx context.Context, moduleStatus *v1alpha1.ModuleStatus) error {
-	manifest := manifestV1alpha1.Manifest{}
+	manifest := manifestv1alpha1.Manifest{}
 	manifest.SetNamespace(moduleStatus.Namespace)
 	manifest.SetName(moduleStatus.Name)
 	return r.Delete(ctx, &manifest, &client.DeleteOptions{})

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
+	manifestv1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -70,7 +70,7 @@ func (r *RunnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 	return false, nil
 }
 
-func (r *RunnerImpl) getModule(ctx context.Context, module *manifestV1alpha1.Manifest) error {
+func (r *RunnerImpl) getModule(ctx context.Context, module *manifestv1alpha1.Manifest) error {
 	return r.Get(ctx, client.ObjectKey{Namespace: module.GetNamespace(), Name: module.GetName()}, module)
 }
 
@@ -142,9 +142,9 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Module
 				Channel:    module.Template.Spec.Channel,
 				Generation: module.Template.Generation,
 				GroupVersionKind: metav1.GroupVersionKind{
-					Group:   manifestV1alpha1.GroupVersionKind.Group,
-					Version: manifestV1alpha1.GroupVersionKind.Version,
-					Kind:    manifestV1alpha1.GroupVersionKind.Kind,
+					Group:   manifestv1alpha1.GroupVersionKind.Group,
+					Version: manifestv1alpha1.GroupVersionKind.Version,
+					Kind:    manifestv1alpha1.GroupVersionKind.Kind,
 				},
 				Version: descriptor.Version,
 			},
@@ -164,7 +164,7 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Module
 	return updateRequired
 }
 
-func stateFromManifest(obj *manifestV1alpha1.Manifest) v1alpha1.State {
+func stateFromManifest(obj *manifestv1alpha1.Manifest) v1alpha1.State {
 	state := v1alpha1.State(obj.Status.State)
 	if state == "" {
 		return v1alpha1.StateProcessing
@@ -182,7 +182,7 @@ func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context,
 	}
 	for i := range moduleStatusArr {
 		moduleStatus := moduleStatusArr[i]
-		module := manifestV1alpha1.Manifest{}
+		module := manifestv1alpha1.Manifest{}
 		module.SetName(moduleStatus.Name)
 		module.SetNamespace(moduleStatus.Namespace)
 		err := r.getModule(ctx, &module)

@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
+	modulemanagerv1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 
 	//nolint:gci
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -106,7 +106,7 @@ var _ = BeforeSuite(func() {
 
 	Expect(operatorv1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
-	Expect(moduleManagerV1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+	Expect(modulemanagerv1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 

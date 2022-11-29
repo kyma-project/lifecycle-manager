@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
+	modulemanagerv1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 
 	//nolint:gci
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -103,8 +103,8 @@ var _ = BeforeSuite(func() {
 	// manifest CRD
 	// istio CRDs
 	remoteCrds, err := ParseRemoteCRDs([]string{
-		"https://raw.githubusercontent.com/kyma-project/module-manager/main/operator/config/crd/bases/operator.kyma-project.io_manifests.yaml", //nolint:lll
-		"https://raw.githubusercontent.com/istio/istio/master/manifests/charts/base/crds/crd-all.gen.yaml",                                     //nolint:lll
+		"https://raw.githubusercontent.com/kyma-project/module-manager/main/config/crd/bases/operator.kyma-project.io_manifests.yaml", //nolint:lll
+		"https://raw.githubusercontent.com/istio/istio/master/manifests/charts/base/crds/crd-all.gen.yaml",                            //nolint:lll
 	})
 	Expect(err).NotTo(HaveOccurred())
 
@@ -129,7 +129,7 @@ var _ = BeforeSuite(func() {
 
 	Expect(operatorv1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(apiextensionsv1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
-	Expect(moduleManagerV1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+	Expect(modulemanagerv1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 

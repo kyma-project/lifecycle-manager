@@ -21,7 +21,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/index"
 	"github.com/kyma-project/lifecycle-manager/pkg/watch"
-	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
+	modulemanagerv1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
 )
 
@@ -36,7 +36,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 		// here we define a watch on secrets for the lifecycle-manager so that the cache is picking up changes
 		Watches(&source.Kind{Type: &corev1.Secret{}}, handler.Funcs{})
 
-	controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: &moduleManagerV1alpha1.Manifest{}},
+	controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: &modulemanagerv1alpha1.Manifest{}},
 		&watch.RestrictedEnqueueRequestForOwner{
 			Log: ctrl.Log, OwnerType: &v1alpha1.Kyma{}, IsController: true,
 		})

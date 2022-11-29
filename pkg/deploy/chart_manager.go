@@ -3,16 +3,17 @@ package deploy
 import (
 	"context"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"net"
 	"strconv"
 
-	moduletypes "github.com/kyma-project/module-manager/operator/pkg/types"
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
+
+	moduletypes "github.com/kyma-project/module-manager/pkg/types"
 
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	modulelib "github.com/kyma-project/module-manager/operator/pkg/manifest"
+	modulelib "github.com/kyma-project/module-manager/pkg/manifest"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -58,18 +59,25 @@ func (m *SKRWebhookChartManagerImpl) Install(ctx context.Context, kyma *v1alpha1
 	}
 	skrWatcherInstallInfo := prepareInstallInfo(ctx, m.config.WebhookChartPath,
 		syncContext.RuntimeRestConfig, syncContext.RuntimeClient, chartArgsValues, kymaObjKey)
+	logger.V(1).Info("following modules will be installed",
+		"modules", prettyPrintSetFlags(skrWatcherInstallInfo.ChartInfo.Flags.SetFlags[customConfigKey]))
 	installed, err := modulelib.InstallChart(logger, skrWatcherInstallInfo, nil, m.cache)
 	if err != nil {
-		return true, fmt.Errorf("failed to install webhook config: %w", err)
+		kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
+		return true, fmt.Errorf("failed to install webhook chart: %w", err)
 	}
 	if !installed {
+		kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
 		return true, ErrSKRWebhookNotInstalled
+	}
+	if err := CheckWebhookCABundleConsistency(ctx, syncContext.RuntimeClient, kymaObjKey); err != nil {
+		kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
+		return true, fmt.Errorf("failed to install webhook chart: %w", err)
 	}
 	kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionTrue)
 	logger.Info("successfully installed webhook chart",
 		"release-name", skrWatcherInstallInfo.ChartInfo.ReleaseName)
-	logger.V(1).Info("following modules were installed",
-		"modules", skrWatcherInstallInfo.ChartInfo.Flags.SetFlags[customConfigKey])
+
 	return false, nil
 }
 

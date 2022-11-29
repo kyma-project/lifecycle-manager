@@ -7,6 +7,7 @@ require (
 	github.com/gardener/component-spec/bindings-go v0.0.70
 	github.com/go-logr/logr v1.2.3
 	github.com/go-logr/zapr v1.2.3
+	github.com/kyma-project/module-manager v0.0.0-20221125165158-b84c96f2a9db
 	github.com/kyma-project/module-manager/operator v0.0.0-20221123135240-96c926015e6a
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20221006112208-0dd54057307c
 	github.com/onsi/ginkgo/v2 v2.5.0
