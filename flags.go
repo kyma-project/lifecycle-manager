@@ -73,12 +73,13 @@ func defineFlagVar() *FlagVar {
 	flag.StringVar(&flagVar.virtualServiceName, "virtual-svc-name", "kcp-events",
 		"Name of the virtual service resource to be reconciled by the watcher control loop.")
 	flag.Var(newNamespacedNameVar(&flagVar.gatewayNamespacedName), "gateway-ns-name",
-		"Unique name of the gateway resource that the virtual service will use. Format: <namespace>/<name>.")
+		"Namespaced name of the gateway resource that the virtual service will use. "+
+			"Format: <namespace>/<name>. Example: \"my-namespace/my-gateway\".")
 	flag.Var(newStringLenVar(&flagVar.gatewaySelector).
 		withMin(gatewayLabelSelMinLen).withMax(gatewayLabelSelMaxLen).
 		withDefault(operatorv1alpha1.DefaultIstioGatewaySelector),
-		"gateway-selector", "Label selector of the gateway resource that the virtual service will use."+
-			"Ignored if gateway-ns-name flag is specified. Format as defined in the K8s LIST API.")
+		"gateway-selector", "Label selector of the gateway resource that the virtual service will use. "+
+			"Ignored if gateway-ns-name flag is specified. Example: \"label1=value1,label2=value2\"")
 	flag.BoolVar(&flagVar.pprof, "pprof", false,
 		"Whether to start up a pprof server.")
 	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
