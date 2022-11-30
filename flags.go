@@ -22,16 +22,21 @@ const (
 	failureMaxDelayDefault        = 1000 * time.Second
 	defaultCacheSyncTimeout       = 2 * time.Minute
 	namespacedNamePartsCnt        = 2
+	gatewayLabelSelMinLen         = 1
+	gatewayLabelSelMaxLen         = 512
 )
 
 var (
 	errInvalidGatewayFmt       = errors.New("must be <namespace>/<name>")
 	errInvalidGatewayNamespace = errors.New("must be an RFC 1123 DNS Label")
 	errInvalidGatewayName      = errors.New("must be an RFC 1035 Label Name")
+	errTooLong                 = errors.New("value is too long")
+	errTooShort                = errors.New("value is too short")
 )
 
 func defineFlagVar() *FlagVar {
 	flagVar := new(FlagVar)
+
 	flag.StringVar(&flagVar.metricsAddr, "metrics-bind-address", ":8080",
 		"The address the metric endpoint binds to.")
 	flag.StringVar(&flagVar.probeAddr, "health-probe-bind-address", ":8081",
@@ -69,8 +74,10 @@ func defineFlagVar() *FlagVar {
 		"Name of the virtual service resource to be reconciled by the watcher control loop.")
 	flag.Var(newNamespacedNameVar(&flagVar.gatewayNamespacedName), "gateway-ns-name",
 		"Unique name of the gateway resource that the virtual service will use. Format: <namespace>/<name>.")
-	flag.StringVar(&flagVar.gatewaySelector, "gateway-selector", operatorv1alpha1.DefaultIstioGatewaySelector,
-		"Label selector of the gateway resource that the virtual service will use."+
+	flag.Var(newStringLenVar(&flagVar.gatewaySelector).
+		withMin(gatewayLabelSelMinLen).withMax(gatewayLabelSelMaxLen).
+		withDefault(operatorv1alpha1.DefaultIstioGatewaySelector),
+		"gateway-selector", "Label selector of the gateway resource that the virtual service will use."+
 			"Ignored if gateway-ns-name flag is specified. Format as defined in the K8s LIST API.")
 	flag.BoolVar(&flagVar.pprof, "pprof", false,
 		"Whether to start up a pprof server.")
@@ -115,25 +122,31 @@ type FlagVar struct {
 	cacheSyncTimeout                                                time.Duration
 }
 
-func newNamespacedNameVar(val *string) namespacedNameVar {
-	return namespacedNameVar{
-		val: val,
+func newNamespacedNameVar(target *string) *namespacedNameVar {
+	if target == nil {
+		panic("target is nil")
+	}
+
+	return &namespacedNameVar{
+		target: target,
 	}
 }
 
 type namespacedNameVar struct {
-	val *string
+	target *string
 }
 
-func (nnv namespacedNameVar) String() string {
-	if nnv.val == nil {
-		return ""
-	}
+func (nnv *namespacedNameVar) String() string {
+	/*
+		if nnv.target == nil {
+			return ""
+		}
+	*/
 
-	return *nnv.val
+	return *nnv.target
 }
 
-func (nnv namespacedNameVar) Set(str string) error {
+func (nnv *namespacedNameVar) Set(str string) error {
 	parts := strings.Split(str, "/")
 	if len(parts) != namespacedNamePartsCnt {
 		return fmt.Errorf("invalid format, %w", errInvalidGatewayFmt)
@@ -149,6 +162,54 @@ func (nnv namespacedNameVar) Set(str string) error {
 		return fmt.Errorf("%q is invalid, %w", parts[1], errInvalidGatewayName)
 	}
 
-	*nnv.val = str
+	*nnv.target = str
+	return nil
+}
+
+func newStringLenVar(target *string) *stringLenVar {
+	if target == nil {
+		panic("target is nil")
+	}
+
+	return &stringLenVar{
+		target: target,
+	}
+}
+
+type stringLenVar struct {
+	minLen uint
+	maxLen uint
+	target *string
+}
+
+func (mlsv *stringLenVar) withMin(min uint) *stringLenVar {
+	mlsv.minLen = min
+	return mlsv
+}
+
+func (mlsv *stringLenVar) withMax(max uint) *stringLenVar {
+	mlsv.maxLen = max
+	return mlsv
+}
+
+func (mlsv *stringLenVar) withDefault(str string) *stringLenVar {
+	*mlsv.target = str
+	return mlsv
+}
+
+func (mlsv *stringLenVar) String() string {
+	return *mlsv.target
+}
+
+func (mlsv *stringLenVar) Set(str string) error {
+	if len(str) < int(mlsv.minLen) {
+		return fmt.Errorf("%w, min length is %d", errTooShort, mlsv.minLen)
+	}
+
+	if len(str) > int(mlsv.maxLen) {
+		return fmt.Errorf("%w, max length is %d", errTooLong, mlsv.maxLen)
+	}
+
+	*mlsv.target = str
 	return nil
 }

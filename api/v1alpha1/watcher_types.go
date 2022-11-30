@@ -58,10 +58,17 @@ const (
 type GatewayConfig struct {
 	// NamespacedName takes precedence over LabelSelector if configured. Format to use: "namespaceName/gatewayName"
 	// TODO: Add validation: <name><slash><namespace>
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinLength=3
+	// +kubebuilder:validation:MaxLength=127
+	// +kubebuilder:validation:Pattern=`^[a-z0-9]([-a-z0-9]*[a-z0-9])?[/][a-z]([-a-z0-9]*[a-z0-9])?$`
 	NamespacedName string `json:"namespacedName,omitempty"`
 
 	// LabelSelector allows to select the Gateway using label selectors as defined in the K8s LIST API.
 	// Ignored if NamespacedName is set.
+	// +kubebuilder:validation:Optional
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=512
 	LabelSelector string `json:"labelSelector,omitempty"`
 }
 

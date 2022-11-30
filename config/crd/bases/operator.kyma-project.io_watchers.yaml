@@ -54,11 +54,16 @@ spec:
                     description: LabelSelector allows to select the Gateway using
                       label selectors as defined in the K8s LIST API. Ignored if NamespacedName
                       is set.
+                    maxLength: 512
+                    minLength: 1
                     type: string
                   namespacedName:
                     description: 'NamespacedName takes precedence over LabelSelector
                       if configured. Format to use: "namespaceName/gatewayName" TODO:
                       Add validation: <name><slash><namespace>'
+                    maxLength: 127
+                    minLength: 3
+                    pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?[/][a-z]([-a-z0-9]*[a-z0-9])?$
                     type: string
                 type: object
               labelsToWatch:
