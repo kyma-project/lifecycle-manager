@@ -46,8 +46,8 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 
@@ -71,7 +71,7 @@ var (
 	runtimeEnv         *envtest.Environment         //nolint:gochecknoglobals
 	suiteCtx           context.Context              //nolint:gochecknoglobals
 	cancel             context.CancelFunc           //nolint:gochecknoglobals
-	cfg                *rest.Config                 //nolint:gochecknoglobals
+	restCfg            *rest.Config                 //nolint:gochecknoglobals
 	istioResources     []*unstructured.Unstructured //nolint:gochecknoglobals
 	remoteClientCache  *remote.ClientCache          //nolint:gochecknoglobals
 )
@@ -80,7 +80,7 @@ const (
 	webhookChartPath       = "../../skr-webhook"
 	istioResourcesFilePath = "../../config/samples/tests/istio-test-resources.yaml"
 	virtualServiceName     = "kcp-events"
-	gatewaySelector        = v1alpha1.DefaultIstioGatewaySelector
+	gatewaySelector        = operatorv1alpha1.DefaultIstioGatewaySelector
 )
 
 func TestAPIs(t *testing.T) {
@@ -119,9 +119,9 @@ var _ = BeforeSuite(func() {
 		ErrorIfCRDPathMissing: true,
 	}
 
-	cfg, err = controlPlaneEnv.Start()
+	restCfg, err = controlPlaneEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
-	Expect(cfg).NotTo(BeNil())
+	Expect(restCfg).NotTo(BeNil())
 
 	Expect(operatorv1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
@@ -129,7 +129,7 @@ var _ = BeforeSuite(func() {
 
 	//+kubebuilder:scaffold:scheme
 
-	controlPlaneClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	controlPlaneClient, err = client.New(restCfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(controlPlaneClient).NotTo(BeNil())
 
@@ -141,7 +141,7 @@ var _ = BeforeSuite(func() {
 	}
 
 	k8sManager, err = ctrl.NewManager(
-		cfg, ctrl.Options{
+		restCfg, ctrl.Options{
 			MetricsBindAddress: metricsBindAddress,
 			Scheme:             scheme.Scheme,
 			NewCache:           controllers.NewCacheFunc(),
@@ -177,6 +177,7 @@ var _ = BeforeSuite(func() {
 		Expect(controlPlaneClient.Create(suiteCtx, istioResource)).To(Succeed())
 	}
 
+	istioCfg := istio.NewConfig(virtualServiceName, "", gatewaySelector)
 	err = (&controllers.WatcherReconciler{
 		Client:           k8sManager.GetClient(),
 		RestConfig:       k8sManager.GetConfig(),
@@ -186,7 +187,7 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(
 		k8sManager, controller.Options{
 			MaxConcurrentReconciles: 1,
-		}, virtualServiceName, gatewaySelector,
+		}, istioCfg,
 	)
 	Expect(err).ToNot(HaveOccurred())
 

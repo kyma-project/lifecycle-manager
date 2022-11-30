@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
+	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 
@@ -48,7 +49,6 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
@@ -102,6 +102,7 @@ type FlagVar struct {
 	skrWebhookMemoryLimits                                          string
 	skrWebhookCPULimits                                             string
 	virtualServiceName                                              string
+	gatewayNamespacedName                                           string
 	gatewaySelector                                                 string
 	pprof                                                           bool
 	pprofAddr                                                       string
@@ -282,8 +283,11 @@ func defineFlagVar() *FlagVar {
 		"The resources.limits.cpu for skr webhook.")
 	flag.StringVar(&flagVar.virtualServiceName, "virtual-svc-name", "kcp-events",
 		"Name of the virtual service resource to be reconciled by the watcher control loop.")
-	flag.StringVar(&flagVar.gatewaySelector, "gateway-selector", v1alpha1.DefaultIstioGatewaySelector,
-		"Name of the gateway resource that the virtual service will use.")
+	flag.StringVar(&flagVar.gatewayNamespacedName, "gateway-ns-name", "",
+		"Unique name of the gateway resource that the virtual service will use. Format: <namespace>/<name>.")
+	flag.StringVar(&flagVar.gatewaySelector, "gateway-selector", operatorv1alpha1.DefaultIstioGatewaySelector,
+		"Label selector of the gateway resource that the virtual service will use."+
+			"Ignored if gateway-ns-name flag is specified. Format as defined in the K8s LIST API.")
 	flag.BoolVar(&flagVar.pprof, "pprof", false,
 		"Whether to start up a pprof server.")
 	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
@@ -349,13 +353,16 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, intervals controllers.RequeueIn
 	// and we don't have to deal with concurrent write to virtual service.
 	// although eventually the write operation will succeed.
 	options.MaxConcurrentReconciles = 1
+
+	istioConfig := istio.NewConfig(flagVar.virtualServiceName, flagVar.gatewayNamespacedName, flagVar.gatewaySelector)
+
 	if err := (&controllers.WatcherReconciler{
 		Client:           mgr.GetClient(),
 		EventRecorder:    mgr.GetEventRecorderFor(operatorv1alpha1.WatcherControllerName),
 		Scheme:           mgr.GetScheme(),
 		RestConfig:       mgr.GetConfig(),
 		RequeueIntervals: intervals,
-	}).SetupWithManager(mgr, options, flagVar.virtualServiceName, flagVar.gatewaySelector); err != nil {
+	}).SetupWithManager(mgr, options, istioConfig); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", operatorv1alpha1.WatcherControllerName)
 		os.Exit(1)
 	}

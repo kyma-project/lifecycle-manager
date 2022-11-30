@@ -37,6 +37,11 @@ type WatcherSpec struct {
 	// Field describes the subresource that should be watched
 	// Value can be one of ("spec", "status")
 	Field FieldName `json:"field"`
+
+	// Gateway configures the Istio Gateway for the VirtualService that is created/updated during processing
+	// of the Watcher CR.
+	// +kubebuilder:validation:Optional
+	Gateway *GatewayConfig `json:"gateway,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=spec;status;
@@ -48,6 +53,16 @@ const (
 	// StatusField represents FieldName status, which indicates that only resource status will be watched.
 	StatusField FieldName = "status"
 )
+
+// GatewayConfig is used to select an Istio Gateway object in the cluster.
+type GatewayConfig struct {
+	// NamespacedName takes precedence over LabelSelector if configured. Format to use: "namespaceName/gatewayName"
+	NamespacedName string `json:"namespacedName,omitempty"`
+
+	// LabelSelector allows to select the Gateway using label selectors as defined in the K8s LIST API.
+	// Ignored if NamespacedName is set.
+	LabelSelector string `json:"labelSelector,omitempty"`
+}
 
 // Service describes the service specification for the corresponding operator container.
 type Service struct {

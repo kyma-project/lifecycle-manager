@@ -82,13 +82,14 @@ func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, e
 
 // SetupWithManager sets up the Watcher controller with the Manager.
 func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options,
-	virtualServiceName, gatewaySelector string,
+	istioConfig istio.Config,
 ) error {
 	if r.RestConfig == nil {
 		return ErrRestConfigIsNotSet
 	}
 	var err error
-	r.IstioClient, err = istio.NewVersionedIstioClient(r.RestConfig, virtualServiceName, gatewaySelector, r.EventRecorder, ctrl.Log.WithName("istioClient"))
+	r.IstioClient, err = istio.NewVersionedIstioClient(r.RestConfig, istioConfig, r.EventRecorder,
+		ctrl.Log.WithName("istioClient"))
 	if err != nil {
 		return fmt.Errorf("unable to set istio client for watcher controller: %w", err)
 	}

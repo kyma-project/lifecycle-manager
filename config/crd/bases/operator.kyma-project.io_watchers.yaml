@@ -46,6 +46,20 @@ spec:
                 - spec
                 - status
                 type: string
+              gateway:
+                description: Gateway configures the Istio Gateway for the VirtualService
+                  that is created/updated during processing of the Watcher CR.
+                properties:
+                  labelSelector:
+                    description: LabelSelector allows to select the Gateway using
+                      label selectors as defined in the K8s LIST API. Ignored if NamespacedName
+                      is set.
+                    type: string
+                  namespacedName:
+                    description: 'NamespacedName takes precedence over LabelSelector
+                      if configured. Format to use: "namespaceName/gatewayName"'
+                    type: string
+                type: object
               labelsToWatch:
                 additionalProperties:
                   type: string
