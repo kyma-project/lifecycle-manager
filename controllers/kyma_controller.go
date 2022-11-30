@@ -270,13 +270,6 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 		}
 	}
 	kyma.SyncConditionsWithModuleStates()
-	// set ready condition if applicable
-	if kyma.AreAllConditionsReadyForKyma() && kyma.Status.State != v1alpha1.StateReady {
-		const message = "Reconciliation finished!"
-		logger.Info(message)
-		r.Event(kyma, "Normal", "ReconciliationSuccess", message)
-		return r.UpdateStatusWithEvent(ctx, kyma, v1alpha1.StateReady, message)
-	}
 
 	isStatusUpdateRequired := statusUpdateRequiredFromModuleSync || statusUpdateRequiredFromModuleStatusSync ||
 		statusUpdateRequiredFromDeletion || statusUpdateRequiredFromSKRWebhookSync || statusUpdateRequiredFromCatalog
@@ -288,6 +281,13 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 		return nil
 	}
 
+	// set ready condition if applicable
+	if kyma.AreAllConditionsReadyForKyma() && kyma.Status.State != v1alpha1.StateReady {
+		const message = "Reconciliation finished!"
+		logger.Info(message)
+		r.Event(kyma, "Normal", "ReconciliationSuccess", message)
+		return r.UpdateStatusWithEvent(ctx, kyma, v1alpha1.StateReady, message)
+	}
 	return nil
 }
 
