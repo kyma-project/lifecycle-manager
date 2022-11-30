@@ -57,7 +57,8 @@ spec:
                     type: string
                   namespacedName:
                     description: 'NamespacedName takes precedence over LabelSelector
-                      if configured. Format to use: "namespaceName/gatewayName"'
+                      if configured. Format to use: "namespaceName/gatewayName" TODO:
+                      Add validation: <name><slash><namespace>'
                     type: string
                 type: object
               labelsToWatch:

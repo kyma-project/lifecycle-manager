@@ -57,6 +57,7 @@ const (
 // GatewayConfig is used to select an Istio Gateway object in the cluster.
 type GatewayConfig struct {
 	// NamespacedName takes precedence over LabelSelector if configured. Format to use: "namespaceName/gatewayName"
+	// TODO: Add validation: <name><slash><namespace>
 	NamespacedName string `json:"namespacedName,omitempty"`
 
 	// LabelSelector allows to select the Gateway using label selectors as defined in the K8s LIST API.

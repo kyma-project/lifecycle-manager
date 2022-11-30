@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/go-logr/logr"
 	istioapi "istio.io/api/networking/v1beta1"
@@ -137,9 +138,10 @@ func (c *Client) lookupGateway(ctx context.Context, watcher *v1alpha1.Watcher) (
 
 	// Gateway namespacedName takes precedence as it is more specific than label selector lookup
 	if gName != "" {
+		name, namespace := splitOnSlash(gName)
 		gateway, err := c.NetworkingV1beta1().
-			Gateways(metav1.NamespaceDefault).
-			Get(ctx, gName, metav1.GetOptions{})
+			Gateways(namespace).
+			Get(ctx, name, metav1.GetOptions{})
 		if err != nil {
 			return nil, fmt.Errorf("error getting configured istio gateway: %w", err)
 		}
@@ -323,4 +325,9 @@ func prepareIstioHTTPRouteForCR(obj *v1alpha1.Watcher) *istioapi.HTTPRoute {
 
 func destinationHost(serviceName, serviceNamespace string) string {
 	return fmt.Sprintf("%s.%s.svc.cluster.local", serviceName, serviceNamespace)
+}
+
+func splitOnSlash(s string) (string, string) {
+	res := strings.Split(s, "/")
+	return res[0], res[1]
 }
