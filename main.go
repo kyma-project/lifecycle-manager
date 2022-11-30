@@ -101,6 +101,8 @@ type FlagVar struct {
 	skrWebhookCPULimits                                             string
 	virtualServiceName                                              string
 	gatewayName                                                     string
+	enableWatcherLocalTesting                                       bool
+	listenerHTTPPortLocalMapping                                    int
 	pprof                                                           bool
 	pprofAddr                                                       string
 	pprofServerTimeout                                              time.Duration
@@ -282,6 +284,11 @@ func defineFlagVar() *FlagVar {
 		"Name of the virtual service resource to be reconciled by the watcher control loop.")
 	flag.StringVar(&flagVar.virtualServiceName, "gateway-name", "lifecycle-manager-kyma-gateway",
 		"Name of the gateway resource that the virtual service will use.")
+	flag.BoolVar(&flagVar.enableWatcherLocalTesting, "enable-watcher-local-testing", false,
+		"Enabling KCP Watcher two-cluster setup to be tested locally using k3d")
+	flag.IntVar(&flagVar.listenerHTTPPortLocalMapping, "listener-http-local-mapping", 9080,
+		`Port that is mapped to HTTP port of the local k3d cluster using
+			--port 9080:80@loadbalancer when creating the KCP cluster`)
 	flag.BoolVar(&flagVar.pprof, "pprof", false,
 		"Whether to start up a pprof server.")
 	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
@@ -313,9 +320,11 @@ func setupKymaReconciler(
 		}
 	}
 	skrChartConfig := &deploy.SkrChartConfig{
-		WebhookChartPath:       flagVar.skrWatcherPath,
-		SkrWebhookMemoryLimits: flagVar.skrWebhookMemoryLimits,
-		SkrWebhookCPULimits:    flagVar.skrWebhookCPULimits,
+		WebhookChartPath:           flagVar.skrWatcherPath,
+		SkrWebhookMemoryLimits:     flagVar.skrWebhookMemoryLimits,
+		SkrWebhookCPULimits:        flagVar.skrWebhookCPULimits,
+		WatcherLocalTestingEnabled: flagVar.enableWatcherLocalTesting,
+		GatewayHTTPPortMapping:     flagVar.listenerHTTPPortLocalMapping,
 	}
 	skrWebhookChartManager, err := deploy.ResolveSKRWebhookChartManager(flagVar.enableKcpWatcher, skrChartConfig)
 	if err != nil {

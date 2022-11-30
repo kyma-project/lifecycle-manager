@@ -64,9 +64,11 @@ type EnabledSKRWebhookChartManager struct {
 type SkrChartConfig struct {
 	// WebhookChartPath represents the path of the webhook chart
 	// to be installed on SKR clusters upon reconciling kyma CRs.
-	WebhookChartPath       string
-	SkrWebhookMemoryLimits string
-	SkrWebhookCPULimits    string
+	WebhookChartPath           string
+	SkrWebhookMemoryLimits     string
+	SkrWebhookCPULimits        string
+	WatcherLocalTestingEnabled bool
+	GatewayHTTPPortMapping     int
 }
 
 func NewEnabledSKRWebhookChartManager(config *SkrChartConfig) *EnabledSKRWebhookChartManager {
@@ -151,6 +153,10 @@ func (m *EnabledSKRWebhookChartManager) generateHelmChartArgs(ctx context.Contex
 
 func (m *EnabledSKRWebhookChartManager) resolveKcpAddr(ctx context.Context, kcpClient client.Client) (string, error) {
 	if m.kcpAddr != "" {
+		return m.kcpAddr, nil
+	}
+	if m.config.WatcherLocalTestingEnabled {
+		m.kcpAddr = net.JoinHostPort(defaultK3dLocalhostMapping, strconv.Itoa(m.config.GatewayHTTPPortMapping))
 		return m.kcpAddr, nil
 	}
 	// Get external IP from the ISTIO load balancer external IP
