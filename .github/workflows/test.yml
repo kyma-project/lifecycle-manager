@@ -108,7 +108,7 @@ jobs:
         run: |
           kyma alpha deploy \
             -k $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/config/default \
-            -k $(go env GOPATH)/src/github.com/$MODULE_MANAGER/operator/config/default
+            -k $(go env GOPATH)/src/github.com/$MODULE_MANAGER/config/default
 
       - name: Inject GOPATH into go Setup
         run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
