@@ -25,6 +25,10 @@ import (
 	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
 )
 
+const (
+	WatcherControllerName = "watcher"
+)
+
 // SetupWithManager sets up the Kyma controller with the Manager.
 func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options, listenerAddr string) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1alpha1.Kyma{}).WithOptions(options).
@@ -96,7 +100,7 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Watcher{}).
-		Named(v1alpha1.WatcherControllerName).
+		Named(WatcherControllerName).
 		WithOptions(options).
 		Complete(r)
 }

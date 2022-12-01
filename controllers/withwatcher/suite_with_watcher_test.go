@@ -181,7 +181,7 @@ var _ = BeforeSuite(func() {
 	err = (&controllers.WatcherReconciler{
 		Client:           k8sManager.GetClient(),
 		RestConfig:       k8sManager.GetConfig(),
-		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1alpha1.WatcherControllerName),
+		EventRecorder:    k8sManager.GetEventRecorderFor(controllers.WatcherControllerName),
 		Scheme:           scheme.Scheme,
 		RequeueIntervals: intervals,
 	}).SetupWithManager(

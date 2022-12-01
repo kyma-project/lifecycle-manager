@@ -2,6 +2,7 @@ package withwatcher_test
 
 import (
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
@@ -64,7 +65,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 
 		istioCfg := istio.NewConfig(virtualServiceName, "", gatewaySelector)
 		customIstioClient, err = istio.NewVersionedIstioClient(restCfg, istioCfg,
-			k8sManager.GetEventRecorderFor(v1alpha1.WatcherControllerName), ctrl.Log.WithName("istioClient"))
+			k8sManager.GetEventRecorderFor(controllers.WatcherControllerName), ctrl.Log.WithName("istioClient"))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(controlPlaneClient.Create(suiteCtx, kymaSample)).To(Succeed())
 		// create WatcherCRs
