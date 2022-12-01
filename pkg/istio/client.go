@@ -138,7 +138,7 @@ func (c *Client) lookupGateway(ctx context.Context, watcher *v1alpha1.Watcher) (
 
 	// Gateway namespacedName takes precedence as it is more specific than label selector lookup
 	if gName != "" {
-		name, namespace := splitOnSlash(gName)
+		namespace, name := splitOnSlash(gName)
 		gateway, err := c.NetworkingV1beta1().
 			Gateways(namespace).
 			Get(ctx, name, metav1.GetOptions{})
