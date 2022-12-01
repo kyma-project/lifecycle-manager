@@ -36,7 +36,6 @@ var (
 
 func defineFlagVar() *FlagVar {
 	flagVar := new(FlagVar)
-
 	flag.StringVar(&flagVar.metricsAddr, "metrics-bind-address", ":8080",
 		"The address the metric endpoint binds to.")
 	flag.StringVar(&flagVar.probeAddr, "health-probe-bind-address", ":8081",
@@ -79,7 +78,8 @@ func defineFlagVar() *FlagVar {
 		withMin(gatewayLabelSelMinLen).withMax(gatewayLabelSelMaxLen).
 		withDefault(operatorv1alpha1.DefaultIstioGatewaySelector),
 		"gateway-selector", "Label selector of the gateway resource that the virtual service will use. "+
-			"Ignored if gateway-ns-name flag is specified. Example: \"label1=value1,label2=value2\"")
+			"Ignored if gateway-ns-name flag is specified. Format: K8s label selector expression. "+
+			"Example: \"label1=value1,label2=value2\"")
 	flag.BoolVar(&flagVar.pprof, "pprof", false,
 		"Whether to start up a pprof server.")
 	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
@@ -138,11 +138,9 @@ type namespacedNameVar struct {
 }
 
 func (nnv *namespacedNameVar) String() string {
-	/*
-		if nnv.target == nil {
-			return ""
-		}
-	*/
+	if nnv.target == nil {
+		return ""
+	}
 
 	return *nnv.target
 }
@@ -199,6 +197,9 @@ func (mlsv *stringLenVar) withDefault(str string) *stringLenVar {
 }
 
 func (mlsv *stringLenVar) String() string {
+	if mlsv.target == nil {
+		return ""
+	}
 	return *mlsv.target
 }
 
