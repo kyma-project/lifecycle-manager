@@ -80,7 +80,6 @@ const (
 	webhookChartPath       = "../../skr-webhook"
 	istioResourcesFilePath = "../../config/samples/tests/istio-test-resources.yaml"
 	virtualServiceName     = "kcp-events"
-	gatewaySelector        = operatorv1alpha1.DefaultIstioGatewaySelector
 )
 
 func TestAPIs(t *testing.T) {
@@ -177,7 +176,7 @@ var _ = BeforeSuite(func() {
 		Expect(controlPlaneClient.Create(suiteCtx, istioResource)).To(Succeed())
 	}
 
-	istioCfg := istio.NewConfig(virtualServiceName, "", gatewaySelector)
+	istioCfg := istio.NewConfig(virtualServiceName, "", operatorv1alpha1.DefaultIstioGatewaySelector())
 	err = (&controllers.WatcherReconciler{
 		Client:           k8sManager.GetClient(),
 		RestConfig:       k8sManager.GetConfig(),

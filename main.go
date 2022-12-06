@@ -260,7 +260,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, intervals controllers.RequeueIn
 	// although eventually the write operation will succeed.
 	options.MaxConcurrentReconciles = 1
 
-	istioConfig := istio.NewConfig(flagVar.virtualServiceName, flagVar.gatewayNamespacedName, flagVar.gatewaySelector)
+	istioConfig := istio.NewConfig(flagVar.virtualServiceName, flagVar.gatewayNamespacedName, &flagVar.gatewaySelector)
 
 	if err := (&controllers.WatcherReconciler{
 		Client:           mgr.GetClient(),

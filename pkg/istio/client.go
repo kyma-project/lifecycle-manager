@@ -35,12 +35,13 @@ type Config struct {
 	Gateway            v1alpha1.GatewayConfig
 }
 
-func NewConfig(vsn, gnsn, gls string) Config {
+func NewConfig(vsn, gnsn string, gsel *metav1.LabelSelector) Config {
+
 	return Config{
 		VirtualServiceName: vsn,
 		Gateway: v1alpha1.GatewayConfig{
 			NamespacedName: gnsn,
-			LabelSelector:  gls,
+			LabelSelector:  gsel,
 		},
 	}
 }
@@ -125,16 +126,22 @@ func (c *Client) lookupGateway(ctx context.Context, watcher *v1alpha1.Watcher) (
 			gName = watcher.Spec.Gateway.NamespacedName
 		}
 
-		if watcher.Spec.Gateway.LabelSelector != "" {
+		if watcher.Spec.Gateway.LabelSelector != nil {
 			gSel = watcher.Spec.Gateway.LabelSelector
 		}
 	}
 
-	if gName == "" && gSel == "" {
+	if gName == "" && gSel == nil {
 		c.eventRecorder.Event(watcher, "Warning", "WatcherGatewayNotConfigured",
 			"Watcher: Gateway for the VirtualService not configured")
 		return nil, errNoGatewayConfigured
 	}
+
+	ls, err := metav1.LabelSelectorAsSelector(gSel)
+	if err != nil {
+		return nil, fmt.Errorf("error converting label selector: %w", err)
+	}
+	lss := ls.String()
 
 	// Gateway namespacedName takes precedence as it is more specific than label selector lookup
 	if gName != "" {
@@ -151,19 +158,19 @@ func (c *Client) lookupGateway(ctx context.Context, watcher *v1alpha1.Watcher) (
 
 	// fallback to label selector
 	lo := metav1.ListOptions{
-		LabelSelector: gSel,
+		LabelSelector: lss,
 	}
 	gateways, err := c.NetworkingV1beta1().
 		Gateways(metav1.NamespaceAll).
 		List(ctx, lo)
 	if err != nil {
-		return nil, fmt.Errorf("error looking up Istio gateway with the label selector %q: %w", gSel, err)
+		return nil, fmt.Errorf("error looking up Istio gateway with the label selector %q: %w", lss, err)
 	}
 
 	if len(gateways.Items) == 0 {
 		c.eventRecorder.Event(watcher, "Warning", "WatcherGatewayNotFound",
 			"Watcher: Gateway for the VirtualService not found")
-		return nil, fmt.Errorf("%w. Label selector: %q", errCantFindMatchingGateway, gSel)
+		return nil, fmt.Errorf("%w. Label selector: %q", errCantFindMatchingGateway, lss)
 	}
 
 	if len(gateways.Items) > 1 {
@@ -171,7 +178,7 @@ func (c *Client) lookupGateway(ctx context.Context, watcher *v1alpha1.Watcher) (
 		c.eventRecorder.Event(watcher, "Warning", "WatcherMultipleGatewaysFound",
 			fmt.Sprintf("Watcher: Found multiple matching Istio Gateways for the VirtualService. Selecting %s", gwKey.String()))
 		c.logger.Info("Warning: Found multiple matching Istio gateways. Selecting the first one",
-			"labelSelector", gSel, "match count", len(gateways.Items), "selected", gwKey.String())
+			"labelSelector", lss, "match count", len(gateways.Items), "selected", gwKey.String())
 	}
 
 	return gateways.Items[0], nil

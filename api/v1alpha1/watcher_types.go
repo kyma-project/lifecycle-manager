@@ -63,9 +63,7 @@ type GatewayConfig struct {
 	// LabelSelector allows to select the Gateway using label selectors as defined in the K8s LIST API.
 	// Ignored if NamespacedName is set.
 	// +kubebuilder:validation:Optional
-	// +kubebuilder:validation:MinLength=1
-	// +kubebuilder:validation:MaxLength=512
-	LabelSelector string `json:"labelSelector,omitempty"`
+	LabelSelector *metav1.LabelSelector `json:"selector,omitempty"`
 }
 
 // Service describes the service specification for the corresponding operator container.
@@ -195,4 +193,12 @@ type WatcherList struct {
 
 func init() { //nolint:gochecknoinits
 	SchemeBuilder.Register(&Watcher{}, &WatcherList{})
+}
+
+// DefaultIstioGatewaySelector defines a default label selector for a Gateway to configure a VirtualService
+// for the Watcher.
+func DefaultIstioGatewaySelector() *metav1.LabelSelector {
+	return &metav1.LabelSelector{
+		MatchLabels: map[string]string{OperatorPrefix + Separator + "watcher-gateway": "default"},
+	}
 }

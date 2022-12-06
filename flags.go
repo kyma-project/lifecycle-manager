@@ -8,6 +8,7 @@ import (
 	"time"
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	utilvalidation "k8s.io/apimachinery/pkg/util/validation"
 )
 
@@ -22,16 +23,12 @@ const (
 	failureMaxDelayDefault        = 1000 * time.Second
 	defaultCacheSyncTimeout       = 2 * time.Minute
 	namespacedNamePartsCnt        = 2
-	gatewayLabelSelMinLen         = 1
-	gatewayLabelSelMaxLen         = 512
 )
 
 var (
 	errInvalidGatewayFmt       = errors.New("must be <namespace>/<name>")
 	errInvalidGatewayNamespace = errors.New("must be an RFC 1123 DNS Label")
 	errInvalidGatewayName      = errors.New("must be an RFC 1035 Label Name")
-	errTooLong                 = errors.New("value is too long")
-	errTooShort                = errors.New("value is too short")
 )
 
 func defineFlagVar() *FlagVar {
@@ -74,9 +71,8 @@ func defineFlagVar() *FlagVar {
 	flag.Var(newNamespacedNameVar(&flagVar.gatewayNamespacedName), "gateway-ns-name",
 		"Namespaced name of the gateway resource that the virtual service will use. "+
 			"Format: <namespace>/<name>. Example: \"my-namespace/my-gateway\".")
-	flag.Var(newStringLenVar(&flagVar.gatewaySelector).
-		withMin(gatewayLabelSelMinLen).withMax(gatewayLabelSelMaxLen).
-		withDefault(operatorv1alpha1.DefaultIstioGatewaySelector),
+	flag.Var(newLabelSelectorVar(&flagVar.gatewaySelector).
+		withDefault(operatorv1alpha1.DefaultIstioGatewaySelector()),
 		"gateway-selector", "Label selector of the gateway resource that the virtual service will use. "+
 			"Ignored if gateway-ns-name flag is specified. Format: K8s label selector expression. "+
 			"Example: \"label1=value1,label2=value2\"")
@@ -114,7 +110,7 @@ type FlagVar struct {
 	skrWebhookCPULimits                                             string
 	virtualServiceName                                              string
 	gatewayNamespacedName                                           string
-	gatewaySelector                                                 string
+	gatewaySelector                                                 metav1.LabelSelector
 	pprof                                                           bool
 	pprofAddr                                                       string
 	pprofServerTimeout                                              time.Duration
@@ -165,53 +161,35 @@ func (nnv *namespacedNameVar) Set(str string) error {
 	return nil
 }
 
-func newStringLenVar(target *string) *stringLenVar {
-	if target == nil {
-		panic("target is nil")
-	}
-
-	return &stringLenVar{
+func newLabelSelectorVar(target *metav1.LabelSelector) *labelSelectorVar {
+	return &labelSelectorVar{
 		target: target,
 	}
 }
 
-type stringLenVar struct {
-	minLen uint
-	maxLen uint
-	target *string
+type labelSelectorVar struct {
+	target *metav1.LabelSelector
 }
 
-func (mlsv *stringLenVar) withMin(min uint) *stringLenVar {
-	mlsv.minLen = min
-	return mlsv
+func (lsv *labelSelectorVar) withDefault(d *metav1.LabelSelector) *labelSelectorVar {
+	*lsv.target = *d
+	return lsv
 }
 
-func (mlsv *stringLenVar) withMax(max uint) *stringLenVar {
-	mlsv.maxLen = max
-	return mlsv
-}
-
-func (mlsv *stringLenVar) withDefault(str string) *stringLenVar {
-	*mlsv.target = str
-	return mlsv
-}
-
-func (mlsv *stringLenVar) String() string {
-	if mlsv.target == nil {
-		return ""
+func (lsv *labelSelectorVar) String() string {
+	ls, err := metav1.LabelSelectorAsSelector(lsv.target)
+	if err != nil {
+		// shouldn't happen!
+		panic(err)
 	}
-	return *mlsv.target
+	return ls.String()
 }
 
-func (mlsv *stringLenVar) Set(str string) error {
-	if len(str) < int(mlsv.minLen) {
-		return fmt.Errorf("%w, min length is %d", errTooShort, mlsv.minLen)
+func (lsv *labelSelectorVar) Set(str string) error {
+	res, err := metav1.ParseToLabelSelector(str)
+	if err != nil {
+		return err
 	}
-
-	if len(str) > int(mlsv.maxLen) {
-		return fmt.Errorf("%w, max length is %d", errTooLong, mlsv.maxLen)
-	}
-
-	*mlsv.target = str
+	*lsv.target = *res
 	return nil
 }
