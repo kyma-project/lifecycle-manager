@@ -47,10 +47,6 @@ spec:
                 description: Channel is the targeted channel of the ModuleTemplate.
                   It will be used to directly assign a Template to a target channel.
                   It has to be provided at any given time.
-                enum:
-                - alpha
-                - fast
-                - regular
                 type: string
               data:
                 description: Data is the default set of attributes that are used to

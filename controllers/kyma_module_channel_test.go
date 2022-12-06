@@ -20,7 +20,7 @@ var _ = Describe("Switching of a Channel leading to an Upgrade", Ordered, func()
 		kyma.Spec.Modules, v1alpha1.Module{
 			ControllerName: "manifest",
 			Name:           "channel-switch",
-			Channel:        v1alpha1.ChannelRegular,
+			Channel:        v1alpha1.DefaultChannel,
 		})
 
 	AfterAll(func() {
@@ -51,19 +51,19 @@ var _ = Describe("Switching of a Channel leading to an Upgrade", Ordered, func()
 			Eventually(expectedBehavior, Timeout, Interval).Should(Succeed())
 		},
 		Entry(
-			"When kyma is deployed in regular channel, expect ModuleStatus to be in regular channel",
+			"When kyma is deployed in default channel, expect ModuleStatus to be in regular channel",
 			noCondition(),
-			expectEveryModuleStatusToHaveChannel(kyma.Name, v1alpha1.ChannelRegular),
+			expectEveryModuleStatusToHaveChannel(kyma.Name, v1alpha1.DefaultChannel),
 		),
 		Entry(
 			"When all modules are updated to fast channel, expect ModuleStatus to update to fast channel",
-			whenUpdatingEveryModuleChannel(kyma.Name, v1alpha1.ChannelFast),
-			expectEveryModuleStatusToHaveChannel(kyma.Name, v1alpha1.ChannelFast),
+			whenUpdatingEveryModuleChannel(kyma.Name, "fast"),
+			expectEveryModuleStatusToHaveChannel(kyma.Name, "fast"),
 		),
 		Entry(
 			"When all modules are reverted to regular channel, expect ModuleStatus to stay in fast channel",
-			whenUpdatingEveryModuleChannel(kyma.Name, v1alpha1.ChannelRegular),
-			expectEveryModuleStatusToHaveChannel(kyma.Name, v1alpha1.ChannelFast),
+			whenUpdatingEveryModuleChannel(kyma.Name, "regular"),
+			expectEveryModuleStatusToHaveChannel(kyma.Name, "fast"),
 		),
 	)
 
@@ -101,7 +101,7 @@ func SetupModuleTemplateSetsForKyma(kyma *v1alpha1.Kyma) func() {
 		for _, module := range kyma.Spec.Modules {
 			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
 			Expect(err).ShouldNot(HaveOccurred())
-			template.Spec.Channel = v1alpha1.ChannelFast
+			template.Spec.Channel = "fast"
 			template.Name = fmt.Sprintf("%s-%s", template.Name, "fast")
 			Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
 		}
@@ -126,13 +126,13 @@ func CleanupModuleTemplateSetsForKyma(kyma *v1alpha1.Kyma) func() {
 	}
 }
 
-func expectEveryModuleStatusToHaveChannel(kymaName string, channel v1alpha1.Channel) func() error {
+func expectEveryModuleStatusToHaveChannel(kymaName, channel string) func() error {
 	return func() error {
 		return TemplateInfosMatchChannel(kymaName, channel)
 	}
 }
 
-func whenUpdatingEveryModuleChannel(kymaName string, channel v1alpha1.Channel) func() error {
+func whenUpdatingEveryModuleChannel(kymaName, channel string) func() error {
 	return func() error {
 		return UpdateKymaModuleChannels(kymaName, channel)
 	}

@@ -19,14 +19,10 @@ type (
 	}
 )
 
-func (m *Module) Channel() v1alpha1.Channel {
-	return m.Template.Spec.Channel
-}
-
 func (m *Module) Logger(base logr.Logger) logr.Logger {
 	return base.WithValues(
 		"module", m.Name,
-		"channel", m.Channel(),
+		"channel", m.Template.Spec.Channel,
 		"templateGeneration", m.Template.GetGeneration(),
 	)
 }
@@ -47,7 +43,7 @@ func (m *Module) ApplyLabels(
 	if templateLabels != nil {
 		lbls[v1alpha1.ControllerName] = m.Template.GetLabels()[v1alpha1.ControllerName]
 	}
-	lbls[v1alpha1.ChannelLabel] = string(m.Template.Spec.Channel)
+	lbls[v1alpha1.ChannelLabel] = m.Template.Spec.Channel
 
 	m.SetLabels(lbls)
 }

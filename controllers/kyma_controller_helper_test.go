@@ -255,7 +255,7 @@ func deleteModule(kymaName, moduleName string) func() error {
 	}
 }
 
-func UpdateKymaModuleChannels(kymaName string, channel v1alpha1.Channel) error {
+func UpdateKymaModuleChannels(kymaName, channel string) error {
 	kyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 	if err != nil {
 		return err
@@ -271,7 +271,7 @@ func UpdateKymaModuleChannels(kymaName string, channel v1alpha1.Channel) error {
 
 var ErrTemplateInfoChannelMismatch = errors.New("mismatch in template info channel")
 
-func TemplateInfosMatchChannel(kymaName string, channel v1alpha1.Channel) error {
+func TemplateInfosMatchChannel(kymaName, channel string) error {
 	kyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 	if err != nil {
 		return err
