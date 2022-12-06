@@ -25,6 +25,10 @@ import (
 	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
 )
 
+const (
+	WatcherControllerName = "watcher"
+)
+
 // SetupWithManager sets up the Kyma controller with the Manager.
 func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options, listenerAddr string) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1alpha1.Kyma{}).WithOptions(options).
@@ -82,19 +86,21 @@ func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, e
 
 // SetupWithManager sets up the Watcher controller with the Manager.
 func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options,
-	virtualServiceName, gatewayName string,
+	istioConfig istio.Config,
 ) error {
 	if r.RestConfig == nil {
 		return ErrRestConfigIsNotSet
 	}
 	var err error
-	r.IstioClient, err = istio.NewVersionedIstioClient(r.RestConfig, virtualServiceName, gatewayName)
+	r.IstioClient, err = istio.NewVersionedIstioClient(r.RestConfig, istioConfig, r.EventRecorder,
+		ctrl.Log.WithName("istioClient"))
 	if err != nil {
 		return fmt.Errorf("unable to set istio client for watcher controller: %w", err)
 	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Watcher{}).
-		Named("watcher").
+		Named(WatcherControllerName).
 		WithOptions(options).
 		Complete(r)
 }
