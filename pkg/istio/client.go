@@ -36,7 +36,6 @@ type Config struct {
 }
 
 func NewConfig(vsn, gnsn string, gsel *metav1.LabelSelector) Config {
-
 	return Config{
 		VirtualServiceName: vsn,
 		Gateway: v1alpha1.GatewayConfig{
@@ -118,18 +117,7 @@ func (c *Client) createVirtualService(ctx context.Context, watcher *v1alpha1.Wat
 }
 
 func (c *Client) lookupGateway(ctx context.Context, watcher *v1alpha1.Watcher) (*istioclientapi.Gateway, error) {
-	gName := c.config.Gateway.NamespacedName
-	gSel := c.config.Gateway.LabelSelector
-
-	if watcher.Spec.Gateway != nil {
-		if watcher.Spec.Gateway.NamespacedName != "" {
-			gName = watcher.Spec.Gateway.NamespacedName
-		}
-
-		if watcher.Spec.Gateway.LabelSelector != nil {
-			gSel = watcher.Spec.Gateway.LabelSelector
-		}
-	}
+	gName, gSel := mergeSelectorCfg(c.config.Gateway, watcher.Spec.Gateway)
 
 	if gName == "" && gSel == nil {
 		c.eventRecorder.Event(watcher, "Warning", "WatcherGatewayNotConfigured",
@@ -337,4 +325,23 @@ func destinationHost(serviceName, serviceNamespace string) string {
 func splitOnSlash(s string) (string, string) {
 	res := strings.Split(s, "/")
 	return res[0], res[1]
+}
+
+func mergeSelectorCfg(fromConfig v1alpha1.GatewayConfig, fromWatcher *v1alpha1.GatewayConfig) (
+	string, *metav1.LabelSelector,
+) {
+	gName := fromConfig.NamespacedName
+	gSel := fromConfig.LabelSelector
+
+	if fromWatcher != nil {
+		if fromWatcher.NamespacedName != "" {
+			gName = fromWatcher.NamespacedName
+		}
+
+		if fromWatcher.LabelSelector != nil {
+			gSel = fromWatcher.LabelSelector
+		}
+	}
+
+	return gName, gSel
 }
