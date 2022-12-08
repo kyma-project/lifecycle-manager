@@ -84,11 +84,11 @@ dry-run-control-plane: kustomize manifests
 
 .PHONY: build
 build: generate fmt vet ## Build manager binary.
-	go build -o bin/manager main.go
+	go build -o bin/manager main.go flags.go
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
-	go run ./main.go
+	go run ./main.go ./flags.go
 
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
@@ -144,7 +144,7 @@ GOLANG_CI_LINT = $(LOCALBIN)/golangci-lint
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v4.5.6
-CONTROLLER_TOOLS_VERSION ?= v0.9.2
+CONTROLLER_TOOLS_VERSION ?= v0.10.0
 GOLANG_CI_LINT_VERSION ?= v1.50.1
 
 .PHONY: kustomize

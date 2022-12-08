@@ -21,6 +21,9 @@ import (
 	"fmt"
 	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/rest"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/catalog"
@@ -32,9 +35,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
-	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
+	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -269,13 +270,6 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 		}
 	}
 	kyma.SyncConditionsWithModuleStates()
-	// set ready condition if applicable
-	if kyma.AreAllConditionsReadyForKyma() && kyma.Status.State != v1alpha1.StateReady {
-		const message = "Reconciliation finished!"
-		logger.Info(message)
-		r.Event(kyma, "Normal", "ReconciliationSuccess", message)
-		return r.UpdateStatusWithEvent(ctx, kyma, v1alpha1.StateReady, message)
-	}
 
 	isStatusUpdateRequired := statusUpdateRequiredFromModuleSync || statusUpdateRequiredFromModuleStatusSync ||
 		statusUpdateRequiredFromDeletion || statusUpdateRequiredFromSKRWebhookSync || statusUpdateRequiredFromCatalog
@@ -287,6 +281,13 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 		return nil
 	}
 
+	// set ready condition if applicable
+	if kyma.AreAllConditionsReadyForKyma() && kyma.Status.State != v1alpha1.StateReady {
+		const message = "Reconciliation finished!"
+		logger.Info(message)
+		r.Event(kyma, "Normal", "ReconciliationSuccess", message)
+		return r.UpdateStatusWithEvent(ctx, kyma, v1alpha1.StateReady, message)
+	}
 	return nil
 }
 

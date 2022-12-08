@@ -20,7 +20,7 @@ var _ = Describe("Switching of a Channel leading to an Upgrade", Ordered, func()
 		kyma.Spec.Modules, v1alpha1.Module{
 			ControllerName: "manifest",
 			Name:           "channel-switch",
-			Channel:        v1alpha1.ChannelStable,
+			Channel:        v1alpha1.ChannelRegular,
 		})
 
 	AfterAll(func() {
@@ -31,7 +31,7 @@ var _ = Describe("Switching of a Channel leading to an Upgrade", Ordered, func()
 	AfterAll(CleanupModuleTemplateSetsForKyma(kyma))
 
 	It(
-		"should create kyma with standard modules in stable normally", func() {
+		"should create kyma with standard modules in regular normally", func() {
 			Expect(controlPlaneClient.Create(ctx, kyma)).ToNot(HaveOccurred())
 			Eventually(GetKymaState(kyma.Name), 5*time.Second, Interval).
 				Should(BeEquivalentTo(string(v1alpha1.StateProcessing)))
@@ -51,9 +51,9 @@ var _ = Describe("Switching of a Channel leading to an Upgrade", Ordered, func()
 			Eventually(expectedBehavior, Timeout, Interval).Should(Succeed())
 		},
 		Entry(
-			"When kyma is deployed in stable channel, expect ModuleStatus to be in stable channel",
+			"When kyma is deployed in regular channel, expect ModuleStatus to be in regular channel",
 			noCondition(),
-			expectEveryModuleStatusToHaveChannel(kyma.Name, v1alpha1.ChannelStable),
+			expectEveryModuleStatusToHaveChannel(kyma.Name, v1alpha1.ChannelRegular),
 		),
 		Entry(
 			"When all modules are updated to fast channel, expect ModuleStatus to update to fast channel",
@@ -61,8 +61,8 @@ var _ = Describe("Switching of a Channel leading to an Upgrade", Ordered, func()
 			expectEveryModuleStatusToHaveChannel(kyma.Name, v1alpha1.ChannelFast),
 		),
 		Entry(
-			"When all modules are reverted to stable channel, expect ModuleStatus to stay in fast channel",
-			whenUpdatingEveryModuleChannel(kyma.Name, v1alpha1.ChannelStable),
+			"When all modules are reverted to regular channel, expect ModuleStatus to stay in fast channel",
+			whenUpdatingEveryModuleChannel(kyma.Name, v1alpha1.ChannelRegular),
 			expectEveryModuleStatusToHaveChannel(kyma.Name, v1alpha1.ChannelFast),
 		),
 	)
@@ -79,7 +79,7 @@ var _ = Describe("Switching of a Channel leading to an Upgrade", Ordered, func()
 
 func SetupModuleTemplateSetsForKyma(kyma *v1alpha1.Kyma) func() {
 	return func() {
-		By("creating decremented ModuleTemplate set in stable")
+		By("creating decremented ModuleTemplate set in regular")
 		for _, module := range kyma.Spec.Modules {
 			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
 			By("decrementing the module template from the factory in the patch of the semantic version")
@@ -110,7 +110,7 @@ func SetupModuleTemplateSetsForKyma(kyma *v1alpha1.Kyma) func() {
 
 func CleanupModuleTemplateSetsForKyma(kyma *v1alpha1.Kyma) func() {
 	return func() {
-		By("Cleaning up decremented ModuleTemplate set in stable")
+		By("Cleaning up decremented ModuleTemplate set in regular")
 		for _, module := range kyma.Spec.Modules {
 			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
 			Expect(err).ShouldNot(HaveOccurred())

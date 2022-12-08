@@ -115,8 +115,8 @@ func CheckForOutdatedTemplate(
 		// that the downstream kyma might have changed its target channel for the module, meaning
 		// the old moduleStatus is reflecting the previous desired state.
 		// when increasing channel stability, this means we could potentially have a downgrade
-		// of module versions here (fast: v2.0.0 get downgraded to stable: v1.0.0). In this
-		// case we want to suspend updating the module until we reach v2.0.0 in stable, since downgrades
+		// of module versions here (fast: v2.0.0 get downgraded to regular: v1.0.0). In this
+		// case we want to suspend updating the module until we reach v2.0.0 in regular, since downgrades
 		// are not supported. To circumvent this, a module can be uninstalled and then reinstalled in the old channel.
 		if versionInStatus.GreaterThan(versionInTemplate) {
 			checkLog.Info("ignore channel skew, as a higher version of the module was previously installed")

@@ -6,11 +6,12 @@ import (
 	"fmt"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
-	"github.com/kyma-project/lifecycle-manager/pkg/channel"
-	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
-	"github.com/kyma-project/module-manager/operator/pkg/types"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/channel"
+	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
+	"github.com/kyma-project/module-manager/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/img"

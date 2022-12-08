@@ -21,7 +21,7 @@ import (
 	sampleCRDv1alpha1 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/watch"
-	manifestV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
+	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 )
 
 func RegisterDefaultLifecycleForKyma(kyma *v1alpha1.Kyma) {
