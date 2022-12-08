@@ -1,7 +1,6 @@
 package security_test
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -23,10 +22,9 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	k8sClient           client.Client        //nolint:gochecknoglobals
-	testEnv             *envtest.Environment //nolint:gochecknoglobals
-	webhookServerCancel context.CancelFunc   //nolint:gochecknoglobals
-	cfg                 *rest.Config         //nolint:gochecknoglobals
+	k8sClient client.Client        //nolint:gochecknoglobals
+	testEnv   *envtest.Environment //nolint:gochecknoglobals
+	cfg       *rest.Config         //nolint:gochecknoglobals
 )
 
 func TestAPIs(t *testing.T) {
@@ -63,7 +61,6 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
-
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })

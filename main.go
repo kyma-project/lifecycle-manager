@@ -81,7 +81,6 @@ func main() {
 	flagVar := defineFlagVar()
 	flag.Parse()
 	ctrl.SetLogger(configLogger())
-
 	if flagVar.pprof {
 		go pprofStartServer(flagVar.pprofAddr, flagVar.pprofServerTimeout)
 	}

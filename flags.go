@@ -31,7 +31,7 @@ var (
 	errInvalidGatewayName      = errors.New("must be an RFC 1035 Label Name")
 )
 
-func defineFlagVar() *FlagVar {
+func defineFlagVar() *FlagVar { //nolint:funlen
 	flagVar := new(FlagVar)
 	flag.StringVar(&flagVar.metricsAddr, "metrics-bind-address", ":8080",
 		"The address the metric endpoint binds to.")

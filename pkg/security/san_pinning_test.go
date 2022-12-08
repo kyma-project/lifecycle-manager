@@ -18,7 +18,8 @@ import (
 	"go.uber.org/zap"
 )
 
-func TestRequestVerifier_verifySAN(t *testing.T) {
+func TestRequestVerifier_verifySAN(t *testing.T) { //nolint:funlen
+	t.Parallel()
 	type args struct {
 		certificate *x509.Certificate
 		kymaDomain  string
@@ -84,20 +85,21 @@ func TestRequestVerifier_verifySAN(t *testing.T) {
 
 	zapLog, err := zap.NewDevelopment()
 	require.NoError(t, err)
-	v := &security.RequestVerifier{
+	verifier := &security.RequestVerifier{
 		Client: nil,
 		Log:    zapr.NewLogger(zapLog),
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := v.VerifySAN(tt.args.certificate, tt.args.kymaDomain)
-			require.Equal(t, tt.want, got)
+		test := tt
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := verifier.VerifySAN(test.args.certificate, test.args.kymaDomain)
+			require.Equal(t, test.want, got)
 		})
 	}
 }
 
 var _ = Describe("Verify Request using SAN", Ordered, func() {
-
 	zapLog, err := zap.NewDevelopment()
 	Expect(err).Should(BeNil())
 
@@ -156,9 +158,8 @@ var _ = Describe("Verify Request using SAN", Ordered, func() {
 	for _, tt := range tests {
 		test := tt
 		It(test.name, func() {
-
 			// Create Request Verifier
-			v := &security.RequestVerifier{
+			verifier := &security.RequestVerifier{
 				Client: k8sClient,
 				Log:    zapr.NewLogger(zapLog),
 			}
@@ -169,18 +170,17 @@ var _ = Describe("Verify Request using SAN", Ordered, func() {
 			}
 
 			// Actual Test
-			err := v.Verify(test.args.request)
+			err := verifier.Verify(test.args.request)
 			if test.wantErr {
 				Expect(err).ShouldNot(BeNil())
 				return
-			} else {
-				Expect(err).Should(BeNil())
 			}
+			Expect(err).Should(BeNil())
+
 			// Cleanup
 			if test.kyma != nil {
 				Expect(k8sClient.Delete(context.TODO(), test.kyma)).Should(Succeed())
 			}
-
 		})
 
 	}

@@ -26,9 +26,8 @@ const (
 	prefixFormat        = "/%s/%s/event"
 )
 
-var vsHost = "listener.kyma.cloud.sap"
-
 var (
+	vsHost                     = "listener.kyma.cloud.sap" //nolint:gochecknoglobals
 	errNoGatewayConfigured     = errors.New("error processing Watcher: No istio gateway configured")
 	errCantFindMatchingGateway = errors.New("can't find matching Istio Gateway")
 )

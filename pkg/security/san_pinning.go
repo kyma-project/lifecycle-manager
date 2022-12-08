@@ -13,6 +13,8 @@ import (
 	"net/url"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/go-logr/logr"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
@@ -36,7 +38,6 @@ const (
 )
 
 var (
-	debugLogLevel = 2
 
 	// Static errors.
 	errNotVerified   = errors.New("SAN from certificate does not match domain specified in KymaCR")
@@ -115,7 +116,7 @@ func (v *RequestVerifier) getCertificateFromHeader(r *http.Request) (*x509.Certi
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse PEM block into x509 certificate: %w", err)
 	}
-	v.Log.V(debugLogLevel).Info(XFCCHeader,
+	v.Log.V(int(zap.DebugLevel)).Info(XFCCHeader,
 		"certificate", certificate)
 
 	return certificate, nil
@@ -151,12 +152,12 @@ func (v *RequestVerifier) getDomain(request *http.Request) (string, error) {
 	return domain, nil
 }
 
-// VerifySAN checks if given domain exists in the SAN information of the given certificate
+// VerifySAN checks if given domain exists in the SAN information of the given certificate.
 func (v *RequestVerifier) VerifySAN(certificate *x509.Certificate, kymaDomain string) bool {
 	if contains(certificate.URIs, kymaDomain) ||
 		contains(certificate.DNSNames, kymaDomain) ||
 		contains(certificate.IPAddresses, kymaDomain) {
-		v.Log.V(debugLogLevel).Info("Received request verified")
+		v.Log.V(int(zap.DebugLevel)).Info("Received request verified")
 		return true
 	}
 	return false
