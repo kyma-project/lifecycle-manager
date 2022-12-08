@@ -24,8 +24,7 @@ var ErrExpectedExactlyOneSKRConfig = errors.New("expected exactly one SKR config
 type SKRWebhookChartManager interface {
 	InstallWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
 		remoteClientCache *remote.ClientCache, kcpClient client.Client) (bool, error)
-	RemoveWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
-		syncCtx *remote.KymaSynchronizationContext) error
+	RemoveWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma) error
 }
 
 type DisabledSKRWebhookChartManager struct{}
@@ -52,9 +51,7 @@ func (m *DisabledSKRWebhookChartManager) InstallWebhookChart(_ context.Context, 
 	return false, nil
 }
 
-func (m *DisabledSKRWebhookChartManager) RemoveWebhookChart(_ context.Context, _ *v1alpha1.Kyma,
-	_ *remote.KymaSynchronizationContext,
-) error {
+func (m *DisabledSKRWebhookChartManager) RemoveWebhookChart(_ context.Context, _ *v1alpha1.Kyma) error {
 	return nil
 }
 
@@ -106,20 +103,20 @@ func (m *EnabledSKRWebhookChartManager) InstallWebhookChart(ctx context.Context,
 	return false, nil
 }
 
-func (m *EnabledSKRWebhookChartManager) RemoveWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
-	syncCtx *remote.KymaSynchronizationContext,
-) error {
-	skrCfg, err := remote.GetRemoteRestConfig(ctx, syncCtx.ControlPlaneClient, client.ObjectKeyFromObject(kyma),
+func (m *EnabledSKRWebhookChartManager) RemoveWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma) error {
+	syncContext := remote.SyncContextFromContext(ctx)
+
+	skrCfg, err := remote.GetRemoteRestConfig(ctx, syncContext.ControlPlaneClient, client.ObjectKeyFromObject(kyma),
 		kyma.Spec.Sync.Strategy)
 	if err != nil {
 		return err
 	}
-	argsVals, err := m.generateHelmChartArgs(ctx, syncCtx.ControlPlaneClient)
+	argsVals, err := m.generateHelmChartArgs(ctx, syncContext.ControlPlaneClient)
 	if err != nil {
 		return err
 	}
 	skrWatcherInstallInfo := prepareInstallInfo(ctx, m.config.WebhookChartPath, ReleaseName, skrCfg,
-		syncCtx.RuntimeClient, argsVals)
+		syncContext.RuntimeClient, argsVals)
 	return m.installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeUninstall)
 }
 
