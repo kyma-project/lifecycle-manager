@@ -46,7 +46,7 @@ func prepareInstallInfo(ctx context.Context, chartPath, releaseName string, rest
 ) moduleTypes.InstallInfo {
 	return moduleTypes.InstallInfo{
 		Ctx: ctx,
-		ResourceInfo: moduleTypes.ResourceInfo{
+		ResourceInfo: &moduleTypes.ResourceInfo{
 			// TODO: replace by a meaningful resource
 			BaseResource: &unstructured.Unstructured{},
 		},
@@ -57,7 +57,7 @@ func prepareInstallInfo(ctx context.Context, chartPath, releaseName string, rest
 				SetFlags: argsVals,
 			},
 		},
-		ClusterInfo: moduleTypes.ClusterInfo{
+		ClusterInfo: &moduleTypes.ClusterInfo{
 			Client: restClient,
 			Config: restConfig,
 		},

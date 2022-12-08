@@ -25,7 +25,6 @@ import (
 )
 
 const (
-	debugLogLevel    = 2
 	requestSizeLimit = 16000
 
 	XFCCHeader           = "X-Forwarded-Client-Cert"
@@ -37,6 +36,8 @@ const (
 )
 
 var (
+	debugLogLevel = 2
+
 	// Static errors.
 	errNotVerified   = errors.New("SAN from certificate does not match domain specified in KymaCR")
 	errPemDecode     = errors.New("failed to decode PEM block")
