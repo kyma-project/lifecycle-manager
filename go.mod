@@ -9,8 +9,9 @@ require (
 	github.com/go-logr/zapr v1.2.3
 	github.com/kyma-project/module-manager/operator v0.0.0-20221031152637-c1668e8dcd6c
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20221124100141-ad3bcec60a2f
-	github.com/onsi/ginkgo/v2 v2.1.6
-	github.com/onsi/gomega v1.20.1
+	github.com/onsi/ginkgo/v2 v2.5.0
+	github.com/onsi/gomega v1.24.1
+	github.com/stretchr/testify v1.8.0
 	go.uber.org/zap v1.23.0
 	golang.org/x/time v0.2.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -115,6 +116,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.0-rc2 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect

@@ -28,7 +28,7 @@ const (
 	debugLogLevel    = 2
 	requestSizeLimit = 16000
 
-	xfccHeader           = "X-Forwarded-Client-Cert"
+	XFCCHeader           = "X-Forwarded-Client-Cert"
 	headerValueSeparator = ";"
 	keyValueSeparator    = "="
 	certificateKey       = "Cert="
@@ -41,18 +41,18 @@ var (
 	errNotVerified   = errors.New("SAN from certificate does not match domain specified in KymaCR")
 	errPemDecode     = errors.New("failed to decode PEM block")
 	errEmptyCert     = errors.New("empty certificate")
-	errHeaderMissing = fmt.Errorf("request does not contain '%s' header", xfccHeader)
+	errHeaderMissing = fmt.Errorf("request does not contain '%s' header", XFCCHeader)
 )
 
 type RequestVerifier struct {
 	Client client.Client
-	log    logr.Logger
+	Log    logr.Logger
 }
 
 func NewRequestVerifier(client client.Client) *RequestVerifier {
 	return &RequestVerifier{
 		Client: client,
-		log:    ctrl.Log.WithName("request–verifier"),
+		Log:    ctrl.Log.WithName("request–verifier"),
 	}
 }
 
@@ -70,10 +70,7 @@ func (v *RequestVerifier) Verify(request *http.Request) error {
 		return err
 	}
 
-	if contains(certificate.URIs, domain) ||
-		contains(certificate.DNSNames, domain) ||
-		contains(certificate.IPAddresses, domain) {
-		v.log.V(debugLogLevel).Info("Received request verified")
+	if v.VerifySAN(certificate, domain) {
 		return nil
 	}
 	return errNotVerified
@@ -82,12 +79,13 @@ func (v *RequestVerifier) Verify(request *http.Request) error {
 // getCertificateFromHeader extracts the XFCC header and pareses it into a valid x509 certificate.
 func (v *RequestVerifier) getCertificateFromHeader(r *http.Request) (*x509.Certificate, error) {
 	// Fetch XFCC-Header data
-	xfccValue, ok := r.Header[xfccHeader]
+	xfccValue, ok := r.Header[XFCCHeader]
 	if !ok {
 		return nil, errHeaderMissing
 	}
 	xfccData := strings.Split(xfccValue[0], headerValueSeparator)
 
+	v.Log.Info(fmt.Sprintf("###### Request Header %v", xfccValue))
 	// Extract raw certificate
 	var cert string
 	for _, keyValuePair := range xfccData {
@@ -116,7 +114,7 @@ func (v *RequestVerifier) getCertificateFromHeader(r *http.Request) (*x509.Certi
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse PEM block into x509 certificate: %w", err)
 	}
-	v.log.V(debugLogLevel).Info(xfccHeader,
+	v.Log.V(debugLogLevel).Info(XFCCHeader,
 		"certificate", certificate)
 
 	return certificate, nil
@@ -152,10 +150,22 @@ func (v *RequestVerifier) getDomain(request *http.Request) (string, error) {
 	return domain, nil
 }
 
+// VerifySAN checks if given domain exists in the SAN information of the given certificate
+func (v *RequestVerifier) VerifySAN(certificate *x509.Certificate, kymaDomain string) bool {
+	if contains(certificate.URIs, kymaDomain) ||
+		contains(certificate.DNSNames, kymaDomain) ||
+		contains(certificate.IPAddresses, kymaDomain) {
+		v.Log.V(debugLogLevel).Info("Received request verified")
+		return true
+	}
+	return false
+}
+
 // contains checks if given string is present in slice.
 func contains[E net.IP | *url.URL | string](arr []E, s string) bool {
 	for i := range arr {
-		if fmt.Sprintf("%s", arr[i]) == s {
+		a := fmt.Sprintf("%s", arr[i])
+		if a == s {
 			return true
 		}
 	}
