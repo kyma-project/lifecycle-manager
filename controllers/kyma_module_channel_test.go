@@ -1,40 +1,80 @@
 package controllers_test
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/Masterminds/semver/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 const (
-	FastChannel   = "fast"
-	RandomChannel = "random"
-	LowerVersion  = "0.0.1"
-	HigherVersion = "0.0.2"
+	FastChannel    = "fast"
+	ValidChannel   = "valid"
+	InValidChannel = "Invalid01" // only allow lower case characters from a to z
+	LowerVersion   = "0.0.1"
+	HigherVersion  = "0.0.2"
 )
 
-var _ = Describe("A random channel should be deployed successful", func() {
+var _ = Describe("A valid channel should be deployed successful", func() {
 	kyma := NewTestKyma("kyma")
-	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1alpha1.Module{
-			ControllerName: "manifest",
-			Name:           "module-with-random-channel",
-			Channel:        RandomChannel,
+	It(
+		"should create kyma with standard modules in default channel normally", func() {
+			Expect(controlPlaneClient.Create(ctx, kyma)).ToNot(HaveOccurred())
 		})
+	DescribeTable(
+		"Test Channel Status", func(givenCondition func() error, expectedBehavior func() error) {
+			Eventually(givenCondition, Timeout, Interval).Should(Succeed())
+			Eventually(expectedBehavior, Timeout, Interval).Should(Succeed())
+		},
+		Entry(
+			"When kyma is deployed in valid channel,"+
+				" expect ModuleStatus to be in valid channel",
+			whenDeployModuleTemplate(kyma, ValidChannel),
+			expectEveryModuleStatusToHaveChannel(kyma.Name, ValidChannel),
+		),
+	)
+})
 
-	BeforeEach(func() {
-		SetupModuleTemplateSetsForKyma(kyma, LowerVersion, RandomChannel)
+var _ = Describe("Given invalid channel module template", func() {
+	kyma := NewTestKyma("kyma")
+	It("should failed to be created", func() {
+		kyma.Spec.Modules = append(
+			kyma.Spec.Modules, v1alpha1.Module{
+				ControllerName: "manifest",
+				Name:           "module-with-" + InValidChannel,
+				Channel:        InValidChannel,
+			})
+		err := CreateModuleTemplateSetsForKyma(kyma, LowerVersion, InValidChannel)
+		var statusError *apiErrors.StatusError
+		ok := errors.As(err, &statusError)
+		Expect(ok).Should(BeTrue())
+		Expect(statusError.ErrStatus.Reason).Should(Equal(metaV1.StatusReasonInvalid))
 	})
-	It("expect moduleStatus in random channel", func() {
-		Expect(controlPlaneClient.Create(ctx, kyma)).ToNot(HaveOccurred())
-		Eventually(expectEveryModuleStatusToHaveChannel(kyma.Name, RandomChannel), Timeout, Interval).Should(Succeed())
+})
+
+var _ = Describe("Given invalid channel kyma", func() {
+	kyma := NewTestKyma("kyma")
+	It("should failed to be created", func() {
+		kyma.Spec.Modules = append(
+			kyma.Spec.Modules, v1alpha1.Module{
+				ControllerName: "manifest",
+				Name:           "module-with-" + InValidChannel,
+				Channel:        InValidChannel,
+			})
+		err := controlPlaneClient.Create(ctx, kyma)
+		var statusError *apiErrors.StatusError
+		ok := errors.As(err, &statusError)
+		Expect(ok).Should(BeTrue())
+		Expect(statusError.ErrStatus.Reason).Should(Equal(metaV1.StatusReasonInvalid))
 	})
 })
 
@@ -53,8 +93,8 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 	})
 
 	BeforeAll(func() {
-		SetupModuleTemplateSetsForKyma(kyma, LowerVersion, v1alpha1.DefaultChannel)
-		SetupModuleTemplateSetsForKyma(kyma, HigherVersion, FastChannel)
+		Expect(CreateModuleTemplateSetsForKyma(kyma, LowerVersion, v1alpha1.DefaultChannel)).To(Succeed())
+		Expect(CreateModuleTemplateSetsForKyma(kyma, HigherVersion, FastChannel)).To(Succeed())
 	})
 
 	AfterAll(CleanupModuleTemplateSetsForKyma(kyma))
@@ -109,23 +149,28 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 },
 )
 
-func SetupModuleTemplateSetsForKyma(kyma *v1alpha1.Kyma, modifiedVersion, channel string) {
+func CreateModuleTemplateSetsForKyma(kyma *v1alpha1.Kyma, modifiedVersion, channel string) error {
 	for _, module := range kyma.Spec.Modules {
 		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
-		Expect(
-			template.Spec.ModifyDescriptor(
-				v1alpha1.ModifyDescriptorVersion(
-					func(version *semver.Version) string {
-						return modifiedVersion
-					},
-				),
+		if err != nil {
+			return err
+		}
+		if err := template.Spec.ModifyDescriptor(
+			v1alpha1.ModifyDescriptorVersion(
+				func(version *semver.Version) string {
+					return modifiedVersion
+				},
 			),
-		).ToNot(HaveOccurred())
-		Expect(err).ShouldNot(HaveOccurred())
+		); err != nil {
+			return err
+		}
 		template.Spec.Channel = channel
 		template.Name = fmt.Sprintf("%s-%s", template.Name, channel)
-		Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
+		if err := controlPlaneClient.Create(ctx, template); err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func CleanupModuleTemplateSetsForKyma(kyma *v1alpha1.Kyma) func() {
@@ -156,5 +201,17 @@ func expectEveryModuleStatusToHaveChannel(kymaName, channel string) func() error
 func whenUpdatingEveryModuleChannel(kymaName, channel string) func() error {
 	return func() error {
 		return UpdateKymaModuleChannels(kymaName, channel)
+	}
+}
+
+func whenDeployModuleTemplate(kyma *v1alpha1.Kyma, channel string) func() error {
+	return func() error {
+		kyma.Spec.Modules = append(
+			kyma.Spec.Modules, v1alpha1.Module{
+				ControllerName: "manifest",
+				Name:           "module-with-" + channel,
+				Channel:        channel,
+			})
+		return CreateModuleTemplateSetsForKyma(kyma, LowerVersion, channel)
 	}
 }

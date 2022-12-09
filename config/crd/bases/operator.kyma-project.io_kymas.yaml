@@ -45,6 +45,7 @@ spec:
               channel:
                 description: Channel specifies the desired Channel of the Installation,
                   usually targeting different module versions.
+                pattern: ^[a-z]+$
                 type: string
               modules:
                 description: Modules specifies the list of modules to be installed
@@ -55,6 +56,7 @@ spec:
                       description: Channel is the desired channel of the Module. If
                         this changes or is set, it will be used to resolve a new ModuleTemplate
                         based on the new resolved resources.
+                      pattern: ^[a-z]+$
                       type: string
                     controller:
                       description: ControllerName is able to set the controller used
