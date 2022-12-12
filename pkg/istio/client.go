@@ -23,9 +23,11 @@ const (
 	firstElementIdx     = 0
 	vsDeletionThreshold = 1
 	contractVersion     = "v1"
+	prefixFormat        = "/%s/%s/event"
 )
 
 var (
+	vsHost                     = "listener.kyma.cloud.sap" //nolint:gochecknoglobals
 	errNoGatewayConfigured     = errors.New("error processing Watcher: No istio gateway configured")
 	errCantFindMatchingGateway = errors.New("can't find matching Istio Gateway")
 )
@@ -106,7 +108,7 @@ func (c *Client) createVirtualService(ctx context.Context, watcher *v1alpha1.Wat
 	virtualSvc.SetName(c.config.VirtualServiceName)
 	virtualSvc.SetNamespace(metav1.NamespaceDefault)
 	virtualSvc.Spec.Gateways = append(virtualSvc.Spec.Gateways, client.ObjectKeyFromObject(gateway).String())
-	virtualSvc.Spec.Hosts = append(virtualSvc.Spec.Hosts, "*")
+	virtualSvc.Spec.Hosts = append(virtualSvc.Spec.Hosts, vsHost)
 	virtualSvc.Spec.Http = []*istioapi.HTTPRoute{
 		prepareIstioHTTPRouteForCR(watcher),
 	}
@@ -300,7 +302,7 @@ func prepareIstioHTTPRouteForCR(obj *v1alpha1.Watcher) *istioapi.HTTPRoute {
 			{
 				Uri: &istioapi.StringMatch{
 					MatchType: &istioapi.StringMatch_Prefix{ //nolint:nosnakecase
-						Prefix: fmt.Sprintf("/%s/%s/event", contractVersion, obj.GetModuleName()),
+						Prefix: fmt.Sprintf(prefixFormat, contractVersion, obj.GetModuleName()),
 					},
 				},
 			},

@@ -32,8 +32,8 @@ type SKRWebhookChartManager interface {
 type DisabledSKRWebhookChartManager struct{}
 
 // ResolveSKRWebhookChartManager resolves to enabled or disabled chart manager.
-// nolint: ireturn
-func ResolveSKRWebhookChartManager(
+
+func ResolveSKRWebhookChartManager( //nolint:ireturn
 	isWatcherEnabled bool,
 	skrConfigs ...*SkrChartConfig,
 ) (SKRWebhookChartManager, error) {
@@ -193,7 +193,14 @@ func (m *EnabledSKRWebhookChartManager) installOrRemoveChartOnSKR(ctx context.Co
 ) error {
 	logger := logf.FromContext(ctx)
 	if mode == ModeUninstall {
-		uninstalled, err := moduleLib.UninstallChart(logger, deployInfo, nil, nil)
+		uninstalled, err := moduleLib.UninstallChart(
+			moduleLib.OperationOptions{
+				Logger:             logger,
+				InstallInfo:        &deployInfo,
+				ResourceTransforms: nil,
+				PostRuns:           nil,
+				Cache:              nil,
+			})
 		if err != nil {
 			return fmt.Errorf("failed to uninstall webhook config: %w", err)
 		}
@@ -204,7 +211,14 @@ func (m *EnabledSKRWebhookChartManager) installOrRemoveChartOnSKR(ctx context.Co
 		return nil
 	}
 	// TODO(khlifi411): verify webhook configuration with watchers' configuration before re-installing the chart
-	ready, err := moduleLib.ConsistencyCheck(logger, deployInfo, nil, nil)
+	ready, err := moduleLib.ConsistencyCheck(
+		moduleLib.OperationOptions{
+			Logger:             logger,
+			InstallInfo:        &deployInfo,
+			ResourceTransforms: nil,
+			PostRuns:           nil,
+			Cache:              nil,
+		})
 	if err != nil {
 		return fmt.Errorf("failed to verify webhook resources: %w", err)
 	}
@@ -212,7 +226,14 @@ func (m *EnabledSKRWebhookChartManager) installOrRemoveChartOnSKR(ctx context.Co
 		logger.V(1).Info("chart resources already installed, nothing to do!")
 		return nil
 	}
-	installed, err := moduleLib.InstallChart(logger, deployInfo, nil, nil)
+	installed, err := moduleLib.InstallChart(
+		moduleLib.OperationOptions{
+			Logger:             logger,
+			InstallInfo:        &deployInfo,
+			ResourceTransforms: nil,
+			PostRuns:           nil,
+			Cache:              nil,
+		})
 	if err != nil {
 		return fmt.Errorf("failed to install webhook config: %w", err)
 	}

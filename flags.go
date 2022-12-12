@@ -31,7 +31,7 @@ var (
 	errInvalidGatewayName      = errors.New("must be an RFC 1035 Label Name")
 )
 
-func defineFlagVar() *FlagVar {
+func defineFlagVar() *FlagVar { //nolint:funlen
 	flagVar := new(FlagVar)
 	flag.StringVar(&flagVar.metricsAddr, "metrics-bind-address", ":8080",
 		"The address the metric endpoint binds to.")
@@ -90,6 +90,8 @@ func defineFlagVar() *FlagVar {
 		"Indicates the failure max delay in seconds")
 	flag.DurationVar(&flagVar.cacheSyncTimeout, "cache-sync-timeout", defaultCacheSyncTimeout,
 		"Indicates the cache sync timeout in seconds")
+	flag.BoolVar(&flagVar.enableDomainNameVerification, "enable-domain-name-pinning", true,
+		"Enabling verification of incoming listener request by comparing SAN with KymaCR-SKR-domain")
 	return flagVar
 }
 
@@ -117,6 +119,7 @@ type FlagVar struct {
 	failureBaseDelay, failureMaxDelay                               time.Duration
 	rateLimiterBurst, rateLimiterFrequency                          int
 	cacheSyncTimeout                                                time.Duration
+	enableDomainNameVerification                                    bool
 }
 
 func newNamespacedNameVar(target *string) *namespacedNameVar {
