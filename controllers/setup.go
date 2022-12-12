@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -62,7 +64,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 		// Verifier used to verify incoming listener requests
 		verifyFunc = security.NewRequestVerifier(mgr.GetClient()).Verify
 	} else {
-		verifyFunc = func(r *http.Request) error {
+		verifyFunc = func(r *http.Request, watcherEvtObject *types.WatchEvent) error {
 			return nil
 		}
 	}

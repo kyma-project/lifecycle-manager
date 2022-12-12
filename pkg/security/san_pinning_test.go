@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"testing"
 
+	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 
 	"github.com/go-logr/zapr"
@@ -104,7 +106,8 @@ var _ = Describe("Verify Request using SAN", Ordered, func() {
 	Expect(err).Should(BeNil())
 
 	type args struct {
-		request *http.Request
+		request            *http.Request
+		watcherEventObject *types.WatchEvent
 	}
 
 	tests := []struct {
@@ -117,7 +120,8 @@ var _ = Describe("Verify Request using SAN", Ordered, func() {
 			name: "Verify Request with SAN (Subject Alternative Name)",
 			kyma: createKyma("kyma-1", annotationsWithCorrectDomain),
 			args: args{
-				request: createRequest("kyma-1", headerWithSufficientCertificate),
+				request:            createRequest("kyma-1", headerWithSufficientCertificate),
+				watcherEventObject: createWatcherCR("kyma-1"),
 			},
 			wantErr: false,
 		},
@@ -125,7 +129,8 @@ var _ = Describe("Verify Request using SAN", Ordered, func() {
 			name: "SKR-Domain Annotation missing on KymaCR",
 			kyma: createKyma("kyma-2", emptyAnnotations),
 			args: args{
-				request: createRequest("kyma-2", headerWithSufficientCertificate),
+				request:            createRequest("kyma-2", headerWithSufficientCertificate),
+				watcherEventObject: createWatcherCR("kyma-2"),
 			},
 			wantErr: true,
 		},
@@ -133,7 +138,8 @@ var _ = Describe("Verify Request using SAN", Ordered, func() {
 			name: "Malformed Certificate",
 			kyma: createKyma("kyma-3", annotationsWithCorrectDomain),
 			args: args{
-				request: createRequest("kyma-3", headerWithMalformedCertificate),
+				request:            createRequest("kyma-3", headerWithMalformedCertificate),
+				watcherEventObject: createWatcherCR("kyma-3"),
 			},
 			wantErr: true,
 		},
@@ -141,7 +147,8 @@ var _ = Describe("Verify Request using SAN", Ordered, func() {
 			name: "SAN does not match KymaCR.annotation..skr-domain",
 			kyma: createKyma("kyma-4", annotationsWithWrongDomain),
 			args: args{
-				request: createRequest("kyma-4", headerWithSufficientCertificate),
+				request:            createRequest("kyma-4", headerWithSufficientCertificate),
+				watcherEventObject: createWatcherCR("kyma-4"),
 			},
 			wantErr: true,
 		},
@@ -149,7 +156,8 @@ var _ = Describe("Verify Request using SAN", Ordered, func() {
 			name: "KymaCR does not exists",
 			kyma: nil,
 			args: args{
-				request: createRequest("kyma-5", headerWithSufficientCertificate),
+				request:            createRequest("kyma-5", headerWithSufficientCertificate),
+				watcherEventObject: createWatcherCR("kyma-5"),
 			},
 			wantErr: true,
 		},
@@ -170,7 +178,7 @@ var _ = Describe("Verify Request using SAN", Ordered, func() {
 			}
 
 			// Actual Test
-			err := verifier.Verify(test.args.request)
+			err := verifier.Verify(test.args.request, test.args.watcherEventObject)
 			if test.wantErr {
 				Expect(err).ShouldNot(BeNil())
 				return

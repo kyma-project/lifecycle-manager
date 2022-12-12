@@ -9,7 +9,7 @@ require (
 	github.com/go-logr/zapr v1.2.3
 	github.com/kyma-project/module-manager v0.0.0-20221207164018-ddf69229acb6
 	github.com/kyma-project/module-manager/operator v0.0.0-20221125150159-5e84c4855249
-	github.com/kyma-project/runtime-watcher/listener v0.0.0-20221124100141-ad3bcec60a2f
+	github.com/kyma-project/runtime-watcher/listener v0.0.0-20221129135108-60e6093eba9d
 	github.com/onsi/ginkgo/v2 v2.5.0
 	github.com/onsi/gomega v1.24.1
 	github.com/stretchr/testify v1.8.0

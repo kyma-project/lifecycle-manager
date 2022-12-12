@@ -1,13 +1,10 @@
 package security
 
 import (
-	"bytes"
 	"crypto/x509"
-	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -27,8 +24,6 @@ import (
 )
 
 const (
-	requestSizeLimit = 16000
-
 	XFCCHeader           = "X-Forwarded-Client-Cert"
 	headerValueSeparator = ";"
 	keyValueSeparator    = "="
@@ -61,13 +56,13 @@ func NewRequestVerifier(client client.Client) *RequestVerifier {
 // Verify verifies the given request by fetching the KymaCR given in the request payload
 // and comparing the SAN(subject alternative name) of the certificate with the SKR-domain of the KymaCR.
 // If the request can be verified 'nil' will be returned.
-func (v *RequestVerifier) Verify(request *http.Request) error {
+func (v *RequestVerifier) Verify(request *http.Request, watcherEvtObject *types.WatchEvent) error {
 	certificate, err := v.getCertificateFromHeader(request)
 	if err != nil {
 		return err
 	}
 
-	domain, err := v.getDomain(request)
+	domain, err := v.getDomain(request, watcherEvtObject)
 	if err != nil {
 		return err
 	}
@@ -123,29 +118,15 @@ func (v *RequestVerifier) getCertificateFromHeader(r *http.Request) (*x509.Certi
 }
 
 // getDomain fetches the KymaCR, mentioned in the requests body, and returns the value of the SKR-Domain annotation.
-func (v *RequestVerifier) getDomain(request *http.Request) (string, error) {
-	limitedReader := &io.LimitedReader{R: request.Body, N: requestSizeLimit}
-	body, err := io.ReadAll(limitedReader)
-	if err != nil {
-		return "", err
-	}
-
-	defer request.Body.Close()
-	request.Body = io.NopCloser(bytes.NewBuffer(body))
-
-	watcherEvent := &types.WatchEvent{}
-	err = json.Unmarshal(body, watcherEvent)
-	if err != nil {
-		return "", err
-	}
+func (v *RequestVerifier) getDomain(request *http.Request, watcherEvtObject *types.WatchEvent) (string, error) {
 	var kymaCR v1alpha1.Kyma
-	if err := v.Client.Get(request.Context(), watcherEvent.Owner, &kymaCR); err != nil {
+	if err := v.Client.Get(request.Context(), watcherEvtObject.Owner, &kymaCR); err != nil {
 		return "", err
 	}
 	domain, ok := kymaCR.Annotations[shootDomainKey]
 	if !ok {
 		return "", AnnotationMissingError{
-			KymaCR:     watcherEvent.Owner.String(),
+			KymaCR:     watcherEvtObject.Owner.String(),
 			Annotation: shootDomainKey,
 		}
 	}

@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 	v1 "k8s.io/api/core/v1"
@@ -44,6 +47,24 @@ func createRequest(kymaName string, header map[string][]string) *http.Request {
 				"\"kind\": \"testResourceKind\"\n    }\n}"),
 		),
 		Header: header,
+	}
+}
+
+func createWatcherCR(kymaName string) *types.WatchEvent {
+	return &types.WatchEvent{
+		Owner: client.ObjectKey{
+			Namespace: "default",
+			Name:      kymaName,
+		},
+		Watched: client.ObjectKey{
+			Namespace: "default",
+			Name:      kymaName,
+		},
+		WatchedGvk: metav1.GroupVersionKind{
+			Group:   "testGroup",
+			Version: "testResourceVersion",
+			Kind:    "testResourceKind",
+		},
 	}
 }
 
