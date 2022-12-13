@@ -4,13 +4,27 @@ kind: Gateway
 metadata:
   name: kyma-gateway
   namespace: default
+  annotations:
+    # When the client connection is mTLS, reset the XFCC header with the client certificate information and send it to the next hop.
+    # This is being used to verify incoming requests
+    "proxy.istio.io/config": '{"gatewayTopology" : { "forwardClientCertDetails": "SANITIZE_SET" } }'
 spec:
   selector:
-    istio: ingressgateway
+    istio: ingressgateway # use istio default controller
   servers:
     - hosts:
-        - '*'
+        - 'listener.kyma.cloud.sap'
       port:
         name: http
-        number: 80
+        number: 8080
         protocol: HTTP
+    # [mTLS] Uncomment following part if mTLS should be used
+    #- hosts:
+    #    - 'listener.kyma.cloud.sap'
+    #  port:
+    #    name: https
+    #    number: 8443
+    #    protocol: HTTPS
+    #  tls:
+    #    credentialName: <reference to secret containing ca.crt, tls.cert and tls.key>
+    #    mode: MUTUAL

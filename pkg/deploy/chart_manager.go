@@ -61,7 +61,14 @@ func (m *SKRWebhookChartManagerImpl) Install(ctx context.Context, kyma *v1alpha1
 		syncContext.RuntimeRestConfig, syncContext.RuntimeClient, chartArgsValues, kymaObjKey)
 	logger.V(1).Info("following modules will be installed",
 		"modules", prettyPrintSetFlags(skrWatcherInstallInfo.ChartInfo.Flags.SetFlags[customConfigKey]))
-	installed, err := modulelib.InstallChart(logger, skrWatcherInstallInfo, nil, m.cache)
+	installed, err := modulelib.InstallChart(
+		modulelib.OperationOptions{
+			Logger:             logger,
+			InstallInfo:        skrWatcherInstallInfo,
+			ResourceTransforms: nil,
+			PostRuns:           nil,
+			Cache:              m.cache,
+		})
 	if err != nil {
 		kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
 		return true, fmt.Errorf("failed to install webhook chart: %w", err)
@@ -91,7 +98,14 @@ func (m *SKRWebhookChartManagerImpl) Remove(ctx context.Context, kyma *v1alpha1.
 	}
 	skrWatcherInstallInfo := prepareInstallInfo(ctx, m.config.WebhookChartPath,
 		syncContext.RuntimeRestConfig, syncContext.RuntimeClient, argsValues, kymaObjKey)
-	uninstalled, err := modulelib.UninstallChart(logger, skrWatcherInstallInfo, nil, m.cache)
+	uninstalled, err := modulelib.UninstallChart(
+		modulelib.OperationOptions{
+			Logger:             logger,
+			InstallInfo:        skrWatcherInstallInfo,
+			ResourceTransforms: nil,
+			PostRuns:           nil,
+			Cache:              nil,
+		})
 	if err != nil {
 		return fmt.Errorf("failed to uninstall webhook config: %w", err)
 	}

@@ -7,10 +7,12 @@ require (
 	github.com/gardener/component-spec/bindings-go v0.0.70
 	github.com/go-logr/logr v1.2.3
 	github.com/go-logr/zapr v1.2.3
-	github.com/kyma-project/module-manager v0.0.0-20221125165158-b84c96f2a9db
-	github.com/kyma-project/runtime-watcher/listener v0.0.0-20221019063139-e95df66a4347
+	github.com/kyma-project/module-manager v0.0.0-20221207164018-ddf69229acb6
+	github.com/kyma-project/module-manager/operator v0.0.0-20221125150159-5e84c4855249
+	github.com/kyma-project/runtime-watcher/listener v0.0.0-20221129135108-60e6093eba9d
 	github.com/onsi/ginkgo/v2 v2.5.0
 	github.com/onsi/gomega v1.24.1
+	github.com/stretchr/testify v1.8.0
 	go.uber.org/zap v1.23.0
 	golang.org/x/time v0.2.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -114,6 +116,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.0-rc2 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.14.0 // indirect
 	github.com/prometheus/client_model v0.3.0 // indirect
 	github.com/prometheus/common v0.37.0 // indirect

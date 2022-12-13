@@ -64,8 +64,8 @@ func skrChartReleaseName(kymaObjKey client.ObjectKey) string {
 
 func prepareInstallInfo(ctx context.Context, chartPath string, restConfig *rest.Config,
 	restClient client.Client, argsVals map[string]interface{}, kymaObjKey client.ObjectKey,
-) moduletypes.InstallInfo {
-	return moduletypes.InstallInfo{
+) *moduletypes.InstallInfo {
+	return &moduletypes.InstallInfo{
 		Ctx: ctx,
 		ChartInfo: &moduletypes.ChartInfo{
 			ChartPath:   chartPath,
@@ -74,10 +74,10 @@ func prepareInstallInfo(ctx context.Context, chartPath string, restConfig *rest.
 				SetFlags: argsVals,
 			},
 		},
-		ResourceInfo: moduletypes.ResourceInfo{
+		ResourceInfo: &moduletypes.ResourceInfo{
 			BaseResource: watcherCachingBaseResource(kymaObjKey),
 		},
-		ClusterInfo: moduletypes.ClusterInfo{
+		ClusterInfo: &moduletypes.ClusterInfo{
 			Client: restClient,
 			Config: restConfig,
 		},
