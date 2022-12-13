@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	manifestv1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 )

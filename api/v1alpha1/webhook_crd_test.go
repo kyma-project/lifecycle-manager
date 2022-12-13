@@ -40,7 +40,7 @@ var _ = Describe("Webhook ValidationCreate Strict", func() {
 			v1alpha1.Module{
 				ControllerName: "manifest",
 				Name:           "example-module-name",
-				Channel:        v1alpha1.ChannelStable,
+				Channel:        v1alpha1.ChannelRegular,
 			}, data,
 		)
 		Expect(err).ToNot(HaveOccurred())
@@ -60,7 +60,7 @@ var _ = Describe("Webhook ValidationCreate Strict", func() {
 			v1alpha1.Module{
 				ControllerName: "manifest",
 				Name:           "example-module-name",
-				Channel:        v1alpha1.ChannelStable,
+				Channel:        v1alpha1.ChannelRegular,
 			}, data,
 		)
 		Expect(err).ToNot(HaveOccurred())
@@ -80,7 +80,7 @@ var _ = Describe("Webhook ValidationCreate Strict", func() {
 			v1alpha1.Module{
 				ControllerName: "manifest",
 				Name:           "example-module-name",
-				Channel:        v1alpha1.ChannelStable,
+				Channel:        v1alpha1.ChannelRegular,
 			}, data,
 		)
 

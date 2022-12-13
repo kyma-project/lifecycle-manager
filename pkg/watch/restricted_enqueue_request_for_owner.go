@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	manifestv1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -16,6 +15,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
+
+	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 )
 
 const (
@@ -159,8 +160,8 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequestFromOwnerRefe
 	}
 
 	if oldIfAny != nil {
-		componentOld, okOld := oldIfAny.(*manifestv1alpha1.Manifest)
-		componentNew, okNew := object.(*manifestv1alpha1.Manifest)
+		componentOld, okOld := oldIfAny.(*manifestV1alpha1.Manifest)
+		componentNew, okNew := object.(*manifestV1alpha1.Manifest)
 
 		if err != nil || !okNew || !okOld {
 			e.Log.Error(err, "error getting owner")

@@ -8,8 +8,7 @@ require (
 	github.com/go-logr/logr v1.2.3
 	github.com/go-logr/zapr v1.2.3
 	github.com/kyma-project/module-manager v0.0.0-20221125165158-b84c96f2a9db
-	github.com/kyma-project/module-manager/operator v0.0.0-20221123135240-96c926015e6a
-	github.com/kyma-project/runtime-watcher/listener v0.0.0-20221006112208-0dd54057307c
+	github.com/kyma-project/runtime-watcher/listener v0.0.0-20221019063139-e95df66a4347
 	github.com/onsi/ginkgo/v2 v2.5.0
 	github.com/onsi/gomega v1.24.1
 	go.uber.org/zap v1.23.0
@@ -46,7 +45,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/chai2010/gettext-go v1.0.2 // indirect
-	github.com/containerd/containerd v1.6.6 // indirect
+	github.com/containerd/containerd v1.6.9 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/cli v20.10.21+incompatible // indirect
@@ -63,7 +62,7 @@ require (
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-errors/errors v1.4.2 // indirect
-	github.com/go-gorp/gorp/v3 v3.0.2 // indirect
+	github.com/go-gorp/gorp/v3 v3.1.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
 	github.com/go-openapi/swag v0.22.3 // indirect
@@ -120,6 +119,7 @@ require (
 	github.com/prometheus/common v0.37.0 // indirect
 	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/rivo/uniseg v0.4.2 // indirect
+	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/rubenv/sql-migrate v1.2.0 // indirect
 	github.com/russross/blackfriday v1.6.0 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect

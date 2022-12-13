@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.9.2
+    controller-gen.kubebuilder.io/version: v0.10.0
   creationTimestamp: null
   name: moduletemplates.operator.kyma-project.io
 spec:
@@ -48,10 +48,9 @@ spec:
                   It will be used to directly assign a Template to a target channel.
                   It has to be provided at any given time.
                 enum:
-                - rapid
+                - alpha
                 - fast
                 - regular
-                - stable
                 type: string
               data:
                 description: Data is the default set of attributes that are used to

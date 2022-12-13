@@ -24,7 +24,7 @@ REMOTE_DESCRIPTOR="./remote-component-descriptor.yaml"
 REMOTE_SIGNED_DESCRIPTOR="./remote-component-descriptor-signed.yaml"
 
 MODULE_TEMPLATE="./generated-module-template.yaml"
-MODULE_TEMPLATE_CHANNEL="stable"
+MODULE_TEMPLATE_CHANNEL="regular"
 MODULE_NAME="kyma-project.io/module/example-module-name"
 MODULE_VERSION="v0.0.63"
 MODULE_PROFILE="production"

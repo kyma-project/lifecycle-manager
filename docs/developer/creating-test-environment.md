@@ -67,7 +67,7 @@ To bundle your module image and operator, please refer to the detailed informati
       spec:
          sync:
             enabled: true
-         channel: stable
+         channel: regular
          modules:
          - name: sample
       EOF 

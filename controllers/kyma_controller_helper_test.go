@@ -21,7 +21,7 @@ import (
 	sampleCRDv1alpha1 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/watch"
-	manifestv1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
+	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 )
 
 func RegisterDefaultLifecycleForKyma(kyma *v1alpha1.Kyma) {
@@ -108,10 +108,10 @@ func SKRModuleExistWithOverwrites(kymaName string, moduleName string) func() str
 	}
 }
 
-func UnmarshalManifestSpec(module *unstructured.Unstructured) *manifestv1alpha1.ManifestSpec {
+func UnmarshalManifestSpec(module *unstructured.Unstructured) *manifestV1alpha1.ManifestSpec {
 	body, err := json.Marshal(module.Object["spec"])
 	Expect(err).ToNot(HaveOccurred())
-	manifestSpec := manifestv1alpha1.ManifestSpec{}
+	manifestSpec := manifestV1alpha1.ManifestSpec{}
 	err = json.Unmarshal(body, &manifestSpec)
 	Expect(err).ToNot(HaveOccurred())
 	return &manifestSpec

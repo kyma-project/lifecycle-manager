@@ -6,11 +6,12 @@ import (
 	"fmt"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
-	"github.com/kyma-project/lifecycle-manager/pkg/channel"
-	manifestv1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
-	"github.com/kyma-project/module-manager/pkg/types"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/channel"
+	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
+	"github.com/kyma-project/module-manager/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/img"
@@ -49,7 +50,7 @@ func templatesToModules(
 	// (since we do not know which module we are dealing with)
 	modules := make(common.Modules)
 
-	var manifest *manifestv1alpha1.Manifest
+	var manifest *manifestV1alpha1.Manifest
 
 	for _, module := range kyma.Spec.Modules {
 		template := templates[module.Name]
@@ -81,8 +82,8 @@ func templatesToModules(
 func NewManifestFromTemplate(
 	template *v1alpha1.ModuleTemplate,
 	verification signature.Verification,
-) (*manifestv1alpha1.Manifest, error) {
-	manifest := &manifestv1alpha1.Manifest{}
+) (*manifestV1alpha1.Manifest, error) {
+	manifest := &manifestV1alpha1.Manifest{}
 	manifest.SetName(template.Spec.Data.GetName())
 	manifest.SetNamespace(template.Spec.Data.GetNamespace())
 	manifest.Spec.Remote = ConvertTargetToRemote(template.Spec.Target)
@@ -112,7 +113,7 @@ func NewManifestFromTemplate(
 }
 
 func translateLayersAndMergeIntoManifest(
-	manifest *manifestv1alpha1.Manifest, layers img.Layers,
+	manifest *manifestV1alpha1.Manifest, layers img.Layers,
 ) error {
 	for _, layer := range layers {
 		if err := insertLayerIntoManifest(manifest, layer); err != nil {
@@ -123,7 +124,7 @@ func translateLayersAndMergeIntoManifest(
 }
 
 func insertLayerIntoManifest(
-	manifest *manifestv1alpha1.Manifest, layer img.Layer,
+	manifest *manifestV1alpha1.Manifest, layer img.Layer,
 ) error {
 	switch layer.LayerName {
 	case img.CRDsLayer:
@@ -145,7 +146,7 @@ func insertLayerIntoManifest(
 			return fmt.Errorf("error while merging the generic install representation: %w", err)
 		}
 		manifest.Spec.Installs = append(
-			manifest.Spec.Installs, manifestv1alpha1.InstallInfo{
+			manifest.Spec.Installs, manifestV1alpha1.InstallInfo{
 				Source: runtime.RawExtension{Raw: installRaw},
 				Name:   string(layer.LayerName),
 			})

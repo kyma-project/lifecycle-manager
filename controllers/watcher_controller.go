@@ -23,6 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/record"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -42,6 +43,7 @@ var ErrRestConfigIsNotSet = errors.New("reconciler rest config is not set")
 // WatcherReconciler reconciles a Watcher object.
 type WatcherReconciler struct {
 	client.Client
+	record.EventRecorder
 	IstioClient *istio.Client
 	RestConfig  *rest.Config
 	Scheme      *runtime.Scheme

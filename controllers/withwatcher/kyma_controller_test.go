@@ -70,7 +70,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		webhookConfig.Webhooks[0].ClientConfig.CABundle = []byte(dummyCaBundleData)
 		Expect(runtimeClient.Update(suiteCtx, webhookConfig)).To(Succeed())
 		By("updating kyma channel to trigger its reconciliation")
-		kyma.Spec.Channel = v1alpha1.ChannelRapid
+		kyma.Spec.Channel = v1alpha1.ChannelAlpha
 		Expect(controlPlaneClient.Update(suiteCtx, kyma)).To(Succeed())
 		Eventually(deploy.CheckWebhookCABundleConsistency(suiteCtx, runtimeClient, kymaObjKey),
 			Timeout, Interval).WithOffset(4).Should(Succeed())
@@ -92,7 +92,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 
 		caBundleValueBeforeUpdate := webhookConfig.Webhooks[0].ClientConfig.CABundle
 		By("updating kyma channel to trigger its reconciliation")
-		kyma.Spec.Channel = v1alpha1.ChannelRapid
+		kyma.Spec.Channel = v1alpha1.ChannelAlpha
 		Expect(controlPlaneClient.Update(suiteCtx, kyma)).To(Succeed())
 		Eventually(webhookConfigCaBundleNewGenerationCheck(suiteCtx, runtimeClient, kymaObjKey,
 			webhookConfig, caBundleValueBeforeUpdate), Timeout, Interval).WithOffset(4).Should(Succeed())
@@ -115,7 +115,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Eventually(isWatcherCrDeletionFinished(client.ObjectKeyFromObject(secondWatcher)), Timeout, Interval).
 			Should(BeTrue())
 		By("updating kyma channel to trigger its reconciliation")
-		kyma.Spec.Channel = v1alpha1.ChannelRapid
+		kyma.Spec.Channel = v1alpha1.ChannelAlpha
 		Expect(controlPlaneClient.Update(suiteCtx, kyma)).To(Succeed())
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma, kymaObjKey, webhookConfig),
 			Timeout, Interval).WithOffset(4).Should(Succeed())

@@ -18,22 +18,20 @@ package withwatcher_test
 
 import (
 	"context"
+	"github.com/go-logr/logr"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/go-logr/logr"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
-	modulemanagerv1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
-
+	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 	//nolint:gci
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -50,6 +48,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 
@@ -63,6 +62,8 @@ import (
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
+const listenerAddr = ":8082"
+
 var (
 	controlPlaneClient client.Client                //nolint:gochecknoglobals
 	runtimeClient      client.Client                //nolint:gochecknoglobals
@@ -71,18 +72,16 @@ var (
 	runtimeEnv         *envtest.Environment         //nolint:gochecknoglobals
 	suiteCtx           context.Context              //nolint:gochecknoglobals
 	cancel             context.CancelFunc           //nolint:gochecknoglobals
-	cfg                *rest.Config                 //nolint:gochecknoglobals
+	restCfg            *rest.Config                 //nolint:gochecknoglobals
 	istioResources     []*unstructured.Unstructured //nolint:gochecknoglobals
 	remoteClientCache  *remote.ClientCache          //nolint:gochecknoglobals
-	logger             logr.Logger                  //nolint:gochecknoglobals
+	logger logr.Logger //nolint:gochecknoglobals
 )
 
 const (
-	listenerAddr           = ":8082"
 	webhookChartPath       = "../../skr-webhook"
 	istioResourcesFilePath = "../../config/samples/tests/istio-test-resources.yaml"
 	virtualServiceName     = "kcp-events"
-	gatewayName            = "lifecycle-manager-kyma-gateway"
 	istioSytemNs           = "istio-system"
 	ingressServiceName     = "istio-ingressgateway"
 )
@@ -109,7 +108,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	// kcpModule CRD
-	controlplaneCrd := &apiextensionsv1.CustomResourceDefinition{}
+	controlplaneCrd := &v1.CustomResourceDefinition{}
 	modulePath := filepath.Join("..", "..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
@@ -119,21 +118,21 @@ var _ = BeforeSuite(func() {
 
 	controlPlaneEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
-		CRDs:                  append([]*apiextensionsv1.CustomResourceDefinition{controlplaneCrd}, remoteCrds...),
+		CRDs:                  append([]*v1.CustomResourceDefinition{controlplaneCrd}, remoteCrds...),
 		ErrorIfCRDPathMissing: true,
 	}
 
-	cfg, err = controlPlaneEnv.Start()
+	restCfg, err = controlPlaneEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
-	Expect(cfg).NotTo(BeNil())
+	Expect(restCfg).NotTo(BeNil())
 
 	Expect(operatorv1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
-	Expect(apiextensionsv1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
-	Expect(modulemanagerv1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+	Expect(moduleManagerV1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 
-	controlPlaneClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	controlPlaneClient, err = client.New(restCfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(controlPlaneClient).NotTo(BeNil())
 
@@ -145,7 +144,7 @@ var _ = BeforeSuite(func() {
 	}
 
 	k8sManager, err = ctrl.NewManager(
-		cfg, ctrl.Options{
+		restCfg, ctrl.Options{
 			MetricsBindAddress: metricsBindAddress,
 			Scheme:             scheme.Scheme,
 			NewCache:           controllers.NewCacheFunc(),
@@ -183,15 +182,17 @@ var _ = BeforeSuite(func() {
 		Expect(controlPlaneClient.Create(suiteCtx, istioResource)).To(Succeed())
 	}
 
+	istioCfg := istio.NewConfig(virtualServiceName, "", operatorv1alpha1.DefaultIstioGatewaySelector())
 	err = (&controllers.WatcherReconciler{
 		Client:           k8sManager.GetClient(),
 		RestConfig:       k8sManager.GetConfig(),
+		EventRecorder:    k8sManager.GetEventRecorderFor(controllers.WatcherControllerName),
 		Scheme:           scheme.Scheme,
 		RequeueIntervals: intervals,
 	}).SetupWithManager(
 		k8sManager, controller.Options{
 			MaxConcurrentReconciles: 1,
-		}, virtualServiceName, gatewayName,
+		}, istioCfg,
 	)
 	Expect(err).ToNot(HaveOccurred())
 

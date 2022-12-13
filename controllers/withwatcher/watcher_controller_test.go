@@ -2,10 +2,12 @@ package withwatcher_test
 
 import (
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -56,8 +58,12 @@ func allCRsDeleted() func(customIstioClient *istio.Client) {
 var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	var customIstioClient *istio.Client
 	var err error
+
 	BeforeAll(func() {
-		customIstioClient, err = istio.NewVersionedIstioClient(cfg, virtualServiceName, gatewayName)
+
+		istioCfg := istio.NewConfig(virtualServiceName, "", v1alpha1.DefaultIstioGatewaySelector())
+		customIstioClient, err = istio.NewVersionedIstioClient(restCfg, istioCfg,
+			k8sManager.GetEventRecorderFor(controllers.WatcherControllerName), ctrl.Log.WithName("istioClient"))
 		Expect(err).ToNot(HaveOccurred())
 		// create WatcherCRs
 		for idx, component := range centralComponents {

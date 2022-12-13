@@ -24,14 +24,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
+	"github.com/kyma-project/lifecycle-manager/pkg/istio"
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
+	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -49,7 +51,7 @@ import (
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
-	modulemanagerv1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
+	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 
 	//+kubebuilder:scaffold:imports
 	"github.com/go-logr/logr"
@@ -58,16 +60,7 @@ import (
 )
 
 const (
-	failureBaseDelayDefault       = 100 * time.Millisecond
-	failureMaxDelayDefault        = 1000 * time.Second
-	rateLimiterFrequencyDefault   = 30
-	rateLimiterBurstDefault       = 200
-	port                          = 9443
-	defaultRequeueSuccessInterval = 20 * time.Second
-	defaultClientQPS              = 150
-	defaultClientBurst            = 150
-	defaultPprofServerTimeout     = 90 * time.Second
-	defaultCacheSyncTimeout       = 2 * time.Minute
+	port = 9443
 )
 
 var (
@@ -80,35 +73,8 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(v1extensions.AddToScheme(scheme))
-	utilruntime.Must(modulemanagerv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(moduleManagerV1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
-}
-
-type FlagVar struct {
-	metricsAddr                                                     string
-	enableLeaderElection                                            bool
-	probeAddr                                                       string
-	listenerAddr                                                    string
-	maxConcurrentReconciles                                         int
-	requeueSuccessInterval                                          time.Duration
-	moduleVerificationKeyFilePath, moduleVerificationSignatureNames string
-	clientQPS                                                       float64
-	clientBurst                                                     int
-	enableWebhooks                                                  bool
-	enableKcpWatcher                                                bool
-	skrWatcherPath                                                  string
-	skrWebhookMemoryLimits                                          string
-	skrWebhookCPULimits                                             string
-	istioNamespace                                                  string
-	istioIngressServiceName                                         string
-	virtualServiceName                                              string
-	gatewayName                                                     string
-	pprof                                                           bool
-	pprofAddr                                                       string
-	pprofServerTimeout                                              time.Duration
-	failureBaseDelay, failureMaxDelay                               time.Duration
-	rateLimiterBurst, rateLimiterFrequency                          int
-	cacheSyncTimeout                                                time.Duration
 }
 
 func main() {
@@ -245,66 +211,6 @@ func NewClient(
 	)
 }
 
-func defineFlagVar() *FlagVar {
-	flagVar := &FlagVar{}
-	flag.StringVar(&flagVar.metricsAddr, "metrics-bind-address", ":8080",
-		"The address the metric endpoint binds to.")
-	flag.StringVar(&flagVar.probeAddr, "health-probe-bind-address", ":8081",
-		"The address the probe endpoint binds to.")
-	flag.StringVar(&flagVar.listenerAddr, "skr-listener-bind-address", ":8082",
-		"The address the skr listener endpoint binds to.")
-	flag.StringVar(&flagVar.pprofAddr, "pprof-bind-address", ":8083",
-		"The address the pprof endpoint binds to.")
-	flag.IntVar(&flagVar.maxConcurrentReconciles, "max-concurrent-reconciles", 1,
-		"The maximum number of concurrent Reconciles which can be run.")
-	flag.BoolVar(&flagVar.enableLeaderElection, "leader-elect", false,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
-	flag.DurationVar(&flagVar.requeueSuccessInterval, "requeue-success-interval", defaultRequeueSuccessInterval,
-		"determines the duration after which an already successfully reconciled Kyma is enqueued for checking "+
-			"if it's still in a consistent state.")
-	flag.Float64Var(&flagVar.clientQPS, "k8s-client-qps", defaultClientQPS, "kubernetes client QPS")
-	flag.IntVar(&flagVar.clientBurst, "k8s-client-burst", defaultClientBurst, "kubernetes client Burst")
-	flag.StringVar(&flagVar.moduleVerificationKeyFilePath, "module-verification-key-file", "",
-		"This verification key is used to verify modules against their signature")
-	flag.StringVar(&flagVar.moduleVerificationKeyFilePath, "module-verification-signature-names",
-		"kyma-module-signature:kyma-extension-signature",
-		"This verification key list is used to verify modules against their signature")
-	flag.BoolVar(&flagVar.enableWebhooks, "enable-webhooks", false,
-		"Enabling Validation/Conversion Webhooks.")
-	flag.BoolVar(&flagVar.enableKcpWatcher, "enable-kcp-watcher", false,
-		"Enabling KCP Watcher to reconcile Watcher CRs created by KCP run operators")
-	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "charts/skr-webhook",
-		"The path to the skr watcher chart.")
-	flag.StringVar(&flagVar.skrWebhookMemoryLimits, "skr-webhook-memory-limits", "200Mi",
-		"The resources.limits.memory for skr webhook.")
-	flag.StringVar(&flagVar.skrWebhookCPULimits, "skr-webhook-cpu-limits", "0.1",
-		"The resources.limits.cpu for skr webhook.")
-	flag.StringVar(&flagVar.istioNamespace, "istio-namespace", "istio-system",
-		"The namespace where istio is configured to use for the load-balancer service used by the gateway.")
-	flag.StringVar(&flagVar.istioIngressServiceName, "istio-ingress-svc-name", "istio-ingressgateway",
-		"The name of the load-balancer service that istio uses for handling its gateway traffic.")
-	flag.StringVar(&flagVar.virtualServiceName, "virtual-svc-name", "kcp-events",
-		"Name of the virtual service resource to be reconciled by the watcher control loop.")
-	flag.StringVar(&flagVar.virtualServiceName, "gateway-name", "lifecycle-manager-kyma-gateway",
-		"Name of the gateway resource that the virtual service will use.")
-	flag.BoolVar(&flagVar.pprof, "pprof", false,
-		"Whether to start up a pprof server.")
-	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
-		"Timeout of Read / Write for the pprof server.")
-	flag.IntVar(&flagVar.rateLimiterBurst, "rate-limiter-burst", rateLimiterBurstDefault,
-		"Indicates the rateLimiterBurstDefault value for the bucket rate limiter.")
-	flag.IntVar(&flagVar.rateLimiterFrequency, "rate-limiter-frequency", rateLimiterFrequencyDefault,
-		"Indicates the bucket rate limiter frequency, signifying no. of events per second.")
-	flag.DurationVar(&flagVar.failureBaseDelay, "failure-base-delay", failureBaseDelayDefault,
-		"Indicates the failure base delay in seconds for rate limiter.")
-	flag.DurationVar(&flagVar.failureMaxDelay, "failure-max-delay", failureMaxDelayDefault,
-		"Indicates the failure max delay in seconds")
-	flag.DurationVar(&flagVar.cacheSyncTimeout, "cache-sync-timeout", defaultCacheSyncTimeout,
-		"Indicates the cache sync timeout in seconds")
-	return flagVar
-}
-
 func setupKymaReconciler(
 	mgr ctrl.Manager,
 	remoteClientCache *remote.ClientCache,
@@ -312,22 +218,21 @@ func setupKymaReconciler(
 	intervals controllers.RequeueIntervals,
 	options controller.Options,
 ) {
-	var skrWebhookChartManager deploy.SKRWebhookChartManager
 	if flagVar.enableKcpWatcher {
 		watcherChartDirInfo, err := os.Stat(flagVar.skrWatcherPath)
 		if err != nil || !watcherChartDirInfo.IsDir() {
 			setupLog.Error(err, "failed to read local skr chart")
 		}
-		skrChartConfig := &deploy.SkrChartManagerConfig{
-			WebhookChartPath:        flagVar.skrWatcherPath,
-			SkrWebhookMemoryLimits:  flagVar.skrWebhookMemoryLimits,
-			SkrWebhookCPULimits:     flagVar.skrWebhookCPULimits,
-			IstioNamespace:          flagVar.istioNamespace,
-			IstioIngressServiceName: flagVar.istioIngressServiceName,
-		}
-		skrWebhookChartManager = deploy.NewSKRWebhookChartManagerImpl(skrChartConfig)
 	}
-
+	skrChartConfig := &deploy.SkrChartConfig{
+		WebhookChartPath:       flagVar.skrWatcherPath,
+		SkrWebhookMemoryLimits: flagVar.skrWebhookMemoryLimits,
+		SkrWebhookCPULimits:    flagVar.skrWebhookCPULimits,
+	}
+	skrWebhookChartManager, err := deploy.ResolveSKRWebhookChartManager(flagVar.enableKcpWatcher, skrChartConfig)
+	if err != nil {
+		setupLog.Error(err, "failed to resolve SKR chart manager")
+	}
 	if err := (&controllers.KymaReconciler{
 		Client:                 mgr.GetClient(),
 		EventRecorder:          mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
@@ -354,13 +259,17 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, intervals controllers.RequeueIn
 	// and we don't have to deal with concurrent write to virtual service.
 	// although eventually the write operation will succeed.
 	options.MaxConcurrentReconciles = 1
+
+	istioConfig := istio.NewConfig(flagVar.virtualServiceName, flagVar.gatewayNamespacedName, &flagVar.gatewaySelector)
+
 	if err := (&controllers.WatcherReconciler{
 		Client:           mgr.GetClient(),
+		EventRecorder:    mgr.GetEventRecorderFor(controllers.WatcherControllerName),
 		Scheme:           mgr.GetScheme(),
 		RestConfig:       mgr.GetConfig(),
 		RequeueIntervals: intervals,
-	}).SetupWithManager(mgr, options, flagVar.virtualServiceName, flagVar.gatewayName); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Watcher")
+	}).SetupWithManager(mgr, options, istioConfig); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", controllers.WatcherControllerName)
 		os.Exit(1)
 	}
 }

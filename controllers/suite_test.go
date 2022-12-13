@@ -23,8 +23,9 @@ import (
 	"testing"
 	"time"
 
-	modulemanagerv1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
 
+	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 	//nolint:gci
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
@@ -42,11 +43,13 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	//+kubebuilder:scaffold:imports
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -81,7 +84,7 @@ var _ = BeforeSuite(func() {
 	// manifest CRD
 	// istio CRDs
 	remoteCrds, err := ParseRemoteCRDs([]string{
-		"https://raw.githubusercontent.com/kyma-project/module-manager/main/operator/config/crd/bases/operator.kyma-project.io_manifests.yaml", //nolint:lll
+		"https://raw.githubusercontent.com/kyma-project/module-manager/main/config/crd/bases/operator.kyma-project.io_manifests.yaml", //nolint:lll
 	})
 	Expect(err).NotTo(HaveOccurred())
 
@@ -106,7 +109,7 @@ var _ = BeforeSuite(func() {
 
 	Expect(operatorv1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
-	Expect(modulemanagerv1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+	Expect(moduleManagerV1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 
@@ -135,9 +138,10 @@ var _ = BeforeSuite(func() {
 
 	remoteClientCache := remote.NewClientCache()
 	err = (&controllers.KymaReconciler{
-		Client:           k8sManager.GetClient(),
-		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		RequeueIntervals: intervals,
+		Client:                 k8sManager.GetClient(),
+		EventRecorder:          k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		RequeueIntervals:       intervals,
+		SKRWebhookChartManager: &deploy.DisabledSKRWebhookChartManager{},
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
 		},
