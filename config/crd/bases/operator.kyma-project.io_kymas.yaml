@@ -45,6 +45,8 @@ spec:
               channel:
                 description: Channel specifies the desired Channel of the Installation,
                   usually targeting different module versions.
+                maxLength: 32
+                minLength: 3
                 pattern: ^[a-z]+$
                 type: string
               modules:
@@ -56,6 +58,8 @@ spec:
                       description: Channel is the desired channel of the Module. If
                         this changes or is set, it will be used to resolve a new ModuleTemplate
                         based on the new resolved resources.
+                      maxLength: 32
+                      minLength: 3
                       pattern: ^[a-z]+$
                       type: string
                     controller:

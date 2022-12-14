@@ -55,6 +55,8 @@ type Module struct {
 	// Channel is the desired channel of the Module. If this changes or is set, it will be used to resolve a new
 	// ModuleTemplate based on the new resolved resources.
 	// +kubebuilder:validation:Pattern:=^[a-z]+$
+	// +kubebuilder:validation:MaxLength:=32
+	// +kubebuilder:validation:MinLength:=3
 	Channel string `json:"channel,omitempty"`
 }
 
@@ -99,6 +101,8 @@ type Sync struct {
 type KymaSpec struct {
 	// Channel specifies the desired Channel of the Installation, usually targeting different module versions.
 	// +kubebuilder:validation:Pattern:=^[a-z]+$
+	// +kubebuilder:validation:MaxLength:=32
+	// +kubebuilder:validation:MinLength:=3
 	Channel string `json:"channel"`
 
 	// Modules specifies the list of modules to be installed

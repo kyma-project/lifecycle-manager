@@ -47,6 +47,8 @@ spec:
                 description: Channel is the targeted channel of the ModuleTemplate.
                   It will be used to directly assign a Template to a target channel.
                   It has to be provided at any given time.
+                maxLength: 32
+                minLength: 3
                 pattern: ^[a-z]+$
                 type: string
               data:
