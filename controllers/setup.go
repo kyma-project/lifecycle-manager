@@ -3,7 +3,11 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"net/http"
 
+	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/security"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -25,12 +29,19 @@ import (
 	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
 )
 
+type SetupUpSetting struct {
+	ListenerAddr                 string
+	EnableDomainNameVerification bool
+}
+
 const (
 	WatcherControllerName = "watcher"
 )
 
 // SetupWithManager sets up the Kyma controller with the Manager.
-func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options, listenerAddr string) error {
+func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
+	options controller.Options, settings SetupUpSetting,
+) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1alpha1.Kyma{}).WithOptions(options).
 		Watches(
 			&source.Kind{Type: &v1alpha1.ModuleTemplate{}},
@@ -45,9 +56,23 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager, options controller.O
 			Log: ctrl.Log, OwnerType: &v1alpha1.Kyma{}, IsController: true,
 		})
 
-	// register listener component
-	runnableListener, eventChannel := listener.RegisterListenerComponent(
-		listenerAddr, v1alpha1.OperatorName,
+	var runnableListener *listener.SKREventListener
+	var eventChannel *source.Channel
+	var verifyFunc listener.Verify
+
+	if settings.EnableDomainNameVerification {
+		// Verifier used to verify incoming listener requests
+		verifyFunc = security.NewRequestVerifier(mgr.GetClient()).Verify
+	} else {
+		verifyFunc = func(r *http.Request, watcherEvtObject *types.WatchEvent) error {
+			return nil
+		}
+	}
+	// register listener component incl. domain name verification
+	runnableListener, eventChannel = listener.RegisterListenerComponent(
+		settings.ListenerAddr,
+		v1alpha1.OperatorName,
+		verifyFunc,
 	)
 
 	// watch event channel

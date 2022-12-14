@@ -81,7 +81,6 @@ func main() {
 	flagVar := defineFlagVar()
 	flag.Parse()
 	ctrl.SetLogger(configLogger())
-
 	if flagVar.pprof {
 		go pprofStartServer(flagVar.pprofAddr, flagVar.pprofServerTimeout)
 	}
@@ -244,7 +243,10 @@ func setupKymaReconciler(
 			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
 			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
 		},
-	}).SetupWithManager(mgr, options, flagVar.listenerAddr); err != nil {
+	}).SetupWithManager(mgr, options, controllers.SetupUpSetting{
+		ListenerAddr:                 flagVar.listenerAddr,
+		EnableDomainNameVerification: flagVar.enableDomainNameVerification,
+	}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
