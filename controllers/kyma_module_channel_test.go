@@ -27,11 +27,10 @@ const (
 
 var _ = Describe("valid channel should be deployed successful", func() {
 	kyma := NewTestKyma("kyma")
-	It(
-		"should create kyma with standard modules in a valid channel", func() {
-			kyma.Spec.Channel = ValidChannel
-			Expect(controlPlaneClient.Create(ctx, kyma)).ToNot(HaveOccurred())
-		})
+	It("should create kyma with standard modules in a valid channel", func() {
+		kyma.Spec.Channel = ValidChannel
+		Expect(controlPlaneClient.Create(ctx, kyma)).ToNot(HaveOccurred())
+	})
 	DescribeTable(
 		"Test Channel Status", func(givenCondition func() error, expectedBehavior func() error) {
 			Eventually(givenCondition, Timeout, Interval).Should(Succeed())
@@ -40,28 +39,28 @@ var _ = Describe("valid channel should be deployed successful", func() {
 		Entry(
 			"When kyma is deployed in valid channel,"+
 				" expect ModuleStatus to be in valid channel",
-			givenModuleTemplateWithChannel(ValidChannel),
+			givenModuleTemplateWithChannel(ValidChannel, true),
 			expectEveryModuleStatusToHaveChannel(kyma.Name, ValidChannel),
 		),
 	)
 })
 
-var _ = Describe("Given invalid channel module template", func() {
+var _ = Describe("Given invalid channel", func() {
 	DescribeTable(
-		"Test module template creation", func(givenCondition func() error) {
+		"Test kyma CR, module template creation", func(givenCondition func() error) {
 			Eventually(givenCondition, Timeout, Interval).Should(Succeed())
 		},
 		Entry(
 			"invalid channel with not allowed characters",
-			givenModuleTemplateWithChannel(InValidChannel),
+			givenModuleTemplateWithChannel(InValidChannel, false),
 		),
 		Entry(
 			"invalid channel with less than min length",
-			givenModuleTemplateWithChannel(InValidMinLengthChannel),
+			givenModuleTemplateWithChannel(InValidMinLengthChannel, false),
 		),
 		Entry(
 			"invalid channel with more than max length",
-			givenModuleTemplateWithChannel(InValidMaxLengthChannel),
+			givenModuleTemplateWithChannel(InValidMaxLengthChannel, false),
 		),
 		Entry(
 			"invalid channel with not allowed characters",
@@ -90,7 +89,7 @@ var _ = Describe("Given invalid channel module template", func() {
 	)
 })
 
-func givenModuleTemplateWithChannel(channel string) func() error {
+func givenModuleTemplateWithChannel(channel string, isValid bool) func() error {
 	return func() error {
 		modules := []v1alpha1.Module{
 			{
@@ -100,7 +99,10 @@ func givenModuleTemplateWithChannel(channel string) func() error {
 			},
 		}
 		err := CreateModuleTemplateSetsForKyma(modules, LowerVersion, channel)
-		return isInvalidError(err)
+		if isValid {
+			return err
+		}
+		return ignoreInvalidError(err)
 	}
 }
 
@@ -109,11 +111,11 @@ func givenKymaWithInvalidChannel(channel string) func() error {
 		kyma := NewTestKyma("kyma")
 		kyma.Spec.Channel = channel
 		err := controlPlaneClient.Create(ctx, kyma)
-		return isInvalidError(err)
+		return ignoreInvalidError(err)
 	}
 }
 
-func isInvalidError(err error) error {
+func ignoreInvalidError(err error) error {
 	var statusError *apiErrors.StatusError
 	ok := errors.As(err, &statusError)
 	Expect(ok).Should(BeTrue())
@@ -133,7 +135,7 @@ func givenKymaSpecModulesWithInvalidChannel(channel string) func() error {
 				Channel:        channel,
 			})
 		err := controlPlaneClient.Create(ctx, kyma)
-		return isInvalidError(err)
+		return ignoreInvalidError(err)
 	}
 }
 
