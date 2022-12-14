@@ -25,10 +25,11 @@ const (
 	HigherVersion           = "0.0.2"
 )
 
-var _ = Describe("A valid channel should be deployed successful", func() {
+var _ = Describe("valid channel should be deployed successful", func() {
 	kyma := NewTestKyma("kyma")
 	It(
-		"should create kyma with standard modules in default channel normally", func() {
+		"should create kyma with standard modules in a valid channel", func() {
+			kyma.Spec.Channel = ValidChannel
 			Expect(controlPlaneClient.Create(ctx, kyma)).ToNot(HaveOccurred())
 		})
 	DescribeTable(
@@ -39,7 +40,7 @@ var _ = Describe("A valid channel should be deployed successful", func() {
 		Entry(
 			"When kyma is deployed in valid channel,"+
 				" expect ModuleStatus to be in valid channel",
-			whenDeployModuleTemplate(kyma, ValidChannel),
+			givenModuleTemplateWithChannel(ValidChannel),
 			expectEveryModuleStatusToHaveChannel(kyma.Name, ValidChannel),
 		),
 	)
@@ -52,15 +53,15 @@ var _ = Describe("Given invalid channel module template", func() {
 		},
 		Entry(
 			"invalid channel with not allowed characters",
-			givenModuleTemplateWithInvalidChannel(InValidChannel),
+			givenModuleTemplateWithChannel(InValidChannel),
 		),
 		Entry(
 			"invalid channel with less than min length",
-			givenModuleTemplateWithInvalidChannel(InValidMinLengthChannel),
+			givenModuleTemplateWithChannel(InValidMinLengthChannel),
 		),
 		Entry(
 			"invalid channel with more than max length",
-			givenModuleTemplateWithInvalidChannel(InValidMaxLengthChannel),
+			givenModuleTemplateWithChannel(InValidMaxLengthChannel),
 		),
 		Entry(
 			"invalid channel with not allowed characters",
@@ -89,15 +90,15 @@ var _ = Describe("Given invalid channel module template", func() {
 	)
 })
 
-func givenModuleTemplateWithInvalidChannel(channel string) func() error {
+func givenModuleTemplateWithChannel(channel string) func() error {
 	return func() error {
-		var modules []v1alpha1.Module
-		modules = append(
-			modules, v1alpha1.Module{
+		modules := []v1alpha1.Module{
+			{
 				ControllerName: "manifest",
 				Name:           "module-with-" + channel,
 				Channel:        channel,
-			})
+			},
+		}
 		err := CreateModuleTemplateSetsForKyma(modules, LowerVersion, channel)
 		return isInvalidError(err)
 	}
@@ -235,18 +236,5 @@ func expectEveryModuleStatusToHaveChannel(kymaName, channel string) func() error
 func whenUpdatingEveryModuleChannel(kymaName, channel string) func() error {
 	return func() error {
 		return UpdateKymaModuleChannels(kymaName, channel)
-	}
-}
-
-func whenDeployModuleTemplate(kyma *v1alpha1.Kyma, channel string) func() error {
-	return func() error {
-		var modules []v1alpha1.Module
-		modules = append(
-			modules, v1alpha1.Module{
-				ControllerName: "manifest",
-				Name:           "module-with-" + channel,
-				Channel:        channel,
-			})
-		return CreateModuleTemplateSetsForKyma(kyma.Spec.Modules, LowerVersion, channel)
 	}
 }
