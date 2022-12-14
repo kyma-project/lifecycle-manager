@@ -2,14 +2,18 @@ package istio
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 
+	"github.com/go-logr/logr"
 	istioapi "istio.io/api/networking/v1beta1"
 	istioclientapi "istio.io/client-go/pkg/apis/networking/v1beta1"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
@@ -19,23 +23,49 @@ const (
 	firstElementIdx     = 0
 	vsDeletionThreshold = 1
 	contractVersion     = "v1"
+	prefixFormat        = "/%s/%s/event"
 )
+
+var (
+	vsHost                     = "listener.kyma.cloud.sap" //nolint:gochecknoglobals
+	errNoGatewayConfigured     = errors.New("error processing Watcher: No istio gateway configured")
+	errCantFindMatchingGateway = errors.New("can't find matching Istio Gateway")
+)
+
+type Config struct {
+	VirtualServiceName string
+	Gateway            v1alpha1.GatewayConfig
+}
+
+func NewConfig(vsn, gnsn string, gsel *metav1.LabelSelector) Config {
+	return Config{
+		VirtualServiceName: vsn,
+		Gateway: v1alpha1.GatewayConfig{
+			NamespacedName: gnsn,
+			LabelSelector:  gsel,
+		},
+	}
+}
 
 type Client struct {
 	istioclient.Interface
-	virtualServiceName string
-	gatewayName        string
+	config        Config
+	eventRecorder record.EventRecorder
+	logger        logr.Logger
 }
 
-func NewVersionedIstioClient(cfg *rest.Config, virtualServiceName, gatewayName string) (*Client, error) {
+func NewVersionedIstioClient(cfg *rest.Config, config Config, recorder record.EventRecorder,
+	logger logr.Logger,
+) (*Client, error) {
 	cs, err := istioclient.NewForConfig(cfg)
 	if err != nil {
 		return nil, err
 	}
 	return &Client{
-		Interface:          cs,
-		virtualServiceName: virtualServiceName,
-		gatewayName:        gatewayName,
+		Interface:     cs,
+		eventRecorder: recorder,
+		config:        config,
+		logger:        logger,
 	}, nil
 }
 
@@ -47,7 +77,7 @@ type customClientErr struct {
 func (c *Client) getVirtualService(ctx context.Context) (*istioclientapi.VirtualService, *customClientErr) {
 	virtualService, err := c.NetworkingV1beta1().
 		VirtualServices(metav1.NamespaceDefault).
-		Get(ctx, c.virtualServiceName, metav1.GetOptions{})
+		Get(ctx, c.config.VirtualServiceName, metav1.GetOptions{})
 	if client.IgnoreNotFound(err) != nil {
 		return nil, &customClientErr{
 			Err:        fmt.Errorf("failed to fetch virtual service %w", err),
@@ -68,23 +98,80 @@ func (c *Client) createVirtualService(ctx context.Context, watcher *v1alpha1.Wat
 	if watcher == nil {
 		return &istioclientapi.VirtualService{}, nil
 	}
-	_, err := c.NetworkingV1beta1().
-		Gateways(metav1.NamespaceDefault).
-		Get(ctx, c.gatewayName, metav1.GetOptions{})
+
+	gateway, err := c.lookupGateway(ctx, watcher)
 	if err != nil {
-		return nil, fmt.Errorf("error getting configured istio gateway: %w", err)
+		return nil, err
 	}
+
 	virtualSvc := &istioclientapi.VirtualService{}
-	virtualSvc.SetName(c.virtualServiceName)
+	virtualSvc.SetName(c.config.VirtualServiceName)
 	virtualSvc.SetNamespace(metav1.NamespaceDefault)
-	virtualSvc.Spec.Gateways = append(virtualSvc.Spec.Gateways, c.gatewayName)
-	virtualSvc.Spec.Hosts = append(virtualSvc.Spec.Hosts, "*")
+	virtualSvc.Spec.Gateways = append(virtualSvc.Spec.Gateways, client.ObjectKeyFromObject(gateway).String())
+	virtualSvc.Spec.Hosts = append(virtualSvc.Spec.Hosts, vsHost)
 	virtualSvc.Spec.Http = []*istioapi.HTTPRoute{
 		prepareIstioHTTPRouteForCR(watcher),
 	}
+
 	return c.NetworkingV1beta1().
 		VirtualServices(metav1.NamespaceDefault).
 		Create(ctx, virtualSvc, metav1.CreateOptions{})
+}
+
+func (c *Client) lookupGateway(ctx context.Context, watcher *v1alpha1.Watcher) (*istioclientapi.Gateway, error) {
+	gName, gSel := mergeSelectorCfg(c.config.Gateway, watcher.Spec.Gateway)
+
+	if gName == "" && gSel == nil {
+		c.eventRecorder.Event(watcher, "Warning", "WatcherGatewayNotConfigured",
+			"Watcher: Gateway for the VirtualService not configured")
+		return nil, errNoGatewayConfigured
+	}
+
+	ls, err := metav1.LabelSelectorAsSelector(gSel)
+	if err != nil {
+		return nil, fmt.Errorf("error converting label selector: %w", err)
+	}
+	lss := ls.String()
+
+	// Gateway namespacedName takes precedence as it is more specific than label selector lookup
+	if gName != "" {
+		namespace, name := splitOnSlash(gName)
+		gateway, err := c.NetworkingV1beta1().
+			Gateways(namespace).
+			Get(ctx, name, metav1.GetOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("error getting configured istio gateway: %w", err)
+		}
+
+		return gateway, nil
+	}
+
+	// fallback to label selector
+	lo := metav1.ListOptions{
+		LabelSelector: lss,
+	}
+	gateways, err := c.NetworkingV1beta1().
+		Gateways(metav1.NamespaceAll).
+		List(ctx, lo)
+	if err != nil {
+		return nil, fmt.Errorf("error looking up Istio gateway with the label selector %q: %w", lss, err)
+	}
+
+	if len(gateways.Items) == 0 {
+		c.eventRecorder.Event(watcher, "Warning", "WatcherGatewayNotFound",
+			"Watcher: Gateway for the VirtualService not found")
+		return nil, fmt.Errorf("%w. Label selector: %q", errCantFindMatchingGateway, lss)
+	}
+
+	if len(gateways.Items) > 1 {
+		gwKey := client.ObjectKeyFromObject(gateways.Items[0])
+		c.eventRecorder.Event(watcher, "Warning", "WatcherMultipleGatewaysFound",
+			fmt.Sprintf("Watcher: Found multiple matching Istio Gateways for the VirtualService. Selecting %s", gwKey.String()))
+		c.logger.Info("Warning: Found multiple matching Istio gateways. Selecting the first one",
+			"labelSelector", lss, "match count", len(gateways.Items), "selected", gwKey.String())
+	}
+
+	return gateways.Items[0], nil
 }
 
 func (c *Client) updateVirtualService(ctx context.Context, virtualService *istioclientapi.VirtualService) error {
@@ -117,7 +204,7 @@ func (c *Client) IsListenerHTTPRouteConfigured(ctx context.Context, obj *v1alpha
 func (c *Client) IsVsDeleted(ctx context.Context) (bool, error) {
 	_, err := c.NetworkingV1beta1().
 		VirtualServices(metav1.NamespaceDefault).
-		Get(ctx, c.virtualServiceName, metav1.GetOptions{})
+		Get(ctx, c.config.VirtualServiceName, metav1.GetOptions{})
 	if apierrors.IsNotFound(err) {
 		return true, nil
 	}
@@ -163,7 +250,7 @@ func (c *Client) RemoveVirtualServiceConfigForCR(ctx context.Context, watcherObj
 		// last http route is being deleted: remove the virtual service resource
 		return c.NetworkingV1beta1().
 			VirtualServices(metav1.NamespaceDefault).
-			Delete(ctx, c.virtualServiceName, metav1.DeleteOptions{})
+			Delete(ctx, c.config.VirtualServiceName, metav1.DeleteOptions{})
 	}
 
 	routeIdx := lookupHTTPRouteByObjectKey(virtualService.Spec.Http, watcherObjKey)
@@ -215,7 +302,7 @@ func prepareIstioHTTPRouteForCR(obj *v1alpha1.Watcher) *istioapi.HTTPRoute {
 			{
 				Uri: &istioapi.StringMatch{
 					MatchType: &istioapi.StringMatch_Prefix{ //nolint:nosnakecase
-						Prefix: fmt.Sprintf("/%s/%s/event", contractVersion, obj.GetModuleName()),
+						Prefix: fmt.Sprintf(prefixFormat, contractVersion, obj.GetModuleName()),
 					},
 				},
 			},
@@ -235,4 +322,28 @@ func prepareIstioHTTPRouteForCR(obj *v1alpha1.Watcher) *istioapi.HTTPRoute {
 
 func destinationHost(serviceName, serviceNamespace string) string {
 	return fmt.Sprintf("%s.%s.svc.cluster.local", serviceName, serviceNamespace)
+}
+
+func splitOnSlash(s string) (string, string) {
+	res := strings.Split(s, "/")
+	return res[0], res[1]
+}
+
+func mergeSelectorCfg(fromConfig v1alpha1.GatewayConfig, fromWatcher *v1alpha1.GatewayConfig) (
+	string, *metav1.LabelSelector,
+) {
+	gName := fromConfig.NamespacedName
+	gSel := fromConfig.LabelSelector
+
+	if fromWatcher != nil {
+		if fromWatcher.NamespacedName != "" {
+			gName = fromWatcher.NamespacedName
+		}
+
+		if fromWatcher.LabelSelector != nil {
+			gSel = fromWatcher.LabelSelector
+		}
+	}
+
+	return gName, gSel
 }

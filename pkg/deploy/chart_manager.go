@@ -8,10 +8,12 @@ import (
 	"strconv"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-	modulelib "github.com/kyma-project/module-manager/operator/pkg/manifest"
-	corev1 "k8s.io/api/core/v1"
+	moduleLib "github.com/kyma-project/module-manager/pkg/manifest"
+	moduleTypes "github.com/kyma-project/module-manager/pkg/types"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -30,8 +32,8 @@ type SKRWebhookChartManager interface {
 type DisabledSKRWebhookChartManager struct{}
 
 // ResolveSKRWebhookChartManager resolves to enabled or disabled chart manager.
-// nolint: ireturn
-func ResolveSKRWebhookChartManager(
+
+func ResolveSKRWebhookChartManager( //nolint:ireturn
 	isWatcherEnabled bool,
 	skrConfigs ...*SkrChartConfig,
 ) (SKRWebhookChartManager, error) {
@@ -193,11 +195,18 @@ func generateWatchableConfigs(watcherList *v1alpha1.WatcherList) map[string]Watc
 }
 
 func (m *EnabledSKRWebhookChartManager) installOrRemoveChartOnSKR(ctx context.Context,
-	deployInfo modulelib.InstallInfo, mode Mode,
+	deployInfo moduleTypes.InstallInfo, mode Mode,
 ) error {
 	logger := logf.FromContext(ctx)
 	if mode == ModeUninstall {
-		uninstalled, err := modulelib.UninstallChart(&logger, deployInfo, nil, nil)
+		uninstalled, err := moduleLib.UninstallChart(
+			moduleLib.OperationOptions{
+				Logger:             logger,
+				InstallInfo:        &deployInfo,
+				ResourceTransforms: nil,
+				PostRuns:           nil,
+				Cache:              nil,
+			})
 		if err != nil {
 			return fmt.Errorf("failed to uninstall webhook config: %w", err)
 		}
@@ -208,7 +217,14 @@ func (m *EnabledSKRWebhookChartManager) installOrRemoveChartOnSKR(ctx context.Co
 		return nil
 	}
 	// TODO(khlifi411): verify webhook configuration with watchers' configuration before re-installing the chart
-	ready, err := modulelib.ConsistencyCheck(&logger, deployInfo, nil, nil)
+	ready, err := moduleLib.ConsistencyCheck(
+		moduleLib.OperationOptions{
+			Logger:             logger,
+			InstallInfo:        &deployInfo,
+			ResourceTransforms: nil,
+			PostRuns:           nil,
+			Cache:              nil,
+		})
 	if err != nil {
 		return fmt.Errorf("failed to verify webhook resources: %w", err)
 	}
@@ -216,7 +232,14 @@ func (m *EnabledSKRWebhookChartManager) installOrRemoveChartOnSKR(ctx context.Co
 		logger.V(1).Info("chart resources already installed, nothing to do!")
 		return nil
 	}
-	installed, err := modulelib.InstallChart(&logger, deployInfo, nil, nil)
+	installed, err := moduleLib.InstallChart(
+		moduleLib.OperationOptions{
+			Logger:             logger,
+			InstallInfo:        &deployInfo,
+			ResourceTransforms: nil,
+			PostRuns:           nil,
+			Cache:              nil,
+		})
 	if err != nil {
 		return fmt.Errorf("failed to install webhook config: %w", err)
 	}

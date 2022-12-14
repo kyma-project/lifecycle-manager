@@ -3,6 +3,8 @@ kind: Gateway
 metadata:
   name: lifecycle-manager-kyma-gateway
   namespace: default
+  labels:
+    operator.kyma-project.io/watcher-gateway: default
 spec:
   selector:
     istio: ingressgateway
