@@ -59,7 +59,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 			Expect(controlPlaneClient.Update(suiteCtx, latestWatcher)).To(Succeed())
 			latestKyma := &v1alpha1.Kyma{}
 			Expect(controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(kyma), latestKyma)).To(Succeed())
-			latestKyma.Spec.Channel = v1alpha1.ChannelFast
+			latestKyma.Spec.Channel = v1alpha1.DefaultChannel
 			Expect(controlPlaneClient.Update(suiteCtx, latestKyma)).To(Succeed())
 			webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
 			Eventually(isWebhookDeployed(suiteCtx, runtimeClient, webhookConfig), Timeout, Interval).Should(Succeed())

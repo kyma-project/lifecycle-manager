@@ -132,7 +132,7 @@ type Lookup interface {
 }
 
 func NewTemplateLookup(client client.Reader, module operatorv1alpha1.Module,
-	defaultChannel operatorv1alpha1.Channel,
+	defaultChannel string,
 ) *TemplateLookup {
 	return &TemplateLookup{
 		reader:         client,
@@ -144,7 +144,7 @@ func NewTemplateLookup(client client.Reader, module operatorv1alpha1.Module,
 type TemplateLookup struct {
 	reader         client.Reader
 	module         operatorv1alpha1.Module
-	defaultChannel operatorv1alpha1.Channel
+	defaultChannel string
 }
 
 func (c *TemplateLookup) WithContext(ctx context.Context) (*ModuleTemplate, error) {
@@ -156,7 +156,7 @@ func (c *TemplateLookup) WithContext(ctx context.Context) (*ModuleTemplate, erro
 
 	if err := c.reader.List(ctx, templateList,
 		selector,
-		index.TemplateChannelField.WithValue(string(desiredChannel)),
+		index.TemplateChannelField.WithValue(desiredChannel),
 	); err != nil {
 		return nil, err
 	}
@@ -208,8 +208,8 @@ func (c *TemplateLookup) WithContext(ctx context.Context) (*ModuleTemplate, erro
 	}, nil
 }
 
-func (c *TemplateLookup) getDesiredChannel() operatorv1alpha1.Channel {
-	var desiredChannel operatorv1alpha1.Channel
+func (c *TemplateLookup) getDesiredChannel() string {
+	var desiredChannel string
 
 	switch {
 	case c.module.Channel != "":
