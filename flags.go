@@ -13,16 +13,17 @@ import (
 )
 
 const (
-	defaultRequeueSuccessInterval = 20 * time.Second
-	defaultClientQPS              = 150
-	defaultClientBurst            = 150
-	defaultPprofServerTimeout     = 90 * time.Second
-	rateLimiterBurstDefault       = 200
-	rateLimiterFrequencyDefault   = 30
-	failureBaseDelayDefault       = 100 * time.Millisecond
-	failureMaxDelayDefault        = 1000 * time.Second
-	defaultCacheSyncTimeout       = 2 * time.Minute
-	namespacedNamePartsCnt        = 2
+	defaultRequeueSuccessInterval       = 20 * time.Second
+	defaultClientQPS                    = 150
+	defaultClientBurst                  = 150
+	defaultPprofServerTimeout           = 90 * time.Second
+	rateLimiterBurstDefault             = 200
+	rateLimiterFrequencyDefault         = 30
+	failureBaseDelayDefault             = 100 * time.Millisecond
+	failureMaxDelayDefault              = 1000 * time.Second
+	defaultCacheSyncTimeout             = 2 * time.Minute
+	namespacedNamePartsCnt              = 2
+	defaultListenerHTTPPortLocalMapping = 9080
 )
 
 var (
@@ -78,8 +79,8 @@ func defineFlagVar() *FlagVar { //nolint:funlen
 			"Example: \"label1=value1,label2=value2\"")
 	flag.BoolVar(&flagVar.enableWatcherLocalTesting, "enable-watcher-local-testing", false,
 		"Enabling KCP Watcher two-cluster setup to be tested locally using k3d")
-	flag.IntVar(&flagVar.listenerHTTPPortLocalMapping, "listener-http-local-mapping", 9080,
-		`Port that is mapped to HTTP port of the local k3d cluster using
+	flag.IntVar(&flagVar.listenerHTTPPortLocalMapping, "listener-http-local-mapping",
+		defaultListenerHTTPPortLocalMapping, `Port that is mapped to HTTP port of the local k3d cluster using
  			--port 9080:80@loadbalancer when creating the KCP cluster`)
 	flag.BoolVar(&flagVar.pprof, "pprof", false,
 		"Whether to start up a pprof server.")
