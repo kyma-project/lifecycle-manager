@@ -58,16 +58,11 @@ func allCRsDeleted() func(customIstioClient *istio.Client) {
 var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	var customIstioClient *istio.Client
 	var err error
-	kymaSample := &v1alpha1.Kyma{}
 	BeforeAll(func() {
-		// create kyma resource
-		kymaSample = NewTestKyma("kyma-sample")
-
-		istioCfg := istio.NewConfig(virtualServiceName, "", v1alpha1.DefaultIstioGatewaySelector())
+		istioCfg := istio.NewConfig(virtualServiceName, "", v1alpha1.DefaultIstioGatewaySelector(), false)
 		customIstioClient, err = istio.NewVersionedIstioClient(restCfg, istioCfg,
 			k8sManager.GetEventRecorderFor(controllers.WatcherControllerName), ctrl.Log.WithName("istioClient"))
 		Expect(err).ToNot(HaveOccurred())
-		Expect(controlPlaneClient.Create(suiteCtx, kymaSample)).To(Succeed())
 		// create WatcherCRs
 		for idx, component := range centralComponents {
 			watcherCR := createWatcherCR(component, isEven(idx))
@@ -76,11 +71,6 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 			// verify
 			Eventually(isCrVsConfigured(suiteCtx, customIstioClient, watcherCR)).Should(BeTrue())
 		}
-	})
-
-	AfterAll(func() {
-		// clean up kyma CR
-		Expect(controlPlaneClient.Delete(suiteCtx, kymaSample)).To(Succeed())
 	})
 
 	DescribeTable("given watcherCR reconcile loop",

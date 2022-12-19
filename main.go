@@ -224,9 +224,11 @@ func setupKymaReconciler(
 		}
 	}
 	skrChartConfig := &deploy.SkrChartConfig{
-		WebhookChartPath:       flagVar.skrWatcherPath,
-		SkrWebhookMemoryLimits: flagVar.skrWebhookMemoryLimits,
-		SkrWebhookCPULimits:    flagVar.skrWebhookCPULimits,
+		WebhookChartPath:           flagVar.skrWatcherPath,
+		SkrWebhookMemoryLimits:     flagVar.skrWebhookMemoryLimits,
+		SkrWebhookCPULimits:        flagVar.skrWebhookCPULimits,
+		WatcherLocalTestingEnabled: flagVar.enableWatcherLocalTesting,
+		GatewayHTTPPortMapping:     flagVar.listenerHTTPPortLocalMapping,
 	}
 	skrWebhookChartManager, err := deploy.ResolveSKRWebhookChartManager(flagVar.enableKcpWatcher, skrChartConfig)
 	if err != nil {
@@ -262,7 +264,8 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, intervals controllers.RequeueIn
 	// although eventually the write operation will succeed.
 	options.MaxConcurrentReconciles = 1
 
-	istioConfig := istio.NewConfig(flagVar.virtualServiceName, flagVar.gatewayNamespacedName, &flagVar.gatewaySelector)
+	istioConfig := istio.NewConfig(flagVar.virtualServiceName, flagVar.gatewayNamespacedName, &flagVar.gatewaySelector,
+		flagVar.enableWatcherLocalTesting)
 
 	if err := (&controllers.WatcherReconciler{
 		Client:           mgr.GetClient(),

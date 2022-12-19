@@ -15,5 +15,5 @@ configMapGenerator:
 
 images:
 - name: controller
-  newName: eu.gcr.io/kyma-project/lifecycle-manager
-  newTag: latest
+  newName: k3d-registry.localhost:5111/lifecycle-manager
+  newTag: 0.0.2

@@ -17,8 +17,22 @@ commonLabels:
   app.kubernetes.io/managed-by: kustomize
   app.kubernetes.io/part-of: manual-deployment
 
+patches:
+  - patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --enable-watcher-local-testing
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --listener-http-local-mapping=9080
+    target:
+      kind: Deployment
+
 patchesJson6902:
   - patch: |-
+      - op: replace
+        path: /spec/gateway/namespacedName
+        value: default/lifecycle-manager-kyma-gateway
       - op: replace
         path: /spec/serviceInfo/name
         value: klm-event-service
@@ -37,6 +51,12 @@ patchesJson6902:
       - op: replace
         path: /metadata/name
         value: lifecycle-manager-kyma-gateway
+      - op: replace
+        path: /spec/servers/0/hosts/0
+        value: "*"
+      - op: replace
+        path: /spec/servers/0/port/number
+        value: 80
     target:
       group: networking.istio.io
       version: v1beta1
@@ -47,7 +67,7 @@ components:
   - ../crd
   - ../rbac
   # [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
-  - ../watcher_local
+  - ../watcher
   # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
   - ../istio
   # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in

@@ -13,7 +13,8 @@ spec:
     name: event-service
     port: 8082
     namespace: kcp-system
-
+  gateway:
+    namespacedName: default/kyma-gateway
 ---
 
 apiVersion: v1

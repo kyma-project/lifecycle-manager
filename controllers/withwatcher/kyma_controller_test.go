@@ -3,6 +3,8 @@ package withwatcher_test
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 
@@ -161,11 +163,9 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1
 	})
 
 	BeforeEach(func() {
+		By("deleting rendered manifests")
+		Expect(os.RemoveAll(filepath.Join(webhookChartPath, "manifest"))).To(Succeed())
 		By("get latest kyma CR")
-		Expect(
-			controlPlaneClient.Get(
-				suiteCtx, client.ObjectKey{
-					Name: kyma.Name, Namespace: metav1.NamespaceDefault,
-				}, kyma)).Should(Succeed())
+		Expect(controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(kyma), kyma)).Should(Succeed())
 	})
 }

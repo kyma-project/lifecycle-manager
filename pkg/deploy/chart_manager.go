@@ -32,7 +32,6 @@ type SKRWebhookChartManager interface {
 type DisabledSKRWebhookChartManager struct{}
 
 // ResolveSKRWebhookChartManager resolves to enabled or disabled chart manager.
-
 func ResolveSKRWebhookChartManager( //nolint:ireturn
 	isWatcherEnabled bool,
 	skrConfigs ...*SkrChartConfig,

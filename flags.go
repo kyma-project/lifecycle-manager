@@ -60,7 +60,7 @@ func defineFlagVar() *FlagVar { //nolint:funlen
 		"Enabling Validation/Conversion Webhooks.")
 	flag.BoolVar(&flagVar.enableKcpWatcher, "enable-kcp-watcher", false,
 		"Enabling KCP Watcher to reconcile Watcher CRs created by KCP run operators")
-	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "charts/skr-webhook",
+	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "./skr-webhook",
 		"The path to the skr watcher chart.")
 	flag.StringVar(&flagVar.skrWebhookMemoryLimits, "skr-webhook-memory-limits", "200Mi",
 		"The resources.limits.memory for skr webhook.")
@@ -76,6 +76,11 @@ func defineFlagVar() *FlagVar { //nolint:funlen
 		"gateway-selector", "Label selector of the gateway resource that the virtual service will use. "+
 			"Ignored if gateway-ns-name flag is specified. Format: K8s label selector expression. "+
 			"Example: \"label1=value1,label2=value2\"")
+	flag.BoolVar(&flagVar.enableWatcherLocalTesting, "enable-watcher-local-testing", false,
+		"Enabling KCP Watcher two-cluster setup to be tested locally using k3d")
+	flag.IntVar(&flagVar.listenerHTTPPortLocalMapping, "listener-http-local-mapping", 9080,
+		`Port that is mapped to HTTP port of the local k3d cluster using
+ 			--port 9080:80@loadbalancer when creating the KCP cluster`)
 	flag.BoolVar(&flagVar.pprof, "pprof", false,
 		"Whether to start up a pprof server.")
 	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
@@ -113,6 +118,8 @@ type FlagVar struct {
 	virtualServiceName                                              string
 	gatewayNamespacedName                                           string
 	gatewaySelector                                                 metav1.LabelSelector
+	enableWatcherLocalTesting                                       bool
+	listenerHTTPPortLocalMapping                                    int
 	pprof                                                           bool
 	pprofAddr                                                       string
 	pprofServerTimeout                                              time.Duration

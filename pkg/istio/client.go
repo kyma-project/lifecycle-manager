@@ -24,22 +24,29 @@ const (
 	vsDeletionThreshold = 1
 	contractVersion     = "v1"
 	prefixFormat        = "/%s/%s/event"
+	vsHost              = "listener.kyma.cloud.sap"
+	localTestingVsHost  = "*"
 )
 
 var (
-	vsHost                     = "listener.kyma.cloud.sap" //nolint:gochecknoglobals
 	errNoGatewayConfigured     = errors.New("error processing Watcher: No istio gateway configured")
 	errCantFindMatchingGateway = errors.New("can't find matching Istio Gateway")
 )
 
 type Config struct {
 	VirtualServiceName string
+	VirtualServiceHost string
 	Gateway            v1alpha1.GatewayConfig
 }
 
-func NewConfig(vsn, gnsn string, gsel *metav1.LabelSelector) Config {
+func NewConfig(vsn, gnsn string, gsel *metav1.LabelSelector, watcherLocalTesting bool) Config {
+	vsh := vsHost
+	if watcherLocalTesting {
+		vsh = localTestingVsHost
+	}
 	return Config{
 		VirtualServiceName: vsn,
+		VirtualServiceHost: vsh,
 		Gateway: v1alpha1.GatewayConfig{
 			NamespacedName: gnsn,
 			LabelSelector:  gsel,
@@ -108,7 +115,7 @@ func (c *Client) createVirtualService(ctx context.Context, watcher *v1alpha1.Wat
 	virtualSvc.SetName(c.config.VirtualServiceName)
 	virtualSvc.SetNamespace(metav1.NamespaceDefault)
 	virtualSvc.Spec.Gateways = append(virtualSvc.Spec.Gateways, client.ObjectKeyFromObject(gateway).String())
-	virtualSvc.Spec.Hosts = append(virtualSvc.Spec.Hosts, vsHost)
+	virtualSvc.Spec.Hosts = append(virtualSvc.Spec.Hosts, c.config.VirtualServiceHost)
 	virtualSvc.Spec.Http = []*istioapi.HTTPRoute{
 		prepareIstioHTTPRouteForCR(watcher),
 	}
