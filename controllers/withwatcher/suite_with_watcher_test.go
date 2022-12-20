@@ -176,7 +176,7 @@ var _ = BeforeSuite(func() {
 		Expect(controlPlaneClient.Create(suiteCtx, istioResource)).To(Succeed())
 	}
 
-	istioCfg := istio.NewConfig(virtualServiceName, "", operatorv1alpha1.DefaultIstioGatewaySelector())
+	istioCfg := istio.NewConfig(virtualServiceName)
 	err = (&controllers.WatcherReconciler{
 		Client:           k8sManager.GetClient(),
 		RestConfig:       k8sManager.GetConfig(),

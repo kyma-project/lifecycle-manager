@@ -63,7 +63,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 		// create kyma resource
 		kymaSample = NewTestKyma("kyma-sample")
 
-		istioCfg := istio.NewConfig(virtualServiceName, "", v1alpha1.DefaultIstioGatewaySelector())
+		istioCfg := istio.NewConfig(virtualServiceName)
 		customIstioClient, err = istio.NewVersionedIstioClient(restCfg, istioCfg,
 			k8sManager.GetEventRecorderFor(controllers.WatcherControllerName), ctrl.Log.WithName("istioClient"))
 		Expect(err).ToNot(HaveOccurred())

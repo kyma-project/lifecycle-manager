@@ -4,6 +4,8 @@ kind: Gateway
 metadata:
   name: kyma-gateway
   namespace: default
+  labels:
+    operator.kyma-project.io/watcher-gateway: default
   annotations:
     # When the client connection is mTLS, reset the XFCC header with the client certificate information and send it to the next hop.
     # This is being used to verify incoming requests
