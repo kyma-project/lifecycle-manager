@@ -47,7 +47,7 @@ make -C $KLM_PATH docker-push IMG=$K3D_REG/lifecycle-manager:$KLM_VERSION
 Run the following command to deploy lifecycle-manager on the KCP cluster:
 ```shell
 make -C $KLM_PATH install && \
-make -C $KLM_PATH local-deploy IMG=$K3D_REG/lifecycle-manager:$KLM_VERSION
+make -C $KLM_PATH local-deploy-with-watcher IMG=$K3D_REG/lifecycle-manager:$KLM_VERSION
 ```
 
 ### Apply sample module templates for sample-kyma:
