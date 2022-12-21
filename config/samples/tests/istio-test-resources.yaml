@@ -10,7 +10,7 @@ spec:
     istio: ingressgateway
   servers:
     - hosts:
-        - "*"
+        - "listener.test.kyma.cloud.sap"
       port:
         name: http
         number: 80
