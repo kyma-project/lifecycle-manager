@@ -120,8 +120,8 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 		[]TableEntry{
 			Entry("when watcherCR specs are updated, "+
 				"expect VirtualService http route configured correctly", cRSpecsUpdates()),
-			// Entry("when watcherCR specs are updated, "+
-			//	"expect VirtualService gateways and hosts configured correctly", checkWatcherCRSpecsGateway()),
+			Entry("when watcherCR specs are updated, "+
+				"expect VirtualService gateways and hosts configured correctly", checkWatcherCRSpecsGateway()),
 			Entry("when one WatcherCR is deleted, "+
 				"expect related VirtualService http route removed", oneCRDeleted()),
 			Entry("when all WatcherCRs are deleted,"+
