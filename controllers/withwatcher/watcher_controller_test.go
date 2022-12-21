@@ -60,7 +60,6 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	var err error
 
 	BeforeAll(func() {
-
 		istioCfg := istio.NewConfig(virtualServiceName, "", v1alpha1.DefaultIstioGatewaySelector())
 		customIstioClient, err = istio.NewVersionedIstioClient(restCfg, istioCfg,
 			k8sManager.GetEventRecorderFor(controllers.WatcherControllerName), ctrl.Log.WithName("istioClient"))

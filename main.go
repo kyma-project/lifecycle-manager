@@ -217,21 +217,20 @@ func setupKymaReconciler(
 	intervals controllers.RequeueIntervals,
 	options controller.Options,
 ) {
+	var skrWebhookChartManager deploy.SKRWebhookChartManager
 	if flagVar.enableKcpWatcher {
 		watcherChartDirInfo, err := os.Stat(flagVar.skrWatcherPath)
 		if err != nil || !watcherChartDirInfo.IsDir() {
 			setupLog.Error(err, "failed to read local skr chart")
 		}
+		skrChartConfig := &deploy.SkrChartManagerConfig{
+			WebhookChartPath:       flagVar.skrWatcherPath,
+			SkrWebhookMemoryLimits: flagVar.skrWebhookMemoryLimits,
+			SkrWebhookCPULimits:    flagVar.skrWebhookCPULimits,
+		}
+		skrWebhookChartManager = deploy.NewSKRWebhookChartManagerImpl(skrChartConfig)
 	}
-	skrChartConfig := &deploy.SkrChartConfig{
-		WebhookChartPath:       flagVar.skrWatcherPath,
-		SkrWebhookMemoryLimits: flagVar.skrWebhookMemoryLimits,
-		SkrWebhookCPULimits:    flagVar.skrWebhookCPULimits,
-	}
-	skrWebhookChartManager, err := deploy.ResolveSKRWebhookChartManager(flagVar.enableKcpWatcher, skrChartConfig)
-	if err != nil {
-		setupLog.Error(err, "failed to resolve SKR chart manager")
-	}
+
 	if err := (&controllers.KymaReconciler{
 		Client:                 mgr.GetClient(),
 		EventRecorder:          mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),

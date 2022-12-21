@@ -18,11 +18,12 @@ package withwatcher_test
 
 import (
 	"context"
-	"github.com/go-logr/logr"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/go-logr/logr"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -75,7 +76,7 @@ var (
 	restCfg            *rest.Config                 //nolint:gochecknoglobals
 	istioResources     []*unstructured.Unstructured //nolint:gochecknoglobals
 	remoteClientCache  *remote.ClientCache          //nolint:gochecknoglobals
-	logger logr.Logger //nolint:gochecknoglobals
+	logger             logr.Logger                  //nolint:gochecknoglobals
 )
 
 const (
