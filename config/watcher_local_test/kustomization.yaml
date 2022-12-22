@@ -31,9 +31,6 @@ patches:
 patchesJson6902:
   - patch: |-
       - op: replace
-        path: /spec/gateway/namespacedName
-        value: default/lifecycle-manager-kyma-gateway
-      - op: replace
         path: /spec/serviceInfo/name
         value: klm-event-service
       - op: replace

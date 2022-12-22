@@ -10,7 +10,6 @@ export KUBE_CONFIG_DIR=<path-to-export-local-kubeconfigs-to>
 ```
 
 ### Create KCP cluster
-
 Run the following command to create a local control-plane (KCP) cluster:
 ```shell
 k3d cluster create kcp-local --port 9080:80@loadbalancer \
@@ -18,11 +17,6 @@ k3d cluster create kcp-local --port 9080:80@loadbalancer \
 --k3s-arg '--no-deploy=traefik@server:0'
 ```
 
-### Create SKR cluster
-Run the following command to create a local kyma-runtime (SKR) cluster:
-```shell
-k3d cluster create skr-local
-```
 ### Install Istio and Manifest CRD
 Run the following command to install Istio and Manifest CRD on the KCP cluster:
 ```shell
@@ -38,7 +32,7 @@ export KUBECONFIG=$KUBE_CONFIG_DIR/kcp-local.yaml
 ```
 2. Run the following command to build and push lifecycle-manager image to local k3d registry:
 ```shell
-export K3D_REG=k3d-registry.localhost:5111
+export K3D_REG=k3d-registry.localhost:5111 && \
 make -C $KLM_PATH docker-build IMG=$K3D_REG/lifecycle-manager:$KLM_VERSION && \
 make -C $KLM_PATH docker-push IMG=$K3D_REG/lifecycle-manager:$KLM_VERSION
 ```
@@ -46,6 +40,7 @@ make -C $KLM_PATH docker-push IMG=$K3D_REG/lifecycle-manager:$KLM_VERSION
 ### Deploy lifecycle-manager on KCP:
 Run the following command to deploy lifecycle-manager on the KCP cluster:
 ```shell
+export K3D_REG=k3d-registry.localhost:5111 && \
 make -C $KLM_PATH install && \
 make -C $KLM_PATH local-deploy-with-watcher IMG=$K3D_REG/lifecycle-manager:$KLM_VERSION
 ```
@@ -53,17 +48,18 @@ make -C $KLM_PATH local-deploy-with-watcher IMG=$K3D_REG/lifecycle-manager:$KLM_
 ### Apply sample module templates for sample-kyma:
 Run the following command to deploy lifecycle-manager on the KCP cluster:
 ```shell
+export KUBECONFIG=$KUBE_CONFIG_DIR/kcp-local.yaml && \
 kubectl apply -f $KLM_PATH/config/samples/component-integration-installed/operator_v1alpha1_moduletemplate_kcp-module.yaml && \
 kubectl apply -f $KLM_PATH/config/samples/component-integration-installed/operator_v1alpha1_moduletemplate_skr-module.yaml
 ```
 ### Apply sample Kyma CR
-1. Run the following command to get SKR cluster kubeconfig and export it:
+1. Run the following command to create a local kyma-runtime (SKR) cluster:
 ```shell
-k3d kubeconfig get skr-local > $KUBE_CONFIG_DIR/skr-local.yaml && \
-export KUBECONFIG=$KUBE_CONFIG_DIR/skr-local.yaml
+k3d cluster create skr-local
 ```
-2. Run the following command to generate and apply sample Kyma CR and its corresponding secret:
+2. Run the following command to generate and apply sample Kyma CR and its corresponding secret on KCP:
 ```shell
+export KUBECONFIG=$KUBE_CONFIG_DIR/kcp-local.yaml && \
 cat << EOF | kubectl apply -f -
 ---
 apiVersion: v1
@@ -100,7 +96,6 @@ Status:
         Reason:                SKRWebhookIsReady
         Status:                True
         Type:                  Ready
-        Last Transition Time:  2022-12-16T10:45:24Z
 ```
 ### Edit kyma on SKR
 By adding the following line to the Kyma CR `spec`, trigger the watcher KCP update
@@ -124,4 +119,9 @@ By watching the `skr-webhook` deployment's logs, verify that the KCP request is 
 1.671187927950956e+09    INFO    skr-webhook    KCP    {"url": "http://host.k3d.internal:9080/v1/lifecycle-manager/event"}                                           │
 1.6711879280545895e+09    INFO    skr-webhook    sent request to KCP successfully for resource default/kyma-sample                                                   │
 1.6711879280546305e+09    INFO    skr-webhook    kcp request succeeded
+```
+### cleanup
+Run the following command to remove the local testing clusters
+```shell
+k3d cluster rm kcp-local skr-local
 ```
