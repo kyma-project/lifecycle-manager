@@ -30,8 +30,6 @@ var (
 	centralComponents           = []string{"lifecycle-manager", "module-manager", "compass"}
 	errRouteNotReady            = errors.New("http route is not ready")
 	errVirtualServiceNotRemoved = errors.New("virtual service not removed")
-	errWatcherNotMatch          = errors.New("watcher not match")
-	errCRNotDeleted             = errors.New("watcher cr not deleted")
 )
 
 func deserializeIstioResources() ([]*unstructured.Unstructured, error) {
@@ -88,7 +86,7 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1alpha1.Watc
 			},
 			Field: field,
 			Gateway: &v1alpha1.GatewayConfig{
-				v1alpha1.DefaultIstioGatewaySelector(),
+				LabelSelector: v1alpha1.DefaultIstioGatewaySelector(),
 			},
 		},
 	}
@@ -100,8 +98,8 @@ func listTestWatcherCrs() []*v1alpha1.Watcher {
 	if err := controlPlaneClient.List(suiteCtx, watcherList); err != nil {
 		return watchers
 	}
-	for _, item := range watcherList.Items {
-		watchers = append(watchers, &item)
+	for i := range watcherList.Items {
+		watchers = append(watchers, &watcherList.Items[i])
 	}
 	return watchers
 }
