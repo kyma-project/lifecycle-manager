@@ -114,10 +114,10 @@ By watching the lifecycle-manager logs, verify that the listener is logging mess
 ### verify SKR-watcher logs
 By watching the `skr-webhook` deployment's logs, verify that the KCP request is sent successfully
 ```log
-1.6711877286771238e+09    INFO    skr-webhook    Kyma UPDATE validated from webhook                                                                                  │
-1.6711879279507768e+09    INFO    skr-webhook    incoming admission review for: operator.kyma-project.io/v1alpha1, Kind=Kyma                                         │
-1.671187927950956e+09    INFO    skr-webhook    KCP    {"url": "http://host.k3d.internal:9080/v1/lifecycle-manager/event"}                                           │
-1.6711879280545895e+09    INFO    skr-webhook    sent request to KCP successfully for resource default/kyma-sample                                                   │
+1.6711877286771238e+09    INFO    skr-webhook    Kyma UPDATE validated from webhook 
+1.6711879279507768e+09    INFO    skr-webhook    incoming admission review for: operator.kyma-project.io/v1alpha1, Kind=Kyma 
+1.671187927950956e+09    INFO    skr-webhook    KCP    {"url": "http://host.k3d.internal:9080/v1/lifecycle-manager/event"} 
+1.6711879280545895e+09    INFO    skr-webhook    sent request to KCP successfully for resource default/kyma-sample 
 1.6711879280546305e+09    INFO    skr-webhook    kcp request succeeded
 ```
 ### cleanup
