@@ -22,7 +22,6 @@ const (
 	IstioSytemNs               = "istio-system"
 	IngressServiceName         = "istio-ingressgateway"
 	DeploymentNameTpl          = "%s-webhook"
-	triggerLabelTimeFormat     = "200601021504050700"
 	defaultK3dLocalhostMapping = "host.k3d.internal"
 )
 

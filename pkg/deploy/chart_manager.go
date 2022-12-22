@@ -4,11 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
 	"net"
 	"strconv"
-	"time"
-
-	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
@@ -144,7 +142,6 @@ func (m *EnabledSKRWebhookChartManager) generateHelmChartArgs(ctx context.Contex
 		return nil, err
 	}
 	return map[string]interface{}{
-		"triggerLabel":          time.Now().Format(triggerLabelTimeFormat),
 		"kcpAddr":               kcpAddr,
 		"resourcesLimitsMemory": m.config.SkrWebhookMemoryLimits,
 		"resourcesLimitsCPU":    m.config.SkrWebhookCPULimits,
