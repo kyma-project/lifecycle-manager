@@ -1,4 +1,7 @@
-# The main purpose of this dedicated kustomization is to have separate resources configuration for load tests. Unlike the default setup, it enables the ability to configure additional components that we do not want in the default configuration (e.g. vendor-specific gateway implementation) but want to test for load anyhow.
+# The main purpose of this dedicated kustomization is to have different configuration for testing the watcher locally.
+# Unlike the default setup, it enables the ability to configure additional components
+# that we do not want in the default configuration (e.g. vendor-specific gateway implementation)
+# but are necessary for testing the watcher on locally provisioned clusters using k3d.
 resources:
   - ../manager
 generatorOptions:
