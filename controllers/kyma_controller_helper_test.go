@@ -17,6 +17,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	sampleCRDv1alpha1 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
@@ -255,7 +256,7 @@ func deleteModule(kymaName, moduleName string) func() error {
 	}
 }
 
-func UpdateKymaModuleChannels(kymaName string, channel v1alpha1.Channel) error {
+func UpdateKymaModuleChannels(kymaName, channel string) error {
 	kyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 	if err != nil {
 		return err
@@ -271,7 +272,7 @@ func UpdateKymaModuleChannels(kymaName string, channel v1alpha1.Channel) error {
 
 var ErrTemplateInfoChannelMismatch = errors.New("mismatch in template info channel")
 
-func TemplateInfosMatchChannel(kymaName string, channel v1alpha1.Channel) error {
+func TemplateInfosMatchChannel(kymaName, channel string) error {
 	kyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 	if err != nil {
 		return err
@@ -280,6 +281,30 @@ func TemplateInfosMatchChannel(kymaName string, channel v1alpha1.Channel) error 
 		if kyma.Status.ModuleStatus[i].TemplateInfo.Channel != channel {
 			return fmt.Errorf("%w: %s should be %s",
 				ErrTemplateInfoChannelMismatch, kyma.Status.ModuleStatus[i].TemplateInfo.Channel, channel)
+		}
+	}
+	return nil
+}
+
+func CreateModuleTemplateSetsForKyma(modules []v1alpha1.Module, modifiedVersion, channel string) error {
+	for _, module := range modules {
+		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
+		if err != nil {
+			return err
+		}
+		if err := template.Spec.ModifyDescriptor(
+			v1alpha1.ModifyDescriptorVersion(
+				func(version *semver.Version) string {
+					return modifiedVersion
+				},
+			),
+		); err != nil {
+			return err
+		}
+		template.Spec.Channel = channel
+		template.Name = fmt.Sprintf("%s-%s", template.Name, channel)
+		if err := controlPlaneClient.Create(ctx, template); err != nil {
+			return err
 		}
 	}
 	return nil

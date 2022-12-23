@@ -29,7 +29,7 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 		kyma.Spec.Modules, v1alpha1.Module{
 			ControllerName: "manifest",
 			Name:           "example-module-name",
-			Channel:        v1alpha1.ChannelRegular,
+			Channel:        v1alpha1.DefaultChannel,
 		})
 
 	RegisterDefaultLifecycleForKyma(kyma)
@@ -80,12 +80,12 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 	skrModule = &v1alpha1.Module{
 		ControllerName: "manifest", // this is a module for SKR that should be installed by module-manager
 		Name:           "skr-module",
-		Channel:        v1alpha1.ChannelRegular,
+		Channel:        v1alpha1.DefaultChannel,
 	}
 	kcpModule = &v1alpha1.Module{
 		ControllerName: "manifest", // this is a module for KCP that should be installed by module-manager
 		Name:           "kcp-module",
-		Channel:        v1alpha1.ChannelRegular,
+		Channel:        v1alpha1.DefaultChannel,
 	}
 	kyma.Spec.Modules = append(kyma.Spec.Modules, *skrModule, *kcpModule)
 	RegisterDefaultLifecycleForKyma(kyma)
@@ -132,7 +132,7 @@ var _ = Describe("Kyma update Manifest CR", Ordered, func() {
 		kyma.Spec.Modules, v1alpha1.Module{
 			ControllerName: "manifest",
 			Name:           "skr-module-update",
-			Channel:        v1alpha1.ChannelRegular,
+			Channel:        v1alpha1.DefaultChannel,
 		})
 
 	RegisterDefaultLifecycleForKyma(kyma)

@@ -54,7 +54,10 @@ type Module struct {
 
 	// Channel is the desired channel of the Module. If this changes or is set, it will be used to resolve a new
 	// ModuleTemplate based on the new resolved resources.
-	Channel Channel `json:"channel,omitempty"`
+	// +kubebuilder:validation:Pattern:=^[a-z]+$
+	// +kubebuilder:validation:MaxLength:=32
+	// +kubebuilder:validation:MinLength:=3
+	Channel string `json:"channel,omitempty"`
 }
 
 // SyncStrategy determines how the Remote Cluster is synchronized with the Control Plane. This can influence secret
@@ -97,7 +100,10 @@ type Sync struct {
 // KymaSpec defines the desired state of Kyma.
 type KymaSpec struct {
 	// Channel specifies the desired Channel of the Installation, usually targeting different module versions.
-	Channel Channel `json:"channel"`
+	// +kubebuilder:validation:Pattern:=^[a-z]+$
+	// +kubebuilder:validation:MaxLength:=32
+	// +kubebuilder:validation:MinLength:=3
+	Channel string `json:"channel"`
 
 	// Modules specifies the list of modules to be installed
 	Modules []Module `json:"modules,omitempty"`
@@ -139,26 +145,10 @@ type KymaStatus struct {
 
 	// Active Channel
 	// +optional
-	ActiveChannel Channel `json:"activeChannel,omitempty"`
+	ActiveChannel string `json:"activeChannel,omitempty"`
 }
 
-// Channel is the release channel in which a Kyma Instance is running. It is used for running Kyma Installations
-// in a control plane against different stability levels of our module system. When switching Channel, all modules
-// will be recalculated based on new templates. If you did not configure a ModuleTemplate for the new channel, the Kyma
-// will abort the installation.
-// +kubebuilder:validation:Enum=alpha;fast;regular
-type Channel string
-
-//goland:noinspection GoUnusedConst
-const (
-	DefaultChannel = ChannelRegular
-	// ChannelAlpha is meant as a fast track channel that will always be equal or close to the main codeline.
-	ChannelAlpha Channel = "alpha"
-	// ChannelFast is meant as the next best upgrade path and a median between "bleeding edge" and stability.
-	ChannelFast Channel = "fast"
-	// ChannelRegular is meant as a reference point and should be used for productive installations.
-	ChannelRegular Channel = "regular"
-)
+const DefaultChannel = "regular"
 
 // +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error
 type State string
@@ -219,7 +209,7 @@ type TemplateInfo struct {
 
 	// Channel tracks the active Channel of the ModuleTemplate. In Case it changes, the new Channel will have caused
 	// a new lookup to be necessary that maybe picks a different ModuleTemplate, which is why we need to reconcile.
-	Channel Channel `json:"channel,omitempty"`
+	Channel string `json:"channel,omitempty"`
 
 	// GroupVersionKind is used to track the Kind that was created from the ModuleTemplate. This is dynamic to not bind
 	// ourselves to any kind of Kind in the code and allows us to work generic on deletion / cleanup of
@@ -382,14 +372,6 @@ func (kyma *Kyma) GetModuleStatusByModuleName(moduleName string) (*ModuleStatus,
 	}
 	// should not happen
 	return nil, ErrModuleStatusNotFound
-}
-
-func IsValidState(state string) bool {
-	castedState := State(state)
-	return castedState == StateReady ||
-		castedState == StateProcessing ||
-		castedState == StateDeleting ||
-		castedState == StateError
 }
 
 // SyncConditionsWithModuleStates iterates all moduleStatus, based on all module state,

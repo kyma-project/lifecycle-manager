@@ -63,7 +63,7 @@ var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
 		kyma.Spec.Modules, v1alpha1.Module{
 			ControllerName: "manifest",
 			Name:           NewUniqModuleName(),
-			Channel:        v1alpha1.ChannelRegular,
+			Channel:        v1alpha1.DefaultChannel,
 		})
 
 	RegisterDefaultLifecycleForKyma(kyma)

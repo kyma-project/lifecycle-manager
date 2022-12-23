@@ -100,7 +100,7 @@ func manageable(template *v1alpha1.ModuleTemplate) bool {
 	return true
 }
 
-func requeueKyma(kyma v1alpha1.Kyma, moduleName string, templateChannel v1alpha1.Channel) bool {
+func requeueKyma(kyma v1alpha1.Kyma, moduleName, templateChannel string) bool {
 	globalChannelMatch := kyma.Spec.Channel == templateChannel
 
 	for _, module := range kyma.Spec.Modules {
