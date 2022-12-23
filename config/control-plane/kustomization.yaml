@@ -77,6 +77,8 @@ patchesJson6902:
     path: patches/metrics_namespace_replace.yaml
 
 patchesStrategicMerge:
+  # We expect an istio gateway to be already present in KCP
+  - patches/gateway_delete.yaml
   # We expect a kcp-system namespace to be already present in KCP
   - patches/namespace_delete.yaml
   # For prometheus scraping in KCP, serviceMonitor better enable mTls for communication
