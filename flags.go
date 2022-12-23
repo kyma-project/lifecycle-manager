@@ -120,6 +120,10 @@ type FlagVar struct {
 	gatewayNamespacedName                                           string
 	gatewaySelector                                                 metav1.LabelSelector
 	enableWatcherLocalTesting                                       bool
+	// listenerHTTPPortLocalMapping is used to enable the user
+	// to specify the port used to expose the KCP cluster for the watcher
+	// when testing locally using dual-k3d cluster-setup
+	// (only k3d clusters are supported for watcher local testing)
 	listenerHTTPPortLocalMapping                                    int
 	pprof                                                           bool
 	pprofAddr                                                       string
