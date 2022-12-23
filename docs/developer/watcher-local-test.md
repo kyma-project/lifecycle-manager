@@ -25,13 +25,9 @@ kubectl apply -f https://raw.githubusercontent.com/kyma-project/module-manager/m
 ```
 
 ### Build and push lifecycle-manager image
-1. Run the following command to get KCP cluster kubeconfig and export it:
+Run the following commands to build and push lifecycle-manager image to local k3d registry:
 ```shell
-k3d kubeconfig get kcp-local > $KUBE_CONFIG_DIR/kcp-local.yaml && \
-export KUBECONFIG=$KUBE_CONFIG_DIR/kcp-local.yaml
-```
-2. Run the following command to build and push lifecycle-manager image to local k3d registry:
-```shell
+kubectl config use-context k3d-kcp-local && \
 export K3D_REG=k3d-registry.localhost:5111 && \
 make -C $KLM_PATH docker-build IMG=$K3D_REG/lifecycle-manager:$KLM_VERSION && \
 make -C $KLM_PATH docker-push IMG=$K3D_REG/lifecycle-manager:$KLM_VERSION
@@ -40,15 +36,15 @@ make -C $KLM_PATH docker-push IMG=$K3D_REG/lifecycle-manager:$KLM_VERSION
 ### Deploy lifecycle-manager on KCP:
 Run the following command to deploy lifecycle-manager on the KCP cluster:
 ```shell
+kubectl config use-context k3d-kcp-local && \
 export K3D_REG=k3d-registry.localhost:5111 && \
-make -C $KLM_PATH install && \
 make -C $KLM_PATH local-deploy-with-watcher IMG=$K3D_REG/lifecycle-manager:$KLM_VERSION
 ```
 
 ### Apply sample module templates for sample-kyma:
-Run the following command to deploy lifecycle-manager on the KCP cluster:
+Run the following command to apply sample module templates needed for sample Kyma on the KCP cluster:
 ```shell
-export KUBECONFIG=$KUBE_CONFIG_DIR/kcp-local.yaml && \
+kubectl config use-context k3d-kcp-local && \
 kubectl apply -f $KLM_PATH/config/samples/component-integration-installed/operator_v1alpha1_moduletemplate_kcp-module.yaml && \
 kubectl apply -f $KLM_PATH/config/samples/component-integration-installed/operator_v1alpha1_moduletemplate_skr-module.yaml
 ```
@@ -59,7 +55,7 @@ k3d cluster create skr-local
 ```
 2. Run the following command to generate and apply sample Kyma CR and its corresponding secret on KCP:
 ```shell
-export KUBECONFIG=$KUBE_CONFIG_DIR/kcp-local.yaml && \
+kubectl config use-context k3d-kcp-local && \
 cat << EOF | kubectl apply -f -
 ---
 apiVersion: v1
@@ -87,7 +83,7 @@ spec:
 EOF
 ```
 ### Verify that watcher-webhook is installed on SKR
-By checking the Kyma Object events, verify that the `SKRWebhookIsReady` ready condition has a `True` Status. 
+By checking the `Kyma CR` events, verify that the `SKRWebhookIsReady` ready condition is set to `True`.
 ```yaml
 Status:                                              
     Conditions:                                        
@@ -98,7 +94,11 @@ Status:
         Type:                  Ready
 ```
 ### Edit kyma on SKR
-By adding the following line to the Kyma CR `spec`, trigger the watcher KCP update
+1. Run the following command to switch the context to using the SKR cluster
+```shell
+kubectl config use-context k3d-skr-local
+```
+2. Add the following line to the Kyma CR `spec` to trigger the watcher KCP update
 ```yaml
   modules:
   - name: skr-module
@@ -121,7 +121,16 @@ By watching the `skr-webhook` deployment's logs, verify that the KCP request is 
 1.6711879280546305e+09    INFO    skr-webhook    kcp request succeeded
 ```
 ### cleanup
-Run the following command to remove the local testing clusters
+1. Run the following command to remove the local testing clusters
 ```shell
 k3d cluster rm kcp-local skr-local
+```
+2. Run the following commands to remove the kubeconfigs of the local testing clusters:
+```shell
+kubectl config unset users.admin@k3d-skr-cluster && \
+kubectl config unset users.admin@k3d-kcp-cluster && \
+kubectl config unset clusters.k3d-skr-cluster && \
+kubectl config unset clusters.k3d-kcp-cluster && \
+kubectl config unset contexts.k3d-skr-cluster && \
+kubectl config unset contexts.k3d-kcp-cluster
 ```
