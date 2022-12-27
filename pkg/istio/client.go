@@ -26,9 +26,8 @@ const (
 )
 
 var (
-	errNoGatewayConfigured        = errors.New("error processing Watcher: No istio gateway configured")
-	errCantFindMatchingGateway    = errors.New("can't find matching Istio Gateway")
-	errCantFindGatewayServersHost = errors.New("can't find Istio Gateway servers hosts")
+	ErrCantFindMatchingGateway    = errors.New("can't find matching Istio Gateway")
+	ErrCantFindGatewayServersHost = errors.New("can't find Istio Gateway servers hosts")
 )
 
 type Config struct {
@@ -121,7 +120,7 @@ func getHosts(gateways []*istioclientapi.Gateway) ([]string, error) {
 		if len(servers) == 0 || len(servers[0].Hosts) == 0 {
 			return nil, fmt.Errorf("for gateway %s: %w",
 				client.ObjectKeyFromObject(gateway).String(),
-				errCantFindGatewayServersHost)
+				ErrCantFindGatewayServersHost)
 		}
 		// The first Hosts entry must be the listener host, use map to filter out duplicate hosts
 		uniqueHostsMap[servers[0].Hosts[0]] = true
@@ -152,7 +151,7 @@ func (c *Client) LookupGateways(ctx context.Context, watcher *v1alpha1.Watcher) 
 	if len(gateways.Items) == 0 {
 		c.eventRecorder.Event(watcher, "Warning", "WatcherGatewayNotFound",
 			"Watcher: Gateway for the VirtualService not found")
-		return nil, fmt.Errorf("%w. Label selector: %q", errCantFindMatchingGateway, labelSelector)
+		return nil, fmt.Errorf("%w. Label selector: %q", ErrCantFindMatchingGateway, labelSelector)
 	}
 
 	return gateways.Items, nil
