@@ -36,8 +36,7 @@ type WatcherSpec struct {
 
 	// Gateway configures the Istio Gateway for the VirtualService that is created/updated during processing
 	// of the Watcher CR.
-	// +kubebuilder:validation:Optional
-	Gateway *GatewayConfig `json:"gateway,omitempty"`
+	Gateway GatewayConfig `json:"gateway"`
 }
 
 // +kubebuilder:validation:Enum=spec;status;
@@ -53,7 +52,7 @@ const (
 // GatewayConfig is used to select an Istio Gateway object in the cluster.
 type GatewayConfig struct {
 	// LabelSelector allows to select the Gateway using label selectors as defined in the K8s LIST API.
-	LabelSelector *metav1.LabelSelector `json:"selector"`
+	LabelSelector metav1.LabelSelector `json:"selector"`
 }
 
 // Service describes the service specification for the corresponding operator container.
@@ -187,8 +186,8 @@ func init() { //nolint:gochecknoinits
 
 // DefaultIstioGatewaySelector defines a default label selector for a Gateway to configure a VirtualService
 // for the Watcher.
-func DefaultIstioGatewaySelector() *metav1.LabelSelector {
-	return &metav1.LabelSelector{
+func DefaultIstioGatewaySelector() metav1.LabelSelector {
+	return metav1.LabelSelector{
 		MatchLabels: map[string]string{OperatorPrefix + Separator + "watcher-gateway": "default"},
 	}
 }

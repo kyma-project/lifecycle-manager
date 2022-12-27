@@ -71,7 +71,7 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	watcherObj := &v1alpha1.Watcher{}
 	if err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, watcherObj); err != nil {
 		logger.Error(err, "Failed to get reconciliation object")
-		return ctrl.Result{Requeue: true}, client.IgnoreNotFound(err)
+		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
 	// check if deletionTimestamp is set, retry until it gets fully deleted
@@ -90,13 +90,11 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	// check finalizer on native object
 	if !controllerutil.ContainsFinalizer(watcherObj, watcherFinalizer) {
-		controllerutil.AddFinalizer(watcherObj, watcherFinalizer)
-		err := r.Update(ctx, watcherObj)
-		if err != nil {
-			return ctrl.Result{}, err
+		if controllerutil.AddFinalizer(watcherObj, watcherFinalizer) {
+			return ctrl.Result{}, r.Update(ctx, watcherObj)
 		}
-		return ctrl.Result{Requeue: true}, nil
 	}
+
 	virtualService, err := r.IstioClient.GetVirtualService(ctx)
 	if apierrors.IsNotFound(err) {
 		if _, err := r.IstioClient.CreateVirtualService(ctx, watcherObj); err != nil {

@@ -134,13 +134,7 @@ func getHosts(gateways []*istioclientapi.Gateway) ([]string, error) {
 }
 
 func (c *Client) LookupGateways(ctx context.Context, watcher *v1alpha1.Watcher) ([]*istioclientapi.Gateway, error) {
-	if watcher.Spec.Gateway == nil || watcher.Spec.Gateway.LabelSelector == nil {
-		c.eventRecorder.Event(watcher, "Warning", "WatcherGatewayNotConfigured",
-			"Watcher: Gateway for the VirtualService not configured")
-		return nil, errNoGatewayConfigured
-	}
-
-	selector, err := metav1.LabelSelectorAsSelector(watcher.Spec.Gateway.LabelSelector)
+	selector, err := metav1.LabelSelectorAsSelector(&watcher.Spec.Gateway.LabelSelector)
 	if err != nil {
 		return nil, fmt.Errorf("error converting label selector: %w", err)
 	}

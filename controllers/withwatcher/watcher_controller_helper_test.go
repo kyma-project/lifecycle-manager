@@ -85,7 +85,7 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1alpha1.Watc
 				fmt.Sprintf("%s-watchable", managerInstanceName): "true",
 			},
 			Field: field,
-			Gateway: &v1alpha1.GatewayConfig{
+			Gateway: v1alpha1.GatewayConfig{
 				LabelSelector: v1alpha1.DefaultIstioGatewaySelector(),
 			},
 		},
