@@ -11,7 +11,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	. "github.com/onsi/gomega"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -21,15 +20,16 @@ import (
 )
 
 const (
-	defaultBufferSize = 2048
-	crToDeleteIdx     = 2
+	defaultBufferSize    = 2048
+	componentToBeRemoved = "compass"
 )
 
 //nolint:gochecknoglobals
 var (
-	centralComponents           = []string{"lifecycle-manager", "module-manager", "compass"}
-	errRouteNotReady            = errors.New("http route is not ready")
+	centralComponents           = []string{"lifecycle-manager", "module-manager", componentToBeRemoved}
+	errRouteNotExists           = errors.New("http route is not exists")
 	errVirtualServiceNotRemoved = errors.New("virtual service not removed")
+	errWatcherNotRemoved        = errors.New("watcher CR not removed")
 )
 
 func deserializeIstioResources() ([]*unstructured.Unstructured, error) {
@@ -69,7 +69,7 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1alpha1.Watc
 			APIVersion: v1alpha1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-sample", managerInstanceName),
+			Name:      managerInstanceName,
 			Namespace: metav1.NamespaceDefault,
 			Labels: map[string]string{
 				v1alpha1.ManagedBy: managerInstanceName,
@@ -92,31 +92,19 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1alpha1.Watc
 	}
 }
 
-func listTestWatcherCrs() []*v1alpha1.Watcher {
-	watcherList := &v1alpha1.WatcherList{}
-	watchers := make([]*v1alpha1.Watcher, 0)
-	if err := controlPlaneClient.List(suiteCtx, watcherList); err != nil {
-		return watchers
-	}
-	for i := range watcherList.Items {
-		watchers = append(watchers, &watcherList.Items[i])
-	}
-	return watchers
-}
-
-func isCrDeleted(watcherObjKeys client.ObjectKey) error {
-	err := controlPlaneClient.Get(suiteCtx, watcherObjKeys, &v1alpha1.Watcher{})
-	if apierrors.IsNotFound(err) {
-		return nil
-	}
-	return err
+func getWatcher(name string) (v1alpha1.Watcher, error) {
+	watcher := v1alpha1.Watcher{}
+	err := controlPlaneClient.Get(suiteCtx,
+		client.ObjectKey{Name: name, Namespace: metav1.NamespaceDefault},
+		&watcher)
+	return watcher, err
 }
 
 func isVirtualServiceHTTPRouteConfigured(ctx context.Context, customIstioClient *istio.Client, obj *v1alpha1.Watcher,
 ) error {
 	routeReady, err := customIstioClient.IsListenerHTTPRouteConfigured(ctx, obj)
 	if !routeReady {
-		return errRouteNotReady
+		return errRouteNotExists
 	}
 	return err
 }

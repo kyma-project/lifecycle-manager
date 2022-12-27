@@ -1,27 +1,28 @@
 package withwatcher_test
 
 import (
+	"errors"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func cRSpecsUpdates() func(customIstioClient *istio.Client) error {
 	return func(customIstioClient *istio.Client) error {
-		watcherCrs := listTestWatcherCrs()
-		Expect(watcherCrs).NotTo(BeEmpty())
-		for _, watcherCR := range watcherCrs {
-			watcherCR.Spec.ServiceInfo.Port = 9090
-			watcherCR.Spec.Field = v1alpha1.StatusField
-			if err := controlPlaneClient.Update(suiteCtx, watcherCR); err != nil {
+		for _, component := range centralComponents {
+			watcherCR, err := getWatcher(component)
+			if err != nil {
 				return err
 			}
-			if err := isVirtualServiceHTTPRouteConfigured(suiteCtx, customIstioClient, watcherCR); err != nil {
+			watcherCR.Spec.ServiceInfo.Port = 9090
+			watcherCR.Spec.Field = v1alpha1.StatusField
+			if err := controlPlaneClient.Update(suiteCtx, &watcherCR); err != nil {
 				return err
 			}
 		}
@@ -29,12 +30,17 @@ func cRSpecsUpdates() func(customIstioClient *istio.Client) error {
 	}
 }
 
-func checkWatcherCRSpecsGateway() func(customIstioClient *istio.Client) error {
+func expectVirtualServiceConfiguredCorrectly() func(customIstioClient *istio.Client) error {
 	return func(customIstioClient *istio.Client) error {
-		watcherCrs := listTestWatcherCrs()
-		Expect(watcherCrs).NotTo(BeEmpty())
-		for _, watcherCR := range watcherCrs {
-			gateways, err := customIstioClient.LookupGateways(suiteCtx, watcherCR)
+		for _, component := range centralComponents {
+			watcherCR, err := getWatcher(component)
+			if err != nil {
+				return err
+			}
+			if err := isVirtualServiceHTTPRouteConfigured(suiteCtx, customIstioClient, &watcherCR); err != nil {
+				return err
+			}
+			gateways, err := customIstioClient.LookupGateways(suiteCtx, &watcherCR)
 			if err != nil {
 				return err
 			}
@@ -47,23 +53,41 @@ func checkWatcherCRSpecsGateway() func(customIstioClient *istio.Client) error {
 	}
 }
 
-func oneCRDeleted() func(customIstioClient *istio.Client) error {
+func deleteOneWatcherCR() func(customIstioClient *istio.Client) error {
 	return func(customIstioClient *istio.Client) error {
-		watcherCrs := listTestWatcherCrs()
-		watcherCR := watcherCrs[crToDeleteIdx]
-		err := deleteAndCheckExists(watcherCR)
-		if err != nil {
+		if err := deleteWatcher(componentToBeRemoved); err != nil {
 			return err
 		}
 		return nil
 	}
 }
 
-func deleteAndCheckExists(watcherCR *v1alpha1.Watcher) error {
-	if err := controlPlaneClient.Delete(suiteCtx, watcherCR); err != nil {
-		return err
+func expectVirtualServiceHttpRouteRemoved() func(customIstioClient *istio.Client) error {
+	return func(customIstioClient *istio.Client) error {
+		watcherCR, err := getWatcher(componentToBeRemoved)
+		if !apierrors.IsNotFound(err) {
+			return errWatcherNotRemoved
+		}
+		err = isVirtualServiceHTTPRouteConfigured(suiteCtx, customIstioClient, &watcherCR)
+		if !errors.Is(err, errRouteNotExists) {
+			return err
+		}
+		return nil
 	}
-	if err := isCrDeleted(client.ObjectKeyFromObject(watcherCR)); err != nil {
+}
+
+func expectVirtualServiceRemoved() func(customIstioClient *istio.Client) error {
+	return func(customIstioClient *istio.Client) error {
+		return isVirtualServiceRemoved(suiteCtx, customIstioClient)
+	}
+}
+
+func deleteWatcher(name string) error {
+	watcher, err := getWatcher(name)
+	if apierrors.IsNotFound(err) {
+		return nil
+	}
+	if err := controlPlaneClient.Delete(suiteCtx, &watcher); err != nil {
 		return err
 	}
 	return nil
@@ -71,17 +95,11 @@ func deleteAndCheckExists(watcherCR *v1alpha1.Watcher) error {
 
 func allCRsDeleted() func(customIstioClient *istio.Client) error {
 	return func(customIstioClient *istio.Client) error {
-		// delete all remaining CRs
-		watcherCrs := listTestWatcherCrs()
-		for _, watcherCr := range watcherCrs {
-			err := deleteAndCheckExists(watcherCr)
+		for _, component := range centralComponents {
+			err := deleteWatcher(component)
 			if err != nil {
 				return err
 			}
-		}
-
-		if err := isVirtualServiceRemoved(suiteCtx, customIstioClient); err != nil {
-			return err
 		}
 		return nil
 	}
@@ -114,17 +132,22 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	})
 
 	DescribeTable("Test VirtualService",
-		func(testCase func(customIstioClient *istio.Client) error) {
-			Eventually(testCase, Timeout, Interval).WithArguments(customIstioClient).Should(Succeed())
+		func(givenCondition func(customIstioClient *istio.Client) error,
+			expectedBehavior func(customIstioClient *istio.Client) error,
+		) {
+			Eventually(givenCondition, Timeout, Interval).WithArguments(customIstioClient).Should(Succeed())
+			Eventually(expectedBehavior, Timeout, Interval).WithArguments(customIstioClient).Should(Succeed())
 		},
-		[]TableEntry{
-			Entry("when watcherCR specs are updated, "+
-				"expect VirtualService http route configured correctly", cRSpecsUpdates()),
-			Entry("when watcherCR specs are updated, "+
-				"expect VirtualService gateways and hosts configured correctly", checkWatcherCRSpecsGateway()),
-			Entry("when one WatcherCR is deleted, "+
-				"expect related VirtualService http route removed", oneCRDeleted()),
-			Entry("when all WatcherCRs are deleted,"+
-				"expect VirtualService removed", allCRsDeleted()),
-		})
+		Entry("when watcherCR specs are updated, "+
+			"expect VirtualService configured correctly",
+			cRSpecsUpdates(),
+			expectVirtualServiceConfiguredCorrectly()),
+		Entry("when one WatcherCR is deleted, "+
+			"expect related VirtualService http route removed",
+			deleteOneWatcherCR(),
+			expectVirtualServiceHttpRouteRemoved()),
+		Entry("when all WatcherCRs are deleted,"+
+			"expect VirtualService removed",
+			allCRsDeleted(),
+			expectVirtualServiceRemoved()))
 })
