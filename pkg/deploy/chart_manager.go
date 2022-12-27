@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	corev1 "k8s.io/api/core/v1"
 	"net"
 	"strconv"
+
+	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
@@ -191,14 +192,14 @@ func generateWatchableConfigs(watcherList *v1alpha1.WatcherList) map[string]Watc
 }
 
 func (m *EnabledSKRWebhookChartManager) installOrRemoveChartOnSKR(ctx context.Context,
-	deployInfo moduleTypes.InstallInfo, mode Mode,
+	deployInfo *moduleTypes.InstallInfo, mode Mode,
 ) error {
 	logger := logf.FromContext(ctx)
 	if mode == ModeUninstall {
 		uninstalled, err := moduleLib.UninstallChart(
 			moduleLib.OperationOptions{
 				Logger:             logger,
-				InstallInfo:        &deployInfo,
+				InstallInfo:        deployInfo,
 				ResourceTransforms: nil,
 				PostRuns:           nil,
 				Cache:              nil,
@@ -213,25 +214,10 @@ func (m *EnabledSKRWebhookChartManager) installOrRemoveChartOnSKR(ctx context.Co
 		return nil
 	}
 	// TODO(khlifi411): verify webhook configuration with watchers' configuration before re-installing the chart
-	ready, err := moduleLib.ConsistencyCheck(
-		moduleLib.OperationOptions{
-			Logger:             logger,
-			InstallInfo:        &deployInfo,
-			ResourceTransforms: nil,
-			PostRuns:           nil,
-			Cache:              nil,
-		})
-	if err != nil {
-		return fmt.Errorf("failed to verify webhook resources: %w", err)
-	}
-	if ready {
-		logger.V(1).Info("chart resources already installed, nothing to do!")
-		return nil
-	}
 	installed, err := moduleLib.InstallChart(
 		moduleLib.OperationOptions{
 			Logger:             logger,
-			InstallInfo:        &deployInfo,
+			InstallInfo:        deployInfo,
 			ResourceTransforms: nil,
 			PostRuns:           nil,
 			Cache:              nil,

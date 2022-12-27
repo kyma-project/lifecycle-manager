@@ -4,8 +4,8 @@
 
 ### Export customizable attributes
 ```shell
-export KLM_PATH=<local-path-of-kyma-lifecycle-manager-project>
-export KLM_VERSION=<docker-image-tag-for-local-testing>
+export KLM_PATH=<local-path-of-kyma-lifecycle-manager-project> && \
+export KLM_VERSION=<docker-image-tag-for-local-testing>  && \
 export KUBE_CONFIG_DIR=<path-to-export-local-kubeconfigs-to>
 ```
 
@@ -20,6 +20,7 @@ k3d cluster create kcp-local --port 9080:80@loadbalancer \
 ### Install Istio and Manifest CRD
 Run the following command to install Istio and Manifest CRD on the KCP cluster:
 ```shell
+kubectl config use-context k3d-kcp-local && \
 istioctl install -y && \
 kubectl apply -f https://raw.githubusercontent.com/kyma-project/module-manager/main/config/crd/bases/operator.kyma-project.io_manifests.yaml
 ```
@@ -27,7 +28,6 @@ kubectl apply -f https://raw.githubusercontent.com/kyma-project/module-manager/m
 ### Build and push lifecycle-manager image
 Run the following commands to build and push lifecycle-manager image to local k3d registry:
 ```shell
-kubectl config use-context k3d-kcp-local && \
 export K3D_REG=k3d-registry.localhost:5111 && \
 make -C $KLM_PATH docker-build IMG=$K3D_REG/lifecycle-manager:$KLM_VERSION && \
 make -C $KLM_PATH docker-push IMG=$K3D_REG/lifecycle-manager:$KLM_VERSION

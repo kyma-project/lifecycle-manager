@@ -43,8 +43,8 @@ func ResolveSKRChartResourceName(resourceNameTpl string) string {
 
 func prepareInstallInfo(ctx context.Context, chartPath, releaseName string, restConfig *rest.Config,
 	restClient client.Client, argsVals map[string]interface{},
-) moduleTypes.InstallInfo {
-	return moduleTypes.InstallInfo{
+) *moduleTypes.InstallInfo {
+	return &moduleTypes.InstallInfo{
 		Ctx: ctx,
 		ResourceInfo: &moduleTypes.ResourceInfo{
 			// TODO: replace by a meaningful resource

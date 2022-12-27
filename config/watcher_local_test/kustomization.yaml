@@ -28,6 +28,16 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --listener-http-local-mapping=9080
+      - op: add
+        path: /spec/template/spec/containers/0/volumeMounts
+        value:
+          - name: manifest
+            mountPath: /skr-webhook/manifest
+      - op: add
+        path: /spec/template/spec/volumes
+        value:
+          - name: manifest
+            emptyDir: {}
     target:
       kind: Deployment
 

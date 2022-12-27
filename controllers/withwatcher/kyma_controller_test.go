@@ -51,25 +51,6 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 			Timeout, Interval).Should(BeTrue())
 	})
 
-	It("kyma reconciler installs watcher helm chart with correct webhook config when watcher specs are updated",
-		func() {
-			Skip("failing because of manifest caching invalidation")
-			latestWatcher := &v1alpha1.Watcher{}
-			Expect(controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(watcherCrForKyma), latestWatcher)).
-				To(Succeed())
-			latestWatcher.Spec.LabelsToWatch["new-key"] = "new-value"
-			Expect(controlPlaneClient.Update(suiteCtx, latestWatcher)).To(Succeed())
-			latestKyma := &v1alpha1.Kyma{}
-			Expect(controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(kyma), latestKyma)).To(Succeed())
-			latestKyma.Spec.Channel = v1alpha1.ChannelFast
-			Expect(controlPlaneClient.Update(suiteCtx, latestKyma)).To(Succeed())
-			webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
-			Eventually(isWebhookDeployed(suiteCtx, runtimeClient, webhookConfig), Timeout, Interval).Should(Succeed())
-			Eventually(IsKymaInState(suiteCtx, controlPlaneClient, kyma.GetName(), v1alpha1.StateReady),
-				Timeout, Interval).Should(BeTrue())
-			Expect(isWebhookConfigured(latestWatcher, webhookConfig)).To(BeTrue())
-		})
-
 	It("webhook manager removes watcher helm chart from SKR cluster when kyma is deleted", func() {
 		latestKyma := &v1alpha1.Kyma{}
 		Expect(controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(kyma), latestKyma)).To(Succeed())
