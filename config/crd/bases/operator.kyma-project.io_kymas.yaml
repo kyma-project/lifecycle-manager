@@ -45,10 +45,9 @@ spec:
               channel:
                 description: Channel specifies the desired Channel of the Installation,
                   usually targeting different module versions.
-                enum:
-                - alpha
-                - fast
-                - regular
+                maxLength: 32
+                minLength: 3
+                pattern: ^[a-z]+$
                 type: string
               modules:
                 description: Modules specifies the list of modules to be installed
@@ -59,10 +58,9 @@ spec:
                       description: Channel is the desired channel of the Module. If
                         this changes or is set, it will be used to resolve a new ModuleTemplate
                         based on the new resolved resources.
-                      enum:
-                      - alpha
-                      - fast
-                      - regular
+                      maxLength: 32
+                      minLength: 3
+                      pattern: ^[a-z]+$
                       type: string
                     controller:
                       description: ControllerName is able to set the controller used
@@ -126,10 +124,6 @@ spec:
             properties:
               activeChannel:
                 description: Active Channel
-                enum:
-                - alpha
-                - fast
-                - regular
                 type: string
               conditions:
                 description: List of status conditions to indicate the status of a
@@ -240,10 +234,6 @@ spec:
                             In Case it changes, the new Channel will have caused a
                             new lookup to be necessary that maybe picks a different
                             ModuleTemplate, which is why we need to reconcile.
-                          enum:
-                          - alpha
-                          - fast
-                          - regular
                           type: string
                         generation:
                           description: Generation tracks the active Generation of

@@ -35,7 +35,10 @@ import (
 type ModuleTemplateSpec struct {
 	// Channel is the targeted channel of the ModuleTemplate. It will be used to directly assign a Template
 	// to a target channel. It has to be provided at any given time.
-	Channel Channel `json:"channel"`
+	// +kubebuilder:validation:Pattern:=^[a-z]+$
+	// +kubebuilder:validation:MaxLength:=32
+	// +kubebuilder:validation:MinLength:=3
+	Channel string `json:"channel"`
 
 	// Data is the default set of attributes that are used to generate the Module. It contains a default set of values
 	// for a given channel, and is thus different from default values allocated during struct parsing of the Module.

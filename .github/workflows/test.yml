@@ -82,7 +82,8 @@ jobs:
       - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
         if: github.event_name == 'pull_request'
         run: |
-          wget -qO - "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          wget --header="Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -qO - "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
           mv kustomize /usr/local/bin/
           cd $(go env GOPATH)/src/github.com/${{ github.repository }}/config/manager
           kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
@@ -96,7 +97,7 @@ jobs:
       - run: ln -s ${{ steps.kyma.outputs.path }} /usr/local/bin/kyma
       - name: Run Provision
         run: |
-          kyma provision k3d \
+          kyma --ci provision k3d \
             -p 8083:80@loadbalancer \
             -p 8443:443@loadbalancer \
             --timeout 1m \
@@ -106,7 +107,7 @@ jobs:
         run: k3d kubeconfig merge -a -d
       - name: Run Deploy
         run: |
-          kyma alpha deploy \
+          kyma --ci alpha deploy \
             -k $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/config/default \
             -k $(go env GOPATH)/src/github.com/$MODULE_MANAGER/config/default
 
