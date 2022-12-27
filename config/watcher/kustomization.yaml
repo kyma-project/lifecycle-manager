@@ -14,9 +14,6 @@ patches:
         value: --enable-kcp-watcher
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --skr-watcher-path=/skr-webhook      
-      - op: add
-        path: /spec/template/spec/containers/0/args/-
-        value: --requeue-success-interval=10m
+        value: --skr-watcher-path=/skr-webhook
     target:
       kind: Deployment

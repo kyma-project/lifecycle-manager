@@ -6,15 +6,16 @@ import (
 )
 
 const (
-	defaultRequeueSuccessInterval = 20 * time.Second
-	defaultClientQPS              = 150
-	defaultClientBurst            = 150
-	defaultPprofServerTimeout     = 90 * time.Second
-	rateLimiterBurstDefault       = 200
-	rateLimiterFrequencyDefault   = 30
-	failureBaseDelayDefault       = 100 * time.Millisecond
-	failureMaxDelayDefault        = 1000 * time.Second
-	defaultCacheSyncTimeout       = 2 * time.Minute
+	defaultKymaRequeueSuccessInterval    = 20 * time.Second
+	defaultWatcherRequeueSuccessInterval = 20 * time.Second
+	defaultClientQPS                     = 150
+	defaultClientBurst                   = 150
+	defaultPprofServerTimeout            = 90 * time.Second
+	rateLimiterBurstDefault              = 200
+	rateLimiterFrequencyDefault          = 30
+	failureBaseDelayDefault              = 100 * time.Millisecond
+	failureMaxDelayDefault               = 1000 * time.Second
+	defaultCacheSyncTimeout              = 2 * time.Minute
 )
 
 func defineFlagVar() *FlagVar {
@@ -32,8 +33,13 @@ func defineFlagVar() *FlagVar {
 	flag.BoolVar(&flagVar.enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	flag.DurationVar(&flagVar.requeueSuccessInterval, "requeue-success-interval", defaultRequeueSuccessInterval,
+	flag.DurationVar(&flagVar.kymaRequeueSuccessInterval, "kyma-requeue-success-interval",
+		defaultKymaRequeueSuccessInterval,
 		"determines the duration after which an already successfully reconciled Kyma is enqueued for checking "+
+			"if it's still in a consistent state.")
+	flag.DurationVar(&flagVar.watcherRequeueSuccessInterval, "watcher-requeue-success-interval",
+		defaultWatcherRequeueSuccessInterval,
+		"determines the duration after which an already successfully reconciled watcher is enqueued for checking "+
 			"if it's still in a consistent state.")
 	flag.Float64Var(&flagVar.clientQPS, "k8s-client-qps", defaultClientQPS, "kubernetes client QPS")
 	flag.IntVar(&flagVar.clientBurst, "k8s-client-burst", defaultClientBurst, "kubernetes client Burst")
@@ -79,7 +85,8 @@ type FlagVar struct {
 	probeAddr                                                       string
 	listenerAddr                                                    string
 	maxConcurrentReconciles                                         int
-	requeueSuccessInterval                                          time.Duration
+	kymaRequeueSuccessInterval                                      time.Duration
+	watcherRequeueSuccessInterval                                   time.Duration
 	moduleVerificationKeyFilePath, moduleVerificationSignatureNames string
 	clientQPS                                                       float64
 	clientBurst                                                     int
