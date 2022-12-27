@@ -46,6 +46,7 @@ var (
 	ErrWatchLabelsMismatch             = errors.New("watch labels mismatch")
 	ErrStatusSubResourcesMismatch      = errors.New("status sub-resources mismatch")
 	ErrSpecSubResourcesMismatch        = errors.New("spec sub-resources mismatch")
+	ErrExpectedSKRChartToBeCached      = errors.New("CA bundle was generated: expected SKR chart will be cached")
 )
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
@@ -226,12 +227,12 @@ func triggerLatestKymaReconciliation(ctx context.Context, kcpClient client.Clien
 	kymaObjKey client.ObjectKey) func() error {
 	return func() error {
 		latestKyma := &v1alpha1.Kyma{}
-		err := kcpClient.Get(suiteCtx, kymaObjKey, latestKyma)
+		err := kcpClient.Get(ctx, kymaObjKey, latestKyma)
 		if err != nil {
 			return fmt.Errorf("failed to get latest kyma: %w", err)
 		}
 		latestKyma.Spec.Channel = kymaChannel
-		return kcpClient.Update(suiteCtx, latestKyma)
+		return kcpClient.Update(ctx, latestKyma)
 	}
 }
 
@@ -244,7 +245,7 @@ func webhookConfigCaBundleNewGenerationCheck(ctx context.Context, skrClient clie
 			return err
 		}
 		if !bytes.Equal(webhookConfig.Webhooks[0].ClientConfig.CABundle, oldCaBundle) {
-			return errors.New("CA bundle was generated: expected SKR chart will be cached")
+			return ErrExpectedSKRChartToBeCached
 		}
 		return nil
 	}
