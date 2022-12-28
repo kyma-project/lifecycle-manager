@@ -86,9 +86,8 @@ func (c *Client) CreateVirtualService(ctx context.Context, watcher *v1alpha1.Wat
 	if err != nil {
 		return nil, err
 	}
-	for i := range gateways {
-		virtualSvc.Spec.Gateways = append(virtualSvc.Spec.Gateways, client.ObjectKeyFromObject(gateways[i]).String())
-	}
+
+	appendGateways(gateways, virtualSvc)
 
 	if err := appendHosts(gateways, virtualSvc); err != nil {
 		return nil, err
@@ -101,6 +100,14 @@ func (c *Client) CreateVirtualService(ctx context.Context, watcher *v1alpha1.Wat
 	return c.NetworkingV1beta1().
 		VirtualServices(metav1.NamespaceDefault).
 		Create(ctx, virtualSvc, metav1.CreateOptions{})
+}
+
+func appendGateways(gateways []*istioclientapi.Gateway, virtualSvc *istioclientapi.VirtualService) {
+	gatewayLists := make([]string, 0)
+	for i := range gateways {
+		gatewayLists = append(gatewayLists, client.ObjectKeyFromObject(gateways[i]).String())
+	}
+	virtualSvc.Spec.Gateways = gatewayLists
 }
 
 func appendHosts(gateways []*istioclientapi.Gateway, virtualSvc *istioclientapi.VirtualService) error {
