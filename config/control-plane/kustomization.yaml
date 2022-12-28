@@ -75,18 +75,12 @@ patchesJson6902:
       kind: ConfigMap
       name: klm-overview
     path: patches/metrics_namespace_replace.yaml
-  - patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: default
-      - op: replace
-        path: /metadata/name
-        value: klm-watcher-gateway
-    target:
+  - target:
       group: networking.istio.io
       version: v1beta1
       kind: Gateway
       name: watcher-gateway
+    path: patches/watcher_gateway_patch.yaml
 
 patchesStrategicMerge:
   # We expect a kcp-system namespace to be already present in KCP
