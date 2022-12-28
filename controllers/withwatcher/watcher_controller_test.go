@@ -30,6 +30,25 @@ func cRSpecsUpdates() func(customIstioClient *istio.Client) error {
 	}
 }
 
+func gatewayUpdated() func(customIstioClient *istio.Client) error {
+	return func(customIstioClient *istio.Client) error {
+		watcher, err := getWatcher(componentToBeUpdated)
+		if err != nil {
+			return err
+		}
+		gateways, err := customIstioClient.LookupGateways(suiteCtx, &watcher)
+		if err != nil {
+			return err
+		}
+		Expect(len(gateways)).To(Equal(1))
+		gateway := gateways[0]
+		Expect(len(gateway.Spec.Servers)).To(Equal(1))
+		Expect(len(gateway.Spec.Servers[0].Hosts)).To(Equal(1))
+		gateway.Spec.Servers[0].Hosts[0] = "listener.updated.kyma.cloud.sap"
+		return controlPlaneClient.Update(suiteCtx, gateway)
+	}
+}
+
 func expectVirtualServiceConfiguredCorrectly() func(customIstioClient *istio.Client) error {
 	return func(customIstioClient *istio.Client) error {
 		for _, component := range centralComponents {
@@ -141,6 +160,10 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 		Entry("when watcherCR specs are updated, "+
 			"expect VirtualService configured correctly",
 			cRSpecsUpdates(),
+			expectVirtualServiceConfiguredCorrectly()),
+		Entry("when gateway specs are updated, "+
+			"expect VirtualService configured correctly",
+			gatewayUpdated(),
 			expectVirtualServiceConfiguredCorrectly()),
 		Entry("when one WatcherCR is deleted, "+
 			"expect related VirtualService http route removed",
