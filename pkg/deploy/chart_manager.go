@@ -59,8 +59,8 @@ func (m *SKRWebhookChartManagerImpl) Install(ctx context.Context, kyma *v1alpha1
 	}
 	skrWatcherInstallInfo := prepareInstallInfo(ctx, m.config.WebhookChartPath,
 		syncContext.RuntimeRestConfig, syncContext.RuntimeClient, chartArgsValues, kymaObjKey)
-	logger.V(1).Info("following modules will be installed",
-		"modules", prettyPrintSetFlags(skrWatcherInstallInfo.ChartInfo.Flags.SetFlags[customConfigKey]))
+	logger.V(1).Info("following watcher configs will be installed",
+		"configs", prettyPrintSetFlags(skrWatcherInstallInfo.ChartInfo.Flags.SetFlags[customConfigKey]))
 	installed, err := modulelib.InstallChart(
 		modulelib.OperationOptions{
 			Logger:             logger,
@@ -84,7 +84,6 @@ func (m *SKRWebhookChartManagerImpl) Install(ctx context.Context, kyma *v1alpha1
 	kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionTrue)
 	logger.Info("successfully installed webhook chart",
 		"release-name", skrWatcherInstallInfo.ChartInfo.ReleaseName)
-
 	return false, nil
 }
 

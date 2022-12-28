@@ -64,7 +64,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 
 	It("kyma reconciler installs watcher helm chart with correct webhook config", func() {
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
-			kymaObjKey, webhookConfig), Timeout, Interval).WithOffset(4).Should(Succeed())
+			kymaObjKey), Timeout, Interval).WithOffset(4).Should(Succeed())
 	})
 
 	It("kyma reconciler re-installs watcher helm chart when webhook CA bundle is not consistent", func() {
@@ -92,13 +92,17 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Eventually(triggerLatestKymaReconciliation(suiteCtx, controlPlaneClient, kymaFastChannel, kymaObjKey),
 			Timeout, Interval).WithOffset(4).Should(Succeed())
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
-			kymaObjKey, webhookConfig), Timeout, Interval).WithOffset(4).Should(Succeed())
-		caBundleValueBeforeUpdate := webhookConfig.Webhooks[0].ClientConfig.CABundle
+			kymaObjKey), Timeout, Interval).WithOffset(4).Should(Succeed())
+		webhookCfg, err := getSKRWebhookConfig(suiteCtx, runtimeClient, kymaObjKey)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(webhookCfg).NotTo(BeNil())
+		Expect(webhookCfg.Webhooks).NotTo(BeEmpty())
+		caBundleValueBeforeUpdate := webhookCfg.Webhooks[0].ClientConfig.CABundle
 		By("updating kyma channel to trigger its reconciliation")
 		Eventually(triggerLatestKymaReconciliation(suiteCtx, controlPlaneClient, kymaAlphaChannel, kymaObjKey),
 			Timeout, Interval).WithOffset(4).Should(Succeed())
 		Eventually(webhookConfigCaBundleNewGenerationCheck(suiteCtx, runtimeClient, kymaObjKey,
-			webhookConfig, caBundleValueBeforeUpdate), Timeout, Interval).WithOffset(4).Should(Succeed())
+			caBundleValueBeforeUpdate), Timeout, Interval).WithOffset(4).Should(Succeed())
 	})
 
 	It("helm three way merge updates webhook-config when a new watcher is created and deleted", func() {
@@ -108,9 +112,9 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		By("updating kyma channel to trigger its reconciliation")
 		Eventually(triggerLatestKymaReconciliation(suiteCtx, controlPlaneClient, kymaFastChannel, kymaObjKey),
 			Timeout, Interval).WithOffset(4).Should(Succeed())
-		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, secondWatcher, kymaObjKey, webhookConfig),
+		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, secondWatcher, kymaObjKey),
 			Timeout, Interval).WithOffset(4).Should(Succeed())
-		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma, kymaObjKey, webhookConfig),
+		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma, kymaObjKey),
 			Timeout, Interval).WithOffset(4).Should(Succeed())
 		By("Deleting second watcher CR")
 		Expect(controlPlaneClient.Delete(suiteCtx, secondWatcher)).To(Succeed())
@@ -120,9 +124,9 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		By("updating kyma channel to trigger its reconciliation")
 		Eventually(triggerLatestKymaReconciliation(suiteCtx, controlPlaneClient, kymaAlphaChannel, kymaObjKey),
 			Timeout, Interval).WithOffset(4).Should(Succeed())
-		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma, kymaObjKey, webhookConfig),
+		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma, kymaObjKey),
 			Timeout, Interval).WithOffset(4).Should(Succeed())
-		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, secondWatcher, kymaObjKey, webhookConfig),
+		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, secondWatcher, kymaObjKey),
 			Timeout, Interval).WithOffset(4).ShouldNot(Succeed())
 	})
 
@@ -203,23 +207,25 @@ func getSkrChartDeployment(ctx context.Context, skrClient client.Client, kymaObj
 }
 
 func getSKRWebhookConfig(ctx context.Context, skrClient client.Client,
-	kymaObjKey client.ObjectKey, webhookConfig *admissionv1.ValidatingWebhookConfiguration,
-) error {
-	return skrClient.Get(ctx, client.ObjectKey{
+	kymaObjKey client.ObjectKey,
+) (*admissionv1.ValidatingWebhookConfiguration, error) {
+	webhookCfg := &admissionv1.ValidatingWebhookConfiguration{}
+	err := skrClient.Get(ctx, client.ObjectKey{
 		Namespace: metav1.NamespaceDefault,
 		Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
-	}, webhookConfig)
+	}, webhookCfg)
+	return webhookCfg, err
 }
 
 func latestWebhookIsConfigured(ctx context.Context, skrClient client.Client, watcher *v1alpha1.Watcher,
-	kymaObjKey client.ObjectKey, webhookConfig *admissionv1.ValidatingWebhookConfiguration,
+	kymaObjKey client.ObjectKey,
 ) func() error {
 	return func() error {
-		err := getSKRWebhookConfig(ctx, skrClient, kymaObjKey, webhookConfig)
+		webhookCfg, err := getSKRWebhookConfig(ctx, skrClient, kymaObjKey)
 		if err != nil {
 			return err
 		}
-		return isWebhookConfigured(watcher, webhookConfig, kymaObjKey.Name)
+		return isWebhookConfigured(watcher, webhookCfg, kymaObjKey.Name)
 	}
 }
 
@@ -237,14 +243,14 @@ func triggerLatestKymaReconciliation(ctx context.Context, kcpClient client.Clien
 }
 
 func webhookConfigCaBundleNewGenerationCheck(ctx context.Context, skrClient client.Client,
-	kymaObjKey client.ObjectKey, webhookConfig *admissionv1.ValidatingWebhookConfiguration, oldCaBundle []byte,
+	kymaObjKey client.ObjectKey, oldCaBundle []byte,
 ) func() error {
 	return func() error {
-		err := getSKRWebhookConfig(ctx, skrClient, kymaObjKey, webhookConfig)
+		webhookCfg, err := getSKRWebhookConfig(ctx, skrClient, kymaObjKey)
 		if err != nil {
 			return err
 		}
-		if !bytes.Equal(webhookConfig.Webhooks[0].ClientConfig.CABundle, oldCaBundle) {
+		if !bytes.Equal(webhookCfg.Webhooks[0].ClientConfig.CABundle, oldCaBundle) {
 			return ErrExpectedSKRChartToBeCached
 		}
 		return nil
