@@ -7,3 +7,15 @@
 - op: replace
   path: /spec/servers/0/port/number
   value: 80
+- op: add
+  path: /spec/servers/-
+  value:
+    hosts:
+      - 'listener.kyma.cloud.sap'
+    port:
+      name: https
+      number: 443
+      protocol: HTTPS
+    tls:
+      credentialName: watcher-gateway-secret
+      mode: MUTUAL

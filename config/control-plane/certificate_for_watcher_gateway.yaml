@@ -8,4 +8,4 @@ spec:
   issuerRef:
     kind: ClusterIssuer
     name: letsencrypt-prd # reuse KCP ClusterIssuer
-  secretName: watcher-gateway-certs
+  secretName: watcher-gateway-secret
