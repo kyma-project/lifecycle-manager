@@ -39,12 +39,12 @@ patchesJson6902:
         value: default
       - op: replace
         path: /metadata/name
-        value: lifecycle-manager-kyma-gateway
+        value: lifecycle-manager-watcher-gateway
     target:
       group: networking.istio.io
       version: v1beta1
       kind: Gateway
-      name: kyma-gateway
+      name: watcher-gateway
 
 patchesStrategicMerge:
   - patches/adjust_resources_in_deployment.yaml
