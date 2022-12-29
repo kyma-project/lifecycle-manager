@@ -9,8 +9,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
-	. "github.com/onsi/gomega"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -22,14 +20,16 @@ import (
 const (
 	defaultBufferSize    = 2048
 	componentToBeRemoved = "compass"
+	componentToBeUpdated = "lifecycle-manager"
 )
 
 //nolint:gochecknoglobals
 var (
-	centralComponents           = []string{"lifecycle-manager", "module-manager", componentToBeRemoved}
-	errRouteNotExists           = errors.New("http route is not exists")
-	errVirtualServiceNotRemoved = errors.New("virtual service not removed")
-	errWatcherNotRemoved        = errors.New("watcher CR not removed")
+	centralComponents                     = []string{componentToBeUpdated, "module-manager", componentToBeRemoved}
+	errRouteNotExists                     = errors.New("http route is not exists")
+	errVirtualServiceNotRemoved           = errors.New("virtual service not removed")
+	errWatcherNotRemoved                  = errors.New("watcher CR not removed")
+	errVirtualServiceHostsNotMatchGateway = errors.New("virtual service hosts not match with gateway")
 )
 
 func deserializeIstioResources() ([]*unstructured.Unstructured, error) {
@@ -117,8 +117,19 @@ func isVirtualServiceHostsConfigured(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	Expect(virtualService.Spec.Hosts).To(ContainElement(gateway.Spec.Servers[0].Hosts[0]))
+	if !contains(virtualService.Spec.Hosts, gateway.Spec.Servers[0].Hosts[0]) {
+		return errVirtualServiceHostsNotMatchGateway
+	}
 	return nil
+}
+
+func contains(source []string, target string) bool {
+	for _, item := range source {
+		if item == target {
+			return true
+		}
+	}
+	return false
 }
 
 func isVirtualServiceRemoved(ctx context.Context, customIstioClient *istio.Client) error {

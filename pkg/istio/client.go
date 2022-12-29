@@ -86,11 +86,10 @@ func (c *Client) CreateVirtualService(ctx context.Context, watcher *v1alpha1.Wat
 	if err != nil {
 		return nil, err
 	}
-	for i := range gateways {
-		virtualSvc.Spec.Gateways = append(virtualSvc.Spec.Gateways, client.ObjectKeyFromObject(gateways[i]).String())
-	}
 
-	if err := appendHosts(gateways, virtualSvc); err != nil {
+	addGateways(gateways, virtualSvc)
+
+	if err := addHosts(gateways, virtualSvc); err != nil {
 		return nil, err
 	}
 
@@ -103,12 +102,25 @@ func (c *Client) CreateVirtualService(ctx context.Context, watcher *v1alpha1.Wat
 		Create(ctx, virtualSvc, metav1.CreateOptions{})
 }
 
-func appendHosts(gateways []*istioclientapi.Gateway, virtualSvc *istioclientapi.VirtualService) error {
+func addGateways(gateways []*istioclientapi.Gateway, virtualSvc *istioclientapi.VirtualService) {
+	gatewayLists := convertToGatewayList(gateways)
+	virtualSvc.Spec.Gateways = gatewayLists
+}
+
+func convertToGatewayList(gateways []*istioclientapi.Gateway) []string {
+	gatewayLists := make([]string, 0)
+	for i := range gateways {
+		gatewayLists = append(gatewayLists, client.ObjectKeyFromObject(gateways[i]).String())
+	}
+	return gatewayLists
+}
+
+func addHosts(gateways []*istioclientapi.Gateway, virtualSvc *istioclientapi.VirtualService) error {
 	hosts, err := getHosts(gateways)
 	if err != nil {
 		return err
 	}
-	virtualSvc.Spec.Hosts = append(virtualSvc.Spec.Hosts, hosts...)
+	virtualSvc.Spec.Hosts = hosts
 	return nil
 }
 
@@ -197,20 +209,87 @@ func (c *Client) IsVirtualServiceDeleted(ctx context.Context) (bool, error) {
 func (c *Client) UpdateVirtualServiceConfig(ctx context.Context, watcher *v1alpha1.Watcher,
 	virtualService *istioclientapi.VirtualService,
 ) error {
+	gateways, err := c.LookupGateways(ctx, watcher)
+	if err != nil {
+		return err
+	}
+	hosts, err := getHosts(gateways)
+	if err != nil {
+		return err
+	}
+	// lookup cr config
+	updateHTTPRouteRequired := updateHTTPRoute(watcher, virtualService)
+	updateGatewayRequired := updateGateway(gateways, virtualService)
+	updateHostsRequired := updateHosts(hosts, virtualService)
+
+	if updateHTTPRouteRequired || updateGatewayRequired || updateHostsRequired {
+		return c.updateVirtualService(ctx, virtualService)
+	}
+	return nil
+}
+
+func updateHTTPRoute(watcher *v1alpha1.Watcher, virtualService *istioclientapi.VirtualService) bool {
 	// lookup cr config
 	routeIdx := lookupHTTPRouteByObjectKey(virtualService.Spec.Http, client.ObjectKeyFromObject(watcher))
 	if routeIdx != -1 {
 		istioHTTPRoute := prepareIstioHTTPRouteForCR(watcher)
 		if isRouteConfigEqual(virtualService.Spec.Http[routeIdx], istioHTTPRoute) {
-			return nil
+			return false
 		}
 		virtualService.Spec.Http[routeIdx] = prepareIstioHTTPRouteForCR(watcher)
-		return c.updateVirtualService(ctx, virtualService)
+		return true
 	}
 	// if route doesn't exist already append it to the route list
 	istioHTTPRoute := prepareIstioHTTPRouteForCR(watcher)
 	virtualService.Spec.Http = append(virtualService.Spec.Http, istioHTTPRoute)
-	return c.updateVirtualService(ctx, virtualService)
+	return true
+}
+
+func updateGateway(
+	gateways []*istioclientapi.Gateway,
+	virtualService *istioclientapi.VirtualService,
+) bool {
+	if contentDiffers(convertToGatewayList(gateways), virtualService.Spec.Gateways) {
+		addGateways(gateways, virtualService)
+		return true
+	}
+	return false
+}
+
+func updateHosts(hosts []string, virtualService *istioclientapi.VirtualService) bool {
+	if contentDiffers(hosts, virtualService.Spec.Gateways) {
+		virtualService.Spec.Hosts = hosts
+		return true
+	}
+	return false
+}
+
+func contentDiffers(target []string, source []string) bool {
+	if len(source) != len(target) {
+		return true
+	}
+
+	targetMap := make(map[string]bool)
+	for i := range target {
+		targetMap[target[i]] = false
+	}
+	for i := range source {
+		_, exists := targetMap[source[i]]
+		if exists {
+			targetMap[source[i]] = true
+		} else {
+			// source item not in target
+			return true
+		}
+	}
+	// check not matched target item
+	for _, exists := range targetMap {
+		if !exists {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (c *Client) RemoveVirtualServiceConfigForCR(ctx context.Context, watcherObjKey client.ObjectKey,
