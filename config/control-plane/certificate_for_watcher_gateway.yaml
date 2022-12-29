@@ -1,0 +1,11 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: watcher-gateway-cert
+spec:
+  dnsNames:
+    - 'listener.kyma.cloud.sap' # this dnsNames should be overwritten based on deployment environment
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt-prd # reuse KCP ClusterIssuer
+  secretName: watcher-gateway-certs

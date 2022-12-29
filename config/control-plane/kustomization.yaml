@@ -24,6 +24,7 @@ resources:
   - ../manager
   # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'. 'WEBHOOK' components are required.
   - ../certmanager
+  - certificate_for_watcher_gateway.yaml
 
 components:
   - ../crd
@@ -92,7 +93,7 @@ patchesStrategicMerge:
   - patches/unique_manager_webhook_patch.yaml
   # patch here are for enabling the conversion webhook for each CRD
   - patches/enable_webhook_in_kyma_crd.yaml
-  - patches/ebable_webhook_in_moduletemplate_crd.yaml
+  - patches/enable_webhook_in_moduletemplate_crd.yaml
 
   # enables webhooks
   - patches/enable_webhooks_in_deployment.yaml
