@@ -217,6 +217,7 @@ func setupKymaReconciler(
 	intervals controllers.RequeueIntervals,
 	options controller.Options,
 ) {
+	kcpRestConfig := mgr.GetConfig()
 	var skrWebhookChartManager deploy.SKRWebhookChartManager
 	if flagVar.enableKcpWatcher {
 		watcherChartDirInfo, err := os.Stat(flagVar.skrWatcherPath)
@@ -228,13 +229,16 @@ func setupKymaReconciler(
 			SkrWebhookMemoryLimits: flagVar.skrWebhookMemoryLimits,
 			SkrWebhookCPULimits:    flagVar.skrWebhookCPULimits,
 		}
-		skrWebhookChartManager = deploy.NewSKRWebhookChartManagerImpl(skrChartConfig)
+		skrWebhookChartManager, err = deploy.NewSKRWebhookChartManagerImpl(kcpRestConfig, skrChartConfig)
+		if err != nil {
+			setupLog.Error(err, "failed to create webhook chart manager")
+		}
 	}
 
 	if err := (&controllers.KymaReconciler{
 		Client:                 mgr.GetClient(),
 		EventRecorder:          mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		KcpRestConfig:          mgr.GetConfig(),
+		KcpRestConfig:          kcpRestConfig,
 		RemoteClientCache:      remoteClientCache,
 		SKRWebhookChartManager: skrWebhookChartManager,
 		RequeueIntervals:       intervals,

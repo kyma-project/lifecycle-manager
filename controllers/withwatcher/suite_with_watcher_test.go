@@ -156,6 +156,13 @@ var _ = BeforeSuite(func() {
 		Success: 3 * time.Second,
 	}
 
+	Expect(createLoadBalancer(suiteCtx, controlPlaneClient)).To(Succeed())
+	istioResources, err = deserializeIstioResources()
+	Expect(err).NotTo(HaveOccurred())
+	for _, istioResource := range istioResources {
+		Expect(controlPlaneClient.Create(suiteCtx, istioResource)).To(Succeed())
+	}
+
 	remoteClientCache = remote.NewClientCache()
 	skrChartCfg := &deploy.SkrChartManagerConfig{
 		WebhookChartPath:        webhookChartPath,
@@ -164,24 +171,19 @@ var _ = BeforeSuite(func() {
 		IstioNamespace:          istioSytemNs,
 		IstioIngressServiceName: ingressServiceName,
 	}
+	skrWebhookChartManager, err := deploy.NewSKRWebhookTemplateChartManager(restCfg, skrChartCfg)
+	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.KymaReconciler{
 		Client:                 k8sManager.GetClient(),
 		EventRecorder:          k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
 		RequeueIntervals:       intervals,
-		SKRWebhookChartManager: deploy.NewSKRWebhookChartManagerImpl(skrChartCfg),
+		SKRWebhookChartManager: skrWebhookChartManager,
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
 		},
 		RemoteClientCache: remoteClientCache,
 	}).SetupWithManager(k8sManager, controller.Options{}, controllers.SetupUpSetting{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
-
-	Expect(createLoadBalancer(suiteCtx, controlPlaneClient)).To(Succeed())
-	istioResources, err = deserializeIstioResources()
-	Expect(err).NotTo(HaveOccurred())
-	for _, istioResource := range istioResources {
-		Expect(controlPlaneClient.Create(suiteCtx, istioResource)).To(Succeed())
-	}
 
 	istioCfg := istio.NewConfig(virtualServiceName, "", operatorv1alpha1.DefaultIstioGatewaySelector())
 	err = (&controllers.WatcherReconciler{

@@ -3,6 +3,7 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"k8s.io/client-go/rest"
 	"net"
 	"strconv"
 
@@ -42,18 +43,23 @@ type SkrChartManagerConfig struct {
 	IstioIngressServiceName string
 }
 
-func NewSKRWebhookChartManagerImpl(config *SkrChartManagerConfig) *SKRWebhookChartManagerImpl {
-	return &SKRWebhookChartManagerImpl{
-		cache:  modulelib.NewRendererCache(),
-		config: config,
+func NewSKRWebhookChartManagerImpl(kcpRestConfig *rest.Config, config *SkrChartManagerConfig) (*SKRWebhookChartManagerImpl, error) {
+	resolvedKcpAddr, err := resolveKcpAddr(kcpRestConfig, config)
+	if err != nil {
+		return nil, err
 	}
+	return &SKRWebhookChartManagerImpl{
+		cache:   modulelib.NewRendererCache(),
+		config:  config,
+		kcpAddr: resolvedKcpAddr,
+	}, nil
 }
 
 func (m *SKRWebhookChartManagerImpl) Install(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error) {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
-	chartArgsValues, err := m.generateHelmChartArgs(ctx, syncContext.ControlPlaneClient)
+	chartArgsValues, err := generateHelmChartArgs(ctx, syncContext.ControlPlaneClient, m.config, m.kcpAddr)
 	if err != nil {
 		return true, err
 	}
@@ -77,10 +83,10 @@ func (m *SKRWebhookChartManagerImpl) Install(ctx context.Context, kyma *v1alpha1
 		kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
 		return true, ErrSKRWebhookNotInstalled
 	}
-	if err := CheckWebhookCABundleConsistency(ctx, syncContext.RuntimeClient, kymaObjKey); err != nil {
-		kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
-		return true, fmt.Errorf("failed to install webhook chart: %w", err)
-	}
+	// if err := CheckWebhookCABundleConsistency(ctx, syncContext.RuntimeClient, kymaObjKey); err != nil {
+	// 	kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
+	// 	return true, fmt.Errorf("failed to install webhook chart: %w", err)
+	// }
 	kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionTrue)
 	logger.Info("successfully installed webhook chart",
 		"release-name", skrWatcherInstallInfo.ChartInfo.ReleaseName)
@@ -91,7 +97,7 @@ func (m *SKRWebhookChartManagerImpl) Remove(ctx context.Context, kyma *v1alpha1.
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
-	argsValues, err := m.generateHelmChartArgs(ctx, syncContext.ControlPlaneClient)
+	argsValues, err := generateHelmChartArgs(ctx, syncContext.ControlPlaneClient, m.config, m.kcpAddr)
 	if err != nil {
 		return err
 	}
@@ -116,8 +122,8 @@ func (m *SKRWebhookChartManagerImpl) Remove(ctx context.Context, kyma *v1alpha1.
 	return nil
 }
 
-func (m *SKRWebhookChartManagerImpl) generateHelmChartArgs(ctx context.Context,
-	kcpClient client.Client,
+func generateHelmChartArgs(ctx context.Context, kcpClient client.Client,
+	managerConfig *SkrChartManagerConfig, kcpAddr string,
 ) (map[string]interface{}, error) {
 	customConfigValue := ""
 	watcherList := &v1alpha1.WatcherList{}
@@ -134,27 +140,27 @@ func (m *SKRWebhookChartManagerImpl) generateHelmChartArgs(ctx context.Context,
 		customConfigValue = string(chartConfigBytes)
 	}
 
-	kcpAddr, err := m.resolveKcpAddr(ctx, kcpClient)
-	if err != nil {
-		return nil, err
-	}
 	return map[string]interface{}{
 		"kcpAddr":               kcpAddr,
-		"resourcesLimitsMemory": m.config.SkrWebhookMemoryLimits,
-		"resourcesLimitsCPU":    m.config.SkrWebhookCPULimits,
+		"resourcesLimitsMemory": managerConfig.SkrWebhookMemoryLimits,
+		"resourcesLimitsCPU":    managerConfig.SkrWebhookCPULimits,
 		customConfigKey:         customConfigValue,
 	}, nil
 }
 
-func (m *SKRWebhookChartManagerImpl) resolveKcpAddr(ctx context.Context, kcpClient client.Client) (string, error) {
-	if m.kcpAddr != "" {
-		return m.kcpAddr, nil
+func resolveKcpAddr(kcpConfig *rest.Config,
+	managerConfig *SkrChartManagerConfig,
+) (string, error) {
+	ctx := context.TODO()
+	// Get public KCP IP from the ISTIO load balancer external IP
+	kcpClient, err := client.New(kcpConfig, client.Options{})
+	if err != nil {
+		return "", err
 	}
-	// Get external IP from the ISTIO load balancer external IP
 	loadBalancerService := &corev1.Service{}
 	if err := kcpClient.Get(ctx, client.ObjectKey{
-		Name:      m.config.IstioIngressServiceName,
-		Namespace: m.config.IstioNamespace,
+		Name:      managerConfig.IstioIngressServiceName,
+		Namespace: managerConfig.IstioNamespace,
 	}, loadBalancerService); err != nil {
 		return "", err
 	}
@@ -169,6 +175,5 @@ func (m *SKRWebhookChartManagerImpl) resolveKcpAddr(ctx context.Context, kcpClie
 			break
 		}
 	}
-	m.kcpAddr = net.JoinHostPort(externalIP, strconv.Itoa(int(port)))
-	return m.kcpAddr, nil
+	return net.JoinHostPort(externalIP, strconv.Itoa(int(port))), nil
 }

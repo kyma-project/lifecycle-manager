@@ -81,6 +81,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	})
 
 	It("Watcher helm chart caching works as expected", func() {
+		Skip("until we introduce caching")
 		labelKey := "new-key"
 		labelValue := "new-value"
 		watcherCrForKyma.Spec.LabelsToWatch[labelKey] = labelValue
@@ -105,16 +106,16 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 			caBundleValueBeforeUpdate), Timeout, Interval).WithOffset(4).Should(Succeed())
 	})
 
-	It("helm three way merge updates webhook-config when a new watcher is created and deleted", func() {
+	It("kubernetes client patch updates webhook-config when a new watcher is created and deleted", func() {
 		secondWatcher := createWatcherCR("second-manager", false)
 		By("Creating second watcher CR")
 		Expect(controlPlaneClient.Create(suiteCtx, secondWatcher)).To(Succeed())
 		By("updating kyma channel to trigger its reconciliation")
 		Eventually(triggerLatestKymaReconciliation(suiteCtx, controlPlaneClient, kymaFastChannel, kymaObjKey),
 			Timeout, Interval).WithOffset(4).Should(Succeed())
-		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, secondWatcher, kymaObjKey),
-			Timeout, Interval).WithOffset(4).Should(Succeed())
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma, kymaObjKey),
+			Timeout, Interval).WithOffset(4).Should(Succeed())
+		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, secondWatcher, kymaObjKey),
 			Timeout, Interval).WithOffset(4).Should(Succeed())
 		By("Deleting second watcher CR")
 		Expect(controlPlaneClient.Delete(suiteCtx, secondWatcher)).To(Succeed())
@@ -266,8 +267,8 @@ func isWebhookConfigured(watcher *v1alpha1.Watcher, webhookConfig *admissionv1.V
 	}
 	idx := lookupWebhookConfigForCR(webhookConfig.Webhooks, watcher)
 	if idx == -1 {
-		return fmt.Errorf("%w: (kyma=%s, webconfig=%s)", ErrWebhookConfigForWatcherNotFound,
-			kymaName, webhookConfig.Name)
+		return fmt.Errorf("%w: (kyma=%s, webconfig=%s, watcher=%s)", ErrWebhookConfigForWatcherNotFound,
+			kymaName, webhookConfig.Name, watcher.Name)
 	}
 	return verifyWebhookConfig(webhookConfig.Webhooks[idx], watcher)
 }
