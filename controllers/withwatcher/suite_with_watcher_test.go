@@ -56,6 +56,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	istioscheme "istio.io/client-go/pkg/clientset/versioned/scheme"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -125,6 +126,7 @@ var _ = BeforeSuite(func() {
 	Expect(operatorv1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(moduleManagerV1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+	Expect(istioscheme.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 
@@ -176,7 +178,7 @@ var _ = BeforeSuite(func() {
 		Expect(controlPlaneClient.Create(suiteCtx, istioResource)).To(Succeed())
 	}
 
-	istioCfg := istio.NewConfig(virtualServiceName, "", operatorv1alpha1.DefaultIstioGatewaySelector(), false)
+	istioCfg := istio.NewConfig(virtualServiceName, false)
 	err = (&controllers.WatcherReconciler{
 		Client:           k8sManager.GetClient(),
 		RestConfig:       k8sManager.GetConfig(),

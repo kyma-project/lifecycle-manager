@@ -144,17 +144,14 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		os.Exit(1)
 	}
 
-	intervals := controllers.RequeueIntervals{
-		Success: flagVar.requeueSuccessInterval,
-	}
 	options := controllerOptionsFromFlagVar(flagVar)
 
 	remoteClientCache := remote.NewClientCache()
 
-	setupKymaReconciler(mgr, remoteClientCache, flagVar, intervals, options)
+	setupKymaReconciler(mgr, remoteClientCache, flagVar, options)
 
 	if flagVar.enableKcpWatcher {
-		setupKcpWatcherReconciler(mgr, intervals, options, flagVar)
+		setupKcpWatcherReconciler(mgr, options, flagVar)
 	}
 	if flagVar.enableWebhooks {
 		if err := (&operatorv1alpha1.ModuleTemplate{}).
@@ -210,11 +207,9 @@ func NewClient(
 	)
 }
 
-func setupKymaReconciler(
-	mgr ctrl.Manager,
+func setupKymaReconciler(mgr ctrl.Manager,
 	remoteClientCache *remote.ClientCache,
 	flagVar *FlagVar,
-	intervals controllers.RequeueIntervals,
 	options controller.Options,
 ) {
 	if flagVar.enableKcpWatcher {
@@ -240,7 +235,9 @@ func setupKymaReconciler(
 		KcpRestConfig:          mgr.GetConfig(),
 		RemoteClientCache:      remoteClientCache,
 		SKRWebhookChartManager: skrWebhookChartManager,
-		RequeueIntervals:       intervals,
+		RequeueIntervals: controllers.RequeueIntervals{
+			Success: flagVar.kymaRequeueSuccessInterval,
+		},
 		VerificationSettings: signature.VerificationSettings{
 			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
 			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
@@ -254,9 +251,7 @@ func setupKymaReconciler(
 	}
 }
 
-func setupKcpWatcherReconciler(mgr ctrl.Manager, intervals controllers.RequeueIntervals, options controller.Options,
-	flagVar *FlagVar,
-) {
+func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, flagVar *FlagVar) {
 	// Set MaxConcurrentReconciles to 1 to avoid concurrent writes on
 	// the Istio virtual service resource the WatcherReconciler is managing.
 	// In total, we probably only have 20 watcher CRs, one worker can sufficiently handle it,
@@ -264,15 +259,16 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, intervals controllers.RequeueIn
 	// although eventually the write operation will succeed.
 	options.MaxConcurrentReconciles = 1
 
-	istioConfig := istio.NewConfig(flagVar.virtualServiceName, flagVar.gatewayNamespacedName, &flagVar.gatewaySelector,
-		flagVar.enableWatcherLocalTesting)
+	istioConfig := istio.NewConfig(flagVar.virtualServiceName, flagVar.enableWatcherLocalTesting)
 
 	if err := (&controllers.WatcherReconciler{
-		Client:           mgr.GetClient(),
-		EventRecorder:    mgr.GetEventRecorderFor(controllers.WatcherControllerName),
-		Scheme:           mgr.GetScheme(),
-		RestConfig:       mgr.GetConfig(),
-		RequeueIntervals: intervals,
+		Client:        mgr.GetClient(),
+		EventRecorder: mgr.GetEventRecorderFor(controllers.WatcherControllerName),
+		Scheme:        mgr.GetScheme(),
+		RestConfig:    mgr.GetConfig(),
+		RequeueIntervals: controllers.RequeueIntervals{
+			Success: flagVar.kymaRequeueSuccessInterval,
+		},
 	}).SetupWithManager(mgr, options, istioConfig); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controllers.WatcherControllerName)
 		os.Exit(1)

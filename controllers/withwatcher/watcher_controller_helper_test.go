@@ -9,23 +9,28 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
-	. "github.com/onsi/gomega"
-
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
+	istioclientapi "istio.io/client-go/pkg/apis/networking/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	defaultBufferSize = 2048
-	crToDeleteIdx     = 2
+	defaultBufferSize    = 2048
+	componentToBeRemoved = "compass"
+	componentToBeUpdated = "lifecycle-manager"
 )
 
 //nolint:gochecknoglobals
-var centralComponents = []string{"lifecycle-manager", "module-manager", "compass"}
+var (
+	centralComponents                     = []string{componentToBeUpdated, "module-manager", componentToBeRemoved}
+	errRouteNotExists                     = errors.New("http route is not exists")
+	errVirtualServiceNotRemoved           = errors.New("virtual service not removed")
+	errWatcherNotRemoved                  = errors.New("watcher CR not removed")
+	errVirtualServiceHostsNotMatchGateway = errors.New("virtual service hosts not match with gateway")
+)
 
 func deserializeIstioResources() ([]*unstructured.Unstructured, error) {
 	var istioResourcesList []*unstructured.Unstructured
@@ -64,7 +69,7 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1alpha1.Watc
 			APIVersion: v1alpha1.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-sample", managerInstanceName),
+			Name:      managerInstanceName,
 			Namespace: metav1.NamespaceDefault,
 			Labels: map[string]string{
 				v1alpha1.ManagedBy: managerInstanceName,
@@ -80,54 +85,57 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1alpha1.Watc
 				fmt.Sprintf("%s-watchable", managerInstanceName): "true",
 			},
 			Field: field,
+			Gateway: v1alpha1.GatewayConfig{
+				LabelSelector: v1alpha1.DefaultIstioGatewaySelector(),
+			},
 		},
 	}
 }
 
-func listTestWatcherCrs(kcpClient client.Client) []*v1alpha1.Watcher {
-	watchers := make([]*v1alpha1.Watcher, 0)
-	for _, component := range centralComponents {
-		watcherCR := &v1alpha1.Watcher{}
-		err := kcpClient.Get(suiteCtx, client.ObjectKey{
-			Name:      fmt.Sprintf("%s-sample", component),
-			Namespace: metav1.NamespaceDefault,
-		}, watcherCR)
-		if err != nil {
-			continue
+func getWatcher(name string) (v1alpha1.Watcher, error) {
+	watcher := v1alpha1.Watcher{}
+	err := controlPlaneClient.Get(suiteCtx,
+		client.ObjectKey{Name: name, Namespace: metav1.NamespaceDefault},
+		&watcher)
+	return watcher, err
+}
+
+func isVirtualServiceHTTPRouteConfigured(ctx context.Context, customIstioClient *istio.Client, obj *v1alpha1.Watcher,
+) error {
+	routeReady, err := customIstioClient.IsListenerHTTPRouteConfigured(ctx, obj)
+	if !routeReady {
+		return errRouteNotExists
+	}
+	return err
+}
+
+func isVirtualServiceHostsConfigured(ctx context.Context,
+	istioClient *istio.Client,
+	gateway *istioclientapi.Gateway,
+) error {
+	virtualService, err := istioClient.GetVirtualService(ctx)
+	if err != nil {
+		return err
+	}
+	if !contains(virtualService.Spec.Hosts, gateway.Spec.Servers[0].Hosts[0]) {
+		return errVirtualServiceHostsNotMatchGateway
+	}
+	return nil
+}
+
+func contains(source []string, target string) bool {
+	for _, item := range source {
+		if item == target {
+			return true
 		}
-
-		watchers = append(watchers, watcherCR)
 	}
-	return watchers
+	return false
 }
 
-func isCrDeletionFinished(watcherObjKeys ...client.ObjectKey) func(g Gomega) bool {
-	if len(watcherObjKeys) > 1 {
-		return nil
+func isVirtualServiceRemoved(ctx context.Context, customIstioClient *istio.Client) error {
+	vsDeleted, err := customIstioClient.IsVirtualServiceDeleted(ctx)
+	if !vsDeleted {
+		return errVirtualServiceNotRemoved
 	}
-	if len(watcherObjKeys) == 0 {
-		return func(g Gomega) bool {
-			watchers := listTestWatcherCrs(controlPlaneClient)
-			return len(watchers) == 0
-		}
-	}
-	return func(g Gomega) bool {
-		err := controlPlaneClient.Get(suiteCtx, watcherObjKeys[0], &v1alpha1.Watcher{})
-		return apierrors.IsNotFound(err)
-	}
-}
-
-func isCrVsConfigured(ctx context.Context, customIstioClient *istio.Client, obj *v1alpha1.Watcher,
-) func(g Gomega) bool {
-	return func(g Gomega) bool {
-		routeReady, err := customIstioClient.IsListenerHTTPRouteConfigured(ctx, obj)
-		return err == nil && routeReady
-	}
-}
-
-func isVsRemoved(ctx context.Context, customIstioClient *istio.Client) func(g Gomega) bool {
-	return func(g Gomega) bool {
-		vsDeleted, err := customIstioClient.IsVsDeleted(ctx)
-		return err == nil && vsDeleted
-	}
+	return err
 }
