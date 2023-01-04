@@ -2,18 +2,11 @@
 
 ### Contents
 
-### Export customizable attributes
-```shell
-export KLM_PATH=<local-path-of-kyma-lifecycle-manager-project> && \
-export KLM_VERSION=<docker-image-tag-for-local-testing>  && \
-export KUBE_CONFIG_DIR=<path-to-export-local-kubeconfigs-to>
-```
-
 ### Create KCP cluster
 Run the following command to create a local control-plane (KCP) cluster:
 ```shell
 k3d cluster create kcp-local --port 9080:80@loadbalancer \
---registry-create k3d-registry.localhost:0.0.0.0:5111 \
+--registry-create k3d-kyma-registry.localhost:0.0.0.0:5111 \
 --k3s-arg '--no-deploy=traefik@server:0'
 ```
 
@@ -28,25 +21,25 @@ kubectl apply -f https://raw.githubusercontent.com/kyma-project/module-manager/m
 ### Build and push lifecycle-manager image
 Run the following commands to build and push lifecycle-manager image to local k3d registry:
 ```shell
-export K3D_REG=k3d-registry.localhost:5111 && \
-make -C $KLM_PATH docker-build IMG=$K3D_REG/lifecycle-manager:$KLM_VERSION && \
-make -C $KLM_PATH docker-push IMG=$K3D_REG/lifecycle-manager:$KLM_VERSION
+export K3D_REG=k3d-kyma-registry.localhost:5111 && \
+make docker-build IMG=$K3D_REG/lifecycle-manager:latest && \
+make docker-push IMG=$K3D_REG/lifecycle-manager:latest
 ```
 
 ### Deploy lifecycle-manager on KCP:
 Run the following command to deploy lifecycle-manager on the KCP cluster:
 ```shell
 kubectl config use-context k3d-kcp-local && \
-export K3D_REG=k3d-registry.localhost:5111 && \
-make -C $KLM_PATH local-deploy-with-watcher IMG=$K3D_REG/lifecycle-manager:$KLM_VERSION
+export K3D_REG=k3d-kyma-registry.localhost:5111 && \
+make local-deploy-with-watcher IMG=$K3D_REG/lifecycle-manager:latest
 ```
 
 ### Apply sample module templates for sample-kyma:
 Run the following command to apply sample module templates needed for sample Kyma on the KCP cluster:
 ```shell
 kubectl config use-context k3d-kcp-local && \
-kubectl apply -f $KLM_PATH/config/samples/component-integration-installed/operator_v1alpha1_moduletemplate_kcp-module.yaml && \
-kubectl apply -f $KLM_PATH/config/samples/component-integration-installed/operator_v1alpha1_moduletemplate_skr-module.yaml
+kubectl apply -f https://raw.githubusercontent.com/kyma-project/lifecycle-manager/main/config/samples/component-integration-installed/operator_v1alpha1_moduletemplate_kcp-module.yaml && \
+kubectl apply -f https://raw.githubusercontent.com/kyma-project/lifecycle-manager/main/config/samples/component-integration-installed/operator_v1alpha1_moduletemplate_skr-module.yaml
 ```
 ### Apply sample Kyma CR
 1. Run the following command to create a local kyma-runtime (SKR) cluster:
