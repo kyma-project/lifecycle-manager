@@ -24,6 +24,9 @@ const (
 	// WatchedByLabel defines a redirect to a controller that should be getting a notification
 	// if this resource is changed.
 	WatchedByLabel = OperatorPrefix + Separator + "watched-by"
+	// PurposeLabel defines the purpose of the resource, i.e. Secrets which will be used to certificate management
+	PurposeLabel = OperatorPrefix + Separator + "purpose"
+	CertManager  = "lmm-cert-manager"
 )
 
 func GetMatchingLabelsForModule(module *Module) client.MatchingLabels {

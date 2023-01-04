@@ -49,14 +49,17 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
+
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
-	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 
 	//+kubebuilder:scaffold:imports
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
+
+	aggregatorclientsetscheme "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/scheme"
 )
 
 const (
@@ -74,6 +77,7 @@ func init() {
 	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(v1extensions.AddToScheme(scheme))
 	utilruntime.Must(moduleManagerV1alpha1.AddToScheme(scheme))
+	utilruntime.Must(aggregatorclientsetscheme.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -152,6 +156,7 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 
 	if flagVar.enableKcpWatcher {
 		setupKcpWatcherReconciler(mgr, options, flagVar)
+		setupCertificateSyncReonciler(mgr, options, flagVar)
 	}
 	if flagVar.enableWebhooks {
 		if err := (&operatorv1alpha1.ModuleTemplate{}).
@@ -269,6 +274,15 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, fla
 		},
 	}).SetupWithManager(mgr, options, istioConfig); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controllers.WatcherControllerName)
+		os.Exit(1)
+	}
+}
+
+func setupCertificateSyncReonciler(mgr ctrl.Manager, options controller.Options, flagVar *FlagVar) {
+	if err := (&controllers.CertificateSyncReconciler{
+		Client: mgr.GetClient(),
+	}).SetupWithManager(mgr, options); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", controllers.CertificateSyncControllerName)
 		os.Exit(1)
 	}
 }

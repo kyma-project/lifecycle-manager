@@ -35,7 +35,8 @@ type SetupUpSetting struct {
 }
 
 const (
-	WatcherControllerName = "watcher"
+	WatcherControllerName         = "watcher"
+	CertificateSyncControllerName = "certificateSync"
 )
 
 // SetupWithManager sets up the Kyma controller with the Manager.
@@ -128,4 +129,33 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 		Named(WatcherControllerName).
 		WithOptions(options).
 		Complete(r)
+}
+
+// SetupWithManager sets up the CertificateSync controller with the Manager.
+func (r *CertificateSyncReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&corev1.Secret{}).
+		Named(CertificateSyncControllerName).WithEventFilter(predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			if label, ok := e.ObjectOld.GetLabels()[v1alpha1.PurposeLabel]; ok && label == v1alpha1.CertManager {
+				return e.ObjectOld != e.ObjectNew
+			}
+			return false
+		},
+		CreateFunc: func(e event.CreateEvent) bool {
+			if label, ok := e.Object.GetLabels()[v1alpha1.PurposeLabel]; ok && label == v1alpha1.CertManager {
+				return true
+			}
+			return false
+		},
+		DeleteFunc: func(e event.DeleteEvent) bool {
+			if label, ok := e.Object.GetLabels()[v1alpha1.PurposeLabel]; ok && label == v1alpha1.CertManager {
+				return true
+			}
+			return false
+		},
+		GenericFunc: func(e event.GenericEvent) bool {
+			return false
+		},
+	}).Complete(r)
 }
