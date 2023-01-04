@@ -24,7 +24,6 @@ resources:
   - ../manager
   # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'. 'WEBHOOK' components are required.
   - ../certmanager
-  - certificate_for_watcher_gateway.yaml
 
 components:
   - ../crd
@@ -76,12 +75,6 @@ patchesJson6902:
       kind: ConfigMap
       name: klm-overview
     path: patches/metrics_namespace_replace.yaml
-  - target:
-      group: networking.istio.io
-      version: v1beta1
-      kind: Gateway
-      name: watcher-gateway
-    path: patches/watcher_gateway_patch.yaml
 
 patchesStrategicMerge:
   # We expect a kcp-system namespace to be already present in KCP
