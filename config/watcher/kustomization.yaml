@@ -3,7 +3,8 @@ kind: Component
 
 resources:
 - operator_v1alpha1_watcher.yaml
-
+- gateway.yaml
+- certificate_for_watcher_gateway.yaml
 generatorOptions:
   disableNameSuffixHash: true
 

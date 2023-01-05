@@ -68,13 +68,24 @@ patchesJson6902:
         path: /spec/servers/0/hosts/0
         value: "*"
       - op: replace
+        path: /spec/servers/0/port/name
+        value: http
+      - op: replace
         path: /spec/servers/0/port/number
         value: 80
+      - op: replace
+        path: /spec/servers/0/port/protocol
+        value: HTTP
+      - op: remove
+        path: /spec/servers/0/tls
     target:
       group: networking.istio.io
       version: v1beta1
       kind: Gateway
       name: watcher-gateway
+
+patchesStrategicMerge:
+  - patch.yaml
 
 components:
   - ../crd
