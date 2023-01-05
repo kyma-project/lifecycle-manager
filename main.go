@@ -156,7 +156,7 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 
 	if flagVar.enableKcpWatcher {
 		setupKcpWatcherReconciler(mgr, options, flagVar)
-		setupCertificateSyncReonciler(mgr, options, flagVar)
+		setupCertificateSyncReonciler(mgr, options, remoteClientCache)
 	}
 	if flagVar.enableWebhooks {
 		if err := (&operatorv1alpha1.ModuleTemplate{}).
@@ -278,9 +278,11 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, fla
 	}
 }
 
-func setupCertificateSyncReonciler(mgr ctrl.Manager, options controller.Options, flagVar *FlagVar) {
+func setupCertificateSyncReonciler(mgr ctrl.Manager, options controller.Options, remoteClientCache *remote.ClientCache) {
 	if err := (&controllers.CertificateSyncReconciler{
-		Client: mgr.GetClient(),
+		Client:            mgr.GetClient(),
+		Scheme:            mgr.GetScheme(),
+		RemoteClientCache: remoteClientCache,
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controllers.CertificateSyncControllerName)
 		os.Exit(1)

@@ -3,7 +3,6 @@ package certificates
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 
@@ -11,12 +10,9 @@ import (
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	apimachinerymetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
-	apimachinerywait "k8s.io/apimachinery/pkg/util/wait"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -27,6 +23,8 @@ const (
 	privateKeyAlgorithm      = "ed25519"
 
 	domainAnnotation = "skr-domain"
+
+	CertificateSuffix = "-watcher-certificate"
 )
 
 var (
@@ -43,7 +41,7 @@ type SubjectAltName struct {
 	EmailAddresses []string
 }
 
-type certManager struct {
+type certificate struct {
 	ctx             context.Context
 	kcpClient       client.Client
 	skrClient       client.Client
@@ -52,22 +50,21 @@ type certManager struct {
 	secretName      string
 }
 
-func NewCertManager(kcpClient, skrClient client.Client, kyma *v1alpha1.Kyma) (*certManager, error) {
+func NewCertificate(kcpClient, skrClient client.Client, kyma *v1alpha1.Kyma) (*certificate, error) {
 	if kcpClient == nil || skrClient == nil || kyma == nil {
 		return nil, fmt.Errorf("coulc not create CertManager, clients or Kyma must not be empty")
 	}
-	return &certManager{
+	return &certificate{
 		ctx:             nil,
 		kcpClient:       kcpClient,
 		skrClient:       skrClient,
 		kyma:            kyma,
-		certificateName: fmt.Sprintf("%s-watcher-certificate", kyma.Name),
-		secretName:      fmt.Sprintf("%s-watcher-certificate", kyma.Name),
+		certificateName: fmt.Sprintf("%s%s", kyma.Name, CertificateSuffix),
+		secretName:      fmt.Sprintf("%s%s", kyma.Name, CertificateSuffix),
 	}, nil
 }
 
-// TODO: Check if it exists
-func (c *certManager) Create() error {
+func (c *certificate) Create() error {
 	// Check if Certificate exists
 	exists, err := c.exists()
 	if exists {
@@ -89,7 +86,7 @@ func (c *certManager) Create() error {
 	return nil
 }
 
-func (c *certManager) exists() (bool, error) {
+func (c *certificate) exists() (bool, error) {
 	cert := v1.Certificate{}
 	err := c.kcpClient.Get(c.ctx, types.NamespacedName{
 		Namespace: c.kyma.Namespace,
@@ -103,7 +100,7 @@ func (c *certManager) exists() (bool, error) {
 	return true, nil
 }
 
-func (c *certManager) createCertificate(
+func (c *certificate) createCertificate(
 	ctx context.Context, certNamespace string,
 	subjectAltName *SubjectAltName,
 ) error {
@@ -150,7 +147,7 @@ func (c *certManager) createCertificate(
 	return c.kcpClient.Create(ctx, &cert, nil)
 }
 
-func (c *certManager) getSubjectAltNames() (*SubjectAltName, error) {
+func (c *certificate) getSubjectAltNames() (*SubjectAltName, error) {
 	if domain, ok := c.kyma.Annotations[domainAnnotation]; ok {
 		if domain == "" {
 			return nil, fmt.Errorf("Domain-Annotation of KymaCR %s is empty", c.kyma.Name)
@@ -164,7 +161,7 @@ func (c *certManager) getSubjectAltNames() (*SubjectAltName, error) {
 }
 
 // TODO double check, if we can use self-signed Issuer with `lifecycle-manager` label
-func (c *certManager) getIssuer() (*v1.Issuer, error) {
+func (c *certificate) getIssuer() (*v1.Issuer, error) {
 	issuerList := &v1.IssuerList{}
 	err := c.kcpClient.List(c.ctx, issuerList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{"app.kubernetes.io/name": "lifecycle-manager"}),
@@ -177,57 +174,4 @@ func (c *certManager) getIssuer() (*v1.Issuer, error) {
 		return nil, fmt.Errorf("no issuer found")
 	}
 	return &issuerList.Items[0], nil
-}
-
-// TODO: Remove or move to secret watcher
-func (c *certManager) syncSecret(ctx context.Context, certName, certNamespace string) error {
-
-	interval := 1 * time.Second
-	timeout := 5 * time.Second
-	var certificate v1.Certificate
-
-	conditionFunc := func(context.Context) (done bool, err error) {
-		var cert v1.Certificate
-		err = c.kcpClient.Get(ctx, types.NamespacedName{Name: certName, Namespace: certNamespace}, &cert)
-		if err != nil {
-			if k8serrors.IsNotFound(err) {
-				return false, nil
-			}
-			return false, err
-		}
-
-		// TODO: ausprobieren wie viel conditions es gibt und wie diese sich verhalten
-		for _, condition := range cert.Status.Conditions {
-			if condition.Type == v1.CertificateConditionReady {
-				if condition.Status == (metav1.ConditionTrue) {
-					certificate = cert
-					return true, nil
-				}
-			}
-		}
-		return false, nil
-	}
-	// Wait until Certificate is ready
-	err := apimachinerywait.PollImmediateWithContext(ctx, interval, timeout, conditionFunc)
-	if err != nil {
-		return err
-	}
-
-	// Get Secret containing PrivateKey and Certificate
-	var certSecret corev1.Secret
-	err = c.kcpClient.Get(ctx, types.NamespacedName{Name: certificate.Spec.SecretName, Namespace: certNamespace}, &certSecret)
-	if err != nil {
-		return err
-	}
-	// Copy secret to SKR cluster
-	err = c.skrClient.Create(ctx, &certSecret, nil)
-	if err != nil {
-		return fmt.Errorf("could not create certificate secret on remote cluster: %w", err)
-	}
-	// Delete secret from KCP cluster
-	err = c.kcpClient.Delete(ctx, &certSecret)
-	if err != nil {
-		return fmt.Errorf("could not delete certificate secret on local cluster: %w", err)
-	}
-	return nil
 }

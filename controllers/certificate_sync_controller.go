@@ -18,8 +18,21 @@ package controllers
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
+	"k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/certificates"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
+
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -28,7 +41,8 @@ import (
 // CertificateSyncReconciler reconciles a Secrets object
 type CertificateSyncReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme            *runtime.Scheme
+	RemoteClientCache *remote.ClientCache
 }
 
 //+kubebuilder:rbac:groups=kyma-project.io,resources=secrets,verbs=get;list;watch;create;update;patch;delete
@@ -37,17 +51,50 @@ type CertificateSyncReconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the Secrets object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.13.0/pkg/reconcile
-func (r *CertificateSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
 
-	// TODO: sync Certificate Secret here
+func (r *CertificateSyncReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+	logger.Info("Syncing Certificate Secret")
+
+	secret := &corev1.Secret{}
+	err := r.Get(ctx, types.NamespacedName{
+		Namespace: req.Namespace,
+		Name:      req.Name,
+	}, secret)
+	kymaName := strings.TrimSuffix(secret.Name, certificates.CertificateSuffix)
+	if err != nil {
+		//TODO
+	}
+
+	kyma := &v1alpha1.Kyma{}
+	err = r.Get(ctx, types.NamespacedName{
+		Namespace: req.Namespace,
+		Name:      kymaName,
+	}, kyma)
+	if err != nil {
+		//TODO
+	}
+
+	skrClient, err := remote.NewRemoteClient(ctx, r.Client, client.ObjectKeyFromObject(kyma),
+		kyma.Spec.Sync.Strategy, r.RemoteClientCache)
+
+	err = skrClient.Get(ctx, types.NamespacedName{
+		Namespace: secret.Namespace,
+		Name:      secret.Name,
+	}, &corev1.Secret{})
+	if err != nil && errors.IsNotFound(err) {
+		logger.Info(fmt.Sprintf("Target secret %s doesn't exist, creating it", secret))
+		err = skrClient.Create(ctx, secret)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	} else {
+		logger.Info(fmt.Sprintf("Target secret already %s exists, updating it now", secret))
+		err = skrClient.Update(ctx, secret)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	}
 
 	return ctrl.Result{}, nil
 }
