@@ -29,6 +29,9 @@ patches:
         path: /spec/template/spec/containers/0/args/-
         value: --listener-http-local-mapping=9080
       - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --enable-domain-name-pinning=false
+      - op: add
         path: /spec/template/spec/containers/0/volumeMounts
         value:
           - name: manifest
