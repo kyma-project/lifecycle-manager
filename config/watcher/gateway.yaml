@@ -17,16 +17,9 @@ spec:
     - hosts:
         - 'listener.kyma.cloud.sap'
       port:
-        name: http
-        number: 8080
-        protocol: HTTP
-    # [mTLS] Uncomment following part if mTLS should be used
-    #- hosts:
-    #    - 'listener.kyma.cloud.sap'
-    #  port:
-    #    name: https
-    #    number: 8443
-    #    protocol: HTTPS
-    #  tls:
-    #    credentialName: <reference to secret containing ca.crt, tls.cert and tls.key>
-    #    mode: MUTUAL
+        name: https
+        number: 443
+        protocol: HTTPS
+      tls:
+        credentialName: watcher-gateway-secret
+        mode: MUTUAL
