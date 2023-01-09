@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/certificates"
+	"github.com/kyma-project/lifecycle-manager/pkg/certmanager"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -104,12 +104,12 @@ func (m *EnabledSKRWebhookChartManager) InstallWebhookChart(ctx context.Context,
 		return true, err
 	}
 
-	// Create CertificateCR which will be sued for mTLS connection from SKR to KCP
-	certManager, err := certificates.NewCertificate(kcpClient, skrClient, kyma)
+	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
+	certificate, err := certmanager.NewCertificate(ctx, kcpClient, skrClient, kyma)
 	if err != nil {
 		return true, err
 	}
-	if err := certManager.Create(); err != nil {
+	if err := certificate.Create(); err != nil {
 		return true, err
 	}
 

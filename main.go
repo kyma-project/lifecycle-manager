@@ -49,6 +49,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
@@ -78,6 +79,8 @@ func init() {
 	utilruntime.Must(v1extensions.AddToScheme(scheme))
 	utilruntime.Must(moduleManagerV1alpha1.AddToScheme(scheme))
 	utilruntime.Must(aggregatorclientsetscheme.AddToScheme(scheme))
+	utilruntime.Must(certManagerV1.AddToScheme(scheme))
+
 	//+kubebuilder:scaffold:scheme
 }
 

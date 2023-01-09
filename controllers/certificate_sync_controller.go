@@ -21,12 +21,12 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/certmanager"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/certificates"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 
@@ -61,7 +61,7 @@ func (r *CertificateSyncReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		Namespace: req.Namespace,
 		Name:      req.Name,
 	}, secret)
-	kymaName := strings.TrimSuffix(secret.Name, certificates.CertificateSuffix)
+	kymaName := strings.TrimSuffix(secret.Name, certmanager.CertificateSuffix)
 	if err != nil {
 		//TODO
 	}

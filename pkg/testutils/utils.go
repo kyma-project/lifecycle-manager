@@ -13,6 +13,11 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
+	k8sruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/onsi/gomega"
 
@@ -21,6 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
+	. "github.com/onsi/gomega"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -180,4 +186,29 @@ func readModuleTemplate(module v1alpha1.Module, moduleTemplate *v1alpha1.ModuleT
 	}
 	err = yaml.Unmarshal(moduleFile, &moduleTemplate)
 	return err
+}
+
+func NewSKRCluster(scheme *k8sruntime.Scheme) (client.Client, *envtest.Environment) {
+	skrEnv := &envtest.Environment{
+		ErrorIfCRDPathMissing: true,
+	}
+	cfg, err := skrEnv.Start()
+	Expect(cfg).NotTo(BeNil())
+	Expect(err).NotTo(HaveOccurred())
+
+	var authUser *envtest.AuthenticatedUser
+	authUser, err = skrEnv.AddUser(envtest.User{
+		Name:   "skr-admin-account",
+		Groups: []string{"system:masters"},
+	}, cfg)
+	Expect(err).NotTo(HaveOccurred())
+
+	remote.LocalClient = func() *rest.Config {
+		return authUser.Config()
+	}
+
+	skrClient, err := client.New(authUser.Config(), client.Options{Scheme: scheme})
+	Expect(err).NotTo(HaveOccurred())
+
+	return skrClient, skrEnv
 }

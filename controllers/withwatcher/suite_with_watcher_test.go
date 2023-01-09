@@ -134,7 +134,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(controlPlaneClient).NotTo(BeNil())
 
-	runtimeClient, runtimeEnv = NewSKRCluster()
+	runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
 
 	metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
 	if !found {
@@ -213,31 +213,6 @@ var _ = AfterSuite(func() {
 	err = runtimeEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
-
-func NewSKRCluster() (client.Client, *envtest.Environment) {
-	skrEnv := &envtest.Environment{
-		ErrorIfCRDPathMissing: true,
-	}
-	cfg, err := skrEnv.Start()
-	Expect(cfg).NotTo(BeNil())
-	Expect(err).NotTo(HaveOccurred())
-
-	var authUser *envtest.AuthenticatedUser
-	authUser, err = skrEnv.AddUser(envtest.User{
-		Name:   "skr-admin-account",
-		Groups: []string{"system:masters"},
-	}, cfg)
-	Expect(err).NotTo(HaveOccurred())
-
-	remote.LocalClient = func() *rest.Config {
-		return authUser.Config()
-	}
-
-	skrClient, err := client.New(authUser.Config(), client.Options{Scheme: controlPlaneClient.Scheme()})
-	Expect(err).NotTo(HaveOccurred())
-
-	return skrClient, skrEnv
-}
 
 func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 	istioNs := &corev1.Namespace{

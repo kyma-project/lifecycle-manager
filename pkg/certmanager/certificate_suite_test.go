@@ -1,61 +1,35 @@
-/*
-Copyright 2022.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-package controllers_test
+package certmanager_test
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
-
-	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
-	//nolint:gci
-	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
-
+	"github.com/kyma-project/lifecycle-manager/controllers"
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"k8s.io/client-go/kubernetes/scheme"
+	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-
-	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/controllers"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-	"github.com/kyma-project/lifecycle-manager/pkg/signature"
-	//+kubebuilder:scaffold:imports
+	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/operator/api/v1alpha1"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
-
-const listenerAddr = ":8082"
 
 var (
 	controlPlaneClient client.Client        //nolint:gochecknoglobals
@@ -71,7 +45,8 @@ var (
 func TestAPIs(t *testing.T) {
 	t.Parallel()
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Controller Suite")
+
+	RunSpecs(t, "Certificate Sync")
 }
 
 var _ = BeforeSuite(func() {
@@ -79,37 +54,28 @@ var _ = BeforeSuite(func() {
 	logger := zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true))
 	logf.SetLogger(logger)
 
-	By("bootstrapping test environment")
-
+	By("bootstrapping control plane test environment")
 	// manifest CRD
 	// istio CRDs
 	remoteCrds, err := ParseRemoteCRDs([]string{
 		"https://raw.githubusercontent.com/kyma-project/module-manager/main/config/crd/bases/operator.kyma-project.io_manifests.yaml", //nolint:lll
+		"https://github.com/cert-manager/cert-manager/releases/download/v1.10.1/cert-manager.crds.yaml",
 	})
 	Expect(err).NotTo(HaveOccurred())
-
-	// kcpModule CRD
-	controlplaneCrd := &v1.CustomResourceDefinition{}
-	modulePath := filepath.Join("..", "config", "samples", "component-integration-installed",
-		"crd", "operator.kyma-project.io_kcpmodules.yaml")
-	moduleFile, err := os.ReadFile(modulePath)
-	Expect(err).To(BeNil())
-	Expect(moduleFile).ToNot(BeEmpty())
-	Expect(yaml2.Unmarshal(moduleFile, &controlplaneCrd)).To(Succeed())
-
 	controlPlaneEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases")},
-		CRDs:                  append([]*v1.CustomResourceDefinition{controlplaneCrd}, remoteCrds...),
+		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
+		CRDs:                  remoteCrds,
 		ErrorIfCRDPathMissing: true,
 	}
 
-	cfg, err = controlPlaneEnv.Start()
+	cfg, err := controlPlaneEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
 	Expect(operatorv1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(moduleManagerV1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+	Expect(certManagerV1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 
@@ -119,35 +85,17 @@ var _ = BeforeSuite(func() {
 
 	runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
 
-	metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
-	if !found {
-		metricsBindAddress = ":8080"
-	}
-
 	k8sManager, err = ctrl.NewManager(
 		cfg, ctrl.Options{
-			MetricsBindAddress: metricsBindAddress,
-			Scheme:             scheme.Scheme,
-			NewCache:           controllers.NewCacheFunc(),
+			Scheme:   scheme.Scheme,
+			NewCache: controllers.NewCacheFunc(),
 		})
 	Expect(err).ToNot(HaveOccurred())
-
-	intervals := controllers.RequeueIntervals{
-		Success: 3 * time.Second,
-	}
-
 	remoteClientCache := remote.NewClientCache()
-	err = (&controllers.KymaReconciler{
-		Client:                 k8sManager.GetClient(),
-		EventRecorder:          k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		RequeueIntervals:       intervals,
-		SKRWebhookChartManager: &deploy.DisabledSKRWebhookChartManager{},
-		VerificationSettings: signature.VerificationSettings{
-			EnableVerification: false,
-		},
+	err = (&controllers.CertificateSyncReconciler{
+		Client:            k8sManager.GetClient(),
 		RemoteClientCache: remoteClientCache,
-	}).SetupWithManager(k8sManager, controller.Options{},
-		controllers.SetupUpSetting{ListenerAddr: listenerAddr})
+	}).SetupWithManager(k8sManager, controller.Options{})
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
@@ -165,4 +113,5 @@ var _ = AfterSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	err = runtimeEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
+
 })

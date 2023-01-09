@@ -1,4 +1,4 @@
-package certificates
+package certmanager
 
 import (
 	"context"
@@ -50,12 +50,12 @@ type certificate struct {
 	secretName      string
 }
 
-func NewCertificate(kcpClient, skrClient client.Client, kyma *v1alpha1.Kyma) (*certificate, error) {
-	if kcpClient == nil || skrClient == nil || kyma == nil {
-		return nil, fmt.Errorf("coulc not create CertManager, clients or Kyma must not be empty")
+func NewCertificate(ctx context.Context, kcpClient, skrClient client.Client, kyma *v1alpha1.Kyma) (*certificate, error) {
+	if ctx == nil || kcpClient == nil || skrClient == nil || kyma == nil {
+		return nil, fmt.Errorf("could not create CertManager, context, clients or Kyma must not be empty")
 	}
 	return &certificate{
-		ctx:             nil,
+		ctx:             ctx,
 		kcpClient:       kcpClient,
 		skrClient:       skrClient,
 		kyma:            kyma,
@@ -68,7 +68,6 @@ func (c *certificate) Create() error {
 	// Check if Certificate exists
 	exists, err := c.exists()
 	if exists {
-		// TODO: check if cert is ready
 		return nil
 	} else if err != nil {
 		return err
@@ -91,7 +90,7 @@ func (c *certificate) exists() (bool, error) {
 	err := c.kcpClient.Get(c.ctx, types.NamespacedName{
 		Namespace: c.kyma.Namespace,
 		Name:      c.certificateName,
-	}, &cert, nil)
+	}, &cert)
 	if k8serrors.IsNotFound(err) {
 		return false, nil
 	} else if err != nil {
