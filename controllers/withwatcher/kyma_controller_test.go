@@ -50,7 +50,6 @@ var (
 )
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
-	webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
 	kyma := NewTestKyma("kyma-remote-sync")
 	kyma.Spec.Sync = v1alpha1.Sync{
 		Enabled:      true,
@@ -67,46 +66,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 			kymaObjKey), Timeout, Interval).WithOffset(4).Should(Succeed())
 	})
 
-	It("kyma reconciler re-installs watcher helm chart when webhook CA bundle is not consistent", func() {
-		Skip("is this needed?")
-		By("updating webhook config with corrupt CA bundle data")
-		Expect(webhookConfig.Webhooks).NotTo(BeEmpty())
-		webhookConfig.Webhooks[0].ClientConfig.CABundle = []byte(dummyCaBundleData)
-		Expect(runtimeClient.Update(suiteCtx, webhookConfig)).To(Succeed())
-		By("updating kyma channel to trigger its reconciliation")
-		kyma.Spec.Channel = kymaAlphaChannel
-		Eventually(controlPlaneClient.Update(suiteCtx, kyma), Timeout, Interval).WithOffset(4).Should(Succeed())
-		Eventually(deploy.CheckWebhookCABundleConsistency(suiteCtx, runtimeClient, kymaObjKey),
-			Timeout, Interval).WithOffset(4).Should(Succeed())
-	})
-
-	It("Watcher helm chart caching works as expected", func() {
-		Skip("until we introduce caching")
-		labelKey := "new-key"
-		labelValue := "new-value"
-		watcherCrForKyma.Spec.LabelsToWatch[labelKey] = labelValue
-		Expect(controlPlaneClient.Update(suiteCtx, watcherCrForKyma)).To(Succeed())
-		By("waiting for watcher CR labelsToWatch to be updated")
-		Eventually(isWatcherCrLabelUpdated(client.ObjectKeyFromObject(watcherCrForKyma),
-			labelKey, labelValue), Timeout, Interval).Should(BeTrue())
-		By("updating kyma channel to trigger its reconciliation")
-		Eventually(triggerLatestKymaReconciliation(suiteCtx, controlPlaneClient, kymaFastChannel, kymaObjKey),
-			Timeout, Interval).WithOffset(4).Should(Succeed())
-		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
-			kymaObjKey), Timeout, Interval).WithOffset(4).Should(Succeed())
-		webhookCfg, err := getSKRWebhookConfig(suiteCtx, runtimeClient, kymaObjKey)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(webhookCfg).NotTo(BeNil())
-		Expect(webhookCfg.Webhooks).NotTo(BeEmpty())
-		caBundleValueBeforeUpdate := webhookCfg.Webhooks[0].ClientConfig.CABundle
-		By("updating kyma channel to trigger its reconciliation")
-		Eventually(triggerLatestKymaReconciliation(suiteCtx, controlPlaneClient, kymaAlphaChannel, kymaObjKey),
-			Timeout, Interval).WithOffset(4).Should(Succeed())
-		Eventually(webhookConfigCaBundleNewGenerationCheck(suiteCtx, runtimeClient, kymaObjKey,
-			caBundleValueBeforeUpdate), Timeout, Interval).WithOffset(4).Should(Succeed())
-	})
-
-	It("kubernetes client patch updates webhook-config when a new watcher is created and deleted", func() {
+	It("kubernetes client update replaces webhook-config when a new watcher is created and deleted", func() {
 		secondWatcher := createWatcherCR("second-manager", false)
 		By("Creating second watcher CR")
 		Expect(controlPlaneClient.Create(suiteCtx, secondWatcher)).To(Succeed())
@@ -129,6 +89,49 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 			Timeout, Interval).WithOffset(4).Should(Succeed())
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, secondWatcher, kymaObjKey),
 			Timeout, Interval).WithOffset(4).ShouldNot(Succeed())
+	})
+
+	It("kyma reconciler re-installs watcher helm chart when webhook CA bundle is not consistent", func() {
+		By("updating webhook config with corrupt CA bundle data")
+		webhookCfg, err := getSKRWebhookConfig(suiteCtx, runtimeClient, kymaObjKey)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(webhookCfg).NotTo(BeNil())
+		Expect(webhookCfg.Webhooks).NotTo(BeEmpty())
+		webhookCfg.Webhooks[0].ClientConfig.CABundle = []byte(dummyCaBundleData)
+		Expect(runtimeClient.Update(suiteCtx, webhookCfg)).To(Succeed())
+		By("updating kyma channel to trigger its reconciliation")
+		kyma.Spec.Channel = kymaAlphaChannel
+		Eventually(controlPlaneClient.Update(suiteCtx, kyma), Timeout, Interval).WithOffset(4).Should(Succeed())
+		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
+			kymaObjKey), Timeout, Interval).WithOffset(4).Should(Succeed())
+		Eventually(deploy.CheckWebhookCABundleConsistency(suiteCtx, runtimeClient, kymaObjKey),
+			Timeout, Interval).WithOffset(4).Should(Succeed())
+	})
+
+	It("Watcher helm chart caching works as expected", func() {
+		Skip("until we re-introduce caching")
+		labelKey := "new-key"
+		labelValue := "new-value"
+		watcherCrForKyma.Spec.LabelsToWatch[labelKey] = labelValue
+		Expect(controlPlaneClient.Update(suiteCtx, watcherCrForKyma)).To(Succeed())
+		By("waiting for watcher CR labelsToWatch to be updated")
+		Eventually(isWatcherCrLabelUpdated(client.ObjectKeyFromObject(watcherCrForKyma),
+			labelKey, labelValue), Timeout, Interval).Should(BeTrue())
+		By("updating kyma channel to trigger its reconciliation")
+		Eventually(triggerLatestKymaReconciliation(suiteCtx, controlPlaneClient, kymaFastChannel, kymaObjKey),
+			Timeout, Interval).WithOffset(4).Should(Succeed())
+		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
+			kymaObjKey), Timeout, Interval).WithOffset(4).Should(Succeed())
+		webhookCfg, err := getSKRWebhookConfig(suiteCtx, runtimeClient, kymaObjKey)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(webhookCfg).NotTo(BeNil())
+		Expect(webhookCfg.Webhooks).NotTo(BeEmpty())
+		caBundleValueBeforeUpdate := webhookCfg.Webhooks[0].ClientConfig.CABundle
+		By("updating kyma channel to trigger its reconciliation")
+		Eventually(triggerLatestKymaReconciliation(suiteCtx, controlPlaneClient, kymaAlphaChannel, kymaObjKey),
+			Timeout, Interval).WithOffset(4).Should(Succeed())
+		Eventually(webhookConfigCaBundleNewGenerationCheck(suiteCtx, runtimeClient, kymaObjKey,
+			caBundleValueBeforeUpdate), Timeout, Interval).WithOffset(4).Should(Succeed())
 	})
 
 	It("webhook manager removes watcher helm chart from SKR cluster when kyma is deleted", func() {

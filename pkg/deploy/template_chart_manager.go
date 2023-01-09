@@ -20,6 +20,7 @@ import (
 
 const (
 	defaultBufferSize = 2048
+	defaultFieldOwner = client.FieldOwner("lifecycle-manager")
 )
 
 type SKRWebhookTemplateChartManager struct {
@@ -81,12 +82,13 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 			return true, fmt.Errorf("failed to resolve webhook %s: %w", resource.GetKind(), err)
 		}
 		if apierrors.IsNotFound(err) {
-			if err := syncContext.RuntimeClient.Create(ctx, resource); err != nil {
+			if err := syncContext.RuntimeClient.Create(ctx, resource, defaultFieldOwner); err != nil {
 				return true, fmt.Errorf("failed to create webhook %s: %w", resource.GetKind(), err)
 			}
 		}
-		patch := client.MergeFrom(oldResource)
-		err = syncContext.RuntimeClient.Patch(ctx, resource, patch)
+		// completely replace old resource with new resource
+		resource.SetResourceVersion(oldResource.GetResourceVersion())
+		err = syncContext.RuntimeClient.Update(ctx, resource, defaultFieldOwner)
 		if err != nil {
 			return true, fmt.Errorf("failed to patch webhook %s: %w", resource.GetKind(), err)
 		}
