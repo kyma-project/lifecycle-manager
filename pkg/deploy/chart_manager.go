@@ -36,15 +36,16 @@ type SKRWebhookChartManagerImpl struct {
 type SkrChartManagerConfig struct {
 	// WebhookChartPath represents the path of the webhook chart
 	// to be installed on SKR clusters upon reconciling kyma CRs.
-	WebhookChartPath        string
-	SkrWebhookMemoryLimits  string
-	SkrWebhookCPULimits     string
-	IstioNamespace          string
-	IstioIngressServiceName string
+	WebhookChartPath           string
+	SkrWebhookMemoryLimits     string
+	SkrWebhookCPULimits        string
+	WatcherLocalTestingEnabled bool
+	GatewayHTTPPortMapping     int
 }
 
-func NewSKRWebhookChartManagerImpl(kcpRestConfig *rest.Config, config *SkrChartManagerConfig) (*SKRWebhookChartManagerImpl, error) {
-	resolvedKcpAddr, err := resolveKcpAddr(kcpRestConfig, config)
+func NewSKRWebhookChartManagerImpl(kcpRestConfig *rest.Config, config *SkrChartManagerConfig,
+) (*SKRWebhookChartManagerImpl, error) {
+	resolvedKcpAddr, err := resolveKcpAddr(kcpRestConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -148,9 +149,7 @@ func generateHelmChartArgs(ctx context.Context, kcpClient client.Client,
 	}, nil
 }
 
-func resolveKcpAddr(kcpConfig *rest.Config,
-	managerConfig *SkrChartManagerConfig,
-) (string, error) {
+func resolveKcpAddr(kcpConfig *rest.Config) (string, error) {
 	ctx := context.TODO()
 	// Get public KCP IP from the ISTIO load balancer external IP
 	kcpClient, err := client.New(kcpConfig, client.Options{})
@@ -159,8 +158,8 @@ func resolveKcpAddr(kcpConfig *rest.Config,
 	}
 	loadBalancerService := &corev1.Service{}
 	if err := kcpClient.Get(ctx, client.ObjectKey{
-		Name:      managerConfig.IstioIngressServiceName,
-		Namespace: managerConfig.IstioNamespace,
+		Name:      IngressServiceName,
+		Namespace: IstioSytemNs,
 	}, loadBalancerService); err != nil {
 		return "", err
 	}

@@ -6,7 +6,7 @@ configurations:
 
 resources:
 - ap.yaml
-- gataway.yaml
+
 generatorOptions:
   disableNameSuffixHash: true
 

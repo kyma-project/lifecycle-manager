@@ -50,18 +50,9 @@ spec:
                 description: Gateway configures the Istio Gateway for the VirtualService
                   that is created/updated during processing of the Watcher CR.
                 properties:
-                  namespacedName:
-                    description: 'NamespacedName takes precedence over LabelSelector
-                      if configured. Format to use: "namespaceName/gatewayName" TODO:
-                      Add validation: <name><slash><namespace>'
-                    maxLength: 127
-                    minLength: 3
-                    pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?[/][a-z]([-a-z0-9]*[a-z0-9])?$
-                    type: string
                   selector:
                     description: LabelSelector allows to select the Gateway using
-                      label selectors as defined in the K8s LIST API. Ignored if NamespacedName
-                      is set.
+                      label selectors as defined in the K8s LIST API.
                     properties:
                       matchExpressions:
                         description: matchExpressions is a list of label selector
@@ -105,6 +96,8 @@ spec:
                         type: object
                     type: object
                     x-kubernetes-map-type: atomic
+                required:
+                - selector
                 type: object
               labelsToWatch:
                 additionalProperties:
@@ -132,6 +125,7 @@ spec:
                 type: object
             required:
             - field
+            - gateway
             - labelsToWatch
             - serviceInfo
             type: object

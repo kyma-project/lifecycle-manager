@@ -25,6 +25,8 @@ type Mode string
 const (
 	customConfigKey                = "modules"
 	WebhookCfgAndDeploymentNameTpl = "%s-webhook"
+	IstioSytemNs                   = "istio-system"
+	IngressServiceName             = "istio-ingressgateway"
 	releaseNameTpl                 = "%s-%s-skr"
 	staticWatcherConfigName        = "static-watcher-config-name"
 	caCertificateSecretKey         = "ca.crt"

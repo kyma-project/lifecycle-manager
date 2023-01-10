@@ -82,7 +82,8 @@ jobs:
       - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
         if: github.event_name == 'pull_request'
         run: |
-          wget -qO - "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          wget --header="Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -qO - "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
           mv kustomize /usr/local/bin/
           cd $(go env GOPATH)/src/github.com/${{ github.repository }}/config/manager
           kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"

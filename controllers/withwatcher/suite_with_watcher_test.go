@@ -58,6 +58,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	istioscheme "istio.io/client-go/pkg/clientset/versioned/scheme"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -83,8 +84,6 @@ const (
 	webhookChartPath       = "../../skr-webhook"
 	istioResourcesFilePath = "../../config/samples/tests/istio-test-resources.yaml"
 	virtualServiceName     = "kcp-events"
-	istioSytemNs           = "istio-system"
-	ingressServiceName     = "istio-ingressgateway"
 )
 
 func TestAPIs(t *testing.T) {
@@ -130,6 +129,7 @@ var _ = BeforeSuite(func() {
 	Expect(operatorv1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(moduleManagerV1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+	Expect(istioscheme.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 
@@ -168,8 +168,6 @@ var _ = BeforeSuite(func() {
 		WebhookChartPath:        webhookChartPath,
 		SkrWebhookMemoryLimits:  "200Mi",
 		SkrWebhookCPULimits:     "1",
-		IstioNamespace:          istioSytemNs,
-		IstioIngressServiceName: ingressServiceName,
 	}
 	skrWebhookChartManager, err := deploy.NewSKRWebhookTemplateChartManager(restCfg, skrChartCfg)
 	Expect(err).ToNot(HaveOccurred())
@@ -185,7 +183,7 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager, controller.Options{}, controllers.SetupUpSetting{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
-	istioCfg := istio.NewConfig(virtualServiceName, "", operatorv1alpha1.DefaultIstioGatewaySelector())
+	istioCfg := istio.NewConfig(virtualServiceName, false)
 	err = (&controllers.WatcherReconciler{
 		Client:           k8sManager.GetClient(),
 		RestConfig:       k8sManager.GetConfig(),
@@ -249,7 +247,7 @@ func NewSKRCluster() (client.Client, *envtest.Environment) {
 func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 	istioNs := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: istioSytemNs,
+			Name: deploy.IstioSytemNs,
 		},
 	}
 	if err := k8sClient.Create(ctx, istioNs); err != nil {
@@ -257,10 +255,10 @@ func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 	}
 	loadBalancerService := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ingressServiceName,
-			Namespace: istioSytemNs,
+			Name:      deploy.IngressServiceName,
+			Namespace: deploy.IstioSytemNs,
 			Labels: map[string]string{
-				"app": ingressServiceName,
+				"app": deploy.IngressServiceName,
 			},
 		},
 		Spec: corev1.ServiceSpec{
@@ -293,7 +291,7 @@ func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 	}
 
 	return k8sClient.Get(ctx, client.ObjectKey{
-		Name:      ingressServiceName,
-		Namespace: istioSytemNs,
+		Name:      deploy.IngressServiceName,
+		Namespace: deploy.IstioSytemNs,
 	}, loadBalancerService)
 }

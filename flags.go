@@ -1,37 +1,25 @@
 package main
 
 import (
-	"errors"
 	"flag"
-	"fmt"
-	"strings"
 	"time"
-
-	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	utilvalidation "k8s.io/apimachinery/pkg/util/validation"
 )
 
 const (
-	defaultRequeueSuccessInterval = 20 * time.Second
-	defaultClientQPS              = 150
-	defaultClientBurst            = 150
-	defaultPprofServerTimeout     = 90 * time.Second
-	rateLimiterBurstDefault       = 200
-	rateLimiterFrequencyDefault   = 30
-	failureBaseDelayDefault       = 100 * time.Millisecond
-	failureMaxDelayDefault        = 1000 * time.Second
-	defaultCacheSyncTimeout       = 2 * time.Minute
-	namespacedNamePartsCnt        = 2
+	defaultKymaRequeueSuccessInterval    = 20 * time.Second
+	defaultWatcherRequeueSuccessInterval = 20 * time.Second
+	defaultClientQPS                     = 150
+	defaultClientBurst                   = 150
+	defaultPprofServerTimeout            = 90 * time.Second
+	rateLimiterBurstDefault              = 200
+	rateLimiterFrequencyDefault          = 30
+	failureBaseDelayDefault              = 100 * time.Millisecond
+	failureMaxDelayDefault               = 1000 * time.Second
+	defaultCacheSyncTimeout              = 2 * time.Minute
+	defaultListenerPort                  = 9080
 )
 
-var (
-	errInvalidGatewayFmt       = errors.New("must be <namespace>/<name>")
-	errInvalidGatewayNamespace = errors.New("must be an RFC 1123 DNS Label")
-	errInvalidGatewayName      = errors.New("must be an RFC 1035 Label Name")
-)
-
-func defineFlagVar() *FlagVar { //nolint:funlen
+func defineFlagVar() *FlagVar {
 	flagVar := new(FlagVar)
 	flag.StringVar(&flagVar.metricsAddr, "metrics-bind-address", ":8080",
 		"The address the metric endpoint binds to.")
@@ -46,9 +34,12 @@ func defineFlagVar() *FlagVar { //nolint:funlen
 	flag.BoolVar(&flagVar.enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	flag.DurationVar(&flagVar.requeueSuccessInterval, "requeue-success-interval", defaultRequeueSuccessInterval,
-		"determines the duration after which an already successfully reconciled Kyma is enqueued for checking "+
-			"if it's still in a consistent state.")
+	flag.DurationVar(&flagVar.kymaRequeueSuccessInterval, "kyma-requeue-success-interval",
+		defaultKymaRequeueSuccessInterval, "determines the duration after which an already successfully "+
+			"reconciled Kyma is enqueued for checking if it's still in a consistent state.")
+	flag.DurationVar(&flagVar.watcherRequeueSuccessInterval, "watcher-requeue-success-interval",
+		defaultWatcherRequeueSuccessInterval, "determines the duration after which an already successfully "+
+			"reconciled watcher is enqueued for checking if it's still in a consistent state.")
 	flag.Float64Var(&flagVar.clientQPS, "k8s-client-qps", defaultClientQPS, "kubernetes client QPS")
 	flag.IntVar(&flagVar.clientBurst, "k8s-client-burst", defaultClientBurst, "kubernetes client Burst")
 	flag.StringVar(&flagVar.moduleVerificationKeyFilePath, "module-verification-key-file", "",
@@ -60,7 +51,7 @@ func defineFlagVar() *FlagVar { //nolint:funlen
 		"Enabling Validation/Conversion Webhooks.")
 	flag.BoolVar(&flagVar.enableKcpWatcher, "enable-kcp-watcher", false,
 		"Enabling KCP Watcher to reconcile Watcher CRs created by KCP run operators")
-	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "charts/skr-webhook",
+	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "./skr-webhook",
 		"The path to the skr watcher chart.")
 	flag.StringVar(&flagVar.skrWebhookMemoryLimits, "skr-webhook-memory-limits", "200Mi",
 		"The resources.limits.memory for skr webhook.")
@@ -68,16 +59,12 @@ func defineFlagVar() *FlagVar { //nolint:funlen
 		"The resources.limits.cpu for skr webhook.")
 	flag.StringVar(&flagVar.virtualServiceName, "virtual-svc-name", "kcp-events",
 		"Name of the virtual service resource to be reconciled by the watcher control loop.")
-	flag.Var(newNamespacedNameVar(&flagVar.gatewayNamespacedName), "gateway-ns-name",
-		"Namespaced name of the gateway resource that the virtual service will use. "+
-			"Format: <namespace>/<name>. Example: \"my-namespace/my-gateway\".")
-	flag.Var(newLabelSelectorVar(&flagVar.gatewaySelector).
-		withDefault(operatorv1alpha1.DefaultIstioGatewaySelector()),
-		"gateway-selector", "Label selector of the gateway resource that the virtual service will use. "+
-			"Ignored if gateway-ns-name flag is specified. Format: K8s label selector expression. "+
-			"Example: \"label1=value1,label2=value2\"")
-	flag.BoolVar(&flagVar.pprof, "pprof", false,
-		"Whether to start up a pprof server.")
+	flag.BoolVar(&flagVar.enableWatcherLocalTesting, "enable-watcher-local-testing", false,
+		"Enabling KCP Watcher two-cluster setup to be tested locally using k3d")
+	flag.IntVar(&flagVar.listenerHTTPPortLocalMapping, "listener-http-local-mapping", defaultListenerPort,
+		"Port that is mapped to HTTP port of the local k3d cluster using --port 9080:80@loadbalancer when "+
+			"creating the KCP cluster")
+	flag.BoolVar(&flagVar.pprof, "pprof", false, "Whether to start up a pprof server.")
 	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
 		"Timeout of Read / Write for the pprof server.")
 	flag.IntVar(&flagVar.rateLimiterBurst, "rate-limiter-burst", rateLimiterBurstDefault,
@@ -101,7 +88,8 @@ type FlagVar struct {
 	probeAddr                                                       string
 	listenerAddr                                                    string
 	maxConcurrentReconciles                                         int
-	requeueSuccessInterval                                          time.Duration
+	kymaRequeueSuccessInterval                                      time.Duration
+	watcherRequeueSuccessInterval                                   time.Duration
 	moduleVerificationKeyFilePath, moduleVerificationSignatureNames string
 	clientQPS                                                       float64
 	clientBurst                                                     int
@@ -111,88 +99,17 @@ type FlagVar struct {
 	skrWebhookMemoryLimits                                          string
 	skrWebhookCPULimits                                             string
 	virtualServiceName                                              string
-	gatewayNamespacedName                                           string
-	gatewaySelector                                                 metav1.LabelSelector
-	pprof                                                           bool
-	pprofAddr                                                       string
-	pprofServerTimeout                                              time.Duration
-	failureBaseDelay, failureMaxDelay                               time.Duration
-	rateLimiterBurst, rateLimiterFrequency                          int
-	cacheSyncTimeout                                                time.Duration
-	enableDomainNameVerification                                    bool
-}
-
-func newNamespacedNameVar(target *string) *namespacedNameVar {
-	if target == nil {
-		panic("target is nil")
-	}
-
-	return &namespacedNameVar{
-		target: target,
-	}
-}
-
-type namespacedNameVar struct {
-	target *string
-}
-
-func (nnv *namespacedNameVar) String() string {
-	if nnv.target == nil {
-		return ""
-	}
-
-	return *nnv.target
-}
-
-func (nnv *namespacedNameVar) Set(str string) error {
-	parts := strings.Split(str, "/")
-	if len(parts) != namespacedNamePartsCnt {
-		return fmt.Errorf("invalid format, %w", errInvalidGatewayFmt)
-	}
-
-	msgs := utilvalidation.IsDNS1123Label(parts[0])
-	if len(msgs) > 0 {
-		return fmt.Errorf("%q is invalid, %w", parts[0], errInvalidGatewayNamespace)
-	}
-
-	msgs = utilvalidation.IsDNS1035Label(parts[1])
-	if len(msgs) > 0 {
-		return fmt.Errorf("%q is invalid, %w", parts[1], errInvalidGatewayName)
-	}
-
-	*nnv.target = str
-	return nil
-}
-
-func newLabelSelectorVar(target *metav1.LabelSelector) *labelSelectorVar {
-	return &labelSelectorVar{
-		target: target,
-	}
-}
-
-type labelSelectorVar struct {
-	target *metav1.LabelSelector
-}
-
-func (lsv *labelSelectorVar) withDefault(d *metav1.LabelSelector) *labelSelectorVar {
-	*lsv.target = *d
-	return lsv
-}
-
-func (lsv *labelSelectorVar) String() string {
-	ls, err := metav1.LabelSelectorAsSelector(lsv.target)
-	if err != nil {
-		// shouldn't happen!
-		panic(err)
-	}
-	return ls.String()
-}
-
-func (lsv *labelSelectorVar) Set(str string) error {
-	res, err := metav1.ParseToLabelSelector(str)
-	if err != nil {
-		return err
-	}
-	*lsv.target = *res
-	return nil
+	enableWatcherLocalTesting                                       bool
+	// listenerHTTPPortLocalMapping is used to enable the user
+	// to specify the port used to expose the KCP cluster for the watcher
+	// when testing locally using dual-k3d cluster-setup
+	// (only k3d clusters are supported for watcher local testing)
+	listenerHTTPPortLocalMapping           int
+	pprof                                  bool
+	pprofAddr                              string
+	pprofServerTimeout                     time.Duration
+	failureBaseDelay, failureMaxDelay      time.Duration
+	rateLimiterBurst, rateLimiterFrequency int
+	cacheSyncTimeout                       time.Duration
+	enableDomainNameVerification           bool
 }

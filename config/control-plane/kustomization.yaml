@@ -77,8 +77,6 @@ patchesJson6902:
     path: patches/metrics_namespace_replace.yaml
 
 patchesStrategicMerge:
-  # We expect an istio gateway to be already present in KCP
-  - patches/gateway_delete.yaml
   # We expect a kcp-system namespace to be already present in KCP
   - patches/namespace_delete.yaml
   # For prometheus scraping in KCP, serviceMonitor better enable mTls for communication
@@ -88,7 +86,7 @@ patchesStrategicMerge:
   - patches/unique_manager_webhook_patch.yaml
   # patch here are for enabling the conversion webhook for each CRD
   - patches/enable_webhook_in_kyma_crd.yaml
-  - patches/ebable_webhook_in_moduletemplate_crd.yaml
+  - patches/enable_webhook_in_moduletemplate_crd.yaml
 
   # enables webhooks
   - patches/enable_webhooks_in_deployment.yaml

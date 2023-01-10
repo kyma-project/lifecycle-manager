@@ -30,7 +30,7 @@ type SKRWebhookTemplateChartManager struct {
 
 func NewSKRWebhookTemplateChartManager(kcpRestConfig *rest.Config, config *SkrChartManagerConfig,
 ) (*SKRWebhookTemplateChartManager, error) {
-	resolvedKcpAddr, err := resolveKcpAddr(kcpRestConfig, config)
+	resolvedKcpAddr, err := resolveKcpAddr(kcpRestConfig)
 	if err != nil {
 		return nil, err
 	}

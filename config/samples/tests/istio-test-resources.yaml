@@ -1,7 +1,7 @@
 apiVersion: networking.istio.io/v1beta1
 kind: Gateway
 metadata:
-  name: lifecycle-manager-kyma-gateway
+  name: lifecycle-manager-watcher-gateway
   namespace: default
   labels:
     operator.kyma-project.io/watcher-gateway: default
@@ -10,7 +10,7 @@ spec:
     istio: ingressgateway
   servers:
     - hosts:
-        - "*"
+        - "listener.test.kyma.cloud.sap"
       port:
         name: http
         number: 80

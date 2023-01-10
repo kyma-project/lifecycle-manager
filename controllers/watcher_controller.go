@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -32,6 +33,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 const (
@@ -76,28 +78,36 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	if !watcherObj.DeletionTimestamp.IsZero() {
 		err := r.IstioClient.RemoveVirtualServiceConfigForCR(ctx, req.NamespacedName)
 		if err != nil {
-			return ctrl.Result{Requeue: true}, err
+			return ctrl.Result{}, err
 		}
 		controllerutil.RemoveFinalizer(watcherObj, watcherFinalizer)
 		err = r.Update(ctx, watcherObj)
 		if err != nil {
-			return ctrl.Result{Requeue: true}, err
+			return ctrl.Result{}, err
 		}
-		return ctrl.Result{}, nil
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	// check finalizer on native object
 	if !controllerutil.ContainsFinalizer(watcherObj, watcherFinalizer) {
-		controllerutil.AddFinalizer(watcherObj, watcherFinalizer)
-		err := r.Update(ctx, watcherObj)
-		if err != nil {
-			return ctrl.Result{Requeue: true}, err
+		if controllerutil.AddFinalizer(watcherObj, watcherFinalizer) {
+			return ctrl.Result{}, r.Update(ctx, watcherObj)
 		}
-		return ctrl.Result{}, nil
 	}
-	err := r.IstioClient.UpdateVirtualServiceConfig(ctx, watcherObj)
+
+	virtualService, err := r.IstioClient.GetVirtualService(ctx)
+	if apierrors.IsNotFound(err) {
+		if _, err := r.IstioClient.CreateVirtualService(ctx, watcherObj); err != nil {
+			return ctrl.Result{}, fmt.Errorf("failed to create virtual service %w", err)
+		}
+		return ctrl.Result{Requeue: true}, nil
+	}
 	if err != nil {
-		return ctrl.Result{Requeue: true}, err
+		return ctrl.Result{}, err
+	}
+	err = r.IstioClient.UpdateVirtualServiceConfig(ctx, watcherObj, virtualService)
+	if err != nil {
+		return ctrl.Result{}, err
 	}
 	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
 }
