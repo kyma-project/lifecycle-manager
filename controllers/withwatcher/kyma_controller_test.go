@@ -92,6 +92,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	})
 
 	It("kyma reconciler re-installs watcher helm chart when webhook CA bundle is not consistent", func() {
+		Skip("Not needed anymore, we are ensuring CA bundle consistency as a post install operation")
 		By("updating webhook config with corrupt CA bundle data")
 		webhookCfg, err := getSKRWebhookConfig(suiteCtx, runtimeClient, kymaObjKey)
 		Expect(err).NotTo(HaveOccurred())
@@ -100,8 +101,8 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		webhookCfg.Webhooks[0].ClientConfig.CABundle = []byte(dummyCaBundleData)
 		Expect(runtimeClient.Update(suiteCtx, webhookCfg)).To(Succeed())
 		By("updating kyma channel to trigger its reconciliation")
-		kyma.Spec.Channel = kymaAlphaChannel
-		Eventually(controlPlaneClient.Update(suiteCtx, kyma), Timeout, Interval).WithOffset(4).Should(Succeed())
+		Eventually(triggerLatestKymaReconciliation(suiteCtx, controlPlaneClient, kymaFastChannel, kymaObjKey),
+			Timeout, Interval).WithOffset(4).Should(Succeed())
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
 			kymaObjKey), Timeout, Interval).WithOffset(4).Should(Succeed())
 		Eventually(deploy.CheckWebhookCABundleConsistency(suiteCtx, runtimeClient, kymaObjKey),

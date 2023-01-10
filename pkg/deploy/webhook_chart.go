@@ -120,6 +120,37 @@ func CheckWebhookCABundleConsistency(ctx context.Context, skrClient client.Clien
 	return nil
 }
 
+func ensureWebhookCABundleConsistency(ctx context.Context, skrClient client.Client, kymaObjKey client.ObjectKey,
+) error {
+	webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
+	err := skrClient.Get(ctx, client.ObjectKey{
+		Namespace: metav1.NamespaceDefault,
+		Name:      ResolveSKRChartResourceName(WebhookCfgAndDeploymentNameTpl, kymaObjKey),
+	}, webhookConfig)
+	if err != nil {
+		return fmt.Errorf("error getting webhook config: %w", err)
+	}
+	tlsSecret := &corev1.Secret{}
+	err = skrClient.Get(ctx, client.ObjectKey{
+		Namespace: metav1.NamespaceDefault,
+		Name:      ResolveSKRChartResourceName("%s-webhook-tls", kymaObjKey),
+	}, tlsSecret)
+	if err != nil {
+		return fmt.Errorf("error getting tls secret: %w", err)
+	}
+	shouldUpdateWebhookCaBundle := false
+	for idx, webhook := range webhookConfig.Webhooks {
+		if !bytes.Equal(webhook.ClientConfig.CABundle, tlsSecret.Data[caCertificateSecretKey]) {
+			shouldUpdateWebhookCaBundle = true
+			webhookConfig.Webhooks[idx].ClientConfig.CABundle = tlsSecret.Data[caCertificateSecretKey]
+		}
+	}
+	if shouldUpdateWebhookCaBundle {
+		return skrClient.Update(ctx, webhookConfig, defaultFieldOwner)
+	}
+	return nil
+}
+
 func prettyPrintSetFlags(stringifiedConfig interface{}) string {
 	jsonBytes, err := k8syaml.YAMLToJSON([]byte(stringifiedConfig.(string)))
 	if err != nil {

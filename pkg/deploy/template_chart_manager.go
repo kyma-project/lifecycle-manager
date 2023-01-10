@@ -79,7 +79,7 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 		oldResource.SetGroupVersionKind(resource.GroupVersionKind())
 		err := syncContext.RuntimeClient.Get(ctx, resourceObjKey, oldResource)
 		if err != nil && !apierrors.IsNotFound(err) {
-			return true, fmt.Errorf("failed to resolve webhook %s: %w", resource.GetKind(), err)
+			return true, fmt.Errorf("failed to get webhook %s: %w", resource.GetKind(), err)
 		}
 		if apierrors.IsNotFound(err) {
 			if err := syncContext.RuntimeClient.Create(ctx, resource, defaultFieldOwner); err != nil {
@@ -90,8 +90,11 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 		resource.SetResourceVersion(oldResource.GetResourceVersion())
 		err = syncContext.RuntimeClient.Update(ctx, resource, defaultFieldOwner)
 		if err != nil {
-			return true, fmt.Errorf("failed to patch webhook %s: %w", resource.GetKind(), err)
+			return true, fmt.Errorf("failed to replace webhook %s: %w", resource.GetKind(), err)
 		}
+	}
+	if err := ensureWebhookCABundleConsistency(ctx, syncContext.RuntimeClient, kymaObjKey); err != nil {
+		return true, err
 	}
 	return false, nil
 }
@@ -113,7 +116,7 @@ func (m *SKRWebhookTemplateChartManager) Remove(ctx context.Context, kyma *v1alp
 		oldResource.SetGroupVersionKind(resource.GroupVersionKind())
 		err := syncContext.RuntimeClient.Get(ctx, resourceObjKey, oldResource)
 		if err != nil && !apierrors.IsNotFound(err) {
-			return fmt.Errorf("failed to resolve webhook %s: %w", resource.GetKind(), err)
+			return fmt.Errorf("failed to get webhook %s: %w", resource.GetKind(), err)
 		}
 		if err == nil {
 			if err := syncContext.RuntimeClient.Delete(ctx, resource); err != nil {
