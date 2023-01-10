@@ -19,19 +19,19 @@ import (
 const (
 	// private key will only be generated if one does not already exist in the target `spec.secretName`
 	privateKeyRotationPolicy = "Never"
-	privateKeyEncoding       = "PKCS2"
-	privateKeyAlgorithm      = "ed25519"
 
-	domainAnnotation = "skr-domain"
+	DomainAnnotation = "skr-domain"
 
 	CertificateSuffix = "-watcher-certificate"
 )
 
 var (
-	secretLabels = map[string]string{
+	secretTemplateLabels = map[string]string{
 		v1alpha1.PurposeLabel: v1alpha1.CertManager,
 		v1alpha1.ManagedBy:    v1alpha1.OperatorName,
 	}
+
+	IssuerLabelSet = k8slabels.Set{"app.kubernetes.io/name": "lifecycle-manager"}
 )
 
 type SubjectAltName struct {
@@ -43,21 +43,20 @@ type SubjectAltName struct {
 
 type certificate struct {
 	ctx             context.Context
+	namespace       string
 	kcpClient       client.Client
-	skrClient       client.Client
 	kyma            *v1alpha1.Kyma
 	certificateName string
 	secretName      string
 }
 
-func NewCertificate(ctx context.Context, kcpClient, skrClient client.Client, kyma *v1alpha1.Kyma) (*certificate, error) {
-	if ctx == nil || kcpClient == nil || skrClient == nil || kyma == nil {
-		return nil, fmt.Errorf("could not create CertManager, context, clients or Kyma must not be empty")
+func NewCertificate(ctx context.Context, kcpClient client.Client, kyma *v1alpha1.Kyma) (*certificate, error) {
+	if ctx == nil || kcpClient == nil || kyma == nil {
+		return nil, fmt.Errorf("could not create CertManager, context, client or Kyma must not be empty")
 	}
 	return &certificate{
 		ctx:             ctx,
 		kcpClient:       kcpClient,
-		skrClient:       skrClient,
 		kyma:            kyma,
 		certificateName: fmt.Sprintf("%s%s", kyma.Name, CertificateSuffix),
 		secretName:      fmt.Sprintf("%s%s", kyma.Name, CertificateSuffix),
@@ -103,10 +102,8 @@ func (c *certificate) createCertificate(
 	ctx context.Context, certNamespace string,
 	subjectAltName *SubjectAltName,
 ) error {
-	//What happens on renewal? How should we deal with it
 	//Duration Default 90 days
 	//RenewBefore default 2/3 of Duration
-
 	issuer, err := c.getIssuer()
 	if err != nil {
 		return err
@@ -118,14 +115,13 @@ func (c *certificate) createCertificate(
 			Namespace: certNamespace,
 		},
 		Spec: v1.CertificateSpec{
-			// TODO: Maybe add subject (v1.X509Subject)
 			DNSNames:       subjectAltName.DNSNames,
 			IPAddresses:    subjectAltName.IPAddresses,
 			URIs:           subjectAltName.URIs,
 			EmailAddresses: subjectAltName.EmailAddresses,
 			SecretName:     c.secretName, // Name of the secret which stored certificate
 			SecretTemplate: &v1.CertificateSecretTemplate{
-				Labels: secretLabels,
+				Labels: secretTemplateLabels,
 			},
 			IssuerRef: metav1.ObjectReference{
 				Name: issuer.Name,
@@ -137,17 +133,17 @@ func (c *certificate) createCertificate(
 			},
 			PrivateKey: &v1.CertificatePrivateKey{
 				RotationPolicy: privateKeyRotationPolicy,
-				Encoding:       privateKeyEncoding,
-				Algorithm:      privateKeyAlgorithm,
+				Encoding:       v1.PKCS1,
+				Algorithm:      v1.RSAKeyAlgorithm,
 			},
 		},
 	}
 
-	return c.kcpClient.Create(ctx, &cert, nil)
+	return c.kcpClient.Create(ctx, &cert)
 }
 
 func (c *certificate) getSubjectAltNames() (*SubjectAltName, error) {
-	if domain, ok := c.kyma.Annotations[domainAnnotation]; ok {
+	if domain, ok := c.kyma.Annotations[DomainAnnotation]; ok {
 		if domain == "" {
 			return nil, fmt.Errorf("Domain-Annotation of KymaCR %s is empty", c.kyma.Name)
 		}
@@ -155,15 +151,15 @@ func (c *certificate) getSubjectAltNames() (*SubjectAltName, error) {
 			DNSNames: []string{domain},
 		}, nil
 	}
-	return nil, fmt.Errorf("kymaCR %s does not contain annotation %s with SKR domain",
-		c.kyma.Name, domainAnnotation)
+	return nil, fmt.Errorf("kymaCR %s does not contain annotation '%s' with specified domain",
+		c.kyma.Name, DomainAnnotation)
 }
 
 // TODO double check, if we can use self-signed Issuer with `lifecycle-manager` label
 func (c *certificate) getIssuer() (*v1.Issuer, error) {
 	issuerList := &v1.IssuerList{}
 	err := c.kcpClient.List(c.ctx, issuerList, &client.ListOptions{
-		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{"app.kubernetes.io/name": "lifecycle-manager"}),
+		LabelSelector: k8slabels.SelectorFromSet(IssuerLabelSet),
 		Namespace:     c.kyma.Namespace,
 	})
 	if err != nil {

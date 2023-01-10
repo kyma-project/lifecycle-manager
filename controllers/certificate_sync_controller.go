@@ -21,6 +21,8 @@ import (
 	"fmt"
 	"strings"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/certmanager"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -56,44 +58,73 @@ func (r *CertificateSyncReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	logger := log.FromContext(ctx)
 	logger.Info("Syncing Certificate Secret")
 
+	// Fetch new/updated Secret
 	secret := &corev1.Secret{}
 	err := r.Get(ctx, types.NamespacedName{
 		Namespace: req.Namespace,
 		Name:      req.Name,
 	}, secret)
-	kymaName := strings.TrimSuffix(secret.Name, certmanager.CertificateSuffix)
 	if err != nil {
-		//TODO
+		return ctrl.Result{}, err
 	}
+	kymaName := strings.TrimSuffix(secret.Name, certmanager.CertificateSuffix)
 
+	// Fetch corresponding KymaCR
 	kyma := &v1alpha1.Kyma{}
 	err = r.Get(ctx, types.NamespacedName{
 		Namespace: req.Namespace,
 		Name:      kymaName,
 	}, kyma)
 	if err != nil {
-		//TODO
+		return ctrl.Result{}, err
 	}
 
+	// Set secret namespace to Kyma-Sync Namespace
+	remoteSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        secret.Name,
+			Namespace:   kyma.Spec.Sync.Namespace,
+			Labels:      secret.Labels,
+			Annotations: secret.Annotations,
+		},
+		Data:       secret.Data,
+		StringData: secret.StringData,
+	}
+
+	// Create/Update secret on remote client
 	skrClient, err := remote.NewRemoteClient(ctx, r.Client, client.ObjectKeyFromObject(kyma),
 		kyma.Spec.Sync.Strategy, r.RemoteClientCache)
-
 	err = skrClient.Get(ctx, types.NamespacedName{
-		Namespace: secret.Namespace,
-		Name:      secret.Name,
+		Namespace: remoteSecret.Namespace,
+		Name:      remoteSecret.Name,
 	}, &corev1.Secret{})
-	if err != nil && errors.IsNotFound(err) {
-		logger.Info(fmt.Sprintf("Target secret %s doesn't exist, creating it", secret))
-		err = skrClient.Create(ctx, secret)
+	if errors.IsNotFound(err) {
+		err = skrClient.Get(ctx, types.NamespacedName{Name: remoteSecret.Namespace}, &corev1.Namespace{})
+		if errors.IsNotFound(err) {
+			logger.Info(fmt.Sprintf("Target namespace %s doesn't exist, creating it", remoteSecret.Namespace))
+			err = skrClient.Create(ctx, &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{Name: remoteSecret.Namespace},
+			})
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+		} else if err != nil {
+			return ctrl.Result{}, err
+		}
+		logger.Info(fmt.Sprintf("Target secret %s doesn't exist, creating it", remoteSecret))
+		err = skrClient.Create(ctx, remoteSecret)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-	} else {
-		logger.Info(fmt.Sprintf("Target secret already %s exists, updating it now", secret))
-		err = skrClient.Update(ctx, secret)
-		if err != nil {
-			return reconcile.Result{}, err
-		}
+		return ctrl.Result{}, nil
+	} else if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	logger.Info(fmt.Sprintf("Target secret already %s exists, updating it now", remoteSecret))
+	err = skrClient.Update(ctx, remoteSecret)
+	if err != nil {
+		return reconcile.Result{}, err
 	}
 
 	return ctrl.Result{}, nil

@@ -283,9 +283,8 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, fla
 
 func setupCertificateSyncReonciler(mgr ctrl.Manager, options controller.Options, remoteClientCache *remote.ClientCache) {
 	if err := (&controllers.CertificateSyncReconciler{
-		Client:            mgr.GetClient(),
-		Scheme:            mgr.GetScheme(),
-		RemoteClientCache: remoteClientCache,
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controllers.CertificateSyncControllerName)
 		os.Exit(1)

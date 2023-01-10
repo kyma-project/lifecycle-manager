@@ -85,6 +85,7 @@ var _ = BeforeSuite(func() {
 	// istio CRDs
 	remoteCrds, err := ParseRemoteCRDs([]string{
 		"https://raw.githubusercontent.com/kyma-project/module-manager/main/config/crd/bases/operator.kyma-project.io_manifests.yaml", //nolint:lll
+		"https://github.com/cert-manager/cert-manager/releases/download/v1.10.1/cert-manager.crds.yaml",                               //nolint:lll
 	})
 	Expect(err).NotTo(HaveOccurred())
 
