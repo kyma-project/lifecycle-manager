@@ -3,8 +3,10 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"io"
 	"os"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"strings"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
@@ -48,7 +50,6 @@ func (m *SKRWebhookTemplateChartManager) renderChartToRawManifest(ctx context.Co
 		return "", err
 	}
 	chartFS := os.DirFS(m.config.WebhookChartPath)
-
 	chart, err := helm.LoadChart(ctx, chartFS)
 	if err != nil {
 		return "", nil
@@ -63,9 +64,12 @@ func (m *SKRWebhookTemplateChartManager) renderChartToRawManifest(ctx context.Co
 }
 
 func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error) {
+	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
 	manifest, err := m.renderChartToRawManifest(ctx, kymaObjKey, syncContext.ControlPlaneClient)
+	logger.V(int(zap.DebugLevel)).Info("following yaml manifest will be installed",
+		"manifest", manifest)
 	if err != nil {
 		return true, err
 	}
@@ -79,10 +83,12 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 		oldResource.SetGroupVersionKind(resource.GroupVersionKind())
 		err := syncContext.RuntimeClient.Get(ctx, resourceObjKey, oldResource)
 		if err != nil && !apierrors.IsNotFound(err) {
+			kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
 			return true, fmt.Errorf("failed to get webhook %s: %w", resource.GetKind(), err)
 		}
 		if apierrors.IsNotFound(err) {
 			if err := syncContext.RuntimeClient.Create(ctx, resource, defaultFieldOwner); err != nil {
+				kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
 				return true, fmt.Errorf("failed to create webhook %s: %w", resource.GetKind(), err)
 			}
 		}
@@ -90,22 +96,30 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 		resource.SetResourceVersion(oldResource.GetResourceVersion())
 		err = syncContext.RuntimeClient.Update(ctx, resource, defaultFieldOwner)
 		if err != nil {
+			kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
 			return true, fmt.Errorf("failed to replace webhook %s: %w", resource.GetKind(), err)
 		}
 	}
 	if err := ensureWebhookCABundleConsistency(ctx, syncContext.RuntimeClient, kymaObjKey); err != nil {
+		kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
 		return true, err
 	}
+	kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionTrue)
+	logger.Info("successfully installed webhook chart",
+		"release-name", skrChartReleaseName(kymaObjKey))
 	return false, nil
 }
 
 func (m *SKRWebhookTemplateChartManager) Remove(ctx context.Context, kyma *v1alpha1.Kyma) error {
+	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
 	manifest, err := m.renderChartToRawManifest(ctx, kymaObjKey, syncContext.ControlPlaneClient)
 	if err != nil {
 		return err
 	}
+	logger.V(int(zap.DebugLevel)).Info("following yaml manifest will be removed",
+		"manifest", manifest)
 	resources, err := getRawManifestUnstructuredResources(manifest)
 	if err != nil {
 		return err
@@ -124,6 +138,8 @@ func (m *SKRWebhookTemplateChartManager) Remove(ctx context.Context, kyma *v1alp
 			}
 		}
 	}
+	logger.Info("successfully removed webhook chart",
+		"release-name", skrChartReleaseName(kymaObjKey))
 	return nil
 }
 
