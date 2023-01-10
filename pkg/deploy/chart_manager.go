@@ -3,6 +3,7 @@ package deploy
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"k8s.io/client-go/rest"
 	"net"
 	"strconv"
@@ -66,7 +67,7 @@ func (m *SKRWebhookChartManagerImpl) Install(ctx context.Context, kyma *v1alpha1
 	}
 	skrWatcherInstallInfo := prepareInstallInfo(ctx, m.config.WebhookChartPath,
 		syncContext.RuntimeRestConfig, syncContext.RuntimeClient, chartArgsValues, kymaObjKey)
-	logger.V(1).Info("following watcher configs will be installed",
+	logger.V(int(zap.DebugLevel)).Info("following watcher configs will be installed",
 		"configs", prettyPrintSetFlags(skrWatcherInstallInfo.ChartInfo.Flags.SetFlags[customConfigKey]))
 	installed, err := modulelib.InstallChart(
 		modulelib.OperationOptions{
@@ -84,10 +85,6 @@ func (m *SKRWebhookChartManagerImpl) Install(ctx context.Context, kyma *v1alpha1
 		kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
 		return true, ErrSKRWebhookNotInstalled
 	}
-	// if err := CheckWebhookCABundleConsistency(ctx, syncContext.RuntimeClient, kymaObjKey); err != nil {
-	// 	kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
-	// 	return true, fmt.Errorf("failed to install webhook chart: %w", err)
-	// }
 	kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionTrue)
 	logger.Info("successfully installed webhook chart",
 		"release-name", skrWatcherInstallInfo.ChartInfo.ReleaseName)
@@ -159,7 +156,7 @@ func resolveKcpAddr(kcpConfig *rest.Config) (string, error) {
 	loadBalancerService := &corev1.Service{}
 	if err := kcpClient.Get(ctx, client.ObjectKey{
 		Name:      IngressServiceName,
-		Namespace: IstioSytemNs,
+		Namespace: IstioSystemNs,
 	}, loadBalancerService); err != nil {
 		return "", err
 	}

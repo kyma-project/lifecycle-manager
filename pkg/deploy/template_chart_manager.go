@@ -41,9 +41,9 @@ func NewSKRWebhookTemplateChartManager(kcpRestConfig *rest.Config, config *SkrCh
 }
 
 func (m *SKRWebhookTemplateChartManager) renderChartToRawManifest(ctx context.Context, kymaObjKey client.ObjectKey,
-	syncContext *remote.KymaSynchronizationContext) (string, error) {
-
-	chartArgsValues, err := generateHelmChartArgs(ctx, syncContext.ControlPlaneClient, m.config, m.kcpAddr)
+	kcpClient client.Client,
+	) (string, error) {
+	chartArgsValues, err := generateHelmChartArgs(ctx, kcpClient, m.config, m.kcpAddr)
 	if err != nil {
 		return "", err
 	}
@@ -65,7 +65,7 @@ func (m *SKRWebhookTemplateChartManager) renderChartToRawManifest(ctx context.Co
 func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error) {
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
-	manifest, err := m.renderChartToRawManifest(ctx, kymaObjKey, syncContext)
+	manifest, err := m.renderChartToRawManifest(ctx, kymaObjKey, syncContext.ControlPlaneClient)
 	if err != nil {
 		return true, err
 	}
@@ -102,7 +102,7 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 func (m *SKRWebhookTemplateChartManager) Remove(ctx context.Context, kyma *v1alpha1.Kyma) error {
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
-	manifest, err := m.renderChartToRawManifest(ctx, kymaObjKey, syncContext)
+	manifest, err := m.renderChartToRawManifest(ctx, kymaObjKey, syncContext.ControlPlaneClient)
 	if err != nil {
 		return err
 	}

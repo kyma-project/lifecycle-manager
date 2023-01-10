@@ -25,7 +25,7 @@ type Mode string
 const (
 	customConfigKey                = "modules"
 	WebhookCfgAndDeploymentNameTpl = "%s-webhook"
-	IstioSytemNs                   = "istio-system"
+	IstioSystemNs                  = "istio-system"
 	IngressServiceName             = "istio-ingressgateway"
 	releaseNameTpl                 = "%s-%s-skr"
 	staticWatcherConfigName        = "static-watcher-config-name"
@@ -33,10 +33,9 @@ const (
 )
 
 var (
-	ErrSKRWebhookNotInstalled         = errors.New("skr webhook resources are not installed")
-	ErrSKRWebhookWasNotRemoved        = errors.New("installed skr webhook resources were not removed")
-	ErrLoadBalancerIPIsNotAssigned    = errors.New("load balancer service external ip is not assigned")
-	ErrCABundleAndCaCertMismatchFound = errors.New("found CABundle and CA certificate mismatch")
+	ErrSKRWebhookNotInstalled      = errors.New("skr webhook resources are not installed")
+	ErrSKRWebhookWasNotRemoved     = errors.New("installed skr webhook resources were not removed")
+	ErrLoadBalancerIPIsNotAssigned = errors.New("load balancer service external ip is not assigned")
 )
 
 type WatchableConfig struct {
@@ -94,32 +93,6 @@ func watcherCachingBaseResource(kymaObjKey client.ObjectKey) *unstructured.Unstr
 	baseRes.SetNamespace(metav1.NamespaceDefault)
 	baseRes.SetName(staticWatcherConfigName)
 	return baseRes
-}
-
-func CheckWebhookCABundleConsistency(ctx context.Context, skrClient client.Client, kymaObjKey client.ObjectKey,
-) error {
-	webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
-	err := skrClient.Get(ctx, client.ObjectKey{
-		Namespace: metav1.NamespaceDefault,
-		Name:      ResolveSKRChartResourceName(WebhookCfgAndDeploymentNameTpl, kymaObjKey),
-	}, webhookConfig)
-	if err != nil {
-		return fmt.Errorf("error getting webhook config: %w", err)
-	}
-	tlsSecret := &corev1.Secret{}
-	err = skrClient.Get(ctx, client.ObjectKey{
-		Namespace: metav1.NamespaceDefault,
-		Name:      ResolveSKRChartResourceName("%s-webhook-tls", kymaObjKey),
-	}, tlsSecret)
-	if err != nil {
-		return fmt.Errorf("error getting tls secret: %w", err)
-	}
-	for _, webhook := range webhookConfig.Webhooks {
-		if !bytes.Equal(webhook.ClientConfig.CABundle, tlsSecret.Data[caCertificateSecretKey]) {
-			return ErrCABundleAndCaCertMismatchFound
-		}
-	}
-	return nil
 }
 
 func ensureWebhookCABundleConsistency(ctx context.Context, skrClient client.Client, kymaObjKey client.ObjectKey,

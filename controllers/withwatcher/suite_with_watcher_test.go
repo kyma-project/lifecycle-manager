@@ -247,7 +247,7 @@ func NewSKRCluster() (client.Client, *envtest.Environment) {
 func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 	istioNs := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: deploy.IstioSytemNs,
+			Name: deploy.IstioSystemNs,
 		},
 	}
 	if err := k8sClient.Create(ctx, istioNs); err != nil {
@@ -256,7 +256,7 @@ func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 	loadBalancerService := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      deploy.IngressServiceName,
-			Namespace: deploy.IstioSytemNs,
+			Namespace: deploy.IstioSystemNs,
 			Labels: map[string]string{
 				"app": deploy.IngressServiceName,
 			},
@@ -292,6 +292,6 @@ func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 
 	return k8sClient.Get(ctx, client.ObjectKey{
 		Name:      deploy.IngressServiceName,
-		Namespace: deploy.IstioSytemNs,
+		Namespace: deploy.IstioSystemNs,
 	}, loadBalancerService)
 }
