@@ -15,14 +15,14 @@ import (
 type Mode string
 
 const (
-	ModeInstall            = Mode("install")
-	ModeUninstall          = Mode("uninstall")
-	customConfigKey        = "modules"
-	ReleaseName            = "skr"
-	IstioSytemNs           = "istio-system"
-	IngressServiceName     = "istio-ingressgateway"
-	DeploymentNameTpl      = "%s-webhook"
-	triggerLabelTimeFormat = "200601021504050700"
+	ModeInstall                = Mode("install")
+	ModeUninstall              = Mode("uninstall")
+	customConfigKey            = "modules"
+	ReleaseName                = "skr"
+	IstioSytemNs               = "istio-system"
+	IngressServiceName         = "istio-ingressgateway"
+	DeploymentNameTpl          = "%s-webhook"
+	defaultK3dLocalhostMapping = "host.k3d.internal"
 )
 
 var (
@@ -43,8 +43,8 @@ func ResolveSKRChartResourceName(resourceNameTpl string) string {
 
 func prepareInstallInfo(ctx context.Context, chartPath, releaseName string, restConfig *rest.Config,
 	restClient client.Client, argsVals map[string]interface{},
-) moduleTypes.InstallInfo {
-	return moduleTypes.InstallInfo{
+) *moduleTypes.InstallInfo {
+	return &moduleTypes.InstallInfo{
 		Ctx: ctx,
 		ResourceInfo: &moduleTypes.ResourceInfo{
 			// TODO: replace by a meaningful resource

@@ -1,0 +1,105 @@
+# The main purpose of this dedicated kustomization is to have different configuration for testing the watcher locally.
+# Unlike the default setup, it enables the ability to configure additional components
+# that we do not want in the default configuration (e.g. vendor-specific gateway implementation)
+# but are necessary for testing the watcher on locally provisioned clusters using k3d.
+resources:
+  - ../manager
+generatorOptions:
+  disableNameSuffixHash: true
+
+# Adds namespace to all resources.
+namespace: kcp-system
+namePrefix: klm-
+
+# Labels to add to all resources and selectors.
+commonLabels:
+  app.kubernetes.io/component: lifecycle-manager.kyma-project.io
+  app.kubernetes.io/instance: kcp-lifecycle-manager-main
+  app.kubernetes.io/name: kcp-lifecycle-manager
+  app.kubernetes.io/created-by: kustomize
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/part-of: manual-deployment
+
+patches:
+  - patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --enable-watcher-local-testing
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --listener-http-local-mapping=9080
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --enable-domain-name-pinning=false
+      - op: add
+        path: /spec/template/spec/containers/0/volumeMounts
+        value:
+          - name: manifest
+            mountPath: /skr-webhook/manifest
+      - op: add
+        path: /spec/template/spec/volumes
+        value:
+          - name: manifest
+            emptyDir: {}
+    target:
+      kind: Deployment
+
+patchesJson6902:
+  - patch: |-
+      - op: replace
+        path: /spec/serviceInfo/name
+        value: klm-event-service
+      - op: replace
+        path: /spec/serviceInfo/namespace
+        value: kcp-system
+    target:
+      group: operator.kyma-project.io
+      version: v1alpha1
+      kind: Watcher
+      name: watcher
+  - patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: default
+      - op: replace
+        path: /metadata/name
+        value: lifecycle-manager-kyma-gateway
+      - op: replace
+        path: /spec/servers/0/hosts/0
+        value: "*"
+      - op: replace
+        path: /spec/servers/0/port/name
+        value: http
+      - op: replace
+        path: /spec/servers/0/port/number
+        value: 80
+      - op: replace
+        path: /spec/servers/0/port/protocol
+        value: HTTP
+      - op: remove
+        path: /spec/servers/0/tls
+    target:
+      group: networking.istio.io
+      version: v1beta1
+      kind: Gateway
+      name: watcher-gateway
+
+patchesStrategicMerge:
+  - patch.yaml
+
+components:
+  - ../crd
+  - ../rbac
+  # [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
+  - ../watcher
+  # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
+  - ../istio
+  # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
+  # crd/kustomization.yaml
+  #- ../webhook
+  # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'. 'WEBHOOK' components are required.
+  #- ../certmanager
+  # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
+  # - ../prometheus
+  # [GRAFANA] To generate configmap for provision grafana dashboard
+  # - ../grafana

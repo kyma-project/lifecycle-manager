@@ -31,12 +31,14 @@ var (
 )
 
 type Config struct {
-	VirtualServiceName string
+	VirtualServiceName  string
+	WatcherLocalTesting bool
 }
 
-func NewConfig(vsn string) Config {
+func NewConfig(vsn string, watcherLocalTesting bool) Config {
 	return Config{
-		VirtualServiceName: vsn,
+		VirtualServiceName:  vsn,
+		WatcherLocalTesting: watcherLocalTesting,
 	}
 }
 
@@ -89,7 +91,9 @@ func (c *Client) CreateVirtualService(ctx context.Context, watcher *v1alpha1.Wat
 
 	addGateways(gateways, virtualSvc)
 
-	if err := addHosts(gateways, virtualSvc); err != nil {
+	if c.config.WatcherLocalTesting {
+		virtualSvc.Spec.Hosts = []string{"*"}
+	} else if err := addHosts(gateways, virtualSvc); err != nil {
 		return nil, err
 	}
 

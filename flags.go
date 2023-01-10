@@ -16,6 +16,7 @@ const (
 	failureBaseDelayDefault              = 100 * time.Millisecond
 	failureMaxDelayDefault               = 1000 * time.Second
 	defaultCacheSyncTimeout              = 2 * time.Minute
+	defaultListenerPort                  = 9080
 )
 
 func defineFlagVar() *FlagVar {
@@ -34,13 +35,11 @@ func defineFlagVar() *FlagVar {
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.DurationVar(&flagVar.kymaRequeueSuccessInterval, "kyma-requeue-success-interval",
-		defaultKymaRequeueSuccessInterval,
-		"determines the duration after which an already successfully reconciled Kyma is enqueued for checking "+
-			"if it's still in a consistent state.")
+		defaultKymaRequeueSuccessInterval, "determines the duration after which an already successfully "+
+			"reconciled Kyma is enqueued for checking if it's still in a consistent state.")
 	flag.DurationVar(&flagVar.watcherRequeueSuccessInterval, "watcher-requeue-success-interval",
-		defaultWatcherRequeueSuccessInterval,
-		"determines the duration after which an already successfully reconciled watcher is enqueued for checking "+
-			"if it's still in a consistent state.")
+		defaultWatcherRequeueSuccessInterval, "determines the duration after which an already successfully "+
+			"reconciled watcher is enqueued for checking if it's still in a consistent state.")
 	flag.Float64Var(&flagVar.clientQPS, "k8s-client-qps", defaultClientQPS, "kubernetes client QPS")
 	flag.IntVar(&flagVar.clientBurst, "k8s-client-burst", defaultClientBurst, "kubernetes client Burst")
 	flag.StringVar(&flagVar.moduleVerificationKeyFilePath, "module-verification-key-file", "",
@@ -52,7 +51,7 @@ func defineFlagVar() *FlagVar {
 		"Enabling Validation/Conversion Webhooks.")
 	flag.BoolVar(&flagVar.enableKcpWatcher, "enable-kcp-watcher", false,
 		"Enabling KCP Watcher to reconcile Watcher CRs created by KCP run operators")
-	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "charts/skr-webhook",
+	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "./skr-webhook",
 		"The path to the skr watcher chart.")
 	flag.StringVar(&flagVar.skrWebhookMemoryLimits, "skr-webhook-memory-limits", "200Mi",
 		"The resources.limits.memory for skr webhook.")
@@ -60,8 +59,12 @@ func defineFlagVar() *FlagVar {
 		"The resources.limits.cpu for skr webhook.")
 	flag.StringVar(&flagVar.virtualServiceName, "virtual-svc-name", "kcp-events",
 		"Name of the virtual service resource to be reconciled by the watcher control loop.")
-	flag.BoolVar(&flagVar.pprof, "pprof", false,
-		"Whether to start up a pprof server.")
+	flag.BoolVar(&flagVar.enableWatcherLocalTesting, "enable-watcher-local-testing", false,
+		"Enabling KCP Watcher two-cluster setup to be tested locally using k3d")
+	flag.IntVar(&flagVar.listenerHTTPPortLocalMapping, "listener-http-local-mapping", defaultListenerPort,
+		"Port that is mapped to HTTP port of the local k3d cluster using --port 9080:80@loadbalancer when "+
+			"creating the KCP cluster")
+	flag.BoolVar(&flagVar.pprof, "pprof", false, "Whether to start up a pprof server.")
 	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
 		"Timeout of Read / Write for the pprof server.")
 	flag.IntVar(&flagVar.rateLimiterBurst, "rate-limiter-burst", rateLimiterBurstDefault,
@@ -96,11 +99,17 @@ type FlagVar struct {
 	skrWebhookMemoryLimits                                          string
 	skrWebhookCPULimits                                             string
 	virtualServiceName                                              string
-	pprof                                                           bool
-	pprofAddr                                                       string
-	pprofServerTimeout                                              time.Duration
-	failureBaseDelay, failureMaxDelay                               time.Duration
-	rateLimiterBurst, rateLimiterFrequency                          int
-	cacheSyncTimeout                                                time.Duration
-	enableDomainNameVerification                                    bool
+	enableWatcherLocalTesting                                       bool
+	// listenerHTTPPortLocalMapping is used to enable the user
+	// to specify the port used to expose the KCP cluster for the watcher
+	// when testing locally using dual-k3d cluster-setup
+	// (only k3d clusters are supported for watcher local testing)
+	listenerHTTPPortLocalMapping           int
+	pprof                                  bool
+	pprofAddr                              string
+	pprofServerTimeout                     time.Duration
+	failureBaseDelay, failureMaxDelay      time.Duration
+	rateLimiterBurst, rateLimiterFrequency int
+	cacheSyncTimeout                       time.Duration
+	enableDomainNameVerification           bool
 }
