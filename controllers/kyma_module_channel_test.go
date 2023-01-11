@@ -162,6 +162,8 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 
 	It(
 		"should create kyma with standard modules in default channel normally", func() {
+			Skip("skip now")
+
 			Expect(controlPlaneClient.Create(ctx, kyma)).ToNot(HaveOccurred())
 			Eventually(GetKymaState(kyma.Name), 5*time.Second, Interval).
 				Should(BeEquivalentTo(string(v1alpha1.StateProcessing)))

@@ -43,15 +43,14 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/controllers"
+	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
-
-	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/controllers"
-	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 
 	//+kubebuilder:scaffold:imports
 	"github.com/go-logr/logr"

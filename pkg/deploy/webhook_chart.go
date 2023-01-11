@@ -1,15 +1,8 @@
 package deploy
 
 import (
-	"context"
 	"errors"
 	"fmt"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	moduleTypes "github.com/kyma-project/module-manager/pkg/types"
 )
 
 type Mode string
@@ -41,25 +34,25 @@ func ResolveSKRChartResourceName(resourceNameTpl string) string {
 	return fmt.Sprintf(resourceNameTpl, ReleaseName)
 }
 
-func prepareInstallInfo(ctx context.Context, chartPath, releaseName string, restConfig *rest.Config,
-	restClient client.Client, argsVals map[string]interface{},
-) *moduleTypes.InstallInfo {
-	return &moduleTypes.InstallInfo{
-		Ctx: ctx,
-		ResourceInfo: &moduleTypes.ResourceInfo{
-			// TODO: replace by a meaningful resource
-			BaseResource: &unstructured.Unstructured{},
-		},
-		ChartInfo: &moduleTypes.ChartInfo{
-			ChartPath:   chartPath,
-			ReleaseName: releaseName,
-			Flags: moduleTypes.ChartFlags{
-				SetFlags: argsVals,
-			},
-		},
-		ClusterInfo: &moduleTypes.ClusterInfo{
-			Client: restClient,
-			Config: restConfig,
-		},
-	}
-}
+// func prepareInstallInfo(ctx context.Context, chartPath, releaseName string, restConfig *rest.Config,
+//	restClient client.Client, argsVals map[string]interface{},
+// ) *moduleTypes.InstallInfo {
+//	return &moduleTypes.InstallInfo{
+//		Ctx: ctx,
+//		ResourceInfo: &moduleTypes.ResourceInfo{
+//			// TODO: replace by a meaningful resource
+//			BaseResource: &unstructured.Unstructured{},
+//		},
+//		ChartInfo: &moduleTypes.ChartInfo{
+//			ChartPath:   chartPath,
+//			ReleaseName: releaseName,
+//			Flags: moduleTypes.ChartFlags{
+//				SetFlags: argsVals,
+//			},
+//		},
+//		ClusterInfo: &moduleTypes.ClusterInfo{
+//			Client: restClient,
+//			Config: restConfig,
+//		},
+//	}
+//}

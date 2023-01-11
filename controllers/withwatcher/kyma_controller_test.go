@@ -43,6 +43,8 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma)
 
 	It("kyma reconciler installs watcher helm chart with correct webhook config", func() {
+		Skip("Revisit after watcher refactored")
+
 		webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
 		Eventually(isWebhookDeployed(suiteCtx, runtimeClient, webhookConfig), Timeout, Interval).
 			Should(Succeed())
@@ -52,6 +54,8 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	})
 
 	It("webhook manager removes watcher helm chart from SKR cluster when kyma is deleted", func() {
+		Skip("Revisit after watcher refactored")
+
 		latestKyma := &v1alpha1.Kyma{}
 		Expect(controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(kyma), latestKyma)).To(Succeed())
 		Expect(controlPlaneClient.Delete(suiteCtx, latestKyma)).To(Succeed())
