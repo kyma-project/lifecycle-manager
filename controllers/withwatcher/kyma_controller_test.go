@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"strings"
 
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
@@ -33,6 +35,7 @@ const (
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
 	kyma := NewTestKyma("kyma-remote-sync")
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
+	issuer := NewTestIssuer(metav1.NamespaceDefault)
 
 	kyma.Spec.Sync = v1alpha1.Sync{
 		Enabled:      true,
@@ -40,7 +43,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Namespace:    metav1.NamespaceDefault,
 		NoModuleCopy: true,
 	}
-	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma)
+	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, issuer)
 
 	It("kyma reconciler installs watcher helm chart with correct webhook config", func() {
 		webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
@@ -130,9 +133,10 @@ func verifyWebhookConfig(
 	return true
 }
 
-func registerDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1alpha1.Watcher) {
+func registerDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1alpha1.Watcher, issuer *v1.Issuer) {
 	BeforeAll(func() {
 		Expect(controlPlaneClient.Create(suiteCtx, watcher)).To(Succeed())
+		Expect(controlPlaneClient.Create(suiteCtx, issuer)).To(Succeed())
 		Expect(controlPlaneClient.Create(suiteCtx, kyma)).Should(Succeed())
 		DeployModuleTemplates(suiteCtx, controlPlaneClient, kyma)
 	})

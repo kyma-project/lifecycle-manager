@@ -13,6 +13,10 @@ import (
 	"runtime"
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/certmanager"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -21,6 +25,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/onsi/gomega"
 
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	v12 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -46,12 +51,34 @@ func NewTestKyma(name string) *v1alpha1.Kyma {
 			Kind:       string(v1alpha1.KymaKind),
 		},
 		ObjectMeta: v1.ObjectMeta{
-			Name:      name + RandString(randomStringLength),
-			Namespace: v1.NamespaceDefault,
+			Name:        name + RandString(randomStringLength),
+			Namespace:   v1.NamespaceDefault,
+			Annotations: map[string]string{certmanager.DomainAnnotation: "example.domain.com"},
 		},
 		Spec: v1alpha1.KymaSpec{
 			Modules: []v1alpha1.Module{},
 			Channel: v1alpha1.DefaultChannel,
+		},
+	}
+}
+
+func NewTestIssuer(namespace string) *certmanagerv1.Issuer {
+	return &certmanagerv1.Issuer{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "test-issuer",
+			Namespace: namespace,
+			Labels:    certmanager.IssuerLabelSet,
+		},
+		Spec: certmanagerv1.IssuerSpec{certmanagerv1.IssuerConfig{
+			SelfSigned: &certmanagerv1.SelfSignedIssuer{},
+		}},
+	}
+}
+
+func NewTestNamespace(namespace string) *corev1.Namespace {
+	return &corev1.Namespace{
+		ObjectMeta: v1.ObjectMeta{
+			Name: namespace,
 		},
 	}
 }

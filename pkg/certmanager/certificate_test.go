@@ -2,6 +2,7 @@ package certmanager_test
 
 import (
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -26,7 +27,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 	}{
 		{
 			name:      "Should create a valid CertificateCR",
-			namespace: createNamespace("testcase-1"),
+			namespace: testutils.NewTestNamespace("testcase-1"),
 			kyma: &v1alpha1.Kyma{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "test-kyma-1",
@@ -42,13 +43,13 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 					},
 				},
 			},
-			issuer:         createIssuer("testcase-1"),
+			issuer:         testutils.NewTestIssuer("testcase-1"),
 			wantCreateErr:  false,
 			wantNewCertErr: false,
 		},
 		{
 			name:      "Should fail since no Issuer can be found",
-			namespace: createNamespace("testcase-2"),
+			namespace: testutils.NewTestNamespace("testcase-2"),
 			kyma: &v1alpha1.Kyma{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "test-kyma-2",
@@ -70,7 +71,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 		},
 		{
 			name:      "Should fail since KymaCR is missing domain annotation",
-			namespace: createNamespace("testcase-3"),
+			namespace: testutils.NewTestNamespace("testcase-3"),
 			kyma: &v1alpha1.Kyma{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-kyma-3",
@@ -91,7 +92,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 		},
 		{
 			name:           "Should fail since Kyma is nil",
-			namespace:      createNamespace("testcase-4"),
+			namespace:      testutils.NewTestNamespace("testcase-4"),
 			kyma:           nil,
 			issuer:         nil,
 			wantCreateErr:  false,
@@ -126,23 +127,5 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 
 	}
 })
-
-func createNamespace(namespace string) *corev1.Namespace {
-	return &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: namespace,
-		},
-	}
-}
-func createIssuer(namespace string) *v1.Issuer {
-	return &v1.Issuer{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "test-issuer",
-			Namespace: namespace,
-			Labels:    certmanager.IssuerLabelSet,
-		},
-		Spec: v1.IssuerSpec{},
-	}
-}
 
 // todo: KymaCR und skr secret erstellen und dann checken ob der sync klappt :D

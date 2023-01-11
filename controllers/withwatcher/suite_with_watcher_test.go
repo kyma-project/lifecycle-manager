@@ -23,6 +23,8 @@ import (
 	"testing"
 	"time"
 
+	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -101,6 +103,7 @@ var _ = BeforeSuite(func() {
 	remoteCrds, err := ParseRemoteCRDs([]string{
 		"https://raw.githubusercontent.com/kyma-project/module-manager/main/config/crd/bases/operator.kyma-project.io_manifests.yaml", //nolint:lll
 		"https://raw.githubusercontent.com/istio/istio/master/manifests/charts/base/crds/crd-all.gen.yaml",                            //nolint:lll
+		"https://github.com/cert-manager/cert-manager/releases/download/v1.10.1/cert-manager.crds.yaml",                               //nolint:lll
 	})
 	Expect(err).NotTo(HaveOccurred())
 
@@ -127,6 +130,7 @@ var _ = BeforeSuite(func() {
 	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(moduleManagerV1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(istioscheme.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+	Expect(certManagerV1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 
