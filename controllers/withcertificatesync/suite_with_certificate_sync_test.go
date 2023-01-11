@@ -13,7 +13,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -39,7 +38,6 @@ var (
 	runtimeEnv         *envtest.Environment //nolint:gochecknoglobals
 	ctx                context.Context      //nolint:gochecknoglobals
 	cancel             context.CancelFunc   //nolint:gochecknoglobals
-	cfg                *rest.Config         //nolint:gochecknoglobals
 )
 
 func TestAPIs(t *testing.T) {
@@ -49,7 +47,7 @@ func TestAPIs(t *testing.T) {
 	RunSpecs(t, "Certificate Sync")
 }
 
-// TODO: Reduce suite to a minimal setup
+// TODO: Reduce suite to a minimal setup.
 var _ = BeforeSuite(func() {
 	ctx, cancel = context.WithCancel(context.TODO())
 	logger := zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true))
@@ -86,10 +84,12 @@ var _ = BeforeSuite(func() {
 
 	runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
 
+	metricsBindAddress := ":8089"
 	k8sManager, err = ctrl.NewManager(
 		cfg, ctrl.Options{
-			Scheme:   scheme.Scheme,
-			NewCache: controllers.NewCacheFunc(),
+			MetricsBindAddress: metricsBindAddress,
+			Scheme:             scheme.Scheme,
+			NewCache:           controllers.NewCacheFunc(),
 		})
 	Expect(err).ToNot(HaveOccurred())
 	remoteClientCache := remote.NewClientCache()
@@ -114,5 +114,4 @@ var _ = AfterSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	err = runtimeEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
-
 })

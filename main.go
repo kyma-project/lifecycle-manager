@@ -278,17 +278,22 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, fla
 			Success: flagVar.kymaRequeueSuccessInterval,
 		},
 	}).SetupWithManager(mgr, options, istioConfig); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", controllers.WatcherControllerName)
+		setupLog.Error(err, "unable to create controller", "controller",
+			controllers.WatcherControllerName)
 		os.Exit(1)
 	}
 }
 
-func setupCertificateSyncReonciler(mgr ctrl.Manager, options controller.Options, remoteClientCache *remote.ClientCache) {
+func setupCertificateSyncReonciler(mgr ctrl.Manager, options controller.Options,
+	remoteClientCache *remote.ClientCache,
+) {
 	if err := (&controllers.CertificateSyncReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:            mgr.GetClient(),
+		Scheme:            mgr.GetScheme(),
+		RemoteClientCache: remoteClientCache,
 	}).SetupWithManager(mgr, options); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", controllers.CertificateSyncControllerName)
+		setupLog.Error(err, "unable to create controller", "controller",
+			controllers.CertificateSyncControllerName)
 		os.Exit(1)
 	}
 }

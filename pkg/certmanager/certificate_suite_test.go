@@ -83,5 +83,4 @@ var _ = AfterSuite(func() {
 	err := controlPlaneEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(err).NotTo(HaveOccurred())
-
 })

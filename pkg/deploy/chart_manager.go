@@ -105,11 +105,11 @@ func (m *EnabledSKRWebhookChartManager) InstallWebhookChart(ctx context.Context,
 	}
 
 	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
-	certificate, err := certmanager.NewCertificate(ctx, kcpClient, kyma)
+	certificate, err := certmanager.NewCertificate(kcpClient, kyma)
 	if err != nil {
 		return true, err
 	}
-	if err := certificate.Create(); err != nil {
+	if err := certificate.Create(ctx); err != nil {
 		return true, err
 	}
 

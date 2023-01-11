@@ -23,7 +23,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	"github.com/onsi/gomega"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	v12 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -31,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega" //nolint:stylecheck,revive
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -98,16 +97,16 @@ func RandString(n int) string {
 func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1alpha1.Kyma) {
 	for _, module := range kyma.Spec.Modules {
 		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
-		gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
-		gomega.Expect(kcpClient.Create(ctx, template)).To(gomega.Succeed())
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(kcpClient.Create(ctx, template)).To(Succeed())
 	}
 }
 
 func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1alpha1.Kyma) {
 	for _, module := range kyma.Spec.Modules {
 		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
-		gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
-		gomega.Expect(kcpClient.Delete(ctx, template)).To(gomega.Succeed())
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(kcpClient.Delete(ctx, template)).To(Succeed())
 	}
 }
 

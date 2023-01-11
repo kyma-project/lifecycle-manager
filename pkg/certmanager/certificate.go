@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	// private key will only be generated if one does not already exist in the target `spec.secretName`
+	// private key will only be generated if one does not already exist in the target `spec.secretName`.
 	privateKeyRotationPolicy = "Never"
 
 	DomainAnnotation = "skr-domain"
@@ -26,12 +26,12 @@ const (
 )
 
 var (
-	secretTemplateLabels = map[string]string{
+	secretTemplateLabels = map[string]string{ //nolint:gochecknoglobals
 		v1alpha1.PurposeLabel: v1alpha1.CertManager,
 		v1alpha1.ManagedBy:    v1alpha1.OperatorName,
 	}
 
-	IssuerLabelSet = k8slabels.Set{"app.kubernetes.io/name": "lifecycle-manager"}
+	IssuerLabelSet = k8slabels.Set{"app.kubernetes.io/name": "lifecycle-manager"} //nolint:gochecknoglobals
 )
 
 type SubjectAltName struct {
@@ -41,21 +41,18 @@ type SubjectAltName struct {
 	EmailAddresses []string
 }
 
-type certificate struct {
-	ctx             context.Context
-	namespace       string
+type Certificate struct {
 	kcpClient       client.Client
 	kyma            *v1alpha1.Kyma
 	certificateName string
 	secretName      string
 }
 
-func NewCertificate(ctx context.Context, kcpClient client.Client, kyma *v1alpha1.Kyma) (*certificate, error) {
-	if ctx == nil || kcpClient == nil || kyma == nil {
-		return nil, fmt.Errorf("could not create CertManager, context, client or Kyma must not be empty")
+func NewCertificate(kcpClient client.Client, kyma *v1alpha1.Kyma) (*Certificate, error) {
+	if kcpClient == nil || kyma == nil {
+		return nil, fmt.Errorf("could not create CertManager, client or Kyma must not be empty") //nolint:goerr113
 	}
-	return &certificate{
-		ctx:             ctx,
+	return &Certificate{
 		kcpClient:       kcpClient,
 		kyma:            kyma,
 		certificateName: fmt.Sprintf("%s%s", kyma.Name, CertificateSuffix),
@@ -63,9 +60,9 @@ func NewCertificate(ctx context.Context, kcpClient client.Client, kyma *v1alpha1
 	}, nil
 }
 
-func (c *certificate) Create() error {
+func (c *Certificate) Create(ctx context.Context) error {
 	// Check if Certificate exists
-	exists, err := c.exists()
+	exists, err := c.exists(ctx)
 	if exists {
 		return nil
 	} else if err != nil {
@@ -77,16 +74,16 @@ func (c *certificate) Create() error {
 		return err
 	}
 	// create cert-manager CertificateCR
-	err = c.createCertificate(c.ctx, c.kyma.Namespace, subjectAltNames)
+	err = c.createCertificate(ctx, c.kyma.Namespace, subjectAltNames)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *certificate) exists() (bool, error) {
+func (c *Certificate) exists(ctx context.Context) (bool, error) {
 	cert := v1.Certificate{}
-	err := c.kcpClient.Get(c.ctx, types.NamespacedName{
+	err := c.kcpClient.Get(ctx, types.NamespacedName{
 		Namespace: c.kyma.Namespace,
 		Name:      c.certificateName,
 	}, &cert)
@@ -98,13 +95,13 @@ func (c *certificate) exists() (bool, error) {
 	return true, nil
 }
 
-func (c *certificate) createCertificate(
+func (c *Certificate) createCertificate(
 	ctx context.Context, certNamespace string,
 	subjectAltName *SubjectAltName,
 ) error {
-	//Duration Default 90 days
-	//RenewBefore default 2/3 of Duration
-	issuer, err := c.getIssuer()
+	// Duration Default 90 days
+	// RenewBefore default 2/3 of Duration
+	issuer, err := c.getIssuer(ctx)
 	if err != nil {
 		return err
 	}
@@ -142,23 +139,23 @@ func (c *certificate) createCertificate(
 	return c.kcpClient.Create(ctx, &cert)
 }
 
-func (c *certificate) getSubjectAltNames() (*SubjectAltName, error) {
+func (c *Certificate) getSubjectAltNames() (*SubjectAltName, error) {
 	if domain, ok := c.kyma.Annotations[DomainAnnotation]; ok {
 		if domain == "" {
-			return nil, fmt.Errorf("Domain-Annotation of KymaCR %s is empty", c.kyma.Name)
+			return nil, fmt.Errorf("Domain-Annotation of KymaCR %s is empty", c.kyma.Name) //nolint:goerr113
 		}
 		return &SubjectAltName{
 			DNSNames: []string{domain},
 		}, nil
 	}
-	return nil, fmt.Errorf("kymaCR %s does not contain annotation '%s' with specified domain",
+	return nil, fmt.Errorf("kymaCR %s does not contain annotation '%s' with specified domain", //nolint:goerr113
 		c.kyma.Name, DomainAnnotation)
 }
 
-// TODO double check, if we can use self-signed Issuer with `lifecycle-manager` label
-func (c *certificate) getIssuer() (*v1.Issuer, error) {
+// TODO double check, if we can use self-signed Issuer with `lifecycle-manager` label.
+func (c *Certificate) getIssuer(ctx context.Context) (*v1.Issuer, error) {
 	issuerList := &v1.IssuerList{}
-	err := c.kcpClient.List(c.ctx, issuerList, &client.ListOptions{
+	err := c.kcpClient.List(ctx, issuerList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(IssuerLabelSet),
 		Namespace:     c.kyma.Namespace,
 	})
@@ -166,7 +163,7 @@ func (c *certificate) getIssuer() (*v1.Issuer, error) {
 		return nil, fmt.Errorf("could not list cert-manager issuer %w", err)
 	}
 	if len(issuerList.Items) == 0 {
-		return nil, fmt.Errorf("no issuer found")
+		return nil, fmt.Errorf("no issuer found") //nolint:goerr113
 	}
 	return &issuerList.Items[0], nil
 }

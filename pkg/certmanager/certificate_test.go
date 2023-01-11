@@ -16,7 +16,6 @@ import (
 )
 
 var _ = Describe("Create Watcher Certificates", Ordered, func() {
-
 	tests := []struct {
 		name           string
 		namespace      *corev1.Namespace
@@ -106,14 +105,14 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 			if test.issuer != nil {
 				Expect(controlPlaneClient.Create(ctx, test.issuer)).Should(BeNil())
 			}
-			cert, err := certmanager.NewCertificate(ctx, controlPlaneClient, test.kyma)
+			cert, err := certmanager.NewCertificate(controlPlaneClient, test.kyma)
 			if test.wantNewCertErr {
 				Expect(err).ShouldNot(BeNil())
 				return
 			}
 			Expect(err).Should(BeNil())
 
-			err = cert.Create()
+			err = cert.Create(ctx)
 			if test.wantCreateErr {
 				Expect(err).ShouldNot(BeNil())
 				return

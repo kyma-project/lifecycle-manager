@@ -25,7 +25,6 @@ import (
 )
 
 var _ = Describe("Create Watcher Certificates", Ordered, func() {
-
 	type testCase struct {
 		name            string
 		namespace       *corev1.Namespace
@@ -70,7 +69,6 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 			},
 			kyma: createKyma("test-kyma-2", "testcase-2"),
 			checkFunc: func(test testCase) {
-				//make sure reconciliation had time to pick secret up
 				time.Sleep(5 * time.Second)
 				Eventually(Expect(errors.IsNotFound(
 					runtimeClient.Get(ctx, types.NamespacedName{
@@ -158,7 +156,9 @@ func createKyma(name, namespace string) *v1alpha1.Kyma {
 	}
 }
 
-func isSecretInSync(ctx context.Context, runtimeClient client.Client, localSecret *corev1.Secret, namespace string) func() bool {
+func isSecretInSync(ctx context.Context, runtimeClient client.Client,
+	localSecret *corev1.Secret, namespace string,
+) func() bool {
 	return func() bool {
 		secretFromRemote, err := getSecret(ctx, runtimeClient, localSecret.Name, namespace)
 		if err != nil {
