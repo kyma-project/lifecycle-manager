@@ -14,7 +14,7 @@ const (
 	rateLimiterBurstDefault              = 200
 	rateLimiterFrequencyDefault          = 30
 	failureBaseDelayDefault              = 100 * time.Millisecond
-	failureMaxDelayDefault               = 1000 * time.Second
+	failureMaxDelayDefault               = 30 * time.Second
 	defaultCacheSyncTimeout              = 2 * time.Minute
 	defaultListenerPort                  = 9080
 )

@@ -3,6 +3,7 @@ package sync
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -13,16 +14,18 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/go-logr/logr"
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 )
 
 func New(clnt client.Client) *RunnerImpl {
-	return &RunnerImpl{clnt}
+	return &RunnerImpl{clnt, sync.WaitGroup{}}
 }
 
 type RunnerImpl struct {
 	client.Client
+	sync.WaitGroup
 }
 
 // Sync implements Runner.Sync.
@@ -30,25 +33,22 @@ func (r *RunnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 	modules common.Modules,
 ) (bool, error) {
 	baseLogger := log.FromContext(ctx).WithName(client.ObjectKey{Name: kyma.Name, Namespace: kyma.Namespace}.String())
+	r.Add(len(modules))
+	errChannel := make(chan error)
+
 	for name := range modules {
-		module := modules[name]
-		logger := module.Logger(baseLogger)
-		manifest := common.NewFromModule(module)
-		err := r.getModule(ctx, manifest)
+		go r.deployModule(ctx, kyma, modules, baseLogger, errChannel)(name)
+	}
 
-		if errors.IsNotFound(err) {
-			logger.Info("module not found, attempting to create it...")
-			err := r.createModule(ctx, name, kyma, module)
-			if err != nil {
-				return false, err
-			}
-			logger.Info("successfully created module CR")
-			return true, nil
-		} else if err != nil {
-			return false, fmt.Errorf("cannot get module %s: %w", module.GetName(), err)
+	go func() {
+		r.Wait()
+		close(errChannel)
+	}()
+
+	for err := range errChannel {
+		if err != nil {
+			return false, err
 		}
-
-		module.UpdateStatusAndReferencesFromUnstructured(manifest)
 	}
 
 	for name := range modules {
@@ -71,6 +71,33 @@ func (r *RunnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 	return false, nil
 }
 
+func (r *RunnerImpl) deployModule(ctx context.Context,
+	kyma *v1alpha1.Kyma,
+	modules common.Modules,
+	baseLogger logr.Logger,
+	errChannel chan error,
+) func(name string) {
+	return func(name string) {
+		defer r.Done()
+		module := modules[name]
+		logger := module.Logger(baseLogger)
+		manifest := common.NewFromModule(module)
+		err := r.getModule(ctx, manifest)
+		if errors.IsNotFound(err) {
+			logger.Info("module not found, attempting to create it...")
+			err := r.createModule(ctx, name, kyma, module)
+			if err != nil {
+				errChannel <- err
+			}
+			logger.Info("successfully created module CR")
+		} else if err != nil {
+			errChannel <- fmt.Errorf("cannot get module %s: %w", module.GetName(), err)
+		}
+
+		module.UpdateStatusAndReferencesFromUnstructured(manifest)
+	}
+}
+
 func (r *RunnerImpl) getModule(ctx context.Context, module *manifestV1alpha1.Manifest) error {
 	return r.Get(ctx, client.ObjectKey{Namespace: module.GetNamespace(), Name: module.GetName()}, module)
 }
@@ -81,8 +108,11 @@ func (r *RunnerImpl) createModule(ctx context.Context, name string, kyma *v1alph
 	if err := r.setupModule(module, kyma, name); err != nil {
 		return err
 	}
-	// create resource if not found
-	if err := r.Client.Create(ctx, module.Manifest, &client.CreateOptions{}); err != nil {
+	if err := r.Client.Patch(ctx,
+		module.Manifest,
+		client.Apply,
+		client.ForceOwnership,
+		client.FieldOwner(kyma.Labels[v1alpha1.ManagedBy])); err != nil {
 		return fmt.Errorf("error creating custom resource of type %s %w", name, err)
 	}
 
@@ -106,6 +136,7 @@ func (r *RunnerImpl) updateModule(ctx context.Context, name string, kyma *v1alph
 func (r *RunnerImpl) setupModule(module *common.Module, kyma *v1alpha1.Kyma, name string) error {
 	// set labels
 	module.ApplyLabels(kyma, name)
+	module.SetGroupVersionKind(manifestV1alpha1.GroupVersionKind)
 
 	if module.GetOwnerReferences() == nil {
 		// set owner reference
