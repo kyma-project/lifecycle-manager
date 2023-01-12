@@ -46,7 +46,7 @@ type SkrChartManagerConfig struct {
 
 func NewSKRWebhookChartManagerImpl(kcpRestConfig *rest.Config, config *SkrChartManagerConfig,
 ) (*SKRWebhookChartManagerImpl, error) {
-	resolvedKcpAddr, err := resolveKcpAddr(kcpRestConfig)
+	resolvedKcpAddr, err := resolveKcpAddr(kcpRestConfig, config)
 	if err != nil {
 		return nil, err
 	}
@@ -146,13 +146,16 @@ func generateHelmChartArgs(ctx context.Context, kcpClient client.Client,
 	}, nil
 }
 
-func resolveKcpAddr(kcpConfig *rest.Config) (string, error) {
-	ctx := context.TODO()
+func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrChartManagerConfig) (string, error) {
+	if managerConfig.WatcherLocalTestingEnabled {
+		return net.JoinHostPort(defaultK3dLocalhostMapping, strconv.Itoa(managerConfig.GatewayHTTPPortMapping)), nil
+	}
 	// Get public KCP IP from the ISTIO load balancer external IP
 	kcpClient, err := client.New(kcpConfig, client.Options{})
 	if err != nil {
 		return "", err
 	}
+	ctx := context.TODO()
 	loadBalancerService := &corev1.Service{}
 	if err := kcpClient.Get(ctx, client.ObjectKey{
 		Name:      IngressServiceName,

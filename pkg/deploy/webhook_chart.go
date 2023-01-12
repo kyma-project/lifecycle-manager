@@ -30,6 +30,7 @@ const (
 	releaseNameTpl                 = "%s-%s-skr"
 	staticWatcherConfigName        = "static-watcher-config-name"
 	caCertificateSecretKey         = "ca.crt"
+	defaultK3dLocalhostMapping     = "host.k3d.internal"
 )
 
 var (

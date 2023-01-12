@@ -265,8 +265,8 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	statusUpdateRequiredFromSKRWebhookSync := false
 	if kyma.Spec.Sync.Enabled && r.SKRWebhookChartManager != nil {
 		if statusUpdateRequiredFromSKRWebhookSync, err = r.SKRWebhookChartManager.Install(ctx, kyma); err != nil {
-			return r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError,
-				fmt.Errorf("error while installing SKR webhook: %w", err))
+			kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
+			return err
 		}
 	}
 	kyma.SyncConditionsWithModuleStates()
