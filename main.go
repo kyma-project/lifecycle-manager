@@ -220,9 +220,9 @@ func setupKymaReconciler(mgr ctrl.Manager,
 			setupLog.Error(err, "failed to read local skr chart")
 		}
 		skrChartConfig := &deploy.SkrChartManagerConfig{
-			WebhookChartPath:       flagVar.skrWatcherPath,
-			SkrWebhookMemoryLimits: flagVar.skrWebhookMemoryLimits,
-			SkrWebhookCPULimits:    flagVar.skrWebhookCPULimits,
+			WebhookChartPath:           flagVar.skrWatcherPath,
+			SkrWebhookMemoryLimits:     flagVar.skrWebhookMemoryLimits,
+			SkrWebhookCPULimits:        flagVar.skrWebhookCPULimits,
 			WatcherLocalTestingEnabled: flagVar.enableWatcherLocalTesting,
 			GatewayHTTPPortMapping:     flagVar.listenerHTTPPortLocalMapping,
 		}

@@ -2,14 +2,17 @@ package deploy
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"go.uber.org/zap"
 	"io"
 	"os"
 	"reflect"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"strings"
 	"sync"
+
+	"go.uber.org/zap"
+
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
@@ -73,7 +76,8 @@ func (m *SKRWebhookTemplateChartManager) renderChartToRawManifest(ctx context.Co
 }
 
 func (m *SKRWebhookTemplateChartManager) cachedConfig(kymaObjKey client.ObjectKey,
-	chartArgValues map[string]interface{}) bool {
+	chartArgValues map[string]interface{},
+) bool {
 	cachedArgValues, ok := m.cache.Load(kymaObjKey)
 	if !ok {
 		m.cache.Store(kymaObjKey, chartArgValues)
@@ -180,10 +184,10 @@ func getRawManifestUnstructuredResources(rawManifest string) ([]*unstructured.Un
 	for {
 		resource := &unstructured.Unstructured{}
 		err := decoder.Decode(resource)
-		if err != nil && err != io.EOF {
+		if err != nil && !errors.Is(err, io.EOF) {
 			return nil, err
 		}
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		resources = append(resources, resource)

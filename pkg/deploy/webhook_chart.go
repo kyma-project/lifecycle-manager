@@ -25,9 +25,7 @@ const (
 	defaultK3dLocalhostMapping     = "host.k3d.internal"
 )
 
-var (
-	ErrLoadBalancerIPIsNotAssigned = errors.New("load balancer service external ip is not assigned")
-)
+var ErrLoadBalancerIPIsNotAssigned = errors.New("load balancer service external ip is not assigned")
 
 type SKRWebhookChartManager interface {
 	Install(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error)

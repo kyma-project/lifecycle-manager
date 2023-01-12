@@ -31,7 +31,6 @@ const (
 	specSubresources               = "*"
 	statusSubresources             = "*/status"
 	expectedWebhookNamePartsLength = 4
-	dummyCaBundleData              = "amVsbHlmaXNoLXdhcy1oZXJl"
 	kymaAlphaChannel               = "alpha"
 	kymaFastChannel                = "fast"
 )
@@ -92,7 +91,6 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	})
 
 	It("Watcher helm chart caching works as expected", func() {
-		Skip("until we re-introduce caching")
 		labelKey := "new-key"
 		labelValue := "new-value"
 		watcherCrForKyma.Spec.LabelsToWatch[labelKey] = labelValue
@@ -217,7 +215,8 @@ func latestWebhookIsConfigured(ctx context.Context, skrClient client.Client, wat
 }
 
 func triggerLatestKymaReconciliation(ctx context.Context, kcpClient client.Client, kymaChannel string,
-	kymaObjKey client.ObjectKey) func() error {
+	kymaObjKey client.ObjectKey,
+) func() error {
 	return func() error {
 		latestKyma := &v1alpha1.Kyma{}
 		err := kcpClient.Get(ctx, kymaObjKey, latestKyma)
