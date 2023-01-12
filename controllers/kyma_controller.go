@@ -232,35 +232,9 @@ func (r *KymaReconciler) HandleInitialState(ctx context.Context, kyma *v1alpha1.
 func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alpha1.Kyma) error {
 	logger := log.FromContext(ctx)
 
-	statusUpdateRequiredFromCatalog, err := r.syncModuleCatalog(ctx, kyma)
+	statusUpdateRequiredFromModulesSync, err := r.syncModules(ctx, kyma)
 	if err != nil {
-		return r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError,
-			fmt.Errorf("could not synchronize remote module catalog: %w", err))
-	}
-
-	var modules common.Modules
-	// these are the actual modules
-	modules, err = r.GenerateModulesFromTemplate(ctx, kyma)
-	if err != nil {
-		return r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError,
-			fmt.Errorf("error while fetching modules during processing: %w", err))
-	}
-
-	runner := sync.New(r)
-
-	statusUpdateRequiredFromModuleSync, err := runner.Sync(ctx, kyma, modules)
-	if err != nil {
-		return r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError,
-			fmt.Errorf("sync failed: %w", err))
-	}
-
-	statusUpdateRequiredFromModuleStatusSync := runner.SyncModuleStatus(ctx, kyma, modules)
-
-	// If module get removed from kyma, the module deletion happens here.
-	statusUpdateRequiredFromDeletion, err := r.DeleteNoLongerExistingModules(ctx, kyma)
-	if err != nil {
-		return r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError,
-			fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err))
+		return r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError, err)
 	}
 	statusUpdateRequiredFromSKRWebhookSync := false
 	if kyma.Spec.Sync.Enabled && r.SKRWebhookChartManager != nil {
@@ -271,8 +245,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	}
 	kyma.SyncConditionsWithModuleStates()
 
-	isStatusUpdateRequired := statusUpdateRequiredFromModuleSync || statusUpdateRequiredFromModuleStatusSync ||
-		statusUpdateRequiredFromDeletion || statusUpdateRequiredFromSKRWebhookSync || statusUpdateRequiredFromCatalog
+	isStatusUpdateRequired := statusUpdateRequiredFromModulesSync || statusUpdateRequiredFromSKRWebhookSync
 	// if the ready condition is not applicable, but we changed the conditions, we still need to issue an update
 	if isStatusUpdateRequired {
 		if err := r.UpdateStatusWithEvent(ctx, kyma, v1alpha1.StateProcessing, "updating component conditions"); err != nil {
@@ -289,6 +262,36 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 		return r.UpdateStatusWithEvent(ctx, kyma, v1alpha1.StateReady, message)
 	}
 	return nil
+}
+
+func (r *KymaReconciler) syncModules(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error) {
+	statusUpdateRequiredFromCatalog, err := r.syncModuleCatalog(ctx, kyma)
+	if err != nil {
+		return false, fmt.Errorf("could not synchronize remote module catalog: %w", err)
+	}
+
+	var modules common.Modules
+	// these are the actual modules
+	modules, err = r.GenerateModulesFromTemplate(ctx, kyma)
+	if err != nil {
+		return false, fmt.Errorf("error while fetching modules during processing: %w", err)
+	}
+
+	runner := sync.New(r)
+
+	statusUpdateRequiredFromModuleSync, err := runner.Sync(ctx, kyma, modules)
+	if err != nil {
+		return false, fmt.Errorf("sync failed: %w", err)
+	}
+
+	statusUpdateRequiredFromModuleStatusSync := runner.SyncModuleStatus(ctx, kyma, modules)
+	// If module get removed from kyma, the module deletion happens here.
+	statusUpdateRequiredFromDeletion, err := r.DeleteNoLongerExistingModules(ctx, kyma)
+	if err != nil {
+		return false, fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err)
+	}
+	return statusUpdateRequiredFromCatalog || statusUpdateRequiredFromModuleSync ||
+		statusUpdateRequiredFromModuleStatusSync || statusUpdateRequiredFromDeletion, nil
 }
 
 func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error) {
