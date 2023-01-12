@@ -1,20 +1,14 @@
 package deploy
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"net"
+	"strconv"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	admissionv1 "k8s.io/api/admissionregistration/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	modulelabels "github.com/kyma-project/module-manager/pkg/labels"
-	moduletypes "github.com/kyma-project/module-manager/pkg/types"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	k8syaml "sigs.k8s.io/yaml"
@@ -28,16 +22,17 @@ const (
 	IstioSystemNs                  = "istio-system"
 	IngressServiceName             = "istio-ingressgateway"
 	releaseNameTpl                 = "%s-%s-skr"
-	staticWatcherConfigName        = "static-watcher-config-name"
-	caCertificateSecretKey         = "ca.crt"
 	defaultK3dLocalhostMapping     = "host.k3d.internal"
 )
 
 var (
-	ErrSKRWebhookNotInstalled      = errors.New("skr webhook resources are not installed")
-	ErrSKRWebhookWasNotRemoved     = errors.New("installed skr webhook resources were not removed")
 	ErrLoadBalancerIPIsNotAssigned = errors.New("load balancer service external ip is not assigned")
 )
+
+type SKRWebhookChartManager interface {
+	Install(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error)
+	Remove(ctx context.Context, kyma *v1alpha1.Kyma) error
+}
 
 type WatchableConfig struct {
 	Labels     map[string]string `json:"labels"`
@@ -64,73 +59,59 @@ func skrChartReleaseName(kymaObjKey client.ObjectKey) string {
 	return fmt.Sprintf(releaseNameTpl, kymaObjKey.Namespace, kymaObjKey.Name)
 }
 
-func prepareInstallInfo(ctx context.Context, chartPath string, restConfig *rest.Config,
-	restClient client.Client, argsVals map[string]interface{}, kymaObjKey client.ObjectKey,
-) *moduletypes.InstallInfo {
-	return &moduletypes.InstallInfo{
-		Ctx: ctx,
-		ChartInfo: &moduletypes.ChartInfo{
-			ChartPath:   chartPath,
-			ReleaseName: skrChartReleaseName(kymaObjKey),
-			Flags: moduletypes.ChartFlags{
-				SetFlags: argsVals,
-			},
-		},
-		ResourceInfo: &moduletypes.ResourceInfo{
-			BaseResource: watcherCachingBaseResource(kymaObjKey),
-		},
-		ClusterInfo: &moduletypes.ClusterInfo{
-			Client: restClient,
-			Config: restConfig,
-		},
+func generateHelmChartArgs(ctx context.Context, kcpClient client.Client,
+	managerConfig *SkrChartManagerConfig, kcpAddr string,
+) (map[string]interface{}, error) {
+	customConfigValue := ""
+	watcherList := &v1alpha1.WatcherList{}
+	if err := kcpClient.List(ctx, watcherList); err != nil {
+		return nil, fmt.Errorf("error listing watcher CRs: %w", err)
 	}
+	watchers := watcherList.Items
+	if len(watchers) != 0 {
+		chartCfg := generateWatchableConfigs(watchers)
+		chartConfigBytes, err := k8syaml.Marshal(chartCfg)
+		if err != nil {
+			return nil, err
+		}
+		customConfigValue = string(chartConfigBytes)
+	}
+
+	return map[string]interface{}{
+		"kcpAddr":               kcpAddr,
+		"resourcesLimitsMemory": managerConfig.SkrWebhookMemoryLimits,
+		"resourcesLimitsCPU":    managerConfig.SkrWebhookCPULimits,
+		customConfigKey:         customConfigValue,
+	}, nil
 }
 
-func watcherCachingBaseResource(kymaObjKey client.ObjectKey) *unstructured.Unstructured {
-	baseRes := &unstructured.Unstructured{}
-	baseRes.SetLabels(map[string]string{
-		modulelabels.CacheKey: kymaObjKey.String(),
-	})
-	baseRes.SetNamespace(metav1.NamespaceDefault)
-	baseRes.SetName(staticWatcherConfigName)
-	return baseRes
-}
-
-func ensureWebhookCABundleConsistency(ctx context.Context, skrClient client.Client, kymaObjKey client.ObjectKey,
-) error {
-	webhookConfig := &admissionv1.ValidatingWebhookConfiguration{}
-	err := skrClient.Get(ctx, client.ObjectKey{
-		Namespace: metav1.NamespaceDefault,
-		Name:      ResolveSKRChartResourceName(WebhookCfgAndDeploymentNameTpl, kymaObjKey),
-	}, webhookConfig)
-	if err != nil {
-		return fmt.Errorf("error getting webhook config: %w", err)
+func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrChartManagerConfig) (string, error) {
+	if managerConfig.WatcherLocalTestingEnabled {
+		return net.JoinHostPort(defaultK3dLocalhostMapping, strconv.Itoa(managerConfig.GatewayHTTPPortMapping)), nil
 	}
-	tlsSecret := &corev1.Secret{}
-	err = skrClient.Get(ctx, client.ObjectKey{
-		Namespace: metav1.NamespaceDefault,
-		Name:      ResolveSKRChartResourceName("%s-webhook-tls", kymaObjKey),
-	}, tlsSecret)
+	// Get public KCP IP from the ISTIO load balancer external IP
+	kcpClient, err := client.New(kcpConfig, client.Options{})
 	if err != nil {
-		return fmt.Errorf("error getting tls secret: %w", err)
+		return "", err
 	}
-	shouldUpdateWebhookCaBundle := false
-	for idx, webhook := range webhookConfig.Webhooks {
-		if !bytes.Equal(webhook.ClientConfig.CABundle, tlsSecret.Data[caCertificateSecretKey]) {
-			shouldUpdateWebhookCaBundle = true
-			webhookConfig.Webhooks[idx].ClientConfig.CABundle = tlsSecret.Data[caCertificateSecretKey]
+	ctx := context.TODO()
+	loadBalancerService := &corev1.Service{}
+	if err := kcpClient.Get(ctx, client.ObjectKey{
+		Name:      IngressServiceName,
+		Namespace: IstioSystemNs,
+	}, loadBalancerService); err != nil {
+		return "", err
+	}
+	if len(loadBalancerService.Status.LoadBalancer.Ingress) == 0 {
+		return "", ErrLoadBalancerIPIsNotAssigned
+	}
+	externalIP := loadBalancerService.Status.LoadBalancer.Ingress[0].IP
+	var port int32
+	for _, loadBalancerPort := range loadBalancerService.Spec.Ports {
+		if loadBalancerPort.Name == "http2" {
+			port = loadBalancerPort.Port
+			break
 		}
 	}
-	if shouldUpdateWebhookCaBundle {
-		return skrClient.Update(ctx, webhookConfig, defaultFieldOwner)
-	}
-	return nil
-}
-
-func prettyPrintSetFlags(stringifiedConfig interface{}) string {
-	jsonBytes, err := k8syaml.YAMLToJSON([]byte(stringifiedConfig.(string)))
-	if err != nil {
-		return stringifiedConfig.(string)
-	}
-	return string(jsonBytes)
+	return net.JoinHostPort(externalIP, strconv.Itoa(int(port))), nil
 }

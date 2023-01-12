@@ -33,6 +33,16 @@ type SKRWebhookTemplateChartManager struct {
 	kcpAddr string
 }
 
+type SkrChartManagerConfig struct {
+	// WebhookChartPath represents the path of the webhook chart
+	// to be installed on SKR clusters upon reconciling kyma CRs.
+	WebhookChartPath           string
+	SkrWebhookMemoryLimits     string
+	SkrWebhookCPULimits        string
+	WatcherLocalTestingEnabled bool
+	GatewayHTTPPortMapping     int
+}
+
 func NewSKRWebhookTemplateChartManager(kcpRestConfig *rest.Config, config *SkrChartManagerConfig,
 ) (*SKRWebhookTemplateChartManager, error) {
 	resolvedKcpAddr, err := resolveKcpAddr(kcpRestConfig, config)
