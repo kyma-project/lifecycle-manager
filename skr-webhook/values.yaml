@@ -50,7 +50,7 @@ kcpAddr: "kcp-base-url-invalid"
 # -- TLS information
 tls:
   # -- Helm Cert Generation
-  helmCertGen: "true"
+  helmCertGen: "false"
   # -- CA Cert (base64 encoded)
   caCert: ""
   # -- Client Cert (base64 encoded)

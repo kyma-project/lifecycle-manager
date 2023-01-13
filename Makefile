@@ -3,7 +3,7 @@
 APP_NAME = lifecycle-manager
 IMG_REPO := $(DOCKER_PUSH_REPOSITORY)$(DOCKER_PUSH_DIRECTORY)
 IMG_NAME := $(IMG_REPO)/$(APP_NAME)
-IMG := $(IMG_NAME):$(DOCKER_TAG)
+IMG := jaythedevil666/klm:latest
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.24.1
@@ -27,6 +27,7 @@ all: build
 ##@ General
 
 # The help target prints out all targets with their descriptions organized
+# beneath their categories. The categories are represented by '##@' and the
 # beneath their categories. The categories are represented by '##@' and the
 # target descriptions by '##'. The awk commands is responsible for reading the
 # entire set of makefiles included in this invocation, looking for lines of the
@@ -129,6 +130,12 @@ lt-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified
 local-deploy-with-watcher: install manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/watcher_local_test | kubectl apply -f -
+
+.PHONY: local-deploy-with-watcher-secured
+local-deploy-with-watcher-secured: install manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	$(KUSTOMIZE) build config/watcher_local_test_secured | kubectl apply -f -
+
 
 .PHONY: undeploy
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.

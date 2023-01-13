@@ -1,5 +1,13 @@
 # Test watcher locally in two-cluster-setup using K3D
 
+The following steps provide you with a quick tour of how setup  the kyma-lifecycle-manager (short `KLM`) including the `Watcher` and a remote cluster. 
+
+There are two ways shown: One with a very simple  KLM setup incl. watcher with security features turned off and another one for the KLM incl. watcher with security features (SAN-pinning and mTLS Communication) turned on. 
+
+Depends on which guide you want to follow, skip the corresponding steps incl. the following tags: 
+- *[SIMPLE]*
+- *[SECURE]*
+
 ### Create KCP and SKR clusters
 1. Run the following command to create a local control-plane (KCP) cluster:
 ```shell
@@ -25,11 +33,23 @@ brew install istioctl
 istioctl install --set profile=demo -y && \
 kubectl apply -f https://raw.githubusercontent.com/kyma-project/module-manager/main/config/crd/bases/operator.kyma-project.io_manifests.yaml
 ```
+### *[SECURE]* Install Cert-Manager
+1. Run the following command to install the cert-manager by Jetstack:
+```shell
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
+```
 
-### Deploy lifecycle-manager on KCP:
+### Deploy lifecycle-manager with enabled Watcher on KCP:
 Run the following command to deploy lifecycle-manager on the KCP cluster:
+
+*[SIMPLE]*
 ```shell
 make local-deploy-with-watcher IMG=eu.gcr.io/kyma-project/lifecycle-manager:latest
+```
+
+*[SECURE]*
+```shell
+make local-deploy-with-watcher-secured IMG=eu.gcr.io/kyma-project/lifecycle-manager:latest
 ```
 
 ### Apply sample module templates for sample-kyma:

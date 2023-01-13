@@ -30,6 +30,10 @@ components:
   - ../rbac
   # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
   - ../istio
+  # [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
+  #- ../watcher
+  # [WATCHER_SECURED] To enable the security infrastructure of the watcher,
+  #- ../certmanager/watcher
   # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix
   - ../webhook
   # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.

@@ -43,9 +43,12 @@ import (
 // CertificateSyncReconciler reconciles a Secrets object.
 type CertificateSyncReconciler struct {
 	client.Client
-	Scheme            *runtime.Scheme
-	RemoteClientCache *remote.ClientCache
+	Scheme                  *runtime.Scheme
+	RemoteClientCache       *remote.ClientCache
+	RemoteTLSCertSecretName string
 }
+
+const remoteSecretDefaultNamespace = "kyma-system"
 
 //+kubebuilder:rbac:groups=kyma-project.io,resources=secrets,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=kyma-project.io,resources=secrets/status,verbs=get;update;patch
@@ -92,10 +95,15 @@ func (r *CertificateSyncReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 }
 
 func newRemoteSecret(localSecret *corev1.Secret, kyma *v1alpha1.Kyma) *corev1.Secret {
+	namespace := remoteSecretDefaultNamespace
+	if kyma.Spec.Sync.Namespace != "" {
+		namespace = kyma.Spec.Sync.Namespace
+	}
+
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        localSecret.Name,
-			Namespace:   kyma.Spec.Sync.Namespace,
+			Namespace:   namespace,
 			Labels:      localSecret.Labels,
 			Annotations: localSecret.Annotations,
 		},

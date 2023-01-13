@@ -1,5 +1,5 @@
 apiVersion: cert-manager.io/v1
-kind: Certificate
+kind: Issuer
 metadata:
-  name: watcher-gateway-cert
+  name: klm-watcher-selfsigned-issuer
 $patch: delete

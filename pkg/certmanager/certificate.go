@@ -20,18 +20,20 @@ const (
 	// private key will only be generated if one does not already exist in the target `spec.secretName`.
 	privateKeyRotationPolicy = "Never"
 
-	DomainAnnotation = "skr-domain"
-
+	DomainAnnotation  = "skr-domain"
 	CertificateSuffix = "-watcher-certificate"
 )
 
 var (
-	secretTemplateLabels = map[string]string{ //nolint:gochecknoglobals
+	SecretTemplateLabels = k8slabels.Set{ //nolint:gochecknoglobals
 		v1alpha1.PurposeLabel: v1alpha1.CertManager,
 		v1alpha1.ManagedBy:    v1alpha1.OperatorName,
 	}
 
-	IssuerLabelSet = k8slabels.Set{"app.kubernetes.io/name": "lifecycle-manager"} //nolint:gochecknoglobals
+	IssuerLabelSet = k8slabels.Set{ //nolint:gochecknoglobals
+		v1alpha1.PurposeLabel: v1alpha1.CertManager,
+		v1alpha1.ManagedBy:    v1alpha1.OperatorName,
+	}
 )
 
 type SubjectAltName struct {
@@ -118,7 +120,7 @@ func (c *Certificate) createCertificate(
 			EmailAddresses: subjectAltName.EmailAddresses,
 			SecretName:     c.secretName, // Name of the secret which stored certificate
 			SecretTemplate: &v1.CertificateSecretTemplate{
-				Labels: secretTemplateLabels,
+				Labels: SecretTemplateLabels,
 			},
 			IssuerRef: metav1.ObjectReference{
 				Name: issuer.Name,
@@ -152,7 +154,6 @@ func (c *Certificate) getSubjectAltNames() (*SubjectAltName, error) {
 		c.kyma.Name, DomainAnnotation)
 }
 
-// TODO double check, if we can use self-signed Issuer with `lifecycle-manager` label.
 func (c *Certificate) getIssuer(ctx context.Context) (*v1.Issuer, error) {
 	issuerList := &v1.IssuerList{}
 	err := c.kcpClient.List(ctx, issuerList, &client.ListOptions{

@@ -24,16 +24,13 @@ patches:
   - patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --enable-watcher-local-testing
+        value: --enable-watcher-local-testing # Enables to check for k3d local address and sets this as kcp address
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --enable-tls-cert-sync=false
+        value: --listener-http-local-mapping=9080 # Port that is mapped to HTTP port of the local k3d cluster
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --listener-http-local-mapping=9080
-      - op: add
-        path: /spec/template/spec/containers/0/args/-
-        value: --enable-domain-name-pinning=false
+        value: --enable-domain-name-pinning=false # TODO Check if we can enable it with a local gateway setup
       - op: add
         path: /spec/template/spec/containers/0/volumeMounts
         value:
@@ -47,6 +44,7 @@ patches:
     target:
       kind: Deployment
 
+# Non-Native k8s resources
 patchesJson6902:
   - patch: |-
       - op: replace
@@ -63,33 +61,29 @@ patchesJson6902:
   - patch: |-
       - op: replace
         path: /metadata/namespace
-        value: default
+        value: default # TODO double check if needed, or if it can be in kcp-system
       - op: replace
         path: /metadata/name
         value: lifecycle-manager-kyma-gateway
       - op: replace
         path: /spec/servers/0/hosts/0
         value: "*"
-      - op: replace
-        path: /spec/servers/0/port/name
-        value: http
-      - op: replace
-        path: /spec/servers/0/port/number
-        value: 80
-      - op: replace
-        path: /spec/servers/0/port/protocol
-        value: HTTP
-      - op: remove
-        path: /spec/servers/0/tls
+      #- op: replace
+      #  path: /spec/servers/0/port/name
+      #  value: http
+      #- op: replace
+      #  path: /spec/servers/0/port/number
+      #  value: 80
+      #- op: replace
+      #  path: /spec/servers/0/port/protocol
+      #  value: HTTP
+      #- op: remove
+      #  path: /spec/servers/0/tls
     target:
       group: networking.istio.io
       version: v1beta1
       kind: Gateway
       name: watcher-gateway
-
-patchesStrategicMerge:
-  - patches/patch_remove_certificate.yaml
-  - patches/patch_remove_cert_issuer.yaml
 
 components:
   - ../crd

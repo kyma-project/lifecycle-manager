@@ -132,7 +132,7 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 }
 
 // SetupWithManager sets up the CertificateSync controller with the Manager.
-func (r *CertificateSyncReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
+func (r *CertificateSyncReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&corev1.Secret{}).
 		Named(CertificateSyncControllerName).WithEventFilter(predicate.Funcs{

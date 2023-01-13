@@ -26,7 +26,7 @@ const (
 	WatchedByLabel = OperatorPrefix + Separator + "watched-by"
 	// PurposeLabel defines the purpose of the resource, i.e. Secrets which will be used to certificate management.
 	PurposeLabel = OperatorPrefix + Separator + "purpose"
-	CertManager  = "lmm-cert-manager"
+	CertManager  = "klm-watcher-cert-manager"
 )
 
 func GetMatchingLabelsForModule(module *Module) client.MatchingLabels {
