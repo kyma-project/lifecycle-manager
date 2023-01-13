@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
-	"reflect"
 	"strings"
 	"sync"
 
@@ -16,7 +14,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-	"github.com/slok/go-helm-template/helm"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -25,15 +22,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
-	defaultBufferSize = 2048
-	defaultFieldOwner = client.FieldOwner("lifecycle-manager")
-)
-
 type SKRWebhookTemplateChartManager struct {
-	config  *SkrChartManagerConfig
-	cache   *sync.Map
-	kcpAddr string
+	config           *SkrChartManagerConfig
+	chartConfigCache *sync.Map
+	kcpAddr          string
 }
 
 type SkrChartManagerConfig struct {
@@ -53,41 +45,10 @@ func NewSKRWebhookTemplateChartManager(kcpRestConfig *rest.Config, config *SkrCh
 		return nil, err
 	}
 	return &SKRWebhookTemplateChartManager{
-		config:  config,
-		cache:   &sync.Map{},
-		kcpAddr: resolvedKcpAddr,
+		config:           config,
+		chartConfigCache: &sync.Map{},
+		kcpAddr:          resolvedKcpAddr,
 	}, nil
-}
-
-func (m *SKRWebhookTemplateChartManager) renderChartToRawManifest(ctx context.Context, kymaObjKey client.ObjectKey,
-	chartArgValues map[string]interface{},
-) (string, error) {
-	chartFS := os.DirFS(m.config.WebhookChartPath)
-	chart, err := helm.LoadChart(ctx, chartFS)
-	if err != nil {
-		return "", nil
-	}
-	return helm.Template(ctx, helm.TemplateConfig{
-		Chart:       chart,
-		ReleaseName: skrChartReleaseName(kymaObjKey),
-		Namespace:   metav1.NamespaceDefault,
-		Values:      chartArgValues,
-	})
-}
-
-func (m *SKRWebhookTemplateChartManager) cachedConfig(kymaObjKey client.ObjectKey,
-	chartArgValues map[string]interface{},
-) bool {
-	cachedArgValues, ok := m.cache.Load(kymaObjKey)
-	if !ok {
-		m.cache.Store(kymaObjKey, chartArgValues)
-		return false
-	}
-	if !reflect.DeepEqual(chartArgValues, cachedArgValues) {
-		m.cache.Store(kymaObjKey, chartArgValues)
-		return false
-	}
-	return true
 }
 
 func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error) {
@@ -98,12 +59,16 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 	if err != nil {
 		return true, err
 	}
-	if m.cachedConfig(kymaObjKey, chartArgValues) {
+	cached, err := m.cachedConfig(kymaObjKey, chartArgValues)
+	if err != nil {
+		return true, err
+	}
+	if cached {
 		logger.V(int(zap.DebugLevel)).Info("webhook chart config is already installed",
 			"release-name", skrChartReleaseName(kymaObjKey))
 		return false, nil
 	}
-	manifest, err := m.renderChartToRawManifest(ctx, kymaObjKey, chartArgValues)
+	manifest, err := renderChartToRawManifest(ctx, kymaObjKey, m.config.WebhookChartPath, chartArgValues)
 	if err != nil {
 		return true, err
 	}
@@ -112,23 +77,8 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 		return true, err
 	}
 	for _, resource := range resources {
-		resourceObjKey := client.ObjectKeyFromObject(resource)
-		oldResource := &unstructured.Unstructured{}
-		oldResource.SetGroupVersionKind(resource.GroupVersionKind())
-		err := syncContext.RuntimeClient.Get(ctx, resourceObjKey, oldResource)
-		if err != nil && !apierrors.IsNotFound(err) {
-			return true, fmt.Errorf("failed to get webhook %s: %w", resource.GetKind(), err)
-		}
-		if apierrors.IsNotFound(err) {
-			if err := syncContext.RuntimeClient.Create(ctx, resource, defaultFieldOwner); err != nil {
-				return true, fmt.Errorf("failed to create webhook %s: %w", resource.GetKind(), err)
-			}
-		}
-		// completely replace old resource with new resource
-		resource.SetResourceVersion(oldResource.GetResourceVersion())
-		err = syncContext.RuntimeClient.Update(ctx, resource, defaultFieldOwner)
-		if err != nil {
-			return true, fmt.Errorf("failed to replace webhook %s: %w", resource.GetKind(), err)
+		if err := createOrUpdateResource(ctx, syncContext.RuntimeClient, resource); err != nil {
+			return true, err
 		}
 	}
 	kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionTrue)
@@ -141,13 +91,13 @@ func (m *SKRWebhookTemplateChartManager) Remove(ctx context.Context, kyma *v1alp
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	// remove cached configs for this kyma
-	m.cache.Delete(kymaObjKey)
+	m.chartConfigCache.Delete(kymaObjKey)
 	syncContext := remote.SyncContextFromContext(ctx)
 	chartArgValues, err := generateHelmChartArgs(ctx, syncContext.ControlPlaneClient, m.config, m.kcpAddr)
 	if err != nil {
 		return err
 	}
-	manifest, err := m.renderChartToRawManifest(ctx, kymaObjKey, chartArgValues)
+	manifest, err := renderChartToRawManifest(ctx, kymaObjKey, m.config.WebhookChartPath, chartArgValues)
 	if err != nil {
 		return err
 	}
@@ -193,4 +143,50 @@ func getRawManifestUnstructuredResources(rawManifest string) ([]*unstructured.Un
 		resources = append(resources, resource)
 	}
 	return resources, nil
+}
+
+func (m *SKRWebhookTemplateChartManager) cachedConfig(kymaObjKey client.ObjectKey,
+	chartArgValues map[string]interface{},
+) (bool, error) {
+	oldHash, ok := m.chartConfigCache.Load(kymaObjKey)
+	if !ok {
+		newHash, err := hashHelmChartArgValues(chartArgValues)
+		if err != nil {
+			return false, err
+		}
+		m.chartConfigCache.Store(kymaObjKey, newHash)
+		return false, nil
+	}
+	newHash, err := hashHelmChartArgValues(chartArgValues)
+	if err != nil {
+		return false, err
+	}
+	if newHash != oldHash {
+		m.chartConfigCache.Store(kymaObjKey, newHash)
+		return false, nil
+	}
+	return true, nil
+}
+
+func createOrUpdateResource(ctx context.Context, skrClient client.Client,
+	resource *unstructured.Unstructured,
+) error {
+	err := skrClient.Create(ctx, resource)
+	if apierrors.IsAlreadyExists(err) {
+		resourceObjKey := client.ObjectKeyFromObject(resource)
+		oldResource := &unstructured.Unstructured{}
+		oldResource.SetGroupVersionKind(resource.GroupVersionKind())
+		if err := skrClient.Get(ctx, resourceObjKey, oldResource); err != nil {
+			return fmt.Errorf("failed to get webhook %s: %w", resource.GetKind(), err)
+		}
+		resource.SetResourceVersion(oldResource.GetResourceVersion())
+		if err := skrClient.Update(ctx, resource); err != nil {
+			return fmt.Errorf("failed to replace webhook %s: %w", resource.GetKind(), err)
+		}
+		return nil
+	}
+	if err != nil {
+		return fmt.Errorf("failed to create webhook %s: %w", resource.GetKind(), err)
+	}
+	return nil
 }

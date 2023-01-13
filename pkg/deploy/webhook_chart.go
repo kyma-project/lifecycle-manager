@@ -1,10 +1,15 @@
 package deploy
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"errors"
 	"fmt"
+	"github.com/slok/go-helm-template/helm"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net"
+	"os"
 	"strconv"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
@@ -23,6 +28,7 @@ const (
 	IngressServiceName             = "istio-ingressgateway"
 	releaseNameTpl                 = "%s-%s-skr"
 	defaultK3dLocalhostMapping     = "host.k3d.internal"
+	defaultBufferSize              = 2048
 )
 
 var ErrLoadBalancerIPIsNotAssigned = errors.New("load balancer service external ip is not assigned")
@@ -113,3 +119,29 @@ func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrChartManagerConfig
 	}
 	return net.JoinHostPort(externalIP, strconv.Itoa(int(port))), nil
 }
+
+func hashHelmChartArgValues(s map[string]interface{}) (string, error) {
+	var b bytes.Buffer
+	err := gob.NewEncoder(&b).Encode(s)
+	if err != nil {
+		return "", err
+	}
+	return b.String(), nil
+}
+
+func renderChartToRawManifest(ctx context.Context, kymaObjKey client.ObjectKey,
+	chartPath string, chartArgValues map[string]interface{},
+) (string, error) {
+	chartFS := os.DirFS(chartPath)
+	chart, err := helm.LoadChart(ctx, chartFS)
+	if err != nil {
+		return "", nil
+	}
+	return helm.Template(ctx, helm.TemplateConfig{
+		Chart:       chart,
+		ReleaseName: skrChartReleaseName(kymaObjKey),
+		Namespace:   v1.NamespaceDefault,
+		Values:      chartArgValues,
+	})
+}
+
