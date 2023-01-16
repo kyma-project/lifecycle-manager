@@ -6,7 +6,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	remotecontext "github.com/kyma-project/lifecycle-manager/pkg/remote"
-	"github.com/kyma-project/module-manager/pkg/types"
+	"golang.org/x/sync/errgroup"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -75,36 +75,31 @@ func (c *RemoteCatalog) CreateOrUpdate(
 
 	diffApply, diffDelete := c.CalculateDiffs(moduleTemplatesRuntime, moduleTemplatesControlPlane)
 
-	results := make(chan error, len(diffApply)+len(diffDelete))
+	errs, groupCtx := errgroup.WithContext(ctx)
 	for _, diff := range diffApply {
-		go c.patchDiff(ctx, diff, syncContext, results, false)
+		diff := diff
+		errs.Go(func() error {
+			return c.patchDiff(groupCtx, diff, syncContext, false)
+		})
 	}
 	for _, diff := range diffDelete {
-		go c.patchDiff(ctx, diff, syncContext, results, true)
+		diff := diff
+		errs.Go(func() error {
+			return c.patchDiff(groupCtx, diff, syncContext, true)
+		})
 	}
 
-	var errs []error
-	for i := 0; i < len(diffApply); i++ {
-		if err := <-results; err != nil {
-			errs = append(errs, err)
-		}
-	}
-
-	if len(errs) > 0 {
-		return types.NewMultiError(errs)
-	}
-
-	return nil
+	return errs.Wait()
 }
 
 func (c *RemoteCatalog) patchDiff(
 	ctx context.Context, diff *v1alpha1.ModuleTemplate, syncContext *remotecontext.KymaSynchronizationContext,
-	results chan error, delete bool,
-) {
+	deleteInsteadOfPatch bool,
+) error {
 	diff.SetLastSync()
 
 	var err error
-	if delete {
+	if deleteInsteadOfPatch {
 		err = syncContext.RuntimeClient.Delete(ctx, diff)
 	} else {
 		err = syncContext.RuntimeClient.Patch(
@@ -113,10 +108,9 @@ func (c *RemoteCatalog) patchDiff(
 	}
 
 	if err != nil {
-		results <- fmt.Errorf("could not apply module template diff: %w", err)
-	} else {
-		results <- nil
+		return fmt.Errorf("could not apply module template diff: %w", err)
 	}
+	return nil
 }
 
 // CalculateDiffs takes two ModuleTemplateLists and a given Force Interval and produces 2 Pointer Lists
