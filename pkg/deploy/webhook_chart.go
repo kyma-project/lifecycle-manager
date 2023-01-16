@@ -34,7 +34,9 @@ const (
 var ErrLoadBalancerIPIsNotAssigned = errors.New("load balancer service external ip is not assigned")
 
 type SKRWebhookChartManager interface {
+	// Install installs the watcher's webhook chart resources on the SKR cluster
 	Install(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error)
+	// Remove removes the watcher's webhook chart resources from the SKR cluster
 	Remove(ctx context.Context, kyma *v1alpha1.Kyma) error
 }
 
@@ -55,11 +57,8 @@ func generateWatchableConfigs(watchers []v1alpha1.Watcher) map[string]WatchableC
 	return chartCfg
 }
 
-func ResolveSKRChartResourceName(resourceNameTpl string, kymaObjKey client.ObjectKey) string {
-	return fmt.Sprintf(resourceNameTpl, skrChartReleaseName(kymaObjKey))
-}
-
-func skrChartReleaseName(kymaObjKey client.ObjectKey) string {
+// SkrChartReleaseName generates the webhook chart's release name from the Kyma name and namespace
+func SkrChartReleaseName(kymaObjKey client.ObjectKey) string {
 	return fmt.Sprintf(releaseNameTpl, kymaObjKey.Namespace, kymaObjKey.Name)
 }
 
@@ -139,7 +138,7 @@ func renderChartToRawManifest(ctx context.Context, kymaObjKey client.ObjectKey,
 	}
 	return helm.Template(ctx, helm.TemplateConfig{
 		Chart:       chart,
-		ReleaseName: skrChartReleaseName(kymaObjKey),
+		ReleaseName: SkrChartReleaseName(kymaObjKey),
 		Namespace:   v1.NamespaceDefault,
 		Values:      chartArgValues,
 	})

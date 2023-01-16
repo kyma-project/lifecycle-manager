@@ -186,7 +186,7 @@ func getSkrChartDeployment(ctx context.Context, skrClient client.Client, kymaObj
 	return func() error {
 		return skrClient.Get(ctx, client.ObjectKey{
 			Namespace: metav1.NamespaceDefault,
-			Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
+			Name:      resolveSKRChartResourceName(deploy.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
 		}, &appsv1.Deployment{})
 	}
 }
@@ -197,7 +197,7 @@ func getSKRWebhookConfig(ctx context.Context, skrClient client.Client,
 	webhookCfg := &admissionv1.ValidatingWebhookConfiguration{}
 	err := skrClient.Get(ctx, client.ObjectKey{
 		Namespace: metav1.NamespaceDefault,
-		Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
+		Name:      resolveSKRChartResourceName(deploy.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
 	}, webhookCfg)
 	return webhookCfg, err
 }
@@ -316,4 +316,8 @@ func isWatcherCrDeletionFinished(watcherObjKey client.ObjectKey) func(g Gomega) 
 		err := controlPlaneClient.Get(suiteCtx, watcherObjKey, &v1alpha1.Watcher{})
 		return apierrors.IsNotFound(err)
 	}
+}
+
+func resolveSKRChartResourceName(resourceNameTpl string, kymaObjKey client.ObjectKey) string {
+	return fmt.Sprintf(resourceNameTpl, deploy.SkrChartReleaseName(kymaObjKey))
 }

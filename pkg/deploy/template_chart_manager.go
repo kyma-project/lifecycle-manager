@@ -22,6 +22,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// SKRWebhookTemplateChartManager is a SKRWebhookChartManager implementation that renders
+// the watcher's helm chart and installs it using a native kube-client
 type SKRWebhookTemplateChartManager struct {
 	config           *SkrChartManagerConfig
 	chartConfigCache *sync.Map
@@ -34,7 +36,9 @@ type SkrChartManagerConfig struct {
 	WebhookChartPath           string
 	SkrWebhookMemoryLimits     string
 	SkrWebhookCPULimits        string
+	// WatcherLocalTestingEnabled indicates if the chart manager is running in local testing mode
 	WatcherLocalTestingEnabled bool
+	// GatewayHTTPPortMapping indicates the port used to expose the KCP cluster locally for the watcher callbacks
 	GatewayHTTPPortMapping     int
 }
 
@@ -65,7 +69,7 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 	}
 	if cached {
 		logger.V(int(zap.DebugLevel)).Info("webhook chart config is already installed",
-			"release-name", skrChartReleaseName(kymaObjKey))
+			"release-name", SkrChartReleaseName(kymaObjKey))
 		return false, nil
 	}
 	manifest, err := renderChartToRawManifest(ctx, kymaObjKey, m.config.WebhookChartPath, chartArgValues)
@@ -83,7 +87,7 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 	}
 	kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionTrue)
 	logger.Info("successfully installed webhook chart",
-		"release-name", skrChartReleaseName(kymaObjKey))
+		"release-name", SkrChartReleaseName(kymaObjKey))
 	return false, nil
 }
 
@@ -122,7 +126,7 @@ func (m *SKRWebhookTemplateChartManager) Remove(ctx context.Context, kyma *v1alp
 		}
 	}
 	logger.Info("successfully removed webhook chart",
-		"release-name", skrChartReleaseName(kymaObjKey))
+		"release-name", SkrChartReleaseName(kymaObjKey))
 	return nil
 }
 
