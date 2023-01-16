@@ -1,16 +1,15 @@
 package deploy
 
 import (
-	"bytes"
 	"context"
-	"encoding/gob"
 	"errors"
 	"fmt"
-	"github.com/slok/go-helm-template/helm"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net"
 	"os"
 	"strconv"
+
+	"github.com/slok/go-helm-template/helm"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -57,7 +56,7 @@ func generateWatchableConfigs(watchers []v1alpha1.Watcher) map[string]WatchableC
 	return chartCfg
 }
 
-// SkrChartReleaseName generates the webhook chart's release name from the Kyma name and namespace
+// SkrChartReleaseName generates the webhook chart's release name from the Kyma name and namespace.
 func SkrChartReleaseName(kymaObjKey client.ObjectKey) string {
 	return fmt.Sprintf(releaseNameTpl, kymaObjKey.Namespace, kymaObjKey.Name)
 }
@@ -119,15 +118,6 @@ func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrChartManagerConfig
 	return net.JoinHostPort(externalIP, strconv.Itoa(int(port))), nil
 }
 
-func hashHelmChartArgValues(s map[string]interface{}) (string, error) {
-	var b bytes.Buffer
-	err := gob.NewEncoder(&b).Encode(s)
-	if err != nil {
-		return "", err
-	}
-	return b.String(), nil
-}
-
 func renderChartToRawManifest(ctx context.Context, kymaObjKey client.ObjectKey,
 	chartPath string, chartArgValues map[string]interface{},
 ) (string, error) {
@@ -143,4 +133,3 @@ func renderChartToRawManifest(ctx context.Context, kymaObjKey client.ObjectKey,
 		Values:      chartArgValues,
 	})
 }
-

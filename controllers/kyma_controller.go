@@ -243,6 +243,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 			return err
 		}
 	}
+
 	kyma.SyncConditionsWithModuleStates()
 
 	isStatusUpdateRequired := statusUpdateRequiredFromModulesSync || statusUpdateRequiredFromSKRWebhookSync
