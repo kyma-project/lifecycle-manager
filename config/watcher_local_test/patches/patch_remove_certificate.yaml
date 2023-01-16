@@ -1,5 +1,6 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: klm-watcher-serving-cert
+  name: watcher-serving-cert
+  namespace: system
 $patch: delete

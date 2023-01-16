@@ -84,6 +84,8 @@ func NewEnabledSKRWebhookChartManager(config *SkrChartConfig) *EnabledSKRWebhook
 func (m *EnabledSKRWebhookChartManager) InstallWebhookChart(ctx context.Context, kyma *v1alpha1.Kyma,
 	remoteClientCache *remote.ClientCache, kcpClient client.Client,
 ) (bool, error) {
+	logger := logf.FromContext(ctx)
+
 	skrClient, err := remote.NewRemoteClient(ctx, kcpClient, client.ObjectKeyFromObject(kyma),
 		kyma.Spec.Sync.Strategy, remoteClientCache)
 	if err != nil {
@@ -99,17 +101,22 @@ func (m *EnabledSKRWebhookChartManager) InstallWebhookChart(ctx context.Context,
 	// If it already exists, create will do nothing
 	certificate, err := certmanager.NewCertificate(kcpClient, kyma)
 	if err != nil {
+		logger.Error(err, "Error while creating new Certificate struct")
 		return true, err
 	}
-	if err := certificate.Create(ctx); err != nil {
+	if err = certificate.Create(ctx); err != nil {
+		logger.Error(err, "Error while creating new Certificate on KCP")
 		return true, err
 	}
+	logger.Info("Certificate created")
 
 	// If secret is not created do nothing and check in next reconcile loop
 	certSecret, err := certificate.GetSecret(ctx)
 	if k8serrors.IsNotFound(err) {
-		return true, nil
+		logger.Info("Certificate not ready - Secret not found")
+		return true, &certmanager.CertificateNotReadyError{}
 	} else if err != nil {
+		logger.Error(err, "Error getting certificate secret")
 		return true, err
 	}
 
@@ -173,9 +180,10 @@ func (m *EnabledSKRWebhookChartManager) generateHelmChartArgs(ctx context.Contex
 			"resourcesLimitsCPU":    m.config.SkrWebhookCPULimits,
 			customConfigKey:         string(bytes),
 			"tls": map[string]string{
-				"caCert":     certSecret.CACrt,
-				"clientCert": certSecret.TLSCrt,
-				"clientKey":  certSecret.TLSKey,
+				"helmCertGen": "false",
+				"caCert":      certSecret.CACrt,
+				"clientCert":  certSecret.TLSCrt,
+				"clientKey":   certSecret.TLSKey,
 			},
 		}, nil
 	}

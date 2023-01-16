@@ -204,3 +204,10 @@ func (c *Certificate) getIssuer(ctx context.Context) (*v1.Issuer, error) {
 	}
 	return &issuerList.Items[0], nil
 }
+
+type CertificateNotReadyError struct {
+}
+
+func (e *CertificateNotReadyError) Error() string {
+	return fmt.Sprintf("Certificate-Secret does not exist")
+}

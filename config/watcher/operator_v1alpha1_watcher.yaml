@@ -2,7 +2,7 @@ apiVersion: operator.kyma-project.io/v1alpha1
 kind: Watcher
 metadata:
   name: watcher
-  namespace: kcp-system
+  namespace: system
   labels:
     "operator.kyma-project.io/managed-by": "lifecycle-manager"
 spec:

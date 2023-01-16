@@ -18,8 +18,11 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/certmanager"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
@@ -266,8 +269,11 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	statusUpdateRequiredFromSKRWebhookSync := false
 	if kyma.Spec.Sync.Enabled {
 		if statusUpdateRequiredFromSKRWebhookSync, err = r.InstallWebhookChart(ctx, kyma,
-			r.RemoteClientCache, r.Client); err != nil { // TODO check here for new certmissingerror and return true and nil if its this error
+			r.RemoteClientCache, r.Client); err != nil {
 			kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
+			if errors.Is(err, &certmanager.CertificateNotReadyError{}) {
+				return nil
+			}
 			return err
 		}
 	}
