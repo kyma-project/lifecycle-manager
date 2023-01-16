@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/certmanager"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -93,23 +94,34 @@ func (m *EnabledSKRWebhookChartManager) InstallWebhookChart(ctx context.Context,
 	if err != nil {
 		return true, err
 	}
-	argsVals, err := m.generateHelmChartArgs(ctx, kcpClient)
-	if err != nil {
-		return true, err
-	}
-	// TODO(khlifi411): make sure that validating-webhook-config resource is in sync with the secret configuration
-	skrWatcherInstallInfo := prepareInstallInfo(ctx, m.config.WebhookChartPath, ReleaseName, skrCfg, skrClient, argsVals)
-	err = m.installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeInstall)
-	if err != nil {
-		return true, err
-	}
 
 	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
+	// If it already exists, create will do nothing
 	certificate, err := certmanager.NewCertificate(kcpClient, kyma)
 	if err != nil {
 		return true, err
 	}
 	if err := certificate.Create(ctx); err != nil {
+		return true, err
+	}
+
+	// If secret is not created do nothing and check in next reconcile loop
+	certSecret, err := certificate.GetSecret(ctx)
+	if k8serrors.IsNotFound(err) {
+		return true, nil
+	} else if err != nil {
+		return true, err
+	}
+
+	argsVals, err := m.generateHelmChartArgs(ctx, kcpClient, certSecret)
+	if err != nil {
+		return true, err
+	}
+
+	// TODO(khlifi411): make sure that validating-webhook-config resource is in sync with the secret configuration
+	skrWatcherInstallInfo := prepareInstallInfo(ctx, m.config.WebhookChartPath, ReleaseName, skrCfg, skrClient, argsVals)
+	err = m.installOrRemoveChartOnSKR(ctx, skrWatcherInstallInfo, ModeInstall)
+	if err != nil {
 		return true, err
 	}
 
@@ -125,7 +137,7 @@ func (m *EnabledSKRWebhookChartManager) RemoveWebhookChart(ctx context.Context, 
 	if err != nil {
 		return err
 	}
-	argsVals, err := m.generateHelmChartArgs(ctx, syncContext.ControlPlaneClient)
+	argsVals, err := m.generateHelmChartArgs(ctx, syncContext.ControlPlaneClient, nil)
 	if err != nil {
 		return err
 	}
@@ -135,7 +147,7 @@ func (m *EnabledSKRWebhookChartManager) RemoveWebhookChart(ctx context.Context, 
 }
 
 func (m *EnabledSKRWebhookChartManager) generateHelmChartArgs(ctx context.Context,
-	kcpClient client.Client,
+	kcpClient client.Client, certSecret *certmanager.CertificateSecret,
 ) (map[string]interface{}, error) {
 	watcherList := &v1alpha1.WatcherList{}
 	if err := kcpClient.List(ctx, watcherList, &client.ListOptions{}); err != nil {
@@ -153,6 +165,19 @@ func (m *EnabledSKRWebhookChartManager) generateHelmChartArgs(ctx context.Contex
 	kcpAddr, err := m.resolveKcpAddr(ctx, kcpClient)
 	if err != nil {
 		return nil, err
+	}
+	if certSecret != nil {
+		return map[string]interface{}{
+			"kcpAddr":               kcpAddr,
+			"resourcesLimitsMemory": m.config.SkrWebhookMemoryLimits,
+			"resourcesLimitsCPU":    m.config.SkrWebhookCPULimits,
+			customConfigKey:         string(bytes),
+			"tls": map[string]string{
+				"caCert":     certSecret.CACrt,
+				"clientCert": certSecret.TLSCrt,
+				"clientKey":  certSecret.TLSKey,
+			},
+		}, nil
 	}
 	return map[string]interface{}{
 		"kcpAddr":               kcpAddr,

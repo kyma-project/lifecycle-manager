@@ -48,7 +48,13 @@ type CertificateSyncReconciler struct {
 	RemoteTLSCertSecretName string
 }
 
-const remoteSecretDefaultNamespace = "kyma-system"
+const (
+	// TODO Change to 'kyma-system' after https://github.com/kyma-project/lifecycle-manager/issues/301 is resolved
+	remoteSecretDefaultNamespace = "default"
+
+	//TODO Remove after dynamic secret lookup is implemented; https://github.com/kyma-project/runtime-watcher/issues/93
+	remoteSecretDefaultName = "skr-webhook-tls"
+)
 
 //+kubebuilder:rbac:groups=kyma-project.io,resources=secrets,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=kyma-project.io,resources=secrets/status,verbs=get;update;patch
@@ -102,7 +108,9 @@ func newRemoteSecret(localSecret *corev1.Secret, kyma *v1alpha1.Kyma) *corev1.Se
 
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        localSecret.Name,
+			//TODO: After dynamic secret lookup is implemented in watcher,
+			// change to `<kyma-name>-certmanager.CertificateSuffix`
+			Name:        remoteSecretDefaultName,
 			Namespace:   namespace,
 			Labels:      localSecret.Labels,
 			Annotations: localSecret.Annotations,
@@ -132,7 +140,7 @@ func (r *CertificateSyncReconciler) createOrUpdate(ctx context.Context, logger l
 		if err != nil && !errors.IsAlreadyExists(err) {
 			return err
 		}
-		logger.Info(fmt.Sprintf("Target secret %s doesn't exist, creating it", remoteSecret))
+		logger.Info(fmt.Sprintf("Target secret %s doesn't exist, creating it", remoteSecret.Name))
 		err = skrClient.Create(ctx, remoteSecret)
 		if err != nil {
 			return err

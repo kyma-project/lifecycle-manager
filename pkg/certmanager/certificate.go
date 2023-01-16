@@ -4,7 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
+
+	"github.com/go-logr/logr"
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"k8s.io/apimachinery/pkg/types"
 
@@ -48,6 +52,13 @@ type Certificate struct {
 	kyma            *v1alpha1.Kyma
 	certificateName string
 	secretName      string
+	logger          logr.Logger
+}
+
+type CertificateSecret struct {
+	CACrt  string
+	TLSCrt string
+	TLSKey string
 }
 
 func NewCertificate(kcpClient client.Client, kyma *v1alpha1.Kyma) (*Certificate, error) {
@@ -63,6 +74,7 @@ func NewCertificate(kcpClient client.Client, kyma *v1alpha1.Kyma) (*Certificate,
 }
 
 func (c *Certificate) Create(ctx context.Context) error {
+	c.logger = logf.FromContext(ctx)
 	// Check if Certificate exists
 	exists, err := c.exists(ctx)
 	if exists {
@@ -73,14 +85,34 @@ func (c *Certificate) Create(ctx context.Context) error {
 	// fetch Subject-Alternative-Name from KymaCR
 	subjectAltNames, err := c.getSubjectAltNames()
 	if err != nil {
+		c.logger.Error(err, "Error get Subject Alternative Name from KymaCR")
 		return err
 	}
 	// create cert-manager CertificateCR
 	err = c.createCertificate(ctx, c.kyma.Namespace, subjectAltNames)
 	if err != nil {
+		c.logger.Error(err, "Error while creating certificate")
 		return err
 	}
 	return nil
+}
+
+func (c *Certificate) GetSecret(ctx context.Context) (*CertificateSecret, error) {
+	secret := &corev1.Secret{}
+	err := c.kcpClient.Get(ctx, types.NamespacedName{
+		Namespace: c.kyma.Namespace,
+		Name:      c.secretName,
+	},
+		secret)
+	if err != nil {
+		return nil, err
+	}
+	certSecret := CertificateSecret{
+		CACrt:  string(secret.Data["ca.crt"]),
+		TLSCrt: string(secret.Data["tls.crt"]),
+		TLSKey: string(secret.Data["tls.key"]),
+	}
+	return &certSecret, nil
 }
 
 func (c *Certificate) exists(ctx context.Context) (bool, error) {
@@ -90,8 +122,10 @@ func (c *Certificate) exists(ctx context.Context) (bool, error) {
 		Name:      c.certificateName,
 	}, &cert)
 	if k8serrors.IsNotFound(err) {
+		c.logger.Info("Certificate does not exist", "Certificate", c.certificateName)
 		return false, nil
 	} else if err != nil {
+		c.logger.Info("Could not fetch certificate from local Cluster")
 		return false, err
 	}
 	return true, nil
@@ -105,8 +139,10 @@ func (c *Certificate) createCertificate(
 	// RenewBefore default 2/3 of Duration
 	issuer, err := c.getIssuer(ctx)
 	if err != nil {
+		c.logger.Error(err, "Error getting Issuer")
 		return err
 	}
+	c.logger.Info("Issuer found", "issuer", issuer)
 
 	cert := v1.Certificate{
 		ObjectMeta: apimachinerymetav1.ObjectMeta{
@@ -164,7 +200,7 @@ func (c *Certificate) getIssuer(ctx context.Context) (*v1.Issuer, error) {
 		return nil, fmt.Errorf("could not list cert-manager issuer %w", err)
 	}
 	if len(issuerList.Items) == 0 {
-		return nil, fmt.Errorf("no issuer found") //nolint:goerr113
+		return nil, fmt.Errorf("no issuer found in Namespace `%s`", c.kyma.Namespace) //nolint:goerr113
 	}
 	return &issuerList.Items[0], nil
 }

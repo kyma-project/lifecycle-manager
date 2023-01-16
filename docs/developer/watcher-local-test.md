@@ -67,7 +67,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: kyma-sample
-  namespace: default
+  namespace: kcp-system
   labels:
     "operator.kyma-project.io/kyma-name": "kyma-sample"
     "operator.kyma-project.io/managed-by": "lifecycle-manager"
@@ -77,8 +77,10 @@ data:
 apiVersion: operator.kyma-project.io/v1alpha1
 kind: Kyma
 metadata:
+  annotations:
+    skr-domain: "example.domain.com"
   name: kyma-sample
-  namespace: default
+  namespace: kcp-system
 spec:
   channel: regular
   sync:
