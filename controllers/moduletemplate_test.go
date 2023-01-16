@@ -174,31 +174,31 @@ func updateModuleTemplateOCIRegistryCredLabel(kymaName string) func() error {
 	}
 }
 
-// var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
-//	kyma := NewTestKyma("kyma")
-//
-//	kyma.Spec.Modules = append(
-//		kyma.Spec.Modules, v1alpha1.Module{
-//			ControllerName: "manifest",
-//			Name:           NewUniqModuleName(),
-//			Channel:        v1alpha1.DefaultChannel,
-//		})
-//
-//	RegisterDefaultLifecycleForKyma(kyma)
-//
-//	DescribeTable("Test ModuleTemplate.Spec.Target",
-//		func(givenCondition func() error, expectedBehavior func() error) {
-//			Eventually(givenCondition, Timeout, Interval).Should(Succeed())
-//			Eventually(expectedBehavior, Timeout, Interval).Should(Succeed())
-//		},
-//		Entry("When update ModuleTemplate.Spec.Target=remote, expect Manifest.Spec.remote=true",
-//			updateModuleTemplateTarget(kyma.Name, v1alpha1.TargetRemote),
-//			expectManifestSpecRemoteMatched(kyma.Name, true)),
-//		Entry("When update ModuleTemplate.Spec.Target=control-plane, expect Manifest.Spec.remote=false",
-//			updateModuleTemplateTarget(kyma.Name, v1alpha1.TargetControlPlane),
-//			expectManifestSpecRemoteMatched(kyma.Name, false)),
-//	)
-//})
+var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
+	kyma := NewTestKyma("kyma")
+
+	kyma.Spec.Modules = append(
+		kyma.Spec.Modules, v1alpha1.Module{
+			ControllerName: "manifest",
+			Name:           NewUniqModuleName(),
+			Channel:        v1alpha1.DefaultChannel,
+		})
+
+	RegisterDefaultLifecycleForKyma(kyma)
+
+	DescribeTable("Test ModuleTemplate.Spec.Target",
+		func(givenCondition func() error, expectedBehavior func() error) {
+			Eventually(givenCondition, Timeout, Interval).Should(Succeed())
+			Eventually(expectedBehavior, Timeout, Interval).Should(Succeed())
+		},
+		Entry("When update ModuleTemplate.Spec.Target=remote, expect Manifest.Spec.remote=true",
+			updateModuleTemplateTarget(kyma.Name, v1alpha1.TargetRemote),
+			expectManifestSpecRemoteMatched(kyma.Name, true)),
+		Entry("When update ModuleTemplate.Spec.Target=control-plane, expect Manifest.Spec.remote=false",
+			updateModuleTemplateTarget(kyma.Name, v1alpha1.TargetControlPlane),
+			expectManifestSpecRemoteMatched(kyma.Name, false)),
+	)
+})
 
 var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
 	kyma := NewTestKyma("kyma")
