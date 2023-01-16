@@ -185,10 +185,6 @@ lister-gen: ## Download lister-gen
 fmt: ## Run go fmt against code.
 	go fmt ./...
 
-.PHONY: resolve
-resolve: ## Run go mod tidy against code.
-	go mod tidy
-
 .PHONY: lint
 lint: ## Run golangci-lint against code.
 	GOBIN=$(LOCALBIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANG_CI_LINT_VERSION)
