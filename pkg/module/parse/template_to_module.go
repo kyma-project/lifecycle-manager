@@ -135,10 +135,11 @@ func insertLayerIntoManifest(
 			return fmt.Errorf("%w: not an OCIImage", ErrDefaultConfigParsing)
 		}
 		manifest.Spec.Config = types.ImageSpec{
-			Repo: ociImage.Repo,
-			Name: ociImage.Name,
-			Ref:  ociImage.Ref,
-			Type: img.OCIRepresentationType,
+			Repo:               ociImage.Repo,
+			Name:               ociImage.Name,
+			Ref:                ociImage.Ref,
+			Type:               img.OCIRepresentationType,
+			CredSecretSelector: ociImage.CredSecretSelector,
 		}
 	default:
 		installRaw, err := json.Marshal(layer.ToGenericRepresentation())

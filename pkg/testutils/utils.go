@@ -146,7 +146,7 @@ func ParseRemoteCRDs(testCrdURLs []string) ([]*v12.CustomResourceDefinition, err
 
 func ModuleTemplateFactory(module v1alpha1.Module, data unstructured.Unstructured) (*v1alpha1.ModuleTemplate, error) {
 	var moduleTemplate v1alpha1.ModuleTemplate
-	err := readModuleTemplate(module, &moduleTemplate)
+	err := readModuleTemplate(&moduleTemplate)
 	if err != nil {
 		return &moduleTemplate, err
 	}
@@ -160,14 +160,8 @@ func ModuleTemplateFactory(module v1alpha1.Module, data unstructured.Unstructure
 	return &moduleTemplate, nil
 }
 
-func readModuleTemplate(module v1alpha1.Module, moduleTemplate *v1alpha1.ModuleTemplate) error {
-	var template string
-	switch module.ControllerName {
-	case "manifest":
-		template = "operator_v1alpha1_moduletemplate_skr-module.yaml"
-	default:
-		template = "operator_v1alpha1_moduletemplate_kcp-module.yaml"
-	}
+func readModuleTemplate(moduleTemplate *v1alpha1.ModuleTemplate) error {
+	template := "operator_v1alpha1_moduletemplate_kcp-module.yaml"
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {
 		panic("Can't capture current filename!")
