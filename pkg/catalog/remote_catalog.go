@@ -77,27 +77,10 @@ func (c *RemoteCatalog) CreateOrUpdate(
 
 	results := make(chan error, len(diffApply)+len(diffDelete))
 	for _, diff := range diffApply {
-		diff := diff
-		go func() {
-			diff.SetLastSync()
-			if err := syncContext.RuntimeClient.Patch(
-				ctx, diff, client.Apply, c.settings.SSAPatchOptions,
-			); err != nil {
-				results <- fmt.Errorf("could not apply module template diff: %w", err)
-			} else {
-				results <- nil
-			}
-		}()
+		go c.patchDiff(ctx, diff, syncContext, results, false)
 	}
 	for _, diff := range diffDelete {
-		diff := diff
-		go func() {
-			if err := syncContext.RuntimeClient.Delete(ctx, diff); err != nil {
-				results <- fmt.Errorf("could not delete module template from diff: %w", err)
-			} else {
-				results <- nil
-			}
-		}()
+		go c.patchDiff(ctx, diff, syncContext, results, true)
 	}
 
 	var errs []error
@@ -112,6 +95,28 @@ func (c *RemoteCatalog) CreateOrUpdate(
 	}
 
 	return nil
+}
+
+func (c *RemoteCatalog) patchDiff(
+	ctx context.Context, diff *v1alpha1.ModuleTemplate, syncContext *remotecontext.KymaSynchronizationContext,
+	results chan error, delete bool,
+) {
+	diff.SetLastSync()
+
+	var err error
+	if delete {
+		err = syncContext.RuntimeClient.Delete(ctx, diff)
+	} else {
+		err = syncContext.RuntimeClient.Patch(
+			ctx, diff, client.Apply, c.settings.SSAPatchOptions,
+		)
+	}
+
+	if err != nil {
+		results <- fmt.Errorf("could not apply module template diff: %w", err)
+	} else {
+		results <- nil
+	}
 }
 
 // CalculateDiffs takes two ModuleTemplateLists and a given Force Interval and produces 2 Pointer Lists
