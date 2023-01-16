@@ -176,6 +176,9 @@ func createOrUpdateResource(ctx context.Context, skrClient client.Client,
 	resource *unstructured.Unstructured,
 ) error {
 	err := skrClient.Create(ctx, resource)
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		return fmt.Errorf("failed to create webhook %s: %w", resource.GetKind(), err)
+	}
 	if apierrors.IsAlreadyExists(err) {
 		resourceObjKey := client.ObjectKeyFromObject(resource)
 		oldResource := &unstructured.Unstructured{}
@@ -188,9 +191,6 @@ func createOrUpdateResource(ctx context.Context, skrClient client.Client,
 			return fmt.Errorf("failed to replace webhook %s: %w", resource.GetKind(), err)
 		}
 		return nil
-	}
-	if err != nil {
-		return fmt.Errorf("failed to create webhook %s: %w", resource.GetKind(), err)
 	}
 	return nil
 }
