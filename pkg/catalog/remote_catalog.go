@@ -1,18 +1,16 @@
 package catalog
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	remotecontext "github.com/kyma-project/lifecycle-manager/pkg/remote"
+	"golang.org/x/sync/errgroup"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/json"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -63,7 +61,7 @@ func (c *RemoteCatalog) CreateOrUpdate(
 	moduleTemplatesRuntime := &v1alpha1.ModuleTemplateList{}
 	err := syncContext.RuntimeClient.List(ctx, moduleTemplatesRuntime)
 
-	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster, then we create it
+	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster; then we create it
 	if meta.IsNoMatchError(err) {
 		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1alpha1.ModuleTemplateKind.Plural()); err != nil {
 			return err
@@ -77,27 +75,40 @@ func (c *RemoteCatalog) CreateOrUpdate(
 
 	diffApply, diffDelete := c.CalculateDiffs(moduleTemplatesRuntime, moduleTemplatesControlPlane)
 
+	errs, groupCtx := errgroup.WithContext(ctx)
 	for _, diff := range diffApply {
-		diff.SetLastSync()
-
-		var buf bytes.Buffer
-
-		if err := json.NewEncoder(&buf).Encode(diff); err != nil {
-			return err
-		}
-		patch := client.RawPatch(types.ApplyPatchType, buf.Bytes())
-
-		if err := syncContext.RuntimeClient.Patch(
-			ctx, diff, patch, c.settings.SSAPatchOptions,
-		); err != nil {
-			return fmt.Errorf("could not apply module template diff: %w", err)
-		}
+		diff := diff
+		errs.Go(func() error {
+			return c.patchDiff(groupCtx, diff, syncContext, false)
+		})
+	}
+	for _, diff := range diffDelete {
+		diff := diff
+		errs.Go(func() error {
+			return c.patchDiff(groupCtx, diff, syncContext, true)
+		})
 	}
 
-	for _, diff := range diffDelete {
-		if err := syncContext.RuntimeClient.Delete(ctx, diff); err != nil {
-			return fmt.Errorf("could not delete module template from diff: %w", err)
-		}
+	return errs.Wait()
+}
+
+func (c *RemoteCatalog) patchDiff(
+	ctx context.Context, diff *v1alpha1.ModuleTemplate, syncContext *remotecontext.KymaSynchronizationContext,
+	deleteInsteadOfPatch bool,
+) error {
+	diff.SetLastSync()
+
+	var err error
+	if deleteInsteadOfPatch {
+		err = syncContext.RuntimeClient.Delete(ctx, diff)
+	} else {
+		err = syncContext.RuntimeClient.Patch(
+			ctx, diff, client.Apply, c.settings.SSAPatchOptions,
+		)
+	}
+
+	if err != nil {
+		return fmt.Errorf("could not apply module template diff: %w", err)
 	}
 	return nil
 }
