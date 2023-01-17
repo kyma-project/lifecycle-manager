@@ -23,6 +23,7 @@ var (
 )
 
 const (
+	//nolint:gosec
 	credSecretLabel = "operator.kyma-project.io/oci-registry-cred"
 	credSecretValue = "test-operator"
 )
