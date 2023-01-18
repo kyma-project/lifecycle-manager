@@ -25,16 +25,16 @@ type ClientCache struct {
 	internal *sync.Map
 }
 
-func (cache *ClientCache) Get(key ClientCacheID) client.Client {
+func (cache *ClientCache) Get(key ClientCacheID) Client {
 	value, ok := cache.internal.Load(key)
 	if !ok {
 		return nil
 	}
 
-	return value.(client.Client)
+	return value.(Client)
 }
 
-func (cache *ClientCache) Set(key ClientCacheID, value client.Client) {
+func (cache *ClientCache) Set(key ClientCacheID, value Client) {
 	cache.internal.Store(key, value)
 }
 

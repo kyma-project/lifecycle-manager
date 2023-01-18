@@ -5,11 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	moduleTypes "github.com/kyma-project/module-manager/pkg/types"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 type Mode string
@@ -41,8 +39,8 @@ func ResolveSKRChartResourceName(resourceNameTpl string) string {
 	return fmt.Sprintf(resourceNameTpl, ReleaseName)
 }
 
-func prepareInstallInfo(ctx context.Context, chartPath, releaseName string, restConfig *rest.Config,
-	restClient client.Client, argsVals map[string]interface{},
+func prepareInstallInfo(ctx context.Context, chartPath, releaseName string,
+	clnt remote.Client, argsVals map[string]interface{},
 ) *moduleTypes.InstallInfo {
 	return &moduleTypes.InstallInfo{
 		Ctx: ctx,
@@ -58,8 +56,8 @@ func prepareInstallInfo(ctx context.Context, chartPath, releaseName string, rest
 			},
 		},
 		ClusterInfo: &moduleTypes.ClusterInfo{
-			Client: restClient,
-			Config: restConfig,
+			Client: clnt,
+			Config: clnt.Config(),
 		},
 	}
 }
