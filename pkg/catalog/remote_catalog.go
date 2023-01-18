@@ -57,19 +57,16 @@ func NewRemoteCatalog(
 // It uses Server-Side-Apply Patches to optimize the turnaround required.
 func (c *RemoteCatalog) CreateOrUpdate(
 	ctx context.Context,
-	moduleTemplatesControlPlane *v1alpha1.ModuleTemplateList,
+	kcp *v1alpha1.ModuleTemplateList,
 ) error {
-	for i := range moduleTemplatesControlPlane.Items {
-		c.prepareForSSA(&moduleTemplatesControlPlane.Items[i])
-	}
-
 	syncContext := remotecontext.SyncContextFromContext(ctx)
 
 	errsApply, applyGroupCtx := errgroup.WithContext(ctx)
-	for _, template := range moduleTemplatesControlPlane.Items {
-		template := template
+	for kcpIndex := range kcp.Items {
+		kcpIndex := kcpIndex
 		errsApply.Go(func() error {
-			return c.patchDiff(applyGroupCtx, template.DeepCopy(), syncContext, false)
+			c.prepareForSSA(&kcp.Items[kcpIndex])
+			return c.patchDiff(applyGroupCtx, &kcp.Items[kcpIndex], syncContext, false)
 		})
 	}
 	err := errsApply.Wait()
@@ -79,7 +76,7 @@ func (c *RemoteCatalog) CreateOrUpdate(
 		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1alpha1.ModuleTemplateKind.Plural()); err != nil {
 			return err
 		}
-		return c.CreateOrUpdate(ctx, moduleTemplatesControlPlane)
+		return c.CreateOrUpdate(ctx, kcp)
 	}
 
 	if err != nil {
@@ -97,7 +94,7 @@ func (c *RemoteCatalog) CreateOrUpdate(
 	}
 
 	errsDelete, deleteGroupCtx := errgroup.WithContext(ctx)
-	diffsToDelete := c.diffsToDelete(moduleTemplatesRuntime, moduleTemplatesControlPlane)
+	diffsToDelete := c.diffsToDelete(moduleTemplatesRuntime, kcp)
 	for _, diff := range diffsToDelete {
 		diff := diff
 		errsDelete.Go(func() error {
