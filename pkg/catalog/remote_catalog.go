@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
@@ -13,6 +14,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+var ErrTemplateCRDNotReady = errors.New("module template crd for catalog sync is not ready")
 
 type Settings struct {
 	// this namespace flag can be used to override the namespace in which all ModuleTemplates should be applied.
@@ -57,35 +60,57 @@ func (c *RemoteCatalog) CreateOrUpdate(
 	ctx context.Context,
 	moduleTemplatesControlPlane *v1alpha1.ModuleTemplateList,
 ) error {
+	for i := range moduleTemplatesControlPlane.Items {
+		c.prepareForSSA(&moduleTemplatesControlPlane.Items[i])
+	}
+
 	syncContext := remotecontext.SyncContextFromContext(ctx)
 
 	errsApply, applyGroupCtx := errgroup.WithContext(ctx)
-	for i := range moduleTemplatesControlPlane.Items {
-		template := moduleTemplatesControlPlane.Items[i].DeepCopy()
-		c.prepareForSSA(template)
+	for _, template := range moduleTemplatesControlPlane.Items {
+		template := template
 		errsApply.Go(func() error {
-			return c.patchDiff(applyGroupCtx, template, syncContext, false)
+			return c.patchDiff(applyGroupCtx, template.DeepCopy(), syncContext, false)
 		})
 	}
-	if err := errsApply.Wait(); err != nil {
-		return err
+	err := errsApply.Wait()
+
+	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster when we apply it and retry
+	if meta.IsNoMatchError(errors.Unwrap(err)) {
+		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1alpha1.ModuleTemplateKind.Plural()); err != nil {
+			return err
+		}
+		return c.CreateOrUpdate(ctx, moduleTemplatesControlPlane)
+	}
+
+	if err != nil {
+		return fmt.Errorf("could not apply catalog templates: %w", err)
 	}
 
 	moduleTemplatesRuntime := &v1alpha1.ModuleTemplateList{}
-	err := syncContext.RuntimeClient.List(ctx, moduleTemplatesRuntime)
-	if err != nil {
+	if err := syncContext.RuntimeClient.List(ctx, moduleTemplatesRuntime); err != nil {
+		// it can happen that the ModuleTemplate CRD is not caught during to apply if there are no modules to apply
+		// if this is the case and there is no CRD there can never be any module templates to delete
+		if meta.IsNoMatchError(err) {
+			return nil
+		}
 		return err
 	}
 
 	errsDelete, deleteGroupCtx := errgroup.WithContext(ctx)
-	for _, diff := range c.diffsToDelete(moduleTemplatesRuntime, moduleTemplatesControlPlane) {
+	diffsToDelete := c.diffsToDelete(moduleTemplatesRuntime, moduleTemplatesControlPlane)
+	for _, diff := range diffsToDelete {
 		diff := diff
 		errsDelete.Go(func() error {
 			return c.patchDiff(deleteGroupCtx, diff, syncContext, true)
 		})
 	}
 
-	return errsDelete.Wait()
+	if err := errsDelete.Wait(); err != nil {
+		return fmt.Errorf("could not delete obsolete catalog templates: %w", err)
+	}
+
+	return nil
 }
 
 func (c *RemoteCatalog) patchDiff(
@@ -101,14 +126,6 @@ func (c *RemoteCatalog) patchDiff(
 		err = syncContext.RuntimeClient.Patch(
 			ctx, diff, client.Apply, c.settings.SSAPatchOptions,
 		)
-	}
-
-	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster; then we create it
-	if meta.IsNoMatchError(err) {
-		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1alpha1.ModuleTemplateKind.Plural()); err != nil {
-			return err
-		}
-		return c.patchDiff(ctx, diff, syncContext, deleteInsteadOfPatch)
 	}
 
 	if err != nil {
@@ -210,9 +227,34 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 		})
 	}
 
+	if !crdReady(crdFromRuntime) {
+		return ErrTemplateCRDNotReady
+	}
+
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func crdReady(crd *v1extensions.CustomResourceDefinition) bool {
+	for _, cond := range crd.Status.Conditions {
+		//nolint:exhaustive
+		switch cond.Type {
+		case v1extensions.Established:
+			if cond.Status == v1extensions.ConditionTrue {
+				return true
+			}
+		case v1extensions.NamesAccepted:
+			if cond.Status == v1extensions.ConditionFalse {
+				// This indicates a naming conflict, but it's probably not the
+				// job of this function to fail because of that. Instead,
+				// we treat it as a success, since the process should be able to
+				// continue.
+				return true
+			}
+		}
+	}
+	return false
 }
