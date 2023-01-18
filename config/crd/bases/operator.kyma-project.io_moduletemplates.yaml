@@ -90,6 +90,7 @@ spec:
             required:
             - channel
             - descriptor
+            - target
             type: object
         type: object
     served: true

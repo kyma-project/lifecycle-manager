@@ -71,7 +71,7 @@ patches:
         value: --pprof=true      
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --cache-sync-timeout=30m      
+        value: --cache-sync-timeout=60m      
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --failure-max-delay=30s    

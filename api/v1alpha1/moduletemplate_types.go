@@ -66,7 +66,7 @@ type ModuleTemplateSpec struct {
 
 	// Target describes where the Module should later on be installed if parsed correctly. It is used as installation
 	// hint by downstream controllers to determine which client implementation to use for working with the Module
-	Target Target `json:"target,omitempty"`
+	Target Target `json:"target"`
 
 	// descriptor is the internal reference holder of the OCMDescriptor once parsed.
 	// it is purposefully not exposed and also excluded from parsers and only used

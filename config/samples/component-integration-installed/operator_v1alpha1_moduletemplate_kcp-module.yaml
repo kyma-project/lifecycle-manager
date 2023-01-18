@@ -15,6 +15,7 @@ metadata:
     "operator.kyma-project.io/generated-at": "2022-07-11T14:59:43Z"
 spec:
   channel: regular
+  target: control-plane
   data:
     kind: KCPModule
     resource: kcpmodules

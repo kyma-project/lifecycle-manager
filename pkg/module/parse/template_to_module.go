@@ -24,8 +24,9 @@ type ModuleConversionSettings struct {
 }
 
 var (
-	ErrTemplateNotFound     = errors.New("template was not found")
-	ErrDefaultConfigParsing = errors.New("defaultConfig could not be parsed")
+	ErrTemplateNotFound        = errors.New("template was not found")
+	ErrUndefinedTargetToRemote = errors.New("target to remote relation undefined")
+	ErrDefaultConfigParsing    = errors.New("defaultConfig could not be parsed")
 )
 
 func GenerateModulesFromTemplates(
@@ -157,12 +158,12 @@ func insertLayerIntoManifest(
 }
 
 func ConvertTargetToRemote(remote v1alpha1.Target) bool {
-	var isRemoteInstall bool
 	switch remote {
 	case v1alpha1.TargetControlPlane:
-		isRemoteInstall = false
+		return false
 	case v1alpha1.TargetRemote:
-		isRemoteInstall = true
+		return true
+	default:
+		panic(ErrUndefinedTargetToRemote)
 	}
-	return isRemoteInstall
 }
