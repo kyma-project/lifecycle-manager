@@ -58,38 +58,34 @@ func (c *RemoteCatalog) CreateOrUpdate(
 	moduleTemplatesControlPlane *v1alpha1.ModuleTemplateList,
 ) error {
 	syncContext := remotecontext.SyncContextFromContext(ctx)
-	moduleTemplatesRuntime := &v1alpha1.ModuleTemplateList{}
-	err := syncContext.RuntimeClient.List(ctx, moduleTemplatesRuntime)
 
-	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster; then we create it
-	if meta.IsNoMatchError(err) {
-		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1alpha1.ModuleTemplateKind.Plural()); err != nil {
-			return err
-		}
-		err = syncContext.RuntimeClient.List(ctx, moduleTemplatesRuntime)
+	errsApply, applyGroupCtx := errgroup.WithContext(ctx)
+	for i := range moduleTemplatesControlPlane.Items {
+		template := moduleTemplatesControlPlane.Items[i].DeepCopy()
+		c.prepareForSSA(template)
+		errsApply.Go(func() error {
+			return c.patchDiff(applyGroupCtx, template, syncContext, false)
+		})
+	}
+	if err := errsApply.Wait(); err != nil {
+		return err
 	}
 
+	moduleTemplatesRuntime := &v1alpha1.ModuleTemplateList{}
+	err := syncContext.RuntimeClient.List(ctx, moduleTemplatesRuntime)
 	if err != nil {
 		return err
 	}
 
-	diffApply, diffDelete := c.CalculateDiffs(moduleTemplatesRuntime, moduleTemplatesControlPlane)
-
-	errs, groupCtx := errgroup.WithContext(ctx)
-	for _, diff := range diffApply {
+	errsDelete, deleteGroupCtx := errgroup.WithContext(ctx)
+	for _, diff := range c.diffsToDelete(moduleTemplatesRuntime, moduleTemplatesControlPlane) {
 		diff := diff
-		errs.Go(func() error {
-			return c.patchDiff(groupCtx, diff, syncContext, false)
-		})
-	}
-	for _, diff := range diffDelete {
-		diff := diff
-		errs.Go(func() error {
-			return c.patchDiff(groupCtx, diff, syncContext, true)
+		errsDelete.Go(func() error {
+			return c.patchDiff(deleteGroupCtx, diff, syncContext, true)
 		})
 	}
 
-	return errs.Wait()
+	return errsDelete.Wait()
 }
 
 func (c *RemoteCatalog) patchDiff(
@@ -105,6 +101,14 @@ func (c *RemoteCatalog) patchDiff(
 		err = syncContext.RuntimeClient.Patch(
 			ctx, diff, client.Apply, c.settings.SSAPatchOptions,
 		)
+	}
+
+	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster; then we create it
+	if meta.IsNoMatchError(err) {
+		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1alpha1.ModuleTemplateKind.Plural()); err != nil {
+			return err
+		}
+		return c.patchDiff(ctx, diff, syncContext, deleteInsteadOfPatch)
 	}
 
 	if err != nil {
@@ -130,48 +134,25 @@ func (c *RemoteCatalog) patchDiff(
 // as we already know the spec will change. It also saves us the use of any special status field.
 // If for some reason the generation is incremented multiple times in between the current and the next reconciliation
 // it can simply jump multiple generations by always basing it on the latest generation of the remote.
-func (c *RemoteCatalog) CalculateDiffs(
+func (c *RemoteCatalog) diffsToDelete(
 	runtimeList *v1alpha1.ModuleTemplateList, controlPlaneList *v1alpha1.ModuleTemplateList,
-) ([]*v1alpha1.ModuleTemplate, []*v1alpha1.ModuleTemplate) {
-	// these are various ModuleTemplate references which we will either have to create, update or delete from
-	// the remote
-	diffToApply := make([]*v1alpha1.ModuleTemplate, 0, len(runtimeList.Items))
-	var diffToDelete []*v1alpha1.ModuleTemplate
-
-	// now lets start using two frequency maps to discover diffs
-	existingOnRemote := make(map[string]int)
-	existingOnControlPlane := make(map[string]int)
-
-	for i := range runtimeList.Items {
-		remote := &runtimeList.Items[i]
-		existingOnRemote[remote.Namespace+remote.Name] = i
-	}
-
-	for i := range controlPlaneList.Items {
-		controlPlane := &controlPlaneList.Items[i]
-		existingOnControlPlane[controlPlane.Namespace+controlPlane.Name] = i
-		// if the controlPlane Template does not exist in the remote, we already know we need to create it
-		// in the runtime
-		if _, exists := existingOnRemote[controlPlane.Namespace+controlPlane.Name]; !exists {
-			c.prepareForSSA(controlPlane)
-			diffToApply = append(diffToApply, controlPlane)
+) []*v1alpha1.ModuleTemplate {
+	kcp := controlPlaneList.Items
+	skr := runtimeList.Items
+	toDelete := make([]*v1alpha1.ModuleTemplate, 0, len(runtimeList.Items))
+	for skrIndex := range skr {
+		shouldDeleteFromSKR := true
+		for kcpIndex := range kcp {
+			if kcp[kcpIndex].Namespace+kcp[kcpIndex].Name == skr[skrIndex].Namespace+skr[skrIndex].Name {
+				shouldDeleteFromSKR = false
+				break
+			}
+		}
+		if shouldDeleteFromSKR {
+			toDelete = append(toDelete, &skr[skrIndex])
 		}
 	}
-
-	for i := range runtimeList.Items {
-		remote := &runtimeList.Items[i]
-		controlPlaneIndex, exists := existingOnControlPlane[remote.Namespace+remote.Name]
-
-		// if the remote Template does not exist in the control plane, we already know we need to delete it
-		if !exists {
-			diffToDelete = append(diffToDelete, remote)
-			continue
-		}
-		c.prepareForSSA(remote)
-		(&controlPlaneList.Items[controlPlaneIndex]).Spec.DeepCopyInto(&remote.Spec)
-		diffToApply = append(diffToApply, remote)
-	}
-	return diffToApply, diffToDelete
+	return toDelete
 }
 
 func (c *RemoteCatalog) prepareForSSA(moduleTemplate *v1alpha1.ModuleTemplate) {
