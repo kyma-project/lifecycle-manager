@@ -14,11 +14,8 @@ require (
 	github.com/onsi/gomega v1.24.1
 	github.com/stretchr/testify v1.8.1
 	go.uber.org/zap v1.24.0
-	golang.org/x/time v0.3.0
-	github.com/stretchr/testify v1.8.0
-	go.uber.org/zap v1.23.0
 	golang.org/x/sync v0.1.0
-	golang.org/x/time v0.2.0
+	golang.org/x/time v0.3.0
 	gopkg.in/yaml.v3 v3.0.1
 	istio.io/api v0.0.0-20220927144349-95d2a2fe2144
 	istio.io/client-go v1.15.1
@@ -55,6 +52,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.10.0 // indirect
 	github.com/evanphx/json-patch v5.6.0+incompatible // indirect
+	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/exponent-io/jsonpath v0.0.0-20210407135951-1de76d718b3f // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
@@ -136,7 +134,6 @@ require (
 	golang.org/x/crypto v0.2.0 // indirect
 	golang.org/x/net v0.3.1-0.20221206200815-1e63c2f08a10 // indirect
 	golang.org/x/oauth2 v0.2.0 // indirect
-	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/term v0.3.0 // indirect
 	golang.org/x/text v0.5.0 // indirect
