@@ -50,12 +50,11 @@ func NewRemoteCatalog(
 }
 
 // CreateOrUpdate first lists all currently available moduleTemplates in the Runtime.
-// If there is a NoMatchError, it will attempt to install the CRD
-// After the list has been aggregated from the client, it calculates a 2 stage diff
+// If there is a NoMatchError, it will attempt to install the CRD but only if there are available crs to copy.
+// It will use a 2 stage process:
 // 1. All ModuleTemplates that either have to be created based on the given Control Plane Templates
 // 2. All ModuleTemplates that have to be removed as they were deleted form the Control Plane Templates
 // It uses Server-Side-Apply Patches to optimize the turnaround required.
-// For more details on when a ModuleTemplate is updated, see CalculateDiffs.
 func (c *RemoteCatalog) CreateOrUpdate(
 	ctx context.Context,
 	moduleTemplatesControlPlane *v1alpha1.ModuleTemplateList,
@@ -134,39 +133,21 @@ func (c *RemoteCatalog) patchDiff(
 	return nil
 }
 
-// CalculateDiffs takes two ModuleTemplateLists and a given Force Interval and produces 2 Pointer Lists
-// The first pointer list references all Templates that would need to be applied to the runtime with SSA
-// The second pointer list references all Templates that would need to be deleted from the runtime.
-//
-// By default, a template is deemed as necessary for apply with SSA to the runtime when
-// 1. it does not exist in the controlPlane
-// 2. it exists but has a mismatching generation in the control-plane (the control plane spec got updated)
-// 3. it exists but has a mismatching generation in the runtime (the runtime spec got updated).
-//
-// The Diff of the Spec is tracked with two annotations.
-// A change in the remote spec advances the last sync gen of the remote
-// to the remote generation + 1 during the diff since the expected apply
-// would increment the generation.
-// This saves an additional API Server call to update the generation in the annotation
-// as we already know the spec will change. It also saves us the use of any special status field.
-// If for some reason the generation is incremented multiple times in between the current and the next reconciliation
-// it can simply jump multiple generations by always basing it on the latest generation of the remote.
+// diffsToDelete takes 2 v1alpha1.ModuleTemplateList to then calculate any diffs.
+// Diffs are defined as any v1alpha1.ModuleTemplate that is available in the skrList but not in the kcpList.
 func (c *RemoteCatalog) diffsToDelete(
-	runtimeList *v1alpha1.ModuleTemplateList, controlPlaneList *v1alpha1.ModuleTemplateList,
+	skrList *v1alpha1.ModuleTemplateList, kcpList *v1alpha1.ModuleTemplateList,
 ) []*v1alpha1.ModuleTemplate {
-	kcp := controlPlaneList.Items
-	skr := runtimeList.Items
-	toDelete := make([]*v1alpha1.ModuleTemplate, 0, len(runtimeList.Items))
-	for skrIndex := range skr {
-		shouldDeleteFromSKR := true
-		for kcpIndex := range kcp {
-			if kcp[kcpIndex].Namespace+kcp[kcpIndex].Name == skr[skrIndex].Namespace+skr[skrIndex].Name {
-				shouldDeleteFromSKR = false
-				break
-			}
-		}
-		if shouldDeleteFromSKR {
-			toDelete = append(toDelete, &skr[skrIndex])
+	kcp := kcpList.Items
+	skr := skrList.Items
+	toDelete := make([]*v1alpha1.ModuleTemplate, 0, len(skrList.Items))
+	presentInKCP := make(map[string]struct{}, len(kcp))
+	for i := range kcp {
+		presentInKCP[kcp[i].Namespace+kcp[i].Name] = struct{}{}
+	}
+	for i := range skr {
+		if _, inKCP := presentInKCP[skr[i].Namespace+skr[i].Name]; !inKCP {
+			toDelete = append(toDelete, &skr[i])
 		}
 	}
 	return toDelete
