@@ -8,8 +8,6 @@ import (
 	"strings"
 	"sync"
 
-	"go.uber.org/zap"
-
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
@@ -59,7 +57,7 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
-	chartArgValues, err := generateHelmChartArgs(ctx, syncContext.ControlPlaneClient, m.config, m.kcpAddr)
+	chartArgValues, err := generateHelmChartArgs(ctx, syncContext.ControlPlaneClient,kymaObjKey, m.config, m.kcpAddr)
 	if err != nil {
 		return true, err
 	}
@@ -86,32 +84,17 @@ func (m *SKRWebhookTemplateChartManager) Remove(ctx context.Context, kyma *v1alp
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
-	chartArgValues, err := generateHelmChartArgs(ctx, syncContext.ControlPlaneClient, m.config, m.kcpAddr)
+	manifest, err := renderChartToRawManifest(ctx, kymaObjKey, m.config.WebhookChartPath, map[string]interface{}{})
 	if err != nil {
 		return err
 	}
-	manifest, err := renderChartToRawManifest(ctx, kymaObjKey, m.config.WebhookChartPath, chartArgValues)
-	if err != nil {
-		return err
-	}
-	logger.V(int(zap.DebugLevel)).Info("following yaml manifest will be removed",
-		"manifest", manifest)
 	resources, err := getRawManifestUnstructuredResources(manifest)
 	if err != nil {
 		return err
 	}
 	for _, resource := range resources {
-		resourceObjKey := client.ObjectKeyFromObject(resource)
-		oldResource := &unstructured.Unstructured{}
-		oldResource.SetGroupVersionKind(resource.GroupVersionKind())
-		err := syncContext.RuntimeClient.Get(ctx, resourceObjKey, oldResource)
-		if err != nil && !apierrors.IsNotFound(err) {
-			return fmt.Errorf("failed to get webhook %s: %w", resource.GetKind(), err)
-		}
-		if err == nil {
-			if err := syncContext.RuntimeClient.Delete(ctx, resource); err != nil {
-				return fmt.Errorf("failed to delete webhook %s: %w", resource.GetKind(), err)
-			}
+		if err := syncContext.RuntimeClient.Delete(ctx, resource); err != nil && !apierrors.IsNotFound(err) {
+			return fmt.Errorf("failed to delete webhook %s: %w", resource.GetKind(), err)
 		}
 	}
 	logger.Info("successfully removed webhook chart",

@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -57,8 +58,9 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		NoModuleCopy: true,
 	}
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
+	tlsSecret := createTlsSecret(kymaObjKey)
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
-	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma)
+	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret)
 
 	It("kyma reconciler installs watcher helm chart with correct webhook config", func() {
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
@@ -124,12 +126,21 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	})
 })
 
-func registerDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1alpha1.Watcher) {
+func registerDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1alpha1.Watcher,
+	tlsSecret *corev1.Secret,
+) {
 	BeforeAll(func() {
 		By("Creating watcher CR")
 		Expect(controlPlaneClient.Create(suiteCtx, watcher)).To(Succeed())
 		By("Creating kyma CR")
 		Expect(controlPlaneClient.Create(suiteCtx, kyma)).To(Succeed())
+		By("Creating TLS Secret")
+		//tlsSecret.Data = map[string][]byte{
+		//	"ca.crt":  []byte("Li4a"),
+		//	"tls.crt": []byte("Li4b"),
+		//	"tls.key": []byte("Li4c"),
+		//}
+		Expect(controlPlaneClient.Create(suiteCtx, tlsSecret)).To(Succeed())
 	})
 
 	AfterAll(func() {
@@ -138,6 +149,8 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1
 		By("Ensuring watcher CR is properly deleted")
 		Eventually(isWatcherCrDeletionFinished(client.ObjectKeyFromObject(watcher)), Timeout, Interval).
 			Should(BeTrue())
+		By("Deleting TLS Secret")
+		Expect(controlPlaneClient.Delete(suiteCtx, tlsSecret)).To(Succeed())
 	})
 
 	BeforeEach(func() {
@@ -152,6 +165,9 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1
 		Expect(controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(kyma), kyma)).To(Succeed())
 		By("get latest watcher CR")
 		Expect(controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(watcher), watcher)).
+			To(Succeed())
+		By("get latest TLS secret")
+		Expect(controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(tlsSecret), tlsSecret)).
 			To(Succeed())
 	})
 	AfterEach(func() {
@@ -186,7 +202,7 @@ func getSkrChartDeployment(ctx context.Context, skrClient client.Client, kymaObj
 	return func() error {
 		return skrClient.Get(ctx, client.ObjectKey{
 			Namespace: metav1.NamespaceDefault,
-			Name:      resolveSKRChartResourceName(deploy.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
+			Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
 		}, &appsv1.Deployment{})
 	}
 }
@@ -197,7 +213,7 @@ func getSKRWebhookConfig(ctx context.Context, skrClient client.Client,
 	webhookCfg := &admissionv1.ValidatingWebhookConfiguration{}
 	err := skrClient.Get(ctx, client.ObjectKey{
 		Namespace: metav1.NamespaceDefault,
-		Name:      resolveSKRChartResourceName(deploy.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
+		Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
 	}, webhookCfg)
 	return webhookCfg, err
 }
@@ -316,8 +332,4 @@ func isWatcherCrDeletionFinished(watcherObjKey client.ObjectKey) func(g Gomega) 
 		err := controlPlaneClient.Get(suiteCtx, watcherObjKey, &v1alpha1.Watcher{})
 		return apierrors.IsNotFound(err)
 	}
-}
-
-func resolveSKRChartResourceName(resourceNameTpl string, kymaObjKey client.ObjectKey) string {
-	return fmt.Sprintf(resourceNameTpl, deploy.SkrChartReleaseName(kymaObjKey))
 }

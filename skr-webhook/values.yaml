@@ -61,6 +61,9 @@ tls:
   webhookServer: "true"
   # -- TLS callback to KCP
   callback: "false"
+  # -- KCP secret resource version
+  secretRV: ""
+
 # -- Module list
 modules: |-
   lifecycle-manager:

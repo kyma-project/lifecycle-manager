@@ -23,6 +23,7 @@ type Mode string
 const (
 	customConfigKey                = "modules"
 	WebhookCfgAndDeploymentNameTpl = "%s-webhook"
+	WebhookTlsCfgNameTpl           = "tls-watcher-%s"
 	IstioSystemNs                  = "istio-system"
 	IngressServiceName             = "istio-ingressgateway"
 	releaseNameTpl                 = "%s-%s-skr"
@@ -61,7 +62,7 @@ func SkrChartReleaseName(kymaObjKey client.ObjectKey) string {
 	return fmt.Sprintf(releaseNameTpl, kymaObjKey.Namespace, kymaObjKey.Name)
 }
 
-func generateHelmChartArgs(ctx context.Context, kcpClient client.Client,
+func generateHelmChartArgs(ctx context.Context, kcpClient client.Client, kymaObjKey client.ObjectKey,
 	managerConfig *SkrChartManagerConfig, kcpAddr string,
 ) (map[string]interface{}, error) {
 	customConfigValue := ""
@@ -69,6 +70,7 @@ func generateHelmChartArgs(ctx context.Context, kcpClient client.Client,
 	if err := kcpClient.List(ctx, watcherList); err != nil {
 		return nil, fmt.Errorf("error listing watcher CRs: %w", err)
 	}
+
 	watchers := watcherList.Items
 	if len(watchers) != 0 {
 		chartCfg := generateWatchableConfigs(watchers)
@@ -79,7 +81,24 @@ func generateHelmChartArgs(ctx context.Context, kcpClient client.Client,
 		customConfigValue = string(chartConfigBytes)
 	}
 
+	tlsSecret := &corev1.Secret{}
+	secretObjKey := client.ObjectKey{
+		Namespace: kymaObjKey.Namespace,
+		Name:      ResolveSKRChartResourceName(WebhookTlsCfgNameTpl, kymaObjKey),
+	}
+
+	if err := kcpClient.Get(ctx, secretObjKey, tlsSecret); err != nil {
+		return nil, fmt.Errorf("error fetching TLS secret: %w", err)
+	}
+
 	return map[string]interface{}{
+		"tls": map[string]string{
+			"helmCertGen": "false",
+			"caCert":      string(tlsSecret.Data["ca.crt"]),
+			"clientCert":  string(tlsSecret.Data["tls.crt"]),
+			"clientKey":   string(tlsSecret.Data["tls.key"]),
+			"secretRV":    tlsSecret.GetResourceVersion(),
+		},
 		"kcpAddr":               kcpAddr,
 		"resourcesLimitsMemory": managerConfig.SkrWebhookMemoryLimits,
 		"resourcesLimitsCPU":    managerConfig.SkrWebhookCPULimits,
@@ -132,4 +151,8 @@ func renderChartToRawManifest(ctx context.Context, kymaObjKey client.ObjectKey,
 		Namespace:   v1.NamespaceDefault,
 		Values:      chartArgValues,
 	})
+}
+
+func ResolveSKRChartResourceName(resourceNameTpl string, kymaObjKey client.ObjectKey) string {
+	return fmt.Sprintf(resourceNameTpl, SkrChartReleaseName(kymaObjKey))
 }

@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
 	"io"
+	corev1 "k8s.io/api/core/v1"
 	"os"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
@@ -93,6 +95,23 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1alpha1.Watc
 			Gateway: v1alpha1.GatewayConfig{
 				LabelSelector: v1alpha1.DefaultIstioGatewaySelector(),
 			},
+		},
+	}
+}
+
+func createTlsSecret(kymaObjKey client.ObjectKey) *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookTlsCfgNameTpl, kymaObjKey),
+			Namespace: kymaObjKey.Namespace,
+			Labels: map[string]string{
+				v1alpha1.ManagedBy: v1alpha1.OperatorName,
+			},
+		},
+		Data: map[string][]byte{
+			"ca.crt":  []byte("Li4a"),
+			"tls.crt": []byte("Li4b"),
+			"tls.key": []byte("Li4c"),
 		},
 	}
 }

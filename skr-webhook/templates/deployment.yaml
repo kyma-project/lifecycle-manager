@@ -30,7 +30,7 @@ spec:
     metadata:
       labels:
         app: skr-webhook
-        operator.kyma-project.io/pod-restart-trigger: {{uuidv4}}
+        operator.kyma-project.io/pod-restart-trigger: "{{.Values.tls.secretRV}}"
     spec:
       serviceAccountName: {{.Release.Name}}-webhook-sa
       containers:
