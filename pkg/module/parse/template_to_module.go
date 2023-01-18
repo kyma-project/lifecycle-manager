@@ -24,8 +24,9 @@ type ModuleConversionSettings struct {
 }
 
 var (
-	ErrTemplateNotFound     = errors.New("template was not found")
-	ErrDefaultConfigParsing = errors.New("defaultConfig could not be parsed")
+	ErrTemplateNotFound        = errors.New("template was not found")
+	ErrUndefinedTargetToRemote = errors.New("target to remote relation undefined")
+	ErrDefaultConfigParsing    = errors.New("defaultConfig could not be parsed")
 )
 
 func GenerateModulesFromTemplates(
@@ -135,10 +136,11 @@ func insertLayerIntoManifest(
 			return fmt.Errorf("%w: not an OCIImage", ErrDefaultConfigParsing)
 		}
 		manifest.Spec.Config = types.ImageSpec{
-			Repo: ociImage.Repo,
-			Name: ociImage.Name,
-			Ref:  ociImage.Ref,
-			Type: img.OCIRepresentationType,
+			Repo:               ociImage.Repo,
+			Name:               ociImage.Name,
+			Ref:                ociImage.Ref,
+			Type:               img.OCIRepresentationType,
+			CredSecretSelector: ociImage.CredSecretSelector,
 		}
 	default:
 		installRaw, err := json.Marshal(layer.ToGenericRepresentation())
@@ -156,12 +158,12 @@ func insertLayerIntoManifest(
 }
 
 func ConvertTargetToRemote(remote v1alpha1.Target) bool {
-	var isRemoteInstall bool
 	switch remote {
 	case v1alpha1.TargetControlPlane:
-		isRemoteInstall = false
+		return false
 	case v1alpha1.TargetRemote:
-		isRemoteInstall = true
+		return true
+	default:
+		panic(ErrUndefinedTargetToRemote)
 	}
-	return isRemoteInstall
 }
