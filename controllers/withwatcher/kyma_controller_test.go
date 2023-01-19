@@ -46,7 +46,6 @@ var (
 	ErrWatchLabelsMismatch             = errors.New("watch labels mismatch")
 	ErrStatusSubResourcesMismatch      = errors.New("status sub-resources mismatch")
 	ErrSpecSubResourcesMismatch        = errors.New("spec sub-resources mismatch")
-	ErrExpectedSKRChartToBeCached      = errors.New("CA bundle was generated: expected SKR chart will be cached")
 )
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
@@ -62,12 +61,12 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
 	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret)
 
-	It("kyma reconciler installs watcher helm chart with correct webhook config", func() {
+	It("kyma reconciliation installs watcher helm chart with correct webhook config", func() {
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
 			kymaObjKey), Timeout, Interval).WithOffset(4).Should(Succeed())
 	})
 
-	It("kubernetes client update replaces webhook-config when a new watcher is created and deleted", func() {
+	It("kyma reconciliation replaces webhook-config when a new watcher is created and deleted", func() {
 		secondWatcher := createWatcherCR("second-manager", false)
 		By("Creating second watcher CR")
 		Expect(controlPlaneClient.Create(suiteCtx, secondWatcher)).To(Succeed())
@@ -92,7 +91,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 			Timeout, Interval).WithOffset(4).ShouldNot(Succeed())
 	})
 
-	It("SKR chart installation works correctly when watcher config is updated and ", func() {
+	It("SKR chart installation works correctly when watcher config is updated", func() {
 		labelKey := "new-key"
 		labelValue := "new-value"
 		watcherCrForKyma.Spec.LabelsToWatch[labelKey] = labelValue
@@ -107,7 +106,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 			kymaObjKey), Timeout, Interval).WithOffset(4).Should(Succeed())
 	})
 
-	It("webhook manager removes watcher helm chart from SKR cluster when kyma is deleted", func() {
+	It("kyma reconciliation removes watcher helm chart from SKR cluster when kyma is deleted", func() {
 		Expect(controlPlaneClient.Delete(suiteCtx, kyma)).To(Succeed())
 		Eventually(getSkrChartDeployment(suiteCtx, runtimeClient, kymaObjKey), Timeout, Interval).
 			ShouldNot(Succeed())
