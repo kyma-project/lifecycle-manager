@@ -9,7 +9,7 @@ import (
 	"strconv"
 
 	"github.com/slok/go-helm-template/helm"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -23,7 +23,7 @@ type Mode string
 const (
 	customConfigKey                = "modules"
 	WebhookCfgAndDeploymentNameTpl = "%s-webhook"
-	WebhookTlsCfgNameTpl           = "tls-watcher-%s"
+	WebhookTLSCfgNameTpl           = "tls-watcher-%s"
 	IstioSystemNs                  = "istio-system"
 	IngressServiceName             = "istio-ingressgateway"
 	releaseNameTpl                 = "%s-%s-skr"
@@ -32,6 +32,7 @@ const (
 	caCertKey                      = "ca.crt"
 	tlsCertKey                     = "tls.crt"
 	tlsPrivateKeyKey               = "tls.key"
+	skrChartFieldOwner             = client.FieldOwner("lifecycle-manager")
 )
 
 var ErrLoadBalancerIPIsNotAssigned = errors.New("load balancer service external ip is not assigned")
@@ -86,7 +87,7 @@ func generateHelmChartArgs(ctx context.Context, kcpClient client.Client, kymaObj
 	tlsSecret := &corev1.Secret{}
 	secretObjKey := client.ObjectKey{
 		Namespace: kymaObjKey.Namespace,
-		Name:      ResolveSKRChartResourceName(WebhookTlsCfgNameTpl, kymaObjKey),
+		Name:      ResolveSKRChartResourceName(WebhookTLSCfgNameTpl, kymaObjKey),
 	}
 
 	if err := kcpClient.Get(ctx, secretObjKey, tlsSecret); err != nil {
@@ -151,13 +152,13 @@ func renderChartToRawManifest(ctx context.Context, kymaObjKey client.ObjectKey,
 	return helm.Template(ctx, helm.TemplateConfig{
 		Chart:       chart,
 		ReleaseName: skrChartReleaseName(kymaObjKey),
-		Namespace:   v1.NamespaceDefault,
+		Namespace:   metav1.NamespaceDefault,
 		Values:      chartArgValues,
 	})
 }
 
 // ResolveSKRChartResourceName resolves a resource name that belongs to the SKR webhook's Chart
-// using the resource name's template
+// using the resource name's template.
 func ResolveSKRChartResourceName(resourceNameTpl string, kymaObjKey client.ObjectKey) string {
 	return fmt.Sprintf(resourceNameTpl, skrChartReleaseName(kymaObjKey))
 }

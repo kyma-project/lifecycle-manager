@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"sync"
 
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -23,9 +22,8 @@ import (
 // SKRWebhookTemplateChartManager is a SKRWebhookChartManager implementation that renders
 // the watcher's helm chart and installs it using a native kube-client.
 type SKRWebhookTemplateChartManager struct {
-	config           *SkrChartManagerConfig
-	chartConfigCache *sync.Map
-	kcpAddr          string
+	config  *SkrChartManagerConfig
+	kcpAddr string
 }
 
 type SkrChartManagerConfig struct {
@@ -47,9 +45,8 @@ func NewSKRWebhookTemplateChartManager(kcpRestConfig *rest.Config, config *SkrCh
 		return nil, err
 	}
 	return &SKRWebhookTemplateChartManager{
-		config:           config,
-		chartConfigCache: &sync.Map{},
-		kcpAddr:          resolvedKcpAddr,
+		config:  config,
+		kcpAddr: resolvedKcpAddr,
 	}, nil
 }
 
@@ -70,7 +67,8 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 		return true, err
 	}
 	for _, resource := range resources {
-		if err := createOrUpdateResource(ctx, syncContext.RuntimeClient, resource); err != nil {
+		err := syncContext.RuntimeClient.Patch(ctx, resource, client.Apply, client.ForceOwnership, skrChartFieldOwner)
+		if err != nil {
 			return true, err
 		}
 	}
@@ -119,28 +117,4 @@ func getRawManifestUnstructuredResources(rawManifest string) ([]*unstructured.Un
 		resources = append(resources, resource)
 	}
 	return resources, nil
-}
-
-func createOrUpdateResource(ctx context.Context, skrClient client.Client,
-	resource *unstructured.Unstructured,
-) error {
-	err := skrClient.Create(ctx, resource)
-	resourceAlreadyExists := apierrors.IsAlreadyExists(err)
-	if err != nil && !resourceAlreadyExists {
-		return fmt.Errorf("failed to create webhook %s: %w", resource.GetKind(), err)
-	}
-	if resourceAlreadyExists {
-		resourceObjKey := client.ObjectKeyFromObject(resource)
-		oldResource := &unstructured.Unstructured{}
-		oldResource.SetGroupVersionKind(resource.GroupVersionKind())
-		if err := skrClient.Get(ctx, resourceObjKey, oldResource); err != nil {
-			return fmt.Errorf("failed to get webhook %s: %w", resource.GetKind(), err)
-		}
-		resource.SetResourceVersion(oldResource.GetResourceVersion())
-		if err := skrClient.Update(ctx, resource); err != nil {
-			return fmt.Errorf("failed to replace webhook %s: %w", resource.GetKind(), err)
-		}
-		return nil
-	}
-	return nil
 }

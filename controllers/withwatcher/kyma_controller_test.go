@@ -1,15 +1,15 @@
 package withwatcher_test
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	corev1 "k8s.io/api/core/v1"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
+
+	corev1 "k8s.io/api/core/v1"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -58,7 +58,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		NoModuleCopy: true,
 	}
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
-	tlsSecret := createTlsSecret(kymaObjKey)
+	tlsSecret := createTLSSecret(kymaObjKey)
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
 	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret)
 
@@ -92,7 +92,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 			Timeout, Interval).WithOffset(4).ShouldNot(Succeed())
 	})
 
-	It("Watcher helm chart caching works as expected", func() {
+	It("SKR chart installation works correctly when watcher config is updated and ", func() {
 		labelKey := "new-key"
 		labelValue := "new-value"
 		watcherCrForKyma.Spec.LabelsToWatch[labelKey] = labelValue
@@ -105,16 +105,6 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 			Timeout, Interval).WithOffset(4).Should(Succeed())
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
 			kymaObjKey), Timeout, Interval).WithOffset(4).Should(Succeed())
-		webhookCfg, err := getSKRWebhookConfig(suiteCtx, runtimeClient, kymaObjKey)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(webhookCfg).NotTo(BeNil())
-		Expect(webhookCfg.Webhooks).NotTo(BeEmpty())
-		caBundleValueBeforeUpdate := webhookCfg.Webhooks[0].ClientConfig.CABundle
-		By("updating kyma channel to trigger its reconciliation")
-		Eventually(triggerLatestKymaReconciliation(suiteCtx, controlPlaneClient, kymaAlphaChannel, kymaObjKey),
-			Timeout, Interval).WithOffset(4).Should(Succeed())
-		Eventually(webhookConfigCaBundleNewGenerationCheck(suiteCtx, runtimeClient, kymaObjKey,
-			caBundleValueBeforeUpdate), Timeout, Interval).WithOffset(4).Should(Succeed())
 	})
 
 	It("webhook manager removes watcher helm chart from SKR cluster when kyma is deleted", func() {
@@ -135,11 +125,6 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1
 		By("Creating kyma CR")
 		Expect(controlPlaneClient.Create(suiteCtx, kyma)).To(Succeed())
 		By("Creating TLS Secret")
-		//tlsSecret.Data = map[string][]byte{
-		//	"ca.crt":  []byte("Li4a"),
-		//	"tls.crt": []byte("Li4b"),
-		//	"tls.key": []byte("Li4c"),
-		//}
 		Expect(controlPlaneClient.Create(suiteCtx, tlsSecret)).To(Succeed())
 	})
 
@@ -241,21 +226,6 @@ func triggerLatestKymaReconciliation(ctx context.Context, kcpClient client.Clien
 		}
 		latestKyma.Spec.Channel = kymaChannel
 		return kcpClient.Update(ctx, latestKyma)
-	}
-}
-
-func webhookConfigCaBundleNewGenerationCheck(ctx context.Context, skrClient client.Client,
-	kymaObjKey client.ObjectKey, oldCaBundle []byte,
-) func() error {
-	return func() error {
-		webhookCfg, err := getSKRWebhookConfig(ctx, skrClient, kymaObjKey)
-		if err != nil {
-			return err
-		}
-		if !bytes.Equal(webhookCfg.Webhooks[0].ClientConfig.CABundle, oldCaBundle) {
-			return ErrExpectedSKRChartToBeCached
-		}
-		return nil
 	}
 }
 

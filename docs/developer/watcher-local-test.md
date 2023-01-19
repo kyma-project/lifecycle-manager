@@ -40,6 +40,7 @@ kubectl apply -f https://raw.githubusercontent.com/kyma-project/lifecycle-manage
 
 ### Create TLS secret
 Run the following commands from your local directory for the [kyma watcher repo](https://github.com/kyma-project/runtime-watcher) to generate PKI for the SKR webhook
+1. Run the following commands to generate the PKI for the watcher web-hook 
 ```shell
 cd listener/example-mtls && \
 cfssl gencert -initca ./kcp/gardener/cert_config/ca-csr.json | cfssljson -bare ca && \
@@ -50,7 +51,9 @@ cfssl gencert \
 -hostname="localhost,127.0.0.1,default-kyma-sample-skr-webhook.default.svc.cluster.local,default-kyma-sample-skr-webhook.default.svc" \
 -profile=default \
 ./kcp/gardener/cert_config/ca-csr.json | cfssljson -bare signed-cert
-
+```
+2. Run the following command to create a secret holding the PKI for the watcher web-hook installation
+```shell
 cat << EOF | kubectl apply -f -
 ---
 apiVersion: v1
