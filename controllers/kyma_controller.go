@@ -299,15 +299,15 @@ func (r *KymaReconciler) syncModules(ctx context.Context, kyma *v1alpha1.Kyma) (
 func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error) {
 	logger := log.FromContext(ctx)
 
-	if kyma.Spec.Sync.Enabled {
-		if r.SKRWebhookChartManager != nil {
-			if err := r.SKRWebhookChartManager.Remove(ctx, kyma); err != nil {
-				// here we expect that an error is normal and means we have to try again if it didn't work
-				r.Event(kyma, "Normal", "WebhookChartRemoval", err.Error())
-				return true, nil
-			}
+	if kyma.Spec.Sync.Enabled && r.SKRWebhookChartManager != nil {
+		if err := r.SKRWebhookChartManager.Remove(ctx, kyma); err != nil {
+			// here we expect that an error is normal and means we have to try again if it didn't work
+			r.Event(kyma, "Normal", "WebhookChartRemoval", err.Error())
+			return true, nil
 		}
+	}
 
+	if kyma.Spec.Sync.Enabled {
 		if err := catalog.NewRemoteCatalogFromKyma(kyma).Delete(ctx); err != nil {
 			err := fmt.Errorf("could not delete remote module catalog: %w", err)
 			r.Event(kyma, "Warning", string(DeletionError), err.Error())
