@@ -6,7 +6,7 @@ import (
 	"github.com/go-logr/logr"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	manifestv1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
+	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 )
 
 type (
@@ -15,7 +15,7 @@ type (
 		Name             string
 		Template         *v1alpha1.ModuleTemplate
 		TemplateOutdated bool
-		*manifestv1alpha1.Manifest
+		*manifestV1alpha1.Manifest
 	}
 )
 
@@ -57,7 +57,7 @@ func (m *Module) StateMismatchedWithModuleStatus(moduleStatus *v1alpha1.ModuleSt
 
 // UpdateStatusAndReferencesFromUnstructured updates the module with necessary information (status, ownerReference) from
 // current deployed resource (from Unstructured).
-func (m *Module) UpdateStatusAndReferencesFromUnstructured(unstructured *manifestv1alpha1.Manifest) {
+func (m *Module) UpdateStatusAndReferencesFromUnstructured(unstructured *manifestV1alpha1.Manifest) {
 	m.Status = unstructured.Status
 	m.SetResourceVersion(unstructured.GetResourceVersion())
 	m.SetOwnerReferences(unstructured.GetOwnerReferences())
@@ -76,8 +76,8 @@ func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {
 	return false
 }
 
-func NewFromModule(module *Module) *manifestv1alpha1.Manifest {
-	fromServer := manifestv1alpha1.Manifest{}
+func NewFromModule(module *Module) *manifestV1alpha1.Manifest {
+	fromServer := manifestV1alpha1.Manifest{}
 	fromServer.SetGroupVersionKind(module.GroupVersionKind())
 	fromServer.SetNamespace(module.GetNamespace())
 	fromServer.SetName(module.GetName())
