@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
@@ -13,6 +14,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
+
+var ErrTemplateCRDNotReady = errors.New("module template crd for catalog sync is not ready")
 
 type Settings struct {
 	// this namespace flag can be used to override the namespace in which all ModuleTemplates should be applied.
@@ -47,49 +50,63 @@ func NewRemoteCatalog(
 }
 
 // CreateOrUpdate first lists all currently available moduleTemplates in the Runtime.
-// If there is a NoMatchError, it will attempt to install the CRD
-// After the list has been aggregated from the client, it calculates a 2 stage diff
+// If there is a NoMatchError, it will attempt to install the CRD but only if there are available crs to copy.
+// It will use a 2 stage process:
 // 1. All ModuleTemplates that either have to be created based on the given Control Plane Templates
 // 2. All ModuleTemplates that have to be removed as they were deleted form the Control Plane Templates
 // It uses Server-Side-Apply Patches to optimize the turnaround required.
-// For more details on when a ModuleTemplate is updated, see CalculateDiffs.
 func (c *RemoteCatalog) CreateOrUpdate(
 	ctx context.Context,
-	moduleTemplatesControlPlane *v1alpha1.ModuleTemplateList,
+	kcp *v1alpha1.ModuleTemplateList,
 ) error {
 	syncContext := remotecontext.SyncContextFromContext(ctx)
-	moduleTemplatesRuntime := &v1alpha1.ModuleTemplateList{}
-	err := syncContext.RuntimeClient.List(ctx, moduleTemplatesRuntime)
 
-	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster; then we create it
-	if meta.IsNoMatchError(err) {
+	errsApply, applyGroupCtx := errgroup.WithContext(ctx)
+	for kcpIndex := range kcp.Items {
+		kcpIndex := kcpIndex
+		errsApply.Go(func() error {
+			c.prepareForSSA(&kcp.Items[kcpIndex])
+			return c.patchDiff(applyGroupCtx, &kcp.Items[kcpIndex], syncContext, false)
+		})
+	}
+	err := errsApply.Wait()
+
+	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster when we apply it and retry
+	if meta.IsNoMatchError(errors.Unwrap(err)) {
 		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1alpha1.ModuleTemplateKind.Plural()); err != nil {
 			return err
 		}
-		err = syncContext.RuntimeClient.List(ctx, moduleTemplatesRuntime)
+		return c.CreateOrUpdate(ctx, kcp)
 	}
 
 	if err != nil {
+		return fmt.Errorf("could not apply catalog templates: %w", err)
+	}
+
+	moduleTemplatesRuntime := &v1alpha1.ModuleTemplateList{}
+	if err := syncContext.RuntimeClient.List(ctx, moduleTemplatesRuntime); err != nil {
+		// it can happen that the ModuleTemplate CRD is not caught during to apply if there are no modules to apply
+		// if this is the case and there is no CRD there can never be any module templates to delete
+		if meta.IsNoMatchError(err) {
+			return nil
+		}
 		return err
 	}
 
-	diffApply, diffDelete := c.CalculateDiffs(moduleTemplatesRuntime, moduleTemplatesControlPlane)
-
-	errs, groupCtx := errgroup.WithContext(ctx)
-	for _, diff := range diffApply {
+	errsDelete, deleteGroupCtx := errgroup.WithContext(ctx)
+	diffsToDelete := c.diffsToDelete(moduleTemplatesRuntime, kcp)
+	for _, diff := range diffsToDelete {
 		diff := diff
-		errs.Go(func() error {
-			return c.patchDiff(groupCtx, diff, syncContext, false)
-		})
-	}
-	for _, diff := range diffDelete {
-		diff := diff
-		errs.Go(func() error {
-			return c.patchDiff(groupCtx, diff, syncContext, true)
+		errsDelete.Go(func() error {
+			return c.patchDiff(deleteGroupCtx, diff, syncContext, true)
 		})
 	}
 
-	return errs.Wait()
+	if err := errsDelete.Wait(); err != nil {
+		return fmt.Errorf("could not delete obsolete catalog templates: %w", err)
+	}
+
+	return nil
 }
 
 func (c *RemoteCatalog) patchDiff(
@@ -113,65 +130,24 @@ func (c *RemoteCatalog) patchDiff(
 	return nil
 }
 
-// CalculateDiffs takes two ModuleTemplateLists and a given Force Interval and produces 2 Pointer Lists
-// The first pointer list references all Templates that would need to be applied to the runtime with SSA
-// The second pointer list references all Templates that would need to be deleted from the runtime.
-//
-// By default, a template is deemed as necessary for apply with SSA to the runtime when
-// 1. it does not exist in the controlPlane
-// 2. it exists but has a mismatching generation in the control-plane (the control plane spec got updated)
-// 3. it exists but has a mismatching generation in the runtime (the runtime spec got updated).
-//
-// The Diff of the Spec is tracked with two annotations.
-// A change in the remote spec advances the last sync gen of the remote
-// to the remote generation + 1 during the diff since the expected apply
-// would increment the generation.
-// This saves an additional API Server call to update the generation in the annotation
-// as we already know the spec will change. It also saves us the use of any special status field.
-// If for some reason the generation is incremented multiple times in between the current and the next reconciliation
-// it can simply jump multiple generations by always basing it on the latest generation of the remote.
-func (c *RemoteCatalog) CalculateDiffs(
-	runtimeList *v1alpha1.ModuleTemplateList, controlPlaneList *v1alpha1.ModuleTemplateList,
-) ([]*v1alpha1.ModuleTemplate, []*v1alpha1.ModuleTemplate) {
-	// these are various ModuleTemplate references which we will either have to create, update or delete from
-	// the remote
-	diffToApply := make([]*v1alpha1.ModuleTemplate, 0, len(runtimeList.Items))
-	var diffToDelete []*v1alpha1.ModuleTemplate
-
-	// now lets start using two frequency maps to discover diffs
-	existingOnRemote := make(map[string]int)
-	existingOnControlPlane := make(map[string]int)
-
-	for i := range runtimeList.Items {
-		remote := &runtimeList.Items[i]
-		existingOnRemote[remote.Namespace+remote.Name] = i
+// diffsToDelete takes 2 v1alpha1.ModuleTemplateList to then calculate any diffs.
+// Diffs are defined as any v1alpha1.ModuleTemplate that is available in the skrList but not in the kcpList.
+func (c *RemoteCatalog) diffsToDelete(
+	skrList *v1alpha1.ModuleTemplateList, kcpList *v1alpha1.ModuleTemplateList,
+) []*v1alpha1.ModuleTemplate {
+	kcp := kcpList.Items
+	skr := skrList.Items
+	toDelete := make([]*v1alpha1.ModuleTemplate, 0, len(skrList.Items))
+	presentInKCP := make(map[string]struct{}, len(kcp))
+	for i := range kcp {
+		presentInKCP[kcp[i].Namespace+kcp[i].Name] = struct{}{}
 	}
-
-	for i := range controlPlaneList.Items {
-		controlPlane := &controlPlaneList.Items[i]
-		existingOnControlPlane[controlPlane.Namespace+controlPlane.Name] = i
-		// if the controlPlane Template does not exist in the remote, we already know we need to create it
-		// in the runtime
-		if _, exists := existingOnRemote[controlPlane.Namespace+controlPlane.Name]; !exists {
-			c.prepareForSSA(controlPlane)
-			diffToApply = append(diffToApply, controlPlane)
+	for i := range skr {
+		if _, inKCP := presentInKCP[skr[i].Namespace+skr[i].Name]; !inKCP {
+			toDelete = append(toDelete, &skr[i])
 		}
 	}
-
-	for i := range runtimeList.Items {
-		remote := &runtimeList.Items[i]
-		controlPlaneIndex, exists := existingOnControlPlane[remote.Namespace+remote.Name]
-
-		// if the remote Template does not exist in the control plane, we already know we need to delete it
-		if !exists {
-			diffToDelete = append(diffToDelete, remote)
-			continue
-		}
-		c.prepareForSSA(remote)
-		(&controlPlaneList.Items[controlPlaneIndex]).Spec.DeepCopyInto(&remote.Spec)
-		diffToApply = append(diffToApply, remote)
-	}
-	return diffToApply, diffToDelete
+	return toDelete
 }
 
 func (c *RemoteCatalog) prepareForSSA(moduleTemplate *v1alpha1.ModuleTemplate) {
@@ -229,9 +205,34 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 		})
 	}
 
+	if !crdReady(crdFromRuntime) {
+		return ErrTemplateCRDNotReady
+	}
+
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func crdReady(crd *v1extensions.CustomResourceDefinition) bool {
+	for _, cond := range crd.Status.Conditions {
+		//nolint:exhaustive
+		switch cond.Type {
+		case v1extensions.Established:
+			if cond.Status == v1extensions.ConditionTrue {
+				return true
+			}
+		case v1extensions.NamesAccepted:
+			if cond.Status == v1extensions.ConditionFalse {
+				// This indicates a naming conflict, but it's probably not the
+				// job of this function to fail because of that. Instead,
+				// we treat it as a success, since the process should be able to
+				// continue.
+				return true
+			}
+		}
+	}
+	return false
 }
