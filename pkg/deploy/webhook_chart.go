@@ -29,6 +29,9 @@ const (
 	releaseNameTpl                 = "%s-%s-skr"
 	defaultK3dLocalhostMapping     = "host.k3d.internal"
 	defaultBufferSize              = 2048
+	caCertKey                      = "ca.crt"
+	tlsCertKey                     = "tls.crt"
+	tlsPrivateKeyKey               = "tls.key"
 )
 
 var ErrLoadBalancerIPIsNotAssigned = errors.New("load balancer service external ip is not assigned")
@@ -57,8 +60,7 @@ func generateWatchableConfigs(watchers []v1alpha1.Watcher) map[string]WatchableC
 	return chartCfg
 }
 
-// SkrChartReleaseName generates the webhook chart's release name from the Kyma name and namespace.
-func SkrChartReleaseName(kymaObjKey client.ObjectKey) string {
+func skrChartReleaseName(kymaObjKey client.ObjectKey) string {
 	return fmt.Sprintf(releaseNameTpl, kymaObjKey.Namespace, kymaObjKey.Name)
 }
 
@@ -92,12 +94,13 @@ func generateHelmChartArgs(ctx context.Context, kcpClient client.Client, kymaObj
 	}
 
 	return map[string]interface{}{
+		"caCert": string(tlsSecret.Data[caCertKey]),
 		"tls": map[string]string{
-			"helmCertGen": "false",
-			"caCert":      string(tlsSecret.Data["ca.crt"]),
-			"clientCert":  string(tlsSecret.Data["tls.crt"]),
-			"clientKey":   string(tlsSecret.Data["tls.key"]),
-			"secretRV":    tlsSecret.GetResourceVersion(),
+			"cert":          string(tlsSecret.Data[tlsCertKey]),
+			"privateKey":    string(tlsSecret.Data[tlsPrivateKeyKey]),
+			"secretResVer":  tlsSecret.GetResourceVersion(),
+			"webhookServer": "true",
+			"callback":      "false",
 		},
 		"kcpAddr":               kcpAddr,
 		"resourcesLimitsMemory": managerConfig.SkrWebhookMemoryLimits,
@@ -147,12 +150,14 @@ func renderChartToRawManifest(ctx context.Context, kymaObjKey client.ObjectKey,
 	}
 	return helm.Template(ctx, helm.TemplateConfig{
 		Chart:       chart,
-		ReleaseName: SkrChartReleaseName(kymaObjKey),
+		ReleaseName: skrChartReleaseName(kymaObjKey),
 		Namespace:   v1.NamespaceDefault,
 		Values:      chartArgValues,
 	})
 }
 
+// ResolveSKRChartResourceName resolves a resource name that belongs to the SKR webhook's Chart
+// using the resource name's template
 func ResolveSKRChartResourceName(resourceNameTpl string, kymaObjKey client.ObjectKey) string {
-	return fmt.Sprintf(resourceNameTpl, SkrChartReleaseName(kymaObjKey))
+	return fmt.Sprintf(resourceNameTpl, skrChartReleaseName(kymaObjKey))
 }

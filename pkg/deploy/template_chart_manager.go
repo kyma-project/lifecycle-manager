@@ -76,7 +76,7 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 	}
 	kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionTrue)
 	logger.Info("successfully installed webhook chart",
-		"release-name", SkrChartReleaseName(kymaObjKey))
+		"release-name", skrChartReleaseName(kymaObjKey))
 	return false, nil
 }
 
@@ -98,7 +98,7 @@ func (m *SKRWebhookTemplateChartManager) Remove(ctx context.Context, kyma *v1alp
 		}
 	}
 	logger.Info("successfully removed webhook chart",
-		"release-name", SkrChartReleaseName(kymaObjKey))
+		"release-name", skrChartReleaseName(kymaObjKey))
 	return nil
 }
 

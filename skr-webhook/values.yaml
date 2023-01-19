@@ -47,22 +47,21 @@ service:
 # -- KCP information
 kcpAddr: "kcp-base-url-invalid"
 
+# -- CA Cert
+caCert: ""
+
 # -- TLS information
 tls:
-  # -- Helm Cert Generation
-  helmCertGen: "true"
-  # -- CA Cert (base64 encoded)
-  caCert: ""
-  # -- Client Cert (base64 encoded)
-  clientCert: ""
-  # -- Client Key (base64 encoded)
-  clientKey: ""
+  # -- TLS Cert
+  cert: ""
+  # -- TLS Private Key
+  privateKey: ""
   # -- TLS webhook server
   webhookServer: "true"
   # -- TLS callback to KCP
   callback: "false"
   # -- KCP secret resource version
-  secretRV: ""
+  secretResVer: ""
 
 # -- Module list
 modules: |-

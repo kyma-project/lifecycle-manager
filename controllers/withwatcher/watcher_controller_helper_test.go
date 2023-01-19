@@ -109,10 +109,11 @@ func createTlsSecret(kymaObjKey client.ObjectKey) *corev1.Secret {
 			},
 		},
 		Data: map[string][]byte{
-			"ca.crt":  []byte("Li4a"),
-			"tls.crt": []byte("Li4b"),
-			"tls.key": []byte("Li4c"),
+			"ca.crt":  []byte("jelly"),
+			"tls.crt": []byte("jellyfish"),
+			"tls.key": []byte("jellyfishes"),
 		},
+		Type: corev1.SecretTypeOpaque,
 	}
 }
 
