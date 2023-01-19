@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	corev1 "k8s.io/api/core/v1"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -17,10 +19,6 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 )
 
 type ClientFunc func() *rest.Config
@@ -31,81 +29,24 @@ var (
 )
 
 type KymaSynchronizationContext struct {
-	ControlPlaneClient client.Client
-	RuntimeClient      client.Client
-	RuntimeRestConfig  *rest.Config
-}
-
-func NewRemoteClient(ctx context.Context, controlPlaneClient client.Client, key client.ObjectKey,
-	strategy v1alpha1.SyncStrategy, cache *ClientCache,
-) (client.Client, *rest.Config, error) {
-	remoteCluster := cache.Get(ClientCacheID(key))
-	if remoteCluster != nil {
-		return remoteCluster.Client, remoteCluster.Config, nil
-	}
-
-	restConfig, err := GetRemoteRestConfig(ctx, controlPlaneClient, key, strategy)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	remoteClient, err := client.New(restConfig, client.Options{Scheme: controlPlaneClient.Scheme()})
-	if err != nil {
-		return nil, nil, err
-	}
-	cache.Set(ClientCacheID(key), &ClusterClientConfigAggregate{
-		Client: remoteClient,
-		Config: restConfig,
-	})
-
-	return remoteClient, restConfig, nil
-}
-
-func GetRemoteRestConfig(ctx context.Context, controlPlaneClient client.Client, key client.ObjectKey,
-	strategy v1alpha1.SyncStrategy,
-) (*rest.Config, error) {
-	var err error
-	var restConfig *rest.Config
-
-	clusterClient := ClusterClient{
-		DefaultClient: controlPlaneClient,
-		Logger:        log.FromContext(ctx),
-	}
-	switch strategy {
-	case v1alpha1.SyncStrategyLocalClient:
-		if LocalClient != nil {
-			restConfig = LocalClient()
-		} else {
-			err = ErrNoLocalClientDefined
-		}
-	case v1alpha1.SyncStrategyLocalSecret:
-		fallthrough
-	default:
-		restConfig, err = clusterClient.GetRestConfigFromSecret(ctx, key.Name, key.Namespace)
-	}
-
-	if err != nil {
-		return nil, err
-	}
-	return restConfig, err
+	ControlPlaneClient Client
+	RuntimeClient      Client
 }
 
 func InitializeKymaSynchronizationContext(
-	ctx context.Context, controlPlaneKyma *v1alpha1.Kyma, controlPlaneClient client.Client, cache *ClientCache,
+	ctx context.Context, kcp Client, cache *ClientCache, kyma *v1alpha1.Kyma,
 ) (*KymaSynchronizationContext, error) {
-	runtimeClient, runtimeCfg, err := NewRemoteClient(ctx, controlPlaneClient,
-		client.ObjectKeyFromObject(controlPlaneKyma), controlPlaneKyma.Spec.Sync.Strategy, cache)
+	skr, err := NewClientLookup(kcp, cache, kyma.Spec.Sync.Strategy).Lookup(ctx, client.ObjectKeyFromObject(kyma))
 	if err != nil {
 		return nil, err
 	}
 
 	sync := &KymaSynchronizationContext{
-		ControlPlaneClient: controlPlaneClient,
-		RuntimeClient:      runtimeClient,
-		RuntimeRestConfig:  runtimeCfg,
+		ControlPlaneClient: kcp,
+		RuntimeClient:      skr,
 	}
 
-	if err := sync.ensureRemoteNamespaceExists(ctx, controlPlaneKyma); err != nil {
+	if err := sync.ensureRemoteNamespaceExists(ctx, kyma); err != nil {
 		return nil, err
 	}
 

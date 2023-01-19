@@ -102,7 +102,8 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	if kyma.Spec.Sync.Enabled {
 		var err error
-		if ctx, err = remote.InitializeSyncContext(ctx, kyma, r.Client, r.RemoteClientCache); err != nil {
+		if ctx, err = remote.InitializeSyncContext(ctx, kyma,
+			remote.NewClientWithConfig(r.Client, r.KcpRestConfig), r.RemoteClientCache); err != nil {
 			err := fmt.Errorf("initializing sync context failed: %w", err)
 			r.Event(kyma, "Warning", string(SyncContextError), err.Error())
 			return r.CtrlErr(ctx, kyma, err)

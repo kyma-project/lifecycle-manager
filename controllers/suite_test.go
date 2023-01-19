@@ -143,6 +143,7 @@ var _ = BeforeSuite(func() {
 			EnableVerification: false,
 		},
 		RemoteClientCache: remoteClientCache,
+		KcpRestConfig:     k8sManager.GetConfig(),
 	}).SetupWithManager(k8sManager, controller.Options{},
 		controllers.SetupUpSetting{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())

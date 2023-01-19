@@ -53,7 +53,7 @@ patches:
   - patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --max-concurrent-reconciles=100
+        value: --max-concurrent-reconciles=10
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --rate-limiter-burst=2000
@@ -71,7 +71,16 @@ patches:
         value: --pprof=true      
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --cache-sync-timeout=4m
+        value: --cache-sync-timeout=60m      
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --failure-max-delay=30s    
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --failure-base-delay=5ms      
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --kyma-requeue-success-interval=5m
     target:
       kind: Deployment
 
@@ -79,9 +88,9 @@ components:
   - ../crd
   - ../rbac
   # [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
-  - ../watcher
+#  - ../watcher
   # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
-  - ../istio
+#  - ../istio
   # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
   # crd/kustomization.yaml
   #- ../webhook

@@ -57,7 +57,7 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
-	chartArgValues, err := generateHelmChartArgs(ctx, syncContext.ControlPlaneClient,kymaObjKey, m.config, m.kcpAddr)
+	chartArgValues, err := generateHelmChartArgs(ctx, syncContext.ControlPlaneClient, kymaObjKey, m.config, m.kcpAddr)
 	if err != nil {
 		return true, err
 	}

@@ -1,6 +1,10 @@
 package img
 
-import "fmt"
+import (
+	"fmt"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 type LayerName string
 
@@ -19,17 +23,19 @@ type LayerRepresentation interface {
 }
 
 type OCI struct {
-	Repo string
-	Name string
-	Ref  string
+	Repo               string
+	Name               string
+	Ref                string
+	CredSecretSelector *metav1.LabelSelector
 }
 
 func (o *OCI) ToGenericRepresentation() map[string]any {
 	return map[string]any{
-		"repo": o.Repo,
-		"name": o.Name,
-		"ref":  o.Ref,
-		"type": OCIRepresentationType,
+		"repo":               o.Repo,
+		"name":               o.Name,
+		"ref":                o.Ref,
+		"type":               OCIRepresentationType,
+		"credSecretSelector": o.CredSecretSelector,
 	}
 }
 

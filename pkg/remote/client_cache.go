@@ -3,16 +3,10 @@ package remote
 import (
 	"sync"
 
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type ClientCacheID client.ObjectKey
-
-type ClusterClientConfigAggregate struct {
-	client.Client
-	*rest.Config
-}
 
 func NewClientCache() *ClientCache {
 	return &ClientCache{internal: &sync.Map{}}
@@ -31,16 +25,16 @@ type ClientCache struct {
 	internal *sync.Map
 }
 
-func (cache *ClientCache) Get(key ClientCacheID) *ClusterClientConfigAggregate {
+func (cache *ClientCache) Get(key ClientCacheID) Client {
 	value, ok := cache.internal.Load(key)
 	if !ok {
 		return nil
 	}
 
-	return value.(*ClusterClientConfigAggregate)
+	return value.(Client)
 }
 
-func (cache *ClientCache) Set(key ClientCacheID, value *ClusterClientConfigAggregate) {
+func (cache *ClientCache) Set(key ClientCacheID, value Client) {
 	cache.internal.Store(key, value)
 }
 
