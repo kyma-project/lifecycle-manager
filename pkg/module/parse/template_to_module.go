@@ -143,9 +143,21 @@ func insertLayerIntoManifest(
 			CredSecretSelector: ociImage.CredSecretSelector,
 		}
 	default:
-		installRaw, err := json.Marshal(layer.ToGenericRepresentation())
-		if err != nil {
-			return fmt.Errorf("error while merging the generic install representation: %w", err)
+		var installRaw []byte
+		var err error
+
+		if ociImage, ok := layer.LayerRepresentation.(*img.OCI); ok {
+			installRaw, err = json.Marshal(ociImage)
+			if err != nil {
+				return fmt.Errorf("error while merging the oci install representation: %w", err)
+			}
+		}
+
+		if helmImage, ok := layer.LayerRepresentation.(*img.Helm); ok {
+			installRaw, err = json.Marshal(helmImage)
+			if err != nil {
+				return fmt.Errorf("error while merging the helm install representation: %w", err)
+			}
 		}
 		manifest.Spec.Installs = append(
 			manifest.Spec.Installs, manifestV1alpha1.InstallInfo{
