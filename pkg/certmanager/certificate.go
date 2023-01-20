@@ -99,10 +99,9 @@ func (c *Certificate) Create(ctx context.Context) error {
 
 func (c *Certificate) GetSecret(ctx context.Context) (*CertificateSecret, error) {
 	secret := &corev1.Secret{}
-	err := c.kcpClient.Get(ctx, types.NamespacedName{
-		Namespace: c.kyma.Namespace,
-		Name:      c.secretName,
-	},
+	namespace := c.kyma.ObjectMeta.Namespace
+	name := c.secretName
+	err := c.kcpClient.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace},
 		secret)
 	if err != nil {
 		return nil, err

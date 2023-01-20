@@ -266,18 +266,20 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 		return r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError,
 			fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err))
 	}
+
+	kyma.SyncConditionsWithModuleStates()
+
 	statusUpdateRequiredFromSKRWebhookSync := false
 	if kyma.Spec.Sync.Enabled {
 		if statusUpdateRequiredFromSKRWebhookSync, err = r.InstallWebhookChart(ctx, kyma,
 			r.RemoteClientCache, r.Client); err != nil {
 			kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
-			if errors.Is(err, &certmanager.CertificateNotReadyError{}) {
-				return nil
+			if err != nil && !errors.Is(err, &certmanager.CertificateNotReadyError{}) {
+				return r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError,
+					fmt.Errorf("error while installing Watcher Webhook Chart: %w", err))
 			}
-			return err
 		}
 	}
-	kyma.SyncConditionsWithModuleStates()
 
 	isStatusUpdateRequired := statusUpdateRequiredFromModuleSync || statusUpdateRequiredFromModuleStatusSync ||
 		statusUpdateRequiredFromDeletion || statusUpdateRequiredFromSKRWebhookSync || statusUpdateRequiredFromCatalog

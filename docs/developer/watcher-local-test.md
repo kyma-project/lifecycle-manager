@@ -89,6 +89,8 @@ spec:
     - name: kcp-module
 EOF
 ```
+
+
 ### Verify that watcher-webhook is installed on SKR
 By checking the `Kyma CR` events, verify that the `SKRWebhookIsReady` ready condition is set to `True`.
 ```yaml
