@@ -77,6 +77,7 @@ func parseLayersByName(repo *ocm.OCIRegistryRepository, descriptor *ocm.Componen
 				ChartName: helmChartAccess.HelmChartName,
 				URL:       helmChartAccess.HelmChartRepoURL,
 				Version:   helmChartAccess.HelmChartVersion,
+				Type:      HelmRepresentationType,
 			}
 		default:
 			return nil, fmt.Errorf("error while parsing access type %s: %w",
@@ -99,6 +100,7 @@ func getOCIRef(repo *ocm.OCIRegistryRepository,
 ) (*OCI, error) {
 	layerRef := OCI{
 		Repo: repo.BaseURL,
+		Type: OCIRepresentationType,
 	}
 	switch repo.ComponentNameMapping { //nolint:exhaustive
 	case ocm.OCIRegistryURLPathMapping:

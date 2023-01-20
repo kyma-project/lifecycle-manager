@@ -18,25 +18,14 @@ const (
 	CRDsLayer   LayerName = "crds"
 )
 
-type LayerRepresentation interface {
-	ToGenericRepresentation() map[string]any
-}
+type LayerRepresentation interface{}
 
 type OCI struct {
-	Repo               string
-	Name               string
-	Ref                string
-	CredSecretSelector *metav1.LabelSelector
-}
-
-func (o *OCI) ToGenericRepresentation() map[string]any {
-	return map[string]any{
-		"repo":               o.Repo,
-		"name":               o.Name,
-		"ref":                o.Ref,
-		"type":               OCIRepresentationType,
-		"credSecretSelector": o.CredSecretSelector,
-	}
+	Repo               string                `json:"repo"`
+	Name               string                `json:"name"`
+	Ref                string                `json:"ref"`
+	Type               string                `json:"type"`
+	CredSecretSelector *metav1.LabelSelector `json:"credSecretSelector,omitempty"`
 }
 
 func (o *OCI) String() string {
@@ -44,18 +33,10 @@ func (o *OCI) String() string {
 }
 
 type Helm struct {
-	ChartName string
-	URL       string
-	Version   string
-}
-
-func (h *Helm) ToGenericRepresentation() map[string]any {
-	return map[string]any{
-		"chartName": h.ChartName,
-		"url":       h.URL,
-		"version":   h.Version,
-		"type":      HelmRepresentationType,
-	}
+	ChartName string `json:"chartName"`
+	URL       string `json:"url"`
+	Version   string `json:"version"`
+	Type      string `json:"type"`
 }
 
 func (h *Helm) String() string {
