@@ -7,6 +7,8 @@ import (
 	"io"
 	"strings"
 
+	"golang.org/x/sync/errgroup"
+
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
@@ -66,11 +68,16 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 	if err != nil {
 		return true, err
 	}
-	for _, resource := range resources {
-		err := syncContext.RuntimeClient.Patch(ctx, resource, client.Apply, client.ForceOwnership, skrChartFieldOwner)
-		if err != nil {
-			return true, err
-		}
+	errGrp, grpCtx := errgroup.WithContext(ctx)
+	for idx := range resources {
+		resIdx := idx
+		errGrp.Go(func() error {
+			return syncContext.RuntimeClient.Patch(grpCtx, resources[resIdx], client.Apply,
+				client.ForceOwnership, skrChartFieldOwner)
+		})
+	}
+	if err := errGrp.Wait(); err != nil {
+		return true, err
 	}
 	kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionTrue)
 	logger.Info("successfully installed webhook chart",
