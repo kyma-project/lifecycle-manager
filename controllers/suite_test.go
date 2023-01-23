@@ -23,8 +23,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
-
 	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 	//nolint:gci
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -139,14 +137,14 @@ var _ = BeforeSuite(func() {
 
 	remoteClientCache := remote.NewClientCache()
 	err = (&controllers.KymaReconciler{
-		Client:                 k8sManager.GetClient(),
-		EventRecorder:          k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		RequeueIntervals:       intervals,
-		SKRWebhookChartManager: &deploy.DisabledSKRWebhookChartManager{},
+		Client:           k8sManager.GetClient(),
+		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		RequeueIntervals: intervals,
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
 		},
 		RemoteClientCache: remoteClientCache,
+		KcpRestConfig:     k8sManager.GetConfig(),
 	}).SetupWithManager(k8sManager, controller.Options{},
 		controllers.SetupUpSetting{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())

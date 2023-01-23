@@ -50,7 +50,7 @@ func NewTestKyma(name string) *v1alpha1.Kyma {
 			Kind:       string(v1alpha1.KymaKind),
 		},
 		ObjectMeta: v1.ObjectMeta{
-			Name:        name + RandString(randomStringLength),
+			Name:         fmt.Sprintf("%s-%s", name, randString(randomStringLength)),
 			Namespace:   v1.NamespaceDefault,
 			Annotations: map[string]string{certmanager.DomainAnnotation: "example.domain.com"},
 		},
@@ -83,10 +83,10 @@ func NewTestNamespace(namespace string) *corev1.Namespace {
 }
 
 func NewUniqModuleName() string {
-	return RandString(randomStringLength)
+	return randString(randomStringLength)
 }
 
-func RandString(n int) string {
+func randString(n int) string {
 	b := make([]byte, n)
 	for i := range b {
 		b[i] = letterBytes[rand.Intn(len(letterBytes))] //nolint:gosec
@@ -178,7 +178,7 @@ func ParseRemoteCRDs(testCrdURLs []string) ([]*v12.CustomResourceDefinition, err
 
 func ModuleTemplateFactory(module v1alpha1.Module, data unstructured.Unstructured) (*v1alpha1.ModuleTemplate, error) {
 	var moduleTemplate v1alpha1.ModuleTemplate
-	err := readModuleTemplate(module, &moduleTemplate)
+	err := readModuleTemplate(&moduleTemplate)
 	if err != nil {
 		return &moduleTemplate, err
 	}
@@ -192,14 +192,8 @@ func ModuleTemplateFactory(module v1alpha1.Module, data unstructured.Unstructure
 	return &moduleTemplate, nil
 }
 
-func readModuleTemplate(module v1alpha1.Module, moduleTemplate *v1alpha1.ModuleTemplate) error {
-	var template string
-	switch module.ControllerName {
-	case "manifest":
-		template = "operator_v1alpha1_moduletemplate_skr-module.yaml"
-	default:
-		template = "operator_v1alpha1_moduletemplate_kcp-module.yaml"
-	}
+func readModuleTemplate(moduleTemplate *v1alpha1.ModuleTemplate) error {
+	template := "operator_v1alpha1_moduletemplate_kcp-module.yaml"
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {
 		panic("Can't capture current filename!")

@@ -11,12 +11,14 @@ const (
 	ControllerName = OperatorPrefix + Separator + "controller-name"
 	ChannelLabel   = OperatorPrefix + Separator + "channel"
 	// ManagedBy defines the controller managing the resource.
-	ManagedBy    = OperatorPrefix + Separator + "managed-by"
-	Finalizer    = OperatorPrefix + Separator + string(KymaKind)
-	KymaName     = OperatorPrefix + Separator + "kyma-name"
-	Signature    = OperatorPrefix + Separator + "signature"
-	ModuleName   = OperatorPrefix + Separator + "module-name"
-	OperatorName = "lifecycle-manager"
+	ManagedBy  = OperatorPrefix + Separator + "managed-by"
+	Finalizer  = OperatorPrefix + Separator + string(KymaKind)
+	KymaName   = OperatorPrefix + Separator + "kyma-name"
+	Signature  = OperatorPrefix + Separator + "signature"
+	ModuleName = OperatorPrefix + Separator + "module-name"
+	//nolint:gosec
+	OCIRegistryCredLabel = "oci-registry-cred"
+	OperatorName         = "lifecycle-manager"
 	// OwnedByLabel defines the resource managing the resource. Differing from ManagedBy in that it does not reference
 	// controllers.
 	OwnedByLabel  = OperatorPrefix + Separator + "owned-by"

@@ -1,12 +1,15 @@
 package img
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const DefaultRepoSubdirectory = "component-descriptors"
@@ -59,7 +62,8 @@ func parseLayersByName(repo *ocm.OCIRegistryRepository, descriptor *ocm.Componen
 			if err := access.DecodeInto(ociAccess); err != nil {
 				return nil, fmt.Errorf("error while decoding the access into OCIRegistryRepository: %w", err)
 			}
-			layerRef, err := getOCIRef(repo, descriptor, ociAccess.Digest)
+
+			layerRef, err := getOCIRef(repo, descriptor, ociAccess.Digest, resource.Labels)
 			if err != nil {
 				return nil, fmt.Errorf("building the digest url: %w", err)
 			}
@@ -73,6 +77,7 @@ func parseLayersByName(repo *ocm.OCIRegistryRepository, descriptor *ocm.Componen
 				ChartName: helmChartAccess.HelmChartName,
 				URL:       helmChartAccess.HelmChartRepoURL,
 				Version:   helmChartAccess.HelmChartVersion,
+				Type:      HelmRepresentationType,
 			}
 		default:
 			return nil, fmt.Errorf("error while parsing access type %s: %w",
@@ -88,9 +93,14 @@ func parseLayersByName(repo *ocm.OCIRegistryRepository, descriptor *ocm.Componen
 	return layers, nil
 }
 
-func getOCIRef(repo *ocm.OCIRegistryRepository, descriptor *ocm.ComponentDescriptor, ref string) (*OCI, error) {
+func getOCIRef(repo *ocm.OCIRegistryRepository,
+	descriptor *ocm.ComponentDescriptor,
+	ref string,
+	labels ocm.Labels,
+) (*OCI, error) {
 	layerRef := OCI{
 		Repo: repo.BaseURL,
+		Type: OCIRepresentationType,
 	}
 	switch repo.ComponentNameMapping { //nolint:exhaustive
 	case ocm.OCIRegistryURLPathMapping:
@@ -107,6 +117,15 @@ func getOCIRef(repo *ocm.OCIRegistryRepository, descriptor *ocm.ComponentDescrip
 			layerRef.Ref = descriptor.GetVersion()
 		} else {
 			layerRef.Ref = ref
+		}
+		if registryCredValue, found := labels.Get(v1alpha1.OCIRegistryCredLabel); found {
+			credSecretLabel := make(map[string]string)
+			if err := json.Unmarshal(registryCredValue, &credSecretLabel); err != nil {
+				return nil, err
+			}
+			layerRef.CredSecretSelector = &metav1.LabelSelector{
+				MatchLabels: credSecretLabel,
+			}
 		}
 	default:
 		return nil, fmt.Errorf("error while parsing componentNameMapping %s: %w",

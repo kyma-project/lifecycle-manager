@@ -1,6 +1,11 @@
 package img
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
 
 type LayerName string
 
@@ -15,22 +20,19 @@ const (
 )
 
 type LayerRepresentation interface {
-	ToGenericRepresentation() map[string]any
+	ToInstallRaw() ([]byte, error)
 }
 
 type OCI struct {
-	Repo string
-	Name string
-	Ref  string
+	Repo               string                `json:"repo"`
+	Name               string                `json:"name"`
+	Ref                string                `json:"ref"`
+	Type               string                `json:"type"`
+	CredSecretSelector *metav1.LabelSelector `json:"credSecretSelector,omitempty"`
 }
 
-func (o *OCI) ToGenericRepresentation() map[string]any {
-	return map[string]any{
-		"repo": o.Repo,
-		"name": o.Name,
-		"ref":  o.Ref,
-		"type": OCIRepresentationType,
-	}
+func (o *OCI) ToInstallRaw() ([]byte, error) {
+	return json.Marshal(o)
 }
 
 func (o *OCI) String() string {
@@ -38,18 +40,14 @@ func (o *OCI) String() string {
 }
 
 type Helm struct {
-	ChartName string
-	URL       string
-	Version   string
+	ChartName string `json:"chartName"`
+	URL       string `json:"url"`
+	Version   string `json:"version"`
+	Type      string `json:"type"`
 }
 
-func (h *Helm) ToGenericRepresentation() map[string]any {
-	return map[string]any{
-		"chartName": h.ChartName,
-		"url":       h.URL,
-		"version":   h.Version,
-		"type":      HelmRepresentationType,
-	}
+func (h *Helm) ToInstallRaw() ([]byte, error) {
+	return json.Marshal(h)
 }
 
 func (h *Helm) String() string {

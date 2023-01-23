@@ -150,9 +150,6 @@ $(LOCALBIN):
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
-CLIENT_GEN ?= $(LOCALBIN)/client-gen
-INFORMER_GEN = $(LOCALBIN)/informer-gen
-LISTER_GEN = $(LOCALBIN)/lister-gen
 GOLANG_CI_LINT = $(LOCALBIN)/golangci-lint
 
 ## Tool Versions
@@ -174,19 +171,6 @@ $(CONTROLLER_GEN): $(LOCALBIN)
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
-
-.PHONY: client-gen
-client-gen: ## Download client-gen
-	GOBIN=$(LOCALBIN) go install k8s.io/code-generator/cmd/client-gen@v0.23.4
-
-.PHONY: informer-gen
-informer-gen: ## Download informer-gen
-	GOBIN=$(LOCALBIN) go install k8s.io/code-generator/cmd/informer-gen@v0.23.4
-
-.PHONY: lister-gen
-lister-gen: ## Download lister-gen
-	GOBIN=$(LOCALBIN) go install k8s.io/code-generator/cmd/lister-gen@v0.23.4
-
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
