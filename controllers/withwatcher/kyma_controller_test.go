@@ -52,6 +52,8 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	kyma := NewTestKyma("kyma-remote-sync")
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
 	issuer := NewTestIssuer(metav1.NamespaceDefault)
+	kymaObjKey := client.ObjectKeyFromObject(kyma)
+	tlsSecret := createTLSSecret(kymaObjKey)
 
 	kyma.Spec.Sync = v1alpha1.Sync{
 		Enabled:      true,
@@ -59,9 +61,6 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Namespace:    metav1.NamespaceDefault,
 		NoModuleCopy: true,
 	}
-	kymaObjKey := client.ObjectKeyFromObject(kyma)
-	tlsSecret := createTLSSecret(kymaObjKey)
-	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
 	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer)
 
 	It("kyma reconciliation installs watcher helm chart with correct webhook config", func() {

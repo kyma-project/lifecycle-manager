@@ -8,6 +8,8 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/certmanager"
+
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -86,7 +88,7 @@ func skrChartReleaseName(kymaObjKey client.ObjectKey) string {
 }
 
 func generateHelmChartArgs(ctx context.Context, kcpClient client.Client, kymaObjKey client.ObjectKey,
-	managerConfig *SkrChartManagerConfig, kcpAddr string,
+	managerConfig *SkrChartManagerConfig, kcpAddr string, certSecret *certmanager.CertificateSecret,
 ) (map[string]interface{}, error) {
 	customConfigValue := ""
 	watcherList := &v1alpha1.WatcherList{}
@@ -104,24 +106,19 @@ func generateHelmChartArgs(ctx context.Context, kcpClient client.Client, kymaObj
 		customConfigValue = string(chartConfigBytes)
 	}
 
-	tlsSecret := &corev1.Secret{}
-	secretObjKey := client.ObjectKey{
-		Namespace: kymaObjKey.Namespace,
-		Name:      ResolveSKRChartResourceName(WebhookTLSCfgNameTpl, kymaObjKey),
-	}
-
-	if err := kcpClient.Get(ctx, secretObjKey, tlsSecret); err != nil {
-		return nil, fmt.Errorf("error fetching TLS secret: %w", err)
+	callback := "true"
+	if managerConfig.WatcherLocalTestingEnabled {
+		callback = "false"
 	}
 
 	return map[string]interface{}{
-		"caCert": string(tlsSecret.Data[caCertKey]),
+		"caCert": certSecret.CACrt,
 		"tls": map[string]string{
-			"cert":          string(tlsSecret.Data[tlsCertKey]),
-			"privateKey":    string(tlsSecret.Data[tlsPrivateKeyKey]),
-			"secretResVer":  tlsSecret.GetResourceVersion(),
+			"cert":          certSecret.TLSCrt,
+			"privateKey":    certSecret.TLSKey,
+			"secretResVer":  certSecret.ResourceVersion,
 			"webhookServer": "true",
-			"callback":      "false",
+			"callback":      callback,
 		},
 		"kcpAddr":               kcpAddr,
 		"resourcesLimitsMemory": managerConfig.SkrWebhookMemoryLimits,

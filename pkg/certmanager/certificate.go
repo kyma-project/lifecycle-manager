@@ -29,6 +29,7 @@ const (
 )
 
 var (
+	// TODO: Maybe removed, since CertSyncOperator is removed
 	SecretTemplateLabels = k8slabels.Set{ //nolint:gochecknoglobals
 		v1alpha1.PurposeLabel: v1alpha1.CertManager,
 		v1alpha1.ManagedBy:    v1alpha1.OperatorName,
@@ -56,9 +57,10 @@ type Certificate struct {
 }
 
 type CertificateSecret struct {
-	CACrt  string
-	TLSCrt string
-	TLSKey string
+	CACrt           string
+	TLSCrt          string
+	TLSKey          string
+	ResourceVersion string
 }
 
 func NewCertificate(kcpClient client.Client, kyma *v1alpha1.Kyma) (*Certificate, error) {
@@ -69,8 +71,12 @@ func NewCertificate(kcpClient client.Client, kyma *v1alpha1.Kyma) (*Certificate,
 		kcpClient:       kcpClient,
 		kyma:            kyma,
 		certificateName: fmt.Sprintf("%s%s", kyma.Name, CertificateSuffix),
-		secretName:      fmt.Sprintf("%s%s", kyma.Name, CertificateSuffix),
+		secretName:      CreateSecretName(client.ObjectKeyFromObject(kyma)),
 	}, nil
+}
+
+func CreateSecretName(kymaObjKey client.ObjectKey) string {
+	return fmt.Sprintf("%s%s", kymaObjKey.Name, CertificateSuffix)
 }
 
 func (c *Certificate) Create(ctx context.Context) error {
@@ -107,9 +113,10 @@ func (c *Certificate) GetSecret(ctx context.Context) (*CertificateSecret, error)
 		return nil, err
 	}
 	certSecret := CertificateSecret{
-		CACrt:  string(secret.Data["ca.crt"]),
-		TLSCrt: string(secret.Data["tls.crt"]),
-		TLSKey: string(secret.Data["tls.key"]),
+		CACrt:           string(secret.Data["ca.crt"]),
+		TLSCrt:          string(secret.Data["tls.crt"]),
+		TLSKey:          string(secret.Data["tls.key"]),
+		ResourceVersion: secret.GetResourceVersion(),
 	}
 	return &certSecret, nil
 }

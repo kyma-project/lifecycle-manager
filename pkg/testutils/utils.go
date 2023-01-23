@@ -50,7 +50,7 @@ func NewTestKyma(name string) *v1alpha1.Kyma {
 			Kind:       string(v1alpha1.KymaKind),
 		},
 		ObjectMeta: v1.ObjectMeta{
-			Name:         fmt.Sprintf("%s-%s", name, randString(randomStringLength)),
+			Name:        fmt.Sprintf("%s-%s", name, randString(randomStringLength)),
 			Namespace:   v1.NamespaceDefault,
 			Annotations: map[string]string{certmanager.DomainAnnotation: "example.domain.com"},
 		},

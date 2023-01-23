@@ -256,7 +256,6 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 		}
 	}
 
-
 	isStatusUpdateRequired := statusUpdateRequiredFromModulesSync || statusUpdateRequiredFromSKRWebhookSync
 	// if the ready condition is not applicable, but we changed the conditions, we still need to issue an update
 	if isStatusUpdateRequired {

@@ -7,6 +7,8 @@ import (
 	"io"
 	"strings"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/certmanager"
+
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
@@ -54,7 +56,35 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
-	chartArgValues, err := generateHelmChartArgs(ctx, syncContext.ControlPlaneClient, kymaObjKey, m.config, m.kcpAddr)
+
+	// TODO
+
+	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
+	// If it already exists, create will do nothing
+	certificate, err := certmanager.NewCertificate(syncContext.ControlPlaneClient, kyma)
+	if err != nil {
+		logger.Error(err, "Error while creating new Certificate struct")
+		return true, err
+	}
+	if err = certificate.Create(ctx); err != nil {
+		logger.Error(err, "Error while creating new Certificate on KCP")
+		return true, err
+	}
+	logger.Info("Certificate created")
+
+	// If secret is not created do nothing and check in next reconcile loop
+	certSecret, err := certificate.GetSecret(ctx)
+	if apierrors.IsNotFound(err) {
+		logger.Info("Certificate not ready - Secret not found")
+		return true, &certmanager.CertificateNotReadyError{}
+	} else if err != nil {
+		logger.Error(err, "Error getting certificate secret")
+		return true, err
+	}
+
+	// TODO
+	chartArgValues, err := generateHelmChartArgs(ctx, syncContext.ControlPlaneClient, kymaObjKey,
+		m.config, m.kcpAddr, certSecret)
 	if err != nil {
 		return true, err
 	}
