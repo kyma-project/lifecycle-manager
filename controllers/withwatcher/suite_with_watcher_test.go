@@ -23,6 +23,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-logr/logr"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -75,6 +77,7 @@ var (
 	restCfg            *rest.Config                 //nolint:gochecknoglobals
 	istioResources     []*unstructured.Unstructured //nolint:gochecknoglobals
 	remoteClientCache  *remote.ClientCache          //nolint:gochecknoglobals
+	logger             logr.Logger                  //nolint:gochecknoglobals
 )
 
 const (
@@ -91,7 +94,7 @@ func TestAPIs(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	suiteCtx, cancel = context.WithCancel(context.TODO())
-	logger := zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true))
+	logger = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true))
 	logf.SetLogger(logger)
 
 	By("bootstrapping test environment")
@@ -153,17 +156,26 @@ var _ = BeforeSuite(func() {
 		Success: 3 * time.Second,
 	}
 
+	Expect(createLoadBalancer(suiteCtx, controlPlaneClient)).To(Succeed())
+	istioResources, err = deserializeIstioResources()
+	Expect(err).NotTo(HaveOccurred())
+	for _, istioResource := range istioResources {
+		Expect(controlPlaneClient.Create(suiteCtx, istioResource)).To(Succeed())
+	}
+
 	remoteClientCache = remote.NewClientCache()
-	skrChartCfg := &deploy.SkrChartConfig{
+	skrChartCfg := &deploy.SkrChartManagerConfig{
 		WebhookChartPath:       webhookChartPath,
 		SkrWebhookMemoryLimits: "200Mi",
 		SkrWebhookCPULimits:    "1",
 	}
+	skrWebhookChartManager, err := deploy.NewSKRWebhookTemplateChartManager(restCfg, skrChartCfg)
+	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.KymaReconciler{
 		Client:                 k8sManager.GetClient(),
 		EventRecorder:          k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
 		RequeueIntervals:       intervals,
-		SKRWebhookChartManager: deploy.NewEnabledSKRWebhookChartManager(skrChartCfg),
+		SKRWebhookChartManager: skrWebhookChartManager,
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
 		},
@@ -171,13 +183,6 @@ var _ = BeforeSuite(func() {
 		KcpRestConfig:     k8sManager.GetConfig(),
 	}).SetupWithManager(k8sManager, controller.Options{}, controllers.SetupUpSetting{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
-
-	Expect(createLoadBalancer(suiteCtx, controlPlaneClient)).To(Succeed())
-	istioResources, err = deserializeIstioResources()
-	Expect(err).NotTo(HaveOccurred())
-	for _, istioResource := range istioResources {
-		Expect(controlPlaneClient.Create(suiteCtx, istioResource)).To(Succeed())
-	}
 
 	istioCfg := istio.NewConfig(virtualServiceName, false)
 	err = (&controllers.WatcherReconciler{
@@ -243,7 +248,7 @@ func NewSKRCluster() (client.Client, *envtest.Environment) {
 func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 	istioNs := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: deploy.IstioSytemNs,
+			Name: deploy.IstioSystemNs,
 		},
 	}
 	if err := k8sClient.Create(ctx, istioNs); err != nil {
@@ -252,7 +257,7 @@ func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 	loadBalancerService := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      deploy.IngressServiceName,
-			Namespace: deploy.IstioSytemNs,
+			Namespace: deploy.IstioSystemNs,
 			Labels: map[string]string{
 				"app": deploy.IngressServiceName,
 			},
@@ -288,6 +293,6 @@ func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 
 	return k8sClient.Get(ctx, client.ObjectKey{
 		Name:      deploy.IngressServiceName,
-		Namespace: deploy.IstioSytemNs,
+		Namespace: deploy.IstioSystemNs,
 	}, loadBalancerService)
 }

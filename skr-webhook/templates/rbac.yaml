@@ -11,8 +11,8 @@ metadata:
   namespace: {{.Release.Namespace}}
   name: kyma-reader
 rules:
-- apiGroups: ["operator.kyma-project.io"] # "" indicates the core API group
-  resources: ["*"]
+- apiGroups: ["operator.kyma-project.io"]
+  resources: ["kymas"]
   verbs: ["get", "watch", "list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -21,13 +21,11 @@ metadata:
   name: read-kymas
   namespace: {{.Release.Namespace}}
 subjects:
-# You can specify more than one "subject"
 - kind: ServiceAccount
   name: {{.Release.Name}}-webhook-sa
   namespace: {{.Release.Namespace}}
 roleRef:
-  # "roleRef" specifies the binding to a Role / ClusterRole
-  kind: ClusterRole #this must be Role or ClusterRole
-  name: kyma-reader # this must match the name of the Role or ClusterRole you wish to bind to
+  kind: ClusterRole
+  name: kyma-reader
   apiGroup: rbac.authorization.k8s.io
 ---

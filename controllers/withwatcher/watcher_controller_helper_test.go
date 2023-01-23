@@ -7,6 +7,9 @@ import (
 	"io"
 	"os"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,7 +42,12 @@ func deserializeIstioResources() ([]*unstructured.Unstructured, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func(file io.ReadCloser) {
+		err := file.Close()
+		if err != nil {
+			logger.Error(err, "failed to close test resources", "path", istioResourcesFilePath)
+		}
+	}(file)
 	decoder := yaml.NewYAMLOrJSONDecoder(file, defaultBufferSize)
 	for {
 		istioResource := &unstructured.Unstructured{}
@@ -89,6 +97,24 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1alpha1.Watc
 				LabelSelector: v1alpha1.DefaultIstioGatewaySelector(),
 			},
 		},
+	}
+}
+
+func createTLSSecret(kymaObjKey client.ObjectKey) *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookTLSCfgNameTpl, kymaObjKey),
+			Namespace: kymaObjKey.Namespace,
+			Labels: map[string]string{
+				v1alpha1.ManagedBy: v1alpha1.OperatorName,
+			},
+		},
+		Data: map[string][]byte{
+			"ca.crt":  []byte("jelly"),
+			"tls.crt": []byte("jellyfish"),
+			"tls.key": []byte("jellyfishes"),
+		},
+		Type: corev1.SecretTypeOpaque,
 	}
 }
 
