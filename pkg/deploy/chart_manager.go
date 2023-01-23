@@ -180,10 +180,12 @@ func (m *EnabledSKRWebhookChartManager) generateHelmChartArgs(ctx context.Contex
 			"resourcesLimitsCPU":    m.config.SkrWebhookCPULimits,
 			customConfigKey:         string(bytes),
 			"tls": map[string]string{
-				"helmCertGen": "false",
-				"caCert":      certSecret.CACrt,
-				"clientCert":  certSecret.TLSCrt,
-				"clientKey":   certSecret.TLSKey,
+				"helmCertGen":   "false",
+				"caCert":        certSecret.CACrt,
+				"clientCert":    certSecret.TLSCrt,
+				"clientKey":     certSecret.TLSKey,
+				"webhookServer": "true",
+				"callback":      "true",
 			},
 		}, nil
 	}
