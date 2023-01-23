@@ -8,6 +8,9 @@ import (
 	"os"
 	"strconv"
 
+	"golang.org/x/sync/errgroup"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	"github.com/slok/go-helm-template/helm"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -59,6 +62,23 @@ func generateWatchableConfigs(watchers []v1alpha1.Watcher) map[string]WatchableC
 		}
 	}
 	return chartCfg
+}
+
+type resourceOperation func(ctx context.Context, clt client.Client, resource *unstructured.Unstructured) error
+
+// runResourceOperationWithGroupedErrors loops through the resources and runs the passed operation
+// on each resource concurrently and groups their returned errors into one.
+func runResourceOperationWithGroupedErrors(ctx context.Context, clt client.Client,
+	resources []*unstructured.Unstructured, operation resourceOperation,
+) error {
+	errGrp, grpCtx := errgroup.WithContext(ctx)
+	for idx := range resources {
+		resIdx := idx
+		errGrp.Go(func() error {
+			return operation(grpCtx, clt, resources[resIdx])
+		})
+	}
+	return errGrp.Wait()
 }
 
 func skrChartReleaseName(kymaObjKey client.ObjectKey) string {

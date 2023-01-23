@@ -7,8 +7,6 @@ import (
 	"io"
 	"strings"
 
-	"golang.org/x/sync/errgroup"
-
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
@@ -68,16 +66,12 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 	if err != nil {
 		return true, err
 	}
-	errGrp, grpCtx := errgroup.WithContext(ctx)
-	for idx := range resources {
-		resIdx := idx
-		errGrp.Go(func() error {
-			return syncContext.RuntimeClient.Patch(grpCtx, resources[resIdx], client.Apply,
-				client.ForceOwnership, skrChartFieldOwner)
+	err = runResourceOperationWithGroupedErrors(ctx, syncContext.RuntimeClient, resources,
+		func(ctx context.Context, clt client.Client, resource *unstructured.Unstructured) error {
+			return clt.Patch(ctx, resource, client.Apply, client.ForceOwnership, skrChartFieldOwner)
 		})
-	}
-	if err := errGrp.Wait(); err != nil {
-		return true, err
+	if err != nil {
+		return true, fmt.Errorf("failed to apply webhook resources: %w", err)
 	}
 	kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionTrue)
 	logger.Info("successfully installed webhook chart",
@@ -97,10 +91,12 @@ func (m *SKRWebhookTemplateChartManager) Remove(ctx context.Context, kyma *v1alp
 	if err != nil {
 		return err
 	}
-	for _, resource := range resources {
-		if err := syncContext.RuntimeClient.Delete(ctx, resource); err != nil && !apierrors.IsNotFound(err) {
-			return fmt.Errorf("failed to delete webhook %s: %w", resource.GetKind(), err)
-		}
+	err = runResourceOperationWithGroupedErrors(ctx, syncContext.RuntimeClient, resources,
+		func(ctx context.Context, clt client.Client, resource *unstructured.Unstructured) error {
+			return clt.Delete(ctx, resource)
+		})
+	if err != nil && !apierrors.IsNotFound(err) {
+		return fmt.Errorf("failed to delete webhook resources: %w", err)
 	}
 	logger.Info("successfully removed webhook chart",
 		"release-name", skrChartReleaseName(kymaObjKey))
