@@ -21,8 +21,6 @@ import (
 	"errors"
 	"fmt"
 
-	"go.uber.org/zap"
-
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"k8s.io/client-go/rest"
@@ -72,7 +70,7 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	watcherObj := &v1alpha1.Watcher{}
 	if err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, watcherObj); err != nil {
-		logger.V(int(zap.DebugLevel)).Info("Failed to get reconciliation object")
+		logger.Error(err, "Failed to get reconciliation object")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 

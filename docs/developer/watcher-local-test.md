@@ -33,43 +33,11 @@ make local-deploy-with-watcher IMG=eu.gcr.io/kyma-project/lifecycle-manager:late
 ```
 
 ### Apply sample module templates for sample-kyma:
-Run the following commands to apply sample module template needed for sample Kyma on the KCP cluster:
+Run the following commands to apply sample module templates needed for sample Kyma on the KCP cluster:
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/kyma-project/lifecycle-manager/main/config/samples/component-integration-installed/operator_v1alpha1_moduletemplate_kcp-module.yaml
+kubectl apply -f https://raw.githubusercontent.com/kyma-project/lifecycle-manager/main/config/samples/component-integration-installed/operator_v1alpha1_moduletemplate_kcp-module.yaml && \
+kubectl apply -f https://raw.githubusercontent.com/kyma-project/lifecycle-manager/main/config/samples/component-integration-installed/operator_v1alpha1_moduletemplate_skr-module.yaml
 ```
-
-### Create TLS secret
-Run the following commands from your local directory for the [kyma watcher repo](https://github.com/kyma-project/runtime-watcher) to generate PKI for the SKR webhook
-1. Run the following commands to generate the PKI for the watcher web-hook 
-```shell
-cd listener/example-mtls && \
-cfssl gencert -initca ./kcp/gardener/cert_config/ca-csr.json | cfssljson -bare ca && \
-cfssl gencert \
--ca=ca.pem \
--ca-key=ca-key.pem \
--config=./kcp/gardener/cert_config/ca-config.json \
--hostname="localhost,127.0.0.1,default-kyma-sample-skr-webhook.default.svc.cluster.local,default-kyma-sample-skr-webhook.default.svc" \
--profile=default \
-./kcp/gardener/cert_config/ca-csr.json | cfssljson -bare signed-cert
-```
-2. Run the following command to create a secret holding the PKI for the watcher web-hook installation
-```shell
-cat << EOF | kubectl apply -f -
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: tls-watcher-default-kyma-sample-skr
-  namespace: default
-  labels:
-    "operator.kyma-project.io/managed-by": "lifecycle-manager"
-data:
-  ca.crt: $(cat ca.pem | base64)
-  tls.crt: $(cat signed-cert.pem | base64)
-  tls.key: $(cat signed-cert-key.pem | base64)
-EOF
-```
-
 ### Create sample Kyma CR
 Run the following command to generate and apply sample Kyma CR and its corresponding secret on KCP:
 ```shell
@@ -96,7 +64,7 @@ spec:
   sync:
     enabled: true
   modules:
-  - name: kcp-module
+    - name: kcp-module
 EOF
 ```
 ### Verify that watcher-webhook is installed on SKR
@@ -118,8 +86,7 @@ kubectl config use-context k3d-skr-local
 2. Add the following line to the Kyma CR `spec` to trigger the watcher KCP update
 ```yaml
   modules:
-  - name: kcp-module
-    channel: fast
+  - name: skr-module
 ```
 ### Verify logs
 1. By watching the `skr-webhook` deployment's logs, verify that the KCP request is sent successfully

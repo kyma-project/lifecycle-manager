@@ -4,10 +4,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var (
