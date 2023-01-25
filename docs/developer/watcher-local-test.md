@@ -11,7 +11,7 @@ Depends on which guide you want to follow, skip the corresponding steps incl. th
 ### Create KCP and SKR clusters
 1. Run the following command to create a local control-plane (KCP) cluster:
 ```shell
-k3d cluster create kcp-local --port 9080:80@loadbalancer \
+k3d cluster create kcp-local --port 9080:80@loadbalancer --port 9443:443@loadbalancer \
 --k3s-arg '--no-deploy=traefik@server:0'
 ```
 2. Run the following command to create a local kyma-runtime (SKR) cluster:
@@ -58,7 +58,8 @@ Run the following commands to apply sample module template needed for sample Kym
 kubectl apply -f https://raw.githubusercontent.com/kyma-project/lifecycle-manager/main/config/samples/component-integration-installed/operator_v1alpha1_moduletemplate_kcp-module.yaml
 ```
 
-### Create TLS secret
+// TODO Remove section below, but test before
+### [Simple] Create TLS secret
 Run the following commands from your local directory for the [kyma watcher repo](https://github.com/kyma-project/runtime-watcher) to generate PKI for the SKR webhook
 1. Run the following commands to generate the PKI for the watcher web-hook 
 ```shell

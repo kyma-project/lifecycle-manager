@@ -1,4 +1,4 @@
-package deploy
+package watcher
 
 import (
 	"context"
@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/certmanager"
 
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -61,12 +59,12 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 
 	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
 	// If it already exists, create will do nothing
-	certificate, err := certmanager.NewCertificate(syncContext.ControlPlaneClient, kyma)
+	certificate, err := NewCertificate(syncContext.ControlPlaneClient, kyma)
 	if err != nil {
 		logger.Error(err, "Error while creating new Certificate struct")
 		return true, err
 	}
-	if err = certificate.Create(ctx); err != nil {
+	if err = certificate.Create(ctx, m.config); err != nil {
 		logger.Error(err, "Error while creating new Certificate on KCP")
 		return true, err
 	}
@@ -76,13 +74,13 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 	certSecret, err := certificate.GetSecret(ctx)
 	if apierrors.IsNotFound(err) {
 		logger.Info("Certificate not ready - Secret not found")
-		return true, &certmanager.CertificateNotReadyError{}
+		return true, &CertificateNotReadyError{}
 	} else if err != nil {
 		logger.Error(err, "Error getting certificate secret")
 		return true, err
 	}
-
 	// TODO
+
 	chartArgValues, err := generateHelmChartArgs(ctx, syncContext.ControlPlaneClient, kymaObjKey,
 		m.config, m.kcpAddr, certSecret)
 	if err != nil {
@@ -105,8 +103,8 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 	}
 	kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionTrue)
 	logger.Info("successfully installed webhook chart",
-		"release-name", skrChartReleaseName(kymaObjKey))
-	return false, nil
+		"release-name", resolveSKRChartReleaseName(kymaObjKey))
+	return true, nil
 }
 
 func (m *SKRWebhookTemplateChartManager) Remove(ctx context.Context, kyma *v1alpha1.Kyma) error {
@@ -129,7 +127,7 @@ func (m *SKRWebhookTemplateChartManager) Remove(ctx context.Context, kyma *v1alp
 		return fmt.Errorf("failed to delete webhook resources: %w", err)
 	}
 	logger.Info("successfully removed webhook chart",
-		"release-name", skrChartReleaseName(kymaObjKey))
+		"release-name", resolveSKRChartReleaseName(kymaObjKey))
 	return nil
 }
 

@@ -1,4 +1,4 @@
-package certmanager
+package watcher
 
 import (
 	"context"
@@ -26,16 +26,14 @@ const (
 
 	DomainAnnotation  = "skr-domain"
 	CertificateSuffix = "-watcher-certificate"
+
+	caCertKey        = "ca.crt"
+	tlsCertKey       = "tls.crt"
+	tlsPrivateKeyKey = "tls.key"
 )
 
 var (
-	// TODO: Maybe removed, since CertSyncOperator is removed
-	SecretTemplateLabels = k8slabels.Set{ //nolint:gochecknoglobals
-		v1alpha1.PurposeLabel: v1alpha1.CertManager,
-		v1alpha1.ManagedBy:    v1alpha1.OperatorName,
-	}
-
-	IssuerLabelSet = k8slabels.Set{ //nolint:gochecknoglobals
+	LabelSet = k8slabels.Set{ //nolint:gochecknoglobals
 		v1alpha1.PurposeLabel: v1alpha1.CertManager,
 		v1alpha1.ManagedBy:    v1alpha1.OperatorName,
 	}
@@ -79,7 +77,7 @@ func CreateSecretName(kymaObjKey client.ObjectKey) string {
 	return fmt.Sprintf("%s%s", kymaObjKey.Name, CertificateSuffix)
 }
 
-func (c *Certificate) Create(ctx context.Context) error {
+func (c *Certificate) Create(ctx context.Context, config *SkrChartManagerConfig) error {
 	c.logger = logf.FromContext(ctx)
 	// Check if Certificate exists
 	exists, err := c.exists(ctx)
@@ -89,7 +87,7 @@ func (c *Certificate) Create(ctx context.Context) error {
 		return err
 	}
 	// fetch Subject-Alternative-Name from KymaCR
-	subjectAltNames, err := c.getSubjectAltNames()
+	subjectAltNames, err := c.getSubjectAltNames(config)
 	if err != nil {
 		c.logger.Error(err, "Error get Subject Alternative Name from KymaCR")
 		return err
@@ -113,9 +111,9 @@ func (c *Certificate) GetSecret(ctx context.Context) (*CertificateSecret, error)
 		return nil, err
 	}
 	certSecret := CertificateSecret{
-		CACrt:           string(secret.Data["ca.crt"]),
-		TLSCrt:          string(secret.Data["tls.crt"]),
-		TLSKey:          string(secret.Data["tls.key"]),
+		CACrt:           string(secret.Data[caCertKey]),
+		TLSCrt:          string(secret.Data[tlsCertKey]),
+		TLSKey:          string(secret.Data[tlsPrivateKeyKey]),
 		ResourceVersion: secret.GetResourceVersion(),
 	}
 	return &certSecret, nil
@@ -162,7 +160,7 @@ func (c *Certificate) createCertificate(
 			EmailAddresses: subjectAltName.EmailAddresses,
 			SecretName:     c.secretName, // Name of the secret which stored certificate
 			SecretTemplate: &v1.CertificateSecretTemplate{
-				Labels: SecretTemplateLabels,
+				Labels: LabelSet,
 			},
 			IssuerRef: metav1.ObjectReference{
 				Name: issuer.Name,
@@ -183,13 +181,29 @@ func (c *Certificate) createCertificate(
 	return c.kcpClient.Create(ctx, &cert)
 }
 
-func (c *Certificate) getSubjectAltNames() (*SubjectAltName, error) {
+func (c *Certificate) getSubjectAltNames(config *SkrChartManagerConfig) (*SubjectAltName, error) {
 	if domain, ok := c.kyma.Annotations[DomainAnnotation]; ok {
 		if domain == "" {
 			return nil, fmt.Errorf("Domain-Annotation of KymaCR %s is empty", c.kyma.Name) //nolint:goerr113
 		}
+
+		resourceName := ResolveSKRChartResourceName(WebhookCfgAndDeploymentNameTpl,
+			client.ObjectKeyFromObject(c.kyma))
+		namespace := c.kyma.Namespace
+		// TODO PKI include localhost and 127.0.0.1 in DNS names if local testing is enabled
+		svcSuffix := []string{"svc.cluster.local", "svc"}
+		dnsNames := []string{domain}
+
+		for _, suffix := range svcSuffix {
+			dnsNames = append(dnsNames, fmt.Sprintf("%s.%s.%s", resourceName, namespace, suffix))
+		}
+
+		if config.WatcherLocalTestingEnabled {
+			dnsNames = append(dnsNames, []string{"localhost", "127.0.0.1"}...)
+		}
+
 		return &SubjectAltName{
-			DNSNames: []string{domain},
+			DNSNames: dnsNames,
 		}, nil
 	}
 	return nil, fmt.Errorf("kymaCR %s does not contain annotation '%s' with specified domain", //nolint:goerr113
@@ -199,7 +213,7 @@ func (c *Certificate) getSubjectAltNames() (*SubjectAltName, error) {
 func (c *Certificate) getIssuer(ctx context.Context) (*v1.Issuer, error) {
 	issuerList := &v1.IssuerList{}
 	err := c.kcpClient.List(ctx, issuerList, &client.ListOptions{
-		LabelSelector: k8slabels.SelectorFromSet(IssuerLabelSet),
+		LabelSelector: k8slabels.SelectorFromSet(LabelSet),
 		Namespace:     c.kyma.Namespace,
 	})
 	if err != nil {

@@ -1,4 +1,4 @@
-package certmanager_test
+package watcher_test
 
 import (
 	"context"

@@ -22,9 +22,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/certmanager"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
 	"k8s.io/client-go/rest"
 
 	manifestv1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
@@ -40,6 +37,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -67,7 +65,7 @@ type KymaReconciler struct {
 	RequeueIntervals
 	signature.VerificationSettings
 	RemoteClientCache      *remote.ClientCache
-	SKRWebhookChartManager deploy.SKRWebhookChartManager
+	SKRWebhookChartManager watcher.SKRWebhookChartManager
 	KcpRestConfig          *rest.Config
 }
 
@@ -249,7 +247,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	if kyma.Spec.Sync.Enabled && r.SKRWebhookChartManager != nil {
 		if statusUpdateRequiredFromSKRWebhookSync, err = r.SKRWebhookChartManager.Install(ctx, kyma); err != nil {
 			kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
-			if err != nil && !errors.Is(err, &certmanager.CertificateNotReadyError{}) {
+			if err != nil && !errors.Is(err, &watcher.CertificateNotReadyError{}) {
 				return r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError,
 					fmt.Errorf("error while installing Watcher Webhook Chart: %w", err))
 			}

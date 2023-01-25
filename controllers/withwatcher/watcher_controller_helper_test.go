@@ -7,12 +7,11 @@ import (
 	"io"
 	"os"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/certmanager"
-
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -104,7 +103,7 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1alpha1.Watc
 func createTLSSecret(kymaObjKey client.ObjectKey) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      certmanager.CreateSecretName(kymaObjKey),
+			Name:      watcher.CreateSecretName(kymaObjKey),
 			Namespace: kymaObjKey.Namespace,
 			Labels: map[string]string{
 				v1alpha1.ManagedBy: v1alpha1.OperatorName,

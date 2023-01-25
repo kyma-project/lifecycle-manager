@@ -30,10 +30,10 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -220,20 +220,20 @@ func setupKymaReconciler(mgr ctrl.Manager,
 	options controller.Options,
 ) {
 	kcpRestConfig := mgr.GetConfig()
-	var skrWebhookChartManager deploy.SKRWebhookChartManager
+	var skrWebhookChartManager watcher.SKRWebhookChartManager
 	if flagVar.enableKcpWatcher {
 		watcherChartDirInfo, err := os.Stat(flagVar.skrWatcherPath)
 		if err != nil || !watcherChartDirInfo.IsDir() {
 			setupLog.Error(err, "failed to read local skr chart")
 		}
-		skrChartConfig := &deploy.SkrChartManagerConfig{
+		skrChartConfig := &watcher.SkrChartManagerConfig{
 			WebhookChartPath:           flagVar.skrWatcherPath,
 			SkrWebhookMemoryLimits:     flagVar.skrWebhookMemoryLimits,
 			SkrWebhookCPULimits:        flagVar.skrWebhookCPULimits,
 			WatcherLocalTestingEnabled: flagVar.enableWatcherLocalTesting,
 			GatewayHTTPPortMapping:     flagVar.listenerHTTPPortLocalMapping,
 		}
-		skrWebhookChartManager, err = deploy.NewSKRWebhookTemplateChartManager(kcpRestConfig, skrChartConfig)
+		skrWebhookChartManager, err = watcher.NewSKRWebhookTemplateChartManager(kcpRestConfig, skrChartConfig)
 		if err != nil {
 			setupLog.Error(err, "failed to create webhook chart manager")
 		}

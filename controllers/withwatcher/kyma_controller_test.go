@@ -17,7 +17,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
@@ -27,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
 const (
@@ -181,7 +181,7 @@ func getSkrChartDeployment(ctx context.Context, skrClient client.Client, kymaObj
 	return func() error {
 		return skrClient.Get(ctx, client.ObjectKey{
 			Namespace: metav1.NamespaceDefault,
-			Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
+			Name:      watcher.ResolveSKRChartResourceName(watcher.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
 		}, &appsv1.Deployment{})
 	}
 }
@@ -192,7 +192,7 @@ func getSKRWebhookConfig(ctx context.Context, skrClient client.Client,
 	webhookCfg := &admissionv1.ValidatingWebhookConfiguration{}
 	err := skrClient.Get(ctx, client.ObjectKey{
 		Namespace: metav1.NamespaceDefault,
-		Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
+		Name:      watcher.ResolveSKRChartResourceName(watcher.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
 	}, webhookCfg)
 	return webhookCfg, err
 }

@@ -1,4 +1,4 @@
-package deploy
+package watcher
 
 import (
 	"context"
@@ -8,15 +8,11 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/certmanager"
-
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/slok/go-helm-template/helm"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/slok/go-helm-template/helm"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -28,15 +24,11 @@ type Mode string
 const (
 	customConfigKey                = "modules"
 	WebhookCfgAndDeploymentNameTpl = "%s-webhook"
-	WebhookTLSCfgNameTpl           = "tls-watcher-%s"
 	IstioSystemNs                  = "istio-system"
 	IngressServiceName             = "istio-ingressgateway"
 	releaseNameTpl                 = "%s-%s-skr"
 	defaultK3dLocalhostMapping     = "host.k3d.internal"
 	defaultBufferSize              = 2048
-	caCertKey                      = "ca.crt"
-	tlsCertKey                     = "tls.crt"
-	tlsPrivateKeyKey               = "tls.key"
 	skrChartFieldOwner             = client.FieldOwner("lifecycle-manager")
 )
 
@@ -83,12 +75,8 @@ func runResourceOperationWithGroupedErrors(ctx context.Context, clt client.Clien
 	return errGrp.Wait()
 }
 
-func skrChartReleaseName(kymaObjKey client.ObjectKey) string {
-	return fmt.Sprintf(releaseNameTpl, kymaObjKey.Namespace, kymaObjKey.Name)
-}
-
 func generateHelmChartArgs(ctx context.Context, kcpClient client.Client, kymaObjKey client.ObjectKey,
-	managerConfig *SkrChartManagerConfig, kcpAddr string, certSecret *certmanager.CertificateSecret,
+	managerConfig *SkrChartManagerConfig, kcpAddr string, certSecret *CertificateSecret,
 ) (map[string]interface{}, error) {
 	customConfigValue := ""
 	watcherList := &v1alpha1.WatcherList{}
@@ -106,10 +94,7 @@ func generateHelmChartArgs(ctx context.Context, kcpClient client.Client, kymaObj
 		customConfigValue = string(chartConfigBytes)
 	}
 
-	callback := "true"
-	if managerConfig.WatcherLocalTestingEnabled {
-		callback = "false"
-	}
+	// TODO PKI Only have secure local testing
 
 	return map[string]interface{}{
 		"caCert": certSecret.CACrt,
@@ -118,7 +103,7 @@ func generateHelmChartArgs(ctx context.Context, kcpClient client.Client, kymaObj
 			"privateKey":    certSecret.TLSKey,
 			"secretResVer":  certSecret.ResourceVersion,
 			"webhookServer": "true",
-			"callback":      callback,
+			"callback":      "true",
 		},
 		"kcpAddr":               kcpAddr,
 		"resourcesLimitsMemory": managerConfig.SkrWebhookMemoryLimits,
@@ -168,8 +153,8 @@ func renderChartToRawManifest(ctx context.Context, kymaObjKey client.ObjectKey,
 	}
 	return helm.Template(ctx, helm.TemplateConfig{
 		Chart:       chart,
-		ReleaseName: skrChartReleaseName(kymaObjKey),
-		Namespace:   metav1.NamespaceDefault,
+		ReleaseName: resolveSKRChartReleaseName(kymaObjKey),
+		Namespace:   kymaObjKey.Namespace, //TODO PKI: change namespace to sync namespace
 		Values:      chartArgValues,
 	})
 }
@@ -177,5 +162,9 @@ func renderChartToRawManifest(ctx context.Context, kymaObjKey client.ObjectKey,
 // ResolveSKRChartResourceName resolves a resource name that belongs to the SKR webhook's Chart
 // using the resource name's template.
 func ResolveSKRChartResourceName(resourceNameTpl string, kymaObjKey client.ObjectKey) string {
-	return fmt.Sprintf(resourceNameTpl, skrChartReleaseName(kymaObjKey))
+	return fmt.Sprintf(resourceNameTpl, resolveSKRChartReleaseName(kymaObjKey))
+}
+
+func resolveSKRChartReleaseName(kymaObjKey client.ObjectKey) string {
+	return fmt.Sprintf(releaseNameTpl, kymaObjKey.Namespace, kymaObjKey.Name)
 }

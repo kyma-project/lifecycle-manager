@@ -1,8 +1,9 @@
-package certmanager_test
+package watcher_test
 
 import (
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
 	corev1 "k8s.io/api/core/v1"
 
@@ -12,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/pkg/certmanager"
 )
 
 var _ = Describe("Create Watcher Certificates", Ordered, func() {
@@ -31,7 +31,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "test-kyma-1",
 					Namespace:   "testcase-1",
-					Annotations: map[string]string{certmanager.DomainAnnotation: "example.domain.com"},
+					Annotations: map[string]string{watcher.DomainAnnotation: "example.domain.com"},
 				},
 				Spec: v1alpha1.KymaSpec{
 					Sync: v1alpha1.Sync{
@@ -53,7 +53,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "test-kyma-2",
 					Namespace:   "testcase-2",
-					Annotations: map[string]string{certmanager.DomainAnnotation: "example.domain.com"},
+					Annotations: map[string]string{watcher.DomainAnnotation: "example.domain.com"},
 				},
 				Spec: v1alpha1.KymaSpec{
 					Sync: v1alpha1.Sync{
@@ -105,14 +105,14 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 			if test.issuer != nil {
 				Expect(controlPlaneClient.Create(ctx, test.issuer)).Should(BeNil())
 			}
-			cert, err := certmanager.NewCertificate(controlPlaneClient, test.kyma)
+			cert, err := watcher.NewCertificate(controlPlaneClient, test.kyma)
 			if test.wantNewCertErr {
 				Expect(err).ShouldNot(BeNil())
 				return
 			}
 			Expect(err).Should(BeNil())
 
-			err = cert.Create(ctx)
+			err = cert.Create(ctx, &watcher.SkrChartManagerConfig{WatcherLocalTestingEnabled: true})
 			if test.wantCreateErr {
 				Expect(err).ShouldNot(BeNil())
 				return

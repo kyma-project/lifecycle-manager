@@ -25,7 +25,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: watcher-serving-cert  # this name should match the one appeared in kustomizeconfig.yaml
-  namespace: system
+  namespace: istio-system
 spec:
   dnsNames:
     - 'listener.kyma.cloud.sap' # this dnsNames should be overwritten based on deployment environment

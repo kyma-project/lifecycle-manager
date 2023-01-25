@@ -15,7 +15,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/certmanager"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
@@ -52,7 +52,7 @@ func NewTestKyma(name string) *v1alpha1.Kyma {
 		ObjectMeta: v1.ObjectMeta{
 			Name:        fmt.Sprintf("%s-%s", name, randString(randomStringLength)),
 			Namespace:   v1.NamespaceDefault,
-			Annotations: map[string]string{certmanager.DomainAnnotation: "example.domain.com"},
+			Annotations: map[string]string{watcher.DomainAnnotation: "example.domain.com"},
 		},
 		Spec: v1alpha1.KymaSpec{
 			Modules: []v1alpha1.Module{},
@@ -66,7 +66,7 @@ func NewTestIssuer(namespace string) *certmanagerv1.Issuer {
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "test-issuer",
 			Namespace: namespace,
-			Labels:    certmanager.IssuerLabelSet,
+			Labels:    watcher.LabelSet,
 		},
 		Spec: certmanagerv1.IssuerSpec{IssuerConfig: certmanagerv1.IssuerConfig{
 			SelfSigned: &certmanagerv1.SelfSignedIssuer{},

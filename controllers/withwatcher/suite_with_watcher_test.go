@@ -50,12 +50,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
-
-	//+kubebuilder:scaffold:imports
-	"github.com/kyma-project/lifecycle-manager/controllers"
-	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	//+kubebuilder:scaffold:imports
+	"github.com/kyma-project/lifecycle-manager/controllers"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	istioscheme "istio.io/client-go/pkg/clientset/versioned/scheme"
 )
@@ -165,12 +164,12 @@ var _ = BeforeSuite(func() {
 	}
 
 	remoteClientCache = remote.NewClientCache()
-	skrChartCfg := &deploy.SkrChartManagerConfig{
+	skrChartCfg := &watcher.SkrChartManagerConfig{
 		WebhookChartPath:       webhookChartPath,
 		SkrWebhookMemoryLimits: "200Mi",
 		SkrWebhookCPULimits:    "1",
 	}
-	skrWebhookChartManager, err := deploy.NewSKRWebhookTemplateChartManager(restCfg, skrChartCfg)
+	skrWebhookChartManager, err := watcher.NewSKRWebhookTemplateChartManager(restCfg, skrChartCfg)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.KymaReconciler{
 		Client:                 k8sManager.GetClient(),
@@ -224,7 +223,7 @@ var _ = AfterSuite(func() {
 func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 	istioNs := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: deploy.IstioSystemNs,
+			Name: watcher.IstioSystemNs,
 		},
 	}
 	if err := k8sClient.Create(ctx, istioNs); err != nil {
@@ -232,10 +231,10 @@ func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 	}
 	loadBalancerService := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      deploy.IngressServiceName,
-			Namespace: deploy.IstioSystemNs,
+			Name:      watcher.IngressServiceName,
+			Namespace: watcher.IstioSystemNs,
 			Labels: map[string]string{
-				"app": deploy.IngressServiceName,
+				"app": watcher.IngressServiceName,
 			},
 		},
 		Spec: corev1.ServiceSpec{
@@ -268,7 +267,7 @@ func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 	}
 
 	return k8sClient.Get(ctx, client.ObjectKey{
-		Name:      deploy.IngressServiceName,
-		Namespace: deploy.IstioSystemNs,
+		Name:      watcher.IngressServiceName,
+		Namespace: watcher.IstioSystemNs,
 	}, loadBalancerService)
 }

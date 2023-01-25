@@ -27,7 +27,7 @@ patches:
         value: --enable-watcher-local-testing # Enables to check for k3d local address and sets this as kcp address
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --listener-http-local-mapping=9080 # Port that is mapped to HTTP port of the local k3d cluster
+        value: --listener-http-local-mapping=9433
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --enable-domain-name-pinning=false # TODO Check if we can enable it with a local gateway setup
@@ -95,8 +95,6 @@ components:
   # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
   # crd/kustomization.yaml
   #- ../webhook
-  # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'. 'WEBHOOK' components are required.
-  #- ../certmanager
   # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
   # - ../prometheus
   # [GRAFANA] To generate configmap for provision grafana dashboard
