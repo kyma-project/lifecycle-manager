@@ -3,8 +3,13 @@ package sync
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/kyma-project/module-manager/pkg/types"
+	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -18,75 +23,55 @@ import (
 )
 
 func New(clnt client.Client) *RunnerImpl {
-	return &RunnerImpl{clnt}
+	return &RunnerImpl{
+		Client:    clnt,
+		versioner: schema.GroupVersions(clnt.Scheme().PreferredVersionAllGroups()),
+		converter: clnt.Scheme(),
+	}
 }
 
 type RunnerImpl struct {
 	client.Client
+	versioner runtime.GroupVersioner
+	converter runtime.ObjectConvertor
 }
 
 // Sync implements Runner.Sync.
 func (r *RunnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 	modules common.Modules,
-) (bool, error) {
+) error {
+	ssaStart := time.Now()
 	baseLogger := log.FromContext(ctx).WithName(client.ObjectKey{Name: kyma.Name, Namespace: kyma.Namespace}.String())
+
+	results := make(chan error, len(modules))
 	for name := range modules {
 		module := modules[name]
 		logger := module.Logger(baseLogger)
-		manifest := common.NewFromModule(module)
-		err := r.getModule(ctx, manifest)
-
-		if errors.IsNotFound(err) {
-			logger.Info("module not found, attempting to create it...")
-			err := r.createModule(ctx, name, kyma, module)
-			if err != nil {
-				return false, err
-			}
-			logger.Info("successfully created module CR")
-			return true, nil
-		} else if err != nil {
-			return false, fmt.Errorf("cannot get module %s: %w", module.GetName(), err)
-		}
-
-		module.UpdateStatusAndReferencesFromUnstructured(manifest)
-	}
-
-	for name := range modules {
-		module := modules[name]
-		logger := module.Logger(baseLogger)
-		moduleStatus, err := kyma.GetModuleStatusByModuleName(name)
-		if err != nil {
-			return false, err
-		}
-
-		if module.StateMismatchedWithModuleStatus(moduleStatus) {
+		go func(name string) {
 			if err := r.updateModule(ctx, name, kyma, module); err != nil {
-				return false, err
+				results <- fmt.Errorf("could not update module %s: %w", module.Name, err)
+				return
 			}
-			logger.Info("successfully updated module CR")
-			return true, nil
+			logger.V(int(zap.DebugLevel)).Info("successfully patched module", "module", module.Name)
+			results <- nil
+		}(name)
+	}
+	var errs []error
+	for i := 0; i < len(modules); i++ {
+		if err := <-results; err != nil {
+			errs = append(errs, err)
 		}
 	}
-
-	return false, nil
+	ssaFinish := time.Since(ssaStart)
+	if errs != nil {
+		return fmt.Errorf("ServerSideApply failed (after %s): %w", ssaFinish, types.NewMultiError(errs))
+	}
+	baseLogger.V(int(zap.DebugLevel)).Info("ServerSideApply finished", "time", ssaFinish)
+	return nil
 }
 
 func (r *RunnerImpl) getModule(ctx context.Context, module *manifestV1alpha1.Manifest) error {
 	return r.Get(ctx, client.ObjectKey{Namespace: module.GetNamespace(), Name: module.GetName()}, module)
-}
-
-func (r *RunnerImpl) createModule(ctx context.Context, name string, kyma *v1alpha1.Kyma,
-	module *common.Module,
-) error {
-	if err := r.setupModule(module, kyma, name); err != nil {
-		return err
-	}
-	// create resource if not found
-	if err := r.Client.Create(ctx, module.Manifest, &client.CreateOptions{}); err != nil {
-		return fmt.Errorf("error creating custom resource of type %s %w", name, err)
-	}
-
-	return nil
 }
 
 func (r *RunnerImpl) updateModule(ctx context.Context, name string, kyma *v1alpha1.Kyma,
@@ -95,10 +80,19 @@ func (r *RunnerImpl) updateModule(ctx context.Context, name string, kyma *v1alph
 	if err := r.setupModule(module, kyma, name); err != nil {
 		return err
 	}
-
-	if err := r.Update(ctx, module.Manifest, &client.UpdateOptions{}); err != nil {
-		return fmt.Errorf("error updating custom resource of type %s %w", name, err)
+	obj, err := r.converter.ConvertToVersion(module.Manifest, r.versioner)
+	if err != nil {
+		return err
 	}
+	clObj := obj.(client.Object)
+	if err := r.Patch(ctx, obj.(client.Object),
+		client.Apply,
+		client.FieldOwner(kyma.Labels[v1alpha1.ManagedBy]),
+		client.ForceOwnership,
+	); err != nil {
+		return fmt.Errorf("error patching custom resource of type %s %w", name, err)
+	}
+	module.UpdateStatusAndReferencesFromUnstructured(clObj.(*manifestV1alpha1.Manifest))
 
 	return nil
 }

@@ -88,13 +88,16 @@ func expectManifestSpecContainsCredSecretSelector(kymaName string) func() error 
 				return err
 			}
 			manifestSpec := UnmarshalManifestSpec(moduleInCluster)
-			if err := expectCredSecretSelectorCorrect(&manifestSpec.Config); err != nil {
-				return err
+			var emptyImageSpec types.ImageSpec
+			if manifestSpec.Config != emptyImageSpec {
+				if err := expectCredSecretSelectorCorrect(&manifestSpec.Config); err != nil {
+					return fmt.Errorf("config %v is invalid: %w", &manifestSpec.Config, err)
+				}
 			}
 
 			installImageSpec := extractInstallImageSpec(manifestSpec.Installs)
 			if err := expectCredSecretSelectorCorrect(installImageSpec); err != nil {
-				return err
+				return fmt.Errorf("install %v is invalid: %w", installImageSpec, err)
 			}
 		}
 		return nil
@@ -111,7 +114,8 @@ func extractInstallImageSpec(installInfo []manifestV1alpha1.InstallInfo) *types.
 
 func expectCredSecretSelectorCorrect(installImageSpec *types.ImageSpec) error {
 	if installImageSpec.CredSecretSelector == nil {
-		return ErrNotContainsExpectedCredSecretSelector
+		return fmt.Errorf("image spec %v does not contain credSecretSelector: %w",
+			installImageSpec, ErrNotContainsExpectedCredSecretSelector)
 	}
 
 	value, found := installImageSpec.CredSecretSelector.MatchLabels[credSecretLabel]
