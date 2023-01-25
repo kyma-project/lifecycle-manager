@@ -62,12 +62,27 @@ func templatesToModules(
 
 		var err error
 
-		template.ModuleTemplate.Spec.Data.SetName(common.CreateModuleName(module.Name, kyma.Name))
-		template.ModuleTemplate.Spec.Data.SetNamespace(kyma.GetNamespace())
-
+		name := common.CreateModuleName(module.Name, kyma.Name)
+		// if the default data does not contain a name, default it to the module name
+		if template.ModuleTemplate.Spec.Data.GetName() == "" {
+			template.ModuleTemplate.Spec.Data.SetName(name)
+		}
+		// if the default data does not contain a namespace, default it to either the sync-namespace
+		// or the kyma namespace
+		if template.ModuleTemplate.Spec.Data.GetNamespace() == "" {
+			if kyma.Spec.Sync.Namespace != "" {
+				template.ModuleTemplate.Spec.Data.SetNamespace(kyma.Spec.Sync.Namespace)
+			} else {
+				template.ModuleTemplate.Spec.Data.SetNamespace(kyma.GetNamespace())
+			}
+		}
 		if manifest, err = NewManifestFromTemplate(template.ModuleTemplate, settings.Verification); err != nil {
 			return nil, err
 		}
+		// we name the manifest after the module name
+		manifest.SetName(name)
+		// to have correct owner references, the manifest must always have the same namespace as kyma
+		manifest.SetNamespace(kyma.GetNamespace())
 		modules[module.Name] = &common.Module{
 			Name:             module.Name,
 			Template:         template.ModuleTemplate,
@@ -84,8 +99,6 @@ func NewManifestFromTemplate(
 	verification signature.Verification,
 ) (*manifestV1alpha1.Manifest, error) {
 	manifest := &manifestV1alpha1.Manifest{}
-	manifest.SetName(template.Spec.Data.GetName())
-	manifest.SetNamespace(template.Spec.Data.GetNamespace())
 	manifest.Spec.Remote = ConvertTargetToRemote(template.Spec.Target)
 	template.Spec.Data.DeepCopyInto(&manifest.Spec.Resource)
 
