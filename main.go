@@ -269,7 +269,13 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, fla
 	// although eventually the write operation will succeed.
 	options.MaxConcurrentReconciles = 1
 
-	istioConfig := istio.NewConfig(flagVar.virtualServiceName, flagVar.enableWatcherLocalTesting)
+	caCertOptions := &istio.CACertOptions{
+		WatcherRootCertificateName:      flagVar.watcherRootCertificateName,
+		WatcherRootCertificateNamespace: flagVar.watcherRootCertificateNamespace,
+		IstioCertificateNamespace:       flagVar.istioCertificateNamespace,
+	}
+
+	istioConfig := istio.NewConfig(flagVar.virtualServiceName, caCertOptions, flagVar.enableWatcherLocalTesting)
 
 	if err := (&controllers.WatcherReconciler{
 		Client:        mgr.GetClient(),

@@ -68,6 +68,12 @@ func defineFlagVar() *FlagVar { //nolint:funlen
 	flag.IntVar(&flagVar.listenerHTTPPortLocalMapping, "listener-http-local-mapping", defaultListenerPort,
 		"Port that is mapped to HTTP port of the local k3d cluster using --port 9080:80@loadbalancer when "+
 			"creating the KCP cluster")
+	flag.StringVar(&flagVar.watcherRootCertificateName, "root-cert-name", "klm-watcher-root-secret",
+		"Name of the root certificate used as CA for signing remote certificates")
+	flag.StringVar(&flagVar.watcherRootCertificateNamespace, "root-cert-namespace", "kcp-system",
+		"Namespace of the root certificate used as CA for signing remote certificates")
+	flag.StringVar(&flagVar.istioCertificateNamespace, "istio-gateway-cert-namespace", "istio-system",
+		"Namespace of Istio, used to sync Istio Gateway certificate")
 	flag.BoolVar(&flagVar.pprof, "pprof", false, "Whether to start up a pprof server.")
 	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
 		"Timeout of Read / Write for the pprof server.")
@@ -105,6 +111,9 @@ type FlagVar struct {
 	skrWebhookMemoryLimits                                          string
 	skrWebhookCPULimits                                             string
 	virtualServiceName                                              string
+	watcherRootCertificateName                                      string
+	watcherRootCertificateNamespace                                 string
+	istioCertificateNamespace                                       string
 	enableWatcherLocalTesting                                       bool
 	// listenerHTTPPortLocalMapping is used to enable the user
 	// to specify the port used to expose the KCP cluster for the watcher

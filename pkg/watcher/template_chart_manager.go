@@ -86,7 +86,7 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 	if err != nil {
 		return true, err
 	}
-	manifest, err := renderChartToRawManifest(ctx, kymaObjKey, m.config.WebhookChartPath, chartArgValues)
+	manifest, err := renderChartToRawManifest(ctx, kyma, m.config.WebhookChartPath, chartArgValues)
 	if err != nil {
 		return true, err
 	}
@@ -111,7 +111,7 @@ func (m *SKRWebhookTemplateChartManager) Remove(ctx context.Context, kyma *v1alp
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
-	manifest, err := renderChartToRawManifest(ctx, kymaObjKey, m.config.WebhookChartPath, map[string]interface{}{})
+	manifest, err := renderChartToRawManifest(ctx, kyma, m.config.WebhookChartPath, map[string]interface{}{})
 	if err != nil {
 		return err
 	}

@@ -84,6 +84,15 @@ patchesJson6902:
       version: v1beta1
       kind: Gateway
       name: watcher-gateway
+  - patch: |-
+      - op: replace
+        path: /spec/dnsNames/0
+        value: "localhost"
+    target:
+      group: cert-manager.io
+      version: v1
+      kind: Certificate
+      name: watcher-serving-cert
 
 components:
   - ../crd

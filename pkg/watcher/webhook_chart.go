@@ -143,7 +143,7 @@ func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrChartManagerConfig
 	return net.JoinHostPort(externalIP, strconv.Itoa(int(port))), nil
 }
 
-func renderChartToRawManifest(ctx context.Context, kymaObjKey client.ObjectKey,
+func renderChartToRawManifest(ctx context.Context, kymaObj *v1alpha1.Kyma,
 	chartPath string, chartArgValues map[string]interface{},
 ) (string, error) {
 	chartFS := os.DirFS(chartPath)
@@ -151,10 +151,14 @@ func renderChartToRawManifest(ctx context.Context, kymaObjKey client.ObjectKey,
 	if err != nil {
 		return "", nil
 	}
+	namespace := kymaObj.Namespace
+	if syncNs := kymaObj.Spec.Sync.Namespace; syncNs != "" {
+		namespace = syncNs
+	}
 	return helm.Template(ctx, helm.TemplateConfig{
 		Chart:       chart,
-		ReleaseName: resolveSKRChartReleaseName(kymaObjKey),
-		Namespace:   kymaObjKey.Namespace, //TODO PKI: change namespace to sync namespace
+		ReleaseName: resolveSKRChartReleaseName(client.ObjectKeyFromObject(kymaObj)),
+		Namespace:   namespace,
 		Values:      chartArgValues,
 	})
 }

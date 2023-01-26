@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/go-logr/logr"
 	istioapi "istio.io/api/networking/v1beta1"
 	istioclientapi "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -33,12 +35,20 @@ var (
 type Config struct {
 	VirtualServiceName  string
 	WatcherLocalTesting bool
+	*CACertOptions
 }
 
-func NewConfig(vsn string, watcherLocalTesting bool) Config {
+type CACertOptions struct {
+	WatcherRootCertificateName      string
+	WatcherRootCertificateNamespace string
+	IstioCertificateNamespace       string
+}
+
+func NewConfig(vsn string, options *CACertOptions, watcherLocalTesting bool) Config {
 	return Config{
 		VirtualServiceName:  vsn,
 		WatcherLocalTesting: watcherLocalTesting,
+		CACertOptions:       options,
 	}
 }
 
@@ -381,4 +391,44 @@ func prepareIstioHTTPRouteForCR(obj *v1alpha1.Watcher) *istioapi.HTTPRoute {
 
 func destinationHost(serviceName, serviceNamespace string) string {
 	return fmt.Sprintf("%s.%s.svc.cluster.local", serviceName, serviceNamespace)
+}
+
+func (c *Client) SyncCertificateSecretToIstio(ctx context.Context, kcpClient client.Client) error {
+	certSecret := &corev1.Secret{}
+	err := kcpClient.Get(ctx,
+		client.ObjectKey{
+			Namespace: c.config.WatcherRootCertificateNamespace,
+			Name:      c.config.WatcherRootCertificateName,
+		}, certSecret)
+
+	if apierrors.IsNotFound(err) {
+		// if CA Certificate does not exist, check if it exists in istio Namespace, if yes remove it
+		c.logger.Info("CA Root Certificate does not exist, " +
+			"will delete CA Root Certificate in istio namespace if exists") //TODO PKI introdice V level
+		if err := kcpClient.Get(ctx, client.ObjectKey{
+			Namespace: c.config.IstioCertificateNamespace,
+			Name:      c.config.WatcherRootCertificateName,
+		}, certSecret); apierrors.IsNotFound(err) {
+			return nil
+		} else if err != nil {
+			return err
+		}
+		if err := kcpClient.Delete(ctx, certSecret); err != nil {
+			return err
+		}
+
+		// CA Certificate has been removed in all namespaces, sync not needed
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	// CA Certificate exists, copy it to istio namespace
+	certSecret.Namespace = c.config.IstioCertificateNamespace
+	certSecret.ResourceVersion = ""
+	if err := kcpClient.Create(ctx, certSecret); err != nil {
+		return err
+	}
+	c.logger.Info("CA Root Certificate has been synchronised to istio namespace") //TODO PKI introdice V level
+	return nil
 }

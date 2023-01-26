@@ -190,7 +190,6 @@ func (c *Certificate) getSubjectAltNames(config *SkrChartManagerConfig) (*Subjec
 		resourceName := ResolveSKRChartResourceName(WebhookCfgAndDeploymentNameTpl,
 			client.ObjectKeyFromObject(c.kyma))
 		namespace := c.kyma.Namespace
-		// TODO PKI include localhost and 127.0.0.1 in DNS names if local testing is enabled
 		svcSuffix := []string{"svc.cluster.local", "svc"}
 		dnsNames := []string{domain}
 

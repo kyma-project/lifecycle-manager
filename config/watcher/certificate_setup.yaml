@@ -32,6 +32,9 @@ spec:
   isCA: true
   commonName: klm-watcher-selfsigned-ca
   secretName: klm-watcher-root-secret # this secret will not be prefixed, since it's not managed by kustomize
+  secretTemplate:
+    labels:
+      operator.kyma-project.io/managed-by: "lifecycle-manager"
   privateKey:
     algorithm: RSA
   issuerRef:
