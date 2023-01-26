@@ -200,6 +200,15 @@ spec:
                   module
                 items:
                   properties:
+                    for:
+                      description: For defines the name of the Module in the Spec
+                        that the status is for. It can either be the FQDN, or a different
+                        kind of Reference format supported by Module.Name
+                      type: string
+                    fqdn:
+                      description: FQDN is the fully qualified domain name of the
+                        module.
+                      type: string
                     generation:
                       description: Generation tracks the active Generation of the
                         Module. In case the tracked Module spec changes, the new Generation
@@ -207,14 +216,11 @@ spec:
                         a reconciliation based on the original content of ModuleTemplate
                       format: int64
                       type: integer
-                    moduleName:
-                      description: ModuleName is the unique identifier of the module.
-                      type: string
                     name:
-                      description: Name is the current deployed module name
+                      description: Name is the current manifest name
                       type: string
                     namespace:
-                      description: Namespace is the current deployed module namespace
+                      description: Namespace is the current manifest namespace
                       type: string
                     state:
                       description: status of the condition, one of True, False, Unknown.
@@ -230,7 +236,7 @@ spec:
                         or the ModuleTemplate is changed.
                       properties:
                         channel:
-                          description: Channel tracks the active Channel of the ModuleTemplate.
+                          description: Channel tracks the active Channel of the Module.
                             In Case it changes, the new Channel will have caused a
                             new lookup to be necessary that maybe picks a different
                             ModuleTemplate, which is why we need to reconcile.
@@ -239,27 +245,9 @@ spec:
                           description: Generation tracks the active Generation of
                             the ModuleTemplate. In case it changes, the new Generation
                             will differ from the one tracked in TemplateInfo and thus
-                            trigger a new reconciliation with a newly parser ModuleTemplate
+                            trigger a new reconciliation with a newly parsed ModuleTemplate
                           format: int64
                           type: integer
-                        gvk:
-                          description: GroupVersionKind is used to track the Kind
-                            that was created from the ModuleTemplate. This is dynamic
-                            to not bind ourselves to any kind of Kind in the code
-                            and allows us to work generic on deletion / cleanup of
-                            related resources to a Kyma Installation.
-                          properties:
-                            group:
-                              type: string
-                            kind:
-                              type: string
-                            version:
-                              type: string
-                          required:
-                          - group
-                          - kind
-                          - version
-                          type: object
                         name:
                           description: Name is the current name of the template resource
                             referenced
@@ -268,6 +256,7 @@ spec:
                           description: Namespace is the namespace of the template
                           type: string
                         version:
+                          description: Channel tracks the active Version of the Module.
                           type: string
                       required:
                       - name
@@ -275,7 +264,8 @@ spec:
                       - version
                       type: object
                   required:
-                  - moduleName
+                  - for
+                  - fqdn
                   - name
                   - namespace
                   - state

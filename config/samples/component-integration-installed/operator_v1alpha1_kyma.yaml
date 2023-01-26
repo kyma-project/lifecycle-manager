@@ -1,11 +1,12 @@
 apiVersion: operator.kyma-project.io/v1alpha1
 kind: Kyma
 metadata:
-  name: kyma-sample
-  namespace: kyma-system
+  labels:
+    "operator.kyma-project.io/managed-by": "lifecycle-manager"
+  name: default-kyma
+  namespace: kcp-system
 spec:
-  channel: regular
+  channel: alpha
   sync:
-    enabled: true
+    enabled: false
   modules:
-    - name: kcp-module

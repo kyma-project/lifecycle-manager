@@ -61,8 +61,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Eventually(runtimeClient.Update(ctx, remoteKyma), Timeout, Interval).Should(Succeed())
 
 		By("skr-module-client created in kcp")
-		Eventually(ModuleExists(kyma.GetName(), skrModuleFromClient.Name),
-			Timeout, Interval).Should(BeTrue())
+		Eventually(ModuleExists(ctx, kyma, *skrModuleFromClient), Timeout, Interval).Should(BeTrue())
 	})
 })
 
@@ -92,7 +91,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("CR created in kcp")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ModuleExists(kyma.GetName(), activeModule.Name), Timeout, Interval).Should(BeTrue())
+			Eventually(ModuleExists(ctx, kyma, activeModule), Timeout, Interval).Should(BeTrue())
 		}
 
 		By("No spec.module in remote Kyma")

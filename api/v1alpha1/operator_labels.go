@@ -28,7 +28,7 @@ const (
 	WatchedByLabel = OperatorPrefix + Separator + "watched-by"
 )
 
-func GetMatchingLabelsForModule(module *Module) client.MatchingLabels {
+func ModuleTemplatesByLabel(module *Module) client.MatchingLabels {
 	selector := client.MatchingLabels{
 		ModuleName: module.Name,
 	}

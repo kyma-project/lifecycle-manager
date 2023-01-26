@@ -167,7 +167,7 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 				Should(BeEquivalentTo(string(v1alpha1.StateProcessing)))
 			for _, module := range kyma.Spec.Modules {
 				Eventually(
-					UpdateModuleState(kyma.GetName(), module.Name, v1alpha1.StateReady), 20*time.Second,
+					UpdateModuleState(ctx, kyma, module, v1alpha1.StateReady), 20*time.Second,
 					Interval).Should(Succeed())
 			}
 			Eventually(GetKymaState(kyma.Name), 5*time.Second, Interval).

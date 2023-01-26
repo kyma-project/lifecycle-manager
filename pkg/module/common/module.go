@@ -2,6 +2,7 @@ package common
 
 import (
 	"fmt"
+	"hash/fnv"
 
 	"github.com/go-logr/logr"
 
@@ -10,9 +11,11 @@ import (
 )
 
 type (
-	Modules map[string]*Module
+	Modules []*Module
 	Module  struct {
-		Name             string
+		For              string
+		FQDN             string
+		Version          string
 		Template         *v1alpha1.ModuleTemplate
 		TemplateOutdated bool
 		*manifestV1alpha1.Manifest
@@ -21,23 +24,21 @@ type (
 
 func (m *Module) Logger(base logr.Logger) logr.Logger {
 	return base.WithValues(
+		"fqdn", m.FQDN,
 		"module", m.Name,
 		"channel", m.Template.Spec.Channel,
 		"templateGeneration", m.Template.GetGeneration(),
 	)
 }
 
-func (m *Module) ApplyLabels(
+func (m *Module) ApplyLabelsAndAnnotations(
 	kyma *v1alpha1.Kyma,
-	moduleName string,
 ) {
 	lbls := m.GetLabels()
 	if lbls == nil {
 		lbls = make(map[string]string)
 	}
 	lbls[v1alpha1.KymaName] = kyma.Name
-
-	lbls[v1alpha1.ModuleName] = moduleName
 
 	templateLabels := m.Template.GetLabels()
 	if templateLabels != nil {
@@ -46,6 +47,13 @@ func (m *Module) ApplyLabels(
 	lbls[v1alpha1.ChannelLabel] = m.Template.Spec.Channel
 
 	m.SetLabels(lbls)
+
+	anns := m.GetAnnotations()
+	if anns == nil {
+		anns = make(map[string]string)
+	}
+	anns[v1alpha1.FQDN] = m.FQDN
+	m.SetAnnotations(anns)
 }
 
 func (m *Module) StateMismatchedWithModuleStatus(moduleStatus *v1alpha1.ModuleStatus) bool {
@@ -76,14 +84,15 @@ func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {
 	return false
 }
 
-func NewFromModule(module *Module) *manifestV1alpha1.Manifest {
-	fromServer := manifestV1alpha1.Manifest{}
-	fromServer.SetGroupVersionKind(module.GroupVersionKind())
-	fromServer.SetNamespace(module.GetNamespace())
-	fromServer.SetName(module.GetName())
-	return &fromServer
-}
+const maxModuleNameLength = 253
 
-func CreateModuleName(moduleName, kymaName string) string {
-	return fmt.Sprintf("%s-%s", kymaName, moduleName)
+func CreateModuleName(fqdn, kymaName string) string {
+	hash := fnv.New32()
+	_, _ = hash.Write([]byte(fqdn))
+	hashedFQDN := hash.Sum32()
+	name := fmt.Sprintf("%s-%v", kymaName, hashedFQDN)
+	if len(name) >= maxModuleNameLength {
+		name = name[:maxModuleNameLength-1]
+	}
+	return name
 }

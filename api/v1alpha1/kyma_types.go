@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"errors"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -173,11 +172,12 @@ const (
 )
 
 type ModuleStatus struct {
-	// Name is the current deployed module name
-	Name string `json:"name"`
+	// For defines the name of the Module in the Spec that the status is for.
+	// It can either be the FQDN, or a different kind of Reference format supported by Module.Name
+	For string `json:"for"`
 
-	// ModuleName is the unique identifier of the module.
-	ModuleName string `json:"moduleName"`
+	// FQDN is the fully qualified domain name of the module.
+	FQDN string `json:"fqdn"`
 
 	// Generation tracks the active Generation of the Module. In case the tracked Module spec changes,
 	// the new Generation will differ from the one tracked in the cluster and thus trigger a reconciliation
@@ -189,7 +189,9 @@ type ModuleStatus struct {
 	// +optional
 	TemplateInfo TemplateInfo `json:"templateInfo"`
 
-	// Namespace is the current deployed module namespace
+	// Name is the current manifest name
+	Name string `json:"name"`
+	// Namespace is the current manifest namespace
 	Namespace string `json:"namespace"`
 
 	// status of the condition, one of True, False, Unknown.
@@ -204,18 +206,14 @@ type TemplateInfo struct {
 	Namespace string `json:"namespace"`
 
 	// Generation tracks the active Generation of the ModuleTemplate. In case it changes, the new Generation will differ
-	// from the one tracked in TemplateInfo and thus trigger a new reconciliation with a newly parser ModuleTemplate
+	// from the one tracked in TemplateInfo and thus trigger a new reconciliation with a newly parsed ModuleTemplate
 	Generation int64 `json:"generation,omitempty"`
 
-	// Channel tracks the active Channel of the ModuleTemplate. In Case it changes, the new Channel will have caused
+	// Channel tracks the active Channel of the Module. In Case it changes, the new Channel will have caused
 	// a new lookup to be necessary that maybe picks a different ModuleTemplate, which is why we need to reconcile.
 	Channel string `json:"channel,omitempty"`
 
-	// GroupVersionKind is used to track the Kind that was created from the ModuleTemplate. This is dynamic to not bind
-	// ourselves to any kind of Kind in the code and allows us to work generic on deletion / cleanup of
-	// related resources to a Kyma Installation.
-	GroupVersionKind metav1.GroupVersionKind `json:"gvk,omitempty"`
-
+	// Channel tracks the active Version of the Module.
 	Version string `json:"version"`
 }
 
@@ -277,7 +275,7 @@ func (kyma *Kyma) GetNoLongerExistingModuleStatus() []*ModuleStatus {
 
 	for i := range kyma.Status.ModuleStatus {
 		moduleStatus := &kyma.Status.ModuleStatus[i]
-		moduleStatusMap[moduleStatus.ModuleName] = &moduleStatusExistsPair{exists: false, moduleStatus: moduleStatus}
+		moduleStatusMap[moduleStatus.For] = &moduleStatusExistsPair{exists: false, moduleStatus: moduleStatus}
 	}
 
 	for i := range kyma.Spec.Modules {
@@ -300,7 +298,7 @@ func (kyma *Kyma) GetModuleStatusMap() map[string]*ModuleStatus {
 	moduleStatusMap := make(map[string]*ModuleStatus)
 	for i := range kyma.Status.ModuleStatus {
 		moduleStatus := &kyma.Status.ModuleStatus[i]
-		moduleStatusMap[moduleStatus.ModuleName] = moduleStatus
+		moduleStatusMap[moduleStatus.For] = moduleStatus
 	}
 	return moduleStatusMap
 }
@@ -359,19 +357,6 @@ func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType,
 		}
 	}
 	return false
-}
-
-var ErrModuleStatusNotFound = errors.New("module status not found")
-
-func (kyma *Kyma) GetModuleStatusByModuleName(moduleName string) (*ModuleStatus, error) {
-	for i := range kyma.Status.ModuleStatus {
-		moduleStatus := &kyma.Status.ModuleStatus[i]
-		if moduleStatus.ModuleName == moduleName {
-			return moduleStatus, nil
-		}
-	}
-	// should not happen
-	return nil, ErrModuleStatusNotFound
 }
 
 // SyncConditionsWithModuleStates iterates all moduleStatus, based on all module state,

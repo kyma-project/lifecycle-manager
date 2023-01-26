@@ -56,7 +56,7 @@ func updateAllModuleState(kymaName string, state v1alpha1.State) func() error {
 			return err
 		}
 		for _, module := range createdKyma.Spec.Modules {
-			if err := updateModuleState(kymaName, module.Name, state); err != nil {
+			if err := updateModuleState(createdKyma, module, state); err != nil {
 				return err
 			}
 		}

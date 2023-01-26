@@ -7,6 +7,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/go-logr/logr"
+	"go.uber.org/zap"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -17,6 +18,7 @@ import (
 var (
 	ErrTemplateNotIdentified    = errors.New("no unique template could be identified")
 	ErrNotDefaultChannelAllowed = errors.New("specifying no default channel is not allowed")
+	ErrNoTemplatesInListResult  = errors.New("no templates were found during listing")
 )
 
 type ModuleTemplate struct {
@@ -52,7 +54,7 @@ func CheckForOutdatedTemplates(logger logr.Logger, k *operatorv1alpha1.Kyma, tem
 	for moduleName, moduleTemplate := range templates {
 		for i := range k.Status.ModuleStatus {
 			moduleStatus := &k.Status.ModuleStatus[i]
-			if moduleStatus.ModuleName == moduleName && moduleTemplate != nil {
+			if moduleStatus.FQDN == moduleName && moduleTemplate != nil {
 				CheckForOutdatedTemplate(logger, moduleTemplate, moduleStatus)
 			}
 		}
@@ -67,7 +69,7 @@ func CheckForOutdatedTemplates(logger logr.Logger, k *operatorv1alpha1.Kyma, tem
 func CheckForOutdatedTemplate(
 	logger logr.Logger, moduleTemplate *ModuleTemplate, moduleStatus *operatorv1alpha1.ModuleStatus,
 ) {
-	checkLog := logger.WithValues("module", moduleStatus.ModuleName,
+	checkLog := logger.WithValues("module", moduleStatus.FQDN,
 		"template", moduleTemplate.Name,
 		"newTemplateGeneration", moduleTemplate.GetGeneration(),
 		"previousTemplateGeneration", moduleStatus.TemplateInfo.Generation,
@@ -148,64 +150,107 @@ type TemplateLookup struct {
 }
 
 func (c *TemplateLookup) WithContext(ctx context.Context) (*ModuleTemplate, error) {
-	templateList := &operatorv1alpha1.ModuleTemplateList{}
-
 	desiredChannel := c.getDesiredChannel()
 
-	selector := operatorv1alpha1.GetMatchingLabelsForModule(&c.module)
-
-	if err := c.reader.List(ctx, templateList,
-		selector,
-		index.TemplateChannelField.WithValue(desiredChannel),
-	); err != nil {
+	template, err := c.getTemplate(ctx, desiredChannel)
+	if err != nil {
 		return nil, err
 	}
 
-	if len(templateList.Items) > 1 {
-		return nil, NewMoreThanOneTemplateCandidateErr(c.module, templateList.Items)
-	}
-
-	// if the desiredChannel cannot be found, use the next best available
-	if len(templateList.Items) == 0 {
-		if err := c.reader.List(ctx, templateList,
-			selector,
-		); err != nil {
-			return nil, err
-		}
-
-		if len(templateList.Items) > 1 {
-			return nil, NewMoreThanOneTemplateCandidateErr(c.module, templateList.Items)
-		}
-
-		if len(templateList.Items) == 0 {
-			return nil, fmt.Errorf("%w: no module template found for module: %s", ErrTemplateNotIdentified, c.module.Name)
-		}
-	}
-
-	template := templateList.Items[0]
 	actualChannel := template.Spec.Channel
 
 	// ModuleTemplates without a Channel are not allowed
 	if actualChannel == "" {
 		return nil, fmt.Errorf(
-			"no default channel found on template for module: %s: %w",
+			"no channel found on template for module: %s: %w",
 			c.module.Name, ErrNotDefaultChannelAllowed,
 		)
 	}
 
-	const logLevel = 3
 	if actualChannel != c.defaultChannel {
-		log.FromContext(ctx).V(logLevel).Info(fmt.Sprintf("using %s (instead of %s) for module %s",
-			actualChannel, c.defaultChannel, c.module.Name))
+		log.FromContext(ctx).Info(
+			fmt.Sprintf(
+				"using %s (instead of %s) for module %s",
+				actualChannel, c.defaultChannel, c.module.Name,
+			),
+		)
 	} else {
-		log.FromContext(ctx).V(logLevel).Info(fmt.Sprintf("using %s for module %s",
-			actualChannel, c.module.Name))
+		log.FromContext(ctx).V(int(zap.DebugLevel)).Info(
+			fmt.Sprintf(
+				"using %s for module %s",
+				actualChannel, c.module.Name,
+			),
+		)
 	}
 
 	return &ModuleTemplate{
-		ModuleTemplate: &template,
+		ModuleTemplate: template,
 		Outdated:       false,
 	}, nil
+}
+
+func (c *TemplateLookup) getTemplate(
+	ctx context.Context, desiredChannel string,
+) (*operatorv1alpha1.ModuleTemplate, error) {
+	lookupVariants := []client.ListOption{
+		// first try to find a template with "operator.kyma-project.io/module-name" == module.Name
+		operatorv1alpha1.ModuleTemplatesByLabel(&c.module),
+		// then try to find a template with FQDN (".spec.descriptor.component.name") == module.Name
+		index.TemplateFQDNField.WithValue(c.module.Name),
+		// then try to find a template with "metadata.name" == module.Name
+		index.TemplateNameField.WithValue(c.module.Name),
+	}
+	var template *operatorv1alpha1.ModuleTemplate
+	for _, variant := range lookupVariants {
+		var err error
+		template, err = c.getModuleTemplateFromDesiredChannel(ctx, desiredChannel, variant)
+		if err != nil && !errors.Is(err, ErrNoTemplatesInListResult) {
+			return nil, err
+		}
+		if template != nil {
+			return template, nil
+		}
+	}
+	return nil, fmt.Errorf(
+		"%w: no module template found for module: %s, attempted to lookup via %v", ErrTemplateNotIdentified, c.module.Name,
+		lookupVariants,
+	)
+}
+
+func (c *TemplateLookup) getModuleTemplateFromDesiredChannel(
+	ctx context.Context, desiredChannel string, option client.ListOption,
+) (*operatorv1alpha1.ModuleTemplate, error) {
+	templateList := &operatorv1alpha1.ModuleTemplateList{}
+
+	var err error
+	switch option.(type) {
+	case client.MatchingFields:
+		templateListPreChannelFilter := &operatorv1alpha1.ModuleTemplateList{}
+		err = c.reader.List(ctx, templateListPreChannelFilter, option)
+		if err != nil {
+			return nil, err
+		}
+		for _, template := range templateListPreChannelFilter.Items {
+			if template.Spec.Channel == desiredChannel {
+				templateList.Items = append(templateList.Items, template)
+			}
+		}
+	default:
+		err = c.reader.List(
+			ctx, templateList, option, index.TemplateChannelField.WithValue(desiredChannel),
+		)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if len(templateList.Items) > 1 {
+		return nil, NewMoreThanOneTemplateCandidateErr(c.module, templateList.Items, option)
+	}
+	if len(templateList.Items) == 0 {
+		return nil, fmt.Errorf("no templates found with %s in channel %s: %w", option, desiredChannel,
+			ErrNoTemplatesInListResult)
+	}
+	return &templateList.Items[0], nil
 }
 
 func (c *TemplateLookup) getDesiredChannel() string {
@@ -224,13 +269,13 @@ func (c *TemplateLookup) getDesiredChannel() string {
 }
 
 func NewMoreThanOneTemplateCandidateErr(component operatorv1alpha1.Module,
-	candidateTemplates []operatorv1alpha1.ModuleTemplate,
+	candidateTemplates []operatorv1alpha1.ModuleTemplate, option client.ListOption,
 ) error {
 	candidates := make([]string, len(candidateTemplates))
 	for i, candidate := range candidateTemplates {
 		candidates[i] = candidate.GetName()
 	}
 
-	return fmt.Errorf("%w: more than one module template found for module: %s, candidates: %v",
-		ErrTemplateNotIdentified, component.Name, candidates)
+	return fmt.Errorf("%w: more than one module template found with %v for module: %s, candidates: %v",
+		ErrTemplateNotIdentified, option, component.Name, candidates)
 }
