@@ -157,11 +157,7 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Module
 func stateFromManifest(obj client.Object) v1alpha1.State {
 	switch manifest := obj.(type) {
 	case *manifestV1alpha1.Manifest:
-		state := v1alpha1.State(manifest.Status.State)
-		if state == "" {
-			return v1alpha1.StateProcessing
-		}
-		return state
+		return v1alpha1.State(manifest.Status.State)
 	default:
 		return v1alpha1.StateError
 	}

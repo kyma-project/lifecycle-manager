@@ -251,12 +251,13 @@ spec:
                       description: Namespace is the current manifest namespace
                       type: string
                     state:
-                      description: status of the condition, one of True, False, Unknown.
+                      description: State of the Module in the currently tracked Generation
                       enum:
                       - Processing
                       - Deleting
                       - Ready
                       - Error
+                      - ""
                       type: string
                     template:
                       description: It contains information about the last parsed ModuleTemplate
@@ -327,6 +328,7 @@ spec:
                 - Deleting
                 - Ready
                 - Error
+                - ""
                 type: string
             type: object
         type: object

@@ -112,7 +112,7 @@ type KymaSpec struct {
 	Sync Sync `json:"sync,omitempty"`
 }
 
-func (kyma *Kyma) AreAllConditionsReadyForKyma() bool {
+func (kyma *Kyma) AllReadyConditionsTrue() bool {
 	status := &kyma.Status
 	if len(status.Conditions) < 1 {
 		return false
@@ -156,7 +156,7 @@ type LastOperation struct {
 
 const DefaultChannel = "regular"
 
-// +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error
+// +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error;""
 type State string
 
 // Valid States.
@@ -207,7 +207,7 @@ type ModuleStatus struct {
 	// +optional
 	TemplateInfo TemplateInfo `json:"template"`
 
-	// status of the condition, one of True, False, Unknown.
+	// State of the Module in the currently tracked Generation
 	State State `json:"state"`
 }
 

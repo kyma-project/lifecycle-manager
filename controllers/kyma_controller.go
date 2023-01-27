@@ -235,6 +235,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	}
 	kyma.UpdateCondition(conditionReason, conditionStatus)
 
+	//TODO move out watcher sync and process condition concurrently
 	if kyma.Spec.Sync.Enabled && r.SKRWebhookChartManager != nil {
 		if _, err := r.SKRWebhookChartManager.Install(ctx, kyma); err != nil {
 			kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
@@ -243,7 +244,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	}
 
 	// set ready condition if applicable
-	if kyma.AreAllConditionsReadyForKyma() {
+	if kyma.AllReadyConditionsTrue() {
 		const message = "kyma is ready"
 		if kyma.Status.State != v1alpha1.StateReady {
 			logger.Info(message)
@@ -251,7 +252,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 		return r.UpdateStatus(ctx, kyma, v1alpha1.StateReady, message)
 	}
 
-	if err := r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing, "updating component conditions"); err != nil {
+	if err := r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing, "waiting for all modules to become ready"); err != nil {
 		return fmt.Errorf("error while updating status for condition change: %w", err)
 	}
 
