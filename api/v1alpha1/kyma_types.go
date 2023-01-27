@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -37,13 +38,12 @@ type Modules []Module
 // Module defines the components to be installed.
 type Module struct {
 	// Name is a unique identifier of the module.
-	// It is used together with KymaName, ChannelLabel, ProfileLabel label to resolve a ModuleTemplate.
+	// It is used to resolve a ModuleTemplate for creating a set of resources on the cluster.
 	//
-	// WARNING: Module-Names are restricted in length based on naming generation strategy!
-	// By default, this means that the length of Name and .metadata.name of Kyma combined must be <= 252 Characters
-	// This is because the naming strategy aggregates Kyma and Module into a format of "kyma-name-module-name"
-	// For more info on the 253 total character limit, see
-	// https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names
+	// Name can be one of 3 kinds:
+	// - The ModuleName label value of the module-template, e.g. operator.kyma-project.io/module-name=my-module
+	// - The Name or Namespace/Name of a ModuleTemplate, e.g. my-moduletemplate or kyma-system/my-moduletemplate
+	// - The FQDN, e.g. kyma-project.io/module/my-module as located in .spec.descriptor.component.name
 	Name string `json:"name"`
 
 	// ControllerName is able to set the controller used for reconciliation of the module. It can be used
@@ -145,6 +145,13 @@ type KymaStatus struct {
 	// Active Channel
 	// +optional
 	ActiveChannel string `json:"activeChannel,omitempty"`
+
+	LastOperation `json:"lastOperation,omitempty"`
+}
+
+type LastOperation struct {
+	Operation      string      `json:"operation"`
+	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty"`
 }
 
 const DefaultChannel = "regular"
@@ -172,11 +179,22 @@ const (
 )
 
 type ModuleStatus struct {
-	// For defines the name of the Module in the Spec that the status is for.
-	// It can either be the FQDN, or a different kind of Reference format supported by Module.Name
+	// Name is the current manifest name
+	Name string `json:"name"`
+	// Namespace is the current manifest namespace
+	Namespace string `json:"namespace"`
+	// GroupVersionKind is used to track the Kind that was created from the ModuleTemplate. This is dynamic to not bind
+	// ourselves to any kind of Kind in the code and allows us to work generic on deletion / cleanup of
+	// related resources to a Kyma Installation.
+	metav1.GroupVersionKind `json:"gvk"`
+
+	// For defines the name of the Module in the Spec that the status is used for.
+	// It can be any kind of Reference format supported by Module.Name.
 	For string `json:"for"`
 
 	// FQDN is the fully qualified domain name of the module.
+	// In the ModuleTemplate it is located in .spec.descriptor.component.name of the ModuleTemplate
+	// FQDN is used to calculate Namespace and Name of the Manifest for tracking.
 	FQDN string `json:"fqdn"`
 
 	// Generation tracks the active Generation of the Module. In case the tracked Module spec changes,
@@ -187,12 +205,7 @@ type ModuleStatus struct {
 	// It contains information about the last parsed ModuleTemplate in Context of the Installation.
 	// This will update when Channel or the ModuleTemplate is changed.
 	// +optional
-	TemplateInfo TemplateInfo `json:"templateInfo"`
-
-	// Name is the current manifest name
-	Name string `json:"name"`
-	// Namespace is the current manifest namespace
-	Namespace string `json:"namespace"`
+	TemplateInfo TemplateInfo `json:"template"`
 
 	// status of the condition, one of True, False, Unknown.
 	State State `json:"state"`
@@ -201,9 +214,12 @@ type ModuleStatus struct {
 type TemplateInfo struct {
 	// Name is the current name of the template resource referenced
 	Name string `json:"name"`
-
 	// Namespace is the namespace of the template
 	Namespace string `json:"namespace"`
+	// GroupVersionKind is used to track the Kind of the ModuleTemplate. This is dynamic to not bind
+	// ourselves to any kind of Kind in the code and allows us to work generic on deletion / cleanup of
+	// related resources to a Kyma Installation.
+	metav1.GroupVersionKind `json:"gvk"`
 
 	// Generation tracks the active Generation of the ModuleTemplate. In case it changes, the new Generation will differ
 	// from the one tracked in TemplateInfo and thus trigger a new reconciliation with a newly parsed ModuleTemplate
@@ -271,17 +287,16 @@ type moduleStatusExistsPair struct {
 }
 
 func (kyma *Kyma) GetNoLongerExistingModuleStatus() []*ModuleStatus {
-	moduleStatusMap := make(map[string]*moduleStatusExistsPair)
+	moduleStatusMap := make(map[int]*moduleStatusExistsPair)
 
 	for i := range kyma.Status.ModuleStatus {
 		moduleStatus := &kyma.Status.ModuleStatus[i]
-		moduleStatusMap[moduleStatus.For] = &moduleStatusExistsPair{exists: false, moduleStatus: moduleStatus}
+		moduleStatusMap[i] = &moduleStatusExistsPair{exists: false, moduleStatus: moduleStatus}
 	}
 
 	for i := range kyma.Spec.Modules {
-		module := &kyma.Spec.Modules[i]
-		if _, exists := moduleStatusMap[module.Name]; exists {
-			moduleStatusMap[module.Name].exists = true
+		if _, exists := moduleStatusMap[i]; exists {
+			moduleStatusMap[i].exists = true
 		}
 	}
 
@@ -294,11 +309,11 @@ func (kyma *Kyma) GetNoLongerExistingModuleStatus() []*ModuleStatus {
 	return notExistsModules
 }
 
-func (kyma *Kyma) GetModuleStatusMap() map[string]*ModuleStatus {
-	moduleStatusMap := make(map[string]*ModuleStatus)
+func (kyma *Kyma) GetModuleStatusMap() map[int]*ModuleStatus {
+	moduleStatusMap := make(map[int]*ModuleStatus)
 	for i := range kyma.Status.ModuleStatus {
 		moduleStatus := &kyma.Status.ModuleStatus[i]
-		moduleStatusMap[moduleStatus.For] = moduleStatus
+		moduleStatusMap[i] = moduleStatus
 	}
 	return moduleStatusMap
 }
@@ -318,27 +333,13 @@ func init() {
 }
 
 func (kyma *Kyma) UpdateCondition(reason KymaConditionReason, status metav1.ConditionStatus) {
-	newCondition := NewConditionBuilder().
-		SetReason(reason).
-		SetStatus(status).
-		SetObservedGeneration(kyma.GetGeneration()).
-		Build()
-
-	isNewReason := true
-
-	for i := range kyma.Status.Conditions {
-		condition := &kyma.Status.Conditions[i]
-		if condition.Reason == string(reason) {
-			isNewReason = false
-			if condition.Status != newCondition.Status || condition.Type != newCondition.Type {
-				*condition = newCondition
-			}
-		}
-	}
-
-	if isNewReason {
-		kyma.Status.Conditions = append(kyma.Status.Conditions, newCondition)
-	}
+	meta.SetStatusCondition(&kyma.Status.Conditions, metav1.Condition{
+		Type:               string(ConditionTypeReady),
+		Status:             status,
+		Reason:             string(reason),
+		Message:            GenerateMessage(reason, status),
+		ObservedGeneration: kyma.GetGeneration(),
+	})
 }
 
 func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType,
@@ -357,19 +358,4 @@ func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType,
 		}
 	}
 	return false
-}
-
-// SyncConditionsWithModuleStates iterates all moduleStatus, based on all module state,
-// it updates the condition.status with Reason ConditionReasonModulesAreReady accordingly.
-func (kyma *Kyma) SyncConditionsWithModuleStates() {
-	conditionReason := ConditionReasonModulesAreReady
-	conditionStatus := metav1.ConditionTrue
-	for i := range kyma.Status.ModuleStatus {
-		moduleStatus := &kyma.Status.ModuleStatus[i]
-		if moduleStatus.State != StateReady {
-			conditionStatus = metav1.ConditionFalse
-			break
-		}
-	}
-	kyma.UpdateCondition(conditionReason, conditionStatus)
 }

@@ -70,14 +70,12 @@ spec:
                       type: string
                     name:
                       description: "Name is a unique identifier of the module. It
-                        is used together with KymaName, ChannelLabel, ProfileLabel
-                        label to resolve a ModuleTemplate. \n WARNING: Module-Names
-                        are restricted in length based on naming generation strategy!
-                        By default, this means that the length of Name and .metadata.name
-                        of Kyma combined must be <= 252 Characters This is because
-                        the naming strategy aggregates Kyma and Module into a format
-                        of \"kyma-name-module-name\" For more info on the 253 total
-                        character limit, see https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names"
+                        is used to resolve a ModuleTemplate for creating a set of
+                        resources on the cluster. \n Name can be one of 3 kinds: -
+                        The ModuleName label value of the module-template, e.g. operator.kyma-project.io/module-name=my-module
+                        - The Name or Namespace/Name of a ModuleTemplate, e.g. my-moduletemplate
+                        or kyma-system/my-moduletemplate - The FQDN, e.g. kyma-project.io/module/my-module
+                        as located in .spec.descriptor.component.name"
                       type: string
                   required:
                   - name
@@ -195,6 +193,16 @@ spec:
                   - type
                   type: object
                 type: array
+              lastOperation:
+                properties:
+                  lastUpdateTime:
+                    format: date-time
+                    type: string
+                  operation:
+                    type: string
+                required:
+                - operation
+                type: object
               moduleStatus:
                 description: Contains essential information about the current deployed
                   module
@@ -202,12 +210,14 @@ spec:
                   properties:
                     for:
                       description: For defines the name of the Module in the Spec
-                        that the status is for. It can either be the FQDN, or a different
-                        kind of Reference format supported by Module.Name
+                        that the status is used for. It can be any kind of Reference
+                        format supported by Module.Name.
                       type: string
                     fqdn:
                       description: FQDN is the fully qualified domain name of the
-                        module.
+                        module. In the ModuleTemplate it is located in .spec.descriptor.component.name
+                        of the ModuleTemplate FQDN is used to calculate Namespace
+                        and Name of the Manifest for tracking.
                       type: string
                     generation:
                       description: Generation tracks the active Generation of the
@@ -216,6 +226,24 @@ spec:
                         a reconciliation based on the original content of ModuleTemplate
                       format: int64
                       type: integer
+                    gvk:
+                      description: GroupVersionKind is used to track the Kind that
+                        was created from the ModuleTemplate. This is dynamic to not
+                        bind ourselves to any kind of Kind in the code and allows
+                        us to work generic on deletion / cleanup of related resources
+                        to a Kyma Installation.
+                      properties:
+                        group:
+                          type: string
+                        kind:
+                          type: string
+                        version:
+                          type: string
+                      required:
+                      - group
+                      - kind
+                      - version
+                      type: object
                     name:
                       description: Name is the current manifest name
                       type: string
@@ -230,7 +258,7 @@ spec:
                       - Ready
                       - Error
                       type: string
-                    templateInfo:
+                    template:
                       description: It contains information about the last parsed ModuleTemplate
                         in Context of the Installation. This will update when Channel
                         or the ModuleTemplate is changed.
@@ -248,6 +276,24 @@ spec:
                             trigger a new reconciliation with a newly parsed ModuleTemplate
                           format: int64
                           type: integer
+                        gvk:
+                          description: GroupVersionKind is used to track the Kind
+                            of the ModuleTemplate. This is dynamic to not bind ourselves
+                            to any kind of Kind in the code and allows us to work
+                            generic on deletion / cleanup of related resources to
+                            a Kyma Installation.
+                          properties:
+                            group:
+                              type: string
+                            kind:
+                              type: string
+                            version:
+                              type: string
+                          required:
+                          - group
+                          - kind
+                          - version
+                          type: object
                         name:
                           description: Name is the current name of the template resource
                             referenced
@@ -259,6 +305,7 @@ spec:
                           description: Channel tracks the active Version of the Module.
                           type: string
                       required:
+                      - gvk
                       - name
                       - namespace
                       - version
@@ -266,6 +313,7 @@ spec:
                   required:
                   - for
                   - fqdn
+                  - gvk
                   - name
                   - namespace
                   - state

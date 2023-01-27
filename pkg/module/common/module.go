@@ -5,9 +5,9 @@ import (
 	"hash/fnv"
 
 	"github.com/go-logr/logr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 )
 
 type (
@@ -18,14 +18,14 @@ type (
 		Version          string
 		Template         *v1alpha1.ModuleTemplate
 		TemplateOutdated bool
-		*manifestV1alpha1.Manifest
+		client.Object
 	}
 )
 
 func (m *Module) Logger(base logr.Logger) logr.Logger {
 	return base.WithValues(
 		"fqdn", m.FQDN,
-		"module", m.Name,
+		"module", m.GetName(),
 		"channel", m.Template.Spec.Channel,
 		"templateGeneration", m.Template.GetGeneration(),
 	)
@@ -61,15 +61,6 @@ func (m *Module) StateMismatchedWithModuleStatus(moduleStatus *v1alpha1.ModuleSt
 		(moduleStatus.TemplateInfo.Generation != m.Template.GetGeneration() ||
 			moduleStatus.TemplateInfo.Channel != m.Template.Spec.Channel)
 	return templateStatusMismatch || moduleStatus.Generation != m.GetGeneration()
-}
-
-// UpdateStatusAndReferencesFromUnstructured updates the module with necessary information (status, ownerReference) from
-// current deployed resource (from Unstructured).
-func (m *Module) UpdateStatusAndReferencesFromUnstructured(unstructured *manifestV1alpha1.Manifest) {
-	m.Status = unstructured.Status
-	m.SetResourceVersion(unstructured.GetResourceVersion())
-	m.SetOwnerReferences(unstructured.GetOwnerReferences())
-	m.SetGeneration(unstructured.GetGeneration())
 }
 
 func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {

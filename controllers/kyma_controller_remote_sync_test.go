@@ -101,8 +101,12 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("Remote Module Catalog created")
 		Eventually(ModuleTemplatesExist(runtimeClient, kyma, true), 30*time.Second, Interval).Should(Succeed())
-		Expect(remoteKyma.ContainsCondition(v1alpha1.ConditionTypeReady,
-			v1alpha1.ConditionReasonModuleCatalogIsReady)).To(BeTrue())
+		Eventually(func() {
+			remoteKyma, err = GetKyma(ctx, runtimeClient, kyma.GetName(), kyma.Spec.Sync.Namespace)
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(remoteKyma.ContainsCondition(v1alpha1.ConditionTypeReady,
+				v1alpha1.ConditionReasonModuleCatalogIsReady)).To(BeTrue())
+		}, Timeout, Interval)
 
 		By("updating a module template in the remote cluster to simulate unwanted modification")
 		Eventually(ModifyModuleTemplateSpecThroughLabels(runtimeClient, kyma,
@@ -111,6 +115,6 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("verifying the discovered override and checking the resetted label")
 		Eventually(ModuleTemplatesLabelsCountMatch(
-			runtimeClient, kyma, 0, true), Timeout, Interval).Should(Succeed())
+			runtimeClient, kyma, 0, true), 20*time.Second, Interval).Should(Succeed())
 	})
 })

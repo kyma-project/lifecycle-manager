@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/Masterminds/semver/v3 v3.1.1
-	github.com/gardener/component-spec/bindings-go v0.0.70
+	github.com/gardener/component-spec/bindings-go v0.0.78
 	github.com/go-logr/logr v1.2.3
 	github.com/go-logr/zapr v1.2.3
 	github.com/kyma-project/module-manager v0.0.0-20230124130422-b20afae7f169

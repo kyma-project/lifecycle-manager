@@ -50,8 +50,6 @@ func templatesToModules(
 	// (since we do not know which module we are dealing with)
 	modules := make(common.Modules, 0)
 
-	var manifest *manifestV1alpha1.Manifest
-
 	for _, module := range kyma.Spec.Modules {
 		template := templates[module.Name]
 		if template == nil {
@@ -79,20 +77,21 @@ func templatesToModules(
 				template.ModuleTemplate.Spec.Data.SetNamespace(kyma.GetNamespace())
 			}
 		}
-		if manifest, err = NewManifestFromTemplate(template.ModuleTemplate, settings.Verification); err != nil {
+		var obj client.Object
+		if obj, err = NewManifestFromTemplate(template.ModuleTemplate, settings.Verification); err != nil {
 			return nil, err
 		}
 		// we name the manifest after the module name
-		manifest.SetName(name)
+		obj.SetName(name)
 		// to have correct owner references, the manifest must always have the same namespace as kyma
-		manifest.SetNamespace(kyma.GetNamespace())
+		obj.SetNamespace(kyma.GetNamespace())
 		modules = append(modules, &common.Module{
 			For:              module.Name,
 			FQDN:             fqdn,
 			Version:          version,
 			Template:         template.ModuleTemplate,
 			TemplateOutdated: template.Outdated,
-			Manifest:         manifest,
+			Object:           obj,
 		})
 	}
 

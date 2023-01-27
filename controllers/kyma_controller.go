@@ -119,7 +119,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		// if the status is not yet set to deleting, also update the status of the control-plane
 		// in the next sync cycle
 		if err := status.Helper(r).UpdateStatusForExistingModules(
-			ctx, kyma, v1alpha1.StateDeleting,
+			ctx, kyma, v1alpha1.StateDeleting, "waiting for modules to be deleted",
 		); err != nil {
 			return r.CtrlErr(ctx, kyma, fmt.Errorf(
 				"could not update kyma status after triggering deletion: %w", err))
@@ -175,12 +175,7 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1alpha1.K
 		return nil
 	}
 
-	if !kyma.ContainsCondition(
-		v1alpha1.ConditionTypeReady,
-		v1alpha1.ConditionReasonModuleCatalogIsReady,
-	) {
-		kyma.UpdateCondition(v1alpha1.ConditionReasonModuleCatalogIsReady, metav1.ConditionFalse)
-	}
+	kyma.UpdateCondition(v1alpha1.ConditionReasonModuleCatalogIsReady, metav1.ConditionFalse)
 
 	moduleTemplateList := &v1alpha1.ModuleTemplateList{}
 	if err := r.List(ctx, moduleTemplateList, &client.ListOptions{}); err != nil {
@@ -191,17 +186,12 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1alpha1.K
 		return fmt.Errorf("could not synchronize remote module catalog: %w", err)
 	}
 
-	if !kyma.ContainsCondition(
-		v1alpha1.ConditionTypeReady,
-		v1alpha1.ConditionReasonModuleCatalogIsReady, metav1.ConditionTrue) {
-		kyma.UpdateCondition(v1alpha1.ConditionReasonModuleCatalogIsReady, metav1.ConditionTrue)
-	}
+	kyma.UpdateCondition(v1alpha1.ConditionReasonModuleCatalogIsReady, metav1.ConditionTrue)
 
 	return nil
 }
 
 func (r *KymaReconciler) stateHandling(ctx context.Context, kyma *v1alpha1.Kyma) (ctrl.Result, error) {
-	log.FromContext(ctx).Info("syncing state", "state", string(kyma.Status.State))
 	switch kyma.Status.State {
 	case "":
 		return ctrl.Result{}, r.HandleInitialState(ctx, kyma)
@@ -223,15 +213,27 @@ func (r *KymaReconciler) stateHandling(ctx context.Context, kyma *v1alpha1.Kyma)
 }
 
 func (r *KymaReconciler) HandleInitialState(ctx context.Context, kyma *v1alpha1.Kyma) error {
-	return r.UpdateStatusWithEvent(ctx, kyma, v1alpha1.StateProcessing, "initial state")
+	return r.UpdateStatusWithEvent(ctx, kyma, v1alpha1.StateProcessing, "started processing")
 }
 
 func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alpha1.Kyma) error {
 	logger := log.FromContext(ctx)
 
+	conditionReason := v1alpha1.ConditionReasonModulesAreReady
+	conditionStatus := metav1.ConditionTrue
 	if err := r.syncModules(ctx, kyma); err != nil {
+		conditionStatus = metav1.ConditionFalse
+		kyma.UpdateCondition(conditionReason, conditionStatus)
 		return r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError, err)
 	}
+	for i := range kyma.Status.ModuleStatus {
+		moduleStatus := &kyma.Status.ModuleStatus[i]
+		if moduleStatus.State != v1alpha1.StateReady {
+			conditionStatus = metav1.ConditionFalse
+			break
+		}
+	}
+	kyma.UpdateCondition(conditionReason, conditionStatus)
 
 	if kyma.Spec.Sync.Enabled && r.SKRWebhookChartManager != nil {
 		if _, err := r.SKRWebhookChartManager.Install(ctx, kyma); err != nil {
@@ -240,19 +242,16 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 		}
 	}
 
-	kyma.SyncConditionsWithModuleStates()
-
 	// set ready condition if applicable
 	if kyma.AreAllConditionsReadyForKyma() {
-		const message = "Reconciliation finished!"
+		const message = "kyma is ready"
 		if kyma.Status.State != v1alpha1.StateReady {
 			logger.Info(message)
-			r.Event(kyma, "Normal", "ReconciliationSuccess", message)
 		}
-		return r.UpdateStatusWithEvent(ctx, kyma, v1alpha1.StateReady, message)
+		return r.UpdateStatus(ctx, kyma, v1alpha1.StateReady, message)
 	}
 
-	if err := r.UpdateStatusWithEvent(ctx, kyma, v1alpha1.StateProcessing, "updating component conditions"); err != nil {
+	if err := r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing, "updating component conditions"); err != nil {
 		return fmt.Errorf("error while updating status for condition change: %w", err)
 	}
 
@@ -337,11 +336,20 @@ func (r *KymaReconciler) TriggerKymaDeletion(ctx context.Context, kyma *v1alpha1
 	return nil
 }
 
+func (r *KymaReconciler) UpdateStatus(
+	ctx context.Context, kyma *v1alpha1.Kyma, state v1alpha1.State, message string,
+) error {
+	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, message); err != nil {
+		return fmt.Errorf("error while updating status to %s because of %s: %w", state, message, err)
+	}
+	return nil
+}
+
 func (r *KymaReconciler) UpdateStatusWithEvent(
 	ctx context.Context, kyma *v1alpha1.Kyma, state v1alpha1.State, message string,
 ) error {
-	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state); err != nil {
-		return fmt.Errorf("error while updating status to %s because of %s: %w", state, message, err)
+	if err := r.UpdateStatus(ctx, kyma, state, message); err != nil {
+		return err
 	}
 	r.Event(kyma, "Normal", "StatusUpdate", message)
 	return nil
@@ -350,7 +358,7 @@ func (r *KymaReconciler) UpdateStatusWithEvent(
 func (r *KymaReconciler) UpdateStatusWithEventFromErr(
 	ctx context.Context, kyma *v1alpha1.Kyma, state v1alpha1.State, err error,
 ) error {
-	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state); err != nil {
+	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, err.Error()); err != nil {
 		return fmt.Errorf("error while updating status to %s: %w", state, err)
 	}
 	r.Event(kyma, "Warning", string(ModuleReconciliationError), err.Error())
