@@ -86,7 +86,7 @@ func templatesToModules(
 		// to have correct owner references, the manifest must always have the same namespace as kyma
 		obj.SetNamespace(kyma.GetNamespace())
 		modules = append(modules, &common.Module{
-			For:              module.Name,
+			ModuleName:       module.Name,
 			FQDN:             fqdn,
 			Version:          version,
 			Template:         template.ModuleTemplate,

@@ -24,7 +24,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
 	"k8s.io/client-go/rest"
 
-	manifestv1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
@@ -404,9 +403,10 @@ func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma
 	return nil
 }
 
-func (r *KymaReconciler) deleteModule(ctx context.Context, moduleStatus *v1alpha1.ModuleStatus) error {
-	manifest := manifestv1alpha1.Manifest{}
-	manifest.SetNamespace(moduleStatus.Namespace)
-	manifest.SetName(moduleStatus.Name)
+func (r *KymaReconciler) deleteModule(ctx context.Context, moduleStatus v1alpha1.ModuleStatus) error {
+	manifest := metav1.PartialObjectMetadata{}
+	manifest.SetGroupVersionKind(moduleStatus.Manifest.GroupVersionKind())
+	manifest.SetNamespace(moduleStatus.Manifest.GetNamespace())
+	manifest.SetName(moduleStatus.Manifest.GetName())
 	return r.Delete(ctx, &manifest, &client.DeleteOptions{})
 }

@@ -72,22 +72,22 @@ func CheckForOutdatedTemplate(
 	checkLog := logger.WithValues("module", moduleStatus.FQDN,
 		"template", moduleTemplate.Name,
 		"newTemplateGeneration", moduleTemplate.GetGeneration(),
-		"previousTemplateGeneration", moduleStatus.TemplateInfo.Generation,
+		"previousTemplateGeneration", moduleStatus.Template.Generation,
 		"newTemplateChannel", moduleTemplate.Spec.Channel,
-		"previousTemplateChannel", moduleStatus.TemplateInfo.Channel,
+		"previousTemplateChannel", moduleStatus.Channel,
 	)
 
 	// generation skews always have to be handled. We are not in need of checking downgrades here,
 	// since these are catched by our validating webhook. We do not support downgrades of Versions
 	// in ModuleTemplates, meaning the only way the generation can be changed is by changing the target
 	// channel (valid change) or a version increase
-	if moduleTemplate.GetGeneration() != moduleStatus.TemplateInfo.Generation {
+	if moduleTemplate.GetGeneration() != moduleStatus.Template.Generation {
 		checkLog.Info("outdated ModuleTemplate: generation skew")
 		moduleTemplate.Outdated = true
 		return
 	}
 
-	if moduleTemplate.Spec.Channel != moduleStatus.TemplateInfo.Channel {
+	if moduleTemplate.Spec.Channel != moduleStatus.Channel {
 		checkLog.Info("outdated ModuleTemplate: channel skew")
 
 		descriptor, err := moduleTemplate.Spec.GetUnsafeDescriptor()
@@ -102,7 +102,7 @@ func CheckForOutdatedTemplate(
 			return
 		}
 
-		versionInStatus, err := semver.NewVersion(moduleStatus.TemplateInfo.Version)
+		versionInStatus, err := semver.NewVersion(moduleStatus.Version)
 		if err != nil {
 			checkLog.Error(err, "could not handle channel skew as ModuleStatus contains invalid version")
 			return

@@ -111,44 +111,41 @@ func (r *RunnerImpl) setupModule(module *common.Module, kyma *v1alpha1.Kyma) err
 }
 
 func (r *RunnerImpl) SyncModuleStatus(ctx context.Context, kyma *v1alpha1.Kyma, modules common.Modules) bool {
-	statusMap := kyma.GetModuleStatusMap()
-	statusUpdateRequiredFromUpdate := r.updateModuleStatusFromExistingModules(modules, statusMap, kyma)
-	statusUpdateRequiredFromDelete := r.deleteNoLongerExistingModuleStatus(ctx, statusMap, kyma)
+	statusUpdateRequiredFromUpdate := r.updateModuleStatusFromExistingModules(modules, kyma)
+	statusUpdateRequiredFromDelete := r.deleteNoLongerExistingModuleStatus(ctx, kyma)
 	return statusUpdateRequiredFromUpdate || statusUpdateRequiredFromDelete
 }
 
-func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Modules,
-	moduleStatusMap map[int]*v1alpha1.ModuleStatus, kyma *v1alpha1.Kyma,
+func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Modules, kyma *v1alpha1.Kyma,
 ) bool {
 	updateRequired := false
 	for idx := range modules {
 		module := modules[idx]
+		manifestApiVersion, manifestKind := module.Object.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
+		templateApiVersion, templateKind := module.Template.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 		latestModuleStatus := v1alpha1.ModuleStatus{
-			Name:             module.Object.GetName(),
-			Namespace:        module.Object.GetNamespace(),
-			GroupVersionKind: metav1.GroupVersionKind(module.Object.GetObjectKind().GroupVersionKind()),
-			For:              module.For,
-			FQDN:             module.FQDN,
-			Generation:       module.Object.GetGeneration(),
-			TemplateInfo: v1alpha1.TemplateInfo{
-				Name:             module.Template.GetName(),
-				Namespace:        module.Template.GetNamespace(),
-				GroupVersionKind: metav1.GroupVersionKind(module.Template.GetObjectKind().GroupVersionKind()),
-				Channel:          module.Template.Spec.Channel,
-				Generation:       module.Template.Generation,
-				Version:          module.Version,
+			Name:    module.ModuleName,
+			FQDN:    module.FQDN,
+			State:   stateFromManifest(module.Object),
+			Channel: module.Template.Spec.Channel,
+			Version: module.Version,
+			Manifest: v1alpha1.TrackingObject{
+				PartialMeta: v1alpha1.PartialMetaFromObject(module.Object),
+				TypeMeta:    metav1.TypeMeta{Kind: manifestKind, APIVersion: manifestApiVersion},
 			},
-			State: stateFromManifest(module.Object),
+			Template: v1alpha1.TrackingObject{
+				PartialMeta: v1alpha1.PartialMetaFromObject(module.Template),
+				TypeMeta:    metav1.TypeMeta{Kind: templateKind, APIVersion: templateApiVersion},
+			},
 		}
-		moduleStatus, exists := moduleStatusMap[idx]
-		if exists {
-			if moduleStatus.State != latestModuleStatus.State {
+		if len(kyma.Status.ModuleStatus) < idx+1 {
+			kyma.Status.ModuleStatus = append(kyma.Status.ModuleStatus, latestModuleStatus)
+			updateRequired = true
+		} else {
+			if kyma.Status.ModuleStatus[idx].State != latestModuleStatus.State {
 				updateRequired = true
 			}
-			*moduleStatus = latestModuleStatus
-		} else {
-			updateRequired = true
-			kyma.Status.ModuleStatus = append(kyma.Status.ModuleStatus, latestModuleStatus)
+			kyma.Status.ModuleStatus[idx] = latestModuleStatus
 		}
 	}
 	return updateRequired
@@ -163,8 +160,7 @@ func stateFromManifest(obj client.Object) v1alpha1.State {
 	}
 }
 
-func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context,
-	moduleStatusMap map[int]*v1alpha1.ModuleStatus, kyma *v1alpha1.Kyma,
+func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1alpha1.Kyma,
 ) bool {
 	updateRequired := false
 	moduleStatusArr := kyma.GetNoLongerExistingModuleStatus()
@@ -174,23 +170,14 @@ func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context,
 	for idx := range moduleStatusArr {
 		moduleStatus := moduleStatusArr[idx]
 		module := unstructured.Unstructured{}
-		module.SetGroupVersionKind(schema.GroupVersionKind(moduleStatus.GroupVersionKind))
-		module.SetName(moduleStatus.Name)
-		module.SetNamespace(moduleStatus.Namespace)
+		module.SetGroupVersionKind(moduleStatus.Manifest.GroupVersionKind())
+		module.SetName(moduleStatus.Manifest.GetName())
+		module.SetNamespace(moduleStatus.Manifest.GetNamespace())
 		err := r.getModule(ctx, &module)
 		if errors.IsNotFound(err) {
 			updateRequired = true
-			delete(moduleStatusMap, idx)
+			kyma.Status.ModuleStatus = append(kyma.Status.ModuleStatus[:idx], kyma.Status.ModuleStatus[idx+1:]...)
 		}
 	}
-	kyma.Status.ModuleStatus = convertToNewmoduleStatus(moduleStatusMap)
 	return updateRequired
-}
-
-func convertToNewmoduleStatus(moduleStatusMap map[int]*v1alpha1.ModuleStatus) []v1alpha1.ModuleStatus {
-	newModuleStatus := make([]v1alpha1.ModuleStatus, 0)
-	for _, moduleStatus := range moduleStatusMap {
-		newModuleStatus = append(newModuleStatus, *moduleStatus)
-	}
-	return newModuleStatus
 }

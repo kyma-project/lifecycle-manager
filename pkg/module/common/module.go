@@ -13,7 +13,7 @@ import (
 type (
 	Modules []*Module
 	Module  struct {
-		For              string
+		ModuleName       string
 		FQDN             string
 		Version          string
 		Template         *v1alpha1.ModuleTemplate
@@ -58,9 +58,9 @@ func (m *Module) ApplyLabelsAndAnnotations(
 
 func (m *Module) StateMismatchedWithModuleStatus(moduleStatus *v1alpha1.ModuleStatus) bool {
 	templateStatusMismatch := m.TemplateOutdated &&
-		(moduleStatus.TemplateInfo.Generation != m.Template.GetGeneration() ||
-			moduleStatus.TemplateInfo.Channel != m.Template.Spec.Channel)
-	return templateStatusMismatch || moduleStatus.Generation != m.GetGeneration()
+		(moduleStatus.Template.Generation != m.Template.GetGeneration() ||
+			moduleStatus.Channel != m.Template.Spec.Channel)
+	return templateStatusMismatch || moduleStatus.Manifest.GetGeneration() != m.GetGeneration()
 }
 
 func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {
