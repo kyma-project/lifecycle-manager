@@ -179,7 +179,6 @@ const (
 )
 
 type ModuleStatus struct {
-
 	// Name defines the name of the Module in the Spec that the status is used for.
 	// It can be any kind of Reference format supported by Module.Name.
 	Name string `json:"name"`
@@ -210,7 +209,7 @@ type ModuleStatus struct {
 
 // TrackingObject contains metav1.TypeMeta and PartialMeta to allow a generation based object tracking.
 // It purposefully does not use ObjectMeta as the generation of controller-runtime for crds would not validate
-// the generation fields even when embedding ObjectMeta
+// the generation fields even when embedding ObjectMeta.
 type TrackingObject struct {
 	metav1.TypeMeta `json:",inline"`
 	PartialMeta     `json:"metadata,omitempty"`
@@ -254,9 +253,11 @@ func PartialMetaFromObject(object metav1.Object) PartialMeta {
 func (m PartialMeta) GetName() string {
 	return m.Name
 }
+
 func (m PartialMeta) GetNamespace() string {
 	return m.Namespace
 }
+
 func (m PartialMeta) GetGeneration() int64 {
 	return m.Generation
 }

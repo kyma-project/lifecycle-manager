@@ -121,8 +121,8 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Module
 	updateRequired := false
 	for idx := range modules {
 		module := modules[idx]
-		manifestApiVersion, manifestKind := module.Object.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
-		templateApiVersion, templateKind := module.Template.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
+		manifestAPIVersion, manifestKind := module.Object.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
+		templateAPIVersion, templateKind := module.Template.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 		latestModuleStatus := v1alpha1.ModuleStatus{
 			Name:    module.ModuleName,
 			FQDN:    module.FQDN,
@@ -131,11 +131,11 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Module
 			Version: module.Version,
 			Manifest: v1alpha1.TrackingObject{
 				PartialMeta: v1alpha1.PartialMetaFromObject(module.Object),
-				TypeMeta:    metav1.TypeMeta{Kind: manifestKind, APIVersion: manifestApiVersion},
+				TypeMeta:    metav1.TypeMeta{Kind: manifestKind, APIVersion: manifestAPIVersion},
 			},
 			Template: v1alpha1.TrackingObject{
 				PartialMeta: v1alpha1.PartialMetaFromObject(module.Template),
-				TypeMeta:    metav1.TypeMeta{Kind: templateKind, APIVersion: templateApiVersion},
+				TypeMeta:    metav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
 			},
 		}
 		if len(kyma.Status.ModuleStatus) < idx+1 {

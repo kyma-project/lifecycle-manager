@@ -234,7 +234,6 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	}
 	kyma.UpdateCondition(conditionReason, conditionStatus)
 
-	//TODO move out watcher sync and process condition concurrently
 	if kyma.Spec.Sync.Enabled && r.SKRWebhookChartManager != nil {
 		if _, err := r.SKRWebhookChartManager.Install(ctx, kyma); err != nil {
 			kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
