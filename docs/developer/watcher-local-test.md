@@ -143,7 +143,7 @@ By checking the `Kyma CR` events, verify that the `SKRWebhookIsReady` ready cond
 2. Change the channel of the `template-operator` module to trigger a watcher event to KCP
     ```yaml
       modules:
-      - name: kcp-module
+      - name: template-operator
         channel: fast
     ```
    
