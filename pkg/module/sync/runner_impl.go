@@ -137,14 +137,14 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Module
 				TypeMeta:    metav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
 			},
 		}
-		if len(kyma.Status.ModuleStatus) < idx+1 {
-			kyma.Status.ModuleStatus = append(kyma.Status.ModuleStatus, latestModuleStatus)
+		if len(kyma.Status.Modules) < idx+1 {
+			kyma.Status.Modules = append(kyma.Status.Modules, latestModuleStatus)
 			updateRequired = true
 		} else {
-			if kyma.Status.ModuleStatus[idx].State != latestModuleStatus.State {
+			if kyma.Status.Modules[idx].State != latestModuleStatus.State {
 				updateRequired = true
 			}
-			kyma.Status.ModuleStatus[idx] = latestModuleStatus
+			kyma.Status.Modules[idx] = latestModuleStatus
 		}
 	}
 	return updateRequired
@@ -175,7 +175,7 @@ func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context, kym
 		err := r.getModule(ctx, &module)
 		if errors.IsNotFound(err) {
 			updateRequired = true
-			kyma.Status.ModuleStatus = append(kyma.Status.ModuleStatus[:idx], kyma.Status.ModuleStatus[idx+1:]...)
+			kyma.Status.Modules = append(kyma.Status.Modules[:idx], kyma.Status.Modules[idx+1:]...)
 		}
 	}
 	return updateRequired

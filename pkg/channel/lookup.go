@@ -52,8 +52,8 @@ func CheckForOutdatedTemplates(logger logr.Logger, k *operatorv1alpha1.Kyma, tem
 	// in the case that the kyma spec did not change, we only have to verify
 	// that all desired templates are still referenced in the latest spec generation
 	for moduleName, moduleTemplate := range templates {
-		for i := range k.Status.ModuleStatus {
-			moduleStatus := &k.Status.ModuleStatus[i]
+		for i := range k.Status.Modules {
+			moduleStatus := &k.Status.Modules[i]
 			if moduleStatus.FQDN == moduleName && moduleTemplate != nil {
 				CheckForOutdatedTemplate(logger, moduleTemplate, moduleStatus)
 			}
@@ -62,7 +62,7 @@ func CheckForOutdatedTemplates(logger logr.Logger, k *operatorv1alpha1.Kyma, tem
 }
 
 // CheckForOutdatedTemplate verifies if the given ModuleTemplate is outdated and sets their Outdated Flag based on
-// provided ModuleStatus, provided by the Cluster as a status of the last known module state.
+// provided Modules, provided by the Cluster as a status of the last known module state.
 // It does this by looking into selected key properties:
 // 1. If the generation of ModuleTemplate changes, it means the spec is outdated
 // 2. If the channel of ModuleTemplate changes, it means the kyma has an old reference to a previous channel.
@@ -104,7 +104,7 @@ func CheckForOutdatedTemplate(
 
 		versionInStatus, err := semver.NewVersion(moduleStatus.Version)
 		if err != nil {
-			checkLog.Error(err, "could not handle channel skew as ModuleStatus contains invalid version")
+			checkLog.Error(err, "could not handle channel skew as Modules contains invalid version")
 			return
 		}
 

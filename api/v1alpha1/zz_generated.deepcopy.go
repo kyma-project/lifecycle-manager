@@ -148,8 +148,8 @@ func (in *KymaStatus) DeepCopyInto(out *KymaStatus) {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
-	if in.ModuleStatus != nil {
-		in, out := &in.ModuleStatus, &out.ModuleStatus
+	if in.Modules != nil {
+		in, out := &in.Modules, &out.Modules
 		*out = make([]ModuleStatus, len(*in))
 		copy(*out, *in)
 	}

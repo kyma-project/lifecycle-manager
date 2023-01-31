@@ -135,7 +135,7 @@ func UnmarshalManifestSpec(module *unstructured.Unstructured) *manifestV1alpha1.
 }
 
 func getModule(kyma *v1alpha1.Kyma, module v1alpha1.Module) (*manifestV1alpha1.Manifest, error) {
-	for _, moduleStatus := range kyma.Status.ModuleStatus {
+	for _, moduleStatus := range kyma.Status.Modules {
 		if moduleStatus.Name == module.Name {
 			component := &manifestV1alpha1.Manifest{}
 			err := controlPlaneClient.Get(ctx, client.ObjectKey{
@@ -289,10 +289,10 @@ func TemplateInfosMatchChannel(kymaName, channel string) error {
 	if err != nil {
 		return err
 	}
-	for i := range kyma.Status.ModuleStatus {
-		if kyma.Status.ModuleStatus[i].Channel != channel {
+	for i := range kyma.Status.Modules {
+		if kyma.Status.Modules[i].Channel != channel {
 			return fmt.Errorf("%w: %s should be %s",
-				ErrTemplateInfoChannelMismatch, kyma.Status.ModuleStatus[i].Channel, channel)
+				ErrTemplateInfoChannelMismatch, kyma.Status.Modules[i].Channel, channel)
 		}
 	}
 	return nil

@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"hash/fnv"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -77,11 +78,17 @@ func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {
 
 const maxModuleNameLength = 253
 
-func CreateModuleName(fqdn, kymaName string) string {
+// CreateModuleName takes a FQDN and a prefix and generates a human-readable unique interpretation of
+// a name combination.
+// e.g. kyma-project.io/module/some-module and default-id => "default-id-some-module-34180237"
+// e.g. domain.com/some-module and default-id => "default-id-some-module-1238916".
+func CreateModuleName(fqdn, prefix string) string {
+	splitFQDN := strings.Split(fqdn, "/")
+	lastPartOfFQDN := splitFQDN[len(splitFQDN)-1]
 	hash := fnv.New32()
 	_, _ = hash.Write([]byte(fqdn))
 	hashedFQDN := hash.Sum32()
-	name := fmt.Sprintf("%s-%v", kymaName, hashedFQDN)
+	name := fmt.Sprintf("%s-%s-%v", prefix, lastPartOfFQDN, hashedFQDN)
 	if len(name) >= maxModuleNameLength {
 		name = name[:maxModuleNameLength-1]
 	}

@@ -140,7 +140,7 @@ type KymaStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// Contains essential information about the current deployed module
-	ModuleStatus []ModuleStatus `json:"modules,omitempty"`
+	Modules []ModuleStatus `json:"modules,omitempty"`
 
 	// Active Channel
 	// +optional
@@ -311,8 +311,8 @@ func (kyma *Kyma) SetLastSync() *Kyma {
 }
 
 func (kyma *Kyma) GetNoLongerExistingModuleStatus() []ModuleStatus {
-	if len(kyma.Status.ModuleStatus) > len(kyma.Spec.Modules) {
-		return kyma.Status.ModuleStatus[len(kyma.Spec.Modules):]
+	if len(kyma.Status.Modules) > len(kyma.Spec.Modules) {
+		return kyma.Status.Modules[len(kyma.Spec.Modules):]
 	}
 	return nil
 }

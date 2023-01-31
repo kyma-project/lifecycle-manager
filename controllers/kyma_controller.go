@@ -226,8 +226,8 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 		kyma.UpdateCondition(conditionReason, conditionStatus)
 		return r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError, err)
 	}
-	for i := range kyma.Status.ModuleStatus {
-		moduleStatus := &kyma.Status.ModuleStatus[i]
+	for i := range kyma.Status.Modules {
+		moduleStatus := &kyma.Status.Modules[i]
 		if moduleStatus.State != v1alpha1.StateReady {
 			conditionStatus = metav1.ConditionFalse
 			break
