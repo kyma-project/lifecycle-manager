@@ -75,7 +75,7 @@ func runResourceOperationWithGroupedErrors(ctx context.Context, clt client.Clien
 	return errGrp.Wait()
 }
 
-func generateHelmChartArgs(ctx context.Context, kcpClient client.Client, kymaObjKey client.ObjectKey,
+func generateHelmChartArgs(ctx context.Context, kcpClient client.Client,
 	managerConfig *SkrChartManagerConfig, kcpAddr string, certSecret *CertificateSecret,
 ) (map[string]interface{}, error) {
 	customConfigValue := ""

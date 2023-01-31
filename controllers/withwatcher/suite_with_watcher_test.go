@@ -184,7 +184,7 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager, controller.Options{}, controllers.SetupUpSetting{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
-	istioCfg := istio.NewConfig(virtualServiceName, &istio.CACertOptions{}, false) //TODO PKI fix
+	istioCfg := istio.NewConfig(virtualServiceName, &istio.CACertOptions{}, false)
 	err = (&controllers.WatcherReconciler{
 		Client:           k8sManager.GetClient(),
 		RestConfig:       k8sManager.GetConfig(),

@@ -81,7 +81,7 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 	}
 	// TODO
 
-	chartArgValues, err := generateHelmChartArgs(ctx, syncContext.ControlPlaneClient, kymaObjKey,
+	chartArgValues, err := generateHelmChartArgs(ctx, syncContext.ControlPlaneClient,
 		m.config, m.kcpAddr, certSecret)
 	if err != nil {
 		return true, err

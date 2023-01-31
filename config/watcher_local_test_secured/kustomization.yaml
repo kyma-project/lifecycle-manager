@@ -27,7 +27,7 @@ patches:
         value: --enable-watcher-local-testing # Enables to check for k3d local address and sets this as kcp address
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --listener-http-local-mapping=9433
+        value: --listener-http-local-mapping=9443
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --enable-domain-name-pinning=false # TODO Check if we can enable it with a local gateway setup

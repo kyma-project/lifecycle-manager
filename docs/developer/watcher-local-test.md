@@ -5,7 +5,7 @@ The following steps provide you with a quick tour of how setup  the kyma-lifecyc
 There are two ways shown: One with a very simple  KLM setup incl. watcher with security features turned off and another one for the KLM incl. watcher with security features (SAN-pinning and mTLS Communication) turned on. 
 
 Depends on which guide you want to follow, skip the corresponding steps incl. the following tags: 
-- *[SIMPLE]*
+- *[UNSECURE]*
 - *[SECURE]*
 
 ### Create KCP and SKR clusters
@@ -42,7 +42,7 @@ kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/
 ### Deploy lifecycle-manager with enabled Watcher on KCP:
 Run the following command to deploy lifecycle-manager on the KCP cluster:
 
-*[SIMPLE]*
+*[UNSECURE]*
 ```shell
 make local-deploy-with-watcher IMG=eu.gcr.io/kyma-project/lifecycle-manager:latest
 ```
@@ -59,9 +59,14 @@ kubectl apply -f https://raw.githubusercontent.com/kyma-project/lifecycle-manage
 ```
 
 // TODO Remove section below, but test before
-### [Simple] Create TLS secret
+### [UNSECURE] Create TLS secret
 Run the following commands from your local directory for the [kyma watcher repo](https://github.com/kyma-project/runtime-watcher) to generate PKI for the SKR webhook
-1. Run the following commands to generate the PKI for the watcher web-hook 
+
+<details>
+  <summary>Click to expand</summary>
+
+
+1. Run the following commands to generate the PKI for the watcher web-hook
 ```shell
 cd listener/example-mtls && \
 cfssl gencert -initca ./kcp/gardener/cert_config/ca-csr.json | cfssljson -bare ca && \
@@ -90,6 +95,8 @@ data:
   tls.key: $(cat signed-cert-key.pem | base64)
 EOF
 ```
+</details>
+
 
 ### Create sample Kyma CR
 Run the following command to generate and apply sample Kyma CR and its corresponding secret on KCP:
