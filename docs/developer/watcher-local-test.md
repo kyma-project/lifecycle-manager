@@ -8,12 +8,8 @@
     --registry-create k3d-registry.localhost:0.0.0.0:5111 \
     --k3s-arg '--no-deploy=traefik@server:0'
     ```
-2. Deploy lifecycle-manager on the cluster:
-    ```shell
-    make local-deploy-with-watcher IMG=eu.gcr.io/kyma-project/lifecycle-manager:latest
-    ```
    
-3. Open `/etc/hosts` file on your local system:
+2. Open `/etc/hosts` file on your local system:
     ```shell
     sudo nano /etc/hosts
    ```
@@ -22,21 +18,7 @@
     127.0.0.1       k3d-registry.localhost
    ```
 
-4. Create `module-template` by using [kyma-cli](https://github.com/kyma-project/cli)
-   which serves the role of a component-descriptor for module installations.
-    
-   For this setup, we will create a module template from the [template-operator](https://github.com/kyma-project/template-operator) repository as reference.
-   Adjust your path to your template-operator local directory or any other reference module operator accordingly.
-
-    ```shell
-   kyma alpha create module -p ../template-operator --version 1.2.3 -w --registry k3d-registry.localhost:5111 --insecure
-   ```
-5.  The previous step will create a `template.yaml` file in the root directory, which is the `module-template`, apply it to the cluster
-    ```
-    kubectl apply -f template.yaml
-    ```
-
-6. Install other pre-requisites required by the lifecycle-manager
+3. Install other pre-requisites required by the lifecycle-manager
    1. `Istio` CRDs using `istioctl`
       ```shell
       brew install istioctl && \
@@ -46,7 +28,25 @@
       ```shell
        kubectl apply -f https://raw.githubusercontent.com/kyma-project/module-manager/main/config/crd/bases/operator.kyma-project.io_manifests.yaml
       ```
+      
+4. Deploy lifecycle-manager on the cluster:
+    ```shell
+    make local-deploy-with-watcher IMG=eu.gcr.io/kyma-project/lifecycle-manager:latest
+    ```
 
+5. Create `module-template` by using [kyma-cli](https://github.com/kyma-project/cli)
+   which serves the role of a component-descriptor for module installations.
+
+   For this setup, we will create a module template from the [template-operator](https://github.com/kyma-project/template-operator) repository as reference.
+   Adjust your path to your template-operator local directory or any other reference module operator accordingly.
+
+    ```shell
+   kyma alpha create module -p ../template-operator --version 1.2.3 -w --registry k3d-registry.localhost:5111 --insecure
+   ```
+6. The previous step will create a `template.yaml` file in the root directory, which is the `module-template`, apply it to the cluster
+    ```
+    kubectl apply -f template.yaml
+    ```
 
 ### Create TLS secret
 Run the following commands from your local directory for the [kyma watcher repo](https://github.com/kyma-project/runtime-watcher) to generate PKI for the SKR webhook
