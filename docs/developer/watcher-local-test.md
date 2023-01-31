@@ -81,9 +81,11 @@ Run the following commands from your local directory for the [kyma watcher repo]
     ```
 
 ### SKR cluster setup
-Create a local kyma-runtime (SKR) cluster:
+Create a local kyma-runtime (SKR) cluster and a `kyma-system` namespace inside.
 ```shell
 k3d cluster create skr-local
+
+kubectl create namespace kcp-system
 ```
 
 
@@ -161,6 +163,9 @@ By checking the `Kyma CR` events, verify that the `SKRWebhookIsReady` ready cond
     {"level":"INFO","date":"2023-01-05T09:21:51.011080512Z","caller":"controllers/kyma_controller.go:87","msg":"reconciling modules","context":{"controller":"kyma","controllerGroup":"operator.kyma-project.io","controllerKind":"Kyma","kyma":{"name":"kyma-sample","namespace":"default"},"namespace":"default","name":"kyma-sample","reconcileID":"f9b42382-dc68-41d2-96de-02b24e3ac2d6"}}
     {"level":"INFO","date":"2023-01-05T09:21:51.043800866Z","caller":"controllers/kyma_controller.go:206","msg":"syncing state","context":{"controller":"kyma","controllerGroup":"operator.kyma-project.io","controllerKind":"Kyma","kyma":{"name":"kyma-sample","namespace":"default"},"namespace":"default","name":"kyma-sample","reconcileID":"f9b42382-dc68-41d2-96de-02b24e3ac2d6","state":"Processing"}}
     ```
+   
+### Full blown setup
+For a full-blown setup please refer to the [comprehensive test setup documentation](creating-test-environment.md) and complete the missing steps, e.g. deploying `module-manager`.
 
 ### Cleanup
 Run the following command to remove the local testing clusters
