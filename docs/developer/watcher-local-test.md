@@ -81,7 +81,7 @@ Run the following commands from your local directory for the [kyma watcher repo]
     ```
 
 ### SKR cluster setup
-Create a local kyma-runtime (SKR) cluster and a `kyma-system` namespace inside.
+Create a local kyma-runtime (SKR) cluster and a `kcp-system` namespace inside.
 ```shell
 k3d cluster create skr-local
 
