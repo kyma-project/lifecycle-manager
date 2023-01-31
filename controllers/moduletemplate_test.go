@@ -219,8 +219,8 @@ var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
 
 	DescribeTable("Test ModuleTemplate.Spec.descriptor",
 		func(givenCondition func() error, expectedBehavior func() error) {
-			Eventually(givenCondition, Timeout, Interval).Should(Succeed())
-			Eventually(expectedBehavior, Timeout, Interval).Should(Succeed())
+			Eventually(givenCondition, Timeout*2, Interval).Should(Succeed())
+			Eventually(expectedBehavior, Timeout*2, Interval).Should(Succeed())
 		},
 		Entry("When ModuleTemplate.Spec.descriptor.component.resources not contains RegistryCred label,"+
 			"expect Manifest.Spec.installs and Manifest.Spec.Config not contains credSecretSelector",

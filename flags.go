@@ -3,6 +3,8 @@ package main
 import (
 	"flag"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
 const (
@@ -17,8 +19,10 @@ const (
 	failureMaxDelayDefault               = 1000 * time.Second
 	defaultCacheSyncTimeout              = 2 * time.Minute
 	defaultListenerPort                  = 9080
+	defaultLogLevel                      = log.WarnLevel
 )
 
+//nolint:funlen
 func defineFlagVar() *FlagVar {
 	flagVar := new(FlagVar)
 	flag.StringVar(&flagVar.metricsAddr, "metrics-bind-address", ":8080",
@@ -79,6 +83,10 @@ func defineFlagVar() *FlagVar {
 		"Indicates the cache sync timeout in seconds")
 	flag.BoolVar(&flagVar.enableDomainNameVerification, "enable-domain-name-pinning", true,
 		"Enabling verification of incoming listener request by comparing SAN with KymaCR-SKR-domain")
+	flag.IntVar(
+		&flagVar.logLevel, "log-level", defaultLogLevel,
+		"indicates the current log-level, enter negative values to increase verbosity (e.g. 9)",
+	)
 	return flagVar
 }
 
@@ -112,4 +120,5 @@ type FlagVar struct {
 	rateLimiterBurst, rateLimiterFrequency int
 	cacheSyncTimeout                       time.Duration
 	enableDomainNameVerification           bool
+	logLevel                               int
 }

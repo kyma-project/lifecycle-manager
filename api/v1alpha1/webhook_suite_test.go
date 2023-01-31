@@ -26,8 +26,10 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"go.uber.org/zap/zapcore"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/client-go/rest"
@@ -39,7 +41,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -62,7 +63,7 @@ func TestAPIs(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
+	logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{

@@ -7,9 +7,9 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/go-logr/logr"
-	"go.uber.org/zap"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/index"
@@ -31,7 +31,7 @@ type ModuleTemplatesByModuleName map[string]*ModuleTemplate
 func GetTemplates(
 	ctx context.Context, client client.Reader, kyma *operatorv1alpha1.Kyma,
 ) (ModuleTemplatesByModuleName, error) {
-	logger := log.FromContext(ctx)
+	logger := ctrlLog.FromContext(ctx)
 	templates := make(ModuleTemplatesByModuleName)
 
 	for _, module := range kyma.Spec.Modules {
@@ -167,15 +167,16 @@ func (c *TemplateLookup) WithContext(ctx context.Context) (*ModuleTemplate, erro
 		)
 	}
 
+	logger := ctrlLog.FromContext(ctx)
 	if actualChannel != c.defaultChannel {
-		log.FromContext(ctx).Info(
+		logger.Info(
 			fmt.Sprintf(
 				"using %s (instead of %s) for module %s",
 				actualChannel, c.defaultChannel, c.module.Name,
 			),
 		)
 	} else {
-		log.FromContext(ctx).V(int(zap.DebugLevel)).Info(
+		logger.V(log.DebugLevel).Info(
 			fmt.Sprintf(
 				"using %s for module %s",
 				actualChannel, c.module.Name,

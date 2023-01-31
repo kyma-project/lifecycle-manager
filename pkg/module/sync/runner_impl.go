@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/module-manager/pkg/types"
-	"go.uber.org/zap"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 
@@ -41,7 +41,7 @@ func (r *RunnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 	modules common.Modules,
 ) error {
 	ssaStart := time.Now()
-	baseLogger := log.FromContext(ctx)
+	baseLogger := ctrlLog.FromContext(ctx)
 
 	results := make(chan error, len(modules))
 	for _, module := range modules {
@@ -50,7 +50,7 @@ func (r *RunnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 				results <- fmt.Errorf("could not update module %s: %w", module.GetName(), err)
 				return
 			}
-			module.Logger(baseLogger).V(int(zap.DebugLevel)).Info("successfully patched module")
+			module.Logger(baseLogger).V(log.DebugLevel).Info("successfully patched module")
 			results <- nil
 		}(module)
 	}
@@ -64,7 +64,7 @@ func (r *RunnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 	if errs != nil {
 		return fmt.Errorf("ServerSideApply failed (after %s): %w", ssaFinish, types.NewMultiError(errs))
 	}
-	baseLogger.V(int(zap.DebugLevel)).Info("ServerSideApply finished", "time", ssaFinish)
+	baseLogger.V(log.DebugLevel).Info("ServerSideApply finished", "time", ssaFinish)
 	return nil
 }
 
@@ -116,8 +116,7 @@ func (r *RunnerImpl) SyncModuleStatus(ctx context.Context, kyma *v1alpha1.Kyma, 
 	return statusUpdateRequiredFromUpdate || statusUpdateRequiredFromDelete
 }
 
-func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Modules, kyma *v1alpha1.Kyma,
-) bool {
+func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Modules, kyma *v1alpha1.Kyma) bool {
 	updateRequired := false
 	for idx := range modules {
 		module := modules[idx]

@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"k8s.io/client-go/rest"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,7 +42,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 type EventErrorType string
@@ -83,8 +84,8 @@ type KymaReconciler struct {
 // move the current state of the cluster closer to the desired state.
 
 func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := log.FromContext(ctx)
-	logger.Info("reconciling modules")
+	logger := ctrlLog.FromContext(ctx)
+	logger.V(log.InfoLevel).Info("reconciling")
 
 	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
 
@@ -216,7 +217,7 @@ func (r *KymaReconciler) HandleInitialState(ctx context.Context, kyma *v1alpha1.
 }
 
 func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alpha1.Kyma) error {
-	logger := log.FromContext(ctx)
+	logger := ctrlLog.FromContext(ctx)
 
 	conditionReason := v1alpha1.ConditionReasonModulesAreReady
 	conditionStatus := metav1.ConditionTrue
@@ -284,7 +285,7 @@ func (r *KymaReconciler) syncModules(ctx context.Context, kyma *v1alpha1.Kyma) e
 }
 
 func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error) {
-	logger := log.FromContext(ctx)
+	logger := ctrlLog.FromContext(ctx).V(log.InfoLevel)
 
 	if kyma.Spec.Sync.Enabled && r.SKRWebhookChartManager != nil {
 		if err := r.SKRWebhookChartManager.Remove(ctx, kyma); err != nil {
@@ -323,7 +324,7 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1
 }
 
 func (r *KymaReconciler) TriggerKymaDeletion(ctx context.Context, kyma *v1alpha1.Kyma) error {
-	logger := log.FromContext(ctx)
+	logger := ctrlLog.FromContext(ctx).V(log.InfoLevel)
 
 	if kyma.Spec.Sync.Enabled {
 		if err := remote.DeleteRemotelySyncedKyma(ctx, kyma); client.IgnoreNotFound(err) != nil {
