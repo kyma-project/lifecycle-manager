@@ -226,7 +226,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 			WatcherLocalTestingEnabled: flagVar.enableWatcherLocalTesting,
 			GatewayHTTPPortMapping:     flagVar.listenerHTTPPortLocalMapping,
 		}
-		skrWebhookChartManager, err = deploy.NewSKRWebhookTemplateChartManager(kcpRestConfig, skrChartConfig)
+		skrWebhookChartManager, err = deploy.NewSKRWebhookManifestManager(kcpRestConfig, skrChartConfig)
 		if err != nil {
 			setupLog.Error(err, "failed to create webhook chart manager")
 		}

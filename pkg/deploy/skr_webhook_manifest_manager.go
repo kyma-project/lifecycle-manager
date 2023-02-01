@@ -25,14 +25,14 @@ type SKRWebhookManifestManager struct {
 	kcpAddr string
 }
 
-func NewSKRWebhookManifestManager(kcpRestConfig *rest.Config, config *SkrChartManagerConfig,
+func NewSKRWebhookManifestManager(kcpRestConfig *rest.Config, managerConfig *SkrChartManagerConfig,
 ) (*SKRWebhookManifestManager, error) {
-	resolvedKcpAddr, err := resolveKcpAddr(kcpRestConfig, config)
+	resolvedKcpAddr, err := resolveKcpAddr(kcpRestConfig, managerConfig)
 	if err != nil {
 		return nil, err
 	}
 	return &SKRWebhookManifestManager{
-		config:  config,
+		config:  managerConfig,
 		kcpAddr: resolvedKcpAddr,
 	}, nil
 }

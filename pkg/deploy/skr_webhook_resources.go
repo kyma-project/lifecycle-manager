@@ -25,6 +25,7 @@ import (
 const (
 	bindingSubjectsKey = "subjects"
 	stringMapDataKey   = "data"
+	podRestartLabelKey = "operator.kyma-project.io/pod-restart-trigger"
 )
 
 var (
@@ -72,7 +73,7 @@ func generateValidatingWebhookConfigFromWatchableConfigs(webhookObjKey, svcObjKe
 		webhook := registrationV1.ValidatingWebhook{
 			Name:                    fmt.Sprintf("%s.operator.kyma-project.io", moduleName),
 			ObjectSelector:          &metav1.LabelSelector{MatchLabels: watchableCfg.Labels},
-			AdmissionReviewVersions: []string{admissionReviewVersion},
+			AdmissionReviewVersions: []string{version},
 			ClientConfig: registrationV1.WebhookClientConfig{
 				CABundle: caCert,
 				Service: &registrationV1.ServiceReference{
@@ -139,7 +140,7 @@ func configureClusterRoleBinding(cfg *unstructuredResourcesConfig, binding *unst
 func configureConfigMap(cfg *unstructuredResourcesConfig, configMap *unstructured.Unstructured,
 ) (*unstructured.Unstructured, error) {
 	configMapData := map[string]string{
-		"contractVersion":  cfg.contractVersion,
+		"version":  cfg.contractVersion,
 		"kcpAddr":          cfg.kcpAddress,
 		"tlsWebhookServer": cfg.tlsWebhookServer,
 		"tlsCallback":      cfg.tlsCallback,
@@ -151,11 +152,38 @@ func configureConfigMap(cfg *unstructuredResourcesConfig, configMap *unstructure
 }
 
 func configureDeploymentLabel(cfg *unstructuredResourcesConfig, deployment *unstructured.Unstructured,
-) *unstructured.Unstructured {
-	labels := deployment.GetLabels()
-	labels["operator.kyma-project.io/pod-restart-trigger"] = cfg.secretResVer
-	deployment.SetLabels(labels)
-	return deployment
+) (*unstructured.Unstructured, error) {
+	err := unstructured.SetNestedField(deployment.Object, cfg.secretResVer, "spec", "template", "metadata",
+		"labels", podRestartLabelKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update pod template labels: %w", err)
+	}
+
+	podVolumes, found, err := unstructured.NestedSlice(deployment.Object, "spec", "template", "spec", "volumes")
+	if !found {
+		return nil, errors.New("pod volumes not found")
+	}
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pod volumes: %w", err)
+	}
+	if len(podVolumes) == 0 {
+		return nil, ErrExpectedSubjectsNotToBeEmpty
+	}
+	sslVolume, ok := podVolumes[0].(map[string]interface{})
+	if !ok {
+		return nil, ErrFailedToConvertSubjectToMap
+	}
+
+	err = unstructured.SetNestedField(sslVolume, cfg.secretName, "secret", "secretName")
+	if err != nil {
+		return nil, fmt.Errorf("failed to set secret name: %w", err)
+	}
+	podVolumes[0] = sslVolume
+	err = unstructured.SetNestedSlice(deployment.Object, podVolumes, "spec", "template", "spec", "volumes")
+	if err != nil {
+		return nil, fmt.Errorf("failed to update deployment volumes: %w", err)
+	}
+	return deployment, nil
 }
 
 func getSKRClientObjectsForInstall(ctx context.Context, kcpClient client.Client, kymaObjKey client.ObjectKey,
@@ -189,7 +217,7 @@ func getSKRClientObjectsForInstall(ctx context.Context, kcpClient client.Client,
 	skrClientObjects = append(skrClientObjects, webhookConfig)
 	secretObjKey := client.ObjectKey{
 		Namespace: remoteNs,
-		Name:      ResolveSKRChartResourceName(WebhookTLSNameTpl, kymaObjKey),
+		Name:      ResolveSKRChartResourceName(WebhookTLSCfgNameTpl, kymaObjKey),
 	}
 	skrSecret := createSKRSecret(resourcesConfig, secretObjKey)
 	return append(skrClientObjects, skrSecret), nil
@@ -210,13 +238,13 @@ func getWatchableConfigs(ctx context.Context, kcpClient client.Client) (map[stri
 }
 
 type unstructuredResourcesConfig struct {
-	contractVersion         string
-	kcpAddress              string
-	tlsWebhookServer        string
-	tlsCallback             string
-	secretResVer            string
-	caCert, tlsCert, tlsKey []byte
-	remoteNs                string
+	contractVersion          string
+	kcpAddress               string
+	tlsWebhookServer         string
+	tlsCallback              string
+	secretName, secretResVer string
+	caCert, tlsCert, tlsKey  []byte
+	remoteNs                 string
 }
 
 func configureUnstructuredResource(cfg *unstructuredResourcesConfig, resource *unstructured.Unstructured,
@@ -224,11 +252,8 @@ func configureUnstructuredResource(cfg *unstructuredResourcesConfig, resource *u
 	if resource.GetAPIVersion() == corev1.SchemeGroupVersion.String() && resource.GetKind() == "ConfigMap" {
 		return configureConfigMap(cfg, resource)
 	}
-	//if resource.GetAPIVersion() == corev1.SchemeGroupVersion.String() && resource.GetKind() == "Secret" {
-	//	return configureSKRSecret(cfg, resource)
-	//}
 	if resource.GetAPIVersion() == appsv1.SchemeGroupVersion.String() && resource.GetKind() == "Deployment" {
-		return configureDeploymentLabel(cfg, resource), nil
+		return configureDeploymentLabel(cfg, resource)
 	}
 	if resource.GetAPIVersion() == rbacV1.SchemeGroupVersion.String() && resource.GetKind() == "ClusterRoleBinding" {
 		return configureClusterRoleBinding(cfg, resource)
@@ -288,11 +313,12 @@ func getUnstructuredResourcesConfig(ctx context.Context, kcpClient client.Client
 	}
 
 	return &unstructuredResourcesConfig{
-		contractVersion:  contractVersion,
+		contractVersion:  version,
 		kcpAddress:       kcpAddr,
 		tlsWebhookServer: "true",
 		tlsCallback:      "true",
-		secretResVer:     tlsSecret.GetResourceVersion(),
+		secretName:       tlsSecret.Name,
+		secretResVer:     tlsSecret.ResourceVersion,
 		caCert:           tlsSecret.Data[caCertKey],
 		tlsCert:          tlsSecret.Data[tlsCertKey],
 		tlsKey:           tlsSecret.Data[tlsPrivateKeyKey],

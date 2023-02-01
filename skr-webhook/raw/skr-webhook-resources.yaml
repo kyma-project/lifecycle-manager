@@ -24,16 +24,6 @@ roleRef:
   kind: ClusterRole
   name: kyma-reader
   apiGroup: rbac.authorization.k8s.io
-#---
-#apiVersion: v1
-#kind: Secret
-#metadata:
-#  name: skr-webhook-tls
-#type: Opaque
-#data:
-#  ca.crt: ""
-#  tls.crt: ""
-#  tls.key: ""
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -90,14 +80,14 @@ spec:
               value: "8443"
             - name: TLS_SERVER
               valueFrom:
-                - configMapKeyRef:
-                    name: skr-webhook-config
-                    key: tlsWebhookServer
+                configMapKeyRef:
+                  name: skr-webhook-config
+                  key: tlsWebhookServer
             - name: TLS_CALLBACK
               valueFrom:
-                - configMapKeyRef:
-                    name: skr-webhook-config
-                    key: tlsCallback
+                configMapKeyRef:
+                  name: skr-webhook-config
+                  key: tlsCallback
             - name: TLS_KEY
               value: "/app/etc/ssl/tls.key"
             - name: TLS_CERT
@@ -106,14 +96,14 @@ spec:
               value: "/app/etc/ssl/ca.crt"
             - name: KCP_ADDR
               valueFrom:
-                - configMapKeyRef:
-                    name: skr-webhook-config
-                    key: kcpAddr
+                configMapKeyRef:
+                  name: skr-webhook-config
+                  key: kcpAddr
             - name: KCP_CONTRACT
               valueFrom:
-                - configMapKeyRef:
-                    name: skr-webhook-config
-                    key: contractVersion
+                configMapKeyRef:
+                  name: skr-webhook-config
+                  key: contractVersion
             - name: WEBHOOK_SIDE_CAR
               value: "true"
           image: "eu.gcr.io/kyma-project/runtime-watcher-skr:latest"
@@ -156,35 +146,3 @@ spec:
                 path: ca.crt
         - name: request
           emptyDir: {}
-#---
-#apiVersion: admissionregistration.k8s.io/v1
-#kind: ValidatingWebhookConfiguration
-#metadata:
-#  name: skr-webhook
-#webhooks:
-#  - name: lifecycle-manager.operator.kyma-project.io
-#    objectSelector:
-#      matchLabels:
-#        app: kyma
-#    admissionReviewVersions:
-#      - v1
-#    clientConfig:
-#      caBundle: ""
-#      service:
-#        name: skr-webhook
-#        namespace: default
-#        path: /validate/lifecycle-manager
-#    rules:
-#      - apiGroups:
-#          - "operator.kyma-project.io"
-#        apiVersions:
-#          - "*"
-#        operations:
-#          - CREATE
-#          - UPDATE
-#          - DELETE
-#        resources:
-#          - "*/status"
-#    sideEffects: NoneOnDryRun
-#    timeoutSeconds: 15
-#    failurePolicy: Ignore
