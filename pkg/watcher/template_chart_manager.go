@@ -68,7 +68,6 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 		logger.Error(err, "Error while creating new Certificate on KCP")
 		return true, err
 	}
-	logger.Info("Certificate created")
 
 	// If secret is not created do nothing and check in next reconcile loop
 	certSecret, err := certificate.GetSecret(ctx)

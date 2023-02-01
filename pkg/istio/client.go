@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"go.uber.org/zap"
-
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/go-logr/logr"
@@ -405,7 +403,7 @@ func (c *Client) SyncCertificateSecretToIstio(ctx context.Context, kcpClient cli
 
 	if apierrors.IsNotFound(err) {
 		// if CA Certificate does not exist, check if it exists in istio Namespace, if yes remove it
-		c.logger.V(int(zap.DebugLevel)).Info("CA Root Certificate does not exist, " +
+		c.logger.Info("CA Root Certificate does not exist, " +
 			"will delete CA Root Certificate in istio namespace if exists")
 		if err := kcpClient.Get(ctx, client.ObjectKey{
 			Namespace: c.config.IstioCertificateNamespace,
@@ -425,16 +423,25 @@ func (c *Client) SyncCertificateSecretToIstio(ctx context.Context, kcpClient cli
 		return err
 	}
 
+	istioCertSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        certSecret.Name,
+			Namespace:   c.config.IstioCertificateNamespace,
+			Labels:      certSecret.Labels,
+			Annotations: certSecret.Annotations,
+		},
+
+		Data: certSecret.Data,
+	}
 	// CA Certificate exists, copy it to istio namespace
-	certSecret.Namespace = c.config.IstioCertificateNamespace
-	if err := kcpClient.Update(ctx, certSecret); apierrors.IsNotFound(err) {
+	//certSecret.Namespace = c.config.IstioCertificateNamespace
+	if err := kcpClient.Update(ctx, istioCertSecret); apierrors.IsNotFound(err) {
 		certSecret.ResourceVersion = ""
-		if err := kcpClient.Create(ctx, certSecret); err != nil {
+		if err := kcpClient.Create(ctx, istioCertSecret); err != nil {
 			return err
 		}
 	} else if err != nil {
 		return err
 	}
-	c.logger.Info("CA Root Certificate has been synchronised to istio namespace")
 	return nil
 }

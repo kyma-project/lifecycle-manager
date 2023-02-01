@@ -98,6 +98,7 @@ func (c *Certificate) Create(ctx context.Context, config *SkrChartManagerConfig)
 		c.logger.Error(err, "Error while creating certificate")
 		return err
 	}
+	c.logger.Info("Successfully created CA Root Certificate")
 	return nil
 }
 
@@ -198,7 +199,7 @@ func (c *Certificate) getSubjectAltNames(config *SkrChartManagerConfig) (*Subjec
 		}
 
 		if config.WatcherLocalTestingEnabled {
-			dnsNames = append(dnsNames, []string{"localhost", "127.0.0.1"}...)
+			dnsNames = append(dnsNames, []string{"localhost", "127.0.0.1", "host.k3d.internal"}...)
 		}
 
 		return &SubjectAltName{

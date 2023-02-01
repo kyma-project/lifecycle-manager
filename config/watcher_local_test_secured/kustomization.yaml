@@ -30,7 +30,7 @@ patches:
         value: --listener-http-local-mapping=9443
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --enable-domain-name-pinning=false # TODO Check if we can enable it with a local gateway setup
+        value: --enable-domain-name-pinning=true
       - op: add
         path: /spec/template/spec/containers/0/volumeMounts
         value:
@@ -68,17 +68,6 @@ patchesJson6902:
       - op: replace
         path: /spec/servers/0/hosts/0
         value: "*"
-      #- op: replace
-      #  path: /spec/servers/0/port/name
-      #  value: http
-      #- op: replace
-      #  path: /spec/servers/0/port/number
-      #  value: 80
-      #- op: replace
-      #  path: /spec/servers/0/port/protocol
-      #  value: HTTP
-      #- op: remove
-      #  path: /spec/servers/0/tls
     target:
       group: networking.istio.io
       version: v1beta1
@@ -88,6 +77,9 @@ patchesJson6902:
       - op: replace
         path: /spec/dnsNames/0
         value: "localhost"
+      - op: add
+        path: /spec/dnsNames/1
+        value: "host.k3d.internal"
     target:
       group: cert-manager.io
       version: v1
