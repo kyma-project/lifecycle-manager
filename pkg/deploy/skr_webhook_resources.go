@@ -12,9 +12,9 @@ import (
 	"go.uber.org/zap"
 
 	registrationV1 "k8s.io/api/admissionregistration/v1"
-	v12 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
-	v13 "k8s.io/api/rbac/v1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	rbacV1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -34,7 +34,28 @@ var (
 	ErrCouldNotFindSubjectsField    = fmt.Errorf("could not find %s field", bindingSubjectsKey)
 )
 
-func generateValidatingWebhookConfigFromWatchableConfigs(webhookObjKey, svcObjKey client.ObjectKey, caCert string,
+func createSKRSecret(cfg *unstructuredResourcesConfig, secretObjKey client.ObjectKey,
+) *corev1.Secret {
+	return &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Secret",
+			APIVersion: corev1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretObjKey.Name,
+			Namespace: secretObjKey.Namespace,
+		},
+		Immutable: nil,
+		Data: map[string][]byte{
+			caCertKey:        cfg.caCert,
+			tlsCertKey:       cfg.tlsCert,
+			tlsPrivateKeyKey: cfg.tlsKey,
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+}
+
+func generateValidatingWebhookConfigFromWatchableConfigs(webhookObjKey, svcObjKey client.ObjectKey, caCert []byte,
 	watchableConfigs map[string]WatchableConfig,
 ) *registrationV1.ValidatingWebhookConfiguration {
 	webhooks := make([]registrationV1.ValidatingWebhook, 0)
@@ -46,14 +67,14 @@ func generateValidatingWebhookConfigFromWatchableConfigs(webhookObjKey, svcObjKe
 		}
 		sideEffects := registrationV1.SideEffectClassNoneOnDryRun
 		failurePolicy := registrationV1.Ignore
-		webhookTimeOutInSeconds := new(int32)
-		*webhookTimeOutInSeconds = 15
+		timeout := new(int32)
+		*timeout = webhookTimeOutInSeconds
 		webhook := registrationV1.ValidatingWebhook{
 			Name:                    fmt.Sprintf("%s.operator.kyma-project.io", moduleName),
 			ObjectSelector:          &metav1.LabelSelector{MatchLabels: watchableCfg.Labels},
-			AdmissionReviewVersions: []string{"v1"},
+			AdmissionReviewVersions: []string{admissionReviewVersion},
 			ClientConfig: registrationV1.WebhookClientConfig{
-				CABundle: []byte(caCert),
+				CABundle: caCert,
 				Service: &registrationV1.ServiceReference{
 					Name:      svcObjKey.Name,
 					Namespace: svcObjKey.Namespace,
@@ -73,7 +94,7 @@ func generateValidatingWebhookConfigFromWatchableConfigs(webhookObjKey, svcObjKe
 				},
 			},
 			SideEffects:    &sideEffects,
-			TimeoutSeconds: webhookTimeOutInSeconds,
+			TimeoutSeconds: timeout,
 			FailurePolicy:  &failurePolicy,
 		}
 		webhooks = append(webhooks, webhook)
@@ -137,19 +158,6 @@ func configureDeploymentLabel(cfg *unstructuredResourcesConfig, deployment *unst
 	return deployment
 }
 
-func configureSKRSecret(cfg *unstructuredResourcesConfig, skrSecret *unstructured.Unstructured,
-) (*unstructured.Unstructured, error) {
-	tlsSecretData := map[string]string{
-		caCertKey:        cfg.caCert,
-		tlsCertKey:       cfg.tlsCert,
-		tlsPrivateKeyKey: cfg.tlsKey,
-	}
-	if err := unstructured.SetNestedStringMap(skrSecret.Object, tlsSecretData, stringMapDataKey); err != nil {
-		return nil, err
-	}
-	return skrSecret, nil
-}
-
 func getSKRClientObjectsForInstall(ctx context.Context, kcpClient client.Client, kymaObjKey client.ObjectKey,
 	remoteNs, kcpAddr, chartPath string, logger logr.Logger,
 ) ([]client.Object, error) {
@@ -178,7 +186,13 @@ func getSKRClientObjectsForInstall(ctx context.Context, kcpClient client.Client,
 	}
 	webhookConfig := generateValidatingWebhookConfigFromWatchableConfigs(webhookCfgObjKey, svcObjKey,
 		resourcesConfig.caCert, watchableConfigs)
-	return append(skrClientObjects, webhookConfig), nil
+	skrClientObjects = append(skrClientObjects, webhookConfig)
+	secretObjKey := client.ObjectKey{
+		Namespace: remoteNs,
+		Name:      ResolveSKRChartResourceName(WebhookTLSNameTpl, kymaObjKey),
+	}
+	skrSecret := createSKRSecret(resourcesConfig, secretObjKey)
+	return append(skrClientObjects, skrSecret), nil
 }
 
 func getWatchableConfigs(ctx context.Context, kcpClient client.Client) (map[string]WatchableConfig, error) {
@@ -201,22 +215,22 @@ type unstructuredResourcesConfig struct {
 	tlsWebhookServer        string
 	tlsCallback             string
 	secretResVer            string
-	caCert, tlsCert, tlsKey string
+	caCert, tlsCert, tlsKey []byte
 	remoteNs                string
 }
 
 func configureUnstructuredResource(cfg *unstructuredResourcesConfig, resource *unstructured.Unstructured,
 ) (*unstructured.Unstructured, error) {
-	if resource.GetAPIVersion() == v1.SchemeGroupVersion.String() && resource.GetKind() == "ConfigMap" {
+	if resource.GetAPIVersion() == corev1.SchemeGroupVersion.String() && resource.GetKind() == "ConfigMap" {
 		return configureConfigMap(cfg, resource)
 	}
-	if resource.GetAPIVersion() == v1.SchemeGroupVersion.String() && resource.GetKind() == "Secret" {
-		return configureSKRSecret(cfg, resource)
-	}
-	if resource.GetAPIVersion() == v12.SchemeGroupVersion.String() && resource.GetKind() == "Deployment" {
+	//if resource.GetAPIVersion() == corev1.SchemeGroupVersion.String() && resource.GetKind() == "Secret" {
+	//	return configureSKRSecret(cfg, resource)
+	//}
+	if resource.GetAPIVersion() == appsv1.SchemeGroupVersion.String() && resource.GetKind() == "Deployment" {
 		return configureDeploymentLabel(cfg, resource), nil
 	}
-	if resource.GetAPIVersion() == v13.SchemeGroupVersion.String() && resource.GetKind() == "ClusterRoleBinding" {
+	if resource.GetAPIVersion() == rbacV1.SchemeGroupVersion.String() && resource.GetKind() == "ClusterRoleBinding" {
 		return configureClusterRoleBinding(cfg, resource)
 	}
 	return resource, nil
@@ -263,7 +277,7 @@ func getRawManifestClientObjects(cfg *unstructuredResourcesConfig, remoteNs, cha
 func getUnstructuredResourcesConfig(ctx context.Context, kcpClient client.Client, kymaObjKey client.ObjectKey,
 	remoteNs, kcpAddr string,
 ) (*unstructuredResourcesConfig, error) {
-	tlsSecret := &v1.Secret{}
+	tlsSecret := &corev1.Secret{}
 	secretObjKey := client.ObjectKey{
 		Namespace: kymaObjKey.Namespace,
 		Name:      ResolveSKRChartResourceName(WebhookTLSCfgNameTpl, kymaObjKey),
@@ -279,9 +293,9 @@ func getUnstructuredResourcesConfig(ctx context.Context, kcpClient client.Client
 		tlsWebhookServer: "true",
 		tlsCallback:      "true",
 		secretResVer:     tlsSecret.GetResourceVersion(),
-		caCert:           string(tlsSecret.Data[caCertKey]),
-		tlsCert:          string(tlsSecret.Data[tlsCertKey]),
-		tlsKey:           string(tlsSecret.Data[tlsPrivateKeyKey]),
+		caCert:           tlsSecret.Data[caCertKey],
+		tlsCert:          tlsSecret.Data[tlsCertKey],
+		tlsKey:           tlsSecret.Data[tlsPrivateKeyKey],
 		remoteNs:         remoteNs,
 	}, nil
 }

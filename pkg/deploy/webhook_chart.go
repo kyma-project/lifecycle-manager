@@ -23,6 +23,7 @@ const (
 	customConfigKey                = "modules"
 	WebhookCfgAndDeploymentNameTpl = "%s-webhook"
 	WebhookSvcNameTpl              = "%s-webhook-svc"
+	WebhookTLSNameTpl              = "%s-webhook-tls"
 	WebhookTLSCfgNameTpl           = "tls-watcher-%s"
 	IstioSystemNs                  = "istio-system"
 	IngressServiceName             = "istio-ingressgateway"
@@ -34,6 +35,8 @@ const (
 	tlsPrivateKeyKey               = "tls.key"
 	skrChartFieldOwner             = client.FieldOwner("lifecycle-manager")
 	contractVersion                = "v1"
+	admissionReviewVersion         = contractVersion
+	webhookTimeOutInSeconds        = 15
 	allResourcesWebhookRule        = "*"
 	statusSubResourceWebhookRule   = "*/status"
 )
