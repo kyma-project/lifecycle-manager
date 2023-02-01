@@ -110,14 +110,12 @@ func (r *RunnerImpl) setupModule(module *common.Module, kyma *v1alpha1.Kyma) err
 	return nil
 }
 
-func (r *RunnerImpl) SyncModuleStatus(ctx context.Context, kyma *v1alpha1.Kyma, modules common.Modules) bool {
-	statusUpdateRequiredFromUpdate := r.updateModuleStatusFromExistingModules(modules, kyma)
-	statusUpdateRequiredFromDelete := r.deleteNoLongerExistingModuleStatus(ctx, kyma)
-	return statusUpdateRequiredFromUpdate || statusUpdateRequiredFromDelete
+func (r *RunnerImpl) SyncModuleStatus(ctx context.Context, kyma *v1alpha1.Kyma, modules common.Modules) {
+	r.updateModuleStatusFromExistingModules(modules, kyma)
+	r.deleteNoLongerExistingModuleStatus(ctx, kyma)
 }
 
-func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Modules, kyma *v1alpha1.Kyma) bool {
-	updateRequired := false
+func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Modules, kyma *v1alpha1.Kyma) {
 	for idx := range modules {
 		module := modules[idx]
 		manifestAPIVersion, manifestKind := module.Object.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
@@ -139,15 +137,10 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Module
 		}
 		if len(kyma.Status.Modules) < idx+1 {
 			kyma.Status.Modules = append(kyma.Status.Modules, latestModuleStatus)
-			updateRequired = true
 		} else {
-			if kyma.Status.Modules[idx].State != latestModuleStatus.State {
-				updateRequired = true
-			}
 			kyma.Status.Modules[idx] = latestModuleStatus
 		}
 	}
-	return updateRequired
 }
 
 func stateFromManifest(obj client.Object) v1alpha1.State {
@@ -159,13 +152,8 @@ func stateFromManifest(obj client.Object) v1alpha1.State {
 	}
 }
 
-func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1alpha1.Kyma,
-) bool {
-	updateRequired := false
+func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1alpha1.Kyma) {
 	moduleStatusArr := kyma.GetNoLongerExistingModuleStatus()
-	if len(moduleStatusArr) == 0 {
-		return false
-	}
 	for idx := range moduleStatusArr {
 		moduleStatus := moduleStatusArr[idx]
 		module := unstructured.Unstructured{}
@@ -174,9 +162,7 @@ func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context, kym
 		module.SetNamespace(moduleStatus.Manifest.GetNamespace())
 		err := r.getModule(ctx, &module)
 		if errors.IsNotFound(err) {
-			updateRequired = true
 			kyma.Status.Modules = append(kyma.Status.Modules[:idx], kyma.Status.Modules[idx+1:]...)
 		}
 	}
-	return updateRequired
 }
