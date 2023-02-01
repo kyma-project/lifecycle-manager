@@ -25,12 +25,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/client-go/rest"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -120,6 +121,9 @@ func SetupWebhook() {
 		Expect(err).NotTo(HaveOccurred())
 
 		err = (&v1alpha1.ModuleTemplate{}).SetupWebhookWithManager(mgr)
+		Expect(err).NotTo(HaveOccurred())
+
+		err = (&Kyma{}).SetupWebhookWithManager(mgr)
 		Expect(err).NotTo(HaveOccurred())
 
 		//+kubebuilder:scaffold:webhook

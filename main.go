@@ -49,9 +49,10 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
+
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
-	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 
 	//+kubebuilder:scaffold:imports
 	"github.com/go-logr/logr"
@@ -159,6 +160,10 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 			setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
 			os.Exit(1)
 		}
+	}
+	if err = (&operatorv1alpha1.Kyma{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Kyma")
+		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
