@@ -1,6 +1,8 @@
 package img
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -99,10 +101,27 @@ func getOCIRef(repo *ocm.OCIRegistryRepository,
 	labels ocm.Labels,
 ) (*OCI, error) {
 	layerRef := OCI{
-		Repo: repo.BaseURL,
 		Type: OCIRepresentationType,
 	}
-	switch repo.ComponentNameMapping { //nolint:exhaustive
+
+	// if ref is not provided, we simply use the version of the descriptor, this will usually default
+	// to a component version that is valid
+	if ref == "" {
+		layerRef.Ref = descriptor.GetVersion()
+	} else {
+		layerRef.Ref = ref
+	}
+	if registryCredValue, found := labels.Get(v1alpha1.OCIRegistryCredLabel); found {
+		credSecretLabel := make(map[string]string)
+		if err := json.Unmarshal(registryCredValue, &credSecretLabel); err != nil {
+			return nil, err
+		}
+		layerRef.CredSecretSelector = &metav1.LabelSelector{
+			MatchLabels: credSecretLabel,
+		}
+	}
+
+	switch repo.ComponentNameMapping {
 	case ocm.OCIRegistryURLPathMapping:
 		repoSubpath := DefaultRepoSubdirectory
 		if ext, found := descriptor.GetLabels().Get(
@@ -111,26 +130,18 @@ func getOCIRef(repo *ocm.OCIRegistryRepository,
 		}
 		layerRef.Repo = fmt.Sprintf("%s/%s", repo.BaseURL, repoSubpath)
 		layerRef.Name = descriptor.GetName()
-		// if ref is not provided, we simply use the version of the descriptor, this will usually default
-		// to a component version that is valid
-		if ref == "" {
-			layerRef.Ref = descriptor.GetVersion()
-		} else {
-			layerRef.Ref = ref
-		}
-		if registryCredValue, found := labels.Get(v1alpha1.OCIRegistryCredLabel); found {
-			credSecretLabel := make(map[string]string)
-			if err := json.Unmarshal(registryCredValue, &credSecretLabel); err != nil {
-				return nil, err
-			}
-			layerRef.CredSecretSelector = &metav1.LabelSelector{
-				MatchLabels: credSecretLabel,
-			}
-		}
+	case ocm.OCIRegistryDigestMapping:
+		layerRef.Repo = repo.BaseURL
+		layerRef.Name = sha256sum(descriptor.GetName())
 	default:
 		return nil, fmt.Errorf("error while parsing componentNameMapping %s: %w",
 			repo.ComponentNameMapping, ErrComponentNameMappingNotSupported,
 		)
 	}
 	return &layerRef, nil
+}
+
+func sha256sum(s string) string {
+	sum := sha256.Sum256([]byte(s))
+	return hex.EncodeToString(sum[:])
 }
