@@ -24,16 +24,16 @@ roleRef:
   kind: ClusterRole
   name: kyma-reader
   apiGroup: rbac.authorization.k8s.io
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: skr-webhook-tls
-type: Opaque
-data:
-  ca.crt: ""
-  tls.crt: ""
-  tls.key: ""
+#---
+#apiVersion: v1
+#kind: Secret
+#metadata:
+#  name: skr-webhook-tls
+#type: Opaque
+#data:
+#  ca.crt: ""
+#  tls.crt: ""
+#  tls.key: ""
 ---
 apiVersion: v1
 kind: ConfigMap
