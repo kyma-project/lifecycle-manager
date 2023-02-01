@@ -8,10 +8,8 @@ import (
 	"os"
 	"strconv"
 
-	"golang.org/x/sync/errgroup"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
 	"github.com/slok/go-helm-template/helm"
+	"golang.org/x/sync/errgroup"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
@@ -21,11 +19,10 @@ import (
 	k8syaml "sigs.k8s.io/yaml"
 )
 
-type Mode string
-
 const (
 	customConfigKey                = "modules"
 	WebhookCfgAndDeploymentNameTpl = "%s-webhook"
+	WebhookSvcNameTpl              = "%s-webhook-svc"
 	WebhookTLSCfgNameTpl           = "tls-watcher-%s"
 	IstioSystemNs                  = "istio-system"
 	IngressServiceName             = "istio-ingressgateway"
@@ -36,15 +33,23 @@ const (
 	tlsCertKey                     = "tls.crt"
 	tlsPrivateKeyKey               = "tls.key"
 	skrChartFieldOwner             = client.FieldOwner("lifecycle-manager")
+	contractVersion                = "v1"
+	allResourcesWebhookRule        = "*"
+	statusSubResourceWebhookRule   = "*/status"
 )
 
 var ErrLoadBalancerIPIsNotAssigned = errors.New("load balancer service external ip is not assigned")
 
-type SKRWebhookChartManager interface {
-	// Install installs the watcher's webhook chart resources on the SKR cluster
-	Install(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error)
-	// Remove removes the watcher's webhook chart resources from the SKR cluster
-	Remove(ctx context.Context, kyma *v1alpha1.Kyma) error
+type SkrChartManagerConfig struct {
+	// WebhookChartPath represents the path of the webhook chart
+	// to be installed on SKR clusters upon reconciling kyma CRs.
+	WebhookChartPath       string
+	SkrWebhookMemoryLimits string
+	SkrWebhookCPULimits    string
+	// WatcherLocalTestingEnabled indicates if the chart manager is running in local testing mode
+	WatcherLocalTestingEnabled bool
+	// GatewayHTTPPortMapping indicates the port used to expose the KCP cluster locally for the watcher callbacks
+	GatewayHTTPPortMapping int
 }
 
 type WatchableConfig struct {
@@ -64,12 +69,12 @@ func generateWatchableConfigs(watchers []v1alpha1.Watcher) map[string]WatchableC
 	return chartCfg
 }
 
-type resourceOperation func(ctx context.Context, clt client.Client, resource *unstructured.Unstructured) error
+type resourceOperation func(ctx context.Context, clt client.Client, resource client.Object) error
 
 // runResourceOperationWithGroupedErrors loops through the resources and runs the passed operation
 // on each resource concurrently and groups their returned errors into one.
 func runResourceOperationWithGroupedErrors(ctx context.Context, clt client.Client,
-	resources []*unstructured.Unstructured, operation resourceOperation,
+	resources []client.Object, operation resourceOperation,
 ) error {
 	errGrp, grpCtx := errgroup.WithContext(ctx)
 	for idx := range resources {
@@ -181,4 +186,11 @@ func renderChartToRawManifest(ctx context.Context, kymaObjKey client.ObjectKey,
 // using the resource name's template.
 func ResolveSKRChartResourceName(resourceNameTpl string, kymaObjKey client.ObjectKey) string {
 	return fmt.Sprintf(resourceNameTpl, skrChartReleaseName(kymaObjKey))
+}
+
+func resolveRemoteNamespace(kyma *v1alpha1.Kyma) string {
+	if kyma.Spec.Sync.Namespace != "" {
+		return kyma.Spec.Sync.Namespace
+	}
+	return kyma.Namespace
 }

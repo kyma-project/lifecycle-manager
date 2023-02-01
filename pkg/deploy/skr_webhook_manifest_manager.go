@@ -2,57 +2,48 @@ package deploy
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
-	"strings"
-
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"os"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
+	"go.uber.org/zap"
+
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/rest"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-// SKRWebhookTemplateChartManager is a SKRWebhookManager implementation that renders
-// the watcher's helm chart and installs it using a native kube-client.
-type SKRWebhookTemplateChartManager struct {
+// SKRWebhookManifestManager is a SKRWebhookManager implementation that applies
+// the SKR webhook's raw manifest using a native kube-client.
+type SKRWebhookManifestManager struct {
 	config  *SkrChartManagerConfig
 	kcpAddr string
 }
 
-func NewSKRWebhookTemplateChartManager(kcpRestConfig *rest.Config, config *SkrChartManagerConfig,
-) (*SKRWebhookTemplateChartManager, error) {
+func NewSKRWebhookManifestManager(kcpRestConfig *rest.Config, config *SkrChartManagerConfig,
+) (*SKRWebhookManifestManager, error) {
 	resolvedKcpAddr, err := resolveKcpAddr(kcpRestConfig, config)
 	if err != nil {
 		return nil, err
 	}
-	return &SKRWebhookTemplateChartManager{
+	return &SKRWebhookManifestManager{
 		config:  config,
 		kcpAddr: resolvedKcpAddr,
 	}, nil
 }
 
-func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error) {
+func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error) {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
 	remoteNs := resolveRemoteNamespace(kyma)
-	chartArgValues, err := generateHelmChartArgs(ctx, syncContext.ControlPlaneClient, kymaObjKey, m.config, m.kcpAddr)
-	if err != nil {
-		return true, err
-	}
-	manifest, err := renderChartToRawManifest(ctx, kymaObjKey, m.config.WebhookChartPath, chartArgValues)
-	if err != nil {
-		return true, err
-	}
-	stringReader := strings.NewReader(manifest)
-	resources, err := getRawManifestUnstructuredResources(stringReader, remoteNs)
+	resources, err := getSKRClientObjectsForInstall(ctx, syncContext.ControlPlaneClient, kymaObjKey,
+		remoteNs, m.kcpAddr, m.config.WebhookChartPath, logger)
 	if err != nil {
 		return true, err
 	}
@@ -69,17 +60,24 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 	return false, nil
 }
 
-func (m *SKRWebhookTemplateChartManager) Remove(ctx context.Context, kyma *v1alpha1.Kyma) error {
+func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1alpha1.Kyma) error {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
 	remoteNs := resolveRemoteNamespace(kyma)
-	manifest, err := renderChartToRawManifest(ctx, kymaObjKey, m.config.WebhookChartPath, map[string]interface{}{})
+	manifestFilePath := fmt.Sprintf("%s/raw/skr-webhook-resources.yaml", m.config.WebhookChartPath)
+	rawManifestFile, err := os.Open(manifestFilePath)
 	if err != nil {
 		return err
 	}
-	stringReader := strings.NewReader(manifest)
-	resources, err := getRawManifestUnstructuredResources(stringReader, remoteNs)
+	defer func(closer io.Closer) {
+		err := closer.Close()
+		if err != nil {
+			logger.V(int(zap.DebugLevel)).Info("failed to close raw manifest file", "path",
+				manifestFilePath)
+		}
+	}(rawManifestFile)
+	resources, err := getRawManifestUnstructuredResources(rawManifestFile, remoteNs)
 	if err != nil {
 		return err
 	}
@@ -93,22 +91,4 @@ func (m *SKRWebhookTemplateChartManager) Remove(ctx context.Context, kyma *v1alp
 	logger.Info("successfully removed webhook chart",
 		"release-name", skrChartReleaseName(kymaObjKey))
 	return nil
-}
-
-func getRawManifestUnstructuredResources(rawManifestReader io.Reader, remoteNs string) ([]client.Object, error) {
-	decoder := k8syaml.NewYAMLOrJSONDecoder(rawManifestReader, defaultBufferSize)
-	var resources []client.Object
-	for {
-		resource := &unstructured.Unstructured{}
-		err := decoder.Decode(resource)
-		if err != nil && !errors.Is(err, io.EOF) {
-			return nil, err
-		}
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		resource.SetNamespace(remoteNs)
-		resources = append(resources, resource)
-	}
-	return resources, nil
 }

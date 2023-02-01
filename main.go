@@ -213,7 +213,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 	options controller.Options,
 ) {
 	kcpRestConfig := mgr.GetConfig()
-	var skrWebhookChartManager deploy.SKRWebhookChartManager
+	var skrWebhookChartManager deploy.SKRWebhookManager
 	if flagVar.enableKcpWatcher {
 		watcherChartDirInfo, err := os.Stat(flagVar.skrWatcherPath)
 		if err != nil || !watcherChartDirInfo.IsDir() {

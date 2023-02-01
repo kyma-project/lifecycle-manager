@@ -169,7 +169,7 @@ var _ = BeforeSuite(func() {
 		SkrWebhookMemoryLimits: "200Mi",
 		SkrWebhookCPULimits:    "1",
 	}
-	skrWebhookChartManager, err := deploy.NewSKRWebhookTemplateChartManager(restCfg, skrChartCfg)
+	skrWebhookChartManager, err := deploy.NewSKRWebhookManifestManager(restCfg, skrChartCfg)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.KymaReconciler{
 		Client:                 k8sManager.GetClient(),

@@ -64,7 +64,7 @@ type KymaReconciler struct {
 	RequeueIntervals
 	signature.VerificationSettings
 	RemoteClientCache      *remote.ClientCache
-	SKRWebhookChartManager deploy.SKRWebhookChartManager
+	SKRWebhookChartManager deploy.SKRWebhookManager
 	KcpRestConfig          *rest.Config
 }
 
