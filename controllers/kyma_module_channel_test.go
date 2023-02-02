@@ -38,7 +38,7 @@ var _ = Describe("valid channel should be deployed successful", func() {
 		},
 		Entry(
 			"When kyma is deployed in valid channel,"+
-				" expect ModuleStatus to be in valid channel",
+				" expect Modules to be in valid channel",
 			givenModuleTemplateWithChannel(ValidChannel, true),
 			expectEveryModuleStatusToHaveChannel(kyma.Name, ValidChannel),
 		),
@@ -167,7 +167,7 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 				Should(BeEquivalentTo(string(v1alpha1.StateProcessing)))
 			for _, module := range kyma.Spec.Modules {
 				Eventually(
-					UpdateModuleState(kyma.GetName(), module.Name, v1alpha1.StateReady), 20*time.Second,
+					UpdateModuleState(ctx, kyma, module, v1alpha1.StateReady), 20*time.Second,
 					Interval).Should(Succeed())
 			}
 			Eventually(GetKymaState(kyma.Name), 5*time.Second, Interval).
@@ -182,19 +182,19 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 		},
 		Entry(
 			"When kyma is deployed in default channel with lower version,"+
-				" expect ModuleStatus to be in regular channel",
+				" expect Modules to be in regular channel",
 			noCondition(),
 			expectEveryModuleStatusToHaveChannel(kyma.Name, v1alpha1.DefaultChannel),
 		),
 		Entry(
 			"When all modules are updated to fast channel with higher version,"+
-				" expect ModuleStatus to update to fast channel",
+				" expect Modules to update to fast channel",
 			whenUpdatingEveryModuleChannel(kyma.Name, FastChannel),
 			expectEveryModuleStatusToHaveChannel(kyma.Name, FastChannel),
 		),
 		Entry(
 			"When all modules are reverted to regular channel,"+
-				" expect ModuleStatus to stay in fast channel",
+				" expect Modules to stay in fast channel",
 			whenUpdatingEveryModuleChannel(kyma.Name, v1alpha1.DefaultChannel),
 			expectEveryModuleStatusToHaveChannel(kyma.Name, FastChannel),
 		),

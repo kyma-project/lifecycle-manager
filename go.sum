@@ -164,8 +164,8 @@ github.com/frankban/quicktest v1.14.3 h1:FJKSZTDHjyhriyC81FLQ0LY93eSai0ZyR/ZIkd3
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
 github.com/fsnotify/fsnotify v1.6.0 h1:n+5WquG0fcWoWp6xPWfHdbskMCQaFnG6PfBrh1Ky4HY=
 github.com/fsnotify/fsnotify v1.6.0/go.mod h1:sl3t1tCWJFWoRz9R8WJCbQihKKwmorjAbSClcnxKAGw=
-github.com/gardener/component-spec/bindings-go v0.0.70 h1:zTESaetRZYKxuK+aMTN1BLOHsp3krhYRYaL31VgHM5I=
-github.com/gardener/component-spec/bindings-go v0.0.70/go.mod h1:qr7kADDXbXB0huul+ih/B43YkwyiMFYQepp/tqJ331c=
+github.com/gardener/component-spec/bindings-go v0.0.78 h1:5BneY5IKuVDc+ifmMQ3aoRIQ2V2C7pOQ/rnNz6vGgYM=
+github.com/gardener/component-spec/bindings-go v0.0.78/go.mod h1:qr7kADDXbXB0huul+ih/B43YkwyiMFYQepp/tqJ331c=
 github.com/ghodss/yaml v1.0.0 h1:wQHKEahhL6wmXdzwWG11gIVCkOv05bNOh+Rxn0yngAk=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/go-errors/errors v1.4.2 h1:J6MZopCL4uSllY1OfXM374weqZFFItUbrImctkmUxIA=
