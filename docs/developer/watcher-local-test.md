@@ -1,17 +1,19 @@
 # Test watcher locally in two-cluster-setup using k3d
 
-The following steps provide you with a quick tour of how setup  the kyma-lifecycle-manager (short `KLM`) including the `Watcher` and a remote cluster. 
+The following steps provide you with a quick tour of how to set up a fully working e2e setup including the following components:
+- kyma-lifecycle-manager (short `KLM`)
+- The runtime-`Watcher` on remote cluster
+- Example `template-operator` on remote cluster
 
-There are two ways shown: One with a very simple  KLM setup incl. watcher with security features turned off and another one for the KLM incl. watcher with security features (SAN-pinning and mTLS Communication) turned on. 
+This setup is deployed with the following security features enabled:
+- Strict mTLS connection between KCP and SKR cluster
+- SAN Pinning (SAN of client TLS certificate needs to match DNS annotation of corresponding Kyma CR)
 
-Depends on which guide you want to follow, skip the corresponding steps incl. the following tags: 
-- *[UNSECURE]*
-- *[SECURE]*
 
 ### Create KCP and SKR clusters
 1. Create a local control-plane (KCP) cluster:
     ```shell
-    k3d cluster create kcp-local --port 9080:80@loadbalancer \
+    k3d cluster create kcp-local --port 9443:443@loadbalancer \
     --registry-create k3d-registry.localhost:0.0.0.0:5111 \
     --k3s-arg '--no-deploy=traefik@server:0'
     ```
@@ -44,6 +46,16 @@ Depends on which guide you want to follow, skip the corresponding steps incl. th
     ```shell
     make local-deploy-with-watcher-secured IMG=eu.gcr.io/kyma-project/lifecycle-manager:latest
     ```
+   <details>
+      <summary>deploying custom image</summary>
+      If you want to test a custom image of the KLM. Adapt the `IMG` variable in the Makefile and run the following:
+   
+   ```shell
+   make docker-build
+   make docker-push
+   make local-deploy-with-watcher-secured IMG=<image-name>:<image-tag>
+   ```
+   </details>
 
 5. Create `module-template` by using [kyma-cli](https://github.com/kyma-project/cli)
    which serves the role of a component-descriptor for module installations.
@@ -62,11 +74,9 @@ Depends on which guide you want to follow, skip the corresponding steps incl. th
 
 
 ### SKR cluster setup
-Create a local kyma-runtime (SKR) cluster and a `kcp-system` namespace inside.
+Create a local kyma-runtime (SKR) cluster.
 ```shell
 k3d cluster create skr-local
-
-kubectl create namespace kcp-system
 ```
 
 
@@ -93,8 +103,8 @@ kubectl create namespace kcp-system
     apiVersion: operator.kyma-project.io/v1alpha1
     kind: Kyma
     metadata:
-   annotations:
-    skr-domain: "example.domain.com"
+      annotations:
+        skr-domain: "example.domain.com"
       name: kyma-sample
       namespace: kcp-system
     spec:
@@ -105,6 +115,40 @@ kubectl create namespace kcp-system
       - name: template-operator
     EOF
     ```
+   <details>
+      <summary>Hint: Running KLM on local machine and not in-cluster</summary>
+      If you are running the KLM on your local machine and not as a deployment in a cluster, please use the following to create a Kyma CR and Secret:
+
+   ```shell  
+    cat << EOF | kubectl apply -f -
+    ---
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: kyma-sample
+      namespace: kcp-system
+      labels:
+        "operator.kyma-project.io/kyma-name": "kyma-sample"
+        "operator.kyma-project.io/managed-by": "lifecycle-manager"
+    data:
+      config: $(echo "$(k3d kubeconfig get skr-local)" | base64)
+    ---
+    apiVersion: operator.kyma-project.io/v1alpha1
+    kind: Kyma
+    metadata:
+      annotations:
+        skr-domain: "example.domain.com"
+      name: kyma-sample
+      namespace: kcp-system
+    spec:
+      channel: regular
+      sync:
+        enabled: true
+      modules:
+      - name: template-operator
+    EOF
+   ```
+   </details>
 
 ### Watcher installation verification
 By checking the `Kyma CR` events, verify that the `SKRWebhookIsReady` ready condition is set to `True`
