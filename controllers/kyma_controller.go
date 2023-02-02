@@ -63,9 +63,9 @@ type KymaReconciler struct {
 	record.EventRecorder
 	RequeueIntervals
 	signature.VerificationSettings
-	RemoteClientCache      *remote.ClientCache
-	SKRWebhookChartManager deploy.SKRWebhookManager
-	KcpRestConfig          *rest.Config
+	RemoteClientCache *remote.ClientCache
+	SKRWebhookManager deploy.SKRWebhookManager
+	KcpRestConfig     *rest.Config
 }
 
 //nolint:lll
@@ -233,8 +233,8 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 		return r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError, err)
 	}
 
-	if kyma.Spec.Sync.Enabled && r.SKRWebhookChartManager != nil {
-		if _, err := r.SKRWebhookChartManager.Install(ctx, kyma); err != nil {
+	if kyma.Spec.Sync.Enabled && r.SKRWebhookManager != nil {
+		if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
 			kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
 			return err
 		}
@@ -288,8 +288,8 @@ func (r *KymaReconciler) syncModules(ctx context.Context, kyma *v1alpha1.Kyma) e
 func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error) {
 	logger := log.FromContext(ctx)
 
-	if kyma.Spec.Sync.Enabled && r.SKRWebhookChartManager != nil {
-		if err := r.SKRWebhookChartManager.Remove(ctx, kyma); err != nil {
+	if kyma.Spec.Sync.Enabled && r.SKRWebhookManager != nil {
+		if err := r.SKRWebhookManager.Remove(ctx, kyma); err != nil {
 			// here we expect that an error is normal and means we have to try again if it didn't work
 			r.Event(kyma, "Normal", "WebhookChartRemoval", err.Error())
 			return true, nil

@@ -170,10 +170,10 @@ var _ = BeforeSuite(func() {
 	skrWebhookChartManager, err := deploy.NewSKRWebhookManifestManager(restCfg, skrChartCfg)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.KymaReconciler{
-		Client:                 k8sManager.GetClient(),
-		EventRecorder:          k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		RequeueIntervals:       intervals,
-		SKRWebhookChartManager: skrWebhookChartManager,
+		Client:            k8sManager.GetClient(),
+		EventRecorder:     k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		RequeueIntervals:  intervals,
+		SKRWebhookManager: skrWebhookChartManager,
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
 		},

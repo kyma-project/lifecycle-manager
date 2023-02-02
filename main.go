@@ -231,11 +231,11 @@ func setupKymaReconciler(mgr ctrl.Manager,
 	}
 
 	if err := (&controllers.KymaReconciler{
-		Client:                 mgr.GetClient(),
-		EventRecorder:          mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		KcpRestConfig:          kcpRestConfig,
-		RemoteClientCache:      remoteClientCache,
-		SKRWebhookChartManager: skrWebhookChartManager,
+		Client:            mgr.GetClient(),
+		EventRecorder:     mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		KcpRestConfig:     kcpRestConfig,
+		RemoteClientCache: remoteClientCache,
+		SKRWebhookManager: skrWebhookChartManager,
 		RequeueIntervals: controllers.RequeueIntervals{
 			Success: flagVar.kymaRequeueSuccessInterval,
 		},

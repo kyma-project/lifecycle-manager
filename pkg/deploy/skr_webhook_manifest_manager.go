@@ -34,7 +34,7 @@ func NewSKRWebhookManifestManager(kcpRestConfig *rest.Config, managerConfig *Skr
 	}, nil
 }
 
-func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1alpha1.Kyma) (bool, error) {
+func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1alpha1.Kyma) error {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
@@ -42,19 +42,19 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1alpha1.
 	resources, err := getSKRClientObjectsForInstall(ctx, syncContext.ControlPlaneClient, kymaObjKey,
 		remoteNs, m.kcpAddr, m.config.WebhookChartPath, logger)
 	if err != nil {
-		return true, err
+		return err
 	}
 	err = runResourceOperationWithGroupedErrors(ctx, syncContext.RuntimeClient, resources,
 		func(ctx context.Context, clt client.Client, resource client.Object) error {
 			return clt.Patch(ctx, resource, client.Apply, client.ForceOwnership, skrChartFieldOwner)
 		})
 	if err != nil {
-		return true, fmt.Errorf("failed to apply webhook resources: %w", err)
+		return fmt.Errorf("failed to apply webhook resources: %w", err)
 	}
 	kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionTrue)
 	logger.Info("successfully installed webhook resources",
 		"kyma", kymaObjKey.String())
-	return false, nil
+	return nil
 }
 
 func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1alpha1.Kyma) error {
