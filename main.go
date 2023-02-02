@@ -213,7 +213,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 	options controller.Options,
 ) {
 	kcpRestConfig := mgr.GetConfig()
-	var skrWebhookChartManager deploy.SKRWebhookManager
+	var skrWebhookManager deploy.SKRWebhookManager
 	if flagVar.enableKcpWatcher {
 		watcherChartDirInfo, err := os.Stat(flagVar.skrWatcherPath)
 		if err != nil || !watcherChartDirInfo.IsDir() {
@@ -224,7 +224,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 			WatcherLocalTestingEnabled: flagVar.enableWatcherLocalTesting,
 			GatewayHTTPPortMapping:     flagVar.listenerHTTPPortLocalMapping,
 		}
-		skrWebhookChartManager, err = deploy.NewSKRWebhookManifestManager(kcpRestConfig, skrChartConfig)
+		skrWebhookManager, err = deploy.NewSKRWebhookManifestManager(kcpRestConfig, skrChartConfig)
 		if err != nil {
 			setupLog.Error(err, "failed to create webhook chart manager")
 		}
@@ -235,7 +235,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		EventRecorder:     mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
 		KcpRestConfig:     kcpRestConfig,
 		RemoteClientCache: remoteClientCache,
-		SKRWebhookManager: skrWebhookChartManager,
+		SKRWebhookManager: skrWebhookManager,
 		RequeueIntervals: controllers.RequeueIntervals{
 			Success: flagVar.kymaRequeueSuccessInterval,
 		},
