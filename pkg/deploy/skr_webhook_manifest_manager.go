@@ -3,13 +3,10 @@ package deploy
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-	"go.uber.org/zap"
-
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
@@ -55,8 +52,8 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1alpha1.
 		return true, fmt.Errorf("failed to apply webhook resources: %w", err)
 	}
 	kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionTrue)
-	logger.Info("successfully installed webhook chart",
-		"release-name", skrChartReleaseName(kymaObjKey))
+	logger.Info("successfully installed webhook resources",
+		"kyma", kymaObjKey.String())
 	return false, nil
 }
 
@@ -65,19 +62,16 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1alpha1.K
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
 	remoteNs := resolveRemoteNamespace(kyma)
-	manifestFilePath := fmt.Sprintf("%s/raw/skr-webhook-resources.yaml", m.config.WebhookChartPath)
+	manifestFilePath := fmt.Sprintf(rawManifestFilePathTpl, m.config.WebhookChartPath)
 	rawManifestFile, err := os.Open(manifestFilePath)
 	if err != nil {
 		return err
 	}
-	defer func(closer io.Closer) {
-		err := closer.Close()
-		if err != nil {
-			logger.V(int(zap.DebugLevel)).Info("failed to close raw manifest file", "path",
-				manifestFilePath)
-		}
-	}(rawManifestFile)
+	defer closeFileAndLogErr(rawManifestFile, logger, manifestFilePath)
 	resources, err := getRawManifestUnstructuredResources(rawManifestFile, remoteNs)
+	genClientObjects := getGeneratedClientObjects(kymaObjKey, remoteNs,
+		&unstructuredResourcesConfig{}, map[string]WatchableConfig{})
+	resources = append(resources, genClientObjects...)
 	if err != nil {
 		return err
 	}
@@ -88,7 +82,7 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1alpha1.K
 	if err != nil && !apierrors.IsNotFound(err) {
 		return fmt.Errorf("failed to delete webhook resources: %w", err)
 	}
-	logger.Info("successfully removed webhook chart",
-		"release-name", skrChartReleaseName(kymaObjKey))
+	logger.Info("successfully removed webhook resources",
+		"kyma", kymaObjKey.String())
 	return nil
 }

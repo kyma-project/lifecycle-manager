@@ -165,9 +165,7 @@ var _ = BeforeSuite(func() {
 
 	remoteClientCache = remote.NewClientCache()
 	skrChartCfg := &deploy.SkrChartManagerConfig{
-		WebhookChartPath:       webhookChartPath,
-		SkrWebhookMemoryLimits: "200Mi",
-		SkrWebhookCPULimits:    "1",
+		WebhookChartPath: webhookChartPath,
 	}
 	skrWebhookChartManager, err := deploy.NewSKRWebhookManifestManager(restCfg, skrChartCfg)
 	Expect(err).ToNot(HaveOccurred())

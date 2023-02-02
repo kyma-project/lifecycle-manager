@@ -63,7 +63,7 @@ the [kyma watcher repo](https://github.com/kyma-project/runtime-watcher) to gene
     -ca=ca.pem \
     -ca-key=ca-key.pem \
     -config=./kcp/gardener/cert_config/ca-config.json \
-    -hostname="localhost,127.0.0.1,default-kyma-sample-skr-webhook.default.svc.cluster.local,default-kyma-sample-skr-webhook.default.svc" \
+    -hostname="localhost,127.0.0.1,skr-webhook.kcp-system.svc.cluster.local,skr-webhook.kcp-system.svc" \
     -profile=default \
     ./kcp/gardener/cert_config/ca-csr.json | cfssljson -bare signed-cert
     ```

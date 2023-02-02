@@ -11,7 +11,6 @@ require (
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20221129135108-60e6093eba9d
 	github.com/onsi/ginkgo/v2 v2.6.0
 	github.com/onsi/gomega v1.24.1
-	github.com/slok/go-helm-template v0.3.0
 	github.com/stretchr/testify v1.8.1
 	go.uber.org/zap v1.24.0
 	golang.org/x/sync v0.1.0
@@ -25,7 +24,6 @@ require (
 	k8s.io/client-go v0.26.0
 	sigs.k8s.io/controller-runtime v0.14.1
 	sigs.k8s.io/e2e-framework v0.0.8
-	sigs.k8s.io/yaml v1.3.0
 )
 
 require (
@@ -161,4 +159,5 @@ require (
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.13.9 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
+	sigs.k8s.io/yaml v1.3.0 // indirect
 )

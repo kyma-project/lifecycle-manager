@@ -23,9 +23,10 @@ import (
 )
 
 const (
-	bindingSubjectsKey = "subjects"
-	stringMapDataKey   = "data"
-	podRestartLabelKey = "operator.kyma-project.io/pod-restart-trigger"
+	bindingSubjectsKey     = "subjects"
+	stringMapDataKey       = "data"
+	podRestartLabelKey     = "operator.kyma-project.io/pod-restart-trigger"
+	rawManifestFilePathTpl = "%s/resources.yaml"
 )
 
 var (
@@ -33,6 +34,9 @@ var (
 	ErrFailedToConvertSubjectToMap  = errors.New("failed to convert subject to a map")
 	ErrExpectedSubjectsNotToBeEmpty = errors.New("expected subjects to be non empty")
 	ErrCouldNotFindSubjectsField    = fmt.Errorf("could not find %s field", bindingSubjectsKey)
+	ErrFailedToConvertVolumeToMap   = errors.New("failed to convert volume to a map")
+	ErrExpectedNonEmptyPodVolumes   = errors.New("expected non empty pod volumes")
+	ErrPodVolumesNotFound           = errors.New("pod volumes not found")
 )
 
 func createSKRSecret(cfg *unstructuredResourcesConfig, secretObjKey client.ObjectKey,
@@ -129,7 +133,9 @@ func configureClusterRoleBinding(cfg *unstructuredResourcesConfig, binding *unst
 	if !ok {
 		return nil, ErrFailedToConvertSubjectToMap
 	}
-	serviceAccountSubj["namespace"] = cfg.remoteNs
+	if err := unstructured.SetNestedField(serviceAccountSubj, cfg.remoteNs, "namespace"); err != nil {
+		return nil, err
+	}
 	subjects[0] = serviceAccountSubj
 	if err := unstructured.SetNestedSlice(binding.Object, subjects, bindingSubjectsKey); err != nil {
 		return nil, err
@@ -140,7 +146,7 @@ func configureClusterRoleBinding(cfg *unstructuredResourcesConfig, binding *unst
 func configureConfigMap(cfg *unstructuredResourcesConfig, configMap *unstructured.Unstructured,
 ) (*unstructured.Unstructured, error) {
 	configMapData := map[string]string{
-		"version":  cfg.contractVersion,
+		"contractVersion":  cfg.contractVersion,
 		"kcpAddr":          cfg.kcpAddress,
 		"tlsWebhookServer": cfg.tlsWebhookServer,
 		"tlsCallback":      cfg.tlsCallback,
@@ -151,7 +157,7 @@ func configureConfigMap(cfg *unstructuredResourcesConfig, configMap *unstructure
 	return configMap, nil
 }
 
-func configureDeploymentLabel(cfg *unstructuredResourcesConfig, deployment *unstructured.Unstructured,
+func configureDeployment(cfg *unstructuredResourcesConfig, deployment *unstructured.Unstructured,
 ) (*unstructured.Unstructured, error) {
 	err := unstructured.SetNestedField(deployment.Object, cfg.secretResVer, "spec", "template", "metadata",
 		"labels", podRestartLabelKey)
@@ -161,19 +167,18 @@ func configureDeploymentLabel(cfg *unstructuredResourcesConfig, deployment *unst
 
 	podVolumes, found, err := unstructured.NestedSlice(deployment.Object, "spec", "template", "spec", "volumes")
 	if !found {
-		return nil, errors.New("pod volumes not found")
+		return nil, ErrPodVolumesNotFound
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to get pod volumes: %w", err)
 	}
 	if len(podVolumes) == 0 {
-		return nil, ErrExpectedSubjectsNotToBeEmpty
+		return nil, ErrExpectedNonEmptyPodVolumes
 	}
 	sslVolume, ok := podVolumes[0].(map[string]interface{})
 	if !ok {
-		return nil, ErrFailedToConvertSubjectToMap
+		return nil, ErrFailedToConvertVolumeToMap
 	}
-
 	err = unstructured.SetNestedField(sslVolume, cfg.secretName, "secret", "secretName")
 	if err != nil {
 		return nil, fmt.Errorf("failed to set secret name: %w", err)
@@ -199,28 +204,36 @@ func getSKRClientObjectsForInstall(ctx context.Context, kcpClient client.Client,
 		return nil, err
 	}
 	skrClientObjects = append(skrClientObjects, resources...)
+	watchableConfigs, err := getWatchableConfigs(ctx, kcpClient)
+	if err != nil {
+		return nil, err
+	}
+	genClientObjects := getGeneratedClientObjects(kymaObjKey, remoteNs, resourcesConfig, watchableConfigs)
+	return append(skrClientObjects, genClientObjects...), nil
+}
+
+func getGeneratedClientObjects(kymaObjKey client.ObjectKey, remoteNs string,
+	resourcesConfig *unstructuredResourcesConfig, watchableConfigs map[string]WatchableConfig,
+) []client.Object {
+	var genClientObjects []client.Object
 	webhookCfgObjKey := client.ObjectKey{
 		Namespace: remoteNs,
 		Name:      ResolveSKRChartResourceName(WebhookCfgAndDeploymentNameTpl, kymaObjKey),
 	}
 	svcObjKey := client.ObjectKey{
 		Namespace: remoteNs,
-		Name:      ResolveSKRChartResourceName(WebhookSvcNameTpl, kymaObjKey),
+		Name:      "skr-webhook",
 	}
 
-	watchableConfigs, err := getWatchableConfigs(ctx, kcpClient)
-	if err != nil {
-		return nil, err
-	}
 	webhookConfig := generateValidatingWebhookConfigFromWatchableConfigs(webhookCfgObjKey, svcObjKey,
 		resourcesConfig.caCert, watchableConfigs)
-	skrClientObjects = append(skrClientObjects, webhookConfig)
+	genClientObjects = append(genClientObjects, webhookConfig)
 	secretObjKey := client.ObjectKey{
 		Namespace: remoteNs,
 		Name:      ResolveSKRChartResourceName(WebhookTLSCfgNameTpl, kymaObjKey),
 	}
 	skrSecret := createSKRSecret(resourcesConfig, secretObjKey)
-	return append(skrClientObjects, skrSecret), nil
+	return append(genClientObjects, skrSecret)
 }
 
 func getWatchableConfigs(ctx context.Context, kcpClient client.Client) (map[string]WatchableConfig, error) {
@@ -253,7 +266,7 @@ func configureUnstructuredResource(cfg *unstructuredResourcesConfig, resource *u
 		return configureConfigMap(cfg, resource)
 	}
 	if resource.GetAPIVersion() == appsv1.SchemeGroupVersion.String() && resource.GetKind() == "Deployment" {
-		return configureDeploymentLabel(cfg, resource)
+		return configureDeployment(cfg, resource)
 	}
 	if resource.GetAPIVersion() == rbacV1.SchemeGroupVersion.String() && resource.GetKind() == "ClusterRoleBinding" {
 		return configureClusterRoleBinding(cfg, resource)
@@ -261,23 +274,24 @@ func configureUnstructuredResource(cfg *unstructuredResourcesConfig, resource *u
 	return resource, nil
 }
 
+func closeFileAndLogErr(closer io.Closer, logger logr.Logger, path string) {
+	err := closer.Close()
+	if err != nil {
+		logger.V(int(zap.DebugLevel)).Info("failed to close raw manifest file", "path", path)
+	}
+}
+
 func getRawManifestClientObjects(cfg *unstructuredResourcesConfig, remoteNs, chartPath string, logger logr.Logger,
 ) ([]client.Object, error) {
 	if cfg == nil {
 		return nil, ErrExpectedNonNilConfig
 	}
-	manifestFilePath := fmt.Sprintf("%s/raw/skr-webhook-resources.yaml", chartPath)
+	manifestFilePath := fmt.Sprintf(rawManifestFilePathTpl, chartPath)
 	rawManifestFile, err := os.Open(manifestFilePath)
 	if err != nil {
 		return nil, err
 	}
-	defer func(closer io.Closer) {
-		err := closer.Close()
-		if err != nil {
-			logger.V(int(zap.DebugLevel)).Info("failed to close raw manifest file", "path",
-				manifestFilePath)
-		}
-	}(rawManifestFile)
+	defer closeFileAndLogErr(rawManifestFile, logger, rawManifestFile.Name())
 	decoder := yaml.NewYAMLOrJSONDecoder(rawManifestFile, defaultBufferSize)
 	var resources []client.Object
 	for {
@@ -316,7 +330,7 @@ func getUnstructuredResourcesConfig(ctx context.Context, kcpClient client.Client
 		contractVersion:  version,
 		kcpAddress:       kcpAddr,
 		tlsWebhookServer: "true",
-		tlsCallback:      "true",
+		tlsCallback:      "false",
 		secretName:       tlsSecret.Name,
 		secretResVer:     tlsSecret.ResourceVersion,
 		caCert:           tlsSecret.Data[caCertKey],

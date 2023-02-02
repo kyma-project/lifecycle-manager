@@ -221,8 +221,6 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		}
 		skrChartConfig := &deploy.SkrChartManagerConfig{
 			WebhookChartPath:           flagVar.skrWatcherPath,
-			SkrWebhookMemoryLimits:     flagVar.skrWebhookMemoryLimits,
-			SkrWebhookCPULimits:        flagVar.skrWebhookCPULimits,
 			WatcherLocalTestingEnabled: flagVar.enableWatcherLocalTesting,
 			GatewayHTTPPortMapping:     flagVar.listenerHTTPPortLocalMapping,
 		}

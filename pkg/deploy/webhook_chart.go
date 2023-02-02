@@ -4,25 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/yaml"
 	"net"
-	"os"
 	"strconv"
 
-	"github.com/slok/go-helm-template/helm"
-	"golang.org/x/sync/errgroup"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	k8syaml "sigs.k8s.io/yaml"
 )
 
 const (
-	customConfigKey                = "modules"
 	WebhookCfgAndDeploymentNameTpl = "%s-webhook"
-	WebhookSvcNameTpl              = "%s-webhook-svc"
 	WebhookTLSCfgNameTpl           = "%s-webhook-tls"
 	IstioSystemNs                  = "istio-system"
 	IngressServiceName             = "istio-ingressgateway"
@@ -44,9 +40,7 @@ var ErrLoadBalancerIPIsNotAssigned = errors.New("load balancer service external 
 type SkrChartManagerConfig struct {
 	// WebhookChartPath represents the path of the webhook chart
 	// to be installed on SKR clusters upon reconciling kyma CRs.
-	WebhookChartPath       string
-	SkrWebhookMemoryLimits string
-	SkrWebhookCPULimits    string
+	WebhookChartPath string
 	// WatcherLocalTestingEnabled indicates if the chart manager is running in local testing mode
 	WatcherLocalTestingEnabled bool
 	// GatewayHTTPPortMapping indicates the port used to expose the KCP cluster locally for the watcher callbacks
@@ -91,51 +85,6 @@ func skrChartReleaseName(kymaObjKey client.ObjectKey) string {
 	return fmt.Sprintf(releaseNameTpl, kymaObjKey.Namespace, kymaObjKey.Name)
 }
 
-func generateHelmChartArgs(ctx context.Context, kcpClient client.Client, kymaObjKey client.ObjectKey,
-	managerConfig *SkrChartManagerConfig, kcpAddr string,
-) (map[string]interface{}, error) {
-	customConfigValue := ""
-	watcherList := &v1alpha1.WatcherList{}
-	if err := kcpClient.List(ctx, watcherList); err != nil {
-		return nil, fmt.Errorf("error listing watcher CRs: %w", err)
-	}
-
-	watchers := watcherList.Items
-	if len(watchers) != 0 {
-		chartCfg := generateWatchableConfigs(watchers)
-		chartConfigBytes, err := k8syaml.Marshal(chartCfg)
-		if err != nil {
-			return nil, err
-		}
-		customConfigValue = string(chartConfigBytes)
-	}
-
-	tlsSecret := &corev1.Secret{}
-	secretObjKey := client.ObjectKey{
-		Namespace: kymaObjKey.Namespace,
-		Name:      ResolveSKRChartResourceName(WebhookTLSCfgNameTpl, kymaObjKey),
-	}
-
-	if err := kcpClient.Get(ctx, secretObjKey, tlsSecret); err != nil {
-		return nil, fmt.Errorf("error fetching TLS secret: %w", err)
-	}
-
-	return map[string]interface{}{
-		"caCert": string(tlsSecret.Data[caCertKey]),
-		"tls": map[string]string{
-			"cert":          string(tlsSecret.Data[tlsCertKey]),
-			"privateKey":    string(tlsSecret.Data[tlsPrivateKeyKey]),
-			"secretResVer":  tlsSecret.GetResourceVersion(),
-			"webhookServer": "true",
-			"callback":      "false",
-		},
-		"kcpAddr":               kcpAddr,
-		"resourcesLimitsMemory": managerConfig.SkrWebhookMemoryLimits,
-		"resourcesLimitsCPU":    managerConfig.SkrWebhookCPULimits,
-		customConfigKey:         customConfigValue,
-	}, nil
-}
-
 func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrChartManagerConfig) (string, error) {
 	if managerConfig.WatcherLocalTestingEnabled {
 		return net.JoinHostPort(defaultK3dLocalhostMapping, strconv.Itoa(managerConfig.GatewayHTTPPortMapping)), nil
@@ -167,22 +116,6 @@ func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrChartManagerConfig
 	return net.JoinHostPort(externalIP, strconv.Itoa(int(port))), nil
 }
 
-func renderChartToRawManifest(ctx context.Context, kymaObjKey client.ObjectKey,
-	chartPath string, chartArgValues map[string]interface{},
-) (string, error) {
-	chartFS := os.DirFS(chartPath)
-	chart, err := helm.LoadChart(ctx, chartFS)
-	if err != nil {
-		return "", nil
-	}
-	return helm.Template(ctx, helm.TemplateConfig{
-		Chart:       chart,
-		ReleaseName: skrChartReleaseName(kymaObjKey),
-		Namespace:   metav1.NamespaceDefault,
-		Values:      chartArgValues,
-	})
-}
-
 // ResolveSKRChartResourceName resolves a resource name that belongs to the SKR webhook's Chart
 // using the resource name's template.
 func ResolveSKRChartResourceName(resourceNameTpl string, kymaObjKey client.ObjectKey) string {
@@ -194,4 +127,22 @@ func resolveRemoteNamespace(kyma *v1alpha1.Kyma) string {
 		return kyma.Spec.Sync.Namespace
 	}
 	return kyma.Namespace
+}
+
+func getRawManifestUnstructuredResources(rawManifestReader io.Reader, remoteNs string) ([]client.Object, error) {
+	decoder := yaml.NewYAMLOrJSONDecoder(rawManifestReader, defaultBufferSize)
+	var resources []client.Object
+	for {
+		resource := &unstructured.Unstructured{}
+		err := decoder.Decode(resource)
+		if err != nil && !errors.Is(err, io.EOF) {
+			return nil, err
+		}
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		resource.SetNamespace(remoteNs)
+		resources = append(resources, resource)
+	}
+	return resources, nil
 }
