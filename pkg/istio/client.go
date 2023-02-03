@@ -437,7 +437,7 @@ func (c *Client) SyncCertificateSecretToIstio(ctx context.Context, kcpClient cli
 		Data: certSecret.Data,
 	}
 	// CA Certificate exists, copy it to istio namespace
-	//certSecret.Namespace = c.config.IstioCertificateNamespace
+
 	if err := kcpClient.Update(ctx, istioCertSecret); apierrors.IsNotFound(err) {
 		certSecret.ResourceVersion = ""
 		if err := kcpClient.Create(ctx, istioCertSecret); err != nil {

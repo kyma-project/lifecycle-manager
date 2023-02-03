@@ -57,9 +57,6 @@ import (
 	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 
 	//+kubebuilder:scaffold:imports
-	"github.com/go-logr/logr"
-	"github.com/go-logr/zapr"
-	"go.uber.org/zap"
 
 	aggregatorclientsetscheme "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/scheme"
 )

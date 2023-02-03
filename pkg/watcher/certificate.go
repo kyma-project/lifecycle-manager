@@ -32,12 +32,10 @@ const (
 	tlsPrivateKeyKey = "tls.key"
 )
 
-var (
-	LabelSet = k8slabels.Set{ //nolint:gochecknoglobals
-		v1alpha1.PurposeLabel: v1alpha1.CertManager,
-		v1alpha1.ManagedBy:    v1alpha1.OperatorName,
-	}
-)
+var LabelSet = k8slabels.Set{ //nolint:gochecknoglobals
+	v1alpha1.PurposeLabel: v1alpha1.CertManager,
+	v1alpha1.ManagedBy:    v1alpha1.OperatorName,
+}
 
 type SubjectAltName struct {
 	DNSNames       []string
@@ -227,9 +225,8 @@ func (c *Certificate) getIssuer(ctx context.Context) (*v1.Issuer, error) {
 	return &issuerList.Items[0], nil
 }
 
-type CertificateNotReadyError struct {
-}
+type CertificateNotReadyError struct{}
 
 func (e *CertificateNotReadyError) Error() string {
-	return fmt.Sprintf("Certificate-Secret does not exist")
+	return "Certificate-Secret does not exist"
 }
