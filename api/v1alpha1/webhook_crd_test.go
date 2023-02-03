@@ -22,8 +22,7 @@ import (
 
 var testFiles = filepath.Join("..", "..", "config", "samples", "tests") //nolint:gochecknoglobals
 
-var _ = Describe("Webhook ValidationCreate Strict", func() {
-	SetupWebhook()
+var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	data := unstructured.Unstructured{}
 	data.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   v1alpha1.OperatorPrefix,
@@ -34,7 +33,7 @@ var _ = Describe("Webhook ValidationCreate Strict", func() {
 		crd := GetCRD(v1alpha1.OperatorPrefix, "samplecrd")
 		Eventually(func() error {
 			return k8sClient.Create(webhookServerContext, crd)
-		}, "10s").Should(Succeed())
+		}, Timeout, Interval).Should(Succeed())
 
 		template, err := testutils.ModuleTemplateFactory(
 			v1alpha1.Module{
@@ -55,7 +54,7 @@ var _ = Describe("Webhook ValidationCreate Strict", func() {
 
 		Eventually(func() error {
 			return k8sClient.Create(webhookServerContext, crd)
-		}, "10s").Should(Succeed())
+		}, Timeout, Interval).Should(Succeed())
 		template, err := testutils.ModuleTemplateFactory(
 			v1alpha1.Module{
 				ControllerName: "manifest",
@@ -74,7 +73,7 @@ var _ = Describe("Webhook ValidationCreate Strict", func() {
 		crd := GetCRD(v1alpha1.OperatorPrefix, "samplecrd")
 		Eventually(func() error {
 			return k8sClient.Create(webhookServerContext, crd)
-		}, "10s").Should(Succeed())
+		}, Timeout, Interval).Should(Succeed())
 
 		template, err := testutils.ModuleTemplateFactory(
 			v1alpha1.Module{
@@ -107,8 +106,6 @@ var _ = Describe("Webhook ValidationCreate Strict", func() {
 		Expect(k8sClient.Delete(webhookServerContext, crd)).Should(Succeed())
 	},
 	)
-
-	StopWebhook()
 },
 )
 
