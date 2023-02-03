@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"github.com/kyma-project/module-manager/pkg/types"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -20,6 +19,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	"golang.org/x/sync/errgroup"
 )
 
 func New(clnt client.Client) *RunnerImpl {
@@ -43,26 +43,21 @@ func (r *RunnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 	ssaStart := time.Now()
 	baseLogger := ctrlLog.FromContext(ctx)
 
-	results := make(chan error, len(modules))
+	group, ctx := errgroup.WithContext(ctx)
 	for _, module := range modules {
-		go func(module *common.Module) {
+		module := module
+		group.Go(func() error {
 			if err := r.updateModule(ctx, kyma, module); err != nil {
-				results <- fmt.Errorf("could not update module %s: %w", module.GetName(), err)
-				return
+				return fmt.Errorf("could not update module %s: %w", module.GetName(), err)
 			}
 			module.Logger(baseLogger).V(log.DebugLevel).Info("successfully patched module")
-			results <- nil
-		}(module)
+			return nil
+		})
 	}
-	var errs []error
-	for i := 0; i < len(modules); i++ {
-		if err := <-results; err != nil {
-			errs = append(errs, err)
-		}
-	}
+	err := group.Wait()
 	ssaFinish := time.Since(ssaStart)
-	if errs != nil {
-		return fmt.Errorf("ServerSideApply failed (after %s): %w", ssaFinish, types.NewMultiError(errs))
+	if err != nil {
+		return fmt.Errorf("ServerSideApply failed (after %s): %w", ssaFinish, err)
 	}
 	baseLogger.V(log.DebugLevel).Info("ServerSideApply finished", "time", ssaFinish)
 	return nil

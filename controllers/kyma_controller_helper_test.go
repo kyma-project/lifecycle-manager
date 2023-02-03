@@ -87,25 +87,43 @@ func updateModuleState(kyma *v1alpha1.Kyma, module v1alpha1.Module, state v1alph
 	return k8sManager.GetClient().Status().Update(ctx, component)
 }
 
-func ModuleExists(ctx context.Context, kyma *v1alpha1.Kyma, module v1alpha1.Module) func() bool {
-	return func() bool {
+func ModuleExists(ctx context.Context, kyma *v1alpha1.Kyma, module v1alpha1.Module) func() error {
+	return func() error {
 		kyma, err := GetKyma(ctx, controlPlaneClient, kyma.Name, kyma.Namespace)
 		if err != nil {
-			return false
+			return err
 		}
 		_, err = getModule(kyma, module)
-		return err == nil
+		return err
 	}
 }
 
-func ModuleNotExist(ctx context.Context, kyma *v1alpha1.Kyma, module v1alpha1.Module) func() bool {
-	return func() bool {
+func UpdateRemoteModule(ctx context.Context,
+	client client.Client,
+	kyma *v1alpha1.Kyma,
+	modules []v1alpha1.Module,
+) func() error {
+	return func() error {
+		kyma, err := GetKyma(ctx, client, kyma.Name, kyma.Namespace)
+		if err != nil {
+			return err
+		}
+		kyma.Spec.Modules = modules
+		return client.Update(ctx, kyma)
+	}
+}
+
+func ModuleNotExist(ctx context.Context, kyma *v1alpha1.Kyma, module v1alpha1.Module) func() error {
+	return func() error {
 		kyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
 		if err != nil {
-			return false
+			return err
 		}
 		_, err = getModule(kyma, module)
-		return k8serrors.IsNotFound(err)
+		if k8serrors.IsNotFound(err) {
+			return nil
+		}
+		return err
 	}
 }
 
@@ -123,15 +141,6 @@ func SKRModuleExistWithOverwrites(kyma *v1alpha1.Kyma, module v1alpha1.Module) f
 		Expect(err).ToNot(HaveOccurred())
 		return skrModuleSpec.InitKey
 	}
-}
-
-func UnmarshalManifestSpec(module *unstructured.Unstructured) *manifestV1alpha1.ManifestSpec {
-	body, err := json.Marshal(module.Object["spec"])
-	Expect(err).ToNot(HaveOccurred())
-	manifestSpec := manifestV1alpha1.ManifestSpec{}
-	err = json.Unmarshal(body, &manifestSpec)
-	Expect(err).ToNot(HaveOccurred())
-	return &manifestSpec
 }
 
 func getModule(kyma *v1alpha1.Kyma, module v1alpha1.Module) (*manifestV1alpha1.Manifest, error) {

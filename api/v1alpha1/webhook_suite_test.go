@@ -55,6 +55,11 @@ var (
 	scheme               *runtime.Scheme      //nolint:gochecknoglobals
 )
 
+const (
+	Timeout  = time.Second * 10
+	Interval = time.Millisecond * 250
+)
+
 func TestAPIs(t *testing.T) {
 	t.Parallel()
 	RegisterFailHandler(Fail)
@@ -64,7 +69,7 @@ func TestAPIs(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
-
+	webhookServerContext, webhookServerCancel = context.WithCancel(context.TODO())
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
@@ -94,62 +99,58 @@ var _ = BeforeSuite(func() {
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
+
+	SetupWebhook()
 })
 
 func StopWebhook() {
-	It("teardown webhook", func() {
-		webhookServerCancel()
-		<-webhookServerContext.Done()
-	})
+	webhookServerCancel()
+	<-webhookServerContext.Done()
 }
 
 func SetupWebhook() {
-	It("setup webhook", func() {
-		webhookServerContext, webhookServerCancel = context.WithCancel(context.TODO())
+	// start webhook server using Manager
+	webhookInstallOptions := &testEnv.WebhookInstallOptions
+	mgr, err := ctrl.NewManager(
+		cfg, ctrl.Options{
+			Scheme:             scheme,
+			Host:               webhookInstallOptions.LocalServingHost,
+			Port:               webhookInstallOptions.LocalServingPort,
+			CertDir:            webhookInstallOptions.LocalServingCertDir,
+			LeaderElection:     false,
+			MetricsBindAddress: "0",
+		})
+	Expect(err).NotTo(HaveOccurred())
 
-		// start webhook server using Manager
-		webhookInstallOptions := &testEnv.WebhookInstallOptions
-		mgr, err := ctrl.NewManager(
-			cfg, ctrl.Options{
-				Scheme:             scheme,
-				Host:               webhookInstallOptions.LocalServingHost,
-				Port:               webhookInstallOptions.LocalServingPort,
-				CertDir:            webhookInstallOptions.LocalServingCertDir,
-				LeaderElection:     false,
-				MetricsBindAddress: "0",
-			})
+	err = (&v1alpha1.ModuleTemplate{}).SetupWebhookWithManager(mgr)
+	Expect(err).NotTo(HaveOccurred())
+
+	//+kubebuilder:scaffold:webhook
+
+	go func() {
+		defer GinkgoRecover()
+		err = mgr.Start(webhookServerContext)
 		Expect(err).NotTo(HaveOccurred())
+	}()
 
-		err = (&v1alpha1.ModuleTemplate{}).SetupWebhookWithManager(mgr)
-		Expect(err).NotTo(HaveOccurred())
-
-		//+kubebuilder:scaffold:webhook
-
-		go func() {
-			defer GinkgoRecover()
-			err = mgr.Start(webhookServerContext)
-			Expect(err).NotTo(HaveOccurred())
-		}()
-
-		// wait for the webhook server to get ready
-		dialer := &net.Dialer{Timeout: time.Second}
-		addrPort := fmt.Sprintf("%s:%d", webhookInstallOptions.LocalServingHost, webhookInstallOptions.LocalServingPort)
-		Eventually(func() error {
-			conn, err := tls.DialWithDialer(dialer, "tcp", addrPort, &tls.Config{
-				InsecureSkipVerify: true, //nolint:gosec
-			})
-			if err != nil {
-				return err
-			}
-			_ = conn.Close()
-			return nil
-		}).Should(Succeed())
-	})
+	// wait for the webhook server to get ready
+	dialer := &net.Dialer{Timeout: time.Second}
+	addrPort := fmt.Sprintf("%s:%d", webhookInstallOptions.LocalServingHost, webhookInstallOptions.LocalServingPort)
+	Eventually(func() error {
+		conn, err := tls.DialWithDialer(dialer, "tcp", addrPort, &tls.Config{
+			InsecureSkipVerify: true, //nolint:gosec
+		})
+		if err != nil {
+			return err
+		}
+		_ = conn.Close()
+		return nil
+	}, Timeout, Interval).Should(Succeed())
 }
 
 var _ = AfterSuite(func() {
-	webhookServerCancel()
 	By("tearing down the test environment")
+	StopWebhook()
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
