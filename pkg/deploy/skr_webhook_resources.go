@@ -11,8 +11,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	"go.uber.org/zap"
-
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	registrationV1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -252,7 +251,7 @@ func configureUnstructuredResource(cfg *unstructuredResourcesConfig, resource *u
 func closeFileAndLogErr(closer io.Closer, logger logr.Logger, path string) {
 	err := closer.Close()
 	if err != nil {
-		logger.V(int(zap.DebugLevel)).Info("failed to close raw manifest file", "path", path)
+		logger.V(log.DebugLevel).Info("failed to close raw manifest file", "path", path)
 	}
 }
 
