@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 
+	"k8s.io/apimachinery/pkg/runtime"
+
 	"github.com/go-logr/logr"
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"go.uber.org/zap"
@@ -23,20 +25,16 @@ import (
 )
 
 const (
-	bindingSubjectsKey     = "subjects"
-	stringMapDataKey       = "data"
 	podRestartLabelKey     = "operator.kyma-project.io/pod-restart-trigger"
 	rawManifestFilePathTpl = "%s/resources.yaml"
 )
 
 var (
-	ErrExpectedNonNilConfig         = errors.New("expected non nil config")
-	ErrFailedToConvertSubjectToMap  = errors.New("failed to convert subject to a map")
-	ErrExpectedSubjectsNotToBeEmpty = errors.New("expected subjects to be non empty")
-	ErrCouldNotFindSubjectsField    = fmt.Errorf("could not find %s field", bindingSubjectsKey)
-	ErrFailedToConvertVolumeToMap   = errors.New("failed to convert volume to a map")
-	ErrExpectedNonEmptyPodVolumes   = errors.New("expected non empty pod volumes")
-	ErrPodVolumesNotFound           = errors.New("pod volumes not found")
+	ErrExpectedNonNilConfig             = errors.New("expected non nil config")
+	ErrExpectedSubjectsNotToBeEmpty     = errors.New("expected subjects to be non empty")
+	ErrExpectedNonEmptyPodVolumes       = errors.New("expected non empty pod volumes")
+	ErrPodTemplateMustContainAtLeastOne = errors.New("pod template labels must contain " +
+		"at least the deployment selector label")
 )
 
 func createSKRSecret(cfg *unstructuredResourcesConfig, secretObjKey client.ObjectKey,
@@ -117,77 +115,53 @@ func generateValidatingWebhookConfigFromWatchableConfigs(webhookObjKey, svcObjKe
 	}
 }
 
-func configureClusterRoleBinding(cfg *unstructuredResourcesConfig, binding *unstructured.Unstructured,
-) (*unstructured.Unstructured, error) {
-	subjects, found, err := unstructured.NestedSlice(binding.UnstructuredContent(), bindingSubjectsKey)
-	if !found {
-		return nil, ErrCouldNotFindSubjectsField
-	}
-	if err != nil {
+func configureClusterRoleBinding(cfg *unstructuredResourcesConfig, resource *unstructured.Unstructured,
+) (*rbacV1.ClusterRoleBinding, error) {
+	crb := &rbacV1.ClusterRoleBinding{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(resource.Object, crb); err != nil {
 		return nil, err
 	}
-	if len(subjects) == 0 {
+	if len(crb.Subjects) == 0 {
 		return nil, ErrExpectedSubjectsNotToBeEmpty
 	}
-	serviceAccountSubj, ok := subjects[0].(map[string]interface{})
-	if !ok {
-		return nil, ErrFailedToConvertSubjectToMap
-	}
-	if err := unstructured.SetNestedField(serviceAccountSubj, cfg.remoteNs, "namespace"); err != nil {
-		return nil, err
-	}
-	subjects[0] = serviceAccountSubj
-	if err := unstructured.SetNestedSlice(binding.Object, subjects, bindingSubjectsKey); err != nil {
-		return nil, err
-	}
-	return binding, nil
+	serviceAccountSubj := crb.Subjects[0]
+	serviceAccountSubj.Namespace = cfg.remoteNs
+	crb.Subjects[0] = serviceAccountSubj
+	return crb, nil
 }
 
-func configureConfigMap(cfg *unstructuredResourcesConfig, configMap *unstructured.Unstructured,
-) (*unstructured.Unstructured, error) {
-	configMapData := map[string]string{
+func configureConfigMap(cfg *unstructuredResourcesConfig, resource *unstructured.Unstructured,
+) (*corev1.ConfigMap, error) {
+	configMap := &corev1.ConfigMap{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(resource.Object, configMap); err != nil {
+		return nil, err
+	}
+	configMap.Data = map[string]string{
 		"contractVersion":  cfg.contractVersion,
 		"kcpAddr":          cfg.kcpAddress,
 		"tlsWebhookServer": cfg.tlsWebhookServer,
 		"tlsCallback":      cfg.tlsCallback,
 	}
-	if err := unstructured.SetNestedStringMap(configMap.Object, configMapData, stringMapDataKey); err != nil {
-		return nil, err
-	}
 	return configMap, nil
 }
 
-func configureDeployment(cfg *unstructuredResourcesConfig, deployment *unstructured.Unstructured,
-) (*unstructured.Unstructured, error) {
-	err := unstructured.SetNestedField(deployment.Object, cfg.secretResVer, "spec", "template", "metadata",
-		"labels", podRestartLabelKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to update pod template labels: %w", err)
+func configureDeployment(cfg *unstructuredResourcesConfig, resource *unstructured.Unstructured,
+) (*appsv1.Deployment, error) {
+	deployment := &appsv1.Deployment{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(resource.Object, deployment); err != nil {
+		return nil, err
 	}
-
-	podVolumes, found, err := unstructured.NestedSlice(deployment.Object, "spec", "template", "spec", "volumes")
-	if !found {
-		return nil, ErrPodVolumesNotFound
+	if deployment.Spec.Template.Labels == nil || len(deployment.Spec.Template.Labels) == 0 {
+		return nil, ErrPodTemplateMustContainAtLeastOne
 	}
-	if err != nil {
-		return nil, fmt.Errorf("failed to get pod volumes: %w", err)
-	}
-	if len(podVolumes) == 0 {
+	deployment.Spec.Template.Labels[podRestartLabelKey] = cfg.secretResVer
+	if len(deployment.Spec.Template.Spec.Volumes) == 0 {
 		return nil, ErrExpectedNonEmptyPodVolumes
 	}
-	sslVolume, ok := podVolumes[0].(map[string]interface{})
-	if !ok {
-		return nil, ErrFailedToConvertVolumeToMap
-	}
-	err = unstructured.SetNestedField(sslVolume, cfg.secretName, "secret", "secretName")
-	if err != nil {
-		return nil, fmt.Errorf("failed to set secret name: %w", err)
-	}
-	podVolumes[0] = sslVolume
-	err = unstructured.SetNestedSlice(deployment.Object, podVolumes, "spec", "template", "spec", "volumes")
-	if err != nil {
-		return nil, fmt.Errorf("failed to update deployment volumes: %w", err)
-	}
+	sslVolume := deployment.Spec.Template.Spec.Volumes[0]
+	sslVolume.Secret.SecretName = cfg.secretName
+	deployment.Spec.Template.Spec.Volumes[0] = sslVolume
+
 	return deployment, nil
 }
 
@@ -261,7 +235,7 @@ type unstructuredResourcesConfig struct {
 }
 
 func configureUnstructuredResource(cfg *unstructuredResourcesConfig, resource *unstructured.Unstructured,
-) (*unstructured.Unstructured, error) {
+) (client.Object, error) {
 	if resource.GetAPIVersion() == corev1.SchemeGroupVersion.String() && resource.GetKind() == "ConfigMap" {
 		return configureConfigMap(cfg, resource)
 	}
