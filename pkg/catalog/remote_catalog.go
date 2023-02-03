@@ -7,7 +7,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	remotecontext "github.com/kyma-project/lifecycle-manager/pkg/remote"
-	"golang.org/x/sync/errgroup"
+	"github.com/kyma-project/module-manager/pkg/types"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -61,26 +61,8 @@ func (c *RemoteCatalog) CreateOrUpdate(
 ) error {
 	syncContext := remotecontext.SyncContextFromContext(ctx)
 
-	errsApply, applyGroupCtx := errgroup.WithContext(ctx)
-	for kcpIndex := range kcp.Items {
-		kcpIndex := kcpIndex
-		errsApply.Go(func() error {
-			c.prepareForSSA(&kcp.Items[kcpIndex])
-			return c.patchDiff(applyGroupCtx, &kcp.Items[kcpIndex], syncContext, false)
-		})
-	}
-	err := errsApply.Wait()
-
-	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster when we apply it and retry
-	if meta.IsNoMatchError(errors.Unwrap(err)) {
-		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1alpha1.ModuleTemplateKind.Plural()); err != nil {
-			return err
-		}
-		return c.CreateOrUpdate(ctx, kcp)
-	}
-
-	if err != nil {
-		return fmt.Errorf("could not apply catalog templates: %w", err)
+	if err := c.createOrUpdateCatalog(ctx, kcp, syncContext); err != nil {
+		return err
 	}
 
 	moduleTemplatesRuntime := &v1alpha1.ModuleTemplateList{}
@@ -93,20 +75,79 @@ func (c *RemoteCatalog) CreateOrUpdate(
 		return err
 	}
 
-	errsDelete, deleteGroupCtx := errgroup.WithContext(ctx)
-	diffsToDelete := c.diffsToDelete(moduleTemplatesRuntime, kcp)
-	for _, diff := range diffsToDelete {
-		diff := diff
-		errsDelete.Go(func() error {
-			return c.patchDiff(deleteGroupCtx, diff, syncContext, true)
-		})
-	}
-
-	if err := errsDelete.Wait(); err != nil {
-		return fmt.Errorf("could not delete obsolete catalog templates: %w", err)
+	if err := c.deleteDiffCatalog(ctx, kcp, moduleTemplatesRuntime, syncContext); err != nil {
+		return err
 	}
 
 	return nil
+}
+
+func (c *RemoteCatalog) deleteDiffCatalog(ctx context.Context,
+	kcp *v1alpha1.ModuleTemplateList,
+	moduleTemplatesRuntime *v1alpha1.ModuleTemplateList,
+	syncContext *remotecontext.KymaSynchronizationContext,
+) error {
+	diffsToDelete := c.diffsToDelete(moduleTemplatesRuntime, kcp)
+	results := make(chan error, len(diffsToDelete))
+	for _, diff := range diffsToDelete {
+		diff := diff
+		go func() {
+			results <- c.patchDiff(ctx, diff, syncContext, true)
+		}()
+	}
+	var errs []error
+	for i := 0; i < len(kcp.Items); i++ {
+		if err := <-results; err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	if len(errs) != 0 {
+		return fmt.Errorf("could not delete obsolete catalog templates: %w", types.NewMultiError(errs))
+	}
+	return nil
+}
+
+func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
+	kcp *v1alpha1.ModuleTemplateList,
+	syncContext *remotecontext.KymaSynchronizationContext,
+) error {
+	results := make(chan error, len(kcp.Items))
+	for kcpIndex := range kcp.Items {
+		kcpIndex := kcpIndex
+		go func() {
+			c.prepareForSSA(&kcp.Items[kcpIndex])
+			results <- c.patchDiff(ctx, &kcp.Items[kcpIndex], syncContext, false)
+		}()
+	}
+	var errs []error
+	for i := 0; i < len(kcp.Items); i++ {
+		if err := <-results; err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster when we apply it and retry
+	if containsMetaIsNoMatchErr(errs) {
+		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1alpha1.ModuleTemplateKind.Plural()); err != nil {
+			return err
+		}
+		return c.CreateOrUpdate(ctx, kcp)
+	}
+
+	if len(errs) != 0 {
+		return fmt.Errorf("could not apply catalog templates: %w", types.NewMultiError(errs))
+	}
+	return nil
+}
+
+func containsMetaIsNoMatchErr(errs []error) bool {
+	for _, err := range errs {
+		if meta.IsNoMatchError(errors.Unwrap(err)) {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *RemoteCatalog) patchDiff(
