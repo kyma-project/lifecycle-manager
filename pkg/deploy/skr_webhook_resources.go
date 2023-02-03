@@ -234,6 +234,7 @@ type unstructuredResourcesConfig struct {
 	remoteNs                 string
 }
 
+//nolint:ireturn
 func configureUnstructuredResource(cfg *unstructuredResourcesConfig, resource *unstructured.Unstructured,
 ) (client.Object, error) {
 	if resource.GetAPIVersion() == corev1.SchemeGroupVersion.String() && resource.GetKind() == "ConfigMap" {
