@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	"k8s.io/client-go/rest"
@@ -50,10 +51,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
+	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 
 	//+kubebuilder:scaffold:imports
 	"github.com/go-logr/logr"
@@ -87,27 +88,12 @@ func init() {
 func main() {
 	flagVar := defineFlagVar()
 	flag.Parse()
-	ctrl.SetLogger(configLogger())
+	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.logLevel), zapcore.Lock(os.Stdout)))
 	if flagVar.pprof {
 		go pprofStartServer(flagVar.pprofAddr, flagVar.pprofServerTimeout)
 	}
 
 	setupManager(flagVar, controllers.NewCacheFunc(), scheme)
-}
-
-func configLogger() logr.Logger {
-	// The following settings is based on kyma community Improvement of log messages usability
-	//nolint:lll
-	// https://github.com/kyma-project/community/blob/main/concepts/observability-consistent-logging/improvement-of-log-messages-usability.md#log-structure
-	atomicLevel := zap.NewAtomicLevel()
-	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.TimeKey = "date"
-	encoderConfig.EncodeTime = zapcore.RFC3339NanoTimeEncoder
-	encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
-	core := zapcore.NewCore(zapcore.NewJSONEncoder(encoderConfig), zapcore.Lock(os.Stdout), atomicLevel)
-	zapLog := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
-	logger := zapr.NewLogger(zapLog.With(zap.Namespace("context")))
-	return logger
 }
 
 func pprofStartServer(addr string, timeout time.Duration) {

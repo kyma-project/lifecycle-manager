@@ -31,7 +31,7 @@ const (
 	CertManager  = "klm-watcher-cert-manager"
 )
 
-func GetMatchingLabelsForModule(module *Module) client.MatchingLabels {
+func ModuleTemplatesByLabel(module *Module) client.MatchingLabels {
 	selector := client.MatchingLabels{
 		ModuleName: module.Name,
 	}

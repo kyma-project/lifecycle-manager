@@ -48,21 +48,22 @@ func templatesToModules(
 ) (common.Modules, error) {
 	// First, we fetch the module spec from the template and use it to resolve it into an arbitrary object
 	// (since we do not know which module we are dealing with)
-	modules := make(common.Modules)
-
-	var manifest *manifestV1alpha1.Manifest
+	modules := make(common.Modules, 0)
 
 	for _, module := range kyma.Spec.Modules {
 		template := templates[module.Name]
 		if template == nil {
-			return nil, fmt.Errorf("could not resolve template for module %s and resource %s: %w",
+			return nil, fmt.Errorf("could not resolve template for module %s in %s: %w",
 				module.Name, client.ObjectKeyFromObject(kyma), ErrTemplateNotFound,
 			)
 		}
-
-		var err error
-
-		name := common.CreateModuleName(module.Name, kyma.Name)
+		descriptor, err := template.Spec.GetUnsafeDescriptor()
+		if err != nil {
+			return nil, err
+		}
+		fqdn := descriptor.GetName()
+		version := descriptor.GetVersion()
+		name := common.CreateModuleName(fqdn, kyma.Name)
 		// if the default data does not contain a name, default it to the module name
 		if template.ModuleTemplate.Spec.Data.GetName() == "" {
 			template.ModuleTemplate.Spec.Data.SetName(name)
@@ -76,19 +77,22 @@ func templatesToModules(
 				template.ModuleTemplate.Spec.Data.SetNamespace(kyma.GetNamespace())
 			}
 		}
-		if manifest, err = NewManifestFromTemplate(template.ModuleTemplate, settings.Verification); err != nil {
+		var obj client.Object
+		if obj, err = NewManifestFromTemplate(template.ModuleTemplate, settings.Verification); err != nil {
 			return nil, err
 		}
 		// we name the manifest after the module name
-		manifest.SetName(name)
+		obj.SetName(name)
 		// to have correct owner references, the manifest must always have the same namespace as kyma
-		manifest.SetNamespace(kyma.GetNamespace())
-		modules[module.Name] = &common.Module{
-			Name:             module.Name,
+		obj.SetNamespace(kyma.GetNamespace())
+		modules = append(modules, &common.Module{
+			ModuleName:       module.Name,
+			FQDN:             fqdn,
+			Version:          version,
 			Template:         template.ModuleTemplate,
 			TemplateOutdated: template.Outdated,
-			Manifest:         manifest,
-		}
+			Object:           obj,
+		})
 	}
 
 	return modules, nil

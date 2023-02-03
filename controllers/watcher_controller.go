@@ -21,8 +21,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go.uber.org/zap"
-
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"k8s.io/client-go/rest"
@@ -31,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
@@ -67,7 +66,7 @@ type WatcherReconciler struct {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := log.FromContext(ctx).WithName(req.NamespacedName.String())
+	logger := ctrlLog.FromContext(ctx).WithName(req.NamespacedName.String())
 	logger.Info("Reconciliation loop starting")
 
 	// sync CA Certificate to Istio Namespace
@@ -78,7 +77,7 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	watcherObj := &v1alpha1.Watcher{}
 	if err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, watcherObj); err != nil {
-		logger.V(int(zap.DebugLevel)).Info("Failed to get reconciliation object")
+		logger.V(log.DebugLevel).Info("Failed to get reconciliation object")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 

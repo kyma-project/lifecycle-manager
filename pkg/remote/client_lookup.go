@@ -56,7 +56,7 @@ func (l *ClientLookup) restConfigFromStrategy(ctx context.Context, key client.Ob
 		if LocalClient != nil {
 			restConfig = LocalClient()
 		} else {
-			err = ErrNoLocalClientDefined
+			restConfig = l.kcp.Config()
 		}
 	case v1alpha1.SyncStrategyLocalSecret:
 		fallthrough

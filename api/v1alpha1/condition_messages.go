@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"time"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -28,40 +26,10 @@ const (
 	ConditionReasonSKRWebhookIsReady    KymaConditionReason = "SKRWebhookIsReady"
 )
 
-func NewConditionBuilder() *ConditionBuilder {
-	return &ConditionBuilder{}
-}
-
-func (cb *ConditionBuilder) SetStatus(status metav1.ConditionStatus) *ConditionBuilder {
-	cb.Status = status
-	return cb
-}
-
-func (cb *ConditionBuilder) SetReason(reason KymaConditionReason) *ConditionBuilder {
-	cb.Reason = reason
-	return cb
-}
-
-func (cb *ConditionBuilder) SetObservedGeneration(observedGeneration int64) *ConditionBuilder {
-	cb.ObservedGeneration = observedGeneration
-	return cb
-}
-
-func (cb *ConditionBuilder) Build() metav1.Condition {
-	return metav1.Condition{
-		Type:               string(ConditionTypeReady),
-		Status:             cb.Status,
-		LastTransitionTime: metav1.Time{Time: time.Now()},
-		Reason:             string(cb.Reason),
-		Message:            cb.generateMessage(),
-		ObservedGeneration: cb.ObservedGeneration,
-	}
-}
-
-func (cb *ConditionBuilder) generateMessage() string {
-	switch cb.Reason {
+func GenerateMessage(reason KymaConditionReason, status metav1.ConditionStatus) string {
+	switch reason {
 	case ConditionReasonModulesAreReady:
-		switch cb.Status {
+		switch status {
 		case metav1.ConditionTrue:
 			return MessageModuleInReadyState
 		case metav1.ConditionUnknown:
@@ -70,7 +38,7 @@ func (cb *ConditionBuilder) generateMessage() string {
 
 		return MessageModuleNotInReadyState
 	case ConditionReasonModuleCatalogIsReady:
-		switch cb.Status {
+		switch status {
 		case metav1.ConditionTrue:
 			return MessageModuleCatalogIsSynced
 		case metav1.ConditionUnknown:
@@ -79,7 +47,7 @@ func (cb *ConditionBuilder) generateMessage() string {
 
 		return MessageModuleCatalogIsOutOfSync
 	case ConditionReasonSKRWebhookIsReady:
-		switch cb.Status {
+		switch status {
 		case metav1.ConditionTrue:
 			return MessageSKRWebhookIsSynced
 		case metav1.ConditionUnknown:

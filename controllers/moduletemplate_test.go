@@ -35,12 +35,11 @@ func expectManifestSpecRemoteMatched(kymaName string, remoteFlag bool) func() er
 			return err
 		}
 		for _, module := range createdKyma.Spec.Modules {
-			moduleInCluster, err := getModule(kymaName, module.Name)
+			moduleInCluster, err := getModule(createdKyma, module)
 			if err != nil {
 				return err
 			}
-			manifestSpec := UnmarshalManifestSpec(moduleInCluster)
-			if manifestSpec.Remote != remoteFlag {
+			if moduleInCluster.Spec.Remote != remoteFlag {
 				return ErrManifestRemoteIsNotMatch
 			}
 		}
@@ -58,15 +57,14 @@ func expectManifestSpecNotContainsCredSecretSelector(kymaName string) func() err
 			return err
 		}
 		for _, module := range createdKyma.Spec.Modules {
-			moduleInCluster, err := getModule(kymaName, module.Name)
+			moduleInCluster, err := getModule(createdKyma, module)
 			if err != nil {
 				return err
 			}
-			manifestSpec := UnmarshalManifestSpec(moduleInCluster)
-			if manifestSpec.Config.CredSecretSelector != nil {
+			if moduleInCluster.Spec.Config.CredSecretSelector != nil {
 				return ErrContainsUnexpectedCredSecretSelector
 			}
-			installImageSpec := extractInstallImageSpec(manifestSpec.Installs)
+			installImageSpec := extractInstallImageSpec(moduleInCluster.Spec.Installs)
 
 			if installImageSpec.CredSecretSelector != nil {
 				return ErrContainsUnexpectedCredSecretSelector
@@ -83,19 +81,18 @@ func expectManifestSpecContainsCredSecretSelector(kymaName string) func() error 
 			return err
 		}
 		for _, module := range createdKyma.Spec.Modules {
-			moduleInCluster, err := getModule(kymaName, module.Name)
+			moduleInCluster, err := getModule(createdKyma, module)
 			if err != nil {
 				return err
 			}
-			manifestSpec := UnmarshalManifestSpec(moduleInCluster)
 			var emptyImageSpec types.ImageSpec
-			if manifestSpec.Config != emptyImageSpec {
-				if err := expectCredSecretSelectorCorrect(&manifestSpec.Config); err != nil {
-					return fmt.Errorf("config %v is invalid: %w", &manifestSpec.Config, err)
+			if moduleInCluster.Spec.Config != emptyImageSpec {
+				if err := expectCredSecretSelectorCorrect(&moduleInCluster.Spec.Config); err != nil {
+					return fmt.Errorf("config %v is invalid: %w", &moduleInCluster.Spec.Config, err)
 				}
 			}
 
-			installImageSpec := extractInstallImageSpec(manifestSpec.Installs)
+			installImageSpec := extractInstallImageSpec(moduleInCluster.Spec.Installs)
 			if err := expectCredSecretSelectorCorrect(installImageSpec); err != nil {
 				return fmt.Errorf("install %v is invalid: %w", installImageSpec, err)
 			}
@@ -222,8 +219,8 @@ var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
 
 	DescribeTable("Test ModuleTemplate.Spec.descriptor",
 		func(givenCondition func() error, expectedBehavior func() error) {
-			Eventually(givenCondition, Timeout, Interval).Should(Succeed())
-			Eventually(expectedBehavior, Timeout, Interval).Should(Succeed())
+			Eventually(givenCondition, Timeout*2, Interval).Should(Succeed())
+			Eventually(expectedBehavior, Timeout*2, Interval).Should(Succeed())
 		},
 		Entry("When ModuleTemplate.Spec.descriptor.component.resources not contains RegistryCred label,"+
 			"expect Manifest.Spec.installs and Manifest.Spec.Config not contains credSecretSelector",

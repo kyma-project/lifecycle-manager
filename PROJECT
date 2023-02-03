@@ -31,4 +31,12 @@ resources:
   domain: kyma-project.io
   kind: Secrets
   version: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: kyma-project.io
+  group: operator
+  kind: Watcher
+  path: github.com/kyma-project/lifecycle-manager/api/v1alpha1
+  version: v1alpha1
 version: "3"
