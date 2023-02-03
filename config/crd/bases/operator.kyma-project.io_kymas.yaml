@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.10.0
+    controller-gen.kubebuilder.io/version: v0.11.2
   creationTimestamp: null
   name: kymas.operator.kyma-project.io
 spec:
@@ -70,14 +70,12 @@ spec:
                       type: string
                     name:
                       description: "Name is a unique identifier of the module. It
-                        is used together with KymaName, ChannelLabel, ProfileLabel
-                        label to resolve a ModuleTemplate. \n WARNING: Module-Names
-                        are restricted in length based on naming generation strategy!
-                        By default, this means that the length of Name and .metadata.name
-                        of Kyma combined must be <= 252 Characters This is because
-                        the naming strategy aggregates Kyma and Module into a format
-                        of \"kyma-name-module-name\" For more info on the 253 total
-                        character limit, see https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#dns-subdomain-names"
+                        is used to resolve a ModuleTemplate for creating a set of
+                        resources on the cluster. \n Name can be one of 3 kinds: -
+                        The ModuleName label value of the module-template, e.g. operator.kyma-project.io/module-name=my-module
+                        - The Name or Namespace/Name of a ModuleTemplate, e.g. my-moduletemplate
+                        or kyma-system/my-moduletemplate - The FQDN, e.g. kyma-project.io/module/my-module
+                        as located in .spec.descriptor.component.name"
                       type: string
                   required:
                   - name
@@ -195,90 +193,148 @@ spec:
                   - type
                   type: object
                 type: array
-              moduleStatus:
+              lastOperation:
+                properties:
+                  lastUpdateTime:
+                    format: date-time
+                    type: string
+                  operation:
+                    type: string
+                required:
+                - operation
+                type: object
+              modules:
                 description: Contains essential information about the current deployed
                   module
                 items:
                   properties:
-                    generation:
-                      description: Generation tracks the active Generation of the
-                        Module. In case the tracked Module spec changes, the new Generation
-                        will differ from the one tracked in the cluster and thus trigger
-                        a reconciliation based on the original content of ModuleTemplate
-                      format: int64
-                      type: integer
-                    moduleName:
-                      description: ModuleName is the unique identifier of the module.
+                    channel:
+                      description: Channel tracks the active Channel of the Module.
+                        In Case it changes, the new Channel will have caused a new
+                        lookup to be necessary that maybe picks a different ModuleTemplate,
+                        which is why we need to reconcile.
                       type: string
+                    fqdn:
+                      description: FQDN is the fully qualified domain name of the
+                        module. In the ModuleTemplate it is located in .spec.descriptor.component.name
+                        of the ModuleTemplate FQDN is used to calculate Namespace
+                        and Name of the Manifest for tracking.
+                      type: string
+                    manifest:
+                      description: Manifest contains the Information of a related
+                        Manifest
+                      properties:
+                        apiVersion:
+                          description: 'APIVersion defines the versioned schema of
+                            this representation of an object. Servers should convert
+                            recognized schemas to the latest internal value, and may
+                            reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                          type: string
+                        kind:
+                          description: 'Kind is a string value representing the REST
+                            resource this object represents. Servers may infer this
+                            from the endpoint the client submits requests to. Cannot
+                            be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                          type: string
+                        metadata:
+                          description: PartialMeta is a subset of ObjectMeta that
+                            contains relevant information to track an Object. see
+                            https://github.com/kubernetes/apimachinery/blob/v0.26.1/pkg/apis/meta/v1/types.go#L111
+                          properties:
+                            generation:
+                              description: A sequence number representing a specific
+                                generation of the desired state. Populated by the
+                                system. Read-only.
+                              format: int64
+                              type: integer
+                            name:
+                              description: 'Name must be unique within a namespace.
+                                Is required when creating resources, although some
+                                resources may allow a client to request the generation
+                                of an appropriate name automatically. Name is primarily
+                                intended for creation idempotence and configuration
+                                definition. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/identifiers#names'
+                              type: string
+                            namespace:
+                              description: "Namespace defines the space within which
+                                each name must be unique. An empty namespace is equivalent
+                                to the \"default\" namespace, but \"default\" is the
+                                canonical representation. Not all objects are required
+                                to be scoped to a namespace - the value of this field
+                                for those objects will be empty. \n Must be a DNS_LABEL.
+                                Cannot be updated. More info: http://kubernetes.io/docs/user-guide/namespaces"
+                              type: string
+                          type: object
+                      type: object
                     name:
-                      description: Name is the current deployed module name
-                      type: string
-                    namespace:
-                      description: Namespace is the current deployed module namespace
+                      description: Name defines the name of the Module in the Spec
+                        that the status is used for. It can be any kind of Reference
+                        format supported by Module.Name.
                       type: string
                     state:
-                      description: status of the condition, one of True, False, Unknown.
+                      description: State of the Module in the currently tracked Generation
                       enum:
                       - Processing
                       - Deleting
                       - Ready
                       - Error
+                      - ""
                       type: string
-                    templateInfo:
+                    template:
                       description: It contains information about the last parsed ModuleTemplate
                         in Context of the Installation. This will update when Channel
                         or the ModuleTemplate is changed.
                       properties:
-                        channel:
-                          description: Channel tracks the active Channel of the ModuleTemplate.
-                            In Case it changes, the new Channel will have caused a
-                            new lookup to be necessary that maybe picks a different
-                            ModuleTemplate, which is why we need to reconcile.
+                        apiVersion:
+                          description: 'APIVersion defines the versioned schema of
+                            this representation of an object. Servers should convert
+                            recognized schemas to the latest internal value, and may
+                            reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
                           type: string
-                        generation:
-                          description: Generation tracks the active Generation of
-                            the ModuleTemplate. In case it changes, the new Generation
-                            will differ from the one tracked in TemplateInfo and thus
-                            trigger a new reconciliation with a newly parser ModuleTemplate
-                          format: int64
-                          type: integer
-                        gvk:
-                          description: GroupVersionKind is used to track the Kind
-                            that was created from the ModuleTemplate. This is dynamic
-                            to not bind ourselves to any kind of Kind in the code
-                            and allows us to work generic on deletion / cleanup of
-                            related resources to a Kyma Installation.
+                        kind:
+                          description: 'Kind is a string value representing the REST
+                            resource this object represents. Servers may infer this
+                            from the endpoint the client submits requests to. Cannot
+                            be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                          type: string
+                        metadata:
+                          description: PartialMeta is a subset of ObjectMeta that
+                            contains relevant information to track an Object. see
+                            https://github.com/kubernetes/apimachinery/blob/v0.26.1/pkg/apis/meta/v1/types.go#L111
                           properties:
-                            group:
+                            generation:
+                              description: A sequence number representing a specific
+                                generation of the desired state. Populated by the
+                                system. Read-only.
+                              format: int64
+                              type: integer
+                            name:
+                              description: 'Name must be unique within a namespace.
+                                Is required when creating resources, although some
+                                resources may allow a client to request the generation
+                                of an appropriate name automatically. Name is primarily
+                                intended for creation idempotence and configuration
+                                definition. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/identifiers#names'
                               type: string
-                            kind:
+                            namespace:
+                              description: "Namespace defines the space within which
+                                each name must be unique. An empty namespace is equivalent
+                                to the \"default\" namespace, but \"default\" is the
+                                canonical representation. Not all objects are required
+                                to be scoped to a namespace - the value of this field
+                                for those objects will be empty. \n Must be a DNS_LABEL.
+                                Cannot be updated. More info: http://kubernetes.io/docs/user-guide/namespaces"
                               type: string
-                            version:
-                              type: string
-                          required:
-                          - group
-                          - kind
-                          - version
                           type: object
-                        name:
-                          description: Name is the current name of the template resource
-                            referenced
-                          type: string
-                        namespace:
-                          description: Namespace is the namespace of the template
-                          type: string
-                        version:
-                          type: string
-                      required:
-                      - name
-                      - namespace
-                      - version
                       type: object
+                    version:
+                      description: Channel tracks the active Version of the Module.
+                      type: string
                   required:
-                  - moduleName
+                  - fqdn
                   - name
-                  - namespace
                   - state
+                  - version
                   type: object
                 type: array
               state:
@@ -289,6 +345,7 @@ spec:
                 - Deleting
                 - Ready
                 - Error
+                - ""
                 type: string
             type: object
         type: object

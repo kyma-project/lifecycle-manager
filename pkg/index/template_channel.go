@@ -7,7 +7,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const TemplateChannelField Field = ".spec.channel"
+const TemplateChannelField Field = "spec.channel"
 
 type TemplateChannelIndex struct{}
 

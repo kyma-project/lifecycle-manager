@@ -3,7 +3,9 @@ package status
 import (
 	"context"
 	"fmt"
+	"time"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
@@ -22,7 +24,7 @@ func Helper(handler HelperClient) *KymaHelper {
 }
 
 func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
-	kyma *v1alpha1.Kyma, newState v1alpha1.State,
+	kyma *v1alpha1.Kyma, newState v1alpha1.State, message string,
 ) error {
 	kyma.Status.State = newState
 
@@ -34,6 +36,11 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 	case v1alpha1.StateError:
 	case v1alpha1.StateProcessing:
 	default:
+	}
+
+	kyma.Status.LastOperation = v1alpha1.LastOperation{
+		Operation:      message,
+		LastUpdateTime: metav1.NewTime(time.Now()),
 	}
 
 	if err := k.Update(ctx, kyma); err != nil {

@@ -1,11 +1,13 @@
 package controllers_test
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	declarative "github.com/kyma-project/module-manager/pkg/declarative/v2"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	. "github.com/onsi/ginkgo/v2"
@@ -15,13 +17,9 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	"github.com/Masterminds/semver/v3"
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	sampleCRDv1alpha1 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
-	"github.com/kyma-project/lifecycle-manager/pkg/watch"
 	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 )
 
@@ -68,38 +66,74 @@ func GetKymaConditions(kymaName string) func() []metav1.Condition {
 	}
 }
 
-func UpdateModuleState(kymaName, moduleName string, state v1alpha1.State) func() error {
+func UpdateModuleState(
+	ctx context.Context, kyma *v1alpha1.Kyma, module v1alpha1.Module, state v1alpha1.State,
+) func() error {
 	return func() error {
-		return updateModuleState(kymaName, moduleName, state)
+		kyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+		if err != nil {
+			return err
+		}
+		return updateModuleState(kyma, module, state)
 	}
 }
 
-func updateModuleState(kymaName string, moduleName string, state v1alpha1.State) error {
-	component, err := getModule(kymaName, moduleName)
-	Expect(err).ShouldNot(HaveOccurred())
-	component.Object[watch.Status] = map[string]any{watch.State: string(state)}
+func updateModuleState(kyma *v1alpha1.Kyma, module v1alpha1.Module, state v1alpha1.State) error {
+	component, err := getModule(kyma, module)
+	if err != nil {
+		return err
+	}
+	component.Status.State = declarative.State(state)
 	return k8sManager.GetClient().Status().Update(ctx, component)
 }
 
-func ModuleExists(kymaName, moduleName string) func() bool {
-	return func() bool {
-		_, err := getModule(kymaName, moduleName)
-		return err == nil
+func ModuleExists(ctx context.Context, kyma *v1alpha1.Kyma, module v1alpha1.Module) func() error {
+	return func() error {
+		kyma, err := GetKyma(ctx, controlPlaneClient, kyma.Name, kyma.Namespace)
+		if err != nil {
+			return err
+		}
+		_, err = getModule(kyma, module)
+		return err
 	}
 }
 
-func ModuleNotExist(kymaName string, moduleName string) func() bool {
-	return func() bool {
-		_, err := getModule(kymaName, moduleName)
-		return k8serrors.IsNotFound(err)
+func UpdateRemoteModule(ctx context.Context,
+	client client.Client,
+	kyma *v1alpha1.Kyma,
+	modules []v1alpha1.Module,
+) func() error {
+	return func() error {
+		kyma, err := GetKyma(ctx, client, kyma.Name, kyma.Namespace)
+		if err != nil {
+			return err
+		}
+		kyma.Spec.Modules = modules
+		return client.Update(ctx, kyma)
 	}
 }
 
-func SKRModuleExistWithOverwrites(kymaName string, moduleName string) func() string {
+func ModuleNotExist(ctx context.Context, kyma *v1alpha1.Kyma, module v1alpha1.Module) func() error {
+	return func() error {
+		kyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+		if err != nil {
+			return err
+		}
+		_, err = getModule(kyma, module)
+		if k8serrors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+}
+
+func SKRModuleExistWithOverwrites(kyma *v1alpha1.Kyma, module v1alpha1.Module) func() string {
 	return func() string {
-		module, err := getModule(kymaName, moduleName)
+		kyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
 		Expect(err).ToNot(HaveOccurred())
-		manifestSpec := UnmarshalManifestSpec(module)
+		module, err := getModule(kyma, module)
+		Expect(err).ToNot(HaveOccurred())
+		manifestSpec := module.Spec
 		body, err := json.Marshal(manifestSpec.Resource.Object["spec"])
 		Expect(err).ToNot(HaveOccurred())
 		skrModuleSpec := sampleCRDv1alpha1.SKRModuleSpec{}
@@ -109,30 +143,22 @@ func SKRModuleExistWithOverwrites(kymaName string, moduleName string) func() str
 	}
 }
 
-func UnmarshalManifestSpec(module *unstructured.Unstructured) *manifestV1alpha1.ManifestSpec {
-	body, err := json.Marshal(module.Object["spec"])
-	Expect(err).ToNot(HaveOccurred())
-	manifestSpec := manifestV1alpha1.ManifestSpec{}
-	err = json.Unmarshal(body, &manifestSpec)
-	Expect(err).ToNot(HaveOccurred())
-	return &manifestSpec
-}
-
-func getModule(kymaName, moduleName string) (*unstructured.Unstructured, error) {
-	component := &unstructured.Unstructured{}
-	component.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   v1alpha1.OperatorPrefix,
-		Version: v1alpha1.Version,
-		Kind:    "Manifest",
-	})
-	err := controlPlaneClient.Get(ctx, client.ObjectKey{
-		Namespace: metav1.NamespaceDefault,
-		Name:      common.CreateModuleName(moduleName, kymaName),
-	}, component)
-	if err != nil {
-		return nil, err
+func getModule(kyma *v1alpha1.Kyma, module v1alpha1.Module) (*manifestV1alpha1.Manifest, error) {
+	for _, moduleStatus := range kyma.Status.Modules {
+		if moduleStatus.Name == module.Name {
+			component := &manifestV1alpha1.Manifest{}
+			err := controlPlaneClient.Get(ctx, client.ObjectKey{
+				Namespace: moduleStatus.Manifest.GetNamespace(),
+				Name:      moduleStatus.Manifest.GetName(),
+			}, component)
+			if err != nil {
+				return nil, err
+			}
+			return component, nil
+		}
 	}
-	return component, nil
+	return nil, fmt.Errorf("no module status mapping exists for module %s: %w", module.Name,
+		k8serrors.NewNotFound(manifestV1alpha1.GroupVersionResource.GroupResource(), module.Name))
 }
 
 func GetModuleTemplate(name string) (*v1alpha1.ModuleTemplate, error) {
@@ -241,18 +267,13 @@ func getModuleTemplate(clnt client.Client, template *v1alpha1.ModuleTemplate, ky
 	return clnt.Get(ctx, client.ObjectKeyFromObject(template), template)
 }
 
-func deleteModule(kymaName, moduleName string) func() error {
+func deleteModule(kyma *v1alpha1.Kyma, module v1alpha1.Module) func() error {
 	return func() error {
-		component := &unstructured.Unstructured{}
-		component.SetGroupVersionKind(schema.GroupVersionKind{
-			Group:   v1alpha1.OperatorPrefix,
-			Version: v1alpha1.Version,
-			Kind:    "Manifest",
-		})
-		component.SetNamespace(metav1.NamespaceDefault)
-		component.SetName(common.CreateModuleName(moduleName, kymaName))
-		err := controlPlaneClient.Delete(ctx, component)
-		return client.IgnoreNotFound(err)
+		component, err := getModule(kyma, module)
+		if k8serrors.IsNotFound(err) {
+			return nil
+		}
+		return client.IgnoreNotFound(controlPlaneClient.Delete(ctx, component))
 	}
 }
 
@@ -277,10 +298,10 @@ func TemplateInfosMatchChannel(kymaName, channel string) error {
 	if err != nil {
 		return err
 	}
-	for i := range kyma.Status.ModuleStatus {
-		if kyma.Status.ModuleStatus[i].TemplateInfo.Channel != channel {
+	for i := range kyma.Status.Modules {
+		if kyma.Status.Modules[i].Channel != channel {
 			return fmt.Errorf("%w: %s should be %s",
-				ErrTemplateInfoChannelMismatch, kyma.Status.ModuleStatus[i].TemplateInfo.Channel, channel)
+				ErrTemplateInfoChannelMismatch, kyma.Status.Modules[i].Channel, channel)
 		}
 	}
 	return nil

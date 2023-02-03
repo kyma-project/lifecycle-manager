@@ -82,15 +82,36 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 		return err
 	}
 
-	if err := index.TemplateChannel().With(context.TODO(), mgr.GetFieldIndexer()); err != nil {
-		return fmt.Errorf("error while setting up ModuleTemplate Channel Field Indexer, "+
-			"make sure you installed all CRDs: %w", err)
+	if err := r.configureIndexing(context.TODO(), mgr); err != nil {
+		return err
 	}
 
 	if err := controllerBuilder.Complete(r); err != nil {
 		return fmt.Errorf("error occurred while building controller: %w", err)
 	}
 
+	return nil
+}
+
+func (r *KymaReconciler) configureIndexing(ctx context.Context, mgr ctrl.Manager) error {
+	if err := index.TemplateChannel().With(ctx, mgr.GetFieldIndexer()); err != nil {
+		return fmt.Errorf(
+			"error while setting up ModuleTemplate Channel Field Indexer, "+
+				"make sure you installed all CRDs: %w", err,
+		)
+	}
+	if err := index.TemplateFQDN().With(ctx, mgr.GetFieldIndexer()); err != nil {
+		return fmt.Errorf(
+			"error while setting up ModuleTemplate FQDN Field Indexer, "+
+				"make sure you installed all CRDs: %w", err,
+		)
+	}
+	if err := index.TemplateName().With(ctx, mgr.GetFieldIndexer()); err != nil {
+		return fmt.Errorf(
+			"error while setting up ModuleTemplate Name Field Indexer, "+
+				"make sure you installed all CRDs: %w", err,
+		)
+	}
 	return nil
 }
 

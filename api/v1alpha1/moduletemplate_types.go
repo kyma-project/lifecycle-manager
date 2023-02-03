@@ -52,7 +52,7 @@ type ModuleTemplateSpec struct {
 
 	// OCMDescriptor is the Raw Open Component Model Descriptor of a Module, containing all relevant information
 	// to correctly initialize a module (e.g. Charts, Manifests, References to Binaries and/or configuration)
-	// For more information on Component Descriptors, see
+	// Name more information on Component Descriptors, see
 	// https://github.com/gardener/component-spec/
 	//
 	// It is translated inside the Lifecycle of the Cluster and will be used by downstream controllers

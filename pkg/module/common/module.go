@@ -2,42 +2,44 @@ package common
 
 import (
 	"fmt"
+	"hash/fnv"
+	"strings"
 
 	"github.com/go-logr/logr"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 )
 
 type (
-	Modules map[string]*Module
+	Modules []*Module
 	Module  struct {
-		Name             string
+		ModuleName       string
+		FQDN             string
+		Version          string
 		Template         *v1alpha1.ModuleTemplate
 		TemplateOutdated bool
-		*manifestV1alpha1.Manifest
+		client.Object
 	}
 )
 
 func (m *Module) Logger(base logr.Logger) logr.Logger {
 	return base.WithValues(
-		"module", m.Name,
+		"fqdn", m.FQDN,
+		"module", m.GetName(),
 		"channel", m.Template.Spec.Channel,
 		"templateGeneration", m.Template.GetGeneration(),
 	)
 }
 
-func (m *Module) ApplyLabels(
+func (m *Module) ApplyLabelsAndAnnotations(
 	kyma *v1alpha1.Kyma,
-	moduleName string,
 ) {
 	lbls := m.GetLabels()
 	if lbls == nil {
 		lbls = make(map[string]string)
 	}
 	lbls[v1alpha1.KymaName] = kyma.Name
-
-	lbls[v1alpha1.ModuleName] = moduleName
 
 	templateLabels := m.Template.GetLabels()
 	if templateLabels != nil {
@@ -46,22 +48,20 @@ func (m *Module) ApplyLabels(
 	lbls[v1alpha1.ChannelLabel] = m.Template.Spec.Channel
 
 	m.SetLabels(lbls)
+
+	anns := m.GetAnnotations()
+	if anns == nil {
+		anns = make(map[string]string)
+	}
+	anns[v1alpha1.FQDN] = m.FQDN
+	m.SetAnnotations(anns)
 }
 
 func (m *Module) StateMismatchedWithModuleStatus(moduleStatus *v1alpha1.ModuleStatus) bool {
 	templateStatusMismatch := m.TemplateOutdated &&
-		(moduleStatus.TemplateInfo.Generation != m.Template.GetGeneration() ||
-			moduleStatus.TemplateInfo.Channel != m.Template.Spec.Channel)
-	return templateStatusMismatch || moduleStatus.Generation != m.GetGeneration()
-}
-
-// UpdateStatusAndReferencesFromUnstructured updates the module with necessary information (status, ownerReference) from
-// current deployed resource (from Unstructured).
-func (m *Module) UpdateStatusAndReferencesFromUnstructured(unstructured *manifestV1alpha1.Manifest) {
-	m.Status = unstructured.Status
-	m.SetResourceVersion(unstructured.GetResourceVersion())
-	m.SetOwnerReferences(unstructured.GetOwnerReferences())
-	m.SetGeneration(unstructured.GetGeneration())
+		(moduleStatus.Template.Generation != m.Template.GetGeneration() ||
+			moduleStatus.Channel != m.Template.Spec.Channel)
+	return templateStatusMismatch || moduleStatus.Manifest.GetGeneration() != m.GetGeneration()
 }
 
 func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {
@@ -76,14 +76,21 @@ func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {
 	return false
 }
 
-func NewFromModule(module *Module) *manifestV1alpha1.Manifest {
-	fromServer := manifestV1alpha1.Manifest{}
-	fromServer.SetGroupVersionKind(module.GroupVersionKind())
-	fromServer.SetNamespace(module.GetNamespace())
-	fromServer.SetName(module.GetName())
-	return &fromServer
-}
+const maxModuleNameLength = 253
 
-func CreateModuleName(moduleName, kymaName string) string {
-	return fmt.Sprintf("%s-%s", kymaName, moduleName)
+// CreateModuleName takes a FQDN and a prefix and generates a human-readable unique interpretation of
+// a name combination.
+// e.g. kyma-project.io/module/some-module and default-id => "default-id-some-module-34180237"
+// e.g. domain.com/some-module and default-id => "default-id-some-module-1238916".
+func CreateModuleName(fqdn, prefix string) string {
+	splitFQDN := strings.Split(fqdn, "/")
+	lastPartOfFQDN := splitFQDN[len(splitFQDN)-1]
+	hash := fnv.New32()
+	_, _ = hash.Write([]byte(fqdn))
+	hashedFQDN := hash.Sum32()
+	name := fmt.Sprintf("%s-%s-%v", prefix, lastPartOfFQDN, hashedFQDN)
+	if len(name) >= maxModuleNameLength {
+		name = name[:maxModuleNameLength-1]
+	}
+	return name
 }

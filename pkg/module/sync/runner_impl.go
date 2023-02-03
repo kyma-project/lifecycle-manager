@@ -5,21 +5,21 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kyma-project/module-manager/pkg/types"
-	"go.uber.org/zap"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	"golang.org/x/sync/errgroup"
 )
 
 func New(clnt client.Client) *RunnerImpl {
@@ -41,159 +41,123 @@ func (r *RunnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 	modules common.Modules,
 ) error {
 	ssaStart := time.Now()
-	baseLogger := log.FromContext(ctx).WithName(client.ObjectKey{Name: kyma.Name, Namespace: kyma.Namespace}.String())
+	baseLogger := ctrlLog.FromContext(ctx)
 
-	results := make(chan error, len(modules))
-	for name := range modules {
-		module := modules[name]
-		logger := module.Logger(baseLogger)
-		go func(name string) {
-			if err := r.updateModule(ctx, name, kyma, module); err != nil {
-				results <- fmt.Errorf("could not update module %s: %w", module.Name, err)
-				return
+	group, ctx := errgroup.WithContext(ctx)
+	for _, module := range modules {
+		module := module
+		group.Go(func() error {
+			if err := r.updateModule(ctx, kyma, module); err != nil {
+				return fmt.Errorf("could not update module %s: %w", module.GetName(), err)
 			}
-			logger.V(int(zap.DebugLevel)).Info("successfully patched module", "module", module.Name)
-			results <- nil
-		}(name)
+			module.Logger(baseLogger).V(log.DebugLevel).Info("successfully patched module")
+			return nil
+		})
 	}
-	var errs []error
-	for i := 0; i < len(modules); i++ {
-		if err := <-results; err != nil {
-			errs = append(errs, err)
-		}
-	}
+	err := group.Wait()
 	ssaFinish := time.Since(ssaStart)
-	if errs != nil {
-		return fmt.Errorf("ServerSideApply failed (after %s): %w", ssaFinish, types.NewMultiError(errs))
+	if err != nil {
+		return fmt.Errorf("ServerSideApply failed (after %s): %w", ssaFinish, err)
 	}
-	baseLogger.V(int(zap.DebugLevel)).Info("ServerSideApply finished", "time", ssaFinish)
+	baseLogger.V(log.DebugLevel).Info("ServerSideApply finished", "time", ssaFinish)
 	return nil
 }
 
-func (r *RunnerImpl) getModule(ctx context.Context, module *manifestV1alpha1.Manifest) error {
+func (r *RunnerImpl) getModule(ctx context.Context, module client.Object) error {
 	return r.Get(ctx, client.ObjectKey{Namespace: module.GetNamespace(), Name: module.GetName()}, module)
 }
 
-func (r *RunnerImpl) updateModule(ctx context.Context, name string, kyma *v1alpha1.Kyma,
+func (r *RunnerImpl) updateModule(ctx context.Context, kyma *v1alpha1.Kyma,
 	module *common.Module,
 ) error {
-	if err := r.setupModule(module, kyma, name); err != nil {
+	if err := r.setupModule(module, kyma); err != nil {
 		return err
 	}
-	obj, err := r.converter.ConvertToVersion(module.Manifest, r.versioner)
+	obj, err := r.converter.ConvertToVersion(module.Object, r.versioner)
 	if err != nil {
 		return err
 	}
 	clObj := obj.(client.Object)
-	if err := r.Patch(ctx, obj.(client.Object),
+	if err := r.Patch(ctx, clObj,
 		client.Apply,
 		client.FieldOwner(kyma.Labels[v1alpha1.ManagedBy]),
 		client.ForceOwnership,
 	); err != nil {
-		return fmt.Errorf("error patching custom resource of type %s %w", name, err)
+		return fmt.Errorf("error applying manifest %s: %w", client.ObjectKeyFromObject(module), err)
 	}
-	module.UpdateStatusAndReferencesFromUnstructured(clObj.(*manifestV1alpha1.Manifest))
+	module.Object = clObj
 
 	return nil
 }
 
-func (r *RunnerImpl) setupModule(module *common.Module, kyma *v1alpha1.Kyma, name string) error {
+func (r *RunnerImpl) setupModule(module *common.Module, kyma *v1alpha1.Kyma) error {
 	// set labels
-	module.ApplyLabels(kyma, name)
+	module.ApplyLabelsAndAnnotations(kyma)
 
 	if module.GetOwnerReferences() == nil {
 		// set owner reference
-		if err := controllerutil.SetControllerReference(kyma, module.Manifest, r.Scheme()); err != nil {
+		if err := controllerutil.SetControllerReference(kyma, module.Object, r.Scheme()); err != nil {
 			return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w",
-				name, kyma.Name, err)
+				module.GetName(), kyma.Name, err)
 		}
 	}
 
 	return nil
 }
 
-func (r *RunnerImpl) SyncModuleStatus(ctx context.Context, kyma *v1alpha1.Kyma, modules common.Modules) bool {
-	statusMap := kyma.GetModuleStatusMap()
-	statusUpdateRequiredFromUpdate := r.updateModuleStatusFromExistingModules(modules, statusMap, kyma)
-	statusUpdateRequiredFromDelete := r.deleteNoLongerExistingModuleStatus(ctx, statusMap, kyma)
-	return statusUpdateRequiredFromUpdate || statusUpdateRequiredFromDelete
+func (r *RunnerImpl) SyncModuleStatus(ctx context.Context, kyma *v1alpha1.Kyma, modules common.Modules) {
+	r.updateModuleStatusFromExistingModules(modules, kyma)
+	r.deleteNoLongerExistingModuleStatus(ctx, kyma)
 }
 
-func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Modules,
-	moduleStatusMap map[string]*v1alpha1.ModuleStatus, kyma *v1alpha1.Kyma,
-) bool {
-	updateRequired := false
-	for name := range modules {
-		module := modules[name]
-		descriptor, _ := module.Template.Spec.GetUnsafeDescriptor()
+func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Modules, kyma *v1alpha1.Kyma) {
+	for idx := range modules {
+		module := modules[idx]
+		manifestAPIVersion, manifestKind := module.Object.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
+		templateAPIVersion, templateKind := module.Template.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 		latestModuleStatus := v1alpha1.ModuleStatus{
-			ModuleName: module.Name,
-			Name:       module.Manifest.GetName(),
-			Namespace:  module.Manifest.GetNamespace(),
-			Generation: module.Manifest.GetGeneration(),
-			TemplateInfo: v1alpha1.TemplateInfo{
-				Name:       module.Template.Name,
-				Namespace:  module.Template.Namespace,
-				Channel:    module.Template.Spec.Channel,
-				Generation: module.Template.Generation,
-				GroupVersionKind: metav1.GroupVersionKind{
-					Group:   manifestV1alpha1.GroupVersionKind.Group,
-					Version: manifestV1alpha1.GroupVersionKind.Version,
-					Kind:    manifestV1alpha1.GroupVersionKind.Kind,
-				},
-				Version: descriptor.Version,
+			Name:    module.ModuleName,
+			FQDN:    module.FQDN,
+			State:   stateFromManifest(module.Object),
+			Channel: module.Template.Spec.Channel,
+			Version: module.Version,
+			Manifest: v1alpha1.TrackingObject{
+				PartialMeta: v1alpha1.PartialMetaFromObject(module.Object),
+				TypeMeta:    metav1.TypeMeta{Kind: manifestKind, APIVersion: manifestAPIVersion},
 			},
-			State: stateFromManifest(module.Manifest),
+			Template: v1alpha1.TrackingObject{
+				PartialMeta: v1alpha1.PartialMetaFromObject(module.Template),
+				TypeMeta:    metav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
+			},
 		}
-		moduleStatus, exists := moduleStatusMap[module.Name]
-		if exists {
-			if moduleStatus.State != latestModuleStatus.State {
-				updateRequired = true
-			}
-			*moduleStatus = latestModuleStatus
+		if len(kyma.Status.Modules) < idx+1 {
+			kyma.Status.Modules = append(kyma.Status.Modules, latestModuleStatus)
 		} else {
-			updateRequired = true
-			kyma.Status.ModuleStatus = append(kyma.Status.ModuleStatus, latestModuleStatus)
+			kyma.Status.Modules[idx] = latestModuleStatus
 		}
 	}
-	return updateRequired
 }
 
-func stateFromManifest(obj *manifestV1alpha1.Manifest) v1alpha1.State {
-	state := v1alpha1.State(obj.Status.State)
-	if state == "" {
-		return v1alpha1.StateProcessing
+func stateFromManifest(obj client.Object) v1alpha1.State {
+	switch manifest := obj.(type) {
+	case *manifestV1alpha1.Manifest:
+		return v1alpha1.State(manifest.Status.State)
+	default:
+		return v1alpha1.StateError
 	}
-	return state
 }
 
-func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context,
-	moduleStatusMap map[string]*v1alpha1.ModuleStatus, kyma *v1alpha1.Kyma,
-) bool {
-	updateRequired := false
+func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1alpha1.Kyma) {
 	moduleStatusArr := kyma.GetNoLongerExistingModuleStatus()
-	if len(moduleStatusArr) == 0 {
-		return false
-	}
-	for i := range moduleStatusArr {
-		moduleStatus := moduleStatusArr[i]
-		module := manifestV1alpha1.Manifest{}
-		module.SetName(moduleStatus.Name)
-		module.SetNamespace(moduleStatus.Namespace)
+	for idx := range moduleStatusArr {
+		moduleStatus := moduleStatusArr[idx]
+		module := unstructured.Unstructured{}
+		module.SetGroupVersionKind(moduleStatus.Manifest.GroupVersionKind())
+		module.SetName(moduleStatus.Manifest.GetName())
+		module.SetNamespace(moduleStatus.Manifest.GetNamespace())
 		err := r.getModule(ctx, &module)
 		if errors.IsNotFound(err) {
-			updateRequired = true
-			delete(moduleStatusMap, moduleStatus.ModuleName)
+			kyma.Status.Modules = append(kyma.Status.Modules[:idx], kyma.Status.Modules[idx+1:]...)
 		}
 	}
-	kyma.Status.ModuleStatus = convertToNewmoduleStatus(moduleStatusMap)
-	return updateRequired
-}
-
-func convertToNewmoduleStatus(moduleStatusMap map[string]*v1alpha1.ModuleStatus) []v1alpha1.ModuleStatus {
-	newModuleStatus := make([]v1alpha1.ModuleStatus, 0)
-	for _, moduleStatus := range moduleStatusMap {
-		newModuleStatus = append(newModuleStatus, *moduleStatus)
-	}
-	return newModuleStatus
 }
