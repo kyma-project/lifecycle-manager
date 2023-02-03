@@ -7,6 +7,9 @@ import (
 	"io"
 	"os"
 
+
+	"k8s.io/apimachinery/pkg/api/resource"
+
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/go-logr/logr"
@@ -32,6 +35,7 @@ var (
 	ErrExpectedNonNilConfig             = errors.New("expected non nil config")
 	ErrExpectedSubjectsNotToBeEmpty     = errors.New("expected subjects to be non empty")
 	ErrExpectedNonEmptyPodVolumes       = errors.New("expected non empty pod volumes")
+	ErrExpectedNonEmptyPodContainers    = errors.New("expected non empty pod containers")
 	ErrPodTemplateMustContainAtLeastOne = errors.New("pod template labels must contain " +
 		"at least the deployment selector label")
 )
@@ -144,16 +148,39 @@ func configureConfigMap(cfg *unstructuredResourcesConfig, resource *unstructured
 	return configMap, nil
 }
 
-func configureDeployment(cfg *unstructuredResourcesConfig, resource *unstructured.Unstructured,
+func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Unstructured,
 ) (*appsv1.Deployment, error) {
 	deployment := &appsv1.Deployment{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(resource.Object, deployment); err != nil {
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, deployment); err != nil {
 		return nil, err
 	}
+
+
 	if deployment.Spec.Template.Labels == nil || len(deployment.Spec.Template.Labels) == 0 {
 		return nil, ErrPodTemplateMustContainAtLeastOne
 	}
 	deployment.Spec.Template.Labels[podRestartLabelKey] = cfg.secretResVer
+
+	// configure resource limits for the webhook server container
+	if len(deployment.Spec.Template.Spec.Containers) == 0 {
+		return nil, ErrExpectedNonEmptyPodContainers
+	}
+	serverContainer := deployment.Spec.Template.Spec.Containers[0]
+	cpuResQty, err := resource.ParseQuantity(cfg.cpuResLimit)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing CPU resource limit: %w", err)
+	}
+	memResQty, err := resource.ParseQuantity(cfg.memResLimit)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing memory resource limit: %w", err)
+	}
+	serverContainer.Resources.Limits = map[corev1.ResourceName]resource.Quantity{
+		corev1.ResourceCPU:    cpuResQty,
+		corev1.ResourceMemory: memResQty,
+	}
+	deployment.Spec.Template.Spec.Containers[0] = serverContainer
+
+	// configure secret name for the ssl volume
 	if len(deployment.Spec.Template.Spec.Volumes) == 0 {
 		return nil, ErrExpectedNonEmptyPodVolumes
 	}
@@ -165,14 +192,14 @@ func configureDeployment(cfg *unstructuredResourcesConfig, resource *unstructure
 }
 
 func getSKRClientObjectsForInstall(ctx context.Context, kcpClient client.Client, kymaObjKey client.ObjectKey,
-	remoteNs, kcpAddr, chartPath string, logger logr.Logger,
+	remoteNs, kcpAddr string, logger logr.Logger, managerConfig *SkrWebhookManagerConfig,
 ) ([]client.Object, error) {
 	var skrClientObjects []client.Object
-	resourcesConfig, err := getUnstructuredResourcesConfig(ctx, kcpClient, kymaObjKey, remoteNs, kcpAddr)
+	resourcesConfig, err := getUnstructuredResourcesConfig(ctx, kcpClient, kymaObjKey, remoteNs, kcpAddr, managerConfig)
 	if err != nil {
 		return nil, err
 	}
-	resources, err := getRawManifestClientObjects(resourcesConfig, remoteNs, chartPath, logger)
+	resources, err := getRawManifestClientObjects(resourcesConfig, remoteNs, managerConfig.WebhookChartPath, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -229,11 +256,12 @@ type unstructuredResourcesConfig struct {
 	tlsWebhookServer         string
 	tlsCallback              string
 	secretName, secretResVer string
+	cpuResLimit, memResLimit string
 	caCert, tlsCert, tlsKey  []byte
 	remoteNs                 string
 }
 
-//nolint:ireturn
+
 func configureUnstructuredResource(cfg *unstructuredResourcesConfig, resource *unstructured.Unstructured,
 ) (client.Object, error) {
 	if resource.GetAPIVersion() == corev1.SchemeGroupVersion.String() && resource.GetKind() == "ConfigMap" {
@@ -288,7 +316,7 @@ func getRawManifestClientObjects(cfg *unstructuredResourcesConfig, remoteNs, cha
 }
 
 func getUnstructuredResourcesConfig(ctx context.Context, kcpClient client.Client, kymaObjKey client.ObjectKey,
-	remoteNs, kcpAddr string,
+	remoteNs, kcpAddr string, managerConfig *SkrWebhookManagerConfig,
 ) (*unstructuredResourcesConfig, error) {
 	tlsSecret := &corev1.Secret{}
 	secretObjKey := client.ObjectKey{
@@ -307,6 +335,8 @@ func getUnstructuredResourcesConfig(ctx context.Context, kcpClient client.Client
 		tlsCallback:      "false",
 		secretName:       tlsSecret.Name,
 		secretResVer:     tlsSecret.ResourceVersion,
+		cpuResLimit:      managerConfig.SkrWebhookCPULimits,
+		memResLimit:      managerConfig.SkrWebhookMemoryLimits,
 		caCert:           tlsSecret.Data[caCertKey],
 		tlsCert:          tlsSecret.Data[tlsCertKey],
 		tlsKey:           tlsSecret.Data[tlsPrivateKeyKey],

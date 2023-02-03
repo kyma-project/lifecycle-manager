@@ -57,6 +57,10 @@ func defineFlagVar() *FlagVar {
 		"Enabling KCP Watcher to reconcile Watcher CRs created by KCP run operators")
 	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "./skr-webhook",
 		"The path to the skr watcher chart.")
+	flag.StringVar(&flagVar.skrWebhookMemoryLimits, "skr-webhook-memory-limits", "200Mi",
+		"The resources.limits.memory for skr webhook.")
+	flag.StringVar(&flagVar.skrWebhookCPULimits, "skr-webhook-cpu-limits", "0.1",
+		"The resources.limits.cpu for skr webhook.")
 	flag.StringVar(&flagVar.virtualServiceName, "virtual-svc-name", "kcp-events",
 		"Name of the virtual service resource to be reconciled by the watcher control loop.")
 	flag.BoolVar(&flagVar.enableWatcherLocalTesting, "enable-watcher-local-testing", false,
@@ -100,6 +104,8 @@ type FlagVar struct {
 	enableWebhooks                                                  bool
 	enableKcpWatcher                                                bool
 	skrWatcherPath                                                  string
+	skrWebhookMemoryLimits                                          string
+	skrWebhookCPULimits                                             string
 	virtualServiceName                                              string
 	enableWatcherLocalTesting                                       bool
 	// listenerHTTPPortLocalMapping is used to enable the user

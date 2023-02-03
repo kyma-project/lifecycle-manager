@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/util/yaml"
 	"net"
 	"strconv"
+
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/util/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"golang.org/x/sync/errgroup"
@@ -37,10 +39,12 @@ const (
 
 var ErrLoadBalancerIPIsNotAssigned = errors.New("load balancer service external ip is not assigned")
 
-type SkrChartManagerConfig struct {
+type SkrWebhookManagerConfig struct {
 	// WebhookChartPath represents the path of the webhook chart
 	// to be installed on SKR clusters upon reconciling kyma CRs.
-	WebhookChartPath string
+	WebhookChartPath       string
+	SkrWebhookMemoryLimits string
+	SkrWebhookCPULimits    string
 	// WatcherLocalTestingEnabled indicates if the chart manager is running in local testing mode
 	WatcherLocalTestingEnabled bool
 	// GatewayHTTPPortMapping indicates the port used to expose the KCP cluster locally for the watcher callbacks
@@ -85,7 +89,7 @@ func skrChartReleaseName(kymaObjKey client.ObjectKey) string {
 	return fmt.Sprintf(releaseNameTpl, kymaObjKey.Namespace, kymaObjKey.Name)
 }
 
-func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrChartManagerConfig) (string, error) {
+func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrWebhookManagerConfig) (string, error) {
 	if managerConfig.WatcherLocalTestingEnabled {
 		return net.JoinHostPort(defaultK3dLocalhostMapping, strconv.Itoa(managerConfig.GatewayHTTPPortMapping)), nil
 	}

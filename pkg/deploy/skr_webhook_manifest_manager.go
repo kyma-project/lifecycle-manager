@@ -18,11 +18,11 @@ import (
 // SKRWebhookManifestManager is a SKRWebhookManager implementation that applies
 // the SKR webhook's raw manifest using a native kube-client.
 type SKRWebhookManifestManager struct {
-	config  *SkrChartManagerConfig
+	config  *SkrWebhookManagerConfig
 	kcpAddr string
 }
 
-func NewSKRWebhookManifestManager(kcpRestConfig *rest.Config, managerConfig *SkrChartManagerConfig,
+func NewSKRWebhookManifestManager(kcpRestConfig *rest.Config, managerConfig *SkrWebhookManagerConfig,
 ) (*SKRWebhookManifestManager, error) {
 	resolvedKcpAddr, err := resolveKcpAddr(kcpRestConfig, managerConfig)
 	if err != nil {
@@ -40,7 +40,7 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1alpha1.
 	syncContext := remote.SyncContextFromContext(ctx)
 	remoteNs := resolveRemoteNamespace(kyma)
 	resources, err := getSKRClientObjectsForInstall(ctx, syncContext.ControlPlaneClient, kymaObjKey,
-		remoteNs, m.kcpAddr, m.config.WebhookChartPath, logger)
+		remoteNs, m.kcpAddr, logger, m.config)
 	if err != nil {
 		return err
 	}
