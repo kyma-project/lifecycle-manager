@@ -22,6 +22,8 @@ images:
 
 resources:
   - ../manager
+  # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'. 'WEBHOOK' components are required.
+  - ../certmanager
 
 components:
   - ../crd
