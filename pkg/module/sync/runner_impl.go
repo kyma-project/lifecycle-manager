@@ -45,15 +45,14 @@ func (r *RunnerImpl) Sync(ctx context.Context, kyma *v1alpha1.Kyma,
 
 	results := make(chan error, len(modules))
 	for _, module := range modules {
-		module := module
-		go func() {
+		go func(module *common.Module) {
 			if err := r.updateModule(ctx, kyma, module); err != nil {
 				results <- fmt.Errorf("could not update module %s: %w", module.GetName(), err)
 				return
 			}
 			module.Logger(baseLogger).V(log.DebugLevel).Info("successfully patched module")
 			results <- nil
-		}()
+		}(module)
 	}
 	var errs []error
 	for i := 0; i < len(modules); i++ {
