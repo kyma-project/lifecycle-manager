@@ -93,7 +93,7 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 	It("CR should be created normally and then recreated after delete", func() {
 		By("CR created")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ModuleExists(ctx, kyma, activeModule), Timeout, Interval).Should(BeTrue())
+			Eventually(ModuleExists(ctx, kyma, activeModule), Timeout, Interval).Should(Succeed())
 		}
 		By("Delete CR")
 		for _, activeModule := range kyma.Spec.Modules {
@@ -102,14 +102,14 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 
 		By("CR created again")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ModuleExists(ctx, kyma, activeModule), Timeout, Interval).Should(BeTrue())
+			Eventually(ModuleExists(ctx, kyma, activeModule), Timeout, Interval).Should(Succeed())
 		}
 	})
 
 	It("CR should be deleted after removed from kyma.spec.modules", func() {
 		By("CR created")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ModuleExists(ctx, kyma, activeModule), Timeout, Interval).Should(BeTrue())
+			Eventually(ModuleExists(ctx, kyma, activeModule), Timeout, Interval).Should(Succeed())
 		}
 		By("Remove kcp-module from kyma.spec.modules")
 		kyma.Spec.Modules = []v1alpha1.Module{
@@ -118,10 +118,10 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 		Expect(controlPlaneClient.Update(ctx, kyma)).To(Succeed())
 
 		By("kcp-module deleted")
-		Eventually(ModuleNotExist(ctx, kyma, *kcpModule), Timeout, Interval).Should(BeTrue())
+		Eventually(ModuleNotExist(ctx, kyma, *kcpModule), Timeout, Interval).Should(Succeed())
 
 		By("skr-module exists")
-		Eventually(ModuleExists(ctx, kyma, *skrModule), Timeout, Interval).Should(BeTrue())
+		Eventually(ModuleExists(ctx, kyma, *skrModule), Timeout, Interval).Should(Succeed())
 	})
 })
 
@@ -140,7 +140,7 @@ var _ = Describe("Kyma update Manifest CR", Ordered, func() {
 	It("Manifest CR should be updated after module template changed", func() {
 		By("CR created")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ModuleExists(ctx, kyma, activeModule), Timeout, Interval).Should(BeTrue())
+			Eventually(ModuleExists(ctx, kyma, activeModule), Timeout, Interval).Should(Succeed())
 		}
 
 		By("reacting to a change of its Modules when they are set to ready")
