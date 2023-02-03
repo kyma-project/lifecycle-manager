@@ -88,7 +88,8 @@ func (c *RemoteCatalog) deleteDiffCatalog(ctx context.Context,
 	syncContext *remotecontext.KymaSynchronizationContext,
 ) error {
 	diffsToDelete := c.diffsToDelete(moduleTemplatesRuntime, kcp)
-	results := make(chan error, len(diffsToDelete))
+	channelLength := len(diffsToDelete)
+	results := make(chan error, channelLength)
 	for _, diff := range diffsToDelete {
 		diff := diff
 		go func() {
@@ -96,7 +97,7 @@ func (c *RemoteCatalog) deleteDiffCatalog(ctx context.Context,
 		}()
 	}
 	var errs []error
-	for i := 0; i < len(kcp.Items); i++ {
+	for i := 0; i < channelLength; i++ {
 		if err := <-results; err != nil {
 			errs = append(errs, err)
 		}
@@ -112,7 +113,8 @@ func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 	kcp *v1alpha1.ModuleTemplateList,
 	syncContext *remotecontext.KymaSynchronizationContext,
 ) error {
-	results := make(chan error, len(kcp.Items))
+	channelLength := len(kcp.Items)
+	results := make(chan error, channelLength)
 	for kcpIndex := range kcp.Items {
 		kcpIndex := kcpIndex
 		go func() {
@@ -121,7 +123,7 @@ func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 		}()
 	}
 	var errs []error
-	for i := 0; i < len(kcp.Items); i++ {
+	for i := 0; i < channelLength; i++ {
 		if err := <-results; err != nil {
 			errs = append(errs, err)
 		}
@@ -132,7 +134,6 @@ func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1alpha1.ModuleTemplateKind.Plural()); err != nil {
 			return err
 		}
-		return c.CreateOrUpdate(ctx, kcp)
 	}
 
 	if len(errs) != 0 {
