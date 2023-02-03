@@ -24,7 +24,7 @@ patches:
   - patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --enable-watcher-local-testing # Enables to check for k3d local address and sets this as kcp address
+        value: --enable-watcher-local-testing
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --listener-http-local-mapping=9443
