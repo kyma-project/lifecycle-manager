@@ -34,8 +34,7 @@ type SetupUpSetting struct {
 }
 
 const (
-	WatcherControllerName         = "watcher"
-	CertificateSyncControllerName = "certificateSync"
+	WatcherControllerName = "watcher"
 )
 
 // SetupWithManager sets up the Kyma controller with the Manager.

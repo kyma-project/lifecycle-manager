@@ -48,21 +48,6 @@ patches:
 patchesJson6902:
   - patch: |-
       - op: replace
-        path: /spec/serviceInfo/name
-        value: klm-event-service
-      - op: replace
-        path: /spec/serviceInfo/namespace
-        value: kcp-system
-    target:
-      group: operator.kyma-project.io
-      version: v1alpha1
-      kind: Watcher
-      name: watcher
-  - patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: default # TODO double check if needed, or if it can be in kcp-system
-      - op: replace
         path: /metadata/name
         value: lifecycle-manager-kyma-gateway
       - op: replace

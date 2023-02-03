@@ -94,8 +94,6 @@ func generateHelmChartArgs(ctx context.Context, kcpClient client.Client,
 		customConfigValue = string(chartConfigBytes)
 	}
 
-	// TODO PKI Only have secure local testing
-
 	return map[string]interface{}{
 		"caCert": certSecret.CACrt,
 		"tls": map[string]string{

@@ -36,7 +36,6 @@ rules:
   - delete
   - get
   - list
-  - patch
   - update
   - watch
 - apiGroups:
@@ -64,9 +63,7 @@ rules:
   - delete
   - get
   - list
-  - patch
   - update
-  - watch
 - apiGroups:
   - cert-manager.io
   resources:
