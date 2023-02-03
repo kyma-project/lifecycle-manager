@@ -102,6 +102,37 @@ func (c *Certificate) Create(ctx context.Context, config *SkrChartManagerConfig)
 	return nil
 }
 
+// Remove removes the certificate including its certificate secret.
+func (c *Certificate) Remove(ctx context.Context) error {
+	certificate := &v1.Certificate{}
+	if err := c.kcpClient.Get(ctx, client.ObjectKey{
+		Name:      c.certificateName,
+		Namespace: c.kyma.Namespace,
+	}, certificate); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	if err := c.kcpClient.Delete(ctx, certificate); err != nil {
+		return err
+	}
+	certSecret := &corev1.Secret{}
+	if err := c.kcpClient.Get(ctx, client.ObjectKey{
+		Name:      c.secretName,
+		Namespace: c.kyma.Namespace,
+	}, certificate); err != nil {
+		if k8serrors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	if err := c.kcpClient.Delete(ctx, certSecret); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (c *Certificate) GetSecret(ctx context.Context) (*CertificateSecret, error) {
 	secret := &corev1.Secret{}
 	namespace := c.kyma.ObjectMeta.Namespace

@@ -107,6 +107,16 @@ func (m *SKRWebhookTemplateChartManager) Remove(ctx context.Context, kyma *v1alp
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
+
+	certificate, err := NewCertificate(syncContext.ControlPlaneClient, kyma)
+	if err != nil {
+		logger.Error(err, "Error while creating new Certificate struct")
+		return err
+	}
+	if err := certificate.Remove(ctx); err != nil {
+		return err
+	}
+
 	manifest, err := renderChartToRawManifest(ctx, kyma, m.config.WebhookChartPath, map[string]interface{}{})
 	if err != nil {
 		return err
