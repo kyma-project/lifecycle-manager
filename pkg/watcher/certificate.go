@@ -61,6 +61,7 @@ type CertificateSecret struct {
 	ResourceVersion string
 }
 
+// NewCertificate returns a new Certificate, which can be used for creating a cert-manager Certificate.
 func NewCertificate(kcpClient client.Client, kyma *v1alpha1.Kyma) (*Certificate, error) {
 	if kcpClient == nil || kyma == nil {
 		return nil, fmt.Errorf("could not create CertManager, client or Kyma must not be empty") //nolint:goerr113
@@ -77,6 +78,7 @@ func CreateSecretName(kymaObjKey client.ObjectKey) string {
 	return fmt.Sprintf("%s%s", kymaObjKey.Name, CertificateSuffix)
 }
 
+// Create creates a cert-manager Certificate with a sufficient set of Subject-Alternative-Names.
 func (c *Certificate) Create(ctx context.Context, config *SkrChartManagerConfig) error {
 	c.logger = logf.FromContext(ctx)
 	// Check if Certificate exists

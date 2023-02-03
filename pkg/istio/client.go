@@ -393,6 +393,9 @@ func destinationHost(serviceName, serviceNamespace string) string {
 	return fmt.Sprintf("%s.%s.svc.cluster.local", serviceName, serviceNamespace)
 }
 
+// SyncCertificateSecretToIstio fetches the CA Root Certificate, configured by KLM flags, and creates, updates
+// or deletes a copy of it in the Istio namespace. This is needed since Istio needs the Root CA Certificate secret
+// in its own namespace to use it for Gateways with strict mTLS connection.
 func (c *Client) SyncCertificateSecretToIstio(ctx context.Context, kcpClient client.Client) error {
 	certSecret := &corev1.Secret{}
 	err := kcpClient.Get(ctx,

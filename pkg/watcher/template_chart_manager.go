@@ -55,8 +55,6 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
 
-	// TODO
-
 	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
 	// If it already exists, create will do nothing
 	certificate, err := NewCertificate(syncContext.ControlPlaneClient, kyma)
@@ -78,7 +76,6 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 		logger.Error(err, "Error getting certificate secret")
 		return true, err
 	}
-	// TODO
 
 	chartArgValues, err := generateHelmChartArgs(ctx, syncContext.ControlPlaneClient,
 		m.config, m.kcpAddr, certSecret)
