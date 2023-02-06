@@ -44,7 +44,7 @@ This setup is deployed with the following security features enabled:
 
 4. Deploy lifecycle-manager on the cluster:
     ```shell
-    make local-deploy-with-watcher-secured IMG=eu.gcr.io/kyma-project/lifecycle-manager:latest
+    make local-deploy-with-watcher IMG=eu.gcr.io/kyma-project/lifecycle-manager:latest
     ```
    <details>
       <summary>deploying custom image</summary>
@@ -53,7 +53,7 @@ This setup is deployed with the following security features enabled:
    ```shell
    make docker-build
    make docker-push
-   make local-deploy-with-watcher-secured IMG=<image-name>:<image-tag>
+   make local-deploy-with-watcher IMG=<image-name>:<image-tag>
    ```
    </details>
 

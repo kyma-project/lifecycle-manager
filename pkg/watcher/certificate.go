@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/log"
+
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/go-logr/logr"
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-
 	"k8s.io/apimachinery/pkg/types"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -44,12 +43,12 @@ type SubjectAltName struct {
 	EmailAddresses []string
 }
 
-type Certificate struct {
-	kcpClient       client.Client
-	kyma            *v1alpha1.Kyma
-	certificateName string
-	secretName      string
-	logger          logr.Logger
+type CertificateManager struct {
+	kcpClient                  client.Client
+	kyma                       *v1alpha1.Kyma
+	certificateName            string
+	secretName                 string
+	watcherLocalTestingEnabled bool
 }
 
 type CertificateSecret struct {
@@ -59,16 +58,16 @@ type CertificateSecret struct {
 	ResourceVersion string
 }
 
-// NewCertificate returns a new Certificate, which can be used for creating a cert-manager Certificate.
-func NewCertificate(kcpClient client.Client, kyma *v1alpha1.Kyma) (*Certificate, error) {
-	if kcpClient == nil || kyma == nil {
-		return nil, fmt.Errorf("could not create CertManager, client or Kyma must not be empty") //nolint:goerr113
-	}
-	return &Certificate{
-		kcpClient:       kcpClient,
-		kyma:            kyma,
-		certificateName: fmt.Sprintf("%s%s", kyma.Name, CertificateSuffix),
-		secretName:      CreateSecretName(client.ObjectKeyFromObject(kyma)),
+// NewCertificateManager returns a new CertificateManager, which can be used for creating a cert-manager Certificates.
+func NewCertificateManager(kcpClient client.Client, kyma *v1alpha1.Kyma,
+	localTesting bool,
+) (*CertificateManager, error) {
+	return &CertificateManager{
+		kcpClient:                  kcpClient,
+		kyma:                       kyma,
+		certificateName:            fmt.Sprintf("%s%s", kyma.Name, CertificateSuffix),
+		secretName:                 CreateSecretName(client.ObjectKeyFromObject(kyma)),
+		watcherLocalTestingEnabled: localTesting,
 	}, nil
 }
 
@@ -77,9 +76,8 @@ func CreateSecretName(kymaObjKey client.ObjectKey) string {
 }
 
 // Create creates a cert-manager Certificate with a sufficient set of Subject-Alternative-Names.
-func (c *Certificate) Create(ctx context.Context, config *SkrChartManagerConfig) error {
-	c.logger = logf.FromContext(ctx)
-	// Check if Certificate exists
+func (c *CertificateManager) Create(ctx context.Context) error {
+	// Check if CertificateManager exists
 	exists, err := c.exists(ctx)
 	if exists {
 		return nil
@@ -87,23 +85,20 @@ func (c *Certificate) Create(ctx context.Context, config *SkrChartManagerConfig)
 		return err
 	}
 	// fetch Subject-Alternative-Name from KymaCR
-	subjectAltNames, err := c.getSubjectAltNames(config)
+	subjectAltNames, err := c.getSubjectAltNames()
 	if err != nil {
-		c.logger.Error(err, "Error get Subject Alternative Name from KymaCR")
-		return err
+		return fmt.Errorf("error get Subject Alternative Name from KymaCR: %w", err)
 	}
 	// create cert-manager CertificateCR
 	err = c.createCertificate(ctx, c.kyma.Namespace, subjectAltNames)
 	if err != nil {
-		c.logger.Error(err, "Error while creating certificate")
-		return err
+		return fmt.Errorf("error while creating certificate: %w", err)
 	}
-	c.logger.Info("Successfully created CA Root Certificate")
 	return nil
 }
 
 // Remove removes the certificate including its certificate secret.
-func (c *Certificate) Remove(ctx context.Context) error {
+func (c *CertificateManager) Remove(ctx context.Context) error {
 	certificate := &v1.Certificate{}
 	if err := c.kcpClient.Get(ctx, client.ObjectKey{
 		Name:      c.certificateName,
@@ -133,7 +128,7 @@ func (c *Certificate) Remove(ctx context.Context) error {
 	return nil
 }
 
-func (c *Certificate) GetSecret(ctx context.Context) (*CertificateSecret, error) {
+func (c *CertificateManager) GetSecret(ctx context.Context) (*CertificateSecret, error) {
 	secret := &corev1.Secret{}
 	namespace := c.kyma.ObjectMeta.Namespace
 	name := c.secretName
@@ -151,23 +146,21 @@ func (c *Certificate) GetSecret(ctx context.Context) (*CertificateSecret, error)
 	return &certSecret, nil
 }
 
-func (c *Certificate) exists(ctx context.Context) (bool, error) {
+func (c *CertificateManager) exists(ctx context.Context) (bool, error) {
 	cert := v1.Certificate{}
 	err := c.kcpClient.Get(ctx, types.NamespacedName{
 		Namespace: c.kyma.Namespace,
 		Name:      c.certificateName,
 	}, &cert)
 	if k8serrors.IsNotFound(err) {
-		c.logger.Info("Certificate does not exist", "Certificate", c.certificateName)
 		return false, nil
 	} else if err != nil {
-		c.logger.Info("Could not fetch certificate from local Cluster")
-		return false, err
+		return false, fmt.Errorf("could not fetch certificate from local Cluster: %w", err)
 	}
 	return true, nil
 }
 
-func (c *Certificate) createCertificate(
+func (c *CertificateManager) createCertificate(
 	ctx context.Context, certNamespace string,
 	subjectAltName *SubjectAltName,
 ) error {
@@ -175,10 +168,8 @@ func (c *Certificate) createCertificate(
 	// RenewBefore default 2/3 of Duration
 	issuer, err := c.getIssuer(ctx)
 	if err != nil {
-		c.logger.Error(err, "Error getting Issuer")
-		return err
+		return fmt.Errorf("error getting issuer: %w", err)
 	}
-	c.logger.Info("Issuer found", "issuer", issuer)
 
 	cert := v1.Certificate{
 		ObjectMeta: apimachinerymetav1.ObjectMeta{
@@ -213,7 +204,7 @@ func (c *Certificate) createCertificate(
 	return c.kcpClient.Create(ctx, &cert)
 }
 
-func (c *Certificate) getSubjectAltNames(config *SkrChartManagerConfig) (*SubjectAltName, error) {
+func (c *CertificateManager) getSubjectAltNames() (*SubjectAltName, error) {
 	if domain, ok := c.kyma.Annotations[DomainAnnotation]; ok {
 		if domain == "" {
 			return nil, fmt.Errorf("Domain-Annotation of KymaCR %s is empty", c.kyma.Name) //nolint:goerr113
@@ -229,7 +220,7 @@ func (c *Certificate) getSubjectAltNames(config *SkrChartManagerConfig) (*Subjec
 			dnsNames = append(dnsNames, fmt.Sprintf("%s.%s.%s", resourceName, namespace, suffix))
 		}
 
-		if config.WatcherLocalTestingEnabled {
+		if c.watcherLocalTestingEnabled {
 			dnsNames = append(dnsNames, []string{"localhost", "127.0.0.1", "host.k3d.internal"}...)
 		}
 
@@ -241,7 +232,8 @@ func (c *Certificate) getSubjectAltNames(config *SkrChartManagerConfig) (*Subjec
 		c.kyma.Name, DomainAnnotation)
 }
 
-func (c *Certificate) getIssuer(ctx context.Context) (*v1.Issuer, error) {
+func (c *CertificateManager) getIssuer(ctx context.Context) (*v1.Issuer, error) {
+	logger := log.FromContext(ctx)
 	issuerList := &v1.IssuerList{}
 	err := c.kcpClient.List(ctx, issuerList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(LabelSet),
@@ -252,6 +244,9 @@ func (c *Certificate) getIssuer(ctx context.Context) (*v1.Issuer, error) {
 	}
 	if len(issuerList.Items) == 0 {
 		return nil, fmt.Errorf("no issuer found in Namespace `%s`", c.kyma.Namespace) //nolint:goerr113
+	} else if len(issuerList.Items) > 1 {
+		logger.Info("Found more than one issuer, will use by default first one in list",
+			"issuer", issuerList.Items)
 	}
 	return &issuerList.Items[0], nil
 }

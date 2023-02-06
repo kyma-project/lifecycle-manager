@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
+
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/go-logr/logr"
@@ -406,7 +408,7 @@ func (c *Client) SyncCertificateSecretToIstio(ctx context.Context, kcpClient cli
 
 	if apierrors.IsNotFound(err) {
 		// if CA Certificate does not exist, check if it exists in istio Namespace, if yes remove it
-		c.logger.Info("CA Root Certificate does not exist, " +
+		c.logger.V(log.DebugLevel).Info("CA Root Certificate does not exist, " +
 			"will delete CA Root Certificate in istio namespace if exists")
 		if err := kcpClient.Get(ctx, client.ObjectKey{
 			Namespace: c.config.IstioCertificateNamespace,

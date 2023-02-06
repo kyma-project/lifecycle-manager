@@ -241,6 +241,8 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	if kyma.Spec.Sync.Enabled && r.SKRWebhookChartManager != nil {
 		if _, err := r.SKRWebhookChartManager.Install(ctx, kyma); err != nil {
 			kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
+			// TODO Move installation to own go-routine to not block installation
+			// https://github.com/kyma-project/lifecycle-manager/issues/376
 			if err != nil && !errors.Is(err, &watcher.CertificateNotReadyError{}) {
 				return r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError,
 					fmt.Errorf("error while installing Watcher Webhook Chart: %w", err))

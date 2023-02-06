@@ -125,8 +125,8 @@ lt-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/load_test | kubectl apply -f -
 
-.PHONY: local-deploy-with-watcher-secured
-local-deploy-with-watcher-secured: install manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+.PHONY: local-deploy-with-watcher
+local-deploy-with-watcher: install manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/watcher_local_test_secured | kubectl apply -f -
 

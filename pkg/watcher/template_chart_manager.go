@@ -7,6 +7,8 @@ import (
 	"io"
 	"strings"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
+
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
@@ -57,20 +59,20 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 
 	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
 	// If it already exists, create will do nothing
-	certificate, err := NewCertificate(syncContext.ControlPlaneClient, kyma)
+	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma, m.config.WatcherLocalTestingEnabled)
 	if err != nil {
-		logger.Error(err, "Error while creating new Certificate struct")
-		return true, err
+		return true, fmt.Errorf("error while creating new CertificateManager struct: %w", err)
 	}
-	if err = certificate.Create(ctx, m.config); err != nil {
+	if err = certificate.Create(ctx); err != nil {
 		logger.Error(err, "Error while creating new Certificate on KCP")
 		return true, err
 	}
+	logger.V(log.DebugLevel).Info("Successfully created Certificate", "kyma", kymaObjKey)
 
 	// If secret is not created do nothing and check in next reconcile loop
 	certSecret, err := certificate.GetSecret(ctx)
 	if apierrors.IsNotFound(err) {
-		logger.Info("Certificate not ready - Secret not found")
+		logger.Info("CertificateManager not ready - Secret not found")
 		return true, &CertificateNotReadyError{}
 	} else if err != nil {
 		logger.Error(err, "Error getting certificate secret")
@@ -108,9 +110,9 @@ func (m *SKRWebhookTemplateChartManager) Remove(ctx context.Context, kyma *v1alp
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
 
-	certificate, err := NewCertificate(syncContext.ControlPlaneClient, kyma)
+	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma, false)
 	if err != nil {
-		logger.Error(err, "Error while creating new Certificate struct")
+		logger.Error(err, "Error while creating new CertificateManager")
 		return err
 	}
 	if err := certificate.Remove(ctx); err != nil {

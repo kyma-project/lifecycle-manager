@@ -55,10 +55,7 @@ import (
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
-
 	//+kubebuilder:scaffold:imports
-
-	aggregatorclientsetscheme "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset/scheme"
 )
 
 const (
@@ -76,7 +73,6 @@ func init() {
 	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(v1extensions.AddToScheme(scheme))
 	utilruntime.Must(moduleManagerV1alpha1.AddToScheme(scheme))
-	utilruntime.Must(aggregatorclientsetscheme.AddToScheme(scheme))
 	utilruntime.Must(certManagerV1.AddToScheme(scheme))
 
 	//+kubebuilder:scaffold:scheme

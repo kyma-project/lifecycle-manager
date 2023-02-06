@@ -105,14 +105,14 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 			if test.issuer != nil {
 				Expect(controlPlaneClient.Create(ctx, test.issuer)).Should(BeNil())
 			}
-			cert, err := watcher.NewCertificate(controlPlaneClient, test.kyma)
+			cert, err := watcher.NewCertificateManager(controlPlaneClient, test.kyma, true)
 			if test.wantNewCertErr {
 				Expect(err).ShouldNot(BeNil())
 				return
 			}
 			Expect(err).Should(BeNil())
 
-			err = cert.Create(ctx, &watcher.SkrChartManagerConfig{WatcherLocalTestingEnabled: true})
+			err = cert.Create(ctx)
 			if test.wantCreateErr {
 				Expect(err).ShouldNot(BeNil())
 				return

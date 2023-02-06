@@ -33,7 +33,7 @@ var (
 func TestAPIs(t *testing.T) {
 	t.Parallel()
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Certificate Sync")
+	RunSpecs(t, "CertificateManager Sync")
 }
 
 var _ = BeforeSuite(func() {

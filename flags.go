@@ -57,10 +57,6 @@ func defineFlagVar() *FlagVar {
 		"Enabling KCP Watcher to reconcile Watcher CRs created by KCP run operators")
 	flag.StringVar(&flagVar.skrWatcherPath, "skr-watcher-path", "./skr-webhook",
 		"The path to the skr watcher chart.")
-	flag.BoolVar(&flagVar.enableTLSCertSync, "enable-tls-cert-sync", true,
-		"Enabling synchronisation of TLS-Certificate-Secrets, created during the Watcher installation")
-	flag.StringVar(&flagVar.tlsCertSecretName, "tls-cert-secret-name", "skr-webhook-tls",
-		"Name of the TLS-Certificate-Secret in the remote cluster.")
 	flag.StringVar(&flagVar.skrWebhookMemoryLimits, "skr-webhook-memory-limits", "200Mi",
 		"The resources.limits.memory for skr webhook.")
 	flag.StringVar(&flagVar.skrWebhookCPULimits, "skr-webhook-cpu-limits", "0.1",
@@ -114,8 +110,6 @@ type FlagVar struct {
 	enableWebhooks                                                  bool
 	enableKcpWatcher                                                bool
 	skrWatcherPath                                                  string
-	enableTLSCertSync                                               bool
-	tlsCertSecretName                                               string
 	skrWebhookMemoryLimits                                          string
 	skrWebhookCPULimits                                             string
 	virtualServiceName                                              string
