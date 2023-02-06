@@ -133,7 +133,7 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1
 		kcpKymas := &v1alpha1.KymaList{}
 		Expect(controlPlaneClient.List(suiteCtx, kcpKymas)).To(Succeed())
 		Expect(kcpKymas.Items).NotTo(BeEmpty())
-		Expect(len(kcpKymas.Items)).To(Equal(1))
+		Expect(kcpKymas.Items).To(HaveLen(1))
 		By("get latest kyma CR")
 		Expect(controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(kyma), kyma)).To(Succeed())
 		By("get latest watcher CR")

@@ -33,7 +33,7 @@ import (
 	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 	//nolint:gci
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
+	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -112,9 +112,9 @@ var _ = BeforeSuite(func() {
 	modulePath := filepath.Join("..", "..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
-	Expect(err).To(BeNil())
+	Expect(err).ToNot(HaveOccurred())
 	Expect(moduleFile).ToNot(BeEmpty())
-	Expect(yaml2.Unmarshal(moduleFile, &controlplaneCrd)).To(Succeed())
+	Expect(k8syaml.Unmarshal(moduleFile, &controlplaneCrd)).To(Succeed())
 
 	controlPlaneEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},

@@ -102,7 +102,7 @@ func expectManifestSpecContainsCredSecretSelector(kymaName string) func() error 
 }
 
 func extractInstallImageSpec(installInfo []manifestV1alpha1.InstallInfo) *types.ImageSpec {
-	Expect(len(installInfo)).To(Equal(1))
+	Expect(installInfo).To(HaveLen(1))
 	var installImageSpec *types.ImageSpec
 	err := yaml.Unmarshal(installInfo[0].Source.Raw, &installImageSpec)
 	Expect(err).ToNot(HaveOccurred())

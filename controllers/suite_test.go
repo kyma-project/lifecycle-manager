@@ -90,7 +90,7 @@ var _ = BeforeSuite(func() {
 	modulePath := filepath.Join("..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
-	Expect(err).To(BeNil())
+	Expect(err).ToNot(HaveOccurred())
 	Expect(moduleFile).ToNot(BeEmpty())
 	Expect(yaml2.Unmarshal(moduleFile, &controlplaneCrd)).To(Succeed())
 

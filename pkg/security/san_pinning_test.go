@@ -103,7 +103,7 @@ func TestRequestVerifier_verifySAN(t *testing.T) { //nolint:funlen
 
 var _ = Describe("Verify Request using SAN", Ordered, func() {
 	zapLog, err := zap.NewDevelopment()
-	Expect(err).Should(BeNil())
+	Expect(err).ShouldNot(HaveOccurred())
 
 	type args struct {
 		request            *http.Request
@@ -180,10 +180,10 @@ var _ = Describe("Verify Request using SAN", Ordered, func() {
 			// Actual Test
 			err := verifier.Verify(test.args.request, test.args.watcherEventObject)
 			if test.wantErr {
-				Expect(err).ShouldNot(BeNil())
+				Expect(err).Should(HaveOccurred())
 				return
 			}
-			Expect(err).Should(BeNil())
+			Expect(err).ShouldNot(HaveOccurred())
 
 			// Cleanup
 			if test.kyma != nil {
