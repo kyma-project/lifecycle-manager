@@ -120,7 +120,7 @@ func (m *SKRWebhookManifestManager) getRawManifestClientObjects(cfg *unstructure
 	if cfg == nil {
 		return nil, ErrExpectedNonNilConfig
 	}
-	var resources []client.Object
+	resources := make([]client.Object, 0)
 	for _, baseRes := range m.baseResources {
 		configuredResource, err := configureUnstructuredObject(cfg, baseRes)
 		if err != nil {
@@ -164,7 +164,7 @@ func (m *SKRWebhookManifestManager) getBaseClientObjects() []client.Object {
 	if m.baseResources == nil || len(m.baseResources) == 0 {
 		return nil
 	}
-	var baseClientObjects []client.Object
+	baseClientObjects := make([]client.Object, 0)
 	for _, res := range m.baseResources {
 		baseClientObjects = append(baseClientObjects, res)
 	}

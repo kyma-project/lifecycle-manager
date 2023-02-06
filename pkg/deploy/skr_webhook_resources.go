@@ -234,6 +234,7 @@ type unstructuredResourcesConfig struct {
 	remoteNs                 string
 }
 
+//nolint:ireturn
 func configureUnstructuredObject(cfg *unstructuredResourcesConfig, object *unstructured.Unstructured,
 ) (client.Object, error) {
 	if object.GetAPIVersion() == corev1.SchemeGroupVersion.String() && object.GetKind() == "ConfigMap" {
@@ -245,7 +246,7 @@ func configureUnstructuredObject(cfg *unstructuredResourcesConfig, object *unstr
 	if object.GetAPIVersion() == rbacV1.SchemeGroupVersion.String() && object.GetKind() == "ClusterRoleBinding" {
 		return configureClusterRoleBinding(cfg, object)
 	}
-	return object, nil
+	return object.DeepCopy(), nil
 }
 
 func closeFileAndLogErr(closer io.Closer, logger logr.Logger, path string) {
