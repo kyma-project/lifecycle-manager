@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -234,7 +235,6 @@ type unstructuredResourcesConfig struct {
 	remoteNs                 string
 }
 
-//nolint:ireturn
 func configureUnstructuredObject(cfg *unstructuredResourcesConfig, object *unstructured.Unstructured,
 ) (client.Object, error) {
 	if object.GetAPIVersion() == corev1.SchemeGroupVersion.String() && object.GetKind() == "ConfigMap" {
