@@ -119,7 +119,7 @@ func GetCRD(group, sample string) *v1.CustomResourceDefinition {
 	By(fmt.Sprintf("using %s as CRD", modulePath))
 
 	file, err := os.ReadFile(modulePath)
-	Expect(err).To(BeNil())
+	Expect(err).ToNot(HaveOccurred())
 	Expect(file).ToNot(BeEmpty())
 
 	var crd v1.CustomResourceDefinition
