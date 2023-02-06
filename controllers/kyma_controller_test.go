@@ -146,6 +146,56 @@ var _ = Describe("Kyma update Manifest CR", Ordered, func() {
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateModuleState(ctx, kyma, activeModule, v1alpha1.StateReady),
+				Timeout, Interval).Should(Succeed())
+		}
+
+		By("Kyma CR should be in Ready state")
+		Eventually(GetKymaState(kyma.GetName()), Timeout, Interval).
+			Should(BeEquivalentTo(string(v1alpha1.StateReady)))
+
+		By("Add skip-reconciliation label to Kyma CR")
+		Eventually(UpdateKymaLabel(ctx, controlPlaneClient, kyma, v1alpha1.SkipReconcileLabel, "true"),
+			Timeout, Interval).
+			Should(BeEquivalentTo(string(v1alpha1.StateReady)))
+
+		By("Update Module Template spec.data.spec field")
+		valueUpdated := "valueUpdated"
+		for _, activeModule := range kyma.Spec.Modules {
+			moduleTemplate, err := GetModuleTemplate(activeModule.Name)
+			Expect(err).ToNot(HaveOccurred())
+			moduleTemplate.Spec.Data.Object["spec"] = map[string]any{"initKey": valueUpdated}
+			err = controlPlaneClient.Update(ctx, moduleTemplate)
+			Expect(err).ToNot(HaveOccurred())
+		}
+		By("CR updated with new value in spec.resource.spec")
+		for _, activeModule := range kyma.Spec.Modules {
+			Eventually(SKRModuleExistWithOverwrites(kyma, activeModule),
+				Timeout, Interval).Should(Equal(valueUpdated))
+		}
+	})
+})
+
+var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
+	kyma := NewTestKyma("kyma-test-update")
+
+	kyma.Spec.Modules = append(
+		kyma.Spec.Modules, v1alpha1.Module{
+			ControllerName: "manifest",
+			Name:           "skr-module-update",
+			Channel:        v1alpha1.DefaultChannel,
+		})
+
+	RegisterDefaultLifecycleForKyma(kyma)
+
+	It("Manifest CR should stop updated after kyma marked with skip label", func() {
+		By("CR created")
+		for _, activeModule := range kyma.Spec.Modules {
+			Eventually(ModuleExists(ctx, kyma, activeModule), Timeout, Interval).Should(Succeed())
+		}
+
+		By("reacting to a change of its Modules when they are set to ready")
+		for _, activeModule := range kyma.Spec.Modules {
+			Eventually(UpdateModuleState(ctx, kyma, activeModule, v1alpha1.StateReady),
 				20*time.Second, Interval).Should(Succeed())
 		}
 

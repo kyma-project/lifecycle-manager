@@ -100,6 +100,11 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, client.IgnoreNotFound(err) //nolint:wrapcheck
 	}
 
+	if kyma.SkipReconciliation() {
+		logger.V(log.DebugLevel).Info("kyma gets skipped because of label")
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
+	}
+
 	if kyma.Spec.Sync.Enabled {
 		var err error
 		if ctx, err = remote.InitializeSyncContext(ctx, kyma,
@@ -112,19 +117,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	// check if deletionTimestamp is set, retry until it gets fully deleted
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != v1alpha1.StateDeleting {
-		if err := r.TriggerKymaDeletion(ctx, kyma); err != nil {
-			return r.CtrlErr(ctx, kyma, err)
-		}
-
-		// if the status is not yet set to deleting, also update the status of the control-plane
-		// in the next sync cycle
-		if err := status.Helper(r).UpdateStatusForExistingModules(
-			ctx, kyma, v1alpha1.StateDeleting, "waiting for modules to be deleted",
-		); err != nil {
-			return r.CtrlErr(ctx, kyma, fmt.Errorf(
-				"could not update kyma status after triggering deletion: %w", err))
-		}
-		return ctrl.Result{}, nil
+		return r.deleteKyma(ctx, kyma)
 	}
 
 	// check finalizer
@@ -144,6 +137,22 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	// state handling
 	return r.stateHandling(ctx, kyma)
+}
+
+func (r *KymaReconciler) deleteKyma(ctx context.Context, kyma *v1alpha1.Kyma) (ctrl.Result, error) {
+	if err := r.TriggerKymaDeletion(ctx, kyma); err != nil {
+		return r.CtrlErr(ctx, kyma, err)
+	}
+
+	// if the status is not yet set to deleting, also update the status of the control-plane
+	// in the next sync cycle
+	if err := status.Helper(r).UpdateStatusForExistingModules(
+		ctx, kyma, v1alpha1.StateDeleting, "waiting for modules to be deleted",
+	); err != nil {
+		return r.CtrlErr(ctx, kyma, fmt.Errorf(
+			"could not update kyma status after triggering deletion: %w", err))
+	}
+	return ctrl.Result{}, nil
 }
 
 func (r *KymaReconciler) CtrlErr(ctx context.Context, kyma *v1alpha1.Kyma, err error) (ctrl.Result, error) {

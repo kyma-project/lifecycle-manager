@@ -113,6 +113,22 @@ func UpdateRemoteModule(ctx context.Context,
 	}
 }
 
+func UpdateKymaLabel(ctx context.Context,
+	client client.Client,
+	kyma *v1alpha1.Kyma,
+	labelKey,
+	labelValue string,
+) func() error {
+	return func() error {
+		kyma, err := GetKyma(ctx, client, kyma.Name, kyma.Namespace)
+		if err != nil {
+			return err
+		}
+		kyma.Labels[labelKey] = labelValue
+		return client.Update(ctx, kyma)
+	}
+}
+
 func ModuleNotExist(ctx context.Context, kyma *v1alpha1.Kyma, module v1alpha1.Module) func() error {
 	return func() error {
 		kyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
