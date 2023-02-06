@@ -238,7 +238,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	if kyma.Spec.Sync.Enabled && r.SKRWebhookManager != nil {
 		if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
 			kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
-			return err
+			return r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError, err)
 		}
 	}
 
