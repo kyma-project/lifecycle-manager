@@ -156,7 +156,7 @@ type Watcher struct {
 	metav1.TypeMeta `json:",inline"`
 
 	// +kubebuilder:validation:Optional
-	metav1.ObjectMeta `json:"metadata"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// +kubebuilder:validation:Optional
 	Spec WatcherSpec `json:"spec"`
