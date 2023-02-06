@@ -53,7 +53,7 @@ import (
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
-const listenerAddr = ":8082"
+const UseRandomPort = "0"
 
 var (
 	controlPlaneClient client.Client        //nolint:gochecknoglobals
@@ -116,14 +116,9 @@ var _ = BeforeSuite(func() {
 
 	runtimeClient, runtimeEnv = NewSKRCluster()
 
-	metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
-	if !found {
-		metricsBindAddress = ":8080"
-	}
-
 	k8sManager, err = ctrl.NewManager(
 		cfg, ctrl.Options{
-			MetricsBindAddress: metricsBindAddress,
+			MetricsBindAddress: UseRandomPort,
 			Scheme:             scheme.Scheme,
 			NewCache:           controllers.NewCacheFunc(),
 		})
@@ -144,7 +139,7 @@ var _ = BeforeSuite(func() {
 		RemoteClientCache: remoteClientCache,
 		KcpRestConfig:     k8sManager.GetConfig(),
 	}).SetupWithManager(k8sManager, controller.Options{},
-		controllers.SetupUpSetting{ListenerAddr: listenerAddr})
+		controllers.SetupUpSetting{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
