@@ -28,7 +28,7 @@ type SKRWebhookManifestManager struct {
 func NewSKRWebhookManifestManager(kcpRestConfig *rest.Config, managerConfig *SkrWebhookManagerConfig,
 ) (*SKRWebhookManifestManager, error) {
 	logger := logf.FromContext(context.TODO())
-	manifestFilePath := fmt.Sprintf(rawManifestFilePathTpl, managerConfig.WebhookChartPath)
+	manifestFilePath := fmt.Sprintf(rawManifestFilePathTpl, managerConfig.SKRWatcherPath)
 	rawManifestFile, err := os.Open(manifestFilePath)
 	if err != nil {
 		return nil, err

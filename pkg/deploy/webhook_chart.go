@@ -39,9 +39,9 @@ const (
 var ErrLoadBalancerIPIsNotAssigned = errors.New("load balancer service external ip is not assigned")
 
 type SkrWebhookManagerConfig struct {
-	// WebhookChartPath represents the path of the webhook chart
+	// SKRWatcherPath represents the path of the webhook resources
 	// to be installed on SKR clusters upon reconciling kyma CRs.
-	WebhookChartPath       string
+	SKRWatcherPath         string
 	SkrWebhookMemoryLimits string
 	SkrWebhookCPULimits    string
 	// WatcherLocalTestingEnabled indicates if the chart manager is running in local testing mode

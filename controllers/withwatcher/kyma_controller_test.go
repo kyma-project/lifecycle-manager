@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"reflect"
 	"strings"
 
@@ -127,8 +125,6 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1
 	})
 
 	BeforeEach(func() {
-		By("deleting rendered manifests")
-		Expect(os.RemoveAll(filepath.Join(webhookChartPath, "manifest"))).To(Succeed())
 		By("asserting only one kyma CR exists")
 		kcpKymas := &v1alpha1.KymaList{}
 		Expect(controlPlaneClient.List(suiteCtx, kcpKymas)).To(Succeed())
@@ -142,10 +138,6 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1
 		By("get latest TLS secret")
 		Expect(controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(tlsSecret), tlsSecret)).
 			To(Succeed())
-	})
-	AfterEach(func() {
-		By("deleting rendered manifests")
-		Expect(os.RemoveAll(filepath.Join(webhookChartPath, "manifest"))).To(Succeed())
 	})
 }
 

@@ -81,7 +81,7 @@ var (
 )
 
 const (
-	webhookChartPath       = "../../skr-webhook"
+	skrWatcherPath         = "../../skr-webhook"
 	istioResourcesFilePath = "../../config/samples/tests/istio-test-resources.yaml"
 	virtualServiceName     = "kcp-events"
 )
@@ -165,7 +165,7 @@ var _ = BeforeSuite(func() {
 
 	remoteClientCache = remote.NewClientCache()
 	skrChartCfg := &deploy.SkrWebhookManagerConfig{
-		WebhookChartPath:       webhookChartPath,
+		SKRWatcherPath:         skrWatcherPath,
 		SkrWebhookMemoryLimits: "200Mi",
 		SkrWebhookCPULimits:    "1",
 	}
