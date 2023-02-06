@@ -8,7 +8,6 @@ import (
 	"net"
 	"strconv"
 
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
@@ -133,9 +132,9 @@ func resolveRemoteNamespace(kyma *v1alpha1.Kyma) string {
 	return kyma.Namespace
 }
 
-func getRawManifestUnstructuredResources(rawManifestReader io.Reader, remoteNs string) ([]client.Object, error) {
+func getRawManifestUnstructuredResources(rawManifestReader io.Reader) ([]*unstructured.Unstructured, error) {
 	decoder := yaml.NewYAMLOrJSONDecoder(rawManifestReader, defaultBufferSize)
-	var resources []client.Object
+	var resources []*unstructured.Unstructured
 	for {
 		resource := &unstructured.Unstructured{}
 		err := decoder.Decode(resource)
@@ -145,7 +144,6 @@ func getRawManifestUnstructuredResources(rawManifestReader io.Reader, remoteNs s
 		if errors.Is(err, io.EOF) {
 			break
 		}
-		resource.SetNamespace(remoteNs)
 		resources = append(resources, resource)
 	}
 	return resources, nil

@@ -5,9 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
-
-
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -21,8 +18,6 @@ import (
 	rbacV1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/util/yaml"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -155,7 +150,6 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 		return nil, err
 	}
 
-
 	if deployment.Spec.Template.Labels == nil || len(deployment.Spec.Template.Labels) == 0 {
 		return nil, ErrPodTemplateMustContainAtLeastOne
 	}
@@ -189,27 +183,6 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 	deployment.Spec.Template.Spec.Volumes[0] = sslVolume
 
 	return deployment, nil
-}
-
-func getSKRClientObjectsForInstall(ctx context.Context, kcpClient client.Client, kymaObjKey client.ObjectKey,
-	remoteNs, kcpAddr string, logger logr.Logger, managerConfig *SkrWebhookManagerConfig,
-) ([]client.Object, error) {
-	var skrClientObjects []client.Object
-	resourcesConfig, err := getUnstructuredResourcesConfig(ctx, kcpClient, kymaObjKey, remoteNs, kcpAddr, managerConfig)
-	if err != nil {
-		return nil, err
-	}
-	resources, err := getRawManifestClientObjects(resourcesConfig, remoteNs, managerConfig.WebhookChartPath, logger)
-	if err != nil {
-		return nil, err
-	}
-	skrClientObjects = append(skrClientObjects, resources...)
-	watchableConfigs, err := getWatchableConfigs(ctx, kcpClient)
-	if err != nil {
-		return nil, err
-	}
-	genClientObjects := getGeneratedClientObjects(kymaObjKey, remoteNs, resourcesConfig, watchableConfigs)
-	return append(skrClientObjects, genClientObjects...), nil
 }
 
 func getGeneratedClientObjects(kymaObjKey client.ObjectKey, remoteNs string,
@@ -261,19 +234,18 @@ type unstructuredResourcesConfig struct {
 	remoteNs                 string
 }
 
-
-func configureUnstructuredResource(cfg *unstructuredResourcesConfig, resource *unstructured.Unstructured,
+func configureUnstructuredObject(cfg *unstructuredResourcesConfig, object *unstructured.Unstructured,
 ) (client.Object, error) {
-	if resource.GetAPIVersion() == corev1.SchemeGroupVersion.String() && resource.GetKind() == "ConfigMap" {
-		return configureConfigMap(cfg, resource)
+	if object.GetAPIVersion() == corev1.SchemeGroupVersion.String() && object.GetKind() == "ConfigMap" {
+		return configureConfigMap(cfg, object)
 	}
-	if resource.GetAPIVersion() == appsv1.SchemeGroupVersion.String() && resource.GetKind() == "Deployment" {
-		return configureDeployment(cfg, resource)
+	if object.GetAPIVersion() == appsv1.SchemeGroupVersion.String() && object.GetKind() == "Deployment" {
+		return configureDeployment(cfg, object)
 	}
-	if resource.GetAPIVersion() == rbacV1.SchemeGroupVersion.String() && resource.GetKind() == "ClusterRoleBinding" {
-		return configureClusterRoleBinding(cfg, resource)
+	if object.GetAPIVersion() == rbacV1.SchemeGroupVersion.String() && object.GetKind() == "ClusterRoleBinding" {
+		return configureClusterRoleBinding(cfg, object)
 	}
-	return resource, nil
+	return object, nil
 }
 
 func closeFileAndLogErr(closer io.Closer, logger logr.Logger, path string) {
@@ -281,65 +253,4 @@ func closeFileAndLogErr(closer io.Closer, logger logr.Logger, path string) {
 	if err != nil {
 		logger.V(log.DebugLevel).Info("failed to close raw manifest file", "path", path)
 	}
-}
-
-func getRawManifestClientObjects(cfg *unstructuredResourcesConfig, remoteNs, chartPath string, logger logr.Logger,
-) ([]client.Object, error) {
-	if cfg == nil {
-		return nil, ErrExpectedNonNilConfig
-	}
-	manifestFilePath := fmt.Sprintf(rawManifestFilePathTpl, chartPath)
-	rawManifestFile, err := os.Open(manifestFilePath)
-	if err != nil {
-		return nil, err
-	}
-	defer closeFileAndLogErr(rawManifestFile, logger, rawManifestFile.Name())
-	decoder := yaml.NewYAMLOrJSONDecoder(rawManifestFile, defaultBufferSize)
-	var resources []client.Object
-	for {
-		resource := &unstructured.Unstructured{}
-		err := decoder.Decode(resource)
-		if err != nil && !errors.Is(err, io.EOF) {
-			return nil, err
-		}
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		resource.SetNamespace(remoteNs)
-		configuredResource, err := configureUnstructuredResource(cfg, resource)
-		if err != nil {
-			return nil, fmt.Errorf("failed to configure %s resource: %w", resource.GetKind(), err)
-		}
-		resources = append(resources, configuredResource)
-	}
-	return resources, nil
-}
-
-func getUnstructuredResourcesConfig(ctx context.Context, kcpClient client.Client, kymaObjKey client.ObjectKey,
-	remoteNs, kcpAddr string, managerConfig *SkrWebhookManagerConfig,
-) (*unstructuredResourcesConfig, error) {
-	tlsSecret := &corev1.Secret{}
-	secretObjKey := client.ObjectKey{
-		Namespace: kymaObjKey.Namespace,
-		Name:      ResolveSKRChartResourceName(WebhookTLSCfgNameTpl, kymaObjKey),
-	}
-
-	if err := kcpClient.Get(ctx, secretObjKey, tlsSecret); err != nil {
-		return nil, fmt.Errorf("error fetching TLS secret: %w", err)
-	}
-
-	return &unstructuredResourcesConfig{
-		contractVersion:  version,
-		kcpAddress:       kcpAddr,
-		tlsWebhookServer: "true",
-		tlsCallback:      "false",
-		secretName:       tlsSecret.Name,
-		secretResVer:     tlsSecret.ResourceVersion,
-		cpuResLimit:      managerConfig.SkrWebhookCPULimits,
-		memResLimit:      managerConfig.SkrWebhookMemoryLimits,
-		caCert:           tlsSecret.Data[caCertKey],
-		tlsCert:          tlsSecret.Data[tlsCertKey],
-		tlsKey:           tlsSecret.Data[tlsPrivateKeyKey],
-		remoteNs:         remoteNs,
-	}, nil
 }
