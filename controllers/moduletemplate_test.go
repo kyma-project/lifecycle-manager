@@ -28,6 +28,21 @@ const (
 	credSecretValue = "test-operator"
 )
 
+func expectManifestSpecDataEquals(kymaName, value string) func() error {
+	return func() error {
+		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
+		if err != nil {
+			return err
+		}
+		for _, module := range createdKyma.Spec.Modules {
+			if SKRModuleExistWithOverwrites(createdKyma, module) != value {
+				return ErrSpecDataMismatch
+			}
+		}
+		return nil
+	}
+}
+
 func expectManifestSpecRemoteMatched(kymaName string, remoteFlag bool) func() error {
 	return func() error {
 		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")

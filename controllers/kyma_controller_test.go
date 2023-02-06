@@ -1,6 +1,7 @@
 package controllers_test
 
 import (
+	"errors"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -9,6 +10,11 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+)
+
+var (
+	ErrSpecDataMismatch          = errors.New("spec.data not match")
+	ErrStatusModuleStateMismatch = errors.New("status.modules.state not match")
 )
 
 var _ = Describe("Kyma with no ModuleTemplate", Ordered, func() {
@@ -153,25 +159,12 @@ var _ = Describe("Kyma update Manifest CR", Ordered, func() {
 		Eventually(GetKymaState(kyma.GetName()), Timeout, Interval).
 			Should(BeEquivalentTo(string(v1alpha1.StateReady)))
 
-		By("Add skip-reconciliation label to Kyma CR")
-		Eventually(UpdateKymaLabel(ctx, controlPlaneClient, kyma, v1alpha1.SkipReconcileLabel, "true"),
-			Timeout, Interval).
-			Should(BeEquivalentTo(string(v1alpha1.StateReady)))
-
 		By("Update Module Template spec.data.spec field")
 		valueUpdated := "valueUpdated"
-		for _, activeModule := range kyma.Spec.Modules {
-			moduleTemplate, err := GetModuleTemplate(activeModule.Name)
-			Expect(err).ToNot(HaveOccurred())
-			moduleTemplate.Spec.Data.Object["spec"] = map[string]any{"initKey": valueUpdated}
-			err = controlPlaneClient.Update(ctx, moduleTemplate)
-			Expect(err).ToNot(HaveOccurred())
-		}
+		Eventually(updateModuleTemplateSpecData(kyma.Name, valueUpdated), Timeout, Interval).Should(Succeed())
+
 		By("CR updated with new value in spec.resource.spec")
-		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(SKRModuleExistWithOverwrites(kyma, activeModule),
-				Timeout, Interval).Should(Equal(valueUpdated))
-		}
+		Eventually(expectManifestSpecDataEquals(kyma.Name, valueUpdated), Timeout, Interval).Should(Succeed())
 	})
 })
 
@@ -187,7 +180,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 
 	RegisterDefaultLifecycleForKyma(kyma)
 
-	It("Manifest CR should stop updated after kyma marked with skip label", func() {
+	It("Mark Kyma as skip Reconciliation", func() {
 		By("CR created")
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(ModuleExists(ctx, kyma, activeModule), Timeout, Interval).Should(Succeed())
@@ -196,26 +189,76 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateModuleState(ctx, kyma, activeModule, v1alpha1.StateReady),
-				20*time.Second, Interval).Should(Succeed())
+				Timeout, Interval).Should(Succeed())
 		}
 
 		By("Kyma CR should be in Ready state")
 		Eventually(GetKymaState(kyma.GetName()), 20*time.Second, Interval).
 			Should(BeEquivalentTo(string(v1alpha1.StateReady)))
 
-		By("Update Module Template spec.data.spec field")
-		valueUpdated := "valueUpdated"
-		for _, activeModule := range kyma.Spec.Modules {
+		By("Add skip-reconciliation label to Kyma CR")
+		Eventually(UpdateKymaLabel(ctx, controlPlaneClient, kyma, v1alpha1.SkipReconcileLabel, "true"),
+			Timeout, Interval).
+			Should(Succeed())
+	})
+
+	DescribeTable("Test stop reconciliation",
+		func(givenCondition func() error, expectedBehavior func() error) {
+			Eventually(givenCondition, Timeout, Interval).Should(Succeed())
+			Eventually(expectedBehavior, Timeout, Interval).Should(Succeed())
+		},
+		Entry("When update Module Template spec.data.spec field, module should not updated",
+			updateModuleTemplateSpecData(kyma.Name, "valueUpdated"),
+			expectManifestSpecDataEquals(kyma.Name, "initValue")),
+		Entry("When put manifest into progress, kyma spec.status.modules should not updated",
+			updateAllModules(kyma.Name, v1alpha1.StateProcessing),
+			expectKymaStatusModules(kyma.Name, v1alpha1.StateReady)),
+	)
+})
+
+func expectKymaStatusModules(kymaName string, state v1alpha1.State) func() error {
+	return func() error {
+		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
+		if err != nil {
+			return err
+		}
+		for _, moduleStatus := range createdKyma.Status.Modules {
+			if moduleStatus.State != state {
+				return ErrStatusModuleStateMismatch
+			}
+		}
+		return nil
+	}
+}
+
+func updateAllModules(kymaName string, state v1alpha1.State) func() error {
+	return func() error {
+		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
+		if err != nil {
+			return err
+		}
+		for _, activeModule := range createdKyma.Spec.Modules {
+			if updateModuleState(createdKyma, activeModule, state) != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func updateModuleTemplateSpecData(kymaName, valueUpdated string) func() error {
+	return func() error {
+		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
+		if err != nil {
+			return err
+		}
+		for _, activeModule := range createdKyma.Spec.Modules {
 			moduleTemplate, err := GetModuleTemplate(activeModule.Name)
 			Expect(err).ToNot(HaveOccurred())
 			moduleTemplate.Spec.Data.Object["spec"] = map[string]any{"initKey": valueUpdated}
 			err = controlPlaneClient.Update(ctx, moduleTemplate)
 			Expect(err).ToNot(HaveOccurred())
 		}
-		By("CR updated with new value in spec.resource.spec")
-		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(SKRModuleExistWithOverwrites(kyma, activeModule),
-				Timeout, Interval).Should(Equal(valueUpdated))
-		}
-	})
-})
+		return nil
+	}
+}
