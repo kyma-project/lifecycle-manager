@@ -4,7 +4,8 @@
 
 1. Create a local control-plane (KCP) cluster:
 ```shell
-kyma provision k3d --name kcp-local --port 9080:80@loadbalancer \
+k3d cluster create kcp-local --port 9080:80@loadbalancer \
+--registry-create k3d-registry.localhost:0.0.0.0:5111 \
 --k3s-arg '--no-deploy=traefik@server:0'
 ```
 
@@ -14,7 +15,7 @@ sudo nano /etc/hosts
 ```
    Add entry for your local k3d registry created in the previous steps
 ```
-127.0.0.1 k3d-kcp-local-registry.localhost
+127.0.0.1 k3d-registry.localhost
 ```
 
 3. Install other pre-requisites required by the lifecycle-manager
@@ -42,7 +43,7 @@ make local-deploy-with-watcher IMG=eu.gcr.io/kyma-project/lifecycle-manager:late
 
 ```shell
 kyma alpha create module -p ../template-operator --version 1.2.3 -w \
---registry k3d-kcp-local-registry.localhost:5001 --insecure
+--registry k3d-registry.localhost:5111 --insecure
 ```
 6. The previous step will create a `template.yaml` file in the root directory, which is the `module-template`, apply it
    to the cluster
@@ -67,14 +68,15 @@ cfssl gencert \
 -profile=default \
 ./kcp/gardener/cert_config/ca-csr.json | cfssljson -bare signed-cert
 ```
-2. Run the following command to create a secret holding the PKI for the watcher web-hook installation
+2. Run the following command to create a secret holding the PKI for the watcher web-hook installation. 
+The name of the secret should follow the template: `<kyma-name>-webhook-tls`
 ```shell
 cat << EOF | kubectl apply -f -
 ---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: kcp-system-kyma-sample-skr-webhook-tls
+  name: kyma-sample-webhook-tls
   namespace: kcp-system
   labels:
     "operator.kyma-project.io/managed-by": "lifecycle-manager"

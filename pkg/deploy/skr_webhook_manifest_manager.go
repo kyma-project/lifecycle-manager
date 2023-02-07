@@ -79,8 +79,7 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1alpha1.K
 	syncContext := remote.SyncContextFromContext(ctx)
 	remoteNs := resolveRemoteNamespace(kyma)
 	skrClientObjects := m.getBaseClientObjects()
-	genClientObjects := getGeneratedClientObjects(kymaObjKey, remoteNs,
-		&unstructuredResourcesConfig{}, map[string]WatchableConfig{})
+	genClientObjects := getGeneratedClientObjects(&unstructuredResourcesConfig{}, map[string]WatchableConfig{}, remoteNs)
 	skrClientObjects = append(skrClientObjects, genClientObjects...)
 	err := runResourceOperationWithGroupedErrors(ctx, syncContext.RuntimeClient, skrClientObjects,
 		func(ctx context.Context, clt client.Client, resource client.Object) error {
@@ -112,7 +111,7 @@ func (m *SKRWebhookManifestManager) getSKRClientObjectsForInstall(ctx context.Co
 	if err != nil {
 		return nil, err
 	}
-	genClientObjects := getGeneratedClientObjects(kymaObjKey, remoteNs, resourcesConfig, watchableConfigs)
+	genClientObjects := getGeneratedClientObjects(resourcesConfig, watchableConfigs, remoteNs)
 	return append(skrClientObjects, genClientObjects...), nil
 }
 
@@ -138,7 +137,7 @@ func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.C
 	tlsSecret := &corev1.Secret{}
 	secretObjKey := client.ObjectKey{
 		Namespace: kymaObjKey.Namespace,
-		Name:      ResolveSKRChartResourceName(WebhookTLSCfgNameTpl, kymaObjKey),
+		Name:      ResolveTLSConfigSecretName(kymaObjKey.Name),
 	}
 
 	if err := kcpClient.Get(ctx, secretObjKey, tlsSecret); err != nil {

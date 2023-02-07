@@ -186,17 +186,17 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 	return deployment, nil
 }
 
-func getGeneratedClientObjects(kymaObjKey client.ObjectKey, remoteNs string,
-	resourcesConfig *unstructuredResourcesConfig, watchableConfigs map[string]WatchableConfig,
+func getGeneratedClientObjects(resourcesConfig *unstructuredResourcesConfig,
+	watchableConfigs map[string]WatchableConfig, remoteNs string,
 ) []client.Object {
 	var genClientObjects []client.Object
 	webhookCfgObjKey := client.ObjectKey{
 		Namespace: remoteNs,
-		Name:      ResolveSKRChartResourceName(WebhookCfgAndDeploymentNameTpl, kymaObjKey),
+		Name:      SkrResourceName,
 	}
 	svcObjKey := client.ObjectKey{
 		Namespace: remoteNs,
-		Name:      "skr-webhook",
+		Name:      SkrResourceName,
 	}
 
 	webhookConfig := generateValidatingWebhookConfigFromWatchableConfigs(webhookCfgObjKey, svcObjKey,
@@ -204,7 +204,7 @@ func getGeneratedClientObjects(kymaObjKey client.ObjectKey, remoteNs string,
 	genClientObjects = append(genClientObjects, webhookConfig)
 	secretObjKey := client.ObjectKey{
 		Namespace: remoteNs,
-		Name:      ResolveSKRChartResourceName(WebhookTLSCfgNameTpl, kymaObjKey),
+		Name:      SkrTLSName,
 	}
 	skrSecret := createSKRSecret(resourcesConfig, secretObjKey)
 	return append(genClientObjects, skrSecret)

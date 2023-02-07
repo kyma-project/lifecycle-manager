@@ -166,8 +166,8 @@ func isKymaCrDeletionFinished(kymaObjKey client.ObjectKey) func() bool {
 func getSkrChartDeployment(ctx context.Context, skrClient client.Client, kymaObjKey client.ObjectKey) func() error {
 	return func() error {
 		return skrClient.Get(ctx, client.ObjectKey{
-			Namespace: metav1.NamespaceDefault,
-			Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
+			Namespace: kymaObjKey.Namespace,
+			Name:      deploy.SkrResourceName,
 		}, &appsv1.Deployment{})
 	}
 }
@@ -177,8 +177,8 @@ func getSKRWebhookConfig(ctx context.Context, skrClient client.Client,
 ) (*admissionv1.ValidatingWebhookConfiguration, error) {
 	webhookCfg := &admissionv1.ValidatingWebhookConfiguration{}
 	err := skrClient.Get(ctx, client.ObjectKey{
-		Namespace: metav1.NamespaceDefault,
-		Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
+		Namespace: kymaObjKey.Namespace,
+		Name:      deploy.SkrResourceName,
 	}, webhookCfg)
 	return webhookCfg, err
 }

@@ -19,21 +19,21 @@ import (
 )
 
 const (
-	WebhookCfgAndDeploymentNameTpl = "%s-webhook"
-	WebhookTLSCfgNameTpl           = "%s-webhook-tls"
-	IstioSystemNs                  = "istio-system"
-	IngressServiceName             = "istio-ingressgateway"
-	releaseNameTpl                 = "%s-%s-skr"
-	defaultK3dLocalhostMapping     = "host.k3d.internal"
-	defaultBufferSize              = 2048
-	caCertKey                      = "ca.crt"
-	tlsCertKey                     = "tls.crt"
-	tlsPrivateKeyKey               = "tls.key"
-	skrChartFieldOwner             = client.FieldOwner(v1alpha1.OperatorName)
-	version                        = "v1"
-	webhookTimeOutInSeconds        = 15
-	allResourcesWebhookRule        = "*"
-	statusSubResourceWebhookRule   = "*/status"
+	webhookTLSCfgNameTpl         = "%s-webhook-tls"
+	SkrTLSName                   = "skr-webhook-tls"
+	SkrResourceName              = "skr-webhook"
+	IstioSystemNs                = "istio-system"
+	IngressServiceName           = "istio-ingressgateway"
+	defaultK3dLocalhostMapping   = "host.k3d.internal"
+	defaultBufferSize            = 2048
+	caCertKey                    = "ca.crt"
+	tlsCertKey                   = "tls.crt"
+	tlsPrivateKeyKey             = "tls.key"
+	skrChartFieldOwner           = client.FieldOwner(v1alpha1.OperatorName)
+	version                      = "v1"
+	webhookTimeOutInSeconds      = 15
+	allResourcesWebhookRule      = "*"
+	statusSubResourceWebhookRule = "*/status"
 )
 
 var ErrLoadBalancerIPIsNotAssigned = errors.New("load balancer service external ip is not assigned")
@@ -84,10 +84,6 @@ func runResourceOperationWithGroupedErrors(ctx context.Context, clt client.Clien
 	return errGrp.Wait()
 }
 
-func skrChartReleaseName(kymaObjKey client.ObjectKey) string {
-	return fmt.Sprintf(releaseNameTpl, kymaObjKey.Namespace, kymaObjKey.Name)
-}
-
 func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrWebhookManagerConfig) (string, error) {
 	if managerConfig.WatcherLocalTestingEnabled {
 		return net.JoinHostPort(defaultK3dLocalhostMapping, strconv.Itoa(managerConfig.GatewayHTTPPortMapping)), nil
@@ -119,17 +115,15 @@ func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrWebhookManagerConf
 	return net.JoinHostPort(externalIP, strconv.Itoa(int(port))), nil
 }
 
-// ResolveSKRChartResourceName resolves a resource name that belongs to the SKR webhook's Chart
-// using the resource name's template.
-func ResolveSKRChartResourceName(resourceNameTpl string, kymaObjKey client.ObjectKey) string {
-	return fmt.Sprintf(resourceNameTpl, skrChartReleaseName(kymaObjKey))
-}
-
 func resolveRemoteNamespace(kyma *v1alpha1.Kyma) string {
 	if kyma.Spec.Sync.Namespace != "" {
 		return kyma.Spec.Sync.Namespace
 	}
 	return kyma.Namespace
+}
+
+func ResolveTLSConfigSecretName(kymaName string) string {
+	return fmt.Sprintf(webhookTLSCfgNameTpl, kymaName)
 }
 
 func getRawManifestUnstructuredResources(rawManifestReader io.Reader) ([]*unstructured.Unstructured, error) {
