@@ -180,10 +180,10 @@ var _ = Describe("Verify Request using SAN", Ordered, func() {
 			// Actual Test
 			err := verifier.Verify(test.args.request, test.args.watcherEventObject)
 			if test.wantErr {
-				Expect(err).Should(HaveOccurred())
+				Expect(err).To(HaveOccurred())
 				return
 			}
-			Expect(err).Should(HaveOccurred())
+			Expect(err).ToNot(HaveOccurred())
 
 			// Cleanup
 			if test.kyma != nil {
