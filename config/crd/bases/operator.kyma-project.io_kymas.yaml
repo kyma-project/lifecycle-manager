@@ -68,6 +68,17 @@ spec:
                         with Cache Configuration on the Operator responsible for the
                         templated Modules to split workload.
                       type: string
+                    customResourcePolicy:
+                      default: CreateAndDelete
+                      description: CustomResourcePolicy determines how a ModuleTemplate
+                        should be parsed. When CustomResourcePolicy is set to CustomResourcePolicyPolicyCreateNoUpdate,
+                        the Manifest will receive instructions to create it on installation
+                        with the default values provided in ModuleTemplate, and to
+                        remove it when the module or Kyma is deleted.
+                      enum:
+                      - CreateAndDelete
+                      - Ignore
+                      type: string
                     name:
                       description: "Name is a unique identifier of the module. It
                         is used to resolve a ModuleTemplate for creating a set of

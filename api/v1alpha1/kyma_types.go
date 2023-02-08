@@ -48,7 +48,27 @@ type Module struct {
 	// +kubebuilder:validation:MaxLength:=32
 	// +kubebuilder:validation:MinLength:=3
 	Channel string `json:"channel,omitempty"`
+
+	// +kubebuilder:default:=CreateAndDelete
+	CustomResourcePolicy `json:"customResourcePolicy,omitempty"`
 }
+
+// CustomResourcePolicy determines how a ModuleTemplate should be parsed. When CustomResourcePolicy is set to
+// CustomResourcePolicyPolicyCreateNoUpdate, the Manifest will receive instructions to create it on installation with
+// the default values provided in ModuleTemplate, and to remove it when the module or Kyma is deleted.
+// +kubebuilder:validation:Enum=CreateAndDelete;Ignore
+type CustomResourcePolicy string
+
+const (
+	// CustomResourcePolicyCreateAndDelete causes the Manifest to contain the default data provided in ModuleTemplate.
+	// While Updates from the Data are never propagated, the resource is deleted on module removal.
+	CustomResourcePolicyCreateAndDelete = "CreateAndDelete"
+	// CustomResourcePolicyIgnore does not pass the Data from ModuleTemplate.
+	// This ensures the user of the module is able to initialize the Module without any default configuration.
+	// This is useful if another controller should manage module configuration as data and not be auto-initialized.
+	// It can also be used to initialize controllers without interacting with them.
+	CustomResourcePolicyIgnore = "Ignore"
+)
 
 // SyncStrategy determines how the Remote Cluster is synchronized with the Control Plane. This can influence secret
 // lookup, or other behavioral patterns when interacting with the remote cluster.

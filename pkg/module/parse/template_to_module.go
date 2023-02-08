@@ -78,7 +78,7 @@ func templatesToModules(
 			}
 		}
 		var obj client.Object
-		if obj, err = NewManifestFromTemplate(template.ModuleTemplate, settings.Verification); err != nil {
+		if obj, err = NewManifestFromTemplate(module, template.ModuleTemplate, settings.Verification); err != nil {
 			return nil, err
 		}
 		// we name the manifest after the module name
@@ -99,12 +99,21 @@ func templatesToModules(
 }
 
 func NewManifestFromTemplate(
+	module v1alpha1.Module,
 	template *v1alpha1.ModuleTemplate,
 	verification signature.Verification,
 ) (*manifestV1alpha1.Manifest, error) {
 	manifest := &manifestV1alpha1.Manifest{}
 	manifest.Spec.Remote = ConvertTargetToRemote(template.Spec.Target)
-	template.Spec.Data.DeepCopyInto(&manifest.Spec.Resource)
+
+	switch module.CustomResourcePolicy {
+	case v1alpha1.CustomResourcePolicyIgnore:
+		manifest.Spec.Resource = nil
+	case v1alpha1.CustomResourcePolicyCreateAndDelete:
+		fallthrough
+	default:
+		manifest.Spec.Resource = template.Spec.Data.DeepCopy()
+	}
 
 	var descriptor *ocm.ComponentDescriptor
 	var layers img.Layers
