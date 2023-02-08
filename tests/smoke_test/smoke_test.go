@@ -29,6 +29,7 @@ import (
 const (
 	ControllerDeploymentName = "lifecycle-manager-controller-manager"
 	KCP                      = "kcp-system"
+	KymaCRNamespace          = "kyma-system"
 )
 
 var TestEnv env.Environment //nolint:gochecknoglobals
@@ -58,7 +59,7 @@ func TestControllerManagerSpinsUp(t *testing.T) {
 		WithLabel("test-type.kyma-project.io", "smoke").
 		Assess("exists", deploymentExists(KCP, ControllerDeploymentName)).
 		Assess("available", deploymentAvailable(KCP, ControllerDeploymentName)).
-		Assess("kyma readiness", kymaReady(KCP, "default-kyma")).
+		Assess("kyma readiness", kymaReady(KymaCRNamespace, "default-kyma")).
 		Feature()
 
 	TestEnv.Test(t, depFeature)
