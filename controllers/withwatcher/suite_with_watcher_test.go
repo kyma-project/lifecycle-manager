@@ -81,7 +81,7 @@ var (
 )
 
 const (
-	webhookChartPath       = "../../skr-webhook"
+	skrWatcherPath         = "../../skr-webhook"
 	istioResourcesFilePath = "../../config/samples/tests/istio-test-resources.yaml"
 	virtualServiceName     = "kcp-events"
 )
@@ -164,18 +164,18 @@ var _ = BeforeSuite(func() {
 	}
 
 	remoteClientCache = remote.NewClientCache()
-	skrChartCfg := &deploy.SkrChartManagerConfig{
-		WebhookChartPath:       webhookChartPath,
+	skrChartCfg := &deploy.SkrWebhookManagerConfig{
+		SKRWatcherPath:         skrWatcherPath,
 		SkrWebhookMemoryLimits: "200Mi",
 		SkrWebhookCPULimits:    "1",
 	}
-	skrWebhookChartManager, err := deploy.NewSKRWebhookTemplateChartManager(restCfg, skrChartCfg)
+	skrWebhookChartManager, err := deploy.NewSKRWebhookManifestManager(restCfg, skrChartCfg)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.KymaReconciler{
-		Client:                 k8sManager.GetClient(),
-		EventRecorder:          k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		RequeueIntervals:       intervals,
-		SKRWebhookChartManager: skrWebhookChartManager,
+		Client:            k8sManager.GetClient(),
+		EventRecorder:     k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		RequeueIntervals:  intervals,
+		SKRWebhookManager: skrWebhookChartManager,
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
 		},

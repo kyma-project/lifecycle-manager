@@ -1,0 +1,148 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: skr-webhook-sa
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kyma-reader
+rules:
+  - apiGroups: ["operator.kyma-project.io"]
+    resources: ["kymas"]
+    verbs: ["get", "watch", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: read-kymas
+subjects:
+  - kind: ServiceAccount
+    name: skr-webhook-sa
+roleRef:
+  kind: ClusterRole
+  name: kyma-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: skr-webhook-config
+data:
+  contractVersion: v1
+  kcpAddr: "kcp-base-url-invalid"
+  # -- TLS webhook server
+  tlsWebhookServer: "true"
+  # -- TLS callback to KCP
+  tlsCallback: "true"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: skr-webhook
+spec:
+  selector:
+    #selector for deployment labels (key, values)
+    app: skr-webhook
+  ports:
+    - port: 443
+      targetPort: watcher-port
+      name: webhook
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: skr-webhook
+  namespace: default
+  labels:
+    app: skr-webhook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: skr-webhook
+  template:
+    metadata:
+      labels:
+        app: skr-webhook
+        operator.kyma-project.io/pod-restart-trigger: ""
+    spec:
+      serviceAccountName: skr-webhook-sa
+      containers:
+        - name: server
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: WEBHOOK_PORT
+              value: "8443"
+            - name: TLS_SERVER
+              valueFrom:
+                configMapKeyRef:
+                  name: skr-webhook-config
+                  key: tlsWebhookServer
+            - name: TLS_CALLBACK
+              valueFrom:
+                configMapKeyRef:
+                  name: skr-webhook-config
+                  key: tlsCallback
+            - name: TLS_KEY
+              value: "/app/etc/ssl/tls.key"
+            - name: TLS_CERT
+              value: "/app/etc/ssl/tls.crt"
+            - name: CA_CERT
+              value: "/app/etc/ssl/ca.crt"
+            - name: KCP_ADDR
+              valueFrom:
+                configMapKeyRef:
+                  name: skr-webhook-config
+                  key: kcpAddr
+            - name: KCP_CONTRACT
+              valueFrom:
+                configMapKeyRef:
+                  name: skr-webhook-config
+                  key: contractVersion
+            - name: WEBHOOK_SIDE_CAR
+              value: "true"
+          image: "eu.gcr.io/kyma-project/runtime-watcher-skr:latest"
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: ssl
+              mountPath: /app/etc/ssl
+            - name: request
+              mountPath: /tmp
+          resources:
+            requests:
+              memory: 20Mi
+              cpu: "0.01"
+            limits:
+              memory: 200Mi
+              cpu: "0.1"
+          ports:
+            - containerPort: 8443
+              name: watcher-port
+        - name: request-sidecar
+          image: alpine
+          command:
+            - /bin/sh
+            - "-c"
+            - "sleep 60m"
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: request
+              mountPath: /tmp
+      volumes:
+        - name: ssl
+          secret:
+            secretName: skr-webhook-tls
+            items:
+              - key: tls.key
+                path: tls.key
+              - key: tls.crt
+                path: tls.crt
+              - key: ca.crt
+                path: ca.crt
+        - name: request
+          emptyDir: {}

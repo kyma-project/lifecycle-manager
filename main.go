@@ -195,31 +195,31 @@ func setupKymaReconciler(mgr ctrl.Manager,
 	options controller.Options,
 ) {
 	kcpRestConfig := mgr.GetConfig()
-	var skrWebhookChartManager deploy.SKRWebhookChartManager
+	var skrWebhookManager deploy.SKRWebhookManager
 	if flagVar.enableKcpWatcher {
 		watcherChartDirInfo, err := os.Stat(flagVar.skrWatcherPath)
 		if err != nil || !watcherChartDirInfo.IsDir() {
 			setupLog.Error(err, "failed to read local skr chart")
 		}
-		skrChartConfig := &deploy.SkrChartManagerConfig{
-			WebhookChartPath:           flagVar.skrWatcherPath,
-			SkrWebhookMemoryLimits:     flagVar.skrWebhookMemoryLimits,
+		skrWebhookConfig := &deploy.SkrWebhookManagerConfig{
+			SKRWatcherPath:             flagVar.skrWatcherPath,
 			SkrWebhookCPULimits:        flagVar.skrWebhookCPULimits,
+			SkrWebhookMemoryLimits:     flagVar.skrWebhookMemoryLimits,
 			WatcherLocalTestingEnabled: flagVar.enableWatcherLocalTesting,
 			GatewayHTTPPortMapping:     flagVar.listenerHTTPPortLocalMapping,
 		}
-		skrWebhookChartManager, err = deploy.NewSKRWebhookTemplateChartManager(kcpRestConfig, skrChartConfig)
+		skrWebhookManager, err = deploy.NewSKRWebhookManifestManager(kcpRestConfig, skrWebhookConfig)
 		if err != nil {
 			setupLog.Error(err, "failed to create webhook chart manager")
 		}
 	}
 
 	if err := (&controllers.KymaReconciler{
-		Client:                 mgr.GetClient(),
-		EventRecorder:          mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		KcpRestConfig:          kcpRestConfig,
-		RemoteClientCache:      remoteClientCache,
-		SKRWebhookChartManager: skrWebhookChartManager,
+		Client:            mgr.GetClient(),
+		EventRecorder:     mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		KcpRestConfig:     kcpRestConfig,
+		RemoteClientCache: remoteClientCache,
+		SKRWebhookManager: skrWebhookManager,
 		RequeueIntervals: controllers.RequeueIntervals{
 			Success: flagVar.kymaRequeueSuccessInterval,
 		},

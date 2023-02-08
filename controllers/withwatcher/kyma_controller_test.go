@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"reflect"
 	"strings"
 
@@ -127,8 +125,6 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1
 	})
 
 	BeforeEach(func() {
-		By("deleting rendered manifests")
-		Expect(os.RemoveAll(filepath.Join(webhookChartPath, "manifest"))).To(Succeed())
 		By("asserting only one kyma CR exists")
 		kcpKymas := &v1alpha1.KymaList{}
 		Expect(controlPlaneClient.List(suiteCtx, kcpKymas)).To(Succeed())
@@ -142,10 +138,6 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1
 		By("get latest TLS secret")
 		Expect(controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(tlsSecret), tlsSecret)).
 			To(Succeed())
-	})
-	AfterEach(func() {
-		By("deleting rendered manifests")
-		Expect(os.RemoveAll(filepath.Join(webhookChartPath, "manifest"))).To(Succeed())
 	})
 }
 
@@ -174,8 +166,8 @@ func isKymaCrDeletionFinished(kymaObjKey client.ObjectKey) func() bool {
 func getSkrChartDeployment(ctx context.Context, skrClient client.Client, kymaObjKey client.ObjectKey) func() error {
 	return func() error {
 		return skrClient.Get(ctx, client.ObjectKey{
-			Namespace: metav1.NamespaceDefault,
-			Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
+			Namespace: kymaObjKey.Namespace,
+			Name:      deploy.SkrResourceName,
 		}, &appsv1.Deployment{})
 	}
 }
@@ -185,8 +177,8 @@ func getSKRWebhookConfig(ctx context.Context, skrClient client.Client,
 ) (*admissionv1.ValidatingWebhookConfiguration, error) {
 	webhookCfg := &admissionv1.ValidatingWebhookConfiguration{}
 	err := skrClient.Get(ctx, client.ObjectKey{
-		Namespace: metav1.NamespaceDefault,
-		Name:      deploy.ResolveSKRChartResourceName(deploy.WebhookCfgAndDeploymentNameTpl, kymaObjKey),
+		Namespace: kymaObjKey.Namespace,
+		Name:      deploy.SkrResourceName,
 	}, webhookCfg)
 	return webhookCfg, err
 }
