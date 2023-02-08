@@ -175,14 +175,6 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 	}
 	deployment.Spec.Template.Spec.Containers[0] = serverContainer
 
-	// configure secret name for the ssl volume
-	if len(deployment.Spec.Template.Spec.Volumes) == 0 {
-		return nil, ErrExpectedNonEmptyPodVolumes
-	}
-	sslVolume := deployment.Spec.Template.Spec.Volumes[0]
-	sslVolume.Secret.SecretName = cfg.secretName
-	deployment.Spec.Template.Spec.Volumes[0] = sslVolume
-
 	return deployment, nil
 }
 
@@ -229,7 +221,7 @@ type unstructuredResourcesConfig struct {
 	kcpAddress               string
 	tlsWebhookServer         string
 	tlsCallback              string
-	secretName, secretResVer string
+	secretResVer             string
 	cpuResLimit, memResLimit string
 	caCert, tlsCert, tlsKey  []byte
 	remoteNs                 string

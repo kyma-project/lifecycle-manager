@@ -149,7 +149,6 @@ func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.C
 		kcpAddress:       m.kcpAddr,
 		tlsWebhookServer: "true",
 		tlsCallback:      "false",
-		secretName:       tlsSecret.Name,
 		secretResVer:     tlsSecret.ResourceVersion,
 		cpuResLimit:      m.config.SkrWebhookCPULimits,
 		memResLimit:      m.config.SkrWebhookMemoryLimits,
