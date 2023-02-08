@@ -28,6 +28,21 @@ const (
 	credSecretValue = "test-operator"
 )
 
+func expectManifestSpecDataEquals(kymaName, value string) func() error {
+	return func() error {
+		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
+		if err != nil {
+			return err
+		}
+		for _, module := range createdKyma.Spec.Modules {
+			if SKRModuleExistWithOverwrites(createdKyma, module) != value {
+				return ErrSpecDataMismatch
+			}
+		}
+		return nil
+	}
+}
+
 func expectManifestSpecRemoteMatched(kymaName string, remoteFlag bool) func() error {
 	return func() error {
 		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
@@ -102,7 +117,7 @@ func expectManifestSpecContainsCredSecretSelector(kymaName string) func() error 
 }
 
 func extractInstallImageSpec(installInfo []manifestV1alpha1.InstallInfo) *types.ImageSpec {
-	Expect(len(installInfo)).To(Equal(1))
+	Expect(installInfo).To(HaveLen(1))
 	var installImageSpec *types.ImageSpec
 	err := yaml.Unmarshal(installInfo[0].Source.Raw, &installImageSpec)
 	Expect(err).ToNot(HaveOccurred())

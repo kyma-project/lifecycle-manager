@@ -358,3 +358,7 @@ func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType,
 	}
 	return false
 }
+
+func (kyma *Kyma) SkipReconciliation() bool {
+	return kyma.GetLabels() != nil && kyma.GetLabels()[SkipReconcileLabel] == "true"
+}

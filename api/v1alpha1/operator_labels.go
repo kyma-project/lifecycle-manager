@@ -26,6 +26,8 @@ const (
 	// WatchedByLabel defines a redirect to a controller that should be getting a notification
 	// if this resource is changed.
 	WatchedByLabel = OperatorPrefix + Separator + "watched-by"
+	// SkipReconcileLabel indicates this specific resource will be skipped during reconciliation.
+	SkipReconcileLabel = OperatorPrefix + Separator + "skip-reconciliation"
 )
 
 func ModuleTemplatesByLabel(module *Module) client.MatchingLabels {
