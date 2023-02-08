@@ -6,6 +6,7 @@ import (
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -39,7 +40,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 
 		kymas := &v1alpha1.KymaList{}
 		listOptions := &client.ListOptions{
-			LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{v1alpha1.ManagedBy: v1alpha1.OperatorName}),
+			LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{v1beta1.ManagedBy: v1beta1.OperatorName}),
 		}
 		if h.NamespaceScoped {
 			listOptions.Namespace = template.Namespace
@@ -56,7 +57,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 		logger := log.FromContext(ctx)
 
 		labels := template.GetLabels()
-		moduleName := labels[v1alpha1.ModuleName]
+		moduleName := labels[v1beta1.ModuleName]
 		templateChannel := template.Spec.Channel
 
 		for _, kyma := range kymas.Items {
@@ -88,10 +89,10 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 func manageable(template *v1alpha1.ModuleTemplate) bool {
 	labels := template.GetLabels()
 
-	if managedBy, ok := labels[v1alpha1.ManagedBy]; !ok || managedBy != v1alpha1.OperatorName {
+	if managedBy, ok := labels[v1beta1.ManagedBy]; !ok || managedBy != v1beta1.OperatorName {
 		return false
 	}
-	if controller, ok := labels[v1alpha1.ControllerName]; !ok || controller == "" {
+	if controller, ok := labels[v1beta1.ControllerName]; !ok || controller == "" {
 		return false
 	}
 	if template.Spec.Target == v1alpha1.TargetControlPlane || template.Spec.Channel == "" {

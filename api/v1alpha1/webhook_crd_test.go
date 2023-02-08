@@ -18,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 var testFiles = filepath.Join("..", "..", "config", "samples", "tests") //nolint:gochecknoglobals
@@ -25,12 +26,12 @@ var testFiles = filepath.Join("..", "..", "config", "samples", "tests") //nolint
 var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	data := unstructured.Unstructured{}
 	data.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   v1alpha1.OperatorPrefix,
+		Group:   v1beta1.OperatorPrefix,
 		Version: v1alpha1.Version,
 		Kind:    "SampleCRD",
 	})
 	It("should successfully fetch accept a moduletemplate based on a compliant crd", func() {
-		crd := GetCRD(v1alpha1.OperatorPrefix, "samplecrd")
+		crd := GetCRD(v1beta1.OperatorPrefix, "samplecrd")
 		Eventually(func() error {
 			return k8sClient.Create(webhookServerContext, crd)
 		}, Timeout, Interval).Should(Succeed())
@@ -50,7 +51,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	})
 
 	It("should accept a moduletemplate based on a non-compliant crd in non-strict mode", func() {
-		crd := GetNonCompliantCRD(v1alpha1.OperatorPrefix, "samplecrd")
+		crd := GetNonCompliantCRD(v1beta1.OperatorPrefix, "samplecrd")
 
 		Eventually(func() error {
 			return k8sClient.Create(webhookServerContext, crd)
@@ -70,7 +71,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	})
 
 	It("should deny a version downgrade when updating", func() {
-		crd := GetCRD(v1alpha1.OperatorPrefix, "samplecrd")
+		crd := GetCRD(v1beta1.OperatorPrefix, "samplecrd")
 		Eventually(func() error {
 			return k8sClient.Create(webhookServerContext, crd)
 		}, Timeout, Interval).Should(Succeed())

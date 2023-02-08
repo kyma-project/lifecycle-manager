@@ -38,6 +38,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -184,7 +185,7 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1alpha1.K
 		return nil
 	}
 
-	kyma.UpdateCondition(v1alpha1.ConditionReasonModuleCatalogIsReady, metav1.ConditionFalse)
+	kyma.UpdateCondition(v1beta1.ConditionReasonModuleCatalogIsReady, metav1.ConditionFalse)
 
 	moduleTemplateList := &v1alpha1.ModuleTemplateList{}
 	if err := r.List(ctx, moduleTemplateList, &client.ListOptions{}); err != nil {
@@ -195,7 +196,7 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1alpha1.K
 		return fmt.Errorf("could not synchronize remote module catalog: %w", err)
 	}
 
-	kyma.UpdateCondition(v1alpha1.ConditionReasonModuleCatalogIsReady, metav1.ConditionTrue)
+	kyma.UpdateCondition(v1beta1.ConditionReasonModuleCatalogIsReady, metav1.ConditionTrue)
 
 	return nil
 }
@@ -228,7 +229,7 @@ func (r *KymaReconciler) HandleInitialState(ctx context.Context, kyma *v1alpha1.
 func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alpha1.Kyma) error {
 	logger := ctrlLog.FromContext(ctx)
 
-	conditionReason := v1alpha1.ConditionReasonModulesAreReady
+	conditionReason := v1beta1.ConditionReasonModulesAreReady
 	conditionStatus := metav1.ConditionTrue
 	if err := r.syncModules(ctx, kyma); err != nil {
 		conditionStatus = metav1.ConditionFalse
@@ -246,7 +247,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 
 	if kyma.Spec.Sync.Enabled && r.SKRWebhookManager != nil {
 		if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
-			kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
+			kyma.UpdateCondition(v1beta1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
 			return r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError, err)
 		}
 	}
@@ -321,7 +322,7 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1alpha1
 		logger.Info("removed remote finalizer")
 	}
 
-	controllerutil.RemoveFinalizer(kyma, v1alpha1.Finalizer)
+	controllerutil.RemoveFinalizer(kyma, v1beta1.Finalizer)
 
 	if err := r.Update(ctx, kyma); err != nil {
 		err := fmt.Errorf("error while trying to udpate kyma during deletion: %w", err)

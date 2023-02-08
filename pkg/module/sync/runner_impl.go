@@ -19,6 +19,7 @@ import (
 	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 )
 
@@ -85,7 +86,7 @@ func (r *RunnerImpl) updateModule(ctx context.Context, kyma *v1alpha1.Kyma,
 	clObj := obj.(client.Object)
 	if err := r.Patch(ctx, clObj,
 		client.Apply,
-		client.FieldOwner(kyma.Labels[v1alpha1.ManagedBy]),
+		client.FieldOwner(kyma.Labels[v1beta1.ManagedBy]),
 		client.ForceOwnership,
 	); err != nil {
 		return fmt.Errorf("error applying manifest %s: %w", client.ObjectKeyFromObject(module), err)

@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -166,7 +167,7 @@ func (w *Watcher) GetModuleName() string {
 	if w.Labels == nil {
 		return ""
 	}
-	return w.Labels[ManagedBy]
+	return w.Labels[v1beta1.ManagedBy]
 }
 
 //+kubebuilder:object:root=true
@@ -188,6 +189,6 @@ func init() { //nolint:gochecknoinits
 // for the Watcher.
 func DefaultIstioGatewaySelector() metav1.LabelSelector {
 	return metav1.LabelSelector{
-		MatchLabels: map[string]string{OperatorPrefix + Separator + "watcher-gateway": "default"},
+		MatchLabels: map[string]string{v1beta1.OperatorPrefix + v1beta1.Separator + "watcher-gateway": "default"},
 	}
 }

@@ -9,6 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 type (
@@ -39,13 +40,13 @@ func (m *Module) ApplyLabelsAndAnnotations(
 	if lbls == nil {
 		lbls = make(map[string]string)
 	}
-	lbls[v1alpha1.KymaName] = kyma.Name
+	lbls[v1beta1.KymaName] = kyma.Name
 
 	templateLabels := m.Template.GetLabels()
 	if templateLabels != nil {
-		lbls[v1alpha1.ControllerName] = m.Template.GetLabels()[v1alpha1.ControllerName]
+		lbls[v1beta1.ControllerName] = m.Template.GetLabels()[v1beta1.ControllerName]
 	}
-	lbls[v1alpha1.ChannelLabel] = m.Template.Spec.Channel
+	lbls[v1beta1.ChannelLabel] = m.Template.Spec.Channel
 
 	m.SetLabels(lbls)
 
@@ -53,7 +54,7 @@ func (m *Module) ApplyLabelsAndAnnotations(
 	if anns == nil {
 		anns = make(map[string]string)
 	}
-	anns[v1alpha1.FQDN] = m.FQDN
+	anns[v1beta1.FQDN] = m.FQDN
 	m.SetAnnotations(anns)
 }
 

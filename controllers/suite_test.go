@@ -48,6 +48,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	//+kubebuilder:scaffold:imports
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -131,7 +132,7 @@ var _ = BeforeSuite(func() {
 	remoteClientCache := remote.NewClientCache()
 	err = (&controllers.KymaReconciler{
 		Client:           k8sManager.GetClient(),
-		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		EventRecorder:    k8sManager.GetEventRecorderFor(v1beta1.OperatorName),
 		RequeueIntervals: intervals,
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,

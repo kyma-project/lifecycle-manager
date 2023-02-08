@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -9,7 +10,7 @@ import (
 
 func NewCacheFunc() cache.NewCacheFunc {
 	cacheLabelSelector := labels.SelectorFromSet(
-		labels.Set{v1alpha1.ManagedBy: v1alpha1.OperatorName},
+		labels.Set{v1beta1.ManagedBy: v1beta1.OperatorName},
 	)
 	return cache.BuilderWithOptions(cache.Options{
 		SelectorsByObject: cache.SelectorsByObject{

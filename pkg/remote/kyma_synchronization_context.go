@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	corev1 "k8s.io/api/core/v1"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -74,7 +75,7 @@ func RemoveFinalizerFromRemoteKyma(
 		return err
 	}
 
-	controllerutil.RemoveFinalizer(remoteKyma, v1alpha1.Finalizer)
+	controllerutil.RemoveFinalizer(remoteKyma, v1beta1.Finalizer)
 
 	return syncContext.RuntimeClient.Update(ctx, remoteKyma)
 }
@@ -99,8 +100,8 @@ func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Con
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        kyma.GetNamespace(),
-			Labels:      map[string]string{v1alpha1.ManagedBy: v1alpha1.OperatorName},
-			Annotations: map[string]string{v1alpha1.LastSync: time.Now().Format(time.RFC3339)},
+			Labels:      map[string]string{v1beta1.ManagedBy: v1beta1.OperatorName},
+			Annotations: map[string]string{v1beta1.LastSync: time.Now().Format(time.RFC3339)},
 		},
 		// setting explicit type meta is required for SSA on Namespaces
 		TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
@@ -278,8 +279,8 @@ func (c *KymaSynchronizationContext) InsertWatcherLabels(controlPlaneKyma, remot
 		remoteKyma.Labels = make(map[string]string)
 	}
 
-	remoteKyma.Labels[v1alpha1.OwnedByLabel] = fmt.Sprintf(
-		v1alpha1.OwnedByFormat,
+	remoteKyma.Labels[v1beta1.OwnedByLabel] = fmt.Sprintf(
+		v1beta1.OwnedByFormat,
 		controlPlaneKyma.Namespace, controlPlaneKyma.Name)
-	remoteKyma.Labels[v1alpha1.WatchedByLabel] = v1alpha1.OperatorName
+	remoteKyma.Labels[v1beta1.WatchedByLabel] = v1beta1.OperatorName
 }

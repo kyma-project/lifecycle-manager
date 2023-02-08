@@ -11,6 +11,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -102,7 +103,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			remoteKyma, err = GetKyma(ctx, runtimeClient, kyma.GetName(), kyma.Spec.Sync.Namespace)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(remoteKyma.ContainsCondition(v1alpha1.ConditionTypeReady,
-				v1alpha1.ConditionReasonModuleCatalogIsReady)).To(BeTrue())
+				v1beta1.ConditionReasonModuleCatalogIsReady)).To(BeTrue())
 		}, Timeout, Interval)
 
 		By("updating a module template in the remote cluster to simulate unwanted modification")

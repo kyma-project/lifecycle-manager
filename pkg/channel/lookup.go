@@ -12,6 +12,7 @@ import (
 	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/index"
 )
 
@@ -195,7 +196,7 @@ func (c *TemplateLookup) getTemplate(
 ) (*operatorv1alpha1.ModuleTemplate, error) {
 	lookupVariants := []client.ListOption{
 		// first try to find a template with "operator.kyma-project.io/module-name" == module.Name
-		operatorv1alpha1.ModuleTemplatesByLabel(&c.module),
+		v1beta1.ModuleTemplatesByLabel(&c.module),
 		// then try to find a template with FQDN (".spec.descriptor.component.name") == module.Name
 		index.TemplateFQDNField.WithValue(c.module.Name),
 		// then try to find a template with "metadata.name" == module.Name

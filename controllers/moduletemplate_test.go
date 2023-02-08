@@ -9,6 +9,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 	"github.com/kyma-project/module-manager/pkg/types"
 	. "github.com/onsi/ginkgo/v2"
@@ -173,7 +174,7 @@ func updateModuleTemplateOCIRegistryCredLabel(kymaName string) func() error {
 					for i := range descriptor.Resources {
 						resource := &descriptor.Resources[i]
 						resource.SetLabels([]ocm.Label{{
-							Name:  v1alpha1.OCIRegistryCredLabel,
+							Name:  v1beta1.OCIRegistryCredLabel,
 							Value: json.RawMessage(fmt.Sprintf(`{"%s": "%s"}`, credSecretLabel, credSecretValue)),
 						}})
 					}

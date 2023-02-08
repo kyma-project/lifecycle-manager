@@ -9,10 +9,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-
 	v2 "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/gardener/component-spec/bindings-go/apis/v2/signatures"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
@@ -105,7 +104,7 @@ func CreateRSAVerifierFromSecrets(
 ) (*MultiVerifier, error) {
 	secretList := &v1.SecretList{}
 
-	selector, err := k8slabels.Parse(fmt.Sprintf("%s in (%s)", v1alpha1.Signature, strings.Join(validSignatureNames, ",")))
+	selector, err := k8slabels.Parse(fmt.Sprintf("%s in (%s)", v1beta1.Signature, strings.Join(validSignatureNames, ",")))
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +114,7 @@ func CreateRSAVerifierFromSecrets(
 	}); err != nil {
 		return nil, err
 	} else if len(secretList.Items) < 1 {
-		gr := v1.SchemeGroupVersion.WithResource(fmt.Sprintf("secrets with label %s", v1alpha1.KymaName)).GroupResource()
+		gr := v1.SchemeGroupVersion.WithResource(fmt.Sprintf("secrets with label %s", v1beta1.KymaName)).GroupResource()
 		return nil, k8serrors.NewNotFound(gr, selector.String())
 	}
 
@@ -132,7 +131,7 @@ func CreateRSAVerifierFromSecrets(
 		}
 		switch key := untypedKey.(type) {
 		case *rsa.PublicKey:
-			publicKeys[item.Labels[v1alpha1.Signature]] = key
+			publicKeys[item.Labels[v1beta1.Signature]] = key
 		default:
 			return nil, fmt.Errorf("public key error: %w - type is %T", ErrPublicKeyWrongType, key)
 		}

@@ -22,6 +22,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
@@ -235,7 +236,7 @@ func verifyWebhookConfig(
 		return fmt.Errorf("%w: (webhook=%s)", ErrWebhookNamePartsNumberMismatch, webhook.Name)
 	}
 	moduleName := webhookNameParts[0]
-	expectedModuleName, exists := watcherCR.Labels[v1alpha1.ManagedBy]
+	expectedModuleName, exists := watcherCR.Labels[v1beta1.ManagedBy]
 	if !exists {
 		return fmt.Errorf("%w: (labels=%v)", ErrManagedByLabelNotFound, watcherCR.Labels)
 	}

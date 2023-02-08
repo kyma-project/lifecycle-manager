@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
@@ -29,7 +30,7 @@ const (
 	caCertKey                    = "ca.crt"
 	tlsCertKey                   = "tls.crt"
 	tlsPrivateKeyKey             = "tls.key"
-	skrChartFieldOwner           = client.FieldOwner(v1alpha1.OperatorName)
+	skrChartFieldOwner           = client.FieldOwner(v1beta1.OperatorName)
 	version                      = "v1"
 	webhookTimeOutInSeconds      = 15
 	allResourcesWebhookRule      = "*"

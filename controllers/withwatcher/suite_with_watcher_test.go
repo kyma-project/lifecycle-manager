@@ -57,6 +57,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	istioscheme "istio.io/client-go/pkg/clientset/versioned/scheme"
 )
@@ -173,7 +174,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.KymaReconciler{
 		Client:            k8sManager.GetClient(),
-		EventRecorder:     k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		EventRecorder:     k8sManager.GetEventRecorderFor(v1beta1.OperatorName),
 		RequeueIntervals:  intervals,
 		SKRWebhookManager: skrWebhookChartManager,
 		VerificationSettings: signature.VerificationSettings{

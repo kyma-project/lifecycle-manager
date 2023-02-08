@@ -19,18 +19,9 @@ package v1alpha1
 import (
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-)
-
-type OverrideType string
-
-type (
-	Overrides []Override
-	Override  struct {
-		Name                  string `json:"name"`
-		*metav1.LabelSelector `json:"selector,omitempty"`
-	}
 )
 
 type Modules []Module
@@ -270,14 +261,6 @@ const (
 	ConditionTypeReady KymaConditionType = "Ready"
 )
 
-// KymaConditionReason is a programmatic identifier indicating the reason for the condition's last transition.
-// By combining of condition status, it explains the current Kyma status for all modules.
-// Name example:
-// Reason: ModulesIsReady and Status: True means all modules are in ready state.
-// Reason: ModulesIsReady and Status: False means some modules are not in ready state,
-// and the actual state of individual module can be found in related ModuleStatus.
-type KymaConditionReason string
-
 //+genclient
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
@@ -305,7 +288,7 @@ func (kyma *Kyma) SetLastSync() *Kyma {
 	if kyma.Annotations == nil {
 		kyma.Annotations = make(map[string]string)
 	}
-	kyma.Annotations[LastSync] = lastSyncDate
+	kyma.Annotations[v1beta1.LastSync] = lastSyncDate
 
 	return kyma
 }
@@ -331,18 +314,18 @@ func init() {
 	SchemeBuilder.Register(&Kyma{}, &KymaList{})
 }
 
-func (kyma *Kyma) UpdateCondition(reason KymaConditionReason, status metav1.ConditionStatus) {
+func (kyma *Kyma) UpdateCondition(reason v1beta1.KymaConditionReason, status metav1.ConditionStatus) {
 	meta.SetStatusCondition(&kyma.Status.Conditions, metav1.Condition{
 		Type:               string(ConditionTypeReady),
 		Status:             status,
 		Reason:             string(reason),
-		Message:            GenerateMessage(reason, status),
+		Message:            v1beta1.GenerateMessage(reason, status),
 		ObservedGeneration: kyma.GetGeneration(),
 	})
 }
 
 func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType,
-	reason KymaConditionReason, conditionStatus ...metav1.ConditionStatus,
+	reason v1beta1.KymaConditionReason, conditionStatus ...metav1.ConditionStatus,
 ) bool {
 	for _, condition := range kyma.Status.Conditions {
 		reasonTypeMatch := condition.Type == string(conditionType) && condition.Reason == string(reason)
@@ -360,5 +343,5 @@ func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType,
 }
 
 func (kyma *Kyma) SkipReconciliation() bool {
-	return kyma.GetLabels() != nil && kyma.GetLabels()[SkipReconcileLabel] == "true"
+	return kyma.GetLabels() != nil && kyma.GetLabels()[v1beta1.SkipReconcileLabel] == "true"
 }

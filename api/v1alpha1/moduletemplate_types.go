@@ -23,6 +23,7 @@ import (
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/gardener/component-spec/bindings-go/codec"
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1/codec/unsafe"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -178,7 +179,7 @@ func (in *ModuleTemplate) SetLastSync() *ModuleTemplate {
 		in.Annotations = make(map[string]string)
 	}
 
-	in.Annotations[LastSync] = lastSyncDate
+	in.Annotations[v1beta1.LastSync] = lastSyncDate
 
 	return in
 }
