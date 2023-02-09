@@ -16,29 +16,27 @@ func ValidateInstalls(manifest *Manifest) field.ErrorList {
 	}
 
 	if len(fieldErrors) == 0 {
-		for _, install := range manifest.Spec.Installs {
-			specType, err := GetSpecType(install.Raw())
-			if err != nil {
-				fieldErrors = append(
-					fieldErrors,
-					field.Invalid(
-						field.NewPath("spec").Child("installs"),
-						install.Raw(), err.Error(),
-					),
-				)
-				continue
-			}
+		specType, err := GetSpecType(manifest.Spec.Install.Raw())
+		if err != nil {
+			fieldErrors = append(
+				fieldErrors,
+				field.Invalid(
+					field.NewPath("spec").Child("installs"),
+					manifest.Spec.Install.Raw(), err.Error(),
+				),
+			)
+			return fieldErrors
+		}
 
-			err = codec.Validate(install.Raw(), specType)
-			if err != nil {
-				fieldErrors = append(
-					fieldErrors,
-					field.Invalid(
-						field.NewPath("spec").Child("installs"),
-						install.Raw(), err.Error(),
-					),
-				)
-			}
+		err = codec.Validate(manifest.Spec.Install.Raw(), specType)
+		if err != nil {
+			fieldErrors = append(
+				fieldErrors,
+				field.Invalid(
+					field.NewPath("spec").Child("installs"),
+					manifest.Spec.Install.Raw(), err.Error(),
+				),
+			)
 		}
 	}
 

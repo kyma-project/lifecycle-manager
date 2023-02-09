@@ -51,8 +51,6 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 		// here we define a watch on secrets for the lifecycle-manager so that the cache is picking up changes
 		Watches(&source.Kind{Type: &corev1.Secret{}}, handler.Funcs{})
 
-	controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: &v1alpha1.Manifest{}},
-		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1alpha1.Kyma{}, IsController: true})
 	controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: &v1beta1.Manifest{}},
 		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1alpha1.Kyma{}, IsController: true})
 

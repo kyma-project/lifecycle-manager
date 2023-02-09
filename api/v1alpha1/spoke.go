@@ -1,9 +1,13 @@
 package v1alpha1
 
 import (
+	"errors"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
+
+var ErrSingleInstallOnly = errors.New("v1beta1 only supports a single install at a time")
 
 // ConvertTo converts this CronJob to the Hub version.
 func (m *Manifest) ConvertTo(hub conversion.Hub) error {
@@ -11,14 +15,15 @@ func (m *Manifest) ConvertTo(hub conversion.Hub) error {
 
 	dst.ObjectMeta = m.ObjectMeta
 
-	dst.Spec.Installs = make([]v1beta1.InstallInfo, 0, len(m.Spec.Installs))
+	if len(m.Spec.Installs) != 1 {
+		return ErrSingleInstallOnly
+	}
+
 	for _, install := range m.Spec.Installs {
-		dst.Spec.Installs = append(
-			dst.Spec.Installs, v1beta1.InstallInfo{
-				Source: install.Source,
-				Name:   install.Name,
-			},
-		)
+		install = InstallInfo{
+			Source: install.Source,
+			Name:   install.Name,
+		}
 	}
 
 	dst.Spec.Config = v1beta1.ImageSpec{
@@ -44,15 +49,10 @@ func (m *Manifest) ConvertFrom(hub conversion.Hub) error {
 
 	m.ObjectMeta = src.ObjectMeta
 
-	m.Spec.Installs = make([]InstallInfo, 0, len(src.Spec.Installs))
-	for _, install := range src.Spec.Installs {
-		m.Spec.Installs = append(
-			m.Spec.Installs, InstallInfo{
-				Source: install.Source,
-				Name:   install.Name,
-			},
-		)
-	}
+	m.Spec.Installs = []InstallInfo{{
+		Source: src.Spec.Install.Source,
+		Name:   src.Spec.Install.Name,
+	}}
 
 	m.Spec.Remote = src.Spec.Remote
 

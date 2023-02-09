@@ -447,24 +447,21 @@ spec:
                     - ""
                     type: string
                 type: object
-              installs:
-                description: Installs specifies a list of installations for Manifest
-                items:
-                  description: InstallInfo defines installation information.
-                  properties:
-                    name:
-                      description: Name specifies a unique install name for Manifest
-                      type: string
-                    source:
-                      description: Source can either be described as ImageSpec, HelmChartSpec
-                        or KustomizeSpec
-                      type: object
-                      x-kubernetes-preserve-unknown-fields: true
-                  required:
-                  - name
-                  - source
-                  type: object
-                type: array
+              install:
+                description: Install specifies a list of installations for Manifest
+                properties:
+                  name:
+                    description: Name specifies a unique install name for Manifest
+                    type: string
+                  source:
+                    description: Source can either be described as ImageSpec, HelmChartSpec
+                      or KustomizeSpec
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                required:
+                - name
+                - source
+                type: object
               remote:
                 description: Remote indicates if Manifest should be installed on a
                   remote cluster
@@ -477,7 +474,7 @@ spec:
                 x-kubernetes-embedded-resource: true
                 x-kubernetes-preserve-unknown-fields: true
             required:
-            - installs
+            - install
             - remote
             type: object
           status:

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -99,8 +100,8 @@ func NewManifestFromTemplate(
 	module v1alpha1.Module,
 	template *v1alpha1.ModuleTemplate,
 	verification signature.Verification,
-) (*v1alpha1.Manifest, error) {
-	manifest := &v1alpha1.Manifest{}
+) (*v1beta1.Manifest, error) {
+	manifest := &v1beta1.Manifest{}
 	manifest.Spec.Remote = ConvertTargetToRemote(template.Spec.Target)
 
 	switch module.CustomResourcePolicy {
@@ -136,7 +137,7 @@ func NewManifestFromTemplate(
 }
 
 func translateLayersAndMergeIntoManifest(
-	manifest *v1alpha1.Manifest, layers img.Layers,
+	manifest *v1beta1.Manifest, layers img.Layers,
 ) error {
 	for _, layer := range layers {
 		if err := insertLayerIntoManifest(manifest, layer); err != nil {
@@ -147,7 +148,7 @@ func translateLayersAndMergeIntoManifest(
 }
 
 func insertLayerIntoManifest(
-	manifest *v1alpha1.Manifest, layer img.Layer,
+	manifest *v1beta1.Manifest, layer img.Layer,
 ) error {
 	switch layer.LayerName {
 	case img.CRDsLayer:
@@ -157,7 +158,7 @@ func insertLayerIntoManifest(
 		if !ok {
 			return fmt.Errorf("%w: not an OCIImage", ErrDefaultConfigParsing)
 		}
-		manifest.Spec.Config = v1alpha1.ImageSpec{
+		manifest.Spec.Config = v1beta1.ImageSpec{
 			Repo:               ociImage.Repo,
 			Name:               ociImage.Name,
 			Ref:                ociImage.Ref,
@@ -169,11 +170,10 @@ func insertLayerIntoManifest(
 		if err != nil {
 			return fmt.Errorf("error while merging the generic install representation: %w", err)
 		}
-		manifest.Spec.Installs = append(
-			manifest.Spec.Installs, v1alpha1.InstallInfo{
-				Source: runtime.RawExtension{Raw: installRaw},
-				Name:   string(layer.LayerName),
-			})
+		manifest.Spec.Install = v1beta1.InstallInfo{
+			Source: runtime.RawExtension{Raw: installRaw},
+			Name:   string(layer.LayerName),
+		}
 	}
 
 	return nil

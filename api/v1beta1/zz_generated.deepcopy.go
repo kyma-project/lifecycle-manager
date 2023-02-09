@@ -156,13 +156,7 @@ func (in *ManifestList) DeepCopyObject() runtime.Object {
 func (in *ManifestSpec) DeepCopyInto(out *ManifestSpec) {
 	*out = *in
 	in.Config.DeepCopyInto(&out.Config)
-	if in.Installs != nil {
-		in, out := &in.Installs, &out.Installs
-		*out = make([]InstallInfo, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
-		}
-	}
+	in.Install.DeepCopyInto(&out.Install)
 	if in.Resource != nil {
 		in, out := &in.Resource, &out.Resource
 		*out = (*in).DeepCopy()

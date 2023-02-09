@@ -101,7 +101,7 @@ var _ = BeforeSuite(func() {
 	// manifest CRD
 	// istio CRDs
 	remoteCrds, err := ParseRemoteCRDs([]string{
-		"https://raw.githubusercontent.com/istio/istio/master/manifests/charts/base/crds/crd-all.gen.yaml", //nolint:lll
+		"https://raw.githubusercontent.com/istio/istio/master/manifests/charts/base/crds/crd-all.gen.yaml",
 	})
 	Expect(err).NotTo(HaveOccurred())
 

@@ -41,9 +41,6 @@ var _ webhook.Defaulter = &Manifest{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type.
 func (m *Manifest) Default() {
-	if m.Spec.Installs == nil {
-		m.Spec.Installs = make([]InstallInfo, 0)
-	}
 }
 
 //nolint:lll

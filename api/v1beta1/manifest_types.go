@@ -49,8 +49,8 @@ type ManifestSpec struct {
 	// Config specifies OCI image configuration for Manifest
 	Config ImageSpec `json:"config,omitempty"`
 
-	// Installs specifies a list of installations for Manifest
-	Installs []InstallInfo `json:"installs"`
+	// Install specifies a list of installations for Manifest
+	Install InstallInfo `json:"install"`
 
 	//+kubebuilder:pruning:PreserveUnknownFields
 	//+kubebuilder:validation:XEmbeddedResource

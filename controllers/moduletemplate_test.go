@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
@@ -77,7 +78,7 @@ func expectManifestSpecNotContainsCredSecretSelector(kymaName string) func() err
 			if moduleInCluster.Spec.Config.CredSecretSelector != nil {
 				return ErrContainsUnexpectedCredSecretSelector
 			}
-			installImageSpec := extractInstallImageSpec(moduleInCluster.Spec.Installs)
+			installImageSpec := extractInstallImageSpec(moduleInCluster.Spec.Install)
 
 			if installImageSpec.CredSecretSelector != nil {
 				return ErrContainsUnexpectedCredSecretSelector
@@ -98,14 +99,14 @@ func expectManifestSpecContainsCredSecretSelector(kymaName string) func() error 
 			if err != nil {
 				return err
 			}
-			var emptyImageSpec v1alpha1.ImageSpec
+			var emptyImageSpec v1beta1.ImageSpec
 			if moduleInCluster.Spec.Config != emptyImageSpec {
 				if err := expectCredSecretSelectorCorrect(&moduleInCluster.Spec.Config); err != nil {
 					return fmt.Errorf("config %v is invalid: %w", &moduleInCluster.Spec.Config, err)
 				}
 			}
 
-			installImageSpec := extractInstallImageSpec(moduleInCluster.Spec.Installs)
+			installImageSpec := extractInstallImageSpec(moduleInCluster.Spec.Install)
 			if err := expectCredSecretSelectorCorrect(installImageSpec); err != nil {
 				return fmt.Errorf("install %v is invalid: %w", installImageSpec, err)
 			}
@@ -114,15 +115,14 @@ func expectManifestSpecContainsCredSecretSelector(kymaName string) func() error 
 	}
 }
 
-func extractInstallImageSpec(installInfo []v1alpha1.InstallInfo) *v1alpha1.ImageSpec {
-	Expect(installInfo).To(HaveLen(1))
-	var installImageSpec *v1alpha1.ImageSpec
-	err := yaml.Unmarshal(installInfo[0].Source.Raw, &installImageSpec)
+func extractInstallImageSpec(installInfo v1beta1.InstallInfo) *v1beta1.ImageSpec {
+	var installImageSpec *v1beta1.ImageSpec
+	err := yaml.Unmarshal(installInfo.Source.Raw, &installImageSpec)
 	Expect(err).ToNot(HaveOccurred())
 	return installImageSpec
 }
 
-func expectCredSecretSelectorCorrect(installImageSpec *v1alpha1.ImageSpec) error {
+func expectCredSecretSelectorCorrect(installImageSpec *v1beta1.ImageSpec) error {
 	if installImageSpec.CredSecretSelector == nil {
 		return fmt.Errorf("image spec %v does not contain credSecretSelector: %w",
 			installImageSpec, ErrNotContainsExpectedCredSecretSelector)

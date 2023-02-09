@@ -56,7 +56,6 @@ var (
 	ErrNeedUniqueInstall                   = errors.New("can only pass exactly one install")
 )
 
-//nolint:funlen
 func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object) (*declarative.Spec, error) {
 	manifest, ok := obj.(*v1beta1.Manifest)
 	if !ok {
@@ -66,14 +65,7 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object)
 		)
 	}
 
-	if len(manifest.Spec.Installs) != 1 {
-		return nil, fmt.Errorf("%v installs found in manifest: %w",
-			len(manifest.Spec.Installs), ErrNeedUniqueInstall)
-	}
-
-	install := manifest.Spec.Installs[0]
-
-	specType, err := v1beta1.GetSpecType(install.Source.Raw)
+	specType, err := v1beta1.GetSpecType(manifest.Spec.Install.Source.Raw)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +75,7 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object)
 		return nil, err
 	}
 
-	chartInfo, err := m.getChartInfoForInstall(ctx, install, specType, keyChain)
+	chartInfo, err := m.getChartInfoForInstall(ctx, manifest.Spec.Install, specType, keyChain)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +93,7 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object)
 			client.ObjectKeyFromObject(manifest), ErrRenderModeInvalid)
 	}
 
-	values, err := m.getValuesFromConfig(ctx, manifest.Spec.Config, install.Name, keyChain)
+	values, err := m.getValuesFromConfig(ctx, manifest.Spec.Config, manifest.Spec.Install.Name, keyChain)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +111,7 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object)
 	}
 
 	return &declarative.Spec{
-		ManifestName: install.Name,
+		ManifestName: manifest.Spec.Install.Name,
 		Path:         path,
 		Values:       values,
 		Mode:         mode,

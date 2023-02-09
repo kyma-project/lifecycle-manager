@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 
@@ -156,10 +157,10 @@ func SKRModuleExistWithOverwrites(kyma *v1alpha1.Kyma, module v1alpha1.Module) s
 	return skrModuleSpec.InitKey
 }
 
-func getModule(kyma *v1alpha1.Kyma, module v1alpha1.Module) (*v1alpha1.Manifest, error) {
+func getModule(kyma *v1alpha1.Kyma, module v1alpha1.Module) (*v1beta1.Manifest, error) {
 	for _, moduleStatus := range kyma.Status.Modules {
 		if moduleStatus.Name == module.Name {
-			component := &v1alpha1.Manifest{}
+			component := &v1beta1.Manifest{}
 			err := controlPlaneClient.Get(ctx, client.ObjectKey{
 				Namespace: moduleStatus.Manifest.GetNamespace(),
 				Name:      moduleStatus.Manifest.GetName(),

@@ -240,20 +240,11 @@ var _ = Describe(
 				// verify no new Helm resources were created
 				verifyHelmResourcesDeletion(validImageSpec)
 				// fresh Manifest with empty installs
-				manifest3WithoutInstall := NewTestManifest("multi-oci3")
-				Eventually(withEmptyInstallImageSpec(), standardTimeout, standardInterval).
-					WithArguments(manifest3WithoutInstall).Should(Succeed())
-				// no cache entry created for empty installs
-				Eventually(expectHelmClientCacheExist(false), standardTimeout, standardInterval).
-					WithArguments(manifest3WithoutInstall.GetLabels()[labels.KymaName]).Should(BeTrue())
 				Eventually(
 					deleteManifestAndVerify(manifestWithInstall), standardTimeout, standardInterval,
 				).Should(Succeed())
 				Eventually(
 					deleteManifestAndVerify(manifest2WithInstall), standardTimeout, standardInterval,
-				).Should(Succeed())
-				Eventually(
-					deleteManifestAndVerify(manifest3WithoutInstall), standardTimeout, standardInterval,
 				).Should(Succeed())
 			},
 		)
@@ -295,12 +286,6 @@ func withValidInstallImageSpec(name string, remote bool) func(manifest *v1beta1.
 	}
 }
 
-func withEmptyInstallImageSpec() func(manifest *v1beta1.Manifest) error {
-	return func(manifest *v1beta1.Manifest) error {
-		return installManifest(manifest, nil, false)
-	}
-}
-
 func withValidInstall(installName string, remote bool) func(manifest *v1beta1.Manifest) error {
 	return func(manifest *v1beta1.Manifest) error {
 		validInstallImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String(), layerInstalls)
@@ -313,16 +298,12 @@ func withValidInstall(installName string, remote bool) func(manifest *v1beta1.Ma
 
 func installManifest(manifest *v1beta1.Manifest, installSpecByte []byte, remote bool) error {
 	if installSpecByte != nil {
-		manifest.Spec.Installs = []v1beta1.InstallInfo{
-			{
-				Source: runtime.RawExtension{
-					Raw: installSpecByte,
-				},
-				Name: "manifest-test",
+		manifest.Spec.Install = v1beta1.InstallInfo{
+			Source: runtime.RawExtension{
+				Raw: installSpecByte,
 			},
+			Name: "manifest-test",
 		}
-	} else {
-		manifest.Spec.Installs = make([]v1beta1.InstallInfo, 0)
 	}
 	// manifest.Spec.CRDs = crdSpec
 	if remote {
