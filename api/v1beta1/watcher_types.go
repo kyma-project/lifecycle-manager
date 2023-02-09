@@ -68,7 +68,7 @@ type Service struct {
 	Namespace string `json:"namespace"`
 }
 
-// +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error
+// +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error;""
 type WatcherState string
 
 // Valid Watcher States.

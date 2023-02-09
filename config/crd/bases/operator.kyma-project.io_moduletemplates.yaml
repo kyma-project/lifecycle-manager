@@ -16,16 +16,16 @@ spec:
   scope: Namespaced
   versions:
     - additionalPrinterColumns:
-    - jsonPath: .metadata.creationTimestamp
-      name: Age
-      type: date
-    name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        description: ModuleTemplate is a representation of a Template used for creating
-          Module Instances within the Module Lifecycle. It is generally loosely defined
-          within the Kubernetes Specification, however it has a strict enforcement
-          of OCM guidelines as it serves an active role in maintaining a list of available
+        - jsonPath: .metadata.creationTimestamp
+          name: Age
+          type: date
+      name: v1alpha1
+      schema:
+        openAPIV3Schema:
+          description: ModuleTemplate is a representation of a Template used for creating
+            Module Instances within the Module Lifecycle. It is generally loosely defined
+            within the Kubernetes Specification, however it has a strict enforcement
+            of OCM guidelines as it serves an active role in maintaining a list of available
           Modules within a cluster.
         properties:
           apiVersion:
@@ -92,7 +92,7 @@ spec:
               - descriptor
               - target
             type: object
-        type: object
+          type: object
       served: true
       storage: false
       subresources: { }

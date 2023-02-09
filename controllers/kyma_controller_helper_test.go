@@ -19,7 +19,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	sampleCRDv1alpha1 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1alpha1"
+	sampleCRDv1beta1 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1beta1"
 	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 )
 
@@ -151,7 +151,7 @@ func SKRModuleExistWithOverwrites(kyma *v1beta1.Kyma, module v1beta1.Module) str
 	manifestSpec := moduleInCluster.Spec
 	body, err := json.Marshal(manifestSpec.Resource.Object["spec"])
 	Expect(err).ToNot(HaveOccurred())
-	skrModuleSpec := sampleCRDv1alpha1.SKRModuleSpec{}
+	skrModuleSpec := sampleCRDv1beta1.SKRModuleSpec{}
 	err = json.Unmarshal(body, &skrModuleSpec)
 	Expect(err).ToNot(HaveOccurred())
 	return skrModuleSpec.InitKey

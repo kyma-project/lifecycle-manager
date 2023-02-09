@@ -22,7 +22,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/index"
 	"github.com/kyma-project/lifecycle-manager/pkg/watch"
@@ -43,9 +42,9 @@ const (
 func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 	options controller.Options, settings SetupUpSetting,
 ) error {
-	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1alpha1.Kyma{}).WithOptions(options).
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta1.Kyma{}).WithOptions(options).
 		Watches(
-			&source.Kind{Type: &v1alpha1.ModuleTemplate{}},
+			&source.Kind{Type: &v1beta1.ModuleTemplate{}},
 			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch(context.TODO())),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
@@ -54,7 +53,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 
 	controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: &moduleManagerV1alpha1.Manifest{}},
 		&watch.RestrictedEnqueueRequestForOwner{
-			Log: ctrl.Log, OwnerType: &v1alpha1.Kyma{}, IsController: true,
+			Log: ctrl.Log, OwnerType: &v1beta1.Kyma{}, IsController: true,
 		})
 
 	var runnableListener *listener.SKREventListener
@@ -146,7 +145,7 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.Watcher{}).
+		For(&v1beta1.Watcher{}).
 		Named(WatcherControllerName).
 		WithOptions(options).
 		Complete(r)
