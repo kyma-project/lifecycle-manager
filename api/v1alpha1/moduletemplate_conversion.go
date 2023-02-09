@@ -12,6 +12,7 @@ func (src *ModuleTemplate) ConvertTo(dstRaw conversion.Hub) error {
 	return nil
 }
 
+//nolint:revive,stylecheck
 func (dst *ModuleTemplate) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*v1beta1.ModuleTemplate)
 	dst.ObjectMeta = src.ObjectMeta

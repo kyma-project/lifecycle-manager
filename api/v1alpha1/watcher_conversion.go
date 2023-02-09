@@ -13,6 +13,7 @@ func (src *Watcher) ConvertTo(dstRaw conversion.Hub) error {
 	return nil
 }
 
+//nolint:revive,stylecheck
 func (dst *Watcher) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*v1beta1.Watcher)
 	dst.ObjectMeta = src.ObjectMeta

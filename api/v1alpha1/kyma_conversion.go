@@ -13,6 +13,7 @@ func (src *Kyma) ConvertTo(dstRaw conversion.Hub) error {
 	return nil
 }
 
+//nolint:revive,stylecheck
 func (dst *Kyma) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*v1beta1.Kyma)
 	dst.ObjectMeta = src.ObjectMeta

@@ -31,7 +31,7 @@ import (
 )
 
 // log is for logging in this package.
-var moduletemplatelog = logf.Log.WithName("moduletemplate-resource")
+var moduletemplatelog = logf.Log.WithName("moduletemplate-resource") //nolint:gochecknoglobals
 
 func (in *ModuleTemplate) SetupWebhookWithManager(
 	mgr ctrl.Manager,
@@ -60,7 +60,7 @@ func (c *clusterAwareModuleTemplateValidator) ValidateDelete(ctx context.Context
 	return c.validate(ctx, nil, obj.(*ModuleTemplate))
 }
 
-func (r *clusterAwareModuleTemplateValidator) validate(
+func (c *clusterAwareModuleTemplateValidator) validate(
 	_ context.Context, oldTemplate, newTemplate *ModuleTemplate,
 ) error {
 	newDescriptor, err := newTemplate.Spec.GetDescriptor()
