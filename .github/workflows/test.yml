@@ -57,7 +57,6 @@ jobs:
     name: "Kyma CLI - ${{ matrix.cli-stability }} - Integration (Tests of ${{ matrix.smoke-run }})"
     runs-on: ubuntu-latest
     env:
-      MODULE_MANAGER: kyma-project/module-manager
       LIFECYCLE_MANAGER: ${{ github.repository }}
       K3D_VERSION: v5.4.6
     steps:
@@ -70,15 +69,6 @@ jobs:
         run: |
           mkdir -p $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER
           mv $GITHUB_WORKSPACE/$LIFECYCLE_MANAGER/** $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/
-      - name: Checkout Module-Manager
-        uses: actions/checkout@v3
-        with:
-          repository: ${{ env.MODULE_MANAGER }}
-          path: ${{ env.MODULE_MANAGER }}
-      - name: Move Module-Manager
-        run: |
-          mkdir -p $(go env GOPATH)/src/github.com/$MODULE_MANAGER
-          mv $GITHUB_WORKSPACE/$MODULE_MANAGER/** $(go env GOPATH)/src/github.com/$MODULE_MANAGER/
       - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
         if: github.event_name == 'pull_request'
         run: |
@@ -108,9 +98,7 @@ jobs:
       - name: Run Deploy
         run: |
           kyma --ci alpha deploy \
-            -k $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/config/default \
-            -k $(go env GOPATH)/src/github.com/$MODULE_MANAGER/config/default
-
+            -k $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/config/default
       - name: Inject GOPATH into go Setup
         run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
       - name: Set up Go for ${{ matrix.smoke-run }}
