@@ -17,7 +17,6 @@ import (
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
@@ -27,7 +26,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	data := unstructured.Unstructured{}
 	data.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   v1beta1.OperatorPrefix,
-		Version: v1alpha1.Version,
+		Version: v1beta1.GroupVersion.Version,
 		Kind:    "SampleCRD",
 	})
 	It("should successfully fetch accept a moduletemplate based on a compliant crd", func() {
@@ -37,10 +36,10 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 		}, Timeout, Interval).Should(Succeed())
 
 		template, err := testutils.ModuleTemplateFactory(
-			v1alpha1.Module{
+			v1beta1.Module{
 				ControllerName: "manifest",
 				Name:           "example-module-name",
-				Channel:        v1alpha1.DefaultChannel,
+				Channel:        v1beta1.DefaultChannel,
 			}, data,
 		)
 		Expect(err).ToNot(HaveOccurred())
@@ -57,10 +56,10 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 			return k8sClient.Create(webhookServerContext, crd)
 		}, Timeout, Interval).Should(Succeed())
 		template, err := testutils.ModuleTemplateFactory(
-			v1alpha1.Module{
+			v1beta1.Module{
 				ControllerName: "manifest",
 				Name:           "example-module-name",
-				Channel:        v1alpha1.DefaultChannel,
+				Channel:        v1beta1.DefaultChannel,
 			}, data,
 		)
 		Expect(err).ToNot(HaveOccurred())
@@ -77,17 +76,17 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 		}, Timeout, Interval).Should(Succeed())
 
 		template, err := testutils.ModuleTemplateFactory(
-			v1alpha1.Module{
+			v1beta1.Module{
 				ControllerName: "manifest",
 				Name:           "example-module-name",
-				Channel:        v1alpha1.DefaultChannel,
+				Channel:        v1beta1.DefaultChannel,
 			}, data,
 		)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
 
-		Expect(template.Spec.ModifyDescriptor(v1alpha1.ModifyDescriptorVersion(func(version *semver.Version) string {
+		Expect(template.Spec.ModifyDescriptor(v1beta1.ModifyDescriptorVersion(func(version *semver.Version) string {
 			return fmt.Sprintf("%v.%v.%v", version.Major(), version.Minor(), version.Patch()-1)
 		}))).ToNot(HaveOccurred())
 

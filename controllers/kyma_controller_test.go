@@ -6,7 +6,6 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
@@ -24,7 +23,7 @@ var _ = Describe("Kyma with no ModuleTemplate", Ordered, func() {
 
 	It("Should result in a ready state immediately", func() {
 		By("having transitioned the CR State to Ready as there are no modules")
-		Eventually(IsKymaInState(ctx, controlPlaneClient, kyma.GetName(), v1alpha1.StateReady),
+		Eventually(IsKymaInState(ctx, controlPlaneClient, kyma.GetName(), v1beta1.StateReady),
 			Timeout, Interval).Should(BeTrue())
 	})
 })
@@ -33,10 +32,10 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 	kyma := NewTestKyma("empty-module-kyma")
 
 	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1alpha1.Module{
+		kyma.Spec.Modules, v1beta1.Module{
 			ControllerName: "manifest",
 			Name:           "example-module-name",
-			Channel:        v1alpha1.DefaultChannel,
+			Channel:        v1beta1.DefaultChannel,
 		})
 
 	RegisterDefaultLifecycleForKyma(kyma)
@@ -44,26 +43,26 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 	It("should result in Kyma becoming Ready", func() {
 		By("checking the state to be Processing")
 		Eventually(GetKymaState(kyma.GetName()), 20*time.Second, Interval).
-			Should(BeEquivalentTo(string(v1alpha1.StateProcessing)))
+			Should(BeEquivalentTo(string(v1beta1.StateProcessing)))
 
 		By("having created new conditions in its status")
 		Eventually(GetKymaConditions(kyma.GetName()), Timeout, Interval).ShouldNot(BeEmpty())
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(UpdateModuleState(ctx, kyma, activeModule, v1alpha1.StateReady),
+			Eventually(UpdateModuleState(ctx, kyma, activeModule, v1beta1.StateReady),
 				20*time.Second, Interval).Should(Succeed())
 		}
 
 		By("having updated the Kyma CR state to ready")
 		Eventually(GetKymaState(kyma.GetName()), 20*time.Second, Interval).
-			Should(BeEquivalentTo(string(v1alpha1.StateReady)))
+			Should(BeEquivalentTo(string(v1beta1.StateReady)))
 
 		By("Kyma status contains expected condition")
 		kymaInCluster, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(
 			kymaInCluster.ContainsCondition(
-				v1alpha1.ConditionTypeReady,
+				v1beta1.ConditionTypeReady,
 				v1beta1.ConditionReasonModulesAreReady, metav1.ConditionTrue)).To(BeTrue())
 		By("Module Catalog created")
 		Eventually(ModuleTemplatesExist(controlPlaneClient, kyma, false), 10*time.Second, Interval).Should(Succeed())
@@ -71,7 +70,7 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(
 			kymaInCluster.ContainsCondition(
-				v1alpha1.ConditionTypeReady,
+				v1beta1.ConditionTypeReady,
 				v1beta1.ConditionReasonModuleCatalogIsReady,
 			)).To(BeFalse())
 	})
@@ -79,20 +78,20 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 
 var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 	var (
-		kyma      *v1alpha1.Kyma
-		skrModule *v1alpha1.Module
-		kcpModule *v1alpha1.Module
+		kyma      *v1beta1.Kyma
+		skrModule *v1beta1.Module
+		kcpModule *v1beta1.Module
 	)
 	kyma = NewTestKyma("kyma-test-recreate")
-	skrModule = &v1alpha1.Module{
+	skrModule = &v1beta1.Module{
 		ControllerName: "manifest", // this is a module for SKR that should be installed by module-manager
 		Name:           "skr-module",
-		Channel:        v1alpha1.DefaultChannel,
+		Channel:        v1beta1.DefaultChannel,
 	}
-	kcpModule = &v1alpha1.Module{
+	kcpModule = &v1beta1.Module{
 		ControllerName: "manifest", // this is a module for KCP that should be installed by module-manager
 		Name:           "kcp-module",
-		Channel:        v1alpha1.DefaultChannel,
+		Channel:        v1beta1.DefaultChannel,
 	}
 	kyma.Spec.Modules = append(kyma.Spec.Modules, *skrModule, *kcpModule)
 	RegisterDefaultLifecycleForKyma(kyma)
@@ -119,7 +118,7 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 			Eventually(ModuleExists(ctx, kyma, activeModule), Timeout, Interval).Should(Succeed())
 		}
 		By("Remove kcp-module from kyma.spec.modules")
-		kyma.Spec.Modules = []v1alpha1.Module{
+		kyma.Spec.Modules = []v1beta1.Module{
 			*skrModule,
 		}
 		Expect(controlPlaneClient.Update(ctx, kyma)).To(Succeed())
@@ -136,10 +135,10 @@ var _ = Describe("Kyma update Manifest CR", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-update")
 
 	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1alpha1.Module{
+		kyma.Spec.Modules, v1beta1.Module{
 			ControllerName: "manifest",
 			Name:           "skr-module-update",
-			Channel:        v1alpha1.DefaultChannel,
+			Channel:        v1beta1.DefaultChannel,
 		})
 
 	RegisterDefaultLifecycleForKyma(kyma)
@@ -152,13 +151,13 @@ var _ = Describe("Kyma update Manifest CR", Ordered, func() {
 
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(UpdateModuleState(ctx, kyma, activeModule, v1alpha1.StateReady),
+			Eventually(UpdateModuleState(ctx, kyma, activeModule, v1beta1.StateReady),
 				Timeout, Interval).Should(Succeed())
 		}
 
 		By("Kyma CR should be in Ready state")
 		Eventually(GetKymaState(kyma.GetName()), Timeout, Interval).
-			Should(BeEquivalentTo(string(v1alpha1.StateReady)))
+			Should(BeEquivalentTo(string(v1beta1.StateReady)))
 
 		By("Update Module Template spec.data.spec field")
 		valueUpdated := "valueUpdated"
@@ -173,10 +172,10 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-update")
 
 	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1alpha1.Module{
+		kyma.Spec.Modules, v1beta1.Module{
 			ControllerName: "manifest",
 			Name:           "skr-module-update",
-			Channel:        v1alpha1.DefaultChannel,
+			Channel:        v1beta1.DefaultChannel,
 		})
 
 	RegisterDefaultLifecycleForKyma(kyma)
@@ -189,13 +188,13 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(UpdateModuleState(ctx, kyma, activeModule, v1alpha1.StateReady),
+			Eventually(UpdateModuleState(ctx, kyma, activeModule, v1beta1.StateReady),
 				Timeout, Interval).Should(Succeed())
 		}
 
 		By("Kyma CR should be in Ready state")
 		Eventually(GetKymaState(kyma.GetName()), 20*time.Second, Interval).
-			Should(BeEquivalentTo(string(v1alpha1.StateReady)))
+			Should(BeEquivalentTo(string(v1beta1.StateReady)))
 
 		By("Add skip-reconciliation label to Kyma CR")
 		Eventually(UpdateKymaLabel(ctx, controlPlaneClient, kyma, v1beta1.SkipReconcileLabel, "true"),
@@ -212,12 +211,12 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 			updateModuleTemplateSpecData(kyma.Name, "valueUpdated"),
 			expectManifestSpecDataEquals(kyma.Name, "initValue")),
 		Entry("When put manifest into progress, kyma spec.status.modules should not updated",
-			updateAllModules(kyma.Name, v1alpha1.StateProcessing),
-			expectKymaStatusModules(kyma.Name, v1alpha1.StateReady)),
+			updateAllModules(kyma.Name, v1beta1.StateProcessing),
+			expectKymaStatusModules(kyma.Name, v1beta1.StateReady)),
 	)
 })
 
-func expectKymaStatusModules(kymaName string, state v1alpha1.State) func() error {
+func expectKymaStatusModules(kymaName string, state v1beta1.State) func() error {
 	return func() error {
 		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 		if err != nil {
@@ -232,7 +231,7 @@ func expectKymaStatusModules(kymaName string, state v1alpha1.State) func() error
 	}
 }
 
-func updateAllModules(kymaName string, state v1alpha1.State) func() error {
+func updateAllModules(kymaName string, state v1beta1.State) func() error {
 	return func() error {
 		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 		if err != nil {

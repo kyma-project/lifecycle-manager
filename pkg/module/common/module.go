@@ -8,7 +8,6 @@ import (
 	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
@@ -18,7 +17,7 @@ type (
 		ModuleName       string
 		FQDN             string
 		Version          string
-		Template         *v1alpha1.ModuleTemplate
+		Template         *v1beta1.ModuleTemplate
 		TemplateOutdated bool
 		client.Object
 	}
@@ -34,7 +33,7 @@ func (m *Module) Logger(base logr.Logger) logr.Logger {
 }
 
 func (m *Module) ApplyLabelsAndAnnotations(
-	kyma *v1alpha1.Kyma,
+	kyma *v1beta1.Kyma,
 ) {
 	lbls := m.GetLabels()
 	if lbls == nil {
@@ -58,7 +57,7 @@ func (m *Module) ApplyLabelsAndAnnotations(
 	m.SetAnnotations(anns)
 }
 
-func (m *Module) StateMismatchedWithModuleStatus(moduleStatus *v1alpha1.ModuleStatus) bool {
+func (m *Module) StateMismatchedWithModuleStatus(moduleStatus *v1beta1.ModuleStatus) bool {
 	templateStatusMismatch := m.TemplateOutdated &&
 		(moduleStatus.Template.Generation != m.Template.GetGeneration() ||
 			moduleStatus.Channel != m.Template.Spec.Channel)

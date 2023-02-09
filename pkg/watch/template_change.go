@@ -5,7 +5,6 @@ import (
 
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -28,7 +27,7 @@ func NewTemplateChangeHandler(handlerClient ChangeHandlerClient) *TemplateChange
 func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 	return func(o client.Object) []reconcile.Request {
 		requests := make([]reconcile.Request, 0)
-		template := &v1alpha1.ModuleTemplate{}
+		template := &v1beta1.ModuleTemplate{}
 
 		if err := h.Get(ctx, client.ObjectKeyFromObject(o), template); err != nil {
 			return requests
@@ -38,7 +37,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 			return requests
 		}
 
-		kymas := &v1alpha1.KymaList{}
+		kymas := &v1beta1.KymaList{}
 		listOptions := &client.ListOptions{
 			LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{v1beta1.ManagedBy: v1beta1.OperatorName}),
 		}
@@ -86,7 +85,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 	}
 }
 
-func manageable(template *v1alpha1.ModuleTemplate) bool {
+func manageable(template *v1beta1.ModuleTemplate) bool {
 	labels := template.GetLabels()
 
 	if managedBy, ok := labels[v1beta1.ManagedBy]; !ok || managedBy != v1beta1.OperatorName {
@@ -95,13 +94,13 @@ func manageable(template *v1alpha1.ModuleTemplate) bool {
 	if controller, ok := labels[v1beta1.ControllerName]; !ok || controller == "" {
 		return false
 	}
-	if template.Spec.Target == v1alpha1.TargetControlPlane || template.Spec.Channel == "" {
+	if template.Spec.Target == v1beta1.TargetControlPlane || template.Spec.Channel == "" {
 		return false
 	}
 	return true
 }
 
-func requeueKyma(kyma v1alpha1.Kyma, moduleName, templateChannel string) bool {
+func requeueKyma(kyma v1beta1.Kyma, moduleName, templateChannel string) bool {
 	globalChannelMatch := kyma.Spec.Channel == templateChannel
 
 	for _, module := range kyma.Spec.Modules {

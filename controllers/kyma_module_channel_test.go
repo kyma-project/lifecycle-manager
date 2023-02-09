@@ -10,7 +10,7 @@ import (
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 )
@@ -91,7 +91,7 @@ var _ = Describe("Given invalid channel", func() {
 
 func givenModuleTemplateWithChannel(channel string, isValid bool) func() error {
 	return func() error {
-		modules := []v1alpha1.Module{
+		modules := []v1beta1.Module{
 			{
 				ControllerName: "manifest",
 				Name:           "module-with-" + channel,
@@ -129,7 +129,7 @@ func givenKymaSpecModulesWithInvalidChannel(channel string) func() error {
 	return func() error {
 		kyma := NewTestKyma("kyma")
 		kyma.Spec.Modules = append(
-			kyma.Spec.Modules, v1alpha1.Module{
+			kyma.Spec.Modules, v1beta1.Module{
 				ControllerName: "manifest",
 				Name:           "module-with-" + channel,
 				Channel:        channel,
@@ -143,10 +143,10 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 	kyma := NewTestKyma("empty-module-kyma")
 
 	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1alpha1.Module{
+		kyma.Spec.Modules, v1beta1.Module{
 			ControllerName: "manifest",
 			Name:           "channel-switch",
-			Channel:        v1alpha1.DefaultChannel,
+			Channel:        v1beta1.DefaultChannel,
 		})
 
 	AfterAll(func() {
@@ -154,7 +154,7 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 	})
 
 	BeforeAll(func() {
-		Expect(CreateModuleTemplateSetsForKyma(kyma.Spec.Modules, LowerVersion, v1alpha1.DefaultChannel)).To(Succeed())
+		Expect(CreateModuleTemplateSetsForKyma(kyma.Spec.Modules, LowerVersion, v1beta1.DefaultChannel)).To(Succeed())
 		Expect(CreateModuleTemplateSetsForKyma(kyma.Spec.Modules, HigherVersion, FastChannel)).To(Succeed())
 	})
 
@@ -164,14 +164,14 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 		"should create kyma with standard modules in default channel normally", func() {
 			Expect(controlPlaneClient.Create(ctx, kyma)).ToNot(HaveOccurred())
 			Eventually(GetKymaState(kyma.Name), 5*time.Second, Interval).
-				Should(BeEquivalentTo(string(v1alpha1.StateProcessing)))
+				Should(BeEquivalentTo(string(v1beta1.StateProcessing)))
 			for _, module := range kyma.Spec.Modules {
 				Eventually(
-					UpdateModuleState(ctx, kyma, module, v1alpha1.StateReady), 20*time.Second,
+					UpdateModuleState(ctx, kyma, module, v1beta1.StateReady), 20*time.Second,
 					Interval).Should(Succeed())
 			}
 			Eventually(GetKymaState(kyma.Name), 5*time.Second, Interval).
-				Should(BeEquivalentTo(string(v1alpha1.StateReady)))
+				Should(BeEquivalentTo(string(v1beta1.StateReady)))
 		},
 	)
 
@@ -184,7 +184,7 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 			"When kyma is deployed in default channel with lower version,"+
 				" expect Modules to be in regular channel",
 			noCondition(),
-			expectEveryModuleStatusToHaveChannel(kyma.Name, v1alpha1.DefaultChannel),
+			expectEveryModuleStatusToHaveChannel(kyma.Name, v1beta1.DefaultChannel),
 		),
 		Entry(
 			"When all modules are updated to fast channel with higher version,"+
@@ -195,7 +195,7 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 		Entry(
 			"When all modules are reverted to regular channel,"+
 				" expect Modules to stay in fast channel",
-			whenUpdatingEveryModuleChannel(kyma.Name, v1alpha1.DefaultChannel),
+			whenUpdatingEveryModuleChannel(kyma.Name, v1beta1.DefaultChannel),
 			expectEveryModuleStatusToHaveChannel(kyma.Name, FastChannel),
 		),
 	)
@@ -204,18 +204,18 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 		"should lead to kyma being ready in the end of the channel switch", func() {
 			By("having updated the Kyma CR state to ready")
 			Eventually(GetKymaState(kyma.Name), 20*time.Second, Timeout).
-				Should(BeEquivalentTo(string(v1alpha1.StateReady)))
+				Should(BeEquivalentTo(string(v1beta1.StateReady)))
 		},
 	)
 },
 )
 
-func CleanupModuleTemplateSetsForKyma(kyma *v1alpha1.Kyma) func() {
+func CleanupModuleTemplateSetsForKyma(kyma *v1beta1.Kyma) func() {
 	return func() {
 		By("Cleaning up decremented ModuleTemplate set in regular")
 		for _, module := range kyma.Spec.Modules {
 			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
-			template.Name = fmt.Sprintf("%s-%s", template.Name, v1alpha1.DefaultChannel)
+			template.Name = fmt.Sprintf("%s-%s", template.Name, v1beta1.DefaultChannel)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(controlPlaneClient.Delete(ctx, template)).To(Succeed())
 		}

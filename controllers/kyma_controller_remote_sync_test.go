@@ -8,33 +8,32 @@ import (
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
-	var kyma *v1alpha1.Kyma
-	var skrModule *v1alpha1.Module
-	skrModuleFromClient := &v1alpha1.Module{
+	var kyma *v1beta1.Kyma
+	var skrModule *v1beta1.Module
+	skrModuleFromClient := &v1beta1.Module{
 		ControllerName: "manifest",
 		Name:           "skr-module-sync-client",
-		Channel:        v1alpha1.DefaultChannel,
+		Channel:        v1beta1.DefaultChannel,
 	}
 	kyma = NewTestKyma("kyma-remote-sync")
-	skrModule = &v1alpha1.Module{
+	skrModule = &v1beta1.Module{
 		ControllerName: "manifest",
 		Name:           "skr-module-sync",
-		Channel:        v1alpha1.DefaultChannel,
+		Channel:        v1beta1.DefaultChannel,
 	}
 
-	kyma.Spec.Sync = v1alpha1.Sync{
+	kyma.Spec.Sync = v1beta1.Sync{
 		Enabled:      true,
-		Strategy:     v1alpha1.SyncStrategyLocalClient,
+		Strategy:     v1beta1.SyncStrategyLocalClient,
 		Namespace:    metav1.NamespaceDefault,
 		NoModuleCopy: true,
 	}
@@ -54,7 +53,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 			Should(Succeed())
 
 		By("add skr-module-client to remoteKyma.spec.modules")
-		Eventually(UpdateRemoteModule(ctx, runtimeClient, kyma, []v1alpha1.Module{
+		Eventually(UpdateRemoteModule(ctx, runtimeClient, kyma, []v1beta1.Module{
 			*skrModuleFromClient,
 		}), Timeout, Interval).Should(Succeed())
 
@@ -66,18 +65,18 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-remote-skr")
 
-	kyma.Spec.Sync = v1alpha1.Sync{
+	kyma.Spec.Sync = v1beta1.Sync{
 		Enabled:      true,
-		Strategy:     v1alpha1.SyncStrategyLocalClient,
+		Strategy:     v1beta1.SyncStrategyLocalClient,
 		Namespace:    "sync-namespace",
 		NoModuleCopy: true,
 	}
 
 	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1alpha1.Module{
+		kyma.Spec.Modules, v1beta1.Module{
 			ControllerName: "manifest",
 			Name:           "skr-remote-module",
-			Channel:        v1alpha1.DefaultChannel,
+			Channel:        v1beta1.DefaultChannel,
 		})
 
 	RegisterDefaultLifecycleForKyma(kyma)
@@ -102,7 +101,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		Eventually(func() {
 			remoteKyma, err = GetKyma(ctx, runtimeClient, kyma.GetName(), kyma.Spec.Sync.Namespace)
 			Expect(err).ShouldNot(HaveOccurred())
-			Expect(remoteKyma.ContainsCondition(v1alpha1.ConditionTypeReady,
+			Expect(remoteKyma.ContainsCondition(v1beta1.ConditionTypeReady,
 				v1beta1.ConditionReasonModuleCatalogIsReady)).To(BeTrue())
 		}, Timeout, Interval)
 

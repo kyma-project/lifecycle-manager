@@ -47,6 +47,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+
 	//+kubebuilder:scaffold:imports
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )

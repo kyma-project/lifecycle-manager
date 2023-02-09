@@ -11,8 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	operatorv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/index"
 )
 
@@ -23,14 +22,14 @@ var (
 )
 
 type ModuleTemplate struct {
-	*operatorv1alpha1.ModuleTemplate
+	*operatorv1beta1.ModuleTemplate
 	Outdated bool
 }
 
 type ModuleTemplatesByModuleName map[string]*ModuleTemplate
 
 func GetTemplates(
-	ctx context.Context, client client.Reader, kyma *operatorv1alpha1.Kyma,
+	ctx context.Context, client client.Reader, kyma *operatorv1beta1.Kyma,
 ) (ModuleTemplatesByModuleName, error) {
 	logger := ctrlLog.FromContext(ctx)
 	templates := make(ModuleTemplatesByModuleName)
@@ -49,7 +48,7 @@ func GetTemplates(
 	return templates, nil
 }
 
-func CheckForOutdatedTemplates(logger logr.Logger, k *operatorv1alpha1.Kyma, templates ModuleTemplatesByModuleName) {
+func CheckForOutdatedTemplates(logger logr.Logger, k *operatorv1beta1.Kyma, templates ModuleTemplatesByModuleName) {
 	// in the case that the kyma spec did not change, we only have to verify
 	// that all desired templates are still referenced in the latest spec generation
 	for moduleName, moduleTemplate := range templates {
@@ -68,7 +67,7 @@ func CheckForOutdatedTemplates(logger logr.Logger, k *operatorv1alpha1.Kyma, tem
 // 1. If the generation of ModuleTemplate changes, it means the spec is outdated
 // 2. If the channel of ModuleTemplate changes, it means the kyma has an old reference to a previous channel.
 func CheckForOutdatedTemplate(
-	logger logr.Logger, moduleTemplate *ModuleTemplate, moduleStatus *operatorv1alpha1.ModuleStatus,
+	logger logr.Logger, moduleTemplate *ModuleTemplate, moduleStatus *operatorv1beta1.ModuleStatus,
 ) {
 	checkLog := logger.WithValues("module", moduleStatus.FQDN,
 		"template", moduleTemplate.Name,
@@ -134,7 +133,7 @@ type Lookup interface {
 	WithContext(ctx context.Context) (*ModuleTemplate, error)
 }
 
-func NewTemplateLookup(client client.Reader, module operatorv1alpha1.Module,
+func NewTemplateLookup(client client.Reader, module operatorv1beta1.Module,
 	defaultChannel string,
 ) *TemplateLookup {
 	return &TemplateLookup{
@@ -146,7 +145,7 @@ func NewTemplateLookup(client client.Reader, module operatorv1alpha1.Module,
 
 type TemplateLookup struct {
 	reader         client.Reader
-	module         operatorv1alpha1.Module
+	module         operatorv1beta1.Module
 	defaultChannel string
 }
 
@@ -193,16 +192,16 @@ func (c *TemplateLookup) WithContext(ctx context.Context) (*ModuleTemplate, erro
 
 func (c *TemplateLookup) getTemplate(
 	ctx context.Context, desiredChannel string,
-) (*operatorv1alpha1.ModuleTemplate, error) {
+) (*operatorv1beta1.ModuleTemplate, error) {
 	lookupVariants := []client.ListOption{
 		// first try to find a template with "operator.kyma-project.io/module-name" == module.Name
-		v1beta1.ModuleTemplatesByLabel(&c.module),
+		operatorv1beta1.ModuleTemplatesByLabel(&c.module),
 		// then try to find a template with FQDN (".spec.descriptor.component.name") == module.Name
 		index.TemplateFQDNField.WithValue(c.module.Name),
 		// then try to find a template with "metadata.name" == module.Name
 		index.TemplateNameField.WithValue(c.module.Name),
 	}
-	var template *operatorv1alpha1.ModuleTemplate
+	var template *operatorv1beta1.ModuleTemplate
 	for _, variant := range lookupVariants {
 		var err error
 		template, err = c.getModuleTemplateFromDesiredChannel(ctx, desiredChannel, variant)
@@ -221,13 +220,13 @@ func (c *TemplateLookup) getTemplate(
 
 func (c *TemplateLookup) getModuleTemplateFromDesiredChannel(
 	ctx context.Context, desiredChannel string, option client.ListOption,
-) (*operatorv1alpha1.ModuleTemplate, error) {
-	templateList := &operatorv1alpha1.ModuleTemplateList{}
+) (*operatorv1beta1.ModuleTemplate, error) {
+	templateList := &operatorv1beta1.ModuleTemplateList{}
 
 	var err error
 	switch option.(type) {
 	case client.MatchingFields:
-		templateListPreChannelFilter := &operatorv1alpha1.ModuleTemplateList{}
+		templateListPreChannelFilter := &operatorv1beta1.ModuleTemplateList{}
 		err = c.reader.List(ctx, templateListPreChannelFilter, option)
 		if err != nil {
 			return nil, err
@@ -264,14 +263,14 @@ func (c *TemplateLookup) getDesiredChannel() string {
 	case c.defaultChannel != "":
 		desiredChannel = c.defaultChannel
 	default:
-		desiredChannel = operatorv1alpha1.DefaultChannel
+		desiredChannel = operatorv1beta1.DefaultChannel
 	}
 
 	return desiredChannel
 }
 
-func NewMoreThanOneTemplateCandidateErr(component operatorv1alpha1.Module,
-	candidateTemplates []operatorv1alpha1.ModuleTemplate, option client.ListOption,
+func NewMoreThanOneTemplateCandidateErr(component operatorv1beta1.Module,
+	candidateTemplates []operatorv1beta1.ModuleTemplate, option client.ListOption,
 ) error {
 	candidates := make([]string, len(candidateTemplates))
 	for i, candidate := range candidateTemplates {
