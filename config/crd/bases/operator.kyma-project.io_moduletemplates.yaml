@@ -26,15 +26,15 @@ spec:
             Module Instances within the Module Lifecycle. It is generally loosely defined
             within the Kubernetes Specification, however it has a strict enforcement
             of OCM guidelines as it serves an active role in maintaining a list of available
-          Modules within a cluster.
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
+            Modules within a cluster.
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation
               of an object. Servers should convert recognized schemas to the latest
               internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource this
               object represents. Servers may infer this from the endpoint the client
               submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
             type: string

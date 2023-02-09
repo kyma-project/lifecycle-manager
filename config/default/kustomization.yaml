@@ -17,7 +17,7 @@ commonLabels:
   app.kubernetes.io/managed-by: kustomize
   app.kubernetes.io/part-of: manual-deployment
 
-patchesJson6902:
+patches:
   - patch: |-
       - op: replace
         path: /spec/serviceInfo/name
