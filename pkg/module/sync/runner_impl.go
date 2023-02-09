@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/types"
@@ -144,8 +145,10 @@ func stateFromManifest(obj client.Object) v1alpha1.State {
 	switch manifest := obj.(type) {
 	case *v1alpha1.Manifest:
 		return v1alpha1.State(manifest.Status.State)
+	case *v1beta1.Manifest:
+		return v1alpha1.State(manifest.Status.State)
 	default:
-		return v1alpha1.StateError
+		return ""
 	}
 }
 

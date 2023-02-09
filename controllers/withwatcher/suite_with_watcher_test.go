@@ -101,8 +101,7 @@ var _ = BeforeSuite(func() {
 	// manifest CRD
 	// istio CRDs
 	remoteCrds, err := ParseRemoteCRDs([]string{
-		"https://raw.githubusercontent.com/kyma-project/module-manager/main/config/crd/bases/operator.kyma-project.io_manifests.yaml", //nolint:lll
-		"https://raw.githubusercontent.com/istio/istio/master/manifests/charts/base/crds/crd-all.gen.yaml",                            //nolint:lll
+		"https://raw.githubusercontent.com/istio/istio/master/manifests/charts/base/crds/crd-all.gen.yaml", //nolint:lll
 	})
 	Expect(err).NotTo(HaveOccurred())
 
@@ -139,7 +138,7 @@ var _ = BeforeSuite(func() {
 
 	metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
 	if !found {
-		metricsBindAddress = ":8081"
+		metricsBindAddress = ":0"
 	}
 
 	k8sManager, err = ctrl.NewManager(

@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
@@ -159,14 +159,16 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequestFromOwnerRefe
 	}
 
 	if oldIfAny != nil {
-		componentOld, okOld := oldIfAny.(*v1alpha1.Manifest)
-		componentNew, okNew := object.(*v1alpha1.Manifest)
+		componentOld, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(oldIfAny)
+		componentNew, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(object)
+		oldState, okOld, _ := unstructured.NestedString(componentOld, "status", "state")
+		newState, okNew, _ := unstructured.NestedString(componentNew, "status", "state")
 
 		if err != nil || !okNew || !okOld {
 			e.Log.Error(err, "error getting owner")
 		}
 
-		if componentOld.Status.State != componentNew.Status.State {
+		if oldState != newState {
 			result[request] = ref
 		}
 		return

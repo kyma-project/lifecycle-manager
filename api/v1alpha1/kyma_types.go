@@ -132,20 +132,26 @@ type KymaSpec struct {
 	Sync Sync `json:"sync,omitempty"`
 }
 
-func (kyma *Kyma) AllReadyConditionsTrue() bool {
+func (kyma *Kyma) DetermineState() State {
 	status := &kyma.Status
+	for _, moduleStatus := range status.Modules {
+		if moduleStatus.State == StateError {
+			return StateError
+		}
+	}
+
 	if len(status.Conditions) < 1 {
-		return false
+		return StateProcessing
 	}
 
 	for _, existingCondition := range status.Conditions {
 		if existingCondition.Type == string(ConditionTypeReady) &&
 			existingCondition.Status != metav1.ConditionTrue {
-			return false
+			return StateProcessing
 		}
 	}
 
-	return true
+	return StateReady
 }
 
 // KymaStatus defines the observed state of Kyma

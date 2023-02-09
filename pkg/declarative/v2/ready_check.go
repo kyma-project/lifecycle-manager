@@ -15,7 +15,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-var ErrResourcesNotReady = errors.New("resources are not ready")
+var (
+	ErrResourcesNotReady           = errors.New("resources are not ready")
+	ErrCustomResourceStateNotFound = errors.New("custom resource state not found")
+)
 
 type ReadyCheck interface {
 	Run(ctx context.Context, clnt Client, obj Object, resources []*resource.Info) error

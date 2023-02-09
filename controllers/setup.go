@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
@@ -51,9 +52,9 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 		Watches(&source.Kind{Type: &corev1.Secret{}}, handler.Funcs{})
 
 	controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: &v1alpha1.Manifest{}},
-		&watch.RestrictedEnqueueRequestForOwner{
-			Log: ctrl.Log, OwnerType: &v1alpha1.Kyma{}, IsController: true,
-		})
+		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1alpha1.Kyma{}, IsController: true})
+	controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: &v1beta1.Manifest{}},
+		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1alpha1.Kyma{}, IsController: true})
 
 	var runnableListener *listener.SKREventListener
 	var eventChannel *source.Channel

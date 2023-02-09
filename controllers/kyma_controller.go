@@ -252,15 +252,17 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	}
 
 	// set ready condition if applicable
-	if kyma.AllReadyConditionsTrue() {
+	state := kyma.DetermineState()
+
+	if state == v1alpha1.StateReady {
 		const message = "kyma is ready"
 		if kyma.Status.State != v1alpha1.StateReady {
 			logger.Info(message)
 		}
-		return r.UpdateStatus(ctx, kyma, v1alpha1.StateReady, message)
+		return r.UpdateStatus(ctx, kyma, state, message)
 	}
 
-	if err := r.UpdateStatus(ctx, kyma, v1alpha1.StateProcessing, "waiting for all modules to become ready"); err != nil {
+	if err := r.UpdateStatus(ctx, kyma, state, "waiting for all modules to become ready"); err != nil {
 		return fmt.Errorf("error while updating status for condition change: %w", err)
 	}
 

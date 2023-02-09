@@ -19,6 +19,12 @@ spec:
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
+    - jsonPath: .spec.channel
+      name: Channel
+      type: string
+    - jsonPath: .spec.target
+      name: Target
+      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:

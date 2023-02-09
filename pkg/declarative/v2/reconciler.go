@@ -261,12 +261,16 @@ func (r *Reconciler) checkTargetReadiness(
 		resourceReadyCheck = NewHelmReadyCheck(clnt)
 	}
 
-	if err := resourceReadyCheck.Run(ctx, clnt, obj, target); errors.Is(err, ErrResourcesNotReady) {
+	err := resourceReadyCheck.Run(ctx, clnt, obj, target)
+
+	if errors.Is(err, ErrResourcesNotReady) || errors.Is(err, ErrCustomResourceStateNotFound) {
 		waitingMsg := fmt.Sprintf("waiting for resources to become ready: %s", err.Error())
 		r.Event(obj, "Normal", "ResourceReadyCheck", waitingMsg)
 		obj.SetStatus(status.WithState(StateProcessing).WithOperation(waitingMsg))
 		return err
-	} else if err != nil {
+	}
+
+	if err != nil {
 		r.Event(obj, "Warning", "ReadyCheck", err.Error())
 		obj.SetStatus(status.WithState(StateError).WithErr(err))
 		return err

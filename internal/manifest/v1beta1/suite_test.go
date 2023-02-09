@@ -112,7 +112,7 @@ var _ = BeforeSuite(
 		Expect(v1alpha1.AddToScheme(scheme.Scheme)).To(Succeed())
 		metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
 		if !found {
-			metricsBindAddress = ":8080"
+			metricsBindAddress = ":0"
 		}
 
 		k8sManager, err = ctrl.NewManager(

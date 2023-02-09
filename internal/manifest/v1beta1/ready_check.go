@@ -15,8 +15,6 @@ import (
 
 const customResourceStatePath = "status.state"
 
-var ErrCustomResourceStateNotFound = errors.New("custom resource state not found")
-
 // NewManifestCustomResourceReadyCheck creates a readiness check that verifies that the Resource in the Manifest
 // returns the ready state, if not it returns not ready.
 func NewManifestCustomResourceReadyCheck() *ManifestCustomResourceReadyCheck {
@@ -46,7 +44,7 @@ func (c *ManifestCustomResourceReadyCheck) Run(
 		)
 	}
 	if !stateExists {
-		return ErrCustomResourceStateNotFound
+		return declarative.ErrCustomResourceStateNotFound
 	}
 
 	if state := declarative.State(state); state != declarative.StateReady {
