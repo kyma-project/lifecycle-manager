@@ -211,6 +211,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 			SkrWebhookCPULimits:        flagVar.skrWebhookCPULimits,
 			WatcherLocalTestingEnabled: flagVar.enableWatcherLocalTesting,
 			GatewayHTTPPortMapping:     flagVar.listenerHTTPPortLocalMapping,
+			IstioNamespace:             flagVar.istioNamespace,
 		}
 		skrWebhookChartManager, err = watcher.NewSKRWebhookTemplateChartManager(kcpRestConfig, skrChartConfig)
 		if err != nil {
@@ -234,6 +235,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 	}).SetupWithManager(mgr, options, controllers.SetupUpSetting{
 		ListenerAddr:                 flagVar.listenerAddr,
 		EnableDomainNameVerification: flagVar.enableDomainNameVerification,
+		IstioNamespace:               flagVar.istioNamespace,
 	}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
@@ -248,13 +250,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, fla
 	// although eventually the write operation will succeed.
 	options.MaxConcurrentReconciles = 1
 
-	caCertOptions := &istio.CACertOptions{
-		WatcherRootCertificateName:      flagVar.watcherRootCertificateName,
-		WatcherRootCertificateNamespace: flagVar.watcherRootCertificateNamespace,
-		IstioCertificateNamespace:       flagVar.istioCertificateNamespace,
-	}
-
-	istioConfig := istio.NewConfig(flagVar.virtualServiceName, caCertOptions, flagVar.enableWatcherLocalTesting)
+	istioConfig := istio.NewConfig(flagVar.virtualServiceName, flagVar.enableWatcherLocalTesting)
 
 	if err := (&controllers.WatcherReconciler{
 		Client:        mgr.GetClient(),

@@ -128,7 +128,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	var customIstioClient *istio.Client
 	var err error
 	BeforeAll(func() {
-		istioCfg := istio.NewConfig(virtualServiceName, &istio.CACertOptions{}, false)
+		istioCfg := istio.NewConfig(virtualServiceName, false)
 		customIstioClient, err = istio.NewVersionedIstioClient(restCfg, istioCfg,
 			k8sManager.GetEventRecorderFor(controllers.WatcherControllerName), ctrl.Log.WithName("istioClient"))
 		Expect(err).ToNot(HaveOccurred())

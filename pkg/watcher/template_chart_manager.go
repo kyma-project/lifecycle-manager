@@ -34,6 +34,8 @@ type SkrChartManagerConfig struct {
 	WebhookChartPath       string
 	SkrWebhookMemoryLimits string
 	SkrWebhookCPULimits    string
+	// IstioNamespace represents the cluster resource namepsace of istio
+	IstioNamespace string
 	// WatcherLocalTestingEnabled indicates if the chart manager is running in local testing mode
 	WatcherLocalTestingEnabled bool
 	// GatewayHTTPPortMapping indicates the port used to expose the KCP cluster locally for the watcher callbacks
@@ -59,7 +61,8 @@ func (m *SKRWebhookTemplateChartManager) Install(ctx context.Context, kyma *v1al
 
 	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
 	// If it already exists, create will do nothing
-	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma, m.config.WatcherLocalTestingEnabled)
+	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma,
+		m.config.IstioNamespace, m.config.WatcherLocalTestingEnabled)
 	if err != nil {
 		return true, fmt.Errorf("error while creating new CertificateManager struct: %w", err)
 	}
@@ -110,7 +113,8 @@ func (m *SKRWebhookTemplateChartManager) Remove(ctx context.Context, kyma *v1alp
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
 
-	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma, false)
+	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma,
+		m.config.IstioNamespace, false)
 	if err != nil {
 		logger.Error(err, "Error while creating new CertificateManager")
 		return err

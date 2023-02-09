@@ -48,6 +48,7 @@ type CertificateManager struct {
 	kyma                       *v1alpha1.Kyma
 	certificateName            string
 	secretName                 string
+	istioNamespace             string
 	watcherLocalTestingEnabled bool
 }
 
@@ -60,13 +61,14 @@ type CertificateSecret struct {
 
 // NewCertificateManager returns a new CertificateManager, which can be used for creating a cert-manager Certificates.
 func NewCertificateManager(kcpClient client.Client, kyma *v1alpha1.Kyma,
-	localTesting bool,
+	istioNamespace string, localTesting bool,
 ) (*CertificateManager, error) {
 	return &CertificateManager{
 		kcpClient:                  kcpClient,
 		kyma:                       kyma,
 		certificateName:            fmt.Sprintf("%s%s", kyma.Name, CertificateSuffix),
 		secretName:                 CreateSecretName(client.ObjectKeyFromObject(kyma)),
+		istioNamespace:             istioNamespace,
 		watcherLocalTestingEnabled: localTesting,
 	}, nil
 }
@@ -77,20 +79,13 @@ func CreateSecretName(kymaObjKey client.ObjectKey) string {
 
 // Create creates a cert-manager Certificate with a sufficient set of Subject-Alternative-Names.
 func (c *CertificateManager) Create(ctx context.Context) error {
-	// Check if CertificateManager exists
-	exists, err := c.exists(ctx)
-	if exists {
-		return nil
-	} else if err != nil {
-		return err
-	}
 	// fetch Subject-Alternative-Name from KymaCR
 	subjectAltNames, err := c.getSubjectAltNames()
 	if err != nil {
 		return fmt.Errorf("error get Subject Alternative Name from KymaCR: %w", err)
 	}
 	// create cert-manager CertificateCR
-	err = c.createCertificate(ctx, c.kyma.Namespace, subjectAltNames)
+	err = c.createCertificate(ctx, subjectAltNames)
 	if err != nil {
 		return fmt.Errorf("error while creating certificate: %w", err)
 	}
@@ -102,11 +97,8 @@ func (c *CertificateManager) Remove(ctx context.Context) error {
 	certificate := &v1.Certificate{}
 	if err := c.kcpClient.Get(ctx, client.ObjectKey{
 		Name:      c.certificateName,
-		Namespace: c.kyma.Namespace,
-	}, certificate); err != nil {
-		if k8serrors.IsNotFound(err) {
-			return nil
-		}
+		Namespace: c.istioNamespace,
+	}, certificate); err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
 	if err := c.kcpClient.Delete(ctx, certificate); err != nil {
@@ -115,11 +107,8 @@ func (c *CertificateManager) Remove(ctx context.Context) error {
 	certSecret := &corev1.Secret{}
 	if err := c.kcpClient.Get(ctx, client.ObjectKey{
 		Name:      c.secretName,
-		Namespace: c.kyma.Namespace,
-	}, certificate); err != nil {
-		if k8serrors.IsNotFound(err) {
-			return nil
-		}
+		Namespace: c.istioNamespace,
+	}, certificate); err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
 	if err := c.kcpClient.Delete(ctx, certSecret); err != nil {
@@ -130,9 +119,7 @@ func (c *CertificateManager) Remove(ctx context.Context) error {
 
 func (c *CertificateManager) GetSecret(ctx context.Context) (*CertificateSecret, error) {
 	secret := &corev1.Secret{}
-	namespace := c.kyma.ObjectMeta.Namespace
-	name := c.secretName
-	err := c.kcpClient.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace},
+	err := c.kcpClient.Get(ctx, client.ObjectKey{Name: c.secretName, Namespace: c.istioNamespace},
 		secret)
 	if err != nil {
 		return nil, err
@@ -146,6 +133,7 @@ func (c *CertificateManager) GetSecret(ctx context.Context) (*CertificateSecret,
 	return &certSecret, nil
 }
 
+// TODO PKI Remove after SSA
 func (c *CertificateManager) exists(ctx context.Context) (bool, error) {
 	cert := v1.Certificate{}
 	err := c.kcpClient.Get(ctx, types.NamespacedName{
@@ -160,21 +148,22 @@ func (c *CertificateManager) exists(ctx context.Context) (bool, error) {
 	return true, nil
 }
 
-func (c *CertificateManager) createCertificate(
-	ctx context.Context, certNamespace string,
-	subjectAltName *SubjectAltName,
-) error {
-	// Duration Default 90 days
-	// RenewBefore default 2/3 of Duration
+func (c *CertificateManager) createCertificate(ctx context.Context, subjectAltName *SubjectAltName) error {
+	// Default Duration 90 days
+	// Default RenewBefore default 2/3 of Duration
 	issuer, err := c.getIssuer(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting issuer: %w", err)
 	}
 
 	cert := v1.Certificate{
+		TypeMeta: apimachinerymetav1.TypeMeta{
+			Kind:       v1.CertificateKind,
+			APIVersion: v1.SchemeGroupVersion.String(),
+		},
 		ObjectMeta: apimachinerymetav1.ObjectMeta{
 			Name:      c.certificateName,
-			Namespace: certNamespace,
+			Namespace: c.istioNamespace,
 		},
 		Spec: v1.CertificateSpec{
 			DNSNames:       subjectAltName.DNSNames,
@@ -201,7 +190,7 @@ func (c *CertificateManager) createCertificate(
 		},
 	}
 
-	return c.kcpClient.Create(ctx, &cert)
+	return c.kcpClient.Patch(ctx, &cert, client.Apply, client.ForceOwnership, skrChartFieldOwner)
 }
 
 func (c *CertificateManager) getSubjectAltNames() (*SubjectAltName, error) {
@@ -210,14 +199,13 @@ func (c *CertificateManager) getSubjectAltNames() (*SubjectAltName, error) {
 			return nil, fmt.Errorf("Domain-Annotation of KymaCR %s is empty", c.kyma.Name) //nolint:goerr113
 		}
 
-		resourceName := ResolveSKRChartResourceName(WebhookCfgAndDeploymentNameTpl,
-			client.ObjectKeyFromObject(c.kyma))
-		namespace := c.kyma.Namespace
+		// TODO PKI double check after rebasing
+		resourceName := ResolveSKRChartResourceName(WebhookCfgAndDeploymentNameTpl, client.ObjectKeyFromObject(c.kyma))
 		svcSuffix := []string{"svc.cluster.local", "svc"}
 		dnsNames := []string{domain}
 
 		for _, suffix := range svcSuffix {
-			dnsNames = append(dnsNames, fmt.Sprintf("%s.%s.%s", resourceName, namespace, suffix))
+			dnsNames = append(dnsNames, fmt.Sprintf("%s.%s.%s", resourceName, c.kyma.Namespace, suffix))
 		}
 
 		if c.watcherLocalTestingEnabled {
@@ -237,13 +225,13 @@ func (c *CertificateManager) getIssuer(ctx context.Context) (*v1.Issuer, error) 
 	issuerList := &v1.IssuerList{}
 	err := c.kcpClient.List(ctx, issuerList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(LabelSet),
-		Namespace:     c.kyma.Namespace,
+		Namespace:     c.istioNamespace,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("could not list cert-manager issuer %w", err)
 	}
 	if len(issuerList.Items) == 0 {
-		return nil, fmt.Errorf("no issuer found in Namespace `%s`", c.kyma.Namespace) //nolint:goerr113
+		return nil, fmt.Errorf("no issuer found in Namespace `%s`", c.istioNamespace) //nolint:goerr113
 	} else if len(issuerList.Items) > 1 {
 		logger.Info("Found more than one issuer, will use by default first one in list",
 			"issuer", issuerList.Items)

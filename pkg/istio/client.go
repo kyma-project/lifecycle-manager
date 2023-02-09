@@ -5,10 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/log"
-
-	corev1 "k8s.io/api/core/v1"
-
 	"github.com/go-logr/logr"
 	istioapi "istio.io/api/networking/v1beta1"
 	istioclientapi "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -37,20 +33,12 @@ var (
 type Config struct {
 	VirtualServiceName  string
 	WatcherLocalTesting bool
-	*CACertOptions
 }
 
-type CACertOptions struct {
-	WatcherRootCertificateName      string
-	WatcherRootCertificateNamespace string
-	IstioCertificateNamespace       string
-}
-
-func NewConfig(vsn string, options *CACertOptions, watcherLocalTesting bool) Config {
+func NewConfig(vsn string, watcherLocalTesting bool) Config {
 	return Config{
 		VirtualServiceName:  vsn,
 		WatcherLocalTesting: watcherLocalTesting,
-		CACertOptions:       options,
 	}
 }
 
@@ -393,60 +381,4 @@ func prepareIstioHTTPRouteForCR(obj *v1alpha1.Watcher) *istioapi.HTTPRoute {
 
 func destinationHost(serviceName, serviceNamespace string) string {
 	return fmt.Sprintf("%s.%s.svc.cluster.local", serviceName, serviceNamespace)
-}
-
-// SyncCertificateSecretToIstio fetches the CA Root Certificate, configured by KLM flags, and creates, updates
-// or deletes a copy of it in the Istio namespace. This is needed since Istio needs the Root CA Certificate secret
-// in its own namespace to use it for Gateways with strict mTLS connection.
-func (c *Client) SyncCertificateSecretToIstio(ctx context.Context, kcpClient client.Client) error {
-	certSecret := &corev1.Secret{}
-	err := kcpClient.Get(ctx,
-		client.ObjectKey{
-			Namespace: c.config.WatcherRootCertificateNamespace,
-			Name:      c.config.WatcherRootCertificateName,
-		}, certSecret)
-
-	if apierrors.IsNotFound(err) {
-		// if CA Certificate does not exist, check if it exists in istio Namespace, if yes remove it
-		c.logger.V(log.DebugLevel).Info("CA Root Certificate does not exist, " +
-			"will delete CA Root Certificate in istio namespace if exists")
-		if err := kcpClient.Get(ctx, client.ObjectKey{
-			Namespace: c.config.IstioCertificateNamespace,
-			Name:      c.config.WatcherRootCertificateName,
-		}, certSecret); apierrors.IsNotFound(err) {
-			return nil
-		} else if err != nil {
-			return err
-		}
-		if err := kcpClient.Delete(ctx, certSecret); err != nil {
-			return err
-		}
-
-		// CA Certificate has been removed in all namespaces, sync not needed
-		return nil
-	} else if err != nil {
-		return err
-	}
-
-	istioCertSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        certSecret.Name,
-			Namespace:   c.config.IstioCertificateNamespace,
-			Labels:      certSecret.Labels,
-			Annotations: certSecret.Annotations,
-		},
-
-		Data: certSecret.Data,
-	}
-	// CA Certificate exists, copy it to istio namespace
-
-	if err := kcpClient.Update(ctx, istioCertSecret); apierrors.IsNotFound(err) {
-		certSecret.ResourceVersion = ""
-		if err := kcpClient.Create(ctx, istioCertSecret); err != nil {
-			return err
-		}
-	} else if err != nil {
-		return err
-	}
-	return nil
 }

@@ -31,6 +31,7 @@ import (
 type SetupUpSetting struct {
 	ListenerAddr                 string
 	EnableDomainNameVerification bool
+	IstioNamespace               string
 }
 
 const (

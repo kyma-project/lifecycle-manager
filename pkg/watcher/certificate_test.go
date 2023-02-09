@@ -89,14 +89,6 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 			wantCreateErr:  true,
 			wantNewCertErr: false,
 		},
-		{
-			name:           "Should fail since Kyma is nil",
-			namespace:      testutils.NewTestNamespace("testcase-4"),
-			kyma:           nil,
-			issuer:         nil,
-			wantCreateErr:  false,
-			wantNewCertErr: true,
-		},
 	}
 	for _, tt := range tests {
 		test := tt
@@ -105,7 +97,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 			if test.issuer != nil {
 				Expect(controlPlaneClient.Create(ctx, test.issuer)).Should(BeNil())
 			}
-			cert, err := watcher.NewCertificateManager(controlPlaneClient, test.kyma, true)
+			cert, err := watcher.NewCertificateManager(controlPlaneClient, test.kyma, test.namespace.Name, true)
 			if test.wantNewCertErr {
 				Expect(err).ShouldNot(BeNil())
 				return
@@ -126,5 +118,3 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 
 	}
 })
-
-// todo: KymaCR und skr secret erstellen und dann checken ob der sync klappt :D

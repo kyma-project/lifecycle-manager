@@ -168,6 +168,7 @@ var _ = BeforeSuite(func() {
 		WebhookChartPath:       webhookChartPath,
 		SkrWebhookMemoryLimits: "200Mi",
 		SkrWebhookCPULimits:    "1",
+		IstioNamespace:         metav1.NamespaceDefault,
 	}
 	skrWebhookChartManager, err := watcher.NewSKRWebhookTemplateChartManager(restCfg, skrChartCfg)
 	Expect(err).ToNot(HaveOccurred())
@@ -184,7 +185,7 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager, controller.Options{}, controllers.SetupUpSetting{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
-	istioCfg := istio.NewConfig(virtualServiceName, &istio.CACertOptions{}, false)
+	istioCfg := istio.NewConfig(virtualServiceName, false)
 	err = (&controllers.WatcherReconciler{
 		Client:           k8sManager.GetClient(),
 		RestConfig:       k8sManager.GetConfig(),

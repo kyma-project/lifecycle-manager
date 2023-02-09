@@ -69,12 +69,6 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	logger := ctrlLog.FromContext(ctx).WithName(req.NamespacedName.String())
 	logger.Info("Reconciliation loop starting")
 
-	// sync CA Certificate to Istio Namespace
-	if err := r.IstioClient.SyncCertificateSecretToIstio(ctx, r.Client); err != nil {
-		logger.Error(err, "Could not synchronise CA Root Certificate to Istio Namespace")
-	}
-	logger.V(log.DebugLevel).Info("Synchronised CA Root Certificate to Istio Namespace")
-
 	watcherObj := &v1alpha1.Watcher{}
 	if err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, watcherObj); err != nil {
 		logger.V(log.DebugLevel).Info("Failed to get reconciliation object")

@@ -179,7 +179,7 @@ By checking the `Kyma CR` events, verify that the `SKRWebhookIsReady` ready cond
     ```log
     1.6711877286771238e+09    INFO    skr-webhook    Kyma UPDATE validated from webhook 
     1.6711879279507768e+09    INFO    skr-webhook    incoming admission review for: operator.kyma-project.io/v1alpha1, Kind=Kyma 
-    1.671187927950956e+09    INFO    skr-webhook    KCP    {"url": "http://host.k3d.internal:9080/v1/lifecycle-manager/event"} 
+    1.671187927950956e+09    INFO    skr-webhook    KCP    {"url": "http://host.k3d.internal:9443/v1/lifecycle-manager/event"} 
     1.6711879280545895e+09    INFO    skr-webhook    sent request to KCP successfully for resource default/kyma-sample 
     1.6711879280546305e+09    INFO    skr-webhook    kcp request succeeded
     ```

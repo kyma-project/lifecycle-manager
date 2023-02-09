@@ -13,7 +13,7 @@ apiVersion: cert-manager.io/v1
 kind: Issuer
 metadata:
   name: watcher-selfsigned-issuer
-  namespace: system
+  namespace: istio-system
   labels:
     operator.kyma-project.io/purpose: "klm-watcher-cert-manager"
     operator.kyma-project.io/managed-by: "lifecycle-manager"
