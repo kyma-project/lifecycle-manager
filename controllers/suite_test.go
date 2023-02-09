@@ -53,7 +53,7 @@ import (
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
-const listenerAddr = ":8082"
+const UseRandomPort = "0"
 
 var (
 	controlPlaneClient client.Client        //nolint:gochecknoglobals
@@ -91,7 +91,7 @@ var _ = BeforeSuite(func() {
 	modulePath := filepath.Join("..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
-	Expect(err).To(BeNil())
+	Expect(err).ToNot(HaveOccurred())
 	Expect(moduleFile).ToNot(BeEmpty())
 	Expect(yaml2.Unmarshal(moduleFile, &controlplaneCrd)).To(Succeed())
 
@@ -117,14 +117,9 @@ var _ = BeforeSuite(func() {
 
 	runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
 
-	metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
-	if !found {
-		metricsBindAddress = ":8080"
-	}
-
 	k8sManager, err = ctrl.NewManager(
 		cfg, ctrl.Options{
-			MetricsBindAddress: metricsBindAddress,
+			MetricsBindAddress: UseRandomPort,
 			Scheme:             scheme.Scheme,
 			NewCache:           controllers.NewCacheFunc(),
 		})
@@ -145,7 +140,7 @@ var _ = BeforeSuite(func() {
 		RemoteClientCache: remoteClientCache,
 		KcpRestConfig:     k8sManager.GetConfig(),
 	}).SetupWithManager(k8sManager, controller.Options{},
-		controllers.SetupUpSetting{ListenerAddr: listenerAddr})
+		controllers.SetupUpSetting{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {

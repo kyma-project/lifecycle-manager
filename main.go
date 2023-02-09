@@ -199,32 +199,32 @@ func setupKymaReconciler(mgr ctrl.Manager,
 	options controller.Options,
 ) {
 	kcpRestConfig := mgr.GetConfig()
-	var skrWebhookChartManager watcher.SKRWebhookChartManager
+	var skrWebhookManager watcher.SKRWebhookManager
 	if flagVar.enableKcpWatcher {
 		watcherChartDirInfo, err := os.Stat(flagVar.skrWatcherPath)
 		if err != nil || !watcherChartDirInfo.IsDir() {
 			setupLog.Error(err, "failed to read local skr chart")
 		}
-		skrChartConfig := &watcher.SkrChartManagerConfig{
-			WebhookChartPath:           flagVar.skrWatcherPath,
-			SkrWebhookMemoryLimits:     flagVar.skrWebhookMemoryLimits,
+		skrWebhookConfig := &watcher.SkrWebhookManagerConfig{
+			SKRWatcherPath:             flagVar.skrWatcherPath,
 			SkrWebhookCPULimits:        flagVar.skrWebhookCPULimits,
+			SkrWebhookMemoryLimits:     flagVar.skrWebhookMemoryLimits,
 			WatcherLocalTestingEnabled: flagVar.enableWatcherLocalTesting,
 			GatewayHTTPPortMapping:     flagVar.listenerHTTPPortLocalMapping,
 			IstioNamespace:             flagVar.istioNamespace,
 		}
-		skrWebhookChartManager, err = watcher.NewSKRWebhookTemplateChartManager(kcpRestConfig, skrChartConfig)
+		skrWebhookManager, err = watcher.NewSKRWebhookManifestManager(kcpRestConfig, skrWebhookConfig)
 		if err != nil {
 			setupLog.Error(err, "failed to create webhook chart manager")
 		}
 	}
 
 	if err := (&controllers.KymaReconciler{
-		Client:                 mgr.GetClient(),
-		EventRecorder:          mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
-		KcpRestConfig:          kcpRestConfig,
-		RemoteClientCache:      remoteClientCache,
-		SKRWebhookChartManager: skrWebhookChartManager,
+		Client:            mgr.GetClient(),
+		EventRecorder:     mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		KcpRestConfig:     kcpRestConfig,
+		RemoteClientCache: remoteClientCache,
+		SKRWebhookManager: skrWebhookManager,
 		RequeueIntervals: controllers.RequeueIntervals{
 			Success: flagVar.kymaRequeueSuccessInterval,
 		},
@@ -261,8 +261,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, fla
 			Success: flagVar.kymaRequeueSuccessInterval,
 		},
 	}).SetupWithManager(mgr, options, istioConfig); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller",
-			controllers.WatcherControllerName)
+		setupLog.Error(err, "unable to create controller", "controller", controllers.WatcherControllerName)
 		os.Exit(1)
 	}
 }

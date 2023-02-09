@@ -29,6 +29,8 @@ const (
 	// PurposeLabel defines the purpose of the resource, i.e. Secrets which will be used to certificate management.
 	PurposeLabel = OperatorPrefix + Separator + "purpose"
 	CertManager  = "klm-watcher-cert-manager"
+	// SkipReconcileLabel indicates this specific resource will be skipped during reconciliation.
+	SkipReconcileLabel = OperatorPrefix + Separator + "skip-reconciliation"
 )
 
 func ModuleTemplatesByLabel(module *Module) client.MatchingLabels {

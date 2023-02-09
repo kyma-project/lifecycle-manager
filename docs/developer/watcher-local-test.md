@@ -9,8 +9,8 @@ This setup is deployed with the following security features enabled:
 - Strict mTLS connection between KCP and SKR cluster
 - SAN Pinning (SAN of client TLS certificate needs to match DNS annotation of corresponding Kyma CR)
 
+### KCP cluster setup
 
-### Create KCP and SKR clusters
 1. Create a local control-plane (KCP) cluster:
     ```shell
     k3d cluster create kcp-local --port 9443:443@loadbalancer \
@@ -19,13 +19,13 @@ This setup is deployed with the following security features enabled:
     ```
 
 2. Open `/etc/hosts` file on your local system:
-    ```shell
-    sudo nano /etc/hosts
-   ```
+```shell
+sudo nano /etc/hosts
+```
    Add entry for your local k3d registry created in the previous steps
-   ```
-    127.0.0.1       k3d-registry.localhost
-   ```
+```
+127.0.0.1 k3d-registry.localhost
+```
 
 3. Install other pre-requisites required by the lifecycle-manager
    1. `Istio` CRDs using `istioctl`
@@ -63,13 +63,15 @@ This setup is deployed with the following security features enabled:
    For this setup, we will create a module template from the [template-operator](https://github.com/kyma-project/template-operator) repository as reference.
    Adjust your path to your template-operator local directory or any other reference module operator accordingly.
 
-    ```shell
-   kyma alpha create module -p ../template-operator --version 1.2.3 -w --registry k3d-registry.localhost:5111 --insecure
-   ```
-6. The previous step will create a `template.yaml` file in the root directory, which is the `module-template`, apply it to the cluster
-    ```
-    kubectl apply -f template.yaml
-    ```
+```shell
+kyma alpha create module -p ../template-operator --version 1.2.3 -w \
+--registry k3d-registry.localhost:5111 --insecure
+```
+6. The previous step will create a `template.yaml` file in the root directory, which is the `module-template`, apply it
+   to the cluster
+```shell
+kubectl apply -f template.yaml
+```
 
 
 
@@ -118,7 +120,6 @@ k3d cluster create skr-local
    <details>
       <summary>Hint: Running KLM on local machine and not in-cluster</summary>
       If you are running the KLM on your local machine and not as a deployment in a cluster, please use the following to create a Kyma CR and Secret:
-
    ```shell  
     cat << EOF | kubectl apply -f -
     ---
@@ -151,7 +152,9 @@ k3d cluster create skr-local
    </details>
 
 ### Watcher installation verification
+
 By checking the `Kyma CR` events, verify that the `SKRWebhookIsReady` ready condition is set to `True`
+
 ```yaml
     Status:                                              
         Conditions:                                        
@@ -163,6 +166,7 @@ By checking the `Kyma CR` events, verify that the `SKRWebhookIsReady` ready cond
 ```
 
 ### Watcher event trigger
+
 1. Switch the context for using SKR cluster
     ```shell
     kubectl config use-context k3d-skr-local
@@ -175,6 +179,7 @@ By checking the `Kyma CR` events, verify that the `SKRWebhookIsReady` ready cond
     ```
    
 ### Verify logs
+
 1. By watching the `skr-webhook` deployment's logs, verify that the KCP request is sent successfully
     ```log
     1.6711877286771238e+09    INFO    skr-webhook    Kyma UPDATE validated from webhook 
@@ -194,8 +199,13 @@ By checking the `Kyma CR` events, verify that the `SKRWebhookIsReady` ready cond
 ### Full blown setup
 For a full-blown setup please refer to the [comprehensive test setup documentation](creating-test-environment.md) and complete the missing steps, e.g. deploying `module-manager`.
 
+For a full-blown setup please refer to the [comprehensive test setup documentation](creating-test-environment.md) and
+complete the missing steps, e.g. deploying `module-manager`.
+
 ### Cleanup
+
 Run the following command to remove the local testing clusters
+
 ```shell
 k3d cluster rm kcp-local skr-local
 ```

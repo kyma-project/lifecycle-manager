@@ -129,6 +129,7 @@ lt-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified
 local-deploy-with-watcher: install manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/watcher_local_test_secured | kubectl apply -f -
+	# TODO PKI remove unsecrued and rename secured without secured
 
 
 .PHONY: undeploy
@@ -148,8 +149,8 @@ GOLANG_CI_LINT = $(LOCALBIN)/golangci-lint
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v4.5.6
-CONTROLLER_TOOLS_VERSION ?= v0.10.0
-GOLANG_CI_LINT_VERSION ?= v1.50.1
+CONTROLLER_TOOLS_VERSION ?= v0.11.2
+GOLANG_CI_LINT_VERSION ?= v1.51.1
 
 .PHONY: kustomize
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.

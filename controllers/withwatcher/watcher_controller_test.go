@@ -40,10 +40,10 @@ func gatewayUpdated() func(customIstioClient *istio.Client) error {
 		if err != nil {
 			return err
 		}
-		Expect(len(gateways)).To(Equal(1))
+		Expect(gateways).To(HaveLen(1))
 		gateway := gateways[0]
-		Expect(len(gateway.Spec.Servers)).To(Equal(1))
-		Expect(len(gateway.Spec.Servers[0].Hosts)).To(Equal(1))
+		Expect(gateway.Spec.Servers).To(HaveLen(1))
+		Expect(gateway.Spec.Servers[0].Hosts).To(HaveLen(1))
 		gateway.Spec.Servers[0].Hosts[0] = "listener.updated.kyma.cloud.sap"
 		return controlPlaneClient.Update(suiteCtx, gateway)
 	}
@@ -63,7 +63,7 @@ func expectVirtualServiceConfiguredCorrectly() func(customIstioClient *istio.Cli
 			if err != nil {
 				return err
 			}
-			Expect(len(gateways)).To(Equal(1))
+			Expect(gateways).To(HaveLen(1))
 			if err := isVirtualServiceHostsConfigured(suiteCtx, customIstioClient, gateways[0]); err != nil {
 				return err
 			}

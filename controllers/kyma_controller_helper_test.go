@@ -113,6 +113,22 @@ func UpdateRemoteModule(ctx context.Context,
 	}
 }
 
+func UpdateKymaLabel(ctx context.Context,
+	client client.Client,
+	kyma *v1alpha1.Kyma,
+	labelKey,
+	labelValue string,
+) func() error {
+	return func() error {
+		kyma, err := GetKyma(ctx, client, kyma.Name, kyma.Namespace)
+		if err != nil {
+			return err
+		}
+		kyma.Labels[labelKey] = labelValue
+		return client.Update(ctx, kyma)
+	}
+}
+
 func ModuleNotExist(ctx context.Context, kyma *v1alpha1.Kyma, module v1alpha1.Module) func() error {
 	return func() error {
 		kyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
@@ -127,20 +143,18 @@ func ModuleNotExist(ctx context.Context, kyma *v1alpha1.Kyma, module v1alpha1.Mo
 	}
 }
 
-func SKRModuleExistWithOverwrites(kyma *v1alpha1.Kyma, module v1alpha1.Module) func() string {
-	return func() string {
-		kyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
-		Expect(err).ToNot(HaveOccurred())
-		module, err := getModule(kyma, module)
-		Expect(err).ToNot(HaveOccurred())
-		manifestSpec := module.Spec
-		body, err := json.Marshal(manifestSpec.Resource.Object["spec"])
-		Expect(err).ToNot(HaveOccurred())
-		skrModuleSpec := sampleCRDv1alpha1.SKRModuleSpec{}
-		err = json.Unmarshal(body, &skrModuleSpec)
-		Expect(err).ToNot(HaveOccurred())
-		return skrModuleSpec.InitKey
-	}
+func SKRModuleExistWithOverwrites(kyma *v1alpha1.Kyma, module v1alpha1.Module) string {
+	kyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+	Expect(err).ToNot(HaveOccurred())
+	moduleInCluster, err := getModule(kyma, module)
+	Expect(err).ToNot(HaveOccurred())
+	manifestSpec := moduleInCluster.Spec
+	body, err := json.Marshal(manifestSpec.Resource.Object["spec"])
+	Expect(err).ToNot(HaveOccurred())
+	skrModuleSpec := sampleCRDv1alpha1.SKRModuleSpec{}
+	err = json.Unmarshal(body, &skrModuleSpec)
+	Expect(err).ToNot(HaveOccurred())
+	return skrModuleSpec.InitKey
 }
 
 func getModule(kyma *v1alpha1.Kyma, module v1alpha1.Module) (*manifestV1alpha1.Manifest, error) {
