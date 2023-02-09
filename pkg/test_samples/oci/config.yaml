@@ -1,0 +1,7 @@
+# Samples Config
+configs:
+#  TODO: Add optional manifest installation chart flags and value overrides
+#  The format below should be followed
+#  - name: nginx-ingress
+#    clientConfig: "CreateNamespace=true,Namespace=jakobs-new"
+#    overrides: "x=4"

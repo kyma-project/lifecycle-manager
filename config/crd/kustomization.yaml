@@ -6,6 +6,7 @@ kind: Component
 # It should be run by config/default
 resources:
   - bases/operator.kyma-project.io_kymas.yaml
+  - bases/operator.kyma-project.io_manifests.yaml
   - bases/operator.kyma-project.io_moduletemplates.yaml
   - bases/operator.kyma-project.io_watchers.yaml
 #+kubebuilder:scaffold:crdkustomizeresource

@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	declarative "github.com/kyma-project/module-manager/pkg/declarative/v2"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	. "github.com/onsi/ginkgo/v2"
@@ -20,7 +20,6 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	sampleCRDv1alpha1 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1alpha1"
-	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 )
 
 func RegisterDefaultLifecycleForKyma(kyma *v1alpha1.Kyma) {
@@ -157,10 +156,10 @@ func SKRModuleExistWithOverwrites(kyma *v1alpha1.Kyma, module v1alpha1.Module) s
 	return skrModuleSpec.InitKey
 }
 
-func getModule(kyma *v1alpha1.Kyma, module v1alpha1.Module) (*manifestV1alpha1.Manifest, error) {
+func getModule(kyma *v1alpha1.Kyma, module v1alpha1.Module) (*v1alpha1.Manifest, error) {
 	for _, moduleStatus := range kyma.Status.Modules {
 		if moduleStatus.Name == module.Name {
-			component := &manifestV1alpha1.Manifest{}
+			component := &v1alpha1.Manifest{}
 			err := controlPlaneClient.Get(ctx, client.ObjectKey{
 				Namespace: moduleStatus.Manifest.GetNamespace(),
 				Name:      moduleStatus.Manifest.GetName(),
@@ -172,7 +171,7 @@ func getModule(kyma *v1alpha1.Kyma, module v1alpha1.Module) (*manifestV1alpha1.M
 		}
 	}
 	return nil, fmt.Errorf("no module status mapping exists for module %s: %w", module.Name,
-		k8serrors.NewNotFound(manifestV1alpha1.GroupVersionResource.GroupResource(), module.Name))
+		k8serrors.NewNotFound(v1alpha1.GroupVersionResource.GroupResource(), module.Name))
 }
 
 func GetModuleTemplate(name string) (*v1alpha1.ModuleTemplate, error) {

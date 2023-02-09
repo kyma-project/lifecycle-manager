@@ -11,6 +11,46 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /mutate-operator-kyma-project-io-v1beta1-manifest
+  failurePolicy: Fail
+  name: v1beta1.mmanifest.kb.io
+  rules:
+  - apiGroups:
+    - operator.kyma-project.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - manifests
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-operator-kyma-project-io-v1alpha1-manifest
+  failurePolicy: Fail
+  name: v1alpha1.mmanifest.kb.io
+  rules:
+  - apiGroups:
+    - operator.kyma-project.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - manifests
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /mutate-operator-kyma-project-io-v1alpha1-moduletemplate
   failurePolicy: Fail
   name: mmoduletemplate.kb.io
@@ -32,6 +72,46 @@ metadata:
   creationTimestamp: null
   name: validating-webhook-configuration
 webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-operator-kyma-project-io-v1beta1-manifest
+  failurePolicy: Fail
+  name: v1beta1.vmanifest.kb.io
+  rules:
+  - apiGroups:
+    - operator.kyma-project.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - manifests
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-operator-kyma-project-io-v1alpha1-manifest
+  failurePolicy: Fail
+  name: v1alpha1.vmanifest.kb.io
+  rules:
+  - apiGroups:
+    - operator.kyma-project.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - manifests
+  sideEffects: None
 - admissionReviewVersions:
   - v1
   clientConfig:

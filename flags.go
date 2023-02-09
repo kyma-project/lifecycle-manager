@@ -8,18 +8,19 @@ import (
 )
 
 const (
-	defaultKymaRequeueSuccessInterval    = 20 * time.Second
-	defaultWatcherRequeueSuccessInterval = 20 * time.Second
-	defaultClientQPS                     = 150
-	defaultClientBurst                   = 150
-	defaultPprofServerTimeout            = 90 * time.Second
-	rateLimiterBurstDefault              = 200
-	rateLimiterFrequencyDefault          = 30
-	failureBaseDelayDefault              = 100 * time.Millisecond
-	failureMaxDelayDefault               = 1000 * time.Second
-	defaultCacheSyncTimeout              = 2 * time.Minute
-	defaultListenerPort                  = 9080
-	defaultLogLevel                      = log.WarnLevel
+	defaultKymaRequeueSuccessInterval     = 20 * time.Second
+	defaultManifestRequeueSuccessInterval = 20 * time.Second
+	defaultWatcherRequeueSuccessInterval  = 20 * time.Second
+	defaultClientQPS                      = 150
+	defaultClientBurst                    = 150
+	defaultPprofServerTimeout             = 90 * time.Second
+	rateLimiterBurstDefault               = 200
+	rateLimiterFrequencyDefault           = 30
+	failureBaseDelayDefault               = 100 * time.Millisecond
+	failureMaxDelayDefault                = 1000 * time.Second
+	defaultCacheSyncTimeout               = 2 * time.Minute
+	defaultListenerPort                   = 9080
+	defaultLogLevel                       = log.WarnLevel
 )
 
 //nolint:funlen
@@ -29,9 +30,11 @@ func defineFlagVar() *FlagVar {
 		"The address the metric endpoint binds to.")
 	flag.StringVar(&flagVar.probeAddr, "health-probe-bind-address", ":8081",
 		"The address the probe endpoint binds to.")
-	flag.StringVar(&flagVar.listenerAddr, "skr-listener-bind-address", ":8082",
+	flag.StringVar(&flagVar.kymaListenerAddr, "kyma-skr-listener-bind-address", ":8082",
 		"The address the skr listener endpoint binds to.")
-	flag.StringVar(&flagVar.pprofAddr, "pprof-bind-address", ":8083",
+	flag.StringVar(&flagVar.manifestListenerAddr, "manifest-skr-listener-bind-address", ":8083",
+		"The address the skr listener endpoint binds to.")
+	flag.StringVar(&flagVar.pprofAddr, "pprof-bind-address", ":8084",
 		"The address the pprof endpoint binds to.")
 	flag.IntVar(&flagVar.maxConcurrentReconciles, "max-concurrent-reconciles", 1,
 		"The maximum number of concurrent Reconciles which can be run.")
@@ -40,6 +43,9 @@ func defineFlagVar() *FlagVar {
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.DurationVar(&flagVar.kymaRequeueSuccessInterval, "kyma-requeue-success-interval",
 		defaultKymaRequeueSuccessInterval, "determines the duration after which an already successfully "+
+			"reconciled Kyma is enqueued for checking if it's still in a consistent state.")
+	flag.DurationVar(&flagVar.manifestRequeueSuccessInterval, "manifest-requeue-success-interval",
+		defaultManifestRequeueSuccessInterval, "determines the duration after which an already successfully "+
 			"reconciled Kyma is enqueued for checking if it's still in a consistent state.")
 	flag.DurationVar(&flagVar.watcherRequeueSuccessInterval, "watcher-requeue-success-interval",
 		defaultWatcherRequeueSuccessInterval, "determines the duration after which an already successfully "+
@@ -87,6 +93,10 @@ func defineFlagVar() *FlagVar {
 		&flagVar.logLevel, "log-level", defaultLogLevel,
 		"indicates the current log-level, enter negative values to increase verbosity (e.g. 9)",
 	)
+	flag.BoolVar(
+		&flagVar.insecureRegistry, "insecure-registry", false,
+		"indicates if insecure (http) response is expected from image registry",
+	)
 	return flagVar
 }
 
@@ -94,9 +104,10 @@ type FlagVar struct {
 	metricsAddr                                                     string
 	enableLeaderElection                                            bool
 	probeAddr                                                       string
-	listenerAddr                                                    string
+	kymaListenerAddr, manifestListenerAddr                          string
 	maxConcurrentReconciles                                         int
 	kymaRequeueSuccessInterval                                      time.Duration
+	manifestRequeueSuccessInterval                                  time.Duration
 	watcherRequeueSuccessInterval                                   time.Duration
 	moduleVerificationKeyFilePath, moduleVerificationSignatureNames string
 	clientQPS                                                       float64
@@ -121,4 +132,5 @@ type FlagVar struct {
 	cacheSyncTimeout                       time.Duration
 	enableDomainNameVerification           bool
 	logLevel                               int
+	insecureRegistry                       bool
 }

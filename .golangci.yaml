@@ -19,11 +19,14 @@ linters:
     - rowserrcheck
     - sqlclosecheck
     - structcheck
+    - unused # TODO Remove once linter is fixed
+    - musttag # TODO Remove once linter is fixed
     - wastedassign
     - ifshort
     - deadcode
     - nosnakecase
     - varcheck
+    - ireturn
 linters-settings:
   gci:
     sections:

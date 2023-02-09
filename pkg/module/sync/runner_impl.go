@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"github.com/kyma-project/module-manager/pkg/types"
+	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/types"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -15,11 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
-
-	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 )
 
 func New(clnt client.Client) *RunnerImpl {
@@ -145,7 +142,7 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Module
 
 func stateFromManifest(obj client.Object) v1alpha1.State {
 	switch manifest := obj.(type) {
-	case *manifestV1alpha1.Manifest:
+	case *v1alpha1.Manifest:
 		return v1alpha1.State(manifest.Status.State)
 	default:
 		return v1alpha1.StateError

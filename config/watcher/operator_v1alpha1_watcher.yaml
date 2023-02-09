@@ -1,7 +1,7 @@
 apiVersion: operator.kyma-project.io/v1alpha1
 kind: Watcher
 metadata:
-  name: watcher
+  name: kyma-watcher
   namespace: system
   labels:
     "operator.kyma-project.io/managed-by": "lifecycle-manager"
@@ -18,7 +18,26 @@ spec:
       matchLabels:
         "operator.kyma-project.io/watcher-gateway": "default"
 ---
-
+apiVersion: operator.kyma-project.io/v1alpha1
+kind: Watcher
+metadata:
+  name: manifest-watcher
+  namespace: system
+  labels:
+    operator.kyma-project.io/managed-by: "lifecycle-manager"
+spec:
+  labelsToWatch:
+    operator.kyma-project.io/watched-by: "module-manager"
+  field: "status"
+  serviceInfo:
+    name: event-service
+    port: 8083
+    namespace: system
+  gateway:
+    selector:
+      matchLabels:
+        "operator.kyma-project.io/watcher-gateway": "default"
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -28,6 +47,9 @@ spec:
   selector:
     app.kubernetes.io/name: lifecycle-manager
   ports:
+    - protocol: TCP
+      port: 8083
+      targetPort: 8083
     - protocol: TCP
       port: 8082
       targetPort: 8082

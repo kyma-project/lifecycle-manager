@@ -24,6 +24,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api"
+	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
@@ -50,9 +53,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
-	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -68,9 +69,8 @@ var (
 //nolint:gochecknoinits
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(api.AddToScheme(scheme))
 	utilruntime.Must(v1extensions.AddToScheme(scheme))
-	utilruntime.Must(moduleManagerV1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -131,14 +131,24 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 	remoteClientCache := remote.NewClientCache()
 
 	setupKymaReconciler(mgr, remoteClientCache, flagVar, options)
+	setupManifestReconciler(mgr, flagVar, options)
 
 	if flagVar.enableKcpWatcher {
 		setupKcpWatcherReconciler(mgr, options, flagVar)
 	}
 	if flagVar.enableWebhooks {
-		if err := (&operatorv1alpha1.ModuleTemplate{}).
+		if err := (&v1alpha1.ModuleTemplate{}).
 			SetupWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
+			os.Exit(1)
+		}
+		if err = (&v1alpha1.Manifest{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "Manifest")
+			os.Exit(1)
+		}
+
+		if err = (&v1beta1.Manifest{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "Manifest")
 			os.Exit(1)
 		}
 	}
@@ -216,7 +226,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 
 	if err := (&controllers.KymaReconciler{
 		Client:            mgr.GetClient(),
-		EventRecorder:     mgr.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		EventRecorder:     mgr.GetEventRecorderFor(v1alpha1.OperatorName),
 		KcpRestConfig:     kcpRestConfig,
 		RemoteClientCache: remoteClientCache,
 		SKRWebhookManager: skrWebhookManager,
@@ -228,10 +238,25 @@ func setupKymaReconciler(mgr ctrl.Manager,
 			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
 		},
 	}).SetupWithManager(mgr, options, controllers.SetupUpSetting{
-		ListenerAddr:                 flagVar.listenerAddr,
+		ListenerAddr:                 flagVar.kymaListenerAddr,
 		EnableDomainNameVerification: flagVar.enableDomainNameVerification,
 	}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
+		os.Exit(1)
+	}
+}
+
+func setupManifestReconciler(mgr ctrl.Manager,
+	flagVar *FlagVar,
+	options controller.Options,
+) {
+	if err := controllers.SetupWithManager(
+		mgr, options, flagVar.insecureRegistry, flagVar.manifestRequeueSuccessInterval, controllers.SetupUpSetting{
+			ListenerAddr:                 flagVar.manifestListenerAddr,
+			EnableDomainNameVerification: flagVar.enableDomainNameVerification,
+		},
+	); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(1)
 	}
 }

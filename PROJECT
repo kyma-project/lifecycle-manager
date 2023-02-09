@@ -35,4 +35,31 @@ resources:
   kind: Watcher
   path: github.com/kyma-project/lifecycle-manager/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: kyma-project.io
+  group: operator
+  kind: Manifest
+  path: github.com/kyma-project/module-manager/api/v1alpha1
+  version: v1alpha1
+  webhooks:
+    conversion: true
+    defaulting: true
+    validation: true
+    webhookVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: kyma-project.io
+  group: operator
+  kind: Manifest
+  path: github.com/kyma-project/module-manager/api/v1beta1
+  version: v1beta1
+  webhooks:
+    conversion: true
+    defaulting: true
+    validation: true
+    webhookVersion: v1
 version: "3"

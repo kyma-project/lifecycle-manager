@@ -8,11 +8,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/channel"
-	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
-	"github.com/kyma-project/module-manager/pkg/types"
-
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"github.com/kyma-project/lifecycle-manager/pkg/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
@@ -102,8 +99,8 @@ func NewManifestFromTemplate(
 	module v1alpha1.Module,
 	template *v1alpha1.ModuleTemplate,
 	verification signature.Verification,
-) (*manifestV1alpha1.Manifest, error) {
-	manifest := &manifestV1alpha1.Manifest{}
+) (*v1alpha1.Manifest, error) {
+	manifest := &v1alpha1.Manifest{}
 	manifest.Spec.Remote = ConvertTargetToRemote(template.Spec.Target)
 
 	switch module.CustomResourcePolicy {
@@ -139,7 +136,7 @@ func NewManifestFromTemplate(
 }
 
 func translateLayersAndMergeIntoManifest(
-	manifest *manifestV1alpha1.Manifest, layers img.Layers,
+	manifest *v1alpha1.Manifest, layers img.Layers,
 ) error {
 	for _, layer := range layers {
 		if err := insertLayerIntoManifest(manifest, layer); err != nil {
@@ -150,7 +147,7 @@ func translateLayersAndMergeIntoManifest(
 }
 
 func insertLayerIntoManifest(
-	manifest *manifestV1alpha1.Manifest, layer img.Layer,
+	manifest *v1alpha1.Manifest, layer img.Layer,
 ) error {
 	switch layer.LayerName {
 	case img.CRDsLayer:
@@ -160,7 +157,7 @@ func insertLayerIntoManifest(
 		if !ok {
 			return fmt.Errorf("%w: not an OCIImage", ErrDefaultConfigParsing)
 		}
-		manifest.Spec.Config = types.ImageSpec{
+		manifest.Spec.Config = v1alpha1.ImageSpec{
 			Repo:               ociImage.Repo,
 			Name:               ociImage.Name,
 			Ref:                ociImage.Ref,
@@ -173,7 +170,7 @@ func insertLayerIntoManifest(
 			return fmt.Errorf("error while merging the generic install representation: %w", err)
 		}
 		manifest.Spec.Installs = append(
-			manifest.Spec.Installs, manifestV1alpha1.InstallInfo{
+			manifest.Spec.Installs, v1alpha1.InstallInfo{
 				Source: runtime.RawExtension{Raw: installRaw},
 				Name:   string(layer.LayerName),
 			})

@@ -1,0 +1,7 @@
+apiVersion: operator.kyma-project.io/v1alpha1
+kind: SampleCRD
+metadata:
+  name: sample-crd-from-manifest
+  namespace: default
+spec:
+  randomkey: samplevalue
