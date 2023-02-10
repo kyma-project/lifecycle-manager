@@ -65,7 +65,7 @@ type KymaReconciler struct {
 	RequeueIntervals
 	signature.VerificationSettings
 	SKRWebhookManager watcher.SKRWebhookManager
-	KcpRestConfig          *rest.Config
+	KcpRestConfig     *rest.Config
 	RemoteClientCache *remote.ClientCache
 }
 
@@ -251,6 +251,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 		if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
 			kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
 			// TODO Move installation to own go-routine to not block installation
+			// + consider introducing own condition for CertificateReady Status
 			// https://github.com/kyma-project/lifecycle-manager/issues/376
 			if err != nil && !errors.Is(err, &watcher.CertificateNotReadyError{}) {
 				return r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError,

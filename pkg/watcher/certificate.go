@@ -9,9 +9,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	"k8s.io/apimachinery/pkg/types"
 
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	apimachinerymetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,8 +22,7 @@ const (
 	// private key will only be generated if one does not already exist in the target `spec.secretName`.
 	privateKeyRotationPolicy = "Never"
 
-	DomainAnnotation  = "skr-domain"
-	CertificateSuffix = "-watcher-certificate"
+	DomainAnnotation = "skr-domain"
 
 	caCertKey        = "ca.crt"
 	tlsCertKey       = "tls.crt"
@@ -66,15 +64,11 @@ func NewCertificateManager(kcpClient client.Client, kyma *v1alpha1.Kyma,
 	return &CertificateManager{
 		kcpClient:                  kcpClient,
 		kyma:                       kyma,
-		certificateName:            fmt.Sprintf("%s%s", kyma.Name, CertificateSuffix),
-		secretName:                 CreateSecretName(client.ObjectKeyFromObject(kyma)),
+		certificateName:            ResolveTLSCertName(kyma.Name),
+		secretName:                 ResolveTLSCertName(kyma.Name),
 		istioNamespace:             istioNamespace,
 		watcherLocalTestingEnabled: localTesting,
 	}, nil
-}
-
-func CreateSecretName(kymaObjKey client.ObjectKey) string {
-	return fmt.Sprintf("%s%s", kymaObjKey.Name, CertificateSuffix)
 }
 
 // Create creates a cert-manager Certificate with a sufficient set of Subject-Alternative-Names.
@@ -94,7 +88,7 @@ func (c *CertificateManager) Create(ctx context.Context) error {
 
 // Remove removes the certificate including its certificate secret.
 func (c *CertificateManager) Remove(ctx context.Context) error {
-	certificate := &v1.Certificate{}
+	certificate := &certmanagerv1.Certificate{}
 	if err := c.kcpClient.Get(ctx, client.ObjectKey{
 		Name:      c.certificateName,
 		Namespace: c.istioNamespace,
@@ -108,7 +102,7 @@ func (c *CertificateManager) Remove(ctx context.Context) error {
 	if err := c.kcpClient.Get(ctx, client.ObjectKey{
 		Name:      c.secretName,
 		Namespace: c.istioNamespace,
-	}, certificate); err != nil && !k8serrors.IsNotFound(err) {
+	}, certSecret); err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
 	if err := c.kcpClient.Delete(ctx, certSecret); err != nil {
@@ -133,21 +127,6 @@ func (c *CertificateManager) GetSecret(ctx context.Context) (*CertificateSecret,
 	return &certSecret, nil
 }
 
-// TODO PKI Remove after SSA
-func (c *CertificateManager) exists(ctx context.Context) (bool, error) {
-	cert := v1.Certificate{}
-	err := c.kcpClient.Get(ctx, types.NamespacedName{
-		Namespace: c.kyma.Namespace,
-		Name:      c.certificateName,
-	}, &cert)
-	if k8serrors.IsNotFound(err) {
-		return false, nil
-	} else if err != nil {
-		return false, fmt.Errorf("could not fetch certificate from local Cluster: %w", err)
-	}
-	return true, nil
-}
-
 func (c *CertificateManager) createCertificate(ctx context.Context, subjectAltName *SubjectAltName) error {
 	// Default Duration 90 days
 	// Default RenewBefore default 2/3 of Duration
@@ -156,36 +135,36 @@ func (c *CertificateManager) createCertificate(ctx context.Context, subjectAltNa
 		return fmt.Errorf("error getting issuer: %w", err)
 	}
 
-	cert := v1.Certificate{
+	cert := certmanagerv1.Certificate{
 		TypeMeta: apimachinerymetav1.TypeMeta{
-			Kind:       v1.CertificateKind,
-			APIVersion: v1.SchemeGroupVersion.String(),
+			Kind:       certmanagerv1.CertificateKind,
+			APIVersion: certmanagerv1.SchemeGroupVersion.String(),
 		},
 		ObjectMeta: apimachinerymetav1.ObjectMeta{
 			Name:      c.certificateName,
 			Namespace: c.istioNamespace,
 		},
-		Spec: v1.CertificateSpec{
+		Spec: certmanagerv1.CertificateSpec{
 			DNSNames:       subjectAltName.DNSNames,
 			IPAddresses:    subjectAltName.IPAddresses,
 			URIs:           subjectAltName.URIs,
 			EmailAddresses: subjectAltName.EmailAddresses,
-			SecretName:     c.secretName, // Name of the secret which stored certificate
-			SecretTemplate: &v1.CertificateSecretTemplate{
+			SecretName:     c.secretName,
+			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
 				Labels: LabelSet,
 			},
 			IssuerRef: metav1.ObjectReference{
 				Name: issuer.Name,
 			},
 			IsCA: false,
-			Usages: []v1.KeyUsage{
-				v1.UsageDigitalSignature,
-				v1.UsageKeyEncipherment,
+			Usages: []certmanagerv1.KeyUsage{
+				certmanagerv1.UsageDigitalSignature,
+				certmanagerv1.UsageKeyEncipherment,
 			},
-			PrivateKey: &v1.CertificatePrivateKey{
+			PrivateKey: &certmanagerv1.CertificatePrivateKey{
 				RotationPolicy: privateKeyRotationPolicy,
-				Encoding:       v1.PKCS1,
-				Algorithm:      v1.RSAKeyAlgorithm,
+				Encoding:       certmanagerv1.PKCS1,
+				Algorithm:      certmanagerv1.RSAKeyAlgorithm,
 			},
 		},
 	}
@@ -199,8 +178,7 @@ func (c *CertificateManager) getSubjectAltNames() (*SubjectAltName, error) {
 			return nil, fmt.Errorf("Domain-Annotation of KymaCR %s is empty", c.kyma.Name) //nolint:goerr113
 		}
 
-		// TODO PKI double check after rebasing
-		resourceName := ResolveSKRChartResourceName(WebhookCfgAndDeploymentNameTpl, client.ObjectKeyFromObject(c.kyma))
+		resourceName := "" // TODO PKI resourceName, something with ...-webhook, should maybe be the service name
 		svcSuffix := []string{"svc.cluster.local", "svc"}
 		dnsNames := []string{domain}
 
@@ -220,9 +198,9 @@ func (c *CertificateManager) getSubjectAltNames() (*SubjectAltName, error) {
 		c.kyma.Name, DomainAnnotation)
 }
 
-func (c *CertificateManager) getIssuer(ctx context.Context) (*v1.Issuer, error) {
+func (c *CertificateManager) getIssuer(ctx context.Context) (*certmanagerv1.Issuer, error) {
 	logger := log.FromContext(ctx)
-	issuerList := &v1.IssuerList{}
+	issuerList := &certmanagerv1.IssuerList{}
 	err := c.kcpClient.List(ctx, issuerList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(LabelSet),
 		Namespace:     c.istioNamespace,

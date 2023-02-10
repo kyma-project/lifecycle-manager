@@ -126,8 +126,6 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1
 		By("Ensuring watcher CR is properly deleted")
 		Eventually(isWatcherCrDeletionFinished(client.ObjectKeyFromObject(watcher)), Timeout, Interval).
 			Should(BeTrue())
-		By("Deleting TLS Secret")
-		Expect(controlPlaneClient.Delete(suiteCtx, tlsSecret)).To(Succeed())
 	})
 
 	BeforeEach(func() {

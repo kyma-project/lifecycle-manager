@@ -93,26 +93,26 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 	for _, tt := range tests {
 		test := tt
 		It(test.name, func() {
-			Expect(controlPlaneClient.Create(ctx, test.namespace)).Should(BeNil())
+			Expect(controlPlaneClient.Create(ctx, test.namespace)).Should(Succeed())
 			if test.issuer != nil {
-				Expect(controlPlaneClient.Create(ctx, test.issuer)).Should(BeNil())
+				Expect(controlPlaneClient.Create(ctx, test.issuer)).Should(Succeed())
 			}
 			cert, err := watcher.NewCertificateManager(controlPlaneClient, test.kyma, test.namespace.Name, true)
 			if test.wantNewCertErr {
-				Expect(err).ShouldNot(BeNil())
+				Expect(err).Should(HaveOccurred())
 				return
 			}
-			Expect(err).Should(BeNil())
+			Expect(err).ShouldNot(HaveOccurred())
 
 			err = cert.Create(ctx)
 			if test.wantCreateErr {
-				Expect(err).ShouldNot(BeNil())
+				Expect(err).Should(HaveOccurred())
 				return
 			}
-			Expect(err).Should(BeNil())
+			Expect(err).ShouldNot(HaveOccurred())
 
 			if test.issuer != nil {
-				Expect(controlPlaneClient.Delete(ctx, test.issuer)).Should(BeNil())
+				Expect(controlPlaneClient.Delete(ctx, test.issuer)).Should(Succeed())
 			}
 		})
 

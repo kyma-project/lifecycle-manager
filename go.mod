@@ -4,10 +4,12 @@ go 1.19
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.0
+	github.com/cert-manager/cert-manager v1.11.0
 	github.com/gardener/component-spec/bindings-go v0.0.78
 	github.com/go-logr/logr v1.2.3
 	github.com/go-logr/zapr v1.2.3
 	github.com/kyma-project/module-manager v0.0.0-20230203122329-275f0c18b284
+	github.com/kyma-project/module-manager/operator v0.0.0-20221125150159-5e84c4855249
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20230131092109-31657012720d
 	github.com/onsi/ginkgo/v2 v2.8.0
 	github.com/onsi/gomega v1.25.0
@@ -115,7 +117,6 @@ require (
 	github.com/prometheus/common v0.39.0 // indirect
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/rivo/uniseg v0.4.3 // indirect
-	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/rubenv/sql-migrate v1.3.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
@@ -155,6 +156,7 @@ require (
 	k8s.io/kubectl v0.26.1 // indirect
 	k8s.io/utils v0.0.0-20230202215443-34013725500c // indirect
 	oras.land/oras-go v1.2.2 // indirect
+	sigs.k8s.io/gateway-api v0.6.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.13.9 // indirect
