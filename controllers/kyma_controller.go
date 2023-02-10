@@ -29,7 +29,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
-	"github.com/kyma-project/lifecycle-manager/pkg/catalog"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/parse"
@@ -191,7 +190,7 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta1.Ky
 		return fmt.Errorf("could not aggregate module templates for module catalog sync: %w", err)
 	}
 
-	if err := catalog.NewRemoteCatalogFromKyma(kyma).CreateOrUpdate(ctx, moduleTemplateList); err != nil {
+	if err := remote.NewRemoteCatalogFromKyma(kyma).CreateOrUpdate(ctx, moduleTemplateList); err != nil {
 		return fmt.Errorf("could not synchronize remote module catalog: %w", err)
 	}
 
@@ -305,7 +304,7 @@ func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1beta1.
 	}
 
 	if kyma.Spec.Sync.Enabled {
-		if err := catalog.NewRemoteCatalogFromKyma(kyma).Delete(ctx); err != nil {
+		if err := remote.NewRemoteCatalogFromKyma(kyma).Delete(ctx); err != nil {
 			err := fmt.Errorf("could not delete remote module catalog: %w", err)
 			r.Event(kyma, "Warning", string(DeletionError), err.Error())
 			return false, err

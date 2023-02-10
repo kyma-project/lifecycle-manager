@@ -145,8 +145,8 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 		Name: fmt.Sprintf("%s.%s", plural, v1beta1.GroupVersion.Group),
 	}, crdFromRuntime)
 
-	if k8serrors.IsNotFound(err) || !containsLatestVersion(crdFromRuntime, v1beta1.GroupVersion.Version) {
-		return c.patchCRD(ctx, crd)
+	if k8serrors.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta1.GroupVersion.Version) {
+		return PatchCRD(ctx, c.RuntimeClient, crd)
 	}
 
 	if err != nil {
@@ -154,26 +154,6 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 	}
 
 	return nil
-}
-
-func (c *KymaSynchronizationContext) patchCRD(ctx context.Context, crd *v1extensions.CustomResourceDefinition) error {
-	crdToApply := &v1extensions.CustomResourceDefinition{}
-	crdToApply.SetGroupVersionKind(crd.GroupVersionKind())
-	crdToApply.SetName(crd.Name)
-	crdToApply.Spec = crd.Spec
-	return c.RuntimeClient.Patch(ctx, crdToApply,
-		client.Apply,
-		client.ForceOwnership,
-		client.FieldOwner(v1beta1.OperatorName))
-}
-
-func containsLatestVersion(crdFromRuntime *v1extensions.CustomResourceDefinition, latestVersion string) bool {
-	for _, version := range crdFromRuntime.Spec.Versions {
-		if latestVersion == version.Name {
-			return true
-		}
-	}
-	return false
 }
 
 func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
