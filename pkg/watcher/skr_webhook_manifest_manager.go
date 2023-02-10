@@ -20,6 +20,11 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+const (
+	// always true since unsecured watcher setup will no longer be supported
+	tlsEnabled = "true"
+)
+
 // SKRWebhookManifestManager is a SKRWebhookManager implementation that applies
 // the SKR webhook's raw manifest using a native kube-client.
 type SKRWebhookManifestManager struct {
@@ -189,8 +194,8 @@ func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.C
 	return &unstructuredResourcesConfig{
 		contractVersion:  version,
 		kcpAddress:       m.kcpAddr,
-		tlsWebhookServer: "true",
-		tlsCallback:      "false",
+		tlsWebhookServer: tlsEnabled,
+		tlsCallback:      tlsEnabled,
 		secretResVer:     tlsSecret.ResourceVersion,
 		cpuResLimit:      m.config.SkrWebhookCPULimits,
 		memResLimit:      m.config.SkrWebhookMemoryLimits,
