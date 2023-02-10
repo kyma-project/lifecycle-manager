@@ -178,12 +178,11 @@ func (c *CertificateManager) getSubjectAltNames() (*SubjectAltName, error) {
 			return nil, fmt.Errorf("Domain-Annotation of KymaCR %s is empty", c.kyma.Name) //nolint:goerr113
 		}
 
-		resourceName := "" // TODO PKI resourceName, something with ...-webhook, should maybe be the service name
 		svcSuffix := []string{"svc.cluster.local", "svc"}
 		dnsNames := []string{domain}
 
 		for _, suffix := range svcSuffix {
-			dnsNames = append(dnsNames, fmt.Sprintf("%s.%s.%s", resourceName, c.kyma.Namespace, suffix))
+			dnsNames = append(dnsNames, fmt.Sprintf("%s.%s.%s", SkrResourceName, c.kyma.Namespace, suffix))
 		}
 
 		if c.watcherLocalTestingEnabled {

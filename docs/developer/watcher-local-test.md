@@ -63,15 +63,15 @@ sudo nano /etc/hosts
    For this setup, we will create a module template from the [template-operator](https://github.com/kyma-project/template-operator) repository as reference.
    Adjust your path to your template-operator local directory or any other reference module operator accordingly.
 
-```shell
-kyma alpha create module -p ../template-operator --version 1.2.3 -w \
---registry k3d-registry.localhost:5111 --insecure
-```
+   ```shell
+   kyma alpha create module -p ../template-operator --version 1.2.3 -w \
+   --registry k3d-registry.localhost:5111 --insecure
+   ```
 6. The previous step will create a `template.yaml` file in the root directory, which is the `module-template`, apply it
    to the cluster
-```shell
-kubectl apply -f template.yaml
-```
+   ```shell
+   kubectl apply -f template.yaml
+   ```
 
 
 

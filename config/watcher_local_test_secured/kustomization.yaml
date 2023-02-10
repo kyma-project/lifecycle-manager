@@ -65,11 +65,32 @@ patchesJson6902:
       - op: add
         path: /spec/dnsNames/1
         value: "host.k3d.internal"
+      - op: replace
+        path: /metadata/namespace
+        value: "istio-system"
     target:
       group: cert-manager.io
       version: v1
       kind: Certificate
       name: watcher-serving-cert
+  - patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: "istio-system"
+    target:
+      group: cert-manager.io
+      version: v1
+      kind: ClusterIssuer
+      name: watcher-selfsigned-cluster-issuer
+  - patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: "istio-system"
+    target:
+      group: cert-manager.io
+      version: v1
+      kind: Issuer
+      name: watcher-selfsigned-issuer
 
 components:
   - ../crd

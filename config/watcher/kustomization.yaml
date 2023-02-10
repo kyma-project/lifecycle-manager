@@ -18,3 +18,4 @@ patches:
         value: --skr-watcher-path=/skr-webhook
     target:
       kind: Deployment
+
