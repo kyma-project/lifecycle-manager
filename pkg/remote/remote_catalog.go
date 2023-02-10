@@ -22,6 +22,7 @@ type Settings struct {
 	SSAPatchOptions *client.PatchOptions
 }
 
+//nolint:revive
 type RemoteCatalog struct {
 	settings Settings
 }
