@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	// always true since unsecured watcher setup will no longer be supported
+	// always true since unsecured watcher setup will no longer be supported.
 	tlsEnabled = "true"
 )
 

@@ -19,3 +19,40 @@ patches:
     target:
       kind: Deployment
 
+patchesJson6902:
+  - patch: |-
+      - op: replace
+        path: /metadata/name
+        value: lifecycle-manager-kyma-gateway
+    target:
+      group: networking.istio.io
+      version: v1beta1
+      kind: Gateway
+      name: watcher-gateway
+  - patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: "istio-system"
+    target:
+      group: cert-manager.io
+      version: v1
+      kind: Certificate
+      name: watcher-serving-cert
+  - patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: "istio-system"
+    target:
+      group: cert-manager.io
+      version: v1
+      kind: ClusterIssuer
+      name: watcher-selfsigned-cluster-issuer
+  - patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: "istio-system"
+    target:
+      group: cert-manager.io
+      version: v1
+      kind: Issuer
+      name: watcher-selfsigned-issuer
