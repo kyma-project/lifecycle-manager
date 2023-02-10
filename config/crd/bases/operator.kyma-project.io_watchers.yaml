@@ -15,37 +15,37 @@ spec:
     singular: watcher
   scope: Namespaced
   versions:
-    - additionalPrinterColumns:
-        - jsonPath: .metadata.creationTimestamp
-          name: Age
-          type: date
-      name: v1alpha1
-      schema:
-        openAPIV3Schema:
-          description: Watcher is the Schema for the watchers API.
-          properties:
-            apiVersion:
-              description: 'APIVersion defines the versioned schema of this representation
+  - additionalPrinterColumns:
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: Watcher is the Schema for the watchers API.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
               of an object. Servers should convert recognized schemas to the latest
               internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-              type: string
-            kind:
-              description: 'Kind is a string value representing the REST resource this
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
               object represents. Servers may infer this from the endpoint the client
               submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-              type: string
-            metadata:
-              type: object
-            spec:
-              description: WatcherSpec defines the desired state of Watcher.
-              properties:
-                field:
-                  description: Field describes the subresource that should be watched
-                    Value can be one of ("spec", "status")
-                  enum:
-                    - spec
-                    - status
-                  type: string
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: WatcherSpec defines the desired state of Watcher.
+            properties:
+              field:
+                description: Field describes the subresource that should be watched
+                  Value can be one of ("spec", "status")
+                enum:
+                - spec
+                - status
+                type: string
               gateway:
                 description: Gateway configures the Istio Gateway for the VirtualService
                   that is created/updated during processing of the Watcher CR.
@@ -119,15 +119,15 @@ spec:
                     format: int64
                     type: integer
                 required:
-                  - name
-                  - namespace
-                  - port
+                - name
+                - namespace
+                - port
                 type: object
-              required:
-                - field
-                - gateway
-                - labelsToWatch
-                - serviceInfo
+            required:
+            - field
+            - gateway
+            - labelsToWatch
+            - serviceInfo
             type: object
           status:
             description: WatcherStatus defines the observed state of Watcher.
@@ -156,20 +156,20 @@ spec:
                       description: Status of the Watcher Condition. Value can be one
                         of ("True", "False", "Unknown").
                       enum:
-                        - "True"
-                        - "False"
-                        - Unknown
+                      - "True"
+                      - "False"
+                      - Unknown
                       type: string
                     type:
                       description: Type is used to reflect what type of condition
                         we are dealing with. Most commonly WatcherConditionTypeReady
                         it is used as extension marker in the future.
                       enum:
-                        - Ready
+                      - Ready
                       type: string
                   required:
-                    - status
-                    - type
+                  - status
+                  - type
                   type: object
                 type: array
               observedGeneration:
@@ -180,194 +180,194 @@ spec:
                 description: State signifies current state of a Watcher. Value can
                   be one of ("Ready", "Processing", "Error", "Deleting")
                 enum:
-                  - Processing
-                  - Deleting
-                  - Ready
-                  - Error
-                  - ""
+                - Processing
+                - Deleting
+                - Ready
+                - Error
+                - ""
                 type: string
             required:
-              - state
+            - state
             type: object
-          type: object
-      served: true
-      storage: false
-      subresources: { }
-    - additionalPrinterColumns:
-        - jsonPath: .metadata.creationTimestamp
-          name: Age
-          type: date
-      name: v1beta1
-      schema:
-        openAPIV3Schema:
-          description: Watcher is the Schema for the watchers API.
-          properties:
-            apiVersion:
-              description: 'APIVersion defines the versioned schema of this representation
+        type: object
+    served: true
+    storage: false
+    subresources: {}
+  - additionalPrinterColumns:
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: Watcher is the Schema for the watchers API.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
               of an object. Servers should convert recognized schemas to the latest
               internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-              type: string
-            kind:
-              description: 'Kind is a string value representing the REST resource this
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
               object represents. Servers may infer this from the endpoint the client
               submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-              type: string
-            metadata:
-              type: object
-            spec:
-              description: WatcherSpec defines the desired state of Watcher.
-              properties:
-                field:
-                  description: Field describes the subresource that should be watched
-                    Value can be one of ("spec", "status")
-                  enum:
-                    - spec
-                    - status
-                  type: string
-                gateway:
-                  description: Gateway configures the Istio Gateway for the VirtualService
-                    that is created/updated during processing of the Watcher CR.
-                  properties:
-                    selector:
-                      description: LabelSelector allows to select the Gateway using
-                        label selectors as defined in the K8s LIST API.
-                      properties:
-                        matchExpressions:
-                          description: matchExpressions is a list of label selector
-                            requirements. The requirements are ANDed.
-                          items:
-                            description: A label selector requirement is a selector
-                              that contains values, a key, and an operator that relates
-                              the key and values.
-                            properties:
-                              key:
-                                description: key is the label key that the selector
-                                  applies to.
-                                type: string
-                              operator:
-                                description: operator represents a key's relationship
-                                  to a set of values. Valid operators are In, NotIn,
-                                  Exists and DoesNotExist.
-                                type: string
-                              values:
-                                description: values is an array of string values. If
-                                  the operator is In or NotIn, the values array must
-                                  be non-empty. If the operator is Exists or DoesNotExist,
-                                  the values array must be empty. This array is replaced
-                                  during a strategic merge patch.
-                                items:
-                                  type: string
-                                type: array
-                            required:
-                              - key
-                              - operator
-                            type: object
-                          type: array
-                        matchLabels:
-                          additionalProperties:
-                            type: string
-                          description: matchLabels is a map of {key,value} pairs. A
-                            single {key,value} in the matchLabels map is equivalent
-                            to an element of matchExpressions, whose key field is "key",
-                            the operator is "In", and the values array contains only
-                            "value". The requirements are ANDed.
-                          type: object
-                      type: object
-                      x-kubernetes-map-type: atomic
-                  required:
-                    - selector
-                  type: object
-                labelsToWatch:
-                  additionalProperties:
-                    type: string
-                  description: LabelsToWatch describes the labels that should be watched
-                  type: object
-                serviceInfo:
-                  description: ServiceInfo describes the service information of the
-                    operator
-                  properties:
-                    name:
-                      description: Name describes the service name.
-                      type: string
-                    namespace:
-                      description: Namespace describes the service namespace.
-                      type: string
-                    port:
-                      description: Port describes the service port.
-                      format: int64
-                      type: integer
-                  required:
-                    - name
-                    - namespace
-                    - port
-                  type: object
-              required:
-                - field
-                - gateway
-                - labelsToWatch
-                - serviceInfo
-              type: object
-            status:
-              description: WatcherStatus defines the observed state of Watcher.
-              properties:
-                conditions:
-                  description: List of status conditions to indicate the status of a
-                    Watcher.
-                  items:
-                    description: WatcherCondition describes condition information for
-                      Watcher.
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: WatcherSpec defines the desired state of Watcher.
+            properties:
+              field:
+                description: Field describes the subresource that should be watched
+                  Value can be one of ("spec", "status")
+                enum:
+                - spec
+                - status
+                type: string
+              gateway:
+                description: Gateway configures the Istio Gateway for the VirtualService
+                  that is created/updated during processing of the Watcher CR.
+                properties:
+                  selector:
+                    description: LabelSelector allows to select the Gateway using
+                      label selectors as defined in the K8s LIST API.
                     properties:
-                      lastTransitionTime:
-                        description: Timestamp for when Watcher last transitioned from
-                          one status to another.
-                        format: date-time
-                        type: string
-                      message:
-                        description: Human-readable message indicating details about
-                          the last status transition.
-                        type: string
-                      reason:
-                        description: Machine-readable text indicating the reason for
-                          the condition's last transition.
-                        type: string
-                      status:
-                        description: Status of the Watcher Condition. Value can be one
-                          of ("True", "False", "Unknown").
-                        enum:
-                          - "True"
-                          - "False"
-                          - Unknown
-                        type: string
-                      type:
-                        description: Type is used to reflect what type of condition
-                          we are dealing with. Most commonly WatcherConditionTypeReady
-                          it is used as extension marker in the future.
-                        enum:
-                          - Ready
-                        type: string
-                    required:
-                      - status
-                      - type
+                      matchExpressions:
+                        description: matchExpressions is a list of label selector
+                          requirements. The requirements are ANDed.
+                        items:
+                          description: A label selector requirement is a selector
+                            that contains values, a key, and an operator that relates
+                            the key and values.
+                          properties:
+                            key:
+                              description: key is the label key that the selector
+                                applies to.
+                              type: string
+                            operator:
+                              description: operator represents a key's relationship
+                                to a set of values. Valid operators are In, NotIn,
+                                Exists and DoesNotExist.
+                              type: string
+                            values:
+                              description: values is an array of string values. If
+                                the operator is In or NotIn, the values array must
+                                be non-empty. If the operator is Exists or DoesNotExist,
+                                the values array must be empty. This array is replaced
+                                during a strategic merge patch.
+                              items:
+                                type: string
+                              type: array
+                          required:
+                          - key
+                          - operator
+                          type: object
+                        type: array
+                      matchLabels:
+                        additionalProperties:
+                          type: string
+                        description: matchLabels is a map of {key,value} pairs. A
+                          single {key,value} in the matchLabels map is equivalent
+                          to an element of matchExpressions, whose key field is "key",
+                          the operator is "In", and the values array contains only
+                          "value". The requirements are ANDed.
+                        type: object
                     type: object
-                  type: array
-                observedGeneration:
-                  description: ObservedGeneration
-                  format: int64
-                  type: integer
-                state:
-                  description: State signifies current state of a Watcher. Value can
-                    be one of ("Ready", "Processing", "Error", "Deleting")
-                  enum:
-                    - Processing
-                    - Deleting
-                    - Ready
-                    - Error
-                    - ""
+                    x-kubernetes-map-type: atomic
+                required:
+                - selector
+                type: object
+              labelsToWatch:
+                additionalProperties:
                   type: string
-              required:
-                - state
-              type: object
-          type: object
-      served: true
-      storage: true
-      subresources: { }
+                description: LabelsToWatch describes the labels that should be watched
+                type: object
+              serviceInfo:
+                description: ServiceInfo describes the service information of the
+                  operator
+                properties:
+                  name:
+                    description: Name describes the service name.
+                    type: string
+                  namespace:
+                    description: Namespace describes the service namespace.
+                    type: string
+                  port:
+                    description: Port describes the service port.
+                    format: int64
+                    type: integer
+                required:
+                - name
+                - namespace
+                - port
+                type: object
+            required:
+            - field
+            - gateway
+            - labelsToWatch
+            - serviceInfo
+            type: object
+          status:
+            description: WatcherStatus defines the observed state of Watcher.
+            properties:
+              conditions:
+                description: List of status conditions to indicate the status of a
+                  Watcher.
+                items:
+                  description: WatcherCondition describes condition information for
+                    Watcher.
+                  properties:
+                    lastTransitionTime:
+                      description: Timestamp for when Watcher last transitioned from
+                        one status to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: Human-readable message indicating details about
+                        the last status transition.
+                      type: string
+                    reason:
+                      description: Machine-readable text indicating the reason for
+                        the condition's last transition.
+                      type: string
+                    status:
+                      description: Status of the Watcher Condition. Value can be one
+                        of ("True", "False", "Unknown").
+                      enum:
+                      - "True"
+                      - "False"
+                      - Unknown
+                      type: string
+                    type:
+                      description: Type is used to reflect what type of condition
+                        we are dealing with. Most commonly WatcherConditionTypeReady
+                        it is used as extension marker in the future.
+                      enum:
+                      - Ready
+                      type: string
+                  required:
+                  - status
+                  - type
+                  type: object
+                type: array
+              observedGeneration:
+                description: ObservedGeneration
+                format: int64
+                type: integer
+              state:
+                description: State signifies current state of a Watcher. Value can
+                  be one of ("Ready", "Processing", "Error", "Deleting")
+                enum:
+                - Processing
+                - Deleting
+                - Ready
+                - Error
+                - ""
+                type: string
+            required:
+            - state
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources: {}
