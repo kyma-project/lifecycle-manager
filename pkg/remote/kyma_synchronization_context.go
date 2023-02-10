@@ -145,7 +145,7 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 		Name: fmt.Sprintf("%s.%s", plural, v1beta1.GroupVersion.Group),
 	}, crdFromRuntime)
 
-	if k8serrors.IsNotFound(err) {
+	if k8serrors.IsNotFound(err) || !containsLatestVersion(crdFromRuntime, v1beta1.GroupVersion.Version) {
 		return c.RuntimeClient.Create(ctx, &v1extensions.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{Name: crd.Name, Namespace: crd.Namespace}, Spec: crd.Spec,
 		})
@@ -155,11 +155,16 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 		return err
 	}
 
-	// crd.SetResourceVersion(crdFromRuntime.GetResourceVersion())
-	// return c.runtimeClient.Update(ctx, &v1extensions.CustomResourceDefinition{
-	// 	ObjectMeta: v1.ObjectMeta{Name: crd.Name, Namespace: crd.Namespace}, Spec: crd.Spec,
-	// })
 	return nil
+}
+
+func containsLatestVersion(crdFromRuntime *v1extensions.CustomResourceDefinition, latestVersion string) bool {
+	for _, version := range crdFromRuntime.Spec.Versions {
+		if latestVersion == version.Name {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
