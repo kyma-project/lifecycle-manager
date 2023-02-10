@@ -56,7 +56,9 @@ import (
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	operatorv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
+
 	//+kubebuilder:scaffold:imports
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 const (
@@ -140,21 +142,9 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		setupKcpWatcherReconciler(mgr, options, flagVar)
 	}
 	if flagVar.enableWebhooks {
-		if err := (&operatorv1alpha1.ModuleTemplate{}).
-			SetupWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
-			os.Exit(1)
-		}
-		if err := (&operatorv1beta1.ModuleTemplate{}).
-			SetupWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
-			os.Exit(1)
-		}
+		enableWebhooks(mgr)
 	}
-	if err = (&operatorv1beta1.ModuleTemplate{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
-		os.Exit(1)
-	}
+
 	//+kubebuilder:scaffold:builder
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
@@ -166,6 +156,27 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 	}
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
+		os.Exit(1)
+	}
+}
+
+func enableWebhooks(mgr manager.Manager) {
+	if err := (&operatorv1alpha1.ModuleTemplate{}).
+		SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
+		os.Exit(1)
+	}
+	if err := (&operatorv1beta1.ModuleTemplate{}).
+		SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
+		os.Exit(1)
+	}
+	if err := (&operatorv1beta1.Kyma{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Kyma")
+		os.Exit(1)
+	}
+	if err := (&operatorv1beta1.Watcher{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Watcher")
 		os.Exit(1)
 	}
 }

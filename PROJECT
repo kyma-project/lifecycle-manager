@@ -47,6 +47,11 @@ resources:
   kind: Kyma
   path: github.com/kyma-project/lifecycle-manager/api/v1beta1
   version: v1beta1
+  webhooks:
+    conversion: true
+    defaulting: true
+    validation: true
+    webhookVersion: v1
 - api:
     crdVersion: v1
     namespaced: true
@@ -57,6 +62,8 @@ resources:
   version: v1beta1
   webhooks:
     conversion: true
+    defaulting: true
+    validation: true
     webhookVersion: v1
 - api:
     crdVersion: v1
@@ -66,4 +73,9 @@ resources:
   kind: Watcher
   path: github.com/kyma-project/lifecycle-manager/api/v1beta1
   version: v1beta1
+  webhooks:
+    conversion: true
+    defaulting: true
+    validation: true
+    webhookVersion: v1
 version: "3"
