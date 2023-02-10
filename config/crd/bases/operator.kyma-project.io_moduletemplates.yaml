@@ -37,14 +37,14 @@ spec:
               description: 'Kind is a string value representing the REST resource this
               object represents. Servers may infer this from the endpoint the client
               submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: ModuleTemplateSpec defines the desired state of ModuleTemplate.
-            properties:
-              channel:
-                description: Channel is the targeted channel of the ModuleTemplate.
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: ModuleTemplateSpec defines the desired state of ModuleTemplate.
+              properties:
+                channel:
+                  description: Channel is the targeted channel of the ModuleTemplate.
                   It will be used to directly assign a Template to a target channel.
                   It has to be provided at any given time.
                 maxLength: 32
@@ -87,11 +87,11 @@ spec:
                   - control-plane
                   - remote
                 type: string
-            required:
-              - channel
-              - descriptor
-              - target
-            type: object
+              required:
+                - channel
+                - descriptor
+                - target
+              type: object
           type: object
       served: true
       storage: false

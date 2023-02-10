@@ -5,26 +5,66 @@ metadata:
   creationTimestamp: null
   name: mutating-webhook-configuration
 webhooks:
-- admissionReviewVersions:
-  - v1
-  clientConfig:
-    service:
-      name: webhook-service
-      namespace: system
-      path: /mutate-operator-kyma-project-io-v1alpha1-moduletemplate
-  failurePolicy: Fail
-  name: mmoduletemplate.kb.io
-  rules:
-  - apiGroups:
-    - operator.kyma-project.io
-    apiVersions:
-    - v1alpha1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - moduletemplates
-  sideEffects: None
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      service:
+        name: webhook-service
+        namespace: system
+        path: /mutate-operator-kyma-project-io-v1beta1-kyma
+    failurePolicy: Fail
+    name: mkyma.kb.io
+    rules:
+      - apiGroups:
+          - operator.kyma-project.io
+        apiVersions:
+          - v1beta1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - kymas
+    sideEffects: None
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      service:
+        name: webhook-service
+        namespace: system
+        path: /mutate-operator-kyma-project-io-v1beta1-watcher
+    failurePolicy: Fail
+    name: mwatcher.kb.io
+    rules:
+      - apiGroups:
+          - operator.kyma-project.io
+        apiVersions:
+          - v1beta1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - watchers
+    sideEffects: None
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      service:
+        name: webhook-service
+        namespace: system
+        path: /mutate-operator-kyma-project-io-v1alpha1-moduletemplate
+    failurePolicy: Fail
+    name: mmoduletemplate.kb.io
+    rules:
+      - apiGroups:
+          - operator.kyma-project.io
+        apiVersions:
+          - v1alpha1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - moduletemplates
+    sideEffects: None
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
@@ -32,23 +72,63 @@ metadata:
   creationTimestamp: null
   name: validating-webhook-configuration
 webhooks:
-- admissionReviewVersions:
-  - v1
-  clientConfig:
-    service:
-      name: webhook-service
-      namespace: system
-      path: /validate-operator-kyma-project-io-v1alpha1-moduletemplate
-  failurePolicy: Fail
-  name: vmoduletemplate.kb.io
-  rules:
-  - apiGroups:
-    - operator.kyma-project.io
-    apiVersions:
-    - v1alpha1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - moduletemplates
-  sideEffects: None
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      service:
+        name: webhook-service
+        namespace: system
+        path: /validate-operator-kyma-project-io-v1beta1-kyma
+    failurePolicy: Fail
+    name: vkyma.kb.io
+    rules:
+      - apiGroups:
+          - operator.kyma-project.io
+        apiVersions:
+          - v1beta1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - kymas
+    sideEffects: None
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      service:
+        name: webhook-service
+        namespace: system
+        path: /validate-operator-kyma-project-io-v1beta1-watcher
+    failurePolicy: Fail
+    name: vwatcher.kb.io
+    rules:
+      - apiGroups:
+          - operator.kyma-project.io
+        apiVersions:
+          - v1beta1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - watchers
+    sideEffects: None
+  - admissionReviewVersions:
+      - v1
+    clientConfig:
+      service:
+        name: webhook-service
+        namespace: system
+        path: /validate-operator-kyma-project-io-v1alpha1-moduletemplate
+    failurePolicy: Fail
+    name: vmoduletemplate.kb.io
+    rules:
+      - apiGroups:
+          - operator.kyma-project.io
+        apiVersions:
+          - v1alpha1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - moduletemplates
+    sideEffects: None

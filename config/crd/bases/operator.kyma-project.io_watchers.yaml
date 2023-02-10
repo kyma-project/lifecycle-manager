@@ -36,16 +36,16 @@ spec:
               type: string
             metadata:
               type: object
-          spec:
-            description: WatcherSpec defines the desired state of Watcher.
-            properties:
-              field:
-                description: Field describes the subresource that should be watched
-                  Value can be one of ("spec", "status")
-                enum:
-                - spec
-                - status
-                type: string
+            spec:
+              description: WatcherSpec defines the desired state of Watcher.
+              properties:
+                field:
+                  description: Field describes the subresource that should be watched
+                    Value can be one of ("spec", "status")
+                  enum:
+                    - spec
+                    - status
+                  type: string
               gateway:
                 description: Gateway configures the Istio Gateway for the VirtualService
                   that is created/updated during processing of the Watcher CR.
@@ -123,11 +123,11 @@ spec:
                   - namespace
                   - port
                 type: object
-            required:
-              - field
-              - gateway
-              - labelsToWatch
-              - serviceInfo
+              required:
+                - field
+                - gateway
+                - labelsToWatch
+                - serviceInfo
             type: object
           status:
             description: WatcherStatus defines the observed state of Watcher.
