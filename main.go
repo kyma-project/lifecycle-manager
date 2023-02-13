@@ -24,15 +24,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/api"
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
@@ -53,8 +51,14 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
+
+	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	operatorv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
+
 	//+kubebuilder:scaffold:imports
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 const (
@@ -71,6 +75,9 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(api.AddToScheme(scheme))
 	utilruntime.Must(v1extensions.AddToScheme(scheme))
+	utilruntime.Must(operatorv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(moduleManagerV1alpha1.AddToScheme(scheme))
+	utilruntime.Must(operatorv1beta1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -137,21 +144,9 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		setupKcpWatcherReconciler(mgr, options, flagVar)
 	}
 	if flagVar.enableWebhooks {
-		if err := (&v1alpha1.ModuleTemplate{}).
-			SetupWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
-			os.Exit(1)
-		}
-		if err = (&v1alpha1.Manifest{}).SetupWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "Manifest")
-			os.Exit(1)
-		}
-
-		if err = (&v1beta1.Manifest{}).SetupWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "Manifest")
-			os.Exit(1)
-		}
+		enableWebhooks(mgr)
 	}
+
 	//+kubebuilder:scaffold:builder
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
@@ -163,6 +158,27 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 	}
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
+		os.Exit(1)
+	}
+}
+
+func enableWebhooks(mgr manager.Manager) {
+	if err := (&operatorv1alpha1.ModuleTemplate{}).
+		SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
+		os.Exit(1)
+	}
+	if err := (&operatorv1beta1.ModuleTemplate{}).
+		SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
+		os.Exit(1)
+	}
+	if err := (&operatorv1beta1.Kyma{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Kyma")
+		os.Exit(1)
+	}
+	if err := (&operatorv1beta1.Watcher{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Watcher")
 		os.Exit(1)
 	}
 }
@@ -226,7 +242,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 
 	if err := (&controllers.KymaReconciler{
 		Client:            mgr.GetClient(),
-		EventRecorder:     mgr.GetEventRecorderFor(v1alpha1.OperatorName),
+		EventRecorder:     mgr.GetEventRecorderFor(operatorv1beta1.OperatorName),
 		KcpRestConfig:     kcpRestConfig,
 		RemoteClientCache: remoteClientCache,
 		SKRWebhookManager: skrWebhookManager,

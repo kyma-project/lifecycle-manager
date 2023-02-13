@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 // syncContextKey is a singleton key.
@@ -13,7 +13,7 @@ type syncContextKey = struct{}
 var ErrIsNoSyncContext = errors.New("the given value is not a pointer to a kyma synchronization context")
 
 func InitializeSyncContext(
-	ctx context.Context, kyma *v1alpha1.Kyma, kcp Client, cache *ClientCache,
+	ctx context.Context, kyma *v1beta1.Kyma, kcp Client, cache *ClientCache,
 ) (context.Context, error) {
 	syncContext, err := InitializeKymaSynchronizationContext(ctx, kcp, cache, kyma)
 	if err != nil {

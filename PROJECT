@@ -62,4 +62,43 @@ resources:
     defaulting: true
     validation: true
     webhookVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: kyma-project.io
+  group: operator
+  kind: Kyma
+  path: github.com/kyma-project/lifecycle-manager/api/v1beta1
+  version: v1beta1
+  webhooks:
+    conversion: true
+    defaulting: true
+    validation: true
+    webhookVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: kyma-project.io
+  group: operator
+  kind: ModuleTemplate
+  path: github.com/kyma-project/lifecycle-manager/api/v1beta1
+  version: v1beta1
+  webhooks:
+    conversion: true
+    defaulting: true
+    validation: true
+    webhookVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: kyma-project.io
+  group: operator
+  kind: Watcher
+  path: github.com/kyma-project/lifecycle-manager/api/v1beta1
+  version: v1beta1
+  webhooks:
+    conversion: true
+    defaulting: true
+    validation: true
+    webhookVersion: v1
 version: "3"

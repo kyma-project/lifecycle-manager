@@ -36,6 +36,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	operatorv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
@@ -130,7 +131,7 @@ var _ = BeforeSuite(func() {
 	remoteClientCache := remote.NewClientCache()
 	err = (&controllers.KymaReconciler{
 		Client:           k8sManager.GetClient(),
-		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1beta1.OperatorName),
 		RequeueIntervals: intervals,
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,

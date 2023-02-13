@@ -8,7 +8,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 type KymaHelper struct {
@@ -24,21 +24,21 @@ func Helper(handler HelperClient) *KymaHelper {
 }
 
 func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
-	kyma *v1alpha1.Kyma, newState v1alpha1.State, message string,
+	kyma *v1beta1.Kyma, newState v1beta1.State, message string,
 ) error {
 	kyma.Status.State = newState
 
 	switch newState {
-	case v1alpha1.StateReady:
+	case v1beta1.StateReady:
 		kyma.SetActiveChannel()
 	case "":
-	case v1alpha1.StateDeleting:
-	case v1alpha1.StateError:
-	case v1alpha1.StateProcessing:
+	case v1beta1.StateDeleting:
+	case v1beta1.StateError:
+	case v1beta1.StateProcessing:
 	default:
 	}
 
-	kyma.Status.LastOperation = v1alpha1.LastOperation{
+	kyma.Status.LastOperation = v1beta1.LastOperation{
 		Operation:      message,
 		LastUpdateTime: metav1.NewTime(time.Now()),
 	}

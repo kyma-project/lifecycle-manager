@@ -6,9 +6,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	declarative "github.com/kyma-project/module-manager/pkg/declarative/v2"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	. "github.com/onsi/ginkgo/v2"
@@ -19,11 +18,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	sampleCRDv1alpha1 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	sampleCRDv1beta1 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1beta1"
+	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 )
 
-func RegisterDefaultLifecycleForKyma(kyma *v1alpha1.Kyma) {
+func RegisterDefaultLifecycleForKyma(kyma *v1beta1.Kyma) {
 	BeforeAll(func() {
 		Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
 		DeployModuleTemplates(ctx, controlPlaneClient, kyma)
@@ -67,7 +67,7 @@ func GetKymaConditions(kymaName string) func() []metav1.Condition {
 }
 
 func UpdateModuleState(
-	ctx context.Context, kyma *v1alpha1.Kyma, module v1alpha1.Module, state v1alpha1.State,
+	ctx context.Context, kyma *v1beta1.Kyma, module v1beta1.Module, state v1beta1.State,
 ) func() error {
 	return func() error {
 		kyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
@@ -78,7 +78,7 @@ func UpdateModuleState(
 	}
 }
 
-func updateModuleState(kyma *v1alpha1.Kyma, module v1alpha1.Module, state v1alpha1.State) error {
+func updateModuleState(kyma *v1beta1.Kyma, module v1beta1.Module, state v1beta1.State) error {
 	component, err := getModule(kyma, module)
 	if err != nil {
 		return err
@@ -87,7 +87,7 @@ func updateModuleState(kyma *v1alpha1.Kyma, module v1alpha1.Module, state v1alph
 	return k8sManager.GetClient().Status().Update(ctx, component)
 }
 
-func ModuleExists(ctx context.Context, kyma *v1alpha1.Kyma, module v1alpha1.Module) func() error {
+func ModuleExists(ctx context.Context, kyma *v1beta1.Kyma, module v1beta1.Module) func() error {
 	return func() error {
 		kyma, err := GetKyma(ctx, controlPlaneClient, kyma.Name, kyma.Namespace)
 		if err != nil {
@@ -100,8 +100,8 @@ func ModuleExists(ctx context.Context, kyma *v1alpha1.Kyma, module v1alpha1.Modu
 
 func UpdateRemoteModule(ctx context.Context,
 	client client.Client,
-	kyma *v1alpha1.Kyma,
-	modules []v1alpha1.Module,
+	kyma *v1beta1.Kyma,
+	modules []v1beta1.Module,
 ) func() error {
 	return func() error {
 		kyma, err := GetKyma(ctx, client, kyma.Name, kyma.Namespace)
@@ -115,7 +115,7 @@ func UpdateRemoteModule(ctx context.Context,
 
 func UpdateKymaLabel(ctx context.Context,
 	client client.Client,
-	kyma *v1alpha1.Kyma,
+	kyma *v1beta1.Kyma,
 	labelKey,
 	labelValue string,
 ) func() error {
@@ -129,7 +129,7 @@ func UpdateKymaLabel(ctx context.Context,
 	}
 }
 
-func ModuleNotExist(ctx context.Context, kyma *v1alpha1.Kyma, module v1alpha1.Module) func() error {
+func ModuleNotExist(ctx context.Context, kyma *v1beta1.Kyma, module v1beta1.Module) func() error {
 	return func() error {
 		kyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
 		if err != nil {
@@ -143,7 +143,7 @@ func ModuleNotExist(ctx context.Context, kyma *v1alpha1.Kyma, module v1alpha1.Mo
 	}
 }
 
-func SKRModuleExistWithOverwrites(kyma *v1alpha1.Kyma, module v1alpha1.Module) string {
+func SKRModuleExistWithOverwrites(kyma *v1beta1.Kyma, module v1beta1.Module) string {
 	kyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
 	Expect(err).ToNot(HaveOccurred())
 	moduleInCluster, err := getModule(kyma, module)
@@ -151,13 +151,13 @@ func SKRModuleExistWithOverwrites(kyma *v1alpha1.Kyma, module v1alpha1.Module) s
 	manifestSpec := moduleInCluster.Spec
 	body, err := json.Marshal(manifestSpec.Resource.Object["spec"])
 	Expect(err).ToNot(HaveOccurred())
-	skrModuleSpec := sampleCRDv1alpha1.SKRModuleSpec{}
+	skrModuleSpec := sampleCRDv1beta1.SKRModuleSpec{}
 	err = json.Unmarshal(body, &skrModuleSpec)
 	Expect(err).ToNot(HaveOccurred())
 	return skrModuleSpec.InitKey
 }
 
-func getModule(kyma *v1alpha1.Kyma, module v1alpha1.Module) (*v1beta1.Manifest, error) {
+func getModule(kyma *v1beta1.Kyma, module v1beta1.Module) (*v1beta1.Manifest, error) {
 	for _, moduleStatus := range kyma.Status.Modules {
 		if moduleStatus.Name == module.Name {
 			component := &v1beta1.Manifest{}
@@ -172,11 +172,11 @@ func getModule(kyma *v1alpha1.Kyma, module v1alpha1.Module) (*v1beta1.Manifest, 
 		}
 	}
 	return nil, fmt.Errorf("no module status mapping exists for module %s: %w", module.Name,
-		k8serrors.NewNotFound(v1alpha1.GroupVersionResource.GroupResource(), module.Name))
+		k8serrors.NewNotFound(v1beta1.GroupVersionResource.GroupResource(), module.Name))
 }
 
-func GetModuleTemplate(name string) (*v1alpha1.ModuleTemplate, error) {
-	moduleTemplateInCluster := &v1alpha1.ModuleTemplate{}
+func GetModuleTemplate(name string) (*v1beta1.ModuleTemplate, error) {
+	moduleTemplateInCluster := &v1beta1.ModuleTemplate{}
 	moduleTemplateInCluster.SetNamespace(metav1.NamespaceDefault)
 	moduleTemplateInCluster.SetName(name)
 	err := getModuleTemplate(controlPlaneClient, moduleTemplateInCluster, nil, false)
@@ -193,7 +193,7 @@ func KymaExists(remoteClient client.Client, name, namespace string) func() error
 	}
 }
 
-func ModuleTemplatesExist(clnt client.Client, kyma *v1alpha1.Kyma, remote bool) func() error {
+func ModuleTemplatesExist(clnt client.Client, kyma *v1beta1.Kyma, remote bool) func() error {
 	return func() error {
 		for _, module := range kyma.Spec.Modules {
 			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
@@ -212,7 +212,7 @@ func ModuleTemplatesExist(clnt client.Client, kyma *v1alpha1.Kyma, remote bool) 
 var ErrModuleTemplateDescriptorLabelCountMismatch = errors.New("label count in descriptor does not match")
 
 func ModuleTemplatesLabelsCountMatch(
-	clnt client.Client, kyma *v1alpha1.Kyma, count int, remote bool,
+	clnt client.Client, kyma *v1beta1.Kyma, count int, remote bool,
 ) func() error {
 	return func() error {
 		for _, module := range kyma.Spec.Modules {
@@ -241,7 +241,7 @@ func ModuleTemplatesLabelsCountMatch(
 
 func ModifyModuleTemplateSpecThroughLabels(
 	clnt client.Client,
-	kyma *v1alpha1.Kyma,
+	kyma *v1beta1.Kyma,
 	labels []ocm.Label,
 	remote bool,
 ) func() error {
@@ -274,14 +274,14 @@ func ModifyModuleTemplateSpecThroughLabels(
 	}
 }
 
-func getModuleTemplate(clnt client.Client, template *v1alpha1.ModuleTemplate, kyma *v1alpha1.Kyma, remote bool) error {
+func getModuleTemplate(clnt client.Client, template *v1beta1.ModuleTemplate, kyma *v1beta1.Kyma, remote bool) error {
 	if remote && kyma.Spec.Sync.Namespace != "" {
 		template.SetNamespace(kyma.Spec.Sync.Namespace)
 	}
 	return clnt.Get(ctx, client.ObjectKeyFromObject(template), template)
 }
 
-func deleteModule(kyma *v1alpha1.Kyma, module v1alpha1.Module) func() error {
+func deleteModule(kyma *v1beta1.Kyma, module v1beta1.Module) func() error {
 	return func() error {
 		component, err := getModule(kyma, module)
 		if k8serrors.IsNotFound(err) {
@@ -321,14 +321,14 @@ func TemplateInfosMatchChannel(kymaName, channel string) error {
 	return nil
 }
 
-func CreateModuleTemplateSetsForKyma(modules []v1alpha1.Module, modifiedVersion, channel string) error {
+func CreateModuleTemplateSetsForKyma(modules []v1beta1.Module, modifiedVersion, channel string) error {
 	for _, module := range modules {
 		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
 		if err != nil {
 			return err
 		}
 		if err := template.Spec.ModifyDescriptor(
-			v1alpha1.ModifyDescriptorVersion(
+			v1beta1.ModifyDescriptorVersion(
 				func(version *semver.Version) string {
 					return modifiedVersion
 				},

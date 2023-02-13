@@ -20,9 +20,23 @@ limitations under the License.
 package v1beta1
 
 import (
+	"strings"
+
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
+
+const (
+	KymaKind           Kind = "Kyma"
+	ModuleTemplateKind Kind = "ModuleTemplate"
+	WatcherKind        Kind = "Watcher"
+)
+
+type Kind string
+
+func (k Kind) Plural() string {
+	return strings.ToLower(string(k)) + "s"
+}
 
 var (
 	// GroupVersion is group version used to register these objects.

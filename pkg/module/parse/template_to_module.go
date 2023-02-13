@@ -27,7 +27,7 @@ var (
 )
 
 func GenerateModulesFromTemplates(
-	kyma *v1alpha1.Kyma, templates channel.ModuleTemplatesByModuleName, verification signature.Verification,
+	kyma *v1beta1.Kyma, templates channel.ModuleTemplatesByModuleName, verification signature.Verification,
 ) (common.Modules, error) {
 	// these are the actual modules
 	modules, err := templatesToModules(kyma, templates,
@@ -40,7 +40,7 @@ func GenerateModulesFromTemplates(
 }
 
 func templatesToModules(
-	kyma *v1alpha1.Kyma,
+	kyma *v1beta1.Kyma,
 	templates channel.ModuleTemplatesByModuleName,
 	settings *ModuleConversionSettings,
 ) (common.Modules, error) {
@@ -97,17 +97,17 @@ func templatesToModules(
 }
 
 func NewManifestFromTemplate(
-	module v1alpha1.Module,
-	template *v1alpha1.ModuleTemplate,
+	module v1beta1.Module,
+	template *v1beta1.ModuleTemplate,
 	verification signature.Verification,
 ) (*v1beta1.Manifest, error) {
 	manifest := &v1beta1.Manifest{}
 	manifest.Spec.Remote = ConvertTargetToRemote(template.Spec.Target)
 
 	switch module.CustomResourcePolicy {
-	case v1alpha1.CustomResourcePolicyIgnore:
+	case v1beta1.CustomResourcePolicyIgnore:
 		manifest.Spec.Resource = nil
-	case v1alpha1.CustomResourcePolicyCreateAndDelete:
+	case v1beta1.CustomResourcePolicyCreateAndDelete:
 		fallthrough
 	default:
 		manifest.Spec.Resource = template.Spec.Data.DeepCopy()
@@ -179,11 +179,11 @@ func insertLayerIntoManifest(
 	return nil
 }
 
-func ConvertTargetToRemote(remote v1alpha1.Target) bool {
+func ConvertTargetToRemote(remote v1beta1.Target) bool {
 	switch remote {
-	case v1alpha1.TargetControlPlane:
+	case v1beta1.TargetControlPlane:
 		return false
-	case v1alpha1.TargetRemote:
+	case v1beta1.TargetRemote:
 		return true
 	default:
 		panic(ErrUndefinedTargetToRemote)

@@ -26,6 +26,7 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -85,14 +86,10 @@ var _ = BeforeSuite(func() {
 	Expect(cfg).NotTo(BeNil())
 
 	scheme = runtime.NewScheme()
-	err = v1alpha1.AddToScheme(scheme)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = apiextensionsv1.AddToScheme(scheme)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = admissionv1beta1.AddToScheme(scheme)
-	Expect(err).NotTo(HaveOccurred())
+	Expect(v1alpha1.AddToScheme(scheme)).NotTo(HaveOccurred())
+	Expect(v1beta1.AddToScheme(scheme)).NotTo(HaveOccurred())
+	Expect(apiextensionsv1.AddToScheme(scheme)).NotTo(HaveOccurred())
+	Expect(admissionv1beta1.AddToScheme(scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 

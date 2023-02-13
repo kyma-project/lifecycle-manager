@@ -13,7 +13,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 
 	"github.com/go-logr/zapr"
-	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/require"
@@ -112,7 +112,7 @@ var _ = Describe("Verify Request using SAN", Ordered, func() {
 
 	tests := []struct {
 		name    string
-		kyma    *operatorv1alpha1.Kyma
+		kyma    *v1beta1.Kyma
 		args    args
 		wantErr bool
 	}{

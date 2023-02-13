@@ -1,25 +1,24 @@
-apiVersion: operator.kyma-project.io/v1alpha1
+apiVersion: operator.kyma-project.io/v1beta1
 kind: ModuleTemplate
 metadata:
-  name: moduletemplate-sample-skr-module
+  name: moduletemplate-sample-kcp-module
   namespace: default
   labels:
     "operator.kyma-project.io/managed-by": "lifecycle-manager"
     "operator.kyma-project.io/controller-name": "manifest"
-    "operator.kyma-project.io/module-name": "skr-module"
+    "operator.kyma-project.io/module-name": "kcp-module"
     "operator.kyma-project.io/profile": "production"
   annotations:
-    "operator.kyma-project.io/module-version": "v0.0.48"
+    "operator.kyma-project.io/module-version": "0.0.4"
     "operator.kyma-project.io/module-provider": "internal"
     "operator.kyma-project.io/descriptor-schema-version": "v2"
-    "operator.kyma-project.io/generated-at": "2022-07-11T14:59:43Z"
 spec:
   channel: regular
-  target: remote
+  target: control-plane
   data:
-    kind: SKRModule
-    resource: skrmodules
-    apiVersion: operator.kyma-project.io/v1alpha1
+    kind: KCPModule
+    resource: kcpmodules
+    apiVersion: operator.kyma-project.io/v1beta1
     spec:
       initKey: initValue
   descriptor:
@@ -41,4 +40,6 @@ spec:
           version: 0.0.4
       sources: []
       version: 0.0.4
+    meta:
+      schemaVersion: v2
     signatures: []

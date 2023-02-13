@@ -15,7 +15,7 @@ import (
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 const (
@@ -74,7 +74,7 @@ func (c *Client) GetVirtualService(ctx context.Context) (*istioclientapi.Virtual
 	return virtualService, nil
 }
 
-func (c *Client) CreateVirtualService(ctx context.Context, watcher *v1alpha1.Watcher,
+func (c *Client) CreateVirtualService(ctx context.Context, watcher *v1beta1.Watcher,
 ) (*istioclientapi.VirtualService, error) {
 	if watcher == nil {
 		return &istioclientapi.VirtualService{}, nil
@@ -148,7 +148,7 @@ func getHosts(gateways []*istioclientapi.Gateway) ([]string, error) {
 	return hosts, nil
 }
 
-func (c *Client) LookupGateways(ctx context.Context, watcher *v1alpha1.Watcher) ([]*istioclientapi.Gateway, error) {
+func (c *Client) LookupGateways(ctx context.Context, watcher *v1beta1.Watcher) ([]*istioclientapi.Gateway, error) {
 	selector, err := metav1.LabelSelectorAsSelector(&watcher.Spec.Gateway.LabelSelector)
 	if err != nil {
 		return nil, fmt.Errorf("error converting label selector: %w", err)
@@ -180,7 +180,7 @@ func (c *Client) updateVirtualService(ctx context.Context, virtualService *istio
 	return err
 }
 
-func (c *Client) IsListenerHTTPRouteConfigured(ctx context.Context, watcher *v1alpha1.Watcher,
+func (c *Client) IsListenerHTTPRouteConfigured(ctx context.Context, watcher *v1beta1.Watcher,
 ) (bool, error) {
 	virtualService, err := c.GetVirtualService(ctx)
 	if err != nil {
@@ -210,7 +210,7 @@ func (c *Client) IsVirtualServiceDeleted(ctx context.Context) (bool, error) {
 	return false, err
 }
 
-func (c *Client) UpdateVirtualServiceConfig(ctx context.Context, watcher *v1alpha1.Watcher,
+func (c *Client) UpdateVirtualServiceConfig(ctx context.Context, watcher *v1beta1.Watcher,
 	virtualService *istioclientapi.VirtualService,
 ) error {
 	gateways, err := c.LookupGateways(ctx, watcher)
@@ -232,7 +232,7 @@ func (c *Client) UpdateVirtualServiceConfig(ctx context.Context, watcher *v1alph
 	return nil
 }
 
-func updateHTTPRoute(watcher *v1alpha1.Watcher, virtualService *istioclientapi.VirtualService) bool {
+func updateHTTPRoute(watcher *v1beta1.Watcher, virtualService *istioclientapi.VirtualService) bool {
 	// lookup cr config
 	routeIdx := lookupHTTPRouteByObjectKey(virtualService.Spec.Http, client.ObjectKeyFromObject(watcher))
 	if routeIdx != -1 {
@@ -354,7 +354,7 @@ func isRouteConfigEqual(route1 *istioapi.HTTPRoute, route2 *istioapi.HTTPRoute) 
 	return true
 }
 
-func prepareIstioHTTPRouteForCR(obj *v1alpha1.Watcher) *istioapi.HTTPRoute {
+func prepareIstioHTTPRouteForCR(obj *v1beta1.Watcher) *istioapi.HTTPRoute {
 	return &istioapi.HTTPRoute{
 		Name: client.ObjectKeyFromObject(obj).String(),
 		Match: []*istioapi.HTTPMatchRequest{

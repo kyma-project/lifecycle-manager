@@ -1,13 +1,12 @@
-package catalog
+package remote
 
 import (
 	"context"
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	remotecontext "github.com/kyma-project/lifecycle-manager/pkg/remote"
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/module-manager/pkg/types"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -23,16 +22,17 @@ type Settings struct {
 	SSAPatchOptions *client.PatchOptions
 }
 
+//nolint:revive
 type RemoteCatalog struct {
 	settings Settings
 }
 
 type Catalog interface {
-	CreateOrUpdate(ctx context.Context, moduleTemplateList *v1alpha1.ModuleTemplateList) error
+	CreateOrUpdate(ctx context.Context, moduleTemplateList *v1beta1.ModuleTemplateList) error
 	Delete(ctx context.Context) error
 }
 
-func NewRemoteCatalogFromKyma(kyma *v1alpha1.Kyma) *RemoteCatalog {
+func NewRemoteCatalogFromKyma(kyma *v1beta1.Kyma) *RemoteCatalog {
 	force := true
 	return NewRemoteCatalog(
 		Settings{
@@ -57,15 +57,15 @@ func NewRemoteCatalog(
 // It uses Server-Side-Apply Patches to optimize the turnaround required.
 func (c *RemoteCatalog) CreateOrUpdate(
 	ctx context.Context,
-	kcp *v1alpha1.ModuleTemplateList,
+	kcp *v1beta1.ModuleTemplateList,
 ) error {
-	syncContext := remotecontext.SyncContextFromContext(ctx)
+	syncContext := SyncContextFromContext(ctx)
 
 	if err := c.createOrUpdateCatalog(ctx, kcp, syncContext); err != nil {
 		return err
 	}
 
-	moduleTemplatesRuntime := &v1alpha1.ModuleTemplateList{}
+	moduleTemplatesRuntime := &v1beta1.ModuleTemplateList{}
 	if err := syncContext.RuntimeClient.List(ctx, moduleTemplatesRuntime); err != nil {
 		// it can happen that the ModuleTemplate CRD is not caught during to apply if there are no modules to apply
 		// if this is the case and there is no CRD there can never be any module templates to delete
@@ -83,9 +83,9 @@ func (c *RemoteCatalog) CreateOrUpdate(
 }
 
 func (c *RemoteCatalog) deleteDiffCatalog(ctx context.Context,
-	kcp *v1alpha1.ModuleTemplateList,
-	moduleTemplatesRuntime *v1alpha1.ModuleTemplateList,
-	syncContext *remotecontext.KymaSynchronizationContext,
+	kcp *v1beta1.ModuleTemplateList,
+	moduleTemplatesRuntime *v1beta1.ModuleTemplateList,
+	syncContext *KymaSynchronizationContext,
 ) error {
 	diffsToDelete := c.diffsToDelete(moduleTemplatesRuntime, kcp)
 	channelLength := len(diffsToDelete)
@@ -110,8 +110,8 @@ func (c *RemoteCatalog) deleteDiffCatalog(ctx context.Context,
 }
 
 func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
-	kcp *v1alpha1.ModuleTemplateList,
-	syncContext *remotecontext.KymaSynchronizationContext,
+	kcp *v1beta1.ModuleTemplateList,
+	syncContext *KymaSynchronizationContext,
 ) error {
 	channelLength := len(kcp.Items)
 	results := make(chan error, channelLength)
@@ -131,7 +131,7 @@ func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 
 	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster when we apply it and retry
 	if containsMetaIsNoMatchErr(errs) {
-		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1alpha1.ModuleTemplateKind.Plural()); err != nil {
+		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1beta1.ModuleTemplateKind.Plural()); err != nil {
 			return err
 		}
 	}
@@ -152,7 +152,7 @@ func containsMetaIsNoMatchErr(errs []error) bool {
 }
 
 func (c *RemoteCatalog) patchDiff(
-	ctx context.Context, diff *v1alpha1.ModuleTemplate, syncContext *remotecontext.KymaSynchronizationContext,
+	ctx context.Context, diff *v1beta1.ModuleTemplate, syncContext *KymaSynchronizationContext,
 	deleteInsteadOfPatch bool,
 ) error {
 	diff.SetLastSync()
@@ -172,14 +172,14 @@ func (c *RemoteCatalog) patchDiff(
 	return nil
 }
 
-// diffsToDelete takes 2 v1alpha1.ModuleTemplateList to then calculate any diffs.
-// Diffs are defined as any v1alpha1.ModuleTemplate that is available in the skrList but not in the kcpList.
+// diffsToDelete takes 2 v1beta1.ModuleTemplateList to then calculate any diffs.
+// Diffs are defined as any v1beta1.ModuleTemplate that is available in the skrList but not in the kcpList.
 func (c *RemoteCatalog) diffsToDelete(
-	skrList *v1alpha1.ModuleTemplateList, kcpList *v1alpha1.ModuleTemplateList,
-) []*v1alpha1.ModuleTemplate {
+	skrList *v1beta1.ModuleTemplateList, kcpList *v1beta1.ModuleTemplateList,
+) []*v1beta1.ModuleTemplate {
 	kcp := kcpList.Items
 	skr := skrList.Items
-	toDelete := make([]*v1alpha1.ModuleTemplate, 0, len(skrList.Items))
+	toDelete := make([]*v1beta1.ModuleTemplate, 0, len(skrList.Items))
 	presentInKCP := make(map[string]struct{}, len(kcp))
 	for i := range kcp {
 		presentInKCP[kcp[i].Namespace+kcp[i].Name] = struct{}{}
@@ -192,7 +192,7 @@ func (c *RemoteCatalog) diffsToDelete(
 	return toDelete
 }
 
-func (c *RemoteCatalog) prepareForSSA(moduleTemplate *v1alpha1.ModuleTemplate) {
+func (c *RemoteCatalog) prepareForSSA(moduleTemplate *v1beta1.ModuleTemplate) {
 	moduleTemplate.SetResourceVersion("")
 	moduleTemplate.SetUID("")
 	moduleTemplate.SetManagedFields([]metav1.ManagedFieldsEntry{})
@@ -205,8 +205,8 @@ func (c *RemoteCatalog) prepareForSSA(moduleTemplate *v1alpha1.ModuleTemplate) {
 func (c *RemoteCatalog) Delete(
 	ctx context.Context,
 ) error {
-	syncContext := remotecontext.SyncContextFromContext(ctx)
-	moduleTemplatesRuntime := &v1alpha1.ModuleTemplateList{Items: []v1alpha1.ModuleTemplate{}}
+	syncContext := SyncContextFromContext(ctx)
+	moduleTemplatesRuntime := &v1beta1.ModuleTemplateList{Items: []v1beta1.ModuleTemplate{}}
 	if err := syncContext.RuntimeClient.List(ctx, moduleTemplatesRuntime); err != nil {
 		// if there is no CRD there can never be any module templates to delete
 		if meta.IsNoMatchError(err) {
@@ -227,13 +227,13 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 	crd := &v1extensions.CustomResourceDefinition{}
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
 
-	syncContext := remotecontext.SyncContextFromContext(ctx)
+	syncContext := SyncContextFromContext(ctx)
 
 	var err error
 	err = syncContext.ControlPlaneClient.Get(ctx, client.ObjectKey{
 		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
 		// name changes, this also has to be adjusted here. We can think of making this configurable later
-		Name: fmt.Sprintf("%s.%s", plural, v1alpha1.GroupVersion.Group),
+		Name: fmt.Sprintf("%s.%s", plural, v1beta1.GroupVersion.Group),
 	}, crd)
 
 	if err != nil {
@@ -241,13 +241,11 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 	}
 
 	err = syncContext.RuntimeClient.Get(ctx, client.ObjectKey{
-		Name: fmt.Sprintf("%s.%s", plural, v1alpha1.GroupVersion.Group),
+		Name: fmt.Sprintf("%s.%s", plural, v1beta1.GroupVersion.Group),
 	}, crdFromRuntime)
 
-	if k8serrors.IsNotFound(err) {
-		return syncContext.RuntimeClient.Create(ctx, &v1extensions.CustomResourceDefinition{
-			ObjectMeta: metav1.ObjectMeta{Name: crd.Name, Namespace: crd.Namespace}, Spec: crd.Spec,
-		})
+	if k8serrors.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta1.GroupVersion.Version) {
+		return PatchCRD(ctx, syncContext.RuntimeClient, crd)
 	}
 
 	if !crdReady(crdFromRuntime) {
