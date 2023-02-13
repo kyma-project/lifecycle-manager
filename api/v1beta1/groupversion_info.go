@@ -47,4 +47,10 @@ var (
 
 	// AddToScheme adds the types in this group-version to the given scheme.
 	AddToScheme = SchemeBuilder.AddToScheme //nolint:gochecknoglobals
+
+	// GroupVersionResource is group version resource.
+	GroupVersionResource = GroupVersion.WithResource(KymaKind.Plural()) //nolint:gochecknoglobals
+
+	// GroupVersionKind is group version kind.
+	GroupVersionKind = GroupVersion.WithKind(string(KymaKind)) //nolint:gochecknoglobals
 )

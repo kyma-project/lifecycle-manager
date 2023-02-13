@@ -51,7 +51,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 		Watches(&source.Kind{Type: &corev1.Secret{}}, handler.Funcs{})
 
 	controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: &v1beta1.Manifest{}},
-		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1alpha1.Kyma{}, IsController: true})
+		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1beta1.Kyma{}, IsController: true})
 
 	var runnableListener *listener.SKREventListener
 	var eventChannel *source.Channel

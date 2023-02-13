@@ -20,7 +20,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
@@ -35,14 +34,6 @@ var (
 	// AddToScheme adds the types in this group-version to the given scheme.
 	AddToScheme = SchemeBuilder.AddToScheme //nolint:gochecknoglobals
 
-	// SchemeGroupVersion is required by kubernetes code-generator.
-	SchemeGroupVersion = GroupVersion //nolint:gochecknoglobals
-
-	// GroupVersionResource is group version resource.
-	GroupVersionResource = GroupVersion.WithResource(v1beta1.KymaKind.Plural()) //nolint:gochecknoglobals
-
-	// GroupVersionKind is group version kind.
-	GroupVersionKind = GroupVersion.WithKind(string(v1beta1.KymaKind)) //nolint:gochecknoglobals
 )
 
 func Resource(resource string) schema.GroupResource {

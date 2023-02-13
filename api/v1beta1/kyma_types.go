@@ -371,3 +371,25 @@ func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType,
 func (kyma *Kyma) SkipReconciliation() bool {
 	return kyma.GetLabels() != nil && kyma.GetLabels()[SkipReconcileLabel] == "true"
 }
+
+func (kyma *Kyma) DetermineState() State {
+	status := &kyma.Status
+	for _, moduleStatus := range status.Modules {
+		if moduleStatus.State == StateError {
+			return StateError
+		}
+	}
+
+	if len(status.Conditions) < 1 {
+		return StateProcessing
+	}
+
+	for _, existingCondition := range status.Conditions {
+		if existingCondition.Type == string(ConditionTypeReady) &&
+			existingCondition.Status != metav1.ConditionTrue {
+			return StateProcessing
+		}
+	}
+
+	return StateReady
+}

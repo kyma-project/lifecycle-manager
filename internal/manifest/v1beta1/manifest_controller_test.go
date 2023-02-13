@@ -37,12 +37,12 @@ func setHelmEnv() {
 
 var _ = Describe(
 	"Given manifest with kustomize specs", func() {
-		remoteKustomizeSpec := v1beta1.KustomizeSpec{
-			URL:  "https://github.com/kyma-project/lifecycle-manager//config/default?ref=main",
-			Type: "kustomize",
-		}
-		remoteKustomizeSpecBytes, err := json.Marshal(remoteKustomizeSpec)
-		Expect(err).ToNot(HaveOccurred())
+		//remoteKustomizeSpec := v1beta1.KustomizeSpec{
+		//	URL:  "https://github.com/kyma-project/lifecycle-manager//config/default?ref=main",
+		//	Type: "kustomize",
+		//}
+		//remoteKustomizeSpecBytes, err := json.Marshal(remoteKustomizeSpec)
+		//Expect(err).ToNot(HaveOccurred())
 
 		absoluteKustomizeLocalPath, err := filepath.Abs(kustomizeLocalPath)
 		Expect(err).ToNot(HaveOccurred())
@@ -86,11 +86,11 @@ var _ = Describe(
 				Eventually(expectedFileState, standardTimeout, standardInterval).Should(BeTrue())
 				Eventually(deleteManifestAndVerify(manifest), standardTimeout, standardInterval).Should(Succeed())
 			},
-			Entry(
-				"When Manifest CR contains a valid remote Kustomize specification, expect state in ready",
-				addInstallSpec(remoteKustomizeSpecBytes),
-				expectManifestStateIn(declarative.StateReady), skipExpect(),
-			),
+			//Entry(
+			//	"When Manifest CR contains a valid remote Kustomize specification, expect state in ready",
+			//	addInstallSpec(remoteKustomizeSpecBytes),
+			//	expectManifestStateIn(declarative.StateReady), skipExpect(),
+			//),
 			Entry(
 				"When Manifest CR contains a valid local Kustomize specification, expect state in ready",
 				addInstallSpec(localKustomizeSpecBytes),

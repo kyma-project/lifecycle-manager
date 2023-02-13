@@ -47,7 +47,7 @@ func (m *Module) ApplyLabelsAndAnnotations(
 	}
 	lbls[v1beta1.ChannelLabel] = m.Template.Spec.Channel
 
-	lbls[v1alpha1.ManagedBy] = v1alpha1.OperatorName
+	lbls[v1beta1.ManagedBy] = v1beta1.OperatorName
 
 	m.SetLabels(lbls)
 

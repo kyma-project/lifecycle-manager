@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	declarative "github.com/kyma-project/module-manager/pkg/declarative/v2"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	. "github.com/onsi/ginkgo/v2"
@@ -20,7 +20,6 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	sampleCRDv1beta1 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1beta1"
-	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 )
 
 func RegisterDefaultLifecycleForKyma(kyma *v1beta1.Kyma) {

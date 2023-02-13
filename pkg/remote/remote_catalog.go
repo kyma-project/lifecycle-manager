@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	"github.com/kyma-project/module-manager/pkg/types"
+	"github.com/kyma-project/lifecycle-manager/pkg/types"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"

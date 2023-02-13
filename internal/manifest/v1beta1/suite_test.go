@@ -18,6 +18,7 @@ package v1beta1_test
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/api"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -25,7 +26,6 @@ import (
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/registry"
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
@@ -108,8 +108,9 @@ var _ = BeforeSuite(
 
 		//+kubebuilder:scaffold:scheme
 
-		Expect(v1beta1.AddToScheme(scheme.Scheme)).To(Succeed())
-		Expect(v1alpha1.AddToScheme(scheme.Scheme)).To(Succeed())
+		Expect(api.AddToScheme(scheme.Scheme)).To(Succeed())
+		Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+
 		metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
 		if !found {
 			metricsBindAddress = ":0"
