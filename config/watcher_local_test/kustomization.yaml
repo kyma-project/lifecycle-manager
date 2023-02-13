@@ -3,7 +3,7 @@
 # that we do not want in the default configuration (e.g. vendor-specific gateway implementation)
 # but are necessary for testing the watcher on locally provisioned clusters using k3d.
 resources:
-  - ../manager
+- ../manager
 generatorOptions:
   disableNameSuffixHash: true
 
@@ -12,97 +12,91 @@ namespace: kcp-system
 namePrefix: klm-
 
 # Labels to add to all resources and selectors.
-commonLabels:
-  app.kubernetes.io/component: lifecycle-manager.kyma-project.io
-  app.kubernetes.io/instance: kcp-lifecycle-manager-main
-  app.kubernetes.io/name: kcp-lifecycle-manager
-  app.kubernetes.io/created-by: kustomize
-  app.kubernetes.io/managed-by: kustomize
-  app.kubernetes.io/part-of: manual-deployment
 
 patches:
-  - patch: |-
-      - op: add
-        path: /spec/template/spec/containers/0/args/-
-        value: --enable-watcher-local-testing
-      - op: add
-        path: /spec/template/spec/containers/0/args/-
-        value: --listener-http-local-mapping=9443
-      - op: add
-        path: /spec/template/spec/containers/0/args/-
-        value: --enable-domain-name-pinning=true
-      - op: add
-        path: /spec/template/spec/containers/0/volumeMounts
-        value:
-          - name: manifest
-            mountPath: /skr-webhook/manifest
-      - op: add
-        path: /spec/template/spec/volumes
-        value:
-          - name: manifest
-            emptyDir: {}
-    target:
-      kind: Deployment
+- patch: |-
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
+      value: --enable-watcher-local-testing
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
+      value: --listener-http-local-mapping=9443
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
+      value: --enable-domain-name-pinning=true
+    - op: add
+      path: /spec/template/spec/containers/0/volumeMounts
+      value:
+        - name: manifest
+          mountPath: /skr-webhook/manifest
+    - op: add
+      path: /spec/template/spec/volumes
+      value:
+        - name: manifest
+          emptyDir: {}
+  target:
+    kind: Deployment
+- patch: |-
+    - op: replace
+      path: /metadata/name
+      value: lifecycle-manager-kyma-gateway
+    - op: replace
+      path: /spec/servers/0/hosts/0
+      value: "*"
+  target:
+    group: networking.istio.io
+    kind: Gateway
+    name: watcher-gateway
+    version: v1beta1
+- patch: |-
+    - op: replace
+      path: /spec/dnsNames/0
+      value: "localhost"
+    - op: add
+      path: /spec/dnsNames/1
+      value: "host.k3d.internal"
+    - op: replace
+      path: /metadata/namespace
+      value: "istio-system"
+  target:
+    group: cert-manager.io
+    kind: Certificate
+    name: watcher-serving-cert
+    version: v1
+- patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: "istio-system"
+  target:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: watcher-selfsigned-cluster-issuer
+    version: v1
+- patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: "istio-system"
+  target:
+    group: cert-manager.io
+    kind: Issuer
+    name: watcher-selfsigned-issuer
+    version: v1
 
-# Non-Native k8s resources
-patchesJson6902:
-  - patch: |-
-      - op: replace
-        path: /metadata/name
-        value: lifecycle-manager-kyma-gateway
-      - op: replace
-        path: /spec/servers/0/hosts/0
-        value: "*"
-    target:
-      group: networking.istio.io
-      version: v1beta1
-      kind: Gateway
-      name: watcher-gateway
-  - patch: |-
-      - op: replace
-        path: /spec/dnsNames/0
-        value: "localhost"
-      - op: add
-        path: /spec/dnsNames/1
-        value: "host.k3d.internal"
-      - op: replace
-        path: /metadata/namespace
-        value: "istio-system"
-    target:
-      group: cert-manager.io
-      version: v1
-      kind: Certificate
-      name: watcher-serving-cert
-  - patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: "istio-system"
-    target:
-      group: cert-manager.io
-      version: v1
-      kind: ClusterIssuer
-      name: watcher-selfsigned-cluster-issuer
-  - patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: "istio-system"
-    target:
-      group: cert-manager.io
-      version: v1
-      kind: Issuer
-      name: watcher-selfsigned-issuer
-
-components:
-  - ../crd
-  - ../rbac
   # [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
-  - ../watcher
   # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
-  - ../istio
-  # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
-  # crd/kustomization.yaml
-  #- ../webhook
-  # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
-  # - ../prometheus
-  # [GRAFANA] To generate configmap for provision grafana dashboard
-  # - ../grafana
+components:
+- ../crd
+- ../rbac
+- ../watcher
+- ../istio
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+labels:
+- includeSelectors: true
+  pairs:
+    app.kubernetes.io/component: lifecycle-manager.kyma-project.io
+    app.kubernetes.io/created-by: kustomize
+    app.kubernetes.io/instance: kcp-lifecycle-manager-main
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: kcp-lifecycle-manager
+    app.kubernetes.io/part-of: manual-deployment

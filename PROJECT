@@ -27,10 +27,6 @@ resources:
     defaulting: true
     validation: true
     webhookVersion: v1
-- controller: true
-  domain: kyma-project.io
-  kind: Secrets
-  version: v1
 - api:
     crdVersion: v1
     namespaced: true

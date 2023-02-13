@@ -25,6 +25,8 @@ import (
 const (
 	podRestartLabelKey     = "operator.kyma-project.io/pod-restart-trigger"
 	rawManifestFilePathTpl = "%s/resources.yaml"
+	// always true since unsecured watcher setup will no longer be supported.
+	tlsEnabled = "true"
 )
 
 var (
@@ -137,8 +139,8 @@ func configureConfigMap(cfg *unstructuredResourcesConfig, resource *unstructured
 	configMap.Data = map[string]string{
 		"contractVersion":  cfg.contractVersion,
 		"kcpAddr":          cfg.kcpAddress,
-		"tlsWebhookServer": cfg.tlsWebhookServer,
-		"tlsCallback":      cfg.tlsCallback,
+		"tlsWebhookServer": tlsEnabled,
+		"tlsCallback":      tlsEnabled,
 	}
 	return configMap, nil
 }
@@ -218,8 +220,6 @@ func getWatchableConfigs(ctx context.Context, kcpClient client.Client) (map[stri
 type unstructuredResourcesConfig struct {
 	contractVersion          string
 	kcpAddress               string
-	tlsWebhookServer         string
-	tlsCallback              string
 	secretResVer             string
 	cpuResLimit, memResLimit string
 	caCert, tlsCert, tlsKey  []byte
