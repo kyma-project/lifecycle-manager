@@ -28,10 +28,18 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
 //nolint:lll
 //+kubebuilder:webhook:path=/mutate-operator-kyma-project-io-v1beta1-moduletemplate,mutating=true,failurePolicy=fail,sideEffects=None,groups=operator.kyma-project.io,resources=moduletemplates,verbs=create;update,versions=v1beta1,name=v1beta1.mmoduletemplate.kb.io,admissionReviewVersions=v1
+
+var _ webhook.Defaulter = &ModuleTemplate{}
+
+// Default implements webhook.Defaulter so a webhook will be registered for the type.
+func (in *ModuleTemplate) Default() {
+	moduletemplatelog.Info("default", "name", in.Name)
+}
 
 //nolint:lll
 //+kubebuilder:webhook:path=/validate-operator-kyma-project-io-v1beta1-moduletemplate,mutating=false,failurePolicy=fail,sideEffects=None,groups=operator.kyma-project.io,resources=moduletemplates,verbs=create;update,versions=v1beta1,name=v1beta1.vmoduletemplate.kb.io,admissionReviewVersions=v1

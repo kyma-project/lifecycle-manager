@@ -18,12 +18,13 @@ package v1beta1_test
 
 import (
 	"context"
-	"github.com/kyma-project/lifecycle-manager/api"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/api"
 
 	"github.com/google/go-containerregistry/pkg/registry"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
