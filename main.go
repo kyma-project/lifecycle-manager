@@ -173,7 +173,7 @@ func enableWebhooks(mgr manager.Manager) {
 	}
 
 	if err := (&operatorv1beta1.Manifest{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "Watcher")
+		setupLog.Error(err, "unable to create webhook", "webhook", "Manifest")
 		os.Exit(1)
 	}
 }
