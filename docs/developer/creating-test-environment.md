@@ -34,7 +34,7 @@ To bundle your module image and operator, please refer to the detailed informati
 
 2. Create the `kyma-system` Namespace
 
-3. Run [module-manager](https://github.com/kyma-project/module-manager/tree/main/operator) and [lifecycle-manager](https://github.com/kyma-project/lifecycle-manager/tree/main) in this order.
+3. Run [lifecycle-manager](https://github.com/kyma-project/lifecycle-manager/tree/main) in this order.
    * local: run following commands against your cluster's kubeconfig
    ```shell
     make install
@@ -44,7 +44,7 @@ To bundle your module image and operator, please refer to the detailed informati
    ```shell
    # for local registry adjust IMG value accordingly
    # using remote registry (replace `latest` with your desired tag)
-   make deploy IMG=eu.gcr.io/kyma-project/module-manager:latest
+   make deploy IMG=eu.gcr.io/kyma-project/lifecycle-manager:latest
    ```
 
    > _**NOTE:**_ Ignore dependency errors like `no matches for kind "VirtualService" in version "networking.istio.io/v1beta1"`, if it is irrelevant for your test setup.

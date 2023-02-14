@@ -17,10 +17,10 @@ Kyma is the opinionated set of Kubernetes based modular building blocks that inc
 
 Lifecycle Manager manages Clusters through the [Kyma Custom Resource](api/v1alpha1/kyma_types.go), which contains a desired state of all modules in a cluster.
 
-Based on the [ModuleTemplate Custom Resource](api/v1alpha1/moduletemplate_types.go), it resolves a set of image layers from an OCI Registry and creates custom resources for the [Module Manager](https://github.com/kyma-project/module-manager/). This is the basic delivery model for all modules.
+Based on the [ModuleTemplate Custom Resource](api/v1alpha1/moduletemplate_types.go), it resolves a set of image layers from an OCI Registry and creates custom resources for the based on a Manifest. This is the basic delivery model for all modules.
 Using its created resources in the initial delivery of a module, it  then updates the [Kyma Custom Resource](api/v1alpha1/kyma_types.go) based on the observed status changes in the Module Custom Resources (similar to a native kubernetes deployment tracking availability).
 
-Module operators only have to watch their own custom resources and reconcile modules in the target clusters to the desired state. These states are then aggregated to reflect the cluster state. Please reference [Module Manager](https://github.com/kyma-project/module-manager/) in order to gain more insight into how each module is collecting its status and report it to the Lifecycle Manager.
+Module operators only have to watch their own custom resources and reconcile modules in the target clusters to the desired state. These states are then aggregated to reflect the cluster state.
 
 ### Example
 
@@ -36,8 +36,8 @@ spec:
 ```
 
 The creation of the custom resource triggers a reconciliation that creates a Manifest for `istio` based on a [ModuleTemplate](api/v1alpha1/moduletemplate_types.go) found in the cluster.
-When each module operator completes their installation, it reports it's own resource status (`.status.state`). Status changes trigger [Module Manager](https://github.com/kyma-project/module-manager/) to update the manifest of the module.
-Lifecycle Manager then uses this to aggregate and combine the readiness condition of the cluster and determine the installation state or trigger more reconciliation steps.
+When each module operator completes their installation, it reports its own resource status (`.status.state`). Status changes trigger the Controller to update the Manifest of the module.
+The Lifecycle Manager then uses this to aggregate and combine the readiness condition of the cluster and determine the installation state or trigger more reconciliation steps.
 
 ## Architecture
 
@@ -67,10 +67,11 @@ subject to change, however the general reconciliation model is considered ready 
 
 Here is a (somewhat complete) list of the different modules in the system together with their stability:
 
-| System Component                                                | Stability                                                                                                     |
-|-----------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| System Component                                       | Stability                                                                                                     |
+|--------------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
 | [Kyma](api/v1alpha1/kyma_types.go)                     | Alpha-Grade - do not rely on in automation and watch upstream as close as possible                            |
 | [ModuleTemplate](api/v1alpha1/moduletemplate_types.go) | Alpha-Grade - only use together with Kyma CLI; expect regular breaking changes in the module bundling process |
+| [Manifest](api/v1beta1/manifest_types.go)              | Beta-Grade - free for use in testing cycles                                                                   |
 | [Controller](controllers/kyma_controller.go)           | In active development (continuous) - Expect Bugs and fast-paced development of new features                   |
 
 ## Deployment / Delivery models
@@ -94,7 +95,7 @@ As such, all module interactions are abstracted through the [ModuleTemplate](api
 
 This abstraction of a template is used for generically deploying instances of a module within a Kyma Runtime at a specific Release Group we call `Channel` (for more information, visit the respective Chapter in the [Concept for Modularization](https://github.com/kyma-project/community/tree/main/concepts/modularization#release-channels)). It contains not only a specification of a Module with it's different components through [OCM Component Descriptors](https://github.com/gardener/component-spec/blob/master/doc/proposal/02-component-descriptor.md).
 
-These serve as small-scale BOM's for all contents included in a module and can be interpreted by Lifecycle Manager and [Module Manager](https://github.com/kyma-project/module-manager/)
+These serve as small-scale BOM's for all contents included in a module and can be interpreted by Lifecycle Manager.
 to correctly install a module. (for more information, please have a look at the respective chapter in the [Kyma Modularization Concept](https://github.com/kyma-project/community/tree/main/concepts/modularization#component-descriptor))
 
 ### Versioning and Releasing

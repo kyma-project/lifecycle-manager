@@ -39,7 +39,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -78,13 +77,6 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 
-	// manifest CRD
-	// istio CRDs
-	remoteCrds, err := ParseRemoteCRDs([]string{
-		"https://raw.githubusercontent.com/kyma-project/module-manager/main/config/crd/bases/operator.kyma-project.io_manifests.yaml", //nolint:lll
-	})
-	Expect(err).NotTo(HaveOccurred())
-
 	// kcpModule CRD
 	controlplaneCrd := &v1.CustomResourceDefinition{}
 	modulePath := filepath.Join("..", "config", "samples", "component-integration-installed",
@@ -96,7 +88,7 @@ var _ = BeforeSuite(func() {
 
 	controlPlaneEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases")},
-		CRDs:                  append([]*v1.CustomResourceDefinition{controlplaneCrd}, remoteCrds...),
+		CRDs:                  []*v1.CustomResourceDefinition{controlplaneCrd},
 		ErrorIfCRDPathMissing: true,
 	}
 
