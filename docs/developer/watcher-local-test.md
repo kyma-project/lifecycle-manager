@@ -38,9 +38,9 @@ sudo nano /etc/hosts
        kubectl apply -f https://raw.githubusercontent.com/kyma-project/module-manager/main/config/crd/bases/operator.kyma-project.io_manifests.yaml
       ```
    3. `cert-manager` by Jetstack
-   ```shell
-   kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
-   ```
+       ```shell
+       kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
+       ```
 
 4. Deploy lifecycle-manager on the cluster:
     ```shell

@@ -4,14 +4,22 @@
 # but are necessary for testing the watcher on locally provisioned clusters using k3d.
 resources:
 - ../manager
+
+# [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
+# [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
+components:
+  - ../crd
+  - ../rbac
+  - ../watcher
+  - ../istio
+
+namespace: kcp-system
+
 generatorOptions:
   disableNameSuffixHash: true
 
 # Adds namespace to all resources.
-namespace: kcp-system
 namePrefix: klm-
-
-# Labels to add to all resources and selectors.
 
 patches:
 - patch: |-
@@ -36,59 +44,57 @@ patches:
           emptyDir: {}
   target:
     kind: Deployment
-- patch: |-
-    - op: replace
-      path: /metadata/name
-      value: lifecycle-manager-kyma-gateway
-    - op: replace
-      path: /spec/servers/0/hosts/0
-      value: "*"
-  target:
-    group: networking.istio.io
-    kind: Gateway
-    name: watcher-gateway
-    version: v1beta1
-- patch: |-
-    - op: replace
-      path: /spec/dnsNames/0
-      value: "localhost"
-    - op: add
-      path: /spec/dnsNames/1
-      value: "host.k3d.internal"
-    - op: replace
-      path: /metadata/namespace
-      value: "istio-system"
-  target:
-    group: cert-manager.io
-    kind: Certificate
-    name: watcher-serving-cert
-    version: v1
-- patch: |-
-    - op: replace
-      path: /metadata/namespace
-      value: "istio-system"
-  target:
-    group: cert-manager.io
-    kind: ClusterIssuer
-    name: watcher-selfsigned-cluster-issuer
-    version: v1
-- patch: |-
-    - op: replace
-      path: /metadata/namespace
-      value: "istio-system"
-  target:
-    group: cert-manager.io
-    kind: Issuer
-    name: watcher-selfsigned-issuer
-    version: v1
 
-  # [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
-  # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
-components:
-- ../crd
-- ../rbac
-- ../watcher
-- ../istio
+# JSON patches needed to ensure certificate setup namespaces are not
+# being overwritten by kustomize global namespace patch. The certificate
+# setup needs to be in the `istio-system` namespace
+patchesJson6902:
+  - patch: |-
+      - op: replace
+        path: /metadata/name
+        value: lifecycle-manager-kyma-gateway
+      - op: replace
+        path: /spec/servers/0/hosts/0
+        value: "*"
+    target:
+      group: networking.istio.io
+      version: v1beta1
+      kind: Gateway
+      name: watcher-gateway
+  - patch: |-
+      - op: replace
+        path: /spec/dnsNames/0
+        value: "localhost"
+      - op: add
+        path: /spec/dnsNames/1
+        value: "host.k3d.internal"
+      - op: replace
+        path: /metadata/namespace
+        value: "istio-system"
+    target:
+      group: cert-manager.io
+      version: v1
+      kind: Certificate
+      name: watcher-serving-cert
+  - patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: "istio-system"
+    target:
+      group: cert-manager.io
+      version: v1
+      kind: ClusterIssuer
+      name: watcher-selfsigned-cluster-issuer
+  - patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: "istio-system"
+    target:
+      group: cert-manager.io
+      version: v1
+      kind: Issuer
+      name: watcher-selfsigned-issuer
+
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 labels:
