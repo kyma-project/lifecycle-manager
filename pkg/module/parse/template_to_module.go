@@ -60,7 +60,7 @@ func templatesToModules(
 		}
 		fqdn := descriptor.GetName()
 		version := descriptor.GetVersion()
-		name := common.CreateModuleName(fqdn, kyma.Name)
+		name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
 		// if the default data does not contain a name, default it to the module name
 		if template.ModuleTemplate.Spec.Data.GetName() == "" {
 			template.ModuleTemplate.Spec.Data.SetName(name)

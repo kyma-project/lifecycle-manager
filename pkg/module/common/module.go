@@ -84,11 +84,11 @@ const maxModuleNameLength = 253
 // a name combination.
 // e.g. kyma-project.io/module/some-module and default-id => "default-id-some-module-34180237"
 // e.g. domain.com/some-module and default-id => "default-id-some-module-1238916".
-func CreateModuleName(fqdn, prefix string) string {
+func CreateModuleName(fqdn, prefix, moduleName string) string {
 	splitFQDN := strings.Split(fqdn, "/")
 	lastPartOfFQDN := splitFQDN[len(splitFQDN)-1]
 	hash := fnv.New32()
-	_, _ = hash.Write([]byte(fqdn))
+	_, _ = hash.Write([]byte(fqdn + moduleName))
 	hashedFQDN := hash.Sum32()
 	name := fmt.Sprintf("%s-%s-%v", prefix, lastPartOfFQDN, hashedFQDN)
 	if len(name) >= maxModuleNameLength {
