@@ -38,25 +38,6 @@ components:
   - ../grafana
 
 
-replacements:
-  # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'.
-  - source:
-      name: serving-cert
-      namespace: system
-      group: cert-manager.io
-      version: v1
-      kind: Certificate
-      fieldPath: spec.secretName
-    targets:
-      - select:
-          kind: Deployment
-          group: apps
-          name: controller-manager
-          namespace: system
-          version: v1
-        fieldPaths:
-          - secretName=lifecycle-manager-webhook-server-cert # this makes sure that the deployment uses cert-manager
-
 patchesJson6902:
   # We patch the Metrics JSONs here as we expect KCP to be watching for grafana dashboards in kyma-system,
   # not kcp-system as we configure it above for the rest of the kustomization
