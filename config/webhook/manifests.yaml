@@ -51,6 +51,26 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /mutate-operator-kyma-project-io-v1beta1-moduletemplate
+  failurePolicy: Fail
+  name: v1beta1.mmoduletemplate.kb.io
+  rules:
+  - apiGroups:
+    - operator.kyma-project.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - moduletemplates
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /mutate-operator-kyma-project-io-v1beta1-watcher
   failurePolicy: Fail
   name: mwatcher.kb.io
@@ -93,7 +113,7 @@ webhooks:
       namespace: system
       path: /mutate-operator-kyma-project-io-v1alpha1-moduletemplate
   failurePolicy: Fail
-  name: mmoduletemplate.kb.io
+  name: v1alpha1.mmoduletemplate.kb.io
   rules:
   - apiGroups:
     - operator.kyma-project.io
@@ -158,6 +178,26 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /validate-operator-kyma-project-io-v1beta1-moduletemplate
+  failurePolicy: Fail
+  name: v1beta1.vmoduletemplate.kb.io
+  rules:
+  - apiGroups:
+    - operator.kyma-project.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - moduletemplates
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /validate-operator-kyma-project-io-v1beta1-watcher
   failurePolicy: Fail
   name: vwatcher.kb.io
@@ -200,7 +240,7 @@ webhooks:
       namespace: system
       path: /validate-operator-kyma-project-io-v1alpha1-moduletemplate
   failurePolicy: Fail
-  name: vmoduletemplate.kb.io
+  name: v1alpha1.vmoduletemplate.kb.io
   rules:
   - apiGroups:
     - operator.kyma-project.io

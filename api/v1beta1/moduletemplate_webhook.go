@@ -30,6 +30,12 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
+//nolint:lll
+//+kubebuilder:webhook:path=/mutate-operator-kyma-project-io-v1beta1-moduletemplate,mutating=true,failurePolicy=fail,sideEffects=None,groups=operator.kyma-project.io,resources=moduletemplates,verbs=create;update,versions=v1beta1,name=v1beta1.mmoduletemplate.kb.io,admissionReviewVersions=v1
+
+//nolint:lll
+//+kubebuilder:webhook:path=/validate-operator-kyma-project-io-v1beta1-moduletemplate,mutating=false,failurePolicy=fail,sideEffects=None,groups=operator.kyma-project.io,resources=moduletemplates,verbs=create;update,versions=v1beta1,name=v1beta1.vmoduletemplate.kb.io,admissionReviewVersions=v1
+
 // log is for logging in this package.
 var moduletemplatelog = logf.Log.WithName("moduletemplate-resource") //nolint:gochecknoglobals
 

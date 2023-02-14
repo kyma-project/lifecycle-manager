@@ -51,6 +51,7 @@ import (
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 
+	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	operatorv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
 
@@ -163,6 +164,13 @@ func enableWebhooks(mgr manager.Manager) {
 		setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
 		os.Exit(1)
 	}
+
+	if err := (&operatorv1alpha1.ModuleTemplate{}).
+		SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
+		os.Exit(1)
+	}
+
 	if err := (&operatorv1beta1.Kyma{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Kyma")
 		os.Exit(1)
@@ -173,6 +181,11 @@ func enableWebhooks(mgr manager.Manager) {
 	}
 
 	if err := (&operatorv1beta1.Manifest{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Manifest")
+		os.Exit(1)
+	}
+
+	if err := (&operatorv1alpha1.Manifest{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Manifest")
 		os.Exit(1)
 	}
