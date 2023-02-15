@@ -8,7 +8,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -30,8 +30,8 @@ const (
 )
 
 var LabelSet = k8slabels.Set{ //nolint:gochecknoglobals
-	v1alpha1.PurposeLabel: v1alpha1.CertManager,
-	v1alpha1.ManagedBy:    v1alpha1.OperatorName,
+	v1beta1.PurposeLabel: v1beta1.CertManager,
+	v1beta1.ManagedBy:    v1beta1.OperatorName,
 }
 
 type SubjectAltName struct {
@@ -43,7 +43,7 @@ type SubjectAltName struct {
 
 type CertificateManager struct {
 	kcpClient                  client.Client
-	kyma                       *v1alpha1.Kyma
+	kyma                       *v1beta1.Kyma
 	certificateName            string
 	secretName                 string
 	istioNamespace             string
@@ -58,7 +58,7 @@ type CertificateSecret struct {
 }
 
 // NewCertificateManager returns a new CertificateManager, which can be used for creating a cert-manager Certificates.
-func NewCertificateManager(kcpClient client.Client, kyma *v1alpha1.Kyma,
+func NewCertificateManager(kcpClient client.Client, kyma *v1beta1.Kyma,
 	istioNamespace string, localTesting bool,
 ) (*CertificateManager, error) {
 	return &CertificateManager{

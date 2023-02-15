@@ -24,12 +24,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"github.com/kyma-project/lifecycle-manager/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
@@ -75,7 +75,6 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(api.AddToScheme(scheme))
 	utilruntime.Must(v1extensions.AddToScheme(scheme))
-	utilruntime.Must(moduleManagerV1alpha1.AddToScheme(scheme))
 	utilruntime.Must(certManagerV1.AddToScheme(scheme))
 
 	//+kubebuilder:scaffold:scheme

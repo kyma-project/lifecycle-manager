@@ -253,7 +253,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1beta
 			// + consider introducing own condition for CertificateReady Status
 			// https://github.com/kyma-project/lifecycle-manager/issues/376
 			if !errors.Is(err, &watcher.CertificateNotReadyError{}) {
-				return r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError,
+				return r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta1.StateError,
 					fmt.Errorf("error while installing Watcher Webhook Chart: %w", err))
 			}
 		}
