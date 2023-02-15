@@ -73,7 +73,7 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           wget --header="Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -qO - "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+            -qO - "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash -s "4.5.7"
           mv kustomize /usr/local/bin/
           cd $(go env GOPATH)/src/github.com/${{ github.repository }}/config/manager
           kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
