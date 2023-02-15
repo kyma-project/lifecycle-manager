@@ -30,7 +30,11 @@ import (
 	. "github.com/onsi/gomega"
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
-	//+kubebuilder:scaffold:imports
+
+	"github.com/kyma-project/lifecycle-manager/api"
+	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -38,18 +42,23 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	cfg       *rest.Config         //nolint:gochecknoglobals
-	k8sClient client.Client        //nolint:gochecknoglobals
-	testEnv   *envtest.Environment //nolint:gochecknoglobals
-	ctx       context.Context      //nolint:gochecknoglobals
-	cancel    context.CancelFunc   //nolint:gochecknoglobals
+	k8sClient            client.Client        //nolint:gochecknoglobals
+	testEnv              *envtest.Environment //nolint:gochecknoglobals
+	webhookServerContext context.Context      //nolint:gochecknoglobals
+	webhookServerCancel  context.CancelFunc   //nolint:gochecknoglobals
+	cfg                  *rest.Config         //nolint:gochecknoglobals
+	scheme               *runtime.Scheme      //nolint:gochecknoglobals
+)
+
+const (
+	Timeout  = time.Second * 10
+	Interval = time.Millisecond * 250
 )
 
 func TestAPIs(t *testing.T) {
@@ -60,10 +69,8 @@ func TestAPIs(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
-	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
-
-	ctx, cancel = context.WithCancel(context.TODO())
-
+	logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
+	webhookServerContext, webhookServerCancel = context.WithCancel(context.TODO())
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
@@ -74,13 +81,12 @@ var _ = BeforeSuite(func() {
 	}
 
 	var err error
-	// cfg is defined in this file globally.
 	cfg, err = testEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	scheme := runtime.NewScheme()
-	Expect(v1beta1.AddToScheme(scheme)).NotTo(HaveOccurred())
+	scheme = runtime.NewScheme()
+	Expect(api.AddToScheme(scheme)).NotTo(HaveOccurred())
 	Expect(apiextensionsv1.AddToScheme(scheme)).NotTo(HaveOccurred())
 	Expect(admissionv1beta1.AddToScheme(scheme)).NotTo(HaveOccurred())
 
@@ -90,32 +96,36 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
+	SetupWebhook()
+})
+
+func StopWebhook() {
+	webhookServerCancel()
+	<-webhookServerContext.Done()
+}
+
+func SetupWebhook() {
 	// start webhook server using Manager
 	webhookInstallOptions := &testEnv.WebhookInstallOptions
-	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
-		Scheme:             scheme,
-		Host:               webhookInstallOptions.LocalServingHost,
-		Port:               webhookInstallOptions.LocalServingPort,
-		CertDir:            webhookInstallOptions.LocalServingCertDir,
-		LeaderElection:     false,
-		MetricsBindAddress: "0",
-	})
+	mgr, err := ctrl.NewManager(
+		cfg, ctrl.Options{
+			Scheme:             scheme,
+			Host:               webhookInstallOptions.LocalServingHost,
+			Port:               webhookInstallOptions.LocalServingPort,
+			CertDir:            webhookInstallOptions.LocalServingCertDir,
+			LeaderElection:     false,
+			MetricsBindAddress: "0",
+		})
 	Expect(err).NotTo(HaveOccurred())
 
-	err = (&v1beta1.ModuleTemplate{}).SetupWebhookWithManager(mgr)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = (&v1beta1.Kyma{}).SetupWebhookWithManager(mgr)
-	Expect(err).NotTo(HaveOccurred())
-
-	err = (&v1beta1.Watcher{}).SetupWebhookWithManager(mgr)
-	Expect(err).NotTo(HaveOccurred())
+	Expect((&v1beta1.ModuleTemplate{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
+	Expect((&v1alpha1.ModuleTemplate{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:webhook
 
 	go func() {
 		defer GinkgoRecover()
-		err = mgr.Start(ctx)
+		err = mgr.Start(webhookServerContext)
 		Expect(err).NotTo(HaveOccurred())
 	}()
 
@@ -123,18 +133,20 @@ var _ = BeforeSuite(func() {
 	dialer := &net.Dialer{Timeout: time.Second}
 	addrPort := fmt.Sprintf("%s:%d", webhookInstallOptions.LocalServingHost, webhookInstallOptions.LocalServingPort)
 	Eventually(func() error {
-		conn, err := tls.DialWithDialer(dialer, "tcp", addrPort, &tls.Config{InsecureSkipVerify: true}) //nolint:gosec
+		conn, err := tls.DialWithDialer(dialer, "tcp", addrPort, &tls.Config{
+			InsecureSkipVerify: true, //nolint:gosec
+		})
 		if err != nil {
 			return err
 		}
-		conn.Close()
+		_ = conn.Close()
 		return nil
-	}).Should(Succeed())
-})
+	}, Timeout, Interval).Should(Succeed())
+}
 
 var _ = AfterSuite(func() {
-	cancel()
 	By("tearing down the test environment")
+	StopWebhook()
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
