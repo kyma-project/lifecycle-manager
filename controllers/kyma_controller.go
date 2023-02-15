@@ -18,10 +18,10 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"k8s.io/client-go/rest"
 
@@ -37,6 +37,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -63,9 +64,9 @@ type KymaReconciler struct {
 	record.EventRecorder
 	RequeueIntervals
 	signature.VerificationSettings
-	RemoteClientCache *remote.ClientCache
-	SKRWebhookManager deploy.SKRWebhookManager
+	SKRWebhookManager watcher.SKRWebhookManager
 	KcpRestConfig     *rest.Config
+	RemoteClientCache *remote.ClientCache
 }
 
 //nolint:lll
@@ -79,6 +80,8 @@ type KymaReconciler struct {
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=moduletemplates,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=moduletemplates/finalizers,verbs=update
 //+kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
+//+kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch
+//+kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;create;update;delete;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -247,7 +250,13 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1alph
 	if kyma.Spec.Sync.Enabled && r.SKRWebhookManager != nil {
 		if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
 			kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
-			return r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError, err)
+			// TODO Move installation to own go-routine to not block installation
+			// + consider introducing own condition for CertificateReady Status
+			// https://github.com/kyma-project/lifecycle-manager/issues/376
+			if err != nil && !errors.Is(err, &watcher.CertificateNotReadyError{}) {
+				return r.UpdateStatusWithEventFromErr(ctx, kyma, v1alpha1.StateError,
+					fmt.Errorf("error while installing Watcher Webhook Chart: %w", err))
+			}
 		}
 	}
 

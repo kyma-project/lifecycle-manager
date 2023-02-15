@@ -7,13 +7,14 @@ import (
 	"reflect"
 	"strings"
 
+	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+
 	corev1 "k8s.io/api/core/v1"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
@@ -23,6 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
 const (
@@ -46,16 +48,18 @@ var (
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
 	kyma := NewTestKyma("kyma-remote-sync")
+	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
+	issuer := NewTestIssuer(metav1.NamespaceDefault)
+	kymaObjKey := client.ObjectKeyFromObject(kyma)
+	tlsSecret := createTLSSecret(kymaObjKey)
+
 	kyma.Spec.Sync = v1alpha1.Sync{
 		Enabled:      true,
 		Strategy:     v1alpha1.SyncStrategyLocalClient,
 		Namespace:    metav1.NamespaceDefault,
 		NoModuleCopy: true,
 	}
-	kymaObjKey := client.ObjectKeyFromObject(kyma)
-	tlsSecret := createTLSSecret(kymaObjKey)
-	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
-	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret)
+	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer)
 
 	It("kyma reconciliation installs watcher helm chart with correct webhook config", func() {
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
@@ -103,7 +107,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 })
 
 func registerDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1alpha1.Watcher,
-	tlsSecret *corev1.Secret,
+	tlsSecret *corev1.Secret, issuer *v1.Issuer,
 ) {
 	BeforeAll(func() {
 		By("Creating watcher CR")
@@ -112,6 +116,8 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1
 		Expect(controlPlaneClient.Create(suiteCtx, kyma)).To(Succeed())
 		By("Creating TLS Secret")
 		Expect(controlPlaneClient.Create(suiteCtx, tlsSecret)).To(Succeed())
+		By("Creating Cert-Manager Issuer")
+		Expect(controlPlaneClient.Create(suiteCtx, issuer)).To(Succeed())
 	})
 
 	AfterAll(func() {
@@ -120,8 +126,6 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1
 		By("Ensuring watcher CR is properly deleted")
 		Eventually(isWatcherCrDeletionFinished(client.ObjectKeyFromObject(watcher)), Timeout, Interval).
 			Should(BeTrue())
-		By("Deleting TLS Secret")
-		Expect(controlPlaneClient.Delete(suiteCtx, tlsSecret)).To(Succeed())
 	})
 
 	BeforeEach(func() {
@@ -167,7 +171,7 @@ func getSkrChartDeployment(ctx context.Context, skrClient client.Client, kymaObj
 	return func() error {
 		return skrClient.Get(ctx, client.ObjectKey{
 			Namespace: kymaObjKey.Namespace,
-			Name:      deploy.SkrResourceName,
+			Name:      watcher.SkrResourceName,
 		}, &appsv1.Deployment{})
 	}
 }
@@ -178,7 +182,7 @@ func getSKRWebhookConfig(ctx context.Context, skrClient client.Client,
 	webhookCfg := &admissionv1.ValidatingWebhookConfiguration{}
 	err := skrClient.Get(ctx, client.ObjectKey{
 		Namespace: kymaObjKey.Namespace,
-		Name:      deploy.SkrResourceName,
+		Name:      watcher.SkrResourceName,
 	}, webhookCfg)
 	return webhookCfg, err
 }

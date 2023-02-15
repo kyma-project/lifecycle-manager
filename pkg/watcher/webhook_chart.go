@@ -1,4 +1,4 @@
-package deploy
+package watcher
 
 import (
 	"context"
@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	"k8s.io/apimachinery/pkg/util/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
@@ -18,37 +19,24 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// TODO PKI move consts into other file if they are not needed here.
 const (
-	webhookTLSCfgNameTpl         = "%s-webhook-tls"
-	SkrTLSName                   = "skr-webhook-tls"
-	SkrResourceName              = "skr-webhook"
-	IstioSystemNs                = "istio-system"
-	IngressServiceName           = "istio-ingressgateway"
-	defaultK3dLocalhostMapping   = "host.k3d.internal"
-	defaultBufferSize            = 2048
-	caCertKey                    = "ca.crt"
-	tlsCertKey                   = "tls.crt"
-	tlsPrivateKeyKey             = "tls.key"
-	skrChartFieldOwner           = client.FieldOwner(v1alpha1.OperatorName)
-	version                      = "v1"
-	webhookTimeOutInSeconds      = 15
-	allResourcesWebhookRule      = "*"
-	statusSubResourceWebhookRule = "*/status"
+	webhookTLSCfgNameTpl           = "%s-webhook-tls"
+	SkrTLSName                     = "skr-webhook-tls"
+	SkrResourceName                = "skr-webhook"
+	IstioSystemNs                  = "istio-system"
+	IngressServiceName             = "istio-ingressgateway"
+	defaultK3dLocalhostMapping     = "host.k3d.internal"
+	defaultBufferSize              = 2048
+	skrChartFieldOwner             = client.FieldOwner(v1alpha1.OperatorName)
+	version                        = "v1"
+	webhookTimeOutInSeconds        = 15
+	allResourcesWebhookRule        = "*"
+	statusSubResourceWebhookRule   = "*/status"
+	WebhookCfgAndDeploymentNameTpl = "%s-webhook"
 )
 
 var ErrLoadBalancerIPIsNotAssigned = errors.New("load balancer service external ip is not assigned")
-
-type SkrWebhookManagerConfig struct {
-	// SKRWatcherPath represents the path of the webhook resources
-	// to be installed on SKR clusters upon reconciling kyma CRs.
-	SKRWatcherPath         string
-	SkrWebhookMemoryLimits string
-	SkrWebhookCPULimits    string
-	// WatcherLocalTestingEnabled indicates if the chart manager is running in local testing mode
-	WatcherLocalTestingEnabled bool
-	// GatewayHTTPPortMapping indicates the port used to expose the KCP cluster locally for the watcher callbacks
-	GatewayHTTPPortMapping int
-}
 
 type WatchableConfig struct {
 	Labels     map[string]string `json:"labels"`
@@ -122,7 +110,7 @@ func resolveRemoteNamespace(kyma *v1alpha1.Kyma) string {
 	return kyma.Namespace
 }
 
-func ResolveTLSConfigSecretName(kymaName string) string {
+func ResolveTLSCertName(kymaName string) string {
 	return fmt.Sprintf(webhookTLSCfgNameTpl, kymaName)
 }
 

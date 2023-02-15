@@ -12,8 +12,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/istio"
-
 	corev1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -24,6 +22,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/index"
+	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/watch"
 	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
@@ -32,6 +31,7 @@ import (
 type SetupUpSetting struct {
 	ListenerAddr                 string
 	EnableDomainNameVerification bool
+	IstioNamespace               string
 }
 
 const (
