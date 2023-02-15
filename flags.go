@@ -71,6 +71,8 @@ func defineFlagVar() *FlagVar {
 		"Name of the virtual service resource to be reconciled by the watcher control loop.")
 	flag.BoolVar(&flagVar.enableWatcherLocalTesting, "enable-watcher-local-testing", false,
 		"Enabling KCP Watcher two-cluster setup to be tested locally using k3d")
+	flag.StringVar(&flagVar.istioNamespace, "istio-namespace", "istio-system",
+		"CLuster Resource Namespace of Istio")
 	flag.IntVar(&flagVar.listenerHTTPPortLocalMapping, "listener-http-local-mapping", defaultListenerPort,
 		"Port that is mapped to HTTP port of the local k3d cluster using --port 9080:80@loadbalancer when "+
 			"creating the KCP cluster")
@@ -119,6 +121,7 @@ type FlagVar struct {
 	skrWebhookCPULimits                                             string
 	virtualServiceName                                              string
 	enableWatcherLocalTesting                                       bool
+	istioNamespace                                                  string
 	// listenerHTTPPortLocalMapping is used to enable the user
 	// to specify the port used to expose the KCP cluster for the watcher
 	// when testing locally using dual-k3d cluster-setup

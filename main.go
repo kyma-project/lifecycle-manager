@@ -29,13 +29,12 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -50,6 +49,8 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+
+	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 
 	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	operatorv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
@@ -74,6 +75,9 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(api.AddToScheme(scheme))
 	utilruntime.Must(v1extensions.AddToScheme(scheme))
+	utilruntime.Must(moduleManagerV1alpha1.AddToScheme(scheme))
+	utilruntime.Must(certManagerV1.AddToScheme(scheme))
+
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -229,20 +233,21 @@ func setupKymaReconciler(mgr ctrl.Manager,
 	options controller.Options,
 ) {
 	kcpRestConfig := mgr.GetConfig()
-	var skrWebhookManager deploy.SKRWebhookManager
+	var skrWebhookManager watcher.SKRWebhookManager
 	if flagVar.enableKcpWatcher {
 		watcherChartDirInfo, err := os.Stat(flagVar.skrWatcherPath)
 		if err != nil || !watcherChartDirInfo.IsDir() {
 			setupLog.Error(err, "failed to read local skr chart")
 		}
-		skrWebhookConfig := &deploy.SkrWebhookManagerConfig{
+		skrWebhookConfig := &watcher.SkrWebhookManagerConfig{
 			SKRWatcherPath:             flagVar.skrWatcherPath,
 			SkrWebhookCPULimits:        flagVar.skrWebhookCPULimits,
 			SkrWebhookMemoryLimits:     flagVar.skrWebhookMemoryLimits,
 			WatcherLocalTestingEnabled: flagVar.enableWatcherLocalTesting,
 			GatewayHTTPPortMapping:     flagVar.listenerHTTPPortLocalMapping,
+			IstioNamespace:             flagVar.istioNamespace,
 		}
-		skrWebhookManager, err = deploy.NewSKRWebhookManifestManager(kcpRestConfig, skrWebhookConfig)
+		skrWebhookManager, err = watcher.NewSKRWebhookManifestManager(kcpRestConfig, skrWebhookConfig)
 		if err != nil {
 			setupLog.Error(err, "failed to create webhook chart manager")
 		}
@@ -264,6 +269,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 	}).SetupWithManager(mgr, options, controllers.SetupUpSetting{
 		ListenerAddr:                 flagVar.kymaListenerAddr,
 		EnableDomainNameVerification: flagVar.enableDomainNameVerification,
+		IstioNamespace:               flagVar.istioNamespace,
 	}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)

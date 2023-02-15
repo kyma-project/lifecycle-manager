@@ -81,7 +81,6 @@ func (v *RequestVerifier) getCertificateFromHeader(r *http.Request) (*x509.Certi
 	}
 	xfccData := strings.Split(xfccValue[0], headerValueSeparator)
 
-	v.Log.Info(fmt.Sprintf("###### Request Header %v", xfccValue))
 	// Extract raw certificate
 	var cert string
 	for _, keyValuePair := range xfccData {
@@ -110,8 +109,6 @@ func (v *RequestVerifier) getCertificateFromHeader(r *http.Request) (*x509.Certi
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse PEM block into x509 certificate: %w", err)
 	}
-	v.Log.V(log.DebugLevel).Info(XFCCHeader,
-		"certificate", certificate)
 
 	return certificate, nil
 }

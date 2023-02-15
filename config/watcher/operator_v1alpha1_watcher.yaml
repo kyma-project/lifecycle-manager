@@ -10,7 +10,7 @@ spec:
     "operator.kyma-project.io/watched-by": "lifecycle-manager"
   field: "spec"
   serviceInfo:
-    name: event-service
+    name: klm-event-service
     port: 8082
     namespace: kcp-system
   gateway:

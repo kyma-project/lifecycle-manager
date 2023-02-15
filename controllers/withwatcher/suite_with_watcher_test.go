@@ -51,11 +51,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
+	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	//+kubebuilder:scaffold:imports
 	"github.com/kyma-project/lifecycle-manager/controllers"
-	"github.com/kyma-project/lifecycle-manager/pkg/deploy"
-
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	istioscheme "istio.io/client-go/pkg/clientset/versioned/scheme"
 )
@@ -101,7 +101,9 @@ var _ = BeforeSuite(func() {
 	// manifest CRD
 	// istio CRDs
 	remoteCrds, err := ParseRemoteCRDs([]string{
-		"https://raw.githubusercontent.com/istio/istio/master/manifests/charts/base/crds/crd-all.gen.yaml",
+		"https://raw.githubusercontent.com/kyma-project/module-manager/main/config/crd/bases/operator.kyma-project.io_manifests.yaml", //nolint:lll
+		"https://raw.githubusercontent.com/istio/istio/master/manifests/charts/base/crds/crd-all.gen.yaml",                            //nolint:lll
+		"https://github.com/cert-manager/cert-manager/releases/download/v1.10.1/cert-manager.crds.yaml",                               //nolint:lll
 	})
 	Expect(err).NotTo(HaveOccurred())
 
@@ -127,6 +129,7 @@ var _ = BeforeSuite(func() {
 	Expect(api.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(istioscheme.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+	Expect(certManagerV1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 
@@ -134,7 +137,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(controlPlaneClient).NotTo(BeNil())
 
-	runtimeClient, runtimeEnv = NewSKRCluster()
+	runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
 
 	metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
 	if !found {
@@ -161,12 +164,13 @@ var _ = BeforeSuite(func() {
 	}
 
 	remoteClientCache = remote.NewClientCache()
-	skrChartCfg := &deploy.SkrWebhookManagerConfig{
+	skrChartCfg := &watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         skrWatcherPath,
 		SkrWebhookMemoryLimits: "200Mi",
 		SkrWebhookCPULimits:    "1",
+		IstioNamespace:         metav1.NamespaceDefault,
 	}
-	skrWebhookChartManager, err := deploy.NewSKRWebhookManifestManager(restCfg, skrChartCfg)
+	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(restCfg, skrChartCfg)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.KymaReconciler{
 		Client:            k8sManager.GetClient(),
@@ -217,35 +221,10 @@ var _ = AfterSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 })
 
-func NewSKRCluster() (client.Client, *envtest.Environment) {
-	skrEnv := &envtest.Environment{
-		ErrorIfCRDPathMissing: true,
-	}
-	cfg, err := skrEnv.Start()
-	Expect(cfg).NotTo(BeNil())
-	Expect(err).NotTo(HaveOccurred())
-
-	var authUser *envtest.AuthenticatedUser
-	authUser, err = skrEnv.AddUser(envtest.User{
-		Name:   "skr-admin-account",
-		Groups: []string{"system:masters"},
-	}, cfg)
-	Expect(err).NotTo(HaveOccurred())
-
-	remote.LocalClient = func() *rest.Config {
-		return authUser.Config()
-	}
-
-	skrClient, err := client.New(authUser.Config(), client.Options{Scheme: controlPlaneClient.Scheme()})
-	Expect(err).NotTo(HaveOccurred())
-
-	return skrClient, skrEnv
-}
-
 func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 	istioNs := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: deploy.IstioSystemNs,
+			Name: watcher.IstioSystemNs,
 		},
 	}
 	if err := k8sClient.Create(ctx, istioNs); err != nil {
@@ -253,10 +232,10 @@ func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 	}
 	loadBalancerService := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      deploy.IngressServiceName,
-			Namespace: deploy.IstioSystemNs,
+			Name:      watcher.IngressServiceName,
+			Namespace: watcher.IstioSystemNs,
 			Labels: map[string]string{
-				"app": deploy.IngressServiceName,
+				"app": watcher.IngressServiceName,
 			},
 		},
 		Spec: corev1.ServiceSpec{
@@ -289,7 +268,7 @@ func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 	}
 
 	return k8sClient.Get(ctx, client.ObjectKey{
-		Name:      deploy.IngressServiceName,
-		Namespace: deploy.IstioSystemNs,
+		Name:      watcher.IngressServiceName,
+		Namespace: watcher.IstioSystemNs,
 	}, loadBalancerService)
 }

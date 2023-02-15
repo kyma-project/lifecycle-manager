@@ -14,13 +14,24 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	"github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
+	k8sruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	v12 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
+	. "github.com/onsi/gomega" //nolint:stylecheck,revive
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -40,12 +51,34 @@ func NewTestKyma(name string) *v1beta1.Kyma {
 			Kind:       string(v1beta1.KymaKind),
 		},
 		ObjectMeta: v1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%s", name, randString(randomStringLength)),
-			Namespace: v1.NamespaceDefault,
+			Name:        fmt.Sprintf("%s-%s", name, randString(randomStringLength)),
+			Namespace:   v1.NamespaceDefault,
+			Annotations: map[string]string{watcher.DomainAnnotation: "example.domain.com"},
 		},
 		Spec: v1beta1.KymaSpec{
 			Modules: []v1beta1.Module{},
 			Channel: v1beta1.DefaultChannel,
+		},
+	}
+}
+
+func NewTestIssuer(namespace string) *certmanagerv1.Issuer {
+	return &certmanagerv1.Issuer{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      "test-issuer",
+			Namespace: namespace,
+			Labels:    watcher.LabelSet,
+		},
+		Spec: certmanagerv1.IssuerSpec{IssuerConfig: certmanagerv1.IssuerConfig{
+			SelfSigned: &certmanagerv1.SelfSignedIssuer{},
+		}},
+	}
+}
+
+func NewTestNamespace(namespace string) *corev1.Namespace {
+	return &corev1.Namespace{
+		ObjectMeta: v1.ObjectMeta{
+			Name: namespace,
 		},
 	}
 }
@@ -65,16 +98,16 @@ func randString(n int) string {
 func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta1.Kyma) {
 	for _, module := range kyma.Spec.Modules {
 		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
-		gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
-		gomega.Expect(kcpClient.Create(ctx, template)).To(gomega.Succeed())
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(kcpClient.Create(ctx, template)).To(Succeed())
 	}
 }
 
 func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta1.Kyma) {
 	for _, module := range kyma.Spec.Modules {
 		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
-		gomega.Expect(err).ShouldNot(gomega.HaveOccurred())
-		gomega.Expect(kcpClient.Delete(ctx, template)).To(gomega.Succeed())
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(kcpClient.Delete(ctx, template)).To(Succeed())
 	}
 }
 
@@ -174,4 +207,29 @@ func readModuleTemplate(moduleTemplate *v1beta1.ModuleTemplate) error {
 	}
 	err = yaml.Unmarshal(moduleFile, &moduleTemplate)
 	return err
+}
+
+func NewSKRCluster(scheme *k8sruntime.Scheme) (client.Client, *envtest.Environment) {
+	skrEnv := &envtest.Environment{
+		ErrorIfCRDPathMissing: true,
+	}
+	cfg, err := skrEnv.Start()
+	Expect(cfg).NotTo(BeNil())
+	Expect(err).NotTo(HaveOccurred())
+
+	var authUser *envtest.AuthenticatedUser
+	authUser, err = skrEnv.AddUser(envtest.User{
+		Name:   "skr-admin-account",
+		Groups: []string{"system:masters"},
+	}, cfg)
+	Expect(err).NotTo(HaveOccurred())
+
+	remote.LocalClient = func() *rest.Config {
+		return authUser.Config()
+	}
+
+	skrClient, err := client.New(authUser.Config(), client.Options{Scheme: scheme})
+	Expect(err).NotTo(HaveOccurred())
+
+	return skrClient, skrEnv
 }
