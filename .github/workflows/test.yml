@@ -59,6 +59,7 @@ jobs:
     env:
       LIFECYCLE_MANAGER: ${{ github.repository }}
       K3D_VERSION: v5.4.6
+      KUSTOMIZE_VERSION: 4.5.7
     steps:
       - name: Checkout Lifecycle-Manager
         uses: actions/checkout@v3
@@ -69,12 +70,14 @@ jobs:
         run: |
           mkdir -p $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER
           mv $GITHUB_WORKSPACE/$LIFECYCLE_MANAGER/** $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/
+      - name: Setup kustomize
+        run: |
+          wget --header="Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -qO - "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash -s "$KUSTOMIZE_VERSION"
+          mv kustomize /usr/local/bin/
       - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
         if: github.event_name == 'pull_request'
         run: |
-          wget --header="Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            -qO - "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash -s "4.5.7"
-          mv kustomize /usr/local/bin/
           cd $(go env GOPATH)/src/github.com/${{ github.repository }}/config/manager
           kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
       - name: Set up k3d
