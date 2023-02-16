@@ -65,7 +65,9 @@ func (m *Manifest) ValidateCreate() error {
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (m *Manifest) ValidateUpdate(old runtime.Object) error {
-	manifestlog.Info("validate update", "name", m.Name)
+	manifestlog.Info("validate update", "name", m.Name,
+		"objectKind", old.GetObjectKind().GroupVersionKind().Kind,
+		"objectVersion", old.GetObjectKind().GroupVersionKind().Version)
 
 	return m.validateInstalls()
 }
