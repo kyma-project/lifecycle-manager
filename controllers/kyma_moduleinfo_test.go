@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -41,7 +41,7 @@ func expectmoduleStatusStateBecomeReady(kymaName string) func() error {
 			return err
 		}
 		for _, moduleStatus := range createdKyma.Status.Modules {
-			if moduleStatus.State != v1alpha1.StateReady {
+			if moduleStatus.State != v1beta1.StateReady {
 				return fmt.Errorf("%w: %s", ErrModuleStatusNotInReady, moduleStatus.Name)
 			}
 		}
@@ -49,7 +49,7 @@ func expectmoduleStatusStateBecomeReady(kymaName string) func() error {
 	}
 }
 
-func updateAllModuleState(kymaName string, state v1alpha1.State) func() error {
+func updateAllModuleState(kymaName string, state v1beta1.State) func() error {
 	return func() error {
 		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 		if err != nil {
@@ -68,7 +68,7 @@ func removeModule(kymaName string) func() error {
 	return func() error {
 		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 		Expect(err).ShouldNot(HaveOccurred())
-		createdKyma.Spec.Modules = v1alpha1.Modules{}
+		createdKyma.Spec.Modules = []v1beta1.Module{}
 		return controlPlaneClient.Update(ctx, createdKyma)
 	}
 }
@@ -77,10 +77,10 @@ var _ = Describe("Test Kyma CR", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 
 	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1alpha1.Module{
+		kyma.Spec.Modules, v1beta1.Module{
 			ControllerName: "manifest",
 			Name:           NewUniqModuleName(),
-			Channel:        v1alpha1.DefaultChannel,
+			Channel:        v1beta1.DefaultChannel,
 		})
 
 	RegisterDefaultLifecycleForKyma(kyma)
@@ -93,7 +93,7 @@ var _ = Describe("Test Kyma CR", Ordered, func() {
 		Entry("When deploy module, expect number of Modules matches spec.modules",
 			noCondition(), expectCorrectNumberOfmoduleStatus(kyma.Name)),
 		Entry("When module state become ready, expect Modules state become ready",
-			updateAllModuleState(kyma.Name, v1alpha1.StateReady), expectmoduleStatusStateBecomeReady(kyma.Name)),
+			updateAllModuleState(kyma.Name, v1beta1.StateReady), expectmoduleStatusStateBecomeReady(kyma.Name)),
 		Entry("When remove module in spec, expect number of Modules matches spec.modules",
 			removeModule(kyma.Name), expectCorrectNumberOfmoduleStatus(kyma.Name)),
 	)

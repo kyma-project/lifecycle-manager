@@ -7,10 +7,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -111,7 +111,7 @@ func getOCIRef(repo *ocm.OCIRegistryRepository,
 	} else {
 		layerRef.Ref = ref
 	}
-	if registryCredValue, found := labels.Get(v1alpha1.OCIRegistryCredLabel); found {
+	if registryCredValue, found := labels.Get(v1beta1.OCIRegistryCredLabel); found {
 		credSecretLabel := make(map[string]string)
 		if err := json.Unmarshal(registryCredValue, &credSecretLabel); err != nil {
 			return nil, err

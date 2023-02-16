@@ -20,28 +20,13 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"strings"
-
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
 )
 
-const (
-	KymaKind           Kind = "Kyma"
-	ModuleTemplateKind Kind = "ModuleTemplate"
-	WatcherKind        Kind = "Watcher"
-	Version                 = "v1alpha1"
-)
-
-type Kind string
-
-func (k Kind) Plural() string {
-	return strings.ToLower(string(k)) + "s"
-}
-
 var (
 	// GroupVersion is group version used to register these objects.
-	GroupVersion = schema.GroupVersion{Group: "operator.kyma-project.io", Version: Version} //nolint:gochecknoglobals
+	GroupVersion = schema.GroupVersion{Group: "operator.kyma-project.io", Version: "v1alpha1"} //nolint:gochecknoglobals
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme.
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion} //nolint:gochecknoglobals
@@ -49,14 +34,6 @@ var (
 	// AddToScheme adds the types in this group-version to the given scheme.
 	AddToScheme = SchemeBuilder.AddToScheme //nolint:gochecknoglobals
 
-	// SchemeGroupVersion is required by kubernetes code-generator.
-	SchemeGroupVersion = GroupVersion //nolint:gochecknoglobals
-
-	// GroupVersionResource is group version resource.
-	GroupVersionResource = GroupVersion.WithResource(KymaKind.Plural()) //nolint:gochecknoglobals
-
-	// GroupVersionKind is group version kind.
-	GroupVersionKind = GroupVersion.WithKind(string(KymaKind)) //nolint:gochecknoglobals
 )
 
 func Resource(resource string) schema.GroupResource {

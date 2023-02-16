@@ -1,0 +1,12 @@
+apiVersion: operator.kyma-project.io/v1beta1
+kind: Kyma
+metadata:
+  labels:
+    "operator.kyma-project.io/managed-by": "lifecycle-manager"
+  name: default-kyma
+  namespace: kcp-system
+spec:
+  channel: alpha
+  sync:
+    enabled: false
+  modules:

@@ -8,23 +8,34 @@ require (
 	github.com/gardener/component-spec/bindings-go v0.0.78
 	github.com/go-logr/logr v1.2.3
 	github.com/go-logr/zapr v1.2.3
-	github.com/kyma-project/module-manager v0.0.0-20230203122329-275f0c18b284
+	github.com/golang/mock v1.6.0
+	github.com/google/go-containerregistry v0.13.0
+	github.com/google/go-containerregistry/pkg/authn/kubernetes v0.0.0-20230104193340-e797859b62b6
+	github.com/invopop/jsonschema v0.7.0
+	github.com/jellydator/ttlcache/v3 v3.0.1
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20230131092109-31657012720d
 	github.com/onsi/ginkgo/v2 v2.8.0
 	github.com/onsi/gomega v1.25.0
 	github.com/stretchr/testify v1.8.1
+	github.com/xeipuuv/gojsonschema v1.2.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/sync v0.1.0
 	golang.org/x/time v0.3.0
 	gopkg.in/yaml.v3 v3.0.1
+	helm.sh/helm/v3 v3.10.3
 	istio.io/api v0.0.0-20230201200515-7f0fb1d3b814
 	istio.io/client-go v1.16.2
 	k8s.io/api v0.26.1
 	k8s.io/apiextensions-apiserver v0.26.1
 	k8s.io/apimachinery v0.26.1
+	k8s.io/cli-runtime v0.26.1
 	k8s.io/client-go v0.26.1
+	k8s.io/kubectl v0.26.1
 	sigs.k8s.io/controller-runtime v0.14.2
 	sigs.k8s.io/e2e-framework v0.0.8
+	sigs.k8s.io/kustomize/api v0.12.1
+	sigs.k8s.io/kustomize/kyaml v0.13.9
+	sigs.k8s.io/yaml v1.3.0
 )
 
 require (
@@ -68,7 +79,6 @@ require (
 	github.com/google/btree v1.1.2 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/google/go-containerregistry v0.13.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.3.0 // indirect
@@ -79,8 +89,6 @@ require (
 	github.com/iancoleman/orderedmap v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/invopop/jsonschema v0.7.0 // indirect
-	github.com/jellydator/ttlcache/v3 v3.0.1 // indirect
 	github.com/jmoiron/sqlx v1.3.5 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -126,7 +134,6 @@ require (
 	github.com/vbatts/tar-split v0.11.2 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
-	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	github.com/xlab/treeprint v1.1.0 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.5 // indirect
 	go.starlark.net v0.0.0-20230128213706-3f75dec8e403 // indirect
@@ -145,20 +152,13 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gotest.tools/v3 v3.1.0 // indirect
-	helm.sh/helm/v3 v3.10.3 // indirect
 	k8s.io/apiserver v0.26.1 // indirect
-	k8s.io/cli-runtime v0.26.1 // indirect
 	k8s.io/component-base v0.26.1 // indirect
 	k8s.io/klog/v2 v2.90.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20230202010329-39b3636cbaa3 // indirect
-	k8s.io/kubectl v0.26.1 // indirect
 	k8s.io/utils v0.0.0-20230202215443-34013725500c // indirect
 	oras.land/oras-go v1.2.2 // indirect
 	sigs.k8s.io/gateway-api v0.6.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
-	sigs.k8s.io/kustomize/api v0.12.1 // indirect
-	sigs.k8s.io/kustomize/kyaml v0.13.9 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
-	sigs.k8s.io/yaml v1.3.0 // indirect
 )

@@ -23,8 +23,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 	"go.uber.org/zap/zapcore"
 
 	//nolint:gci
@@ -35,7 +35,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	operatorv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
@@ -105,9 +105,8 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	Expect(operatorv1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+	Expect(api.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
-	Expect(moduleManagerV1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 
@@ -132,7 +131,7 @@ var _ = BeforeSuite(func() {
 	remoteClientCache := remote.NewClientCache()
 	err = (&controllers.KymaReconciler{
 		Client:           k8sManager.GetClient(),
-		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1beta1.OperatorName),
 		RequeueIntervals: intervals,
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,

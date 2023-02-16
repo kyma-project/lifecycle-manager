@@ -10,7 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -66,7 +66,7 @@ func NewSKRWebhookManifestManager(kcpRestConfig *rest.Config, managerConfig *Skr
 	}, nil
 }
 
-func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1alpha1.Kyma) error {
+func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta1.Kyma) error {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
@@ -95,13 +95,13 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1alpha1.
 	if err != nil {
 		return fmt.Errorf("failed to apply webhook resources: %w", err)
 	}
-	kyma.UpdateCondition(v1alpha1.ConditionReasonSKRWebhookIsReady, metav1.ConditionTrue)
+	kyma.UpdateCondition(v1beta1.ConditionReasonSKRWebhookIsReady, metav1.ConditionTrue)
 	logger.Info("successfully installed webhook resources",
 		"kyma", kymaObjKey.String())
 	return nil
 }
 
-func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1alpha1.Kyma) error {
+func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta1.Kyma) error {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)

@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/go-logr/logr"
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	registrationV1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -87,7 +87,7 @@ func generateValidatingWebhookConfigFromWatchableConfigs(webhookObjKey, svcObjKe
 			Rules: []registrationV1.RuleWithOperations{
 				{
 					Rule: registrationV1.Rule{
-						APIGroups:   []string{v1alpha1.GroupVersion.Group},
+						APIGroups:   []string{v1beta1.GroupVersion.Group},
 						APIVersions: []string{"*"},
 						Resources:   []string{watchableResources},
 					},
@@ -205,7 +205,7 @@ func getGeneratedClientObjects(resourcesConfig *unstructuredResourcesConfig,
 
 func getWatchableConfigs(ctx context.Context, kcpClient client.Client) (map[string]WatchableConfig, error) {
 	watchableConfigs := map[string]WatchableConfig{}
-	watcherList := &v1alpha1.WatcherList{}
+	watcherList := &v1beta1.WatcherList{}
 	if err := kcpClient.List(ctx, watcherList); err != nil {
 		return nil, fmt.Errorf("error listing watcher CRs: %w", err)
 	}

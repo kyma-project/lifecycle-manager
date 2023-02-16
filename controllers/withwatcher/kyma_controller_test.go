@@ -13,7 +13,7 @@ import (
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -53,9 +53,9 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	tlsSecret := createTLSSecret(kymaObjKey)
 
-	kyma.Spec.Sync = v1alpha1.Sync{
+	kyma.Spec.Sync = v1beta1.Sync{
 		Enabled:      true,
-		Strategy:     v1alpha1.SyncStrategyLocalClient,
+		Strategy:     v1beta1.SyncStrategyLocalClient,
 		Namespace:    metav1.NamespaceDefault,
 		NoModuleCopy: true,
 	}
@@ -106,7 +106,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	})
 })
 
-func registerDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1alpha1.Watcher,
+func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta1.Kyma, watcher *v1beta1.Watcher,
 	tlsSecret *corev1.Secret, issuer *v1.Issuer,
 ) {
 	BeforeAll(func() {
@@ -130,7 +130,7 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1
 
 	BeforeEach(func() {
 		By("asserting only one kyma CR exists")
-		kcpKymas := &v1alpha1.KymaList{}
+		kcpKymas := &v1beta1.KymaList{}
 		Expect(controlPlaneClient.List(suiteCtx, kcpKymas)).To(Succeed())
 		Expect(kcpKymas.Items).NotTo(BeEmpty())
 		Expect(kcpKymas.Items).To(HaveLen(1))
@@ -147,7 +147,7 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1alpha1.Kyma, watcher *v1
 
 func isWatcherCrLabelUpdated(watcherObjKey client.ObjectKey, labelKey, expectedLabelValue string) func() bool {
 	return func() bool {
-		watcher := &v1alpha1.Watcher{}
+		watcher := &v1beta1.Watcher{}
 		err := controlPlaneClient.Get(suiteCtx, watcherObjKey, watcher)
 		if err != nil {
 			return false
@@ -162,7 +162,7 @@ func isWatcherCrLabelUpdated(watcherObjKey client.ObjectKey, labelKey, expectedL
 
 func isKymaCrDeletionFinished(kymaObjKey client.ObjectKey) func() bool {
 	return func() bool {
-		err := controlPlaneClient.Get(suiteCtx, kymaObjKey, &v1alpha1.Kyma{})
+		err := controlPlaneClient.Get(suiteCtx, kymaObjKey, &v1beta1.Kyma{})
 		return apierrors.IsNotFound(err)
 	}
 }
@@ -187,7 +187,7 @@ func getSKRWebhookConfig(ctx context.Context, skrClient client.Client,
 	return webhookCfg, err
 }
 
-func latestWebhookIsConfigured(ctx context.Context, skrClient client.Client, watcher *v1alpha1.Watcher,
+func latestWebhookIsConfigured(ctx context.Context, skrClient client.Client, watcher *v1beta1.Watcher,
 	kymaObjKey client.ObjectKey,
 ) func() error {
 	return func() error {
@@ -199,7 +199,7 @@ func latestWebhookIsConfigured(ctx context.Context, skrClient client.Client, wat
 	}
 }
 
-func isWebhookConfigured(watcher *v1alpha1.Watcher, webhookConfig *admissionv1.ValidatingWebhookConfiguration,
+func isWebhookConfigured(watcher *v1beta1.Watcher, webhookConfig *admissionv1.ValidatingWebhookConfiguration,
 	kymaName string,
 ) error {
 	if len(webhookConfig.Webhooks) < 1 {
@@ -214,7 +214,7 @@ func isWebhookConfigured(watcher *v1alpha1.Watcher, webhookConfig *admissionv1.V
 	return verifyWebhookConfig(webhookConfig.Webhooks[idx], watcher)
 }
 
-func lookupWebhookConfigForCR(webhooks []admissionv1.ValidatingWebhook, watcher *v1alpha1.Watcher) int {
+func lookupWebhookConfigForCR(webhooks []admissionv1.ValidatingWebhook, watcher *v1beta1.Watcher) int {
 	cfgIdx := -1
 	for idx, webhook := range webhooks {
 		webhookNameParts := strings.Split(webhook.Name, ".")
@@ -232,14 +232,14 @@ func lookupWebhookConfigForCR(webhooks []admissionv1.ValidatingWebhook, watcher 
 
 func verifyWebhookConfig(
 	webhook admissionv1.ValidatingWebhook,
-	watcherCR *v1alpha1.Watcher,
+	watcherCR *v1beta1.Watcher,
 ) error {
 	webhookNameParts := strings.Split(webhook.Name, ".")
 	if len(webhookNameParts) != expectedWebhookNamePartsLength {
 		return fmt.Errorf("%w: (webhook=%s)", ErrWebhookNamePartsNumberMismatch, webhook.Name)
 	}
 	moduleName := webhookNameParts[0]
-	expectedModuleName, exists := watcherCR.Labels[v1alpha1.ManagedBy]
+	expectedModuleName, exists := watcherCR.Labels[v1beta1.ManagedBy]
 	if !exists {
 		return fmt.Errorf("%w: (labels=%v)", ErrManagedByLabelNotFound, watcherCR.Labels)
 	}
@@ -256,11 +256,11 @@ func verifyWebhookConfig(
 		return fmt.Errorf("%w: (expected=%v, got=%v)", ErrWatchLabelsMismatch,
 			watcherCR.Spec.LabelsToWatch, webhook.ObjectSelector.MatchLabels)
 	}
-	if watcherCR.Spec.Field == v1alpha1.StatusField && webhook.Rules[0].Resources[0] != statusSubresources {
+	if watcherCR.Spec.Field == v1beta1.StatusField && webhook.Rules[0].Resources[0] != statusSubresources {
 		return fmt.Errorf("%w: (expected=%s, got=%s)", ErrStatusSubResourcesMismatch,
 			statusSubresources, webhook.Rules[0].Resources[0])
 	}
-	if watcherCR.Spec.Field == v1alpha1.SpecField && webhook.Rules[0].Resources[0] != specSubresources {
+	if watcherCR.Spec.Field == v1beta1.SpecField && webhook.Rules[0].Resources[0] != specSubresources {
 		return fmt.Errorf("%w: (expected=%s, got=%s)", ErrSpecSubResourcesMismatch,
 			specSubresources, webhook.Rules[0].Resources[0])
 	}
@@ -269,7 +269,7 @@ func verifyWebhookConfig(
 
 func isWatcherCrDeletionFinished(watcherObjKey client.ObjectKey) func(g Gomega) bool {
 	return func(g Gomega) bool {
-		err := controlPlaneClient.Get(suiteCtx, watcherObjKey, &v1alpha1.Watcher{})
+		err := controlPlaneClient.Get(suiteCtx, watcherObjKey, &v1beta1.Watcher{})
 		return apierrors.IsNotFound(err)
 	}
 }

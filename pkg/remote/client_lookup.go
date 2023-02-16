@@ -3,7 +3,7 @@ package remote
 import (
 	"context"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -13,10 +13,10 @@ type ClientLookup struct {
 	kcp   Client
 	cache *ClientCache
 
-	strategy v1alpha1.SyncStrategy
+	strategy v1beta1.SyncStrategy
 }
 
-func NewClientLookup(kcp Client, cache *ClientCache, strategy v1alpha1.SyncStrategy) *ClientLookup {
+func NewClientLookup(kcp Client, cache *ClientCache, strategy v1beta1.SyncStrategy) *ClientLookup {
 	return &ClientLookup{kcp: kcp, cache: cache, strategy: strategy}
 }
 
@@ -52,13 +52,13 @@ func (l *ClientLookup) restConfigFromStrategy(ctx context.Context, key client.Ob
 		Logger:        log.FromContext(ctx),
 	}
 	switch l.strategy {
-	case v1alpha1.SyncStrategyLocalClient:
+	case v1beta1.SyncStrategyLocalClient:
 		if LocalClient != nil {
 			restConfig = LocalClient()
 		} else {
 			restConfig = l.kcp.Config()
 		}
-	case v1alpha1.SyncStrategyLocalSecret:
+	case v1beta1.SyncStrategyLocalSecret:
 		fallthrough
 	default:
 		restConfig, err = clusterClient.GetRestConfigFromSecret(ctx, key.Name, key.Namespace)

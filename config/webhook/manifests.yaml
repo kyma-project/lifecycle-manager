@@ -11,9 +11,109 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /mutate-operator-kyma-project-io-v1beta1-kyma
+  failurePolicy: Fail
+  name: mkyma.kb.io
+  rules:
+  - apiGroups:
+    - operator.kyma-project.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - kymas
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-operator-kyma-project-io-v1beta1-manifest
+  failurePolicy: Fail
+  name: v1beta1.mmanifest.kb.io
+  rules:
+  - apiGroups:
+    - operator.kyma-project.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - manifests
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-operator-kyma-project-io-v1beta1-moduletemplate
+  failurePolicy: Fail
+  name: v1beta1.mmoduletemplate.kb.io
+  rules:
+  - apiGroups:
+    - operator.kyma-project.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - moduletemplates
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-operator-kyma-project-io-v1beta1-watcher
+  failurePolicy: Fail
+  name: mwatcher.kb.io
+  rules:
+  - apiGroups:
+    - operator.kyma-project.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - watchers
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-operator-kyma-project-io-v1alpha1-manifest
+  failurePolicy: Fail
+  name: v1alpha1.mmanifest.kb.io
+  rules:
+  - apiGroups:
+    - operator.kyma-project.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - manifests
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /mutate-operator-kyma-project-io-v1alpha1-moduletemplate
   failurePolicy: Fail
-  name: mmoduletemplate.kb.io
+  name: v1alpha1.mmoduletemplate.kb.io
   rules:
   - apiGroups:
     - operator.kyma-project.io
@@ -38,9 +138,109 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /validate-operator-kyma-project-io-v1beta1-kyma
+  failurePolicy: Fail
+  name: vkyma.kb.io
+  rules:
+  - apiGroups:
+    - operator.kyma-project.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - kymas
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-operator-kyma-project-io-v1beta1-manifest
+  failurePolicy: Fail
+  name: v1beta1.vmanifest.kb.io
+  rules:
+  - apiGroups:
+    - operator.kyma-project.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - manifests
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-operator-kyma-project-io-v1beta1-moduletemplate
+  failurePolicy: Fail
+  name: v1beta1.vmoduletemplate.kb.io
+  rules:
+  - apiGroups:
+    - operator.kyma-project.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - moduletemplates
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-operator-kyma-project-io-v1beta1-watcher
+  failurePolicy: Fail
+  name: vwatcher.kb.io
+  rules:
+  - apiGroups:
+    - operator.kyma-project.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - watchers
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-operator-kyma-project-io-v1alpha1-manifest
+  failurePolicy: Fail
+  name: v1alpha1.vmanifest.kb.io
+  rules:
+  - apiGroups:
+    - operator.kyma-project.io
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - manifests
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /validate-operator-kyma-project-io-v1alpha1-moduletemplate
   failurePolicy: Fail
-  name: vmoduletemplate.kb.io
+  name: v1alpha1.vmoduletemplate.kb.io
   rules:
   - apiGroups:
     - operator.kyma-project.io

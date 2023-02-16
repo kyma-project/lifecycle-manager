@@ -4,8 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
-	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api"
 	v1 "k8s.io/api/apps/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -49,9 +48,8 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	Expect(operatorv1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+	Expect(api.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
-	Expect(moduleManagerV1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 

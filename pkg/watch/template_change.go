@@ -5,7 +5,7 @@ import (
 
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -27,7 +27,7 @@ func NewTemplateChangeHandler(handlerClient ChangeHandlerClient) *TemplateChange
 func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 	return func(o client.Object) []reconcile.Request {
 		requests := make([]reconcile.Request, 0)
-		template := &v1alpha1.ModuleTemplate{}
+		template := &v1beta1.ModuleTemplate{}
 
 		if err := h.Get(ctx, client.ObjectKeyFromObject(o), template); err != nil {
 			return requests
@@ -37,9 +37,9 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 			return requests
 		}
 
-		kymas := &v1alpha1.KymaList{}
+		kymas := &v1beta1.KymaList{}
 		listOptions := &client.ListOptions{
-			LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{v1alpha1.ManagedBy: v1alpha1.OperatorName}),
+			LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{v1beta1.ManagedBy: v1beta1.OperatorName}),
 		}
 		if h.NamespaceScoped {
 			listOptions.Namespace = template.Namespace
@@ -49,58 +49,57 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 			return requests
 		}
 
-		templateNamespacedName := types.NamespacedName{
-			Namespace: template.GetNamespace(),
-			Name:      template.GetName(),
-		}
 		logger := log.FromContext(ctx)
 
-		labels := template.GetLabels()
-		moduleName := labels[v1alpha1.ModuleName]
-		templateChannel := template.Spec.Channel
-
 		for _, kyma := range kymas.Items {
-			if !requeueKyma(kyma, moduleName, templateChannel) {
-				continue
+			templateUsed := false
+			for _, moduleStatus := range kyma.Status.Modules {
+				if moduleStatus.Template.GetName() == template.GetName() &&
+					moduleStatus.Template.GetNamespace() == template.GetNamespace() {
+					templateUsed = true
+					break
+				}
+			}
+			if !templateUsed {
+				return nil
 			}
 
-			namespacedNameForKyma := types.NamespacedName{
+			templateName := types.NamespacedName{
+				Namespace: template.GetNamespace(),
+				Name:      template.GetName(),
+			}
+			kymaName := types.NamespacedName{
 				Namespace: kyma.GetNamespace(),
 				Name:      kyma.GetName(),
 			}
 
-			logger.WithValues(
-				"moduleName", moduleName,
-				"templateChannel", templateChannel,
-				"template", templateNamespacedName.String(),
-				"kyma", namespacedNameForKyma.String(),
-			).Info(
+			logger.WithValues("template", templateName.String(), "kyma", kymaName.String()).Info(
 				"Kyma CR instance is scheduled for reconciliation because a relevant ModuleTemplate changed",
 			)
 
-			requests = append(requests, reconcile.Request{NamespacedName: namespacedNameForKyma})
+			requests = append(requests, reconcile.Request{NamespacedName: kymaName})
 		}
 
 		return requests
 	}
 }
 
-func manageable(template *v1alpha1.ModuleTemplate) bool {
+func manageable(template *v1beta1.ModuleTemplate) bool {
 	labels := template.GetLabels()
 
-	if managedBy, ok := labels[v1alpha1.ManagedBy]; !ok || managedBy != v1alpha1.OperatorName {
+	if managedBy, ok := labels[v1beta1.ManagedBy]; !ok || managedBy != v1beta1.OperatorName {
 		return false
 	}
-	if controller, ok := labels[v1alpha1.ControllerName]; !ok || controller == "" {
+	if controller, ok := labels[v1beta1.ControllerName]; !ok || controller == "" {
 		return false
 	}
-	if template.Spec.Target == v1alpha1.TargetControlPlane || template.Spec.Channel == "" {
+	if template.Spec.Target == v1beta1.TargetControlPlane || template.Spec.Channel == "" {
 		return false
 	}
 	return true
 }
 
-func requeueKyma(kyma v1alpha1.Kyma, moduleName, templateChannel string) bool {
+func requeueKyma(kyma v1beta1.Kyma, moduleName, templateChannel string) bool {
 	globalChannelMatch := kyma.Spec.Channel == templateChannel
 
 	for _, module := range kyma.Spec.Modules {

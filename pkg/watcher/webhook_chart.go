@@ -12,7 +12,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/yaml"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/rest"
@@ -28,7 +28,7 @@ const (
 	IngressServiceName             = "istio-ingressgateway"
 	defaultK3dLocalhostMapping     = "host.k3d.internal"
 	defaultBufferSize              = 2048
-	skrChartFieldOwner             = client.FieldOwner(v1alpha1.OperatorName)
+	skrChartFieldOwner             = client.FieldOwner(v1beta1.OperatorName)
 	version                        = "v1"
 	webhookTimeOutInSeconds        = 15
 	allResourcesWebhookRule        = "*"
@@ -43,10 +43,10 @@ type WatchableConfig struct {
 	StatusOnly bool              `json:"statusOnly"`
 }
 
-func generateWatchableConfigs(watchers []v1alpha1.Watcher) map[string]WatchableConfig {
+func generateWatchableConfigs(watchers []v1beta1.Watcher) map[string]WatchableConfig {
 	chartCfg := make(map[string]WatchableConfig, 0)
 	for _, watcher := range watchers {
-		statusOnly := watcher.Spec.Field == v1alpha1.StatusField
+		statusOnly := watcher.Spec.Field == v1beta1.StatusField
 		chartCfg[watcher.GetModuleName()] = WatchableConfig{
 			Labels:     watcher.Spec.LabelsToWatch,
 			StatusOnly: statusOnly,
@@ -103,7 +103,7 @@ func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrWebhookManagerConf
 	return net.JoinHostPort(externalIP, strconv.Itoa(int(port))), nil
 }
 
-func resolveRemoteNamespace(kyma *v1alpha1.Kyma) string {
+func resolveRemoteNamespace(kyma *v1beta1.Kyma) string {
 	if kyma.Spec.Sync.Namespace != "" {
 		return kyma.Spec.Sync.Namespace
 	}

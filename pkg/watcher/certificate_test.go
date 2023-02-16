@@ -12,14 +12,14 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 var _ = Describe("Create Watcher Certificates", Ordered, func() {
 	tests := []struct {
 		name           string
 		namespace      *corev1.Namespace
-		kyma           *v1alpha1.Kyma
+		kyma           *v1beta1.Kyma
 		wantNewCertErr bool
 		wantCreateErr  bool
 		issuer         *v1.Issuer
@@ -27,16 +27,16 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 		{
 			name:      "Should create a valid CertificateCR",
 			namespace: testutils.NewTestNamespace("testcase-1"),
-			kyma: &v1alpha1.Kyma{
+			kyma: &v1beta1.Kyma{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "test-kyma-1",
 					Namespace:   "testcase-1",
 					Annotations: map[string]string{watcher.DomainAnnotation: "example.domain.com"},
 				},
-				Spec: v1alpha1.KymaSpec{
-					Sync: v1alpha1.Sync{
+				Spec: v1beta1.KymaSpec{
+					Sync: v1beta1.Sync{
 						Enabled:      true,
-						Strategy:     v1alpha1.SyncStrategyLocalClient,
+						Strategy:     v1beta1.SyncStrategyLocalClient,
 						Namespace:    metav1.NamespaceDefault,
 						NoModuleCopy: true,
 					},
@@ -49,16 +49,16 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 		{
 			name:      "Should fail since no Issuer can be found",
 			namespace: testutils.NewTestNamespace("testcase-2"),
-			kyma: &v1alpha1.Kyma{
+			kyma: &v1beta1.Kyma{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "test-kyma-2",
 					Namespace:   "testcase-2",
 					Annotations: map[string]string{watcher.DomainAnnotation: "example.domain.com"},
 				},
-				Spec: v1alpha1.KymaSpec{
-					Sync: v1alpha1.Sync{
+				Spec: v1beta1.KymaSpec{
+					Sync: v1beta1.Sync{
 						Enabled:      true,
-						Strategy:     v1alpha1.SyncStrategyLocalClient,
+						Strategy:     v1beta1.SyncStrategyLocalClient,
 						Namespace:    metav1.NamespaceDefault,
 						NoModuleCopy: true,
 					},
@@ -71,15 +71,15 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 		{
 			name:      "Should fail since KymaCR is missing domain annotation",
 			namespace: testutils.NewTestNamespace("testcase-3"),
-			kyma: &v1alpha1.Kyma{
+			kyma: &v1beta1.Kyma{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-kyma-3",
 					Namespace: "testcase-3",
 				},
-				Spec: v1alpha1.KymaSpec{
-					Sync: v1alpha1.Sync{
+				Spec: v1beta1.KymaSpec{
+					Sync: v1beta1.Sync{
 						Enabled:      true,
-						Strategy:     v1alpha1.SyncStrategyLocalClient,
+						Strategy:     v1beta1.SyncStrategyLocalClient,
 						Namespace:    metav1.NamespaceDefault,
 						NoModuleCopy: true,
 					},

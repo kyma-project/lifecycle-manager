@@ -5,12 +5,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
-	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
-	"github.com/kyma-project/module-manager/pkg/types"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -79,7 +77,7 @@ func expectManifestSpecNotContainsCredSecretSelector(kymaName string) func() err
 			if moduleInCluster.Spec.Config.CredSecretSelector != nil {
 				return ErrContainsUnexpectedCredSecretSelector
 			}
-			installImageSpec := extractInstallImageSpec(moduleInCluster.Spec.Installs)
+			installImageSpec := extractInstallImageSpec(moduleInCluster.Spec.Install)
 
 			if installImageSpec.CredSecretSelector != nil {
 				return ErrContainsUnexpectedCredSecretSelector
@@ -100,14 +98,14 @@ func expectManifestSpecContainsCredSecretSelector(kymaName string) func() error 
 			if err != nil {
 				return err
 			}
-			var emptyImageSpec types.ImageSpec
+			var emptyImageSpec v1beta1.ImageSpec
 			if moduleInCluster.Spec.Config != emptyImageSpec {
 				if err := expectCredSecretSelectorCorrect(&moduleInCluster.Spec.Config); err != nil {
 					return fmt.Errorf("config %v is invalid: %w", &moduleInCluster.Spec.Config, err)
 				}
 			}
 
-			installImageSpec := extractInstallImageSpec(moduleInCluster.Spec.Installs)
+			installImageSpec := extractInstallImageSpec(moduleInCluster.Spec.Install)
 			if err := expectCredSecretSelectorCorrect(installImageSpec); err != nil {
 				return fmt.Errorf("install %v is invalid: %w", installImageSpec, err)
 			}
@@ -116,15 +114,14 @@ func expectManifestSpecContainsCredSecretSelector(kymaName string) func() error 
 	}
 }
 
-func extractInstallImageSpec(installInfo []manifestV1alpha1.InstallInfo) *types.ImageSpec {
-	Expect(installInfo).To(HaveLen(1))
-	var installImageSpec *types.ImageSpec
-	err := yaml.Unmarshal(installInfo[0].Source.Raw, &installImageSpec)
+func extractInstallImageSpec(installInfo v1beta1.InstallInfo) *v1beta1.ImageSpec {
+	var installImageSpec *v1beta1.ImageSpec
+	err := yaml.Unmarshal(installInfo.Source.Raw, &installImageSpec)
 	Expect(err).ToNot(HaveOccurred())
 	return installImageSpec
 }
 
-func expectCredSecretSelectorCorrect(installImageSpec *types.ImageSpec) error {
+func expectCredSecretSelectorCorrect(installImageSpec *v1beta1.ImageSpec) error {
 	if installImageSpec.CredSecretSelector == nil {
 		return fmt.Errorf("image spec %v does not contain credSecretSelector: %w",
 			installImageSpec, ErrNotContainsExpectedCredSecretSelector)
@@ -136,7 +133,7 @@ func expectCredSecretSelectorCorrect(installImageSpec *types.ImageSpec) error {
 	return nil
 }
 
-func updateModuleTemplateTarget(kymaName string, target v1alpha1.Target) func() error {
+func updateModuleTemplateTarget(kymaName string, target v1beta1.Target) func() error {
 	return func() error {
 		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 		if err != nil {
@@ -173,7 +170,7 @@ func updateModuleTemplateOCIRegistryCredLabel(kymaName string) func() error {
 					for i := range descriptor.Resources {
 						resource := &descriptor.Resources[i]
 						resource.SetLabels([]ocm.Label{{
-							Name:  v1alpha1.OCIRegistryCredLabel,
+							Name:  v1beta1.OCIRegistryCredLabel,
 							Value: json.RawMessage(fmt.Sprintf(`{"%s": "%s"}`, credSecretLabel, credSecretValue)),
 						}})
 					}
@@ -195,10 +192,10 @@ var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 
 	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1alpha1.Module{
+		kyma.Spec.Modules, v1beta1.Module{
 			ControllerName: "manifest",
 			Name:           NewUniqModuleName(),
-			Channel:        v1alpha1.DefaultChannel,
+			Channel:        v1beta1.DefaultChannel,
 		})
 
 	RegisterDefaultLifecycleForKyma(kyma)
@@ -212,10 +209,10 @@ var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
 			noCondition(),
 			expectManifestSpecRemoteMatched(kyma.Name, false)),
 		Entry("When update ModuleTemplate.Spec.Target=remote, expect Manifest.Spec.remote=true",
-			updateModuleTemplateTarget(kyma.Name, v1alpha1.TargetRemote),
+			updateModuleTemplateTarget(kyma.Name, v1beta1.TargetRemote),
 			expectManifestSpecRemoteMatched(kyma.Name, true)),
 		Entry("When update ModuleTemplate.Spec.Target=control-plane, expect Manifest.Spec.remote=false",
-			updateModuleTemplateTarget(kyma.Name, v1alpha1.TargetControlPlane),
+			updateModuleTemplateTarget(kyma.Name, v1beta1.TargetControlPlane),
 			expectManifestSpecRemoteMatched(kyma.Name, false)),
 	)
 })
@@ -224,10 +221,10 @@ var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 
 	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1alpha1.Module{
+		kyma.Spec.Modules, v1beta1.Module{
 			ControllerName: "manifest",
 			Name:           NewUniqModuleName(),
-			Channel:        v1alpha1.DefaultChannel,
+			Channel:        v1beta1.DefaultChannel,
 		})
 
 	RegisterDefaultLifecycleForKyma(kyma)

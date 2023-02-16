@@ -13,6 +13,7 @@ RUN go mod download
 COPY main.go main.go
 COPY flags.go flags.go
 COPY api api/
+COPY internal internal/
 COPY controllers controllers/
 COPY pkg pkg/
 # Build

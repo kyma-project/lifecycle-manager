@@ -5,14 +5,11 @@ import (
 	"fmt"
 
 	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
-	manifestV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
-	"github.com/kyma-project/module-manager/pkg/types"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
@@ -29,7 +26,7 @@ var (
 )
 
 func GenerateModulesFromTemplates(
-	kyma *v1alpha1.Kyma, templates channel.ModuleTemplatesByModuleName, verification signature.Verification,
+	kyma *v1beta1.Kyma, templates channel.ModuleTemplatesByModuleName, verification signature.Verification,
 ) (common.Modules, error) {
 	// these are the actual modules
 	modules, err := templatesToModules(kyma, templates,
@@ -42,7 +39,7 @@ func GenerateModulesFromTemplates(
 }
 
 func templatesToModules(
-	kyma *v1alpha1.Kyma,
+	kyma *v1beta1.Kyma,
 	templates channel.ModuleTemplatesByModuleName,
 	settings *ModuleConversionSettings,
 ) (common.Modules, error) {
@@ -63,7 +60,7 @@ func templatesToModules(
 		}
 		fqdn := descriptor.GetName()
 		version := descriptor.GetVersion()
-		name := common.CreateModuleName(fqdn, kyma.Name)
+		name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
 		// if the default data does not contain a name, default it to the module name
 		if template.ModuleTemplate.Spec.Data.GetName() == "" {
 			template.ModuleTemplate.Spec.Data.SetName(name)
@@ -99,17 +96,17 @@ func templatesToModules(
 }
 
 func NewManifestFromTemplate(
-	module v1alpha1.Module,
-	template *v1alpha1.ModuleTemplate,
+	module v1beta1.Module,
+	template *v1beta1.ModuleTemplate,
 	verification signature.Verification,
-) (*manifestV1alpha1.Manifest, error) {
-	manifest := &manifestV1alpha1.Manifest{}
+) (*v1beta1.Manifest, error) {
+	manifest := &v1beta1.Manifest{}
 	manifest.Spec.Remote = ConvertTargetToRemote(template.Spec.Target)
 
 	switch module.CustomResourcePolicy {
-	case v1alpha1.CustomResourcePolicyIgnore:
+	case v1beta1.CustomResourcePolicyIgnore:
 		manifest.Spec.Resource = nil
-	case v1alpha1.CustomResourcePolicyCreateAndDelete:
+	case v1beta1.CustomResourcePolicyCreateAndDelete:
 		fallthrough
 	default:
 		manifest.Spec.Resource = template.Spec.Data.DeepCopy()
@@ -139,7 +136,7 @@ func NewManifestFromTemplate(
 }
 
 func translateLayersAndMergeIntoManifest(
-	manifest *manifestV1alpha1.Manifest, layers img.Layers,
+	manifest *v1beta1.Manifest, layers img.Layers,
 ) error {
 	for _, layer := range layers {
 		if err := insertLayerIntoManifest(manifest, layer); err != nil {
@@ -150,7 +147,7 @@ func translateLayersAndMergeIntoManifest(
 }
 
 func insertLayerIntoManifest(
-	manifest *manifestV1alpha1.Manifest, layer img.Layer,
+	manifest *v1beta1.Manifest, layer img.Layer,
 ) error {
 	switch layer.LayerName {
 	case img.CRDsLayer:
@@ -160,7 +157,7 @@ func insertLayerIntoManifest(
 		if !ok {
 			return fmt.Errorf("%w: not an OCIImage", ErrDefaultConfigParsing)
 		}
-		manifest.Spec.Config = types.ImageSpec{
+		manifest.Spec.Config = v1beta1.ImageSpec{
 			Repo:               ociImage.Repo,
 			Name:               ociImage.Name,
 			Ref:                ociImage.Ref,
@@ -172,21 +169,20 @@ func insertLayerIntoManifest(
 		if err != nil {
 			return fmt.Errorf("error while merging the generic install representation: %w", err)
 		}
-		manifest.Spec.Installs = append(
-			manifest.Spec.Installs, manifestV1alpha1.InstallInfo{
-				Source: runtime.RawExtension{Raw: installRaw},
-				Name:   string(layer.LayerName),
-			})
+		manifest.Spec.Install = v1beta1.InstallInfo{
+			Source: runtime.RawExtension{Raw: installRaw},
+			Name:   string(layer.LayerName),
+		}
 	}
 
 	return nil
 }
 
-func ConvertTargetToRemote(remote v1alpha1.Target) bool {
+func ConvertTargetToRemote(remote v1beta1.Target) bool {
 	switch remote {
-	case v1alpha1.TargetControlPlane:
+	case v1beta1.TargetControlPlane:
 		return false
-	case v1alpha1.TargetRemote:
+	case v1beta1.TargetRemote:
 		return true
 	default:
 		panic(ErrUndefinedTargetToRemote)

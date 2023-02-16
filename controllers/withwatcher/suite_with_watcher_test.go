@@ -24,29 +24,30 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"github.com/kyma-project/lifecycle-manager/api"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	moduleManagerV1alpha1 "github.com/kyma-project/module-manager/api/v1alpha1"
 	//nolint:gci
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
 
-	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	operatorv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
@@ -125,9 +126,8 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(restCfg).NotTo(BeNil())
 
-	Expect(operatorv1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+	Expect(api.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
-	Expect(moduleManagerV1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(istioscheme.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(certManagerV1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 
@@ -141,7 +141,7 @@ var _ = BeforeSuite(func() {
 
 	metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
 	if !found {
-		metricsBindAddress = ":8081"
+		metricsBindAddress = ":0"
 	}
 
 	k8sManager, err = ctrl.NewManager(
@@ -174,7 +174,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.KymaReconciler{
 		Client:            k8sManager.GetClient(),
-		EventRecorder:     k8sManager.GetEventRecorderFor(operatorv1alpha1.OperatorName),
+		EventRecorder:     k8sManager.GetEventRecorderFor(operatorv1beta1.OperatorName),
 		RequeueIntervals:  intervals,
 		SKRWebhookManager: skrWebhookChartManager,
 		VerificationSettings: signature.VerificationSettings{
