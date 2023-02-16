@@ -81,6 +81,9 @@ func parseLayersByName(repo *ocm.OCIRegistryRepository, descriptor *ocm.Componen
 				Version:   helmChartAccess.HelmChartVersion,
 				Type:      HelmRepresentationType,
 			}
+		// this resource type is not relevant for module rendering but for security scanning only
+		case ocm.OCIRegistryType:
+			continue
 		default:
 			return nil, fmt.Errorf("error while parsing access type %s: %w",
 				access.GetType(), ErrAccessTypeNotSupported,
