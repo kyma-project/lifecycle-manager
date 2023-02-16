@@ -23,6 +23,7 @@ import (
 
 //+kubebuilder:object:root=true
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:deprecatedversion:warning="kyma-project.io/v1alpha1 Watcher is deprecated. Use v1beta1 instead."
 
 // Watcher is the Schema for the watchers API.
 type Watcher struct {
