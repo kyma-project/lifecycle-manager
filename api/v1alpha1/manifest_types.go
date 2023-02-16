@@ -84,6 +84,7 @@ type Manifest struct {
 	Status ManifestStatus `json:"status,omitempty"`
 }
 
+//nolint:stylecheck
 func (m *Manifest) ComponentName() string {
 	return fmt.Sprintf("manifest-%s", m.Name)
 }

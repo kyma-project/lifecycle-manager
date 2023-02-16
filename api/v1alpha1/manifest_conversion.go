@@ -45,7 +45,7 @@ func (src *Manifest) ConvertTo(dstRaw conversion.Hub) error {
 
 // ConvertFrom converts from the Hub version to this version.
 //
-//nolint:revive,stylecheck
+//nolint:revive
 func (dst *Manifest) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*v1beta1.Manifest)
 
