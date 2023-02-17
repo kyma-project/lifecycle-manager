@@ -329,16 +329,16 @@ func (kyma *Kyma) SetLastSync() *Kyma {
 }
 
 type moduleStatusExistsPair struct {
-	moduleStatus ModuleStatus
+	moduleStatus *ModuleStatus
 	exists       bool
 }
 
-func (kyma *Kyma) GetNoLongerExistingModuleStatus() []ModuleStatus {
+func (kyma *Kyma) GetNoLongerExistingModuleStatus() []*ModuleStatus {
 	moduleStatusMap := make(map[string]*moduleStatusExistsPair)
 
 	for i := range kyma.Status.Modules {
 		moduleStatus := &kyma.Status.Modules[i]
-		moduleStatusMap[moduleStatus.Name] = &moduleStatusExistsPair{exists: false, moduleStatus: *moduleStatus}
+		moduleStatusMap[moduleStatus.Name] = &moduleStatusExistsPair{exists: false, moduleStatus: moduleStatus}
 	}
 
 	for i := range kyma.Spec.Modules {
@@ -348,7 +348,7 @@ func (kyma *Kyma) GetNoLongerExistingModuleStatus() []ModuleStatus {
 		}
 	}
 
-	notExistsModules := make([]ModuleStatus, 0)
+	notExistsModules := make([]*ModuleStatus, 0)
 	for _, item := range moduleStatusMap {
 		if !item.exists {
 			notExistsModules = append(notExistsModules, item.moduleStatus)

@@ -20,7 +20,7 @@ func (src *Manifest) ConvertTo(dstRaw conversion.Hub) error {
 	}
 
 	for _, install := range src.Spec.Installs {
-		install = InstallInfo{
+		dst.Spec.Install = v1beta1.InstallInfo{
 			Source: install.Source,
 			Name:   install.Name,
 		}

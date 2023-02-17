@@ -150,6 +150,9 @@ func stateFromManifest(obj client.Object) v1beta1.State {
 	switch manifest := obj.(type) {
 	case *v1beta1.Manifest:
 		return v1beta1.State(manifest.Status.State)
+	case *unstructured.Unstructured:
+		state, _, _ := unstructured.NestedString(manifest.Object, "status", "state")
+		return v1beta1.State(state)
 	default:
 		return ""
 	}
@@ -159,16 +162,18 @@ func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context,
 	moduleStatusMap map[string]*v1beta1.ModuleStatus,
 	kyma *v1beta1.Kyma,
 ) {
-	moduleStatusArr := kyma.GetNoLongerExistingModuleStatus()
-	for idx := range moduleStatusArr {
-		moduleStatus := moduleStatusArr[idx]
-		module := unstructured.Unstructured{}
+	moduleStatus := kyma.GetNoLongerExistingModuleStatus()
+	for idx := range moduleStatus {
+		moduleStatus := moduleStatus[idx]
+		module := &unstructured.Unstructured{}
 		module.SetGroupVersionKind(moduleStatus.Manifest.GroupVersionKind())
 		module.SetName(moduleStatus.Manifest.GetName())
 		module.SetNamespace(moduleStatus.Manifest.GetNamespace())
-		err := r.getModule(ctx, &module)
+		err := r.getModule(ctx, module)
 		if errors.IsNotFound(err) {
 			delete(moduleStatusMap, moduleStatus.Name)
+		} else {
+			moduleStatus.State = stateFromManifest(module)
 		}
 	}
 	kyma.Status.Modules = convertToNewModuleStatus(moduleStatusMap)
