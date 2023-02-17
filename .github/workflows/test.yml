@@ -80,6 +80,9 @@ jobs:
         run: |
           cd $(go env GOPATH)/src/github.com/${{ github.repository }}/config/manager
           kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
+      - name: Setup istioctl
+        run: |
+          curl -L https://istio.io/downloadIstio | sh -
       - name: Set up k3d
         run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
       - id: kyma
@@ -98,6 +101,8 @@ jobs:
             --name kyma
       - name: Update Kubeconfigs
         run: k3d kubeconfig merge -a -d
+      - name: Install Istio
+        run: istioctl install --set profile=demo -y
       - name: Run Deploy
         run: |
           kyma --ci alpha deploy \
