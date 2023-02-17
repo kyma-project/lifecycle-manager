@@ -152,6 +152,15 @@ func (kyma *Kyma) AllReadyConditionsTrue() bool {
 	return true
 }
 
+func (kyma *Kyma) GetModuleStatusMap() map[string]*ModuleStatus {
+	moduleStatusMap := make(map[string]*ModuleStatus)
+	for i := range kyma.Status.Modules {
+		moduleStatus := &kyma.Status.Modules[i]
+		moduleStatusMap[moduleStatus.Name] = moduleStatus
+	}
+	return moduleStatusMap
+}
+
 // KymaStatus defines the observed state of Kyma
 // +kubebuilder:subresource:status
 type KymaStatus struct {
@@ -319,11 +328,33 @@ func (kyma *Kyma) SetLastSync() *Kyma {
 	return kyma
 }
 
+type moduleStatusExistsPair struct {
+	moduleStatus ModuleStatus
+	exists       bool
+}
+
 func (kyma *Kyma) GetNoLongerExistingModuleStatus() []ModuleStatus {
-	if len(kyma.Status.Modules) > len(kyma.Spec.Modules) {
-		return kyma.Status.Modules[len(kyma.Spec.Modules):]
+	moduleStatusMap := make(map[string]*moduleStatusExistsPair)
+
+	for i := range kyma.Status.Modules {
+		moduleStatus := &kyma.Status.Modules[i]
+		moduleStatusMap[moduleStatus.Name] = &moduleStatusExistsPair{exists: false, moduleStatus: *moduleStatus}
 	}
-	return nil
+
+	for i := range kyma.Spec.Modules {
+		module := &kyma.Spec.Modules[i]
+		if _, found := moduleStatusMap[module.Name]; found {
+			moduleStatusMap[module.Name].exists = true
+		}
+	}
+
+	notExistsModules := make([]ModuleStatus, 0)
+	for _, item := range moduleStatusMap {
+		if !item.exists {
+			notExistsModules = append(notExistsModules, item.moduleStatus)
+		}
+	}
+	return notExistsModules
 }
 
 //+kubebuilder:object:root=true

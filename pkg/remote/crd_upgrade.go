@@ -13,6 +13,8 @@ func PatchCRD(ctx context.Context, clnt client.Client, crd *v1extensions.CustomR
 	crdToApply.SetGroupVersionKind(crd.GroupVersionKind())
 	crdToApply.SetName(crd.Name)
 	crdToApply.Spec = crd.Spec
+	crdToApply.Spec.Conversion.Strategy = v1extensions.NoneConverter
+	crdToApply.Spec.Conversion.Webhook = nil
 	return clnt.Patch(ctx, crdToApply,
 		client.Apply,
 		client.ForceOwnership,

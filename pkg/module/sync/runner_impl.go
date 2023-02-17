@@ -108,11 +108,12 @@ func (r *RunnerImpl) setupModule(module *common.Module, kyma *v1beta1.Kyma) erro
 }
 
 func (r *RunnerImpl) SyncModuleStatus(ctx context.Context, kyma *v1beta1.Kyma, modules common.Modules) {
-	r.updateModuleStatusFromExistingModules(modules, kyma)
-	r.deleteNoLongerExistingModuleStatus(ctx, kyma)
+	statusMap := kyma.GetModuleStatusMap()
+	r.updateModuleStatusFromExistingModules(modules, statusMap, kyma)
+	r.deleteNoLongerExistingModuleStatus(ctx, statusMap, kyma)
 }
 
-func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Modules, kyma *v1beta1.Kyma) {
+func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Modules, moduleStatusMap map[string]*v1beta1.ModuleStatus, kyma *v1beta1.Kyma) {
 	for idx := range modules {
 		module := modules[idx]
 		manifestAPIVersion, manifestKind := module.Object.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
@@ -132,10 +133,11 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Module
 				TypeMeta:    metav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
 			},
 		}
-		if len(kyma.Status.Modules) < idx+1 {
-			kyma.Status.Modules = append(kyma.Status.Modules, latestModuleStatus)
+		moduleStatus, exists := moduleStatusMap[module.ModuleName]
+		if exists {
+			*moduleStatus = latestModuleStatus
 		} else {
-			kyma.Status.Modules[idx] = latestModuleStatus
+			kyma.Status.Modules = append(kyma.Status.Modules, latestModuleStatus)
 		}
 	}
 }
@@ -149,7 +151,7 @@ func stateFromManifest(obj client.Object) v1beta1.State {
 	}
 }
 
-func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1beta1.Kyma) {
+func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context, moduleStatusMap map[string]*v1beta1.ModuleStatus, kyma *v1beta1.Kyma) {
 	moduleStatusArr := kyma.GetNoLongerExistingModuleStatus()
 	for idx := range moduleStatusArr {
 		moduleStatus := moduleStatusArr[idx]
@@ -159,7 +161,16 @@ func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context, kym
 		module.SetNamespace(moduleStatus.Manifest.GetNamespace())
 		err := r.getModule(ctx, &module)
 		if errors.IsNotFound(err) {
-			kyma.Status.Modules = append(kyma.Status.Modules[:idx], kyma.Status.Modules[idx+1:]...)
+			delete(moduleStatusMap, moduleStatus.Name)
 		}
 	}
+	kyma.Status.Modules = convertToNewModuleStatus(moduleStatusMap)
+}
+
+func convertToNewModuleStatus(moduleStatusMap map[string]*v1beta1.ModuleStatus) []v1beta1.ModuleStatus {
+	newModuleStatus := make([]v1beta1.ModuleStatus, 0)
+	for _, moduleStatus := range moduleStatusMap {
+		newModuleStatus = append(newModuleStatus, *moduleStatus)
+	}
+	return newModuleStatus
 }
