@@ -15,3 +15,6 @@ patches:
       version: v1
       kind: Namespace
     path: patches/istio_namespace_labels.yaml
+  - target:
+      kind: Deployment
+    path: patches/exclude_webhook_port.yaml
