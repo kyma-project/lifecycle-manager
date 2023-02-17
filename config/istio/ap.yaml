@@ -11,6 +11,9 @@ spec:
             paths:
               - /metrics
               - /v1*
+              - /convert
+              - /validate
+              - /mutate
   selector:
     matchLabels:
       app.kubernetes.io/component: lifecycle-manager.kyma-project.io
