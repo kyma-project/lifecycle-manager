@@ -52,9 +52,9 @@ jobs:
     strategy:
       matrix:
         cli-stability: ["unstable"]
-        smoke-run: [ "${{ github.repository }}" ]
+        target: ["default", "control-plane"]
     needs: [wait-for-img, kustomize]
-    name: "Kyma CLI - ${{ matrix.cli-stability }} - Integration (Tests of ${{ matrix.smoke-run }})"
+    name: "Kyma CLI - ${{ matrix.cli-stability }} - Integration (Tests of ${{ github.repository }})"
     runs-on: ubuntu-latest
     env:
       LIFECYCLE_MANAGER: ${{ github.repository }}
@@ -99,7 +99,8 @@ jobs:
             --name kyma
       - name: Update Kubeconfigs
         run: k3d kubeconfig merge -a -d
-      - name: Setup istioctl & install istio
+      - name: Setup Control-Plane requirements
+        if: ${{ matrix.target }} == 'control-plane'
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           chmod +x kubectl
@@ -117,15 +118,15 @@ jobs:
       - name: Run Deploy
         run: |
           kyma --ci alpha deploy \
-            -k $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/config/control-plane
+            -k $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/config/${{ matrix.target }}
       - name: Inject GOPATH into go Setup
         run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-      - name: Set up Go for ${{ matrix.smoke-run }}
+      - name: Set up Go for ${{ github.repository }}
         uses: actions/setup-go@v3
         with:
-          go-version-file: ${{ env.GOPATH }}/src/github.com/${{ matrix.smoke-run }}/go.mod
-          cache-dependency-path: ${{ env.GOPATH }}/src/github.com/${{ matrix.smoke-run }}/go.sum
-      - name: Run Smoke Tests for ${{ matrix.smoke_test-run }}
+          go-version-file: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}/go.mod
+          cache-dependency-path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}/go.sum
+      - name: Run Smoke Tests for ${{ matrix.target }}
         run: |
-          cd $(go env GOPATH)/src/github.com/${{ matrix.smoke-run }}/tests/smoke_test
-          make test-verbose
+          cd $(go env GOPATH)/src/github.com/${{ github.repository }}/tests/smoke_test
+          go test --tags=smoke smoke_test.go -v -feature="${{ matrix.target }}"
