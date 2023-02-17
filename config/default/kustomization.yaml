@@ -30,12 +30,6 @@ patches:
       version: v1beta1
       kind: Gateway
       name: watcher-gateway
-  - patch: |-
-      - op: add
-        path: /spec/template/spec/containers/0/args/-
-        value: --enable-webhooks=true
-    target:
-      kind: Deployment
 resources:
   - ../manager
   - ../certmanager
