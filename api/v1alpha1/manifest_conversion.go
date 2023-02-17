@@ -9,7 +9,7 @@ import (
 
 var ErrSingleInstallOnly = errors.New("v1beta1 only supports a single install at a time")
 
-// ConvertTo converts this CronJob to the Hub version.
+// ConvertTo converts this to the Hub version.
 func (src *Manifest) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*v1beta1.Manifest)
 
