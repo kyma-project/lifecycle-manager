@@ -113,7 +113,11 @@ func (r *RunnerImpl) SyncModuleStatus(ctx context.Context, kyma *v1beta1.Kyma, m
 	r.deleteNoLongerExistingModuleStatus(ctx, statusMap, kyma)
 }
 
-func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Modules, moduleStatusMap map[string]*v1beta1.ModuleStatus, kyma *v1beta1.Kyma) {
+func (r *RunnerImpl) updateModuleStatusFromExistingModules(
+	modules common.Modules,
+	moduleStatusMap map[string]*v1beta1.ModuleStatus,
+	kyma *v1beta1.Kyma,
+) {
 	for idx := range modules {
 		module := modules[idx]
 		manifestAPIVersion, manifestKind := module.Object.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
@@ -151,7 +155,10 @@ func stateFromManifest(obj client.Object) v1beta1.State {
 	}
 }
 
-func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context, moduleStatusMap map[string]*v1beta1.ModuleStatus, kyma *v1beta1.Kyma) {
+func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context,
+	moduleStatusMap map[string]*v1beta1.ModuleStatus,
+	kyma *v1beta1.Kyma,
+) {
 	moduleStatusArr := kyma.GetNoLongerExistingModuleStatus()
 	for idx := range moduleStatusArr {
 		moduleStatus := moduleStatusArr[idx]
