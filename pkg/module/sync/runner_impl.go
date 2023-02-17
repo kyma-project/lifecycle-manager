@@ -112,7 +112,12 @@ func (r *RunnerImpl) SyncModuleStatus(ctx context.Context, kyma *v1beta1.Kyma, m
 	r.deleteNoLongerExistingModuleStatus(ctx, kyma)
 }
 
-func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Modules, kyma *v1beta1.Kyma) {
+func (r *RunnerImpl) updateModuleStatusFromExistingModules(
+	modules common.Modules,
+	kyma *v1beta1.Kyma,
+) {
+	moduleStatusMap := kyma.GetModuleStatusMap()
+
 	for idx := range modules {
 		module := modules[idx]
 		manifestAPIVersion, manifestKind := module.Object.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
@@ -132,10 +137,11 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(modules common.Module
 				TypeMeta:    metav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
 			},
 		}
-		if len(kyma.Status.Modules) < idx+1 {
-			kyma.Status.Modules = append(kyma.Status.Modules, latestModuleStatus)
+		moduleStatus, exists := moduleStatusMap[module.ModuleName]
+		if exists {
+			*moduleStatus = latestModuleStatus
 		} else {
-			kyma.Status.Modules[idx] = latestModuleStatus
+			kyma.Status.Modules = append(kyma.Status.Modules, latestModuleStatus)
 		}
 	}
 }
@@ -144,22 +150,37 @@ func stateFromManifest(obj client.Object) v1beta1.State {
 	switch manifest := obj.(type) {
 	case *v1beta1.Manifest:
 		return v1beta1.State(manifest.Status.State)
+	case *unstructured.Unstructured:
+		state, _, _ := unstructured.NestedString(manifest.Object, "status", "state")
+		return v1beta1.State(state)
 	default:
 		return ""
 	}
 }
 
 func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1beta1.Kyma) {
-	moduleStatusArr := kyma.GetNoLongerExistingModuleStatus()
-	for idx := range moduleStatusArr {
-		moduleStatus := moduleStatusArr[idx]
-		module := unstructured.Unstructured{}
+	moduleStatusMap := kyma.GetModuleStatusMap()
+	moduleStatus := kyma.GetNoLongerExistingModuleStatus()
+	for idx := range moduleStatus {
+		moduleStatus := moduleStatus[idx]
+		module := &unstructured.Unstructured{}
 		module.SetGroupVersionKind(moduleStatus.Manifest.GroupVersionKind())
 		module.SetName(moduleStatus.Manifest.GetName())
 		module.SetNamespace(moduleStatus.Manifest.GetNamespace())
-		err := r.getModule(ctx, &module)
+		err := r.getModule(ctx, module)
 		if errors.IsNotFound(err) {
-			kyma.Status.Modules = append(kyma.Status.Modules[:idx], kyma.Status.Modules[idx+1:]...)
+			delete(moduleStatusMap, moduleStatus.Name)
+		} else {
+			moduleStatus.State = stateFromManifest(module)
 		}
 	}
+	kyma.Status.Modules = convertToNewModuleStatus(moduleStatusMap)
+}
+
+func convertToNewModuleStatus(moduleStatusMap map[string]*v1beta1.ModuleStatus) []v1beta1.ModuleStatus {
+	newModuleStatus := make([]v1beta1.ModuleStatus, 0)
+	for _, moduleStatus := range moduleStatusMap {
+		newModuleStatus = append(newModuleStatus, *moduleStatus)
+	}
+	return newModuleStatus
 }

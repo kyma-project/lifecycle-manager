@@ -422,7 +422,7 @@ func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma
 	return nil
 }
 
-func (r *KymaReconciler) deleteModule(ctx context.Context, moduleStatus v1beta1.ModuleStatus) error {
+func (r *KymaReconciler) deleteModule(ctx context.Context, moduleStatus *v1beta1.ModuleStatus) error {
 	manifest := metav1.PartialObjectMetadata{}
 	manifest.SetGroupVersionKind(moduleStatus.Manifest.GroupVersionKind())
 	manifest.SetNamespace(moduleStatus.Manifest.GetNamespace())

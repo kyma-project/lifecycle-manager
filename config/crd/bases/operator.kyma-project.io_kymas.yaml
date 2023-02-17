@@ -22,6 +22,8 @@ spec:
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
+    deprecated: true
+    deprecationWarning: kyma-project.io/v1alpha1 Kyma is deprecated. Use v1beta1 instead.
     name: v1alpha1
     schema:
       openAPIV3Schema:
