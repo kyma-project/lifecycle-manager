@@ -39,6 +39,13 @@ components:
   # [GRAFANA] To enable prometheus monitor, uncomment all sections with 'GRAFANA'.
   - ../grafana
 
+patches:
+  - patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --enable-webhooks=true
+    target:
+      kind: Deployment
 
 patchesJson6902:
   # We patch the Metrics JSONs here as we expect KCP to be watching for grafana dashboards in kyma-system,
