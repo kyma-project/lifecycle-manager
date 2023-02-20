@@ -23,8 +23,8 @@ require (
 	golang.org/x/time v0.3.0
 	gopkg.in/yaml.v3 v3.0.1
 	helm.sh/helm/v3 v3.11.1
-	istio.io/api v0.0.0-20230201200515-7f0fb1d3b814
-	istio.io/client-go v1.16.2
+	istio.io/api v0.0.0-20230204131218-41d7951eb9e4
+	istio.io/client-go v1.17.0
 	k8s.io/api v0.26.1
 	k8s.io/apiextensions-apiserver v0.26.1
 	k8s.io/apimachinery v0.26.1
