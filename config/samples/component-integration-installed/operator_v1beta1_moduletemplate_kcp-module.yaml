@@ -24,6 +24,10 @@ spec:
   descriptor:
     component:
       componentReferences: []
+      labels:
+      - name: scan.security.kyma-project.io
+        value:
+          scan: enabled
       name: kyma.project.io/module/loadtest
       provider: internal
       repositoryContexts:
@@ -37,6 +41,17 @@ spec:
           name: loadtest-operator
           relation: local
           type: helm-chart
+          version: 0.0.4
+        - access:
+            imageReference: artifact.registry.hostname/path/to/the/registry/k8s-tools:v20221213-1840f45a
+            type: ociRegistry
+          labels:
+          - name: type.scan.security.kyma-project.io
+            value:
+              type: third-party-image
+          name: k8s-tools
+          relation: external
+          type: ociImage
           version: 0.0.4
       sources: []
       version: 0.0.4

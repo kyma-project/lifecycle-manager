@@ -208,6 +208,24 @@ func ModuleTemplatesExist(clnt client.Client, kyma *v1beta1.Kyma, remote bool) f
 	}
 }
 
+func GetModuleTemplatesLabelCount(clnt client.Client, kyma *v1beta1.Kyma, remote bool) (int, error) {
+	module := kyma.Spec.Modules[0]
+	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
+	if err != nil {
+		return 0, err
+	}
+	if err := getModuleTemplate(clnt, template, kyma, remote); err != nil {
+		return 0, err
+	}
+	descriptor, err := template.Spec.GetUnsafeDescriptor()
+	if err != nil {
+		return 0, err
+	}
+
+	return len(descriptor.GetLabels()), nil
+
+}
+
 var ErrModuleTemplateDescriptorLabelCountMismatch = errors.New("label count in descriptor does not match")
 
 func ModuleTemplatesLabelsCountMatch(
@@ -227,10 +245,10 @@ func ModuleTemplatesLabelsCountMatch(
 			if err != nil {
 				return err
 			}
-
-			if len(descriptor.GetLabels()) != count {
+			l := len(descriptor.GetLabels())
+			if l != count {
 				return fmt.Errorf("expected %v but got %v labels: %w", count,
-					len(descriptor.GetLabels()), ErrModuleTemplateDescriptorLabelCountMismatch,
+					l, ErrModuleTemplateDescriptorLabelCountMismatch,
 				)
 			}
 		}
