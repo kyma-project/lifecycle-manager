@@ -8,6 +8,5 @@ const (
 	LifecycleManager = "lifecycle-manager"
 	OperatorName     = "module-manager"
 	OwnedByLabel     = OperatorPrefix + Separator + "owned-by"
-	OwnedByFormat    = "%s__%s"
 	WatchedByLabel   = OperatorPrefix + Separator + "watched-by"
 )

@@ -131,19 +131,23 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 	crd := &v1extensions.CustomResourceDefinition{}
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
 	var err error
-	err = c.ControlPlaneClient.Get(ctx, client.ObjectKey{
-		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
-		// name changes, this also has to be adjusted here. We can think of making this configurable later
-		Name: fmt.Sprintf("%s.%s", plural, v1beta1.GroupVersion.Group),
-	}, crd)
+	err = c.ControlPlaneClient.Get(
+		ctx, client.ObjectKey{
+			// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
+			// name changes, this also has to be adjusted here. We can think of making this configurable later
+			Name: fmt.Sprintf("%s.%s", plural, v1beta1.GroupVersion.Group),
+		}, crd,
+	)
 
 	if err != nil {
 		return err
 	}
 
-	err = c.RuntimeClient.Get(ctx, client.ObjectKey{
-		Name: fmt.Sprintf("%s.%s", plural, v1beta1.GroupVersion.Group),
-	}, crdFromRuntime)
+	err = c.RuntimeClient.Get(
+		ctx, client.ObjectKey{
+			Name: fmt.Sprintf("%s.%s", plural, v1beta1.GroupVersion.Group),
+		}, crdFromRuntime,
+	)
 
 	if k8serrors.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta1.GroupVersion.Version) {
 		return PatchCRD(ctx, c.RuntimeClient, crd)
@@ -204,7 +208,8 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 	return remoteKyma, err
 }
 
-func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context,
+func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(
+	ctx context.Context,
 	controlPlaneKyma, remoteKyma *v1beta1.Kyma,
 ) error {
 	recorder := adapter.RecorderFromContext(ctx)
@@ -232,7 +237,8 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(ctx context.Context,
 
 // ReplaceWithVirtualKyma creates a virtual kyma instance from a control plane Kyma and N Remote Kymas,
 // merging the module specification in the process.
-func (c *KymaSynchronizationContext) ReplaceWithVirtualKyma(kyma *v1beta1.Kyma,
+func (c *KymaSynchronizationContext) ReplaceWithVirtualKyma(
+	kyma *v1beta1.Kyma,
 	remotes ...*v1beta1.Kyma,
 ) {
 	totalModuleAmount := len(kyma.Spec.Modules)
@@ -272,8 +278,6 @@ func (c *KymaSynchronizationContext) InsertWatcherLabels(controlPlaneKyma, remot
 		remoteKyma.Labels = make(map[string]string)
 	}
 
-	remoteKyma.Labels[v1beta1.OwnedByLabel] = fmt.Sprintf(
-		v1beta1.OwnedByFormat,
-		controlPlaneKyma.Namespace, controlPlaneKyma.Name)
+	remoteKyma.Labels[v1beta1.OwnedByLabel] = controlPlaneKyma.GetName()
 	remoteKyma.Labels[v1beta1.WatchedByLabel] = v1beta1.OperatorName
 }

@@ -2,7 +2,6 @@ package v2
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/labels"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -62,7 +61,7 @@ func watchedByOwnedBy(_ context.Context, obj Object, resources []*unstructured.U
 		}
 		// legacy managed by value
 		lbls[labels.WatchedByLabel] = labels.OperatorName
-		lbls[labels.OwnedByLabel] = fmt.Sprintf(labels.OwnedByFormat, obj.GetNamespace(), obj.GetName())
+		lbls[labels.OwnedByLabel] = obj.GetName()
 		resource.SetLabels(lbls)
 	}
 	return nil
