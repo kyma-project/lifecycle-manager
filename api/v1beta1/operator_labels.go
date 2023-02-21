@@ -19,9 +19,6 @@ const (
 	//nolint:gosec
 	OCIRegistryCredLabel = "oci-registry-cred"
 	OperatorName         = "lifecycle-manager"
-	// OwnedByLabel defines the resource managing the resource. Differing from ManagedBy in that it does not reference
-	// controllers.
-	OwnedByLabel = OperatorPrefix + Separator + "owned-by"
 	// WatchedByLabel defines a redirect to a controller that should be getting a notification
 	// if this resource is changed.
 	WatchedByLabel = OperatorPrefix + Separator + "watched-by"

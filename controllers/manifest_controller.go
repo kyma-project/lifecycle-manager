@@ -9,7 +9,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
-	"github.com/kyma-project/lifecycle-manager/pkg/labels"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
 	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
@@ -42,7 +41,7 @@ func SetupWithManager(
 	}
 
 	runnableListener, eventChannel := listener.RegisterListenerComponent(
-		settings.ListenerAddr, strings.ToLower(labels.OperatorName), verifyFunc,
+		settings.ListenerAddr, strings.ToLower(declarative.OperatorName), verifyFunc,
 	)
 
 	// start listener as a manager runnable
@@ -89,7 +88,7 @@ func ManifestReconciler(
 				Config: mgr.GetConfig(),
 			}}).ConfigResolver,
 		),
-		declarative.WithClientCacheKeyFromLabelOrResource(labels.KymaName),
+		declarative.WithClientCacheKeyFromLabelOrResource(v1beta1.KymaName),
 		declarative.WithPostRun{internalv1beta1.PostRunCreateCR},
 		declarative.WithPreDelete{internalv1beta1.PreDeleteDeleteCR},
 		declarative.WithPeriodicConsistencyCheck(checkInterval),
