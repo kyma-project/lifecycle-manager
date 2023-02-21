@@ -5,7 +5,7 @@ metadata:
     operator.kyma-project.io/channel: stable
     operator.kyma-project.io/controller-name: manifest
     operator.kyma-project.io/kyma-name: kyma-sample
-  name: manifestkyma-sample
+  name: manifestkyma-sample2
   namespace: default
 spec:
   remote: false
@@ -18,12 +18,12 @@ spec:
     spec:
       randomkey: samplevalue
   installs:
-#    - source:
-#        name: kyma.project.io/module/kyma-redis
-#        repo: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/operator-demo
-#        ref: sha256:cd98ce9b440fef2e1d11fe382ccf6fab971f516efa9ee174d73209777ed318b5
-#        type: oci-ref
-#      name: kyma-redis-operator
+    - source:
+        name: kyma.project.io/module/kyma-redis
+        repo: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/operator-demo
+        ref: sha256:cd98ce9b440fef2e1d11fe382ccf6fab971f516efa9ee174d73209777ed318b5
+        type: oci-ref
+      name: kyma-redis-operator
     - source:
         chartName: nginx-ingress
         url:       https://helm.nginx.com/stable

@@ -15,5 +15,5 @@ configMapGenerator:
 
 images:
 - name: controller
-  newName: eu.gcr.io/kyma-project/lifecycle-manager
-  newTag: latest
+  newName: ghcr.io/ruanxin/lifecycle-manager
+  newTag: 10.5.7
