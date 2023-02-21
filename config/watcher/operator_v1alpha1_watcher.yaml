@@ -24,7 +24,7 @@ metadata:
   name: manifest-watcher
   namespace: system
   labels:
-    operator.kyma-project.io/managed-by: "lifecycle-manager"
+    operator.kyma-project.io/managed-by: "module-manager"
 spec:
   labelsToWatch:
     operator.kyma-project.io/watched-by: "module-manager"
