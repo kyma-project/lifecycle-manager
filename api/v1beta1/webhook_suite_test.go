@@ -39,7 +39,6 @@ import (
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 
 	"github.com/kyma-project/lifecycle-manager/api"
-	"github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -134,7 +133,6 @@ func SetupWebhook() {
 	Expect(err).NotTo(HaveOccurred())
 
 	Expect((&v1beta1.ModuleTemplate{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
-	Expect((&v1alpha1.ModuleTemplate{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:webhook
 

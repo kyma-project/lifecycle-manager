@@ -14,7 +14,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	opLabels "github.com/kyma-project/lifecycle-manager/pkg/labels"
 	"github.com/kyma-project/lifecycle-manager/pkg/types"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -161,13 +160,13 @@ func CalculateHash(interfaceToBeHashed any) (uint32, error) {
 	return h.Sum32(), nil
 }
 
-func GetCacheFunc() cache.NewCacheFunc {
+func GetCacheFunc(labelSelector labels.Set) cache.NewCacheFunc {
 	return cache.BuilderWithOptions(
 		cache.Options{
 			SelectorsByObject: cache.SelectorsByObject{
 				&v1.Secret{}: {
 					Label: labels.SelectorFromSet(
-						labels.Set{opLabels.ManagedBy: opLabels.LifecycleManager},
+						labelSelector,
 					),
 				},
 			},

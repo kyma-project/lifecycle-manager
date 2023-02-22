@@ -11,8 +11,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/labels"
 )
 
 var ErrKubeconfigFetchFailed = errors.New("could not fetch kubeconfig")
@@ -24,11 +22,11 @@ type ClusterClient struct {
 var ErrMoreThanOneSecretFound = errors.New("more than one secret found")
 
 func (cc *ClusterClient) GetRESTConfig(
-	ctx context.Context, kymaOwner string, namespace string,
+	ctx context.Context, kymaOwner, kymaNameLabel, namespace string,
 ) (*rest.Config, error) {
 	kubeConfigSecretList := &v1.SecretList{}
 	groupResource := v1.SchemeGroupVersion.WithResource(string(v1.ResourceSecrets)).GroupResource()
-	labelSelector := k8slabels.SelectorFromSet(k8slabels.Set{labels.KymaName: kymaOwner})
+	labelSelector := k8slabels.SelectorFromSet(k8slabels.Set{kymaNameLabel: kymaOwner})
 	err := cc.DefaultClient.List(
 		ctx, kubeConfigSecretList, &client.ListOptions{LabelSelector: labelSelector, Namespace: namespace},
 	)

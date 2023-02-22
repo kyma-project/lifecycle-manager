@@ -7,7 +7,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
-	"github.com/kyma-project/lifecycle-manager/pkg/labels"
 	"k8s.io/client-go/rest"
 )
 
@@ -28,7 +27,7 @@ func (r *RemoteClusterLookup) ConfigResolver(
 		return r.KCP, nil
 	}
 
-	kymaOwnerLabel, err := internal.GetResourceLabel(manifest, labels.KymaName)
+	kymaOwnerLabel, err := internal.GetResourceLabel(manifest, v1beta1.KymaName)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +41,7 @@ func (r *RemoteClusterLookup) ConfigResolver(
 		restConfigGetter = func() (*rest.Config, error) {
 			// evaluate remote rest config from secret
 			config, err := (&ClusterClient{DefaultClient: r.KCP.Client}).GetRESTConfig(
-				ctx, kymaOwnerLabel, manifest.GetNamespace(),
+				ctx, kymaOwnerLabel, v1beta1.KymaName, manifest.GetNamespace(),
 			)
 			if err != nil {
 				return nil, fmt.Errorf("could not resolve remote cluster rest config: %w", err)

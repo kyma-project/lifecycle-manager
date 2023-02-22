@@ -30,7 +30,7 @@ func (src *Manifest) ConvertTo(dstRaw conversion.Hub) error {
 		Repo:               src.Spec.Config.Repo,
 		Name:               src.Spec.Config.Name,
 		Ref:                src.Spec.Config.Ref,
-		Type:               v1beta1.RefTypeMetadata(src.Spec.Config.Type),
+		Type:               src.Spec.Config.Type,
 		CredSecretSelector: src.Spec.Config.CredSecretSelector,
 	}
 
@@ -58,11 +58,11 @@ func (dst *Manifest) ConvertFrom(srcRaw conversion.Hub) error {
 
 	dst.Spec.Remote = src.Spec.Remote
 
-	dst.Spec.Config = ImageSpec{
+	dst.Spec.Config = v1beta1.ImageSpec{
 		Repo:               src.Spec.Config.Repo,
 		Name:               src.Spec.Config.Name,
 		Ref:                src.Spec.Config.Ref,
-		Type:               RefTypeMetadata(src.Spec.Config.Type),
+		Type:               src.Spec.Config.Type,
 		CredSecretSelector: src.Spec.Config.CredSecretSelector,
 	}
 
