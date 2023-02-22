@@ -25,6 +25,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-component-model/ocm/pkg/contexts/oci"
+	"github.com/open-component-model/ocm/pkg/contexts/oci/repositories/ocireg"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm"
+	_ "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/cpi"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -67,36 +74,43 @@ func TestAPIs(t *testing.T) {
 	RunSpecs(t, "Webhook Suite")
 }
 
-var _ = BeforeSuite(func() {
-	logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
-	webhookServerContext, webhookServerCancel = context.WithCancel(context.TODO())
-	By("bootstrapping test environment")
-	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
-		ErrorIfCRDPathMissing: false,
-		WebhookInstallOptions: envtest.WebhookInstallOptions{
-			Paths: []string{filepath.Join("..", "..", "config", "webhook")},
-		},
-	}
+var _ = BeforeSuite(
+	func() {
+		logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
+		webhookServerContext, webhookServerCancel = context.WithCancel(context.TODO())
+		By("bootstrapping test environment")
+		testEnv = &envtest.Environment{
+			CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
+			ErrorIfCRDPathMissing: false,
+			WebhookInstallOptions: envtest.WebhookInstallOptions{
+				Paths: []string{filepath.Join("..", "..", "config", "webhook")},
+			},
+		}
 
-	var err error
-	cfg, err = testEnv.Start()
-	Expect(err).NotTo(HaveOccurred())
-	Expect(cfg).NotTo(BeNil())
+		var err error
+		cfg, err = testEnv.Start()
+		Expect(err).NotTo(HaveOccurred())
+		Expect(cfg).NotTo(BeNil())
 
-	scheme = runtime.NewScheme()
-	Expect(api.AddToScheme(scheme)).NotTo(HaveOccurred())
-	Expect(apiextensionsv1.AddToScheme(scheme)).NotTo(HaveOccurred())
-	Expect(admissionv1beta1.AddToScheme(scheme)).NotTo(HaveOccurred())
+		scheme = runtime.NewScheme()
+		ocm.DefaultContext().RepositoryTypes().Register(genericocireg.Type, &genericocireg.RepositoryType{})
+		ocm.DefaultContext().RepositoryTypes().Register(genericocireg.TypeV1, &genericocireg.RepositoryType{})
+		cpi.DefaultContext().RepositoryTypes().Register(
+			ocireg.LegacyType, genericocireg.NewRepositoryType(oci.DefaultContext()),
+		)
+		Expect(api.AddToScheme(scheme)).NotTo(HaveOccurred())
+		Expect(apiextensionsv1.AddToScheme(scheme)).NotTo(HaveOccurred())
+		Expect(admissionv1beta1.AddToScheme(scheme)).NotTo(HaveOccurred())
 
-	//+kubebuilder:scaffold:scheme
+		//+kubebuilder:scaffold:scheme
 
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(k8sClient).NotTo(BeNil())
+		k8sClient, err = client.New(cfg, client.Options{Scheme: scheme})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(k8sClient).NotTo(BeNil())
 
-	SetupWebhook()
-})
+		SetupWebhook()
+	},
+)
 
 func StopWebhook() {
 	webhookServerCancel()
@@ -114,7 +128,8 @@ func SetupWebhook() {
 			CertDir:            webhookInstallOptions.LocalServingCertDir,
 			LeaderElection:     false,
 			MetricsBindAddress: "0",
-		})
+		},
+	)
 	Expect(err).NotTo(HaveOccurred())
 
 	Expect((&v1beta1.ModuleTemplate{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
@@ -130,21 +145,27 @@ func SetupWebhook() {
 	// wait for the webhook server to get ready
 	dialer := &net.Dialer{Timeout: time.Second}
 	addrPort := fmt.Sprintf("%s:%d", webhookInstallOptions.LocalServingHost, webhookInstallOptions.LocalServingPort)
-	Eventually(func() error {
-		conn, err := tls.DialWithDialer(dialer, "tcp", addrPort, &tls.Config{
-			InsecureSkipVerify: true, //nolint:gosec
-		})
-		if err != nil {
-			return err
-		}
-		_ = conn.Close()
-		return nil
-	}, Timeout, Interval).Should(Succeed())
+	Eventually(
+		func() error {
+			conn, err := tls.DialWithDialer(
+				dialer, "tcp", addrPort, &tls.Config{
+					InsecureSkipVerify: true, //nolint:gosec
+				},
+			)
+			if err != nil {
+				return err
+			}
+			_ = conn.Close()
+			return nil
+		}, Timeout, Interval,
+	).Should(Succeed())
 }
 
-var _ = AfterSuite(func() {
-	By("tearing down the test environment")
-	StopWebhook()
-	err := testEnv.Stop()
-	Expect(err).NotTo(HaveOccurred())
-})
+var _ = AfterSuite(
+	func() {
+		By("tearing down the test environment")
+		StopWebhook()
+		err := testEnv.Stop()
+		Expect(err).NotTo(HaveOccurred())
+	},
+)

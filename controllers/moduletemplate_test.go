@@ -7,8 +7,9 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
+	v1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
 
-	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -123,8 +124,10 @@ func extractInstallImageSpec(installInfo v1beta1.InstallInfo) *v1beta1.ImageSpec
 
 func expectCredSecretSelectorCorrect(installImageSpec *v1beta1.ImageSpec) error {
 	if installImageSpec.CredSecretSelector == nil {
-		return fmt.Errorf("image spec %v does not contain credSecretSelector: %w",
-			installImageSpec, ErrNotContainsExpectedCredSecretSelector)
+		return fmt.Errorf(
+			"image spec %v does not contain credSecretSelector: %w",
+			installImageSpec, ErrNotContainsExpectedCredSecretSelector,
+		)
 	}
 
 	value, found := installImageSpec.CredSecretSelector.MatchLabels[credSecretLabel]
@@ -165,20 +168,25 @@ func updateModuleTemplateOCIRegistryCredLabel(kymaName string) func() error {
 			if err != nil {
 				return err
 			}
-			err = moduleTemplate.Spec.ModifyDescriptor(
-				func(descriptor *ocm.ComponentDescriptor) error {
-					for i := range descriptor.Resources {
-						resource := &descriptor.Resources[i]
-						resource.SetLabels([]ocm.Label{{
-							Name:  v1beta1.OCIRegistryCredLabel,
-							Value: json.RawMessage(fmt.Sprintf(`{"%s": "%s"}`, credSecretLabel, credSecretValue)),
-						}})
-					}
-					return nil
-				})
+			descriptor, err := moduleTemplate.Spec.GetDescriptor()
 			if err != nil {
 				return err
 			}
+			for i := range descriptor.Resources {
+				resource := &descriptor.Resources[i]
+				resource.SetLabels(
+					[]v1.Label{{
+						Name:  v1beta1.OCIRegistryCredLabel,
+						Value: json.RawMessage(fmt.Sprintf(`{"%s": "%s"}`, credSecretLabel, credSecretValue)),
+					}},
+				)
+			}
+			newDescriptor, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONLCodec)
+			if err != nil {
+				return err
+			}
+			moduleTemplate.Spec.Descriptor.Raw = newDescriptor
+			moduleTemplate.Spec.Descriptor.Object = nil
 			err = controlPlaneClient.Update(ctx, moduleTemplate)
 			if err != nil {
 				return err
@@ -188,59 +196,77 @@ func updateModuleTemplateOCIRegistryCredLabel(kymaName string) func() error {
 	}
 }
 
-var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
-	kyma := NewTestKyma("kyma")
+var _ = Describe(
+	"Test ModuleTemplate CR", Ordered, func() {
+		kyma := NewTestKyma("kyma")
 
-	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1beta1.Module{
-			ControllerName: "manifest",
-			Name:           NewUniqModuleName(),
-			Channel:        v1beta1.DefaultChannel,
-		})
+		kyma.Spec.Modules = append(
+			kyma.Spec.Modules, v1beta1.Module{
+				ControllerName: "manifest",
+				Name:           NewUniqModuleName(),
+				Channel:        v1beta1.DefaultChannel,
+			},
+		)
 
-	RegisterDefaultLifecycleForKyma(kyma)
+		RegisterDefaultLifecycleForKyma(kyma)
 
-	DescribeTable("Test ModuleTemplate.Spec.Target",
-		func(givenCondition func() error, expectedBehavior func() error) {
-			Eventually(givenCondition, Timeout, Interval).Should(Succeed())
-			Eventually(expectedBehavior, Timeout, Interval).Should(Succeed())
-		},
-		Entry("When ModuleTemplate.Spec.Target not exist deployed, expect Manifest.Spec.remote=false",
-			noCondition(),
-			expectManifestSpecRemoteMatched(kyma.Name, false)),
-		Entry("When update ModuleTemplate.Spec.Target=remote, expect Manifest.Spec.remote=true",
-			updateModuleTemplateTarget(kyma.Name, v1beta1.TargetRemote),
-			expectManifestSpecRemoteMatched(kyma.Name, true)),
-		Entry("When update ModuleTemplate.Spec.Target=control-plane, expect Manifest.Spec.remote=false",
-			updateModuleTemplateTarget(kyma.Name, v1beta1.TargetControlPlane),
-			expectManifestSpecRemoteMatched(kyma.Name, false)),
-	)
-})
+		DescribeTable(
+			"Test ModuleTemplate.Spec.Target",
+			func(givenCondition func() error, expectedBehavior func() error) {
+				Eventually(givenCondition, Timeout, Interval).Should(Succeed())
+				Eventually(expectedBehavior, Timeout, Interval).Should(Succeed())
+			},
+			Entry(
+				"When ModuleTemplate.Spec.Target not exist deployed, expect Manifest.Spec.remote=false",
+				noCondition(),
+				expectManifestSpecRemoteMatched(kyma.Name, false),
+			),
+			Entry(
+				"When update ModuleTemplate.Spec.Target=remote, expect Manifest.Spec.remote=true",
+				updateModuleTemplateTarget(kyma.Name, v1beta1.TargetRemote),
+				expectManifestSpecRemoteMatched(kyma.Name, true),
+			),
+			Entry(
+				"When update ModuleTemplate.Spec.Target=control-plane, expect Manifest.Spec.remote=false",
+				updateModuleTemplateTarget(kyma.Name, v1beta1.TargetControlPlane),
+				expectManifestSpecRemoteMatched(kyma.Name, false),
+			),
+		)
+	},
+)
 
-var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
-	kyma := NewTestKyma("kyma")
+var _ = Describe(
+	"Test ModuleTemplate CR", Ordered, func() {
+		kyma := NewTestKyma("kyma")
 
-	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1beta1.Module{
-			ControllerName: "manifest",
-			Name:           NewUniqModuleName(),
-			Channel:        v1beta1.DefaultChannel,
-		})
+		kyma.Spec.Modules = append(
+			kyma.Spec.Modules, v1beta1.Module{
+				ControllerName: "manifest",
+				Name:           NewUniqModuleName(),
+				Channel:        v1beta1.DefaultChannel,
+			},
+		)
 
-	RegisterDefaultLifecycleForKyma(kyma)
+		RegisterDefaultLifecycleForKyma(kyma)
 
-	DescribeTable("Test ModuleTemplate.Spec.descriptor",
-		func(givenCondition func() error, expectedBehavior func() error) {
-			Eventually(givenCondition, Timeout*2, Interval).Should(Succeed())
-			Eventually(expectedBehavior, Timeout*2, Interval).Should(Succeed())
-		},
-		Entry("When ModuleTemplate.Spec.descriptor.component.resources not contains RegistryCred label,"+
-			"expect Manifest.Spec.installs and Manifest.Spec.Config not contains credSecretSelector",
-			noCondition(),
-			expectManifestSpecNotContainsCredSecretSelector(kyma.Name)),
-		Entry("When ModuleTemplate.Spec.descriptor.component.resources contains RegistryCred label,"+
-			"expect Manifest.Spec.installs and Manifest.Spec.Config contains credSecretSelector",
-			updateModuleTemplateOCIRegistryCredLabel(kyma.Name),
-			expectManifestSpecContainsCredSecretSelector(kyma.Name)),
-	)
-})
+		DescribeTable(
+			"Test ModuleTemplate.Spec.descriptor",
+			func(givenCondition func() error, expectedBehavior func() error) {
+				Eventually(givenCondition, Timeout*2, Interval).Should(Succeed())
+				Eventually(expectedBehavior, Timeout*2, Interval).Should(Succeed())
+			},
+			Entry(
+				"When ModuleTemplate.Spec.descriptor.component.resources not contains RegistryCred label,"+
+					"expect Manifest.Spec.installs and Manifest.Spec.Config not contains credSecretSelector",
+				noCondition(),
+				expectManifestSpecNotContainsCredSecretSelector(kyma.Name),
+			),
+			Entry(
+				"When ModuleTemplate.Spec.descriptor.component.resources contains RegistryCred label,"+
+					"expect Manifest.Spec.installs and Manifest.Spec.Config contains credSecretSelector",
+				updateModuleTemplateOCIRegistryCredLabel(kyma.Name),
+				expectManifestSpecContainsCredSecretSelector(kyma.Name),
+			),
+		)
+	},
+)
