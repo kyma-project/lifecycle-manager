@@ -8,8 +8,9 @@ import (
 
 	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
+	v1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
 
-	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -17,32 +18,43 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/Masterminds/semver/v3"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	sampleCRDv1beta1 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1beta1"
 )
 
 func RegisterDefaultLifecycleForKyma(kyma *v1beta1.Kyma) {
-	BeforeAll(func() {
-		Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma)
-	})
+	BeforeAll(
+		func() {
+			Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
+			DeployModuleTemplates(ctx, controlPlaneClient, kyma)
+		},
+	)
 
-	AfterAll(func() {
-		DeleteModuleTemplates(ctx, controlPlaneClient, kyma)
-	})
+	AfterAll(
+		func() {
+			DeleteModuleTemplates(ctx, controlPlaneClient, kyma)
+		},
+	)
 
-	AfterAll(func() {
-		Expect(controlPlaneClient.Delete(ctx, kyma)).Should(Succeed())
-	})
+	AfterAll(
+		func() {
+			Expect(controlPlaneClient.Delete(ctx, kyma)).Should(Succeed())
+		},
+	)
 
-	BeforeEach(func() {
-		By("get latest kyma CR")
-		Expect(controlPlaneClient.Get(ctx, client.ObjectKey{
-			Name:      kyma.Name,
-			Namespace: metav1.NamespaceDefault,
-		}, kyma)).Should(Succeed())
-	})
+	BeforeEach(
+		func() {
+			By("get latest kyma CR")
+			Expect(
+				controlPlaneClient.Get(
+					ctx, client.ObjectKey{
+						Name:      kyma.Name,
+						Namespace: metav1.NamespaceDefault,
+					}, kyma,
+				),
+			).Should(Succeed())
+		},
+	)
 }
 
 func GetKymaState(kymaName string) func() string {
@@ -97,7 +109,8 @@ func ModuleExists(ctx context.Context, kyma *v1beta1.Kyma, module v1beta1.Module
 	}
 }
 
-func UpdateRemoteModule(ctx context.Context,
+func UpdateRemoteModule(
+	ctx context.Context,
 	client client.Client,
 	kyma *v1beta1.Kyma,
 	modules []v1beta1.Module,
@@ -112,7 +125,8 @@ func UpdateRemoteModule(ctx context.Context,
 	}
 }
 
-func UpdateKymaLabel(ctx context.Context,
+func UpdateKymaLabel(
+	ctx context.Context,
 	client client.Client,
 	kyma *v1beta1.Kyma,
 	labelKey,
@@ -160,18 +174,22 @@ func getModule(kyma *v1beta1.Kyma, module v1beta1.Module) (*v1beta1.Manifest, er
 	for _, moduleStatus := range kyma.Status.Modules {
 		if moduleStatus.Name == module.Name {
 			component := &v1beta1.Manifest{}
-			err := controlPlaneClient.Get(ctx, client.ObjectKey{
-				Namespace: moduleStatus.Manifest.GetNamespace(),
-				Name:      moduleStatus.Manifest.GetName(),
-			}, component)
+			err := controlPlaneClient.Get(
+				ctx, client.ObjectKey{
+					Namespace: moduleStatus.Manifest.GetNamespace(),
+					Name:      moduleStatus.Manifest.GetName(),
+				}, component,
+			)
 			if err != nil {
 				return nil, err
 			}
 			return component, nil
 		}
 	}
-	return nil, fmt.Errorf("no module status mapping exists for module %s: %w", module.Name,
-		k8serrors.NewNotFound(v1beta1.GroupVersionResource.GroupResource(), module.Name))
+	return nil, fmt.Errorf(
+		"no module status mapping exists for module %s: %w", module.Name,
+		k8serrors.NewNotFound(v1beta1.GroupVersionResource.GroupResource(), module.Name),
+	)
 }
 
 func GetModuleTemplate(name string) (*v1beta1.ModuleTemplate, error) {
@@ -217,13 +235,12 @@ func GetModuleTemplatesLabelCount(clnt client.Client, kyma *v1beta1.Kyma, remote
 	if err := getModuleTemplate(clnt, template, kyma, remote); err != nil {
 		return 0, err
 	}
-	descriptor, err := template.Spec.GetUnsafeDescriptor()
+	descriptor, err := template.Spec.GetDescriptor()
 	if err != nil {
 		return 0, err
 	}
 
 	return len(descriptor.GetLabels()), nil
-
 }
 
 var ErrModuleTemplateDescriptorLabelCountMismatch = errors.New("label count in descriptor does not match")
@@ -241,13 +258,14 @@ func ModuleTemplatesLabelsCountMatch(
 				return err
 			}
 
-			descriptor, err := template.Spec.GetUnsafeDescriptor()
+			descriptor, err := template.Spec.GetDescriptor()
 			if err != nil {
 				return err
 			}
 			l := len(descriptor.GetLabels())
 			if l != count {
-				return fmt.Errorf("expected %v but got %v labels: %w", count,
+				return fmt.Errorf(
+					"expected %v but got %v labels: %w", count,
 					l, ErrModuleTemplateDescriptorLabelCountMismatch,
 				)
 			}
@@ -259,7 +277,7 @@ func ModuleTemplatesLabelsCountMatch(
 func ModifyModuleTemplateSpecThroughLabels(
 	clnt client.Client,
 	kyma *v1beta1.Kyma,
-	labels []ocm.Label,
+	labels []v1.Label,
 	remote bool,
 ) func() error {
 	return func() error {
@@ -273,14 +291,14 @@ func ModifyModuleTemplateSpecThroughLabels(
 				return err
 			}
 
-			err = template.Spec.ModifyDescriptor(
-				func(descriptor *ocm.ComponentDescriptor) error {
-					descriptor.SetLabels(labels)
-					return nil
-				})
+			descriptor, err := template.Spec.GetDescriptor()
 			if err != nil {
 				return err
 			}
+			descriptor.SetLabels(labels)
+			newDescriptor, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONLCodec)
+			Expect(err).ToNot(HaveOccurred())
+			template.Spec.Descriptor.Raw = newDescriptor
 
 			if err := runtimeClient.Update(ctx, template); err != nil {
 				return err
@@ -331,8 +349,10 @@ func TemplateInfosMatchChannel(kymaName, channel string) error {
 	}
 	for i := range kyma.Status.Modules {
 		if kyma.Status.Modules[i].Channel != channel {
-			return fmt.Errorf("%w: %s should be %s",
-				ErrTemplateInfoChannelMismatch, kyma.Status.Modules[i].Channel, channel)
+			return fmt.Errorf(
+				"%w: %s should be %s",
+				ErrTemplateInfoChannelMismatch, kyma.Status.Modules[i].Channel, channel,
+			)
 		}
 	}
 	return nil
@@ -344,15 +364,17 @@ func CreateModuleTemplateSetsForKyma(modules []v1beta1.Module, modifiedVersion, 
 		if err != nil {
 			return err
 		}
-		if err := template.Spec.ModifyDescriptor(
-			v1beta1.ModifyDescriptorVersion(
-				func(version *semver.Version) string {
-					return modifiedVersion
-				},
-			),
-		); err != nil {
+
+		descriptor, err := template.Spec.GetDescriptor()
+		if err != nil {
 			return err
 		}
+		descriptor.Version = modifiedVersion
+		newDescriptor, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONLCodec)
+		if err != nil {
+			return err
+		}
+		template.Spec.Descriptor.Raw = newDescriptor
 		template.Spec.Channel = channel
 		template.Name = fmt.Sprintf("%s-%s", template.Name, channel)
 		if err := controlPlaneClient.Create(ctx, template); err != nil {

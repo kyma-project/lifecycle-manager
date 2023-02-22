@@ -25,6 +25,12 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"github.com/open-component-model/ocm/pkg/contexts/oci"
+	"github.com/open-component-model/ocm/pkg/contexts/oci/repositories/ocireg"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm"
+	_ "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/cpi"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	"k8s.io/client-go/rest"
@@ -72,8 +78,14 @@ var (
 
 //nolint:gochecknoinits
 func init() {
+	ocm.DefaultContext().RepositoryTypes().Register(genericocireg.Type, &genericocireg.RepositoryType{})
+	ocm.DefaultContext().RepositoryTypes().Register(genericocireg.TypeV1, &genericocireg.RepositoryType{})
+	cpi.DefaultContext().RepositoryTypes().Register(
+		ocireg.LegacyType, genericocireg.NewRepositoryType(oci.DefaultContext()),
+	)
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(api.AddToScheme(scheme))
+
 	utilruntime.Must(v1extensions.AddToScheme(scheme))
 	utilruntime.Must(certManagerV1.AddToScheme(scheme))
 
@@ -117,16 +129,18 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 	config.QPS = float32(flagVar.clientQPS)
 	config.Burst = flagVar.clientBurst
 
-	mgr, err := ctrl.NewManager(config, ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     flagVar.metricsAddr,
-		Port:                   port,
-		HealthProbeBindAddress: flagVar.probeAddr,
-		LeaderElection:         flagVar.enableLeaderElection,
-		LeaderElectionID:       "893110f7.kyma-project.io",
-		NewCache:               newCacheFunc,
-		NewClient:              NewClient,
-	})
+	mgr, err := ctrl.NewManager(
+		config, ctrl.Options{
+			Scheme:                 scheme,
+			MetricsBindAddress:     flagVar.metricsAddr,
+			Port:                   port,
+			HealthProbeBindAddress: flagVar.probeAddr,
+			LeaderElection:         flagVar.enableLeaderElection,
+			LeaderElectionID:       "893110f7.kyma-project.io",
+			NewCache:               newCacheFunc,
+			NewClient:              NewClient,
+		},
+	)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
@@ -192,6 +206,7 @@ func enableWebhooks(mgr manager.Manager) {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Manifest")
 		os.Exit(1)
 	}
+
 }
 
 func controllerOptionsFromFlagVar(flagVar *FlagVar) controller.Options {
@@ -226,7 +241,8 @@ func NewClient(
 	)
 }
 
-func setupKymaReconciler(mgr ctrl.Manager,
+func setupKymaReconciler(
+	mgr ctrl.Manager,
 	remoteClientCache *remote.ClientCache,
 	flagVar *FlagVar,
 	options controller.Options,
@@ -265,17 +281,20 @@ func setupKymaReconciler(mgr ctrl.Manager,
 			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
 			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
 		},
-	}).SetupWithManager(mgr, options, controllers.SetupUpSetting{
-		ListenerAddr:                 flagVar.kymaListenerAddr,
-		EnableDomainNameVerification: flagVar.enableDomainNameVerification,
-		IstioNamespace:               flagVar.istioNamespace,
-	}); err != nil {
+	}).SetupWithManager(
+		mgr, options, controllers.SetupUpSetting{
+			ListenerAddr:                 flagVar.kymaListenerAddr,
+			EnableDomainNameVerification: flagVar.enableDomainNameVerification,
+			IstioNamespace:               flagVar.istioNamespace,
+		},
+	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
 }
 
-func setupManifestReconciler(mgr ctrl.Manager,
+func setupManifestReconciler(
+	mgr ctrl.Manager,
 	flagVar *FlagVar,
 	options controller.Options,
 ) {

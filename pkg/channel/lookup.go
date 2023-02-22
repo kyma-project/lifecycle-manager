@@ -29,7 +29,7 @@ type ModuleTemplate struct {
 type ModuleTemplatesByModuleName map[string]*ModuleTemplate
 
 func GetTemplates(
-	ctx context.Context, client client.Reader, kyma *operatorv1beta1.Kyma,
+	ctx context.Context, client client.Client, kyma *operatorv1beta1.Kyma,
 ) (ModuleTemplatesByModuleName, error) {
 	logger := ctrlLog.FromContext(ctx)
 	templates := make(ModuleTemplatesByModuleName)
@@ -69,7 +69,8 @@ func CheckForOutdatedTemplates(logger logr.Logger, k *operatorv1beta1.Kyma, temp
 func CheckForOutdatedTemplate(
 	logger logr.Logger, moduleTemplate *ModuleTemplate, moduleStatus *operatorv1beta1.ModuleStatus,
 ) {
-	checkLog := logger.WithValues("module", moduleStatus.FQDN,
+	checkLog := logger.WithValues(
+		"module", moduleStatus.FQDN,
 		"template", moduleTemplate.Name,
 		"newTemplateGeneration", moduleTemplate.GetGeneration(),
 		"previousTemplateGeneration", moduleStatus.Template.Generation,
@@ -90,11 +91,7 @@ func CheckForOutdatedTemplate(
 	if moduleTemplate.Spec.Channel != moduleStatus.Channel {
 		checkLog.Info("outdated ModuleTemplate: channel skew")
 
-		descriptor, err := moduleTemplate.Spec.GetUnsafeDescriptor()
-		if err != nil {
-			checkLog.Error(err, "could not handle channel skew as descriptor from template cannot be fetched")
-			return
-		}
+		descriptor, _ := moduleTemplate.Spec.GetDescriptor()
 
 		versionInTemplate, err := semver.NewVersion(descriptor.Version)
 		if err != nil {
@@ -133,7 +130,8 @@ type Lookup interface {
 	WithContext(ctx context.Context) (*ModuleTemplate, error)
 }
 
-func NewTemplateLookup(client client.Reader, module operatorv1beta1.Module,
+func NewTemplateLookup(
+	client client.Client, module operatorv1beta1.Module,
 	defaultChannel string,
 ) *TemplateLookup {
 	return &TemplateLookup{
@@ -144,7 +142,7 @@ func NewTemplateLookup(client client.Reader, module operatorv1beta1.Module,
 }
 
 type TemplateLookup struct {
-	reader         client.Reader
+	reader         client.Client
 	module         operatorv1beta1.Module
 	defaultChannel string
 }
@@ -213,7 +211,8 @@ func (c *TemplateLookup) getTemplate(
 		}
 	}
 	return nil, fmt.Errorf(
-		"%w: no module template found for module: %s, attempted to lookup via %v", ErrTemplateNotIdentified, c.module.Name,
+		"%w: no module template found for module: %s, attempted to lookup via %v", ErrTemplateNotIdentified,
+		c.module.Name,
 		lookupVariants,
 	)
 }
@@ -248,8 +247,10 @@ func (c *TemplateLookup) getModuleTemplateFromDesiredChannel(
 		return nil, NewMoreThanOneTemplateCandidateErr(c.module, templateList.Items, option)
 	}
 	if len(templateList.Items) == 0 {
-		return nil, fmt.Errorf("no templates found with %s in channel %s: %w", option, desiredChannel,
-			ErrNoTemplatesInListResult)
+		return nil, fmt.Errorf(
+			"no templates found with %s in channel %s: %w", option, desiredChannel,
+			ErrNoTemplatesInListResult,
+		)
 	}
 	return &templateList.Items[0], nil
 }
@@ -269,7 +270,8 @@ func (c *TemplateLookup) getDesiredChannel() string {
 	return desiredChannel
 }
 
-func NewMoreThanOneTemplateCandidateErr(component operatorv1beta1.Module,
+func NewMoreThanOneTemplateCandidateErr(
+	component operatorv1beta1.Module,
 	candidateTemplates []operatorv1beta1.ModuleTemplate, option client.ListOption,
 ) error {
 	candidates := make([]string, len(candidateTemplates))
@@ -277,6 +279,8 @@ func NewMoreThanOneTemplateCandidateErr(component operatorv1beta1.Module,
 		candidates[i] = candidate.GetName()
 	}
 
-	return fmt.Errorf("%w: more than one module template found with %v for module: %s, candidates: %v",
-		ErrTemplateNotIdentified, option, component.Name, candidates)
+	return fmt.Errorf(
+		"%w: more than one module template found with %v for module: %s, candidates: %v",
+		ErrTemplateNotIdentified, option, component.Name, candidates,
+	)
 }

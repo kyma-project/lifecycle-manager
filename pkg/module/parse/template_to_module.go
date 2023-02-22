@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -29,8 +28,10 @@ func GenerateModulesFromTemplates(
 	kyma *v1beta1.Kyma, templates channel.ModuleTemplatesByModuleName, verification signature.Verification,
 ) (common.Modules, error) {
 	// these are the actual modules
-	modules, err := templatesToModules(kyma, templates,
-		&ModuleConversionSettings{Verification: verification})
+	modules, err := templatesToModules(
+		kyma, templates,
+		&ModuleConversionSettings{Verification: verification},
+	)
 	if err != nil {
 		return nil, fmt.Errorf("cannot convert templates: %w", err)
 	}
@@ -50,14 +51,12 @@ func templatesToModules(
 	for _, module := range kyma.Spec.Modules {
 		template := templates[module.Name]
 		if template == nil {
-			return nil, fmt.Errorf("could not resolve template for module %s in %s: %w",
+			return nil, fmt.Errorf(
+				"could not resolve template for module %s in %s: %w",
 				module.Name, client.ObjectKeyFromObject(kyma), ErrTemplateNotFound,
 			)
 		}
-		descriptor, err := template.Spec.GetUnsafeDescriptor()
-		if err != nil {
-			return nil, err
-		}
+		descriptor, _ := template.Spec.GetDescriptor()
 		fqdn := descriptor.GetName()
 		version := descriptor.GetVersion()
 		name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
@@ -74,22 +73,24 @@ func templatesToModules(
 				template.ModuleTemplate.Spec.Data.SetNamespace(kyma.GetNamespace())
 			}
 		}
-		var obj client.Object
-		if obj, err = NewManifestFromTemplate(module, template.ModuleTemplate, settings.Verification); err != nil {
+		obj, err := NewManifestFromTemplate(module, template.ModuleTemplate, settings.Verification)
+		if err != nil {
 			return nil, err
 		}
 		// we name the manifest after the module name
 		obj.SetName(name)
 		// to have correct owner references, the manifest must always have the same namespace as kyma
 		obj.SetNamespace(kyma.GetNamespace())
-		modules = append(modules, &common.Module{
-			ModuleName:       module.Name,
-			FQDN:             fqdn,
-			Version:          version,
-			Template:         template.ModuleTemplate,
-			TemplateOutdated: template.Outdated,
-			Object:           obj,
-		})
+		modules = append(
+			modules, &common.Module{
+				ModuleName:       module.Name,
+				FQDN:             fqdn,
+				Version:          version,
+				Template:         template.ModuleTemplate,
+				TemplateOutdated: template.Outdated,
+				Object:           obj,
+			},
+		)
 	}
 
 	return modules, nil
@@ -112,19 +113,19 @@ func NewManifestFromTemplate(
 		manifest.Spec.Resource = template.Spec.Data.DeepCopy()
 	}
 
-	var descriptor *ocm.ComponentDescriptor
 	var layers img.Layers
 	var err error
 
-	if descriptor, err = template.Spec.GetUnsafeDescriptor(); err != nil {
-		return nil, fmt.Errorf("could not decode the descriptor: %w", err)
+	descriptor, err := template.Spec.GetDescriptor()
+	if err != nil {
+		return nil, err
 	}
 
-	if err := signature.Verify(descriptor, verification); err != nil {
+	if err := signature.Verify(descriptor.ComponentDescriptor, verification); err != nil {
 		return nil, fmt.Errorf("could not verify descriptor: %w", err)
 	}
 
-	if layers, err = img.Parse(descriptor); err != nil {
+	if layers, err = img.Parse(descriptor.ComponentDescriptor); err != nil {
 		return nil, fmt.Errorf("could not parse descriptor: %w", err)
 	}
 

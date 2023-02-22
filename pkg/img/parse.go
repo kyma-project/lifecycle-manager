@@ -8,8 +8,17 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm"
+	_ "github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods/localblob"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods/localociblob"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods/ociartifact"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
+	ocmmetav1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/cpi"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
+	"github.com/open-component-model/ocm/pkg/runtime"
 
-	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -23,7 +32,7 @@ var (
 )
 
 func Parse(
-	descriptor *ocm.ComponentDescriptor,
+	descriptor *compdesc.ComponentDescriptor,
 ) (Layers, error) {
 	ctx := descriptor.GetEffectiveRepositoryContext()
 	if ctx == nil {
@@ -32,76 +41,87 @@ func Parse(
 	return parseDescriptor(ctx, descriptor)
 }
 
-func parseDescriptor(ctx *ocm.UnstructuredTypedObject, descriptor *ocm.ComponentDescriptor) (Layers, error) {
-	switch ctx.GetType() {
-	case ocm.OCIRegistryType:
-		repo := &ocm.OCIRegistryRepository{}
-		if err := ctx.DecodeInto(repo); err != nil {
-			return nil, fmt.Errorf("error while decoding the repository context into an OCI registry: %w", err)
-		}
-
-		layersByName, err := parseLayersByName(repo, descriptor)
-		if err != nil {
-			return nil, err
-		}
-
-		return layersByName, nil
-	default:
-		return nil, fmt.Errorf("error while parsing context type %s: %w",
-			ctx.GetType(), ErrContextTypeNotSupported,
-		)
+func parseDescriptor(ctx *runtime.UnstructuredTypedObject, descriptor *compdesc.ComponentDescriptor) (Layers, error) {
+	repo, err := ctx.Evaluate(cpi.DefaultContext().RepositoryTypes())
+	if err != nil {
+		return nil, fmt.Errorf("error while decoding the repository context into an OCI registry: %w", err)
 	}
+	typedRepo := repo.(*genericocireg.RepositorySpec)
+	layersByName, err := parseLayersByName(typedRepo, descriptor)
+	if err != nil {
+		return nil, err
+	}
+
+	return layersByName, nil
 }
 
-func parseLayersByName(repo *ocm.OCIRegistryRepository, descriptor *ocm.ComponentDescriptor) (Layers, error) {
+func parseLayersByName(repo *genericocireg.RepositorySpec, descriptor *compdesc.ComponentDescriptor) (Layers, error) {
 	layers := Layers{}
 	for _, resource := range descriptor.Resources {
 		access := resource.Access
 		var layerRepresentation LayerRepresentation
+		spec, err := ocm.DefaultContext().AccessSpecForSpec(access)
+		if err != nil {
+			return nil, err
+		}
 		switch access.GetType() {
-		case ocm.LocalOCIBlobType:
-			ociAccess := &ocm.LocalOCIBlobAccess{}
-			if err := access.DecodeInto(ociAccess); err != nil {
-				return nil, fmt.Errorf("error while decoding the access into OCIRegistryRepository: %w", err)
+		case localblob.TypeV1:
+			fallthrough
+		case localblob.Type:
+			accessSpec := spec.(*localblob.AccessSpec)
+			layerRef, err := getOCIRef(repo, descriptor, accessSpec.LocalReference, resource.Labels)
+			if err != nil {
+				return nil, fmt.Errorf("building the digest url: %w", err)
 			}
-
-			layerRef, err := getOCIRef(repo, descriptor, ociAccess.Digest, resource.Labels)
+			layerRepresentation = layerRef
+		case localociblob.TypeV1:
+			fallthrough
+		case localociblob.Type:
+			accessSpec := spec.(*localociblob.AccessSpec)
+			layerRef, err := getOCIRef(repo, descriptor, accessSpec.Digest.String(), resource.Labels)
 			if err != nil {
 				return nil, fmt.Errorf("building the digest url: %w", err)
 			}
 			layerRepresentation = layerRef
 		case ocmextensions.HelmChartRepositoryType:
-			helmChartAccess := &ocmextensions.HelmChartRepositoryAccess{}
-			if err := access.DecodeInto(helmChartAccess); err != nil {
-				return nil, fmt.Errorf("error while decoding the access into OCIRegistryRepository: %w", err)
-			}
+			accessSpec := spec.(*ocmextensions.HelmChartRepositoryAccess)
 			layerRepresentation = &Helm{
-				ChartName: helmChartAccess.HelmChartName,
-				URL:       helmChartAccess.HelmChartRepoURL,
-				Version:   helmChartAccess.HelmChartVersion,
+				ChartName: accessSpec.HelmChartName,
+				URL:       accessSpec.HelmChartRepoURL,
+				Version:   accessSpec.HelmChartVersion,
 				Type:      HelmRepresentationType,
 			}
 		// this resource type is not relevant for module rendering but for security scanning only
-		case ocm.OCIRegistryType:
+		case ociartifact.Type:
+			fallthrough
+		case ociartifact.TypeV1:
+			fallthrough
+		case ociartifact.LegacyTypeV1:
+			fallthrough
+		case ociartifact.LegacyType:
 			continue
 		default:
-			return nil, fmt.Errorf("error while parsing access type %s: %w",
+			return nil, fmt.Errorf(
+				"error while parsing access type %s: %w",
 				access.GetType(), ErrAccessTypeNotSupported,
 			)
 		}
 
-		layers = append(layers, Layer{
-			LayerName:           LayerName(resource.Name),
-			LayerRepresentation: layerRepresentation,
-		})
+		layers = append(
+			layers, Layer{
+				LayerName:           LayerName(resource.Name),
+				LayerRepresentation: layerRepresentation,
+			},
+		)
 	}
 	return layers, nil
 }
 
-func getOCIRef(repo *ocm.OCIRegistryRepository,
-	descriptor *ocm.ComponentDescriptor,
+func getOCIRef(
+	repo *genericocireg.RepositorySpec,
+	descriptor *compdesc.ComponentDescriptor,
 	ref string,
-	labels ocm.Labels,
+	labels ocmmetav1.Labels,
 ) (*OCI, error) {
 	layerRef := OCI{
 		Type: OCIRepresentationType,
@@ -125,19 +145,22 @@ func getOCIRef(repo *ocm.OCIRegistryRepository,
 	}
 
 	switch repo.ComponentNameMapping {
-	case ocm.OCIRegistryURLPathMapping:
+	case genericocireg.OCIRegistryURLPathMapping:
 		repoSubpath := DefaultRepoSubdirectory
 		if ext, found := descriptor.GetLabels().Get(
-			fmt.Sprintf("%s%s", ocm.OCIRegistryURLPathMapping, "RepoSubpath")); found {
+			fmt.Sprintf("%s%s", genericocireg.OCIRegistryURLPathMapping, "RepoSubpath"),
+		); found {
 			repoSubpath = string(ext)
 		}
-		layerRef.Repo = fmt.Sprintf("%s/%s", repo.BaseURL, repoSubpath)
+
+		layerRef.Repo = fmt.Sprintf("%s/%s", repo.UniformRepositorySpec().RepositoryRef(), repoSubpath)
 		layerRef.Name = descriptor.GetName()
-	case ocm.OCIRegistryDigestMapping:
-		layerRef.Repo = repo.BaseURL
+	case genericocireg.OCIRegistryDigestMapping:
+		layerRef.Repo = repo.UniformRepositorySpec().RepositoryRef()
 		layerRef.Name = sha256sum(descriptor.GetName())
 	default:
-		return nil, fmt.Errorf("error while parsing componentNameMapping %s: %w",
+		return nil, fmt.Errorf(
+			"error while parsing componentNameMapping %s: %w",
 			repo.ComponentNameMapping, ErrComponentNameMappingNotSupported,
 		)
 	}
