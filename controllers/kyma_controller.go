@@ -20,9 +20,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"github.com/kyma-project/lifecycle-manager/pkg/metrics"
 	"k8s.io/client-go/rest"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -428,4 +430,34 @@ func (r *KymaReconciler) deleteModule(ctx context.Context, moduleStatus *v1beta1
 	manifest.SetNamespace(moduleStatus.Manifest.GetNamespace())
 	manifest.SetName(moduleStatus.Manifest.GetName())
 	return r.Delete(ctx, &manifest, &client.DeleteOptions{})
+}
+
+// RecordKymaStatusMetrics updates prometheus metrics defined to track changes to the Kyma status.
+func (r *KymaReconciler) RecordKymaStatusMetrics(kyma *v1beta1.Kyma) {
+	shoot := ""
+	shootFQDN, keyExists := kyma.Annotations[v1beta1.SKRDomainAnnotation]
+	if keyExists {
+		parts := strings.Split(shootFQDN, ".")
+		// at least three labels in any real deployment.
+		if len(parts) > 2 { //nolint:gomnd
+			shoot = parts[0] // hostname
+		}
+	} else {
+		r.EventRecorder.Eventf(
+			kyma, "Warning", "AnnotationNotDefined",
+			"Expected annotation: %s not found.",
+			v1beta1.SKRDomainAnnotation,
+		)
+	}
+
+	instanceID, keyExists := kyma.Labels[v1beta1.InstanceIDLabel]
+	if !keyExists {
+		r.EventRecorder.Eventf(
+			kyma, "Warning", "LabelNotDefined",
+			"Expected label: %s not found.",
+			v1beta1.InstanceIDLabel,
+		)
+	}
+
+	metrics.RecordKymaStatus(kyma.Name, kyma.Status.State, shoot, instanceID)
 }
