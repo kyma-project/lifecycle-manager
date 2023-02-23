@@ -9,7 +9,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm"
-	_ "github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods/localblob"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods/localociblob"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods/ociartifact"
@@ -27,7 +26,6 @@ const DefaultRepoSubdirectory = "component-descriptors"
 
 var (
 	ErrAccessTypeNotSupported           = errors.New("access type not supported")
-	ErrContextTypeNotSupported          = errors.New("context type not supported")
 	ErrComponentNameMappingNotSupported = errors.New("componentNameMapping not supported")
 )
 

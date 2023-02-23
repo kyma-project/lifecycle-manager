@@ -18,9 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var (
-	ErrNoSignatureFound = errors.New("no signature was found")
-)
+var ErrNoSignatureFound = errors.New("no signature was found")
 
 type Verifier interface {
 	Verify(componentDescriptor *compdesc.ComponentDescriptor, signature metav1.Signature) error

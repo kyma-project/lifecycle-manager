@@ -10,20 +10,25 @@ import (
 // HelmChartRepositoryType is the access type of a oci blob in the current component descriptor manifest.
 const HelmChartRepositoryType = "helmChartRepository"
 
+//nolint:gochecknoinits
 func init() {
-	cpi.RegisterAccessType(cpi.NewAccessSpecType(HelmChartRepositoryType, &HelmChartRepositoryAccess{}))
+	cpi.RegisterAccessType(
+		cpi.NewAccessSpecType(
+			HelmChartRepositoryType, &HelmChartRepositoryAccess{},
+		),
+	)
 }
 
 var _ cpi.AccessSpec = (*HelmChartRepositoryAccess)(nil)
 
 // New creates a new LocalOCIBlob accessor.
 // Deprecated: Use LocalBlob.
-func New(RepoURL, Name, Version string) *HelmChartRepositoryAccess {
+func New(repoURL, name, version string) *HelmChartRepositoryAccess {
 	return &HelmChartRepositoryAccess{
 		ObjectVersionedType: runtime.NewVersionedObjectType(HelmChartRepositoryType),
-		HelmChartRepoURL:    RepoURL,
-		HelmChartName:       Name,
-		HelmChartVersion:    Version,
+		HelmChartRepoURL:    repoURL,
+		HelmChartName:       name,
+		HelmChartVersion:    version,
 	}
 }
 
@@ -41,7 +46,6 @@ func (a *HelmChartRepositoryAccess) Describe(ctx cpi.Context) string {
 }
 
 func (a *HelmChartRepositoryAccess) IsLocal(context cpi.Context) bool {
-	//TODO implement me
 	panic("implement me")
 }
 
