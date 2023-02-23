@@ -13,7 +13,7 @@ import (
 	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	errors2 "k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -338,7 +338,6 @@ func expectManifestStateIn(state declarative.State) func(manifestName string) er
 
 func getManifestStatus(manifestName string) (declarative.Status, error) {
 	manifest := &v1beta1.Manifest{}
-
 	err := k8sClient.Get(
 		ctx, client.ObjectKey{
 			Namespace: v1.NamespaceDefault,
@@ -357,12 +356,12 @@ func deleteManifestAndVerify(manifest *v1beta1.Manifest) func() error {
 		if err := os.Chmod(kustomizeLocalPath, fs.ModePerm); err != nil {
 			return err
 		}
-		if err := k8sClient.Delete(ctx, manifest); err != nil && !errors2.IsNotFound(err) {
+		if err := k8sClient.Delete(ctx, manifest); err != nil && !k8serrors.IsNotFound(err) {
 			return err
 		}
 		newManifest := v1beta1.Manifest{}
 		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(manifest), &newManifest)
-		if errors2.IsNotFound(err) {
+		if k8serrors.IsNotFound(err) {
 			return nil
 		}
 		return err
@@ -380,13 +379,13 @@ func addInstallSpecWithFilePermission(
 	remote bool, fileMode os.FileMode,
 ) func(manifest *v1beta1.Manifest) error {
 	return func(manifest *v1beta1.Manifest) error {
-		user, err := user.Current()
+		currentUser, err := user.Current()
 		Expect(err).ToNot(HaveOccurred())
-		if user.Username == "root" {
+		if currentUser.Username == "root" {
 			Skip("This test is not suitable for user with root privileges")
 		}
 		// should not be run as root user
-		Expect(user.Username).ToNot(Equal("root"))
+		Expect(currentUser.Username).ToNot(Equal("root"))
 		Expect(os.Chmod(kustomizeLocalPath, fileMode)).ToNot(HaveOccurred())
 		return installManifest(manifest, specBytes, remote)
 	}
