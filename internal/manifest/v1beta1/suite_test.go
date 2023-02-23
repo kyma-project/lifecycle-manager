@@ -24,6 +24,8 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/labels"
+
 	"github.com/kyma-project/lifecycle-manager/api"
 
 	"github.com/google/go-containerregistry/pkg/registry"
@@ -31,7 +33,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
-	"github.com/kyma-project/lifecycle-manager/pkg/labels"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap/zapcore"
@@ -121,7 +122,7 @@ var _ = BeforeSuite(
 			cfg, ctrl.Options{
 				MetricsBindAddress: metricsBindAddress,
 				Scheme:             scheme.Scheme,
-				NewCache:           internal.GetCacheFunc(),
+				NewCache:           internal.GetCacheFunc(labels.Set{v1beta1.ManagedBy: v1beta1.OperatorName}),
 			},
 		)
 		Expect(err).ToNot(HaveOccurred())
@@ -148,7 +149,7 @@ var _ = BeforeSuite(
 					return &declarative.ClusterInfo{Config: authUser.Config()}, nil
 				},
 			),
-			declarative.WithClientCacheKeyFromLabelOrResource(labels.KymaName),
+			declarative.WithClientCacheKeyFromLabelOrResource(v1beta1.KymaName),
 			declarative.WithPostRun{internalv1beta1.PostRunCreateCR},
 			declarative.WithPreDelete{internalv1beta1.PreDeleteDeleteCR},
 			declarative.WithCustomReadyCheck(declarative.NewExistsReadyCheck()),
