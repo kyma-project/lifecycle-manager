@@ -22,10 +22,8 @@ import (
 	yaml2 "sigs.k8s.io/yaml"
 )
 
-func GetPathFromExtractedTarGz(
-	ctx context.Context,
+func GetPathFromExtractedTarGz(ctx context.Context,
 	imageSpec v1beta1.ImageSpec,
-	insecureRegistry bool,
 	keyChain authn.Keychain,
 ) (string, error) {
 	imageRef := fmt.Sprintf("%s/%s@%s", imageSpec.Repo, imageSpec.Name, imageSpec.Ref)
@@ -42,7 +40,7 @@ func GetPathFromExtractedTarGz(
 	}
 
 	// pull image layer
-	layer, err := pullLayer(ctx, insecureRegistry, imageRef, keyChain)
+	layer, err := pullLayer(ctx, imageRef, keyChain)
 	if err != nil {
 		return "", err
 	}
@@ -130,10 +128,8 @@ func handleExtractedHeaderFile(
 	return nil
 }
 
-func DecodeUncompressedYAMLLayer(
-	ctx context.Context,
+func DecodeUncompressedYAMLLayer(ctx context.Context,
 	imageSpec v1beta1.ImageSpec,
-	insecureRegistry bool,
 	keyChain authn.Keychain,
 ) (interface{}, error) {
 	configFilePath := GetConfigFilePath(imageSpec)
@@ -149,7 +145,7 @@ func DecodeUncompressedYAMLLayer(
 
 	// proceed only if file was not found
 	// yaml is not compressed
-	layer, err := pullLayer(ctx, insecureRegistry, imageRef, keyChain)
+	layer, err := pullLayer(ctx, imageRef, keyChain)
 	if err != nil {
 		return nil, err
 	}
@@ -161,11 +157,12 @@ func DecodeUncompressedYAMLLayer(
 	return writeYamlContent(blob, imageRef, configFilePath)
 }
 
-func pullLayer(ctx context.Context, insecureRegistry bool, imageRef string, keyChain authn.Keychain) (v1.Layer, error) {
-	if insecureRegistry {
+func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (v1.Layer, error) {
+	layer, err := crane.PullLayer(imageRef, crane.WithAuthFromKeychain(keyChain), crane.WithContext(ctx))
+	if err != nil {
 		return crane.PullLayer(imageRef, crane.Insecure, crane.WithAuthFromKeychain(keyChain))
 	}
-	return crane.PullLayer(imageRef, crane.WithAuthFromKeychain(keyChain), crane.WithContext(ctx))
+	return layer, nil
 }
 
 func writeYamlContent(blob io.ReadCloser, layerReference string, filePath string) (interface{}, error) {

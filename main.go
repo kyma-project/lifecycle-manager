@@ -268,7 +268,7 @@ func setupManifestReconciler(mgr ctrl.Manager,
 	options controller.Options,
 ) {
 	if err := controllers.SetupWithManager(
-		mgr, options, flagVar.insecureRegistry, flagVar.manifestRequeueSuccessInterval, controllers.SetupUpSetting{
+		mgr, options, flagVar.manifestRequeueSuccessInterval, controllers.SetupUpSetting{
 			ListenerAddr:                 flagVar.manifestListenerAddr,
 			EnableDomainNameVerification: flagVar.enableDomainNameVerification,
 		},

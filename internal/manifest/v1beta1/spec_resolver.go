@@ -35,16 +35,14 @@ type ManifestSpecResolver struct {
 	KCP client.Client
 
 	*v1beta1.Codec
-	Insecure bool
 
 	ChartCache   string
 	cachedCharts map[string]string
 }
 
-func NewManifestSpecResolver(codec *v1beta1.Codec, insecure bool) *ManifestSpecResolver {
+func NewManifestSpecResolver(codec *v1beta1.Codec) *ManifestSpecResolver {
 	return &ManifestSpecResolver{
 		Codec:        codec,
-		Insecure:     insecure,
 		ChartCache:   os.TempDir(),
 		cachedCharts: make(map[string]string),
 	}
@@ -150,7 +148,7 @@ func (m *ManifestSpecResolver) getValuesFromConfig(
 ) (map[string]any, error) {
 	var configs []any
 	if config.Type.NotEmpty() { //nolint:nestif
-		decodedConfig, err := DecodeUncompressedYAMLLayer(ctx, config, m.Insecure, keyChain)
+		decodedConfig, err := DecodeUncompressedYAMLLayer(ctx, config, keyChain)
 		if err != nil {
 			// if EOF error, we should proceed without config
 			if !errors.Is(err, io.EOF) {
@@ -229,7 +227,7 @@ func (m *ManifestSpecResolver) getChartInfoForInstall(
 		}
 
 		// extract helm chart from layer digest
-		chartPath, err := GetPathFromExtractedTarGz(ctx, imageSpec, m.Insecure, keyChain)
+		chartPath, err := GetPathFromExtractedTarGz(ctx, imageSpec, keyChain)
 		if err != nil {
 			return nil, err
 		}

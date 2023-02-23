@@ -15,7 +15,7 @@ This setup is deployed with the following security features enabled:
     ```shell
     k3d cluster create kcp-local --port 9443:443@loadbalancer \
     --registry-create k3d-registry.localhost:0.0.0.0:5111 \
-    --k3s-arg '--no-deploy=traefik@server:0'
+    --k3s-arg '--disable=traefik@server:0'
     ```
 
 2. Open `/etc/hosts` file on your local system:

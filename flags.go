@@ -95,10 +95,6 @@ func defineFlagVar() *FlagVar {
 		&flagVar.logLevel, "log-level", defaultLogLevel,
 		"indicates the current log-level, enter negative values to increase verbosity (e.g. 9)",
 	)
-	flag.BoolVar(
-		&flagVar.insecureRegistry, "insecure-registry", false,
-		"indicates if insecure (http) response is expected from image registry",
-	)
 	return flagVar
 }
 
@@ -135,5 +131,4 @@ type FlagVar struct {
 	cacheSyncTimeout                       time.Duration
 	enableDomainNameVerification           bool
 	logLevel                               int
-	insecureRegistry                       bool
 }
