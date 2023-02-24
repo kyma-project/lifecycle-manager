@@ -77,8 +77,12 @@ var (
 
 //nolint:gochecknoinits
 func init() {
-	ocm.DefaultContext().RepositoryTypes().Register(genericocireg.Type, &genericocireg.RepositoryType{})
-	ocm.DefaultContext().RepositoryTypes().Register(genericocireg.TypeV1, &genericocireg.RepositoryType{})
+	ocm.DefaultContext().RepositoryTypes().Register(
+		genericocireg.Type, genericocireg.NewRepositoryType(oci.DefaultContext()),
+	)
+	ocm.DefaultContext().RepositoryTypes().Register(
+		genericocireg.TypeV1, genericocireg.NewRepositoryType(oci.DefaultContext()),
+	)
 	cpi.DefaultContext().RepositoryTypes().Register(
 		ocireg.LegacyType, genericocireg.NewRepositoryType(oci.DefaultContext()),
 	)
