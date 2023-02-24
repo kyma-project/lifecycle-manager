@@ -33,11 +33,7 @@ sudo nano /etc/hosts
       brew install istioctl && \
       istioctl install --set profile=demo -y
       ```
-   2. `module-manager` CRDs
-      ```shell
-       kubectl apply -f https://raw.githubusercontent.com/kyma-project/module-manager/main/config/crd/bases/operator.kyma-project.io_manifests.yaml
-      ```
-   3. `cert-manager` by Jetstack
+   2. `cert-manager` by Jetstack
        ```shell
        kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
        ```
