@@ -151,7 +151,7 @@ func getOCIRef(
 			repoSubpath = string(ext)
 		}
 
-		layerRef.Repo = fmt.Sprintf("%s/%s", repo.UniformRepositorySpec().RepositoryRef(), repoSubpath)
+		layerRef.Repo = fmt.Sprintf("%s/%s", repo.Name(), repoSubpath)
 		layerRef.Name = descriptor.GetName()
 	case genericocireg.OCIRegistryDigestMapping:
 		layerRef.Repo = repo.UniformRepositorySpec().RepositoryRef()
