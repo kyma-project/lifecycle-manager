@@ -10,18 +10,6 @@ spec:
   selfSigned: {}
 ---
 apiVersion: cert-manager.io/v1
-kind: Issuer
-metadata:
-  name: watcher-selfsigned-issuer
-  namespace: istio-system
-  labels:
-    operator.kyma-project.io/purpose: "klm-watcher-cert-manager"
-    operator.kyma-project.io/managed-by: "lifecycle-manager"
-spec:
-  ca:
-    secretName: klm-watcher-root-secret
----
-apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: watcher-serving-cert  # this name should match the one appeared in kustomizeconfig.yaml
@@ -42,4 +30,14 @@ spec:
     kind: ClusterIssuer
     group: cert-manager.io
 ---
-
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: watcher-selfsigned-issuer
+  namespace: istio-system
+  labels:
+    operator.kyma-project.io/purpose: "klm-watcher-cert-manager"
+    operator.kyma-project.io/managed-by: "lifecycle-manager"
+spec:
+  ca:
+    secretName: klm-watcher-root-secret

@@ -45,13 +45,13 @@ metadata:
   namespace: system
 spec:
   selector:
-    app.kubernetes.io/name: lifecycle-manager
+    app.kubernetes.io/name: kcp-lifecycle-manager
   ports:
     - protocol: TCP
       name: klm
-      port: 8083
-      targetPort: 8083
-    - protocol: TCP
-      name: kmm
       port: 8082
       targetPort: 8082
+    - protocol: TCP
+      name: kmm
+      port: 8083
+      targetPort: 8083
