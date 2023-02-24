@@ -1,0 +1,101 @@
+apiVersion: operator.kyma-project.io/v1beta1
+kind: ModuleTemplate
+metadata:
+  name: moduletemplate-my-module
+  namespace: default
+  labels:
+    "operator.kyma-project.io/managed-by": "lifecycle-manager"
+    "operator.kyma-project.io/controller-name": "manifest"
+    "operator.kyma-project.io/module-name": "my-module"
+spec:
+  target: remote
+  channel: regular
+  data:
+    apiVersion: operator.kyma-project.io/v1alpha1
+    kind: Sample
+    metadata:
+      name: sample-yaml
+    spec:
+      resourceFilePath: "./module-data/yaml"
+  descriptor:
+    apiVersion: ocm.software/v3alpha1
+    kind: ComponentVersion
+    metadata:
+      labels:
+        - name: security.kyma-project.io/scan
+          value: enabled
+          version: v1
+      name: kyma-project.io/my-module
+      provider:
+        labels:
+          - name: kyma-project.io/built-by
+            value: cli
+            version: v1
+        name: kyma-project.io
+      version: v0.0.1
+    repositoryContexts:
+      - baseUrl: ghcr.io/jakobmoellersap/testmodule
+        componentNameMapping: urlPath
+        type: OCIRegistry
+    spec:
+      resources:
+        - access:
+            globalAccess:
+              digest: sha256:646134c464aa82adba7583ca800121d20faf0d840725e3108f649fa03eb2f679
+              mediaType: application/gzip
+              ref: ghcr.io/jakobmoellersap/testmodule/component-descriptors/kyma-project.io/my-module
+              size: 3874
+              type: ociBlob
+            localReference: sha256:646134c464aa82adba7583ca800121d20faf0d840725e3108f649fa03eb2f679
+            mediaType: application/gzip
+            type: localBlob
+          name: my-module
+          relation: local
+          type: helm-chart
+          version: v0.0.1
+        - access:
+            globalAccess:
+              digest: sha256:db86408caca4c94250d8291aa79655b84146f9cc45e0da49f05a52b3722d74a0
+              mediaType: application/octet-stream
+              ref: ghcr.io/jakobmoellersap/testmodule/component-descriptors/kyma-project.io/my-module
+              size: 250
+              type: ociBlob
+            localReference: sha256:db86408caca4c94250d8291aa79655b84146f9cc45e0da49f05a52b3722d74a0
+            mediaType: application/octet-stream
+            type: localBlob
+          name: config
+          relation: local
+          type: yaml
+          version: v0.0.1
+        - access:
+            imageReference: artifact.registry.hostname/path/to/the/registry/k8s-tools:v20221213-1840f45a
+            type: ociRegistry
+          labels:
+            - name: scan.security.kyma-project.io/type
+              value: third-party-image
+              version: v1
+          name: k8s-tools
+          relation: external
+          type: ociImage
+          version: v20221213-1840f45a
+      sources:
+        - access:
+            commit: 60f2474a6673be4c823b42c69846676d49a49937
+            repoUrl: github.com/kyma-project/template-operator
+            type: gitHub
+          labels:
+            - name: git.kyma-project.io/ref
+              value: refs/heads/main
+              version: v1
+            - name: scan.security.kyma-project.io/language
+              value: golang-mod
+              version: v1
+            - name: scan.security.kyma-project.io/subprojects
+              value: "true"
+              version: v1
+            - name: scan.security.kyma-project.io/exclude
+              value: '**/examples/**'
+              version: v1
+          name: module-sources
+          type: Github
+          version: v0.0.1
