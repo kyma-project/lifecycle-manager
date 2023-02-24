@@ -195,11 +195,6 @@ func enableWebhooks(mgr manager.Manager) {
 		os.Exit(1)
 	}
 
-	if err := (&operatorv1alpha1.Manifest{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "Manifest")
-		os.Exit(1)
-	}
-
 }
 
 func controllerOptionsFromFlagVar(flagVar *FlagVar) controller.Options {

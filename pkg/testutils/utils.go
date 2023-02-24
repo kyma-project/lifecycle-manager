@@ -14,6 +14,9 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/ocm.software/v3alpha1"
+	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	corev1 "k8s.io/api/core/v1"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
@@ -114,10 +117,12 @@ func GetKyma(ctx context.Context, testClient client.Client, name, namespace stri
 	if namespace == "" {
 		namespace = v1.NamespaceDefault
 	}
-	err := testClient.Get(ctx, client.ObjectKey{
-		Namespace: namespace,
-		Name:      name,
-	}, kymaInCluster)
+	err := testClient.Get(
+		ctx, client.ObjectKey{
+			Namespace: namespace,
+			Name:      name,
+		}, kymaInCluster,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -153,8 +158,10 @@ func ParseRemoteCRDs(testCrdURLs []string) ([]*v12.CustomResourceDefinition, err
 		}
 		if httpResponse.StatusCode != http.StatusOK {
 			//nolint:goerr113
-			return nil, fmt.Errorf("failed pulling content for URL (%s) with status code: %d",
-				testCrdURL, httpResponse.StatusCode)
+			return nil, fmt.Errorf(
+				"failed pulling content for URL (%s) with status code: %d",
+				testCrdURL, httpResponse.StatusCode,
+			)
 		}
 
 		decoder := yaml.NewYAMLOrJSONDecoder(httpResponse.Body, defaultBufferSize)
@@ -174,14 +181,33 @@ func ParseRemoteCRDs(testCrdURLs []string) ([]*v12.CustomResourceDefinition, err
 	}()
 	return crds, nil
 }
-
 func ModuleTemplateFactory(module v1beta1.Module, data unstructured.Unstructured) (*v1beta1.ModuleTemplate, error) {
+	return ModuleTemplateFactoryForSchema(module, data, compdesc2.SchemaVersion)
+}
+
+func ModuleTemplateFactoryForSchema(
+	module v1beta1.Module, data unstructured.Unstructured, schemaVersion compdesc.SchemaVersion,
+) (*v1beta1.ModuleTemplate, error) {
 	var moduleTemplate v1beta1.ModuleTemplate
-	err := readModuleTemplate(&moduleTemplate)
+	var err error
+	switch schemaVersion {
+	case compdesc2.SchemaVersion:
+		err = readModuleTemplateWithV2Schema(&moduleTemplate)
+	case v3alpha1.GroupVersion:
+		fallthrough
+	case v3alpha1.SchemaVersion:
+		fallthrough
+	default:
+		err = readModuleTemplateWithV3Schema(&moduleTemplate)
+	}
+
 	if err != nil {
 		return &moduleTemplate, err
 	}
 	moduleTemplate.Name = module.Name
+	if moduleTemplate.Labels == nil {
+		moduleTemplate.Labels = make(map[string]string)
+	}
 	moduleTemplate.Labels[v1beta1.ModuleName] = module.Name
 	moduleTemplate.Labels[v1beta1.ControllerName] = module.ControllerName
 	moduleTemplate.Spec.Channel = module.Channel
@@ -191,13 +217,33 @@ func ModuleTemplateFactory(module v1beta1.Module, data unstructured.Unstructured
 	return &moduleTemplate, nil
 }
 
-func readModuleTemplate(moduleTemplate *v1beta1.ModuleTemplate) error {
+func readModuleTemplateWithV2Schema(moduleTemplate *v1beta1.ModuleTemplate) error {
 	template := "operator_v1beta1_moduletemplate_kcp-module.yaml"
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {
 		panic("Can't capture current filename!")
 	}
-	modulePath := filepath.Join(filepath.Dir(filename), "../../config/samples/component-integration-installed", template)
+	modulePath := filepath.Join(
+		filepath.Dir(filename), "../../config/samples/component-integration-installed", template,
+	)
+
+	moduleFile, err := os.ReadFile(modulePath)
+	if err != nil {
+		return err
+	}
+	err = yaml.Unmarshal(moduleFile, &moduleTemplate)
+	return err
+}
+
+func readModuleTemplateWithV3Schema(moduleTemplate *v1beta1.ModuleTemplate) error {
+	template := "operator_v1beta1_moduletemplate_ocm.software.v3alpha1.yaml"
+	_, filename, _, ok := runtime.Caller(1)
+	if !ok {
+		panic("Can't capture current filename!")
+	}
+	modulePath := filepath.Join(
+		filepath.Dir(filename), "../../config/samples/component-integration-installed", template,
+	)
 
 	moduleFile, err := os.ReadFile(modulePath)
 	if err != nil {
@@ -216,10 +262,12 @@ func NewSKRCluster(scheme *k8sruntime.Scheme) (client.Client, *envtest.Environme
 	Expect(err).NotTo(HaveOccurred())
 
 	var authUser *envtest.AuthenticatedUser
-	authUser, err = skrEnv.AddUser(envtest.User{
-		Name:   "skr-admin-account",
-		Groups: []string{"system:masters"},
-	}, cfg)
+	authUser, err = skrEnv.AddUser(
+		envtest.User{
+			Name:   "skr-admin-account",
+			Groups: []string{"system:masters"},
+		}, cfg,
+	)
 	Expect(err).NotTo(HaveOccurred())
 
 	remote.LocalClient = func() *rest.Config {
