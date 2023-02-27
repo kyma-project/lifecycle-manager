@@ -24,13 +24,13 @@ This setup is deployed with the following security features enabled:
     ```
 
 2. Open `/etc/hosts` file on your local system:
-```shell
-sudo nano /etc/hosts
-```
+   ```shell
+   sudo nano /etc/hosts
+   ```
    Add entry for your local k3d registry created in the previous steps
-```
-127.0.0.1 k3d-registry.localhost
-```
+   ```
+   127.0.0.1 k3d-registry.localhost
+   ```
 
 3. Install other pre-requisites required by the lifecycle-manager
    1. `Istio` CRDs using `istioctl`
@@ -47,6 +47,10 @@ sudo nano /etc/hosts
     ```shell
     make local-deploy-with-watcher IMG=eu.gcr.io/kyma-project/lifecycle-manager:latest
     ```
+   > **Hint:** If you get similar errors like the following, please wait a couple of seconds and rerun the command.
+   > ```shell
+   > Error from server (InternalError): error when creating "STDIN": Internal error occurred: failed calling webhook "webhook.cert-manager.io": failed to call webhook: Post "https://cert-manager-webhook.cert-manager.svc:443/mutate?timeout=10s": no endpoints available for service "cert-manager-webhook"
+   > ```
    <details>
       <summary>deploying custom image</summary>
       If you want to test a custom image of the KLM. Adapt the `IMG` variable in the Makefile and run the following:
@@ -68,7 +72,15 @@ sudo nano /etc/hosts
    kyma alpha create module -p ../template-operator --version 1.2.3 -w \
    --registry k3d-registry.localhost:5111 --insecure
    ```
-6. The previous step will create a `template.yaml` file in the root directory, which is the `module-template`, apply it
+6. Verify images has been pushed to local registry:
+   ```shell
+   curl http://k3d-registry.localhost:5111/v2/_catalog\?n\=100
+   ```
+   The output should look like the following:
+   ```shell
+   {"repositories":["component-descriptors/kyma-project.io/template-operator"]}
+   ```
+7. The previous step will create a `template.yaml` file in the root directory, which is the `module-template`, apply it
    to the cluster
    ```shell
    kubectl apply -f template.yaml
@@ -113,6 +125,7 @@ k3d cluster create skr-local
       channel: regular
       sync:
         enabled: true
+        namespace: kcp-system
       modules:
         - name: template-operator
    EOF
