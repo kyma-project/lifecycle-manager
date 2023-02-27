@@ -225,7 +225,7 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(
 		return nil
 	}
 
-	c.InsertWatcherLabels(controlPlaneKyma, remoteKyma)
+	c.InsertWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma)
 
 	if err := c.RuntimeClient.Update(ctx, remoteKyma.SetLastSync()); err != nil {
 		recorder.Event(controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma last sync annotation")
@@ -271,13 +271,17 @@ func GetRemoteObjectKey(kyma *v1beta1.Kyma) client.ObjectKey {
 	return client.ObjectKey{Namespace: namespace, Name: name}
 }
 
-// InsertWatcherLabels inserts labels into the given KymaCR, which are needed to ensure
+// InsertWatcherLabelsAnnotations inserts labels into the given KymaCR, which are needed to ensure
 // a working e2e-flow for the runtime-watcher.
-func (c *KymaSynchronizationContext) InsertWatcherLabels(controlPlaneKyma, remoteKyma *v1beta1.Kyma) {
+func (c *KymaSynchronizationContext) InsertWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma *v1beta1.Kyma) {
 	if remoteKyma.Labels == nil {
 		remoteKyma.Labels = make(map[string]string)
 	}
-
-	remoteKyma.Labels[v1beta1.OwnedByLabel] = controlPlaneKyma.GetName()
 	remoteKyma.Labels[v1beta1.WatchedByLabel] = v1beta1.OperatorName
+
+	if remoteKyma.Annotations == nil {
+		remoteKyma.Annotations = make(map[string]string)
+	}
+	remoteKyma.Annotations[v1beta1.OwnedByAnnotation] = fmt.Sprintf(v1beta1.OwnedByFormat,
+		controlPlaneKyma.GetNamespace(), controlPlaneKyma.GetName())
 }

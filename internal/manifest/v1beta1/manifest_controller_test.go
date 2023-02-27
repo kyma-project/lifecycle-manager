@@ -21,8 +21,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/labels"
 )
 
 const ManifestDir = "manifest"
@@ -144,7 +142,7 @@ var _ = Describe(
 				Eventually(expectManifestState, standardTimeout, standardInterval).
 					WithArguments(manifest.GetName()).Should(Succeed())
 				Eventually(expectedHelmClientCache, standardTimeout, standardInterval).
-					WithArguments(manifest.GetLabels()[labels.KymaName]).Should(BeTrue())
+					WithArguments(manifest.GetLabels()[v1beta1.KymaName]).Should(BeTrue())
 				Eventually(deleteManifestAndVerify(manifest), standardTimeout, standardInterval).Should(Succeed())
 			},
 			Entry(
@@ -229,12 +227,12 @@ var _ = Describe(
 					WithArguments(manifestWithInstall).Should(Succeed())
 				validImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String(), layerInstalls)
 				Eventually(expectHelmClientCacheExist(true), standardTimeout, standardInterval).
-					WithArguments(manifestWithInstall.GetLabels()[labels.KymaName]).Should(BeTrue())
+					WithArguments(manifestWithInstall.GetLabels()[v1beta1.KymaName]).Should(BeTrue())
 				// this will ensure only manifest.yaml remains
 				deleteHelmChartResources(validImageSpec)
 				manifest2WithInstall := NewTestManifest("multi-oci2")
 				// copy owner label over to the new manifest resource
-				manifest2WithInstall.Labels[labels.KymaName] = manifestWithInstall.Labels[labels.KymaName]
+				manifest2WithInstall.Labels[v1beta1.KymaName] = manifestWithInstall.Labels[v1beta1.KymaName]
 				Eventually(withValidInstallImageSpec(installName, false), standardTimeout, standardInterval).
 					WithArguments(manifest2WithInstall).Should(Succeed())
 				// verify no new Helm resources were created
