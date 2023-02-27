@@ -198,7 +198,6 @@ func enableWebhooks(mgr manager.Manager) {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Manifest")
 		os.Exit(1)
 	}
-
 }
 
 func controllerOptionsFromFlagVar(flagVar *FlagVar) controller.Options {

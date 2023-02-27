@@ -79,105 +79,94 @@ func TestAPIs(t *testing.T) {
 	RunSpecs(t, "Controller Suite")
 }
 
-var _ = BeforeSuite(
-	func() {
-		ctx, cancel = context.WithCancel(context.TODO())
-		logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
+var _ = BeforeSuite(func() {
+	ctx, cancel = context.WithCancel(context.TODO())
+	logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
 
-		By("bootstrapping test environment")
+	By("bootstrapping test environment")
 
-		// manifest CRD
-		// istio CRDs
-		remoteCrds, err := ParseRemoteCRDs(
-			[]string{
-				"https://raw.githubusercontent.com/kyma-project/module-manager/main/config/crd/bases/operator.kyma-project.io_manifests.yaml", //nolint:lll
-				"https://github.com/cert-manager/cert-manager/releases/download/v1.10.1/cert-manager.crds.yaml",                               //nolint:lll
-			},
-		)
-		Expect(err).NotTo(HaveOccurred())
+	// manifest CRD
+	// istio CRDs
+	remoteCrds, err := ParseRemoteCRDs([]string{
+		"https://raw.githubusercontent.com/kyma-project/module-manager/main/config/crd/bases/operator.kyma-project.io_manifests.yaml", //nolint:lll
+		"https://github.com/cert-manager/cert-manager/releases/download/v1.10.1/cert-manager.crds.yaml",                               //nolint:lll
+	})
+	Expect(err).NotTo(HaveOccurred())
 
-		// kcpModule CRD
-		controlplaneCrd := &v1.CustomResourceDefinition{}
-		modulePath := filepath.Join(
-			"..", "config", "samples", "component-integration-installed",
-			"crd", "operator.kyma-project.io_kcpmodules.yaml",
-		)
-		moduleFile, err := os.ReadFile(modulePath)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(moduleFile).ToNot(BeEmpty())
-		Expect(yaml2.Unmarshal(moduleFile, &controlplaneCrd)).To(Succeed())
+	// kcpModule CRD
+	controlplaneCrd := &v1.CustomResourceDefinition{}
+	modulePath := filepath.Join("..", "config", "samples", "component-integration-installed",
+		"crd", "operator.kyma-project.io_kcpmodules.yaml")
+	moduleFile, err := os.ReadFile(modulePath)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(moduleFile).ToNot(BeEmpty())
+	Expect(yaml2.Unmarshal(moduleFile, &controlplaneCrd)).To(Succeed())
 
-		controlPlaneEnv = &envtest.Environment{
-			CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases")},
-			CRDs:                  append([]*v1.CustomResourceDefinition{controlplaneCrd}, remoteCrds...),
-			ErrorIfCRDPathMissing: true,
-		}
+	controlPlaneEnv = &envtest.Environment{
+		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases")},
+		CRDs:                  append([]*v1.CustomResourceDefinition{controlplaneCrd}, remoteCrds...),
+		ErrorIfCRDPathMissing: true,
+	}
 
-		cfg, err = controlPlaneEnv.Start()
-		Expect(err).NotTo(HaveOccurred())
-		Expect(cfg).NotTo(BeNil())
+	cfg, err = controlPlaneEnv.Start()
+	Expect(err).NotTo(HaveOccurred())
+	Expect(cfg).NotTo(BeNil())
 
-		ocm.DefaultContext().RepositoryTypes().Register(genericocireg.Type, &genericocireg.RepositoryType{})
-		ocm.DefaultContext().RepositoryTypes().Register(genericocireg.TypeV1, &genericocireg.RepositoryType{})
-		cpi.DefaultContext().RepositoryTypes().Register(
-			ocireg.LegacyType, genericocireg.NewRepositoryType(oci.DefaultContext()),
-		)
-		Expect(api.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
-		Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+	ocm.DefaultContext().RepositoryTypes().Register(genericocireg.Type, &genericocireg.RepositoryType{})
+	ocm.DefaultContext().RepositoryTypes().Register(genericocireg.TypeV1, &genericocireg.RepositoryType{})
+	cpi.DefaultContext().RepositoryTypes().Register(
+		ocireg.LegacyType, genericocireg.NewRepositoryType(oci.DefaultContext()),
+	)
+	Expect(api.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 
-		//+kubebuilder:scaffold:scheme
+	//+kubebuilder:scaffold:scheme
 
-		controlPlaneClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
-		Expect(err).NotTo(HaveOccurred())
-		Expect(controlPlaneClient).NotTo(BeNil())
+	controlPlaneClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	Expect(err).NotTo(HaveOccurred())
+	Expect(controlPlaneClient).NotTo(BeNil())
 
-		runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
+	runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
 
-		k8sManager, err = ctrl.NewManager(
-			cfg, ctrl.Options{
-				MetricsBindAddress: UseRandomPort,
-				Scheme:             scheme.Scheme,
-				NewCache:           controllers.NewCacheFunc(),
-			},
-		)
-		Expect(err).ToNot(HaveOccurred())
+	k8sManager, err = ctrl.NewManager(
+		cfg, ctrl.Options{
+			MetricsBindAddress: UseRandomPort,
+			Scheme:             scheme.Scheme,
+			NewCache:           controllers.NewCacheFunc(),
+		})
+	Expect(err).ToNot(HaveOccurred())
 
-		intervals := controllers.RequeueIntervals{
-			Success: 3 * time.Second,
-		}
+	intervals := controllers.RequeueIntervals{
+		Success: 3 * time.Second,
+	}
 
-		remoteClientCache := remote.NewClientCache()
-		err = (&controllers.KymaReconciler{
-			Client:           k8sManager.GetClient(),
-			EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1beta1.OperatorName),
-			RequeueIntervals: intervals,
-			VerificationSettings: signature.VerificationSettings{
-				EnableVerification: false,
-			},
-			RemoteClientCache: remoteClientCache,
-			KcpRestConfig:     k8sManager.GetConfig(),
-		}).SetupWithManager(
-			k8sManager, controller.Options{},
-			controllers.SetupUpSetting{ListenerAddr: UseRandomPort},
-		)
-		Expect(err).ToNot(HaveOccurred())
+	remoteClientCache := remote.NewClientCache()
+	err = (&controllers.KymaReconciler{
+		Client:           k8sManager.GetClient(),
+		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1beta1.OperatorName),
+		RequeueIntervals: intervals,
+		VerificationSettings: signature.VerificationSettings{
+			EnableVerification: false,
+		},
+		RemoteClientCache: remoteClientCache,
+		KcpRestConfig:     k8sManager.GetConfig(),
+	}).SetupWithManager(k8sManager, controller.Options{},
+		controllers.SetupUpSetting{ListenerAddr: UseRandomPort})
+	Expect(err).ToNot(HaveOccurred())
 
-		go func() {
-			defer GinkgoRecover()
-			err = k8sManager.Start(ctx)
-			Expect(err).ToNot(HaveOccurred(), "failed to run manager")
-		}()
-	},
-)
+	go func() {
+		defer GinkgoRecover()
+		err = k8sManager.Start(ctx)
+		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
+	}()
+})
 
-var _ = AfterSuite(
-	func() {
-		By("tearing down the test environment")
-		cancel()
+var _ = AfterSuite(func() {
+	By("tearing down the test environment")
+	cancel()
 
-		err := controlPlaneEnv.Stop()
-		Expect(err).NotTo(HaveOccurred())
-		err = runtimeEnv.Stop()
-		Expect(err).NotTo(HaveOccurred())
-	},
-)
+	err := controlPlaneEnv.Stop()
+	Expect(err).NotTo(HaveOccurred())
+	err = runtimeEnv.Stop()
+	Expect(err).NotTo(HaveOccurred())
+})

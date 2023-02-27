@@ -41,12 +41,12 @@ type HelmChartRepositoryAccess struct {
 	HelmChartVersion string `json:"helmChartVersion"`
 }
 
-func (a *HelmChartRepositoryAccess) Describe(ctx cpi.Context) string {
+func (a *HelmChartRepositoryAccess) Describe(cpi.Context) string {
 	return fmt.Sprintf("Helm Chart %s, Verstion %s, Repo %s", a.HelmChartName, a.HelmChartVersion, a.HelmChartRepoURL)
 }
 
-func (a *HelmChartRepositoryAccess) IsLocal(context cpi.Context) bool {
-	panic("implement me")
+func (a *HelmChartRepositoryAccess) IsLocal(cpi.Context) bool {
+	return false
 }
 
 func (a *HelmChartRepositoryAccess) AccessMethod(c cpi.ComponentVersionAccess) (cpi.AccessMethod, error) {

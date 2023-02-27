@@ -181,6 +181,7 @@ func ParseRemoteCRDs(testCrdURLs []string) ([]*v12.CustomResourceDefinition, err
 	}()
 	return crds, nil
 }
+
 func ModuleTemplateFactory(module v1beta1.Module, data unstructured.Unstructured) (*v1beta1.ModuleTemplate, error) {
 	return ModuleTemplateFactoryForSchema(module, data, compdesc2.SchemaVersion)
 }
