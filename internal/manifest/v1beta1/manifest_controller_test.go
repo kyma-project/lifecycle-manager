@@ -15,7 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -259,7 +259,7 @@ func skipExpect() func() bool {
 
 func expectHelmClientCacheExist(expectExist bool) func(componentOwner string) bool {
 	return func(componentOwner string) bool {
-		key := client.ObjectKey{Name: componentOwner, Namespace: v1.NamespaceDefault}
+		key := client.ObjectKey{Name: componentOwner, Namespace: metav1.NamespaceDefault}
 		clnt := reconciler.ClientCache.GetClientFromCache(key)
 		if expectExist {
 			return clnt != nil
@@ -310,11 +310,11 @@ func installManifest(manifest *v1beta1.Manifest, installSpecByte []byte, remote 
 		manifest.Spec.Remote = true
 		manifest.Spec.Resource = &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": "operator.kyma-project.io/v1alpha1",
+				"apiVersion": "operator.kyma-project.io/v1beta1",
 				"kind":       "SampleCRD",
 				"metadata": map[string]interface{}{
 					"name":      "sample-crd-from-manifest",
-					"namespace": v1.NamespaceDefault,
+					"namespace": metav1.NamespaceDefault,
 				},
 				"namespace": "default",
 			},
@@ -336,11 +336,13 @@ func expectManifestStateIn(state declarative.State) func(manifestName string) er
 	}
 }
 
+
+
 func getManifestStatus(manifestName string) (declarative.Status, error) {
 	manifest := &v1beta1.Manifest{}
 	err := k8sClient.Get(
 		ctx, client.ObjectKey{
-			Namespace: v1.NamespaceDefault,
+			Namespace: metav1.NamespaceDefault,
 			Name:      manifestName,
 		}, manifest,
 	)
@@ -361,10 +363,7 @@ func deleteManifestAndVerify(manifest *v1beta1.Manifest) func() error {
 		}
 		newManifest := v1beta1.Manifest{}
 		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(manifest), &newManifest)
-		if k8serrors.IsNotFound(err) {
-			return nil
-		}
-		return err
+		return client.IgnoreNotFound(err)
 	}
 }
 

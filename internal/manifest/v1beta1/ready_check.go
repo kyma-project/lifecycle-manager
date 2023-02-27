@@ -4,10 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"helm.sh/helm/v3/pkg/kube"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"strings"
 
 	manifestv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
@@ -29,19 +27,18 @@ func NewManifestCustomResourceReadyCheck() *ManifestCustomResourceReadyCheck {
 type ManifestCustomResourceReadyCheck struct{}
 
 var (
-	ErrNoDeterminedState      = errors.New("could not determine state")
-	ErrManifestDeployNotReady = errors.New("manifest deployment is not ready")
+	ErrNoDeterminedState = errors.New("could not determine state")
 )
 
 func (c *ManifestCustomResourceReadyCheck) Run(
 	ctx context.Context, clnt declarative.Client, obj declarative.Object, resources []*resource.Info,
 ) error {
-	ready, err := checkDeploymentState(resources)
+	ready, err := checkDeploymentState(clnt, resources)
 	if err != nil {
 		return err
 	}
 	if !ready {
-		return ErrManifestDeployNotReady
+		return declarative.ErrManifestDeployNotReady
 	}
 	manifest := obj.(*manifestv1beta1.Manifest)
 	if manifest.Spec.Resource == nil {
@@ -72,35 +69,27 @@ func (c *ManifestCustomResourceReadyCheck) Run(
 	return nil
 }
 
-func checkDeploymentState(resources []*resource.Info) (bool, error) {
-	var deploy *appsv1.Deployment
+var ErrDeploymentResNotFound = errors.New("deployment resource is not found")
+
+func checkDeploymentState(clt declarative.Client, resources []*resource.Info) (bool, error) {
+	deploy := &appsv1.Deployment{}
+	found := false
 	for _, res := range resources {
-		typedObject := kube.AsVersioned(res)
-		deployGvk := schema.GroupVersionKind{
-			Group:   appsv1.GroupName,
-			Version: appsv1.SchemeGroupVersion.Version,
-			Kind:    "Deployment",
-		}
-		if typedObject.GetObjectKind().GroupVersionKind() == deployGvk {
-			deploy = kube.AsVersioned(res).(*appsv1.Deployment)
+		err := clt.Scheme().Convert(res.Object, deploy, nil)
+		if err == nil {
+			found = true
+			break
 		}
 	}
-	if deploy == nil {
-		return false, errors.New("deployment resource is not found")
+	if !found {
+		return false, ErrDeploymentResNotFound
+	}
+	if deploy.Spec.Replicas != nil && *deploy.Spec.Replicas != deploy.Status.ReadyReplicas {
+		return false, nil
 	}
 	availableCond := deploymentutil.GetDeploymentCondition(deploy.Status, appsv1.DeploymentAvailable)
-	if availableCond != nil && availableCond.Status == corev1.ConditionTrue {
-		return true, nil
+	if availableCond != nil && availableCond.Status == corev1.ConditionFalse {
+		return false, nil
 	}
-	if deploy.Generation <= deploy.Status.ObservedGeneration {
-		cond := deploymentutil.GetDeploymentCondition(deploy.Status, appsv1.DeploymentProgressing)
-		if cond != nil && cond.Reason == deploymentutil.TimedOutReason {
-			return false, fmt.Errorf("deployment %q exceeded its progress deadline", deploy.Name)
-		}
-		if deploy.Spec.Replicas != nil && deploy.Status.AvailableReplicas < *deploy.Spec.Replicas {
-			return false, nil
-		}
-		return true, nil
-	}
-	return false, nil
+	return true, nil
 }

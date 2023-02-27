@@ -179,3 +179,12 @@ lint: ## Run golangci-lint against code.
 grafana-dashboard: ## Generating Grafana manifests to visualize controller status.
 	kubebuilder edit --plugins grafana.kubebuilder.io/v1-alpha
 	mv grafana/* config/grafana
+
+CRD_FILE_PATH ?= ./config/samples/tests/crds/operator.kyma-project.io_samplecrd.yaml
+ARCHIVES_DST ?= ./pkg/test_samples/oci
+HELM_CHART_PATH ?= ./pkg/test_samples/helm
+OCI_GEN_SCRIPT ?= $(ARCHIVES_DST)/generate_oci_archives.sh
+
+.PHONY: gen-oci-archives
+gen-oci-archives: ## Generate OCI Layers archives used for testing
+	$(OCI_GEN_SCRIPT) $(HELM_CHART_PATH) $(CRD_FILE_PATH) $(ARCHIVES_DST)
