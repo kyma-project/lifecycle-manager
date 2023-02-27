@@ -2,19 +2,24 @@ package v1beta1_test
 
 import (
 	"encoding/json"
+	"os"
+	"path/filepath"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/resource"
-	"os"
-	"path/filepath"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -49,17 +54,21 @@ var _ = Describe("Custom Manifest consistency check", Ordered, func() {
 			Name:      manifest.GetLabels()[v1beta1.KymaName],
 			Namespace: metav1.NamespaceDefault,
 		})
-		resources := make([]*resource.Info, 0)
+
+		By("Verifying that deployment and Sample CR are deployed and ready")
 		deploy := &appsv1.Deployment{}
 		sampleCR := &unstructured.Unstructured{}
 		Expect(verifyDeploymentInstallation(deploy)).To(Succeed())
 		Expect(verifySampleCRInstallation(sampleCR)).To(Succeed())
+		By("Preparing resources for the custom readiness check")
+		resources := make([]*resource.Info, 0)
 		sampleCRInfo, err := cachedClient.ResourceInfo(sampleCR, true)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(sampleCRInfo).ToNot(BeNil())
 		resources = append(resources, sampleCRInfo)
 		deployUnstructuredObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(deploy)
 		Expect(err).NotTo(HaveOccurred())
+		Expect(deployUnstructuredObj).ToNot(BeNil())
 		deployUnstructured := &unstructured.Unstructured{}
 		deployUnstructured.SetUnstructuredContent(deployUnstructuredObj)
 		deployUnstructured.SetGroupVersionKind(appsv1.SchemeGroupVersion.WithKind("Deployment"))
@@ -67,6 +76,7 @@ var _ = Describe("Custom Manifest consistency check", Ordered, func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(deployInfo).ToNot(BeNil())
 		resources = append(resources, deployInfo)
+		By("Executing the custom readiness check")
 		customReadyCheck := internalv1beta1.NewManifestCustomResourceReadyCheck()
 		Expect(customReadyCheck.Run(ctx, cachedClient, manifest, resources)).To(Succeed())
 	})
