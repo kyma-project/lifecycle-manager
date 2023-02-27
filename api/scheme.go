@@ -17,36 +17,28 @@ func AddToScheme(scheme *runtime.Scheme) error {
 	if err := scheme.SetVersionPriority(v1beta1.GroupVersion, v1alpha1.GroupVersion); err != nil {
 		return err
 	}
-	if err := scheme.AddConversionFunc(
-		&v1alpha1.Manifest{}, &v1beta1.Manifest{},
+	if err := scheme.AddConversionFunc(&v1alpha1.Manifest{}, &v1beta1.Manifest{},
 		func(a, b interface{}, scope conversion.Scope) error {
 			return a.(*v1alpha1.Manifest).ConvertTo(b.(*v1beta1.Manifest))
-		},
-	); err != nil {
+		}); err != nil {
 		return err
 	}
-	if err := scheme.AddConversionFunc(
-		&v1alpha1.Kyma{}, &v1beta1.Kyma{},
+	if err := scheme.AddConversionFunc(&v1alpha1.Kyma{}, &v1beta1.Kyma{},
 		func(a, b interface{}, scope conversion.Scope) error {
 			return a.(*v1alpha1.Kyma).ConvertTo(b.(*v1beta1.Kyma))
-		},
-	); err != nil {
+		}); err != nil {
 		return err
 	}
-	if err := scheme.AddConversionFunc(
-		&v1alpha1.ModuleTemplate{}, &v1beta1.ModuleTemplate{},
+	if err := scheme.AddConversionFunc(&v1alpha1.ModuleTemplate{}, &v1beta1.ModuleTemplate{},
 		func(a, b interface{}, scope conversion.Scope) error {
 			return a.(*v1alpha1.ModuleTemplate).ConvertTo(b.(*v1beta1.ModuleTemplate))
-		},
-	); err != nil {
+		}); err != nil {
 		return err
 	}
-	if err := scheme.AddConversionFunc(
-		&v1alpha1.Watcher{}, &v1beta1.Watcher{},
+	if err := scheme.AddConversionFunc(&v1alpha1.Watcher{}, &v1beta1.Watcher{},
 		func(a, b interface{}, scope conversion.Scope) error {
 			return a.(*v1alpha1.Watcher).ConvertTo(b.(*v1beta1.Watcher))
-		},
-	); err != nil {
+		}); err != nil {
 		return err
 	}
 
