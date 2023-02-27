@@ -23,113 +23,99 @@ import (
 
 var testFiles = filepath.Join("..", "..", "config", "samples", "tests") //nolint:gochecknoglobals
 
-var _ = Describe(
-	"Webhook ValidationCreate Strict", Ordered, func() {
-		data := unstructured.Unstructured{}
-		data.SetGroupVersionKind(
-			schema.GroupVersionKind{
-				Group:   v1beta1.OperatorPrefix,
-				Version: v1beta1.GroupVersion.Version,
-				Kind:    "SampleCRD",
-			},
+var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
+	data := unstructured.Unstructured{}
+	data.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   v1beta1.OperatorPrefix,
+		Version: v1beta1.GroupVersion.Version,
+		Kind:    "SampleCRD",
+	})
+	It("should successfully fetch accept a moduletemplate based on a compliant crd", func() {
+		crd := GetCRD(v1beta1.OperatorPrefix, "samplecrd")
+		Eventually(func() error {
+			return k8sClient.Create(webhookServerContext, crd)
+		}, Timeout, Interval).Should(Succeed())
+
+		template, err := testutils.ModuleTemplateFactory(
+			v1beta1.Module{
+				ControllerName: "manifest",
+				Name:           "example-module-name",
+				Channel:        v1beta1.DefaultChannel,
+			}, data,
 		)
-		It(
-			"should successfully fetch accept a moduletemplate based on a compliant crd", func() {
-				crd := GetCRD(v1beta1.OperatorPrefix, "samplecrd")
-				Eventually(
-					func() error {
-						return k8sClient.Create(webhookServerContext, crd)
-					}, Timeout, Interval,
-				).Should(Succeed())
+		Expect(err).ToNot(HaveOccurred())
+		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
+		Expect(k8sClient.Delete(webhookServerContext, template)).Should(Succeed())
 
-				template, err := testutils.ModuleTemplateFactory(
-					v1beta1.Module{
-						ControllerName: "manifest",
-						Name:           "example-module-name",
-						Channel:        v1beta1.DefaultChannel,
-					}, data,
-				)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
-				Expect(k8sClient.Delete(webhookServerContext, template)).Should(Succeed())
+		Expect(k8sClient.Delete(webhookServerContext, crd)).Should(Succeed())
+	})
 
-				Expect(k8sClient.Delete(webhookServerContext, crd)).Should(Succeed())
-			},
+	It("should accept a moduletemplate based on a non-compliant crd in non-strict mode", func() {
+		crd := GetNonCompliantCRD(v1beta1.OperatorPrefix, "samplecrd")
+
+		Eventually(func() error {
+			return k8sClient.Create(webhookServerContext, crd)
+		}, Timeout, Interval).Should(Succeed())
+		template, err := testutils.ModuleTemplateFactory(
+			v1beta1.Module{
+				ControllerName: "manifest",
+				Name:           "example-module-name",
+				Channel:        v1beta1.DefaultChannel,
+			}, data,
+		)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
+		Expect(k8sClient.Delete(webhookServerContext, template)).Should(Succeed())
+
+		Expect(k8sClient.Delete(webhookServerContext, crd)).Should(Succeed())
+	})
+
+	It("should deny a version downgrade when updating", func() {
+		crd := GetCRD(v1beta1.OperatorPrefix, "samplecrd")
+		Eventually(func() error {
+			return k8sClient.Create(webhookServerContext, crd)
+		}, Timeout, Interval).Should(Succeed())
+
+		template, err := testutils.ModuleTemplateFactory(
+			v1beta1.Module{
+				ControllerName: "manifest",
+				Name:           "example-module-name",
+				Channel:        v1beta1.DefaultChannel,
+			}, data,
 		)
 
-		It(
-			"should accept a moduletemplate based on a non-compliant crd in non-strict mode", func() {
-				crd := GetNonCompliantCRD(v1beta1.OperatorPrefix, "samplecrd")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
 
-				Eventually(
-					func() error {
-						return k8sClient.Create(webhookServerContext, crd)
-					}, Timeout, Interval,
-				).Should(Succeed())
-				template, err := testutils.ModuleTemplateFactory(
-					v1beta1.Module{
-						ControllerName: "manifest",
-						Name:           "example-module-name",
-						Channel:        v1beta1.DefaultChannel,
-					}, data,
-				)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
-				Expect(k8sClient.Delete(webhookServerContext, template)).Should(Succeed())
+		descriptor, err := template.Spec.GetDescriptor()
+		Expect(err).ToNot(HaveOccurred())
+		version, err := semver.NewVersion(descriptor.Version)
+		Expect(err).ToNot(HaveOccurred())
+		descriptor.Version = fmt.Sprintf("v%d.%d.%d", version.Major(), version.Minor(), version.Patch()-1)
+		for i := range descriptor.Resources {
+			descriptor.Resources[i].SetVersion(descriptor.Version)
+		}
+		newDescriptor, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONLCodec)
+		Expect(err).ToNot(HaveOccurred())
+		template.Spec.Descriptor.Raw = newDescriptor
 
-				Expect(k8sClient.Delete(webhookServerContext, crd)).Should(Succeed())
-			},
-		)
+		err = k8sClient.Update(webhookServerContext, template)
 
-		It(
-			"should deny a version downgrade when updating", func() {
-				crd := GetCRD(v1beta1.OperatorPrefix, "samplecrd")
-				Eventually(
-					func() error {
-						return k8sClient.Create(webhookServerContext, crd)
-					}, Timeout, Interval,
-				).Should(Succeed())
+		Expect(err).To(HaveOccurred())
+		var statusErr *k8serrors.StatusError
+		isStatusErr := errors.As(err, &statusErr)
+		Expect(isStatusErr).To(BeTrue())
+		Expect(statusErr.ErrStatus.Status).To(Equal("Failure"))
+		Expect(string(statusErr.ErrStatus.Reason)).To(Equal("Invalid"))
+		Expect(statusErr.ErrStatus.Message).
+			To(ContainSubstring("version of templates can never be decremented "))
 
-				template, err := testutils.ModuleTemplateFactory(
-					v1beta1.Module{
-						ControllerName: "manifest",
-						Name:           "example-module-name",
-						Channel:        v1beta1.DefaultChannel,
-					}, data,
-				)
+		Expect(k8sClient.Delete(webhookServerContext, template)).Should(Succeed())
 
-				Expect(err).ToNot(HaveOccurred())
-				Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
-
-				descriptor, err := template.Spec.GetDescriptor()
-				Expect(err).ToNot(HaveOccurred())
-				version, err := semver.NewVersion(descriptor.Version)
-				Expect(err).ToNot(HaveOccurred())
-				descriptor.Version = fmt.Sprintf("v%d.%d.%d", version.Major(), version.Minor(), version.Patch()-1)
-				for i := range descriptor.Resources {
-					descriptor.Resources[i].SetVersion(descriptor.Version)
-				}
-				newDescriptor, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONLCodec)
-				Expect(err).ToNot(HaveOccurred())
-				template.Spec.Descriptor.Raw = newDescriptor
-
-				err = k8sClient.Update(webhookServerContext, template)
-
-				Expect(err).To(HaveOccurred())
-				var statusErr *k8serrors.StatusError
-				isStatusErr := errors.As(err, &statusErr)
-				Expect(isStatusErr).To(BeTrue())
-				Expect(statusErr.ErrStatus.Status).To(Equal("Failure"))
-				Expect(string(statusErr.ErrStatus.Reason)).To(Equal("Invalid"))
-				Expect(statusErr.ErrStatus.Message).
-					To(ContainSubstring("version of templates can never be decremented "))
-
-				Expect(k8sClient.Delete(webhookServerContext, template)).Should(Succeed())
-
-				Expect(k8sClient.Delete(webhookServerContext, crd)).Should(Succeed())
-			},
-		)
+		Expect(k8sClient.Delete(webhookServerContext, crd)).Should(Succeed())
 	},
+	)
+},
 )
 
 func GetCRD(group, sample string) *v1.CustomResourceDefinition {
