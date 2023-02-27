@@ -19,8 +19,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/uuid"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/labels"
 )
 
 type mockLayer struct {
@@ -125,7 +123,7 @@ func NewTestManifest(prefix string) *v1beta1.Manifest {
 			Name:      fmt.Sprintf("%s-%d", prefix, rand.Intn(999999)),
 			Namespace: metav1.NamespaceDefault,
 			Labels: map[string]string{
-				labels.KymaName: string(uuid.NewUUID()),
+				v1beta1.KymaName: string(uuid.NewUUID()),
 			},
 		},
 	}
