@@ -102,8 +102,14 @@ func (c *clusterAwareModuleTemplateValidator) validate(
 
 	if oldTemplate != nil {
 		// the old descriptor has to be valid since it otherwise would not have been submitted
-		oldDescriptor, _ := oldTemplate.Spec.GetDescriptor()
-		oldVersion, _ := semver.NewVersion(oldDescriptor.Version)
+		oldDescriptor, err := oldTemplate.Spec.GetDescriptor()
+		if err != nil {
+			return err
+		}
+		oldVersion, err := semver.NewVersion(oldDescriptor.Version)
+		if err != nil {
+			return err
+		}
 		if newVersion.LessThan(oldVersion) {
 			return apierrors.NewInvalid(
 				schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
