@@ -1,4 +1,4 @@
-# Test watcher locally in two-cluster-setup using k3d
+# Local test setup in two-cluster-mode using k3d
 
 The following steps provide you with a quick tour of how to set up a fully working e2e setup including the following components:
 - kyma-lifecycle-manager (short `KLM`)
@@ -9,13 +9,18 @@ This setup is deployed with the following security features enabled:
 - Strict mTLS connection between KCP and SKR cluster
 - SAN Pinning (SAN of client TLS certificate needs to match DNS annotation of corresponding Kyma CR)
 
+> **Optional -** 
+> If you want to use remote clusters instead of a local k3d setup or external registries, please refer to the following guides for the cluster and registry setup:
+> - [Provision cluster and OCI registry](./provision-cluster-and-registry.md)
+> - [Create a test environment on Google Container Registry (GCR)](./prepare-gcr-registry.md)
+
 ### KCP cluster setup
 
 1. Create a local control-plane (KCP) cluster:
     ```shell
     k3d cluster create kcp-local --port 9443:443@loadbalancer \
     --registry-create k3d-registry.localhost:0.0.0.0:5111 \
-    --k3s-arg '--no-deploy=traefik@server:0'
+    --k3s-arg '--disable=traefik@server:0'
     ```
 
 2. Open `/etc/hosts` file on your local system:
@@ -85,33 +90,32 @@ k3d cluster create skr-local
     ```
 2. Generate and apply sample `Kyma CR` and its corresponding secret on KCP:
     ```shell
-    cat << EOF | kubectl apply -f -
-    ---
-    apiVersion: v1
-    kind: Secret
-    metadata:
+    cat <<EOF | kubectl apply -f -
+   apiVersion: v1
+   kind: Secret
+   metadata:
       name: kyma-sample
       namespace: kcp-system
       labels:
         "operator.kyma-project.io/kyma-name": "kyma-sample"
         "operator.kyma-project.io/managed-by": "lifecycle-manager"
-    data:
-      config: $(k3d kubeconfig get skr-local | sed "s/0.0.0.0/host.k3d.internal/" | base64 | tr -d '\n')
-    ---
-    apiVersion: operator.kyma-project.io/v1alpha1
-    kind: Kyma
-    metadata:
+   data:
+      config: $(k3d kubeconfig get skr-local | sed 's/0\.0\.0\.0/host.k3d.internal/' | base64 | tr -d '\n')
+   ---
+   apiVersion: operator.kyma-project.io/v1beta1
+   kind: Kyma
+   metadata:
       annotations:
         skr-domain: "example.domain.com"
       name: kyma-sample
       namespace: kcp-system
-    spec:
+   spec:
       channel: regular
       sync:
         enabled: true
       modules:
-      - name: template-operator
-    EOF
+        - name: template-operator
+   EOF
     ```
    <details>
       <summary>Hint: Running KLM on local machine and not in-cluster</summary>
@@ -130,7 +134,7 @@ k3d cluster create skr-local
     data:
       config: $(k3d kubeconfig get skr-local | base64 | tr -d '\n')
     ---
-    apiVersion: operator.kyma-project.io/v1alpha1
+    apiVersion: operator.kyma-project.io/v1beta1
     kind: Kyma
     metadata:
       annotations:
@@ -147,21 +151,26 @@ k3d cluster create skr-local
    ```
    </details>
 
-### Watcher installation verification
+### Watcher and module installation verification
 
-By checking the `Kyma CR` events, verify that the `SKRWebhookIsReady` ready condition is set to `True`
+By checking the `Kyma CR` events, verify that the `SKRWebhookIsReady` and the `TODO` ready conditions is set to `True`. 
 
 ```yaml
     Status:                                              
         Conditions:                                        
-            Message:               skrwebhook is synchronized
-            Observed Generation:   1               
-            Reason:                SKRWebhookIsReady
-            Status:                True
-            Type:                  Ready
+            - Message:               skrwebhook is synchronized
+              Observed Generation:   1               
+              Reason:                SKRWebhookIsReady
+              Status:                True
+              Type:                  Ready
+            - Message:               TODO
+              Observed Generation:   1
+              Reason:                TODO
+              Status:                True
+              Type:                  Ready
 ```
 
-### Watcher event trigger
+### (Optional) Check functionality of Watcher component
 
 1. Switch the context for using SKR cluster
     ```shell
@@ -191,12 +200,6 @@ By checking the `Kyma CR` events, verify that the `SKRWebhookIsReady` ready cond
     {"level":"INFO","date":"2023-01-05T09:21:51.011080512Z","caller":"controllers/kyma_controller.go:87","msg":"reconciling modules","context":{"controller":"kyma","controllerGroup":"operator.kyma-project.io","controllerKind":"Kyma","kyma":{"name":"kyma-sample","namespace":"default"},"namespace":"default","name":"kyma-sample","reconcileID":"f9b42382-dc68-41d2-96de-02b24e3ac2d6"}}
     {"level":"INFO","date":"2023-01-05T09:21:51.043800866Z","caller":"controllers/kyma_controller.go:206","msg":"syncing state","context":{"controller":"kyma","controllerGroup":"operator.kyma-project.io","controllerKind":"Kyma","kyma":{"name":"kyma-sample","namespace":"default"},"namespace":"default","name":"kyma-sample","reconcileID":"f9b42382-dc68-41d2-96de-02b24e3ac2d6","state":"Processing"}}
     ```
-   
-### Full blown setup
-For a full-blown setup please refer to the [comprehensive test setup documentation](creating-test-environment.md) and complete the missing steps, e.g. deploying `module-manager`.
-
-For a full-blown setup please refer to the [comprehensive test setup documentation](creating-test-environment.md) and
-complete the missing steps, e.g. deploying `module-manager`.
 
 ### Cleanup
 

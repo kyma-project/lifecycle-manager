@@ -110,5 +110,5 @@ We chose to replace this with Operator-focused Reconciliation due to various rea
 
 ## Testing and implementation guide
 
-- For a detailed cluster and module setup refer to our [test environment guide](docs/developer/creating-test-environment.md)
+- For a detailed cluster and module setup refer to our [test environment guide](docs/developer/local-test-setup.md)
 - For configuring the lifecycle-manager operator refer to our [developer guide](docs/user/starting-operator-with-webhooks.md)
