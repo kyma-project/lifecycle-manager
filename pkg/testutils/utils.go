@@ -117,12 +117,10 @@ func GetKyma(ctx context.Context, testClient client.Client, name, namespace stri
 	if namespace == "" {
 		namespace = v1.NamespaceDefault
 	}
-	err := testClient.Get(
-		ctx, client.ObjectKey{
-			Namespace: namespace,
-			Name:      name,
-		}, kymaInCluster,
-	)
+	err := testClient.Get(ctx, client.ObjectKey{
+		Namespace: namespace,
+		Name:      name,
+	}, kymaInCluster)
 	if err != nil {
 		return nil, err
 	}
@@ -158,10 +156,8 @@ func ParseRemoteCRDs(testCrdURLs []string) ([]*v12.CustomResourceDefinition, err
 		}
 		if httpResponse.StatusCode != http.StatusOK {
 			//nolint:goerr113
-			return nil, fmt.Errorf(
-				"failed pulling content for URL (%s) with status code: %d",
-				testCrdURL, httpResponse.StatusCode,
-			)
+			return nil, fmt.Errorf("failed pulling content for URL (%s) with status code: %d",
+				testCrdURL, httpResponse.StatusCode)
 		}
 
 		decoder := yaml.NewYAMLOrJSONDecoder(httpResponse.Body, defaultBufferSize)
@@ -263,12 +259,10 @@ func NewSKRCluster(scheme *k8sruntime.Scheme) (client.Client, *envtest.Environme
 	Expect(err).NotTo(HaveOccurred())
 
 	var authUser *envtest.AuthenticatedUser
-	authUser, err = skrEnv.AddUser(
-		envtest.User{
-			Name:   "skr-admin-account",
-			Groups: []string{"system:masters"},
-		}, cfg,
-	)
+	authUser, err = skrEnv.AddUser(envtest.User{
+		Name:   "skr-admin-account",
+		Groups: []string{"system:masters"},
+	}, cfg)
 	Expect(err).NotTo(HaveOccurred())
 
 	remote.LocalClient = func() *rest.Config {

@@ -28,10 +28,8 @@ func GenerateModulesFromTemplates(
 	kyma *v1beta1.Kyma, templates channel.ModuleTemplatesByModuleName, verification signature.Verification,
 ) (common.Modules, error) {
 	// these are the actual modules
-	modules, err := templatesToModules(
-		kyma, templates,
-		&ModuleConversionSettings{Verification: verification},
-	)
+	modules, err := templatesToModules(kyma, templates,
+		&ModuleConversionSettings{Verification: verification})
 	if err != nil {
 		return nil, fmt.Errorf("cannot convert templates: %w", err)
 	}
@@ -51,12 +49,14 @@ func templatesToModules(
 	for _, module := range kyma.Spec.Modules {
 		template := templates[module.Name]
 		if template == nil {
-			return nil, fmt.Errorf(
-				"could not resolve template for module %s in %s: %w",
+			return nil, fmt.Errorf("could not resolve template for module %s in %s: %w",
 				module.Name, client.ObjectKeyFromObject(kyma), ErrTemplateNotFound,
 			)
 		}
-		descriptor, _ := template.Spec.GetDescriptor()
+		descriptor, err := template.Spec.GetDescriptor()
+		if err != nil {
+			return nil, err
+		}
 		fqdn := descriptor.GetName()
 		version := descriptor.GetVersion()
 		name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
@@ -73,24 +73,22 @@ func templatesToModules(
 				template.ModuleTemplate.Spec.Data.SetNamespace(kyma.GetNamespace())
 			}
 		}
-		obj, err := NewManifestFromTemplate(module, template.ModuleTemplate, settings.Verification)
-		if err != nil {
+		var obj client.Object
+		if obj, err = NewManifestFromTemplate(module, template.ModuleTemplate, settings.Verification); err != nil {
 			return nil, err
 		}
 		// we name the manifest after the module name
 		obj.SetName(name)
 		// to have correct owner references, the manifest must always have the same namespace as kyma
 		obj.SetNamespace(kyma.GetNamespace())
-		modules = append(
-			modules, &common.Module{
-				ModuleName:       module.Name,
-				FQDN:             fqdn,
-				Version:          version,
-				Template:         template.ModuleTemplate,
-				TemplateOutdated: template.Outdated,
-				Object:           obj,
-			},
-		)
+		modules = append(modules, &common.Module{
+			ModuleName:       module.Name,
+			FQDN:             fqdn,
+			Version:          version,
+			Template:         template.ModuleTemplate,
+			TemplateOutdated: template.Outdated,
+			Object:           obj,
+		})
 	}
 
 	return modules, nil

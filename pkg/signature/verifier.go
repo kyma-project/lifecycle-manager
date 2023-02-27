@@ -28,10 +28,6 @@ type MultiVerifier struct {
 	registry signing.Registry
 }
 
-type GenericVerifier struct {
-	registry signing.Registry
-}
-
 type VerificationSettings struct {
 	client.Client
 	PublicKeyFilePath   string
@@ -105,20 +101,14 @@ func CreateRSAVerifierFromSecrets(
 ) (*MultiVerifier, error) {
 	secretList := &v1.SecretList{}
 
-	selector, err := k8slabels.Parse(
-		fmt.Sprintf(
-			"%s in (%s)", v1beta1.Signature, strings.Join(validSignatureNames, ","),
-		),
-	)
+	selector, err := k8slabels.Parse(fmt.Sprintf("%s in (%s)", v1beta1.Signature, strings.Join(validSignatureNames, ",")))
 	if err != nil {
 		return nil, err
 	}
 
-	if err := k8sClient.List(
-		ctx, secretList, &client.ListOptions{
-			LabelSelector: selector, Namespace: namespace,
-		},
-	); err != nil {
+	if err := k8sClient.List(ctx, secretList, &client.ListOptions{
+		LabelSelector: selector, Namespace: namespace,
+	}); err != nil {
 		return nil, err
 	} else if len(secretList.Items) < 1 {
 		gr := v1.SchemeGroupVersion.WithResource(fmt.Sprintf("secrets with label %s", v1beta1.KymaName)).GroupResource()
