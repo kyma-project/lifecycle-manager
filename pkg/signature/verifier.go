@@ -9,7 +9,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
-	metav1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
+	ocmv1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
 	"github.com/open-component-model/ocm/pkg/signing"
 	"github.com/open-component-model/ocm/pkg/signing/handlers/rsa"
 	v1 "k8s.io/api/core/v1"
@@ -21,7 +21,7 @@ import (
 var ErrNoSignatureFound = errors.New("no signature was found")
 
 type Verifier interface {
-	Verify(componentDescriptor *compdesc.ComponentDescriptor, signature metav1.Signature) error
+	Verify(componentDescriptor *compdesc.ComponentDescriptor, signature ocmv1.Signature) error
 }
 
 type MultiVerifier struct {
@@ -90,7 +90,7 @@ func CreateMultiRSAVerifier(keys signing.KeyRegistry) (*MultiVerifier, error) {
 	return &MultiVerifier{registry: signing.NewRegistry(handlers, keys)}, nil
 }
 
-func (v MultiVerifier) Verify(descriptor *compdesc.ComponentDescriptor, signature metav1.Signature) error {
+func (v MultiVerifier) Verify(descriptor *compdesc.ComponentDescriptor, signature ocmv1.Signature) error {
 	return compdesc.Verify(descriptor, v.registry, signature.Name)
 }
 

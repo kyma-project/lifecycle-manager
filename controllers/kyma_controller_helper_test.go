@@ -9,7 +9,7 @@ import (
 	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
-	v1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
+	ocmv1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -265,7 +265,7 @@ func ModuleTemplatesLabelsCountMatch(
 func ModifyModuleTemplateSpecThroughLabels(
 	clnt client.Client,
 	kyma *v1beta1.Kyma,
-	labels []v1.Label,
+	labels []ocmv1.Label,
 	remote bool,
 ) func() error {
 	return func() error {
