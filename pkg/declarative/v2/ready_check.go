@@ -18,7 +18,7 @@ import (
 var (
 	ErrResourcesNotReady           = errors.New("resources are not ready")
 	ErrCustomResourceStateNotFound = errors.New("custom resource state not found")
-	ErrManifestDeployNotReady = errors.New("manifest deployment is not ready")
+	ErrManifestDeployNotReady      = errors.New("manifest deployment is not ready")
 )
 
 type ReadyCheck interface {

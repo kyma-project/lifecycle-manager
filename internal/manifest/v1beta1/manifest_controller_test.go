@@ -336,8 +336,6 @@ func expectManifestStateIn(state declarative.State) func(manifestName string) er
 	}
 }
 
-
-
 func getManifestStatus(manifestName string) (declarative.Status, error) {
 	manifest := &v1beta1.Manifest{}
 	err := k8sClient.Get(
