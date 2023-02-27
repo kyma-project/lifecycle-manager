@@ -5,7 +5,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
-	"github.com/kyma-project/lifecycle-manager/pkg/labels"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
@@ -45,9 +44,9 @@ var _ = Describe("Custom Manifest consistency check", Ordered, func() {
 		Eventually(expectManifestStateIn(declarative.StateReady), standardTimeout, standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 		Eventually(expectHelmClientCacheExist(true), standardTimeout, standardInterval).
-			WithArguments(manifest.GetLabels()[labels.KymaName]).Should(BeTrue())
+			WithArguments(manifest.GetLabels()[v1beta1.KymaName]).Should(BeTrue())
 		cachedClient := reconciler.ClientCache.GetClientFromCache(client.ObjectKey{
-			Name:      manifest.GetLabels()[labels.KymaName],
+			Name:      manifest.GetLabels()[v1beta1.KymaName],
 			Namespace: metav1.NamespaceDefault,
 		})
 		resources := make([]*resource.Info, 0)
