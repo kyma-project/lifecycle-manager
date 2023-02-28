@@ -90,7 +90,7 @@ func CheckForOutdatedTemplate(
 	if moduleTemplate.Spec.Channel != moduleStatus.Channel {
 		checkLog.Info("outdated ModuleTemplate: channel skew")
 
-		descriptor, err := moduleTemplate.Spec.GetUnsafeDescriptor()
+		descriptor, err := moduleTemplate.Spec.GetDescriptor()
 		if err != nil {
 			checkLog.Error(err, "could not handle channel skew as descriptor from template cannot be fetched")
 			return

@@ -1,31 +1,56 @@
 package ocmextensions
 
-import ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
+import (
+	"fmt"
+
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/cpi"
+	"github.com/open-component-model/ocm/pkg/runtime"
+)
 
 // HelmChartRepositoryType is the access type of a oci blob in the current component descriptor manifest.
 const HelmChartRepositoryType = "helmChartRepository"
 
-var _ ocm.TypedObjectAccessor = &HelmChartRepositoryAccess{}
+//nolint:gochecknoinits
+func init() {
+	cpi.RegisterAccessType(
+		cpi.NewAccessSpecType(
+			HelmChartRepositoryType, &HelmChartRepositoryAccess{},
+		),
+	)
+}
 
-// NewLocalOCIBlobAccess creates a new LocalOCIBlob accessor.
-func NewLocalOCIBlobAccess(repoURL, name, version string) *HelmChartRepositoryAccess {
+var _ cpi.AccessSpec = (*HelmChartRepositoryAccess)(nil)
+
+// New creates a new LocalOCIBlob accessor.
+// Deprecated: Use LocalBlob.
+func New(repoURL, name, version string) *HelmChartRepositoryAccess {
 	return &HelmChartRepositoryAccess{
-		ObjectType: ocm.ObjectType{
-			Type: HelmChartRepositoryType,
-		},
-		HelmChartName:    name,
-		HelmChartVersion: version,
-		HelmChartRepoURL: repoURL,
+		ObjectVersionedType: runtime.NewVersionedObjectType(HelmChartRepositoryType),
+		HelmChartRepoURL:    repoURL,
+		HelmChartName:       name,
+		HelmChartVersion:    version,
 	}
 }
 
 // HelmChartRepositoryAccess describes the access for a blob that is stored in the component descriptors oci manifest.
 type HelmChartRepositoryAccess struct {
-	ocm.ObjectType `json:",inline"`
+	runtime.ObjectVersionedType `json:",inline"`
 	// Digest is the digest of the targeted content.
 	HelmChartRepoURL string `json:"helmChartRepoUrl"`
 	HelmChartName    string `json:"helmChartName"`
 	HelmChartVersion string `json:"helmChartVersion"`
+}
+
+func (a *HelmChartRepositoryAccess) Describe(cpi.Context) string {
+	return fmt.Sprintf("Helm Chart %s, Verstion %s, Repo %s", a.HelmChartName, a.HelmChartVersion, a.HelmChartRepoURL)
+}
+
+func (a *HelmChartRepositoryAccess) IsLocal(cpi.Context) bool {
+	return false
+}
+
+func (a *HelmChartRepositoryAccess) AccessMethod(c cpi.ComponentVersionAccess) (cpi.AccessMethod, error) {
+	return c.AccessMethod(a)
 }
 
 func (*HelmChartRepositoryAccess) GetType() string {

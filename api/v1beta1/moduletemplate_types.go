@@ -19,13 +19,11 @@ package v1beta1
 import (
 	"time"
 
-	"github.com/Masterminds/semver/v3"
-	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
-	"github.com/gardener/component-spec/bindings-go/codec"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1/codec/unsafe"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // ModuleTemplate is a representation of a Template used for creating Module Instances within the Module Lifecycle.
@@ -41,6 +39,31 @@ type ModuleTemplate struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec ModuleTemplateSpec `json:"spec,omitempty"`
+}
+
+// +k8s:deepcopy-gen=false
+type Descriptor struct {
+	*compdesc.ComponentDescriptor
+}
+
+func (d *Descriptor) SetGroupVersionKind(kind schema.GroupVersionKind) {
+	d.Version = kind.Version
+}
+
+func (d *Descriptor) GroupVersionKind() schema.GroupVersionKind {
+	return schema.GroupVersionKind{
+		Group:   "ocm.kyma-project.io",
+		Version: d.Metadata.ConfiguredVersion,
+		Kind:    "Descriptor",
+	}
+}
+
+func (d *Descriptor) GetObjectKind() schema.ObjectKind {
+	return d
+}
+
+func (d *Descriptor) DeepCopyObject() runtime.Object {
+	return &Descriptor{ComponentDescriptor: d.Copy()}
 }
 
 // ModuleTemplateSpec defines the desired state of ModuleTemplate.
@@ -62,10 +85,10 @@ type ModuleTemplateSpec struct {
 	//+kubebuilder:validation:XEmbeddedResource
 	Data unstructured.Unstructured `json:"data,omitempty"`
 
-	// OCMDescriptor is the Raw Open Component Model Descriptor of a Module, containing all relevant information
+	// The Descriptor is the Open Component Model Descriptor of a Module, containing all relevant information
 	// to correctly initialize a module (e.g. Charts, Manifests, References to Binaries and/or configuration)
 	// Name more information on Component Descriptors, see
-	// https://github.com/gardener/component-spec/
+	// https://github.com/open-component-model/ocm
 	//
 	// It is translated inside the Lifecycle of the Cluster and will be used by downstream controllers
 	// to bootstrap and manage the module. This part is also propagated for every change of the template.
@@ -73,77 +96,25 @@ type ModuleTemplateSpec struct {
 	// (e.g. by updating the controller binary linked in a chart referenced in the descriptor)
 	//
 	//+kubebuilder:pruning:PreserveUnknownFields
-	//+structType=atomic
-	OCMDescriptor runtime.RawExtension `json:"descriptor"`
+	Descriptor runtime.RawExtension `json:"descriptor"`
 
 	// Target describes where the Module should later on be installed if parsed correctly. It is used as installation
 	// hint by downstream controllers to determine which client implementation to use for working with the Module
 	Target Target `json:"target"`
-
-	// descriptor is the internal reference holder of the OCMDescriptor once parsed.
-	// it is purposefully not exposed and also excluded from parsers and only used
-	// by GetUnsafeDescriptor to hold a singleton reference to avoid multiple parse efforts
-	// in the reconciliation loop.
-	descriptor *ocm.ComponentDescriptor `json:"-"`
 }
 
-func (in *ModuleTemplateSpec) GetUnsafeDescriptor() (*ocm.ComponentDescriptor, error) {
-	if in.descriptor == nil && in.OCMDescriptor.Raw != nil {
-		var descriptor ocm.ComponentDescriptor
-		if err := unsafe.DecodeV2(in.OCMDescriptor.Raw, &descriptor); err != nil {
-			return nil, err
-		}
-		in.descriptor = &descriptor
+func (in *ModuleTemplateSpec) GetDescriptor(opts ...compdesc.DecodeOption) (*Descriptor, error) {
+	if in.Descriptor.Object != nil {
+		return in.Descriptor.Object.(*Descriptor), nil
 	}
-	return in.descriptor, nil
-}
-
-func (in *ModuleTemplateSpec) GetDescriptor() (*ocm.ComponentDescriptor, error) {
-	if in.descriptor == nil && in.OCMDescriptor.Raw != nil {
-		var descriptor ocm.ComponentDescriptor
-		if err := codec.Decode(in.OCMDescriptor.Raw, &descriptor); err != nil {
-			return nil, err
-		}
-		in.descriptor = &descriptor
-	}
-	return in.descriptor, nil
-}
-
-func (in *ModuleTemplateSpec) ModifyDescriptor(modify func(descriptor *ocm.ComponentDescriptor) error) error {
-	descriptor, err := in.GetUnsafeDescriptor()
+	desc, err := compdesc.Decode(
+		in.Descriptor.Raw, append([]compdesc.DecodeOption{compdesc.DisableValidation(true)}, opts...)...,
+	)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	if err := modify(descriptor); err != nil {
-		return err
-	}
-
-	encodedDescriptor, err := unsafe.EncodeV2(descriptor)
-	if err != nil {
-		return err
-	}
-
-	in.OCMDescriptor = runtime.RawExtension{Raw: encodedDescriptor}
-	in.descriptor = nil
-	return nil
-}
-
-func ModifyDescriptorVersion(
-	modify func(version *semver.Version) string,
-) func(descriptor *ocm.ComponentDescriptor) error {
-	return func(descriptor *ocm.ComponentDescriptor) error {
-		semVersion, err := semver.NewVersion(descriptor.Version)
-		if err != nil {
-			return err
-		}
-		newVersion := modify(semVersion)
-		descriptor.Version = newVersion
-		for i := range descriptor.Resources {
-			descriptor.Resources[i].Version = newVersion
-		}
-		return nil
-	}
+	in.Descriptor.Object = &Descriptor{ComponentDescriptor: desc}
+	return in.Descriptor.Object.(*Descriptor), err
 }
 
 //+kubebuilder:object:root=true
@@ -166,7 +137,7 @@ const (
 
 //nolint:gochecknoinits
 func init() {
-	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{})
+	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{}, &Descriptor{})
 }
 
 func (in *ModuleTemplate) SetLastSync() *ModuleTemplate {

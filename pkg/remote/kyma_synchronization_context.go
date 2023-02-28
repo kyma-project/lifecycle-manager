@@ -277,6 +277,7 @@ func (c *KymaSynchronizationContext) InsertWatcherLabelsAnnotations(controlPlane
 	if remoteKyma.Labels == nil {
 		remoteKyma.Labels = make(map[string]string)
 	}
+
 	remoteKyma.Labels[v1beta1.WatchedByLabel] = v1beta1.OperatorName
 
 	if remoteKyma.Annotations == nil {

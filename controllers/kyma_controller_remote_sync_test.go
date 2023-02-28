@@ -4,9 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
+	ocmv1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -112,7 +111,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("updating a module template in the remote cluster to simulate unwanted modification")
 		Eventually(ModifyModuleTemplateSpecThroughLabels(runtimeClient, kyma,
-			ocm.Labels{ocm.Label{Name: "test", Value: json.RawMessage(`{"foo":"bar"}`)}},
+			ocmv1.Labels{ocmv1.Label{Name: "test", Value: json.RawMessage(`{"foo":"bar"}`)}},
 			true), Timeout, Interval).Should(Succeed())
 
 		By("verifying the discovered override and checking the reset label")

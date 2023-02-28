@@ -51,6 +51,4 @@ var (
 	// GroupVersionResource is group version resource.
 	GroupVersionResource = GroupVersion.WithResource(KymaKind.Plural()) //nolint:gochecknoglobals
 
-	// GroupVersionKind is group version kind.
-	GroupVersionKind = GroupVersion.WithKind(string(KymaKind)) //nolint:gochecknoglobals
 )
