@@ -1,4 +1,4 @@
-# Test watcher locally in two-cluster-setup using k3d
+# Local test setup in two-cluster-mode using k3d
 
 The following steps provide you with a quick tour of how to set up a fully working e2e setup including the following components:
 - kyma-lifecycle-manager (short `KLM`)
@@ -9,23 +9,28 @@ This setup is deployed with the following security features enabled:
 - Strict mTLS connection between KCP and SKR cluster
 - SAN Pinning (SAN of client TLS certificate needs to match DNS annotation of corresponding Kyma CR)
 
+> **Optional -** 
+> If you want to use remote clusters instead of a local k3d setup or external registries, please refer to the following guides for the cluster and registry setup:
+> - [Provision cluster and OCI registry](./provision-cluster-and-registry.md)
+> - [Create a test environment on Google Container Registry (GCR)](./prepare-gcr-registry.md)
+
 ### KCP cluster setup
 
 1. Create a local control-plane (KCP) cluster:
     ```shell
     k3d cluster create kcp-local --port 9443:443@loadbalancer \
     --registry-create k3d-registry.localhost:0.0.0.0:5111 \
-    --k3s-arg '--no-deploy=traefik@server:0'
+    --k3s-arg '--disable=traefik@server:0'
     ```
 
 2. Open `/etc/hosts` file on your local system:
-```shell
-sudo nano /etc/hosts
-```
+   ```shell
+   sudo nano /etc/hosts
+   ```
    Add entry for your local k3d registry created in the previous steps
-```
-127.0.0.1 k3d-registry.localhost
-```
+   ```
+   127.0.0.1 k3d-registry.localhost
+   ```
 
 3. Install other pre-requisites required by the lifecycle-manager
    1. `Istio` CRDs using `istioctl`
@@ -33,11 +38,7 @@ sudo nano /etc/hosts
       brew install istioctl && \
       istioctl install --set profile=demo -y
       ```
-   2. `module-manager` CRDs
-      ```shell
-       kubectl apply -f https://raw.githubusercontent.com/kyma-project/module-manager/main/config/crd/bases/operator.kyma-project.io_manifests.yaml
-      ```
-   3. `cert-manager` by Jetstack
+   2. `cert-manager` by Jetstack
        ```shell
        kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
        ```
@@ -46,6 +47,10 @@ sudo nano /etc/hosts
     ```shell
     make local-deploy-with-watcher IMG=eu.gcr.io/kyma-project/lifecycle-manager:latest
     ```
+   > **Hint:** If you get similar errors like the following, please wait a couple of seconds and rerun the command.
+   > ```shell
+   > Error from server (InternalError): error when creating "STDIN": Internal error occurred: failed calling webhook "webhook.cert-manager.io": failed to call webhook: Post "https://cert-manager-webhook.cert-manager.svc:443/mutate?timeout=10s": no endpoints available for service "cert-manager-webhook"
+   > ```
    <details>
       <summary>deploying custom image</summary>
       If you want to test a custom image of the KLM. Adapt the `IMG` variable in the Makefile and run the following:
@@ -67,16 +72,34 @@ sudo nano /etc/hosts
    kyma alpha create module -p ../template-operator --version 1.2.3 -w \
    --registry k3d-registry.localhost:5111 --insecure
    ```
-6. The previous step will create a `template.yaml` file in the root directory, which is the `module-template`, apply it
-   to the cluster
+6. Verify images has been pushed to local registry:
+   ```shell
+   curl http://k3d-registry.localhost:5111/v2/_catalog\?n\=100
+   ```
+   The output should look like the following:
+   ```shell
+   {"repositories":["component-descriptors/kyma-project.io/template-operator"]}
+   ```
+7. Open the generated `template.yaml` file and change the following line:
+   ```yaml
+    <...>
+      - baseUrl: k3d-registry.localhost:5111
+    <...>
+   ```
+   To the following:
+    ```yaml
+    <...>
+      - baseUrl: k3d-registry.localhost:5000
+    <...>
+   ```
+   This needs to be done since the operators are running inside of two local k3d cluster, and the internal port for the k3d registry is set by default to `5000`.
+8. Apply the template:
    ```shell
    kubectl apply -f template.yaml
    ```
 
-
-
 ### SKR cluster setup
-Create a local kyma-runtime (SKR) cluster.
+Create a local kyma-runtime (SKR) cluster:
 ```shell
 k3d cluster create skr-local
 ```
@@ -89,33 +112,33 @@ k3d cluster create skr-local
     ```
 2. Generate and apply sample `Kyma CR` and its corresponding secret on KCP:
     ```shell
-    cat << EOF | kubectl apply -f -
-    ---
-    apiVersion: v1
-    kind: Secret
-    metadata:
+    cat <<EOF | kubectl apply -f -
+   apiVersion: v1
+   kind: Secret
+   metadata:
       name: kyma-sample
       namespace: kcp-system
       labels:
         "operator.kyma-project.io/kyma-name": "kyma-sample"
         "operator.kyma-project.io/managed-by": "lifecycle-manager"
-    data:
-      config: $(k3d kubeconfig get skr-local | sed "s/0.0.0.0/host.k3d.internal/" | base64 | tr -d '\n')
-    ---
-    apiVersion: operator.kyma-project.io/v1alpha1
-    kind: Kyma
-    metadata:
+   data:
+      config: $(k3d kubeconfig get skr-local | sed 's/0\.0\.0\.0/host.k3d.internal/' | base64 | tr -d '\n')
+   ---
+   apiVersion: operator.kyma-project.io/v1beta1
+   kind: Kyma
+   metadata:
       annotations:
         skr-domain: "example.domain.com"
       name: kyma-sample
       namespace: kcp-system
-    spec:
+   spec:
       channel: regular
       sync:
         enabled: true
+        namespace: kcp-system
       modules:
-      - name: template-operator
-    EOF
+        - name: template-operator
+   EOF
     ```
    <details>
       <summary>Hint: Running KLM on local machine and not in-cluster</summary>
@@ -134,7 +157,7 @@ k3d cluster create skr-local
     data:
       config: $(k3d kubeconfig get skr-local | base64 | tr -d '\n')
     ---
-    apiVersion: operator.kyma-project.io/v1alpha1
+    apiVersion: operator.kyma-project.io/v1beta1
     kind: Kyma
     metadata:
       annotations:
@@ -151,21 +174,48 @@ k3d cluster create skr-local
    ```
    </details>
 
-### Watcher installation verification
+### Watcher and module installation verification
 
-By checking the `Kyma CR` events, verify that the `SKRWebhookIsReady` ready condition is set to `True`
+By checking the `Kyma CR` events, verify that the `SKRWebhookIsReady` condition is set to `True`.
+And the state of the `template-operator` is `Ready`, as well as the overall `state`.
 
 ```yaml
-    Status:                                              
-        Conditions:                                        
-            Message:               skrwebhook is synchronized
-            Observed Generation:   1               
-            Reason:                SKRWebhookIsReady
-            Status:                True
-            Type:                  Ready
+status:
+   activeChannel: regular
+   conditions:
+      - lastTransitionTime: "2023-02-28T06:42:00Z"
+        message: skrwebhook is synchronized
+        observedGeneration: 1
+        reason: SKRWebhookIsReady
+        status: "True"
+        type: Ready
+   lastOperation:
+      lastUpdateTime: "2023-02-28T06:42:00Z"
+      operation: kyma is ready
+   modules:
+      - channel: regular
+        fqdn: kyma-project.io/template-operator
+        manifest:
+           apiVersion: operator.kyma-project.io/v1beta1
+           kind: Manifest
+           metadata:
+              generation: 1
+              name: kyma-sample-template-operator-3685142144
+              namespace: kcp-system
+        name: template-operator
+        state: Ready
+        template:
+           apiVersion: operator.kyma-project.io/v1beta1
+           kind: ModuleTemplate
+           metadata:
+              generation: 1
+              name: moduletemplate-template-operator
+              namespace: kcp-system
+        version: 1.2.3
+   state: Ready
 ```
 
-### Watcher event trigger
+### (Optional) Check functionality of Watcher component
 
 1. Switch the context for using SKR cluster
     ```shell
@@ -195,12 +245,6 @@ By checking the `Kyma CR` events, verify that the `SKRWebhookIsReady` ready cond
     {"level":"INFO","date":"2023-01-05T09:21:51.011080512Z","caller":"controllers/kyma_controller.go:87","msg":"reconciling modules","context":{"controller":"kyma","controllerGroup":"operator.kyma-project.io","controllerKind":"Kyma","kyma":{"name":"kyma-sample","namespace":"default"},"namespace":"default","name":"kyma-sample","reconcileID":"f9b42382-dc68-41d2-96de-02b24e3ac2d6"}}
     {"level":"INFO","date":"2023-01-05T09:21:51.043800866Z","caller":"controllers/kyma_controller.go:206","msg":"syncing state","context":{"controller":"kyma","controllerGroup":"operator.kyma-project.io","controllerKind":"Kyma","kyma":{"name":"kyma-sample","namespace":"default"},"namespace":"default","name":"kyma-sample","reconcileID":"f9b42382-dc68-41d2-96de-02b24e3ac2d6","state":"Processing"}}
     ```
-   
-### Full blown setup
-For a full-blown setup please refer to the [comprehensive test setup documentation](creating-test-environment.md) and complete the missing steps, e.g. deploying `module-manager`.
-
-For a full-blown setup please refer to the [comprehensive test setup documentation](creating-test-environment.md) and
-complete the missing steps, e.g. deploying `module-manager`.
 
 ### Cleanup
 
