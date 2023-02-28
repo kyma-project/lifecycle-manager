@@ -94,6 +94,7 @@ spec:
                   - name
                   type: object
                 type: array
+                x-kubernetes-list-type: atomic
               sync:
                 description: Active Synchronization Settings
                 properties:
@@ -443,6 +444,7 @@ spec:
                   - name
                   type: object
                 type: array
+                x-kubernetes-list-type: atomic
               sync:
                 description: Active Synchronization Settings
                 properties:

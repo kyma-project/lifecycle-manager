@@ -129,6 +129,7 @@ type KymaSpec struct {
 	Channel string `json:"channel"`
 
 	// Modules specifies the list of modules to be installed
+	//+listType:=atomic
 	Modules []Module `json:"modules,omitempty"`
 
 	// Active Synchronization Settings
