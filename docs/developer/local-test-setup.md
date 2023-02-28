@@ -80,16 +80,26 @@ This setup is deployed with the following security features enabled:
    ```shell
    {"repositories":["component-descriptors/kyma-project.io/template-operator"]}
    ```
-7. The previous step will create a `template.yaml` file in the root directory, which is the `module-template`, apply it
-   to the cluster
+7. Open the generated `template.yaml` file and change the following line:
+   ```yaml
+    <...>
+      - baseUrl: k3d-registry.localhost:5111
+    <...>
+   ```
+   To the following:
+    ```yaml
+    <...>
+      - baseUrl: k3d-registry.localhost:5000
+    <...>
+   ```
+   This needs to be done since the operators are running inside of two local k3d cluster, and the internal port for the k3d registry is set by default to `5000`.
+8. Apply the template:
    ```shell
    kubectl apply -f template.yaml
    ```
 
-
-
 ### SKR cluster setup
-Create a local kyma-runtime (SKR) cluster.
+Create a local kyma-runtime (SKR) cluster:
 ```shell
 k3d cluster create skr-local
 ```
@@ -166,21 +176,43 @@ k3d cluster create skr-local
 
 ### Watcher and module installation verification
 
-By checking the `Kyma CR` events, verify that the `SKRWebhookIsReady` and the `TODO` ready conditions is set to `True`. 
+By checking the `Kyma CR` events, verify that the `SKRWebhookIsReady` condition is set to `True`.
+And the state of the `template-operator` is `Ready`, as well as the overall `state`.
 
 ```yaml
-    Status:                                              
-        Conditions:                                        
-            - Message:               skrwebhook is synchronized
-              Observed Generation:   1               
-              Reason:                SKRWebhookIsReady
-              Status:                True
-              Type:                  Ready
-            - Message:               TODO
-              Observed Generation:   1
-              Reason:                TODO
-              Status:                True
-              Type:                  Ready
+status:
+   activeChannel: regular
+   conditions:
+      - lastTransitionTime: "2023-02-28T06:42:00Z"
+        message: skrwebhook is synchronized
+        observedGeneration: 1
+        reason: SKRWebhookIsReady
+        status: "True"
+        type: Ready
+   lastOperation:
+      lastUpdateTime: "2023-02-28T06:42:00Z"
+      operation: kyma is ready
+   modules:
+      - channel: regular
+        fqdn: kyma-project.io/template-operator
+        manifest:
+           apiVersion: operator.kyma-project.io/v1beta1
+           kind: Manifest
+           metadata:
+              generation: 1
+              name: kyma-sample-template-operator-3685142144
+              namespace: kcp-system
+        name: template-operator
+        state: Ready
+        template:
+           apiVersion: operator.kyma-project.io/v1beta1
+           kind: ModuleTemplate
+           metadata:
+              generation: 1
+              name: moduletemplate-template-operator
+              namespace: kcp-system
+        version: 1.2.3
+   state: Ready
 ```
 
 ### (Optional) Check functionality of Watcher component
