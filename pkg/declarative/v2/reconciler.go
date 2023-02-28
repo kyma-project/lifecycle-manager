@@ -264,7 +264,7 @@ func (r *Reconciler) checkTargetReadiness(
 	err := resourceReadyCheck.Run(ctx, clnt, obj, target)
 
 	if errors.Is(err, ErrResourcesNotReady) || errors.Is(err, ErrCustomResourceStateNotFound) ||
-		errors.Is(err, ErrManifestDeployNotReady) {
+		errors.Is(err, ErrDeploymentNotReady) {
 		waitingMsg := fmt.Sprintf("waiting for resources to become ready: %s", err.Error())
 		r.Event(obj, "Normal", "ResourceReadyCheck", waitingMsg)
 		obj.SetStatus(status.WithState(StateProcessing).WithOperation(waitingMsg))

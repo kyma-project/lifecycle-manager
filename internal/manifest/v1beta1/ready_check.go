@@ -80,18 +80,12 @@ func checkDeploymentState(clt declarative.Client, resources []*resource.Info) er
 	if !found {
 		return ErrDeploymentResNotFound
 	}
-	if deploy.Spec.Replicas != nil && *deploy.Spec.Replicas != deploy.Status.ReadyReplicas {
-		return fmt.Errorf("deployment %s ready replicas are %d but expected %d: %w",
-			client.ObjectKeyFromObject(deploy).String(),
-			deploy.Status.ReadyReplicas,
-			*deploy.Spec.Replicas,
-			declarative.ErrManifestDeployNotReady)
-	}
 	availableCond := deploymentutil.GetDeploymentCondition(deploy.Status, appsv1.DeploymentAvailable)
-	if availableCond != nil && availableCond.Status == corev1.ConditionFalse {
-		return fmt.Errorf("deployment %s available condition is false: %w",
-			client.ObjectKeyFromObject(deploy).String(),
-			declarative.ErrManifestDeployNotReady)
+	if availableCond != nil && availableCond.Status == corev1.ConditionTrue{
+		return nil
 	}
-	return nil
+	if deploy.Spec.Replicas != nil && *deploy.Spec.Replicas == deploy.Status.ReadyReplicas {
+		return nil
+	}
+	return fmt.Errorf("%w: (ns=%s, name=%s)", declarative.ErrDeploymentNotReady, deploy.Namespace, deploy.Name)
 }
