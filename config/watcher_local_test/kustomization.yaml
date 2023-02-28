@@ -15,11 +15,6 @@ components:
 generatorOptions:
   disableNameSuffixHash: true
 
-# TODO REMOVE this nameprefix and adapt whole watcher setup -> everything should have `lifecycle-manager-` as prefix
-# heist eigentlich nameprefix entfernen, für local setup alles per handpatchen oder ein neues kommentiertes value in der default einfügen und das nutzen
-# glaube die zweite lösung ist schlauer udn einfacher zum maintainen, er fordrert aber change im code wenn man es testen will aber naja mach ich erstmal so lul
-# Adds namespace to all resources.
-
 # Patches enable the local testing mode for the KLM
 # and sets the namespace for the watcher resources to `kcp-system`.
 # When deployed on KCP it will be set by the default kustomize.
