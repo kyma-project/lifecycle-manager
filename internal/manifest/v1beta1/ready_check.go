@@ -33,12 +33,8 @@ var (
 func (c *ManifestCustomResourceReadyCheck) Run(
 	ctx context.Context, clnt declarative.Client, obj declarative.Object, resources []*resource.Info,
 ) error {
-	ready, err := checkDeploymentState(clnt, resources)
-	if err != nil {
+	if err := checkDeploymentState(clnt, resources); err != nil {
 		return err
-	}
-	if !ready {
-		return declarative.ErrManifestDeployNotReady
 	}
 	manifest := obj.(*manifestv1beta1.Manifest)
 	if manifest.Spec.Resource == nil {
@@ -71,7 +67,7 @@ func (c *ManifestCustomResourceReadyCheck) Run(
 
 var ErrDeploymentResNotFound = errors.New("deployment resource is not found")
 
-func checkDeploymentState(clt declarative.Client, resources []*resource.Info) (bool, error) {
+func checkDeploymentState(clt declarative.Client, resources []*resource.Info) error {
 	deploy := &appsv1.Deployment{}
 	found := false
 	for _, res := range resources {
@@ -82,14 +78,20 @@ func checkDeploymentState(clt declarative.Client, resources []*resource.Info) (b
 		}
 	}
 	if !found {
-		return false, ErrDeploymentResNotFound
+		return ErrDeploymentResNotFound
 	}
 	if deploy.Spec.Replicas != nil && *deploy.Spec.Replicas != deploy.Status.ReadyReplicas {
-		return false, nil
+		return fmt.Errorf("deployment %s ready replicas are %d but expected %d: %w",
+			client.ObjectKeyFromObject(deploy).String(),
+			deploy.Status.ReadyReplicas,
+			*deploy.Spec.Replicas,
+			declarative.ErrManifestDeployNotReady)
 	}
 	availableCond := deploymentutil.GetDeploymentCondition(deploy.Status, appsv1.DeploymentAvailable)
 	if availableCond != nil && availableCond.Status == corev1.ConditionFalse {
-		return false, nil
+		return fmt.Errorf("deployment %s available condition is false: %w",
+			client.ObjectKeyFromObject(deploy).String(),
+			declarative.ErrManifestDeployNotReady)
 	}
-	return true, nil
+	return nil
 }

@@ -185,6 +185,10 @@ ARCHIVES_DST ?= ./pkg/test_samples/oci
 HELM_CHART_PATH ?= ./pkg/test_samples/helm
 OCI_GEN_SCRIPT ?= $(ARCHIVES_DST)/generate_oci_archives.sh
 
+# Use this whenever you change the content of the sample CRD file located under
+# ./config/samples/tests/crds/operator.kyma-project.io_samplecrd.yaml
+# and/or any of the contents of the sample helm chart used by manifest reconciler tests located in
+# ./pkg/test_samples/helm
 .PHONY: gen-oci-archives
 gen-oci-archives: ## Generate OCI Layers archives used for testing
 	$(OCI_GEN_SCRIPT) $(HELM_CHART_PATH) $(CRD_FILE_PATH) $(ARCHIVES_DST)
