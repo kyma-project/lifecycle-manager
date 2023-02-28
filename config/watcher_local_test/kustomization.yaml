@@ -3,24 +3,21 @@
 # that we do not want in the default configuration (e.g. vendor-specific gateway implementation)
 # but are necessary for testing the watcher on locally provisioned clusters using k3d.
 resources:
-- ../manager
+- ../default
 
 # [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
 # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
 components:
-  - ../crd
-  - ../rbac
   - ../watcher
   - ../istio
 
-namespace: kcp-system
 
 generatorOptions:
   disableNameSuffixHash: true
 
-# Adds namespace to all resources.
-namePrefix: klm-
-
+# Patches enable the local testing mode for the KLM
+# and sets the namespace for the watcher resources to `kcp-system`.
+# When deployed on KCP it will be set by the default kustomize.
 patches:
 - patch: |-
     - op: add
@@ -33,34 +30,65 @@ patches:
       path: /spec/template/spec/containers/0/args/-
       value: --enable-domain-name-pinning=true
     - op: add
-      path: /spec/template/spec/containers/0/volumeMounts
-      value:
-        - name: manifest
-          mountPath: /skr-webhook/manifest
-    - op: add
-      path: /spec/template/spec/volumes
-      value:
-        - name: manifest
-          emptyDir: {}
+      path: /spec/template/spec/containers/0/args/-
+      value: --insecure-registry=true
   target:
     kind: Deployment
+- patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: kcp-system
+  target:
+    group: operator.kyma-project.io
+    version: v1beta1
+    kind: Watcher
+    name: kyma-watcher
+- patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: kcp-system
+  target:
+    group: operator.kyma-project.io
+    version: v1beta1
+    kind: Watcher
+    name: manifest-watcher
+- patch: |-
+    - op: replace
+      path: /metadata/name
+      value: lifecycle-manager-event-service
+    - op: replace
+      path: /metadata/namespace
+      value: kcp-system
+  target:
+    kind: Service
+    name: event-service
+- patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: kcp-system
+  target:
+    group: security.istio.io
+    version: v1beta1
+    kind: AuthorizationPolicy
+    name: controller-manager
+- patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: kcp-system
+    - op: replace
+      path: /spec/servers/0/hosts/0
+      value: "*"
+  target:
+    group: networking.istio.io
+    version: v1beta1
+    kind: Gateway
+    name: lifecycle-manager-watcher-gateway
+
 
 # JSON patches needed to ensure certificate setup namespaces are not
 # being overwritten by kustomize global namespace patch. The certificate
 # setup needs to be in the `istio-system` namespace
 patchesJson6902:
-  - patch: |-
-      - op: replace
-        path: /metadata/name
-        value: lifecycle-manager-kyma-gateway
-      - op: replace
-        path: /spec/servers/0/hosts/0
-        value: "*"
-    target:
-      group: networking.istio.io
-      version: v1beta1
-      kind: Gateway
-      name: watcher-gateway
   - patch: |-
       - op: replace
         path: /spec/dnsNames/0
@@ -71,6 +99,9 @@ patchesJson6902:
       - op: replace
         path: /metadata/namespace
         value: "istio-system"
+      - op: add
+        path: /spec/issuerRef/name
+        value: "watcher-selfsigned-cluster-issuer"
     target:
       group: cert-manager.io
       version: v1

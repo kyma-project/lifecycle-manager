@@ -18,54 +18,12 @@ patches:
         value: --skr-watcher-path=/skr-webhook
     target:
       kind: Deployment
-  - patch: |-
-      - op: replace
-        path: /metadata/name
-        value: lifecycle-manager-kyma-gateway
-    target:
-      group: networking.istio.io
-      version: v1beta1
-      kind: Gateway
-      name: watcher-gateway
-  - patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: "istio-system"
-    target:
-      group: cert-manager.io
-      version: v1
-      kind: Certificate
-  - patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: "istio-system"
-    target:
-      group: cert-manager.io
-      version: v1
-      kind: ClusterIssuer
-  - patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: "istio-system"
-    target:
-      group: cert-manager.io
-      version: v1
-      kind: Issuer
 
 
 # JSON patches needed to ensure certificate setup namespaces are not
 # being overwritten by kustomize global namespace patch. The certificate
 # setup needs to be in the `istio-system` namespace
 patchesJson6902:
-  - patch: |-
-      - op: replace
-        path: /metadata/name
-        value: lifecycle-manager-kyma-gateway
-    target:
-      group: networking.istio.io
-      version: v1beta1
-      kind: Gateway
-      name: watcher-gateway
   - patch: |-
       - op: replace
         path: /metadata/namespace
