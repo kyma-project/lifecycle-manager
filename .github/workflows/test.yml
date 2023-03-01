@@ -64,13 +64,7 @@ jobs:
     steps:
       - name: Checkout Lifecycle-Manager
         uses: actions/checkout@v3
-        with:
-          repository: ${{ env.LIFECYCLE_MANAGER }}
-          path: ${{ env.LIFECYCLE_MANAGER }}
       - name: Move Lifecycle-Manager
-        run: |
-          mkdir -p $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER
-          mv $GITHUB_WORKSPACE/$LIFECYCLE_MANAGER/** $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/
       - name: Setup kustomize
         run: |
           wget --header="Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
@@ -79,8 +73,7 @@ jobs:
       - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
         if: github.event_name == 'pull_request'
         run: |
-          cd $(go env GOPATH)/src/github.com/${{ github.repository }}/config/manager
-          kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
+          cd config/manager && kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
       - name: Set up k3d
         run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
       - id: kyma
@@ -116,18 +109,18 @@ jobs:
           
           kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/crds/crd-servicemonitors.yaml
       - name: Run Deploy
-        run: |
-          kyma --ci alpha deploy \
-            -k $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/config/${{ matrix.target }}
+        run: kyma --ci alpha deploy -k config/${{ matrix.target }}
       - name: Inject GOPATH into go Setup
         run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
       - name: Set up Go for ${{ github.repository }}
         uses: actions/setup-go@v3
         with:
-          go-version-file: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}/go.mod
-          cache-dependency-path: ${{ env.GOPATH }}/src/github.com/${{ github.repository }}/go.sum
           cache: true
+          go-version-file: 'go.mod'
+          cache-dependency-path: 'go.sum'
       - name: Run Smoke Tests for ${{ matrix.target }}
         run: |
-          cd $(go env GOPATH)/src/github.com/${{ github.repository }}/tests/smoke_test
-          go test --tags=smoke smoke_test.go -v -feature="${{ matrix.target }}"
+          go test --tags=smoke \
+            tests/smoke_test/smoke_test.go \
+            -v \
+            -feature="${{ matrix.target }}"
