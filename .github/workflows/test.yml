@@ -53,14 +53,14 @@ jobs:
       matrix:
         cli-stability: ["unstable"]
         target: ["default", "control-plane"]
-    needs: [wait-for-img, kustomize]
+    needs: [kustomize]
     name: "Kyma CLI - ${{ matrix.cli-stability }} - Integration (Tests of ${{ github.repository }})"
     runs-on: ubuntu-latest
     env:
       LIFECYCLE_MANAGER: ${{ github.repository }}
       K3D_VERSION: v5.4.7
       KUSTOMIZE_VERSION: 4.5.7
-      ISTIO_VERSION: 1.17.0
+      ISTIO_VERSION: 1.17.1
     steps:
       - name: Checkout Lifecycle-Manager
         uses: actions/checkout@v3
