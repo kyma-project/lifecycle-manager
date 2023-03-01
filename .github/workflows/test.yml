@@ -64,7 +64,6 @@ jobs:
     steps:
       - name: Checkout Lifecycle-Manager
         uses: actions/checkout@v3
-      - name: Move Lifecycle-Manager
       - name: Setup kustomize
         run: |
           wget --header="Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
