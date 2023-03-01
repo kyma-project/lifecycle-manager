@@ -7,8 +7,9 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
+	ocmv1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
 
-	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -165,20 +166,25 @@ func updateModuleTemplateOCIRegistryCredLabel(kymaName string) func() error {
 			if err != nil {
 				return err
 			}
-			err = moduleTemplate.Spec.ModifyDescriptor(
-				func(descriptor *ocm.ComponentDescriptor) error {
-					for i := range descriptor.Resources {
-						resource := &descriptor.Resources[i]
-						resource.SetLabels([]ocm.Label{{
-							Name:  v1beta1.OCIRegistryCredLabel,
-							Value: json.RawMessage(fmt.Sprintf(`{"%s": "%s"}`, credSecretLabel, credSecretValue)),
-						}})
-					}
-					return nil
-				})
+			descriptor, err := moduleTemplate.Spec.GetDescriptor()
 			if err != nil {
 				return err
 			}
+			for i := range descriptor.Resources {
+				resource := &descriptor.Resources[i]
+				resource.SetLabels(
+					[]ocmv1.Label{{
+						Name:  v1beta1.OCIRegistryCredLabel,
+						Value: json.RawMessage(fmt.Sprintf(`{"%s": "%s"}`, credSecretLabel, credSecretValue)),
+					}},
+				)
+			}
+			newDescriptor, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONLCodec)
+			if err != nil {
+				return err
+			}
+			moduleTemplate.Spec.Descriptor.Raw = newDescriptor
+			moduleTemplate.Spec.Descriptor.Object = nil
 			err = controlPlaneClient.Update(ctx, moduleTemplate)
 			if err != nil {
 				return err

@@ -8,6 +8,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -86,9 +87,17 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
 
-		Expect(template.Spec.ModifyDescriptor(v1beta1.ModifyDescriptorVersion(func(version *semver.Version) string {
-			return fmt.Sprintf("%v.%v.%v", version.Major(), version.Minor(), version.Patch()-1)
-		}))).ToNot(HaveOccurred())
+		descriptor, err := template.Spec.GetDescriptor()
+		Expect(err).ToNot(HaveOccurred())
+		version, err := semver.NewVersion(descriptor.Version)
+		Expect(err).ToNot(HaveOccurred())
+		descriptor.Version = fmt.Sprintf("v%d.%d.%d", version.Major(), version.Minor(), version.Patch()-1)
+		for i := range descriptor.Resources {
+			descriptor.Resources[i].SetVersion(descriptor.Version)
+		}
+		newDescriptor, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONLCodec)
+		Expect(err).ToNot(HaveOccurred())
+		template.Spec.Descriptor.Raw = newDescriptor
 
 		err = k8sClient.Update(webhookServerContext, template)
 

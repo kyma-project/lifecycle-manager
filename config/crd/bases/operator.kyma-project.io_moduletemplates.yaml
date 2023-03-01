@@ -68,11 +68,11 @@ spec:
                 x-kubernetes-embedded-resource: true
                 x-kubernetes-preserve-unknown-fields: true
               descriptor:
-                description: "OCMDescriptor is the Raw Open Component Model Descriptor
+                description: "The Descriptor is the Open Component Model Descriptor
                   of a Module, containing all relevant information to correctly initialize
                   a module (e.g. Charts, Manifests, References to Binaries and/or
                   configuration) Name more information on Component Descriptors, see
-                  https://github.com/gardener/component-spec/ \n It is translated
+                  https://github.com/open-component-model/ocm \n It is translated
                   inside the Lifecycle of the Cluster and will be used by downstream
                   controllers to bootstrap and manage the module. This part is also
                   propagated for every change of the template. This means for upgrades
@@ -80,7 +80,6 @@ spec:
                   modules (e.g. by updating the controller binary linked in a chart
                   referenced in the descriptor)"
                 type: object
-                x-kubernetes-map-type: atomic
                 x-kubernetes-preserve-unknown-fields: true
               target:
                 description: Target describes where the Module should later on be
@@ -149,11 +148,11 @@ spec:
                 x-kubernetes-embedded-resource: true
                 x-kubernetes-preserve-unknown-fields: true
               descriptor:
-                description: "OCMDescriptor is the Raw Open Component Model Descriptor
+                description: "The Descriptor is the Open Component Model Descriptor
                   of a Module, containing all relevant information to correctly initialize
                   a module (e.g. Charts, Manifests, References to Binaries and/or
                   configuration) Name more information on Component Descriptors, see
-                  https://github.com/gardener/component-spec/ \n It is translated
+                  https://github.com/open-component-model/ocm \n It is translated
                   inside the Lifecycle of the Cluster and will be used by downstream
                   controllers to bootstrap and manage the module. This part is also
                   propagated for every change of the template. This means for upgrades
@@ -161,7 +160,6 @@ spec:
                   modules (e.g. by updating the controller binary linked in a chart
                   referenced in the descriptor)"
                 type: object
-                x-kubernetes-map-type: atomic
                 x-kubernetes-preserve-unknown-fields: true
               target:
                 description: Target describes where the Module should later on be

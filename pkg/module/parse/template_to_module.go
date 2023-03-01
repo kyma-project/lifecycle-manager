@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	ocm "github.com/gardener/component-spec/bindings-go/apis/v2"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -54,7 +53,7 @@ func templatesToModules(
 				module.Name, client.ObjectKeyFromObject(kyma), ErrTemplateNotFound,
 			)
 		}
-		descriptor, err := template.Spec.GetUnsafeDescriptor()
+		descriptor, err := template.Spec.GetDescriptor()
 		if err != nil {
 			return nil, err
 		}
@@ -112,19 +111,19 @@ func NewManifestFromTemplate(
 		manifest.Spec.Resource = template.Spec.Data.DeepCopy()
 	}
 
-	var descriptor *ocm.ComponentDescriptor
 	var layers img.Layers
 	var err error
 
-	if descriptor, err = template.Spec.GetUnsafeDescriptor(); err != nil {
-		return nil, fmt.Errorf("could not decode the descriptor: %w", err)
+	descriptor, err := template.Spec.GetDescriptor()
+	if err != nil {
+		return nil, err
 	}
 
-	if err := signature.Verify(descriptor, verification); err != nil {
+	if err := signature.Verify(descriptor.ComponentDescriptor, verification); err != nil {
 		return nil, fmt.Errorf("could not verify descriptor: %w", err)
 	}
 
-	if layers, err = img.Parse(descriptor); err != nil {
+	if layers, err = img.Parse(descriptor.ComponentDescriptor); err != nil {
 		return nil, fmt.Errorf("could not parse descriptor: %w", err)
 	}
 
