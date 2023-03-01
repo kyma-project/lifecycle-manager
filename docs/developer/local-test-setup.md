@@ -69,7 +69,7 @@ This setup is deployed with the following security features enabled:
    Adjust your path to your template-operator local directory or any other reference module operator accordingly.
 
    ```shell
-   kyma alpha create module -p ../template-operator --version 1.2.3 -w \
+   kyma alpha create module -p ../template-operator --version 1.2.3 \
    --registry k3d-registry.localhost:5111 --insecure
    ```
 6. Verify images has been pushed to local registry:

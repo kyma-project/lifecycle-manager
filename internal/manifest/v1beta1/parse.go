@@ -19,10 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 
 	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
-	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"net/http"
-	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
+	"regexp"
 	yaml2 "sigs.k8s.io/yaml"
 )
 
@@ -162,18 +159,17 @@ func DecodeUncompressedYAMLLayer(ctx context.Context,
 }
 
 func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (v1.Layer, error) {
-	layer, err := crane.PullLayer(imageRef, crane.WithAuthFromKeychain(keyChain), crane.WithContext(ctx))
-	if err != nil {
-		if err, ok := err.(*transport.Error); ok {
-			// prevent fallback to insecure request if unauthorized error occurs
-			if err.StatusCode == http.StatusUnauthorized {
-				return nil, err
-			}
-		}
-		ctrlLog.FromContext(ctx).V(log.WarnLevel).Info("fallback to insecure oci registry connection")
-		return crane.PullLayer(imageRef, crane.Insecure, crane.WithAuthFromKeychain(keyChain))
+	noSchemeImageRef := noSchemeURL(imageRef)
+	isInsecureLayer, _ := regexp.MatchString("^http://", imageRef)
+	if isInsecureLayer {
+		return crane.PullLayer(noSchemeImageRef, crane.Insecure, crane.WithAuthFromKeychain(keyChain))
 	}
-	return layer, nil
+	return crane.PullLayer(noSchemeImageRef, crane.WithAuthFromKeychain(keyChain), crane.WithContext(ctx))
+}
+
+func noSchemeURL(url string) string {
+	regex := regexp.MustCompile(`^https?://`)
+	return regex.ReplaceAllString(url, "")
 }
 
 func writeYamlContent(blob io.ReadCloser, layerReference string, filePath string) (interface{}, error) {
