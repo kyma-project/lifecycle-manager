@@ -53,7 +53,7 @@ func TestMain(m *testing.M) {
 
 //nolint:paralleltest
 func TestDefaultControllerManagerSpinsUp(t *testing.T) {
-	deploymentName = "lifecycle-manager-controller-manager"
+	deploymentName := "lifecycle-manager-controller-manager"
 	depFeature := features.New("default").
 		WithLabel("app.kubernetes.io/component", "lifecycle-manager.kyma-project.io").
 		WithLabel("test-type.kyma-project.io", "smoke").
@@ -67,7 +67,7 @@ func TestDefaultControllerManagerSpinsUp(t *testing.T) {
 
 //nolint:paralleltest
 func TestControlPlaneControllerManagerSpinsUp(t *testing.T) {
-	deploymentName = "klm-controller-manager"
+	deploymentName := "klm-controller-manager"
 	depFeature := features.New("control-plane").
 		WithLabel("app.kubernetes.io/component", "lifecycle-manager.kyma-project.io").
 		WithLabel("test-type.kyma-project.io", "smoke").
