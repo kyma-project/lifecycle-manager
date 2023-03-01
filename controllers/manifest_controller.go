@@ -26,7 +26,6 @@ import (
 func SetupWithManager(
 	mgr manager.Manager,
 	options controller.Options,
-	insecure bool,
 	checkInterval time.Duration,
 	settings SetupUpSetting,
 ) error {
@@ -69,17 +68,17 @@ func SetupWithManager(
 					queue.Add(ctrl.Request{NamespacedName: client.ObjectKeyFromObject(event.Object)})
 				},
 			},
-		).WithOptions(options).Complete(ManifestReconciler(mgr, codec, insecure, checkInterval))
+		).WithOptions(options).Complete(ManifestReconciler(mgr, codec, checkInterval))
 }
 
 func ManifestReconciler(
-	mgr manager.Manager, codec *v1beta1.Codec, insecure bool,
+	mgr manager.Manager, codec *v1beta1.Codec,
 	checkInterval time.Duration,
 ) *declarative.Reconciler {
 	return declarative.NewFromManager(
 		mgr, &v1beta1.Manifest{},
 		declarative.WithSpecResolver(
-			internalv1beta1.NewManifestSpecResolver(codec, insecure),
+			internalv1beta1.NewManifestSpecResolver(codec),
 		),
 		declarative.WithCustomReadyCheck(internalv1beta1.NewManifestCustomResourceReadyCheck()),
 		declarative.WithRemoteTargetCluster(

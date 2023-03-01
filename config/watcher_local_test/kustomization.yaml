@@ -29,9 +29,6 @@ patches:
     - op: add
       path: /spec/template/spec/containers/0/args/-
       value: --enable-domain-name-pinning=true
-    - op: add
-      path: /spec/template/spec/containers/0/args/-
-      value: --insecure-registry=true
   target:
     kind: Deployment
 - patch: |-

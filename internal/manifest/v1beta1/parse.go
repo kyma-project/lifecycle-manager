@@ -19,13 +19,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 
 	"github.com/google/go-containerregistry/pkg/authn"
+	"regexp"
 	yaml2 "sigs.k8s.io/yaml"
 )
 
-func GetPathFromExtractedTarGz(
-	ctx context.Context,
+func GetPathFromExtractedTarGz(ctx context.Context,
 	imageSpec v1beta1.ImageSpec,
-	insecureRegistry bool,
 	keyChain authn.Keychain,
 ) (string, error) {
 	imageRef := fmt.Sprintf("%s/%s@%s", imageSpec.Repo, imageSpec.Name, imageSpec.Ref)
@@ -42,7 +41,7 @@ func GetPathFromExtractedTarGz(
 	}
 
 	// pull image layer
-	layer, err := pullLayer(ctx, insecureRegistry, imageRef, keyChain)
+	layer, err := pullLayer(ctx, imageRef, keyChain)
 	if err != nil {
 		return "", err
 	}
@@ -130,10 +129,8 @@ func handleExtractedHeaderFile(
 	return nil
 }
 
-func DecodeUncompressedYAMLLayer(
-	ctx context.Context,
+func DecodeUncompressedYAMLLayer(ctx context.Context,
 	imageSpec v1beta1.ImageSpec,
-	insecureRegistry bool,
 	keyChain authn.Keychain,
 ) (interface{}, error) {
 	configFilePath := GetConfigFilePath(imageSpec)
@@ -149,7 +146,7 @@ func DecodeUncompressedYAMLLayer(
 
 	// proceed only if file was not found
 	// yaml is not compressed
-	layer, err := pullLayer(ctx, insecureRegistry, imageRef, keyChain)
+	layer, err := pullLayer(ctx, imageRef, keyChain)
 	if err != nil {
 		return nil, err
 	}
@@ -161,11 +158,18 @@ func DecodeUncompressedYAMLLayer(
 	return writeYamlContent(blob, imageRef, configFilePath)
 }
 
-func pullLayer(ctx context.Context, insecureRegistry bool, imageRef string, keyChain authn.Keychain) (v1.Layer, error) {
-	if insecureRegistry {
-		return crane.PullLayer(imageRef, crane.Insecure, crane.WithAuthFromKeychain(keyChain))
+func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (v1.Layer, error) {
+	noSchemeImageRef := noSchemeURL(imageRef)
+	isInsecureLayer, _ := regexp.MatchString("^http://", imageRef)
+	if isInsecureLayer {
+		return crane.PullLayer(noSchemeImageRef, crane.Insecure, crane.WithAuthFromKeychain(keyChain))
 	}
-	return crane.PullLayer(imageRef, crane.WithAuthFromKeychain(keyChain), crane.WithContext(ctx))
+	return crane.PullLayer(noSchemeImageRef, crane.WithAuthFromKeychain(keyChain), crane.WithContext(ctx))
+}
+
+func noSchemeURL(url string) string {
+	regex := regexp.MustCompile(`^https?://`)
+	return regex.ReplaceAllString(url, "")
 }
 
 func writeYamlContent(blob io.ReadCloser, layerReference string, filePath string) (interface{}, error) {
