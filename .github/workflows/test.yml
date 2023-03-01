@@ -54,7 +54,7 @@ jobs:
         cli-stability: ["unstable"]
         target: ["default", "control-plane"]
     needs: [kustomize]
-    name: "Kyma CLI - ${{ matrix.cli-stability }} - Integration (Tests of ${{ github.repository }})"
+    name: "kyma (${{ matrix.cli-stability }}) alpha deploy -k config/${{ matrix.target }}"
     runs-on: ubuntu-latest
     env:
       LIFECYCLE_MANAGER: ${{ github.repository }}
@@ -107,10 +107,8 @@ jobs:
           kubectl create namespace kcp-system
           
           kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/crds/crd-servicemonitors.yaml
-      - name: Run Deploy
-        run: kyma --ci alpha deploy -k config/${{ matrix.target }}
-      - name: Inject GOPATH into go Setup
-        run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+      - run: kyma --ci alpha deploy -k config/${{ matrix.target }}
+      - run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
       - name: Set up Go for ${{ github.repository }}
         uses: actions/setup-go@v3
         with:
@@ -118,8 +116,4 @@ jobs:
           go-version-file: 'go.mod'
           cache-dependency-path: 'go.sum'
       - name: Run Smoke Tests for ${{ matrix.target }}
-        run: |
-          go test --tags=smoke \
-            tests/smoke_test/smoke_test.go \
-            -v \
-            -feature="${{ matrix.target }}"
+        run: go test --tags=smoke tests/smoke_test/smoke_test.go -v -feature="${{ matrix.target }}"
