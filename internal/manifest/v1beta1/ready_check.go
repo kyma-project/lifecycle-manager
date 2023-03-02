@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	"strings"
 
 	manifestv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/resource"
+	deploymentutil "k8s.io/kubectl/pkg/util/deployment"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -23,11 +26,16 @@ func NewManifestCustomResourceReadyCheck() *ManifestCustomResourceReadyCheck {
 
 type ManifestCustomResourceReadyCheck struct{}
 
-var ErrNoDeterminedState = errors.New("could not determine state")
+var (
+	ErrNoDeterminedState = errors.New("could not determine state")
+)
 
 func (c *ManifestCustomResourceReadyCheck) Run(
-	ctx context.Context, clnt declarative.Client, obj declarative.Object, _ []*resource.Info,
+	ctx context.Context, clnt declarative.Client, obj declarative.Object, resources []*resource.Info,
 ) error {
+	if err := checkDeploymentState(clnt, resources); err != nil {
+		return err
+	}
 	manifest := obj.(*manifestv1beta1.Manifest)
 	if manifest.Spec.Resource == nil {
 		return nil
@@ -55,4 +63,29 @@ func (c *ManifestCustomResourceReadyCheck) Run(
 	}
 
 	return nil
+}
+
+var ErrDeploymentResNotFound = errors.New("deployment resource is not found")
+
+func checkDeploymentState(clt declarative.Client, resources []*resource.Info) error {
+	deploy := &appsv1.Deployment{}
+	found := false
+	for _, res := range resources {
+		err := clt.Scheme().Convert(res.Object, deploy, nil)
+		if err == nil {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return ErrDeploymentResNotFound
+	}
+	availableCond := deploymentutil.GetDeploymentCondition(deploy.Status, appsv1.DeploymentAvailable)
+	if availableCond != nil && availableCond.Status == corev1.ConditionTrue{
+		return nil
+	}
+	if deploy.Spec.Replicas != nil && *deploy.Spec.Replicas == deploy.Status.ReadyReplicas {
+		return nil
+	}
+	return fmt.Errorf("%w: (ns=%s, name=%s)", declarative.ErrDeploymentNotReady, deploy.Namespace, deploy.Name)
 }
