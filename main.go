@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"github.com/kyma-project/lifecycle-manager/pkg/metrics"
 	"github.com/open-component-model/ocm/pkg/contexts/oci"
 	"github.com/open-component-model/ocm/pkg/contexts/oci/repositories/ocireg"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm"
@@ -281,6 +282,8 @@ func setupKymaReconciler(
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
+
+	metrics.Initialize()
 }
 
 func setupManifestReconciler(

@@ -211,6 +211,10 @@ const (
 	StateDeleting State = "Deleting"
 )
 
+func AllKymaStates() []State {
+	return []State{StateReady, StateProcessing, StateError, StateDeleting}
+}
+
 type ModuleStatus struct {
 	// Name defines the name of the Module in the Spec that the status is used for.
 	// It can be any kind of Reference format supported by Module.Name.

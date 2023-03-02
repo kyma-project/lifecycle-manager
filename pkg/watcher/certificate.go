@@ -22,7 +22,7 @@ const (
 	// private key will only be generated if one does not already exist in the target `spec.secretName`.
 	privateKeyRotationPolicy = "Never"
 
-	DomainAnnotation = "skr-domain"
+	DomainAnnotation = v1beta1.SKRDomainAnnotation
 
 	caCertKey        = "ca.crt"
 	tlsCertKey       = "tls.crt"
