@@ -38,20 +38,6 @@ func (m *MockObject) EXPECT() *MockObjectMockRecorder {
 	return m.recorder
 }
 
-// ComponentName mocks base method.
-func (m *MockObject) ComponentName() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ComponentName")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// ComponentName indicates an expected call of ComponentName.
-func (mr *MockObjectMockRecorder) ComponentName() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ComponentName", reflect.TypeOf((*MockObject)(nil).ComponentName))
-}
-
 // DeepCopyObject mocks base method.
 func (m *MockObject) DeepCopyObject() runtime.Object {
 	m.ctrl.T.Helper()

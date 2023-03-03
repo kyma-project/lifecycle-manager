@@ -17,8 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"fmt"
-
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -83,11 +81,6 @@ type Manifest struct {
 	// Status signifies the current status of the Manifest
 	// +kubebuilder:validation:Optional
 	Status ManifestStatus `json:"status,omitempty"`
-}
-
-//nolint:stylecheck
-func (m *Manifest) ComponentName() string {
-	return fmt.Sprintf("manifest-%s", m.Name)
 }
 
 func (m *Manifest) GetStatus() declarative.Status {

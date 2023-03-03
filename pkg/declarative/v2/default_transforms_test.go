@@ -13,9 +13,8 @@ import (
 
 type testObj struct{ *unstructured.Unstructured }
 
-func (t testObj) ComponentName() string { return "test-object" }
-func (t testObj) GetStatus() Status     { panic("status not supported in test object") }
-func (t testObj) SetStatus(Status)      { panic("status not supported in test object") }
+func (t testObj) GetStatus() Status { panic("status not supported in test object") }
+func (t testObj) SetStatus(Status)  { panic("status not supported in test object") }
 
 //nolint:funlen
 func Test_defaultTransforms(t *testing.T) {
@@ -105,7 +104,9 @@ func Test_defaultTransforms(t *testing.T) {
 		t.Run(
 			testCase.name, func(t *testing.T) {
 				t.Parallel()
-				err := testCase.ObjectTransform(context.Background(), &testObj{}, testCase.resources)
+				obj := &testObj{Unstructured: &unstructured.Unstructured{}}
+				obj.SetName("test-object")
+				err := testCase.ObjectTransform(context.Background(), obj, testCase.resources)
 				testCase.wantErr(
 					t, err, testCase.resources,
 				)

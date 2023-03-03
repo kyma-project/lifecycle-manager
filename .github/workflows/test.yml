@@ -53,7 +53,7 @@ jobs:
       matrix:
         cli-stability: ["unstable"]
         target: ["default", "control-plane"]
-    needs: [kustomize]
+    needs: [kustomize,wait-for-img]
     name: "kyma (${{ matrix.cli-stability }}) alpha deploy -k config/${{ matrix.target }}"
     runs-on: ubuntu-latest
     env:

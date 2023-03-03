@@ -17,7 +17,7 @@ type Spec struct {
 
 func DefaultSpec(path string, values any, mode RenderMode) *CustomSpecFns {
 	return &CustomSpecFns{
-		ManifestNameFn: func(_ context.Context, obj Object) string { return obj.ComponentName() },
+		ManifestNameFn: func(_ context.Context, obj Object) string { return obj.GetName() },
 		PathFn:         func(_ context.Context, _ Object) string { return path },
 		ValuesFn:       func(_ context.Context, _ Object) any { return values },
 		ModeFn:         func(_ context.Context, _ Object) RenderMode { return mode },

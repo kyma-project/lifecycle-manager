@@ -13,7 +13,6 @@ import (
 //go:generate mockgen -source object.go -destination mock/object.go Object
 type Object interface {
 	client.Object
-	ComponentName() string
 	GetStatus() Status
 	SetStatus(Status)
 }
