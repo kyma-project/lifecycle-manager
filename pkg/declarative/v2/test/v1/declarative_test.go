@@ -62,7 +62,7 @@ var _ = Describe(
 		var runID string
 		var ctx context.Context
 		var cancel context.CancelFunc
-		BeforeEach(func() { runID = rand.String(4) })
+		BeforeEach(func() { runID = fmt.Sprintf("run-%s", rand.String(4)) })
 		BeforeEach(func() { ctx, cancel = context.WithCancel(context.TODO()) })
 		AfterEach(func() { cancel() })
 

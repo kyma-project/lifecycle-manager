@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	"strings"
 
 	manifestv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
@@ -81,7 +82,7 @@ func checkDeploymentState(clt declarative.Client, resources []*resource.Info) er
 		return ErrDeploymentResNotFound
 	}
 	availableCond := deploymentutil.GetDeploymentCondition(deploy.Status, appsv1.DeploymentAvailable)
-	if availableCond != nil && availableCond.Status == corev1.ConditionTrue{
+	if availableCond != nil && availableCond.Status == corev1.ConditionTrue {
 		return nil
 	}
 	if deploy.Spec.Replicas != nil && *deploy.Spec.Replicas == deploy.Status.ReadyReplicas {

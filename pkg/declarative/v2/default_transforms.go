@@ -46,7 +46,7 @@ func kymaComponentTransform(_ context.Context, obj Object, resources []*unstruct
 		if lbls == nil {
 			lbls = make(map[string]string)
 		}
-		lbls["app.kubernetes.io/component"] = obj.ComponentName()
+		lbls["app.kubernetes.io/component"] = obj.GetName()
 		lbls["app.kubernetes.io/part-of"] = "Kyma"
 		resource.SetLabels(lbls)
 	}

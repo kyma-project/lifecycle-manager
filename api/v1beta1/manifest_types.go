@@ -17,8 +17,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	"fmt"
-
 	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -75,10 +73,6 @@ type Manifest struct {
 
 	Spec   ManifestSpec   `json:"spec,omitempty"`
 	Status ManifestStatus `json:"status,omitempty"`
-}
-
-func (m *Manifest) ComponentName() string {
-	return fmt.Sprintf("manifest-%s", m.Name)
 }
 
 func (m *Manifest) GetStatus() declarative.Status {

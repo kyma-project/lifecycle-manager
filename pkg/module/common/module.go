@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
@@ -78,7 +79,7 @@ func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {
 	return false
 }
 
-const maxModuleNameLength = 253
+const maxModuleNameLength = validation.DNS1035LabelMaxLength
 
 // CreateModuleName takes a FQDN and a prefix and generates a human-readable unique interpretation of
 // a name combination.
