@@ -27,9 +27,8 @@ import (
 )
 
 const (
-	ControllerDeploymentName = "lifecycle-manager-controller-manager"
-	KCP                      = "kcp-system"
-	KymaCRNamespace          = "kyma-system"
+	KCP             = "kcp-system"
+	KymaCRNamespace = "kyma-system"
 )
 
 var TestEnv env.Environment //nolint:gochecknoglobals
@@ -53,12 +52,27 @@ func TestMain(m *testing.M) {
 }
 
 //nolint:paralleltest
-func TestControllerManagerSpinsUp(t *testing.T) {
-	depFeature := features.New("appsv1/deployment/controller-manager").
+func TestDefaultControllerManagerSpinsUp(t *testing.T) {
+	deploymentName := "lifecycle-manager-controller-manager"
+	depFeature := features.New("default").
 		WithLabel("app.kubernetes.io/component", "lifecycle-manager.kyma-project.io").
 		WithLabel("test-type.kyma-project.io", "smoke").
-		Assess("exists", deploymentExists(KCP, ControllerDeploymentName)).
-		Assess("available", deploymentAvailable(KCP, ControllerDeploymentName)).
+		Assess("exists", deploymentExists(KCP, deploymentName)).
+		Assess("available", deploymentAvailable(KCP, deploymentName)).
+		Assess("kyma readiness", kymaReady(KymaCRNamespace, "default-kyma")).
+		Feature()
+
+	TestEnv.Test(t, depFeature)
+}
+
+//nolint:paralleltest
+func TestControlPlaneControllerManagerSpinsUp(t *testing.T) {
+	deploymentName := "klm-controller-manager"
+	depFeature := features.New("control-plane").
+		WithLabel("app.kubernetes.io/component", "lifecycle-manager.kyma-project.io").
+		WithLabel("test-type.kyma-project.io", "smoke").
+		Assess("exists", deploymentExists(KCP, deploymentName)).
+		Assess("available", deploymentAvailable(KCP, deploymentName)).
 		Assess("kyma readiness", kymaReady(KymaCRNamespace, "default-kyma")).
 		Feature()
 

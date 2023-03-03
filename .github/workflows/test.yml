@@ -52,24 +52,18 @@ jobs:
     strategy:
       matrix:
         cli-stability: ["unstable"]
-        smoke-run: [ "${{ github.repository }}" ]
-    needs: [wait-for-img, kustomize]
-    name: "Kyma CLI - ${{ matrix.cli-stability }} - Integration (Tests of ${{ matrix.smoke-run }})"
+        target: ["default", "control-plane"]
+    needs: [kustomize]
+    name: "kyma (${{ matrix.cli-stability }}) alpha deploy -k config/${{ matrix.target }}"
     runs-on: ubuntu-latest
     env:
       LIFECYCLE_MANAGER: ${{ github.repository }}
-      K3D_VERSION: v5.4.6
+      K3D_VERSION: v5.4.7
       KUSTOMIZE_VERSION: 4.5.7
+      ISTIO_VERSION: 1.17.1
     steps:
       - name: Checkout Lifecycle-Manager
         uses: actions/checkout@v3
-        with:
-          repository: ${{ env.LIFECYCLE_MANAGER }}
-          path: ${{ env.LIFECYCLE_MANAGER }}
-      - name: Move Lifecycle-Manager
-        run: |
-          mkdir -p $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER
-          mv $GITHUB_WORKSPACE/$LIFECYCLE_MANAGER/** $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/
       - name: Setup kustomize
         run: |
           wget --header="Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
@@ -78,8 +72,7 @@ jobs:
       - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
         if: github.event_name == 'pull_request'
         run: |
-          cd $(go env GOPATH)/src/github.com/${{ github.repository }}/config/manager
-          kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
+          cd config/manager && kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
       - name: Set up k3d
         run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
       - id: kyma
@@ -98,18 +91,29 @@ jobs:
             --name kyma
       - name: Update Kubeconfigs
         run: k3d kubeconfig merge -a -d
-      - name: Run Deploy
+      - name: Setup Control-Plane requirements
+        if: ${{ matrix.target }} == 'control-plane'
         run: |
-          kyma --ci alpha deploy \
-            -k $(go env GOPATH)/src/github.com/$LIFECYCLE_MANAGER/config/default
-      - name: Inject GOPATH into go Setup
-        run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-      - name: Set up Go for ${{ matrix.smoke-run }}
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          mv kubectl /usr/local/bin
+          
+          curl -L https://istio.io/downloadIstio | TARGET_ARCH=x86_64 sh -
+          chmod +x istio-$ISTIO_VERSION/bin/istioctl
+          mv istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin
+          istioctl install --set profile=demo -y
+          
+          kubectl create namespace kyma-system
+          kubectl create namespace kcp-system
+          
+          kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/crds/crd-servicemonitors.yaml
+      - run: kyma --ci alpha deploy -k config/${{ matrix.target }}
+      - run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+      - name: Set up Go for ${{ github.repository }}
         uses: actions/setup-go@v3
         with:
-          go-version-file: ${{ env.GOPATH }}/src/github.com/${{ matrix.smoke-run }}/go.mod
-          cache-dependency-path: ${{ env.GOPATH }}/src/github.com/${{ matrix.smoke-run }}/go.sum
-      - name: Run Smoke Tests for ${{ matrix.smoke_test-run }}
-        run: |
-          cd $(go env GOPATH)/src/github.com/${{ matrix.smoke-run }}/tests/smoke_test
-          make test-verbose
+          cache: true
+          go-version-file: 'go.mod'
+          cache-dependency-path: 'go.sum'
+      - name: Run Smoke Tests for ${{ matrix.target }}
+        run: go test --tags=smoke tests/smoke_test/smoke_test.go -v -feature="${{ matrix.target }}"
