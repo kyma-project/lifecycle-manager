@@ -57,15 +57,15 @@ As mentioned above, when each module operator completes their installation, it r
 
 ### Getting Started
 
-To get started, we have prepared a curated reference implementation of an operator in our [Template Operator](https://github.com/kyma-project/template-operator). On top of this we have prepared multiple likely use cases for modules (e.g. implementing an installation for a third-party-module).
+To get started, we have prepared a curated reference implementation of an operator in our [Template Operator](https://github.com/kyma-project/template-operator), which  is a small operator built with [kubebuilder](https://kubebuilder.io) that installs some basic resources for showcase purposes. On top of this we have prepared multiple likely use cases for modules (e.g. implementing an installation for a third-party-module) in the operator so you can try around with different configurations.
 
 In summary, every module follows basic steps that we have accompanied with respective [cli](https://github.com/kyma-project/cli) commands:
 
-1. Create a Kyma Control Plane on a cluster
+1. Create a Local Kyma Control Plane on a cluster:
   ```shell
   kyma alpha deploy
   ```
-2. Create a module in a specific semantic version and a fully qualified domain name (FQDN). The easiest way to make 
+2. Create a module in a specific semantic version and a fully qualified domain name (FQDN). We will use our [cli](https://github.com/kyma-project/cli):
   ```shell
   kyma alpha create module \
     --name kyma-project.io/module/samples/my-module \
@@ -74,15 +74,16 @@ In summary, every module follows basic steps that we have accompanied with respe
   ```
   This will also output a `template.yaml` file which you can directly apply to a cluster with
   `kubectl apply -f template.yaml`
-3. Enable the module in the cluster with a specific release channel
+3. Enable the module in the cluster:
   ```shell
-  kyma alpha enable module --name my-module
+  kyma alpha enable module --name my-module -w
   ```
-  Enjoy your module in your cluster!
+  This will wait for the module to be enabled.
 4. Disable the module in the cluster
   ```shell
   kyma alpha disable module --name my-module
   ```
+  This will remove all references (except for CRDs) out of the cluster to allow for clean re- or uninstallation.
 ## Architecture
 
 The architecture of this operator is based on Kubernetes controllers/operators. `lifecycle-manager` is a meta operator that coordinates and tracks the lifecycle of kyma components by delegating it to module operators. You can compare it to [Operator Lifecycle Manager](https://olm.operatorframework.io/) from Operator Framework, and we are strongly inspired by their ideas. One of the main differentiating factors however, is that the Scope of the Kyma Lifecycle Manager is to reconcile not only locally, but also into remote Clusters.
