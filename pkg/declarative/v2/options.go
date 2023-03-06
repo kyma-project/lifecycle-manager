@@ -2,12 +2,10 @@ package v2
 
 import (
 	"context"
-	"errors"
 	"os"
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -24,7 +22,6 @@ const (
 	FieldOwnerDefault         = "declarative.kyma-project.io/applier"
 	EventRecorderDefault      = "declarative.kyma-project.io/events"
 	DefaultSkipReconcileLabel = "declarative.kyma-project.io/skip-reconciliation"
-	DefaultCacheKey           = "declarative.kyma-project.io/cache-key"
 	DefaultInMemoryParseTTL   = 24 * time.Hour
 )
 
@@ -42,7 +39,6 @@ func DefaultOptions() *Options {
 		),
 		WithPermanentConsistencyCheck(false),
 		WithSingletonClientCache(NewMemorySingletonClientCache()),
-		WithClientCacheKeyFromLabelOrResource(DefaultCacheKey),
 		WithManifestCache(os.TempDir()),
 		WithSkipReconcileOn(SkipReconcileOnDefaultLabelPresentAndTrue),
 		WithManifestParser(NewInMemoryCachedManifestParser(DefaultInMemoryParseTTL)),
@@ -314,39 +310,7 @@ func (o WithSkipReconcileOnOption) Apply(options *Options) {
 	options.ShouldSkip = o.skipReconcile
 }
 
-type ClientCacheKeyFn func(ctx context.Context, obj Object) any
-
-func WithClientCacheKeyFromLabelOrResource(label string) WithClientCacheKeyOption {
-	cacheKey := func(ctx context.Context, resource Object) any {
-		logger := log.FromContext(ctx)
-
-		if resource == nil {
-			return client.ObjectKey{}
-		}
-
-		label, err := internal.GetResourceLabel(resource, label)
-		objectKey := client.ObjectKeyFromObject(resource)
-		var labelErr *types.LabelNotFoundError
-		if errors.As(err, &labelErr) {
-			logger.V(internal.DebugLogLevel).Info(
-				label+" missing on resource, it will be cached "+
-					"based on resource name and namespace.",
-				"resource", objectKey,
-			)
-			return objectKey
-		}
-
-		logger.V(internal.DebugLogLevel).Info(
-			"resource will be cached based on "+label,
-			"resource", objectKey,
-			"label", label,
-			"labelValue", label,
-		)
-
-		return client.ObjectKey{Name: label, Namespace: resource.GetNamespace()}
-	}
-	return WithClientCacheKeyOption{ClientCacheKeyFn: cacheKey}
-}
+type ClientCacheKeyFn func(ctx context.Context, obj Object) (any, bool)
 
 type WithClientCacheKeyOption struct {
 	ClientCacheKeyFn

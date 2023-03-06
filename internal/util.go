@@ -129,14 +129,14 @@ func WriteToFile(filePath string, bytes []byte) error {
 
 func GetResourceLabel(resource client.Object, labelName string) (string, error) {
 	labels := resource.GetLabels()
-	label, ok := labels[labelName]
+	labelValue, ok := labels[labelName]
 	if !ok {
 		return "", &types.LabelNotFoundError{
 			Resource:  resource,
-			LabelName: label,
+			LabelName: labelValue,
 		}
 	}
-	return label, nil
+	return labelValue, nil
 }
 
 func GetStringifiedYamlFromFilePath(filePath string) (string, error) {

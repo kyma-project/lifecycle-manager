@@ -396,10 +396,11 @@ func (r *Reconciler) getTargetClient(
 	ctx context.Context, obj Object, spec *Spec,
 ) (Client, error) {
 	var err error
-
-	clientsCacheKey := r.ClientCacheKeyFn(ctx, obj)
-
-	clnt := r.GetClientFromCache(clientsCacheKey)
+	var clnt Client
+	clientsCacheKey, found := r.ClientCacheKeyFn(ctx, obj)
+	if found {
+		clnt = r.GetClientFromCache(clientsCacheKey)
+	}
 
 	if clnt == nil {
 		cluster := &ClusterInfo{
