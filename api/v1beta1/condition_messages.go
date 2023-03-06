@@ -4,12 +4,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type ConditionBuilder struct {
-	Status             metav1.ConditionStatus
-	Reason             KymaConditionReason
-	ObservedGeneration int64
-}
-
 const (
 	MessageModuleInReadyState       = "all modules are in ready state"
 	MessageModuleNotInReadyState    = "not all modules are in ready state"
@@ -21,14 +15,14 @@ const (
 
 // Extend this list by actual needs.
 const (
-	ConditionReasonModulesAreReady      KymaConditionReason = "ModulesAreReady"
-	ConditionReasonModuleCatalogIsReady KymaConditionReason = "ModuleCatalogIsReady"
-	ConditionReasonSKRWebhookIsReady    KymaConditionReason = "SKRWebhookIsReady"
+	ConditionTypeModulesAreReady      KymaConditionType = "ModulesAreReady"
+	ConditionTypeModuleCatalogIsReady KymaConditionType = "ModuleCatalogIsReady"
+	ConditionTypeSKRWebhookIsReady    KymaConditionType = "SKRWebhookIsReady"
 )
 
-func GenerateMessage(reason KymaConditionReason, status metav1.ConditionStatus) string {
-	switch reason {
-	case ConditionReasonModulesAreReady:
+func GenerateMessage(conditionType KymaConditionType, status metav1.ConditionStatus) string {
+	switch conditionType {
+	case ConditionTypeModulesAreReady:
 		switch status {
 		case metav1.ConditionTrue:
 			return MessageModuleInReadyState
@@ -37,7 +31,7 @@ func GenerateMessage(reason KymaConditionReason, status metav1.ConditionStatus) 
 		}
 
 		return MessageModuleNotInReadyState
-	case ConditionReasonModuleCatalogIsReady:
+	case ConditionTypeModuleCatalogIsReady:
 		switch status {
 		case metav1.ConditionTrue:
 			return MessageModuleCatalogIsSynced
@@ -46,7 +40,7 @@ func GenerateMessage(reason KymaConditionReason, status metav1.ConditionStatus) 
 		}
 
 		return MessageModuleCatalogIsOutOfSync
-	case ConditionReasonSKRWebhookIsReady:
+	case ConditionTypeSKRWebhookIsReady:
 		switch status {
 		case metav1.ConditionTrue:
 			return MessageSKRWebhookIsSynced

@@ -188,7 +188,7 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta1.Ky
 		return nil
 	}
 
-	kyma.UpdateCondition(v1beta1.ConditionReasonModuleCatalogIsReady, metav1.ConditionFalse)
+	kyma.UpdateCondition(v1beta1.ConditionTypeModuleCatalogIsReady, metav1.ConditionFalse)
 
 	moduleTemplateList := &v1beta1.ModuleTemplateList{}
 	if err := r.List(ctx, moduleTemplateList, &client.ListOptions{}); err != nil {
@@ -199,7 +199,7 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta1.Ky
 		return fmt.Errorf("could not synchronize remote module catalog: %w", err)
 	}
 
-	kyma.UpdateCondition(v1beta1.ConditionReasonModuleCatalogIsReady, metav1.ConditionTrue)
+	kyma.UpdateCondition(v1beta1.ConditionTypeModuleCatalogIsReady, metav1.ConditionTrue)
 
 	return nil
 }
@@ -232,7 +232,7 @@ func (r *KymaReconciler) HandleInitialState(ctx context.Context, kyma *v1beta1.K
 func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1beta1.Kyma) error {
 	logger := ctrlLog.FromContext(ctx)
 
-	conditionReason := v1beta1.ConditionReasonModulesAreReady
+	conditionReason := v1beta1.ConditionTypeModulesAreReady
 	conditionStatus := metav1.ConditionTrue
 	if err := r.syncModules(ctx, kyma); err != nil {
 		conditionStatus = metav1.ConditionFalse
@@ -250,7 +250,7 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1beta
 
 	if kyma.Spec.Sync.Enabled && r.SKRWebhookManager != nil {
 		if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
-			kyma.UpdateCondition(v1beta1.ConditionReasonSKRWebhookIsReady, metav1.ConditionFalse)
+			kyma.UpdateCondition(v1beta1.ConditionTypeSKRWebhookIsReady, metav1.ConditionFalse)
 			// TODO Move installation to own go-routine to not block installation
 			// + consider introducing own condition for CertificateReady Status
 			// https://github.com/kyma-project/lifecycle-manager/issues/376
