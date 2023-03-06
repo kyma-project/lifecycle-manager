@@ -4,12 +4,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type ConditionBuilder struct {
-	Status             metav1.ConditionStatus
-	Reason             KymaConditionReason
-	ObservedGeneration int64
-}
-
 const (
 	MessageModuleInReadyState       = "all modules are in ready state"
 	MessageModuleNotInReadyState    = "not all modules are in ready state"
@@ -17,18 +11,21 @@ const (
 	MessageModuleCatalogIsOutOfSync = "module catalog is out of sync and needs to be resynchronized"
 	MessageSKRWebhookIsSynced       = "skrwebhook is synchronized"
 	MessageSKRWebhookIsOutOfSync    = "skrwebhook is out of sync and needs to be resynchronized"
+
+	ReasonReady      = "Ready"
+	ReasonProcessing = "Processing"
 )
 
 // Extend this list by actual needs.
 const (
-	ConditionReasonModulesAreReady      KymaConditionReason = "ModulesAreReady"
-	ConditionReasonModuleCatalogIsReady KymaConditionReason = "ModuleCatalogIsReady"
-	ConditionReasonSKRWebhookIsReady    KymaConditionReason = "SKRWebhookIsReady"
+	ConditionTypeModulesAreReady      KymaConditionType = "ModulesAreReady"
+	ConditionTypeModuleCatalogIsReady KymaConditionType = "ModuleCatalogIsReady"
+	ConditionTypeSKRWebhookIsReady    KymaConditionType = "SKRWebhookIsReady"
 )
 
-func GenerateMessage(reason KymaConditionReason, status metav1.ConditionStatus) string {
-	switch reason {
-	case ConditionReasonModulesAreReady:
+func GenerateMessage(conditionType KymaConditionType, status metav1.ConditionStatus) string {
+	switch conditionType {
+	case ConditionTypeModulesAreReady:
 		switch status {
 		case metav1.ConditionTrue:
 			return MessageModuleInReadyState
@@ -37,7 +34,7 @@ func GenerateMessage(reason KymaConditionReason, status metav1.ConditionStatus) 
 		}
 
 		return MessageModuleNotInReadyState
-	case ConditionReasonModuleCatalogIsReady:
+	case ConditionTypeModuleCatalogIsReady:
 		switch status {
 		case metav1.ConditionTrue:
 			return MessageModuleCatalogIsSynced
@@ -46,7 +43,7 @@ func GenerateMessage(reason KymaConditionReason, status metav1.ConditionStatus) 
 		}
 
 		return MessageModuleCatalogIsOutOfSync
-	case ConditionReasonSKRWebhookIsReady:
+	case ConditionTypeSKRWebhookIsReady:
 		switch status {
 		case metav1.ConditionTrue:
 			return MessageSKRWebhookIsSynced
@@ -57,5 +54,17 @@ func GenerateMessage(reason KymaConditionReason, status metav1.ConditionStatus) 
 		return MessageSKRWebhookIsOutOfSync
 	}
 
-	return "no detailed message available as reason is unknown to API"
+	return "no detailed message available as condition or status is unknown to API"
+}
+
+func GenerateReason(status metav1.ConditionStatus) string {
+	switch status {
+	case metav1.ConditionTrue:
+		return ReasonReady
+	case metav1.ConditionUnknown:
+	case metav1.ConditionFalse:
+		return ReasonProcessing
+	}
+
+	return "no detailed reason available as status is unknown to API"
 }

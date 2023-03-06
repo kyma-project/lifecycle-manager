@@ -95,7 +95,7 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta1.K
 	if err != nil {
 		return fmt.Errorf("failed to apply webhook resources: %w", err)
 	}
-	kyma.UpdateCondition(v1beta1.ConditionReasonSKRWebhookIsReady, metav1.ConditionTrue)
+	kyma.UpdateCondition(v1beta1.ConditionTypeSKRWebhookIsReady, metav1.ConditionTrue)
 	logger.Info("successfully installed webhook resources",
 		"kyma", kymaObjKey.String())
 	return nil
