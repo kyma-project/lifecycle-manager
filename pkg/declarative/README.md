@@ -61,7 +61,7 @@ These options include but are not limited to:
 - Consistency Check configurations determining frequency of reconciliation efforts.
 
 
-## Rendering Engines
+## Resource Rendering
 
 All renderer implementations must implement the [renderer interface](v2/renderer.go) and are initialized based on a given `RendererMode` that is available in the [object specification](v2/spec.go).
 
@@ -84,14 +84,14 @@ Every renderer reconciles in a particular order through the [renderer interface]
 
 To allow tracking the resources created by the `renderer`, every resource is converted to a generic [resource](v2/resource_converter.go), which translates all objects into a [k8s cli-runtime compliant resource represenation](https://pkg.go.dev/k8s.io/cli-runtime/pkg/resource#Info), which contains information about the object, its API Version and Mappings towards a specific API Resource of the API server.
 
-### Resource Cluster Synchronization
+## Resource Synchronization
 
 All [create/update](v2/ssa.go) and [delete](v2/cleanup.go) cluster interactions of the library are done by leveraging highly concurrent [ServerSideApply](https://kubernetes.io/docs/reference/using-api/server-side-apply/) implementations that are written to:
 1. Always apply the latest available version of resources in the schema by using inbuilt schema conversions
 2. Delegate as much compute to the api-server to reduce overall load of the controller even with several hundred concurrent reconciliations.
 3. Use a highly concurrent process that is rather focusing on retrying an apply and failing early and often instead of introducing dependencies between different resources. The library will always attempt to reconcile all resources in parallel and will simply ask for a retry in case it is determined there is a missing interdependency (e.g. a missing CustomResourceDefinition that is applied in parallel, only leading to sucessful reconciliations in subsequent reconciliations).
 
-### Resource Tracking
+## Resource Tracking
 
 Every resource rendered by the [renderer](v2/renderer.go) is tracked through a set of fields in the [declarative status in the object](v2/object.go). This can be embedded in objects through implementing the [Object interface](v2/object.go), a superset of the [`client.Object` from controller-runtime](https://github.com/kubernetes-sigs/controller-runtime/blob/main/pkg/client/object.go).
 
