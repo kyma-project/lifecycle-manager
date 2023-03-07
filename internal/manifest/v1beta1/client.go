@@ -66,31 +66,22 @@ func WithClientCacheKey() declarative.WithClientCacheKeyOption {
 	cacheKey := func(ctx context.Context, resource declarative.Object) (any, bool) {
 		logger := log.FromContext(ctx)
 
-		if resource == nil {
-			return nil, false
-		}
 		manifest := resource.(*manifestv1beta1.Manifest)
 		labelValue, err := internal.GetResourceLabel(resource, manifestv1beta1.KymaName)
 		objectKey := client.ObjectKeyFromObject(resource)
 		var labelErr *types.LabelNotFoundError
 		if errors.As(err, &labelErr) {
+			logger.V(internal.DebugLogLevel).Info(
+				"client can not been cached due to lack of expected label",
+				"resource", objectKey)
 			return nil, false
 		}
-		cacheKey := generateCacheKey(labelValue, strconv.FormatBool(manifest.Spec.Remote), manifest.GetNamespace())
-		logger.V(internal.DebugLogLevel).Info(
-			"resource will be cached",
-			"resource", objectKey,
-			"cachekey", cacheKey,
-		)
+		cacheKey := GenerateCacheKey(labelValue, strconv.FormatBool(manifest.Spec.Remote), manifest.GetNamespace())
 		return cacheKey, true
 	}
 	return declarative.WithClientCacheKeyOption{ClientCacheKeyFn: cacheKey}
 }
 
-func generateCacheKey(values ...string) string {
-	var sb strings.Builder
-	for _, value := range values {
-		sb.WriteString(value)
-	}
-	return sb.String()
+func GenerateCacheKey(values ...string) string {
+	return strings.Join(values, "|")
 }

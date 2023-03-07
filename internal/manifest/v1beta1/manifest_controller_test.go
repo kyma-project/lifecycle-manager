@@ -20,7 +20,9 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	internalV1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"strconv"
 )
 
 const ManifestDir = "manifest"
@@ -142,7 +144,8 @@ var _ = Describe(
 				Eventually(expectManifestState, standardTimeout, standardInterval).
 					WithArguments(manifest.GetName()).Should(Succeed())
 				Eventually(expectedHelmClientCache, standardTimeout, standardInterval).
-					WithArguments(manifest.GetLabels()[v1beta1.KymaName]).Should(BeTrue())
+					WithArguments(internalV1beta1.GenerateCacheKey(manifest.GetLabels()[v1beta1.KymaName],
+						strconv.FormatBool(manifest.Spec.Remote), manifest.GetNamespace())).Should(BeTrue())
 				Eventually(deleteManifestAndVerify(manifest), standardTimeout, standardInterval).Should(Succeed())
 			},
 			Entry(
@@ -227,7 +230,9 @@ var _ = Describe(
 					WithArguments(manifestWithInstall).Should(Succeed())
 				validImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String(), layerInstalls)
 				Eventually(expectHelmClientCacheExist(true), standardTimeout, standardInterval).
-					WithArguments(manifestWithInstall.GetLabels()[v1beta1.KymaName]).Should(BeTrue())
+					WithArguments(internalV1beta1.GenerateCacheKey(manifestWithInstall.GetLabels()[v1beta1.KymaName],
+						strconv.FormatBool(manifestWithInstall.Spec.Remote), manifestWithInstall.GetNamespace())).
+					Should(BeTrue())
 				// this will ensure only manifest.yaml remains
 				deleteHelmChartResources(validImageSpec)
 				manifest2WithInstall := NewTestManifest("multi-oci2")
@@ -255,10 +260,9 @@ func skipExpect() func() bool {
 	}
 }
 
-func expectHelmClientCacheExist(expectExist bool) func(componentOwner string) bool {
-	return func(componentOwner string) bool {
-		key := client.ObjectKey{Name: componentOwner, Namespace: metav1.NamespaceDefault}
-		clnt := reconciler.ClientCache.GetClientFromCache(key)
+func expectHelmClientCacheExist(expectExist bool) func(cacheKey string) bool {
+	return func(cacheKey string) bool {
+		clnt := reconciler.ClientCache.GetClientFromCache(cacheKey)
 		if expectExist {
 			return clnt != nil
 		}
