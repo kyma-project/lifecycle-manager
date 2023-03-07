@@ -78,6 +78,7 @@ func (h *Helm) EnsurePrerequisites(ctx context.Context, obj Object) error {
 
 	chrt, err := loader.Load(h.chartPath)
 	if err != nil {
+		err = fmt.Errorf("error loading chart at %s: %w", h.chartPath, err)
 		h.recorder.Event(obj, "Warning", "ChartLoading", err.Error())
 		meta.SetStatusCondition(&status.Conditions, h.prerequisiteCondition(obj))
 		obj.SetStatus(status.WithState(StateError).WithErr(err))
@@ -159,6 +160,7 @@ func (h *Helm) Render(ctx context.Context, obj Object) ([]byte, error) {
 
 	chrt, err := loader.Load(h.chartPath)
 	if err != nil {
+		err = fmt.Errorf("error loading chart for rendering at %s: %w", h.chartPath, err)
 		h.recorder.Event(obj, "Warning", "ChartLoading", err.Error())
 		meta.SetStatusCondition(&status.Conditions, h.prerequisiteCondition(obj))
 		obj.SetStatus(status.WithState(StateError).WithErr(err))
