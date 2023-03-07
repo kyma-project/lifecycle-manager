@@ -65,12 +65,12 @@ These options include but are not limited to:
 
 All renderer implementations must implement the [renderer interface](v2/renderer.go) and are initialized based on a given `RendererMode` that is available in the [object specification](v2/spec.go).
 
-Currently all renderer options
+This is our current selection of rendering engines:
 
-- [HELM](v2/renderer_helm.go) is an optimized and specced-down version of the Helm Templating Engine to use with Charts
-- [kustomize](v2/renderer_kustomize.go) is an embedded [krusty](https://pkg.go.dev/sigs.k8s.io/kustomize/api/krusty) kustomize implementation
-- [raw](v2/renderer_raw.go) is an easy to use raw renderer that just passes through manifests
-- [cached](v2/renderer_with_cache.go) which uses an existing renderer and passes rendered resources by levaring a file cache in order to save on reoccuring reconciliation times. Especially useful for long render times from libraries like `HELM` or `kustomize`
+- [HELM](v2/renderer_helm.go): an optimized and specced-down version of the Helm Templating Engine to use with Charts
+- [kustomize](v2/renderer_kustomize.go): an embedded [krusty](https://pkg.go.dev/sigs.k8s.io/kustomize/api/krusty) kustomize implementation
+- [raw](v2/renderer_raw.go): Easy to use raw renderer that just passes through manifests as `.yaml` to the converter
+- [cached](v2/renderer_with_cache.go): Uses an existing renderer and passes rendered resources by levaring a file cache in order to save on reoccuring reconciliation times. Especially useful for long render times from libraries like `HELM` or `kustomize`
 
 Every renderer reconciles in a particular order through the [renderer interface](v2/renderer.go):
 
