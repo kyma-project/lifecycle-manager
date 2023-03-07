@@ -13,8 +13,8 @@ require (
 	github.com/invopop/jsonschema v0.7.0
 	github.com/jellydator/ttlcache/v3 v3.0.1
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20230131092109-31657012720d
-	github.com/onsi/ginkgo/v2 v2.8.3
-	github.com/onsi/gomega v1.27.1
+	github.com/onsi/ginkgo/v2 v2.8.4
+	github.com/onsi/gomega v1.27.2
 	github.com/open-component-model/ocm v0.1.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/stretchr/testify v1.8.2
