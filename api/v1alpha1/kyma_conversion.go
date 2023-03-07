@@ -10,6 +10,7 @@ func (src *Kyma) ConvertTo(dstRaw conversion.Hub) error {
 	dst.ObjectMeta = src.ObjectMeta
 	dst.Spec = src.Spec
 	dst.Status = src.Status
+	dst.Status.Conditions = nil
 	return nil
 }
 
@@ -19,5 +20,6 @@ func (dst *Kyma) ConvertFrom(srcRaw conversion.Hub) error {
 	dst.ObjectMeta = src.ObjectMeta
 	dst.Spec = src.Spec
 	dst.Status = src.Status
+	dst.Status.Conditions = nil
 	return nil
 }
