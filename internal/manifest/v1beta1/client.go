@@ -5,12 +5,19 @@ import (
 	"errors"
 	"fmt"
 
+	manifestv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/internal"
+	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/pkg/types"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log"
+	"strconv"
+	"strings"
 )
 
 var ErrKubeconfigFetchFailed = errors.New("could not fetch kubeconfig")
@@ -53,4 +60,28 @@ func (cc *ClusterClient) GetRESTConfig(
 		return nil, err
 	}
 	return restConfig, err
+}
+
+func WithClientCacheKey() declarative.WithClientCacheKeyOption {
+	cacheKey := func(ctx context.Context, resource declarative.Object) (any, bool) {
+		logger := log.FromContext(ctx)
+
+		manifest := resource.(*manifestv1beta1.Manifest)
+		labelValue, err := internal.GetResourceLabel(resource, manifestv1beta1.KymaName)
+		objectKey := client.ObjectKeyFromObject(resource)
+		var labelErr *types.LabelNotFoundError
+		if errors.As(err, &labelErr) {
+			logger.V(internal.DebugLogLevel).Info(
+				"client can not been cached due to lack of expected label",
+				"resource", objectKey)
+			return nil, false
+		}
+		cacheKey := GenerateCacheKey(labelValue, strconv.FormatBool(manifest.Spec.Remote), manifest.GetNamespace())
+		return cacheKey, true
+	}
+	return declarative.WithClientCacheKeyOption{ClientCacheKeyFn: cacheKey}
+}
+
+func GenerateCacheKey(values ...string) string {
+	return strings.Join(values, "|")
 }

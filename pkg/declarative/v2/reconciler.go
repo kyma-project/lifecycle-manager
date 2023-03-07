@@ -396,39 +396,21 @@ func (r *Reconciler) getTargetClient(
 	ctx context.Context, obj Object, spec *Spec,
 ) (Client, error) {
 	var err error
+	var clnt Client
+	if r.ClientCacheKeyFn == nil {
+		return r.configClient(ctx, obj, spec.ManifestName)
+	}
 
-	clientsCacheKey := r.ClientCacheKeyFn(ctx, obj)
-
-	clnt := r.GetClientFromCache(clientsCacheKey)
+	clientsCacheKey, found := r.ClientCacheKeyFn(ctx, obj)
+	if found {
+		clnt = r.GetClientFromCache(clientsCacheKey)
+	}
 
 	if clnt == nil {
-		cluster := &ClusterInfo{
-			Config: r.Config,
-			Client: r.Client,
-		}
-		if r.TargetCluster != nil {
-			cluster, err = r.TargetCluster(ctx, obj)
-		}
+		clnt, err = r.configClient(ctx, obj, spec.ManifestName)
 		if err != nil {
 			return nil, err
 		}
-		clnt, err = NewSingletonClients(cluster, log.FromContext(ctx))
-		if err != nil {
-			return nil, err
-		}
-		clnt.Install().Atomic = false
-		clnt.Install().Replace = true
-		clnt.Install().DryRun = true
-		clnt.Install().IncludeCRDs = false
-		clnt.Install().CreateNamespace = r.CreateNamespace
-		clnt.Install().UseReleaseName = false
-		clnt.Install().IsUpgrade = true
-		clnt.Install().DisableHooks = true
-		clnt.Install().DisableOpenAPIValidation = true
-		if clnt.Install().Version == "" && clnt.Install().Devel {
-			clnt.Install().Version = ">0.0.0-0"
-		}
-		clnt.Install().ReleaseName = spec.ManifestName
 		r.SetClientInCache(clientsCacheKey, clnt)
 	}
 
@@ -448,6 +430,41 @@ func (r *Reconciler) getTargetClient(
 		}
 	}
 
+	return clnt, nil
+}
+
+func (r *Reconciler) configClient(ctx context.Context, obj Object, releaseName string) (Client, error) {
+	var err error
+
+	cluster := &ClusterInfo{
+		Config: r.Config,
+		Client: r.Client,
+	}
+
+	if r.TargetCluster != nil {
+		cluster, err = r.TargetCluster(ctx, obj)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	clnt, err := NewSingletonClients(cluster, log.FromContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+	clnt.Install().Atomic = false
+	clnt.Install().Replace = true
+	clnt.Install().DryRun = true
+	clnt.Install().IncludeCRDs = false
+	clnt.Install().CreateNamespace = r.CreateNamespace
+	clnt.Install().UseReleaseName = false
+	clnt.Install().IsUpgrade = true
+	clnt.Install().DisableHooks = true
+	clnt.Install().DisableOpenAPIValidation = true
+	if clnt.Install().Version == "" && clnt.Install().Devel {
+		clnt.Install().Version = ">0.0.0-0"
+	}
+	clnt.Install().ReleaseName = releaseName
 	return clnt, nil
 }
 

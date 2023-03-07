@@ -149,7 +149,7 @@ var _ = BeforeSuite(
 					return &declarative.ClusterInfo{Config: authUser.Config()}, nil
 				},
 			),
-			declarative.WithClientCacheKeyFromLabelOrResource(v1beta1.KymaName),
+			internalv1beta1.WithClientCacheKey(),
 			declarative.WithPostRun{internalv1beta1.PostRunCreateCR},
 			declarative.WithPreDelete{internalv1beta1.PreDeleteDeleteCR},
 			declarative.WithCustomReadyCheck(declarative.NewExistsReadyCheck()),

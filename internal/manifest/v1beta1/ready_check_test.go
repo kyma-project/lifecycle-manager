@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
+	internalV1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
 
 	appsv1 "k8s.io/api/apps/v1"
@@ -21,6 +21,7 @@ import (
 	"k8s.io/cli-runtime/pkg/resource"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strconv"
 )
 
 var _ = Describe("Custom Manifest consistency check", Ordered, func() {
@@ -49,11 +50,12 @@ var _ = Describe("Custom Manifest consistency check", Ordered, func() {
 		Eventually(expectManifestStateIn(declarative.StateReady), standardTimeout, standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 		Eventually(expectHelmClientCacheExist(true), standardTimeout, standardInterval).
-			WithArguments(manifest.GetLabels()[v1beta1.KymaName]).Should(BeTrue())
-		cachedClient := reconciler.ClientCache.GetClientFromCache(client.ObjectKey{
-			Name:      manifest.GetLabels()[v1beta1.KymaName],
-			Namespace: metav1.NamespaceDefault,
-		})
+			WithArguments(internalV1beta1.GenerateCacheKey(manifest.GetLabels()[v1beta1.KymaName],
+				strconv.FormatBool(manifest.Spec.Remote), manifest.GetNamespace())).Should(BeTrue())
+		cacheKey := internalV1beta1.GenerateCacheKey(manifest.GetLabels()[v1beta1.KymaName],
+			strconv.FormatBool(manifest.Spec.Remote), manifest.GetNamespace())
+
+		cachedClient := reconciler.ClientCache.GetClientFromCache(cacheKey)
 
 		By("Verifying that deployment and Sample CR are deployed and ready")
 		deploy := &appsv1.Deployment{}
@@ -77,7 +79,7 @@ var _ = Describe("Custom Manifest consistency check", Ordered, func() {
 		Expect(deployInfo).ToNot(BeNil())
 		resources = append(resources, deployInfo)
 		By("Executing the custom readiness check")
-		customReadyCheck := internalv1beta1.NewManifestCustomResourceReadyCheck()
+		customReadyCheck := internalV1beta1.NewManifestCustomResourceReadyCheck()
 		Expect(customReadyCheck.Run(ctx, cachedClient, manifest, resources)).To(Succeed())
 	})
 })

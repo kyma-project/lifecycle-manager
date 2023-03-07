@@ -310,6 +310,7 @@ func StartDeclarativeReconcilerForRun(
 			// readiness check will not work without dedicated control loops in envtest. E.g. by default
 			// deployments are not started or set to ready. However we can check if the resource was created by
 			// the reconciler.
+			WithClientCacheKey(),
 			WithCustomReadyCheck(NewExistsReadyCheck()),
 			WithCustomResourceLabels(labels.Set{testRunLabel: runID}),
 			WithPeriodicConsistencyCheck(2*time.Second),
@@ -366,4 +367,11 @@ func expectResourceRecreated(ctx context.Context, obj *testv1.TestAPI) error {
 	}
 
 	return nil
+}
+
+func WithClientCacheKey() WithClientCacheKeyOption {
+	cacheKey := func(ctx context.Context, resource Object) (any, bool) {
+		return client.ObjectKeyFromObject(resource), true
+	}
+	return WithClientCacheKeyOption{ClientCacheKeyFn: cacheKey}
 }
