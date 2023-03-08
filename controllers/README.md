@@ -1,0 +1,25 @@
+# Controllers used within Lifecycle-Manager
+
+This package contains all controllers that can be registered within the Lifecycle Manager.
+
+## Kyma Controller
+
+The [Kyma controller](kyma_controller.go) is dealing with the introspection, interpretation and status update of the [`Kyma` CustomResource](../api/v1beta1/kyma_types.go).
+
+Its main responsibilities are:
+
+1. Interpret the `.spec.modules` list and use the correct [`ModuleTemplate` CustomResource](../api/v1beta1/moduletemplate_types.go) for the Module
+2. Translate the `ModuleTemplate` into a [`Manifest` CustomResource](../api/v1beta1/manifest_types.go) and create it with an OwnerReference to the `Kyma` where the module was listed
+3. Propagate changes from `ModuleTemplate` updates (e.g. updates to the Module Layers contained in the OCI Descriptor) into the correct `Manifest` and process upgrades, but prohibit downgrades.
+4. Track all created `Manifests` and aggregate the status into a `State`, that reflects the integrity of the Kyma installation managed by Lifecycle Manager.
+5. Synchronize all of the above changes to the `Kyma` Status as well as available `ModuleTemplates` into a remote cluster based on the fields in `.spec.remote`. 
+   This allows the use of ModuleTemplates in a cluster managed by the Lifecycle Manager as a Target while the Control-Plane is in a different Cluster.
+
+## Manifest Controller
+
+The [Manifest controller](manifest_controller.go) is dealing with the reconciliation and installation of data desired through a `Manifest`, a representation of a single module desired in a cluster.
+Since it mainly is a delegation to the [declarative reconciliation library](../pkg/declarative/README.md) with certain [internal implementation additions](../internal/manifest/README.md) please look at the respective documentation for these parts to understand them more.
+
+## Watcher Controller
+
+The [Watcher controller](watcher_controller.go) is dealing with the update of VirtualService rules derived from the [`Watcher` CustomResource](../api/v1beta1/watcher_types.go). This is then used to initialize the `Watcher` from the Kyma controller in each runtime, a small component initialized to propagate changes from the runtime(remote) clusters back to react to changes that can affect the `Manifest` integrity.
