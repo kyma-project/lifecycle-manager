@@ -7,7 +7,6 @@ import (
 
 	"helm.sh/helm/v3/pkg/kube"
 	v1 "k8s.io/api/core/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/resource"
@@ -298,9 +297,6 @@ func (r *Reconciler) deleteResources(
 	if !obj.GetDeletionTimestamp().IsZero() {
 		for _, preDelete := range r.PreDeletes {
 			if err := preDelete(ctx, clnt, r.Client, obj); err != nil {
-				if k8serrors.IsNotFound(err) || meta.IsNoMatchError(err) {
-					continue
-				}
 				r.Event(obj, "Warning", "PreDelete", err.Error())
 				// we do not set a status here since it will be deleting if timestamp is set.
 				return err
