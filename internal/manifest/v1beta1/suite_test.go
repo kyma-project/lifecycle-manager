@@ -138,10 +138,14 @@ var _ = BeforeSuite(
 		)
 		Expect(err).NotTo(HaveOccurred())
 
+		k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(k8sClient).NotTo(BeNil())
+		kcp := &declarative.ClusterInfo{Config: cfg, Client: k8sClient}
 		reconciler = declarative.NewFromManager(
 			k8sManager, &v1beta1.Manifest{},
 			declarative.WithSpecResolver(
-				internalv1beta1.NewManifestSpecResolver(codec),
+				internalv1beta1.NewManifestSpecResolver(kcp, codec),
 			),
 			declarative.WithPermanentConsistencyCheck(true),
 			declarative.WithRemoteTargetCluster(
@@ -168,10 +172,6 @@ var _ = BeforeSuite(
 				},
 			).Complete(reconciler)
 		Expect(err).ToNot(HaveOccurred())
-
-		k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
-		Expect(err).NotTo(HaveOccurred())
-		Expect(k8sClient).NotTo(BeNil())
 
 		go func() {
 			defer GinkgoRecover()
