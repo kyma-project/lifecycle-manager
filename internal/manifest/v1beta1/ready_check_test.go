@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -21,7 +22,6 @@ import (
 	"k8s.io/cli-runtime/pkg/resource"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strconv"
 )
 
 var _ = Describe("Custom Manifest consistency check", Ordered, func() {

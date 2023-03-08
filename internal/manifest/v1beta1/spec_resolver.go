@@ -40,9 +40,9 @@ type ManifestSpecResolver struct {
 	cachedCharts map[string]string
 }
 
-func NewManifestSpecResolver(KCP *declarative.ClusterInfo, codec *v1beta1.Codec) *ManifestSpecResolver {
+func NewManifestSpecResolver(kcp *declarative.ClusterInfo, codec *v1beta1.Codec) *ManifestSpecResolver {
 	return &ManifestSpecResolver{
-		KCP:          KCP,
+		KCP:          kcp,
 		Codec:        codec,
 		ChartCache:   os.TempDir(),
 		cachedCharts: make(map[string]string),
