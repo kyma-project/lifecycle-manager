@@ -27,9 +27,7 @@ func NewManifestCustomResourceReadyCheck() *ManifestCustomResourceReadyCheck {
 
 type ManifestCustomResourceReadyCheck struct{}
 
-var (
-	ErrNoDeterminedState = errors.New("could not determine state")
-)
+var ErrNoDeterminedState = errors.New("could not determine state")
 
 func (c *ManifestCustomResourceReadyCheck) Run(
 	ctx context.Context, clnt declarative.Client, obj declarative.Object, resources []*resource.Info,
