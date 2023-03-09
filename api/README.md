@@ -203,7 +203,7 @@ status:
     version: v0.2.3
 ```
 
-As can be seen above, not only is the module name resolved to a unique `fqdn`, it also represents the active `channel`, `version` and `state` which is a direct tracking to the `Manifest` `.status.state``
+As can be seen above, not only is the module name resolved to a unique `fqdn`, it also represents the active `channel`, `version` and `state` which is a direct tracking to the `Manifest` `.status.state`. The Kyma `Ready` state can only be achieved if all tracked modules are in `Ready` themselves.
 
 The `Manifest` can be directly observed by looking at the `metadata` and `apiVersion` and `kind` which can be used to dynamically resolve the module.
 
@@ -360,6 +360,11 @@ The [internal spec resolver](../internal/manifest/v1beta1/spec_resolver.go) will
 ### `.spec.resource`
 
 The resource is the default data that should be initialized for the module and is directly copied from `.spec.data` of the `ModuleTemplate` after normalizing it with the `namespace` for the synchronized module.
+
+
+### `.status`
+
+The Manifest status is an unmodified version of the [declarative status](../pkg/declarative/README.md#resource-tracking), so the tracking process of the library applies. There is no custom API for this.
 
 ## [`Watcher` CustomResource](v1beta1/watcher_types.go)
 
