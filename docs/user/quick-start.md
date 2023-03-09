@@ -25,7 +25,7 @@ istioctl install -y
 ```
 Lifecycle Manager also exposes metrics that are collected by Prometheus Operator in the control plane to provide better observability. To simplify the local setup, you only need to deploy the ServiceMonitor CRD using the following command:
 ```
-kubectl apply -f hack/servicemonitors.yaml
+kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/crds/crd-servicemonitors.yaml
 ```
 You can also follow official [quick start](https://prometheus-operator.dev/docs/prologue/quick-start/) guide to deploy a full set of prometheus operator into cluster as an alternative solution if you want to monitor the component performance.
 
