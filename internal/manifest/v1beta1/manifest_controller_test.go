@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"strconv"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
@@ -22,7 +23,6 @@ import (
 
 	internalV1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"strconv"
 )
 
 const ManifestDir = "manifest"

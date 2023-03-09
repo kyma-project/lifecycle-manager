@@ -32,7 +32,7 @@ type ChartInfo struct {
 var ErrNoAuthSecretFound = errors.New("no auth secret found")
 
 type ManifestSpecResolver struct {
-	KCP client.Client
+	KCP *declarative.ClusterInfo
 
 	*v1beta1.Codec
 
@@ -40,8 +40,9 @@ type ManifestSpecResolver struct {
 	cachedCharts map[string]string
 }
 
-func NewManifestSpecResolver(codec *v1beta1.Codec) *ManifestSpecResolver {
+func NewManifestSpecResolver(kcp *declarative.ClusterInfo, codec *v1beta1.Codec) *ManifestSpecResolver {
 	return &ManifestSpecResolver{
+		KCP:          kcp,
 		Codec:        codec,
 		ChartCache:   os.TempDir(),
 		cachedCharts: make(map[string]string),
@@ -309,7 +310,7 @@ func (m *ManifestSpecResolver) lookupKeyChain(
 	var keyChain authn.Keychain
 	var err error
 	if imageSpec.CredSecretSelector != nil {
-		if keyChain, err = GetAuthnKeychain(ctx, imageSpec, m.KCP); err != nil {
+		if keyChain, err = GetAuthnKeychain(ctx, imageSpec, m.KCP.Client); err != nil {
 			return nil, err
 		}
 	} else {

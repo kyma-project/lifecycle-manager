@@ -75,18 +75,18 @@ func ManifestReconciler(
 	mgr manager.Manager, codec *v1beta1.Codec,
 	checkInterval time.Duration,
 ) *declarative.Reconciler {
+	kcp := &declarative.ClusterInfo{
+		Client: mgr.GetClient(),
+		Config: mgr.GetConfig(),
+	}
+	lookup := &internalv1beta1.RemoteClusterLookup{KCP: kcp}
 	return declarative.NewFromManager(
 		mgr, &v1beta1.Manifest{},
 		declarative.WithSpecResolver(
-			internalv1beta1.NewManifestSpecResolver(codec),
+			internalv1beta1.NewManifestSpecResolver(kcp, codec),
 		),
 		declarative.WithCustomReadyCheck(internalv1beta1.NewManifestCustomResourceReadyCheck()),
-		declarative.WithRemoteTargetCluster(
-			(&internalv1beta1.RemoteClusterLookup{KCP: &declarative.ClusterInfo{
-				Client: mgr.GetClient(),
-				Config: mgr.GetConfig(),
-			}}).ConfigResolver,
-		),
+		declarative.WithRemoteTargetCluster(lookup.ConfigResolver),
 		internalv1beta1.WithClientCacheKey(),
 		declarative.WithPostRun{internalv1beta1.PostRunCreateCR},
 		declarative.WithPreDelete{internalv1beta1.PreDeleteDeleteCR},
