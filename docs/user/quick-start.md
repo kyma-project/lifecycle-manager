@@ -79,6 +79,3 @@ kubectl apply -f default-kyma-secret.yaml
 ```
 
 After this access secrete successfully deployed, you can start to use Kyma CLI manage modules for remote cluster.
-
-## Next Steps
-[TBD]
