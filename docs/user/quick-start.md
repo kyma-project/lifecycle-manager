@@ -63,6 +63,10 @@ The Module Template persists in [kyma official repository](https://github.com/ky
 kubectl apply -k https://github.com/kyma-project/kyma//modules
 ```
 
+In order to manage remote cluster modules, Kyma Lifecycle Manager needs to know the authentication credential, like other native Kubernetes tools, the nature way to communicate with Kubernetes API server is through kubeconfig file. 
+
+That brings us the design idea to relay on the secret resource to provide this information. In each secret, there configured a label named `operator.kyma-project.io/kyma-name`, user must configure the label value same as the Kyma CR name so that Lifecyle Manager can knows which correct authentication credential to use.
+
 With the following command, it will create a secret yaml file which named `default-kyma` (same as the Kyma CR name) under `kyma-system` (same as the Kyma CR namespace) namespace, which contains remote cluster kubeconfig as `data.config`.
 ```
 export KUBECONFIG=[path to your remote cluster kubeconfig yaml file]
