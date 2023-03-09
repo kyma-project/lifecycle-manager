@@ -154,6 +154,65 @@ When set to its default value `true`, it will always create the `Kyma` resource 
 This does not mean however, that the desired state has no modules as well. It simply means that all modules that are already activated before the synchronziation will not be replicated to the remote cluster. 
 This might be less confusing as disabling it, as even if one would remove a module in the remote cluster, if it is still present in the control-plane specification, it would not be removed.
 
+
+### `.status.state`
+
+The `State` is a simple representation of the state of the entire `Kyma` installation. It is defined as an aggregated status that is one of `Ready`, `Processing`, `Error` and `Deleting`, based on the status of _all_ `Manifest` resources on top of the validity/integrity of the synchronization to a remote cluster if enabled.
+
+The `State` will always be reported based on the last reconciliation loop of the [Kyma controller](../controllers/kyma_controller.go). It will be set to `Ready` only if all installations were succesfully executed and are consistent at the time of the reconciliation.
+
+### `.status.conditions`
+
+The conditions represent individual elements of the reconciliation that can either be `true` or `false`, for example representing the readiness of all Modules (`Manifest`). For more details on how conditions are aggregated and built, take a look at [KEP-1623: Standardize Conditions](https://github.com/kubernetes/enhancements/tree/master/keps/sig-api-machinery/1623-standardize-conditions), which is our reference documentation for conditions.
+
+Currently, we maintain conditions for
+- Module (`Manifest`) synchronization
+- Module Catalog (`ModuleTemplate`) synchronization
+- Watcher Installation Consistency
+
+We also calculate `.status.state` readiness based on all the conditions available.
+
+### `.status.modules`
+
+This describes the tracked modules that should be installed within a `Kyma` cluster. Each tracked module is based on one entry in `.spec.modules` and represents the resolved `Manifest` that is based on a given `ModuleTemplate` in a release `channel`:
+
+```yaml
+apiVersion: operator.kyma-project.io/v1beta1
+kind: Kyma
+# ...
+status:
+  modules:
+  - channel: alpha
+    fqdn: kyma.project.io/module/btp-operator
+    manifest:
+      apiVersion: operator.kyma-project.io/v1beta1
+      kind: Manifest
+      metadata:
+        generation: 1
+        name: 24bd3cbf-454a-4075-baa6-113a23fdfcd0-btp-operator-4128321918
+        namespace: kcp-system
+    name: btp-operator
+    state: Processing
+    template:
+      apiVersion: operator.kyma-project.io/v1beta1
+      kind: ModuleTemplate
+      metadata:
+        generation: 2
+        name: moduletemplate-btp-operator
+        namespace: kcp-system
+    version: v0.2.3
+```
+
+As can be seen above, not only is the module name resolved to a unique `fqdn`, it also represents the active `channel`, `version` and `state` which is a direct tracking to the `Manifest` `.status.state``
+
+The `Manifest` can be directly observed by looking at the `metadata` and `apiVersion` and `kind` which can be used to dynamically resolve the module.
+
+The same is done for the `ModuleTemplate`. The actual one that is used as template to initialize and synchronize the module similarly is referenced by `apiVersion`, `kind` and `metadata`.
+
+To observe not only how the state of the `synchronization` but the entire reconciliation is working, as well as to check on latency and the last observed change, we also introduce a new field: `lastOperation`. This contains not only a timestamp of the last change (which allows to view the time since the module was last reconciled by Lifecycle Manager), but also a message that either contains a process message, or an error message in case of an `Error` state. Thus, to get more details of any potential issues, it is recommended to check `lastOperation`.
+
+In addition to this we also regularly issue `Events` for important things happening at specific time intervals, e.g. critical errors that ease observability.
+
 ## [`ModuleTemplate` CustomResource](v1beta1/moduletemplate_types.go)
 
 The core of our modular discovery, the `ModuleTemplate` contains 3 main parts that are used to initialize and resolve modules.
