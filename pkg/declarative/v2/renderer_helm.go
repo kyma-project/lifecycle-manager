@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/kube"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -75,12 +76,8 @@ func (h *Helm) EnsurePrerequisites(ctx context.Context, obj Object) error {
 		return nil
 	}
 
-	chrt, err := loader.Load(h.chartPath)
+	chrt, err := h.loadChart(obj, status)
 	if err != nil {
-		err = fmt.Errorf("error loading chart at %s: %w", h.chartPath, err)
-		h.recorder.Event(obj, "Warning", "ChartLoading", err.Error())
-		meta.SetStatusCondition(&status.Conditions, h.prerequisiteCondition(obj))
-		obj.SetStatus(status.WithState(StateError).WithErr(err))
 		return err
 	}
 
@@ -126,6 +123,18 @@ func (h *Helm) EnsurePrerequisites(ctx context.Context, obj Object) error {
 	return nil
 }
 
+func (h *Helm) loadChart(obj Object, status Status) (*chart.Chart, error) {
+	chrt, err := loader.Load(h.chartPath)
+	if err != nil {
+		err = fmt.Errorf("error loading chart at %s: %w", h.chartPath, err)
+		h.recorder.Event(obj, "Warning", "ChartLoading", err.Error())
+		meta.SetStatusCondition(&status.Conditions, h.prerequisiteCondition(obj))
+		obj.SetStatus(status.WithState(StateError).WithErr(err))
+		return nil, err
+	}
+	return chrt, nil
+}
+
 func (h *Helm) RemovePrerequisites(ctx context.Context, obj Object) error {
 	status := obj.GetStatus()
 	if err := NewConcurrentCleanup(h.clnt).Run(ctx, h.crds); errors.Is(err, ErrDeletionNotFinished) {
@@ -156,12 +165,8 @@ func (h *Helm) Render(ctx context.Context, obj Object) ([]byte, error) {
 		valuesAsMap = map[string]any{}
 	}
 
-	chrt, err := loader.Load(h.chartPath)
+	chrt, err := h.loadChart(obj, status)
 	if err != nil {
-		err = fmt.Errorf("error loading chart for rendering at %s: %w", h.chartPath, err)
-		h.recorder.Event(obj, "Warning", "ChartLoading", err.Error())
-		meta.SetStatusCondition(&status.Conditions, h.prerequisiteCondition(obj))
-		obj.SetStatus(status.WithState(StateError).WithErr(err))
 		return nil, err
 	}
 
