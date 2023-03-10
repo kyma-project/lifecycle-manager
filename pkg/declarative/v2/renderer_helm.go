@@ -69,7 +69,6 @@ func (h *Helm) Initialize(obj Object) error {
 
 func (h *Helm) EnsurePrerequisites(ctx context.Context, obj Object) error {
 	status := obj.GetStatus()
-
 	if obj.GetDeletionTimestamp().IsZero() && meta.IsStatusConditionTrue(
 		status.Conditions, h.prerequisiteCondition(obj).Type,
 	) {
