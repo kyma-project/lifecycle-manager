@@ -31,7 +31,13 @@ const (
 	RenderModeRaw       RenderMode = "raw"
 )
 
-func InitializeRenderer(ctx context.Context, obj Object, spec *Spec, client Client, options *Options) (Renderer, error) {
+func InitializeRenderer(
+	ctx context.Context,
+	obj Object,
+	spec *Spec,
+	client Client,
+	options *Options,
+) (Renderer, error) {
 	var renderer Renderer
 
 	switch spec.Mode {
