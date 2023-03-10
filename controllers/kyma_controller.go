@@ -27,8 +27,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/metrics"
 	"k8s.io/client-go/rest"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
@@ -39,6 +37,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -86,7 +85,6 @@ type KymaReconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-
 func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := ctrlLog.FromContext(ctx)
 	logger.V(log.InfoLevel).Info("reconciling")
@@ -102,6 +100,11 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		logger.Info("Deleted successfully!")
 
 		return ctrl.Result{}, client.IgnoreNotFound(err) //nolint:wrapcheck
+	}
+
+	if status.SetConditions(kyma, r.WatcherEnabled(kyma)) {
+		r.Client.Patch(ctx, kyma, client.Apply)
+		return ctrl.Result{}, nil
 	}
 
 	if kyma.SkipReconciliation() {
@@ -188,8 +191,6 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta1.Ky
 		return nil
 	}
 
-	kyma.UpdateCondition(v1beta1.ConditionTypeModuleCatalogIsReady, metav1.ConditionFalse)
-
 	moduleTemplateList := &v1beta1.ModuleTemplateList{}
 	if err := r.List(ctx, moduleTemplateList, &client.ListOptions{}); err != nil {
 		return fmt.Errorf("could not aggregate module templates for module catalog sync: %w", err)
@@ -199,7 +200,7 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta1.Ky
 		return fmt.Errorf("could not synchronize remote module catalog: %w", err)
 	}
 
-	kyma.UpdateCondition(v1beta1.ConditionTypeModuleCatalogIsReady, metav1.ConditionTrue)
+	kyma.UpdateCondition(v1beta1.ConditionTypeModuleCatalog, metav1.ConditionTrue)
 
 	return nil
 }
@@ -232,25 +233,24 @@ func (r *KymaReconciler) HandleInitialState(ctx context.Context, kyma *v1beta1.K
 func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1beta1.Kyma) error {
 	logger := ctrlLog.FromContext(ctx)
 
-	conditionReason := v1beta1.ConditionTypeModulesAreReady
-	conditionStatus := metav1.ConditionTrue
+	allModulesReady := true
 	if err := r.syncModules(ctx, kyma); err != nil {
-		conditionStatus = metav1.ConditionFalse
-		kyma.UpdateCondition(conditionReason, conditionStatus)
 		return r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta1.StateError, err)
 	}
 	for i := range kyma.Status.Modules {
 		moduleStatus := &kyma.Status.Modules[i]
 		if moduleStatus.State != v1beta1.StateReady {
-			conditionStatus = metav1.ConditionFalse
+			allModulesReady = false
 			break
 		}
 	}
-	kyma.UpdateCondition(conditionReason, conditionStatus)
 
-	if kyma.Spec.Sync.Enabled && r.SKRWebhookManager != nil {
+	if allModulesReady {
+		kyma.UpdateCondition(v1beta1.ConditionTypeModules, metav1.ConditionTrue)
+	}
+
+	if r.WatcherEnabled(kyma) {
 		if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
-			kyma.UpdateCondition(v1beta1.ConditionTypeSKRWebhookIsReady, metav1.ConditionFalse)
 			// TODO Move installation to own go-routine to not block installation
 			// + consider introducing own condition for CertificateReady Status
 			// https://github.com/kyma-project/lifecycle-manager/issues/376
@@ -259,10 +259,11 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1beta
 					fmt.Errorf("error while installing Watcher Webhook Chart: %w", err))
 			}
 		}
+		kyma.UpdateCondition(v1beta1.ConditionTypeSKRWebhook, metav1.ConditionTrue)
 	}
 
 	// set ready condition if applicable
-	state := kyma.DetermineState()
+	state := kyma.DetermineState(r.WatcherEnabled(kyma))
 
 	if state == v1beta1.StateReady {
 		const message = "kyma is ready"
@@ -308,7 +309,7 @@ func (r *KymaReconciler) syncModules(ctx context.Context, kyma *v1beta1.Kyma) er
 func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1beta1.Kyma) (bool, error) {
 	logger := ctrlLog.FromContext(ctx).V(log.InfoLevel)
 
-	if kyma.Spec.Sync.Enabled && r.SKRWebhookManager != nil {
+	if r.WatcherEnabled(kyma) {
 		if err := r.SKRWebhookManager.Remove(ctx, kyma); err != nil {
 			// here we expect that an error is normal and means we have to try again if it didn't work
 			r.Event(kyma, "Normal", "WebhookChartRemoval", err.Error())
@@ -460,4 +461,11 @@ func (r *KymaReconciler) RecordKymaStatusMetrics(kyma *v1beta1.Kyma) {
 	}
 
 	metrics.RecordKymaStatus(kyma.Name, kyma.Status.State, shoot, instanceID)
+}
+
+func (r *KymaReconciler) WatcherEnabled(kyma *v1beta1.Kyma) bool {
+	if kyma.Spec.Sync.Enabled && r.SKRWebhookManager != nil {
+		return true
+	}
+	return false
 }

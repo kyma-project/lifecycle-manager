@@ -176,17 +176,6 @@ func getSkrChartDeployment(ctx context.Context, skrClient client.Client, kymaObj
 	}
 }
 
-func getSKRWebhookConfig(ctx context.Context, skrClient client.Client,
-	kymaObjKey client.ObjectKey,
-) (*admissionv1.ValidatingWebhookConfiguration, error) {
-	webhookCfg := &admissionv1.ValidatingWebhookConfiguration{}
-	err := skrClient.Get(ctx, client.ObjectKey{
-		Namespace: kymaObjKey.Namespace,
-		Name:      watcher.SkrResourceName,
-	}, webhookCfg)
-	return webhookCfg, err
-}
-
 func latestWebhookIsConfigured(ctx context.Context, skrClient client.Client, watcher *v1beta1.Watcher,
 	kymaObjKey client.ObjectKey,
 ) func() error {
@@ -197,6 +186,17 @@ func latestWebhookIsConfigured(ctx context.Context, skrClient client.Client, wat
 		}
 		return isWebhookConfigured(watcher, webhookCfg, kymaObjKey.Name)
 	}
+}
+
+func getSKRWebhookConfig(ctx context.Context, skrClient client.Client,
+	kymaObjKey client.ObjectKey,
+) (*admissionv1.ValidatingWebhookConfiguration, error) {
+	webhookCfg := &admissionv1.ValidatingWebhookConfiguration{}
+	err := skrClient.Get(ctx, client.ObjectKey{
+		Namespace: kymaObjKey.Namespace,
+		Name:      watcher.SkrResourceName,
+	}, webhookCfg)
+	return webhookCfg, err
 }
 
 func isWebhookConfigured(watcher *v1beta1.Watcher, webhookConfig *admissionv1.ValidatingWebhookConfiguration,
