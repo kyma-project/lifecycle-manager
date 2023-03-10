@@ -28,8 +28,6 @@ type Status struct {
 
 	// Conditions contain a set of conditionals to determine the State of Status.
 	// If all Conditions are met, the State is expected to be in StateReady.
-	// +patchMergeKey=type
-	// +patchStrategy=merge
 	// +listType=map
 	// +listMapKey=type
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`

@@ -33,6 +33,8 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 ) error {
 	kyma.Status.State = newState
 
+	kyma.ManagedFields = nil
+
 	switch newState {
 	case v1beta1.StateReady:
 		kyma.SetActiveChannel()
@@ -48,7 +50,8 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 		LastUpdateTime: metav1.NewTime(time.Now()),
 	}
 
-	if err := k.Update(ctx, kyma); err != nil {
+	if err := k.Patch(ctx, kyma, client.Apply, subResourceOpts(client.ForceOwnership),
+		client.FieldOwner(v1beta1.OperatorName)); err != nil {
 		return fmt.Errorf("status could not be updated: %w", err)
 	}
 
@@ -57,4 +60,8 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 	}
 
 	return nil
+}
+
+func subResourceOpts(opts ...client.PatchOption) client.SubResourcePatchOption {
+	return &client.SubResourcePatchOptions{PatchOptions: *(&client.PatchOptions{}).ApplyOptions(opts)}
 }

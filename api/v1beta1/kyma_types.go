@@ -169,6 +169,8 @@ type KymaStatus struct {
 
 	// List of status conditions to indicate the status of a ServiceInstance.
 	// +optional
+	// +listType=map
+	// +listMapKey=type
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// Contains essential information about the current deployed module
@@ -298,6 +300,12 @@ func (m PartialMeta) GetGeneration() int64 {
 	return m.Generation
 }
 
+// TODO Cond: Document
+type KymaConditionMsg string
+
+// TODO Cond: Document
+type KymaConditionReason string
+
 // KymaConditionType is a programmatic identifier indicating the type for the corresponding condition.
 // By combining of condition type and status, it explains the current Kyma status for all modules.
 // Name example:
@@ -370,7 +378,7 @@ func (kyma *Kyma) UpdateCondition(conditionType KymaConditionType, status metav1
 	meta.SetStatusCondition(&kyma.Status.Conditions, metav1.Condition{
 		Type:               string(conditionType),
 		Status:             status,
-		Reason:             GenerateReason(status),
+		Reason:             string(ConditionReason),
 		Message:            GenerateMessage(conditionType, status),
 		ObservedGeneration: kyma.GetGeneration(),
 	})
@@ -399,7 +407,7 @@ func (kyma *Kyma) SkipReconciliation() bool {
 	return kyma.GetLabels() != nil && kyma.GetLabels()[SkipReconcileLabel] == "true"
 }
 
-func (kyma *Kyma) DetermineState() State {
+func (kyma *Kyma) DetermineState(watcherEnabled bool) State {
 	status := &kyma.Status
 	for _, moduleStatus := range status.Modules {
 		if moduleStatus.State == StateError {
@@ -407,12 +415,9 @@ func (kyma *Kyma) DetermineState() State {
 		}
 	}
 
-	if len(status.Conditions) < 1 {
-		return StateProcessing
-	}
-
-	for _, existingCondition := range status.Conditions {
-		if existingCondition.Status != metav1.ConditionTrue {
+	for _, condition := range GetRequiredConditions(kyma.Spec.Sync.Enabled, watcherEnabled) {
+		existingCondition := meta.FindStatusCondition(status.Conditions, string(condition))
+		if existingCondition == nil || existingCondition.Status != metav1.ConditionTrue {
 			return StateProcessing
 		}
 	}
