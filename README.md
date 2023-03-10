@@ -136,5 +136,6 @@ We chose to replace this with Operator-focused Reconciliation due to various rea
 
 ## Testing and implementation guide for Lifecycle Manager developers
 
+- For our detailed overview and reference documentation refer to our [reference overview](docs/developer/reference-documentation.md)
 - For a detailed cluster and module setup refer to our [test environment guide](docs/developer/local-test-setup.md)
 - For configuring the lifecycle-manager operator refer to our [developer guide](docs/user/starting-operator-with-webhooks.md)
