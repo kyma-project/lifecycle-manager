@@ -213,6 +213,19 @@ To observe not only how the state of the `synchronization` but the entire reconc
 
 In addition to this we also regularly issue `Events` for important things happening at specific time intervals, e.g. critical errors that ease observability.
 
+### Label-based side-effects from `operator.kyma-project.io`
+
+There are various overarching features that can be enabled/disabled or provided as hints to the reconciler by providing a specific label key and value to the `Kyma` and it's related resources. To take a look at labels, use the matching [API label reference](v1beta1/operator_labels.go).
+
+The most important ones include, but are not limited to:
+
+- `operator.kyma-project.io/Kyma`: the [finalizer](https://kubernetes.io/docs/concepts/overview/working-with-objects/finalizers/) set by lifecycle manager to deal with `Kyma` cleanup
+- `operator.kyma-project.io/kyma-name`: An identifier that can be set on a secret to identify correct cluster access kubeconfigs to be used during reconciliation.
+- `operator.kyma-project.io/signature`: An identifier that can be set on a secret to identify correct signature X.509 Secrets that contain a key called `key` which contains a X.509 PKIX PublicKey or an PKCS1 Public Key. Used in conjunction with the label-value for templates signed with a signature in the descriptor.
+- `operator.kyma-project.io/skip-reconciliation`: A label that can be used with value `true` to completely disable reconciliation for a `Kyma` resource. Can also be used on the `Manifest` to disable a specific module. This will avoid all reconciliations for the entire Kyma `Resource` or `Manifest` resource. Note that even though reconciliation for `Kyma` might be disabled, the `Manifest` in a Kyma can still get reconciled normally if not adjusted to have the label set as well.
+- `operator.kyma-project.io/managed-by`: A cache limitation label that must be set to `lifecycle-manager` to have the resources be picked up by the cache. Hard-coded but will be made dynamic to allow for multi-tenant deployments that have non-conflicting caches
+- `operator.kyma-project.io/purpose`: Can be used to identify resources by their intended purpose inside lifecycle manager. Useful meta information for cluster managers.
+
 ## [`ModuleTemplate` CustomResource](v1beta1/moduletemplate_types.go)
 
 The core of our modular discovery, the `ModuleTemplate` contains 3 main parts that are used to initialize and resolve modules.
