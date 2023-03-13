@@ -1015,8 +1015,8 @@ github.com/onsi/gomega v1.10.2/go.mod h1:iN09h71vgCQne3DLsj+A5owkum+a2tYe+TOCB1y
 github.com/onsi/gomega v1.10.3/go.mod h1:V9xEwhxec5O8UDM77eCW8vLymOMltsqPVYWrpDsH8xc=
 github.com/onsi/gomega v1.27.3 h1:5VwIwnBY3vbBDOJrNtA4rVdiTZCsq9B5F12pvy1Drmk=
 github.com/onsi/gomega v1.27.3/go.mod h1:5vG284IBtfDAmDyrK+eGyZmUgUlmi+Wngqo557cZ6Gw=
-github.com/open-component-model/ocm v0.1.0 h1:K1RrHOWO3erTqPZkLKvQ0JRA/uGXGpHaS+uKkIrVZMk=
-github.com/open-component-model/ocm v0.1.0/go.mod h1:aPlBtHOXiAVG9wy7vL1fIwwEjJwB0HMk5n16JlI5k2o=
+github.com/open-component-model/ocm v0.2.0 h1:3/T54MO/E3dzMRV8X1eQ1RWI3UPc4QM1cw1B2mufbE4=
+github.com/open-component-model/ocm v0.2.0/go.mod h1:SzDUp1q7p/8hUf7sdHCx3qNzJzU6cyAAfJZMtBrJqAI=
 github.com/opencontainers/go-digest v0.0.0-20170106003457-a6d0ee40d420/go.mod h1:cMLVZDEM3+U2I4VmLI6N8jQYUd2OVphdqWwCJHrFt2s=
 github.com/opencontainers/go-digest v0.0.0-20180430190053-c9281466c8b2/go.mod h1:cMLVZDEM3+U2I4VmLI6N8jQYUd2OVphdqWwCJHrFt2s=
 github.com/opencontainers/go-digest v1.0.0-rc1/go.mod h1:cMLVZDEM3+U2I4VmLI6N8jQYUd2OVphdqWwCJHrFt2s=
