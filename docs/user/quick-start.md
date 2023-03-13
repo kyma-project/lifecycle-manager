@@ -79,3 +79,7 @@ kubectl apply -f default-kyma-secret.yaml
 ```
 
 After this access secrete successfully deployed, you can start to use Kyma CLI manage modules for remote cluster.
+
+# Next Steps
+
+- For publish Module Template in private OCI registry refer to our [Provide credential for private OCI registry authentication](tutorials/config-private-registry.md)
