@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"strconv"
 	"strings"
 
 	manifestv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/types"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"

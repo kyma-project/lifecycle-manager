@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"io/fs"
 	"os"
 	"os/user"
@@ -11,9 +12,6 @@ import (
 	"strconv"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,6 +21,9 @@ import (
 
 	internalV1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 const ManifestDir = "manifest"

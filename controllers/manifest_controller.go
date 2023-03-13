@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
-	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
 	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
