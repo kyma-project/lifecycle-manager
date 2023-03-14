@@ -25,6 +25,19 @@ const (
 	ConditionMessageModuleCatalogIsOutOfSync = "module catalog is out of sync and needs to be resynchronized"
 	ConditionMessageSKRWebhookIsSynced       = "skrwebhook is synchronized"
 	ConditionMessageSKRWebhookIsOutOfSync    = "skrwebhook is out of sync and needs to be resynchronized"
+<<<<<<< HEAD
+=======
+)
+
+var (
+	// RequiredConditions are all conditions which are required on each KymaCR
+	requiredConditions            = []KymaConditionType{ConditionTypeModules, ConditionTypeModuleCatalog}
+	requiredConditionsInclWatcher = []KymaConditionType{
+		ConditionTypeModules,
+		ConditionTypeModuleCatalog,
+		ConditionTypeSKRWebhook,
+	}
+>>>>>>> 4a2079e4242eae3accf892b1ade42c3bedb6f120
 )
 
 func GenerateMessage(conditionType KymaConditionType, status metav1.ConditionStatus) string {
