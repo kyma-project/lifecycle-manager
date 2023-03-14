@@ -10,7 +10,8 @@ To address this issue, we propose a CustomResourcePolicy feature that allows use
 
 With the Kyma CLI [enable module](https://github.com/kyma-project/cli/blob/main/docs/gen-docs/kyma_alpha_enable.md) command, you can manage the CustomResourcePolicy for each Module individually.
 
-By default, the CustomResourcePolicy of enabled Module will always be `CreateAndDelete`, with this configuration, the Lifecycle Manager take fully control on Module initialization.
+By default, the CustomResourcePolicy of enabled Module will always be `CreateAndDelete`. 
+With this configuration, the Lifecycle Manager take fully control on Module initialization.
 
 For example, to enable the Keda Module with the default policy for `default-kyma` Kyma CR, users can run:
 ```
