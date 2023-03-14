@@ -83,4 +83,4 @@ After this access secrete successfully deployed, you can start to use Kyma CLI m
 # Next Steps
 
 - For publishing Module Templates in a private OCI registry, refer to our [Private Registry Configuration Guide](tutorials/config-private-registry.md)
-- For manage Module initialization with provided strategies refer to our [Manage Module Initialization with CustomResourcePolicy](tutorials/manage-module-with-custom-resource-policy.md)
+- For managing module initialization with the provided strategies, refer to our [Managing module initialization with the CustomResourcePolicy](tutorials/manage-module-with-custom-resource-policy.md)
