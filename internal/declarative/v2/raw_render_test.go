@@ -2,12 +2,13 @@ package v2_test
 
 import (
 	"context"
-	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	mockV2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/mock"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	mockV2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/mock"
 
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"

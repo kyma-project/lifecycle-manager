@@ -2,10 +2,11 @@ package v1beta1_test
 
 import (
 	"encoding/json"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"os"
 	"path/filepath"
 	"strconv"
+
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	internalV1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"

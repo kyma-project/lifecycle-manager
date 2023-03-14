@@ -2,7 +2,6 @@ package v2_test
 
 import (
 	"context"
-	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

@@ -18,12 +18,13 @@ package v1beta1_test
 
 import (
 	"context"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
 	"k8s.io/apimachinery/pkg/labels"
 

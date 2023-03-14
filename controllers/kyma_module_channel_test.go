@@ -3,11 +3,12 @@ package controllers_test
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"

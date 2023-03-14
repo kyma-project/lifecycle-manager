@@ -15,7 +15,8 @@ func SetConditions(kyma *v1beta1.Kyma, watcherEnabled bool) bool {
 
 	existingConditions := kyma.Status.Conditions
 	// Remove deprecated `Ready` condition
-	if deprecatedCondition := apimeta.FindStatusCondition(existingConditions, string(v1beta1.DeprecatedConditionReady)); deprecatedCondition != nil {
+	if deprecatedCondition := apimeta.FindStatusCondition(existingConditions,
+		string(v1beta1.DeprecatedConditionReady)); deprecatedCondition != nil {
 		apimeta.RemoveStatusCondition(&existingConditions, string(v1beta1.DeprecatedConditionReady))
 		conditionUpdateNeeded = true
 	}

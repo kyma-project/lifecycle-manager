@@ -2,10 +2,11 @@ package v1_test
 
 import (
 	"context"
-	testv1 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
 	"os"
 	"path/filepath"
 	"time"
+
+	testv1 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
 
 	apiExtensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/client-go/kubernetes/scheme"

@@ -9,7 +9,7 @@ const (
 	// DeprecatedConditionReady was introduced by a bug. Ths condition needs to be removed on all KymaCRs.
 	DeprecatedConditionReady KymaConditionType = "Ready"
 
-	// Determines the Type of a Condition
+	// Determines the Type of a Condition.
 	ConditionTypeModules       KymaConditionType = "Modules"
 	ConditionTypeModuleCatalog KymaConditionType = "ModuleCatalog"
 	ConditionTypeSKRWebhook    KymaConditionType = "SKRWebhook"
@@ -56,12 +56,13 @@ func GenerateMessage(conditionType KymaConditionType, status metav1.ConditionSta
 		}
 
 		return ConditionMessageSKRWebhookIsOutOfSync
+	case DeprecatedConditionReady:
 	}
 
 	return "no detailed message available as condition or status is unknown to API"
 }
 
-// GetRequiredConditions returns all required Conditions for a KymaCR
+// GetRequiredConditions returns all required Conditions for a KymaCR.
 func GetRequiredConditions(syncEnabled, watcherEnabled bool) []KymaConditionType {
 	requiredConditions := []KymaConditionType{ConditionTypeModules}
 	if syncEnabled {
