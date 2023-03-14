@@ -22,7 +22,7 @@ limitations under the License.
 package v1beta1
 
 import (
-	"github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )

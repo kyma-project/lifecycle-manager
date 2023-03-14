@@ -2,9 +2,9 @@ package v2_test
 
 import (
 	"context"
+	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"testing"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/resource"

@@ -5,10 +5,10 @@
 package mock_v2
 
 import (
+	"github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	v2 "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

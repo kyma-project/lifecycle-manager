@@ -3,10 +3,10 @@ package v1beta1
 import (
 	"context"
 	"fmt"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
 	"k8s.io/client-go/rest"
 )
 

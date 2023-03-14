@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"regexp"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
@@ -19,7 +20,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 
 	"github.com/google/go-containerregistry/pkg/authn"
-	"regexp"
 	yaml2 "sigs.k8s.io/yaml"
 )
 

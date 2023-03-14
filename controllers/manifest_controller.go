@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
-	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
 	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
@@ -75,19 +75,19 @@ func ManifestReconciler(
 	mgr manager.Manager, codec *v1beta1.Codec,
 	checkInterval time.Duration,
 ) *declarative.Reconciler {
+	kcp := &declarative.ClusterInfo{
+		Client: mgr.GetClient(),
+		Config: mgr.GetConfig(),
+	}
+	lookup := &internalv1beta1.RemoteClusterLookup{KCP: kcp}
 	return declarative.NewFromManager(
 		mgr, &v1beta1.Manifest{},
 		declarative.WithSpecResolver(
-			internalv1beta1.NewManifestSpecResolver(codec),
+			internalv1beta1.NewManifestSpecResolver(kcp, codec),
 		),
 		declarative.WithCustomReadyCheck(internalv1beta1.NewManifestCustomResourceReadyCheck()),
-		declarative.WithRemoteTargetCluster(
-			(&internalv1beta1.RemoteClusterLookup{KCP: &declarative.ClusterInfo{
-				Client: mgr.GetClient(),
-				Config: mgr.GetConfig(),
-			}}).ConfigResolver,
-		),
-		declarative.WithClientCacheKeyFromLabelOrResource(v1beta1.KymaName),
+		declarative.WithRemoteTargetCluster(lookup.ConfigResolver),
+		internalv1beta1.WithClientCacheKey(),
 		declarative.WithPostRun{internalv1beta1.PostRunCreateCR},
 		declarative.WithPreDelete{internalv1beta1.PreDeleteDeleteCR},
 		declarative.WithPeriodicConsistencyCheck(checkInterval),

@@ -4,8 +4,8 @@ package v1
 
 import (
 	"fmt"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
-	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"

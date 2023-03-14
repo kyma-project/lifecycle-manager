@@ -18,6 +18,7 @@ package v1beta1_test
 
 import (
 	"context"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -32,9 +33,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
-	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"go.uber.org/zap/zapcore"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -50,6 +48,9 @@ import (
 	//+kubebuilder:scaffold:imports
 
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -138,10 +139,14 @@ var _ = BeforeSuite(
 		)
 		Expect(err).NotTo(HaveOccurred())
 
+		k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(k8sClient).NotTo(BeNil())
+		kcp := &declarative.ClusterInfo{Config: cfg, Client: k8sClient}
 		reconciler = declarative.NewFromManager(
 			k8sManager, &v1beta1.Manifest{},
 			declarative.WithSpecResolver(
-				internalv1beta1.NewManifestSpecResolver(codec),
+				internalv1beta1.NewManifestSpecResolver(kcp, codec),
 			),
 			declarative.WithPermanentConsistencyCheck(true),
 			declarative.WithRemoteTargetCluster(
@@ -149,7 +154,7 @@ var _ = BeforeSuite(
 					return &declarative.ClusterInfo{Config: authUser.Config()}, nil
 				},
 			),
-			declarative.WithClientCacheKeyFromLabelOrResource(v1beta1.KymaName),
+			internalv1beta1.WithClientCacheKey(),
 			declarative.WithPostRun{internalv1beta1.PostRunCreateCR},
 			declarative.WithPreDelete{internalv1beta1.PreDeleteDeleteCR},
 			declarative.WithCustomReadyCheck(declarative.NewExistsReadyCheck()),
@@ -168,10 +173,6 @@ var _ = BeforeSuite(
 				},
 			).Complete(reconciler)
 		Expect(err).ToNot(HaveOccurred())
-
-		k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
-		Expect(err).NotTo(HaveOccurred())
-		Expect(k8sClient).NotTo(BeNil())
 
 		go func() {
 			defer GinkgoRecover()

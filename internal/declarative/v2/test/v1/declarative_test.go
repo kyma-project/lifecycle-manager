@@ -3,14 +3,12 @@ package v1_test
 import (
 	"context"
 	"fmt"
+	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	testv1 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
 	"path/filepath"
 	"testing"
 	"time"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
-	testv1 "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2/test/v1"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"golang.org/x/time/rate"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -27,6 +25,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 //nolint:gochecknoglobals
@@ -35,7 +36,7 @@ var (
 	// it is expected to be removed externally (e.g. by testing.T) to cleanup leftovers
 	// (e.g. cached manifests).
 	testDir        string
-	testSamplesDir = filepath.Join("..", "..", "..", "..", "test_samples")
+	testSamplesDir = filepath.Join("..", "..", "..", "..", "..", "pkg", "test_samples")
 
 	env        *envtest.Environment
 	cfg        *rest.Config
@@ -310,6 +311,7 @@ func StartDeclarativeReconcilerForRun(
 			// readiness check will not work without dedicated control loops in envtest. E.g. by default
 			// deployments are not started or set to ready. However we can check if the resource was created by
 			// the reconciler.
+			WithClientCacheKey(),
 			WithCustomReadyCheck(NewExistsReadyCheck()),
 			WithCustomResourceLabels(labels.Set{testRunLabel: runID}),
 			WithPeriodicConsistencyCheck(2*time.Second),
@@ -366,4 +368,11 @@ func expectResourceRecreated(ctx context.Context, obj *testv1.TestAPI) error {
 	}
 
 	return nil
+}
+
+func WithClientCacheKey() WithClientCacheKeyOption {
+	cacheKey := func(ctx context.Context, resource Object) (any, bool) {
+		return client.ObjectKeyFromObject(resource), true
+	}
+	return WithClientCacheKeyOption{ClientCacheKeyFn: cacheKey}
 }

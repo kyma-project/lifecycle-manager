@@ -4,7 +4,7 @@ metadata:
   labels:
     "operator.kyma-project.io/managed-by": "lifecycle-manager"
   name: default-kyma
-  namespace: kcp-system
+  namespace: kyma-system
 spec:
   channel: alpha
   sync:
