@@ -32,3 +32,5 @@ Lifecycle Manager will create a corresponding Keda CR in your target cluster and
 To skip this initialization process, you can set the `policy` flag to `Ignore` when you enable the module.
 
 With this flag, the `modules.customResourcePolicy` will initialized with `Ignore`. You will observe there will be no Keda CR created in target cluster, this will also prevent Lifecycle Manager from adding any `spec.resource` to the related Manifest CR. 
+
+Please note that this also means that Lifecycle Manager will not monitor or manage any Keda CR's readiness status which provided by users. Therefore, you should exercise caution and discretion when using the `Ignore` policy for your Module CR.
