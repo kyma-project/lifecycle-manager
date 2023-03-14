@@ -6,7 +6,7 @@ This can be inconvenient for some use cases that require more flexibility and ex
 
 To address this issue, we propose a CustomResourcePolicy feature that allows users to specify how Lifecycle Manager should handle the configuration of the Module CR during initialization and reconciliation.
 
-# Use Kyma CLI manage Module enabling
+## Using Kyma CLI
 
 With Kyma CLI [enable module](https://github.com/kyma-project/cli/blob/main/docs/gen-docs/kyma_alpha_enable.md) command, you can manage CustomResourcePolicy for each Module individually.
 
