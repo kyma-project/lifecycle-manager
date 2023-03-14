@@ -1,4 +1,4 @@
-# Manage Module Initialization with CustomResourcePolicy
+# Managing module initialization with the CustomResourcePolicy
 
 During the Module CR initialization, the default behavior of Lifecycle Manager is to apply the configuration from the Module Template to the Module CR, and to reset any direct changes to the Module CR during reconciliation. 
 
