@@ -18,6 +18,7 @@ package v1beta1_test
 
 import (
 	"context"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -32,9 +33,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
-	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"go.uber.org/zap/zapcore"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -50,6 +48,9 @@ import (
 	//+kubebuilder:scaffold:imports
 
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to

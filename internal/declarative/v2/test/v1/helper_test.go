@@ -3,10 +3,10 @@ package v1_test
 import (
 	"context"
 	"fmt"
-
-	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
-	testv1 "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2/test/v1"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	testv1 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
 	. "github.com/onsi/gomega"
+
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -162,7 +162,8 @@ func (matcher *HaveSyncedResourceMatcher) Match(actual interface{}) (bool, error
 func (matcher *HaveSyncedResourceMatcher) FailureMessage(actual interface{}) string {
 	return format.Message(
 		actual, fmt.Sprintf(
-			"to have %v synced resources in status, but got %v", matcher.count, len(actual.(declarative.Status).Synced),
+			"to have %v synced resources in status, but got %v", matcher.count,
+			len(actual.(declarative.Status).Synced),
 		),
 	)
 }
