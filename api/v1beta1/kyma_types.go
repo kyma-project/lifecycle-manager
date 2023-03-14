@@ -300,19 +300,19 @@ func (m PartialMeta) GetGeneration() int64 {
 	return m.Generation
 }
 
-// TODO Cond: Document
-type KymaConditionMsg string
-
-// TODO Cond: Document
-type KymaConditionReason string
-
 // KymaConditionType is a programmatic identifier indicating the type for the corresponding condition.
-// By combining of condition type and status, it explains the current Kyma status for all modules.
+// By combining of condition type, status and reason  it explains the current Kyma status.
 // Name example:
-// Type: ModulesIsReady and Status: True means all modules are in ready state.
-// Type: ModulesIsReady and Status: False means some modules are not in ready state,
+// Type: Modules, Reason: Ready and Status: True means all modules are in ready state.
+// Type: Modules, Reason: Ready and Status: False means some modules are not in ready state,
 // and the actual state of individual module can be found in related ModuleStatus.
 type KymaConditionType string
+
+// KymaConditionMsg represents the current state of a condition in a human-readable format.
+type KymaConditionMsg string
+
+// KymaConditionReason should always be set to `Ready`.
+type KymaConditionReason string
 
 func (kyma *Kyma) SetActiveChannel() *Kyma {
 	kyma.Status.ActiveChannel = kyma.Spec.Channel
