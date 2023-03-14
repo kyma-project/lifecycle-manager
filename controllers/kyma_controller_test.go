@@ -32,7 +32,7 @@ var _ = Describe("Kyma with no ModuleTemplate", Ordered, func() {
 
 var _ = Describe("Kyma with deprecated Condition", Ordered, func() {
 	kyma := NewTestKyma("no-module-kyma")
-	kyma.Status.Conditions = []metav1.Condition{metav1.Condition{
+	kyma.Status.Conditions = []metav1.Condition{{
 		Type:               string(v1beta1.DeprecatedConditionReady),
 		Status:             metav1.ConditionFalse,
 		ObservedGeneration: kyma.GetGeneration(),
@@ -84,7 +84,8 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 		Expect(
 			kymaInCluster.ContainsCondition(v1beta1.ConditionTypeModules, metav1.ConditionTrue)).To(BeTrue())
 		By("Module Catalog created")
-		Eventually(ModuleTemplatesExist(controlPlaneClient, kyma, false), 10*time.Second, Interval).Should(Succeed())
+		Eventually(ModuleTemplatesExist(controlPlaneClient, kyma, false),
+			10*time.Second, Interval).Should(Succeed())
 		kymaInCluster, err = GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(
@@ -279,7 +280,8 @@ func updateModuleTemplateSpecData(kymaName, valueUpdated string) func() error {
 	}
 }
 
-func CheckKymaConditions(ctx context.Context, kcpClient client.Client, kymaName string, requiredConditions []v1beta1.KymaConditionType) func() bool {
+func CheckKymaConditions(ctx context.Context, kcpClient client.Client, kymaName string,
+	requiredConditions []v1beta1.KymaConditionType) func() bool {
 	return func() bool {
 		kymaFromCluster, err := GetKyma(ctx, kcpClient, kymaName, "")
 		if err != nil || len(kymaFromCluster.Status.Conditions) != len(requiredConditions) {
