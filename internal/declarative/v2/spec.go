@@ -42,11 +42,3 @@ func (s *CustomSpecFns) Spec(
 		Mode:         s.ModeFn(ctx, obj),
 	}, nil
 }
-
-type RenderMode string
-
-const (
-	RenderModeHelm      RenderMode = "helm"
-	RenderModeKustomize RenderMode = "kustomize"
-	RenderModeRaw       RenderMode = "raw"
-)
