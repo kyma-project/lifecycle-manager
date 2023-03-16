@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"io"
 	"os"
 	"path/filepath"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/downloader"
 	"helm.sh/helm/v3/pkg/getter"

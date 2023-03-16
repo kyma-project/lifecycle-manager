@@ -2,17 +2,13 @@ package v1beta1_test
 
 import (
 	"encoding/json"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"os"
 	"path/filepath"
 	"strconv"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	internalV1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
-	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
-
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,6 +18,9 @@ import (
 	"k8s.io/cli-runtime/pkg/resource"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Custom Manifest consistency check", Ordered, func() {

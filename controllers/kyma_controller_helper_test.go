@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
+
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	ocmv1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -20,6 +20,9 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	sampleCRDv1beta1 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1beta1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func RegisterDefaultLifecycleForKyma(kyma *v1beta1.Kyma) {
@@ -212,16 +215,6 @@ func ModuleTemplatesExist(clnt client.Client, kyma *v1beta1.Kyma, remote bool) f
 
 		return nil
 	}
-}
-
-func GetModuleTemplatesLabels(clt client.Client, kyma *v1beta1.Kyma, remote bool) ([]ocmv1.Label, error) {
-	module := kyma.Spec.Modules[0]
-	descriptor, err := getModuleDescriptor(module, clt, kyma, remote)
-	if err != nil {
-		return nil, err
-	}
-
-	return descriptor.GetLabels(), nil
 }
 
 var ErrUnwantedChangesFound = errors.New("unwanted changes found")

@@ -57,33 +57,8 @@ As mentioned above, when each module operator completes their installation, it r
 
 ### Getting Started
 
-To get started, we have prepared a curated reference implementation of an operator in our [Template Operator](https://github.com/kyma-project/template-operator), which  is a small operator built with [kubebuilder](https://kubebuilder.io) that installs some basic resources for showcase purposes. On top of this we have prepared multiple likely use cases for modules (e.g. implementing an installation for a third-party-module) in the operator so you can try around with different configurations.
+If you are new to our Lifecycle Manager and want to get started quickly, we recommend that you follow our [Quick Start Guide](./docs/user/quick-start.md). This guide will walk you through the basic steps of setting up your local KCP cluster to installing the Lifecycle Manager, and using the main features.
 
-In summary, every module follows basic steps that we have accompanied with respective [cli](https://github.com/kyma-project/cli) commands:
-
-1. Create a Local Kyma Control Plane on a cluster:
-  ```shell
-  kyma alpha deploy
-  ```
-2. Create a module in a specific semantic version and a fully qualified domain name (FQDN). We will use our [cli](https://github.com/kyma-project/cli):
-  ```shell
-  kyma alpha create module \
-    --name kyma-project.io/module/samples/my-module \
-    --version=1.0.0 \
-    --registry=europe-west3-docker.pkg.dev/sample-registry/sample-subpath
-  ```
-  This will also output a `template.yaml` file which you can directly apply to a cluster with
-  `kubectl apply -f template.yaml`
-3. Enable the module in the cluster:
-  ```shell
-  kyma alpha enable module --name my-module -w
-  ```
-  This will wait for the module to be enabled.
-4. Disable the module in the cluster
-  ```shell
-  kyma alpha disable module --name my-module
-  ```
-  This will remove all references (except for CRDs) out of the cluster to allow for clean re- or uninstallation.
 ## Architecture
 
 The architecture of this operator is based on Kubernetes controllers/operators. `lifecycle-manager` is a meta operator that coordinates and tracks the lifecycle of kyma components by delegating it to module operators. You can compare it to [Operator Lifecycle Manager](https://olm.operatorframework.io/) from Operator Framework, and we are strongly inspired by their ideas. One of the main differentiating factors however, is that the Scope of the Kyma Lifecycle Manager is to reconcile not only locally, but also into remote Clusters.
@@ -119,7 +94,7 @@ Here is a (somewhat complete) list of the different modules in the system togeth
 | v1alpha1,v1beta1 | [Manifest](api/v1beta1/manifest_types.go)                 | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
 | v1alpha1,v1beta1 | [Watcher](api/v1beta1/watcher_types.go)                   | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
 |                  | [Kyma Controller](controllers/kyma_controller.go)         | In active development (continuous) - Expect Bugs and fast-paced development of new features                                                                                                                  |
-|                  | [Manifest Controller](controllers/manifest_controller.go) | Directs to the [Declarative Library](pkg/declarative/v2), a reconciliation library we use to install all modules                                                                                             |
+|                  | [Manifest Controller](controllers/manifest_controller.go) | Directs to the [Declarative Library](internal/declarative/v2), a reconciliation library we use to install all modules                                                                                             |
 |                  | [Watcher Controller](controllers/watcher_controller.go)   | Maintains VirtualService entries for events coming from runtime clusters, mostly stable                                                                                                                      |
 
 ## Deployment / Delivery models
