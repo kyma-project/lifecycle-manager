@@ -107,7 +107,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	converter := NewResourceToInfoConverter(clnt, r.Namespace)
 
-	renderer, err := r.initializeRenderer(ctx, obj, spec, clnt)
+	renderer, err := InitializeRenderer(ctx, obj, spec, clnt, r.Options)
 	if err != nil {
 		return r.ssaStatus(ctx, obj)
 	}
@@ -352,30 +352,6 @@ func (r *Reconciler) renderTargetResources(
 	}
 
 	return target, nil
-}
-
-func (r *Reconciler) initializeRenderer(ctx context.Context, obj Object, spec *Spec, client Client) (Renderer, error) {
-	var renderer Renderer
-
-	switch spec.Mode {
-	case RenderModeHelm:
-		renderer = NewHelmRenderer(spec, client, r.Options)
-		renderer = WrapWithRendererCache(renderer, spec, r.Options)
-	case RenderModeKustomize:
-		renderer = NewKustomizeRenderer(spec, r.Options)
-		renderer = WrapWithRendererCache(renderer, spec, r.Options)
-	case RenderModeRaw:
-		renderer = NewRawRenderer(spec, r.Options)
-	}
-
-	if err := renderer.Initialize(obj); err != nil {
-		return nil, err
-	}
-	if err := renderer.EnsurePrerequisites(ctx, obj); err != nil {
-		return nil, err
-	}
-
-	return renderer, nil
 }
 
 func (r *Reconciler) pruneDiff(

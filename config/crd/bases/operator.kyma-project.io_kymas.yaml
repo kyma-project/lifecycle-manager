@@ -73,7 +73,7 @@ spec:
                     customResourcePolicy:
                       default: CreateAndDelete
                       description: CustomResourcePolicy determines how a ModuleTemplate
-                        should be parsed. When CustomResourcePolicy is set to CustomResourcePolicyPolicyCreateNoUpdate,
+                        should be parsed. When CustomResourcePolicy is set to CustomResourcePolicyCreateAndDelete,
                         the Manifest will receive instructions to create it on installation
                         with the default values provided in ModuleTemplate, and to
                         remove it when the module or Kyma is deleted.
@@ -425,7 +425,7 @@ spec:
                     customResourcePolicy:
                       default: CreateAndDelete
                       description: CustomResourcePolicy determines how a ModuleTemplate
-                        should be parsed. When CustomResourcePolicy is set to CustomResourcePolicyPolicyCreateNoUpdate,
+                        should be parsed. When CustomResourcePolicy is set to CustomResourcePolicyCreateAndDelete,
                         the Manifest will receive instructions to create it on installation
                         with the default values provided in ModuleTemplate, and to
                         remove it when the module or Kyma is deleted.

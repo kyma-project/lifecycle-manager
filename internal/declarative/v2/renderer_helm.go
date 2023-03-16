@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 
+	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/kube"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -69,18 +70,14 @@ func (h *Helm) Initialize(obj Object) error {
 
 func (h *Helm) EnsurePrerequisites(ctx context.Context, obj Object) error {
 	status := obj.GetStatus()
-
 	if obj.GetDeletionTimestamp().IsZero() && meta.IsStatusConditionTrue(
 		status.Conditions, h.prerequisiteCondition(obj).Type,
 	) {
 		return nil
 	}
 
-	chrt, err := loader.Load(h.chartPath)
+	chrt, err := h.loadChart(obj, status)
 	if err != nil {
-		h.recorder.Event(obj, "Warning", "ChartLoading", err.Error())
-		meta.SetStatusCondition(&status.Conditions, h.prerequisiteCondition(obj))
-		obj.SetStatus(status.WithState(StateError).WithErr(err))
 		return err
 	}
 
@@ -101,7 +98,6 @@ func (h *Helm) EnsurePrerequisites(ctx context.Context, obj Object) error {
 	}
 
 	err = h.crdChecker.Run(ctx, h.clnt, obj, h.crds)
-
 	if errors.Is(err, ErrResourcesNotReady) {
 		h.recorder.Event(obj, "Normal", "CRDReadyCheck", "crds are not yet ready...")
 		meta.SetStatusCondition(&status.Conditions, h.prerequisiteCondition(obj))
@@ -125,6 +121,18 @@ func (h *Helm) EnsurePrerequisites(ctx context.Context, obj Object) error {
 	obj.SetStatus(status.WithOperation("CRDs are ready"))
 
 	return nil
+}
+
+func (h *Helm) loadChart(obj Object, status Status) (*chart.Chart, error) {
+	chrt, err := loader.Load(h.chartPath)
+	if err != nil {
+		err = fmt.Errorf("error loading chart at %s: %w", h.chartPath, err)
+		h.recorder.Event(obj, "Warning", "ChartLoading", err.Error())
+		meta.SetStatusCondition(&status.Conditions, h.prerequisiteCondition(obj))
+		obj.SetStatus(status.WithState(StateError).WithErr(err))
+		return nil, err
+	}
+	return chrt, nil
 }
 
 func (h *Helm) RemovePrerequisites(ctx context.Context, obj Object) error {
@@ -157,11 +165,8 @@ func (h *Helm) Render(ctx context.Context, obj Object) ([]byte, error) {
 		valuesAsMap = map[string]any{}
 	}
 
-	chrt, err := loader.Load(h.chartPath)
+	chrt, err := h.loadChart(obj, status)
 	if err != nil {
-		h.recorder.Event(obj, "Warning", "ChartLoading", err.Error())
-		meta.SetStatusCondition(&status.Conditions, h.prerequisiteCondition(obj))
-		obj.SetStatus(status.WithState(StateError).WithErr(err))
 		return nil, err
 	}
 

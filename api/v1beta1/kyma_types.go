@@ -67,7 +67,7 @@ type Module struct {
 }
 
 // CustomResourcePolicy determines how a ModuleTemplate should be parsed. When CustomResourcePolicy is set to
-// CustomResourcePolicyPolicyCreateNoUpdate, the Manifest will receive instructions to create it on installation with
+// CustomResourcePolicyCreateAndDelete, the Manifest will receive instructions to create it on installation with
 // the default values provided in ModuleTemplate, and to remove it when the module or Kyma is deleted.
 // +kubebuilder:validation:Enum=CreateAndDelete;Ignore
 type CustomResourcePolicy string
