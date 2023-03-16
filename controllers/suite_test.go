@@ -121,12 +121,6 @@ var _ = BeforeSuite(func() {
 
 	//+kubebuilder:scaffold:scheme
 
-	controlPlaneClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(controlPlaneClient).NotTo(BeNil())
-
-	runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
-
 	k8sManager, err = ctrl.NewManager(
 		cfg, ctrl.Options{
 			MetricsBindAddress: UseRandomPort,
@@ -152,6 +146,10 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager, controller.Options{},
 		controllers.SetupUpSetting{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())
+
+	controlPlaneClient = k8sManager.GetClient()
+
+	runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
 
 	go func() {
 		defer GinkgoRecover()

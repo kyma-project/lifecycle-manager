@@ -133,12 +133,6 @@ var _ = BeforeSuite(func() {
 
 	//+kubebuilder:scaffold:scheme
 
-	controlPlaneClient, err = client.New(restCfg, client.Options{Scheme: scheme.Scheme})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(controlPlaneClient).NotTo(BeNil())
-
-	runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
-
 	metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
 	if !found {
 		metricsBindAddress = ":0"
@@ -151,6 +145,9 @@ var _ = BeforeSuite(func() {
 			NewCache:           controllers.NewCacheFunc(),
 		})
 	Expect(err).ToNot(HaveOccurred())
+
+	controlPlaneClient = k8sManager.GetClient()
+	runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
 
 	intervals := controllers.RequeueIntervals{
 		Success: 3 * time.Second,
