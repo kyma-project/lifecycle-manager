@@ -117,7 +117,8 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequest(
 ) {
 	// Iterate through the OwnerReferences looking for a match on Group and Kind against what was requested
 	// by the user
-	for _, ref := range e.getOwnersReferences(object) {
+	refs := e.getOwnersReferences(object)
+	for _, ref := range refs {
 		// Parse the Group out of the OwnerReference to compare it to what was parsed out of the requested OwnerType
 		refGV, err := schema.ParseGroupVersion(ref.APIVersion)
 		if err != nil {

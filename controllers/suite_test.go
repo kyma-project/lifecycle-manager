@@ -150,7 +150,7 @@ var _ = BeforeSuite(func() {
 		RemoteClientCache: remoteClientCache,
 		KcpRestConfig:     k8sManager.GetConfig(),
 	}).SetupWithManager(k8sManager, controller.Options{},
-		controllers.SetupUpSetting{ListenerAddr: UseRandomPort})
+		controllers.SetupUpSetting{ListenerAddr: ":8080"})
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {

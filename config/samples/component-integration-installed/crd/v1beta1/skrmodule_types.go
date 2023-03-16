@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 // +groupName=operator.kyma-project.io
+
 package v1beta1
 
 import (
@@ -34,6 +35,7 @@ type SKRModuleSpec struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+
 // SKRModule is the Schema for the moduletemplates API.
 type SKRModule struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -43,7 +45,8 @@ type SKRModule struct {
 	Status SKRModuleStatus `json:"status,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error
+//+kubebuilder:validation:Enum=Processing;Deleting;Ready;Error
+
 type SKRModuleState string
 
 // SKRModuleStatus defines the observed state of Manifest.

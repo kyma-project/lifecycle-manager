@@ -1,11 +1,11 @@
 package controllers_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-
 	declarative "github.com/kyma-project/lifecycle-manager/pkg/declarative/v2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
@@ -214,58 +214,47 @@ func ModuleTemplatesExist(clnt client.Client, kyma *v1beta1.Kyma, remote bool) f
 	}
 }
 
-func GetModuleTemplatesLabelCount(clnt client.Client, kyma *v1beta1.Kyma, remote bool) (int, error) {
+func GetModuleTemplatesLabels(clt client.Client, kyma *v1beta1.Kyma, remote bool) ([]ocmv1.Label, error) {
 	module := kyma.Spec.Modules[0]
-	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
+	descriptor, err := getModuleDescriptor(module, clt, kyma, remote)
 	if err != nil {
-		return 0, err
-	}
-	if err := getModuleTemplate(clnt, template, kyma, remote); err != nil {
-		return 0, err
-	}
-	descriptor, err := template.Spec.GetDescriptor()
-	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	return len(descriptor.GetLabels()), nil
+	return descriptor.GetLabels(), nil
 }
 
-var ErrModuleTemplateDescriptorLabelCountMismatch = errors.New("label count in descriptor does not match")
+var ErrUnwantedChangesFound = errors.New("unwanted changes found")
 
 func ModuleTemplatesLabelsCountMatch(
-	clnt client.Client, kyma *v1beta1.Kyma, count int, remote bool,
+	clnt client.Client, kyma *v1beta1.Kyma, unwantedLabel ocmv1.Label, remote bool,
 ) func() error {
 	return func() error {
 		for _, module := range kyma.Spec.Modules {
-			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
+			descriptor, err := getModuleDescriptor(module, clnt, kyma, remote)
 			if err != nil {
 				return err
 			}
-			if err := getModuleTemplate(clnt, template, kyma, remote); err != nil {
-				return err
-			}
-
-			descriptor, err := template.Spec.GetDescriptor()
-			if err != nil {
-				return err
-			}
-			l := len(descriptor.GetLabels())
-			if l != count {
-				return fmt.Errorf(
-					"expected %v but got %v labels: %w", count,
-					l, ErrModuleTemplateDescriptorLabelCountMismatch,
-				)
+			labels := descriptor.GetLabels()
+			for idx := range labels {
+				lbl := labels[idx]
+				if ocmLabelEquals(lbl, unwantedLabel) {
+					return ErrUnwantedChangesFound
+				}
 			}
 		}
 		return nil
 	}
 }
 
+func ocmLabelEquals(l1, l2 ocmv1.Label) bool {
+	return l1.Name == l2.Name && l1.Version == l2.Version && bytes.Equal(l1.Value, l2.Value)
+}
+
 func ModifyModuleTemplateSpecThroughLabels(
 	clnt client.Client,
 	kyma *v1beta1.Kyma,
-	labels []ocmv1.Label,
+	label ocmv1.Label,
 	remote bool,
 ) func() error {
 	return func() error {
@@ -283,6 +272,8 @@ func ModifyModuleTemplateSpecThroughLabels(
 			if err != nil {
 				return err
 			}
+			labels := descriptor.GetLabels()
+			labels = append(labels, label)
 			descriptor.SetLabels(labels)
 			newDescriptor, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONLCodec)
 			Expect(err).ToNot(HaveOccurred())
@@ -295,6 +286,18 @@ func ModifyModuleTemplateSpecThroughLabels(
 
 		return nil
 	}
+}
+
+func getModuleDescriptor(module v1beta1.Module, clt client.Client, kyma *v1beta1.Kyma, remote bool,
+) (*v1beta1.Descriptor, error) {
+	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
+	if err != nil {
+		return nil, err
+	}
+	if err := getModuleTemplate(clt, template, kyma, remote); err != nil {
+		return nil, err
+	}
+	return template.Spec.GetDescriptor(compdesc.DefaultJSONLCodec)
 }
 
 func getModuleTemplate(clnt client.Client, template *v1beta1.ModuleTemplate, kyma *v1beta1.Kyma, remote bool) error {
