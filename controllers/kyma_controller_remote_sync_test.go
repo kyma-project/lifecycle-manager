@@ -61,7 +61,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	})
 })
 
-var _ = FDescribe("Kyma sync into Remote Cluster", Ordered, func() {
+var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-remote-skr")
 
 	kyma.Spec.Sync = v1beta1.Sync{
@@ -110,7 +110,7 @@ var _ = FDescribe("Kyma sync into Remote Cluster", Ordered, func() {
 			Timeout, Interval).Should(Succeed())
 
 		By("verifying the discovered override and checking the reset label")
-		Eventually(ModuleTemplatesLabelsCountMatch(
+		Eventually(ModuleTemplatesVerifyUnwantedLabel(
 			runtimeClient, kyma, unwantedLabel, true), Timeout, Interval).Should(Succeed())
 	})
 })

@@ -219,7 +219,7 @@ func ModuleTemplatesExist(clnt client.Client, kyma *v1beta1.Kyma, remote bool) f
 
 var ErrUnwantedChangesFound = errors.New("unwanted changes found")
 
-func ModuleTemplatesLabelsCountMatch(
+func ModuleTemplatesVerifyUnwantedLabel(
 	clnt client.Client, kyma *v1beta1.Kyma, unwantedLabel ocmv1.Label, remote bool,
 ) func() error {
 	return func() error {

@@ -215,18 +215,16 @@ func ModuleTemplateFactoryForSchema(
 }
 
 func readModuleTemplateWithV2Schema(moduleTemplate *v1beta1.ModuleTemplate) error {
-	//template := "operator_v1beta1_moduletemplate_kcp-module.yaml"
+	template := "operator_v1beta1_moduletemplate_kcp-module.yaml"
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {
 		panic("Can't capture current filename!")
 	}
-/*
+
 	modulePath := filepath.Join(
 		filepath.Dir(filename), "../../config/samples/component-integration-installed", template,
 	)
-*/
 
-	modulePath := filepath.Join(filepath.Dir(filename), "../../../template-test.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
 	if err != nil {
 		return err
