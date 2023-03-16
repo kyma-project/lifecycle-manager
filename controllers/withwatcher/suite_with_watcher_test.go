@@ -153,11 +153,16 @@ var _ = BeforeSuite(func() {
 		Success: 3 * time.Second,
 	}
 
-	Expect(createLoadBalancer(suiteCtx, controlPlaneClient)).To(Succeed())
+	// This k8sClient is used to install external resources
+	k8sClient, err := client.New(restCfg, client.Options{Scheme: scheme.Scheme})
+	Expect(err).NotTo(HaveOccurred())
+	Expect(k8sClient).NotTo(BeNil())
+
+	Expect(createLoadBalancer(suiteCtx, k8sClient)).To(Succeed())
 	istioResources, err = deserializeIstioResources()
 	Expect(err).NotTo(HaveOccurred())
 	for _, istioResource := range istioResources {
-		Expect(controlPlaneClient.Create(suiteCtx, istioResource)).To(Succeed())
+		Expect(k8sClient.Create(suiteCtx, istioResource)).To(Succeed())
 	}
 
 	remoteClientCache = remote.NewClientCache()
