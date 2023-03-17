@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"

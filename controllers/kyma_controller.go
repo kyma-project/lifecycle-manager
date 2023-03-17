@@ -433,30 +433,23 @@ func (r *KymaReconciler) deleteModule(ctx context.Context, moduleStatus *v1beta1
 }
 
 // RecordKymaStatusMetrics updates prometheus metrics defined to track changes to the Kyma status.
-func (r *KymaReconciler) RecordKymaStatusMetrics(kyma *v1beta1.Kyma) {
+func (r *KymaReconciler) RecordKymaStatusMetrics(ctx context.Context, kyma *v1beta1.Kyma) {
+	logger := ctrlLog.FromContext(ctx).V(log.InfoLevel)
 	shoot := ""
 	shootFQDN, keyExists := kyma.Annotations[v1beta1.SKRDomainAnnotation]
 	if keyExists {
 		parts := strings.Split(shootFQDN, ".")
-		// at least three labels in any real deployment.
-		if len(parts) > 2 { //nolint:gomnd
+		minFqdnParts := 2
+		if len(parts) > minFqdnParts {
 			shoot = parts[0] // hostname
 		}
 	} else {
-		r.EventRecorder.Eventf(
-			kyma, "Warning", "AnnotationNotDefined",
-			"Expected annotation: %s not found.",
-			v1beta1.SKRDomainAnnotation,
-		)
+		logger.Info(fmt.Sprintf("expected annotation: %s not found when setting metric", v1beta1.SKRDomainAnnotation))
 	}
 
 	instanceID, keyExists := kyma.Labels[v1beta1.InstanceIDLabel]
 	if !keyExists {
-		r.EventRecorder.Eventf(
-			kyma, "Warning", "LabelNotDefined",
-			"Expected label: %s not found.",
-			v1beta1.InstanceIDLabel,
-		)
+		logger.Info(fmt.Sprintf("expected label: %s not found when setting metric", v1beta1.InstanceIDLabel))
 	}
 
 	metrics.RecordKymaStatus(kyma.Name, kyma.Status.State, shoot, instanceID)

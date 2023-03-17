@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"strings"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 
 	manifestv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/resource"
 	deploymentutil "k8s.io/kubectl/pkg/util/deployment"

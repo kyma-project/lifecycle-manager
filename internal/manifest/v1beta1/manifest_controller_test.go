@@ -4,12 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"io/fs"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strconv"
+
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
