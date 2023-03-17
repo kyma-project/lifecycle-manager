@@ -15,5 +15,5 @@ The available references are:
 - [Dual Cluster Setup](provision-cluster-and-registry.md)
 - [API Design and Reference Documentation](../../api/README.md)
 - [Controller Design and Reference Documentation](../../controllers/README.md)
-- [Declarative Reconciliation Library Reference Documentation](../../pkg/declarative/README.md)
+- [Declarative Reconciliation Library Reference Documentation](../../internal/declarative/README.md)
 - [Internal Manifest Reconciliation Library Extensions](../../internal/manifest/README.md)
