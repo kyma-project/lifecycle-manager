@@ -3,6 +3,7 @@ package v1beta1
 import (
 	"context"
 	"fmt"
+
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"

@@ -3,6 +3,7 @@ package v1_test
 import (
 	"context"
 	"fmt"
+
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	testv1 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
 	. "github.com/onsi/gomega"

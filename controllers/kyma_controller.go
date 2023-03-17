@@ -439,7 +439,8 @@ func (r *KymaReconciler) RecordKymaStatusMetrics(ctx context.Context, kyma *v1be
 	shootFQDN, keyExists := kyma.Annotations[v1beta1.SKRDomainAnnotation]
 	if keyExists {
 		parts := strings.Split(shootFQDN, ".")
-		if len(parts) > 2 {
+		minFqdnParts := 2
+		if len(parts) > minFqdnParts {
 			shoot = parts[0] // hostname
 		}
 	} else {
