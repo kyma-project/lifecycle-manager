@@ -18,12 +18,13 @@ package v1beta1_test
 
 import (
 	"context"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
 	"k8s.io/apimachinery/pkg/labels"
 
@@ -139,9 +140,8 @@ var _ = BeforeSuite(
 		)
 		Expect(err).NotTo(HaveOccurred())
 
-		k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
-		Expect(err).NotTo(HaveOccurred())
-		Expect(k8sClient).NotTo(BeNil())
+		k8sClient = k8sManager.GetClient()
+
 		kcp := &declarative.ClusterInfo{Config: cfg, Client: k8sClient}
 		reconciler = declarative.NewFromManager(
 			k8sManager, &v1beta1.Manifest{},

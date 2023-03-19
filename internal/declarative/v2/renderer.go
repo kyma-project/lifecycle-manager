@@ -22,3 +22,41 @@ type Renderer interface {
 	Render(ctx context.Context, obj Object) ([]byte, error)
 	RemovePrerequisites(ctx context.Context, obj Object) error
 }
+
+type RenderMode string
+
+const (
+	RenderModeHelm      RenderMode = "helm"
+	RenderModeKustomize RenderMode = "kustomize"
+	RenderModeRaw       RenderMode = "raw"
+)
+
+func InitializeRenderer(
+	ctx context.Context,
+	obj Object,
+	spec *Spec,
+	client Client,
+	options *Options,
+) (Renderer, error) {
+	var renderer Renderer
+
+	switch spec.Mode {
+	case RenderModeHelm:
+		renderer = NewHelmRenderer(spec, client, options)
+		renderer = WrapWithRendererCache(renderer, spec, options)
+	case RenderModeKustomize:
+		renderer = NewKustomizeRenderer(spec, options)
+		renderer = WrapWithRendererCache(renderer, spec, options)
+	case RenderModeRaw:
+		renderer = NewRawRenderer(spec, options)
+	}
+
+	if err := renderer.Initialize(obj); err != nil {
+		return nil, err
+	}
+	if err := renderer.EnsurePrerequisites(ctx, obj); err != nil {
+		return nil, err
+	}
+
+	return renderer, nil
+}

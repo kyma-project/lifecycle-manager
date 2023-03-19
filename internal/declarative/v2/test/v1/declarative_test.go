@@ -3,11 +3,12 @@ package v1_test
 import (
 	"context"
 	"fmt"
-	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	testv1 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
 	"path/filepath"
 	"testing"
 	"time"
+
+	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	testv1 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
 
 	"golang.org/x/time/rate"
 	v1 "k8s.io/api/core/v1"

@@ -26,14 +26,18 @@ _Notice, to compliance least privileges principle, make sure this credential onl
    ```yaml
    apiVersion: v1
    kind: Secret
-   labels:
-   "operator.kyma-project.io/oci-registry-cred": "test-operator"
-   
+   metadata:
+      labels:
+        "operator.kyma-project.io/managed-by": "lifecycle-manager"
+        "operator.kyma-project.io/oci-registry-cred": "test-operator"
+   ```   
+   Please be aware, the `"operator.kyma-project.io/managed-by": "lifecycle-manager"` is mandatory to have, it's for the Lifecycle Manager runtime controller to know which resources to cache.
+
 3. Deploy to the KCP cluster in each environment.
 
 ### Generate Module Template with `oci-registry-cred` label
 
-`oci-registry-cred` label in module template allows lifecycle manager parsing the secret label selector and propagate to manifest CR so that module manager knows which credential secret to lookup.
+`oci-registry-cred` label in module template allows lifecycle manager parsing the secret label selector and propagate to manifest CR so that Lifecycle Manager knows which credential secret to lookup.
 
 The most convenient way to support module template with `oci-registry-cred` label is using Kyma CLI with `registry-cred-selector`flag for create module command.
 
@@ -54,4 +58,4 @@ Verify in each component descriptor resources layer, it should contains `oci-reg
           value:
             operator.kyma-project.io/oci-registry-cred: test-operator
    ```
-With this module template, module manager should access private oci registry with no authentication problem.
+With this module template, Lifecycle Manager should access private oci registry with no authentication problem.

@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"io"
 	"os"
 	"path/filepath"
 	"reflect"
+
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"

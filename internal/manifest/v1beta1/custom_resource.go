@@ -3,6 +3,7 @@ package v1beta1
 import (
 	"context"
 	"errors"
+
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
 	manifestv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
