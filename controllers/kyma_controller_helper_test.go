@@ -1,7 +1,6 @@
 package controllers_test
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -11,7 +10,6 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	ocmv1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
-
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -229,25 +227,19 @@ func ModuleTemplatesVerifyUnwantedLabel(
 				return err
 			}
 			labels := descriptor.GetLabels()
-			for idx := range labels {
-				lbl := labels[idx]
-				if ocmLabelEquals(lbl, unwantedLabel) {
-					return ErrUnwantedChangesFound
-				}
+			_, ok := labels.Get(unwantedLabel.Name)
+			if ok {
+				return ErrUnwantedChangesFound
 			}
 		}
 		return nil
 	}
 }
 
-func ocmLabelEquals(l1, l2 ocmv1.Label) bool {
-	return l1.Name == l2.Name && l1.Version == l2.Version && bytes.Equal(l1.Value, l2.Value)
-}
-
 func ModifyModuleTemplateSpecThroughLabels(
 	clnt client.Client,
 	kyma *v1beta1.Kyma,
-	label ocmv1.Label,
+	unwantedLabel ocmv1.Label,
 	remote bool,
 ) func() error {
 	return func() error {
@@ -266,7 +258,10 @@ func ModifyModuleTemplateSpecThroughLabels(
 				return err
 			}
 			labels := descriptor.GetLabels()
-			labels = append(labels, label)
+			err = labels.Set(unwantedLabel.Name, unwantedLabel.Value, ocmv1.WithVersion(unwantedLabel.Version))
+			if err != nil {
+				return err
+			}
 			descriptor.SetLabels(labels)
 			newDescriptor, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONLCodec)
 			Expect(err).ToNot(HaveOccurred())

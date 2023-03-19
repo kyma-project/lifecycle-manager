@@ -104,7 +104,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 				v1beta1.ConditionReasonModuleCatalogIsReady)).To(BeTrue())
 		}, Timeout, Interval)
 
-		unwantedLabel := ocmv1.Label{Name: "test", Value: json.RawMessage(`{"foo":"bar"}`)}
+		unwantedLabel := ocmv1.Label{Name: "test", Value: json.RawMessage(`{"foo":"bar"}`), Version: "v1"}
 		By("updating a module template in the remote cluster to simulate unwanted modification")
 		Eventually(ModifyModuleTemplateSpecThroughLabels(runtimeClient, kyma, unwantedLabel, true),
 			Timeout, Interval).Should(Succeed())
