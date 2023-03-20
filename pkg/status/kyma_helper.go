@@ -13,12 +13,12 @@ import (
 
 type KymaHelper struct {
 	client.StatusWriter
-	recordKymaStatusMetrics func(kyma *v1beta1.Kyma)
+	recordKymaStatusMetrics func(ctx context.Context, kyma *v1beta1.Kyma)
 }
 
 type HelperClient interface {
 	Status() client.StatusWriter
-	RecordKymaStatusMetrics(kyma *v1beta1.Kyma)
+	RecordKymaStatusMetrics(ctx context.Context, kyma *v1beta1.Kyma)
 }
 
 func Helper(handler HelperClient) *KymaHelper {
@@ -56,7 +56,7 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 	}
 
 	if k.recordKymaStatusMetrics != nil {
-		k.recordKymaStatusMetrics(kyma)
+		k.recordKymaStatusMetrics(ctx, kyma)
 	}
 
 	return nil

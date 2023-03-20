@@ -30,7 +30,7 @@ var _ = Describe("Kyma with no ModuleTemplate", Ordered, func() {
 	})
 })
 
-var _ = FDescribe("Kyma with deprecated Condition", Ordered, func() {
+var _ = Describe("Kyma with deprecated Condition", Ordered, func() {
 	kyma := NewTestKyma("no-module-kyma")
 	RegisterDefaultLifecycleForKyma(kyma)
 

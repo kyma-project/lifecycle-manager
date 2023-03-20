@@ -8,7 +8,6 @@ import (
 
 const (
 	kymaNameLabel   = "kyma_name"
-	moduleNameLabel = "module_name"
 	stateLabel      = "state"
 	shootLabel      = "shoot"
 	instanceIDLabel = "instance_id"
