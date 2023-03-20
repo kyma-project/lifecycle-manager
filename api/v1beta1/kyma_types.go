@@ -143,8 +143,7 @@ func (kyma *Kyma) AllReadyConditionsTrue() bool {
 	}
 
 	for _, existingCondition := range status.Conditions {
-		if existingCondition.Type == string(ConditionTypeReady) &&
-			existingCondition.Status != metav1.ConditionTrue {
+		if existingCondition.Status != metav1.ConditionTrue {
 			return false
 		}
 	}
@@ -170,6 +169,8 @@ type KymaStatus struct {
 
 	// List of status conditions to indicate the status of a ServiceInstance.
 	// +optional
+	// +listType=map
+	// +listMapKey=type
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 
 	// Contains essential information about the current deployed module
@@ -299,20 +300,18 @@ func (m PartialMeta) GetGeneration() int64 {
 	return m.Generation
 }
 
+// KymaConditionType is a programmatic identifier indicating the type for the corresponding condition.
+// By combining of condition type, status and reason  it explains the current Kyma status.
+// Name example:
+// Type: Modules, Reason: Ready and Status: True means all modules are in ready state.
+// Type: Modules, Reason: Ready and Status: False means some modules are not in ready state,
+// and the actual state of individual module can be found in related ModuleStatus.
 type KymaConditionType string
 
-const (
-	// ConditionTypeReady represents KymaConditionType Ready, meaning as soon as its true we will reconcile Kyma
-	// into KymaStateReady.
-	ConditionTypeReady KymaConditionType = "Ready"
-)
+// KymaConditionMsg represents the current state of a condition in a human-readable format.
+type KymaConditionMsg string
 
-// KymaConditionReason is a programmatic identifier indicating the reason for the condition's last transition.
-// By combining of condition status, it explains the current Kyma status for all modules.
-// Name example:
-// Reason: ModulesIsReady and Status: True means all modules are in ready state.
-// Reason: ModulesIsReady and Status: False means some modules are not in ready state,
-// and the actual state of individual module can be found in related ModuleStatus.
+// KymaConditionReason should always be set to `Ready`.
 type KymaConditionReason string
 
 func (kyma *Kyma) SetActiveChannel() *Kyma {
@@ -375,28 +374,29 @@ func init() {
 	SchemeBuilder.Register(&Kyma{}, &KymaList{})
 }
 
-func (kyma *Kyma) UpdateCondition(reason KymaConditionReason, status metav1.ConditionStatus) {
+func (kyma *Kyma) UpdateCondition(conditionType KymaConditionType, status metav1.ConditionStatus) {
 	meta.SetStatusCondition(&kyma.Status.Conditions, metav1.Condition{
-		Type:               string(ConditionTypeReady),
+		Type:               string(conditionType),
 		Status:             status,
-		Reason:             string(reason),
-		Message:            GenerateMessage(reason, status),
+		Reason:             string(ConditionReason),
+		Message:            GenerateMessage(conditionType, status),
 		ObservedGeneration: kyma.GetGeneration(),
 	})
 }
 
-func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType,
-	reason KymaConditionReason, conditionStatus ...metav1.ConditionStatus,
+func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType, conditionStatus ...metav1.ConditionStatus,
 ) bool {
-	for _, condition := range kyma.Status.Conditions {
-		reasonTypeMatch := condition.Type == string(conditionType) && condition.Reason == string(reason)
+	for _, existingCondition := range kyma.Status.Conditions {
+		if existingCondition.Type != string(conditionType) {
+			continue
+		}
 		if len(conditionStatus) > 0 {
 			for i := range conditionStatus {
-				if reasonTypeMatch && condition.Status == conditionStatus[i] {
+				if existingCondition.Status == conditionStatus[i] {
 					return true
 				}
 			}
-		} else if reasonTypeMatch {
+		} else {
 			return true
 		}
 	}
@@ -415,13 +415,8 @@ func (kyma *Kyma) DetermineState() State {
 		}
 	}
 
-	if len(status.Conditions) < 1 {
-		return StateProcessing
-	}
-
-	for _, existingCondition := range status.Conditions {
-		if existingCondition.Type == string(ConditionTypeReady) &&
-			existingCondition.Status != metav1.ConditionTrue {
+	for _, condition := range status.Conditions {
+		if condition.Status != metav1.ConditionTrue {
 			return StateProcessing
 		}
 	}

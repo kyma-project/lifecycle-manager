@@ -100,8 +100,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		Eventually(func() {
 			remoteKyma, err = GetKyma(ctx, runtimeClient, kyma.GetName(), kyma.Spec.Sync.Namespace)
 			Expect(err).ShouldNot(HaveOccurred())
-			Expect(remoteKyma.ContainsCondition(v1beta1.ConditionTypeReady,
-				v1beta1.ConditionReasonModuleCatalogIsReady)).To(BeTrue())
+			Expect(remoteKyma.ContainsCondition(v1beta1.ConditionTypeModuleCatalog)).To(BeTrue())
 		}, Timeout, Interval)
 
 		By("getting the label count of module templates in the remote cluster before updating the labels")
