@@ -101,13 +101,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 		return ctrl.Result{}, client.IgnoreNotFound(err) //nolint:wrapcheck
 	}
-
-	if status.SetConditions(kyma, r.WatcherEnabled(kyma)) {
-		if err := r.UpdateStatus(ctx, kyma, kyma.Status.State, "Initialising Conditions"); err != nil {
-			return r.CtrlErr(ctx, kyma, err)
-		}
-		return ctrl.Result{Requeue: true}, nil
-	}
+	status.InitConditions(kyma, r.WatcherEnabled(kyma))
 
 	if kyma.SkipReconciliation() {
 		logger.V(log.DebugLevel).Info("kyma gets skipped because of label")
@@ -235,21 +229,11 @@ func (r *KymaReconciler) HandleInitialState(ctx context.Context, kyma *v1beta1.K
 func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1beta1.Kyma) error {
 	logger := ctrlLog.FromContext(ctx)
 
-	allModulesReady := true
 	if err := r.syncModules(ctx, kyma); err != nil {
 		return r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta1.StateError, err)
 	}
-	for i := range kyma.Status.Modules {
-		moduleStatus := &kyma.Status.Modules[i]
-		if moduleStatus.State != v1beta1.StateReady {
-			allModulesReady = false
-			break
-		}
-	}
 
-	if allModulesReady {
-		kyma.UpdateCondition(v1beta1.ConditionTypeModules, metav1.ConditionTrue)
-	}
+	checkModuleCondition(kyma)
 
 	if r.WatcherEnabled(kyma) {
 		if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
@@ -260,12 +244,13 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1beta
 				return r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta1.StateError,
 					fmt.Errorf("error while installing Watcher Webhook Chart: %w", err))
 			}
+		} else {
+			kyma.UpdateCondition(v1beta1.ConditionTypeSKRWebhook, metav1.ConditionTrue)
 		}
-		kyma.UpdateCondition(v1beta1.ConditionTypeSKRWebhook, metav1.ConditionTrue)
 	}
 
 	// set ready condition if applicable
-	state := kyma.DetermineState(r.WatcherEnabled(kyma))
+	state := kyma.DetermineState()
 
 	if state == v1beta1.StateReady {
 		const message = "kyma is ready"
@@ -280,6 +265,21 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1beta
 	}
 
 	return nil
+}
+
+func checkModuleCondition(kyma *v1beta1.Kyma) {
+	allModulesReady := true
+	for i := range kyma.Status.Modules {
+		moduleStatus := &kyma.Status.Modules[i]
+		if moduleStatus.State != v1beta1.StateReady {
+			allModulesReady = false
+			break
+		}
+	}
+
+	if allModulesReady {
+		kyma.UpdateCondition(v1beta1.ConditionTypeModules, metav1.ConditionTrue)
+	}
 }
 
 func (r *KymaReconciler) syncModules(ctx context.Context, kyma *v1beta1.Kyma) error {

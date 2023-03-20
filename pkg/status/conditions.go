@@ -6,27 +6,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// SetConditions checks if all required conditions do exists and removes deprecated Conditions.
-// If one or many Conditions are missing, they will be created and `true` will be returned
-// to determine that an update is needed.
-// If all required conditions exist, they will be set to `False`.
-func SetConditions(kyma *v1beta1.Kyma, watcherEnabled bool) bool {
-	conditionUpdateNeeded := false
-
-	existingConditions := kyma.Status.Conditions
-	// Remove deprecated `Ready` condition
-	if deprecatedCondition := apimeta.FindStatusCondition(existingConditions,
-		string(v1beta1.DeprecatedConditionReady)); deprecatedCondition != nil {
-		apimeta.RemoveStatusCondition(&existingConditions, string(v1beta1.DeprecatedConditionReady))
-		conditionUpdateNeeded = true
+// InitConditions initializes the required conditions in the Kyma CR and removes deprecated Conditions.
+func InitConditions(kyma *v1beta1.Kyma, watcherEnabled bool) {
+	// Removing deprecated `Ready` condition
+	existingCondition := &kyma.Status.Conditions
+	if deprecatedCondition := apimeta.FindStatusCondition(*existingCondition,
+		string(v1beta1.DeprecatedConditionTypeReady)); deprecatedCondition != nil {
+		apimeta.RemoveStatusCondition(existingCondition, string(v1beta1.DeprecatedConditionTypeReady))
 	}
 	// Add required Conditions
-	for _, cond := range v1beta1.GetRequiredConditions(kyma.Spec.Sync.Enabled, watcherEnabled) {
-		if existingCondition := apimeta.FindStatusCondition(existingConditions, string(cond)); existingCondition == nil {
-			// Condition does not exist, KymaCR needs to be patched after Condition is being added
-			conditionUpdateNeeded = true
-		}
+	for _, cond := range v1beta1.GetRequiredConditionTypes(kyma.Spec.Sync.Enabled, watcherEnabled) {
 		kyma.UpdateCondition(cond, metav1.ConditionFalse)
 	}
-	return conditionUpdateNeeded
 }

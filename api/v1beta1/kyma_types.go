@@ -407,7 +407,7 @@ func (kyma *Kyma) SkipReconciliation() bool {
 	return kyma.GetLabels() != nil && kyma.GetLabels()[SkipReconcileLabel] == "true"
 }
 
-func (kyma *Kyma) DetermineState(watcherEnabled bool) State {
+func (kyma *Kyma) DetermineState() State {
 	status := &kyma.Status
 	for _, moduleStatus := range status.Modules {
 		if moduleStatus.State == StateError {
@@ -415,9 +415,8 @@ func (kyma *Kyma) DetermineState(watcherEnabled bool) State {
 		}
 	}
 
-	for _, condition := range GetRequiredConditions(kyma.Spec.Sync.Enabled, watcherEnabled) {
-		existingCondition := meta.FindStatusCondition(status.Conditions, string(condition))
-		if existingCondition == nil || existingCondition.Status != metav1.ConditionTrue {
+	for _, condition := range status.Conditions {
+		if condition.Status != metav1.ConditionTrue {
 			return StateProcessing
 		}
 	}

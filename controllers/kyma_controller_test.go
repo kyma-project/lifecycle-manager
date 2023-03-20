@@ -30,18 +30,22 @@ var _ = Describe("Kyma with no ModuleTemplate", Ordered, func() {
 	})
 })
 
-var _ = Describe("Kyma with deprecated Condition", Ordered, func() {
+var _ = FDescribe("Kyma with deprecated Condition", Ordered, func() {
 	kyma := NewTestKyma("no-module-kyma")
-	kyma.Status.Conditions = []metav1.Condition{{
-		Type:               string(v1beta1.DeprecatedConditionReady),
-		Status:             metav1.ConditionFalse,
-		ObservedGeneration: kyma.GetGeneration(),
-		Reason:             "Deprecated",
-		Message:            "Deprecated",
-	}}
 	RegisterDefaultLifecycleForKyma(kyma)
 
 	It("Should remove deprecated conditions and add required conditions", func() {
+		kyma.Status.Conditions = append(kyma.Status.Conditions, metav1.Condition{
+			Type:               string(v1beta1.DeprecatedConditionTypeReady),
+			Status:             metav1.ConditionFalse,
+			ObservedGeneration: kyma.GetGeneration(),
+			Reason:             "Deprecated",
+			Message:            "Deprecated",
+			LastTransitionTime: metav1.Time{Time: time.Now()},
+		})
+		kyma.ManagedFields = nil
+		Expect(controlPlaneClient.Patch(ctx, kyma, client.Apply,
+			client.FieldOwner(v1beta1.OperatorName))).To(Succeed())
 		By("having transitioned the CR State to Ready as there are no modules")
 		Eventually(CheckKymaConditions(ctx, controlPlaneClient, kyma.GetName(),
 			[]v1beta1.KymaConditionType{v1beta1.ConditionTypeModules}),
