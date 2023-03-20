@@ -108,13 +108,13 @@ func (c *clusterAwareModuleTemplateValidator) validate(oldTemplate, newTemplate 
 		if err != nil {
 			return err
 		}
-		return validateVersion(newVersion, oldVersion, newTemplate.Name)
+		return validateVersionUpgrade(newVersion, oldVersion, newTemplate.Name)
 	}
 
 	return nil
 }
 
-func validateVersion(newVersion *semver.Version, oldVersion *semver.Version, templateName string) error {
+func validateVersionUpgrade(newVersion *semver.Version, oldVersion *semver.Version, templateName string) error {
 	filteredNewVersion := filterVersion(newVersion)
 	filteredOldVersion := filterVersion(oldVersion)
 	if filteredNewVersion.LessThan(filteredOldVersion) {
