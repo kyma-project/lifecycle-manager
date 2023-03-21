@@ -13,7 +13,3 @@ configMapGenerator:
   - controller_manager_config.yaml
   name: manager-config
 
-images:
-- name: controller
-  newName: eu.gcr.io/kyma-project/lifecycle-manager
-  newTag: latest
