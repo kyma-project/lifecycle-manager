@@ -64,22 +64,20 @@ type clusterAwareModuleTemplateValidator struct {
 
 func (c *clusterAwareModuleTemplateValidator) ValidateCreate(ctx context.Context, obj runtime.Object) error {
 	moduletemplatelog.Info("validate create", "name", obj.(*ModuleTemplate).Name)
-	return c.validate(ctx, nil, obj.(*ModuleTemplate))
+	return c.validate(nil, obj.(*ModuleTemplate))
 }
 
 func (c *clusterAwareModuleTemplateValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) error {
 	moduletemplatelog.Info("validate update", "name", newObj.(*ModuleTemplate).Name)
-	return c.validate(ctx, oldObj.(*ModuleTemplate), newObj.(*ModuleTemplate))
+	return c.validate(oldObj.(*ModuleTemplate), newObj.(*ModuleTemplate))
 }
 
 func (c *clusterAwareModuleTemplateValidator) ValidateDelete(ctx context.Context, obj runtime.Object) error {
 	moduletemplatelog.Info("validate delete", "name", obj.(*ModuleTemplate).Name)
-	return c.validate(ctx, nil, obj.(*ModuleTemplate))
+	return c.validate(nil, obj.(*ModuleTemplate))
 }
 
-func (c *clusterAwareModuleTemplateValidator) validate(
-	_ context.Context, oldTemplate, newTemplate *ModuleTemplate,
-) error {
+func (c *clusterAwareModuleTemplateValidator) validate(oldTemplate, newTemplate *ModuleTemplate) error {
 	newDescriptor, err := newTemplate.Spec.GetDescriptor()
 	if err != nil {
 		return err
@@ -110,20 +108,33 @@ func (c *clusterAwareModuleTemplateValidator) validate(
 		if err != nil {
 			return err
 		}
-		if newVersion.LessThan(oldVersion) {
-			return apierrors.NewInvalid(
-				schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
-				newTemplate.Name, field.ErrorList{field.Invalid(
-					field.NewPath("spec").Child("descriptor").
-						Child("version"),
-					newVersion.String(), fmt.Sprintf(
-						"version of templates can never be decremented (previously %s)",
-						oldVersion,
-					),
-				)},
-			)
-		}
+		return validateVersionUpgrade(newVersion, oldVersion, newTemplate.Name)
 	}
 
 	return nil
+}
+
+func validateVersionUpgrade(newVersion *semver.Version, oldVersion *semver.Version, templateName string) error {
+	filteredNewVersion := filterVersion(newVersion)
+	filteredOldVersion := filterVersion(oldVersion)
+	if filteredNewVersion.LessThan(filteredOldVersion) {
+		return apierrors.NewInvalid(
+			schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
+			templateName, field.ErrorList{field.Invalid(
+				field.NewPath("spec").Child("descriptor").
+					Child("version"),
+				newVersion.String(), fmt.Sprintf(
+					"version of templates can never be decremented (previously %s)",
+					oldVersion,
+				),
+			)},
+		)
+	}
+	return nil
+}
+
+func filterVersion(version *semver.Version) *semver.Version {
+	filteredVersion, _ := semver.NewVersion(fmt.Sprintf("%d.%d.%d",
+		version.Major(), version.Minor(), version.Patch()))
+	return filteredVersion
 }
