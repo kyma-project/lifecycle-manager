@@ -26,13 +26,14 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/metrics"
 	"k8s.io/client-go/rest"
+	"sync"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/parse"
-	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
+	modulesync "github.com/kyma-project/lifecycle-manager/pkg/module/sync"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
@@ -196,8 +197,6 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta1.Ky
 		return fmt.Errorf("could not synchronize remote module catalog: %w", err)
 	}
 
-	kyma.UpdateCondition(v1beta1.ConditionTypeModuleCatalog, metav1.ConditionTrue)
-
 	return nil
 }
 
@@ -229,23 +228,25 @@ func (r *KymaReconciler) HandleInitialState(ctx context.Context, kyma *v1beta1.K
 func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1beta1.Kyma) error {
 	logger := ctrlLog.FromContext(ctx)
 
-	if err := r.syncModules(ctx, kyma); err != nil {
-		return r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta1.StateError, err)
-	}
+	var waitGroup sync.WaitGroup
+	errorChannel := make(chan error)
 
-	checkModuleCondition(kyma)
+	waitGroup.Add(1)
+	go r.syncModuleCatalogInParallel(ctx, kyma, errorChannel, &waitGroup)
+
+	waitGroup.Add(1)
+	go r.syncModulesInParallel(ctx, kyma, errorChannel, &waitGroup)
 
 	if r.WatcherEnabled(kyma) {
-		if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
-			// TODO Move installation to own go-routine to not block installation
-			// + consider introducing own condition for CertificateReady Status
-			// https://github.com/kyma-project/lifecycle-manager/issues/376
-			if !errors.Is(err, &watcher.CertificateNotReadyError{}) {
-				return r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta1.StateError,
-					fmt.Errorf("error while installing Watcher Webhook Chart: %w", err))
-			}
-		} else {
-			kyma.UpdateCondition(v1beta1.ConditionTypeSKRWebhook, metav1.ConditionTrue)
+		waitGroup.Add(1)
+		go r.installWatcherInParallel(ctx, kyma, errorChannel, &waitGroup)
+	}
+
+	waitGroup.Wait()
+	close(errorChannel)
+	for err := range errorChannel {
+		if err != nil {
+			return err
 		}
 	}
 
@@ -267,33 +268,58 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1beta
 	return nil
 }
 
-func checkModuleCondition(kyma *v1beta1.Kyma) {
-	allModulesReady := true
+func (r *KymaReconciler) syncModuleCatalogInParallel(ctx context.Context, kyma *v1beta1.Kyma,
+	errorChannel chan error, wg *sync.WaitGroup) {
+	if err := r.syncModuleCatalog(ctx, kyma); err != nil {
+		errorChannel <- r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta1.StateError,
+			fmt.Errorf("could not synchronize remote module catalog: %w", err))
+	} else {
+		kyma.UpdateCondition(v1beta1.ConditionTypeModuleCatalog, metav1.ConditionTrue)
+	}
+	wg.Done()
+}
+
+func (r *KymaReconciler) syncModulesInParallel(ctx context.Context, kyma *v1beta1.Kyma,
+	errorChannel chan error, wg *sync.WaitGroup) {
+	if err := r.syncModules(ctx, kyma); err != nil {
+		errorChannel <- r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta1.StateError, err)
+	} else if areAllModulesReady(kyma) {
+		kyma.UpdateCondition(v1beta1.ConditionTypeModules, metav1.ConditionTrue)
+	}
+	wg.Done()
+}
+
+func (r *KymaReconciler) installWatcherInParallel(ctx context.Context, kyma *v1beta1.Kyma,
+	errorChannel chan error, wg *sync.WaitGroup) {
+	if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
+		if !errors.Is(err, &watcher.CertificateNotReadyError{}) {
+			errorChannel <- r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta1.StateError,
+				fmt.Errorf("error while installing Watcher Webhook Chart: %w", err))
+		}
+	} else {
+		kyma.UpdateCondition(v1beta1.ConditionTypeSKRWebhook, metav1.ConditionTrue)
+	}
+	wg.Done()
+}
+
+func areAllModulesReady(kyma *v1beta1.Kyma) bool {
 	for i := range kyma.Status.Modules {
 		moduleStatus := &kyma.Status.Modules[i]
 		if moduleStatus.State != v1beta1.StateReady {
-			allModulesReady = false
-			break
+			return false
 		}
 	}
-
-	if allModulesReady {
-		kyma.UpdateCondition(v1beta1.ConditionTypeModules, metav1.ConditionTrue)
-	}
+	return true
 }
 
 func (r *KymaReconciler) syncModules(ctx context.Context, kyma *v1beta1.Kyma) error {
-	if err := r.syncModuleCatalog(ctx, kyma); err != nil {
-		return fmt.Errorf("could not synchronize remote module catalog: %w", err)
-	}
-
 	// these are the actual modules
 	modules, err := r.GenerateModulesFromTemplate(ctx, kyma)
 	if err != nil {
 		return fmt.Errorf("error while fetching modules during processing: %w", err)
 	}
 
-	runner := sync.New(r)
+	runner := modulesync.New(r)
 
 	if err := runner.Sync(ctx, kyma, modules); err != nil {
 		return fmt.Errorf("sync failed: %w", err)
