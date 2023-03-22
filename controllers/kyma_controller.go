@@ -184,10 +184,6 @@ func (r *KymaReconciler) syncRemoteKymaSpecAndStatus(
 }
 
 func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta1.Kyma) error {
-	if !kyma.Spec.Sync.Enabled || !kyma.Spec.Sync.ModuleCatalog {
-		return nil
-	}
-
 	moduleTemplateList := &v1beta1.ModuleTemplateList{}
 	if err := r.List(ctx, moduleTemplateList, &client.ListOptions{}); err != nil {
 		return fmt.Errorf("could not aggregate module templates for module catalog sync: %w", err)
@@ -231,8 +227,10 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1beta
 	var waitGroup sync.WaitGroup
 	errorChannel := make(chan error)
 
-	waitGroup.Add(1)
-	go r.syncModuleCatalogInParallel(ctx, kyma, errorChannel, &waitGroup)
+	if kyma.Spec.Sync.Enabled && kyma.Spec.Sync.ModuleCatalog {
+		waitGroup.Add(1)
+		go r.syncModuleCatalogInParallel(ctx, kyma, errorChannel, &waitGroup)
+	}
 
 	waitGroup.Add(1)
 	go r.syncModulesInParallel(ctx, kyma, errorChannel, &waitGroup)
@@ -242,8 +240,11 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1beta
 		go r.installWatcherInParallel(ctx, kyma, errorChannel, &waitGroup)
 	}
 
-	waitGroup.Wait()
-	close(errorChannel)
+	go func() {
+		waitGroup.Wait()
+		close(errorChannel)
+	}()
+
 	for err := range errorChannel {
 		if err != nil {
 			return err
@@ -269,28 +270,31 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1beta
 }
 
 func (r *KymaReconciler) syncModuleCatalogInParallel(ctx context.Context, kyma *v1beta1.Kyma,
-	errorChannel chan error, wg *sync.WaitGroup) {
+	errorChannel chan error, waitGroup *sync.WaitGroup) {
+	defer waitGroup.Done()
 	if err := r.syncModuleCatalog(ctx, kyma); err != nil {
 		errorChannel <- r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta1.StateError,
 			fmt.Errorf("could not synchronize remote module catalog: %w", err))
+		return
 	} else {
 		kyma.UpdateCondition(v1beta1.ConditionTypeModuleCatalog, metav1.ConditionTrue)
 	}
-	wg.Done()
 }
 
 func (r *KymaReconciler) syncModulesInParallel(ctx context.Context, kyma *v1beta1.Kyma,
-	errorChannel chan error, wg *sync.WaitGroup) {
+	errorChannel chan error, waitGroup *sync.WaitGroup) {
+	defer waitGroup.Done()
 	if err := r.syncModules(ctx, kyma); err != nil {
 		errorChannel <- r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta1.StateError, err)
+		return
 	} else if areAllModulesReady(kyma) {
 		kyma.UpdateCondition(v1beta1.ConditionTypeModules, metav1.ConditionTrue)
 	}
-	wg.Done()
 }
 
 func (r *KymaReconciler) installWatcherInParallel(ctx context.Context, kyma *v1beta1.Kyma,
-	errorChannel chan error, wg *sync.WaitGroup) {
+	errorChannel chan error, waitGroup *sync.WaitGroup) {
+	defer waitGroup.Done()
 	if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
 		if !errors.Is(err, &watcher.CertificateNotReadyError{}) {
 			errorChannel <- r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta1.StateError,
@@ -299,7 +303,6 @@ func (r *KymaReconciler) installWatcherInParallel(ctx context.Context, kyma *v1b
 	} else {
 		kyma.UpdateCondition(v1beta1.ConditionTypeSKRWebhook, metav1.ConditionTrue)
 	}
-	wg.Done()
 }
 
 func areAllModulesReady(kyma *v1beta1.Kyma) bool {
