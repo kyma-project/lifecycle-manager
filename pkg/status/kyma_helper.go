@@ -29,7 +29,7 @@ func Helper(handler HelperClient) *KymaHelper {
 }
 
 func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
-	kyma *v1beta1.Kyma, newState v1beta1.State, message string,
+	kyma *v1beta1.Kyma, newState v1beta1.State, message string, isKymaManaged bool,
 ) error {
 	kyma.Status.State = newState
 
@@ -50,8 +50,12 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 		LastUpdateTime: metav1.NewTime(time.Now()),
 	}
 
+	fieldOwner := "unmanaged-kyma"
+	if isKymaManaged {
+		fieldOwner = v1beta1.OperatorName
+	}
 	if err := k.Patch(ctx, kyma, client.Apply, subResourceOpts(client.ForceOwnership),
-		client.FieldOwner(v1beta1.OperatorName)); err != nil {
+		client.FieldOwner(fieldOwner)); err != nil {
 		return fmt.Errorf("status could not be updated: %w", err)
 	}
 
