@@ -39,24 +39,24 @@ components:
   # [GRAFANA] To enable prometheus monitor, uncomment all sections with 'GRAFANA'.
   - ../grafana
 
-patchesJson6902:
+patches:
   # We patch the Metrics JSONs here as we expect KCP to be watching for grafana dashboards in kyma-system,
   # not kcp-system as we configure it above for the rest of the kustomization
-  - target:
+  - path: patches/dashboard_cm_patch.yaml
+    target:
       version: v1
       kind: ConfigMap
       name: klm-controller-resources-metrics
-    path: patches/metrics_namespace_replace.yaml
-  - target:
+  - path: patches/dashboard_cm_patch.yaml
+    target:
       version: v1
       kind: ConfigMap
       name: klm-controller-runtime-metrics
-    path: patches/metrics_namespace_replace.yaml
-  - target:
+  - path: patches/dashboard_cm_patch.yaml
+    target:
       version: v1
       kind: ConfigMap
       name: klm-overview
-    path: patches/metrics_namespace_replace.yaml
 
 patchesStrategicMerge:
   # We expect a kcp-system namespace to be already present in KCP
