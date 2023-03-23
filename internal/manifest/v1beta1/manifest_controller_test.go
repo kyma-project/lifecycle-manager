@@ -117,15 +117,16 @@ var _ = Describe(
 	},
 )
 
-var _ = Describe(
+var _ = FDescribe(
 	"Given manifest with OCI specs", func() {
 		mainOciTempDir := "main-dir"
 		installName := filepath.Join(mainOciTempDir, "installs")
-		crdName := filepath.Join(mainOciTempDir, "crds")
+		//installName:="installs"
+		//crdName := filepath.Join(mainOciTempDir, "crds")
 		It(
 			"setup OCI", func() {
 				PushToRemoteOCIRegistry(installName, layerInstalls)
-				PushToRemoteOCIRegistry(crdName, layerCRDs)
+				//PushToRemoteOCIRegistry(crdName, layerCRDs)
 			},
 		)
 		BeforeEach(

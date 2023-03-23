@@ -2,6 +2,7 @@ package v2
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"os"
 
 	"k8s.io/client-go/tools/record"
@@ -43,4 +44,9 @@ func (r *RawRenderer) Render(_ context.Context, obj Object) ([]byte, error) {
 
 func (r *RawRenderer) RemovePrerequisites(_ context.Context, _ Object) error {
 	return nil
+}
+
+func getCRDsFromRawManifest(manifestFilePath string) ([]*unstructured.Unstructured, error){
+	crds:=make([]*unstructured.Unstructured, 0)
+	return crds, nil
 }

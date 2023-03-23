@@ -53,7 +53,6 @@ func NewManifestSpecResolver(kcp *declarative.ClusterInfo, codec *v1beta1.Codec)
 var (
 	ErrRenderModeInvalid                   = errors.New("render mode is invalid")
 	ErrInvalidObjectPassedToSpecResolution = errors.New("invalid object passed to spec resolution")
-	ErrNeedUniqueInstall                   = errors.New("can only pass exactly one install")
 )
 
 func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object) (*declarative.Spec, error) {
@@ -85,7 +84,7 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object)
 	case v1beta1.HelmChartType:
 		mode = declarative.RenderModeHelm
 	case v1beta1.OciRefType:
-		mode = declarative.RenderModeHelm
+		mode = declarative.RenderModeRaw
 	case v1beta1.KustomizeType:
 		mode = declarative.RenderModeKustomize
 	case v1beta1.NilRefType:
@@ -229,14 +228,14 @@ func (m *ManifestSpecResolver) getChartInfoForInstall(
 		}
 
 		// extract helm chart from layer digest
-		chartPath, err := GetPathFromExtractedTarGz(ctx, imageSpec, keyChain)
+		rawManifestPath, err := GetPathFromRawManifest(ctx, imageSpec, keyChain)
 		if err != nil {
 			return nil, err
 		}
 
 		return &ChartInfo{
 			ChartName: install.Name,
-			ChartPath: chartPath,
+			ChartPath: rawManifestPath,
 		}, nil
 	case v1beta1.KustomizeType:
 		var kustomizeSpec v1beta1.KustomizeSpec

@@ -2,6 +2,7 @@ package v1beta1_test
 
 import (
 	"fmt"
+	"github.com/google/go-containerregistry/pkg/v1/partial"
 	"io"
 	"net/url"
 	"os"
@@ -9,7 +10,6 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/partial"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
@@ -25,22 +25,7 @@ type mockLayer struct {
 	filePath string
 }
 
-func (m mockLayer) Digest() (v1.Hash, error) {
-	r, err := m.Compressed()
-	if err != nil {
-		return v1.Hash{}, err
-	}
-	defer r.Close()
-	hash, _, err := v1.SHA256(r)
-	return hash, err
-}
-
-func (m mockLayer) MediaType() (types.MediaType, error) {
-	return types.OCILayer, nil
-}
-
-func (m mockLayer) Size() (int64, error) { return 137438691328, nil }
-func (m mockLayer) Compressed() (io.ReadCloser, error) {
+func (m mockLayer) Uncompressed() (io.ReadCloser, error) {
 	f, err := os.Open(m.filePath)
 	if err != nil {
 		return nil, err
@@ -48,26 +33,42 @@ func (m mockLayer) Compressed() (io.ReadCloser, error) {
 	return io.NopCloser(f), nil
 }
 
-func (m mockLayer) Uncompressed() (io.ReadCloser, error) {
-	f, err := os.Open("../../../pkg/test_samples/oci/config.yaml")
-	if err != nil {
-		return nil, err
-	}
-	return io.NopCloser(f), nil
+//func (m mockLayer) Digest() (v1.Hash, error) {
+//	r, err := m.Compressed()
+//	if err != nil {
+//		return v1.Hash{}, err
+//	}
+//	defer r.Close()
+//	hash, _, err := v1.SHA256(r)
+//	return hash, err
+//}
+
+func (m mockLayer) MediaType() (types.MediaType, error) {
+	return types.OCIUncompressedLayer, nil
 }
+
+//func (m mockLayer) Size() (int64, error) { return 137438691328, nil }
+//func (m mockLayer) Compressed() (io.ReadCloser, error) {
+//	f, err := os.Open(m.filePath)
+//	if err != nil {
+//		return nil, err
+//	}
+//	return io.NopCloser(f), nil
+//}
 
 func (m mockLayer) DiffID() (v1.Hash, error) {
 	return v1.Hash{Algorithm: "fake", Hex: "diff id"}, nil
 }
 
 func CreateImageSpecLayer(ociLayerType OCILayerType) v1.Layer {
-	var layer v1.Layer
-	var err error
-	if ociLayerType == layerCRDs {
-		layer, err = partial.CompressedToLayer(mockLayer{filePath: "../../../pkg/test_samples/oci/crd.tgz"})
-	} else {
-		layer, err = partial.CompressedToLayer(mockLayer{filePath: "../../../pkg/test_samples/oci/helm_chart_with_crds.tgz"})
-	}
+	//var layer v1.Layer
+	//var err error
+	//if ociLayerType == layerCRDs {
+	//	layer, err = partial.CompressedToLayer(mockLayer{filePath: "../../../pkg/test_samples/oci/crd.tgz"})
+	//} else {
+	//	layer, err = partial.CompressedToLayer(mockLayer{filePath: "../../../pkg/test_samples/oci/helm_chart_with_crds.tgz"})
+	//}
+	layer, err := partial.UncompressedToLayer(mockLayer{filePath: "../../../pkg/test_samples/oci/rendered.yaml"})
 	Expect(err).ToNot(HaveOccurred())
 	return layer
 }

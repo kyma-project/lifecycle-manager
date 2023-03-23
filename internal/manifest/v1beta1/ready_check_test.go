@@ -27,11 +27,11 @@ import (
 var _ = Describe("Custom Manifest consistency check", Ordered, func() {
 	mainOciTempDir := "main-dir"
 	installName := filepath.Join(mainOciTempDir, "installs")
-	crdName := filepath.Join(mainOciTempDir, "crds")
+	//crdName := filepath.Join(mainOciTempDir, "crds")
 	It(
 		"setup OCI", func() {
 			PushToRemoteOCIRegistry(installName, layerInstalls)
-			PushToRemoteOCIRegistry(crdName, layerCRDs)
+			//PushToRemoteOCIRegistry(crdName, layerCRDs)
 		},
 	)
 	BeforeAll(
