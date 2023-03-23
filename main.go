@@ -138,7 +138,7 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 			MetricsBindAddress:     flagVar.metricsAddr,
 			Port:                   port,
 			HealthProbeBindAddress: flagVar.probeAddr,
-			LeaderElection:         flagVar.enableLeaderElection,
+			LeaderElection:         true,
 			LeaderElectionID:       "893110f7.kyma-project.io",
 			NewCache:               newCacheFunc,
 			NewClient:              NewClient,

@@ -38,9 +38,6 @@ func defineFlagVar() *FlagVar {
 		"The address the pprof endpoint binds to.")
 	flag.IntVar(&flagVar.maxConcurrentReconciles, "max-concurrent-reconciles", 1,
 		"The maximum number of concurrent Reconciles which can be run.")
-	flag.BoolVar(&flagVar.enableLeaderElection, "leader-elect", true,
-		"Enable leader election for controller manager. "+
-			"Enabling this will ensure there is only one active controller manager.")
 	flag.DurationVar(&flagVar.kymaRequeueSuccessInterval, "kyma-requeue-success-interval",
 		defaultKymaRequeueSuccessInterval, "determines the duration after which an already successfully "+
 			"reconciled Kyma is enqueued for checking if it's still in a consistent state.")
@@ -100,7 +97,6 @@ func defineFlagVar() *FlagVar {
 
 type FlagVar struct {
 	metricsAddr                                                     string
-	enableLeaderElection                                            bool
 	probeAddr                                                       string
 	kymaListenerAddr, manifestListenerAddr                          string
 	maxConcurrentReconciles                                         int
