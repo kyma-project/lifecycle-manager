@@ -50,7 +50,7 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 		LastUpdateTime: metav1.NewTime(time.Now()),
 	}
 
-	fieldOwner := "unmanaged-kyma"
+	fieldOwner := v1beta1.UnmanagedKyma
 	if isKymaManaged {
 		fieldOwner = v1beta1.OperatorName
 	}
