@@ -123,7 +123,7 @@ func SetupWebhook() {
 			Host:               webhookInstallOptions.LocalServingHost,
 			Port:               webhookInstallOptions.LocalServingPort,
 			CertDir:            webhookInstallOptions.LocalServingCertDir,
-			LeaderElection:     false,
+			LeaderElection:     true,
 			MetricsBindAddress: "0",
 		})
 	Expect(err).NotTo(HaveOccurred())
