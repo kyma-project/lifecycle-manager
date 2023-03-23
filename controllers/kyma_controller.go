@@ -20,13 +20,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"golang.org/x/sync/errgroup"
 	"strings"
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/metrics"
 	"k8s.io/client-go/rest"
-	"sync"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
@@ -199,56 +199,45 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta1.Ky
 func (r *KymaReconciler) stateHandling(ctx context.Context, kyma *v1beta1.Kyma) (ctrl.Result, error) {
 	switch kyma.Status.State {
 	case "":
-		return ctrl.Result{}, r.HandleInitialState(ctx, kyma)
+		return ctrl.Result{}, r.handleInitialState(ctx, kyma)
 	case v1beta1.StateProcessing:
-		return ctrl.Result{Requeue: true}, r.HandleProcessingState(ctx, kyma)
+		return ctrl.Result{Requeue: true}, r.handleProcessingState(ctx, kyma)
 	case v1beta1.StateDeleting:
-		if dependentsDeleting, err := r.HandleDeletingState(ctx, kyma); err != nil {
+		if dependentsDeleting, err := r.handleDeletingState(ctx, kyma); err != nil {
 			return ctrl.Result{}, err
 		} else if dependentsDeleting {
 			return ctrl.Result{Requeue: true}, nil
 		}
 	case v1beta1.StateError:
-		return ctrl.Result{Requeue: true}, r.HandleProcessingState(ctx, kyma)
+		return ctrl.Result{Requeue: true}, r.handleProcessingState(ctx, kyma)
 	case v1beta1.StateReady:
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, r.HandleProcessingState(ctx, kyma)
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, r.handleProcessingState(ctx, kyma)
 	}
 
 	return ctrl.Result{}, nil
 }
 
-func (r *KymaReconciler) HandleInitialState(ctx context.Context, kyma *v1beta1.Kyma) error {
+func (r *KymaReconciler) handleInitialState(ctx context.Context, kyma *v1beta1.Kyma) error {
 	return r.UpdateStatusWithEvent(ctx, kyma, v1beta1.StateProcessing, "started processing")
 }
 
-func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1beta1.Kyma) error {
+func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta1.Kyma) error {
 	logger := ctrlLog.FromContext(ctx)
 
-	var waitGroup sync.WaitGroup
-	errorChannel := make(chan error)
+	var errGroup errgroup.Group
 
 	if kyma.Spec.Sync.Enabled && kyma.Spec.Sync.ModuleCatalog {
-		waitGroup.Add(1)
-		go r.syncModuleCatalogInParallel(ctx, kyma, errorChannel, &waitGroup)
+		errGroup.Go(func() error { return r.syncModuleCatalogInParallel(ctx, kyma) })
 	}
 
-	waitGroup.Add(1)
-	go r.syncModulesInParallel(ctx, kyma, errorChannel, &waitGroup)
+	errGroup.Go(func() error { return r.reconcileManifestsInParallel(ctx, kyma) })
 
 	if r.WatcherEnabled(kyma) {
-		waitGroup.Add(1)
-		go r.installWatcherInParallel(ctx, kyma, errorChannel, &waitGroup)
+		errGroup.Go(func() error { return r.installWatcherInParallel(ctx, kyma) })
 	}
 
-	go func() {
-		waitGroup.Wait()
-		close(errorChannel)
-	}()
-
-	for err := range errorChannel {
-		if err != nil {
-			return err
-		}
+	if err := errGroup.Wait(); err != nil {
+		return err
 	}
 
 	// set ready condition if applicable
@@ -269,53 +258,36 @@ func (r *KymaReconciler) HandleProcessingState(ctx context.Context, kyma *v1beta
 	return nil
 }
 
-func (r *KymaReconciler) syncModuleCatalogInParallel(ctx context.Context, kyma *v1beta1.Kyma,
-	errorChannel chan error, waitGroup *sync.WaitGroup) {
-	defer waitGroup.Done()
+func (r *KymaReconciler) syncModuleCatalogInParallel(ctx context.Context, kyma *v1beta1.Kyma) error {
 	if err := r.syncModuleCatalog(ctx, kyma); err != nil {
-		errorChannel <- r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta1.StateError,
+		return r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta1.StateError,
 			fmt.Errorf("could not synchronize remote module catalog: %w", err))
-		return
-	} else {
-		kyma.UpdateCondition(v1beta1.ConditionTypeModuleCatalog, metav1.ConditionTrue)
 	}
+	kyma.UpdateCondition(v1beta1.ConditionTypeModuleCatalog, metav1.ConditionTrue)
+	return nil
 }
 
-func (r *KymaReconciler) syncModulesInParallel(ctx context.Context, kyma *v1beta1.Kyma,
-	errorChannel chan error, waitGroup *sync.WaitGroup) {
-	defer waitGroup.Done()
-	if err := r.syncModules(ctx, kyma); err != nil {
-		errorChannel <- r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta1.StateError, err)
-		return
-	} else if areAllModulesReady(kyma) {
+func (r *KymaReconciler) reconcileManifestsInParallel(ctx context.Context, kyma *v1beta1.Kyma) error {
+	if err := r.reconcileManifests(ctx, kyma); err != nil {
+		return r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta1.StateError, err)
+	} else if kyma.AllModulesReady() {
 		kyma.UpdateCondition(v1beta1.ConditionTypeModules, metav1.ConditionTrue)
 	}
+	return nil
 }
 
-func (r *KymaReconciler) installWatcherInParallel(ctx context.Context, kyma *v1beta1.Kyma,
-	errorChannel chan error, waitGroup *sync.WaitGroup) {
-	defer waitGroup.Done()
+func (r *KymaReconciler) installWatcherInParallel(ctx context.Context, kyma *v1beta1.Kyma) error {
 	if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
 		if !errors.Is(err, &watcher.CertificateNotReadyError{}) {
-			errorChannel <- r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta1.StateError,
+			return r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta1.StateError,
 				fmt.Errorf("error while installing Watcher Webhook Chart: %w", err))
 		}
-	} else {
-		kyma.UpdateCondition(v1beta1.ConditionTypeSKRWebhook, metav1.ConditionTrue)
 	}
+	kyma.UpdateCondition(v1beta1.ConditionTypeSKRWebhook, metav1.ConditionTrue)
+	return nil
 }
 
-func areAllModulesReady(kyma *v1beta1.Kyma) bool {
-	for i := range kyma.Status.Modules {
-		moduleStatus := &kyma.Status.Modules[i]
-		if moduleStatus.State != v1beta1.StateReady {
-			return false
-		}
-	}
-	return true
-}
-
-func (r *KymaReconciler) syncModules(ctx context.Context, kyma *v1beta1.Kyma) error {
+func (r *KymaReconciler) reconcileManifests(ctx context.Context, kyma *v1beta1.Kyma) error {
 	// these are the actual modules
 	modules, err := r.GenerateModulesFromTemplate(ctx, kyma)
 	if err != nil {
@@ -324,7 +296,7 @@ func (r *KymaReconciler) syncModules(ctx context.Context, kyma *v1beta1.Kyma) er
 
 	runner := modulesync.New(r)
 
-	if err := runner.Sync(ctx, kyma, modules); err != nil {
+	if err := runner.ReconcileManifests(ctx, kyma, modules); err != nil {
 		return fmt.Errorf("sync failed: %w", err)
 	}
 
@@ -337,7 +309,7 @@ func (r *KymaReconciler) syncModules(ctx context.Context, kyma *v1beta1.Kyma) er
 	return nil
 }
 
-func (r *KymaReconciler) HandleDeletingState(ctx context.Context, kyma *v1beta1.Kyma) (bool, error) {
+func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta1.Kyma) (bool, error) {
 	logger := ctrlLog.FromContext(ctx).V(log.InfoLevel)
 
 	if r.WatcherEnabled(kyma) {
