@@ -62,17 +62,17 @@ type clusterAwareModuleTemplateValidator struct {
 	Client client.Client
 }
 
-func (c *clusterAwareModuleTemplateValidator) ValidateCreate(ctx context.Context, obj runtime.Object) error {
+func (c *clusterAwareModuleTemplateValidator) ValidateCreate(_ context.Context, obj runtime.Object) error {
 	moduletemplatelog.Info("validate create", "name", obj.(*ModuleTemplate).Name)
 	return c.validate(nil, obj.(*ModuleTemplate))
 }
 
-func (c *clusterAwareModuleTemplateValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) error {
+func (c *clusterAwareModuleTemplateValidator) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) error {
 	moduletemplatelog.Info("validate update", "name", newObj.(*ModuleTemplate).Name)
 	return c.validate(oldObj.(*ModuleTemplate), newObj.(*ModuleTemplate))
 }
 
-func (c *clusterAwareModuleTemplateValidator) ValidateDelete(ctx context.Context, obj runtime.Object) error {
+func (c *clusterAwareModuleTemplateValidator) ValidateDelete(_ context.Context, obj runtime.Object) error {
 	moduletemplatelog.Info("validate delete", "name", obj.(*ModuleTemplate).Name)
 	return c.validate(nil, obj.(*ModuleTemplate))
 }

@@ -1,0 +1,6 @@
+- op: replace
+  path: /metadata/namespace
+  value: kyma-system
+- op: add
+  path: /metadata/labels/grafana_dashboard
+  value: "1"
