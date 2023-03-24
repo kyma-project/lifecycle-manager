@@ -36,12 +36,8 @@ func AddToScheme(scheme *runtime.Scheme) error {
 		}); err != nil {
 		return err
 	}
-	if err := scheme.AddConversionFunc(&v1alpha1.Watcher{}, &v1beta1.Watcher{},
+	return scheme.AddConversionFunc(&v1alpha1.Watcher{}, &v1beta1.Watcher{},
 		func(a, b interface{}, scope conversion.Scope) error {
 			return a.(*v1alpha1.Watcher).ConvertTo(b.(*v1beta1.Watcher))
-		}); err != nil {
-		return err
-	}
-
-	return nil
+		})
 }

@@ -103,10 +103,7 @@ func (c *CertificateManager) Remove(ctx context.Context) error {
 	}, certSecret); err != nil && !k8serrors.IsNotFound(err) {
 		return err
 	}
-	if err := c.kcpClient.Delete(ctx, certSecret); err != nil {
-		return err
-	}
-	return nil
+	return c.kcpClient.Delete(ctx, certSecret)
 }
 
 func (c *CertificateManager) GetSecret(ctx context.Context) (*CertificateSecret, error) {

@@ -147,11 +147,7 @@ func (c *Codec) Decode(data []byte, obj interface{}, refType RefTypeMetadata) er
 		return err
 	}
 
-	if err := yaml.Unmarshal(data, &obj); err != nil {
-		return err
-	}
-
-	return nil
+	return yaml.Unmarshal(data, &obj)
 }
 
 var ErrInstallationTypeNotSupported = errors.New("installation type is not supported")
