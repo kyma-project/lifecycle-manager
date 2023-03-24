@@ -134,14 +134,15 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 
 	mgr, err := ctrl.NewManager(
 		config, ctrl.Options{
-			Scheme:                 scheme,
-			MetricsBindAddress:     flagVar.metricsAddr,
-			Port:                   port,
-			HealthProbeBindAddress: flagVar.probeAddr,
-			LeaderElection:         true,
-			LeaderElectionID:       "893110f7.kyma-project.io",
-			NewCache:               newCacheFunc,
-			NewClient:              NewClient,
+			Scheme:                  scheme,
+			MetricsBindAddress:      flagVar.metricsAddr,
+			Port:                    port,
+			HealthProbeBindAddress:  flagVar.probeAddr,
+			LeaderElection:          true,
+			LeaderElectionID:        "893110f7.kyma-project.io",
+			LeaderElectionNamespace: "kcp-system",
+			NewCache:                newCacheFunc,
+			NewClient:               NewClient,
 		},
 	)
 	if err != nil {
