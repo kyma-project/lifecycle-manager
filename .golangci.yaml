@@ -6,7 +6,7 @@ linters:
     - exhaustivestruct # deprecated (since v1.46.0) and replaced by 'exhaustruct'
     - exhaustruct # TODO enable and fix, use regex to exclude certain cases
     - forcetypeassert # TODO enable and fix
-    - gci # keep disabled for now since it will autofix all imports and result in git dirty state
+    - gci # keep disabled for now since it will autofix all imports and result in a git dirty state
     - godox # TODO enable and fix
     - golint # deprecated (since v1.41.0) and replaced by 'revive'
     - ifshort # deprecated (since v1.48.0)
@@ -14,9 +14,9 @@ linters:
     - ireturn # TODO enable and fix
     - maligned # deprecated (since v1.38.0)
     - nlreturn # too strict and mostly code is not more readable
-    - nosnakecase  # deprecated (since v1.48.1) and eplaced by 'revive'
+    - nosnakecase  # deprecated (since v1.48.1) and replaced by 'revive'
     - scopelint # deprecated (since v1.39.0) and replaced by 'exportloopref'
-    - structcheck # deprecated (since v1.49.0) and eplaced by 'unused'
+    - structcheck # deprecated (since v1.49.0) and replaced by 'unused'
     - sqlclosecheck # not needed for this project
     - varcheck # deprecated (since v1.49.0) and replaced by 'unused'
     - wsl # too strict and mostly code is not more readable
