@@ -1,27 +1,26 @@
 linters:
   enable-all: true
   disable:
-    - interfacer # deprecated (since v1.38.0)
-    - maligned # deprecated (since v1.38.0)
-    - scopelint # deprecated (since v1.39.0) and replaced by 'exportloopref'
-    - golint # deprecated (since v1.41.0) and replaced by 'revive'
-    - exhaustivestruct # deprecated (since v1.46.0) and replaced by 'exhaustruct'
-    - ifshort # deprecated (since v1.48.0)
-    - nosnakecase  # deprecated (since v1.48.1) and eplaced by 'revive'
-    - deadcode # deprecated (since v1.49.0) and replaced by 'unused'
-    - varcheck # deprecated (since v1.49.0) and replaced by 'unused'
-    - structcheck # deprecated (since v1.49.0) and eplaced by 'unused'
     - contextcheck # too many false positives
-    - wsl # too strict and mostly code is not more readable
+    - deadcode # deprecated (since v1.49.0) and replaced by 'unused'
+    - exhaustivestruct # deprecated (since v1.46.0) and replaced by 'exhaustruct'
+    - exhaustruct # TODO enable and fix, use regex to exclude certain cases
+    - forcetypeassert # TODO enable and fix
+    - gci # keep disabled for now since it will autofix all imports and result in git dirty state
+    - godox # TODO enable and fix
+    - golint # deprecated (since v1.41.0) and replaced by 'revive'
+    - ifshort # deprecated (since v1.48.0)
+    - interfacer # deprecated (since v1.38.0)
+    - ireturn # TODO enable and fix
+    - maligned # deprecated (since v1.38.0)
     - nlreturn # too strict and mostly code is not more readable
+    - nosnakecase  # deprecated (since v1.48.1) and eplaced by 'revive'
+    - scopelint # deprecated (since v1.39.0) and replaced by 'exportloopref'
+    - structcheck # deprecated (since v1.49.0) and eplaced by 'unused'
     - sqlclosecheck # not needed for this project
-    - ireturn # TODO worth to enable in a separate PR
-    - revive # TODO Remove
-    - exhaustruct # TODO too many, but we can use regex to exclude
-    - forcetypeassert # TODO
-    - godox # TODO enable and fix all TODOs
-#    - gci # TODO order imports, but keep disabled because autofix is not supported https://github.com/golangci/golangci-lint/issues/2591
-    - wrapcheck # TODO worth to enable in a separate PR
+    - varcheck # deprecated (since v1.49.0) and replaced by 'unused'
+    - wsl # too strict and mostly code is not more readable
+    - wrapcheck # TODO enable and fix
 linters-settings:
   gci:
     sections:
