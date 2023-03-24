@@ -9,16 +9,16 @@ import (
 	"path/filepath"
 	"reflect"
 
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-
 	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/downloader"
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/repo"
 	"helm.sh/helm/v3/pkg/strvals"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
 // ChartInfo defines helm chart information.

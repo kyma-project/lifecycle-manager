@@ -17,11 +17,12 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
 const ManifestKind = "Manifest"

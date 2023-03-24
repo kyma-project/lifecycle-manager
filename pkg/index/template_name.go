@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 const TemplateNameField Field = "metadata.name"

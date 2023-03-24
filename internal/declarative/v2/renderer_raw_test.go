@@ -7,12 +7,12 @@ import (
 	"reflect"
 	"testing"
 
-	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	mockV2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/mock"
-
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/tools/record"
+
+	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	mockV2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/mock"
 )
 
 func TestNewRawRenderer(t *testing.T) {

@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"k8s.io/client-go/rest"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"k8s.io/client-go/rest"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
 type RESTConfigGetter func() (*rest.Config, error)

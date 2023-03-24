@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/go-logr/logr"
-	"github.com/kyma-project/lifecycle-manager/internal"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/kube"
 	"helm.sh/helm/v3/pkg/storage"
@@ -26,6 +25,8 @@ import (
 	"k8s.io/client-go/restmapper"
 	"k8s.io/kubectl/pkg/util/openapi"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/internal"
 )
 
 const (

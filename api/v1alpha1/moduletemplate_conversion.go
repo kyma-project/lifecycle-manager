@@ -1,8 +1,9 @@
 package v1alpha1
 
 import (
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 func (src *ModuleTemplate) ConvertTo(dstRaw conversion.Hub) error {

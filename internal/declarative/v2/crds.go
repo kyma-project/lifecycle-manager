@@ -3,11 +3,12 @@ package v2
 import (
 	"sync"
 
-	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/kube"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
+	"github.com/kyma-project/lifecycle-manager/internal"
+	"github.com/kyma-project/lifecycle-manager/pkg/types"
 )
 
 func getCRDs(clnt Client, crdFiles []chart.CRD) (kube.ResourceList, error) {

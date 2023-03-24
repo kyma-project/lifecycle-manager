@@ -1,37 +1,32 @@
 linters:
   enable-all: true
   disable:
-    - golint # deprecated (since v1.41.0) and replaced by 'revive'.
-    - deadcode # deprecated (since v1.49.0) and replaced by 'unused'.
-    - exhaustivestruct
-    - interfacer
-    - maligned
-    - scopelint
-    - forcetypeassert
-    - godox
-    - wsl
-    - nlreturn
-    - exhaustruct
-    - gci # disable because autofix is not supported https://github.com/golangci/golangci-lint/issues/2591
-    - wrapcheck
-    - bodyclose
-    - contextcheck
-    - nilerr
-    - rowserrcheck
-    - sqlclosecheck
-    - structcheck
-    - musttag # TODO Remove once linter is fixed
-    - wastedassign
-    - ifshort
-    - nosnakecase
-    - varcheck
-    - ireturn
+    - interfacer # deprecated (since v1.38.0)
+    - maligned # deprecated (since v1.38.0)
+    - scopelint # deprecated (since v1.39.0) and replaced by 'exportloopref'
+    - golint # deprecated (since v1.41.0) and replaced by 'revive'
+    - exhaustivestruct # deprecated (since v1.46.0) and replaced by 'exhaustruct'
+    - ifshort # deprecated (since v1.48.0)
+    - nosnakecase  # deprecated (since v1.48.1) and eplaced by 'revive'
+    - deadcode # deprecated (since v1.49.0) and replaced by 'unused'
+    - varcheck # deprecated (since v1.49.0) and replaced by 'unused'
+    - structcheck # deprecated (since v1.49.0) and eplaced by 'unused'
+    - contextcheck # too many false positives
+    - wsl # too strict and mostly code is not more readable
+    - nlreturn # too strict and mostly code is not more readable
+    - sqlclosecheck # not needed for this project
+    - ireturn # TODO worth to enable in a separate PR
     - revive # TODO Remove
+    - exhaustruct # TODO too many, but we can use regex to exclude
+    - forcetypeassert # TODO
+    - godox # TODO enable and fix all TODOs
+#    - gci # TODO order imports, but keep disabled because autofix is not supported https://github.com/golangci/golangci-lint/issues/2591
+    - wrapcheck # TODO worth to enable in a separate PR
 linters-settings:
   gci:
     sections:
-      - standard # Captures all standard packages if they do not match another section.
-      - default # Contains all imports that could not be matched to another section type.
+      - standard
+      - default
       - prefix(github.com/kyma-project)
   cyclop:
     max-complexity: 15
