@@ -1,8 +1,9 @@
 linters:
   enable-all: true
   disable:
+    - golint # deprecated (since v1.41.0) and replaced by 'revive'.
+    - deadcode # deprecated (since v1.49.0) and replaced by 'unused'.
     - exhaustivestruct
-    - golint
     - interfacer
     - maligned
     - scopelint
@@ -19,14 +20,13 @@ linters:
     - rowserrcheck
     - sqlclosecheck
     - structcheck
-    - unused # TODO Remove once linter is fixed
     - musttag # TODO Remove once linter is fixed
     - wastedassign
     - ifshort
-    - deadcode
     - nosnakecase
     - varcheck
     - ireturn
+    - revive # TODO Remove
 linters-settings:
   gci:
     sections:
