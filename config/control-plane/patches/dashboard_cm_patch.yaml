@@ -2,6 +2,5 @@
   path: /metadata/namespace
   value: kyma-system
 - op: add
-  path: /metadata/labels
-  value:
-    grafana_dashboard: "1"
+  path: /metadata/labels/grafana_dashboard
+  value: "1"

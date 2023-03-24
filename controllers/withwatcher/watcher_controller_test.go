@@ -74,10 +74,7 @@ func expectVirtualServiceConfiguredCorrectly() func(customIstioClient *istio.Cli
 
 func deleteOneWatcherCR() func(customIstioClient *istio.Client) error {
 	return func(customIstioClient *istio.Client) error {
-		if err := deleteWatcher(componentToBeRemoved); err != nil {
-			return err
-		}
-		return nil
+		return deleteWatcher(componentToBeRemoved)
 	}
 }
 
@@ -106,10 +103,7 @@ func deleteWatcher(name string) error {
 	if apierrors.IsNotFound(err) {
 		return nil
 	}
-	if err := controlPlaneClient.Delete(suiteCtx, &watcher); err != nil {
-		return err
-	}
-	return nil
+	return controlPlaneClient.Delete(suiteCtx, &watcher)
 }
 
 func allCRsDeleted() func(customIstioClient *istio.Client) error {
