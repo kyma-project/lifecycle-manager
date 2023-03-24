@@ -75,11 +75,7 @@ func (c *RemoteCatalog) CreateOrUpdate(
 		return err
 	}
 
-	if err := c.deleteDiffCatalog(ctx, kcp, moduleTemplatesRuntime, syncContext); err != nil {
-		return err
-	}
-
-	return nil
+	return c.deleteDiffCatalog(ctx, kcp, moduleTemplatesRuntime, syncContext)
 }
 
 func (c *RemoteCatalog) deleteDiffCatalog(ctx context.Context,

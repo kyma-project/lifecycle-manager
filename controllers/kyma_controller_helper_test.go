@@ -324,10 +324,7 @@ func UpdateKymaModuleChannels(kymaName, channel string) error {
 	for i := range kyma.Spec.Modules {
 		kyma.Spec.Modules[i].Channel = channel
 	}
-	if err := controlPlaneClient.Update(ctx, kyma); err != nil {
-		return err
-	}
-	return nil
+	return controlPlaneClient.Update(ctx, kyma)
 }
 
 var ErrTemplateInfoChannelMismatch = errors.New("mismatch in template info channel")
