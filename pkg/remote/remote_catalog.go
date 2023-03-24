@@ -261,20 +261,18 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 
 func crdReady(crd *v1extensions.CustomResourceDefinition) bool {
 	for _, cond := range crd.Status.Conditions {
-		//nolint:exhaustive
-		switch cond.Type {
-		case v1extensions.Established:
-			if cond.Status == v1extensions.ConditionTrue {
-				return true
-			}
-		case v1extensions.NamesAccepted:
-			if cond.Status == v1extensions.ConditionFalse {
-				// This indicates a naming conflict, but it's probably not the
-				// job of this function to fail because of that. Instead,
-				// we treat it as a success, since the process should be able to
-				// continue.
-				return true
-			}
+		if cond.Type == v1extensions.Established &&
+			cond.Status == v1extensions.ConditionTrue {
+			return true
+		}
+
+		if cond.Type == v1extensions.NamesAccepted &&
+			cond.Status == v1extensions.ConditionFalse {
+			// This indicates a naming conflict, but it's probably not the
+			// job of this function to fail because of that. Instead,
+			// we treat it as a success, since the process should be able to
+			// continue.
+			return true
 		}
 	}
 	return false
