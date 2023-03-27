@@ -4,9 +4,8 @@ import (
 	"context"
 	"errors"
 
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-
 	manifestv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"

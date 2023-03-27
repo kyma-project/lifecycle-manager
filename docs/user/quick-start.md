@@ -46,12 +46,12 @@ If the deployment is successful, you should see the following main resources:
 ### Manage modules in single cluster mode
 By default, all Module Templates deployed by Kyma CLI will be configured for single cluster mode (`spec.target=control-plane`), which means the module will be deployed in the Control Plane cluster, together with Kyma Lifecycle Manager.
 
-With Kyma CLI [enable module](https://github.com/kyma-project/cli/blob/main/docs/gen-docs/kyma_alpha_enable.md) and [disable module](https://github.com/kyma-project/cli/blob/main/docs/gen-docs/kyma_alpha_disable.md) command, you can manage kyma modules without directly modify Kyma CR.
+To help you get started with Kyma CLI and learn how to use its features effectively, we have prepared an interactive tutorial that guides you through the basic commands and scenarios. The tutorial is designed to be easy to follow and fun to complete. You can access it by clicking this Interactive tutorial link below.
 
-As an example, you can use following command to enable keda module in `alpha` channel for `default-kyma` under `kyma-system` namespace
-```
-kyma alpha enable module keda -c alpha -n kyma-system -k default-kyma
-```
+https://killercoda.com/kyma-project/scenario/modular-kyma
+
+We highly recommend you trying it out and see for yourself how Kyma CLI can enhance your development experience.
+
 ### Manage modules in remote cluster mode
 To allow Kyma Lifecycle Manager manages Kyma modules in remote cluster, two prerequisite must be fulfilled.
 

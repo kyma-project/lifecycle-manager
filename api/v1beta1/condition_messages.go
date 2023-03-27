@@ -4,58 +4,72 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type ConditionBuilder struct {
-	Status             metav1.ConditionStatus
-	Reason             KymaConditionReason
-	ObservedGeneration int64
-}
-
-const (
-	MessageModuleInReadyState       = "all modules are in ready state"
-	MessageModuleNotInReadyState    = "not all modules are in ready state"
-	MessageModuleCatalogIsSynced    = "module catalog is synchronized"
-	MessageModuleCatalogIsOutOfSync = "module catalog is out of sync and needs to be resynchronized"
-	MessageSKRWebhookIsSynced       = "skrwebhook is synchronized"
-	MessageSKRWebhookIsOutOfSync    = "skrwebhook is out of sync and needs to be resynchronized"
-)
-
 // Extend this list by actual needs.
 const (
-	ConditionReasonModulesAreReady      KymaConditionReason = "ModulesAreReady"
-	ConditionReasonModuleCatalogIsReady KymaConditionReason = "ModuleCatalogIsReady"
-	ConditionReasonSKRWebhookIsReady    KymaConditionReason = "SKRWebhookIsReady"
+	// DeprecatedConditionTypeReady was introduced by a bug. Ths condition needs to be removed on all KymaCRs.
+	DeprecatedConditionTypeReady KymaConditionType = "Ready"
+
+	// Determines the Type of a Condition.
+	ConditionTypeModules       KymaConditionType = "Modules"
+	ConditionTypeModuleCatalog KymaConditionType = "ModuleCatalog"
+	ConditionTypeSKRWebhook    KymaConditionType = "SKRWebhook"
+
+	// ConditionReason will be set to `Ready` on all Conditions. If the Condition is actual ready,
+	// can be determined by the state.
+	ConditionReason KymaConditionReason = "Ready"
+
+	// ConditionMessage represents the current state of a Condition in a human readable format.
+	ConditionMessageModuleInReadyState       = "all modules are in ready state"
+	ConditionMessageModuleNotInReadyState    = "not all modules are in ready state"
+	ConditionMessageModuleCatalogIsSynced    = "module catalog is synchronized"
+	ConditionMessageModuleCatalogIsOutOfSync = "module catalog is out of sync and needs to be resynchronized"
+	ConditionMessageSKRWebhookIsSynced       = "skrwebhook is synchronized"
+	ConditionMessageSKRWebhookIsOutOfSync    = "skrwebhook is out of sync and needs to be resynchronized"
 )
 
-func GenerateMessage(reason KymaConditionReason, status metav1.ConditionStatus) string {
-	switch reason {
-	case ConditionReasonModulesAreReady:
+func GenerateMessage(conditionType KymaConditionType, status metav1.ConditionStatus) string {
+	switch conditionType {
+	case ConditionTypeModules:
 		switch status {
 		case metav1.ConditionTrue:
-			return MessageModuleInReadyState
+			return ConditionMessageModuleInReadyState
 		case metav1.ConditionUnknown:
 		case metav1.ConditionFalse:
 		}
 
-		return MessageModuleNotInReadyState
-	case ConditionReasonModuleCatalogIsReady:
+		return ConditionMessageModuleNotInReadyState
+	case ConditionTypeModuleCatalog:
 		switch status {
 		case metav1.ConditionTrue:
-			return MessageModuleCatalogIsSynced
+			return ConditionMessageModuleCatalogIsSynced
 		case metav1.ConditionUnknown:
 		case metav1.ConditionFalse:
 		}
 
-		return MessageModuleCatalogIsOutOfSync
-	case ConditionReasonSKRWebhookIsReady:
+		return ConditionMessageModuleCatalogIsOutOfSync
+	case ConditionTypeSKRWebhook:
 		switch status {
 		case metav1.ConditionTrue:
-			return MessageSKRWebhookIsSynced
+			return ConditionMessageSKRWebhookIsSynced
 		case metav1.ConditionUnknown:
 		case metav1.ConditionFalse:
 		}
 
-		return MessageSKRWebhookIsOutOfSync
+		return ConditionMessageSKRWebhookIsOutOfSync
+	case DeprecatedConditionTypeReady:
 	}
 
-	return "no detailed message available as reason is unknown to API"
+	return "no detailed message available as condition or status is unknown to API"
+}
+
+// GetRequiredConditionTypes returns all required ConditionTypes for a KymaCR.
+func GetRequiredConditionTypes(syncEnabled, watcherEnabled bool) []KymaConditionType {
+	requiredConditions := []KymaConditionType{ConditionTypeModules}
+	if syncEnabled {
+		requiredConditions = append(requiredConditions, ConditionTypeModuleCatalog)
+	}
+	if watcherEnabled {
+		requiredConditions = append(requiredConditions, ConditionTypeSKRWebhook)
+	}
+	return requiredConditions
 }

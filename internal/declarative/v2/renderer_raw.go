@@ -37,8 +37,8 @@ func NewRawRenderer(
 type RawRenderer struct {
 	record.EventRecorder
 	Client
-	Path      string
-	crds      []*unstructured.Unstructured
+	Path string
+	crds []*unstructured.Unstructured
 }
 
 func (r *RawRenderer) prerequisiteCondition(object metav1.Object) metav1.Condition {

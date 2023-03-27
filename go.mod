@@ -14,7 +14,7 @@ require (
 	github.com/jellydator/ttlcache/v3 v3.0.1
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20230131092109-31657012720d
 	github.com/onsi/ginkgo/v2 v2.9.1
-	github.com/onsi/gomega v1.27.3
+	github.com/onsi/gomega v1.27.4
 	github.com/open-component-model/ocm v0.2.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/stretchr/testify v1.8.2
@@ -26,12 +26,12 @@ require (
 	helm.sh/helm/v3 v3.11.2
 	istio.io/api v0.0.0-20230217221049-9d422bf48675
 	istio.io/client-go v1.17.1
-	k8s.io/api v0.26.2
-	k8s.io/apiextensions-apiserver v0.26.2
-	k8s.io/apimachinery v0.26.2
-	k8s.io/cli-runtime v0.26.2
-	k8s.io/client-go v0.26.2
-	k8s.io/kubectl v0.26.2
+	k8s.io/api v0.26.3
+	k8s.io/apiextensions-apiserver v0.26.3
+	k8s.io/apimachinery v0.26.3
+	k8s.io/cli-runtime v0.26.3
+	k8s.io/client-go v0.26.3
+	k8s.io/kubectl v0.26.3
 	sigs.k8s.io/controller-runtime v0.14.5
 	sigs.k8s.io/e2e-framework v0.1.0
 	sigs.k8s.io/kustomize/api v0.12.1
@@ -197,8 +197,8 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	k8s.io/apiserver v0.26.2 // indirect
-	k8s.io/component-base v0.26.2 // indirect
+	k8s.io/apiserver v0.26.3 // indirect
+	k8s.io/component-base v0.26.3 // indirect
 	k8s.io/klog/v2 v2.90.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20230202010329-39b3636cbaa3 // indirect
 	k8s.io/utils v0.0.0-20230202215443-34013725500c // indirect

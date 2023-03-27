@@ -96,6 +96,8 @@ type WatcherStatus struct {
 
 	// List of status conditions to indicate the status of a Watcher.
 	// +kubebuilder:validation:Optional
+	// +listType=map
+	// +listMapKey=type
 	Conditions []WatcherCondition `json:"conditions"`
 
 	// ObservedGeneration

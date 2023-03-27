@@ -13,7 +13,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -95,7 +94,6 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta1.K
 	if err != nil {
 		return fmt.Errorf("failed to apply webhook resources: %w", err)
 	}
-	kyma.UpdateCondition(v1beta1.ConditionReasonSKRWebhookIsReady, metav1.ConditionTrue)
 	logger.Info("successfully installed webhook resources",
 		"kyma", kymaObjKey.String())
 	return nil
