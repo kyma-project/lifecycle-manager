@@ -43,7 +43,10 @@
   "liveNow": false,
   "panels": [
     {
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "P1809F7CD0C75ACF3"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -118,7 +121,10 @@
       "pluginVersion": "8.4.3",
       "targets": [
         {
-          "datasource": "${DS_PROMETHEUS}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P1809F7CD0C75ACF3"
+          },
           "exemplar": true,
           "expr": "rate(process_cpu_seconds_total{job=\"$job\", namespace=\"$namespace\", pod=\"$pod\"}[5m]) * 100",
           "format": "time_series",
@@ -133,7 +139,10 @@
       "type": "timeseries"
     },
     {
-      "datasource": "${DS_PROMETHEUS}",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "P1809F7CD0C75ACF3"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -208,7 +217,10 @@
       "pluginVersion": "8.4.3",
       "targets": [
         {
-          "datasource": "${DS_PROMETHEUS}",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P1809F7CD0C75ACF3"
+          },
           "exemplar": true,
           "expr": "process_resident_memory_bytes{job=\"$job\", namespace=\"$namespace\", pod=\"$pod\"}",
           "format": "time_series",
@@ -229,7 +241,10 @@
   "templating": {
     "list": [
       {
-        "datasource": "${DS_PROMETHEUS}",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "P1809F7CD0C75ACF3"
+        },
         "definition": "label_values(controller_runtime_reconcile_total{namespace=~\"$namespace\"}, job)",
         "hide": 0,
         "includeAll": false,
@@ -252,7 +267,10 @@
           "text": "observability",
           "value": "observability"
         },
-        "datasource": "${DS_PROMETHEUS}",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "P1809F7CD0C75ACF3"
+        },
         "definition": "label_values(controller_runtime_reconcile_total, namespace)",
         "hide": 0,
         "includeAll": false,
@@ -275,7 +293,10 @@
           "text": "All",
           "value": "$__all"
         },
-        "datasource": "${DS_PROMETHEUS}",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "P1809F7CD0C75ACF3"
+        },
         "definition": "label_values(controller_runtime_reconcile_total{namespace=~\"$namespace\", job=~\"$job\"}, pod)",
         "hide": 2,
         "includeAll": true,
