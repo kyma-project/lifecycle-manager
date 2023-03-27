@@ -1,12 +1,21 @@
 package v1beta1_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/google/go-containerregistry/pkg/v1/partial"
+	"github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/onsi/ginkgo/v2"
 	"io"
+	"io/fs"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"net/url"
 	"os"
+	"os/user"
 	"path/filepath"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -21,6 +30,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
+const manifestInstallName = "manifest-test"
+
 type mockLayer struct {
 	filePath string
 }
@@ -33,56 +44,22 @@ func (m mockLayer) Uncompressed() (io.ReadCloser, error) {
 	return io.NopCloser(f), nil
 }
 
-//func (m mockLayer) Digest() (v1.Hash, error) {
-//	r, err := m.Compressed()
-//	if err != nil {
-//		return v1.Hash{}, err
-//	}
-//	defer r.Close()
-//	hash, _, err := v1.SHA256(r)
-//	return hash, err
-//}
-
 func (m mockLayer) MediaType() (types.MediaType, error) {
 	return types.OCIUncompressedLayer, nil
 }
-
-//func (m mockLayer) Size() (int64, error) { return 137438691328, nil }
-//func (m mockLayer) Compressed() (io.ReadCloser, error) {
-//	f, err := os.Open(m.filePath)
-//	if err != nil {
-//		return nil, err
-//	}
-//	return io.NopCloser(f), nil
-//}
 
 func (m mockLayer) DiffID() (v1.Hash, error) {
 	return v1.Hash{Algorithm: "fake", Hex: "diff id"}, nil
 }
 
-func CreateImageSpecLayer(ociLayerType OCILayerType) v1.Layer {
-	//var layer v1.Layer
-	//var err error
-	//if ociLayerType == layerCRDs {
-	//	layer, err = partial.CompressedToLayer(mockLayer{filePath: "../../../pkg/test_samples/oci/crd.tgz"})
-	//} else {
-	//	layer, err = partial.CompressedToLayer(mockLayer{filePath: "../../../pkg/test_samples/oci/helm_chart_with_crds.tgz"})
-	//}
+func CreateImageSpecLayer() v1.Layer {
 	layer, err := partial.UncompressedToLayer(mockLayer{filePath: "../../../pkg/test_samples/oci/rendered.yaml"})
 	Expect(err).ToNot(HaveOccurred())
 	return layer
 }
 
-type OCILayerType int
-
-// Valid Helm States.
-const (
-	layerCRDs OCILayerType = iota
-	layerInstalls
-)
-
-func PushToRemoteOCIRegistry(layerName string, ociLayerType OCILayerType) {
-	layer := CreateImageSpecLayer(ociLayerType)
+func PushToRemoteOCIRegistry(layerName string) {
+	layer := CreateImageSpecLayer()
 	digest, err := layer.Digest()
 	Expect(err).ToNot(HaveOccurred())
 
@@ -105,13 +82,13 @@ func PushToRemoteOCIRegistry(layerName string, ociLayerType OCILayerType) {
 }
 
 //nolint:unparam
-func createOCIImageSpec(name, repo string, ociLayerType OCILayerType) v1beta1.ImageSpec {
+func createOCIImageSpec(name, repo string) v1beta1.ImageSpec {
 	imageSpec := v1beta1.ImageSpec{
 		Name: name,
 		Repo: repo,
 		Type: "oci-ref",
 	}
-	layer := CreateImageSpecLayer(ociLayerType)
+	layer := CreateImageSpecLayer()
 	digest, err := layer.Digest()
 	Expect(err).ToNot(HaveOccurred())
 	imageSpec.Ref = digest.String()
@@ -146,4 +123,147 @@ func verifyHelmResourcesDeletion(imageSpec v1beta1.ImageSpec) {
 	Expect(os.IsNotExist(err)).To(BeTrue())
 	_, err = os.Stat(filepath.Join(internalv1beta1.GetFsChartPath(imageSpec), "templates"))
 	Expect(os.IsNotExist(err)).To(BeTrue())
+}
+
+func skipExpect() func() bool {
+	return func() bool {
+		return true
+	}
+}
+
+func expectHelmClientCacheExist(expectExist bool) func(cacheKey string) bool {
+	return func(cacheKey string) bool {
+		clnt := reconciler.ClientCache.GetClientFromCache(cacheKey)
+		if expectExist {
+			return clnt != nil
+		}
+		return clnt == nil
+	}
+}
+
+func withInvalidInstallImageSpec(remote bool) func(manifest *v1beta1.Manifest) error {
+	return func(manifest *v1beta1.Manifest) error {
+		invalidImageSpec := createOCIImageSpec("invalid-image-spec", "domain.invalid")
+		imageSpecByte, err := json.Marshal(invalidImageSpec)
+		Expect(err).ToNot(HaveOccurred())
+		return installManifest(manifest, imageSpecByte, remote)
+	}
+}
+
+func withValidInstallImageSpec(name string, remote bool) func(manifest *v1beta1.Manifest) error {
+	return func(manifest *v1beta1.Manifest) error {
+		validImageSpec := createOCIImageSpec(name, server.Listener.Addr().String())
+		imageSpecByte, err := json.Marshal(validImageSpec)
+		Expect(err).ToNot(HaveOccurred())
+		return installManifest(manifest, imageSpecByte, remote)
+	}
+}
+
+func withValidInstall(installName string, remote bool) func(manifest *v1beta1.Manifest) error {
+	return func(manifest *v1beta1.Manifest) error {
+		validInstallImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String())
+		installSpecByte, err := json.Marshal(validInstallImageSpec)
+		Expect(err).ToNot(HaveOccurred())
+
+		return installManifest(manifest, installSpecByte, remote)
+	}
+}
+
+func installManifest(manifest *v1beta1.Manifest, installSpecByte []byte, remote bool) error {
+	if installSpecByte != nil {
+		manifest.Spec.Install = v1beta1.InstallInfo{
+			Source: runtime.RawExtension{
+				Raw: installSpecByte,
+			},
+			Name: manifestInstallName,
+		}
+	}
+	// manifest.Spec.CRDs = crdSpec
+	if remote {
+		manifest.Spec.Remote = true
+		manifest.Spec.Resource = &unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"apiVersion": "operator.kyma-project.io/v1alpha1",
+				"kind":       "Sample",
+				"metadata": map[string]interface{}{
+					"name":      "sample-crd-from-manifest",
+					"namespace": metav1.NamespaceDefault,
+				},
+				"namespace": "default",
+			},
+		}
+	}
+	return k8sClient.Create(ctx, manifest)
+}
+
+func expectManifestStateIn(state v2.State) func(manifestName string) error {
+	return func(manifestName string) error {
+		status, err := getManifestStatus(manifestName)
+		if err != nil {
+			return err
+		}
+		if state != status.State {
+			return fmt.Errorf("status is %v but expected %s: %w", status, state, ErrManifestStateMisMatch)
+		}
+		return nil
+	}
+}
+
+func getManifestStatus(manifestName string) (v2.Status, error) {
+	manifest := &v1beta1.Manifest{}
+	err := k8sClient.Get(
+		ctx, client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      manifestName,
+		}, manifest,
+	)
+	if err != nil {
+		return v2.Status{}, err
+	}
+	return v2.Status(manifest.Status), nil
+}
+
+func deleteManifestAndVerify(manifest *v1beta1.Manifest) func() error {
+	return func() error {
+		// reverting permissions for deletion - in case it was changed during tests
+		if err := os.Chmod(kustomizeLocalPath, fs.ModePerm); err != nil {
+			return err
+		}
+		if err := k8sClient.Delete(ctx, manifest); err != nil && !errors.IsNotFound(err) {
+			return err
+		}
+		newManifest := v1beta1.Manifest{}
+		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(manifest), &newManifest)
+		return client.IgnoreNotFound(err)
+	}
+}
+
+func addInstallSpec(specBytes []byte) func(manifest *v1beta1.Manifest) error {
+	return func(manifest *v1beta1.Manifest) error {
+		return installManifest(manifest, specBytes, false)
+	}
+}
+
+func addInstallSpecWithFilePermission(
+	specBytes []byte,
+	remote bool, fileMode os.FileMode,
+) func(manifest *v1beta1.Manifest) error {
+	return func(manifest *v1beta1.Manifest) error {
+		currentUser, err := user.Current()
+		Expect(err).ToNot(HaveOccurred())
+		if currentUser.Username == "root" {
+			ginkgo.Skip("This test is not suitable for user with root privileges")
+		}
+		// should not be run as root user
+		Expect(currentUser.Username).ToNot(Equal("root"))
+		Expect(os.Chmod(kustomizeLocalPath, fileMode)).ToNot(HaveOccurred())
+		return installManifest(manifest, specBytes, remote)
+	}
+}
+
+func expectFileNotExistError() func() bool {
+	return func() bool {
+		_, err := os.Stat(filepath.Join(kustomizeLocalPath, ManifestDir))
+		return os.IsNotExist(err)
+	}
 }

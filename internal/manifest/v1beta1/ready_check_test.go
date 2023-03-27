@@ -2,85 +2,63 @@ package v1beta1_test
 
 import (
 	"encoding/json"
-	"os"
-	"path/filepath"
-	"strconv"
-
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-
+	"fmt"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	internalV1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/resource"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"strconv"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Custom Manifest consistency check", Ordered, func() {
-	mainOciTempDir := "main-dir"
-	installName := filepath.Join(mainOciTempDir, "installs")
-	//crdName := filepath.Join(mainOciTempDir, "crds")
-	It(
-		"setup OCI", func() {
-			PushToRemoteOCIRegistry(installName, layerInstalls)
-			//PushToRemoteOCIRegistry(crdName, layerCRDs)
-		},
-	)
-	BeforeAll(
-		func() {
-			Expect(os.RemoveAll(filepath.Join(os.TempDir(), mainOciTempDir))).To(Succeed())
-		},
-	)
+const nginxControllerDeploymentSuffix = "nginx-ingress-controller"
 
-	It("Install OCI manifest and wait until it's ready", func() {
-		manifest := NewTestManifest("custom-check-oci")
+var _ = Describe("Custom Manifest consistency check, given Manifest CR with Helm specs", Ordered, func() {
+	setHelmEnv()
+	validHelmChartSpec := v1beta1.HelmChartSpec{
+		ChartName: "nginx-ingress",
+		URL:       "https://helm.nginx.com/stable",
+		Type:      "helm-chart",
+	}
+
+	validHelmChartSpecBytes, err := json.Marshal(validHelmChartSpec)
+	Expect(err).NotTo(HaveOccurred())
+
+	It("Install nginx helm chart", func() {
+
+		manifest := NewTestManifest("custom-check-helm")
 		manifestName := manifest.GetName()
-		validImageSpec := createOCIImageSpec(manifestName, server.Listener.Addr().String(), layerInstalls)
-		imageSpecByte, err := json.Marshal(validImageSpec)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(installManifest(manifest, imageSpecByte, true)).To(Succeed())
+		Eventually(addInstallSpec(validHelmChartSpecBytes), standardTimeout, standardInterval).
+			WithArguments(manifest).Should(Succeed())
 		Eventually(expectManifestStateIn(declarative.StateReady), standardTimeout, standardInterval).
 			WithArguments(manifestName).Should(Succeed())
-		Eventually(expectHelmClientCacheExist(true), standardTimeout, standardInterval).
-			WithArguments(internalV1beta1.GenerateCacheKey(manifest.GetLabels()[v1beta1.KymaName],
-				strconv.FormatBool(manifest.Spec.Remote), manifest.GetNamespace())).Should(BeTrue())
 		cacheKey := internalV1beta1.GenerateCacheKey(manifest.GetLabels()[v1beta1.KymaName],
 			strconv.FormatBool(manifest.Spec.Remote), manifest.GetNamespace())
-
 		cachedClient := reconciler.ClientCache.GetClientFromCache(cacheKey)
 
 		By("Verifying that deployment and Sample CR are deployed and ready")
 		deploy := &appsv1.Deployment{}
-		sampleCR := &unstructured.Unstructured{}
 		Expect(verifyDeploymentInstallation(deploy)).To(Succeed())
-		Expect(verifySampleCRInstallation(sampleCR)).To(Succeed())
+
 		By("Preparing resources for the custom readiness check")
-		resources := make([]*resource.Info, 0)
-		sampleCRInfo, err := cachedClient.ResourceInfo(sampleCR, true)
+		resources, err := prepareResourceInfosForCustomCheck(cachedClient, deploy)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(sampleCRInfo).ToNot(BeNil())
-		resources = append(resources, sampleCRInfo)
-		deployUnstructuredObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(deploy)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(deployUnstructuredObj).ToNot(BeNil())
-		deployUnstructured := &unstructured.Unstructured{}
-		deployUnstructured.SetUnstructuredContent(deployUnstructuredObj)
-		deployUnstructured.SetGroupVersionKind(appsv1.SchemeGroupVersion.WithKind("Deployment"))
-		deployInfo, err := cachedClient.ResourceInfo(deployUnstructured, true)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(deployInfo).ToNot(BeNil())
-		resources = append(resources, deployInfo)
+		Expect(resources).ToNot(BeEmpty())
+
 		By("Executing the custom readiness check")
 		customReadyCheck := internalV1beta1.NewManifestCustomResourceReadyCheck()
 		Expect(customReadyCheck.Run(ctx, cachedClient, manifest, resources)).To(Succeed())
+
+		By("cleaning up the manifest")
+		Eventually(deleteManifestAndVerify(manifest), standardTimeout, standardInterval).Should(Succeed())
 	})
 })
 
@@ -88,7 +66,7 @@ func verifyDeploymentInstallation(deploy *appsv1.Deployment) error {
 	err := k8sClient.Get(
 		ctx, client.ObjectKey{
 			Namespace: metav1.NamespaceDefault,
-			Name:      "busybox-deploy",
+			Name:      fmt.Sprintf("%s-%s", manifestInstallName, nginxControllerDeploymentSuffix),
 		}, deploy,
 	)
 	if err != nil {
@@ -109,24 +87,17 @@ func verifyDeploymentInstallation(deploy *appsv1.Deployment) error {
 	return nil
 }
 
-func verifySampleCRInstallation(sampleCR *unstructured.Unstructured) error {
-	sampleCR.SetGroupVersionKind(v1beta1.GroupVersion.WithKind("SampleCRD"))
-	err := k8sClient.Get(
-		ctx, client.ObjectKey{
-			Namespace: metav1.NamespaceDefault,
-			Name:      "sample-crd-from-manifest",
-		}, sampleCR,
-	)
+func prepareResourceInfosForCustomCheck(clt declarative.Client, deploy *appsv1.Deployment) ([]*resource.Info, error) {
+	deployUnstructuredObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(deploy)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	err = unstructured.SetNestedField(sampleCR.Object, "Ready", "status", "state")
+	deployUnstructured := &unstructured.Unstructured{}
+	deployUnstructured.SetUnstructuredContent(deployUnstructuredObj)
+	deployUnstructured.SetGroupVersionKind(appsv1.SchemeGroupVersion.WithKind("Deployment"))
+	deployInfo, err := clt.ResourceInfo(deployUnstructured, true)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	err = k8sClient.Status().Update(ctx, sampleCR)
-	if err != nil {
-		return err
-	}
-	return nil
+	return []*resource.Info{deployInfo}, nil
 }

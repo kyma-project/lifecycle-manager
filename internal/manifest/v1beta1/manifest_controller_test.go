@@ -3,26 +3,15 @@ package v1beta1_test
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/fs"
 	"os"
-	"os/user"
 	"path/filepath"
 	"strconv"
 
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	internalV1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -121,12 +110,9 @@ var _ = Describe(
 	"Given manifest with OCI specs", func() {
 		mainOciTempDir := "main-dir"
 		installName := filepath.Join(mainOciTempDir, "installs")
-		//installName:="installs"
-		//crdName := filepath.Join(mainOciTempDir, "crds")
 		It(
 			"setup OCI", func() {
-				PushToRemoteOCIRegistry(installName, layerInstalls)
-				//PushToRemoteOCIRegistry(crdName, layerCRDs)
+				PushToRemoteOCIRegistry(installName)
 			},
 		)
 		BeforeEach(
@@ -218,7 +204,7 @@ var _ = Describe(
 		It(
 			"setup remote oci Registry",
 			func() {
-				PushToRemoteOCIRegistry(installName, layerInstalls)
+				PushToRemoteOCIRegistry(installName)
 			},
 		)
 		BeforeEach(
@@ -231,7 +217,7 @@ var _ = Describe(
 				manifestWithInstall := NewTestManifest("multi-oci1")
 				Eventually(withValidInstallImageSpec(installName, false), standardTimeout, standardInterval).
 					WithArguments(manifestWithInstall).Should(Succeed())
-				validImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String(), layerInstalls)
+				validImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String())
 				Eventually(expectHelmClientCacheExist(true), standardTimeout, standardInterval).
 					WithArguments(internalV1beta1.GenerateCacheKey(manifestWithInstall.GetLabels()[v1beta1.KymaName],
 						strconv.FormatBool(manifestWithInstall.Spec.Remote), manifestWithInstall.GetNamespace())).
@@ -256,146 +242,3 @@ var _ = Describe(
 		)
 	},
 )
-
-func skipExpect() func() bool {
-	return func() bool {
-		return true
-	}
-}
-
-func expectHelmClientCacheExist(expectExist bool) func(cacheKey string) bool {
-	return func(cacheKey string) bool {
-		clnt := reconciler.ClientCache.GetClientFromCache(cacheKey)
-		if expectExist {
-			return clnt != nil
-		}
-		return clnt == nil
-	}
-}
-
-func withInvalidInstallImageSpec(remote bool) func(manifest *v1beta1.Manifest) error {
-	return func(manifest *v1beta1.Manifest) error {
-		invalidImageSpec := createOCIImageSpec("invalid-image-spec", "domain.invalid", layerInstalls)
-		imageSpecByte, err := json.Marshal(invalidImageSpec)
-		Expect(err).ToNot(HaveOccurred())
-		return installManifest(manifest, imageSpecByte, remote)
-	}
-}
-
-func withValidInstallImageSpec(name string, remote bool) func(manifest *v1beta1.Manifest) error {
-	return func(manifest *v1beta1.Manifest) error {
-		validImageSpec := createOCIImageSpec(name, server.Listener.Addr().String(), layerInstalls)
-		imageSpecByte, err := json.Marshal(validImageSpec)
-		Expect(err).ToNot(HaveOccurred())
-		return installManifest(manifest, imageSpecByte, remote)
-	}
-}
-
-func withValidInstall(installName string, remote bool) func(manifest *v1beta1.Manifest) error {
-	return func(manifest *v1beta1.Manifest) error {
-		validInstallImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String(), layerInstalls)
-		installSpecByte, err := json.Marshal(validInstallImageSpec)
-		Expect(err).ToNot(HaveOccurred())
-
-		return installManifest(manifest, installSpecByte, remote)
-	}
-}
-
-func installManifest(manifest *v1beta1.Manifest, installSpecByte []byte, remote bool) error {
-	if installSpecByte != nil {
-		manifest.Spec.Install = v1beta1.InstallInfo{
-			Source: runtime.RawExtension{
-				Raw: installSpecByte,
-			},
-			Name: "manifest-test",
-		}
-	}
-	// manifest.Spec.CRDs = crdSpec
-	if remote {
-		manifest.Spec.Remote = true
-		manifest.Spec.Resource = &unstructured.Unstructured{
-			Object: map[string]interface{}{
-				"apiVersion": "operator.kyma-project.io/v1alpha1",
-				"kind":       "Sample",
-				"metadata": map[string]interface{}{
-					"name":      "sample-crd-from-manifest",
-					"namespace": metav1.NamespaceDefault,
-				},
-				"namespace": "default",
-			},
-		}
-	}
-	return k8sClient.Create(ctx, manifest)
-}
-
-func expectManifestStateIn(state declarative.State) func(manifestName string) error {
-	return func(manifestName string) error {
-		status, err := getManifestStatus(manifestName)
-		if err != nil {
-			return err
-		}
-		if state != status.State {
-			return fmt.Errorf("status is %v but expected %s: %w", status, state, ErrManifestStateMisMatch)
-		}
-		return nil
-	}
-}
-
-func getManifestStatus(manifestName string) (declarative.Status, error) {
-	manifest := &v1beta1.Manifest{}
-	err := k8sClient.Get(
-		ctx, client.ObjectKey{
-			Namespace: metav1.NamespaceDefault,
-			Name:      manifestName,
-		}, manifest,
-	)
-	if err != nil {
-		return declarative.Status{}, err
-	}
-	return declarative.Status(manifest.Status), nil
-}
-
-func deleteManifestAndVerify(manifest *v1beta1.Manifest) func() error {
-	return func() error {
-		// reverting permissions for deletion - in case it was changed during tests
-		if err := os.Chmod(kustomizeLocalPath, fs.ModePerm); err != nil {
-			return err
-		}
-		if err := k8sClient.Delete(ctx, manifest); err != nil && !k8serrors.IsNotFound(err) {
-			return err
-		}
-		newManifest := v1beta1.Manifest{}
-		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(manifest), &newManifest)
-		return client.IgnoreNotFound(err)
-	}
-}
-
-func addInstallSpec(specBytes []byte) func(manifest *v1beta1.Manifest) error {
-	return func(manifest *v1beta1.Manifest) error {
-		return installManifest(manifest, specBytes, false)
-	}
-}
-
-func addInstallSpecWithFilePermission(
-	specBytes []byte,
-	remote bool, fileMode os.FileMode,
-) func(manifest *v1beta1.Manifest) error {
-	return func(manifest *v1beta1.Manifest) error {
-		currentUser, err := user.Current()
-		Expect(err).ToNot(HaveOccurred())
-		if currentUser.Username == "root" {
-			Skip("This test is not suitable for user with root privileges")
-		}
-		// should not be run as root user
-		Expect(currentUser.Username).ToNot(Equal("root"))
-		Expect(os.Chmod(kustomizeLocalPath, fileMode)).ToNot(HaveOccurred())
-		return installManifest(manifest, specBytes, remote)
-	}
-}
-
-func expectFileNotExistError() func() bool {
-	return func() bool {
-		_, err := os.Stat(filepath.Join(kustomizeLocalPath, ManifestDir))
-		return os.IsNotExist(err)
-	}
-}
