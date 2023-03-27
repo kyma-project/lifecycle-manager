@@ -4,13 +4,13 @@ kind: Component
 configMapGenerator:
   - name: controller-resources-metrics
     files:
-      - controller-resources-metrics.json
+      - dashboards/resources-metrics.json
   - name: controller-runtime-metrics
     files:
-      - controller-runtime-metrics.json
+      - dashboards/runtime-metrics.json
   - name: overview
     files:
-      - overview.json
+      - dashboards/overview.json
 
 generatorOptions:
   disableNameSuffixHash: true

@@ -21,7 +21,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 1242,
+  "id": 102,
   "links": [],
   "panels": [
     {
@@ -79,7 +79,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(rate(rest_client_requests_total{job=\"operator-controller-manager-metrics-service\", code=~\"2..\"}[$__rate_interval]))",
+          "expr": "sum(rate(rest_client_requests_total{job=\"klm-metrics-service\", code=~\"2..\"}[$__rate_interval]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -92,7 +92,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(rate(rest_client_requests_total{job=\"operator-controller-manager-metrics-service\", code=~\"3..\"}[$__rate_interval]))",
+          "expr": "sum(rate(rest_client_requests_total{job=\"klm-metrics-service\", code=~\"3..\"}[$__rate_interval]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -105,7 +105,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(rate(rest_client_requests_total{job=\"operator-controller-manager-metrics-service\", code=~\"4..\"}[$__rate_interval]))",
+          "expr": "sum(rate(rest_client_requests_total{job=\"klm-metrics-service\", code=~\"4..\"}[$__rate_interval]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -118,7 +118,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(rate(rest_client_requests_total{job=\"operator-controller-manager-metrics-service\", code=~\"5..\"}[$__rate_interval]))",
+          "expr": "sum(rate(rest_client_requests_total{job=\"klm-metrics-service\", code=~\"5..\"}[$__rate_interval]))",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -181,344 +181,6 @@
         "y": 0
       },
       "hiddenSeries": false,
-      "id": 36,
-      "interval": "1m",
-      "legend": {
-        "alignAsTable": true,
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "rightSide": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "links": [],
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "",
-      "pointradius": 5,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "exemplar": true,
-          "expr": "process_resident_memory_bytes{job=\"manifest-operator-manager-metrics-service\"}",
-          "format": "time_series",
-          "interval": "",
-          "intervalFactor": 2,
-          "legendFormat": "{{job}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Module Manager Memory",
-      "tooltip": {
-        "shared": false,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:162",
-          "format": "bytes",
-          "logBase": 1,
-          "show": true
-        },
-        {
-          "$$hashKey": "object:163",
-          "format": "bytes",
-          "logBase": 1,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 7,
-        "w": 8,
-        "x": 16,
-        "y": 0
-      },
-      "hiddenSeries": false,
-      "id": 38,
-      "interval": "1m",
-      "legend": {
-        "alignAsTable": true,
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "rightSide": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "links": [],
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "",
-      "pointradius": 5,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "exemplar": true,
-          "expr": "rate(process_cpu_seconds_total{job=\"manifest-operator-manager-metrics-service\"}[$__rate_interval])",
-          "interval": "",
-          "legendFormat": "{{job}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Module Manager CPU usage",
-      "tooltip": {
-        "shared": false,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:101",
-          "format": "short",
-          "logBase": 1,
-          "min": 0,
-          "show": true
-        },
-        {
-          "$$hashKey": "object:102",
-          "format": "short",
-          "logBase": 1,
-          "min": 0,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 7,
-        "w": 8,
-        "x": 0,
-        "y": 7
-      },
-      "hiddenSeries": false,
-      "id": 33,
-      "interval": "1m",
-      "legend": {
-        "alignAsTable": true,
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "links": [],
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "",
-      "pointradius": 5,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "exemplar": true,
-          "expr": "sum(rate(rest_client_requests_total{job=\"manifest-operator-manager-metrics-service\", code=~\"2..\"}[$__rate_interval]))",
-          "format": "time_series",
-          "interval": "",
-          "intervalFactor": 2,
-          "legendFormat": "2xx",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "exemplar": true,
-          "expr": "sum(rate(rest_client_requests_total{job=\"manifest-operator-manager-metrics-service\", code=~\"3..\"}[$__rate_interval]))",
-          "format": "time_series",
-          "interval": "",
-          "intervalFactor": 2,
-          "legendFormat": "3xx",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "exemplar": true,
-          "expr": "sum(rate(rest_client_requests_total{job=\"manifest-operator-manager-metrics-service\", code=~\"4..\"}[$__rate_interval]))",
-          "format": "time_series",
-          "interval": "",
-          "intervalFactor": 2,
-          "legendFormat": "4xx",
-          "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "exemplar": true,
-          "expr": "sum(rate(rest_client_requests_total{job=\"manifest-operator-ctrlman-metrics-service\", code=~\"5..\"}[$__rate_interval]))",
-          "format": "time_series",
-          "interval": "",
-          "intervalFactor": 2,
-          "legendFormat": "5xx",
-          "refId": "D"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Module Manager Kube API Request Rate",
-      "tooltip": {
-        "shared": false,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:245",
-          "format": "ops",
-          "logBase": 1,
-          "show": true
-        },
-        {
-          "$$hashKey": "object:246",
-          "format": "ops",
-          "logBase": 1,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 7,
-        "w": 8,
-        "x": 8,
-        "y": 7
-      },
-      "hiddenSeries": false,
       "id": 39,
       "interval": "1m",
       "legend": {
@@ -555,7 +217,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "process_resident_memory_bytes{job=\"operator-controller-manager-metrics-service\"}",
+          "expr": "process_resident_memory_bytes{job=\"klm-metrics-service\"}",
           "hide": false,
           "interval": "",
           "legendFormat": "Lifecycle Manager",
@@ -616,7 +278,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 7
+        "y": 0
       },
       "hiddenSeries": false,
       "id": 41,
@@ -655,7 +317,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "rate(process_cpu_seconds_total{job=\"operator-controller-manager-metrics-service\"}[$__rate_interval])",
+          "expr": "rate(process_cpu_seconds_total{job=\"klm-metrics-service\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "{{job}}",
           "refId": "A"
@@ -706,7 +368,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 14
+        "y": 7
       },
       "id": 9,
       "panels": [],
@@ -760,116 +422,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 15
-      },
-      "id": 11,
-      "interval": "15s",
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "single"
-        },
-        "tooltipOptions": {
-          "mode": "single"
-        }
-      },
-      "pluginVersion": "8.3.3",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "exemplar": true,
-          "expr": "sum(rate(controller_runtime_reconcile_total{controller=\"manifest\", result=\"requeue\"}[$__rate_interval])) by (controller)",
-          "hide": false,
-          "instant": false,
-          "interval": "",
-          "intervalFactor": 1,
-          "legendFormat": "requeue",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "exemplar": true,
-          "expr": "sum(rate(controller_runtime_reconcile_total{controller=\"manifest\", result=\"requeue_after\"}[$__rate_interval])) by (controller)",
-          "hide": false,
-          "instant": false,
-          "interval": "",
-          "legendFormat": "requeue_after",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "exemplar": true,
-          "expr": "sum(rate(controller_runtime_reconcile_total{controller=\"manifest\", result=\"success\"}[$__rate_interval])) by (controller)",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "success",
-          "refId": "C"
-        }
-      ],
-      "title": "Module Manager Controller Runtime Reconcile Success",
-      "type": "timeseries"
-    },
-    {
-      "datasource": null,
-      "description": "Total number of successfully reconciliations per controller.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "graph": false,
-              "legend": false,
-              "tooltip": false,
-              "viz": false
-            },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 15
+        "y": 8
       },
       "id": 42,
       "interval": "15s",
@@ -979,10 +532,10 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
-        "w": 24,
-        "x": 0,
-        "y": 23
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
       },
       "id": 13,
       "options": {
@@ -1044,7 +597,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 30
+        "y": 16
       },
       "hiddenSeries": false,
       "id": 43,
@@ -1166,7 +719,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 37
+        "y": 23
       },
       "id": 44,
       "options": {
@@ -1265,7 +818,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 37
+        "y": 23
       },
       "id": 45,
       "options": {
@@ -1317,7 +870,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 45
+        "y": 31
       },
       "id": 7,
       "panels": [],
@@ -1378,7 +931,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 46
+        "y": 32
       },
       "id": 5,
       "options": {
@@ -1402,22 +955,10 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "workqueue_longest_running_processor_seconds{job=\"operator-controller-manager-metrics-service\"}",
+          "expr": "workqueue_longest_running_processor_seconds{job=\"klm-metrics-service\"}",
           "interval": "",
           "legendFormat": "{{job}}",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "exemplar": true,
-          "expr": "workqueue_longest_running_processor_seconds{job=\"manifest-operator-manager-metrics-service\"}",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{job}}",
-          "refId": "B"
         }
       ],
       "title": "Workqueue Longest running processor seconds",
@@ -1474,7 +1015,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 46
+        "y": 32
       },
       "id": 20,
       "options": {
@@ -1497,23 +1038,11 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "workqueue_unfinished_work_seconds{job=\"operator-controller-manager-metrics-service\"}",
+          "expr": "workqueue_unfinished_work_seconds{job=\"klm-metrics-service\"}",
           "hide": false,
           "interval": "",
           "legendFormat": "{{job}}",
           "refId": "D"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P1809F7CD0C75ACF3"
-          },
-          "exemplar": true,
-          "expr": "workqueue_unfinished_work_seconds{job=\"manifest-operator-manager-metrics-service\"}",
-          "hide": false,
-          "interval": "",
-          "legendFormat": "{{job}}",
-          "refId": "A"
         }
       ],
       "title": "Workqueue Unfinished Work Seconds",
@@ -1536,7 +1065,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 54
+        "y": 40
       },
       "hiddenSeries": false,
       "id": 31,
@@ -1646,7 +1175,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 61
+        "y": 47
       },
       "hiddenSeries": false,
       "id": 46,
@@ -1756,7 +1285,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 68
+        "y": 54
       },
       "hiddenSeries": false,
       "id": 29,
@@ -1869,7 +1398,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 75
+        "y": 61
       },
       "hiddenSeries": false,
       "id": 27,
@@ -1978,7 +1507,7 @@
   },
   "timepicker": {},
   "timezone": "",
-  "title": "Lifecycle Manager & Module Manager",
+  "title": "Lifecycle Manager Overview",
   "uid": "O3DH7uunk",
-  "version": 2
+  "version": 1
 }
