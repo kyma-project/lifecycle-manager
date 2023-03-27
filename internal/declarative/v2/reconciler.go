@@ -231,14 +231,14 @@ func (r *Reconciler) syncResources(
 		return err
 	}
 
-	//oldSynced := status.Synced
+	oldSynced := status.Synced
 	newSynced := NewInfoToResourceConverter().InfosToResources(target)
 	status.Synced = newSynced
 
-	//if len(ResourcesDiff(oldSynced, newSynced)) > 0 {
-	//	obj.SetStatus(status.WithState(StateProcessing).WithOperation(ErrResourceSyncStateDiff.Error()))
-	//	return ErrResourceSyncStateDiff
-	//}
+	if len(ResourcesDiff(oldSynced, newSynced)) > 0 {
+		obj.SetStatus(status.WithState(StateProcessing).WithOperation(ErrResourceSyncStateDiff.Error()))
+		return ErrResourceSyncStateDiff
+	}
 
 	for i := range r.PostRuns {
 		if err := r.PostRuns[i](ctx, clnt, r.Client, obj); err != nil {

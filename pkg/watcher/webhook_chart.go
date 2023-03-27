@@ -33,7 +33,6 @@ const (
 	webhookTimeOutInSeconds        = 15
 	allResourcesWebhookRule        = "*"
 	statusSubResourceWebhookRule   = "*/status"
-	WebhookCfgAndDeploymentNameTpl = "%s-webhook"
 )
 
 var ErrLoadBalancerIPIsNotAssigned = errors.New("load balancer service external ip is not assigned")

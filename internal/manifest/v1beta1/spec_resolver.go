@@ -227,7 +227,7 @@ func (m *ManifestSpecResolver) getChartInfoForInstall(
 			return nil, err
 		}
 
-		// extract helm chart from layer digest
+		// extract raw manifest from layer digest
 		rawManifestPath, err := GetPathFromRawManifest(ctx, imageSpec, keyChain)
 		if err != nil {
 			return nil, err
@@ -250,11 +250,9 @@ func (m *ManifestSpecResolver) getChartInfoForInstall(
 		}, nil
 	case v1beta1.NilRefType:
 		return nil, ErrEmptyInstallType
+	default:
+		return nil, fmt.Errorf("%s is invalid: %w", specType, ErrUnsupportedInstallType)
 	}
-
-	return nil, fmt.Errorf(
-		"%s is invalid: %w", specType, ErrUnsupportedInstallType,
-	)
 }
 
 func parseChartConfigAndValues(

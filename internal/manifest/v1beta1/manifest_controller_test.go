@@ -117,7 +117,7 @@ var _ = Describe(
 	},
 )
 
-var _ = FDescribe(
+var _ = Describe(
 	"Given manifest with OCI specs", func() {
 		mainOciTempDir := "main-dir"
 		installName := filepath.Join(mainOciTempDir, "installs")
@@ -315,8 +315,8 @@ func installManifest(manifest *v1beta1.Manifest, installSpecByte []byte, remote 
 		manifest.Spec.Remote = true
 		manifest.Spec.Resource = &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"apiVersion": "operator.kyma-project.io/v1beta1",
-				"kind":       "SampleCRD",
+				"apiVersion": "operator.kyma-project.io/v1alpha1",
+				"kind":       "Sample",
 				"metadata": map[string]interface{}{
 					"name":      "sample-crd-from-manifest",
 					"namespace": metav1.NamespaceDefault,
