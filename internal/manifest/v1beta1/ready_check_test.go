@@ -3,6 +3,8 @@ package v1beta1_test
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	internalV1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
@@ -13,7 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strconv"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -33,7 +34,6 @@ var _ = Describe("Custom Manifest consistency check, given Manifest CR with Helm
 	Expect(err).NotTo(HaveOccurred())
 
 	It("Install nginx helm chart", func() {
-
 		manifest := NewTestManifest("custom-check-helm")
 		manifestName := manifest.GetName()
 		Eventually(addInstallSpec(validHelmChartSpecBytes), standardTimeout, standardInterval).

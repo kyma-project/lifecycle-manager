@@ -284,7 +284,8 @@ func updateModuleTemplateSpecData(kymaName, valueUpdated string) func() error {
 }
 
 func CheckKymaConditions(ctx context.Context, kcpClient client.Client, kymaName string,
-	requiredConditions []v1beta1.KymaConditionType) func() bool {
+	requiredConditions []v1beta1.KymaConditionType,
+) func() bool {
 	return func() bool {
 		kymaFromCluster, err := GetKyma(ctx, kcpClient, kymaName, "")
 		if err != nil || len(kymaFromCluster.Status.Conditions) != len(requiredConditions) {

@@ -6,13 +6,16 @@ import (
 	"fmt"
 	"github.com/kyma-project/lifecycle-manager/pkg/types"
 	"io"
+	"os"
+
+
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/tools/record"
-	"os"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

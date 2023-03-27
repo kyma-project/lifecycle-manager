@@ -3,18 +3,20 @@ package v1beta1_test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/google/go-containerregistry/pkg/v1/partial"
-	"github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	"github.com/onsi/ginkgo/v2"
 	"io"
 	"io/fs"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
 	"net/url"
 	"os"
 	"os/user"
 	"path/filepath"
+
+	"github.com/google/go-containerregistry/pkg/v1/partial"
+	"github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+
+	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/google/go-containerregistry/pkg/name"
@@ -23,7 +25,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
-	_ "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -81,7 +83,7 @@ func PushToRemoteOCIRegistry(layerName string) {
 	Expect(gotHash).To(Equal(digest))
 }
 
-//nolint:unparam
+
 func createOCIImageSpec(name, repo string) v1beta1.ImageSpec {
 	imageSpec := v1beta1.ImageSpec{
 		Name: name,
@@ -252,7 +254,7 @@ func addInstallSpecWithFilePermission(
 		currentUser, err := user.Current()
 		Expect(err).ToNot(HaveOccurred())
 		if currentUser.Username == "root" {
-			ginkgo.Skip("This test is not suitable for user with root privileges")
+			Skip("This test is not suitable for user with root privileges")
 		}
 		// should not be run as root user
 		Expect(currentUser.Username).ToNot(Equal("root"))
