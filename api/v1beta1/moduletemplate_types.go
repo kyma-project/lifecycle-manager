@@ -19,6 +19,7 @@ package v1beta1
 import (
 	"time"
 
+	"fmt"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -150,4 +151,12 @@ func (in *ModuleTemplate) SetLastSync() *ModuleTemplate {
 	in.Annotations[LastSync] = lastSyncDate
 
 	return in
+}
+
+func (in *ModuleTemplate) GetComponentDescriptorCacheKey() (string, error) {
+	descriptor, err := in.Spec.GetDescriptor()
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s:%s:%s", in.Spec.Channel, descriptor.GetName(), descriptor.GetVersion()), nil
 }

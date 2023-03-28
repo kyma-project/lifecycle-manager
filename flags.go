@@ -54,7 +54,7 @@ func defineFlagVar() *FlagVar {
 	flag.IntVar(&flagVar.clientBurst, "k8s-client-burst", defaultClientBurst, "kubernetes client Burst")
 	flag.StringVar(&flagVar.moduleVerificationKeyFilePath, "module-verification-key-file", "",
 		"This verification key is used to verify modules against their signature")
-	flag.StringVar(&flagVar.moduleVerificationKeyFilePath, "module-verification-signature-names",
+	flag.StringVar(&flagVar.moduleVerificationSignatureNames, "module-verification-signature-names",
 		"kyma-module-signature:kyma-extension-signature",
 		"This verification key list is used to verify modules against their signature")
 	flag.BoolVar(&flagVar.enableWebhooks, "enable-webhooks", false,

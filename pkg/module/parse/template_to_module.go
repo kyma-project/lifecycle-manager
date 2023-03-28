@@ -11,6 +11,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"github.com/kyma-project/lifecycle-manager/pkg/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 )
 
@@ -25,11 +26,14 @@ var (
 )
 
 func GenerateModulesFromTemplates(
-	kyma *v1beta1.Kyma, templates channel.ModuleTemplatesByModuleName, verification signature.Verification,
+	kyma *v1beta1.Kyma,
+	templates channel.ModuleTemplatesByModuleName,
+	verification signature.Verification,
+	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
 ) (common.Modules, error) {
 	// these are the actual modules
 	modules, err := templatesToModules(kyma, templates,
-		&ModuleConversionSettings{Verification: verification})
+		&ModuleConversionSettings{Verification: verification}, componentDescriptorCache)
 	if err != nil {
 		return nil, fmt.Errorf("cannot convert templates: %w", err)
 	}
@@ -41,6 +45,7 @@ func templatesToModules(
 	kyma *v1beta1.Kyma,
 	templates channel.ModuleTemplatesByModuleName,
 	settings *ModuleConversionSettings,
+	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
 ) (common.Modules, error) {
 	// First, we fetch the module spec from the template and use it to resolve it into an arbitrary object
 	// (since we do not know which module we are dealing with)
@@ -74,7 +79,10 @@ func templatesToModules(
 			}
 		}
 		var obj client.Object
-		if obj, err = NewManifestFromTemplate(module, template.ModuleTemplate, settings.Verification); err != nil {
+		if obj, err = NewManifestFromTemplate(module,
+			template.ModuleTemplate,
+			settings.Verification,
+			componentDescriptorCache); err != nil {
 			return nil, err
 		}
 		// we name the manifest after the module name
@@ -98,6 +106,7 @@ func NewManifestFromTemplate(
 	module v1beta1.Module,
 	template *v1beta1.ModuleTemplate,
 	verification signature.Verification,
+	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
 ) (*v1beta1.Manifest, error) {
 	manifest := &v1beta1.Manifest{}
 	manifest.Spec.Remote = ConvertTargetToRemote(template.Spec.Target)
@@ -118,12 +127,24 @@ func NewManifestFromTemplate(
 	if err != nil {
 		return nil, err
 	}
+	descriptorCacheKey, err := template.GetComponentDescriptorCacheKey()
+	if err != nil {
+		return nil, err
+	}
+	remoteDescriptor := componentDescriptorCache.Get(descriptorCacheKey)
+	if remoteDescriptor == nil {
+		remoteDescriptor, err = ocmextensions.GetRemoteDescriptor(descriptor)
+		if err != nil {
+			return nil, err
+		}
+		componentDescriptorCache.Set(descriptorCacheKey, remoteDescriptor)
+	}
 
-	if err := signature.Verify(descriptor.ComponentDescriptor, verification); err != nil {
+	if err := signature.Verify(remoteDescriptor, verification); err != nil {
 		return nil, fmt.Errorf("could not verify descriptor: %w", err)
 	}
 
-	if layers, err = img.Parse(descriptor.ComponentDescriptor); err != nil {
+	if layers, err = img.Parse(remoteDescriptor); err != nil {
 		return nil, fmt.Errorf("could not parse descriptor: %w", err)
 	}
 

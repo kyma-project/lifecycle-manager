@@ -40,6 +40,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -65,9 +66,10 @@ type KymaReconciler struct {
 	record.EventRecorder
 	RequeueIntervals
 	signature.VerificationSettings
-	SKRWebhookManager watcher.SKRWebhookManager
-	KcpRestConfig     *rest.Config
-	RemoteClientCache *remote.ClientCache
+	SKRWebhookManager        watcher.SKRWebhookManager
+	KcpRestConfig            *rest.Config
+	RemoteClientCache        *remote.ClientCache
+	ComponentDescriptorCache *ocmextensions.ComponentDescriptorCache
 }
 
 //nolint:lll
@@ -403,7 +405,7 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 	}
 
 	// these are the actual modules
-	modules, err := parse.GenerateModulesFromTemplates(kyma, templates, verification)
+	modules, err := parse.GenerateModulesFromTemplates(kyma, templates, verification, r.ComponentDescriptorCache)
 	if err != nil {
 		return nil, fmt.Errorf("cannot generate modules: %w", err)
 	}

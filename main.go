@@ -63,6 +63,7 @@ import (
 
 	//+kubebuilder:scaffold:imports
 	"github.com/kyma-project/lifecycle-manager/api"
+	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
@@ -153,7 +154,8 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 
 	remoteClientCache := remote.NewClientCache()
 
-	setupKymaReconciler(mgr, remoteClientCache, flagVar, options)
+	componentDescriptorCache := ocmextensions.NewComponentDescriptorCache()
+	setupKymaReconciler(mgr, remoteClientCache, componentDescriptorCache, flagVar, options)
 	setupManifestReconciler(mgr, flagVar, options)
 
 	if flagVar.enableKcpWatcher {
@@ -232,9 +234,9 @@ func NewClient(
 	)
 }
 
-func setupKymaReconciler(
-	mgr ctrl.Manager,
+func setupKymaReconciler(mgr ctrl.Manager,
 	remoteClientCache *remote.ClientCache,
+	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
 	flagVar *FlagVar,
 	options controller.Options,
 ) {
@@ -260,11 +262,12 @@ func setupKymaReconciler(
 	}
 
 	if err := (&controllers.KymaReconciler{
-		Client:            mgr.GetClient(),
-		EventRecorder:     mgr.GetEventRecorderFor(operatorv1beta1.OperatorName),
-		KcpRestConfig:     kcpRestConfig,
-		RemoteClientCache: remoteClientCache,
-		SKRWebhookManager: skrWebhookManager,
+		Client:                   mgr.GetClient(),
+		EventRecorder:            mgr.GetEventRecorderFor(operatorv1beta1.OperatorName),
+		KcpRestConfig:            kcpRestConfig,
+		RemoteClientCache:        remoteClientCache,
+		ComponentDescriptorCache: componentDescriptorCache,
+		SKRWebhookManager:        skrWebhookManager,
 		RequeueIntervals: controllers.RequeueIntervals{
 			Success: flagVar.kymaRequeueSuccessInterval,
 		},
