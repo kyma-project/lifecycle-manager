@@ -83,7 +83,6 @@ func PushToRemoteOCIRegistry(layerName string) {
 	Expect(gotHash).To(Equal(digest))
 }
 
-
 func createOCIImageSpec(name, repo string) v1beta1.ImageSpec {
 	imageSpec := v1beta1.ImageSpec{
 		Name: name,

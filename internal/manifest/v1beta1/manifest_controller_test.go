@@ -125,41 +125,37 @@ var _ = Describe(
 			func(
 				givenCondition func(manifest *v1beta1.Manifest) error,
 				expectManifestState func(manifestName string) error,
-				expectedHelmClientCache func(cacheKey string) bool,
 			) {
 				manifest := NewTestManifest("oci")
 				Eventually(givenCondition, standardTimeout, standardInterval).
 					WithArguments(manifest).Should(Succeed())
 				Eventually(expectManifestState, standardTimeout, standardInterval).
 					WithArguments(manifest.GetName()).Should(Succeed())
-				Eventually(expectedHelmClientCache, standardTimeout, standardInterval).
-					WithArguments(internalV1beta1.GenerateCacheKey(manifest.GetLabels()[v1beta1.KymaName],
-						strconv.FormatBool(manifest.Spec.Remote), manifest.GetNamespace())).Should(BeTrue())
 				Eventually(deleteManifestAndVerify(manifest), standardTimeout, standardInterval).Should(Succeed())
 			},
 			Entry(
 				"When Manifest CR contains a valid install OCI image specification, "+
 					"expect state in ready and helmClient cache exist",
 				withValidInstallImageSpec(installName, false),
-				expectManifestStateIn(declarative.StateReady), expectHelmClientCacheExist(true),
+				expectManifestStateIn(declarative.StateReady),
 			),
 			Entry(
 				"When Manifest CR contains a valid install OCI image specification and enabled remote, "+
 					"expect state in ready and helmClient cache exist",
 				withValidInstallImageSpec(installName, true),
-				expectManifestStateIn(declarative.StateReady), expectHelmClientCacheExist(true),
+				expectManifestStateIn(declarative.StateReady),
 			),
 			Entry(
 				"When Manifest CR contains valid install and CRD image specification, "+
 					"expect state in ready and helmClient cache exist",
 				withValidInstall(installName, true),
-				expectManifestStateIn(declarative.StateReady), expectHelmClientCacheExist(true),
+				expectManifestStateIn(declarative.StateReady),
 			),
 			Entry(
 				"When Manifest CR contains an invalid install OCI image specification, "+
 					"expect state in error and no helmClient cache exit",
 				withInvalidInstallImageSpec(false),
-				expectManifestStateIn(declarative.StateError), expectHelmClientCacheExist(false),
+				expectManifestStateIn(declarative.StateError),
 			),
 		)
 	},

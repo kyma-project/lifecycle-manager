@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 
-
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,7 +56,7 @@ func (r *RawRenderer) prerequisiteCondition(object metav1.Object) metav1.Conditi
 func (r *RawRenderer) Initialize(obj Object) error {
 	status := obj.GetStatus()
 
-	prerequisiteExists := meta.FindStatusCondition(status.Conditions, r.prerequisiteCondition(obj).Type) != nil
+	prerequisiteExists := meta.FindStatusCondition(status.Conditions, string(ConditionTypeRawManifestCRDs)) != nil
 	if !prerequisiteExists {
 		meta.SetStatusCondition(&status.Conditions, r.prerequisiteCondition(obj))
 		obj.SetStatus(status)
@@ -69,8 +68,8 @@ func (r *RawRenderer) Initialize(obj Object) error {
 
 func (r *RawRenderer) EnsurePrerequisites(ctx context.Context, obj Object) error {
 	status := obj.GetStatus()
-	if obj.GetDeletionTimestamp().IsZero() && meta.IsStatusConditionTrue(
-		status.Conditions, r.prerequisiteCondition(obj).Type,
+	if meta.IsStatusConditionTrue(
+		status.Conditions, string(ConditionTypeRawManifestCRDs),
 	) {
 		return nil
 	}
@@ -112,7 +111,18 @@ func (r *RawRenderer) Render(_ context.Context, obj Object) ([]byte, error) {
 	return manifest, nil
 }
 
-func (r *RawRenderer) RemovePrerequisites(_ context.Context, _ Object) error {
+func (r *RawRenderer) RemovePrerequisites(ctx context.Context, obj Object) error {
+	crdLength := len(r.crds)
+	if crdLength == 0 {
+		//nothing to remove
+		return nil
+	}
+	status := obj.GetStatus()
+	if err := r.uninstallCRDs(ctx); err != nil {
+		r.Event(obj, "Warning", "CRDsUninstallation", err.Error())
+		obj.SetStatus(status.WithState(StateError).WithErr(err))
+		return err
+	}
 	return nil
 }
 
@@ -138,8 +148,8 @@ func (r *RawRenderer) getCRDs(rawManifestReader io.Reader) error {
 }
 
 func (r *RawRenderer) installCRDs(ctx context.Context) error {
-	errChanLength := len(r.crds)
-	errChan := make(chan error, errChanLength)
+	crdCount := len(r.crds)
+	errChan := make(chan error, crdCount)
 	for idx := range r.crds {
 		crd := r.crds[idx]
 		go func() {
@@ -147,7 +157,7 @@ func (r *RawRenderer) installCRDs(ctx context.Context) error {
 		}()
 	}
 	errs := make([]error, 0)
-	for i := 0; i < errChanLength; i++ {
+	for i := 0; i < crdCount; i++ {
 		if err := <-errChan; err != nil {
 			errs = append(errs, err)
 		}
@@ -156,5 +166,26 @@ func (r *RawRenderer) installCRDs(ctx context.Context) error {
 		return fmt.Errorf("failed to install raw manifest CRDs: %w", types.NewMultiError(errs))
 	}
 
+	return nil
+}
+
+func (r *RawRenderer) uninstallCRDs(ctx context.Context) error {
+	crdCount := len(r.crds)
+	errChan := make(chan error, crdCount)
+	for idx := range r.crds {
+		crd := r.crds[idx]
+		go func() {
+			errChan <- r.Delete(ctx, crd, &client.DeleteOptions{})
+		}()
+	}
+	errs := make([]error, 0)
+	for i := 0; i < crdCount; i++ {
+		if err := <-errChan; err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) != 0 {
+		return fmt.Errorf("failed to remove raw manifest CRDs: %w", types.NewMultiError(errs))
+	}
 	return nil
 }
