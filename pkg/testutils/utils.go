@@ -235,19 +235,17 @@ func NewSKRCluster(scheme *k8sruntime.Scheme) (client.Client, *envtest.Environme
 func AppendExternalCRDs(path string, files ...string) []*apiExtensionsv1.CustomResourceDefinition {
 	crds := []*apiExtensionsv1.CustomResourceDefinition{}
 	for _, file := range files {
-
 		crdPath := filepath.Join(path, file)
 		moduleFile, err := os.Open(crdPath)
 		Expect(err).ToNot(HaveOccurred())
 		decoder := yaml.NewYAMLOrJSONDecoder(moduleFile, defaultBufferSize)
 		for {
 			crd := &apiExtensionsv1.CustomResourceDefinition{}
-			err = decoder.Decode(crd)
-			if err == nil {
-				crds = append(crds, crd)
-			}
-			if errors.Is(err, io.EOF) {
-				break
+			if err = decoder.Decode(crd); err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				}
+				continue
 			}
 			crds = append(crds, crd)
 		}

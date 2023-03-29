@@ -55,7 +55,6 @@ func SyncKyma(kyma *v1beta1.Kyma) error {
 		return nil
 	}
 	return err
-
 }
 
 func GetKymaState(kymaName string) (string, error) {
@@ -64,7 +63,6 @@ func GetKymaState(kymaName string) (string, error) {
 		return "", err
 	}
 	return string(createdKyma.Status.State), nil
-
 }
 
 func GetKymaConditions(kymaName string) func() []metav1.Condition {
