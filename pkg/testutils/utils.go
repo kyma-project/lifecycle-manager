@@ -233,7 +233,7 @@ func NewSKRCluster(scheme *k8sruntime.Scheme) (client.Client, *envtest.Environme
 }
 
 func AppendExternalCRDs(path string, files ...string) []*apiExtensionsv1.CustomResourceDefinition {
-	crds := []*apiExtensionsv1.CustomResourceDefinition{}
+	var crds []*apiExtensionsv1.CustomResourceDefinition
 	for _, file := range files {
 		crdPath := filepath.Join(path, file)
 		moduleFile, err := os.Open(crdPath)
