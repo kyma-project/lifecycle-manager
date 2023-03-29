@@ -40,7 +40,7 @@ func RegisterDefaultLifecycleForKyma(kyma *v1beta1.Kyma) {
 
 	BeforeEach(func() {
 		By("get latest kyma CR")
-		Eventually(SyncKyma, Timeout, Interval).WithArguments(kyma).Should(Succeed())
+		Eventually(SyncKyma(kyma), Timeout, Interval).Should(Succeed())
 	})
 }
 
