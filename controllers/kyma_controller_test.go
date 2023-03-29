@@ -45,7 +45,7 @@ var _ = Describe("Kyma with deprecated Condition", Ordered, func() {
 		})
 		kyma.ManagedFields = nil
 		Expect(controlPlaneClient.Patch(ctx, kyma, client.Apply,
-			client.FieldOwner(v1beta1.OperatorName))).To(Succeed())
+			client.FieldOwner(v1beta1.UnmanagedKyma))).To(Succeed())
 		By("having transitioned the CR State to Ready as there are no modules")
 		Eventually(CheckKymaConditions(ctx, controlPlaneClient, kyma.GetName(),
 			[]v1beta1.KymaConditionType{v1beta1.ConditionTypeModules}),
