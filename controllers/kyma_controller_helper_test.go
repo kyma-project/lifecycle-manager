@@ -40,11 +40,17 @@ func RegisterDefaultLifecycleForKyma(kyma *v1beta1.Kyma) {
 
 	BeforeEach(func() {
 		By("get latest kyma CR")
-		Expect(controlPlaneClient.Get(ctx, client.ObjectKey{
+		Eventually(SyncKyma, Timeout, Interval).WithArguments(kyma).Should(Succeed())
+	})
+}
+
+func SyncKyma(kyma *v1beta1.Kyma) func() error {
+	return func() error {
+		return controlPlaneClient.Get(ctx, client.ObjectKey{
 			Name:      kyma.Name,
 			Namespace: metav1.NamespaceDefault,
-		}, kyma)).Should(Succeed())
-	})
+		}, kyma)
+	}
 }
 
 func GetKymaState(kymaName string) func() string {
