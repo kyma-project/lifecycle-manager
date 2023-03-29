@@ -423,3 +423,13 @@ func (kyma *Kyma) DetermineState() State {
 
 	return StateReady
 }
+
+func (kyma *Kyma) AllModulesReady() bool {
+	for i := range kyma.Status.Modules {
+		moduleStatus := &kyma.Status.Modules[i]
+		if moduleStatus.State != StateReady {
+			return false
+		}
+	}
+	return true
+}
