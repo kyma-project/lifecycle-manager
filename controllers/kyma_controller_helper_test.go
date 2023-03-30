@@ -51,10 +51,7 @@ func SyncKyma(kyma *v1beta1.Kyma) error {
 	}, kyma)
 	// It might happen in some test case, kyma get deleted, if you need to make sure Kyma should exist,
 	// write expected condition to check it specifically.
-	if k8serrors.IsNotFound(err) {
-		return nil
-	}
-	return err
+	return client.IgnoreNotFound(err)
 }
 
 func GetKymaState(kymaName string) (string, error) {
