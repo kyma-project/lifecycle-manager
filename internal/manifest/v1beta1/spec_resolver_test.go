@@ -83,16 +83,16 @@ func Test_ParseInstallConfigs(t *testing.T) {
 			wantErr: true,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := v1beta1.ParseInstallConfigs(tt.args.decodedConfig)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("parseInstallConfigs() error = %v, wantErr %v", err, tt.wantErr)
+			got, err := v1beta1.ParseInstallConfigs(testCase.args.decodedConfig)
+			if (err != nil) != testCase.wantErr {
+				t.Errorf("parseInstallConfigs() error = %v, wantErr %v", err, testCase.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("parseInstallConfigs() got = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, testCase.want) {
+				t.Errorf("parseInstallConfigs() got = %v, want %v", got, testCase.want)
 			}
 		})
 	}
