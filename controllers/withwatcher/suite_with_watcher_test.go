@@ -32,8 +32,6 @@ import (
 
 	//nolint:gci
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
-
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -54,10 +52,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	//+kubebuilder:scaffold:imports
+
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	istioscheme "istio.io/client-go/pkg/clientset/versioned/scheme"
+	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -98,14 +97,10 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 
-	// manifest CRD
-	// istio CRDs
-	remoteCrds, err := ParseRemoteCRDs([]string{
-		"https://raw.githubusercontent.com/kyma-project/module-manager/main/config/crd/bases/operator.kyma-project.io_manifests.yaml", //nolint:lll
-		"https://raw.githubusercontent.com/istio/istio/master/manifests/charts/base/crds/crd-all.gen.yaml",                            //nolint:lll
-		"https://github.com/cert-manager/cert-manager/releases/download/v1.10.1/cert-manager.crds.yaml",                               //nolint:lll
-	})
-	Expect(err).NotTo(HaveOccurred())
+	externalCRDs := AppendExternalCRDs(
+		filepath.Join("..", "..", "config", "samples", "tests", "crds"),
+		"cert-manager-v1.10.1.crds.yaml",
+		"istio-v1.17.1.crds.yaml")
 
 	// kcpModule CRD
 	controlplaneCrd := &v1.CustomResourceDefinition{}
@@ -114,11 +109,11 @@ var _ = BeforeSuite(func() {
 	moduleFile, err := os.ReadFile(modulePath)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(moduleFile).ToNot(BeEmpty())
-	Expect(yaml2.Unmarshal(moduleFile, &controlplaneCrd)).To(Succeed())
+	Expect(yaml.Unmarshal(moduleFile, &controlplaneCrd)).To(Succeed())
 
 	controlPlaneEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
-		CRDs:                  append([]*v1.CustomResourceDefinition{controlplaneCrd}, remoteCrds...),
+		CRDs:                  append([]*v1.CustomResourceDefinition{controlplaneCrd}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}
 
