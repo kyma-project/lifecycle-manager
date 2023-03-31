@@ -34,8 +34,8 @@ type RunnerImpl struct {
 	converter runtime.ObjectConvertor
 }
 
-// Sync implements Runner.Sync.
-func (r *RunnerImpl) Sync(ctx context.Context, kyma *v1beta1.Kyma,
+// ReconcileManifests implements Runner.Sync.
+func (r *RunnerImpl) ReconcileManifests(ctx context.Context, kyma *v1beta1.Kyma,
 	modules common.Modules,
 ) error {
 	ssaStart := time.Now()
@@ -44,7 +44,7 @@ func (r *RunnerImpl) Sync(ctx context.Context, kyma *v1beta1.Kyma,
 	results := make(chan error, len(modules))
 	for _, module := range modules {
 		go func(module *common.Module) {
-			if err := r.updateModule(ctx, kyma, module); err != nil {
+			if err := r.updateManifests(ctx, kyma, module); err != nil {
 				results <- fmt.Errorf("could not update module %s: %w", module.GetName(), err)
 				return
 			}
@@ -70,7 +70,7 @@ func (r *RunnerImpl) getModule(ctx context.Context, module client.Object) error 
 	return r.Get(ctx, client.ObjectKey{Namespace: module.GetNamespace(), Name: module.GetName()}, module)
 }
 
-func (r *RunnerImpl) updateModule(ctx context.Context, kyma *v1beta1.Kyma,
+func (r *RunnerImpl) updateManifests(ctx context.Context, kyma *v1beta1.Kyma,
 	module *common.Module,
 ) error {
 	if err := r.setupModule(module, kyma); err != nil {
@@ -80,15 +80,15 @@ func (r *RunnerImpl) updateModule(ctx context.Context, kyma *v1beta1.Kyma,
 	if err != nil {
 		return err
 	}
-	clObj := obj.(client.Object)
-	if err := r.Patch(ctx, clObj,
+	manifestObj := obj.(client.Object)
+	if err := r.Patch(ctx, manifestObj,
 		client.Apply,
 		client.FieldOwner(kyma.Labels[v1beta1.ManagedBy]),
 		client.ForceOwnership,
 	); err != nil {
 		return fmt.Errorf("error applying manifest %s: %w", client.ObjectKeyFromObject(module), err)
 	}
-	module.Object = clObj
+	module.Object = manifestObj
 
 	return nil
 }
