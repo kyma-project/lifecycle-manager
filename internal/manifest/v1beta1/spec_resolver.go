@@ -178,10 +178,6 @@ var (
 func parseInstallConfigs(decodedConfig interface{}) ([]interface{}, error) {
 	var configs []interface{}
 
-	type Config struct {
-		value interface{}
-	}
-
 	type ConfigsYaml struct {
 		Configs []interface{}
 	}
