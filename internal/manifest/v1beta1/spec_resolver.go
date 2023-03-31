@@ -4,20 +4,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"os"
-	"path/filepath"
-	"reflect"
-
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/mitchellh/mapstructure"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/downloader"
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/repo"
 	"helm.sh/helm/v3/pkg/strvals"
+	"io"
+	"os"
+	"path/filepath"
+	"reflect"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -53,7 +52,6 @@ func NewManifestSpecResolver(kcp *declarative.ClusterInfo, codec *v1beta1.Codec)
 var (
 	ErrRenderModeInvalid                   = errors.New("render mode is invalid")
 	ErrInvalidObjectPassedToSpecResolution = errors.New("invalid object passed to spec resolution")
-	ErrNeedUniqueInstall                   = errors.New("can only pass exactly one install")
 )
 
 func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object) (*declarative.Spec, error) {
@@ -174,27 +172,32 @@ func (m *ManifestSpecResolver) getValuesFromConfig(
 }
 
 var (
-	ErrChartConfigObjectInvalid = errors.New("chart config object of .spec.config is invalid")
-	ErrConfigObjectInvalid      = errors.New(".spec.config is invalid")
+	ErrConfigObjectInvalid = errors.New(".spec.config is invalid")
 )
 
 func parseInstallConfigs(decodedConfig interface{}) ([]interface{}, error) {
 	var configs []interface{}
-	installConfigObj, decodeOk := decodedConfig.(map[string]interface{})
-	if !decodeOk {
+
+	type Config struct {
+		value interface{}
+	}
+
+	type ConfigsYaml struct {
+		Configs []interface{}
+	}
+
+	var configsValues ConfigsYaml
+	err := mapstructure.Decode(decodedConfig, &configsValues)
+
+	if err != nil {
 		return nil, fmt.Errorf("reading install %s resulted in an error: %w", v1beta1.ManifestKind,
 			ErrConfigObjectInvalid)
 	}
-	if installConfigObj["configs"] != nil {
-		var configOk bool
-		configs, configOk = installConfigObj["configs"].([]interface{})
-		if !configOk {
-			return nil, fmt.Errorf(
-				"reading install %s resulted in an error: %w ", v1beta1.ManifestKind,
-				ErrChartConfigObjectInvalid,
-			)
-		}
+
+	if configsValues.Configs != nil {
+		configs = configsValues.Configs
 	}
+
 	return configs, nil
 }
 
