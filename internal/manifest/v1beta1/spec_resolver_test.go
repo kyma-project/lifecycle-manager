@@ -6,6 +6,7 @@ import (
 	"testing"
 )
 
+//nolint:funlen
 func Test_ParseInstallConfigs(t *testing.T) {
 	t.Parallel()
 	type args struct {
