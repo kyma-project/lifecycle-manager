@@ -1,11 +1,13 @@
-package v1beta1
+package v1beta1_test
 
 import (
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	"reflect"
 	"testing"
 )
 
-func Test_parseInstallConfigs(t *testing.T) {
+func Test_ParseInstallConfigs(t *testing.T) {
+	t.Parallel()
 	type args struct {
 		decodedConfig interface{}
 	}
@@ -83,7 +85,7 @@ func Test_parseInstallConfigs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseInstallConfigs(tt.args.decodedConfig)
+			got, err := v1beta1.ParseInstallConfigs(tt.args.decodedConfig)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parseInstallConfigs() error = %v, wantErr %v", err, tt.wantErr)
 				return

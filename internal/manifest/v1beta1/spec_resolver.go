@@ -156,7 +156,7 @@ func (m *ManifestSpecResolver) getValuesFromConfig(
 			}
 		} else {
 			var err error
-			configs, err = parseInstallConfigs(decodedConfig)
+			configs, err = ParseInstallConfigs(decodedConfig)
 			if err != nil {
 				return nil, fmt.Errorf("value parsing for %s encountered an err: %w", name, err)
 			}
@@ -175,7 +175,7 @@ var (
 	ErrConfigObjectInvalid = errors.New(".spec.config is invalid")
 )
 
-func parseInstallConfigs(decodedConfig interface{}) ([]interface{}, error) {
+func ParseInstallConfigs(decodedConfig interface{}) ([]interface{}, error) {
 	var configs []interface{}
 
 	type ConfigsYaml struct {
