@@ -31,7 +31,6 @@ import (
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/cpi"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
 	"go.uber.org/zap/zapcore"
-	
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -80,12 +79,10 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 
-	// manifest CRD
-	// istio CRDs
-	remoteCrds, err := ParseRemoteCRDs([]string{
-		"https://github.com/cert-manager/cert-manager/releases/download/v1.10.1/cert-manager.crds.yaml",
-	})
-	Expect(err).NotTo(HaveOccurred())
+	externalCRDs := AppendExternalCRDs(
+		filepath.Join("..", "config", "samples", "tests", "crds"),
+		"cert-manager-v1.10.1.crds.yaml",
+		"istio-v1.17.1.crds.yaml")
 
 	// kcpModule CRD
 	controlplaneCrd := &v1.CustomResourceDefinition{}
@@ -98,7 +95,7 @@ var _ = BeforeSuite(func() {
 
 	controlPlaneEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases")},
-		CRDs:                  append([]*v1.CustomResourceDefinition{controlplaneCrd}, remoteCrds...),
+		CRDs:                  append([]*v1.CustomResourceDefinition{controlplaneCrd}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}
 

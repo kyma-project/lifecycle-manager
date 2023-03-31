@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
-	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -19,7 +17,7 @@ import (
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/ocm.software/v3alpha1"
 	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	corev1 "k8s.io/api/core/v1"
-	v12 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiExtensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
@@ -134,47 +132,6 @@ func IsKymaInState(ctx context.Context, kcpClient client.Client, kymaName string
 	}
 }
 
-func ParseRemoteCRDs(testCrdURLs []string) ([]*v12.CustomResourceDefinition, error) {
-	var crds []*v12.CustomResourceDefinition
-	var httpResponse *http.Response
-	for _, testCrdURL := range testCrdURLs {
-		_, err := url.Parse(testCrdURL)
-		if err != nil {
-			return nil, err
-		}
-		request, err := http.NewRequestWithContext(context.Background(), http.MethodGet, testCrdURL, nil)
-		if err != nil {
-			return nil, fmt.Errorf("failed pulling content for URL (%s) :%w", testCrdURL, err)
-		}
-		httpClient := &http.Client{Timeout: httpClientTimeout}
-		httpResponse, err = httpClient.Do(request)
-		if err != nil {
-			return nil, err
-		}
-		if httpResponse.StatusCode != http.StatusOK {
-			//nolint:goerr113
-			return nil, fmt.Errorf("failed pulling content for URL (%s) with status code: %d",
-				testCrdURL, httpResponse.StatusCode)
-		}
-
-		decoder := yaml.NewYAMLOrJSONDecoder(httpResponse.Body, defaultBufferSize)
-		for {
-			crd := &v12.CustomResourceDefinition{}
-			err = decoder.Decode(crd)
-			if err == nil {
-				crds = append(crds, crd)
-			}
-			if errors.Is(err, io.EOF) {
-				break
-			}
-		}
-	}
-	defer func() {
-		_ = httpResponse.Body.Close()
-	}()
-	return crds, nil
-}
-
 func ModuleTemplateFactory(module v1beta1.Module, data unstructured.Unstructured) (*v1beta1.ModuleTemplate, error) {
 	return ModuleTemplateFactoryForSchema(module, data, compdesc2.SchemaVersion)
 }
@@ -270,4 +227,25 @@ func NewSKRCluster(scheme *k8sruntime.Scheme) (client.Client, *envtest.Environme
 	Expect(err).NotTo(HaveOccurred())
 
 	return skrClient, skrEnv
+}
+
+func AppendExternalCRDs(path string, files ...string) []*apiExtensionsv1.CustomResourceDefinition {
+	var crds []*apiExtensionsv1.CustomResourceDefinition
+	for _, file := range files {
+		crdPath := filepath.Join(path, file)
+		moduleFile, err := os.Open(crdPath)
+		Expect(err).ToNot(HaveOccurred())
+		decoder := yaml.NewYAMLOrJSONDecoder(moduleFile, defaultBufferSize)
+		for {
+			crd := &apiExtensionsv1.CustomResourceDefinition{}
+			if err = decoder.Decode(crd); err != nil {
+				if errors.Is(err, io.EOF) {
+					break
+				}
+				continue
+			}
+			crds = append(crds, crd)
+		}
+	}
+	return crds
 }

@@ -37,21 +37,26 @@ func RegisterDefaultLifecycleForKyma(kyma *v1beta1.Kyma) {
 
 	BeforeEach(func() {
 		By("get latest kyma CR")
-		Expect(controlPlaneClient.Get(ctx, client.ObjectKey{
-			Name:      kyma.Name,
-			Namespace: metav1.NamespaceDefault,
-		}, kyma)).Should(Succeed())
+		Eventually(SyncKyma(kyma), Timeout, Interval).Should(Succeed())
 	})
 }
 
-func GetKymaState(kymaName string) func() string {
-	return func() string {
-		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
-		if err != nil {
-			return ""
-		}
-		return string(createdKyma.Status.State)
+func SyncKyma(kyma *v1beta1.Kyma) error {
+	err := controlPlaneClient.Get(ctx, client.ObjectKey{
+		Name:      kyma.Name,
+		Namespace: metav1.NamespaceDefault,
+	}, kyma)
+	// It might happen in some test case, kyma get deleted, if you need to make sure Kyma should exist,
+	// write expected condition to check it specifically.
+	return client.IgnoreNotFound(err)
+}
+
+func GetKymaState(kymaName string) (string, error) {
+	createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
+	if err != nil {
+		return "", err
 	}
+	return string(createdKyma.Status.State), nil
 }
 
 func GetKymaConditions(kymaName string) func() []metav1.Condition {
