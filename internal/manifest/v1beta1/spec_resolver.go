@@ -182,7 +182,6 @@ type ConfigsYaml struct {
 
 func ParseInstallConfigs(decodedConfig interface{}) ([]interface{}, error) {
 	var configs []interface{}
-	decodedConfig = nil
 	var configsValues ConfigsYaml
 	configsValuesYamlObj, err := json.Marshal(decodedConfig)
 	if err != nil {
