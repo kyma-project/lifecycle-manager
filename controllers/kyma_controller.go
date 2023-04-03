@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/utils/strings/slices"
 	"strings"
 	"time"
 
@@ -190,11 +191,24 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta1.Ky
 		return fmt.Errorf("could not aggregate module templates for module catalog sync: %w", err)
 	}
 
+	filterTemplatesFromWhitelistedChannels(kyma, moduleTemplateList)
+
 	if err := remote.NewRemoteCatalogFromKyma(kyma).CreateOrUpdate(ctx, moduleTemplateList); err != nil {
 		return fmt.Errorf("could not synchronize remote module catalog: %w", err)
 	}
 
 	return nil
+}
+
+func filterTemplatesFromWhitelistedChannels(kyma *v1beta1.Kyma, moduleTemplateList *v1beta1.ModuleTemplateList) {
+	whitelistedChannels := kyma.GetWhitelistedChannels()
+	var filteredModuleTemplates []v1beta1.ModuleTemplate
+	for _, moduleTemplate := range moduleTemplateList.Items {
+		if slices.Contains(whitelistedChannels, moduleTemplate.Spec.Channel) {
+			filteredModuleTemplates = append(filteredModuleTemplates, moduleTemplate)
+		}
+	}
+	moduleTemplateList.Items = filteredModuleTemplates
 }
 
 func (r *KymaReconciler) stateHandling(ctx context.Context, kyma *v1beta1.Kyma) (ctrl.Result, error) {
@@ -295,6 +309,8 @@ func (r *KymaReconciler) reconcileManifests(ctx context.Context, kyma *v1beta1.K
 		return fmt.Errorf("error while fetching modules during processing: %w", err)
 	}
 
+	modules = filterModulesFromWhitelistedChannels(kyma, modules)
+
 	runner := modulesync.New(r)
 
 	if err := runner.ReconcileManifests(ctx, kyma, modules); err != nil {
@@ -308,6 +324,17 @@ func (r *KymaReconciler) reconcileManifests(ctx context.Context, kyma *v1beta1.K
 		return fmt.Errorf("error while syncing conditions during deleting non exists modules: %w", err)
 	}
 	return nil
+}
+
+func filterModulesFromWhitelistedChannels(kyma *v1beta1.Kyma, modules common.Modules) common.Modules {
+	whitelistedChannels := kyma.GetWhitelistedChannels()
+	var filteredModules common.Modules
+	for _, module := range modules {
+		if slices.Contains(whitelistedChannels, module.Template.Spec.Channel) {
+			filteredModules = append(filteredModules, module)
+		}
+	}
+	return filteredModules
 }
 
 func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta1.Kyma) (bool, error) {

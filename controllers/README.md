@@ -36,7 +36,7 @@ On top of this, based on the  `.spec.sync.moduleCatalog` flag, the `syncModuleCa
 ## Manifest Controller
 
 The [Manifest controller](manifest_controller.go) is dealing with the reconciliation and installation of data desired through a `Manifest`, a representation of a single module desired in a cluster.
-Since it mainly is a delegation to the [declarative reconciliation library](../pkg/declarative/README.md) with certain [internal implementation additions](../internal/manifest/README.md) please look at the respective documentation for these parts to understand them more.
+Since it mainly is a delegation to the [declarative reconciliation library](../internal/declarative/README.md) with certain [internal implementation additions](../internal/manifest/README.md) please look at the respective documentation for these parts to understand them more.
 
 ## Watcher Controller
 

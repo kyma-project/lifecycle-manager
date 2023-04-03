@@ -3,6 +3,7 @@ package v1beta1
 import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"strings"
 )
 
 const (
@@ -27,6 +28,10 @@ const (
 	CertManager  = "klm-watcher-cert-manager"
 	// SkipReconcileLabel indicates this specific resource will be skipped during reconciliation.
 	SkipReconcileLabel = OperatorPrefix + Separator + "skip-reconciliation"
+
+	// ChannelWhitelistPrefix is used to identify labels for whitelisting a channel
+	ChannelWhitelistPrefix  = OperatorPrefix + Separator + "whitelist-channel-"
+	ChannelWhitelistEnabled = "true"
 )
 
 func ModuleTemplatesByLabel(module *Module) client.MatchingLabels {
@@ -59,4 +64,18 @@ func (kyma *Kyma) CheckLabelsAndFinalizers() bool {
 		updateRequired = true
 	}
 	return updateRequired
+}
+
+func (kyma *Kyma) GetWhitelistedChannels() []string {
+	var whitelistChannels []string
+
+	for label, value := range kyma.ObjectMeta.Labels {
+		if channelName, prefixFound := strings.CutPrefix(label, ChannelWhitelistPrefix); prefixFound {
+			if value == ChannelWhitelistEnabled {
+				whitelistChannels = append(whitelistChannels, channelName)
+			}
+		}
+	}
+
+	return whitelistChannels
 }
