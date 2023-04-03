@@ -15,6 +15,14 @@ func Test_ParseInstallConfigs(t *testing.T) {
 	}
 	var emptyConfigs []interface{}
 
+	// capacity 4 to mimic json.Unmarshal logic
+	validConfigs := make([]interface{}, 0, 4)
+	validConfigs = append(validConfigs,
+		map[string]interface{}{
+			"name":      "test",
+			"overrides": "test2",
+		})
+
 	tests := []struct {
 		name    string
 		args    args
@@ -63,12 +71,7 @@ func Test_ParseInstallConfigs(t *testing.T) {
 					},
 				},
 			},
-			want: []interface{}{
-				map[string]string{
-					"name":      "test",
-					"overrides": "test2",
-				},
-			},
+			want:    validConfigs,
 			wantErr: false,
 		},
 		{

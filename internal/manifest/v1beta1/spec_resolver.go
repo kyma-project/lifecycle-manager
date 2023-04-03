@@ -2,6 +2,7 @@ package v1beta1
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -12,7 +13,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	"github.com/mitchellh/mapstructure"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/downloader"
 	"helm.sh/helm/v3/pkg/getter"
@@ -176,16 +176,20 @@ var (
 	ErrConfigObjectInvalid = errors.New(".spec.config is invalid")
 )
 
+type ConfigsYaml struct {
+	Configs []interface{}
+}
+
 func ParseInstallConfigs(decodedConfig interface{}) ([]interface{}, error) {
 	var configs []interface{}
-
-	type ConfigsYaml struct {
-		Configs []interface{}
-	}
-
+	decodedConfig = nil
 	var configsValues ConfigsYaml
-	err := mapstructure.Decode(decodedConfig, &configsValues)
-
+	configsValuesYamlObj, err := json.Marshal(decodedConfig)
+	if err != nil {
+		return nil, fmt.Errorf("reading install %s resulted in an error: %w", v1beta1.ManifestKind,
+			ErrConfigObjectInvalid)
+	}
+	err = json.Unmarshal(configsValuesYamlObj, &configsValues)
 	if err != nil {
 		return nil, fmt.Errorf("reading install %s resulted in an error: %w", v1beta1.ManifestKind,
 			ErrConfigObjectInvalid)
