@@ -1,9 +1,10 @@
 package v1beta1_test
 
 import (
-	"github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	"reflect"
 	"testing"
+
+	"github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 )
 
 //nolint:funlen
