@@ -15,10 +15,10 @@ func Test_ParseInstallConfigs(t *testing.T) {
 		decodedConfig interface{}
 	}
 	var emptyConfigs []interface{}
-	emptyFile, _ := internal.GetYamlFileContent("test-config-files/empty.yaml")
-	nonEmptyConfig, _ := internal.GetYamlFileContent("test-config-files/non-empty-configs.yaml")
-	emptyConfig, _ := internal.GetYamlFileContent("test-config-files/empty-configs.yaml")
-	invalidConfig, _ := internal.GetYamlFileContent("test-config-files/invalid-configs.yaml")
+	emptyFile, _ := internal.GetYamlFileContent("../../../pkg/test_samples/test-config-files/empty.yaml")
+	nonEmptyConfig, _ := internal.GetYamlFileContent("../../../pkg/test_samples/test-config-files/non-empty-configs.yaml")
+	emptyConfig, _ := internal.GetYamlFileContent("../../../pkg/test_samples/test-config-files/empty-configs.yaml")
+	invalidConfig, _ := internal.GetYamlFileContent("../../../pkg/test_samples/test-config-files/invalid-configs.yaml")
 
 	tests := []struct {
 		name    string
