@@ -21,6 +21,7 @@ import (
 const (
 	firstElementIdx     = 0
 	vsDeletionThreshold = 1
+	notFoundRouteIndex=-1
 	contractVersion     = "v1"
 	prefixFormat        = "/%s/%s/event"
 )
@@ -35,8 +36,8 @@ type Config struct {
 	WatcherLocalTesting bool
 }
 
-func NewConfig(vsn string, watcherLocalTesting bool) Config {
-	return Config{
+func NewConfig(vsn string, watcherLocalTesting bool) *Config {
+	return &Config{
 		VirtualServiceName:  vsn,
 		WatcherLocalTesting: watcherLocalTesting,
 	}
@@ -44,12 +45,12 @@ func NewConfig(vsn string, watcherLocalTesting bool) Config {
 
 type Client struct {
 	istioclient.Interface
-	config        Config
+	cfg           *Config
 	eventRecorder record.EventRecorder
 	logger        logr.Logger
 }
 
-func NewVersionedIstioClient(cfg *rest.Config, config Config, recorder record.EventRecorder,
+func NewVersionedIstioClient(cfg *rest.Config, config *Config, recorder record.EventRecorder,
 	logger logr.Logger,
 ) (*Client, error) {
 	cs, err := istioclient.NewForConfig(cfg)
@@ -59,7 +60,7 @@ func NewVersionedIstioClient(cfg *rest.Config, config Config, recorder record.Ev
 	return &Client{
 		Interface:     cs,
 		eventRecorder: recorder,
-		config:        config,
+		cfg:           config,
 		logger:        logger,
 	}, nil
 }
@@ -67,7 +68,7 @@ func NewVersionedIstioClient(cfg *rest.Config, config Config, recorder record.Ev
 func (c *Client) GetVirtualService(ctx context.Context) (*istioclientapi.VirtualService, error) {
 	virtualService, err := c.NetworkingV1beta1().
 		VirtualServices(metav1.NamespaceDefault).
-		Get(ctx, c.config.VirtualServiceName, metav1.GetOptions{})
+		Get(ctx, c.cfg.VirtualServiceName, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch virtual service %w", err)
 	}
@@ -81,7 +82,7 @@ func (c *Client) CreateVirtualService(ctx context.Context, watcher *v1beta1.Watc
 	}
 
 	virtualSvc := &istioclientapi.VirtualService{}
-	virtualSvc.SetName(c.config.VirtualServiceName)
+	virtualSvc.SetName(c.cfg.VirtualServiceName)
 	virtualSvc.SetNamespace(metav1.NamespaceDefault)
 
 	gateways, err := c.LookupGateways(ctx, watcher)
@@ -91,14 +92,14 @@ func (c *Client) CreateVirtualService(ctx context.Context, watcher *v1beta1.Watc
 
 	addGateways(gateways, virtualSvc)
 
-	if c.config.WatcherLocalTesting {
+	if c.cfg.WatcherLocalTesting {
 		virtualSvc.Spec.Hosts = []string{"*"}
 	} else if err := addHosts(gateways, virtualSvc); err != nil {
 		return nil, err
 	}
 
 	virtualSvc.Spec.Http = []*istioapi.HTTPRoute{
-		prepareIstioHTTPRouteForCR(watcher),
+		PrepareIstioHTTPRouteForCR(watcher),
 	}
 
 	return c.NetworkingV1beta1().
@@ -180,36 +181,6 @@ func (c *Client) updateVirtualService(ctx context.Context, virtualService *istio
 	return err
 }
 
-func (c *Client) IsListenerHTTPRouteConfigured(ctx context.Context, watcher *v1beta1.Watcher,
-) (bool, error) {
-	virtualService, err := c.GetVirtualService(ctx)
-	if err != nil {
-		return false, err
-	}
-	if len(virtualService.Spec.Http) == 0 {
-		return false, nil
-	}
-
-	for idx, route := range virtualService.Spec.Http {
-		if route.Name == client.ObjectKeyFromObject(watcher).String() {
-			istioHTTPRoute := prepareIstioHTTPRouteForCR(watcher)
-			return isRouteConfigEqual(virtualService.Spec.Http[idx], istioHTTPRoute), nil
-		}
-	}
-
-	return false, nil
-}
-
-func (c *Client) IsVirtualServiceDeleted(ctx context.Context) (bool, error) {
-	_, err := c.NetworkingV1beta1().
-		VirtualServices(metav1.NamespaceDefault).
-		Get(ctx, c.config.VirtualServiceName, metav1.GetOptions{})
-	if apierrors.IsNotFound(err) {
-		return true, nil
-	}
-	return false, err
-}
-
 func (c *Client) UpdateVirtualServiceConfig(ctx context.Context, watcher *v1beta1.Watcher,
 	virtualService *istioclientapi.VirtualService,
 ) error {
@@ -235,16 +206,16 @@ func (c *Client) UpdateVirtualServiceConfig(ctx context.Context, watcher *v1beta
 func updateHTTPRoute(watcher *v1beta1.Watcher, virtualService *istioclientapi.VirtualService) bool {
 	// lookup cr config
 	routeIdx := lookupHTTPRouteByObjectKey(virtualService.Spec.Http, client.ObjectKeyFromObject(watcher))
-	if routeIdx != -1 {
-		istioHTTPRoute := prepareIstioHTTPRouteForCR(watcher)
-		if isRouteConfigEqual(virtualService.Spec.Http[routeIdx], istioHTTPRoute) {
+	if routeIdx != notFoundRouteIndex {
+		istioHTTPRoute := PrepareIstioHTTPRouteForCR(watcher)
+		if IsRouteConfigEqual(virtualService.Spec.Http[routeIdx], istioHTTPRoute) {
 			return false
 		}
-		virtualService.Spec.Http[routeIdx] = prepareIstioHTTPRouteForCR(watcher)
+		virtualService.Spec.Http[routeIdx] = PrepareIstioHTTPRouteForCR(watcher)
 		return true
 	}
 	// if route doesn't exist already append it to the route list
-	istioHTTPRoute := prepareIstioHTTPRouteForCR(watcher)
+	istioHTTPRoute := PrepareIstioHTTPRouteForCR(watcher)
 	virtualService.Spec.Http = append(virtualService.Spec.Http, istioHTTPRoute)
 	return true
 }
@@ -309,11 +280,11 @@ func (c *Client) RemoveVirtualServiceConfigForCR(ctx context.Context, watcherObj
 		// last http route is being deleted: remove the virtual service resource
 		return c.NetworkingV1beta1().
 			VirtualServices(metav1.NamespaceDefault).
-			Delete(ctx, c.config.VirtualServiceName, metav1.DeleteOptions{})
+			Delete(ctx, c.cfg.VirtualServiceName, metav1.DeleteOptions{})
 	}
 
 	routeIdx := lookupHTTPRouteByObjectKey(virtualService.Spec.Http, watcherObjKey)
-	if routeIdx == -1 {
+	if routeIdx == notFoundRouteIndex {
 		return nil
 	}
 	l := len(virtualService.Spec.Http)
@@ -325,17 +296,17 @@ func (c *Client) RemoveVirtualServiceConfigForCR(ctx context.Context, watcherObj
 
 func lookupHTTPRouteByObjectKey(routes []*istioapi.HTTPRoute, watcherObjKey client.ObjectKey) int {
 	if len(routes) == 0 {
-		return -1
+		return notFoundRouteIndex
 	}
 	for idx, route := range routes {
 		if route.Name == watcherObjKey.String() {
 			return idx
 		}
 	}
-	return -1
+	return notFoundRouteIndex
 }
 
-func isRouteConfigEqual(route1 *istioapi.HTTPRoute, route2 *istioapi.HTTPRoute) bool {
+func IsRouteConfigEqual(route1 *istioapi.HTTPRoute, route2 *istioapi.HTTPRoute) bool {
 	if route1.Match[firstElementIdx].Uri.MatchType.(*istioapi.StringMatch_Prefix).Prefix != //nolint:nosnakecase
 		route2.Match[firstElementIdx].Uri.MatchType.(*istioapi.StringMatch_Prefix).Prefix { //nolint:nosnakecase
 		return false
@@ -354,7 +325,7 @@ func isRouteConfigEqual(route1 *istioapi.HTTPRoute, route2 *istioapi.HTTPRoute) 
 	return true
 }
 
-func prepareIstioHTTPRouteForCR(obj *v1beta1.Watcher) *istioapi.HTTPRoute {
+func PrepareIstioHTTPRouteForCR(obj *v1beta1.Watcher) *istioapi.HTTPRoute {
 	return &istioapi.HTTPRoute{
 		Name: client.ObjectKeyFromObject(obj).String(),
 		Match: []*istioapi.HTTPMatchRequest{

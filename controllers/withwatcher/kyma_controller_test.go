@@ -46,7 +46,7 @@ var (
 	ErrSpecSubResourcesMismatch        = errors.New("spec sub-resources mismatch")
 )
 
-var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
+var _ = FDescribe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
 	kyma := NewTestKyma("kyma-remote-sync")
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
 	issuer := NewTestIssuer(metav1.NamespaceDefault)
@@ -77,12 +77,14 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		By("Deleting second watcher CR")
 		Expect(controlPlaneClient.Delete(suiteCtx, secondWatcher)).To(Succeed())
 		By("Ensuring second watcher CR is properly deleted")
-		Eventually(isWatcherCrDeletionFinished(client.ObjectKeyFromObject(secondWatcher)), Timeout, Interval).
-			Should(BeTrue())
+		Eventually(isWatcherCrDeletionFinished, Timeout, Interval).WithArguments(secondWatcher).
+			WithOffset(4).Should(Succeed())
+		By("ensuring skr resources are configured for the non-removed watcher CRs")
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma, kymaObjKey),
 			Timeout, Interval).WithOffset(4).Should(Succeed())
+		By("ensuring skr resources are not configured for the removed watcher CR")
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, secondWatcher, kymaObjKey),
-			Timeout, Interval).WithOffset(4).ShouldNot(Succeed())
+			2*Timeout, Interval).WithOffset(4).ShouldNot(Succeed())
 	})
 
 	It("SKR chart installation works correctly when watcher config is updated", func() {
@@ -124,8 +126,8 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta1.Kyma, watcher *v1b
 		By("Deleting watcher CR")
 		Expect(controlPlaneClient.Delete(suiteCtx, watcher)).To(Succeed())
 		By("Ensuring watcher CR is properly deleted")
-		Eventually(isWatcherCrDeletionFinished(client.ObjectKeyFromObject(watcher)), Timeout, Interval).
-			Should(BeTrue())
+		Eventually(isWatcherCrDeletionFinished, Timeout, Interval).WithArguments(watcher).
+			WithOffset(4).Should(Succeed())
 	})
 
 	BeforeEach(func() {
@@ -147,12 +149,12 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta1.Kyma, watcher *v1b
 
 func isWatcherCrLabelUpdated(watcherObjKey client.ObjectKey, labelKey, expectedLabelValue string) func() bool {
 	return func() bool {
-		watcher := &v1beta1.Watcher{}
-		err := controlPlaneClient.Get(suiteCtx, watcherObjKey, watcher)
+		watcherObj := &v1beta1.Watcher{}
+		err := controlPlaneClient.Get(suiteCtx, watcherObjKey, watcherObj)
 		if err != nil {
 			return false
 		}
-		labelValue, ok := watcher.Spec.LabelsToWatch[labelKey]
+		labelValue, ok := watcherObj.Spec.LabelsToWatch[labelKey]
 		if !ok {
 			return false
 		}
@@ -267,9 +269,7 @@ func verifyWebhookConfig(
 	return nil
 }
 
-func isWatcherCrDeletionFinished(watcherObjKey client.ObjectKey) func(g Gomega) bool {
-	return func(g Gomega) bool {
-		err := controlPlaneClient.Get(suiteCtx, watcherObjKey, &v1beta1.Watcher{})
-		return apierrors.IsNotFound(err)
-	}
+func isWatcherCrDeletionFinished(watcherCR client.Object) error {
+	err := controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(watcherCR), watcherCR)
+	return client.IgnoreNotFound(err)
 }

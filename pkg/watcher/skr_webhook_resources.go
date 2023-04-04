@@ -203,16 +203,18 @@ func getGeneratedClientObjects(resourcesConfig *unstructuredResourcesConfig,
 	return append(genClientObjects, skrSecret)
 }
 
-func getWatchableConfigs(ctx context.Context, kcpClient client.Client) (map[string]WatchableConfig, error) {
+func getWatchableConfigs(ctx context.Context, kcpClient client.Client, logger logr.Logger) (map[string]WatchableConfig, error) {
 	watchableConfigs := map[string]WatchableConfig{}
 	watcherList := &v1beta1.WatcherList{}
 	if err := kcpClient.List(ctx, watcherList); err != nil {
 		return nil, fmt.Errorf("error listing watcher CRs: %w", err)
 	}
 
-	watchers := watcherList.Items
-	if len(watchers) != 0 {
-		watchableConfigs = generateWatchableConfigs(watchers)
+
+	watcherCount := len(watcherList.Items)
+	logger.V(log.InfoLevel).Info(fmt.Sprintf("generating watchable configs from %d watchers", watcherCount))
+	if watcherCount != 0 {
+		watchableConfigs = generateWatchableConfigs(watcherList)
 	}
 	return watchableConfigs, nil
 }

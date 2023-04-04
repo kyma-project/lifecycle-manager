@@ -129,7 +129,7 @@ func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, e
 
 // SetupWithManager sets up the Watcher controller with the Manager.
 func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options,
-	istioConfig istio.Config,
+	istioConfig *istio.Config,
 ) error {
 	if r.RestConfig == nil {
 		return ErrRestConfigIsNotSet

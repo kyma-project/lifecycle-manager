@@ -179,7 +179,14 @@ var _ = BeforeSuite(func() {
 		},
 		RemoteClientCache: remoteClientCache,
 		KcpRestConfig:     k8sManager.GetConfig(),
-	}).SetupWithManager(k8sManager, controller.Options{}, controllers.SetupUpSetting{ListenerAddr: listenerAddr})
+	}).SetupWithManager(k8sManager, controller.Options{
+		//set cache timeout to a smaller value
+		//as kyma reconciliation (SKR watcher installation)
+		//is listing watcher CRs from cache.
+		//The cache needs to be synced quickly to test watcher CR removal scenario
+		CacheSyncTimeout: Timeout,
+	},
+	controllers.SetupUpSetting{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
 	istioCfg := istio.NewConfig(virtualServiceName, false)

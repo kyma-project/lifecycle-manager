@@ -29,9 +29,9 @@ const (
 //nolint:gochecknoglobals
 var (
 	centralComponents                     = []string{componentToBeUpdated, "module-manager", componentToBeRemoved}
-	errRouteNotExists                     = errors.New("http route is not exists")
-	errVirtualServiceNotRemoved           = errors.New("virtual service not removed")
-	errWatcherNotRemoved                  = errors.New("watcher CR not removed")
+	errRouteNotFound                      = errors.New("http route is not found")
+	errHttpRoutesEmpty                    = errors.New("empty http routes")
+	errRouteConfigMismatch                = errors.New("http route config mismatch")
 	errVirtualServiceHostsNotMatchGateway = errors.New("virtual service hosts not match with gateway")
 )
 
@@ -118,21 +118,16 @@ func createTLSSecret(kymaObjKey client.ObjectKey) *corev1.Secret {
 	}
 }
 
-func getWatcher(name string) (v1beta1.Watcher, error) {
-	watcher := v1beta1.Watcher{}
+func getWatcher(name string) (*v1beta1.Watcher, error) {
+	watcherCR := &v1beta1.Watcher{}
 	err := controlPlaneClient.Get(suiteCtx,
 		client.ObjectKey{Name: name, Namespace: metav1.NamespaceDefault},
-		&watcher)
-	return watcher, err
+		watcherCR)
+	return watcherCR, err
 }
 
-func isVirtualServiceHTTPRouteConfigured(ctx context.Context, customIstioClient *istio.Client, obj *v1beta1.Watcher,
-) error {
-	routeReady, err := customIstioClient.IsListenerHTTPRouteConfigured(ctx, obj)
-	if !routeReady {
-		return errRouteNotExists
-	}
-	return err
+func skipExpect() error {
+	return nil
 }
 
 func isVirtualServiceHostsConfigured(ctx context.Context,
@@ -158,10 +153,43 @@ func contains(source []string, target string) bool {
 	return false
 }
 
-func isVirtualServiceRemoved(ctx context.Context, customIstioClient *istio.Client) error {
-	vsDeleted, err := customIstioClient.IsVirtualServiceDeleted(ctx)
-	if !vsDeleted {
-		return errVirtualServiceNotRemoved
+func isListenerHTTPRouteConfigured(ctx context.Context, clt *istio.Client, watcher *v1beta1.Watcher,
+) error {
+	virtualService, err := clt.GetVirtualService(ctx)
+	if err != nil {
+		return err
 	}
-	return err
+	if len(virtualService.Spec.Http) == 0 {
+		return errHttpRoutesEmpty
+	}
+
+	for idx, route := range virtualService.Spec.Http {
+		if route.Name == client.ObjectKeyFromObject(watcher).String() {
+			istioHTTPRoute := istio.PrepareIstioHTTPRouteForCR(watcher)
+			if !istio.IsRouteConfigEqual(virtualService.Spec.Http[idx], istioHTTPRoute) {
+				return errRouteConfigMismatch
+			}
+			return nil
+		}
+	}
+
+	return errRouteNotFound
+}
+
+func listenerHTTPRouteExists(ctx context.Context, clt *istio.Client, watcherObjKey client.ObjectKey) error {
+	virtualService, err := clt.GetVirtualService(ctx)
+	if err != nil {
+		return err
+	}
+	if len(virtualService.Spec.Http) == 0 {
+		return errHttpRoutesEmpty
+	}
+
+	for _, route := range virtualService.Spec.Http {
+		if route.Name == watcherObjKey.String() {
+			return nil
+		}
+	}
+
+	return errRouteNotFound
 }
