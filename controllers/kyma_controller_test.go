@@ -241,6 +241,17 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	)
 })
 
+var _ = Describe("Kyma with managed fields", Ordered, func() {
+	kyma := NewTestKyma("unmanaged-kyma")
+	RegisterDefaultLifecycleForKyma(kyma)
+
+	It("Should result in a managed field with manager named 'unmanaged-kyma'", func() {
+		Eventually(ExpectKymaManagerField, Timeout, Interval).
+			WithArguments(ctx, controlPlaneClient, kyma.GetName(), v1beta1.UnmanagedKyma).
+			Should(BeTrue())
+	})
+})
+
 func expectKymaStatusModules(kymaName string, state v1beta1.State) func() error {
 	return func() error {
 		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
