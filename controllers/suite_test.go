@@ -141,7 +141,7 @@ var _ = BeforeSuite(func() {
 		RemoteClientCache: remoteClientCache,
 		KcpRestConfig:     k8sManager.GetConfig(),
 	}).SetupWithManager(k8sManager, controller.Options{},
-		controllers.SetupUpSetting{ListenerAddr: ":8080"})
+		controllers.SetupUpSetting{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())
 
 	controlPlaneClient = k8sManager.GetClient()
