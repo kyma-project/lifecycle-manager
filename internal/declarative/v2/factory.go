@@ -1,7 +1,6 @@
 package v2
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -31,12 +30,6 @@ import (
 const (
 	apis = "/apis"
 	api  = "/api"
-)
-
-var (
-	ErrUnknownScope                        = errors.New("unknown scope")
-	ErrNamespaceForClusterScopedObject     = errors.New("namespace was provided for cluster-scoped object")
-	ErrNoNamespaceForNamespaceScopedObject = errors.New("no namespace was provided for namespace-scoped object")
 )
 
 // SingletonClients serves as a single-minded client interface that combines
@@ -178,38 +171,6 @@ func (s *SingletonClients) clientCacheKeyForMapping(mapping *meta.RESTMapping) s
 	)
 }
 
-func (s *SingletonClients) DynamicResourceInterface(obj *unstructured.Unstructured) (dynamic.ResourceInterface, error) {
-	mapping, err := getResourceMapping(obj, s.discoveryShortcutExpander, true)
-	if err != nil {
-		return nil, err
-	}
-	gvk := obj.GroupVersionKind()
-
-	var dynamicResource dynamic.ResourceInterface
-
-	namespace := obj.GetNamespace()
-
-	switch mapping.Scope.Name() {
-	case meta.RESTScopeNameNamespace:
-		if namespace == "" {
-			return nil, fmt.Errorf("%w: %v", ErrNoNamespaceForNamespaceScopedObject, gvk)
-		}
-		dynamicResource = s.dynamicClient.Resource(mapping.Resource).Namespace(namespace)
-	case meta.RESTScopeNameRoot:
-		if namespace != "" {
-			// TODO: Differentiate between server-fixable vs client-fixable errors?
-			return nil, fmt.Errorf(
-				"%w: %q provided for %v", ErrNamespaceForClusterScopedObject, obj.GetNamespace(), gvk,
-			)
-		}
-		dynamicResource = s.dynamicClient.Resource(mapping.Resource)
-	default:
-		// Internal error ... this is panic-level
-		return nil, fmt.Errorf("%w: for gvk %s: %q", ErrUnknownScope, gvk, mapping.Scope.Name())
-	}
-	return dynamicResource, nil
-}
-
 func (s *SingletonClients) ResourceInfo(obj *unstructured.Unstructured, retryOnNoMatch bool) (*resource.Info, error) {
 	mapping, err := getResourceMapping(obj, s.discoveryShortcutExpander, retryOnNoMatch)
 	if err != nil {
@@ -250,7 +211,6 @@ func (s *SingletonClients) Install() *action.Install {
 }
 
 func setKubernetesDefaults(config *rest.Config) error {
-	// TODO remove this hack.  This is allowing the GetOptions to be serialized.
 	config.GroupVersion = &schema.GroupVersion{Group: "", Version: "v1"}
 
 	if config.APIPath == "" {
