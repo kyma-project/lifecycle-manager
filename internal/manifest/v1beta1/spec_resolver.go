@@ -2,7 +2,6 @@ package v1beta1
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -173,31 +172,30 @@ func (m *ManifestSpecResolver) getValuesFromConfig(
 }
 
 var (
-	ErrConfigObjectInvalid = errors.New(".spec.config is invalid")
+	ErrChartConfigObjectInvalid = errors.New("chart config object of .spec.config is invalid")
+	ErrConfigObjectInvalid      = errors.New(".spec.config is invalid")
 )
-
-type ConfigsYaml struct {
-	Configs []interface{}
-}
 
 func ParseInstallConfigs(decodedConfig interface{}) ([]interface{}, error) {
 	var configs []interface{}
-	var configsValues ConfigsYaml
-	configsValuesYamlObj, err := json.Marshal(decodedConfig)
-	if err != nil {
+	if decodedConfig == nil {
+		return configs, nil
+	}
+	installConfigObj, decodeOk := decodedConfig.(map[string]interface{})
+	if !decodeOk {
 		return nil, fmt.Errorf("reading install %s resulted in an error: %w", v1beta1.ManifestKind,
 			ErrConfigObjectInvalid)
 	}
-	err = json.Unmarshal(configsValuesYamlObj, &configsValues)
-	if err != nil {
-		return nil, fmt.Errorf("reading install %s resulted in an error: %w", v1beta1.ManifestKind,
-			ErrConfigObjectInvalid)
+	if installConfigObj["configs"] != nil {
+		var configOk bool
+		configs, configOk = installConfigObj["configs"].([]interface{})
+		if !configOk {
+			return nil, fmt.Errorf(
+				"reading install %s resulted in an error: %w ", v1beta1.ManifestKind,
+				ErrChartConfigObjectInvalid,
+			)
+		}
 	}
-
-	if configsValues.Configs != nil {
-		configs = configsValues.Configs
-	}
-
 	return configs, nil
 }
 

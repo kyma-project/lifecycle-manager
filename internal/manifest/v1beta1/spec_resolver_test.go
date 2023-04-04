@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 )
 
@@ -14,14 +15,10 @@ func Test_ParseInstallConfigs(t *testing.T) {
 		decodedConfig interface{}
 	}
 	var emptyConfigs []interface{}
-
-	// capacity 4 to mimic json.Unmarshal logic
-	validConfigs := make([]interface{}, 0, 4)
-	validConfigs = append(validConfigs,
-		map[string]interface{}{
-			"name":      "test",
-			"overrides": "test2",
-		})
+	emptyFile, _ := internal.GetYamlFileContent("test-config-files/empty.yaml")
+	nonEmptyConfig, _ := internal.GetYamlFileContent("test-config-files/non-empty-configs.yaml")
+	emptyConfig, _ := internal.GetYamlFileContent("test-config-files/empty-configs.yaml")
+	invalidConfig, _ := internal.GetYamlFileContent("test-config-files/invalid-configs.yaml")
 
 	tests := []struct {
 		name    string
@@ -32,7 +29,7 @@ func Test_ParseInstallConfigs(t *testing.T) {
 		{
 			name: "Empty config file",
 			args: args{
-				decodedConfig: nil,
+				decodedConfig: emptyFile,
 			},
 			want:    emptyConfigs,
 			wantErr: false,
@@ -40,21 +37,7 @@ func Test_ParseInstallConfigs(t *testing.T) {
 		{
 			name: "Empty configs object",
 			args: args{
-				decodedConfig: map[string]interface{}{
-					"configs": nil,
-				},
-			},
-			want:    emptyConfigs,
-			wantErr: false,
-		},
-		{
-			name: "Non empty configs with no configs object",
-			args: args{
-				decodedConfig: map[string]interface{}{
-					"test": map[string]string{
-						"name": "test",
-					},
-				},
+				decodedConfig: emptyConfig,
 			},
 			want:    emptyConfigs,
 			wantErr: false,
@@ -62,27 +45,20 @@ func Test_ParseInstallConfigs(t *testing.T) {
 		{
 			name: "Valid configs",
 			args: args{
-				decodedConfig: map[string]interface{}{
-					"configs": []interface{}{
-						map[string]string{
-							"name":      "test",
-							"overrides": "test2",
-						},
-					},
+				decodedConfig: nonEmptyConfig,
+			},
+			want: []interface{}{
+				map[string]interface{}{
+					"name":      "test",
+					"overrides": "test2",
 				},
 			},
-			want:    validConfigs,
 			wantErr: false,
 		},
 		{
 			name: "Invalid configs",
 			args: args{
-				decodedConfig: map[string]interface{}{
-					"configs": map[string]string{
-						"name":      "test",
-						"overrides": "test2",
-					},
-				},
+				decodedConfig: invalidConfig,
 			},
 			want:    nil,
 			wantErr: true,
