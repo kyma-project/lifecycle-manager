@@ -254,7 +254,8 @@ func AppendExternalCRDs(path string, files ...string) []*apiExtensionsv1.CustomR
 }
 
 func ExpectKymaManagerField(
-	ctx context.Context, controlPlaneClient client.Client, kymaName string, managerName string) (bool, error) {
+	ctx context.Context, controlPlaneClient client.Client, kymaName string, managerName string,
+) (bool, error) {
 	createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 	if err != nil {
 		return false, err
