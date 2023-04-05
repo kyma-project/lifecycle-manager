@@ -3,8 +3,9 @@ package internal_test
 import (
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/kyma-project/lifecycle-manager/internal"
 )
 
 //nolint:funlen

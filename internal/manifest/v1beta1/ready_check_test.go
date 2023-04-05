@@ -6,22 +6,19 @@ import (
 	"path/filepath"
 	"strconv"
 
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	internalV1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/resource"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	internalV1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 )
 
 var _ = Describe("Custom Manifest consistency check", Ordered, func() {

@@ -3,8 +3,9 @@ package v1alpha1
 import (
 	"errors"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 var ErrSingleInstallOnly = errors.New("v1beta1 only supports a single install at a time")

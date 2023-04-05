@@ -7,8 +7,9 @@ import (
 	"time"
 
 	"github.com/jellydator/ttlcache/v3"
-	"github.com/kyma-project/lifecycle-manager/internal"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/kyma-project/lifecycle-manager/internal"
 )
 
 type ManifestParser interface {

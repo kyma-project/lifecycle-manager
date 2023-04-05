@@ -8,9 +8,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 )
 
 var _ = Describe(
@@ -18,7 +22,7 @@ var _ = Describe(
 		It(
 			"should fetch authnKeyChain from secret correctly", func() {
 				By("install secret")
-				installCredSecret()
+				Eventually(installCredSecret(), standardTimeout, standardInterval).Should(Succeed())
 				const repo = "test.registry.io"
 				imageSpecWithCredSelect := createOCIImageSpecWithCredSelect(
 					"imageName",
@@ -66,16 +70,20 @@ func (d TestRegistry) RegistryStr() string {
 	return d.registry
 }
 
-func installCredSecret() {
-	secret := &corev1.Secret{}
-	secretFile, err := os.ReadFile("../../../pkg/test_samples/auth_secret.yaml")
-	Expect(err).ToNot(HaveOccurred())
-	err = yaml.Unmarshal(secretFile, secret)
-	Expect(err).ToNot(HaveOccurred())
-	err = k8sClient.Create(ctx, secret)
-	Expect(err).ToNot(HaveOccurred())
-	err = k8sClient.Get(ctx, client.ObjectKeyFromObject(secret), &corev1.Secret{})
-	Eventually(err, standardTimeout, standardInterval).Should(Succeed())
+func installCredSecret() func() error {
+	return func() error {
+		secret := &corev1.Secret{}
+		secretFile, err := os.ReadFile("../../../pkg/test_samples/auth_secret.yaml")
+		Expect(err).ToNot(HaveOccurred())
+		err = yaml.Unmarshal(secretFile, secret)
+		Expect(err).ToNot(HaveOccurred())
+		err = k8sClient.Create(ctx, secret)
+		if errors.IsAlreadyExists(err) {
+			return nil
+		}
+		Expect(err).ToNot(HaveOccurred())
+		return k8sClient.Get(ctx, client.ObjectKeyFromObject(secret), &corev1.Secret{})
+	}
 }
 
 func credSecretLabel() metav1.LabelSelector {

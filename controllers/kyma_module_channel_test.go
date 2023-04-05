@@ -7,12 +7,12 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 const (
@@ -163,14 +163,16 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 	It(
 		"should create kyma with standard modules in default channel normally", func() {
 			Expect(controlPlaneClient.Create(ctx, kyma)).ToNot(HaveOccurred())
-			Eventually(GetKymaState(kyma.Name), 5*time.Second, Interval).
+			Eventually(GetKymaState, 20*time.Second, Interval).
+				WithArguments(kyma.GetName()).
 				Should(BeEquivalentTo(string(v1beta1.StateProcessing)))
 			for _, module := range kyma.Spec.Modules {
 				Eventually(
 					UpdateModuleState(ctx, kyma, module, v1beta1.StateReady), 20*time.Second,
 					Interval).Should(Succeed())
 			}
-			Eventually(GetKymaState(kyma.Name), 5*time.Second, Interval).
+			Eventually(GetKymaState, 20*time.Second, Interval).
+				WithArguments(kyma.GetName()).
 				Should(BeEquivalentTo(string(v1beta1.StateReady)))
 		},
 	)
@@ -203,7 +205,8 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 	It(
 		"should lead to kyma being ready in the end of the channel switch", func() {
 			By("having updated the Kyma CR state to ready")
-			Eventually(GetKymaState(kyma.Name), 20*time.Second, Timeout).
+			Eventually(GetKymaState, 20*time.Second, Interval).
+				WithArguments(kyma.GetName()).
 				Should(BeEquivalentTo(string(v1beta1.StateReady)))
 		},
 	)

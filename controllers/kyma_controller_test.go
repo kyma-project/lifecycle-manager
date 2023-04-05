@@ -5,13 +5,13 @@ import (
 	"errors"
 	"time"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -44,8 +44,8 @@ var _ = Describe("Kyma with deprecated Condition", Ordered, func() {
 			LastTransitionTime: metav1.Time{Time: time.Now()},
 		})
 		kyma.ManagedFields = nil
-		Expect(controlPlaneClient.Patch(ctx, kyma, client.Apply,
-			client.FieldOwner(v1beta1.OperatorName))).To(Succeed())
+		Eventually(controlPlaneClient.Patch(ctx, kyma, client.Apply,
+			client.FieldOwner(v1beta1.OperatorName)), Timeout*2, Interval).Should(Succeed())
 		By("having transitioned the CR State to Ready as there are no modules")
 		Eventually(CheckKymaConditions(ctx, controlPlaneClient, kyma.GetName(),
 			[]v1beta1.KymaConditionType{v1beta1.ConditionTypeModules}),
@@ -67,8 +67,9 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 
 	It("should result in Kyma becoming Ready", func() {
 		By("checking the state to be Processing")
-		Eventually(GetKymaState(kyma.GetName()), 20*time.Second, Interval).
-			Should(BeEquivalentTo(string(v1beta1.StateProcessing)))
+		Eventually(GetKymaState, 20*time.Second, Interval).
+			WithArguments(kyma.GetName()).
+			Should(Equal(string(v1beta1.StateProcessing)))
 
 		By("having created new conditions in its status")
 		Eventually(GetKymaConditions(kyma.GetName()), Timeout, Interval).ShouldNot(BeEmpty())
@@ -79,7 +80,8 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 		}
 
 		By("having updated the Kyma CR state to ready")
-		Eventually(GetKymaState(kyma.GetName()), 20*time.Second, Interval).
+		Eventually(GetKymaState, 20*time.Second, Interval).
+			WithArguments(kyma.GetName()).
 			Should(BeEquivalentTo(string(v1beta1.StateReady)))
 
 		By("Kyma status contains expected condition")
@@ -177,7 +179,8 @@ var _ = Describe("Kyma update Manifest CR", Ordered, func() {
 		}
 
 		By("Kyma CR should be in Ready state")
-		Eventually(GetKymaState(kyma.GetName()), Timeout, Interval).
+		Eventually(GetKymaState, 20*time.Second, Interval).
+			WithArguments(kyma.GetName()).
 			Should(BeEquivalentTo(string(v1beta1.StateReady)))
 
 		By("Update Module Template spec.data.spec field")
@@ -214,7 +217,8 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 		}
 
 		By("Kyma CR should be in Ready state")
-		Eventually(GetKymaState(kyma.GetName()), 20*time.Second, Interval).
+		Eventually(GetKymaState, 20*time.Second, Interval).
+			WithArguments(kyma.GetName()).
 			Should(BeEquivalentTo(string(v1beta1.StateReady)))
 
 		By("Add skip-reconciliation label to Kyma CR")
@@ -285,7 +289,8 @@ func updateModuleTemplateSpecData(kymaName, valueUpdated string) func() error {
 }
 
 func CheckKymaConditions(ctx context.Context, kcpClient client.Client, kymaName string,
-	requiredConditions []v1beta1.KymaConditionType) func() bool {
+	requiredConditions []v1beta1.KymaConditionType,
+) func() bool {
 	return func() bool {
 		kymaFromCluster, err := GetKyma(ctx, kcpClient, kymaName, "")
 		if err != nil || len(kymaFromCluster.Status.Conditions) != len(requiredConditions) {

@@ -6,12 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
-	"github.com/kyma-project/lifecycle-manager/pkg/security"
-	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
-	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -21,6 +15,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/pkg/security"
+	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
+	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
 )
 
 func SetupWithManager(
