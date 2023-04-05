@@ -2,15 +2,9 @@ apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
 
 configMapGenerator:
-  - name: controller-resources-metrics
-    files:
-      - dashboards/resources-metrics.json
-  - name: controller-runtime-metrics
-    files:
-      - dashboards/runtime-metrics.json
   - name: overview
     files:
-      - dashboards/overview.json
+      - overview.json
 
 generatorOptions:
   disableNameSuffixHash: true
