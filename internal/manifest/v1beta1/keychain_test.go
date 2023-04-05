@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -25,7 +25,7 @@ var _ = Describe(
 					repo, "digest",
 					credSecretLabel(),
 				)
-				keychain, err := internalv1beta1.GetAuthnKeychain(ctx, imageSpecWithCredSelect, k8sClient)
+				keychain, err := ocmextensions.GetAuthnKeychain(ctx, imageSpecWithCredSelect.CredSecretSelector, k8sClient)
 				Expect(err).ToNot(HaveOccurred())
 				dig := &TestRegistry{target: repo, registry: repo}
 				authenticator, err := keychain.Resolve(dig)

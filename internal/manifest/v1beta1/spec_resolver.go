@@ -10,6 +10,7 @@ import (
 	"reflect"
 
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
@@ -29,8 +30,6 @@ type ChartInfo struct {
 	ChartName   string
 	ReleaseName string
 }
-
-var ErrNoAuthSecretFound = errors.New("no auth secret found")
 
 type ManifestSpecResolver struct {
 	KCP *declarative.ClusterInfo
@@ -311,7 +310,7 @@ func (m *ManifestSpecResolver) lookupKeyChain(
 	var keyChain authn.Keychain
 	var err error
 	if imageSpec.CredSecretSelector != nil {
-		if keyChain, err = GetAuthnKeychain(ctx, imageSpec, m.KCP.Client); err != nil {
+		if keyChain, err = ocmextensions.GetAuthnKeychain(ctx, imageSpec.CredSecretSelector, m.KCP.Client); err != nil {
 			return nil, err
 		}
 	} else {

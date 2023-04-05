@@ -20,9 +20,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"golang.org/x/sync/errgroup"
 	"strings"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/metrics"
@@ -405,7 +406,9 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 	}
 
 	// these are the actual modules
-	modules, err := parse.GenerateModulesFromTemplates(kyma, templates, verification, r.ComponentDescriptorCache)
+	modules, err := parse.GenerateModulesFromTemplates(ctx, kyma, templates, verification,
+		r.ComponentDescriptorCache,
+		r.Client)
 	if err != nil {
 		return nil, fmt.Errorf("cannot generate modules: %w", err)
 	}

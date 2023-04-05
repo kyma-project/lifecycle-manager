@@ -3,7 +3,6 @@ package img
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -19,7 +18,6 @@ import (
 	"github.com/open-component-model/ocm/pkg/runtime"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const DefaultRepoSubdirectory = "component-descriptors"
@@ -133,13 +131,11 @@ func getOCIRef(
 		layerRef.Ref = ref
 	}
 	if registryCredValue, found := labels.Get(v1beta1.OCIRegistryCredLabel); found {
-		credSecretLabel := make(map[string]string)
-		if err := json.Unmarshal(registryCredValue, &credSecretLabel); err != nil {
+		credSecretSelector, err := ocmextensions.GenerateLabelSelector(registryCredValue)
+		if err != nil {
 			return nil, err
 		}
-		layerRef.CredSecretSelector = &metav1.LabelSelector{
-			MatchLabels: credSecretLabel,
-		}
+		layerRef.CredSecretSelector = credSecretSelector
 	}
 
 	switch repo.ComponentNameMapping {
