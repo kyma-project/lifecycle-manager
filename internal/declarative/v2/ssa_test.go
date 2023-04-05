@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 
-	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+
+	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
 func TestConcurrentSSA(t *testing.T) {

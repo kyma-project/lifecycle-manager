@@ -3,8 +3,9 @@ package index
 import (
 	"context"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 const TemplateFQDNField Field = "spec.descriptor.component.name"

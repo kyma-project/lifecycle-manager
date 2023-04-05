@@ -10,21 +10,17 @@ import (
 	"path/filepath"
 	"strconv"
 
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	internalV1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	internalV1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 )
 
 const ManifestDir = "manifest"
