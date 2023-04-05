@@ -141,6 +141,7 @@ func givenKymaSpecModulesWithInvalidChannel(channel string) func() error {
 
 var _ = Describe("Switching of a Channel with higher version leading to an Upgrade", Ordered, func() {
 	kyma := NewTestKyma("empty-module-kyma")
+	kyma.ObjectMeta.Labels[v1beta1.ChannelWhitelistPrefix+FastChannel] = "true"
 
 	kyma.Spec.Modules = append(
 		kyma.Spec.Modules, v1beta1.Module{

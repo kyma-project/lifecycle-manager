@@ -53,6 +53,8 @@ func NewTestKyma(name string) *v1beta1.Kyma {
 			Name:        fmt.Sprintf("%s-%s", name, randString(randomStringLength)),
 			Namespace:   v1.NamespaceDefault,
 			Annotations: map[string]string{watcher.DomainAnnotation: "example.domain.com"},
+			Labels: map[string]string{
+				v1beta1.ChannelWhitelistPrefix + v1beta1.DefaultChannel: v1beta1.ChannelWhitelistEnabled},
 		},
 		Spec: v1beta1.KymaSpec{
 			Modules: []v1beta1.Module{},

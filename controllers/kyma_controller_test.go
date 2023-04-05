@@ -3,6 +3,7 @@ package controllers_test
 import (
 	"context"
 	"errors"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -96,6 +97,66 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(
 			kymaInCluster.ContainsCondition(v1beta1.ConditionTypeModuleCatalog)).To(BeFalse())
+	})
+})
+
+var _ = Describe("Kyma with limited channel availability", Ordered, func() {
+	kyma := NewTestKyma("whitelist-channel-kyma")
+
+	whitelistChannelName := "goodchannel"
+	nonWhitelistChannelName := "badchannel"
+	kyma.ObjectMeta.Labels[v1beta1.ChannelWhitelistPrefix+whitelistChannelName] = "true"
+
+	kyma.Spec.Sync = v1beta1.Sync{
+		Enabled:      true,
+		Strategy:     v1beta1.SyncStrategyLocalClient,
+		Namespace:    "sync-namespace",
+		NoModuleCopy: false,
+	}
+
+	kyma.Spec.Modules = append(
+		kyma.Spec.Modules, v1beta1.Module{
+			ControllerName: "manifest",
+			Name:           "module-in-whitelist-channel",
+			Channel:        whitelistChannelName,
+		})
+	kyma.Spec.Modules = append(
+		kyma.Spec.Modules, v1beta1.Module{
+			ControllerName: "manifest",
+			Name:           "module-in-non-whitelisted-channel",
+			Channel:        nonWhitelistChannelName,
+		})
+
+	RegisterDefaultLifecycleForKyma(kyma)
+
+	It("should not sync ModuleTemplate and Module for not whitelisted channel", func() {
+		By("checking the state to be Processing")
+		Eventually(GetKymaState, 20*time.Second, Interval).
+			WithArguments(kyma.GetName()).
+			Should(Equal(string(v1beta1.StateProcessing)))
+
+		By("Remote Kyma created")
+		Eventually(KymaExists(runtimeClient, kyma.GetName(), kyma.Spec.Sync.Namespace), 30*time.Second, Interval).
+			Should(Succeed())
+
+		By("only whitelisted CR ModuleTemplate is synced")
+		for _, moduleInKymaCr := range kyma.Spec.Modules {
+			template, _ := ModuleTemplateFactory(moduleInKymaCr, unstructured.Unstructured{})
+			if moduleInKymaCr.Channel == whitelistChannelName {
+				Eventually(getModuleTemplate(runtimeClient, template, kyma, true), Timeout, Interval).Should(Succeed())
+			} else if moduleInKymaCr.Channel == nonWhitelistChannelName {
+				Consistently(getModuleTemplate(runtimeClient, template, kyma, true), Timeout, Interval).Should(Not(Succeed()))
+			}
+		}
+
+		By("only whitelisted CR Manifest is reconciled")
+		for _, moduleInKymaCr := range kyma.Spec.Modules {
+			if moduleInKymaCr.Channel == whitelistChannelName {
+				Eventually(ModuleExists(ctx, kyma, moduleInKymaCr), Timeout, Interval).Should(Succeed())
+			} else if moduleInKymaCr.Channel == nonWhitelistChannelName {
+				Consistently(ModuleExists(ctx, kyma, moduleInKymaCr), Timeout, Interval).Should(Not(Succeed()))
+			}
+		}
 	})
 })
 
