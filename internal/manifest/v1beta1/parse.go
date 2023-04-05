@@ -19,10 +19,8 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	yaml2 "sigs.k8s.io/yaml"
-
 )
 
 func GetPathFromExtractedTarGz(ctx context.Context,

@@ -56,12 +56,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 )
 
 const (
