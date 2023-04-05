@@ -6,10 +6,11 @@ import (
 	"fmt"
 
 	"github.com/invopop/jsonschema"
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
 	"github.com/xeipuuv/gojsonschema"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/types"
 )
 
 // ImageSpec defines OCI Image specifications.

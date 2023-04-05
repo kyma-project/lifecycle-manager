@@ -5,18 +5,18 @@ import (
 	"path/filepath"
 	"testing"
 
-	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
+	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	operatorv1alpha1 "github.com/kyma-project/lifecycle-manager/api/v1alpha1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/client-go/kubernetes/scheme"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to

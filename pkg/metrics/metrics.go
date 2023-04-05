@@ -1,9 +1,10 @@
 package metrics
 
 import (
-	kymaTypes "github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/prometheus/client_golang/prometheus"
 	ctrlMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
+
+	kymaTypes "github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 const (

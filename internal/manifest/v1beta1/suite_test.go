@@ -24,18 +24,12 @@ import (
 	"testing"
 	"time"
 
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-
-	"k8s.io/apimachinery/pkg/labels"
-
-	"github.com/kyma-project/lifecycle-manager/api"
-
 	"github.com/google/go-containerregistry/pkg/registry"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	"github.com/kyma-project/lifecycle-manager/internal"
-	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"go.uber.org/zap/zapcore"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -46,12 +40,12 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	//+kubebuilder:scaffold:imports
-
+	"github.com/kyma-project/lifecycle-manager/api"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/internal"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to

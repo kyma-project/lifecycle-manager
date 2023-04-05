@@ -6,12 +6,10 @@ import (
 	"errors"
 	"fmt"
 
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	ocmv1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
-
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -19,9 +17,8 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	sampleCRDv1beta1 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1beta1"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 func RegisterDefaultLifecycleForKyma(kyma *v1beta1.Kyma) {
