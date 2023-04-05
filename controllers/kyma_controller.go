@@ -153,7 +153,7 @@ func (r *KymaReconciler) deleteKyma(ctx context.Context, kyma *v1beta1.Kyma) (ct
 	// if the status is not yet set to deleting, also update the status of the control-plane
 	// in the next sync cycle
 	if err := status.Helper(r).UpdateStatusForExistingModules(
-		ctx, kyma, v1beta1.StateDeleting, "waiting for modules to be deleted", r.IsKymaManaged,
+		ctx, kyma, v1beta1.StateDeleting, "waiting for modules to be deleted",
 	); err != nil {
 		return r.CtrlErr(ctx, kyma, fmt.Errorf(
 			"could not update kyma status after triggering deletion: %w", err))
@@ -366,7 +366,7 @@ func (r *KymaReconciler) TriggerKymaDeletion(ctx context.Context, kyma *v1beta1.
 func (r *KymaReconciler) UpdateStatus(
 	ctx context.Context, kyma *v1beta1.Kyma, state v1beta1.State, message string,
 ) error {
-	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, message, r.IsKymaManaged); err != nil {
+	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, message); err != nil {
 		return fmt.Errorf("error while updating status to %s because of %s: %w", state, message, err)
 	}
 	return nil
@@ -385,7 +385,7 @@ func (r *KymaReconciler) UpdateStatusWithEvent(
 func (r *KymaReconciler) UpdateStatusWithEventFromErr(
 	ctx context.Context, kyma *v1beta1.Kyma, state v1beta1.State, err error,
 ) error {
-	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, err.Error(), r.IsKymaManaged); err != nil {
+	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, err.Error()); err != nil {
 		return fmt.Errorf("error while updating status to %s: %w", state, err)
 	}
 	r.Event(kyma, "Warning", string(ModuleReconciliationError), err.Error())
@@ -466,4 +466,8 @@ func (r *KymaReconciler) WatcherEnabled(kyma *v1beta1.Kyma) bool {
 		return true
 	}
 	return false
+}
+
+func (r *KymaReconciler) DetermineIsKymaManaged() bool {
+	return r.IsKymaManaged
 }
