@@ -36,8 +36,12 @@ func defineFlagVar() *FlagVar {
 		"The address the skr listener endpoint binds to.")
 	flag.StringVar(&flagVar.pprofAddr, "pprof-bind-address", ":8084",
 		"The address the pprof endpoint binds to.")
-	flag.IntVar(&flagVar.maxConcurrentReconciles, "max-concurrent-reconciles", 1,
-		"The maximum number of concurrent Reconciles which can be run.")
+	flag.IntVar(&flagVar.maxConcurrentKymaReconciles, "max-concurrent-kyma-reconciles", 1,
+		"The maximum number of concurrent Kyma Reconciles which can be run.")
+	flag.IntVar(&flagVar.maxConcurrentManifestReconciles, "max-concurrent-manifest-reconciles", 1,
+		"The maximum number of concurrent Manifest Reconciles which can be run.")
+	flag.IntVar(&flagVar.maxConcurrentWatcherReconciles, "max-concurrent-watcher-reconciles", 1,
+		"The maximum number of concurrent Watcher Reconciles which can be run.")
 	flag.BoolVar(&flagVar.enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
@@ -103,7 +107,9 @@ type FlagVar struct {
 	enableLeaderElection                                            bool
 	probeAddr                                                       string
 	kymaListenerAddr, manifestListenerAddr                          string
-	maxConcurrentReconciles                                         int
+	maxConcurrentKymaReconciles                                     int
+	maxConcurrentManifestReconciles                                 int
+	maxConcurrentWatcherReconciles                                  int
 	kymaRequeueSuccessInterval                                      time.Duration
 	manifestRequeueSuccessInterval                                  time.Duration
 	watcherRequeueSuccessInterval                                   time.Duration

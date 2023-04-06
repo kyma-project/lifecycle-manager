@@ -203,8 +203,8 @@ func controllerOptionsFromFlagVar(flagVar *FlagVar) controller.Options {
 				Limiter: rate.NewLimiter(rate.Limit(flagVar.rateLimiterFrequency), flagVar.rateLimiterBurst),
 			},
 		),
-		MaxConcurrentReconciles: flagVar.maxConcurrentReconciles,
-		CacheSyncTimeout:        flagVar.cacheSyncTimeout,
+
+		CacheSyncTimeout: flagVar.cacheSyncTimeout,
 	}
 }
 
@@ -233,6 +233,8 @@ func setupKymaReconciler(
 	flagVar *FlagVar,
 	options controller.Options,
 ) {
+	options.MaxConcurrentReconciles = flagVar.maxConcurrentKymaReconciles
+
 	kcpRestConfig := mgr.GetConfig()
 	var skrWebhookManager watcher.SKRWebhookManager
 	if flagVar.enableKcpWatcher {
@@ -286,6 +288,8 @@ func setupManifestReconciler(
 	flagVar *FlagVar,
 	options controller.Options,
 ) {
+	options.MaxConcurrentReconciles = flagVar.maxConcurrentManifestReconciles
+
 	if err := controllers.SetupWithManager(
 		mgr, options, flagVar.manifestRequeueSuccessInterval, controllers.SetupUpSetting{
 			ListenerAddr:                 flagVar.manifestListenerAddr,
@@ -303,7 +307,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, fla
 	// In total, we probably only have 20 watcher CRs, one worker can sufficiently handle it,
 	// and we don't have to deal with concurrent write to virtual service.
 	// although eventually the write operation will succeed.
-	options.MaxConcurrentReconciles = 1
+	options.MaxConcurrentReconciles = flagVar.maxConcurrentWatcherReconciles
 
 	istioConfig := istio.NewConfig(flagVar.virtualServiceName, flagVar.enableWatcherLocalTesting)
 
