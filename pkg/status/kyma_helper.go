@@ -20,14 +20,14 @@ type KymaHelper struct {
 type HelperClient interface {
 	Status() client.StatusWriter
 	RecordKymaStatusMetrics(ctx context.Context, kyma *v1beta1.Kyma)
-	DetermineIsKymaManaged() bool
+	IsKymaManaged() bool
 }
 
 func Helper(handler HelperClient) *KymaHelper {
 	return &KymaHelper{
 		StatusWriter:            handler.Status(),
 		recordKymaStatusMetrics: handler.RecordKymaStatusMetrics,
-		isManagedKyma:           handler.DetermineIsKymaManaged(),
+		isManagedKyma:           handler.IsKymaManaged(),
 	}
 }
 

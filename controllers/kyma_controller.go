@@ -69,7 +69,7 @@ type KymaReconciler struct {
 	SKRWebhookManager watcher.SKRWebhookManager
 	KcpRestConfig     *rest.Config
 	RemoteClientCache *remote.ClientCache
-	IsKymaManaged     bool
+	IsManagedKyma     bool
 }
 
 //nolint:lll
@@ -468,6 +468,6 @@ func (r *KymaReconciler) WatcherEnabled(kyma *v1beta1.Kyma) bool {
 	return false
 }
 
-func (r *KymaReconciler) DetermineIsKymaManaged() bool {
-	return r.IsKymaManaged
+func (r *KymaReconciler) IsKymaManaged() bool {
+	return r.IsManagedKyma
 }
