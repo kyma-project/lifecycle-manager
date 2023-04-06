@@ -70,6 +70,7 @@ type KymaReconciler struct {
 	KcpRestConfig            *rest.Config
 	RemoteClientCache        *remote.ClientCache
 	ComponentDescriptorCache *ocmextensions.ComponentDescriptorCache
+	IsManagedKyma     bool
 }
 
 //nolint:lll
@@ -468,4 +469,8 @@ func (r *KymaReconciler) WatcherEnabled(kyma *v1beta1.Kyma) bool {
 		return true
 	}
 	return false
+}
+
+func (r *KymaReconciler) IsKymaManaged() bool {
+	return r.IsManagedKyma
 }
