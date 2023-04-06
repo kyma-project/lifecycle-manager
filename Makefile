@@ -173,12 +173,7 @@ fmt: ## Run go fmt against code.
 .PHONY: lint
 lint: ## Run golangci-lint against code.
 	GOBIN=$(LOCALBIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANG_CI_LINT_VERSION)
-	$(LOCALBIN)/golangci-lint run
-
-.PHONY: grafana-dashboard
-grafana-dashboard: ## Generating Grafana manifests to visualize controller status.
-	kubebuilder edit --plugins grafana.kubebuilder.io/v1-alpha
-	mv grafana/* config/grafana
+	$(LOCALBIN)/golangci-lint -v run
 
 CRD_FILE_PATH ?= ./config/samples/tests/crds/operator.kyma-project.io_samplecrd.yaml
 ARCHIVES_DST ?= ./pkg/test_samples/oci

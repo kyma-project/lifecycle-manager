@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods/localblob"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods/localociblob"
@@ -17,9 +16,10 @@ import (
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/cpi"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
 	"github.com/open-component-model/ocm/pkg/runtime"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 )
 
 const DefaultRepoSubdirectory = "component-descriptors"

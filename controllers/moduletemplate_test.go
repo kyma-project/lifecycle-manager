@@ -5,14 +5,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
-	ocmv1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
+	ocmv1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var (

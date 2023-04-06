@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 
-	manifestv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	manifestv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
 const CustomResourceManager = "resource.kyma-project.io/finalizer"

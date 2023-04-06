@@ -12,15 +12,14 @@ import (
 	"path"
 	"regexp"
 
+	"github.com/google/go-containerregistry/pkg/authn"
+	"github.com/google/go-containerregistry/pkg/crane"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"k8s.io/apimachinery/pkg/util/yaml"
+	yaml2 "sigs.k8s.io/yaml"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/internal"
-
-	"github.com/google/go-containerregistry/pkg/crane"
-	"k8s.io/apimachinery/pkg/util/yaml"
-
-	"github.com/google/go-containerregistry/pkg/authn"
-	yaml2 "sigs.k8s.io/yaml"
 )
 
 const manifestFileName = "raw-manifest.yaml"

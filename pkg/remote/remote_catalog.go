@@ -5,13 +5,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/pkg/types"
 )
 
 var ErrTemplateCRDNotReady = errors.New("module template crd for catalog sync is not ready")
@@ -256,20 +257,18 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 
 func crdReady(crd *v1extensions.CustomResourceDefinition) bool {
 	for _, cond := range crd.Status.Conditions {
-		//nolint:exhaustive
-		switch cond.Type {
-		case v1extensions.Established:
-			if cond.Status == v1extensions.ConditionTrue {
-				return true
-			}
-		case v1extensions.NamesAccepted:
-			if cond.Status == v1extensions.ConditionFalse {
-				// This indicates a naming conflict, but it's probably not the
-				// job of this function to fail because of that. Instead,
-				// we treat it as a success, since the process should be able to
-				// continue.
-				return true
-			}
+		if cond.Type == v1extensions.Established &&
+			cond.Status == v1extensions.ConditionTrue {
+			return true
+		}
+
+		if cond.Type == v1extensions.NamesAccepted &&
+			cond.Status == v1extensions.ConditionFalse {
+			// This indicates a naming conflict, but it's probably not the
+			// job of this function to fail because of that. Instead,
+			// we treat it as a success, since the process should be able to
+			// continue.
+			return true
 		}
 	}
 	return false

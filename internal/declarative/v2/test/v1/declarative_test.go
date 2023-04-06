@@ -7,9 +7,8 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	testv1 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
-
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	"golang.org/x/time/rate"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -27,8 +26,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	testv1 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
 )
 
 //nolint:gochecknoglobals

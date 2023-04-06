@@ -4,16 +4,16 @@ import (
 	"context"
 	"fmt"
 
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	testv1 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
 	. "github.com/onsi/gomega"
-
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	testv1 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
 )
 
 // BeInState determines if the resource is in a given declarative state

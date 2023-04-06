@@ -8,21 +8,16 @@ import (
 	"strings"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-
-	corev1 "k8s.io/api/core/v1"
-
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )

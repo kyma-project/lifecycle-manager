@@ -3,9 +3,10 @@ package remote
 import (
 	"context"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 func PatchCRD(ctx context.Context, clnt client.Client, crd *v1extensions.CustomResourceDefinition) error {

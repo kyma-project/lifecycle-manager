@@ -6,10 +6,11 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	authnK8s "github.com/google/go-containerregistry/pkg/authn/kubernetes"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 func GetAuthnKeychain(ctx context.Context, spec v1beta1.ImageSpec, clnt client.Client) (authn.Keychain, error) {
