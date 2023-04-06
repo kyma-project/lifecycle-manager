@@ -46,10 +46,10 @@ patches:
         value: --is-kyma-managed  
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: max-concurrent-manifest-reconciles=10
+        value: --max-concurrent-manifest-reconciles=10
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: max-concurrent-kyma-reconciles=10
+        value: --max-concurrent-kyma-reconciles=10
     target:
       kind: Deployment
 
