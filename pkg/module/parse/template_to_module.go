@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -129,29 +130,26 @@ func NewManifestFromTemplate(
 
 	var layers img.Layers
 	var err error
-
 	descriptor, err := template.Spec.GetDescriptor()
 	if err != nil {
 		return nil, err
 	}
-	descriptorCacheKey, err := template.GetComponentDescriptorCacheKey()
-	if err != nil {
-		return nil, err
-	}
-	remoteDescriptor := componentDescriptorCache.Get(descriptorCacheKey)
-	if remoteDescriptor == nil {
-		remoteDescriptor, err = ocmextensions.GetRemoteDescriptor(ctx, descriptor, clnt)
+	var componentDescriptor *compdesc.ComponentDescriptor
+	useLocalTemplate, found := template.GetLabels()[v1beta1.UseLocalTemplate]
+	if found && useLocalTemplate == "true" {
+		componentDescriptor = descriptor.ComponentDescriptor
+	} else {
+		componentDescriptor, err = getRemoteDescriptor(ctx, template, descriptor, componentDescriptorCache, clnt)
 		if err != nil {
 			return nil, err
 		}
-		componentDescriptorCache.Set(descriptorCacheKey, remoteDescriptor)
 	}
 
-	if err := signature.Verify(remoteDescriptor, verification); err != nil {
+	if err := signature.Verify(componentDescriptor, verification); err != nil {
 		return nil, fmt.Errorf("could not verify descriptor: %w", err)
 	}
 
-	if layers, err = img.Parse(remoteDescriptor); err != nil {
+	if layers, err = img.Parse(componentDescriptor); err != nil {
 		return nil, fmt.Errorf("could not parse descriptor: %w", err)
 	}
 
@@ -160,6 +158,28 @@ func NewManifestFromTemplate(
 	}
 
 	return manifest, nil
+}
+
+func getRemoteDescriptor(
+	ctx context.Context,
+	template *v1beta1.ModuleTemplate,
+	descriptor *v1beta1.Descriptor,
+	cache *ocmextensions.ComponentDescriptorCache,
+	clnt client.Client,
+) (*compdesc.ComponentDescriptor, error) {
+	descriptorCacheKey, err := template.GetComponentDescriptorCacheKey()
+	if err != nil {
+		return nil, err
+	}
+	remoteDescriptor := cache.Get(descriptorCacheKey)
+	if remoteDescriptor == nil {
+		remoteDescriptor, err = ocmextensions.GetRemoteDescriptor(ctx, descriptor, clnt)
+		if err != nil {
+			return nil, err
+		}
+		cache.Set(descriptorCacheKey, remoteDescriptor)
+	}
+	return remoteDescriptor, nil
 }
 
 func translateLayersAndMergeIntoManifest(

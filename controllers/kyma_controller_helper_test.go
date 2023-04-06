@@ -24,12 +24,12 @@ import (
 func RegisterDefaultLifecycleForKyma(kyma *v1beta1.Kyma) {
 	BeforeAll(func() {
 		Eventually(controlPlaneClient.Create(ctx, kyma), Timeout, Interval).Should(Succeed())
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma)
+		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false)
 	})
 
 	AfterAll(func() {
 		Eventually(controlPlaneClient.Delete(ctx, kyma), Timeout, Interval).Should(Succeed())
-		DeleteModuleTemplates(ctx, controlPlaneClient, kyma)
+		DeleteModuleTemplates(ctx, controlPlaneClient, kyma, false)
 	})
 
 	BeforeEach(func() {
@@ -332,7 +332,7 @@ func TemplateInfosMatchChannel(kymaName, channel string) error {
 
 func CreateModuleTemplateSetsForKyma(modules []v1beta1.Module, modifiedVersion, channel string) error {
 	for _, module := range modules {
-		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
+		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false)
 		if err != nil {
 			return err
 		}

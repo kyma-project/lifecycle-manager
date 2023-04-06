@@ -91,17 +91,27 @@ func randString(n int) string {
 	return string(b)
 }
 
-func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta1.Kyma) {
+func DeployModuleTemplates(
+	ctx context.Context,
+	kcpClient client.Client,
+	kyma *v1beta1.Kyma,
+	onPrivateRepo bool,
+) {
 	for _, module := range kyma.Spec.Modules {
-		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
+		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo)
 		Expect(err).ShouldNot(HaveOccurred())
 		Eventually(kcpClient.Create(ctx, template), Timeout, Interval).Should(Succeed())
 	}
 }
 
-func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta1.Kyma) {
+func DeleteModuleTemplates(
+	ctx context.Context,
+	kcpClient client.Client,
+	kyma *v1beta1.Kyma,
+	onPrivateRepo bool,
+) {
 	for _, module := range kyma.Spec.Modules {
-		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
+		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo)
 		Expect(err).ShouldNot(HaveOccurred())
 		Eventually(kcpClient.Delete(ctx, template), Timeout, Interval).Should(Succeed())
 	}
@@ -132,12 +142,19 @@ func IsKymaInState(ctx context.Context, kcpClient client.Client, kymaName string
 	}
 }
 
-func ModuleTemplateFactory(module v1beta1.Module, data unstructured.Unstructured) (*v1beta1.ModuleTemplate, error) {
-	return ModuleTemplateFactoryForSchema(module, data, compdesc2.SchemaVersion)
+func ModuleTemplateFactory(
+	module v1beta1.Module,
+	data unstructured.Unstructured,
+	onPrivateRepo bool,
+) (*v1beta1.ModuleTemplate, error) {
+	return ModuleTemplateFactoryForSchema(module, data, compdesc2.SchemaVersion, onPrivateRepo)
 }
 
 func ModuleTemplateFactoryForSchema(
-	module v1beta1.Module, data unstructured.Unstructured, schemaVersion compdesc.SchemaVersion,
+	module v1beta1.Module,
+	data unstructured.Unstructured,
+	schemaVersion compdesc.SchemaVersion,
+	onPrivateRepo bool,
 ) (*v1beta1.ModuleTemplate, error) {
 	var moduleTemplate v1beta1.ModuleTemplate
 	var err error
@@ -151,7 +168,9 @@ func ModuleTemplateFactoryForSchema(
 	default:
 		err = readModuleTemplateWithV3Schema(&moduleTemplate)
 	}
-
+	if onPrivateRepo {
+		err = readModuleTemplateWithinPrivateRepo(&moduleTemplate)
+	}
 	if err != nil {
 		return &moduleTemplate, err
 	}
@@ -170,6 +189,24 @@ func ModuleTemplateFactoryForSchema(
 
 func readModuleTemplateWithV2Schema(moduleTemplate *v1beta1.ModuleTemplate) error {
 	template := "operator_v1beta1_moduletemplate_kcp-module.yaml"
+	_, filename, _, ok := runtime.Caller(1)
+	if !ok {
+		panic("Can't capture current filename!")
+	}
+	modulePath := filepath.Join(
+		filepath.Dir(filename), "../../config/samples/component-integration-installed", template,
+	)
+
+	moduleFile, err := os.ReadFile(modulePath)
+	if err != nil {
+		return err
+	}
+	err = yaml.Unmarshal(moduleFile, &moduleTemplate)
+	return err
+}
+
+func readModuleTemplateWithinPrivateRepo(moduleTemplate *v1beta1.ModuleTemplate) error {
+	template := "operator_v1beta1_moduletemplate_kcp-module-cred-label.yaml"
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {
 		panic("Can't capture current filename!")

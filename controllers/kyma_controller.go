@@ -70,7 +70,7 @@ type KymaReconciler struct {
 	KcpRestConfig            *rest.Config
 	RemoteClientCache        *remote.ClientCache
 	ComponentDescriptorCache *ocmextensions.ComponentDescriptorCache
-	IsManagedKyma     bool
+	IsManagedKyma            bool
 }
 
 //nolint:lll

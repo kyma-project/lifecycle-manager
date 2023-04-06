@@ -40,8 +40,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 				ControllerName: "manifest",
 				Name:           "example-module-name",
 				Channel:        v1beta1.DefaultChannel,
-			}, data,
-		)
+			}, data, false)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
 		Expect(k8sClient.Delete(webhookServerContext, template)).Should(Succeed())
@@ -60,8 +59,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 				ControllerName: "manifest",
 				Name:           "example-module-name",
 				Channel:        v1beta1.DefaultChannel,
-			}, data,
-		)
+			}, data, false)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
 		Expect(k8sClient.Delete(webhookServerContext, template)).Should(Succeed())
@@ -80,8 +78,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 				ControllerName: "manifest",
 				Name:           "example-module-name",
 				Channel:        v1beta1.DefaultChannel,
-			}, data,
-		)
+			}, data, false)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())

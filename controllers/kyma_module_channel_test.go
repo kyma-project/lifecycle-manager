@@ -217,14 +217,14 @@ func CleanupModuleTemplateSetsForKyma(kyma *v1beta1.Kyma) func() {
 	return func() {
 		By("Cleaning up decremented ModuleTemplate set in regular")
 		for _, module := range kyma.Spec.Modules {
-			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
+			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false)
 			template.Name = fmt.Sprintf("%s-%s", template.Name, v1beta1.DefaultChannel)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(controlPlaneClient.Delete(ctx, template)).To(Succeed())
 		}
 		By("Cleaning up standard ModuleTemplate set in fast")
 		for _, module := range kyma.Spec.Modules {
-			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
+			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false)
 			template.Name = fmt.Sprintf("%s-%s", template.Name, FastChannel)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(controlPlaneClient.Delete(ctx, template)).To(Succeed())
