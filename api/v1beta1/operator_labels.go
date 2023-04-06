@@ -27,6 +27,7 @@ const (
 	CertManager  = "klm-watcher-cert-manager"
 	// SkipReconcileLabel indicates this specific resource will be skipped during reconciliation.
 	SkipReconcileLabel = OperatorPrefix + Separator + "skip-reconciliation"
+	UnmanagedKyma      = "unmanaged-kyma"
 )
 
 func ModuleTemplatesByLabel(module *Module) client.MatchingLabels {
