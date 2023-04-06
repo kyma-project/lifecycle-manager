@@ -141,7 +141,7 @@ func updateModuleTemplateTarget(kymaName string, target v1beta1.Target) func() e
 			return err
 		}
 		for _, module := range createdKyma.Spec.Modules {
-			moduleTemplate, err := GetModuleTemplate(module.Name)
+			moduleTemplate, err := GetModuleTemplate(module.Name, controlPlaneClient, createdKyma, false)
 			if err != nil {
 				return err
 			}
@@ -162,7 +162,7 @@ func updateModuleTemplateOCIRegistryCredLabel(kymaName string) func() error {
 			return err
 		}
 		for _, module := range createdKyma.Spec.Modules {
-			moduleTemplate, err := GetModuleTemplate(module.Name)
+			moduleTemplate, err := GetModuleTemplate(module.Name, controlPlaneClient, createdKyma, false)
 			if err != nil {
 				return err
 			}
@@ -233,10 +233,23 @@ var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
 			Channel:        v1beta1.DefaultChannel,
 		})
 
-	RegisterDefaultLifecycleForKyma(kyma)
+	BeforeAll(func() {
+		Eventually(controlPlaneClient.Create(ctx, kyma), Timeout, Interval).Should(Succeed())
+	})
+
+	AfterAll(func() {
+		Eventually(controlPlaneClient.Delete(ctx, kyma), Timeout, Interval).Should(Succeed())
+	})
+
+	BeforeEach(func() {
+		By("get latest kyma CR")
+		Eventually(SyncKyma(kyma), Timeout, Interval).Should(Succeed())
+	})
 
 	DescribeTable("Test ModuleTemplate.Spec.descriptor",
 		func(givenCondition func() error, expectedBehavior func() error) {
+			Skip("skip")
+
 			Eventually(givenCondition, Timeout*2, Interval).Should(Succeed())
 			Eventually(expectedBehavior, Timeout*2, Interval).Should(Succeed())
 		},

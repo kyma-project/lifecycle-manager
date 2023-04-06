@@ -144,7 +144,7 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 		kyma.Spec.Modules = []v1beta1.Module{
 			*skrModule,
 		}
-		Expect(controlPlaneClient.Update(ctx, kyma)).To(Succeed())
+		Eventually(controlPlaneClient.Update(ctx, kyma), Timeout, Interval).Should(Succeed())
 
 		By("kcp-module deleted")
 		Eventually(ModuleNotExist(ctx, kyma, *kcpModule), Timeout, Interval).Should(Succeed())
@@ -278,7 +278,7 @@ func updateModuleTemplateSpecData(kymaName, valueUpdated string) func() error {
 			return err
 		}
 		for _, activeModule := range createdKyma.Spec.Modules {
-			moduleTemplate, err := GetModuleTemplate(activeModule.Name)
+			moduleTemplate, err := GetModuleTemplate(activeModule.Name, controlPlaneClient, createdKyma, false)
 			Expect(err).ToNot(HaveOccurred())
 			moduleTemplate.Spec.Data.Object["spec"] = map[string]any{"initKey": valueUpdated}
 			err = controlPlaneClient.Update(ctx, moduleTemplate)
