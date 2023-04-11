@@ -11,12 +11,11 @@ import (
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/cpi"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
+	"github.com/open-component-model/ocm/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var (
-	ErrNoEffectiveRepositoryContext = errors.New("no effective repository context")
-)
+var ErrNoEffectiveRepositoryContext = errors.New("no effective repository context")
 
 type OCIRegistry struct {
 	target string
@@ -31,12 +30,12 @@ func (o OCIRegistry) RegistryStr() string {
 	return o.host
 }
 
-func NewOCIRegistry(registryUrl string) (*OCIRegistry, error) {
-	fullURL, err := url.Parse(fmt.Sprintf("https://%s", NoSchemeURL(registryUrl)))
+func NewOCIRegistry(registryURL string) (*OCIRegistry, error) {
+	fullURL, err := url.Parse(fmt.Sprintf("https://%s", NoSchemeURL(registryURL)))
 	if err != nil {
 		return nil, err
 	}
-	return &OCIRegistry{target: registryUrl, host: fullURL.Host}, nil
+	return &OCIRegistry{target: registryURL, host: fullURL.Host}, nil
 }
 
 func NoSchemeURL(url string) string {
@@ -48,7 +47,6 @@ func GetRemoteDescriptor(ctx context.Context,
 	descriptor *v1beta1.Descriptor,
 	clnt client.Client,
 ) (*compdesc.ComponentDescriptor, error) {
-
 	repositoryContext := descriptor.GetEffectiveRepositoryContext()
 	if repositoryContext == nil {
 		return nil, ErrNoEffectiveRepositoryContext
@@ -57,34 +55,33 @@ func GetRemoteDescriptor(ctx context.Context,
 	if err != nil {
 		return nil, fmt.Errorf("error while decoding the repository context into an OCI registry: %w", err)
 	}
-	genericSpec := repoTyped.(*genericocireg.RepositorySpec)
-	var repo cpi.Repository
-	if registryCredValue, found := descriptor.GetLabels().Get(v1beta1.OCIRegistryCredLabel); found {
-
-		labelSelector, err := GenerateLabelSelector(registryCredValue)
-		if err != nil {
-			return nil, err
-		}
-		ociRegistry, err := NewOCIRegistry(genericSpec.Name())
-		if err != nil {
-			return nil, err
-		}
-		credentials, err := GetCredentials(ctx, labelSelector, ociRegistry, clnt)
-		if err != nil {
-			return nil, err
-		}
-		repo, err = cpi.DefaultContext().RepositoryForSpec(genericSpec, credentials)
-	} else {
-		repo, err = cpi.DefaultContext().RepositoryForSpec(genericSpec)
-	}
-
+	repo, err := GetRepo(ctx, descriptor, clnt, repoTyped)
 	if err != nil {
 		return nil, fmt.Errorf("error creating repository from spec: %w", err)
 	}
-
 	cva, err := repo.LookupComponentVersion(descriptor.GetName(), descriptor.GetVersion())
 	if err != nil {
 		return nil, err
 	}
 	return cva.GetDescriptor(), nil
+}
+
+func GetRepo(ctx context.Context,
+	descriptor *v1beta1.Descriptor,
+	clnt client.Client,
+	repoTyped runtime.TypedObject,
+) (cpi.Repository, error) {
+	genericSpec := repoTyped.(*genericocireg.RepositorySpec)
+	if registryCredValue, found := descriptor.GetLabels().Get(v1beta1.OCIRegistryCredLabel); found {
+		ociRegistry, err := NewOCIRegistry(genericSpec.Name())
+		if err != nil {
+			return nil, err
+		}
+		cred, err := GetCredentials(ctx, registryCredValue, ociRegistry, clnt)
+		if err != nil {
+			return nil, err
+		}
+		return cpi.DefaultContext().RepositoryForSpec(genericSpec, cred)
+	}
+	return cpi.DefaultContext().RepositoryForSpec(genericSpec)
 }

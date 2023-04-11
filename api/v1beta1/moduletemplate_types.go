@@ -17,9 +17,9 @@ limitations under the License.
 package v1beta1
 
 import (
+	"fmt"
 	"time"
 
-	"fmt"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"

@@ -1,8 +1,9 @@
 package ocmextensions
 
 import (
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"sync"
+
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 )
 
 func NewComponentDescriptorCache() *ComponentDescriptorCache {

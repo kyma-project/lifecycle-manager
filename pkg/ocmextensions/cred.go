@@ -28,10 +28,14 @@ func GetAuthnKeychain(ctx context.Context,
 }
 
 func GetCredentials(ctx context.Context,
-	credSecretSelector *metav1.LabelSelector,
+	registryCredValue []byte,
 	ociRegistry *OCIRegistry,
 	clnt client.Client,
 ) (credentials.Credentials, error) {
+	credSecretSelector, err := GenerateLabelSelector(registryCredValue)
+	if err != nil {
+		return nil, err
+	}
 	secretList, err := getCredSecrets(ctx, credSecretSelector, clnt)
 	if err != nil {
 		return nil, err

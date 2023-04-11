@@ -22,6 +22,7 @@ var (
 const (
 	//nolint:gosec
 	credSecretLabel = "operator.kyma-project.io/oci-registry-cred"
+	//nolint:gosec
 	credSecretValue = "operator-regcred"
 )
 
@@ -208,7 +209,6 @@ var _ = Describe("Test ModuleTemplate.Spec.descriptor not contains RegistryCred 
 		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false)
 		Eventually(expectManifestSpecNotContainsCredSecretSelector(kyma.Name), Timeout*2, Interval).Should(Succeed())
 	})
-
 })
 
 var _ = Describe("Test ModuleTemplate.Spec.descriptor contains RegistryCred label", Ordered, func() {
