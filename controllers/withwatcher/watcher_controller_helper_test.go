@@ -29,11 +29,11 @@ const (
 var (
 	centralComponents                     = []string{componentToBeUpdated, "module-manager", componentToBeRemoved}
 	errRouteNotFound                      = errors.New("http route is not found")
-	errHttpRoutesEmpty                    = errors.New("empty http routes")
+	errHTTPRoutesEmpty                    = errors.New("empty http routes")
 	errRouteConfigMismatch                = errors.New("http route config mismatch")
 	errVirtualServiceHostsNotMatchGateway = errors.New("virtual service hosts not match with gateway")
-	errWatcherExistsAfterDeletion = errors.New("watcher CR still exists after deletion")
-	errFinalizerExistsAfterDeletion = errors.New("finalizer still exists after deletion")
+	errWatcherExistsAfterDeletion         = errors.New("watcher CR still exists after deletion")
+	errWatcherNotReady                    = errors.New("watcher not ready")
 )
 
 func deserializeIstioResources() ([]*unstructured.Unstructured, error) {
@@ -127,10 +127,6 @@ func getWatcher(name string) (*v1beta1.Watcher, error) {
 	return watcherCR, err
 }
 
-func skipExpect() error {
-	return nil
-}
-
 func isVirtualServiceHostsConfigured(ctx context.Context,
 	istioClient *istio.Client,
 	gateway *istioclientapi.Gateway,
@@ -161,7 +157,7 @@ func isListenerHTTPRouteConfigured(ctx context.Context, clt *istio.Client, watch
 		return err
 	}
 	if len(virtualService.Spec.Http) == 0 {
-		return errHttpRoutesEmpty
+		return errHTTPRoutesEmpty
 	}
 
 	for idx, route := range virtualService.Spec.Http {
@@ -183,7 +179,7 @@ func listenerHTTPRouteExists(ctx context.Context, clt *istio.Client, watcherObjK
 		return err
 	}
 	if len(virtualService.Spec.Http) == 0 {
-		return errHttpRoutesEmpty
+		return errHTTPRoutesEmpty
 	}
 
 	for _, route := range virtualService.Spec.Http {

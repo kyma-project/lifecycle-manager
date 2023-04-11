@@ -2,8 +2,10 @@ package withwatcher_test
 
 import (
 	"errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
+
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
@@ -122,7 +124,7 @@ func watcherCRIsReady(watcherName string) error {
 		return err
 	}
 	if watcher.Status.State != v1beta1.WatcherStateReady {
-		return errors.New("watcher not ready")
+		return errWatcherNotReady
 	}
 	return nil
 }

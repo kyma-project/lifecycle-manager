@@ -176,7 +176,7 @@ var _ = BeforeSuite(func() {
 		RemoteClientCache: remoteClientCache,
 		KcpRestConfig:     k8sManager.GetConfig(),
 	}).SetupWithManager(k8sManager, controller.Options{},
-	controllers.SetupUpSetting{ListenerAddr: listenerAddr})
+		controllers.SetupUpSetting{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
 	istioCfg := istio.NewConfig(virtualServiceName, false)

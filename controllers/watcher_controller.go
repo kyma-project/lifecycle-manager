@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -184,16 +185,6 @@ func (r *WatcherReconciler) updateWatcherToErrState(ctx context.Context, watcher
 	return err
 }
 
-func (r *WatcherReconciler) updateWatcherUsingSSA(ctx context.Context, watcher *v1beta1.Watcher, reason string) error {
-	watcher.ManagedFields = nil
-	err := r.Client.Patch(ctx, watcher, client.Apply, client.FieldOwner(v1beta1.OperatorName), client.ForceOwnership)
-	if err != nil {
-		r.EventRecorder.Event(watcher, "Warning", reason, err.Error())
-		return fmt.Errorf("%s failed: %w", reason, err)
-	}
-	return nil
-}
-
 func (r *WatcherReconciler) updateWatcherStatusUsingSSA(ctx context.Context, watcher *v1beta1.Watcher) error {
 	watcher.ManagedFields = nil
 	reason := "WatcherStatusUpdate"
@@ -225,7 +216,9 @@ func (r *WatcherReconciler) initializeConditions(ctx context.Context, watcher *v
 	return r.updateWatcherStatusUsingSSA(ctx, watcher)
 }
 
-func findWatcherCondition(conditions []v1beta1.WatcherCondition, conditionType v1beta1.WatcherConditionType) *v1beta1.WatcherCondition {
+func findWatcherCondition(conditions []v1beta1.WatcherCondition,
+	conditionType v1beta1.WatcherConditionType,
+) *v1beta1.WatcherCondition {
 	for i := range conditions {
 		if conditions[i].Type == conditionType {
 			return &conditions[i]

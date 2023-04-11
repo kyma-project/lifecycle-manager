@@ -21,7 +21,7 @@ import (
 const (
 	firstElementIdx     = 0
 	vsDeletionThreshold = 1
-	notFoundRouteIndex=-1
+	notFoundRouteIndex  = -1
 	contractVersion     = "v1"
 	prefixFormat        = "/%s/%s/event"
 )
