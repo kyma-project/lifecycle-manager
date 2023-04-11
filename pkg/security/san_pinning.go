@@ -11,15 +11,12 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/kyma-project/lifecycle-manager/pkg/log"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
-
-	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 const (

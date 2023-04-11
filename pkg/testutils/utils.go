@@ -11,27 +11,24 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	. "github.com/onsi/gomega" //nolint:stylecheck,revive
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/ocm.software/v3alpha1"
 	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	corev1 "k8s.io/api/core/v1"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-	k8sruntime "k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
-
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	apiExtensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	k8sruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/yaml"
-
-	. "github.com/onsi/gomega" //nolint:stylecheck,revive
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
 const (
@@ -251,4 +248,24 @@ func AppendExternalCRDs(path string, files ...string) []*apiExtensionsv1.CustomR
 		}
 	}
 	return crds
+}
+
+func ExpectKymaManagerField(
+	ctx context.Context, controlPlaneClient client.Client, kymaName string, managerName string,
+) (bool, error) {
+	createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
+	if err != nil {
+		return false, err
+	}
+	if createdKyma.ManagedFields == nil {
+		return false, nil
+	}
+
+	for _, v := range createdKyma.ManagedFields {
+		if v.Subresource == "status" && v.Manager == managerName {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }

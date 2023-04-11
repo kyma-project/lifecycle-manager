@@ -9,10 +9,9 @@ import (
 	"path/filepath"
 	"reflect"
 
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/downloader"
 	"helm.sh/helm/v3/pkg/getter"
@@ -53,7 +52,6 @@ func NewManifestSpecResolver(kcp *declarative.ClusterInfo, codec *v1beta1.Codec)
 var (
 	ErrRenderModeInvalid                   = errors.New("render mode is invalid")
 	ErrInvalidObjectPassedToSpecResolution = errors.New("invalid object passed to spec resolution")
-	ErrNeedUniqueInstall                   = errors.New("can only pass exactly one install")
 )
 
 func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object) (*declarative.Spec, error) {
@@ -158,7 +156,7 @@ func (m *ManifestSpecResolver) getValuesFromConfig(
 			}
 		} else {
 			var err error
-			configs, err = parseInstallConfigs(decodedConfig)
+			configs, err = ParseInstallConfigs(decodedConfig)
 			if err != nil {
 				return nil, fmt.Errorf("value parsing for %s encountered an err: %w", name, err)
 			}
@@ -178,8 +176,11 @@ var (
 	ErrConfigObjectInvalid      = errors.New(".spec.config is invalid")
 )
 
-func parseInstallConfigs(decodedConfig interface{}) ([]interface{}, error) {
+func ParseInstallConfigs(decodedConfig interface{}) ([]interface{}, error) {
 	var configs []interface{}
+	if decodedConfig == nil {
+		return configs, nil
+	}
 	installConfigObj, decodeOk := decodedConfig.(map[string]interface{})
 	if !decodeOk {
 		return nil, fmt.Errorf("reading install %s resulted in an error: %w", v1beta1.ManifestKind,

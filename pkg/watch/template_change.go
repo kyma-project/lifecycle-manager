@@ -3,15 +3,15 @@ package watch
 import (
 	"context"
 
-	k8slabels "k8s.io/apimachinery/pkg/labels"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 type TemplateChangeHandler struct {
@@ -39,7 +39,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 
 		kymas := &v1beta1.KymaList{}
 		listOptions := &client.ListOptions{
-			LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{v1beta1.ManagedBy: v1beta1.OperatorName}),
+			LabelSelector: labels.SelectorFromSet(labels.Set{v1beta1.ManagedBy: v1beta1.OperatorName}),
 		}
 		if h.NamespaceScoped {
 			listOptions.Namespace = template.Namespace
@@ -85,32 +85,16 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 }
 
 func manageable(template *v1beta1.ModuleTemplate) bool {
-	labels := template.GetLabels()
+	lbls := template.GetLabels()
 
-	if managedBy, ok := labels[v1beta1.ManagedBy]; !ok || managedBy != v1beta1.OperatorName {
+	if managedBy, ok := lbls[v1beta1.ManagedBy]; !ok || managedBy != v1beta1.OperatorName {
 		return false
 	}
-	if controller, ok := labels[v1beta1.ControllerName]; !ok || controller == "" {
+	if controller, ok := lbls[v1beta1.ControllerName]; !ok || controller == "" {
 		return false
 	}
 	if template.Spec.Target == v1beta1.TargetControlPlane || template.Spec.Channel == "" {
 		return false
 	}
 	return true
-}
-
-func requeueKyma(kyma v1beta1.Kyma, moduleName, templateChannel string) bool {
-	globalChannelMatch := kyma.Spec.Channel == templateChannel
-
-	for _, module := range kyma.Spec.Modules {
-		if module.Name == moduleName {
-			// check module level channel on matching module
-			if (module.Channel == "" && globalChannelMatch) ||
-				module.Channel == templateChannel {
-				return true
-			}
-		}
-	}
-
-	return false
 }

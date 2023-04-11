@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers_test
+package control_plane_test
 
 import (
 	"context"
@@ -23,32 +23,37 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"github.com/open-component-model/ocm/pkg/contexts/oci"
 	"github.com/open-component-model/ocm/pkg/contexts/oci/repositories/ocireg"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/cpi"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
-	"go.uber.org/zap/zapcore"
-	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kyma-project/lifecycle-manager/api"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"go.uber.org/zap/zapcore"
+
+	//nolint:gci
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
+
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+
 	operatorv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
-	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	//+kubebuilder:scaffold:imports
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -58,7 +63,6 @@ const UseRandomPort = "0"
 
 var (
 	controlPlaneClient client.Client        //nolint:gochecknoglobals
-	runtimeClient      client.Client        //nolint:gochecknoglobals
 	k8sManager         manager.Manager      //nolint:gochecknoglobals
 	controlPlaneEnv    *envtest.Environment //nolint:gochecknoglobals
 	runtimeEnv         *envtest.Environment //nolint:gochecknoglobals
@@ -80,13 +84,13 @@ var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 
 	externalCRDs := AppendExternalCRDs(
-		filepath.Join("..", "config", "samples", "tests", "crds"),
+		filepath.Join("../..", "config", "samples", "tests", "crds"),
 		"cert-manager-v1.10.1.crds.yaml",
 		"istio-v1.17.1.crds.yaml")
 
 	// kcpModule CRD
 	controlplaneCrd := &v1.CustomResourceDefinition{}
-	modulePath := filepath.Join("..", "config", "samples", "component-integration-installed",
+	modulePath := filepath.Join("../..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
 	Expect(err).ToNot(HaveOccurred())
@@ -94,7 +98,7 @@ var _ = BeforeSuite(func() {
 	Expect(yaml2.Unmarshal(moduleFile, &controlplaneCrd)).To(Succeed())
 
 	controlPlaneEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases")},
+		CRDDirectoryPaths:     []string{filepath.Join("../..", "config", "crd", "bases")},
 		CRDs:                  append([]*v1.CustomResourceDefinition{controlplaneCrd}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}
@@ -135,13 +139,13 @@ var _ = BeforeSuite(func() {
 		},
 		RemoteClientCache: remoteClientCache,
 		KcpRestConfig:     k8sManager.GetConfig(),
+		IsManagedKyma:     true,
 	}).SetupWithManager(k8sManager, controller.Options{},
 		controllers.SetupUpSetting{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())
 
 	controlPlaneClient = k8sManager.GetClient()
-
-	runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
+	_, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
 
 	go func() {
 		defer GinkgoRecover()

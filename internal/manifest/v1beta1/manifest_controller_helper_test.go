@@ -12,13 +12,14 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/partial"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/types"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	_ "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/apimachinery/pkg/util/uuid"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 )
 
 type mockLayer struct {

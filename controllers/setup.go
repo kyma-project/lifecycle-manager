@@ -5,17 +5,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/security"
-	"k8s.io/client-go/util/workqueue"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/event"
-
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -23,8 +19,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/index"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
+	"github.com/kyma-project/lifecycle-manager/pkg/security"
 	"github.com/kyma-project/lifecycle-manager/pkg/watch"
 	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
+	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
 )
 
 type SetupUpSetting struct {

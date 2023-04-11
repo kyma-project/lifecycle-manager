@@ -5,13 +5,13 @@ import (
 	"errors"
 	"time"
 
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -45,7 +45,7 @@ var _ = Describe("Kyma with deprecated Condition", Ordered, func() {
 		})
 		kyma.ManagedFields = nil
 		Eventually(controlPlaneClient.Patch(ctx, kyma, client.Apply,
-			client.FieldOwner(v1beta1.OperatorName)), Timeout*2, Interval).Should(Succeed())
+			client.FieldOwner(v1beta1.UnmanagedKyma)), Timeout*2, Interval).Should(Succeed())
 		By("having transitioned the CR State to Ready as there are no modules")
 		Eventually(CheckKymaConditions(ctx, controlPlaneClient, kyma.GetName(),
 			[]v1beta1.KymaConditionType{v1beta1.ConditionTypeModules}),
@@ -239,6 +239,17 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 			updateAllModules(kyma.Name, v1beta1.StateProcessing),
 			expectKymaStatusModules(kyma.Name, v1beta1.StateReady)),
 	)
+})
+
+var _ = Describe("Kyma with managed fields", Ordered, func() {
+	kyma := NewTestKyma("unmanaged-kyma")
+	RegisterDefaultLifecycleForKyma(kyma)
+
+	It("Should result in a managed field with manager named 'unmanaged-kyma'", func() {
+		Eventually(ExpectKymaManagerField, Timeout, Interval).
+			WithArguments(ctx, controlPlaneClient, kyma.GetName(), v1beta1.UnmanagedKyma).
+			Should(BeTrue())
+	})
 })
 
 func expectKymaStatusModules(kymaName string, state v1beta1.State) func() error {

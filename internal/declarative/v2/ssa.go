@@ -6,17 +6,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
-
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	"k8s.io/cli-runtime/pkg/resource"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/kyma-project/lifecycle-manager/internal"
+	"github.com/kyma-project/lifecycle-manager/pkg/types"
 )
 
 var ErrClientObjectConversionFailed = errors.New("client object conversion failed")

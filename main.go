@@ -24,8 +24,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"github.com/kyma-project/lifecycle-manager/pkg/metrics"
+	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/open-component-model/ocm/pkg/contexts/oci"
 	"github.com/open-component-model/ocm/pkg/contexts/oci/repositories/ocireg"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm"
@@ -33,37 +32,33 @@ import (
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/util/workqueue"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/istio"
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-	"github.com/kyma-project/lifecycle-manager/pkg/signature"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-
-	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
-
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
+	// to ensure that exec-entrypoint and run can make use of them.
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
-
-	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-
-	operatorv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	"github.com/kyma-project/lifecycle-manager/controllers"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	//+kubebuilder:scaffold:imports
 	"github.com/kyma-project/lifecycle-manager/api"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
+	operatorv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/controllers"
+	"github.com/kyma-project/lifecycle-manager/pkg/istio"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"github.com/kyma-project/lifecycle-manager/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
+	"github.com/kyma-project/lifecycle-manager/pkg/signature"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
 const (
@@ -272,6 +267,7 @@ func setupKymaReconciler(
 			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
 			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
 		},
+		IsManagedKyma: flagVar.isKymaManaged,
 	}).SetupWithManager(
 		mgr, options, controllers.SetupUpSetting{
 			ListenerAddr:                 flagVar.kymaListenerAddr,

@@ -6,19 +6,17 @@ import (
 	"path/filepath"
 	"time"
 
-	testv1 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
-
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	apiExtensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/client-go/kubernetes/scheme"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/yaml"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	testv1 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
 )
 
 const (
