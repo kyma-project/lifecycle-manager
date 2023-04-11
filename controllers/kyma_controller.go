@@ -105,6 +105,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 		return ctrl.Result{}, client.IgnoreNotFound(err) //nolint:wrapcheck
 	}
+
 	status.InitConditions(kyma, r.WatcherEnabled(kyma))
 
 	if kyma.SkipReconciliation() {

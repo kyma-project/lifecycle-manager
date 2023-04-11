@@ -21,6 +21,7 @@ const (
 	defaultCacheSyncTimeout               = 2 * time.Minute
 	defaultListenerPort                   = 9080
 	defaultLogLevel                       = log.WarnLevel
+	defaultPurgeFinalizerTimeout          = 5 * time.Minute
 )
 
 //nolint:funlen
@@ -99,6 +100,12 @@ func defineFlagVar() *FlagVar {
 		&flagVar.logLevel, "log-level", defaultLogLevel,
 		"indicates the current log-level, enter negative values to increase verbosity (e.g. 9)",
 	)
+	flag.BoolVar(&flagVar.enablePurgeFinalizer, "enable-purge-finalizer", false,
+		"Enabling purge finalizer")
+	flag.DurationVar(&flagVar.purgeFinalizerTimeout, "purge-finalizer-timeout", defaultPurgeFinalizerTimeout,
+		"Indicates the SKR Purge Finalizers execution delay in seconds")
+	flag.StringVar(&flagVar.skipPurgingFor, "skip-finalizer-purging-for", "", "Exclude the passed CRDs"+
+		" from finalizer removal. Example: 'ingressroutetcps.traefik.containo.us,*.helm.cattle.io'.")
 	flag.BoolVar(&flagVar.isKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
 	return flagVar
 }
@@ -139,4 +146,7 @@ type FlagVar struct {
 	enableDomainNameVerification           bool
 	logLevel                               int
 	isKymaManaged                          bool
+	enablePurgeFinalizer                   bool
+	purgeFinalizerTimeout                  time.Duration
+	skipPurgingFor                         string
 }

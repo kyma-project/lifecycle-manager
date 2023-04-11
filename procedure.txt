@@ -1,0 +1,62 @@
+k3d cluster create kcp
+k3d cluster create skr
+
+k3d kubeconfig get kcp  > kubeconfig.kcp.yaml
+k3d kubeconfig get skr  > kubeconfig.skr.yaml
+#in the appropriate terminal windows: 
+export KUBECONFIG=$PWD/kubeconfig.kcp.yaml
+#or 
+export KUBECONFIG=$PWD/kubeconfig.skr.yaml
+
+#prepare the skr cluster
+#install cert manager crds:
+kubectl create -f config/samples/tests/crds/cert-manager-v1.10.1.crds.yaml
+
+#create foobar namespace
+kubectl create ns foobar
+
+#install issuer.yaml
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: ca-issuer
+  namespace: foobar
+spec:
+  ca:
+    secretName: ca-key-pair
+
+#prepare the kcp cluster
+kc create ns kyma-system
+
+make install
+go run ./main.go ./flags.go --enable-purge-finalizer=true --purge-finalizer-timeout=10s
+
+#create the Kyma
+kubectl create -f config/samples/component-integration-installed/operator_v1beta1_kyma.yaml
+
+#delete the Kyma
+kubectl delete -f config/samples/component-integration-installed/operator_v1beta1_kyma.yaml
+
+#You should observe an error related to missing secret - finalizer loop cannot access the target cluster
+
+#Create the necessary secret
+
+kubectl -n kyma-system create secret generic foobar --from-file=config=kubeconfig.skr.yaml
+kubectl -n kyma-system label secret foobar --overwrite operator.kyma-project.io/kyma-name=default-kyma
+kubectl -n kyma-system label secret foobar --overwrite operator.kyma-project.io/managed-by=lifecycle-manager
+
+# create and delete the Kyma again, ther should be no error
+
+# add some finalizer to the issuer CR in the SKR cluster
+
+# create and delete the Kyma again, ther should be no error and the finalizer on the issuer should be gone
+
+
+#Feedback
+
+- error (Secret Not Found, but probably also others) circulates endlessly in the loop even if the original  Kyma is gone!
+  Suggestion: Do not requeue errors if there is no Kyma
+
+- Think about making the CRD filtering configurable, the loop drops finalizers from k3d built-in objects.
+
+
