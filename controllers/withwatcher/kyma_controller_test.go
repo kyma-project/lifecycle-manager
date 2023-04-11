@@ -79,7 +79,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 			Timeout, Interval).WithOffset(4).Should(Succeed())
 		By("ensuring skr resources are not configured for the removed watcher CR")
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, secondWatcher, kymaObjKey),
-			2*Timeout, Interval).WithOffset(4).ShouldNot(Succeed())
+			Timeout, Interval).WithOffset(4).ShouldNot(Succeed())
 	})
 
 	It("SKR chart installation works correctly when watcher config is updated", func() {
