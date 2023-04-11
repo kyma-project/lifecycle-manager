@@ -46,7 +46,7 @@ var (
 	ErrSpecSubResourcesMismatch        = errors.New("spec sub-resources mismatch")
 )
 
-var _ = FDescribe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
+var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
 	kyma := NewTestKyma("kyma-remote-sync")
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
 	issuer := NewTestIssuer(metav1.NamespaceDefault)
@@ -271,5 +271,8 @@ func verifyWebhookConfig(
 
 func isWatcherCrDeletionFinished(watcherCR client.Object) error {
 	err := controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(watcherCR), watcherCR)
-	return client.IgnoreNotFound(err)
+	if !apierrors.IsNotFound(err) {
+		return errWatcherExistsAfterDeletion
+	}
+	return nil
 }

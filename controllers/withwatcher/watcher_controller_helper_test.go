@@ -33,6 +33,8 @@ var (
 	errHttpRoutesEmpty                    = errors.New("empty http routes")
 	errRouteConfigMismatch                = errors.New("http route config mismatch")
 	errVirtualServiceHostsNotMatchGateway = errors.New("virtual service hosts not match with gateway")
+	errWatcherExistsAfterDeletion = errors.New("watcher CR still exists after deletion")
+	errFinalizerExistsAfterDeletion = errors.New("finalizer still exists after deletion")
 )
 
 func deserializeIstioResources() ([]*unstructured.Unstructured, error) {

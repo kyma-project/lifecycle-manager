@@ -44,6 +44,7 @@ const (
 var (
 	ErrRestConfigIsNotSet = errors.New("reconciler rest config is not set")
 	errRemovingFinalizer  = errors.New("error removing finalizer")
+	errAddingFinalizer    = errors.New("error adding finalizer")
 )
 
 // WatcherReconciler reconciles a Watcher object.
@@ -84,10 +85,13 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	// check finalizer on native object
 	if !controllerutil.ContainsFinalizer(watcherObj, watcherFinalizer) {
-		if controllerutil.AddFinalizer(watcherObj, watcherFinalizer) {
-			return ctrl.Result{}, r.updateWatcherUsingSSA(ctx, watcherObj,
-				"AddingFinalizer")
+		finalizerAdded := controllerutil.AddFinalizer(watcherObj, watcherFinalizer)
+		if !finalizerAdded {
+			r.EventRecorder.Event(watcherObj, "Warning", "AddFinalizerErr",
+				errAddingFinalizer.Error())
+			return ctrl.Result{}, errAddingFinalizer
 		}
+		return ctrl.Result{}, r.updateFinalizer(ctx, watcherObj)
 	}
 
 	err := r.initializeConditions(ctx, watcherObj)
@@ -96,6 +100,16 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	return r.stateHandling(ctx, watcherObj)
+}
+
+func (r *WatcherReconciler) updateFinalizer(ctx context.Context, watcherCR *v1beta1.Watcher) error {
+	err := r.Client.Update(ctx, watcherCR)
+	if err != nil {
+		r.EventRecorder.Event(watcherCR, "Warning", "WatcherFinalizerErr",
+			err.Error())
+		return err
+	}
+	return nil
 }
 
 func (r *WatcherReconciler) stateHandling(ctx context.Context, watcherCR *v1beta1.Watcher) (ctrl.Result, error) {
@@ -124,11 +138,11 @@ func (r *WatcherReconciler) handleDeletingState(ctx context.Context, watcherCR *
 	}
 	finalizerRemoved := controllerutil.RemoveFinalizer(watcherCR, watcherFinalizer)
 	if !finalizerRemoved {
-		r.EventRecorder.Event(watcherCR, "Warning", "RemovingFinalizerErr",
+		r.EventRecorder.Event(watcherCR, "Warning", "RemoveFinalizerErr",
 			errRemovingFinalizer.Error())
 		return errRemovingFinalizer
 	}
-	return r.updateWatcherUsingSSA(ctx, watcherCR, "RemovingFinalizer")
+	return r.updateFinalizer(ctx, watcherCR)
 }
 
 func (r *WatcherReconciler) handleProcessingState(ctx context.Context, watcherCR *v1beta1.Watcher) error {
@@ -177,7 +191,6 @@ func (r *WatcherReconciler) updateWatcherUsingSSA(ctx context.Context, watcher *
 		r.EventRecorder.Event(watcher, "Warning", reason, err.Error())
 		return fmt.Errorf("%s failed: %w", reason, err)
 	}
-	r.EventRecorder.Event(watcher, "Normal", reason, "success")
 	return nil
 }
 
@@ -190,7 +203,6 @@ func (r *WatcherReconciler) updateWatcherStatusUsingSSA(ctx context.Context, wat
 		r.EventRecorder.Event(watcher, "Warning", reason, err.Error())
 		return fmt.Errorf("%s failed: %w", reason, err)
 	}
-	r.EventRecorder.Event(watcher, "Normal", reason, "success")
 	return nil
 }
 

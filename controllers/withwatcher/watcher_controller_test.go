@@ -87,7 +87,10 @@ func expectHTTPRouteRemoved(customIstioClient *istio.Client) error {
 
 func expectWatcherCRRemoved(watcherName string) error {
 	_, err := getWatcher(watcherName)
-	return client.IgnoreNotFound(err)
+	if !apierrors.IsNotFound(err) {
+		return errWatcherExistsAfterDeletion
+	}
+	return nil
 }
 
 func expectVirtualServiceRemoved(customIstioClient *istio.Client) error {
@@ -204,7 +207,8 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 			nil,
 		),
 		Entry("when one WatcherCR is deleted, "+
-			"expect related VirtualService http route removed",
+			"expect related VirtualService http route removed"+
+			"and watcher finalizer is removed",
 			Timeout,
 			Interval,
 			deleteOneWatcherCR,
