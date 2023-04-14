@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -16,6 +15,8 @@ import (
 )
 
 var ErrTemplateCRDNotReady = errors.New("module template crd for catalog sync is not ready")
+
+const moduleCatalogSyncFieldManager = "catalog-sync"
 
 type Settings struct {
 	// this namespace flag can be used to override the namespace in which all ModuleTemplates should be applied.
@@ -37,7 +38,7 @@ func NewRemoteCatalogFromKyma(kyma *v1beta1.Kyma) *RemoteCatalog {
 	force := true
 	return NewRemoteCatalog(
 		Settings{
-			SSAPatchOptions: &client.PatchOptions{FieldManager: "catalog-sync", Force: &force},
+			SSAPatchOptions: &client.PatchOptions{FieldManager: moduleCatalogSyncFieldManager, Force: &force},
 			Namespace:       kyma.Spec.Sync.Namespace,
 		},
 	)
@@ -180,11 +181,20 @@ func (c *RemoteCatalog) diffsToDelete(
 		presentInKCP[kcp[i].Namespace+kcp[i].Name] = struct{}{}
 	}
 	for i := range skr {
-		if _, inKCP := presentInKCP[skr[i].Namespace+skr[i].Name]; !inKCP {
+		if _, inKCP := presentInKCP[skr[i].Namespace+skr[i].Name]; !inKCP && isManagedByKcp(skr[i]) {
 			toDelete = append(toDelete, &skr[i])
 		}
 	}
 	return toDelete
+}
+
+func isManagedByKcp(skrTemplate v1beta1.ModuleTemplate) bool {
+	for _, managedFieldEntry := range skrTemplate.ObjectMeta.ManagedFields {
+		if managedFieldEntry.Manager == moduleCatalogSyncFieldManager {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *RemoteCatalog) prepareForSSA(moduleTemplate *v1beta1.ModuleTemplate) {
@@ -210,9 +220,11 @@ func (c *RemoteCatalog) Delete(
 		return err
 	}
 	for i := range moduleTemplatesRuntime.Items {
-		if err := syncContext.RuntimeClient.Delete(ctx, &moduleTemplatesRuntime.Items[i]); err != nil &&
-			!k8serrors.IsNotFound(err) {
-			return err
+		if isManagedByKcp(moduleTemplatesRuntime.Items[i]) {
+			if err := syncContext.RuntimeClient.Delete(ctx, &moduleTemplatesRuntime.Items[i]); err != nil &&
+				!k8serrors.IsNotFound(err) {
+				return err
+			}
 		}
 	}
 	return nil
