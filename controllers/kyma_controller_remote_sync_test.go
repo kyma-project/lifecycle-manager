@@ -102,18 +102,13 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			Expect(remoteKyma.ContainsCondition(v1beta1.ConditionTypeModuleCatalog)).To(BeTrue())
 		}, Timeout, Interval)
 
-		By("getting the label count of module templates in the remote cluster before updating the labels")
-		Expect(kyma.Spec.Modules).NotTo(BeEmpty())
-		count, err := GetModuleTemplatesLabelCount(runtimeClient, kyma, true)
-		Expect(err).ShouldNot(HaveOccurred())
-
+		unwantedLabel := ocmv1.Label{Name: "test", Value: json.RawMessage(`{"foo":"bar"}`), Version: "v1"}
 		By("updating a module template in the remote cluster to simulate unwanted modification")
-		Eventually(ModifyModuleTemplateSpecThroughLabels(runtimeClient, kyma,
-			ocmv1.Labels{ocmv1.Label{Name: "test", Value: json.RawMessage(`{"foo":"bar"}`)}},
-			true), Timeout, Interval).Should(Succeed())
+		Eventually(ModifyModuleTemplateSpecThroughLabels(runtimeClient, kyma, unwantedLabel, true),
+			Timeout, Interval).Should(Succeed())
 
 		By("verifying the discovered override and checking the reset label")
-		Eventually(ModuleTemplatesLabelsCountMatch(
-			runtimeClient, kyma, count, true), 20*time.Second, Interval).Should(Succeed())
+		Eventually(ModuleTemplatesVerifyUnwantedLabel(
+			runtimeClient, kyma, unwantedLabel, true), Timeout, Interval).Should(Succeed())
 	})
 })

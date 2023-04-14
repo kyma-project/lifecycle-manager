@@ -22,6 +22,56 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 )
 
+const manifestFileName = "raw-manifest.yaml"
+
+func GetPathFromRawManifest(ctx context.Context,
+	imageSpec v1beta1.ImageSpec,
+	keyChain authn.Keychain,
+) (string, error) {
+	imageRef := fmt.Sprintf("%s/%s@%s", imageSpec.Repo, imageSpec.Name, imageSpec.Ref)
+
+	// check existing file
+	// if file exists return existing file path
+	installPath := GetFsChartPath(imageSpec)
+	manifestPath := path.Join(installPath, manifestFileName)
+	dir, err := os.Open(manifestPath)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return "", fmt.Errorf("opening dir for installs caused an error %s: %w", imageRef, err)
+	}
+	if dir != nil {
+		return manifestPath, nil
+	}
+
+	// pull image layer
+	layer, err := pullLayer(ctx, imageRef, keyChain)
+	if err != nil {
+		return "", err
+	}
+
+	// copy uncompressed manifest to install path
+	blobReadCloser, err := layer.Uncompressed()
+	if err != nil {
+		return "", fmt.Errorf("failed fetching blob for layer %s: %w", imageRef, err)
+	}
+	defer blobReadCloser.Close()
+
+	// create dir for uncompressed manifest
+	if err := os.MkdirAll(installPath, fs.ModePerm); err != nil {
+		return "", fmt.Errorf(
+			"failure while creating installPath directory for layer %s: %w",
+			imageRef, err,
+		)
+	}
+	outFile, err := os.Create(manifestPath)
+	if err != nil {
+		return "", fmt.Errorf("file create failed for layer %s: %w", imageRef, err)
+	}
+	if _, err := io.Copy(outFile, blobReadCloser); err != nil {
+		return "", fmt.Errorf("file copy storage failed for layer %s: %w", imageRef, err)
+	}
+	return manifestPath, io.Closer(outFile).Close()
+}
+
 func GetPathFromExtractedTarGz(ctx context.Context,
 	imageSpec v1beta1.ImageSpec,
 	keyChain authn.Keychain,
@@ -32,7 +82,7 @@ func GetPathFromExtractedTarGz(ctx context.Context,
 	// if dir exists return existing dir
 	installPath := GetFsChartPath(imageSpec)
 	dir, err := os.Open(installPath)
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("opening dir for installs caused an error %s: %w", imageRef, err)
 	}
 	if dir != nil {
@@ -118,7 +168,7 @@ func handleExtractedHeaderFile(
 		if _, err := io.Copy(outFile, reader); err != nil {
 			return fmt.Errorf("file copy storage failed while extracting TarGz %s: %w", layerReference, err)
 		}
-		return outFile.Close()
+		return io.Closer(outFile).Close()
 	default:
 		return fmt.Errorf(
 			"error while extracting TarGz %v in %s: %w",
