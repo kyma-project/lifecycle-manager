@@ -25,18 +25,22 @@ import (
 
 func RegisterDefaultLifecycleForKyma(kyma *v1beta1.Kyma) {
 	BeforeAll(func() {
-		Eventually(controlPlaneClient.Create(ctx, kyma), Timeout, Interval).Should(Succeed())
+		Eventually(controlPlaneClient.Create, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kyma).Should(Succeed())
 		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false)
 	})
 
 	AfterAll(func() {
-		Eventually(controlPlaneClient.Delete(ctx, kyma), Timeout, Interval).Should(Succeed())
+		Eventually(controlPlaneClient.Delete, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kyma).Should(Succeed())
 		DeleteModuleTemplates(ctx, controlPlaneClient, kyma, false)
 	})
 
 	BeforeEach(func() {
 		By("get latest kyma CR")
-		Eventually(SyncKyma(kyma), Timeout, Interval).Should(Succeed())
+		Eventually(SyncKyma, Timeout, Interval).WithArguments(kyma).Should(Succeed())
 	})
 }
 
@@ -233,6 +237,7 @@ func GetModuleTemplatesLabelCount(clnt client.Client, kyma *v1beta1.Kyma, remote
 
 	return len(descriptor.GetLabels()), nil
 }
+
 var ErrUnwantedChangesFound = errors.New("unwanted changes found")
 
 func ModuleTemplatesVerifyUnwantedLabel(
@@ -248,32 +253,6 @@ func ModuleTemplatesVerifyUnwantedLabel(
 			_, ok := labels.Get(unwantedLabel.Name)
 			if ok {
 				return ErrUnwantedChangesFound
-			}
-		}
-		return nil
-	}
-}
-
-func ModuleTemplatesLabelsCountMatch(
-	clnt client.Client, kyma *v1beta1.Kyma, count int, remote bool,
-) func() error {
-	return func() error {
-		for _, module := range kyma.Spec.Modules {
-			template, err := GetModuleTemplate(module.Name, clnt, kyma, remote)
-			if err != nil {
-				return err
-			}
-
-			descriptor, err := template.Spec.GetDescriptor()
-			if err != nil {
-				return err
-			}
-			l := len(descriptor.GetLabels())
-			if l != count {
-				return fmt.Errorf(
-					"expected %v but got %v labels: %w", count,
-					l, ErrModuleTemplateDescriptorLabelCountMismatch,
-				)
 			}
 		}
 		return nil
@@ -316,23 +295,13 @@ func ModifyModuleTemplateSpecThroughLabels(
 	}
 }
 
-func getModuleDescriptor(module v1beta1.Module, clt client.Client, kyma *v1beta1.Kyma, remote bool,
+func getModuleDescriptor(module v1beta1.Module, clnt client.Client, kyma *v1beta1.Kyma, remote bool,
 ) (*v1beta1.Descriptor, error) {
-	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
+	template, err := GetModuleTemplate(module.Name, clnt, kyma, remote)
 	if err != nil {
 		return nil, err
 	}
-	if err := getModuleTemplate(clt, template, kyma, remote); err != nil {
-		return nil, err
-	}
 	return template.Spec.GetDescriptor(compdesc.DefaultJSONLCodec)
-}
-
-func getModuleTemplate(clnt client.Client, template *v1beta1.ModuleTemplate, kyma *v1beta1.Kyma, remote bool) error {
-	if remote && kyma.Spec.Sync.Namespace != "" {
-		template.SetNamespace(kyma.Spec.Sync.Namespace)
-	}
-	return clnt.Get(ctx, client.ObjectKeyFromObject(template), template)
 }
 
 func deleteModule(kyma *v1beta1.Kyma, module v1beta1.Module) func() error {
