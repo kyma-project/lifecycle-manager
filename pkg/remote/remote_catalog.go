@@ -152,8 +152,6 @@ func (c *RemoteCatalog) patchDiff(
 	ctx context.Context, diff *v1beta1.ModuleTemplate, syncContext *KymaSynchronizationContext,
 	deleteInsteadOfPatch bool,
 ) error {
-	diff.SetLastSync()
-
 	var err error
 	if deleteInsteadOfPatch {
 		err = syncContext.RuntimeClient.Delete(ctx, diff)
@@ -193,6 +191,7 @@ func (c *RemoteCatalog) prepareForSSA(moduleTemplate *v1beta1.ModuleTemplate) {
 	moduleTemplate.SetResourceVersion("")
 	moduleTemplate.SetUID("")
 	moduleTemplate.SetManagedFields([]metav1.ManagedFieldsEntry{})
+	moduleTemplate.SetLastSync()
 
 	if c.settings.Namespace != "" {
 		moduleTemplate.SetNamespace(c.settings.Namespace)

@@ -135,7 +135,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, nil
 	}
 
-	// create a remote synchronization context, and update the remote kyma with the state of the control plane
+	// update the remote kyma with the state of the control plane
 	if kyma.Spec.Sync.Enabled {
 		if err := r.syncRemoteKymaSpecAndStatus(ctx, kyma); err != nil {
 			return r.CtrlErr(ctx, kyma, fmt.Errorf("could not synchronize remote kyma: %w", err))

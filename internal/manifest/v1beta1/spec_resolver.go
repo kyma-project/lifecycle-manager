@@ -83,7 +83,7 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object)
 	case v1beta1.HelmChartType:
 		mode = declarative.RenderModeHelm
 	case v1beta1.OciRefType:
-		mode = declarative.RenderModeHelm
+		mode = declarative.RenderModeRaw
 	case v1beta1.KustomizeType:
 		mode = declarative.RenderModeKustomize
 	case v1beta1.NilRefType:
@@ -229,15 +229,15 @@ func (m *ManifestSpecResolver) getChartInfoForInstall(
 			return nil, err
 		}
 
-		// extract helm chart from layer digest
-		chartPath, err := GetPathFromExtractedTarGz(ctx, imageSpec, keyChain)
+		// extract raw manifest from layer digest
+		rawManifestPath, err := GetPathFromRawManifest(ctx, imageSpec, keyChain)
 		if err != nil {
 			return nil, err
 		}
 
 		return &ChartInfo{
 			ChartName: install.Name,
-			ChartPath: chartPath,
+			ChartPath: rawManifestPath,
 		}, nil
 	case v1beta1.KustomizeType:
 		var kustomizeSpec v1beta1.KustomizeSpec
@@ -252,11 +252,9 @@ func (m *ManifestSpecResolver) getChartInfoForInstall(
 		}, nil
 	case v1beta1.NilRefType:
 		return nil, ErrEmptyInstallType
+	default:
+		return nil, fmt.Errorf("%s is invalid: %w", specType, ErrUnsupportedInstallType)
 	}
-
-	return nil, fmt.Errorf(
-		"%s is invalid: %w", specType, ErrUnsupportedInstallType,
-	)
 }
 
 func parseChartConfigAndValues(

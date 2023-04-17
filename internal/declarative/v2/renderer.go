@@ -48,7 +48,7 @@ func InitializeRenderer(
 		renderer = NewKustomizeRenderer(spec, options)
 		renderer = WrapWithRendererCache(renderer, spec, options)
 	case RenderModeRaw:
-		renderer = NewRawRenderer(spec, options)
+		renderer = NewRawRenderer(spec, client, options)
 	}
 
 	if err := renderer.Initialize(obj); err != nil {

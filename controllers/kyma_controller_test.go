@@ -219,12 +219,11 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 		By("Kyma CR should be in Ready state")
 		Eventually(GetKymaState, 20*time.Second, Interval).
 			WithArguments(kyma.GetName()).
-			Should(BeEquivalentTo(string(v1beta1.StateReady)))
+			Should(BeEquivalentTo(v1beta1.StateReady))
 
 		By("Add skip-reconciliation label to Kyma CR")
 		Eventually(UpdateKymaLabel(ctx, controlPlaneClient, kyma, v1beta1.SkipReconcileLabel, "true"),
-			Timeout, Interval).
-			Should(Succeed())
+			Timeout, Interval).Should(Succeed())
 	})
 
 	DescribeTable("Test stop reconciliation",

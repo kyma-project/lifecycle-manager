@@ -6,10 +6,11 @@ import (
 	"errors"
 	"fmt"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	ocmv1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
+
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -17,8 +18,9 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	sampleCRDv1beta1 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1beta1"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 func RegisterDefaultLifecycleForKyma(kyma *v1beta1.Kyma) {
@@ -231,8 +233,26 @@ func GetModuleTemplatesLabelCount(clnt client.Client, kyma *v1beta1.Kyma, remote
 
 	return len(descriptor.GetLabels()), nil
 }
+var ErrUnwantedChangesFound = errors.New("unwanted changes found")
 
-var ErrModuleTemplateDescriptorLabelCountMismatch = errors.New("label count in descriptor does not match")
+func ModuleTemplatesVerifyUnwantedLabel(
+	clnt client.Client, kyma *v1beta1.Kyma, unwantedLabel ocmv1.Label, remote bool,
+) func() error {
+	return func() error {
+		for _, module := range kyma.Spec.Modules {
+			descriptor, err := getModuleDescriptor(module, clnt, kyma, remote)
+			if err != nil {
+				return err
+			}
+			labels := descriptor.GetLabels()
+			_, ok := labels.Get(unwantedLabel.Name)
+			if ok {
+				return ErrUnwantedChangesFound
+			}
+		}
+		return nil
+	}
+}
 
 func ModuleTemplatesLabelsCountMatch(
 	clnt client.Client, kyma *v1beta1.Kyma, count int, remote bool,
@@ -263,7 +283,7 @@ func ModuleTemplatesLabelsCountMatch(
 func ModifyModuleTemplateSpecThroughLabels(
 	clnt client.Client,
 	kyma *v1beta1.Kyma,
-	labels []ocmv1.Label,
+	unwantedLabel ocmv1.Label,
 	remote bool,
 ) func() error {
 	return func() error {
@@ -274,6 +294,11 @@ func ModifyModuleTemplateSpecThroughLabels(
 			}
 
 			descriptor, err := template.Spec.GetDescriptor()
+			if err != nil {
+				return err
+			}
+			labels := descriptor.GetLabels()
+			err = labels.Set(unwantedLabel.Name, unwantedLabel.Value, ocmv1.WithVersion(unwantedLabel.Version))
 			if err != nil {
 				return err
 			}
@@ -289,6 +314,25 @@ func ModifyModuleTemplateSpecThroughLabels(
 
 		return nil
 	}
+}
+
+func getModuleDescriptor(module v1beta1.Module, clt client.Client, kyma *v1beta1.Kyma, remote bool,
+) (*v1beta1.Descriptor, error) {
+	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{})
+	if err != nil {
+		return nil, err
+	}
+	if err := getModuleTemplate(clt, template, kyma, remote); err != nil {
+		return nil, err
+	}
+	return template.Spec.GetDescriptor(compdesc.DefaultJSONLCodec)
+}
+
+func getModuleTemplate(clnt client.Client, template *v1beta1.ModuleTemplate, kyma *v1beta1.Kyma, remote bool) error {
+	if remote && kyma.Spec.Sync.Namespace != "" {
+		template.SetNamespace(kyma.Spec.Sync.Namespace)
+	}
+	return clnt.Get(ctx, client.ObjectKeyFromObject(template), template)
 }
 
 func deleteModule(kyma *v1beta1.Kyma, module v1beta1.Module) func() error {
