@@ -36,11 +36,7 @@ func GetCredentials(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	secretList, err := getCredSecrets(ctx, credSecretSelector, clnt)
-	if err != nil {
-		return nil, err
-	}
-	keychain, err := authnK8s.NewFromPullSecrets(ctx, secretList.Items)
+	keychain, err := GetAuthnKeychain(ctx, credSecretSelector, clnt)
 	if err != nil {
 		return nil, err
 	}

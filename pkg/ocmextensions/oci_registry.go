@@ -43,7 +43,7 @@ func NoSchemeURL(url string) string {
 	return regex.ReplaceAllString(url, "")
 }
 
-func GetRemoteDescriptor(ctx context.Context,
+func getRemoteDescriptor(ctx context.Context,
 	descriptor *v1beta1.Descriptor,
 	clnt client.Client,
 ) (*compdesc.ComponentDescriptor, error) {

@@ -139,7 +139,12 @@ func NewManifestFromTemplate(
 	if found && useLocalTemplate == "true" {
 		componentDescriptor = descriptor.ComponentDescriptor
 	} else {
-		componentDescriptor, err = getRemoteDescriptor(ctx, template, descriptor, componentDescriptorCache, clnt)
+		descriptorCacheKey, err := template.GetComponentDescriptorCacheKey()
+		if err != nil {
+			return nil, err
+		}
+		componentDescriptor, err = componentDescriptorCache.GetRemoteDescriptor(ctx,
+			descriptorCacheKey, descriptor, clnt)
 		if err != nil {
 			return nil, err
 		}
@@ -158,28 +163,6 @@ func NewManifestFromTemplate(
 	}
 
 	return manifest, nil
-}
-
-func getRemoteDescriptor(
-	ctx context.Context,
-	template *v1beta1.ModuleTemplate,
-	descriptor *v1beta1.Descriptor,
-	cache *ocmextensions.ComponentDescriptorCache,
-	clnt client.Client,
-) (*compdesc.ComponentDescriptor, error) {
-	descriptorCacheKey, err := template.GetComponentDescriptorCacheKey()
-	if err != nil {
-		return nil, err
-	}
-	remoteDescriptor := cache.Get(descriptorCacheKey)
-	if remoteDescriptor == nil {
-		remoteDescriptor, err = ocmextensions.GetRemoteDescriptor(ctx, descriptor, clnt)
-		if err != nil {
-			return nil, err
-		}
-		cache.Set(descriptorCacheKey, remoteDescriptor)
-	}
-	return remoteDescriptor, nil
 }
 
 func translateLayersAndMergeIntoManifest(

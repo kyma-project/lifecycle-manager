@@ -144,7 +144,8 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 		kyma.Spec.Modules = []v1beta1.Module{
 			*skrModule,
 		}
-		Eventually(controlPlaneClient.Update(ctx, kyma), Timeout, Interval).Should(Succeed())
+		Eventually(controlPlaneClient.Update, Timeout, Interval).
+			WithContext(ctx).WithArguments(kyma).Should(Succeed())
 
 		By("kcp-module deleted")
 		Eventually(ModuleNotExist(ctx, kyma, *kcpModule), Timeout, Interval).Should(Succeed())
