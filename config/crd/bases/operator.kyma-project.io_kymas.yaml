@@ -90,6 +90,12 @@ spec:
                         or kyma-system/my-moduletemplate - The FQDN, e.g. kyma-project.io/module/my-module
                         as located in .spec.descriptor.component.name"
                       type: string
+                    remoteModuleTemplateRef:
+                      description: RemoteModuleTemplateRef is the reference (FQDN,
+                        Namespace/Name, Module Name Label) to the module template
+                        on the remote cluster. If specified, the module template will
+                        be fetched from the SKR and reconciled.
+                      type: string
                   required:
                   - name
                   type: object
@@ -441,6 +447,12 @@ spec:
                         - The Name or Namespace/Name of a ModuleTemplate, e.g. my-moduletemplate
                         or kyma-system/my-moduletemplate - The FQDN, e.g. kyma-project.io/module/my-module
                         as located in .spec.descriptor.component.name"
+                      type: string
+                    remoteModuleTemplateRef:
+                      description: RemoteModuleTemplateRef is the reference (FQDN,
+                        Namespace/Name, Module Name Label) to the module template
+                        on the remote cluster. If specified, the module template will
+                        be fetched from the SKR and reconciled.
                       type: string
                   required:
                   - name
