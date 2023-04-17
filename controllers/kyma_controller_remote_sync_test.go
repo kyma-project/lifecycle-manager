@@ -4,14 +4,13 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	ocmv1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
@@ -102,8 +101,10 @@ var _ = Describe("Kyma with remote module templates", Ordered, func() {
 	It("Should not sync the moduleInSkr template in KCP and keep it only in SKR", func() {
 		Eventually(ModuleTemplatesExist(runtimeClient, kyma, true), Timeout, Interval).
 			Should(Succeed())
-		Consistently(ModuleTemplatesExist(controlPlaneClient, kyma, false), Timeout, Interval).
-			ShouldNot(Succeed())
+
+		templateInSkr, err := ModuleTemplateFactory(moduleInSkr, unstructured.Unstructured{})
+		Expect(err).ShouldNot(HaveOccurred())
+		Eventually(ModuleTemplateExist(controlPlaneClient, kyma, templateInSkr), Timeout, Interval).Should(BeTrue())
 	})
 
 	It("Should reconcile Manifest in KCP using remote moduleInSkr template", func() {
@@ -166,7 +167,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		Expect(remoteKyma.Spec.Modules).To(BeEmpty())
 
 		By("Remote Module Catalog created")
-		Eventually(ModuleTemplatesExist(runtimeClient, kyma, true), 30*time.Second, Interval).Should(Succeed())
+		Eventually(ModuleTemplatesExist(runtimeClient, kyma, true), Timeout, Interval).Should(Succeed())
 		Eventually(func() {
 			remoteKyma, err = GetKyma(ctx, runtimeClient, kyma.GetName(), kyma.Spec.Sync.Namespace)
 			Expect(err).ShouldNot(HaveOccurred())

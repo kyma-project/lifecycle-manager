@@ -220,6 +220,13 @@ func ModuleTemplatesExist(clnt client.Client, kyma *v1beta1.Kyma, remote bool) f
 	}
 }
 
+func ModuleTemplateExist(client client.Client, kyma *v1beta1.Kyma, template *v1beta1.ModuleTemplate) func() bool {
+	return func() bool {
+		err := getModuleTemplate(client, template, kyma, true)
+		return k8serrors.IsNotFound(err)
+	}
+}
+
 var ErrUnwantedChangesFound = errors.New("unwanted changes found")
 
 func ModuleTemplatesVerifyUnwantedLabel(
