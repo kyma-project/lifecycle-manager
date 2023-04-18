@@ -28,7 +28,7 @@ spec:
       name: kyma-project.io/template-operator
       provider: internal
       repositoryContexts:
-        - baseUrl: http://k3d-registry.localhost:5111
+        - baseUrl: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/template-operator
           componentNameMapping: urlPath
           type: ociRegistry
       resources:
@@ -59,7 +59,7 @@ spec:
           version: v1.2.3
       sources:
         - access:
-            commit: 11736fd1d8b12f978f2048195d458a60409a5ae8
+            commit: 4e4b9d47cb655ca23e5c706462485ff7605e8d71
             repoUrl: github.com/kyma-project/template-operator
             type: gitHub
           labels:
