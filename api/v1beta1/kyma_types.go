@@ -17,8 +17,6 @@ limitations under the License.
 package v1beta1
 
 import (
-	"time"
-
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -316,17 +314,6 @@ type KymaConditionReason string
 
 func (kyma *Kyma) SetActiveChannel() *Kyma {
 	kyma.Status.ActiveChannel = kyma.Spec.Channel
-
-	return kyma
-}
-
-func (kyma *Kyma) SetLastSync() *Kyma {
-	// this is an additional update on the runtime and might not be worth it
-	lastSyncDate := time.Now().Format(time.RFC3339)
-	if kyma.Annotations == nil {
-		kyma.Annotations = make(map[string]string)
-	}
-	kyma.Annotations[LastSync] = lastSyncDate
 
 	return kyma
 }

@@ -191,7 +191,6 @@ func (c *RemoteCatalog) prepareForSSA(moduleTemplate *v1beta1.ModuleTemplate) {
 	moduleTemplate.SetResourceVersion("")
 	moduleTemplate.SetUID("")
 	moduleTemplate.SetManagedFields([]metav1.ManagedFieldsEntry{})
-	moduleTemplate.SetLastSync()
 
 	if c.settings.Namespace != "" {
 		moduleTemplate.SetNamespace(c.settings.Namespace)
