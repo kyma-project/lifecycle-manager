@@ -13,14 +13,6 @@ about: Suggest an improvement or report a bug in the documentation
 
 <!-- Provide a clear and concise description of the potential documentation improvement.-->
 
-**Area**
-
-<!-- Provide the area the document refers to. For example, write: 
-* Application Connector
-* Event Mesh
-* Kyma Environment Broker
-* Rafter -->
-
 **Reasons**
 
 <!-- Explain why we should improve the document. -->
