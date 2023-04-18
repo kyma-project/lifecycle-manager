@@ -23,21 +23,35 @@ type ModuleConversionSettings struct {
 
 var (
 	ErrTemplateNotFound        = errors.New("template was not found")
+	ErrTemplateNoRequiredLabel = errors.New("template not contains required label")
 	ErrUndefinedTargetToRemote = errors.New("target to remote relation undefined")
 	ErrDefaultConfigParsing    = errors.New("defaultConfig could not be parsed")
 )
 
-func GenerateModulesFromTemplates(ctx context.Context,
+type TemplateParser struct {
+	client.Client
+	*ocmextensions.ComponentDescriptorCache
+	EnableVerification bool
+	PublicKeyFilePath  string
+}
+
+func NewTemplateParser(clnt client.Client,
+	cache *ocmextensions.ComponentDescriptorCache,
+	enableVerification bool,
+	publicKeyFilePath string,
+) *TemplateParser {
+	return &TemplateParser{Client: clnt,
+		ComponentDescriptorCache: cache,
+		EnableVerification:       enableVerification,
+		PublicKeyFilePath:        publicKeyFilePath}
+}
+
+func (parser *TemplateParser) GenerateModulesFromTemplates(ctx context.Context,
 	kyma *v1beta1.Kyma,
 	templates channel.ModuleTemplatesByModuleName,
-	verification signature.Verification,
-	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
-	clnt client.Client,
 ) (common.Modules, error) {
 	// these are the actual modules
-	modules, err := templatesToModules(ctx, kyma, templates,
-		&ModuleConversionSettings{Verification: verification},
-		componentDescriptorCache, clnt)
+	modules, err := parser.templatesToModules(ctx, kyma, templates)
 	if err != nil {
 		return nil, fmt.Errorf("cannot convert templates: %w", err)
 	}
@@ -45,13 +59,10 @@ func GenerateModulesFromTemplates(ctx context.Context,
 	return modules, nil
 }
 
-func templatesToModules(
+func (parser *TemplateParser) templatesToModules(
 	ctx context.Context,
 	kyma *v1beta1.Kyma,
 	templates channel.ModuleTemplatesByModuleName,
-	settings *ModuleConversionSettings,
-	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
-	clnt client.Client,
 ) (common.Modules, error) {
 	// First, we fetch the module spec from the template and use it to resolve it into an arbitrary object
 	// (since we do not know which module we are dealing with)
@@ -85,10 +96,8 @@ func templatesToModules(
 			}
 		}
 		var obj client.Object
-		if obj, err = NewManifestFromTemplate(ctx, module,
-			template.ModuleTemplate,
-			settings.Verification,
-			componentDescriptorCache, clnt); err != nil {
+		if obj, err = parser.NewManifestFromTemplate(ctx, module,
+			template.ModuleTemplate); err != nil {
 			return nil, err
 		}
 		// we name the manifest after the module name
@@ -108,13 +117,10 @@ func templatesToModules(
 	return modules, nil
 }
 
-func NewManifestFromTemplate(
+func (parser *TemplateParser) NewManifestFromTemplate(
 	ctx context.Context,
 	module v1beta1.Module,
 	template *v1beta1.ModuleTemplate,
-	verification signature.Verification,
-	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
-	clnt client.Client,
 ) (*v1beta1.Manifest, error) {
 	manifest := &v1beta1.Manifest{}
 	manifest.Spec.Remote = ConvertTargetToRemote(template.Spec.Target)
@@ -143,11 +149,20 @@ func NewManifestFromTemplate(
 		if err != nil {
 			return nil, err
 		}
-		componentDescriptor, err = componentDescriptorCache.GetRemoteDescriptor(ctx,
-			descriptorCacheKey, descriptor, clnt)
+		componentDescriptor, err = parser.ComponentDescriptorCache.GetRemoteDescriptor(ctx,
+			descriptorCacheKey, descriptor, parser.Client)
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	verification, err := signature.NewVerification(ctx,
+		parser.Client,
+		parser.EnableVerification,
+		parser.PublicKeyFilePath,
+		module.Name)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := signature.Verify(componentDescriptor, verification); err != nil {

@@ -21,7 +21,6 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
-	"strings"
 	"time"
 
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -269,8 +268,8 @@ func setupKymaReconciler(mgr ctrl.Manager,
 			Success: flagVar.kymaRequeueSuccessInterval,
 		},
 		VerificationSettings: signature.VerificationSettings{
-			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
-			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
+			EnableVerification: flagVar.enableVerification,
+			PublicKeyFilePath:  flagVar.moduleVerificationKeyFilePath,
 		},
 		IsManagedKyma: flagVar.isKymaManaged,
 	}).SetupWithManager(

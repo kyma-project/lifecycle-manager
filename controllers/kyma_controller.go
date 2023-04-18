@@ -399,16 +399,9 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 	if err != nil {
 		return nil, fmt.Errorf("templates could not be fetched: %w", err)
 	}
-
-	verification, err := r.VerificationSettings.NewVerification(ctx, kyma.GetNamespace())
-	if err != nil {
-		return nil, err
-	}
-
+	parser := parse.NewTemplateParser(r.Client, r.ComponentDescriptorCache, r.EnableVerification, r.PublicKeyFilePath)
 	// these are the actual modules
-	modules, err := parse.GenerateModulesFromTemplates(ctx, kyma, templates, verification,
-		r.ComponentDescriptorCache,
-		r.Client)
+	modules, err := parser.GenerateModulesFromTemplates(ctx, kyma, templates)
 	if err != nil {
 		return nil, fmt.Errorf("cannot generate modules: %w", err)
 	}

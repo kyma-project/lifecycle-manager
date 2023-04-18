@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	ocmv1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
@@ -13,6 +12,7 @@ import (
 	"github.com/open-component-model/ocm/pkg/signing/handlers/rsa"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -20,6 +20,8 @@ import (
 )
 
 var ErrNoSignatureFound = errors.New("no signature was found")
+
+const ValidSignatureName = "kyma-module-signature"
 
 type Verifier interface {
 	Verify(componentDescriptor *compdesc.ComponentDescriptor, signature ocmv1.Signature) error
@@ -31,9 +33,8 @@ type MultiVerifier struct {
 
 type VerificationSettings struct {
 	client.Client
-	PublicKeyFilePath   string
-	ValidSignatureNames []string
-	EnableVerification  bool
+	PublicKeyFilePath  string
+	EnableVerification bool
 }
 
 type Verification func(descriptor *compdesc.ComponentDescriptor) error
@@ -49,19 +50,23 @@ func Verify(
 	return nil
 }
 
-func (settings *VerificationSettings) NewVerification(
-	ctx context.Context, namespace string,
+func NewVerification(
+	ctx context.Context,
+	clnt client.Client,
+	enableVerification bool,
+	publicKeyFilePath,
+	moduleName string,
 ) (Verification, error) {
-	if !settings.EnableVerification {
+	if !enableVerification {
 		return NoSignatureVerification, nil
 	}
 
 	var verifier Verifier
 	var err error
-	if settings.PublicKeyFilePath == "" {
-		verifier, err = CreateRSAVerifierFromSecrets(ctx, settings.Client, settings.ValidSignatureNames, namespace)
+	if publicKeyFilePath == "" {
+		verifier, err = CreateRSAVerifierFromSecrets(ctx, clnt, moduleName)
 	} else {
-		verifier, err = CreateRSAVerifierFromPublicKeyFile(settings.PublicKeyFilePath, settings.ValidSignatureNames)
+		verifier, err = CreateRSAVerifierFromPublicKeyFile(publicKeyFilePath)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("error occurred while initializing Signature Verifier: %w", err)
@@ -69,13 +74,11 @@ func (settings *VerificationSettings) NewVerification(
 
 	return func(descriptor *compdesc.ComponentDescriptor) error {
 		for _, sig := range descriptor.Signatures {
-			for _, validName := range settings.ValidSignatureNames {
-				if sig.Name == validName {
-					if err := verifier.Verify(descriptor, sig); err != nil {
-						return fmt.Errorf("error occurred during signature verification: %w", err)
-					}
-					return nil
+			if sig.Name == ValidSignatureName {
+				if err := verifier.Verify(descriptor, sig); err != nil {
+					return fmt.Errorf("error occurred during signature verification: %w", err)
 				}
+				return nil
 			}
 		}
 		return fmt.Errorf("descriptor contains invalid signature list: %w", ErrNoSignatureFound)
@@ -98,18 +101,20 @@ func (v MultiVerifier) Verify(descriptor *compdesc.ComponentDescriptor, signatur
 // CreateRSAVerifierFromSecrets creates an instance of RsaVerifier from a rsa public key file located as secret
 // in kubernetes. The key has to be in the PKIX, ASN.1 DER form, see x509.ParsePKIXPublicKey.
 func CreateRSAVerifierFromSecrets(
-	ctx context.Context, k8sClient client.Client, validSignatureNames []string, namespace string,
+	ctx context.Context,
+	k8sClient client.Client,
+	moduleName string,
 ) (*MultiVerifier, error) {
 	secretList := &v1.SecretList{}
 
-	selector, err := k8slabels.Parse(fmt.Sprintf("%s in (%s)", v1beta1.Signature, strings.Join(validSignatureNames, ",")))
-	if err != nil {
-		return nil, err
+	secretSelector := &metav1.LabelSelector{
+		MatchLabels: k8slabels.Set{v1beta1.Signature: ValidSignatureName, v1beta1.ModuleName: moduleName},
 	}
-
-	if err := k8sClient.List(ctx, secretList, &client.ListOptions{
-		LabelSelector: selector, Namespace: namespace,
-	}); err != nil {
+	selector, err := metav1.LabelSelectorAsSelector(secretSelector)
+	if err != nil {
+		return nil, fmt.Errorf("error converting signature labelSelector: %w", err)
+	}
+	if err := k8sClient.List(ctx, secretList, &client.ListOptions{LabelSelector: selector}); err != nil {
 		return nil, err
 	} else if len(secretList.Items) < 1 {
 		gr := v1.SchemeGroupVersion.WithResource(fmt.Sprintf("secrets with label %s", v1beta1.KymaName)).GroupResource()
@@ -122,14 +127,12 @@ func CreateRSAVerifierFromSecrets(
 		if err != nil {
 			return nil, err
 		}
-		registry.RegisterPublicKey(item.Labels[v1beta1.Signature], key)
+		registry.RegisterPublicKey(ValidSignatureName, key)
 	}
 	return CreateMultiRSAVerifier(registry)
 }
 
-func CreateRSAVerifierFromPublicKeyFile(
-	file string, validSignatureNames []string,
-) (*MultiVerifier, error) {
+func CreateRSAVerifierFromPublicKeyFile(file string) (*MultiVerifier, error) {
 	data, err := os.ReadFile(file)
 	if err != nil {
 		return nil, err
@@ -139,8 +142,6 @@ func CreateRSAVerifierFromPublicKeyFile(
 	if err != nil {
 		return nil, err
 	}
-	for _, signatureName := range validSignatureNames {
-		registry.RegisterPublicKey(signatureName, key)
-	}
+	registry.RegisterPublicKey(ValidSignatureName, key)
 	return CreateMultiRSAVerifier(registry)
 }
