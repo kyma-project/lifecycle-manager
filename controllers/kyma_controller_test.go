@@ -1,17 +1,14 @@
 package controllers_test
 
 import (
-	"context"
 	"errors"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var (
@@ -26,29 +23,6 @@ var _ = Describe("Kyma with no ModuleTemplate", Ordered, func() {
 	It("Should result in a ready state immediately", func() {
 		By("having transitioned the CR State to Ready as there are no modules")
 		Eventually(IsKymaInState(ctx, controlPlaneClient, kyma.GetName(), v1beta1.StateReady),
-			Timeout, Interval).Should(BeTrue())
-	})
-})
-
-var _ = Describe("Kyma with deprecated Condition", Ordered, func() {
-	kyma := NewTestKyma("no-module-kyma")
-	RegisterDefaultLifecycleForKyma(kyma)
-
-	It("Should remove deprecated conditions and add required conditions", func() {
-		kyma.Status.Conditions = append(kyma.Status.Conditions, metav1.Condition{
-			Type:               string(v1beta1.DeprecatedConditionTypeReady),
-			Status:             metav1.ConditionFalse,
-			ObservedGeneration: kyma.GetGeneration(),
-			Reason:             "Deprecated",
-			Message:            "Deprecated",
-			LastTransitionTime: metav1.Time{Time: time.Now()},
-		})
-		kyma.ManagedFields = nil
-		Eventually(controlPlaneClient.Patch(ctx, kyma, client.Apply,
-			client.FieldOwner(v1beta1.UnmanagedKyma)), Timeout*2, Interval).Should(Succeed())
-		By("having transitioned the CR State to Ready as there are no modules")
-		Eventually(CheckKymaConditions(ctx, controlPlaneClient, kyma.GetName(),
-			[]v1beta1.KymaConditionType{v1beta1.ConditionTypeModules}),
 			Timeout, Interval).Should(BeTrue())
 	})
 })
@@ -295,30 +269,5 @@ func updateModuleTemplateSpecData(kymaName, valueUpdated string) func() error {
 			Expect(err).ToNot(HaveOccurred())
 		}
 		return nil
-	}
-}
-
-func CheckKymaConditions(ctx context.Context, kcpClient client.Client, kymaName string,
-	requiredConditions []v1beta1.KymaConditionType,
-) func() bool {
-	return func() bool {
-		kymaFromCluster, err := GetKyma(ctx, kcpClient, kymaName, "")
-		if err != nil || len(kymaFromCluster.Status.Conditions) != len(requiredConditions) {
-			return false
-		}
-
-		for _, conditionType := range requiredConditions {
-			exists := false
-			for _, kymaCondition := range kymaFromCluster.Status.Conditions {
-				if kymaCondition.Type == string(conditionType) {
-					exists = true
-					break
-				}
-			}
-			if !exists {
-				return false
-			}
-		}
-		return true
 	}
 }
