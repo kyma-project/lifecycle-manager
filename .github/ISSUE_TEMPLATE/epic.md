@@ -1,6 +1,6 @@
 ---
 name: Epic
-about: Suggest a long-term or complex improvemnt to the project
+about: Suggest a long-term or complex improvement to the project
 ---
 
 <!-- Thank you for your contribution. Before you submit the epic:
