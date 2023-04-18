@@ -150,7 +150,9 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 		})
 
 	AfterAll(func() {
-		Expect(controlPlaneClient.Delete(ctx, kyma)).Should(Succeed())
+		Eventually(controlPlaneClient.Delete, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kyma).Should(Succeed())
 	})
 
 	BeforeAll(func() {

@@ -25,17 +25,26 @@ import (
 
 func RegisterDefaultLifecycleForKyma(kyma *v1beta1.Kyma) {
 	BeforeAll(func() {
+		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false)
+	})
+
+	AfterAll(func() {
+		DeleteModuleTemplates(ctx, controlPlaneClient, kyma, false)
+	})
+	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
+}
+
+func RegisterDefaultLifecycleForKymaWithoutTemplate(kyma *v1beta1.Kyma) {
+	BeforeAll(func() {
 		Eventually(controlPlaneClient.Create, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kyma).Should(Succeed())
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false)
 	})
 
 	AfterAll(func() {
 		Eventually(controlPlaneClient.Delete, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kyma).Should(Succeed())
-		DeleteModuleTemplates(ctx, controlPlaneClient, kyma, false)
 	})
 
 	BeforeEach(func() {

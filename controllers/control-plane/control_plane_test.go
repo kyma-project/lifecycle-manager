@@ -11,16 +11,22 @@ import (
 
 func registerControlPlaneLifecycleForKyma(kyma *v1beta1.Kyma) {
 	BeforeAll(func() {
-		Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
+		Eventually(controlPlaneClient.Create, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kyma).Should(Succeed())
+		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false)
 	})
 
 	AfterAll(func() {
-		Expect(controlPlaneClient.Delete(ctx, kyma)).Should(Succeed())
+		Eventually(controlPlaneClient.Delete, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kyma).Should(Succeed())
+		DeleteModuleTemplates(ctx, controlPlaneClient, kyma, false)
 	})
 
 	BeforeEach(func() {
 		By("get latest kyma CR")
-		Eventually(syncKyma(kyma), Timeout, Interval).Should(Succeed())
+		Eventually(syncKyma, Timeout, Interval).WithArguments(kyma).Should(Succeed())
 	})
 }
 

@@ -193,17 +193,7 @@ var _ = Describe("Test ModuleTemplate.Spec.descriptor not contains RegistryCred 
 			Channel:        v1beta1.DefaultChannel,
 		})
 
-	BeforeAll(func() {
-		Eventually(controlPlaneClient.Create(ctx, kyma), Timeout, Interval).Should(Succeed())
-	})
-
-	AfterAll(func() {
-		Eventually(controlPlaneClient.Delete(ctx, kyma), Timeout, Interval).Should(Succeed())
-	})
-
-	BeforeEach(func() {
-		Eventually(SyncKyma(kyma), Timeout, Interval).Should(Succeed())
-	})
+	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
 	It("expect Manifest.Spec.installs and Manifest.Spec.Config not contains credSecretSelector", func() {
 		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false)
@@ -221,17 +211,7 @@ var _ = Describe("Test ModuleTemplate.Spec.descriptor contains RegistryCred labe
 			Channel:        v1beta1.DefaultChannel,
 		})
 
-	BeforeAll(func() {
-		Eventually(controlPlaneClient.Create(ctx, kyma), Timeout, Interval).Should(Succeed())
-	})
-
-	AfterAll(func() {
-		Eventually(controlPlaneClient.Delete(ctx, kyma), Timeout, Interval).Should(Succeed())
-	})
-
-	BeforeEach(func() {
-		Eventually(SyncKyma(kyma), Timeout, Interval).Should(Succeed())
-	})
+	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
 	It("expect Manifest.Spec.installs and Manifest.Spec.Config contains credSecretSelector", func() {
 		DeployModuleTemplates(ctx, controlPlaneClient, kyma, true)

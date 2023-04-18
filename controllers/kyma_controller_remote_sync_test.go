@@ -42,7 +42,10 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	It("module template created", func() {
 		template, err := ModuleTemplateFactory(*skrModuleFromClient, unstructured.Unstructured{}, false)
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(controlPlaneClient.Create(ctx, template)).To(Succeed())
+		Eventually(controlPlaneClient.Create, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(template).
+			Should(Succeed())
 	})
 
 	It("CR add from client should be synced in both clusters", func() {

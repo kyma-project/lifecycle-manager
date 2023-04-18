@@ -25,12 +25,9 @@ var _ = Describe(
 			"should successfully fetch accept a moduletemplate based on template with a v3alpha1 ocm descriptor",
 			func() {
 				crd := GetCRD(v1beta1.OperatorPrefix, "samplecrd")
-				Eventually(
-					func() error {
-						return k8sClient.Create(webhookServerContext, crd)
-					}, Timeout, Interval,
-				).Should(Succeed())
-
+				Eventually(k8sClient.Create, Timeout, Interval).
+					WithContext(webhookServerContext).
+					WithArguments(crd).Should(Succeed())
 				template, err := testutils.ModuleTemplateFactoryForSchema(
 					v1beta1.Module{
 						ControllerName: "manifest",

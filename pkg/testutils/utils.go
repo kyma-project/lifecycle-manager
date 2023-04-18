@@ -100,7 +100,7 @@ func DeployModuleTemplates(
 	for _, module := range kyma.Spec.Modules {
 		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo)
 		Expect(err).ShouldNot(HaveOccurred())
-		Eventually(kcpClient.Create(ctx, template), Timeout, Interval).Should(Succeed())
+		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).WithArguments(template).Should(Succeed())
 	}
 }
 
@@ -113,7 +113,7 @@ func DeleteModuleTemplates(
 	for _, module := range kyma.Spec.Modules {
 		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo)
 		Expect(err).ShouldNot(HaveOccurred())
-		Eventually(kcpClient.Delete(ctx, template), Timeout, Interval).Should(Succeed())
+		Eventually(kcpClient.Delete, Timeout, Interval).WithContext(ctx).WithArguments(template).Should(Succeed())
 	}
 }
 
