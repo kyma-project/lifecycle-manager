@@ -38,14 +38,14 @@ spec:
           name: config
           relation: local
           type: yaml
-          version: v1.2.3
+          version: v1.6.1
         - access:
             digest: sha256:1735cfa45bf07b63427c8e11717278f8847e352a66af7633611db902386d18ed
             type: localOciBlob
           name: raw-manifest
           relation: local
           type: yaml
-          version: v1.2.3
+          version: v1.6.1
         - access:
             imageReference: artifact.registry.hostname/path/to/the/registry/k8s-tools:v20221213-1840f45a
             type: ociRegistry
@@ -56,7 +56,7 @@ spec:
           name: k8s-tools
           relation: external
           type: ociImage
-          version: v1.2.3
+          version: v1.6.1
       sources:
         - access:
             commit: 4e4b9d47cb655ca23e5c706462485ff7605e8d71
@@ -68,7 +68,7 @@ spec:
               version: v1
           name: module-sources
           type: git
-          version: v1.2.3
-      version: v1.2.3
+          version: v1.6.1
+      version: v1.6.1
     meta:
       schemaVersion: v2
