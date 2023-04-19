@@ -108,6 +108,11 @@ jobs:
           
           kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/crds/crd-servicemonitors.yaml
       - run: kyma --ci alpha deploy -k config/${{ matrix.target }}
+      - name: Deploy template operator module template and enable module
+        if: ${{ matrix.target }} == 'control-plane'
+        run: |
+          kubectl apply -f config/samples/component-integration-installed/operator_v1beta1_moduletemplate_kcp-module.yaml
+          kyma alpha enable module template-operator -c regular -n kyma-system -k default-kyma
       - run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
       - name: Set up Go for ${{ github.repository }}
         uses: actions/setup-go@v3
