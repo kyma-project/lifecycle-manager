@@ -26,6 +26,7 @@ import (
 
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-logr/logr"
+	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	istioscheme "istio.io/client-go/pkg/clientset/versioned/scheme"
@@ -157,6 +158,8 @@ var _ = BeforeSuite(func() {
 	}
 
 	remoteClientCache = remote.NewClientCache()
+	componentDescriptorCache := ocmextensions.NewComponentDescriptorCache()
+
 	skrChartCfg := &watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         skrWatcherPath,
 		SkrWebhookMemoryLimits: "200Mi",
@@ -173,8 +176,9 @@ var _ = BeforeSuite(func() {
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
 		},
-		RemoteClientCache: remoteClientCache,
-		KcpRestConfig:     k8sManager.GetConfig(),
+		RemoteClientCache:        remoteClientCache,
+		ComponentDescriptorCache: componentDescriptorCache,
+		KcpRestConfig:            k8sManager.GetConfig(),
 	}).SetupWithManager(k8sManager, controller.Options{}, controllers.SetupUpSetting{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 

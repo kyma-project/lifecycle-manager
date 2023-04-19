@@ -16,6 +16,9 @@ const (
 	KymaName   = OperatorPrefix + Separator + "kyma-name"
 	Signature  = OperatorPrefix + Separator + "signature"
 	ModuleName = OperatorPrefix + Separator + "module-name"
+	// Notice: This label is intended solely for testing purposes and should not be used in production module templates.
+	UseLocalTemplate = OperatorPrefix + Separator + "use-local-template"
+
 	//nolint:gosec
 	OCIRegistryCredLabel = "oci-registry-cred"
 	OperatorName         = "lifecycle-manager"
