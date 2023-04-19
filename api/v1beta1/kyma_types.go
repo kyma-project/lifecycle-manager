@@ -245,6 +245,7 @@ type ModuleStatus struct {
 	State State `json:"state"`
 
 	// Resource contains information about the created module CR.
+	// +optional
 	Resource TrackingObject `json:"resource"`
 }
 

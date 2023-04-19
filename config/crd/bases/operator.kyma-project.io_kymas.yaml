@@ -395,7 +395,6 @@ spec:
                   required:
                   - fqdn
                   - name
-                  - resource
                   - state
                   - version
                   type: object
@@ -794,7 +793,6 @@ spec:
                   required:
                   - fqdn
                   - name
-                  - resource
                   - state
                   - version
                   type: object
