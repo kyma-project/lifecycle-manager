@@ -245,8 +245,7 @@ type ModuleStatus struct {
 	State State `json:"state"`
 
 	// Resource contains information about the created module CR.
-	// +optional
-	Resource TrackingObject `json:"resource"`
+	Resource TrackingObject `json:"resource,omitempty"`
 }
 
 // TrackingObject contains metav1.TypeMeta and PartialMeta to allow a generation based object tracking.
