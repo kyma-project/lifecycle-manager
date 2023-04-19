@@ -287,6 +287,52 @@ spec:
                         that the status is used for. It can be any kind of Reference
                         format supported by Module.Name.
                       type: string
+                    resource:
+                      description: Resource contains information about the created
+                        module CR.
+                      properties:
+                        apiVersion:
+                          description: 'APIVersion defines the versioned schema of
+                            this representation of an object. Servers should convert
+                            recognized schemas to the latest internal value, and may
+                            reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                          type: string
+                        kind:
+                          description: 'Kind is a string value representing the REST
+                            resource this object represents. Servers may infer this
+                            from the endpoint the client submits requests to. Cannot
+                            be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                          type: string
+                        metadata:
+                          description: PartialMeta is a subset of ObjectMeta that
+                            contains relevant information to track an Object. see
+                            https://github.com/kubernetes/apimachinery/blob/v0.26.1/pkg/apis/meta/v1/types.go#L111
+                          properties:
+                            generation:
+                              description: A sequence number representing a specific
+                                generation of the desired state. Populated by the
+                                system. Read-only.
+                              format: int64
+                              type: integer
+                            name:
+                              description: 'Name must be unique within a namespace.
+                                Is required when creating resources, although some
+                                resources may allow a client to request the generation
+                                of an appropriate name automatically. Name is primarily
+                                intended for creation idempotence and configuration
+                                definition. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/identifiers#names'
+                              type: string
+                            namespace:
+                              description: "Namespace defines the space within which
+                                each name must be unique. An empty namespace is equivalent
+                                to the \"default\" namespace, but \"default\" is the
+                                canonical representation. Not all objects are required
+                                to be scoped to a namespace - the value of this field
+                                for those objects will be empty. \n Must be a DNS_LABEL.
+                                Cannot be updated. More info: http://kubernetes.io/docs/user-guide/namespaces"
+                              type: string
+                          type: object
+                      type: object
                     state:
                       description: State of the Module in the currently tracked Generation
                       enum:
@@ -349,6 +395,7 @@ spec:
                   required:
                   - fqdn
                   - name
+                  - resource
                   - state
                   - version
                   type: object
@@ -639,6 +686,52 @@ spec:
                         that the status is used for. It can be any kind of Reference
                         format supported by Module.Name.
                       type: string
+                    resource:
+                      description: Resource contains information about the created
+                        module CR.
+                      properties:
+                        apiVersion:
+                          description: 'APIVersion defines the versioned schema of
+                            this representation of an object. Servers should convert
+                            recognized schemas to the latest internal value, and may
+                            reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+                          type: string
+                        kind:
+                          description: 'Kind is a string value representing the REST
+                            resource this object represents. Servers may infer this
+                            from the endpoint the client submits requests to. Cannot
+                            be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                          type: string
+                        metadata:
+                          description: PartialMeta is a subset of ObjectMeta that
+                            contains relevant information to track an Object. see
+                            https://github.com/kubernetes/apimachinery/blob/v0.26.1/pkg/apis/meta/v1/types.go#L111
+                          properties:
+                            generation:
+                              description: A sequence number representing a specific
+                                generation of the desired state. Populated by the
+                                system. Read-only.
+                              format: int64
+                              type: integer
+                            name:
+                              description: 'Name must be unique within a namespace.
+                                Is required when creating resources, although some
+                                resources may allow a client to request the generation
+                                of an appropriate name automatically. Name is primarily
+                                intended for creation idempotence and configuration
+                                definition. Cannot be updated. More info: http://kubernetes.io/docs/user-guide/identifiers#names'
+                              type: string
+                            namespace:
+                              description: "Namespace defines the space within which
+                                each name must be unique. An empty namespace is equivalent
+                                to the \"default\" namespace, but \"default\" is the
+                                canonical representation. Not all objects are required
+                                to be scoped to a namespace - the value of this field
+                                for those objects will be empty. \n Must be a DNS_LABEL.
+                                Cannot be updated. More info: http://kubernetes.io/docs/user-guide/namespaces"
+                              type: string
+                          type: object
+                      type: object
                     state:
                       description: State of the Module in the currently tracked Generation
                       enum:
@@ -701,6 +794,7 @@ spec:
                   required:
                   - fqdn
                   - name
+                  - resource
                   - state
                   - version
                   type: object
