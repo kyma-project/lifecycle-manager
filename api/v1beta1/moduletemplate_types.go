@@ -18,7 +18,6 @@ package v1beta1
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -139,18 +138,6 @@ const (
 //nolint:gochecknoinits
 func init() {
 	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{}, &Descriptor{})
-}
-
-func (in *ModuleTemplate) SetLastSync() *ModuleTemplate {
-	lastSyncDate := time.Now().Format(time.RFC3339)
-
-	if in.Annotations == nil {
-		in.Annotations = make(map[string]string)
-	}
-
-	in.Annotations[LastSync] = lastSyncDate
-
-	return in
 }
 
 func (in *ModuleTemplate) GetComponentDescriptorCacheKey() (string, error) {
