@@ -457,6 +457,9 @@ func (r *KymaReconciler) RecordKymaStatusMetrics(ctx context.Context, kyma *v1be
 	}
 
 	metrics.SetKymaStateGauge(kyma.Status.State, kyma.Name, shoot, instanceID)
+	for _, moduleStatus := range kyma.Status.Modules {
+		metrics.SetModuleStateGauge(moduleStatus.State, moduleStatus.Name, kyma.Name, shoot, instanceID)
+	}
 }
 
 func (r *KymaReconciler) WatcherEnabled(kyma *v1beta1.Kyma) bool {
