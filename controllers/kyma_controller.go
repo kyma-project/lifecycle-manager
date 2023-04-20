@@ -456,7 +456,7 @@ func (r *KymaReconciler) RecordKymaStatusMetrics(ctx context.Context, kyma *v1be
 		logger.Info(fmt.Sprintf("expected label: %s not found when setting metric", v1beta1.InstanceIDLabel))
 	}
 
-	metrics.SetKymaStatusInfo(kyma.Status.State, kyma.Name, shoot, instanceID)
+	metrics.SetKymaStateGauge(kyma.Status.State, kyma.Name, shoot, instanceID)
 }
 
 func (r *KymaReconciler) WatcherEnabled(kyma *v1beta1.Kyma) bool {

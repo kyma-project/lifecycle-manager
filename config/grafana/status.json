@@ -30,7 +30,7 @@
       },
       "id": 4,
       "panels": [],
-      "title": "Kyma Status Overview",
+      "title": "Kyma State Overview",
       "type": "row"
     },
     {
@@ -80,14 +80,14 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(klm_kyma_status_info{state=\"Ready\"})",
+          "expr": "sum(lifecycle_mgr_kyma_state{state=\"Ready\"})",
           "interval": "",
           "legendFormat": "Ready",
           "refId": "A"
         },
         {
           "exemplar": true,
-          "expr": "sum(klm_kyma_status_info{state=\"Deleting\"})",
+          "expr": "sum(lifecycle_mgr_kyma_state{state=\"Deleting\"})",
           "hide": false,
           "interval": "",
           "legendFormat": "Deleting",
@@ -95,7 +95,7 @@
         },
         {
           "exemplar": true,
-          "expr": "sum(klm_kyma_status_info{state=\"Processing\"})",
+          "expr": "sum(lifecycle_mgr_kyma_state{state=\"Processing\"})",
           "hide": false,
           "interval": "",
           "legendFormat": "Processing",
@@ -103,7 +103,7 @@
         },
         {
           "exemplar": true,
-          "expr": "sum(klm_kyma_status_info{state=\"Error\"})",
+          "expr": "sum(lifecycle_mgr_kyma_state{state=\"Error\"})",
           "hide": false,
           "interval": "",
           "legendFormat": "Error",
@@ -114,7 +114,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Kyma Statuses Total",
+      "title": "Kyma State Total",
       "tooltip": {
         "shared": true,
         "sort": 0,
