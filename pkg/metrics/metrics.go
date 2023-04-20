@@ -30,17 +30,17 @@ func Initialize() {
 }
 
 // SetKymaStatusInfo adjusts the metric that tracks the current "Status.state" of the Kyma object.
-func SetKymaStatusInfo(new kymaTypes.State, kymaName, shoot, instanceID string) {
+func SetKymaStatusInfo(state kymaTypes.State, kymaName, shoot, instanceID string) {
 	states := kymaTypes.AllKymaStates()
-	for _, state := range states {
+	for i := range states {
 		mtr := KymaStatusInfo.With(
 			prometheus.Labels{
 				kymaNameLabel:   kymaName,
-				stateLabel:      string(state),
+				stateLabel:      string(states[i]),
 				shootLabel:      shoot,
 				instanceIDLabel: instanceID,
 			})
-		if state == new {
+		if states[i] == state {
 			mtr.Set(1)
 		} else {
 			mtr.Set(0)
