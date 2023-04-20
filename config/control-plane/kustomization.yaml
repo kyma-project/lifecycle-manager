@@ -36,7 +36,7 @@ components:
   - ../webhook
   # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
   - ../prometheus
-  # [GRAFANA] To enable prometheus monitor, uncomment all sections with 'GRAFANA'.
+  # [GRAFANA] To enable grafana, uncomment all sections with 'GRAFANA'.
   - ../grafana
 
 patches:
@@ -60,17 +60,12 @@ patchesJson6902:
     target:
       version: v1
       kind: ConfigMap
-      name: klm-controller-resources-metrics
-  - path: patches/dashboard_cm_patch.yaml
-    target:
-      version: v1
-      kind: ConfigMap
-      name: klm-controller-runtime-metrics
-  - path: patches/dashboard_cm_patch.yaml
-    target:
-      version: v1
-      kind: ConfigMap
       name: klm-overview
+  - path: patches/dashboard_cm_patch.yaml
+    target:
+      version: v1
+      kind: ConfigMap
+      name: klm-status
 
 patchesStrategicMerge:
   # We expect a kcp-system namespace to be already present in KCP
