@@ -124,7 +124,8 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(
 		manifestObject := module.Object.(*v1beta1.Manifest)
 		manifestAPIVersion, manifestKind := manifestObject.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 		templateAPIVersion, templateKind := module.Template.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
-		moduleCRAPIVersion, moduleCRKind := manifestObject.Spec.Resource.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
+		moduleCRAPIVersion, moduleCRKind := manifestObject.Spec.Resource.
+			GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 		latestModuleStatus := v1beta1.ModuleStatus{
 			Name:    module.ModuleName,
 			FQDN:    module.FQDN,
