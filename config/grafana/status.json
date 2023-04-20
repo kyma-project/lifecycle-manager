@@ -80,14 +80,14 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(lifecycle_manager_kyma_status{state=\"Ready\"})",
+          "expr": "sum(klm_kyma_status_info{state=\"Ready\"})",
           "interval": "",
           "legendFormat": "Ready",
           "refId": "A"
         },
         {
           "exemplar": true,
-          "expr": "sum(lifecycle_manager_kyma_status{state=\"Deleting\"})",
+          "expr": "sum(klm_kyma_status_info{state=\"Deleting\"})",
           "hide": false,
           "interval": "",
           "legendFormat": "Deleting",
@@ -95,7 +95,7 @@
         },
         {
           "exemplar": true,
-          "expr": "sum(lifecycle_manager_kyma_status{state=\"Processing\"})",
+          "expr": "sum(klm_kyma_status_info{state=\"Processing\"})",
           "hide": false,
           "interval": "",
           "legendFormat": "Processing",
@@ -103,7 +103,7 @@
         },
         {
           "exemplar": true,
-          "expr": "sum(lifecycle_manager_kyma_status{state=\"Error\"})",
+          "expr": "sum(klm_kyma_status_info{state=\"Error\"})",
           "hide": false,
           "interval": "",
           "legendFormat": "Error",

@@ -14,24 +14,26 @@ const (
 	instanceIDLabel = "instance_id"
 )
 
-// KymaStatus is a prometheus metric which holds
-// a count for Status.state value for every reconciled Kyma.
-// The value of zero means the status is not set, the value of 1 means the status is set.
-// The "state" label values must be one of the defined Status.state values for Kyma CRs.
-var kymaStatus = prometheus.NewGaugeVec(prometheus.GaugeOpts{ //nolint:gochecknoglobals
-	Name: "lifecycle_manager_kyma_status",
-	Help: "Indicates the Status.state for a given Kyma object",
-}, []string{kymaNameLabel, stateLabel, shootLabel, instanceIDLabel})
+var (
+	// KymaStatusInfo is a prometheus metric which holds
+	// a count for Status.state value for every reconciled Kyma.
+	// The value of zero means the status is not set, the value of 1 means the status is set.
+	// The "state" label values must be one of the defined Status.state values for Kyma CRs.
+	KymaStatusInfo = prometheus.NewGaugeVec(prometheus.GaugeOpts{ //nolint:gochecknoglobals
+		Name: "klm_kyma_status_info",
+		Help: "Indicates the Status.state for a given Kyma object",
+	}, []string{kymaNameLabel, stateLabel, shootLabel, instanceIDLabel})
+)
 
 func Initialize() {
-	ctrlMetrics.Registry.MustRegister(kymaStatus)
+	ctrlMetrics.Registry.MustRegister(KymaStatusInfo)
 }
 
-// RecordKymaStatus adjusts the metric that tracks the current "Status.state" of the Kyma object.
-func RecordKymaStatus(new kymaTypes.State, kymaName, shoot, instanceID string) {
+// SetKymaStatusInfo adjusts the metric that tracks the current "Status.state" of the Kyma object.
+func SetKymaStatusInfo(new kymaTypes.State, kymaName, shoot, instanceID string) {
 	states := kymaTypes.AllKymaStates()
 	for _, state := range states {
-		mtr := kymaStatus.With(
+		mtr := KymaStatusInfo.With(
 			prometheus.Labels{
 				kymaNameLabel:   kymaName,
 				stateLabel:      string(state),
