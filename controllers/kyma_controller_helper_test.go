@@ -233,6 +233,13 @@ func ModuleTemplatesExist(clnt client.Client, kyma *v1beta1.Kyma, remote bool) f
 	}
 }
 
+func ModuleTemplateExist(client client.Client, kyma *v1beta1.Kyma, template *v1beta1.ModuleTemplate) func() bool {
+	return func() bool {
+		err := getModuleTemplate(client, template, kyma, true)
+		return k8serrors.IsNotFound(err)
+	}
+}
+
 func GetModuleTemplatesLabelCount(clnt client.Client, kyma *v1beta1.Kyma, remote bool) (int, error) {
 	module := kyma.Spec.Modules[0]
 	template, err := GetModuleTemplate(module.Name, clnt, kyma, remote)
@@ -311,6 +318,13 @@ func getModuleDescriptor(module v1beta1.Module, clnt client.Client, kyma *v1beta
 		return nil, err
 	}
 	return template.Spec.GetDescriptor(compdesc.DefaultJSONLCodec)
+}
+
+func getModuleTemplate(clnt client.Client, template *v1beta1.ModuleTemplate, kyma *v1beta1.Kyma, remote bool) error {
+	if remote && kyma.Spec.Sync.Namespace != "" {
+		template.SetNamespace(kyma.Spec.Sync.Namespace)
+	}
+	return clnt.Get(ctx, client.ObjectKeyFromObject(template), template)
 }
 
 func deleteModule(kyma *v1beta1.Kyma, module v1beta1.Module) func() error {

@@ -248,7 +248,7 @@ func (c *TemplateLookup) getTemplate(ctx context.Context, desiredChannel string)
 		}
 		descriptor, err := template.Spec.GetDescriptor()
 		if err != nil {
-			return nil, fmt.Errorf("invalid ModuleTemplate descriptor: %v", err)
+			return nil, fmt.Errorf("invalid ModuleTemplate descriptor: %w", err)
 		}
 		if descriptor.Name == moduleIdentifier && template.Spec.Channel == desiredChannel {
 			filteredTemplates = append(filteredTemplates, template)
