@@ -1,9 +1,11 @@
 package parse
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"github.com/kyma-project/lifecycle-manager/pkg/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 )
 
@@ -24,12 +27,17 @@ var (
 	ErrDefaultConfigParsing    = errors.New("defaultConfig could not be parsed")
 )
 
-func GenerateModulesFromTemplates(
-	kyma *v1beta1.Kyma, templates channel.ModuleTemplatesByModuleName, verification signature.Verification,
+func GenerateModulesFromTemplates(ctx context.Context,
+	kyma *v1beta1.Kyma,
+	templates channel.ModuleTemplatesByModuleName,
+	verification signature.Verification,
+	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
+	clnt client.Client,
 ) (common.Modules, error) {
 	// these are the actual modules
-	modules, err := templatesToModules(kyma, templates,
-		&ModuleConversionSettings{Verification: verification})
+	modules, err := templatesToModules(ctx, kyma, templates,
+		&ModuleConversionSettings{Verification: verification},
+		componentDescriptorCache, clnt)
 	if err != nil {
 		return nil, fmt.Errorf("cannot convert templates: %w", err)
 	}
@@ -38,9 +46,12 @@ func GenerateModulesFromTemplates(
 }
 
 func templatesToModules(
+	ctx context.Context,
 	kyma *v1beta1.Kyma,
 	templates channel.ModuleTemplatesByModuleName,
 	settings *ModuleConversionSettings,
+	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
+	clnt client.Client,
 ) (common.Modules, error) {
 	// First, we fetch the module spec from the template and use it to resolve it into an arbitrary object
 	// (since we do not know which module we are dealing with)
@@ -74,7 +85,10 @@ func templatesToModules(
 			}
 		}
 		var obj client.Object
-		if obj, err = NewManifestFromTemplate(module, template.ModuleTemplate, settings.Verification); err != nil {
+		if obj, err = NewManifestFromTemplate(ctx, module,
+			template.ModuleTemplate,
+			settings.Verification,
+			componentDescriptorCache, clnt); err != nil {
 			return nil, err
 		}
 		// we name the manifest after the module name
@@ -95,9 +109,12 @@ func templatesToModules(
 }
 
 func NewManifestFromTemplate(
+	ctx context.Context,
 	module v1beta1.Module,
 	template *v1beta1.ModuleTemplate,
 	verification signature.Verification,
+	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
+	clnt client.Client,
 ) (*v1beta1.Manifest, error) {
 	manifest := &v1beta1.Manifest{}
 	manifest.Spec.Remote = ConvertTargetToRemote(template.Spec.Target)
@@ -113,17 +130,31 @@ func NewManifestFromTemplate(
 
 	var layers img.Layers
 	var err error
-
 	descriptor, err := template.Spec.GetDescriptor()
 	if err != nil {
 		return nil, err
 	}
+	var componentDescriptor *compdesc.ComponentDescriptor
+	useLocalTemplate, found := template.GetLabels()[v1beta1.UseLocalTemplate]
+	if found && useLocalTemplate == "true" {
+		componentDescriptor = descriptor.ComponentDescriptor
+	} else {
+		descriptorCacheKey, err := template.GetComponentDescriptorCacheKey()
+		if err != nil {
+			return nil, err
+		}
+		componentDescriptor, err = componentDescriptorCache.GetRemoteDescriptor(ctx,
+			descriptorCacheKey, descriptor, clnt)
+		if err != nil {
+			return nil, err
+		}
+	}
 
-	if err := signature.Verify(descriptor.ComponentDescriptor, verification); err != nil {
+	if err := signature.Verify(componentDescriptor, verification); err != nil {
 		return nil, fmt.Errorf("could not verify descriptor: %w", err)
 	}
 
-	if layers, err = img.Parse(descriptor.ComponentDescriptor); err != nil {
+	if layers, err = img.Parse(componentDescriptor); err != nil {
 		return nil, fmt.Errorf("could not parse descriptor: %w", err)
 	}
 

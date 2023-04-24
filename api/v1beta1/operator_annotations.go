@@ -1,8 +1,7 @@
 package v1beta1
 
 const (
-	LastSync = OperatorPrefix + Separator + "last-sync"
-	FQDN     = OperatorPrefix + Separator + "fqdn"
+	FQDN = OperatorPrefix + Separator + "fqdn"
 
 	// OwnedByAnnotation defines the resource managing the resource. Differing from ManagedBy
 	// in that it does not reference controllers. Used by the runtime-watcher to determine the

@@ -3,10 +3,11 @@ package img
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods/localblob"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods/localociblob"
@@ -16,10 +17,6 @@ import (
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/cpi"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
 	"github.com/open-component-model/ocm/pkg/runtime"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 )
 
 const DefaultRepoSubdirectory = "component-descriptors"
@@ -133,13 +130,11 @@ func getOCIRef(
 		layerRef.Ref = ref
 	}
 	if registryCredValue, found := labels.Get(v1beta1.OCIRegistryCredLabel); found {
-		credSecretLabel := make(map[string]string)
-		if err := json.Unmarshal(registryCredValue, &credSecretLabel); err != nil {
+		credSecretSelector, err := ocmextensions.GenerateLabelSelector(registryCredValue)
+		if err != nil {
 			return nil, err
 		}
-		layerRef.CredSecretSelector = &metav1.LabelSelector{
-			MatchLabels: credSecretLabel,
-		}
+		layerRef.CredSecretSelector = credSecretSelector
 	}
 
 	switch repo.ComponentNameMapping {

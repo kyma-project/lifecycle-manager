@@ -1,0 +1,71 @@
+apiVersion: operator.kyma-project.io/v1beta1
+kind: ModuleTemplate
+metadata:
+  name: moduletemplate-template-operator
+  namespace: default
+  labels:
+    "operator.kyma-project.io/managed-by": "lifecycle-manager"
+    "operator.kyma-project.io/controller-name": "manifest"
+    "operator.kyma-project.io/module-name": "template-operator"
+    "operator.kyma-project.io/use-local-template": "true"
+spec:
+  target: control-plane
+  channel: regular
+  data:
+    apiVersion: operator.kyma-project.io/v1alpha1
+    kind: Sample
+    metadata:
+      name: sample-yaml
+    spec:
+      resourceFilePath: "./module-data/yaml"
+  descriptor:
+    component:
+      componentReferences: []
+      labels:
+        - name: oci-registry-cred
+          value:
+            operator.kyma-project.io/oci-registry-cred: operator-regcred
+      name: kyma-project.io/template-operator
+      provider: internal
+      repositoryContexts:
+        - baseUrl: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/template-operator
+          componentNameMapping: urlPath
+          type: ociRegistry
+      resources:
+        - access:
+            digest: sha256:db86408caca4c94250d8291aa79655b84146f9cc45e0da49f05a52b3722d74a0
+            type: localOciBlob
+          labels:
+            - name: oci-registry-cred
+              value:
+                operator.kyma-project.io/oci-registry-cred: operator-regcred
+          name: config
+          relation: local
+          type: yaml
+          version: v1.6.0
+        - access:
+            digest: sha256:8f01a545b7f53f91dd9f0bb7b74b30dfa2e571dae8d38fd0f56af66f809378fd
+            type: localOciBlob
+          labels:
+            - name: oci-registry-cred
+              value:
+                operator.kyma-project.io/oci-registry-cred: operator-regcred
+          name: template-operator
+          relation: local
+          type: helm-chart
+          version: v1.6.0
+      sources:
+        - access:
+            commit: 26bd319108e0f9001baec78780d7fc52b5bd7eb3
+            repoUrl: github.com/kyma-project/template-operator
+            type: gitHub
+          labels:
+            - name: git.kyma-project.io/ref
+              value: refs/heads/main
+              version: v1
+          name: module-sources
+          type: git
+          version: v1.6.0
+      version: v1.6.0
+    meta:
+      schemaVersion: v2
