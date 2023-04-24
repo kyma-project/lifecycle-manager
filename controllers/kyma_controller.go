@@ -97,6 +97,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	// check if kyma resource exists
 	kyma := &v1beta1.Kyma{}
+
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
 		// we'll ignore not-found errors, since they can't be fixed by an immediate
 		// requeue (we'll need to wait for a new notification), and we can get them
