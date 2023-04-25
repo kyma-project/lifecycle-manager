@@ -2,60 +2,34 @@
 
 Kyma is an opinionated set of Kubernetes based modular building blocks that includes the necessary capabilities to develop and run enterprise-grade cloud-native applications. Kyma's Lifecycle Manager is a tool that manages the lifecycle of these modules in your cluster.
 
-### Contents
-* [How it works](#how-it-works)
-  * [Example](#example)
-  * [Getting Started](#getting-started)
-* [Architecture](#architecture)
-  * [Stability](#stability)
-* [Deployment / Delivery models](#deployment--delivery-models)
-  * [Release Lifecycles for Modules](#release-lifecycles-for-modules)
-  * [Versioning and Releasing](#versioning-and-releasing)
-  * [Comparison to the Old Reconciler](#comparison-to-the-old-reconciler)
-* [Testing and implementation guide](#testing-and-implementation-guide)
-
 ## Modularization
 
-Lifecycle Manager manages Clusters through the [Kyma Custom Resource](api/v1beta1/kyma_types.go), which contains a desired state of all modules in a cluster. Imagine it as a one stop shop for a cluster where you can add and remove modules with domain-specific functionality with additional configuration.
+<!-- moved to [docs/modularization.md](docs/modularization.md) -->
 
-The modules themselves are bundled containers based on the [OCI Image Format Specification](https://github.com/opencontainers/image-spec). 
-They contain an immutable layer set of a module operator deployment description and its configuration. 
+## Get Started
 
-![Kyma Module Structure](docs/assets/kyma-module-template-structure.svg)
 
-If you use Kyma's [CLI](https://github.com/kyma-project/cli), please refer to the `kyma alpha create module --help` section to learn more about it's structure and how it is created. You might even be able to use its inbuilt auto-detection of [kubebuilder](https://kubebuilder.io) projects to easily bundle your module with little effort.
+### Prerequisites (environment setup)
 
-The modules are installed and controlled by Lifecycle Manager. We use [Open Component Model](https://ocm.software) to describe all of our modules descriptively. 
-Based on the [ModuleTemplate Custom Resource](api/v1beta1/moduletemplate_types.go), the module is resolved from its individual layers and version and is used as a template for the [Manifest](api/v1beta1/manifest_types.go). 
-Whenever a module is accepted by Lifecycle Manager the ModuleTemplate gets translated into a Manifest, which describes the actual desired state of the module operator.
+- [k3d](https://k3d.io/)
+- [istioctl](https://istio.io/latest/docs/setup/install/istioctl/)
+- [Kyma CLI](https://kyma-project.io/docs/kyma/latest/04-operation-guides/operations/01-install-kyma-CLI)
 
-The Lifecycle Manager then updates the [Kyma Custom Resource](api/v1alpha1/kyma_types.go) of the cluster based on the observed status changes in the Module Custom Resources (similar to a native kubernetes deployment tracking availability).
+### deploying the templates  
 
-Module operators only have to watch their own custom resources and reconcile modules in the target clusters to the desired state. 
+1. Provision a local k3d cluster. Run:
 
-### Example
-
-A sample `Kyma` CR could look like this:
-```
-apiVersion: operator.kyma-project.io/v1beta1
-kind: Kyma
-metadata:
-  name: my-kyma
-spec:
-  modules:
-  - name: my-module
+```bash
+kyma provision k3d
 ```
 
-The creation of the custom resource triggers a reconciliation that
-1. looks for a ModuleTemplate based on search criteria, for example the OCM Component Name of the Module or simply the of the `ModuleTemplate`
-2. creates a `Manifest` for `my-module` based on a [ModuleTemplate](api/v1beta1/moduletemplate_types.go) found in the cluster by resolving all relevant image layer for the installation
-3. installing the contents of the modules operator by applying them to the cluster, and observing its state
-4. reporting back all states observed in the `Manifest` which then gets propagated to the `Kyma` resource for the cluster.
-   Lifecycle Manager then uses this to aggregate and combine the readiness condition of the cluster and determine the installation state or trigger more reconciliation loops as needed.
+```bash
+kyma alpha deploy
+```
 
-As mentioned above, when each module operator completes their installation, it reports its own resource status. However, to accurately report state, we read out the `.status.state` field to accumulate status reporting for an entire cluster.
+### enabling modules  
 
-### Getting Started
+### interactive tutorials?  
 
 If you are new to our Lifecycle Manager and want to get started quickly, we recommend that you follow our [Quick Start Guide](./docs/user/quick-start.md). This guide will walk you through the basic steps of setting up your local KCP cluster to installing the Lifecycle Manager, and using the main features.
 
