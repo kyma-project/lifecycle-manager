@@ -23,6 +23,10 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+var (
+	ErrKymaNotFound = errors.New("kyma not exists")
+)
+
 func RegisterDefaultLifecycleForKyma(kyma *v1beta1.Kyma) {
 	BeforeAll(func() {
 		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false)
@@ -214,11 +218,12 @@ func GetModuleTemplate(name string,
 	return moduleTemplateInCluster, nil
 }
 
-func KymaExists(remoteClient client.Client, name, namespace string) func() error {
-	return func() error {
-		_, err := GetKyma(ctx, remoteClient, name, namespace)
-		return err
+func KymaExists(clnt client.Client, name, namespace string) error {
+	_, err := GetKyma(ctx, clnt, name, namespace)
+	if k8serrors.IsNotFound(err) {
+		return ErrKymaNotFound
 	}
+	return nil
 }
 
 func ModuleTemplatesExist(clnt client.Client, kyma *v1beta1.Kyma, remote bool) func() error {
@@ -233,39 +238,23 @@ func ModuleTemplatesExist(clnt client.Client, kyma *v1beta1.Kyma, remote bool) f
 	}
 }
 
-func GetModuleTemplatesLabelCount(clnt client.Client, kyma *v1beta1.Kyma, remote bool) (int, error) {
-	module := kyma.Spec.Modules[0]
-	template, err := GetModuleTemplate(module.Name, clnt, kyma, remote)
-	if err != nil {
-		return 0, err
-	}
-	descriptor, err := template.Spec.GetDescriptor()
-	if err != nil {
-		return 0, err
-	}
-
-	return len(descriptor.GetLabels()), nil
-}
-
 var ErrUnwantedChangesFound = errors.New("unwanted changes found")
 
 func ModuleTemplatesVerifyUnwantedLabel(
 	clnt client.Client, kyma *v1beta1.Kyma, unwantedLabel ocmv1.Label, remote bool,
-) func() error {
-	return func() error {
-		for _, module := range kyma.Spec.Modules {
-			descriptor, err := getModuleDescriptor(module, clnt, kyma, remote)
-			if err != nil {
-				return err
-			}
-			labels := descriptor.GetLabels()
-			_, ok := labels.Get(unwantedLabel.Name)
-			if ok {
-				return ErrUnwantedChangesFound
-			}
+) error {
+	for _, module := range kyma.Spec.Modules {
+		descriptor, err := getModuleDescriptor(module, clnt, kyma, remote)
+		if err != nil {
+			return err
 		}
-		return nil
+		labels := descriptor.GetLabels()
+		_, ok := labels.Get(unwantedLabel.Name)
+		if ok {
+			return ErrUnwantedChangesFound
+		}
 	}
+	return nil
 }
 
 func ModifyModuleTemplateSpecThroughLabels(
@@ -295,7 +284,7 @@ func ModifyModuleTemplateSpecThroughLabels(
 			Expect(err).ToNot(HaveOccurred())
 			template.Spec.Descriptor.Raw = newDescriptor
 
-			if err := runtimeClient.Update(ctx, template); err != nil {
+			if err := clnt.Update(ctx, template); err != nil {
 				return err
 			}
 		}
