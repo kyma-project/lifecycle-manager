@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"golang.org/x/sync/errgroup"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -40,10 +40,12 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/parse"
 	modulesync "github.com/kyma-project/lifecycle-manager/pkg/module/sync"
+	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type EventErrorType string
@@ -64,10 +66,11 @@ type KymaReconciler struct {
 	record.EventRecorder
 	RequeueIntervals
 	signature.VerificationSettings
-	SKRWebhookManager watcher.SKRWebhookManager
-	KcpRestConfig     *rest.Config
-	RemoteClientCache *remote.ClientCache
-	IsManagedKyma     bool
+	SKRWebhookManager        watcher.SKRWebhookManager
+	KcpRestConfig            *rest.Config
+	RemoteClientCache        *remote.ClientCache
+	ComponentDescriptorCache *ocmextensions.ComponentDescriptorCache
+	IsManagedKyma            bool
 }
 
 //nolint:lll
@@ -403,7 +406,9 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 	}
 
 	// these are the actual modules
-	modules, err := parse.GenerateModulesFromTemplates(kyma, templates, verification)
+	modules, err := parse.GenerateModulesFromTemplates(ctx, kyma, templates, verification,
+		r.ComponentDescriptorCache,
+		r.Client)
 	if err != nil {
 		return nil, fmt.Errorf("cannot generate modules: %w", err)
 	}
@@ -456,7 +461,10 @@ func (r *KymaReconciler) RecordKymaStatusMetrics(ctx context.Context, kyma *v1be
 		logger.Info(fmt.Sprintf("expected label: %s not found when setting metric", v1beta1.InstanceIDLabel))
 	}
 
-	metrics.RecordKymaStatus(kyma.Name, kyma.Status.State, shoot, instanceID)
+	metrics.SetKymaStateGauge(kyma.Status.State, kyma.Name, shoot, instanceID)
+	for _, moduleStatus := range kyma.Status.Modules {
+		metrics.SetModuleStateGauge(moduleStatus.State, moduleStatus.Name, kyma.Name, shoot, instanceID)
+	}
 }
 
 func (r *KymaReconciler) WatcherEnabled(kyma *v1beta1.Kyma) bool {

@@ -31,17 +31,16 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	})
 	It("should successfully fetch accept a moduletemplate based on a compliant crd", func() {
 		crd := GetCRD(v1beta1.OperatorPrefix, "samplecrd")
-		Eventually(func() error {
-			return k8sClient.Create(webhookServerContext, crd)
-		}, Timeout, Interval).Should(Succeed())
+		Eventually(k8sClient.Create, Timeout, Interval).
+			WithContext(webhookServerContext).
+			WithArguments(crd).Should(Succeed())
 
 		template, err := testutils.ModuleTemplateFactory(
 			v1beta1.Module{
 				ControllerName: "manifest",
 				Name:           "example-module-name",
 				Channel:        v1beta1.DefaultChannel,
-			}, data,
-		)
+			}, data, false)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
 		Expect(k8sClient.Delete(webhookServerContext, template)).Should(Succeed())
@@ -52,16 +51,15 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	It("should accept a moduletemplate based on a non-compliant crd in non-strict mode", func() {
 		crd := GetNonCompliantCRD(v1beta1.OperatorPrefix, "samplecrd")
 
-		Eventually(func() error {
-			return k8sClient.Create(webhookServerContext, crd)
-		}, Timeout, Interval).Should(Succeed())
+		Eventually(k8sClient.Create, Timeout, Interval).
+			WithContext(webhookServerContext).
+			WithArguments(crd).Should(Succeed())
 		template, err := testutils.ModuleTemplateFactory(
 			v1beta1.Module{
 				ControllerName: "manifest",
 				Name:           "example-module-name",
 				Channel:        v1beta1.DefaultChannel,
-			}, data,
-		)
+			}, data, false)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
 		Expect(k8sClient.Delete(webhookServerContext, template)).Should(Succeed())
@@ -71,17 +69,15 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 
 	It("should deny a version downgrade when updating", func() {
 		crd := GetCRD(v1beta1.OperatorPrefix, "samplecrd")
-		Eventually(func() error {
-			return k8sClient.Create(webhookServerContext, crd)
-		}, Timeout, Interval).Should(Succeed())
-
+		Eventually(k8sClient.Create, Timeout, Interval).
+			WithContext(webhookServerContext).
+			WithArguments(crd).Should(Succeed())
 		template, err := testutils.ModuleTemplateFactory(
 			v1beta1.Module{
 				ControllerName: "manifest",
 				Name:           "example-module-name",
 				Channel:        v1beta1.DefaultChannel,
-			}, data,
-		)
+			}, data, false)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
