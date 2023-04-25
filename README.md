@@ -1,6 +1,6 @@
 # Lifecycle Manager
 
-Kyma is the opinionated set of Kubernetes based modular building blocks that includes the necessary capabilities to develop and run enterprise-grade cloud-native applications. Kyma's Lifecycle Manager (or `lifecycle-manager` in various technical references) is a tool that manages the lifecycle of these components in your cluster.
+Kyma is an opinionated set of Kubernetes based modular building blocks that includes the necessary capabilities to develop and run enterprise-grade cloud-native applications. Kyma's Lifecycle Manager is a tool that manages the lifecycle of these modules in your cluster.
 
 ### Contents
 * [How it works](#how-it-works)
@@ -14,7 +14,7 @@ Kyma is the opinionated set of Kubernetes based modular building blocks that inc
   * [Comparison to the Old Reconciler](#comparison-to-the-old-reconciler)
 * [Testing and implementation guide](#testing-and-implementation-guide)
 
-## How it works
+## Modularization
 
 Lifecycle Manager manages Clusters through the [Kyma Custom Resource](api/v1beta1/kyma_types.go), which contains a desired state of all modules in a cluster. Imagine it as a one stop shop for a cluster where you can add and remove modules with domain-specific functionality with additional configuration.
 
@@ -58,44 +58,6 @@ As mentioned above, when each module operator completes their installation, it r
 ### Getting Started
 
 If you are new to our Lifecycle Manager and want to get started quickly, we recommend that you follow our [Quick Start Guide](./docs/user/quick-start.md). This guide will walk you through the basic steps of setting up your local KCP cluster to installing the Lifecycle Manager, and using the main features.
-
-## Architecture
-
-The architecture of this operator is based on Kubernetes controllers/operators. `lifecycle-manager` is a meta operator that coordinates and tracks the lifecycle of kyma components by delegating it to module operators. You can compare it to [Operator Lifecycle Manager](https://olm.operatorframework.io/) from Operator Framework, and we are strongly inspired by their ideas. One of the main differentiating factors however, is that the Scope of the Kyma Lifecycle Manager is to reconcile not only locally, but also into remote Clusters.
-
-A few selected key advantages include:
-
-- Manage Operators completely free of dependency-trees and without opinionation on dependency resolution
-- Reconcile many clusters (up to 10.000 per control-plane are measured with our performance tests) from a control-plane
-- Centralize the effort on managed Runtimes by providing a Control-Plane style Reconciliation Mechanism
-- Use familiar Release Concepts of Release Channels to manage delivery of operators
-
-Before you go further, please make sure you understand concepts of Kubernetes API and resources. Recommended reading:
-- [Kubebuilder book](https://book.kubebuilder.io/)
-- [Operator SDK](https://sdk.operatorframework.io/docs/building-operators/golang/)
-
-The architecture is based as much as possible on best practices for building Kubernetes operators ([1](https://cloud.google.com/blog/products/containers-kubernetes/best-practices-for-building-kubernetes-operators-and-stateful-apps), [2](https://sdk.operatorframework.io/docs/best-practices/)).
-
-The diagram below shows a sample deployment of a Control-Plane in interaction with the Kyma Runtime. Please use this diagram not as a single source of truth (as diagrams like to be treated in README's), but rather a reference for navigation of nomenclature and terms, as real deliveries can differ significantly depending on the tradeoffs chosen for reconciliation.
-
-![Kyma Operator Architecture](docs/assets/kyma-operator-architecture.svg)
-
-### Stability
-
-Some architecture decisions were derived from business requirements and experiments (proof of concepts) and are still
-subject to change, however the general reconciliation model is considered ready for use already.
-
-Here is a (somewhat complete) list of the different modules in the system together with their stability:
-
-| Version          | System Component                                          | Stability                                                                                                                                                                                                    |
-|:-----------------|-----------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| v1alpha1,v1beta1 | [Kyma](api/v1beta1/kyma_types.go)                         | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
-| v1alpha1,v1beta1 | [ModuleTemplate](api/v1beta1/moduletemplate_types.go)     | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
-| v1alpha1,v1beta1 | [Manifest](api/v1beta1/manifest_types.go)                 | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
-| v1alpha1,v1beta1 | [Watcher](api/v1beta1/watcher_types.go)                   | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
-|                  | [Kyma Controller](controllers/kyma_controller.go)         | In active development (continuous) - Expect Bugs and fast-paced development of new features                                                                                                                  |
-|                  | [Manifest Controller](controllers/manifest_controller.go) | Directs to the [Declarative Library](internal/declarative/v2), a reconciliation library we use to install all modules                                                                                             |
-|                  | [Watcher Controller](controllers/watcher_controller.go)   | Maintains VirtualService entries for events coming from runtime clusters, mostly stable                                                                                                                      |
 
 ## Deployment / Delivery models
 
