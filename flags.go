@@ -130,9 +130,9 @@ type FlagVar struct {
 	// to specify the port used to expose the KCP cluster for the watcher
 	// when testing locally using dual-k3d cluster-setup
 	// (only k3d clusters are supported for watcher local testing)
-	listenerHTTPPortLocalMapping int
-	skrWatcherImage              string
-	pprof                        bool
+	listenerHTTPPortLocalMapping           int
+	skrWatcherImage                        string
+	pprof                                  bool
 	pprofAddr                              string
 	pprofServerTimeout                     time.Duration
 	failureBaseDelay, failureMaxDelay      time.Duration

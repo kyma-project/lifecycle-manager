@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"net/http"
+
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
@@ -38,8 +40,8 @@ const (
 )
 
 var (
-	errConvertingWatched = errors.New("error converting watched to object key")
-	errParsingWatched    = errors.New("error parsing watched from watcher event")
+	errConvertingWatched      = errors.New("error converting watched to object key")
+	errParsingWatched         = errors.New("error parsing watched from watcher event")
 	errConvertingWatcherEvent = errors.New("error converting watcher event to unstructured")
 )
 
@@ -122,19 +124,19 @@ func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, e
 	controllerBuilder.Watches(eventChannel, &handler.Funcs{
 		GenericFunc: func(event event.GenericEvent, queue workqueue.RateLimitingInterface) {
 			logger := ctrl.Log.WithName("listener")
-			unstructWatcherEvt, ok := event.Object.(*unstructured.Unstructured)
-			if !ok {
-				logger.Error(errConvertingWatcherEvent, "event", event.Object)
+			unstructWatcherEvt, conversionOk := event.Object.(*unstructured.Unstructured)
+			if !conversionOk {
+				logger.Error(errConvertingWatcherEvent, fmt.Sprintf("event: %v", event.Object))
 				return
 			}
 			watched, ok := unstructWatcherEvt.Object["watched"]
 			if !ok {
-				logger.Error(errParsingWatched, "unstructured", unstructWatcherEvt)
+				logger.Error(errParsingWatched, fmt.Sprintf("unstructured event: %v", unstructWatcherEvt))
 				return
 			}
-			watchedObjectKey, ok := watched.(client.ObjectKey)
-			if !ok {
-				logger.Error(errConvertingWatched, "watched", watched)
+			watchedObjectKey, conversionOk := watched.(client.ObjectKey)
+			if !conversionOk {
+				logger.Error(errConvertingWatched, fmt.Sprintf("watched object: %v", watched))
 				return
 			}
 			logger.Info(
