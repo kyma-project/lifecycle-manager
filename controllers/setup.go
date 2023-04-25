@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -66,7 +67,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 	// register listener component incl. domain name verification
 	runnableListener, eventChannel = listener.RegisterListenerComponent(
 		settings.ListenerAddr,
-		v1beta1.OperatorName,
+		v1beta2.OperatorName,
 		verifyFunc,
 	)
 

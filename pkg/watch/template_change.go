@@ -3,6 +3,7 @@ package watch
 import (
 	"context"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -39,7 +40,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 
 		kymas := &v1beta1.KymaList{}
 		listOptions := &client.ListOptions{
-			LabelSelector: labels.SelectorFromSet(labels.Set{v1beta1.ManagedBy: v1beta1.OperatorName}),
+			LabelSelector: labels.SelectorFromSet(labels.Set{v1beta2.ManagedBy: v1beta2.OperatorName}),
 		}
 		if h.NamespaceScoped {
 			listOptions.Namespace = template.Namespace
@@ -87,10 +88,10 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 func manageable(template *v1beta1.ModuleTemplate) bool {
 	lbls := template.GetLabels()
 
-	if managedBy, ok := lbls[v1beta1.ManagedBy]; !ok || managedBy != v1beta1.OperatorName {
+	if managedBy, ok := lbls[v1beta2.ManagedBy]; !ok || managedBy != v1beta2.OperatorName {
 		return false
 	}
-	if controller, ok := lbls[v1beta1.ControllerName]; !ok || controller == "" {
+	if controller, ok := lbls[v1beta2.ControllerName]; !ok || controller == "" {
 		return false
 	}
 	if template.Spec.Target == v1beta1.TargetControlPlane || template.Spec.Channel == "" {

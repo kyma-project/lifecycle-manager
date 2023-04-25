@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 
 	"github.com/google/go-containerregistry/pkg/v1/partial"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -83,8 +84,8 @@ func PushToRemoteOCIRegistry(layerName string) {
 	Expect(gotHash).To(Equal(digest))
 }
 
-func createOCIImageSpec(name, repo string) v1beta1.ImageSpec {
-	imageSpec := v1beta1.ImageSpec{
+func createOCIImageSpec(name, repo string) v1beta2.ImageSpec {
+	imageSpec := v1beta2.ImageSpec{
 		Name: name,
 		Repo: repo,
 		Type: "oci-ref",
@@ -102,13 +103,13 @@ func NewTestManifest(prefix string) *v1beta1.Manifest {
 			Name:      fmt.Sprintf("%s-%d", prefix, rand.Intn(999999)),
 			Namespace: metav1.NamespaceDefault,
 			Labels: map[string]string{
-				v1beta1.KymaName: string(uuid.NewUUID()),
+				v1beta2.KymaName: string(uuid.NewUUID()),
 			},
 		},
 	}
 }
 
-func deleteHelmChartResources(imageSpec v1beta1.ImageSpec) {
+func deleteHelmChartResources(imageSpec v1beta2.ImageSpec) {
 	chartYamlPath := filepath.Join(internalv1beta1.GetFsChartPath(imageSpec), "Chart.yaml")
 	Expect(os.RemoveAll(chartYamlPath)).Should(Succeed())
 	valuesYamlPath := filepath.Join(internalv1beta1.GetFsChartPath(imageSpec), "values.yaml")
@@ -117,7 +118,7 @@ func deleteHelmChartResources(imageSpec v1beta1.ImageSpec) {
 	Expect(os.RemoveAll(templatesPath)).Should(Succeed())
 }
 
-func verifyHelmResourcesDeletion(imageSpec v1beta1.ImageSpec) {
+func verifyHelmResourcesDeletion(imageSpec v1beta2.ImageSpec) {
 	_, err := os.Stat(filepath.Join(internalv1beta1.GetFsChartPath(imageSpec), "Chart.yaml"))
 	Expect(os.IsNotExist(err)).To(BeTrue())
 	_, err = os.Stat(filepath.Join(internalv1beta1.GetFsChartPath(imageSpec), "values.yaml"))

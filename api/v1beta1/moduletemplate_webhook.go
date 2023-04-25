@@ -18,14 +18,9 @@ package v1beta1
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/Masterminds/semver/v3"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -63,78 +58,36 @@ type clusterAwareModuleTemplateValidator struct {
 }
 
 func (c *clusterAwareModuleTemplateValidator) ValidateCreate(_ context.Context, obj runtime.Object) error {
-	moduletemplatelog.Info("validate create", "name", obj.(*ModuleTemplate).Name)
-	return c.validate(nil, obj.(*ModuleTemplate))
-}
-
-func (c *clusterAwareModuleTemplateValidator) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) error {
-	moduletemplatelog.Info("validate update", "name", newObj.(*ModuleTemplate).Name)
-	return c.validate(oldObj.(*ModuleTemplate), newObj.(*ModuleTemplate))
-}
-
-func (c *clusterAwareModuleTemplateValidator) ValidateDelete(_ context.Context, obj runtime.Object) error {
-	moduletemplatelog.Info("validate delete", "name", obj.(*ModuleTemplate).Name)
-	return c.validate(nil, obj.(*ModuleTemplate))
-}
-
-func (c *clusterAwareModuleTemplateValidator) validate(oldTemplate, newTemplate *ModuleTemplate) error {
+	newTemplate := obj.(*ModuleTemplate)
 	newDescriptor, err := newTemplate.Spec.GetDescriptor()
 	if err != nil {
 		return err
 	}
-	if err := compdesc.Validate(newDescriptor.ComponentDescriptor); err != nil {
+	moduletemplatelog.Info("validate create", "name", newTemplate.Name)
+	return v1beta2.Validate(nil, newDescriptor, newTemplate.Name)
+}
+
+func (c *clusterAwareModuleTemplateValidator) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) error {
+	newTemplate := newObj.(*ModuleTemplate)
+	newDescriptor, err := newTemplate.Spec.GetDescriptor()
+	if err != nil {
 		return err
 	}
-
-	newVersion, err := semver.NewVersion(newDescriptor.Version)
+	oldTemplate := oldObj.(*ModuleTemplate)
+	oldDescriptor, err := oldTemplate.Spec.GetDescriptor()
 	if err != nil {
-		return apierrors.NewInvalid(
-			schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
-			newTemplate.Name, field.ErrorList{field.Invalid(
-				field.NewPath("spec").Child("descriptor").
-					Child("version"),
-				newDescriptor.Version, err.Error(),
-			)},
-		)
+		return err
 	}
-
-	if oldTemplate != nil {
-		// the old descriptor has to be valid since it otherwise would not have been submitted
-		oldDescriptor, err := oldTemplate.Spec.GetDescriptor()
-		if err != nil {
-			return err
-		}
-		oldVersion, err := semver.NewVersion(oldDescriptor.Version)
-		if err != nil {
-			return err
-		}
-		return validateVersionUpgrade(newVersion, oldVersion, newTemplate.Name)
-	}
-
-	return nil
+	moduletemplatelog.Info("validate update", "name", newObj.(*ModuleTemplate).Name)
+	return v1beta2.Validate(oldDescriptor, newDescriptor, newTemplate.Name)
 }
 
-func validateVersionUpgrade(newVersion *semver.Version, oldVersion *semver.Version, templateName string) error {
-	filteredNewVersion := filterVersion(newVersion)
-	filteredOldVersion := filterVersion(oldVersion)
-	if filteredNewVersion.LessThan(filteredOldVersion) {
-		return apierrors.NewInvalid(
-			schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
-			templateName, field.ErrorList{field.Invalid(
-				field.NewPath("spec").Child("descriptor").
-					Child("version"),
-				newVersion.String(), fmt.Sprintf(
-					"version of templates can never be decremented (previously %s)",
-					oldVersion,
-				),
-			)},
-		)
+func (c *clusterAwareModuleTemplateValidator) ValidateDelete(_ context.Context, obj runtime.Object) error {
+	newTemplate := obj.(*ModuleTemplate)
+	newDescriptor, err := newTemplate.Spec.GetDescriptor()
+	if err != nil {
+		return err
 	}
-	return nil
-}
-
-func filterVersion(version *semver.Version) *semver.Version {
-	filteredVersion, _ := semver.NewVersion(fmt.Sprintf("%d.%d.%d",
-		version.Major(), version.Minor(), version.Patch()))
-	return filteredVersion
+	moduletemplatelog.Info("validate delete", "name", obj.(*ModuleTemplate).Name)
+	return v1beta2.Validate(nil, newDescriptor, newTemplate.Name)
 }

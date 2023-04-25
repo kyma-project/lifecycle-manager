@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -53,9 +54,9 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 		LastUpdateTime: metav1.NewTime(time.Now()),
 	}
 
-	fieldOwner := v1beta1.UnmanagedKyma
+	fieldOwner := v1beta2.UnmanagedKyma
 	if k.isManagedKyma {
-		fieldOwner = v1beta1.OperatorName
+		fieldOwner = v1beta2.OperatorName
 	}
 	if err := k.Patch(ctx, kyma, client.Apply, subResourceOpts(client.ForceOwnership),
 		client.FieldOwner(fieldOwner)); err != nil {

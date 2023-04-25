@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/registry"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap/zapcore"
@@ -118,11 +119,11 @@ var _ = BeforeSuite(
 			cfg, ctrl.Options{
 				MetricsBindAddress: metricsBindAddress,
 				Scheme:             scheme.Scheme,
-				NewCache:           internal.GetCacheFunc(labels.Set{v1beta1.ManagedBy: v1beta1.OperatorName}),
+				NewCache:           internal.GetCacheFunc(labels.Set{v1beta2.ManagedBy: v1beta2.OperatorName}),
 			},
 		)
 		Expect(err).ToNot(HaveOccurred())
-		codec, err := v1beta1.NewCodec()
+		codec, err := v1beta2.NewCodec()
 		Expect(err).ToNot(HaveOccurred())
 
 		var authUser *envtest.AuthenticatedUser

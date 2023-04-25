@@ -12,6 +12,7 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/gomega" //nolint:stylecheck,revive
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/ocm.software/v3alpha1"
@@ -178,8 +179,8 @@ func ModuleTemplateFactoryForSchema(
 	if moduleTemplate.Labels == nil {
 		moduleTemplate.Labels = make(map[string]string)
 	}
-	moduleTemplate.Labels[v1beta1.ModuleName] = module.Name
-	moduleTemplate.Labels[v1beta1.ControllerName] = module.ControllerName
+	moduleTemplate.Labels[v1beta2.ModuleName] = module.Name
+	moduleTemplate.Labels[v1beta2.ControllerName] = module.ControllerName
 	moduleTemplate.Spec.Channel = module.Channel
 	if data.GetKind() != "" {
 		moduleTemplate.Spec.Data = data

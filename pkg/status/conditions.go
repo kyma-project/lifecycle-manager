@@ -1,6 +1,7 @@
 package status
 
 import (
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/strings/slices"
 
@@ -11,7 +12,7 @@ import (
 func InitConditions(kyma *v1beta1.Kyma, watcherEnabled bool) {
 	removeDeprecatedConditions(kyma)
 	// Add required Conditions
-	for _, cond := range v1beta1.GetRequiredConditionTypes(kyma.Spec.Sync.Enabled, watcherEnabled) {
+	for _, cond := range v1beta2.GetRequiredConditionTypes(kyma.Spec.Sync.Enabled, watcherEnabled) {
 		kyma.UpdateCondition(cond, metav1.ConditionFalse)
 	}
 }
@@ -20,9 +21,9 @@ func removeDeprecatedConditions(kyma *v1beta1.Kyma) {
 	// validConditionTypes is a slice of all conditions allowed in a Kyma CR.
 	// All other conditions will be deprecated, i.e. removed from the CR.
 	validConditionTypes := []string{
-		string(v1beta1.ConditionTypeModules),
-		string(v1beta1.ConditionTypeModuleCatalog),
-		string(v1beta1.ConditionTypeSKRWebhook),
+		string(v1beta2.ConditionTypeModules),
+		string(v1beta2.ConditionTypeModuleCatalog),
+		string(v1beta2.ConditionTypeSKRWebhook),
 	}
 
 	var filteredConditions []metav1.Condition

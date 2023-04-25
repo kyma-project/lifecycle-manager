@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -40,15 +41,15 @@ func (m *Module) ApplyLabelsAndAnnotations(
 	if lbls == nil {
 		lbls = make(map[string]string)
 	}
-	lbls[v1beta1.KymaName] = kyma.Name
+	lbls[v1beta2.KymaName] = kyma.Name
 
 	templateLabels := m.Template.GetLabels()
 	if templateLabels != nil {
-		lbls[v1beta1.ControllerName] = m.Template.GetLabels()[v1beta1.ControllerName]
+		lbls[v1beta2.ControllerName] = m.Template.GetLabels()[v1beta2.ControllerName]
 	}
-	lbls[v1beta1.ChannelLabel] = m.Template.Spec.Channel
+	lbls[v1beta2.ChannelLabel] = m.Template.Spec.Channel
 
-	lbls[v1beta1.ManagedBy] = v1beta1.OperatorName
+	lbls[v1beta2.ManagedBy] = v1beta2.OperatorName
 
 	m.SetLabels(lbls)
 

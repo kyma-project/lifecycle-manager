@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
@@ -234,7 +235,7 @@ func verifyWebhookConfig(
 		return fmt.Errorf("%w: (webhook=%s)", ErrWebhookNamePartsNumberMismatch, webhook.Name)
 	}
 	moduleName := webhookNameParts[0]
-	expectedModuleName, exists := watcherCR.Labels[v1beta1.ManagedBy]
+	expectedModuleName, exists := watcherCR.Labels[v1beta2.ManagedBy]
 	if !exists {
 		return fmt.Errorf("%w: (labels=%v)", ErrManagedByLabelNotFound, watcherCR.Labels)
 	}

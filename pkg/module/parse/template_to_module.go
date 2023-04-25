@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -135,7 +136,7 @@ func NewManifestFromTemplate(
 		return nil, err
 	}
 	var componentDescriptor *compdesc.ComponentDescriptor
-	useLocalTemplate, found := template.GetLabels()[v1beta1.UseLocalTemplate]
+	useLocalTemplate, found := template.GetLabels()[v1beta2.UseLocalTemplate]
 	if found && useLocalTemplate == "true" {
 		componentDescriptor = descriptor.ComponentDescriptor
 	} else {
@@ -187,7 +188,7 @@ func insertLayerIntoManifest(
 		if !ok {
 			return fmt.Errorf("%w: not an OCIImage", ErrDefaultConfigParsing)
 		}
-		manifest.Spec.Config = v1beta1.ImageSpec{
+		manifest.Spec.Config = v1beta2.ImageSpec{
 			Repo:               ociImage.Repo,
 			Name:               ociImage.Name,
 			Ref:                ociImage.Ref,

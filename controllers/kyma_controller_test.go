@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -62,14 +63,14 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 		kymaInCluster, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(
-			kymaInCluster.ContainsCondition(v1beta1.ConditionTypeModules, metav1.ConditionTrue)).To(BeTrue())
+			kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModules, metav1.ConditionTrue)).To(BeTrue())
 		By("Module Catalog created")
 		Eventually(ModuleTemplatesExist(controlPlaneClient, kyma, false),
 			10*time.Second, Interval).Should(Succeed())
 		kymaInCluster, err = GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(
-			kymaInCluster.ContainsCondition(v1beta1.ConditionTypeModuleCatalog)).To(BeFalse())
+			kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModuleCatalog)).To(BeFalse())
 	})
 })
 
@@ -197,7 +198,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 			Should(BeEquivalentTo(v1beta1.StateReady))
 
 		By("Add skip-reconciliation label to Kyma CR")
-		Eventually(UpdateKymaLabel(ctx, controlPlaneClient, kyma, v1beta1.SkipReconcileLabel, "true"),
+		Eventually(UpdateKymaLabel(ctx, controlPlaneClient, kyma, v1beta2.SkipReconcileLabel, "true"),
 			Timeout, Interval).Should(Succeed())
 	})
 
@@ -221,7 +222,7 @@ var _ = Describe("Kyma with managed fields", Ordered, func() {
 
 	It("Should result in a managed field with manager named 'unmanaged-kyma'", func() {
 		Eventually(ExpectKymaManagerField, Timeout, Interval).
-			WithArguments(ctx, controlPlaneClient, kyma.GetName(), v1beta1.UnmanagedKyma).
+			WithArguments(ctx, controlPlaneClient, kyma.GetName(), v1beta2.UnmanagedKyma).
 			Should(BeTrue())
 	})
 })

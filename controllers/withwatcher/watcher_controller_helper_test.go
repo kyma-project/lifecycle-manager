@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	istioclientapi "istio.io/client-go/pkg/apis/networking/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -79,7 +80,7 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta1.Watch
 			Name:      managerInstanceName,
 			Namespace: metav1.NamespaceDefault,
 			Labels: map[string]string{
-				v1beta1.ManagedBy: managerInstanceName,
+				v1beta2.ManagedBy: managerInstanceName,
 			},
 		},
 		Spec: v1beta1.WatcherSpec{
@@ -105,7 +106,7 @@ func createTLSSecret(kymaObjKey client.ObjectKey) *corev1.Secret {
 			Name:      watcher.ResolveTLSCertName(kymaObjKey.Name),
 			Namespace: kymaObjKey.Namespace,
 			Labels: map[string]string{
-				v1beta1.ManagedBy: v1beta1.OperatorName,
+				v1beta2.ManagedBy: v1beta2.OperatorName,
 			},
 		},
 		Data: map[string][]byte{

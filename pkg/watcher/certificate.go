@@ -6,6 +6,7 @@ import (
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	apimachinerymetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,8 +29,8 @@ const (
 )
 
 var LabelSet = k8slabels.Set{ //nolint:gochecknoglobals
-	v1beta1.PurposeLabel: v1beta1.CertManager,
-	v1beta1.ManagedBy:    v1beta1.OperatorName,
+	v1beta2.PurposeLabel: v1beta2.CertManager,
+	v1beta2.ManagedBy:    v1beta2.OperatorName,
 }
 
 type SubjectAltName struct {

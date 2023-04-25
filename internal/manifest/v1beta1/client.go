@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
@@ -68,7 +69,7 @@ func WithClientCacheKey() declarative.WithClientCacheKeyOption {
 		logger := log.FromContext(ctx)
 
 		manifest := resource.(*manifestv1beta1.Manifest)
-		labelValue, err := internal.GetResourceLabel(resource, manifestv1beta1.KymaName)
+		labelValue, err := internal.GetResourceLabel(resource, v1beta2.KymaName)
 		objectKey := client.ObjectKeyFromObject(resource)
 		var labelErr *types.LabelNotFoundError
 		if errors.As(err, &labelErr) {

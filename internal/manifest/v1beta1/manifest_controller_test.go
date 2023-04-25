@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
@@ -28,7 +29,7 @@ func setHelmEnv() {
 
 var _ = Describe(
 	"Given manifest with kustomize specs", func() {
-		remoteKustomizeSpec := v1beta1.KustomizeSpec{
+		remoteKustomizeSpec := v1beta2.KustomizeSpec{
 			URL:  "https://github.com/kubernetes-sigs/kustomize//examples/helloWorld/?ref=v3.3.1",
 			Type: "kustomize",
 		}
@@ -37,7 +38,7 @@ var _ = Describe(
 
 		absoluteKustomizeLocalPath, err := filepath.Abs(kustomizeLocalPath)
 		Expect(err).ToNot(HaveOccurred())
-		localKustomizeSpec := v1beta1.KustomizeSpec{
+		localKustomizeSpec := v1beta2.KustomizeSpec{
 			Path: absoluteKustomizeLocalPath,
 			Type: "kustomize",
 		}
@@ -45,7 +46,7 @@ var _ = Describe(
 		localKustomizeSpecBytes, err := json.Marshal(localKustomizeSpec)
 		Expect(err).ToNot(HaveOccurred())
 
-		invalidKustomizeSpec := v1beta1.KustomizeSpec{
+		invalidKustomizeSpec := v1beta2.KustomizeSpec{
 			Path: "./invalidPath",
 			Type: "kustomize",
 		}
@@ -164,7 +165,7 @@ var _ = Describe(
 var _ = Describe(
 	"Given Manifest CR with Helm specs", func() {
 		setHelmEnv()
-		validHelmChartSpec := v1beta1.HelmChartSpec{
+		validHelmChartSpec := v1beta2.HelmChartSpec{
 			ChartName: "nginx-ingress",
 			URL:       "https://helm.nginx.com/stable",
 			Type:      "helm-chart",
@@ -215,14 +216,14 @@ var _ = Describe(
 					WithArguments(manifestWithInstall).Should(Succeed())
 				validImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String())
 				Eventually(expectHelmClientCacheExist(true), standardTimeout, standardInterval).
-					WithArguments(internalV1beta1.GenerateCacheKey(manifestWithInstall.GetLabels()[v1beta1.KymaName],
+					WithArguments(internalV1beta1.GenerateCacheKey(manifestWithInstall.GetLabels()[v1beta2.KymaName],
 						strconv.FormatBool(manifestWithInstall.Spec.Remote), manifestWithInstall.GetNamespace())).
 					Should(BeTrue())
 				// this will ensure only manifest.yaml remains
 				deleteHelmChartResources(validImageSpec)
 				manifest2WithInstall := NewTestManifest("multi-oci2")
 				// copy owner label over to the new manifest resource
-				manifest2WithInstall.Labels[v1beta1.KymaName] = manifestWithInstall.Labels[v1beta1.KymaName]
+				manifest2WithInstall.Labels[v1beta2.KymaName] = manifestWithInstall.Labels[v1beta2.KymaName]
 				Eventually(withValidInstallImageSpec(installName, false), standardTimeout, standardInterval).
 					WithArguments(manifest2WithInstall).Should(Succeed())
 				// verify no new Helm resources were created

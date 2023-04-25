@@ -8,6 +8,7 @@ import (
 	"regexp"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/cpi"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
@@ -72,7 +73,7 @@ func GetRepo(ctx context.Context,
 	repoTyped runtime.TypedObject,
 ) (cpi.Repository, error) {
 	genericSpec := repoTyped.(*genericocireg.RepositorySpec)
-	if registryCredValue, found := descriptor.GetLabels().Get(v1beta1.OCIRegistryCredLabel); found {
+	if registryCredValue, found := descriptor.GetLabels().Get(v1beta2.OCIRegistryCredLabel); found {
 		ociRegistry, err := NewOCIRegistry(genericSpec.Name())
 		if err != nil {
 			return nil, err

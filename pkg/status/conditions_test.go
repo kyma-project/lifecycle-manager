@@ -1,12 +1,13 @@
 package status_test
 
 import (
-	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	"testing"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/status"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
@@ -39,7 +40,7 @@ func TestInitConditions(t *testing.T) {
 
 			kyma := NewTestKyma("kyma")
 			kyma.Status.Conditions = append(kyma.Status.Conditions, metav1.Condition{
-				Type:               string(v1beta1.DeprecatedConditionTypeReady),
+				Type:               string(v1beta2.DeprecatedConditionTypeReady),
 				Status:             metav1.ConditionFalse,
 				ObservedGeneration: kyma.GetGeneration(),
 				Reason:             "Deprecated",
@@ -53,7 +54,7 @@ func TestInitConditions(t *testing.T) {
 
 			status.InitConditions(kyma, tcase.args.watcherEnabled)
 
-			if !onlyRequiredKymaConditionsPresent(kyma, v1beta1.GetRequiredConditionTypes(
+			if !onlyRequiredKymaConditionsPresent(kyma, v1beta2.GetRequiredConditionTypes(
 				false, tcase.args.watcherEnabled)) {
 				t.Error("Incorrect Condition Initialization")
 				return
@@ -62,7 +63,7 @@ func TestInitConditions(t *testing.T) {
 	}
 }
 
-func onlyRequiredKymaConditionsPresent(kyma *v1beta1.Kyma, requiredConditions []v1beta1.KymaConditionType) bool {
+func onlyRequiredKymaConditionsPresent(kyma *v1beta2.Kyma, requiredConditions []v1beta2.KymaConditionType) bool {
 	if len(kyma.Status.Conditions) != len(requiredConditions) {
 		return false
 	}

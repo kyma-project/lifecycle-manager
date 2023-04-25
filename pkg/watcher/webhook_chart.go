@@ -8,6 +8,7 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -27,7 +28,7 @@ const (
 	IngressServiceName           = "istio-ingressgateway"
 	defaultK3dLocalhostMapping   = "host.k3d.internal"
 	defaultBufferSize            = 2048
-	skrChartFieldOwner           = client.FieldOwner(v1beta1.OperatorName)
+	skrChartFieldOwner           = client.FieldOwner(v1beta2.OperatorName)
 	version                      = "v1"
 	webhookTimeOutInSeconds      = 15
 	allResourcesWebhookRule      = "*"

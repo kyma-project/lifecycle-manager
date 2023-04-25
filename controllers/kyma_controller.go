@@ -23,6 +23,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"golang.org/x/sync/errgroup"
 
 	"k8s.io/client-go/rest"
@@ -266,7 +267,7 @@ func (r *KymaReconciler) syncModuleCatalogInParallel(ctx context.Context, kyma *
 		return r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta1.StateError,
 			fmt.Errorf("could not synchronize remote module catalog: %w", err))
 	}
-	kyma.UpdateCondition(v1beta1.ConditionTypeModuleCatalog, metav1.ConditionTrue)
+	kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, metav1.ConditionTrue)
 	return nil
 }
 
@@ -274,7 +275,7 @@ func (r *KymaReconciler) reconcileManifestsInParallel(ctx context.Context, kyma 
 	if err := r.reconcileManifests(ctx, kyma); err != nil {
 		return r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta1.StateError, err)
 	} else if kyma.AllModulesReady() {
-		kyma.UpdateCondition(v1beta1.ConditionTypeModules, metav1.ConditionTrue)
+		kyma.UpdateCondition(v1beta2.ConditionTypeModules, metav1.ConditionTrue)
 	}
 	return nil
 }
@@ -286,7 +287,7 @@ func (r *KymaReconciler) installWatcherInParallel(ctx context.Context, kyma *v1b
 				fmt.Errorf("error while installing Watcher Webhook Chart: %w", err))
 		}
 	}
-	kyma.UpdateCondition(v1beta1.ConditionTypeSKRWebhook, metav1.ConditionTrue)
+	kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, metav1.ConditionTrue)
 	return nil
 }
 
@@ -340,7 +341,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta1.
 		logger.Info("removed remote finalizer")
 	}
 
-	controllerutil.RemoveFinalizer(kyma, v1beta1.Finalizer)
+	controllerutil.RemoveFinalizer(kyma, v1beta2.Finalizer)
 
 	if err := r.Update(ctx, kyma); err != nil {
 		err := fmt.Errorf("error while trying to udpate kyma during deletion: %w", err)

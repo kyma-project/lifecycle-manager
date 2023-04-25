@@ -49,6 +49,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	operatorv1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	//+kubebuilder:scaffold:imports
 	"github.com/kyma-project/lifecycle-manager/api"
 	operatorv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
@@ -88,6 +89,7 @@ func init() {
 	utilruntime.Must(v1extensions.AddToScheme(scheme))
 	utilruntime.Must(certManagerV1.AddToScheme(scheme))
 
+	utilruntime.Must(operatorv1beta2.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -160,6 +162,18 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		enableWebhooks(mgr)
 	}
 
+	if err = (&operatorv1beta2.Kyma{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Kyma")
+		os.Exit(1)
+	}
+	if err = (&operatorv1beta2.Manifest{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Manifest")
+		os.Exit(1)
+	}
+	if err = (&operatorv1beta2.ModuleTemplate{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
+		os.Exit(1)
+	}
 	//+kubebuilder:scaffold:builder
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
@@ -260,7 +274,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 
 	if err := (&controllers.KymaReconciler{
 		Client:                   mgr.GetClient(),
-		EventRecorder:            mgr.GetEventRecorderFor(operatorv1beta1.OperatorName),
+		EventRecorder:            mgr.GetEventRecorderFor(operatorv1beta2.OperatorName),
 		KcpRestConfig:            kcpRestConfig,
 		RemoteClientCache:        remoteClientCache,
 		ComponentDescriptorCache: componentDescriptorCache,

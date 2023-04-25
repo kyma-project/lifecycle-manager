@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -49,7 +50,7 @@ func SetupWithManager(
 		return err
 	}
 
-	codec, err := v1beta1.NewCodec()
+	codec, err := v1beta2.NewCodec()
 	if err != nil {
 		return fmt.Errorf("unable to initialize codec: %w", err)
 	}
@@ -73,7 +74,7 @@ func SetupWithManager(
 }
 
 func ManifestReconciler(
-	mgr manager.Manager, codec *v1beta1.Codec,
+	mgr manager.Manager, codec *v1beta2.Codec,
 	checkInterval time.Duration,
 ) *declarative.Reconciler {
 	kcp := &declarative.ClusterInfo{

@@ -1,6 +1,7 @@
 package v1beta1_test
 
 import (
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/ocm.software/v3alpha1"
@@ -16,7 +17,7 @@ var _ = Describe(
 		data := unstructured.Unstructured{}
 		data.SetGroupVersionKind(
 			schema.GroupVersionKind{
-				Group:   v1beta1.OperatorPrefix,
+				Group:   v1beta2.OperatorPrefix,
 				Version: v1beta1.GroupVersion.Version,
 				Kind:    "SampleCRD",
 			},
@@ -24,7 +25,7 @@ var _ = Describe(
 		It(
 			"should successfully fetch accept a moduletemplate based on template with a v3alpha1 ocm descriptor",
 			func() {
-				crd := GetCRD(v1beta1.OperatorPrefix, "samplecrd")
+				crd := v1beta2.GetCRD(v1beta2.OperatorPrefix, "samplecrd")
 				Eventually(k8sClient.Create, Timeout, Interval).
 					WithContext(webhookServerContext).
 					WithArguments(crd).Should(Succeed())

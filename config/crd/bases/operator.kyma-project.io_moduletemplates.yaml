@@ -19,18 +19,14 @@ spec:
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
-    - jsonPath: .spec.channel
-      name: Channel
-      type: string
-    - jsonPath: .spec.target
-      name: Target
-      type: string
-    deprecated: true
-    deprecationWarning: kyma-project.io/v1alpha1 ModuleTemplate is deprecated. Use
-      v1beta1 instead.
-    name: v1alpha1
+    name: v1beta1
     schema:
       openAPIV3Schema:
+        description: ModuleTemplate is a representation of a Template used for creating
+          Module Instances within the Module Lifecycle. It is generally loosely defined
+          within the Kubernetes Specification, however it has a strict enforcement
+          of OCM guidelines as it serves an active role in maintaining a list of available
+          Modules within a cluster.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -103,7 +99,7 @@ spec:
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
-    name: v1beta1
+    name: v1beta2
     schema:
       openAPIV3Schema:
         description: ModuleTemplate is a representation of a Template used for creating

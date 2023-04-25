@@ -23,9 +23,9 @@ spec:
       name: Age
       type: date
     deprecated: true
-    deprecationWarning: kyma-project.io/v1alpha1 Manifest is deprecated. Use v1beta1
+    deprecationWarning: kyma-project.io/v1beta1 Manifest is deprecated. Use v1beta2
       instead.
-    name: v1alpha1
+    name: v1beta1
     schema:
       openAPIV3Schema:
         description: Manifest is the Schema for the manifests API.
@@ -43,7 +43,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: Spec specifies the content and configuration for Manifest
+            description: ManifestSpec defines the desired state of Manifest.
             properties:
               config:
                 description: Config specifies OCI image configuration for Manifest
@@ -116,95 +116,21 @@ spec:
                     - ""
                     type: string
                 type: object
-              crds:
-                description: CRDs specifies the custom resource definitions' ImageSpec
+              install:
+                description: Install specifies a list of installations for Manifest
                 properties:
-                  credSecretSelector:
-                    description: CredSecretSelector is an optional field, for OCI
-                      image saved in private registry, use it to indicate the secret
-                      which contains registry credentials, must exist in the namespace
-                      same as manifest
-                    properties:
-                      matchExpressions:
-                        description: matchExpressions is a list of label selector
-                          requirements. The requirements are ANDed.
-                        items:
-                          description: A label selector requirement is a selector
-                            that contains values, a key, and an operator that relates
-                            the key and values.
-                          properties:
-                            key:
-                              description: key is the label key that the selector
-                                applies to.
-                              type: string
-                            operator:
-                              description: operator represents a key's relationship
-                                to a set of values. Valid operators are In, NotIn,
-                                Exists and DoesNotExist.
-                              type: string
-                            values:
-                              description: values is an array of string values. If
-                                the operator is In or NotIn, the values array must
-                                be non-empty. If the operator is Exists or DoesNotExist,
-                                the values array must be empty. This array is replaced
-                                during a strategic merge patch.
-                              items:
-                                type: string
-                              type: array
-                          required:
-                          - key
-                          - operator
-                          type: object
-                        type: array
-                      matchLabels:
-                        additionalProperties:
-                          type: string
-                        description: matchLabels is a map of {key,value} pairs. A
-                          single {key,value} in the matchLabels map is equivalent
-                          to an element of matchExpressions, whose key field is "key",
-                          the operator is "In", and the values array contains only
-                          "value". The requirements are ANDed.
-                        type: object
-                    type: object
-                    x-kubernetes-map-type: atomic
                   name:
-                    description: Name defines the Image name
+                    description: Name specifies a unique install name for Manifest
                     type: string
-                  ref:
-                    description: Ref is either a sha value, tag or version
-                    type: string
-                  repo:
-                    description: Repo defines the Image repo
-                    type: string
-                  type:
-                    description: Type specifies the type of installation specification
-                      that could be provided as part of a custom resource. This time
-                      is used in codec to successfully decode from raw extensions.
-                    enum:
-                    - helm-chart
-                    - oci-ref
-                    - kustomize
-                    - ""
-                    type: string
+                  source:
+                    description: Source can either be described as ImageSpec, HelmChartSpec
+                      or KustomizeSpec
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                required:
+                - name
+                - source
                 type: object
-              installs:
-                description: Installs specifies a list of installations for Manifest
-                items:
-                  description: InstallInfo defines installation information.
-                  properties:
-                    name:
-                      description: Name specifies a unique install name for Manifest
-                      type: string
-                    source:
-                      description: Source can either be described as ImageSpec, HelmChartSpec
-                        or KustomizeSpec
-                      type: object
-                      x-kubernetes-preserve-unknown-fields: true
-                  required:
-                  - name
-                  - source
-                  type: object
-                type: array
               remote:
                 description: Remote indicates if Manifest should be installed on a
                   remote cluster
@@ -217,11 +143,11 @@ spec:
                 x-kubernetes-embedded-resource: true
                 x-kubernetes-preserve-unknown-fields: true
             required:
-            - installs
+            - install
             - remote
             type: object
           status:
-            description: Status signifies the current status of the Manifest
+            description: ManifestStatus defines the observed state of Manifest.
             properties:
               conditions:
                 description: Conditions contain a set of conditionals to determine
@@ -356,10 +282,10 @@ spec:
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
-    name: v1beta1
+    name: v1beta2
     schema:
       openAPIV3Schema:
-        description: Manifest is the Schema for the manifests API.
+        description: Manifest is the Schema for the manifests API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation

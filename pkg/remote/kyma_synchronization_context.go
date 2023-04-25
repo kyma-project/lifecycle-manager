@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -74,7 +75,7 @@ func RemoveFinalizerFromRemoteKyma(
 		return err
 	}
 
-	controllerutil.RemoveFinalizer(remoteKyma, v1beta1.Finalizer)
+	controllerutil.RemoveFinalizer(remoteKyma, v1beta2.Finalizer)
 
 	return syncContext.RuntimeClient.Update(ctx, remoteKyma)
 }
@@ -99,7 +100,7 @@ func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Con
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   kyma.GetNamespace(),
-			Labels: map[string]string{v1beta1.ManagedBy: v1beta1.OperatorName},
+			Labels: map[string]string{v1beta2.ManagedBy: v1beta2.OperatorName},
 		},
 		// setting explicit type meta is required for SSA on Namespaces
 		TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
@@ -272,7 +273,7 @@ func (c *KymaSynchronizationContext) InsertWatcherLabelsAnnotations(controlPlane
 		remoteKyma.Labels = make(map[string]string)
 	}
 
-	remoteKyma.Labels[v1beta1.WatchedByLabel] = v1beta1.OperatorName
+	remoteKyma.Labels[v1beta2.WatchedByLabel] = v1beta2.OperatorName
 
 	if remoteKyma.Annotations == nil {
 		remoteKyma.Annotations = make(map[string]string)

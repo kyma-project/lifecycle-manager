@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -98,7 +99,7 @@ func expectManifestSpecContainsCredSecretSelector(kymaName string) func() error 
 			if err != nil {
 				return err
 			}
-			var emptyImageSpec v1beta1.ImageSpec
+			var emptyImageSpec v1beta2.ImageSpec
 			if moduleInCluster.Spec.Config != emptyImageSpec {
 				if err := expectCredSecretSelectorCorrect(&moduleInCluster.Spec.Config); err != nil {
 					return fmt.Errorf("config %v is invalid: %w", &moduleInCluster.Spec.Config, err)
@@ -114,14 +115,14 @@ func expectManifestSpecContainsCredSecretSelector(kymaName string) func() error 
 	}
 }
 
-func extractInstallImageSpec(installInfo v1beta1.InstallInfo) *v1beta1.ImageSpec {
-	var installImageSpec *v1beta1.ImageSpec
+func extractInstallImageSpec(installInfo v1beta1.InstallInfo) *v1beta2.ImageSpec {
+	var installImageSpec *v1beta2.ImageSpec
 	err := yaml.Unmarshal(installInfo.Source.Raw, &installImageSpec)
 	Expect(err).ToNot(HaveOccurred())
 	return installImageSpec
 }
 
-func expectCredSecretSelectorCorrect(installImageSpec *v1beta1.ImageSpec) error {
+func expectCredSecretSelectorCorrect(installImageSpec *v1beta2.ImageSpec) error {
 	if installImageSpec.CredSecretSelector == nil {
 		return fmt.Errorf("image spec %v does not contain credSecretSelector: %w",
 			installImageSpec, ErrNotContainsExpectedCredSecretSelector)
