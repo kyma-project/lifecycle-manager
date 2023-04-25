@@ -15,7 +15,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/types"
@@ -36,7 +35,7 @@ type RunnerImpl struct {
 }
 
 // ReconcileManifests implements Runner.Sync.
-func (r *RunnerImpl) ReconcileManifests(ctx context.Context, kyma *v1beta1.Kyma,
+func (r *RunnerImpl) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	modules common.Modules,
 ) error {
 	ssaStart := time.Now()
@@ -71,7 +70,7 @@ func (r *RunnerImpl) getModule(ctx context.Context, module client.Object) error 
 	return r.Get(ctx, client.ObjectKey{Namespace: module.GetNamespace(), Name: module.GetName()}, module)
 }
 
-func (r *RunnerImpl) updateManifests(ctx context.Context, kyma *v1beta1.Kyma,
+func (r *RunnerImpl) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	module *common.Module,
 ) error {
 	if err := r.setupModule(module, kyma); err != nil {
@@ -94,7 +93,7 @@ func (r *RunnerImpl) updateManifests(ctx context.Context, kyma *v1beta1.Kyma,
 	return nil
 }
 
-func (r *RunnerImpl) setupModule(module *common.Module, kyma *v1beta1.Kyma) error {
+func (r *RunnerImpl) setupModule(module *common.Module, kyma *v1beta2.Kyma) error {
 	// set labels
 	module.ApplyLabelsAndAnnotations(kyma)
 	refs := module.GetOwnerReferences()
@@ -109,14 +108,14 @@ func (r *RunnerImpl) setupModule(module *common.Module, kyma *v1beta1.Kyma) erro
 	return nil
 }
 
-func (r *RunnerImpl) SyncModuleStatus(ctx context.Context, kyma *v1beta1.Kyma, modules common.Modules) {
+func (r *RunnerImpl) SyncModuleStatus(ctx context.Context, kyma *v1beta2.Kyma, modules common.Modules) {
 	r.updateModuleStatusFromExistingModules(modules, kyma)
 	r.deleteNoLongerExistingModuleStatus(ctx, kyma)
 }
 
 func (r *RunnerImpl) updateModuleStatusFromExistingModules(
 	modules common.Modules,
-	kyma *v1beta1.Kyma,
+	kyma *v1beta2.Kyma,
 ) {
 	moduleStatusMap := kyma.GetModuleStatusMap()
 
@@ -124,18 +123,18 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(
 		module := modules[idx]
 		manifestAPIVersion, manifestKind := module.Object.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 		templateAPIVersion, templateKind := module.Template.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
-		latestModuleStatus := v1beta1.ModuleStatus{
+		latestModuleStatus := v1beta2.ModuleStatus{
 			Name:    module.ModuleName,
 			FQDN:    module.FQDN,
 			State:   stateFromManifest(module.Object),
 			Channel: module.Template.Spec.Channel,
 			Version: module.Version,
-			Manifest: v1beta1.TrackingObject{
-				PartialMeta: v1beta1.PartialMetaFromObject(module.Object),
+			Manifest: v1beta2.TrackingObject{
+				PartialMeta: v1beta2.PartialMetaFromObject(module.Object),
 				TypeMeta:    metav1.TypeMeta{Kind: manifestKind, APIVersion: manifestAPIVersion},
 			},
-			Template: v1beta1.TrackingObject{
-				PartialMeta: v1beta1.PartialMetaFromObject(module.Template),
+			Template: v1beta2.TrackingObject{
+				PartialMeta: v1beta2.PartialMetaFromObject(module.Template),
 				TypeMeta:    metav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
 			},
 		}
@@ -148,19 +147,19 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(
 	}
 }
 
-func stateFromManifest(obj client.Object) v1beta1.State {
+func stateFromManifest(obj client.Object) v1beta2.State {
 	switch manifest := obj.(type) {
-	case *v1beta1.Manifest:
-		return v1beta1.State(manifest.Status.State)
+	case *v1beta2.Manifest:
+		return v1beta2.State(manifest.Status.State)
 	case *unstructured.Unstructured:
 		state, _, _ := unstructured.NestedString(manifest.Object, "status", "state")
-		return v1beta1.State(state)
+		return v1beta2.State(state)
 	default:
 		return ""
 	}
 }
 
-func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1beta1.Kyma) {
+func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1beta2.Kyma) {
 	moduleStatusMap := kyma.GetModuleStatusMap()
 	moduleStatus := kyma.GetNoLongerExistingModuleStatus()
 	for idx := range moduleStatus {
@@ -179,8 +178,8 @@ func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context, kym
 	kyma.Status.Modules = convertToNewModuleStatus(moduleStatusMap)
 }
 
-func convertToNewModuleStatus(moduleStatusMap map[string]*v1beta1.ModuleStatus) []v1beta1.ModuleStatus {
-	newModuleStatus := make([]v1beta1.ModuleStatus, 0)
+func convertToNewModuleStatus(moduleStatusMap map[string]*v1beta2.ModuleStatus) []v1beta2.ModuleStatus {
+	newModuleStatus := make([]v1beta2.ModuleStatus, 0)
 	for _, moduleStatus := range moduleStatusMap {
 		newModuleStatus = append(newModuleStatus, *moduleStatus)
 	}

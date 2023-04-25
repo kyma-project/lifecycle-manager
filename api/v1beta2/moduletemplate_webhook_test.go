@@ -1,5 +1,5 @@
 //nolint:testpackage
-package v1beta1
+package v1beta2
 
 import (
 	"testing"

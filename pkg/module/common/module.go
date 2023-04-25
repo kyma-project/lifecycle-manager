@@ -9,8 +9,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 type (
@@ -19,7 +17,7 @@ type (
 		ModuleName       string
 		FQDN             string
 		Version          string
-		Template         *v1beta1.ModuleTemplate
+		Template         *v1beta2.ModuleTemplate
 		TemplateOutdated bool
 		client.Object
 	}
@@ -35,7 +33,7 @@ func (m *Module) Logger(base logr.Logger) logr.Logger {
 }
 
 func (m *Module) ApplyLabelsAndAnnotations(
-	kyma *v1beta1.Kyma,
+	kyma *v1beta2.Kyma,
 ) {
 	lbls := m.GetLabels()
 	if lbls == nil {
@@ -57,11 +55,11 @@ func (m *Module) ApplyLabelsAndAnnotations(
 	if anns == nil {
 		anns = make(map[string]string)
 	}
-	anns[v1beta1.FQDN] = m.FQDN
+	anns[v1beta2.FQDN] = m.FQDN
 	m.SetAnnotations(anns)
 }
 
-func (m *Module) StateMismatchedWithModuleStatus(moduleStatus *v1beta1.ModuleStatus) bool {
+func (m *Module) StateMismatchedWithModuleStatus(moduleStatus *v1beta2.ModuleStatus) bool {
 	templateStatusMismatch := m.TemplateOutdated &&
 		(moduleStatus.Template.Generation != m.Template.GetGeneration() ||
 			moduleStatus.Channel != m.Template.Spec.Channel)

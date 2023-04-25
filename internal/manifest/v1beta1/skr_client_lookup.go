@@ -7,7 +7,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"k8s.io/client-go/rest"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
@@ -22,7 +21,7 @@ type RemoteClusterLookup struct {
 func (r *RemoteClusterLookup) ConfigResolver(
 	ctx context.Context, obj declarative.Object,
 ) (*declarative.ClusterInfo, error) {
-	manifest := obj.(*v1beta1.Manifest)
+	manifest := obj.(*v1beta2.Manifest)
 	// in single cluster mode return the default cluster info
 	// since the resources need to be installed in the same cluster
 	if !manifest.Spec.Remote {

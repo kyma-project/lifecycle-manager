@@ -23,7 +23,6 @@ import (
 	"testing"
 	"time"
 
-	operatorv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -131,7 +130,7 @@ var _ = BeforeSuite(func() {
 
 	err = (&controllers.KymaReconciler{
 		Client:           k8sManager.GetClient(),
-		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1beta1.OperatorName),
+		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1beta2.OperatorName),
 		RequeueIntervals: intervals,
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,

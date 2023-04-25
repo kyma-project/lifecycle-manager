@@ -23,7 +23,7 @@ import (
 	"testing"
 	"time"
 
-	operatorv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	operatorv1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/open-component-model/ocm/pkg/contexts/oci"
 	"github.com/open-component-model/ocm/pkg/contexts/oci/repositories/ocireg"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm"
@@ -132,7 +132,7 @@ var _ = BeforeSuite(func() {
 	remoteClientCache := remote.NewClientCache()
 	err = (&controllers.KymaReconciler{
 		Client:           k8sManager.GetClient(),
-		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1beta1.OperatorName),
+		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1beta2.OperatorName),
 		RequeueIntervals: intervals,
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,

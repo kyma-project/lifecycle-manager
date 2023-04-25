@@ -15,8 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 // TODO PKI move consts into other file if they are not needed here.
@@ -42,10 +40,10 @@ type WatchableConfig struct {
 	StatusOnly bool              `json:"statusOnly"`
 }
 
-func generateWatchableConfigs(watchers []v1beta1.Watcher) map[string]WatchableConfig {
+func generateWatchableConfigs(watchers []v1beta2.Watcher) map[string]WatchableConfig {
 	chartCfg := make(map[string]WatchableConfig, 0)
 	for _, watcher := range watchers {
-		statusOnly := watcher.Spec.Field == v1beta1.StatusField
+		statusOnly := watcher.Spec.Field == v1beta2.StatusField
 		chartCfg[watcher.GetModuleName()] = WatchableConfig{
 			Labels:     watcher.Spec.LabelsToWatch,
 			StatusOnly: statusOnly,
@@ -102,7 +100,7 @@ func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrWebhookManagerConf
 	return net.JoinHostPort(externalIP, strconv.Itoa(int(port))), nil
 }
 
-func resolveRemoteNamespace(kyma *v1beta1.Kyma) string {
+func resolveRemoteNamespace(kyma *v1beta2.Kyma) string {
 	if kyma.Spec.Sync.Namespace != "" {
 		return kyma.Spec.Sync.Namespace
 	}

@@ -3,12 +3,12 @@ package withwatcher_test
 import (
 	"errors"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -22,7 +22,7 @@ func cRSpecsUpdates() func(customIstioClient *istio.Client) error {
 				return err
 			}
 			watcherCR.Spec.ServiceInfo.Port = 9090
-			watcherCR.Spec.Field = v1beta1.StatusField
+			watcherCR.Spec.Field = v1beta2.StatusField
 			if err := controlPlaneClient.Update(suiteCtx, &watcherCR); err != nil {
 				return err
 			}

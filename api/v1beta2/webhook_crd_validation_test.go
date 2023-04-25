@@ -1,4 +1,4 @@
-package v1beta1_test
+package v1beta2_test
 
 import (
 	"errors"
@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
@@ -16,7 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
@@ -25,21 +25,21 @@ var testFiles = filepath.Join("..", "..", "config", "samples", "tests") //nolint
 var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	data := unstructured.Unstructured{}
 	data.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   v1beta1.OperatorPrefix,
-		Version: v1beta1.GroupVersion.Version,
+		Group:   v1beta2.OperatorPrefix,
+		Version: v1beta2.GroupVersion.Version,
 		Kind:    "SampleCRD",
 	})
 	It("should successfully fetch accept a moduletemplate based on a compliant crd", func() {
-		crd := GetCRD(v1beta1.OperatorPrefix, "samplecrd")
+		crd := GetCRD(v1beta2.OperatorPrefix, "samplecrd")
 		Eventually(k8sClient.Create, Timeout, Interval).
 			WithContext(webhookServerContext).
 			WithArguments(crd).Should(Succeed())
 
 		template, err := testutils.ModuleTemplateFactory(
-			v1beta1.Module{
+			v1beta2.Module{
 				ControllerName: "manifest",
 				Name:           "example-module-name",
-				Channel:        v1beta1.DefaultChannel,
+				Channel:        v1beta2.DefaultChannel,
 			}, data, false)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
@@ -49,16 +49,16 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	})
 
 	It("should accept a moduletemplate based on a non-compliant crd in non-strict mode", func() {
-		crd := GetNonCompliantCRD(v1beta1.OperatorPrefix, "samplecrd")
+		crd := GetNonCompliantCRD(v1beta2.OperatorPrefix, "samplecrd")
 
 		Eventually(k8sClient.Create, Timeout, Interval).
 			WithContext(webhookServerContext).
 			WithArguments(crd).Should(Succeed())
 		template, err := testutils.ModuleTemplateFactory(
-			v1beta1.Module{
+			v1beta2.Module{
 				ControllerName: "manifest",
 				Name:           "example-module-name",
-				Channel:        v1beta1.DefaultChannel,
+				Channel:        v1beta2.DefaultChannel,
 			}, data, false)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
@@ -68,15 +68,15 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	})
 
 	It("should deny a version downgrade when updating", func() {
-		crd := GetCRD(v1beta1.OperatorPrefix, "samplecrd")
+		crd := GetCRD(v1beta2.OperatorPrefix, "samplecrd")
 		Eventually(k8sClient.Create, Timeout, Interval).
 			WithContext(webhookServerContext).
 			WithArguments(crd).Should(Succeed())
 		template, err := testutils.ModuleTemplateFactory(
-			v1beta1.Module{
+			v1beta2.Module{
 				ControllerName: "manifest",
 				Name:           "example-module-name",
-				Channel:        v1beta1.DefaultChannel,
+				Channel:        v1beta2.DefaultChannel,
 			}, data, false)
 
 		Expect(err).ToNot(HaveOccurred())

@@ -13,15 +13,13 @@ import (
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 const (
 	// private key will only be generated if one does not already exist in the target `spec.secretName`.
 	privateKeyRotationPolicy = "Never"
 
-	DomainAnnotation = v1beta1.SKRDomainAnnotation
+	DomainAnnotation = v1beta2.SKRDomainAnnotation
 
 	caCertKey        = "ca.crt"
 	tlsCertKey       = "tls.crt"
@@ -42,7 +40,7 @@ type SubjectAltName struct {
 
 type CertificateManager struct {
 	kcpClient                  client.Client
-	kyma                       *v1beta1.Kyma
+	kyma                       *v1beta2.Kyma
 	certificateName            string
 	secretName                 string
 	istioNamespace             string
@@ -57,7 +55,7 @@ type CertificateSecret struct {
 }
 
 // NewCertificateManager returns a new CertificateManager, which can be used for creating a cert-manager Certificates.
-func NewCertificateManager(kcpClient client.Client, kyma *v1beta1.Kyma,
+func NewCertificateManager(kcpClient client.Client, kyma *v1beta2.Kyma,
 	istioNamespace string, localTesting bool,
 ) (*CertificateManager, error) {
 	return &CertificateManager{

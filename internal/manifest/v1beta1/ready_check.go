@@ -13,7 +13,6 @@ import (
 	deploymentutil "k8s.io/kubectl/pkg/util/deployment"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	manifestv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
@@ -35,7 +34,7 @@ func (c *ManifestCustomResourceReadyCheck) Run(
 	if err := checkDeploymentState(clnt, resources); err != nil {
 		return err
 	}
-	manifest := obj.(*manifestv1beta1.Manifest)
+	manifest := obj.(*manifestv1beta2.Manifest)
 	if manifest.Spec.Resource == nil {
 		return nil
 	}

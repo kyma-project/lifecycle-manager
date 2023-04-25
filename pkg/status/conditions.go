@@ -4,12 +4,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/strings/slices"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 // InitConditions initializes the required conditions in the Kyma CR and removes deprecated Conditions.
-func InitConditions(kyma *v1beta1.Kyma, watcherEnabled bool) {
+func InitConditions(kyma *v1beta2.Kyma, watcherEnabled bool) {
 	removeDeprecatedConditions(kyma)
 	// Add required Conditions
 	for _, cond := range v1beta2.GetRequiredConditionTypes(kyma.Spec.Sync.Enabled, watcherEnabled) {
@@ -17,7 +15,7 @@ func InitConditions(kyma *v1beta1.Kyma, watcherEnabled bool) {
 	}
 }
 
-func removeDeprecatedConditions(kyma *v1beta1.Kyma) {
+func removeDeprecatedConditions(kyma *v1beta2.Kyma) {
 	// validConditionTypes is a slice of all conditions allowed in a Kyma CR.
 	// All other conditions will be deprecated, i.e. removed from the CR.
 	validConditionTypes := []string{

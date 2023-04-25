@@ -10,7 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"github.com/kyma-project/lifecycle-manager/pkg/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
@@ -29,7 +28,7 @@ var (
 )
 
 func GenerateModulesFromTemplates(ctx context.Context,
-	kyma *v1beta1.Kyma,
+	kyma *v1beta2.Kyma,
 	templates channel.ModuleTemplatesByModuleName,
 	verification signature.Verification,
 	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
@@ -48,7 +47,7 @@ func GenerateModulesFromTemplates(ctx context.Context,
 
 func templatesToModules(
 	ctx context.Context,
-	kyma *v1beta1.Kyma,
+	kyma *v1beta2.Kyma,
 	templates channel.ModuleTemplatesByModuleName,
 	settings *ModuleConversionSettings,
 	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
@@ -111,19 +110,19 @@ func templatesToModules(
 
 func NewManifestFromTemplate(
 	ctx context.Context,
-	module v1beta1.Module,
-	template *v1beta1.ModuleTemplate,
+	module v1beta2.Module,
+	template *v1beta2.ModuleTemplate,
 	verification signature.Verification,
 	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
 	clnt client.Client,
-) (*v1beta1.Manifest, error) {
-	manifest := &v1beta1.Manifest{}
+) (*v1beta2.Manifest, error) {
+	manifest := &v1beta2.Manifest{}
 	manifest.Spec.Remote = ConvertTargetToRemote(template.Spec.Target)
 
 	switch module.CustomResourcePolicy {
-	case v1beta1.CustomResourcePolicyIgnore:
+	case v1beta2.CustomResourcePolicyIgnore:
 		manifest.Spec.Resource = nil
-	case v1beta1.CustomResourcePolicyCreateAndDelete:
+	case v1beta2.CustomResourcePolicyCreateAndDelete:
 		fallthrough
 	default:
 		manifest.Spec.Resource = template.Spec.Data.DeepCopy()
@@ -167,7 +166,7 @@ func NewManifestFromTemplate(
 }
 
 func translateLayersAndMergeIntoManifest(
-	manifest *v1beta1.Manifest, layers img.Layers,
+	manifest *v1beta2.Manifest, layers img.Layers,
 ) error {
 	for _, layer := range layers {
 		if err := insertLayerIntoManifest(manifest, layer); err != nil {
@@ -178,7 +177,7 @@ func translateLayersAndMergeIntoManifest(
 }
 
 func insertLayerIntoManifest(
-	manifest *v1beta1.Manifest, layer img.Layer,
+	manifest *v1beta2.Manifest, layer img.Layer,
 ) error {
 	switch layer.LayerName {
 	case img.CRDsLayer:
@@ -200,7 +199,7 @@ func insertLayerIntoManifest(
 		if err != nil {
 			return fmt.Errorf("error while merging the generic install representation: %w", err)
 		}
-		manifest.Spec.Install = v1beta1.InstallInfo{
+		manifest.Spec.Install = v1beta2.InstallInfo{
 			Source: runtime.RawExtension{Raw: installRaw},
 			Name:   string(layer.LayerName),
 		}
@@ -209,11 +208,11 @@ func insertLayerIntoManifest(
 	return nil
 }
 
-func ConvertTargetToRemote(remote v1beta1.Target) bool {
+func ConvertTargetToRemote(remote v1beta2.Target) bool {
 	switch remote {
-	case v1beta1.TargetControlPlane:
+	case v1beta2.TargetControlPlane:
 		return false
-	case v1beta1.TargetRemote:
+	case v1beta2.TargetRemote:
 		return true
 	default:
 		panic(ErrUndefinedTargetToRemote)

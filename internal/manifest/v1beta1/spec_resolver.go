@@ -14,7 +14,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 
 	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/downloader"
 	"helm.sh/helm/v3/pkg/getter"
@@ -56,7 +55,7 @@ var (
 )
 
 func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object) (*declarative.Spec, error) {
-	manifest, ok := obj.(*v1beta1.Manifest)
+	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
 		return nil, fmt.Errorf(
 			"invalid type %s: %w", reflect.TypeOf(obj),
@@ -184,7 +183,7 @@ func ParseInstallConfigs(decodedConfig interface{}) ([]interface{}, error) {
 	}
 	installConfigObj, decodeOk := decodedConfig.(map[string]interface{})
 	if !decodeOk {
-		return nil, fmt.Errorf("reading install %s resulted in an error: %w", v1beta1.ManifestKind,
+		return nil, fmt.Errorf("reading install %s resulted in an error: %w", v1beta2.ManifestKind,
 			ErrConfigObjectInvalid)
 	}
 	if installConfigObj["configs"] != nil {
@@ -192,7 +191,7 @@ func ParseInstallConfigs(decodedConfig interface{}) ([]interface{}, error) {
 		configs, configOk = installConfigObj["configs"].([]interface{})
 		if !configOk {
 			return nil, fmt.Errorf(
-				"reading install %s resulted in an error: %w ", v1beta1.ManifestKind,
+				"reading install %s resulted in an error: %w ", v1beta2.ManifestKind,
 				ErrChartConfigObjectInvalid,
 			)
 		}
@@ -207,7 +206,7 @@ var (
 
 func (m *ManifestSpecResolver) getChartInfoForInstall(
 	ctx context.Context,
-	install v1beta1.InstallInfo,
+	install v1beta2.InstallInfo,
 	specType v1beta2.RefTypeMetadata,
 	keyChain authn.Keychain,
 ) (*ChartInfo, error) {
@@ -288,7 +287,7 @@ func getConfigAndValuesForInstall(configs []interface{}, name string) (
 		mappedConfig, configExists := config.(map[string]interface{})
 		if !configExists {
 			return "", fmt.Errorf(
-				"reading install %s resulted in an error: %w", v1beta1.ManifestKind, ErrConfigDoesNotExist,
+				"reading install %s resulted in an error: %w", v1beta2.ManifestKind, ErrConfigDoesNotExist,
 			)
 		}
 		if mappedConfig["name"] == name {
@@ -296,7 +295,7 @@ func getConfigAndValuesForInstall(configs []interface{}, name string) (
 			if !configExists {
 				return "", fmt.Errorf(
 					"reading install %s resulted in an error: %w",
-					v1beta1.ManifestKind, ErrConfigOverridesDoNotExist,
+					v1beta2.ManifestKind, ErrConfigOverridesDoNotExist,
 				)
 			}
 			break

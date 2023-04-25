@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -11,28 +12,27 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
-	var kyma *v1beta1.Kyma
-	var skrModule *v1beta1.Module
-	skrModuleFromClient := &v1beta1.Module{
+	var kyma *v1beta2.Kyma
+	var skrModule *v1beta2.Module
+	skrModuleFromClient := &v1beta2.Module{
 		ControllerName: "manifest",
 		Name:           "skr-module-sync-client",
-		Channel:        v1beta1.DefaultChannel,
+		Channel:        v1beta2.DefaultChannel,
 	}
 	kyma = NewTestKyma("kyma-remote-sync")
-	skrModule = &v1beta1.Module{
+	skrModule = &v1beta2.Module{
 		ControllerName: "manifest",
 		Name:           "skr-module-sync",
-		Channel:        v1beta1.DefaultChannel,
+		Channel:        v1beta2.DefaultChannel,
 	}
 
-	kyma.Spec.Sync = v1beta1.Sync{
+	kyma.Spec.Sync = v1beta2.Sync{
 		Enabled:      true,
-		Strategy:     v1beta1.SyncStrategyLocalClient,
+		Strategy:     v1beta2.SyncStrategyLocalClient,
 		Namespace:    metav1.NamespaceDefault,
 		NoModuleCopy: true,
 	}
@@ -55,7 +55,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 			Should(Succeed())
 
 		By("add skr-module-client to remoteKyma.spec.modules")
-		Eventually(UpdateRemoteModule(ctx, runtimeClient, kyma, []v1beta1.Module{
+		Eventually(UpdateRemoteModule(ctx, runtimeClient, kyma, []v1beta2.Module{
 			*skrModuleFromClient,
 		}), Timeout, Interval).Should(Succeed())
 
@@ -75,10 +75,10 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	}
 
 	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1beta1.Module{
+		kyma.Spec.Modules, v1beta2.Module{
 			ControllerName: "manifest",
 			Name:           "skr-remote-module",
-			Channel:        v1beta1.DefaultChannel,
+			Channel:        v1beta2.DefaultChannel,
 		})
 
 	RegisterDefaultLifecycleForKyma(kyma)

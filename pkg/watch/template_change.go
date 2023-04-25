@@ -11,8 +11,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 type TemplateChangeHandler struct {
@@ -28,7 +26,7 @@ func NewTemplateChangeHandler(handlerClient ChangeHandlerClient) *TemplateChange
 func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 	return func(o client.Object) []reconcile.Request {
 		requests := make([]reconcile.Request, 0)
-		template := &v1beta1.ModuleTemplate{}
+		template := &v1beta2.ModuleTemplate{}
 
 		if err := h.Get(ctx, client.ObjectKeyFromObject(o), template); err != nil {
 			return requests
@@ -38,7 +36,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 			return requests
 		}
 
-		kymas := &v1beta1.KymaList{}
+		kymas := &v1beta2.KymaList{}
 		listOptions := &client.ListOptions{
 			LabelSelector: labels.SelectorFromSet(labels.Set{v1beta2.ManagedBy: v1beta2.OperatorName}),
 		}
@@ -85,7 +83,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 	}
 }
 
-func manageable(template *v1beta1.ModuleTemplate) bool {
+func manageable(template *v1beta2.ModuleTemplate) bool {
 	lbls := template.GetLabels()
 
 	if managedBy, ok := lbls[v1beta2.ManagedBy]; !ok || managedBy != v1beta2.OperatorName {
@@ -94,7 +92,7 @@ func manageable(template *v1beta1.ModuleTemplate) bool {
 	if controller, ok := lbls[v1beta2.ControllerName]; !ok || controller == "" {
 		return false
 	}
-	if template.Spec.Target == v1beta1.TargetControlPlane || template.Spec.Channel == "" {
+	if template.Spec.Target == v1beta2.TargetControlPlane || template.Spec.Channel == "" {
 		return false
 	}
 	return true

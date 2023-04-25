@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -75,7 +76,7 @@ func (m *Manifest) validateInstalls() error {
 
 	if len(fieldErrors) > 0 {
 		return apierrors.NewInvalid(
-			schema.GroupKind{Group: GroupVersion.Group, Kind: ManifestKind}, m.Name, fieldErrors,
+			schema.GroupKind{Group: GroupVersion.Group, Kind: v1beta2.ManifestKind}, m.Name, fieldErrors,
 		)
 	}
 

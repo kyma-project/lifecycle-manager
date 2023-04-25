@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -33,7 +32,7 @@ func (cache *ComponentDescriptorCache) set(key string, value *compdesc.Component
 func (cache *ComponentDescriptorCache) GetRemoteDescriptor(
 	ctx context.Context,
 	descriptorCacheKey string,
-	descriptor *v1beta1.Descriptor,
+	descriptor *v1beta2.Descriptor,
 	clnt client.Client,
 ) (*compdesc.ComponentDescriptor, error) {
 	remoteDescriptor := cache.get(descriptorCacheKey)

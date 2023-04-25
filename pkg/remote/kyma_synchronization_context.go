@@ -18,7 +18,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 )
 
@@ -35,7 +34,7 @@ type KymaSynchronizationContext struct {
 }
 
 func InitializeKymaSynchronizationContext(
-	ctx context.Context, kcp Client, cache *ClientCache, kyma *v1beta1.Kyma,
+	ctx context.Context, kcp Client, cache *ClientCache, kyma *v1beta2.Kyma,
 ) (*KymaSynchronizationContext, error) {
 	skr, err := NewClientLookup(kcp, cache, kyma.Spec.Sync.Strategy).Lookup(ctx, client.ObjectKeyFromObject(kyma))
 	if err != nil {
@@ -55,9 +54,9 @@ func InitializeKymaSynchronizationContext(
 }
 
 func (c *KymaSynchronizationContext) GetRemotelySyncedKyma(
-	ctx context.Context, controlPlaneKyma *v1beta1.Kyma,
-) (*v1beta1.Kyma, error) {
-	remoteKyma := &v1beta1.Kyma{}
+	ctx context.Context, controlPlaneKyma *v1beta2.Kyma,
+) (*v1beta2.Kyma, error) {
+	remoteKyma := &v1beta2.Kyma{}
 	if err := c.RuntimeClient.Get(ctx, GetRemoteObjectKey(controlPlaneKyma), remoteKyma); err != nil {
 		return nil, err
 	}
@@ -66,7 +65,7 @@ func (c *KymaSynchronizationContext) GetRemotelySyncedKyma(
 }
 
 func RemoveFinalizerFromRemoteKyma(
-	ctx context.Context, kyma *v1beta1.Kyma,
+	ctx context.Context, kyma *v1beta2.Kyma,
 ) error {
 	syncContext := SyncContextFromContext(ctx)
 
@@ -81,7 +80,7 @@ func RemoveFinalizerFromRemoteKyma(
 }
 
 func DeleteRemotelySyncedKyma(
-	ctx context.Context, kyma *v1beta1.Kyma,
+	ctx context.Context, kyma *v1beta2.Kyma,
 ) error {
 	syncContext := SyncContextFromContext(ctx)
 	remoteKyma, err := syncContext.GetRemotelySyncedKyma(ctx, kyma)
@@ -96,7 +95,7 @@ func DeleteRemotelySyncedKyma(
 // 1. name of namespace if controlPlaneKyma.spec.sync.namespace is set
 // 2. name of controlPlaneKyma.namespace
 // in this order.
-func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Context, kyma *v1beta1.Kyma) error {
+func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Context, kyma *v1beta2.Kyma) error {
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   kyma.GetNamespace(),
@@ -135,7 +134,7 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 		ctx, client.ObjectKey{
 			// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
 			// name changes, this also has to be adjusted here. We can think of making this configurable later
-			Name: fmt.Sprintf("%s.%s", plural, v1beta1.GroupVersion.Group),
+			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
 		}, crd,
 	)
 
@@ -145,11 +144,11 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 
 	err = c.RuntimeClient.Get(
 		ctx, client.ObjectKey{
-			Name: fmt.Sprintf("%s.%s", plural, v1beta1.GroupVersion.Group),
+			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
 		}, crdFromRuntime,
 	)
 
-	if k8serrors.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta1.GroupVersion.Version) {
+	if k8serrors.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta2.GroupVersion.Version) {
 		return PatchCRD(ctx, c.RuntimeClient, crd)
 	}
 
@@ -161,10 +160,10 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 }
 
 func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
-	ctx context.Context, kyma *v1beta1.Kyma,
-) (*v1beta1.Kyma, error) {
+	ctx context.Context, kyma *v1beta2.Kyma,
+) (*v1beta2.Kyma, error) {
 	recorder := adapter.RecorderFromContext(ctx)
-	remoteKyma := &v1beta1.Kyma{}
+	remoteKyma := &v1beta2.Kyma{}
 
 	remoteKyma.Name = kyma.Name
 	remoteKyma.Namespace = kyma.Namespace
@@ -177,7 +176,7 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 	if meta.IsNoMatchError(err) {
 		recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
 
-		if err := c.CreateOrUpdateCRD(ctx, v1beta1.KymaKind.Plural()); err != nil {
+		if err := c.CreateOrUpdateCRD(ctx, v1beta2.KymaKind.Plural()); err != nil {
 			return nil, err
 		}
 
@@ -190,7 +189,7 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 		kyma.Spec.DeepCopyInto(&remoteKyma.Spec)
 
 		if kyma.Spec.Sync.NoModuleCopy {
-			remoteKyma.Spec.Modules = []v1beta1.Module{}
+			remoteKyma.Spec.Modules = []v1beta2.Module{}
 		}
 
 		err = c.RuntimeClient.Create(ctx, remoteKyma)
@@ -210,7 +209,7 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 
 func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(
 	ctx context.Context,
-	controlPlaneKyma, remoteKyma *v1beta1.Kyma,
+	controlPlaneKyma, remoteKyma *v1beta2.Kyma,
 ) error {
 	recorder := adapter.RecorderFromContext(ctx)
 
@@ -233,14 +232,14 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(
 // ReplaceWithVirtualKyma creates a virtual kyma instance from a control plane Kyma and N Remote Kymas,
 // merging the module specification in the process.
 func (c *KymaSynchronizationContext) ReplaceWithVirtualKyma(
-	kyma *v1beta1.Kyma,
-	remotes ...*v1beta1.Kyma,
+	kyma *v1beta2.Kyma,
+	remotes ...*v1beta2.Kyma,
 ) {
 	totalModuleAmount := len(kyma.Spec.Modules)
 	for _, remote := range remotes {
 		totalModuleAmount += len(remote.Spec.Modules)
 	}
-	modules := make(map[string]v1beta1.Module, totalModuleAmount)
+	modules := make(map[string]v1beta2.Module, totalModuleAmount)
 
 	for _, remote := range remotes {
 		for _, m := range remote.Spec.Modules {
@@ -251,13 +250,13 @@ func (c *KymaSynchronizationContext) ReplaceWithVirtualKyma(
 		modules[m.Name] = m
 	}
 
-	kyma.Spec.Modules = []v1beta1.Module{}
+	kyma.Spec.Modules = []v1beta2.Module{}
 	for _, m := range modules {
 		kyma.Spec.Modules = append(kyma.Spec.Modules, m)
 	}
 }
 
-func GetRemoteObjectKey(kyma *v1beta1.Kyma) client.ObjectKey {
+func GetRemoteObjectKey(kyma *v1beta2.Kyma) client.ObjectKey {
 	name := kyma.Name
 	namespace := kyma.Namespace
 	if kyma.Spec.Sync.Namespace != "" {
@@ -268,7 +267,7 @@ func GetRemoteObjectKey(kyma *v1beta1.Kyma) client.ObjectKey {
 
 // InsertWatcherLabelsAnnotations inserts labels into the given KymaCR, which are needed to ensure
 // a working e2e-flow for the runtime-watcher.
-func (c *KymaSynchronizationContext) InsertWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma *v1beta1.Kyma) {
+func (c *KymaSynchronizationContext) InsertWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma *v1beta2.Kyma) {
 	if remoteKyma.Labels == nil {
 		remoteKyma.Labels = make(map[string]string)
 	}
@@ -278,6 +277,6 @@ func (c *KymaSynchronizationContext) InsertWatcherLabelsAnnotations(controlPlane
 	if remoteKyma.Annotations == nil {
 		remoteKyma.Annotations = make(map[string]string)
 	}
-	remoteKyma.Annotations[v1beta1.OwnedByAnnotation] = fmt.Sprintf(v1beta1.OwnedByFormat,
+	remoteKyma.Annotations[v1beta2.OwnedByAnnotation] = fmt.Sprintf(v1beta2.OwnedByFormat,
 		controlPlaneKyma.GetNamespace(), controlPlaneKyma.GetName())
 }

@@ -10,7 +10,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
@@ -115,7 +114,7 @@ func expectManifestSpecContainsCredSecretSelector(kymaName string) func() error 
 	}
 }
 
-func extractInstallImageSpec(installInfo v1beta1.InstallInfo) *v1beta2.ImageSpec {
+func extractInstallImageSpec(installInfo v1beta2.InstallInfo) *v1beta2.ImageSpec {
 	var installImageSpec *v1beta2.ImageSpec
 	err := yaml.Unmarshal(installInfo.Source.Raw, &installImageSpec)
 	Expect(err).ToNot(HaveOccurred())
@@ -134,7 +133,7 @@ func expectCredSecretSelectorCorrect(installImageSpec *v1beta2.ImageSpec) error 
 	return nil
 }
 
-func updateModuleTemplateTarget(kymaName string, target v1beta1.Target) func() error {
+func updateModuleTemplateTarget(kymaName string, target v1beta2.Target) func() error {
 	return func() error {
 		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 		if err != nil {
@@ -159,10 +158,10 @@ var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 
 	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1beta1.Module{
+		kyma.Spec.Modules, v1beta2.Module{
 			ControllerName: "manifest",
 			Name:           NewUniqModuleName(),
-			Channel:        v1beta1.DefaultChannel,
+			Channel:        v1beta2.DefaultChannel,
 		})
 
 	RegisterDefaultLifecycleForKyma(kyma)
@@ -176,10 +175,10 @@ var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
 			noCondition(),
 			expectManifestSpecRemoteMatched(kyma.Name, false)),
 		Entry("When update ModuleTemplate.Spec.Target=remote, expect Manifest.Spec.remote=true",
-			updateModuleTemplateTarget(kyma.Name, v1beta1.TargetRemote),
+			updateModuleTemplateTarget(kyma.Name, v1beta2.TargetRemote),
 			expectManifestSpecRemoteMatched(kyma.Name, true)),
 		Entry("When update ModuleTemplate.Spec.Target=control-plane, expect Manifest.Spec.remote=false",
-			updateModuleTemplateTarget(kyma.Name, v1beta1.TargetControlPlane),
+			updateModuleTemplateTarget(kyma.Name, v1beta2.TargetControlPlane),
 			expectManifestSpecRemoteMatched(kyma.Name, false)),
 	)
 })
@@ -188,10 +187,10 @@ var _ = Describe("Test ModuleTemplate.Spec.descriptor not contains RegistryCred 
 	kyma := NewTestKyma("kyma")
 
 	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1beta1.Module{
+		kyma.Spec.Modules, v1beta2.Module{
 			ControllerName: "manifest",
 			Name:           NewUniqModuleName(),
-			Channel:        v1beta1.DefaultChannel,
+			Channel:        v1beta2.DefaultChannel,
 		})
 
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
@@ -206,10 +205,10 @@ var _ = Describe("Test ModuleTemplate.Spec.descriptor contains RegistryCred labe
 	kyma := NewTestKyma("kyma")
 
 	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1beta1.Module{
+		kyma.Spec.Modules, v1beta2.Module{
 			ControllerName: "manifest",
 			Name:           NewUniqModuleName(),
-			Channel:        v1beta1.DefaultChannel,
+			Channel:        v1beta2.DefaultChannel,
 		})
 
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)

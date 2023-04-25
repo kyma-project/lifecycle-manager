@@ -17,7 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/index"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
@@ -40,17 +39,17 @@ const (
 func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 	options controller.Options, settings SetupUpSetting,
 ) error {
-	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta1.Kyma{}).WithOptions(options).
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).WithOptions(options).
 		Watches(
-			&source.Kind{Type: &v1beta1.ModuleTemplate{}},
+			&source.Kind{Type: &v1beta2.ModuleTemplate{}},
 			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch(context.TODO())),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		// here we define a watch on secrets for the lifecycle-manager so that the cache is picking up changes
 		Watches(&source.Kind{Type: &corev1.Secret{}}, handler.Funcs{})
 
-	controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: &v1beta1.Manifest{}},
-		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1beta1.Kyma{}, IsController: true})
+	controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: &v1beta2.Manifest{}},
+		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1beta2.Kyma{}, IsController: true})
 
 	var runnableListener *listener.SKREventListener
 	var eventChannel *source.Channel
@@ -141,7 +140,7 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1beta1.Watcher{}).
+		For(&v1beta2.Watcher{}).
 		Named(WatcherControllerName).
 		WithOptions(options).
 		Complete(r)

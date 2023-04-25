@@ -30,7 +30,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
@@ -67,7 +66,7 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	logger := ctrlLog.FromContext(ctx).WithName(req.NamespacedName.String())
 	logger.Info("Reconciliation loop starting")
 
-	watcherObj := &v1beta1.Watcher{}
+	watcherObj := &v1beta2.Watcher{}
 	if err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, watcherObj); err != nil {
 		logger.V(log.DebugLevel).Info("Failed to get reconciliation object")
 		return ctrl.Result{}, client.IgnoreNotFound(err)

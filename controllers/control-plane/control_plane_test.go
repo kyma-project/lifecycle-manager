@@ -1,7 +1,6 @@
 package control_plane_test
 
 import (
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
@@ -10,7 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func registerControlPlaneLifecycleForKyma(kyma *v1beta1.Kyma) {
+func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
 		Eventually(controlPlaneClient.Create, Timeout, Interval).
 			WithContext(ctx).
@@ -31,7 +30,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta1.Kyma) {
 	})
 }
 
-func syncKyma(kyma *v1beta1.Kyma) error {
+func syncKyma(kyma *v1beta2.Kyma) error {
 	err := controlPlaneClient.Get(ctx, client.ObjectKey{
 		Name:      kyma.Name,
 		Namespace: metav1.NamespaceDefault,

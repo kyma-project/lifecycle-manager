@@ -11,8 +11,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	internalV1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -67,7 +65,7 @@ var _ = Describe(
 		DescribeTable(
 			"Testing Kustomize test entries",
 			func(
-				givenCondition func(manifest *v1beta1.Manifest) error,
+				givenCondition func(manifest *v1beta2.Manifest) error,
 				expectedManifestState func(manifestName string) error, expectedFileState func() bool,
 			) {
 				manifest := NewTestManifest("kust")
@@ -124,7 +122,7 @@ var _ = Describe(
 		DescribeTable(
 			"Test OCI specs",
 			func(
-				givenCondition func(manifest *v1beta1.Manifest) error,
+				givenCondition func(manifest *v1beta2.Manifest) error,
 				expectManifestState func(manifestName string) error,
 			) {
 				manifest := NewTestManifest("oci")
@@ -176,7 +174,7 @@ var _ = Describe(
 		DescribeTable(
 			"Test Helm specs",
 			func(
-				givenCondition func(manifest *v1beta1.Manifest) error,
+				givenCondition func(manifest *v1beta2.Manifest) error,
 				expectedBehavior func(manifestName string) error,
 			) {
 				manifest := NewTestManifest("helm")
@@ -216,7 +214,7 @@ var _ = Describe(
 					WithArguments(manifestWithInstall).Should(Succeed())
 				validImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String())
 				Eventually(expectHelmClientCacheExist(true), standardTimeout, standardInterval).
-					WithArguments(internalV1beta1.GenerateCacheKey(manifestWithInstall.GetLabels()[v1beta2.KymaName],
+					WithArguments(internalv1beta2.GenerateCacheKey(manifestWithInstall.GetLabels()[v1beta2.KymaName],
 						strconv.FormatBool(manifestWithInstall.Spec.Remote), manifestWithInstall.GetNamespace())).
 					Should(BeTrue())
 				// this will ensure only manifest.yaml remains

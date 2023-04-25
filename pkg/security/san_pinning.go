@@ -14,7 +14,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
 )
@@ -112,7 +111,7 @@ func (v *RequestVerifier) getCertificateFromHeader(r *http.Request) (*x509.Certi
 
 // getDomain fetches the KymaCR, mentioned in the requests body, and returns the value of the SKR-Domain annotation.
 func (v *RequestVerifier) getDomain(request *http.Request, watcherEvtObject *types.WatchEvent) (string, error) {
-	var kymaCR v1beta1.Kyma
+	var kymaCR v1beta2.Kyma
 	if err := v.Client.Get(request.Context(), watcherEvtObject.Owner, &kymaCR); err != nil {
 		return "", err
 	}

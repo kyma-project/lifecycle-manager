@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 const TemplateFQDNField Field = "spec.descriptor.component.name"
@@ -17,9 +15,9 @@ func TemplateFQDN() *TemplateFQDNIndex {
 }
 
 func (idx *TemplateFQDNIndex) With(ctx context.Context, indexer client.FieldIndexer) error {
-	return indexer.IndexField(ctx, &v1beta1.ModuleTemplate{}, string(TemplateFQDNField),
+	return indexer.IndexField(ctx, &v1beta2.ModuleTemplate{}, string(TemplateFQDNField),
 		func(o client.Object) []string {
-			descriptor, err := o.(*v1beta1.ModuleTemplate).Spec.GetDescriptor()
+			descriptor, err := o.(*v1beta2.ModuleTemplate).Spec.GetDescriptor()
 			if err != nil {
 				return nil
 			}

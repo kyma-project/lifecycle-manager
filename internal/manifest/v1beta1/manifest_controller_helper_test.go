@@ -24,7 +24,6 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/types"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -97,8 +96,8 @@ func createOCIImageSpec(name, repo string) v1beta2.ImageSpec {
 	return imageSpec
 }
 
-func NewTestManifest(prefix string) *v1beta1.Manifest {
-	return &v1beta1.Manifest{
+func NewTestManifest(prefix string) *v1beta2.Manifest {
+	return &v1beta2.Manifest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", prefix, rand.Intn(999999)),
 			Namespace: metav1.NamespaceDefault,
@@ -143,8 +142,8 @@ func expectHelmClientCacheExist(expectExist bool) func(cacheKey string) bool {
 	}
 }
 
-func withInvalidInstallImageSpec(remote bool) func(manifest *v1beta1.Manifest) error {
-	return func(manifest *v1beta1.Manifest) error {
+func withInvalidInstallImageSpec(remote bool) func(manifest *v1beta2.Manifest) error {
+	return func(manifest *v1beta2.Manifest) error {
 		invalidImageSpec := createOCIImageSpec("invalid-image-spec", "domain.invalid")
 		imageSpecByte, err := json.Marshal(invalidImageSpec)
 		Expect(err).ToNot(HaveOccurred())
@@ -152,8 +151,8 @@ func withInvalidInstallImageSpec(remote bool) func(manifest *v1beta1.Manifest) e
 	}
 }
 
-func withValidInstallImageSpec(name string, remote bool) func(manifest *v1beta1.Manifest) error {
-	return func(manifest *v1beta1.Manifest) error {
+func withValidInstallImageSpec(name string, remote bool) func(manifest *v1beta2.Manifest) error {
+	return func(manifest *v1beta2.Manifest) error {
 		validImageSpec := createOCIImageSpec(name, server.Listener.Addr().String())
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
@@ -161,8 +160,8 @@ func withValidInstallImageSpec(name string, remote bool) func(manifest *v1beta1.
 	}
 }
 
-func withValidInstall(installName string, remote bool) func(manifest *v1beta1.Manifest) error {
-	return func(manifest *v1beta1.Manifest) error {
+func withValidInstall(installName string, remote bool) func(manifest *v1beta2.Manifest) error {
+	return func(manifest *v1beta2.Manifest) error {
 		validInstallImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String())
 		installSpecByte, err := json.Marshal(validInstallImageSpec)
 		Expect(err).ToNot(HaveOccurred())
@@ -171,9 +170,9 @@ func withValidInstall(installName string, remote bool) func(manifest *v1beta1.Ma
 	}
 }
 
-func installManifest(manifest *v1beta1.Manifest, installSpecByte []byte, remote bool) error {
+func installManifest(manifest *v1beta2.Manifest, installSpecByte []byte, remote bool) error {
 	if installSpecByte != nil {
-		manifest.Spec.Install = v1beta1.InstallInfo{
+		manifest.Spec.Install = v1beta2.InstallInfo{
 			Source: runtime.RawExtension{
 				Raw: installSpecByte,
 			},
@@ -212,7 +211,7 @@ func expectManifestStateIn(state v2.State) func(manifestName string) error {
 }
 
 func getManifestStatus(manifestName string) (v2.Status, error) {
-	manifest := &v1beta1.Manifest{}
+	manifest := &v1beta2.Manifest{}
 	err := k8sClient.Get(
 		ctx, client.ObjectKey{
 			Namespace: metav1.NamespaceDefault,
@@ -225,7 +224,7 @@ func getManifestStatus(manifestName string) (v2.Status, error) {
 	return v2.Status(manifest.Status), nil
 }
 
-func deleteManifestAndVerify(manifest *v1beta1.Manifest) func() error {
+func deleteManifestAndVerify(manifest *v1beta2.Manifest) func() error {
 	return func() error {
 		// reverting permissions for deletion - in case it was changed during tests
 		if err := os.Chmod(kustomizeLocalPath, fs.ModePerm); err != nil {
@@ -234,14 +233,14 @@ func deleteManifestAndVerify(manifest *v1beta1.Manifest) func() error {
 		if err := k8sClient.Delete(ctx, manifest); err != nil && !errors.IsNotFound(err) {
 			return err
 		}
-		newManifest := v1beta1.Manifest{}
+		newManifest := v1beta2.Manifest{}
 		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(manifest), &newManifest)
 		return client.IgnoreNotFound(err)
 	}
 }
 
-func addInstallSpec(specBytes []byte) func(manifest *v1beta1.Manifest) error {
-	return func(manifest *v1beta1.Manifest) error {
+func addInstallSpec(specBytes []byte) func(manifest *v1beta2.Manifest) error {
+	return func(manifest *v1beta2.Manifest) error {
 		return installManifest(manifest, specBytes, false)
 	}
 }
@@ -249,8 +248,8 @@ func addInstallSpec(specBytes []byte) func(manifest *v1beta1.Manifest) error {
 func addInstallSpecWithFilePermission(
 	specBytes []byte,
 	remote bool, fileMode os.FileMode,
-) func(manifest *v1beta1.Manifest) error {
-	return func(manifest *v1beta1.Manifest) error {
+) func(manifest *v1beta2.Manifest) error {
+	return func(manifest *v1beta2.Manifest) error {
 		currentUser, err := user.Current()
 		Expect(err).ToNot(HaveOccurred())
 		if currentUser.Username == "root" {

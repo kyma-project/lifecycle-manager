@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
@@ -41,20 +40,20 @@ const (
 	Interval           = time.Millisecond * 250
 )
 
-func NewTestKyma(name string) *v1beta1.Kyma {
-	return &v1beta1.Kyma{
+func NewTestKyma(name string) *v1beta2.Kyma {
+	return &v1beta2.Kyma{
 		TypeMeta: v1.TypeMeta{
-			APIVersion: v1beta1.GroupVersion.String(),
-			Kind:       string(v1beta1.KymaKind),
+			APIVersion: v1beta2.GroupVersion.String(),
+			Kind:       string(v1beta2.KymaKind),
 		},
 		ObjectMeta: v1.ObjectMeta{
 			Name:        fmt.Sprintf("%s-%s", name, randString(randomStringLength)),
 			Namespace:   v1.NamespaceDefault,
 			Annotations: map[string]string{watcher.DomainAnnotation: "example.domain.com"},
 		},
-		Spec: v1beta1.KymaSpec{
-			Modules: []v1beta1.Module{},
-			Channel: v1beta1.DefaultChannel,
+		Spec: v1beta2.KymaSpec{
+			Modules: []v1beta2.Module{},
+			Channel: v1beta2.DefaultChannel,
 		},
 	}
 }
@@ -95,7 +94,7 @@ func randString(n int) string {
 func DeployModuleTemplates(
 	ctx context.Context,
 	kcpClient client.Client,
-	kyma *v1beta1.Kyma,
+	kyma *v1beta2.Kyma,
 	onPrivateRepo bool,
 ) {
 	for _, module := range kyma.Spec.Modules {
@@ -108,7 +107,7 @@ func DeployModuleTemplates(
 func DeleteModuleTemplates(
 	ctx context.Context,
 	kcpClient client.Client,
-	kyma *v1beta1.Kyma,
+	kyma *v1beta2.Kyma,
 	onPrivateRepo bool,
 ) {
 	for _, module := range kyma.Spec.Modules {
@@ -118,8 +117,8 @@ func DeleteModuleTemplates(
 	}
 }
 
-func GetKyma(ctx context.Context, testClient client.Client, name, namespace string) (*v1beta1.Kyma, error) {
-	kymaInCluster := &v1beta1.Kyma{}
+func GetKyma(ctx context.Context, testClient client.Client, name, namespace string) (*v1beta2.Kyma, error) {
+	kymaInCluster := &v1beta2.Kyma{}
 	if namespace == "" {
 		namespace = v1.NamespaceDefault
 	}
@@ -133,7 +132,7 @@ func GetKyma(ctx context.Context, testClient client.Client, name, namespace stri
 	return kymaInCluster, nil
 }
 
-func IsKymaInState(ctx context.Context, kcpClient client.Client, kymaName string, state v1beta1.State) func() bool {
+func IsKymaInState(ctx context.Context, kcpClient client.Client, kymaName string, state v1beta2.State) func() bool {
 	return func() bool {
 		kymaFromCluster, err := GetKyma(ctx, kcpClient, kymaName, "")
 		if err != nil || kymaFromCluster.Status.State != state {
@@ -144,20 +143,20 @@ func IsKymaInState(ctx context.Context, kcpClient client.Client, kymaName string
 }
 
 func ModuleTemplateFactory(
-	module v1beta1.Module,
+	module v1beta2.Module,
 	data unstructured.Unstructured,
 	onPrivateRepo bool,
-) (*v1beta1.ModuleTemplate, error) {
+) (*v1beta2.ModuleTemplate, error) {
 	return ModuleTemplateFactoryForSchema(module, data, compdesc2.SchemaVersion, onPrivateRepo)
 }
 
 func ModuleTemplateFactoryForSchema(
-	module v1beta1.Module,
+	module v1beta2.Module,
 	data unstructured.Unstructured,
 	schemaVersion compdesc.SchemaVersion,
 	onPrivateRepo bool,
-) (*v1beta1.ModuleTemplate, error) {
-	var moduleTemplate v1beta1.ModuleTemplate
+) (*v1beta2.ModuleTemplate, error) {
+	var moduleTemplate v1beta2.ModuleTemplate
 	var err error
 	switch schemaVersion {
 	case compdesc2.SchemaVersion:
@@ -188,7 +187,7 @@ func ModuleTemplateFactoryForSchema(
 	return &moduleTemplate, nil
 }
 
-func readModuleTemplateWithV2Schema(moduleTemplate *v1beta1.ModuleTemplate) error {
+func readModuleTemplateWithV2Schema(moduleTemplate *v1beta2.ModuleTemplate) error {
 	template := "operator_v1beta1_moduletemplate_kcp-module.yaml"
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {
@@ -206,7 +205,7 @@ func readModuleTemplateWithV2Schema(moduleTemplate *v1beta1.ModuleTemplate) erro
 	return err
 }
 
-func readModuleTemplateWithinPrivateRepo(moduleTemplate *v1beta1.ModuleTemplate) error {
+func readModuleTemplateWithinPrivateRepo(moduleTemplate *v1beta2.ModuleTemplate) error {
 	template := "operator_v1beta1_moduletemplate_kcp-module-cred-label.yaml"
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {
@@ -224,7 +223,7 @@ func readModuleTemplateWithinPrivateRepo(moduleTemplate *v1beta1.ModuleTemplate)
 	return err
 }
 
-func readModuleTemplateWithV3Schema(moduleTemplate *v1beta1.ModuleTemplate) error {
+func readModuleTemplateWithV3Schema(moduleTemplate *v1beta2.ModuleTemplate) error {
 	template := "operator_v1beta1_moduletemplate_ocm.software.v3alpha1.yaml"
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {

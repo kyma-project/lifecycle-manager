@@ -15,7 +15,6 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
@@ -66,15 +65,15 @@ func isEven(idx int) bool {
 	return idx%2 == 0
 }
 
-func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta1.Watcher {
-	field := v1beta1.SpecField
+func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watcher {
+	field := v1beta2.SpecField
 	if statusOnly {
-		field = v1beta1.StatusField
+		field = v1beta2.StatusField
 	}
-	return &v1beta1.Watcher{
+	return &v1beta2.Watcher{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       string(v1beta1.WatcherKind),
-			APIVersion: v1beta1.GroupVersion.String(),
+			Kind:       string(v1beta2.WatcherKind),
+			APIVersion: v1beta2.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      managerInstanceName,
@@ -83,8 +82,8 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta1.Watch
 				v1beta2.ManagedBy: managerInstanceName,
 			},
 		},
-		Spec: v1beta1.WatcherSpec{
-			ServiceInfo: v1beta1.Service{
+		Spec: v1beta2.WatcherSpec{
+			ServiceInfo: v1beta2.Service{
 				Port:      8082,
 				Name:      fmt.Sprintf("%s-svc", managerInstanceName),
 				Namespace: metav1.NamespaceDefault,
@@ -93,8 +92,8 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta1.Watch
 				fmt.Sprintf("%s-watchable", managerInstanceName): "true",
 			},
 			Field: field,
-			Gateway: v1beta1.GatewayConfig{
-				LabelSelector: v1beta1.DefaultIstioGatewaySelector(),
+			Gateway: v1beta2.GatewayConfig{
+				LabelSelector: v1beta2.DefaultIstioGatewaySelector(),
 			},
 		},
 	}
@@ -118,15 +117,15 @@ func createTLSSecret(kymaObjKey client.ObjectKey) *corev1.Secret {
 	}
 }
 
-func getWatcher(name string) (v1beta1.Watcher, error) {
-	watcher := v1beta1.Watcher{}
+func getWatcher(name string) (v1beta2.Watcher, error) {
+	watcher := v1beta2.Watcher{}
 	err := controlPlaneClient.Get(suiteCtx,
 		client.ObjectKey{Name: name, Namespace: metav1.NamespaceDefault},
 		&watcher)
 	return watcher, err
 }
 
-func isVirtualServiceHTTPRouteConfigured(ctx context.Context, customIstioClient *istio.Client, obj *v1beta1.Watcher,
+func isVirtualServiceHTTPRouteConfigured(ctx context.Context, customIstioClient *istio.Client, obj *v1beta2.Watcher,
 ) error {
 	routeReady, err := customIstioClient.IsListenerHTTPRouteConfigured(ctx, obj)
 	if !routeReady {
