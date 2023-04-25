@@ -24,7 +24,7 @@ import (
 
 const (
 	servicePathTpl                 = "/validate/%s"
-	expectedWebhookNamePartsLength = 4
+	expectedWebhookNamePartsLength = 5
 )
 
 var (
@@ -32,7 +32,7 @@ var (
 	ErrWebhookConfigForWatcherNotFound = errors.New("webhook config matching Watcher CR not found")
 	ErrWebhookNamePartsNumberMismatch  = errors.New("webhook name dot separated parts number mismatch")
 	ErrManagedByLabelNotFound          = errors.New("managed-by label not found")
-	ErrModuleNameMismatch              = errors.New("module name mismatch")
+	ErrWebhookCfgNameMismatch          = errors.New("webhook config name mismatch")
 	ErrSvcPathMismatch                 = errors.New("service path mismatch")
 	ErrWatchLabelsMismatch             = errors.New("watch labels mismatch")
 	ErrResourcesMismatch               = errors.New("resources mismatch")
@@ -53,7 +53,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	}
 	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer)
 
-	It("kyma reconciliation installs watcher helm chart with correct webhook config", func() {
+	It("kyma reconciliation installs watcher resources with correct webhook config", func() {
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
 			kymaObjKey), Timeout, Interval).WithOffset(4).Should(Succeed())
 	})
@@ -210,12 +210,11 @@ func lookupWebhookConfigForCR(webhooks []admissionv1.ValidatingWebhook, watcher 
 	cfgIdx := -1
 	for idx, webhook := range webhooks {
 		webhookNameParts := strings.Split(webhook.Name, ".")
-		if len(webhookNameParts) == 0 {
+		if len(webhookNameParts) < 3 {
 			continue
 		}
-		moduleName := webhookNameParts[0]
-		objModuleName := watcher.GetModuleName()
-		if moduleName == objModuleName {
+
+		if watcher.Namespace == webhookNameParts[0] && watcher.Name == webhookNameParts[1] {
 			return idx
 		}
 	}
@@ -230,16 +229,20 @@ func verifyWebhookConfig(
 	if len(webhookNameParts) != expectedWebhookNamePartsLength {
 		return fmt.Errorf("%w: (webhook=%s)", ErrWebhookNamePartsNumberMismatch, webhook.Name)
 	}
-	moduleName := webhookNameParts[0]
+	watcherNamespace := webhookNameParts[0]
+	watcherName := webhookNameParts[1]
+	if watcherNamespace != watcherCR.Namespace || watcherName != watcherCR.Name {
+		return fmt.Errorf("%w: (expected=%s, got=%s)", ErrWebhookCfgNameMismatch,
+			client.ObjectKeyFromObject(watcherCR), client.ObjectKey{
+				Namespace: watcherNamespace,
+				Name:      watcherName,
+			})
+	}
 	expectedModuleName, exists := watcherCR.Labels[v1beta1.ManagedBy]
 	if !exists {
 		return fmt.Errorf("%w: (labels=%v)", ErrManagedByLabelNotFound, watcherCR.Labels)
 	}
-	if moduleName != expectedModuleName {
-		return fmt.Errorf("%w: (expected=%s, got=%s)", ErrModuleNameMismatch,
-			expectedModuleName, moduleName)
-	}
-	expectedSvcPath := fmt.Sprintf(servicePathTpl, moduleName)
+	expectedSvcPath := fmt.Sprintf(servicePathTpl, expectedModuleName)
 	if *webhook.ClientConfig.Service.Path != expectedSvcPath {
 		return fmt.Errorf("%w: (expected=%s, got=%s)", ErrSvcPathMismatch,
 			expectedSvcPath, *webhook.ClientConfig.Service.Path)
