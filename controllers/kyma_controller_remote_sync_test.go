@@ -1,12 +1,10 @@
 package controllers_test
 
 import (
-	"encoding/json"
 	"errors"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	ocmv1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -18,6 +16,7 @@ var (
 	ErrContainsUnexpectedModules    = errors.New("kyma CR contains unexpected modules")
 	ErrNotContainsExpectedCondition = errors.New("kyma CR not contains expected condition")
 )
+
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
 	var kyma *v1beta1.Kyma
 	var skrModule *v1beta1.Module
@@ -88,8 +87,6 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	RegisterDefaultLifecycleForKyma(kyma)
 
 	It("Kyma CR should be synchronized in both clusters", func() {
-		Skip("Skip this test at the moment, until we have an agreement how to deal with diff detection in SSA.")
-
 		By("Remote Kyma created")
 		Eventually(KymaExists, Timeout, Interval).
 			WithArguments(runtimeClient, kyma.GetName(), kyma.Spec.Sync.Namespace).
@@ -97,7 +94,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("CR created in kcp")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ModuleExists(ctx, kyma, activeModule), Timeout*3, Interval).Should(Succeed())
+			Eventually(ModuleExists(ctx, kyma, activeModule), Timeout, Interval).Should(Succeed())
 		}
 
 		By("No spec.module in remote Kyma")
@@ -124,15 +121,15 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			}
 			return nil
 		}, Timeout, Interval)
-
-		unwantedLabel := ocmv1.Label{Name: "test", Value: json.RawMessage(`{"foo":"bar"}`), Version: "v1"}
-		By("updating a module template in the remote cluster to simulate unwanted modification")
-		Eventually(ModifyModuleTemplateSpecThroughLabels(runtimeClient, kyma, unwantedLabel, true),
-			Timeout, Interval).Should(Succeed())
-
-		By("verifying the discovered override and checking the reset label")
-		Eventually(ModuleTemplatesVerifyUnwantedLabel, Timeout*3, Interval).
-			WithArguments(runtimeClient, kyma, unwantedLabel, true).
+		moduleToBeUpdated := kyma.Spec.Modules[0].Name
+		By("Update SKR Module Template spec.data.spec field")
+		Eventually(updateModuleTemplateSpec,
+			Timeout, Interval).
+			WithArguments(runtimeClient, kyma, moduleToBeUpdated, "valueUpdated", true).
 			Should(Succeed())
+
+		By("Expect SKR Module Template spec.data.spec field get reset")
+		Eventually(expectModuleTemplateSpecGetReset, Timeout, Interval).
+			WithArguments(runtimeClient, kyma, moduleToBeUpdated, "initValue", true).Should(Succeed())
 	})
 })

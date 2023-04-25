@@ -9,8 +9,6 @@ import (
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
-	ocmv1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
-
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -24,7 +22,8 @@ import (
 )
 
 var (
-	ErrKymaNotFound = errors.New("kyma not exists")
+	ErrKymaNotFound          = errors.New("kyma not exists")
+	ErrExpectedLabelNotReset = errors.New("expected label not reset")
 )
 
 func RegisterDefaultLifecycleForKyma(kyma *v1beta1.Kyma) {
@@ -236,70 +235,6 @@ func ModuleTemplatesExist(clnt client.Client, kyma *v1beta1.Kyma, remote bool) f
 
 		return nil
 	}
-}
-
-var ErrUnwantedChangesFound = errors.New("unwanted changes found")
-
-func ModuleTemplatesVerifyUnwantedLabel(
-	clnt client.Client, kyma *v1beta1.Kyma, unwantedLabel ocmv1.Label, remote bool,
-) error {
-	for _, module := range kyma.Spec.Modules {
-		descriptor, err := getModuleDescriptor(module, clnt, kyma, remote)
-		if err != nil {
-			return err
-		}
-		labels := descriptor.GetLabels()
-		_, ok := labels.Get(unwantedLabel.Name)
-		if ok {
-			return ErrUnwantedChangesFound
-		}
-	}
-	return nil
-}
-
-func ModifyModuleTemplateSpecThroughLabels(
-	clnt client.Client,
-	kyma *v1beta1.Kyma,
-	unwantedLabel ocmv1.Label,
-	remote bool,
-) func() error {
-	return func() error {
-		for _, module := range kyma.Spec.Modules {
-			template, err := GetModuleTemplate(module.Name, clnt, kyma, remote)
-			if err != nil {
-				return err
-			}
-
-			descriptor, err := template.Spec.GetDescriptor()
-			if err != nil {
-				return err
-			}
-			labels := descriptor.GetLabels()
-			err = labels.Set(unwantedLabel.Name, unwantedLabel.Value, ocmv1.WithVersion(unwantedLabel.Version))
-			if err != nil {
-				return err
-			}
-			descriptor.SetLabels(labels)
-			newDescriptor, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONLCodec)
-			Expect(err).ToNot(HaveOccurred())
-			template.Spec.Descriptor.Raw = newDescriptor
-
-			if err := clnt.Update(ctx, template); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}
-}
-
-func getModuleDescriptor(module v1beta1.Module, clnt client.Client, kyma *v1beta1.Kyma, remote bool,
-) (*v1beta1.Descriptor, error) {
-	template, err := GetModuleTemplate(module.Name, clnt, kyma, remote)
-	if err != nil {
-		return nil, err
-	}
-	return template.Spec.GetDescriptor(compdesc.DefaultJSONLCodec)
 }
 
 func deleteModule(kyma *v1beta1.Kyma, module v1beta1.Module) func() error {
