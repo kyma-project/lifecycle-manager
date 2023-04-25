@@ -107,9 +107,24 @@ spec:
                   type: string
                 description: LabelsToWatch describes the labels that should be watched
                 type: object
+              resourceToWatch:
+                description: ResourceToWatch is the GroupVersionResource of the resource
+                  that should be watched.
+                properties:
+                  group:
+                    type: string
+                  resource:
+                    type: string
+                  version:
+                    type: string
+                required:
+                - group
+                - resource
+                - version
+                type: object
               serviceInfo:
                 description: ServiceInfo describes the service information of the
-                  operator
+                  listener
                 properties:
                   name:
                     description: Name describes the service name.
@@ -130,6 +145,7 @@ spec:
             - field
             - gateway
             - labelsToWatch
+            - resourceToWatch
             - serviceInfo
             type: object
           status:
@@ -288,9 +304,24 @@ spec:
                   type: string
                 description: LabelsToWatch describes the labels that should be watched
                 type: object
+              resourceToWatch:
+                description: ResourceToWatch is the GroupVersionResource of the resource
+                  that should be watched.
+                properties:
+                  group:
+                    type: string
+                  resource:
+                    type: string
+                  version:
+                    type: string
+                required:
+                - group
+                - resource
+                - version
+                type: object
               serviceInfo:
                 description: ServiceInfo describes the service information of the
-                  operator
+                  listener
                 properties:
                   name:
                     description: Name describes the service name.
@@ -311,6 +342,7 @@ spec:
             - field
             - gateway
             - labelsToWatch
+            - resourceToWatch
             - serviceInfo
             type: object
           status:

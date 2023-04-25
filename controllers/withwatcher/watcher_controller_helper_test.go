@@ -91,6 +91,11 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta1.Watch
 			LabelsToWatch: map[string]string{
 				fmt.Sprintf("%s-watchable", managerInstanceName): "true",
 			},
+			ResourceToWatch: v1beta1.WatchableGVR{
+				Group:    v1beta1.GroupVersionResource.Group,
+				Version:  v1beta1.GroupVersionResource.Version,
+				Resource: v1beta1.GroupVersionResource.Resource,
+			},
 			Field: field,
 			Gateway: v1beta1.GatewayConfig{
 				LabelSelector: v1beta1.DefaultIstioGatewaySelector(),

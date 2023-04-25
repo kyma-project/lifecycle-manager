@@ -36,23 +36,6 @@ const (
 
 var ErrLoadBalancerIPIsNotAssigned = errors.New("load balancer service external ip is not assigned")
 
-type WatchableConfig struct {
-	Labels     map[string]string `json:"labels"`
-	StatusOnly bool              `json:"statusOnly"`
-}
-
-func generateWatchableConfigs(watchers []v1beta1.Watcher) map[string]WatchableConfig {
-	chartCfg := make(map[string]WatchableConfig, 0)
-	for _, watcher := range watchers {
-		statusOnly := watcher.Spec.Field == v1beta1.StatusField
-		chartCfg[watcher.GetModuleName()] = WatchableConfig{
-			Labels:     watcher.Spec.LabelsToWatch,
-			StatusOnly: statusOnly,
-		}
-	}
-	return chartCfg
-}
-
 type resourceOperation func(ctx context.Context, clt client.Client, resource client.Object) error
 
 // runResourceOperationWithGroupedErrors loops through the resources and runs the passed operation

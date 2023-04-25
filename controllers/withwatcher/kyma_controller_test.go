@@ -24,8 +24,6 @@ import (
 
 const (
 	servicePathTpl                 = "/validate/%s"
-	specSubresources               = "*"
-	statusSubresources             = "*/status"
 	expectedWebhookNamePartsLength = 4
 )
 
@@ -37,8 +35,7 @@ var (
 	ErrModuleNameMismatch              = errors.New("module name mismatch")
 	ErrSvcPathMismatch                 = errors.New("service path mismatch")
 	ErrWatchLabelsMismatch             = errors.New("watch labels mismatch")
-	ErrStatusSubResourcesMismatch      = errors.New("status sub-resources mismatch")
-	ErrSpecSubResourcesMismatch        = errors.New("spec sub-resources mismatch")
+	ErrResourcesMismatch               = errors.New("resources mismatch")
 )
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
@@ -142,12 +139,12 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta1.Kyma, watcher *v1b
 
 func isWatcherCrLabelUpdated(watcherObjKey client.ObjectKey, labelKey, expectedLabelValue string) func() bool {
 	return func() bool {
-		watcher := &v1beta1.Watcher{}
-		err := controlPlaneClient.Get(suiteCtx, watcherObjKey, watcher)
+		watcherCR := &v1beta1.Watcher{}
+		err := controlPlaneClient.Get(suiteCtx, watcherObjKey, watcherCR)
 		if err != nil {
 			return false
 		}
-		labelValue, ok := watcher.Spec.LabelsToWatch[labelKey]
+		labelValue, ok := watcherCR.Spec.LabelsToWatch[labelKey]
 		if !ok {
 			return false
 		}
@@ -251,13 +248,10 @@ func verifyWebhookConfig(
 		return fmt.Errorf("%w: (expected=%v, got=%v)", ErrWatchLabelsMismatch,
 			watcherCR.Spec.LabelsToWatch, webhook.ObjectSelector.MatchLabels)
 	}
-	if watcherCR.Spec.Field == v1beta1.StatusField && webhook.Rules[0].Resources[0] != statusSubresources {
-		return fmt.Errorf("%w: (expected=%s, got=%s)", ErrStatusSubResourcesMismatch,
-			statusSubresources, webhook.Rules[0].Resources[0])
-	}
-	if watcherCR.Spec.Field == v1beta1.SpecField && webhook.Rules[0].Resources[0] != specSubresources {
-		return fmt.Errorf("%w: (expected=%s, got=%s)", ErrSpecSubResourcesMismatch,
-			specSubresources, webhook.Rules[0].Resources[0])
+	expectedResources := watcher.ResolveWebhookRuleResources(watcherCR.Spec.ResourceToWatch.Resource, watcherCR.Spec.Field)
+	if webhook.Rules[0].Resources[0] != expectedResources[0] {
+		return fmt.Errorf("%w: (expected=%s, got=%s)", ErrResourcesMismatch,
+			expectedResources[0], webhook.Rules[0].Resources[0])
 	}
 	return nil
 }

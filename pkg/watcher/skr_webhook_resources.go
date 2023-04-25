@@ -4,9 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/go-logr/logr"
 	"io"
 
-	"github.com/go-logr/logr"
 	registrationV1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -57,23 +57,29 @@ func createSKRSecret(cfg *unstructuredResourcesConfig, secretObjKey client.Objec
 	}
 }
 
-func generateValidatingWebhookConfigFromWatchableConfigs(webhookObjKey, svcObjKey client.ObjectKey, caCert []byte,
-	watchableConfigs map[string]WatchableConfig,
+func ResolveWebhookRuleResources(resource string, fieldName v1beta1.FieldName) []string {
+	if fieldName == v1beta1.StatusField {
+		return []string{fmt.Sprintf("%s/%s", resource, fieldName)}
+	}
+	return []string{resource}
+}
+
+func generateValidatingWebhookConfigFromWatchers(webhookObjKey,
+	svcObjKey client.ObjectKey, caCert []byte, watchers []v1beta1.Watcher,
 ) *registrationV1.ValidatingWebhookConfiguration {
 	webhooks := make([]registrationV1.ValidatingWebhook, 0)
-	for moduleName, watchableCfg := range watchableConfigs {
+	for _, watcher := range watchers {
+		moduleName := watcher.GetModuleName()
+		webhookName := fmt.Sprintf("%s.%s.operator.kyma-project.io", watcher.Namespace, watcher.Name)
 		svcPath := fmt.Sprintf("/validate/%s", moduleName)
-		watchableResources := allResourcesWebhookRule
-		if watchableCfg.StatusOnly {
-			watchableResources = statusSubResourceWebhookRule
-		}
+		watchableResources := ResolveWebhookRuleResources(watcher.Spec.ResourceToWatch.Resource, watcher.Spec.Field)
 		sideEffects := registrationV1.SideEffectClassNoneOnDryRun
 		failurePolicy := registrationV1.Ignore
 		timeout := new(int32)
 		*timeout = webhookTimeOutInSeconds
 		webhook := registrationV1.ValidatingWebhook{
-			Name:                    fmt.Sprintf("%s.operator.kyma-project.io", moduleName),
-			ObjectSelector:          &metav1.LabelSelector{MatchLabels: watchableCfg.Labels},
+			Name:                    webhookName,
+			ObjectSelector:          &metav1.LabelSelector{MatchLabels: watcher.Spec.LabelsToWatch},
 			AdmissionReviewVersions: []string{version},
 			ClientConfig: registrationV1.WebhookClientConfig{
 				CABundle: caCert,
@@ -86,9 +92,9 @@ func generateValidatingWebhookConfigFromWatchableConfigs(webhookObjKey, svcObjKe
 			Rules: []registrationV1.RuleWithOperations{
 				{
 					Rule: registrationV1.Rule{
-						APIGroups:   []string{v1beta1.GroupVersion.Group},
-						APIVersions: []string{"*"},
-						Resources:   []string{watchableResources},
+						APIGroups:   []string{watcher.Spec.ResourceToWatch.Group},
+						APIVersions: []string{watcher.Spec.ResourceToWatch.Version},
+						Resources:   watchableResources,
 					},
 					Operations: []registrationV1.OperationType{
 						"CREATE", "UPDATE", "DELETE",
@@ -161,6 +167,9 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 		return nil, ErrExpectedNonEmptyPodContainers
 	}
 	serverContainer := deployment.Spec.Template.Spec.Containers[0]
+	if cfg.skrWatcherImage != "" {
+		serverContainer.Image = cfg.skrWatcherImage
+	}
 	cpuResQty, err := resource.ParseQuantity(cfg.cpuResLimit)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing CPU resource limit: %w", err)
@@ -179,7 +188,7 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 }
 
 func getGeneratedClientObjects(resourcesConfig *unstructuredResourcesConfig,
-	watchableConfigs map[string]WatchableConfig, remoteNs string,
+	watchers []v1beta1.Watcher, remoteNs string,
 ) []client.Object {
 	var genClientObjects []client.Object
 	webhookCfgObjKey := client.ObjectKey{
@@ -191,8 +200,8 @@ func getGeneratedClientObjects(resourcesConfig *unstructuredResourcesConfig,
 		Name:      SkrResourceName,
 	}
 
-	webhookConfig := generateValidatingWebhookConfigFromWatchableConfigs(webhookCfgObjKey, svcObjKey,
-		resourcesConfig.caCert, watchableConfigs)
+	webhookConfig := generateValidatingWebhookConfigFromWatchers(webhookCfgObjKey, svcObjKey,
+		resourcesConfig.caCert, watchers)
 	genClientObjects = append(genClientObjects, webhookConfig)
 	secretObjKey := client.ObjectKey{
 		Namespace: remoteNs,
@@ -202,18 +211,13 @@ func getGeneratedClientObjects(resourcesConfig *unstructuredResourcesConfig,
 	return append(genClientObjects, skrSecret)
 }
 
-func getWatchableConfigs(ctx context.Context, kcpClient client.Client) (map[string]WatchableConfig, error) {
-	watchableConfigs := map[string]WatchableConfig{}
+func getWatchers(ctx context.Context, kcpClient client.Client) ([]v1beta1.Watcher, error) {
 	watcherList := &v1beta1.WatcherList{}
 	if err := kcpClient.List(ctx, watcherList); err != nil {
 		return nil, fmt.Errorf("error listing watcher CRs: %w", err)
 	}
 
-	watchers := watcherList.Items
-	if len(watchers) != 0 {
-		watchableConfigs = generateWatchableConfigs(watchers)
-	}
-	return watchableConfigs, nil
+	return watcherList.Items, nil
 }
 
 type unstructuredResourcesConfig struct {
@@ -221,6 +225,7 @@ type unstructuredResourcesConfig struct {
 	kcpAddress               string
 	secretResVer             string
 	cpuResLimit, memResLimit string
+	skrWatcherImage          string
 	caCert, tlsCert, tlsKey  []byte
 	remoteNs                 string
 }
