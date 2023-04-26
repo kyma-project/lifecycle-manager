@@ -379,7 +379,7 @@ spec:
     name: v1beta2
     schema:
       openAPIV3Schema:
-        description: Kyma is the Schema for the kymas API
+        description: Kyma is the Schema for the kymas API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -394,7 +394,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: KymaSpec defines the desired state of Kyma
+            description: KymaSpec defines the desired state of Kyma.
             properties:
               channel:
                 description: Channel specifies the desired Channel of the Installation,

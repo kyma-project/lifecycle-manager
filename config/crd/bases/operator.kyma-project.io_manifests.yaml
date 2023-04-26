@@ -285,7 +285,7 @@ spec:
     name: v1beta2
     schema:
       openAPIV3Schema:
-        description: Manifest is the Schema for the manifests API
+        description: Manifest is the Schema for the manifests API.
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
