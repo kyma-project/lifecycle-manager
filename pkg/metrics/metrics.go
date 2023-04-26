@@ -12,32 +12,57 @@ const (
 	stateLabel      = "state"
 	shootLabel      = "shoot"
 	instanceIDLabel = "instance_id"
+	moduleNameLabel = "module_name"
 )
 
-// KymaStatus is a prometheus metric which holds
-// a count for Status.state value for every reconciled Kyma.
-// The value of zero means the status is not set, the value of 1 means the status is set.
-// The "state" label values must be one of the defined Status.state values for Kyma CRs.
-var kymaStatus = prometheus.NewGaugeVec(prometheus.GaugeOpts{ //nolint:gochecknoglobals
-	Name: "lifecycle_manager_kyma_status",
-	Help: "Indicates the Status.state for a given Kyma object",
-}, []string{kymaNameLabel, stateLabel, shootLabel, instanceIDLabel})
+var (
+	kymaStateGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{ //nolint:gochecknoglobals
+		Name: "lifecycle_mgr_kyma_state",
+		Help: "Indicates the Status.state for a given Kyma object",
+	}, []string{kymaNameLabel, stateLabel, shootLabel, instanceIDLabel})
+	moduleStateGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{ //nolint:gochecknoglobals
+		Name: "lifecycle_mgr_module_state",
+		Help: "Indicates the Status.state for modules of Kyma",
+	}, []string{moduleNameLabel, kymaNameLabel, stateLabel, shootLabel, instanceIDLabel})
+)
 
 func Initialize() {
-	ctrlMetrics.Registry.MustRegister(kymaStatus)
+	ctrlMetrics.Registry.MustRegister(kymaStateGauge)
+	ctrlMetrics.Registry.MustRegister(moduleStateGauge)
 }
 
-// RecordKymaStatus adjusts the metric that tracks the current "Status.state" of the Kyma object.
-func RecordKymaStatus(kymaName string, newState kymaTypes.State, shoot, instanceID string) {
-	for _, definedState := range kymaTypes.AllKymaStates() {
-		mtr := kymaStatus.With(
+// SetKymaStateGauge adjusts the metric that tracks the current "Status.state" of the Kyma object.
+func SetKymaStateGauge(currentState kymaTypes.State, kymaName, shoot, instanceID string) {
+	states := kymaTypes.AllKymaStates()
+	for _, state := range states {
+		mtr := kymaStateGauge.With(
 			prometheus.Labels{
 				kymaNameLabel:   kymaName,
-				stateLabel:      string(newState),
+				stateLabel:      string(state),
 				shootLabel:      shoot,
 				instanceIDLabel: instanceID,
 			})
-		if newState == definedState {
+		if state == currentState {
+			mtr.Set(1)
+		} else {
+			mtr.Set(0)
+		}
+	}
+}
+
+// SetModuleStateGauge adjusts the metric that tracks the current "Status.state" of the Kyma object's modules.
+func SetModuleStateGauge(currentState kymaTypes.State, moduleName, kymaName, shoot, instanceID string) {
+	states := kymaTypes.AllKymaStates()
+	for _, state := range states {
+		mtr := moduleStateGauge.With(
+			prometheus.Labels{
+				moduleNameLabel: moduleName,
+				kymaNameLabel:   kymaName,
+				stateLabel:      string(state),
+				shootLabel:      shoot,
+				instanceIDLabel: instanceID,
+			})
+		if state == currentState {
 			mtr.Set(1)
 		} else {
 			mtr.Set(0)

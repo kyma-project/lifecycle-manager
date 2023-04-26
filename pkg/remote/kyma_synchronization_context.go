@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -99,9 +98,8 @@ func DeleteRemotelySyncedKyma(
 func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Context, kyma *v1beta1.Kyma) error {
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        kyma.GetNamespace(),
-			Labels:      map[string]string{v1beta1.ManagedBy: v1beta1.OperatorName},
-			Annotations: map[string]string{v1beta1.LastSync: time.Now().Format(time.RFC3339)},
+			Name:   kyma.GetNamespace(),
+			Labels: map[string]string{v1beta1.ManagedBy: v1beta1.OperatorName},
 		},
 		// setting explicit type meta is required for SSA on Namespaces
 		TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
@@ -227,11 +225,6 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(
 	}
 
 	c.InsertWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma)
-
-	if err := c.RuntimeClient.Update(ctx, remoteKyma.SetLastSync()); err != nil {
-		recorder.Event(controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma last sync annotation")
-		return err
-	}
 
 	return nil
 }

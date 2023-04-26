@@ -70,7 +70,7 @@ jobs:
             -qO - "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash -s "$KUSTOMIZE_VERSION"
           mv kustomize /usr/local/bin/
       - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
-        if: github.event_name == 'pull_request'
+        if: ${{ github.event_name == 'pull_request' }}
         run: |
           cd config/manager && kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
       - name: Set up k3d
@@ -92,7 +92,7 @@ jobs:
       - name: Update Kubeconfigs
         run: k3d kubeconfig merge -a -d
       - name: Setup Control-Plane requirements
-        if: ${{ matrix.target }} == 'control-plane'
+        if: ${{ matrix.target  == 'control-plane' }}
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           chmod +x kubectl
@@ -108,6 +108,34 @@ jobs:
           
           kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/crds/crd-servicemonitors.yaml
       - run: kyma --ci alpha deploy -k config/${{ matrix.target }}
+      - name: Deploy template operator module template and enable module
+        if: ${{ matrix.target  == 'default' }}
+        run: |
+          cat << EOF | kubectl apply -f - 
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRole
+          metadata:
+            name: kyma-cli-provisioned-wildcard
+          rules:
+            - apiGroups: ["*"]
+              resources: ["*"]
+              verbs: ["*"]
+          ---
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRoleBinding
+          metadata:
+            name: lifecycle-manager-wildcard
+          roleRef:
+            apiGroup: rbac.authorization.k8s.io
+            kind: ClusterRole
+            name: kyma-cli-provisioned-wildcard
+          subjects:
+            - kind: ServiceAccount
+              name: lifecycle-manager-controller-manager
+              namespace: kcp-system
+          EOF
+          kubectl apply -f config/samples/component-integration-installed/operator_v1beta1_moduletemplate_kcp-module.yaml
+          kyma alpha enable module template-operator -c regular -n kyma-system -k default-kyma
       - run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
       - name: Set up Go for ${{ github.repository }}
         uses: actions/setup-go@v3

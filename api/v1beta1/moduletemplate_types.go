@@ -17,7 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
-	"time"
+	"fmt"
 
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -140,14 +140,10 @@ func init() {
 	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{}, &Descriptor{})
 }
 
-func (in *ModuleTemplate) SetLastSync() *ModuleTemplate {
-	lastSyncDate := time.Now().Format(time.RFC3339)
-
-	if in.Annotations == nil {
-		in.Annotations = make(map[string]string)
+func (in *ModuleTemplate) GetComponentDescriptorCacheKey() (string, error) {
+	descriptor, err := in.Spec.GetDescriptor()
+	if err != nil {
+		return "", err
 	}
-
-	in.Annotations[LastSync] = lastSyncDate
-
-	return in
+	return fmt.Sprintf("%s:%s:%s", in.Spec.Channel, descriptor.GetName(), descriptor.GetVersion()), nil
 }
