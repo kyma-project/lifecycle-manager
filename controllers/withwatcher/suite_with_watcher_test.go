@@ -26,6 +26,7 @@ import (
 
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-logr/logr"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -169,7 +170,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.KymaReconciler{
 		Client:            k8sManager.GetClient(),
-		EventRecorder:     k8sManager.GetEventRecorderFor(operatorv1beta2.OperatorName),
+		EventRecorder:     k8sManager.GetEventRecorderFor(v1beta2.OperatorName),
 		RequeueIntervals:  intervals,
 		SKRWebhookManager: skrWebhookChartManager,
 		VerificationSettings: signature.VerificationSettings{

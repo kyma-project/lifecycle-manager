@@ -48,12 +48,6 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	tlsSecret := createTLSSecret(kymaObjKey)
 
-	kyma.Spec.Sync = v1beta2.Sync{
-		Enabled:      true,
-		Strategy:     v1beta2.SyncStrategyLocalClient,
-		Namespace:    metav1.NamespaceDefault,
-		NoModuleCopy: true,
-	}
 	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer)
 
 	It("kyma reconciliation installs watcher helm chart with correct webhook config", func() {
