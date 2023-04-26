@@ -1,8 +1,9 @@
 package status_test
 
 import (
-	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	"testing"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/status"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
