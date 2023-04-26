@@ -1,5 +1,9 @@
 # Modularization
 
+Modules are the next generation of components in Kyma that are available for local and cluster installation.
+
+Modules are no longer represented by a single helm-chart, but instead are bundled and released within channels through a ModuleTemplate CR, a unique link of a module, and its desired state of charts and configuration, and a channel.
+
 Lifecycle Manager manages clusters using the [Kyma](api/v1beta1/kyma_types.go) custom resource (CR). The CR defines the desired state of modules in a cluster. With the CR you can enable and disable modules with domain-specific functionality with additional configuration.
 
 The modules themselves are bundled containers based on the [OCI Image Format Specification](https://github.com/opencontainers/image-spec). They contain an immutable layer set of a module operator deployment description and its configuration.

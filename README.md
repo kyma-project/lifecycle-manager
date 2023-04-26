@@ -9,6 +9,8 @@ This list of basic concepts relating to Lifecycle Manager aims to help you under
 - Kyma custom resource (CR) - [short description]
 - ModuleTemplate CR - [short description]
 - Module CR - [short description]
+- Manifest CR - [short description]
+- Watcher CR - [short description]
 
 Lifecycle Manager manages clusters using the [Kyma](api/v1beta1/kyma_types.go) custom resource (CR). The CR defines the desired state of modules in a cluster. With the CR you can enable and disable modules. Lifecycle Manager installs, uninstalls, and updates the module status.
 
