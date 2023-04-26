@@ -20,7 +20,7 @@ To use Lifecycle Manager in a local setup, install the following:
 
 ### Steps
 
-1. To set up the enviroment, provision a local k3d cluster and install Kyma. Run:
+1. To set up the environment, provision a local k3d cluster and install Kyma. Run:
 
   ```bash
   kyma provision k3d
