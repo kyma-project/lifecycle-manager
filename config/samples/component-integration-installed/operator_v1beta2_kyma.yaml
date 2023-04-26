@@ -1,4 +1,4 @@
-apiVersion: operator.kyma-project.io/v1beta1
+apiVersion: operator.kyma-project.io/v1beta2
 kind: Kyma
 metadata:
   labels:
@@ -7,6 +7,4 @@ metadata:
   namespace: kyma-system
 spec:
   channel: alpha
-  sync:
-    enabled: false
   modules:

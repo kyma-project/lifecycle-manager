@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -37,7 +38,7 @@ func NewRemoteCatalogFromKyma(kyma *v1beta2.Kyma) *RemoteCatalog {
 	return NewRemoteCatalog(
 		Settings{
 			SSAPatchOptions: &client.PatchOptions{FieldManager: "catalog-sync", Force: &force},
-			Namespace:       kyma.Spec.Sync.Namespace,
+			Namespace:       kyma.GetNamespace(),
 		},
 	)
 }

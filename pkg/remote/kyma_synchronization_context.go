@@ -36,7 +36,7 @@ type KymaSynchronizationContext struct {
 func InitializeKymaSynchronizationContext(
 	ctx context.Context, kcp Client, cache *ClientCache, kyma *v1beta2.Kyma,
 ) (*KymaSynchronizationContext, error) {
-	skr, err := NewClientLookup(kcp, cache, kyma.Spec.Sync.Strategy).Lookup(ctx, client.ObjectKeyFromObject(kyma))
+	skr, err := NewClientLookup(kcp, cache, kyma).Lookup(ctx, client.ObjectKeyFromObject(kyma))
 	if err != nil {
 		return nil, err
 	}
@@ -92,9 +92,7 @@ func DeleteRemotelySyncedKyma(
 }
 
 // ensureRemoteNamespaceExists tries to ensure existence of a namespace for synchronization based on
-// 1. name of namespace if controlPlaneKyma.spec.sync.namespace is set
-// 2. name of controlPlaneKyma.namespace
-// in this order.
+// name of controlPlaneKyma.namespace in this order.
 func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Context, kyma *v1beta2.Kyma) error {
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -103,9 +101,6 @@ func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Con
 		},
 		// setting explicit type meta is required for SSA on Namespaces
 		TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
-	}
-	if kyma.Spec.Sync.Namespace != "" {
-		namespace.SetName(kyma.Spec.Sync.Namespace)
 	}
 
 	var buf bytes.Buffer
@@ -167,9 +162,6 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 
 	remoteKyma.Name = kyma.Name
 	remoteKyma.Namespace = kyma.Namespace
-	if kyma.Spec.Sync.Namespace != "" {
-		remoteKyma.Namespace = kyma.Spec.Sync.Namespace
-	}
 
 	err := c.RuntimeClient.Get(ctx, client.ObjectKeyFromObject(remoteKyma), remoteKyma)
 
@@ -188,9 +180,8 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 	if k8serrors.IsNotFound(err) {
 		kyma.Spec.DeepCopyInto(&remoteKyma.Spec)
 
-		if kyma.Spec.Sync.NoModuleCopy {
-			remoteKyma.Spec.Modules = []v1beta2.Module{}
-		}
+		// if KCP Kyma contains some modules during initialization, not sync them into remote.
+		remoteKyma.Spec.Modules = []v1beta2.Module{}
 
 		err = c.RuntimeClient.Create(ctx, remoteKyma)
 		if err != nil {
@@ -259,9 +250,6 @@ func (c *KymaSynchronizationContext) ReplaceWithVirtualKyma(
 func GetRemoteObjectKey(kyma *v1beta2.Kyma) client.ObjectKey {
 	name := kyma.Name
 	namespace := kyma.Namespace
-	if kyma.Spec.Sync.Namespace != "" {
-		namespace = kyma.Spec.Sync.Namespace
-	}
 	return client.ObjectKey{Namespace: namespace, Name: name}
 }
 

@@ -2,6 +2,7 @@ package watcher_test
 
 import (
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
@@ -29,14 +30,6 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 					Namespace:   "testcase-1",
 					Annotations: map[string]string{watcher.DomainAnnotation: "example.domain.com"},
 				},
-				Spec: v1beta2.KymaSpec{
-					Sync: v1beta2.Sync{
-						Enabled:      true,
-						Strategy:     v1beta2.SyncStrategyLocalClient,
-						Namespace:    metav1.NamespaceDefault,
-						NoModuleCopy: true,
-					},
-				},
 			},
 			issuer:         testutils.NewTestIssuer("testcase-1"),
 			wantCreateErr:  false,
@@ -51,14 +44,6 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 					Namespace:   "testcase-2",
 					Annotations: map[string]string{watcher.DomainAnnotation: "example.domain.com"},
 				},
-				Spec: v1beta2.KymaSpec{
-					Sync: v1beta2.Sync{
-						Enabled:      true,
-						Strategy:     v1beta2.SyncStrategyLocalClient,
-						Namespace:    metav1.NamespaceDefault,
-						NoModuleCopy: true,
-					},
-				},
 			},
 			issuer:         nil,
 			wantCreateErr:  true,
@@ -71,14 +56,6 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-kyma-3",
 					Namespace: "testcase-3",
-				},
-				Spec: v1beta2.KymaSpec{
-					Sync: v1beta2.Sync{
-						Enabled:      true,
-						Strategy:     v1beta2.SyncStrategyLocalClient,
-						Namespace:    metav1.NamespaceDefault,
-						NoModuleCopy: true,
-					},
 				},
 			},
 			issuer:         nil,

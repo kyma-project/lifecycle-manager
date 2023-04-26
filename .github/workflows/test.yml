@@ -134,7 +134,7 @@ jobs:
               name: lifecycle-manager-controller-manager
               namespace: kcp-system
           EOF
-          kubectl apply -f config/samples/component-integration-installed/operator_v1beta1_moduletemplate_kcp-module.yaml
+          kubectl apply -f config/samples/component-integration-installed/operator_v1beta2_moduletemplate_kcp-module.yaml
           kyma alpha enable module template-operator -c regular -n kyma-system -k default-kyma
       - run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
       - name: Set up Go for ${{ github.repository }}

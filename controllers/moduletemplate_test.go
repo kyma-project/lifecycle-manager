@@ -140,7 +140,7 @@ func updateModuleTemplateTarget(kymaName string, target v1beta2.Target) func() e
 			return err
 		}
 		for _, module := range createdKyma.Spec.Modules {
-			moduleTemplate, err := GetModuleTemplate(module.Name, controlPlaneClient, createdKyma, false)
+			moduleTemplate, err := GetModuleTemplate(module.Name, controlPlaneClient, createdKyma)
 			if err != nil {
 				return err
 			}

@@ -94,8 +94,8 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	logger.V(log.InfoLevel).Info("reconciling")
 
 	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
-	//TODO: remove it after 542 merged
-	syncEnable := true
+	//TODO: revisit it after 542 merged
+	syncEnabled := true
 	// check if kyma resource exists
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
@@ -106,14 +106,15 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 		return ctrl.Result{}, client.IgnoreNotFound(err) //nolint:wrapcheck
 	}
-	status.InitConditions(kyma, r.WatcherEnabled())
+
+	status.InitConditions(kyma, syncEnabled, r.WatcherEnabled())
 
 	if kyma.SkipReconciliation() {
 		logger.V(log.DebugLevel).Info("kyma gets skipped because of label")
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
 	}
 
-	if syncEnable {
+	if syncEnabled {
 		var err error
 		if ctx, err = remote.InitializeSyncContext(ctx, kyma,
 			remote.NewClientWithConfig(r.Client, r.KcpRestConfig), r.RemoteClientCache); err != nil {
@@ -137,7 +138,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	// update the remote kyma with the state of the control plane
-	if syncEnable {
+	if syncEnabled {
 		if err := r.syncRemoteKymaSpecAndStatus(ctx, kyma); err != nil {
 			return r.CtrlErr(ctx, kyma, fmt.Errorf("could not synchronize remote kyma: %w", err))
 		}
@@ -229,7 +230,7 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 	logger := ctrlLog.FromContext(ctx)
 
 	var errGroup errgroup.Group
-	//TODO: remove it after 542 merged
+	//TODO: revisit it after 542 merged
 	syncEnable := true
 	syncCatalog := true
 	if syncEnable && syncCatalog {
@@ -325,7 +326,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 			return true, nil
 		}
 	}
-	//TODO: remove it after 542 merged
+	//TODO: revisit it after 542 merged
 	syncEnable := true
 	if syncEnable {
 		if err := remote.NewRemoteCatalogFromKyma(kyma).Delete(ctx); err != nil {
@@ -357,7 +358,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 
 func (r *KymaReconciler) TriggerKymaDeletion(ctx context.Context, kyma *v1beta2.Kyma) error {
 	logger := ctrlLog.FromContext(ctx).V(log.InfoLevel)
-	//TODO: remove it after 542 merged
+	//TODO: revisit it after 542 merged
 	syncEnable := true
 	if syncEnable {
 		if err := remote.DeleteRemotelySyncedKyma(ctx, kyma); client.IgnoreNotFound(err) != nil {
@@ -473,7 +474,7 @@ func (r *KymaReconciler) RecordKymaStatusMetrics(ctx context.Context, kyma *v1be
 }
 
 func (r *KymaReconciler) WatcherEnabled() bool {
-	//TODO: remove it after 542 merged
+	//TODO: revisit it after 542 merged
 	syncEnable := true
 	if syncEnable && r.SKRWebhookManager != nil {
 		return true

@@ -3,6 +3,7 @@ package remote
 import (
 	"context"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -15,8 +16,13 @@ type ClientLookup struct {
 	strategy v1beta2.SyncStrategy
 }
 
-func NewClientLookup(kcp Client, cache *ClientCache, strategy v1beta2.SyncStrategy) *ClientLookup {
-	return &ClientLookup{kcp: kcp, cache: cache, strategy: strategy}
+func NewClientLookup(kcp Client, cache *ClientCache, kyma *v1beta2.Kyma) *ClientLookup {
+	strategyValue, found := kyma.Annotations[v1beta2.SyncStrategyAnnotation]
+	strategy := v1beta2.SyncStrategyLocalSecret
+	if found && strategyValue == v1beta2.SyncStrategyLocalClient {
+		strategy = v1beta2.SyncStrategyLocalClient
+	}
+	return &ClientLookup{kcp: kcp, cache: cache, strategy: v1beta2.SyncStrategy(strategy)}
 }
 
 func (l *ClientLookup) Lookup(ctx context.Context, key client.ObjectKey) (Client, error) {

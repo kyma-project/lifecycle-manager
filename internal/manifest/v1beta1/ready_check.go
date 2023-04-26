@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -34,7 +35,7 @@ func (c *ManifestCustomResourceReadyCheck) Run(
 	if err := checkDeploymentState(clnt, resources); err != nil {
 		return err
 	}
-	manifest := obj.(*manifestv1beta2.Manifest)
+	manifest := obj.(*v1beta2.Manifest)
 	if manifest.Spec.Resource == nil {
 		return nil
 	}

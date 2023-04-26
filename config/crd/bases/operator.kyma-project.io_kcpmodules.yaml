@@ -75,7 +75,7 @@ spec:
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
-    name: v1alpha1
+    name: v1beta1
     schema:
       openAPIV3Schema:
         description: KCPModule is the Schema for the moduletemplates API.
@@ -96,6 +96,8 @@ spec:
             description: KCPModuleSpec defines the desired state of KCPModule.
             properties:
               initKey:
+                type: string
+              newKey:
                 type: string
             type: object
           status:
@@ -128,7 +130,7 @@ spec:
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
-    name: v1beta1
+    name: v1beta2
     schema:
       openAPIV3Schema:
         description: KCPModule is the Schema for the moduletemplates API.

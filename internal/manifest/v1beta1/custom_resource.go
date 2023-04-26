@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,7 +25,7 @@ var ErrWaitingForAsyncCustomResourceDeletion = errors.New(
 func PostRunCreateCR(
 	ctx context.Context, skr declarative.Client, kcp client.Client, obj declarative.Object,
 ) error {
-	manifest := obj.(*manifestv1beta2.Manifest)
+	manifest := obj.(*v1beta2.Manifest)
 	if manifest.Spec.Resource == nil {
 		return nil
 	}
@@ -61,7 +62,7 @@ func PostRunCreateCR(
 func PreDeleteDeleteCR(
 	ctx context.Context, skr declarative.Client, kcp client.Client, obj declarative.Object,
 ) error {
-	manifest := obj.(*manifestv1beta2.Manifest)
+	manifest := obj.(*v1beta2.Manifest)
 	if manifest.Spec.Resource == nil {
 		return nil
 	}

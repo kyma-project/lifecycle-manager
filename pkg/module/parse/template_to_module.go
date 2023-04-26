@@ -75,14 +75,9 @@ func templatesToModules(
 		if template.ModuleTemplate.Spec.Data.GetName() == "" {
 			template.ModuleTemplate.Spec.Data.SetName(name)
 		}
-		// if the default data does not contain a namespace, default it to either the sync-namespace
-		// or the kyma namespace
+		// if the default data does not contain a namespace, default it to the kyma namespace
 		if template.ModuleTemplate.Spec.Data.GetNamespace() == "" {
-			if kyma.Spec.Sync.Namespace != "" {
-				template.ModuleTemplate.Spec.Data.SetNamespace(kyma.Spec.Sync.Namespace)
-			} else {
-				template.ModuleTemplate.Spec.Data.SetNamespace(kyma.GetNamespace())
-			}
+			template.ModuleTemplate.Spec.Data.SetNamespace(kyma.GetNamespace())
 		}
 		var obj client.Object
 		if obj, err = NewManifestFromTemplate(ctx, module,

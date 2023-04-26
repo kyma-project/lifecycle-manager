@@ -42,7 +42,7 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 
 	It("should result in Kyma becoming Ready", func() {
 		By("checking the state to be Processing")
-		Eventually(GetKymaState, 20*time.Second, Interval).
+		Eventually(GetKymaState, Timeout, Interval).
 			WithArguments(kyma.GetName()).
 			Should(Equal(string(v1beta2.StateProcessing)))
 
@@ -51,11 +51,11 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateModuleState(ctx, kyma, activeModule, v1beta2.StateReady),
-				20*time.Second, Interval).Should(Succeed())
+				Timeout, Interval).Should(Succeed())
 		}
 
 		By("having updated the Kyma CR state to ready")
-		Eventually(GetKymaState, 20*time.Second, Interval).
+		Eventually(GetKymaState, Timeout, Interval).
 			WithArguments(kyma.GetName()).
 			Should(BeEquivalentTo(string(v1beta2.StateReady)))
 
@@ -64,13 +64,11 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(
 			kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModules, metav1.ConditionTrue)).To(BeTrue())
-		By("Module Catalog created")
-		Eventually(ModuleTemplatesExist(controlPlaneClient, kyma, false),
-			10*time.Second, Interval).Should(Succeed())
-		kymaInCluster, err = GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
-		Expect(err).ShouldNot(HaveOccurred())
 		Expect(
-			kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModuleCatalog)).To(BeFalse())
+			kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModuleCatalog, metav1.ConditionTrue)).To(BeTrue())
+		By("Module Catalog created")
+		Eventually(ModuleTemplatesExist(controlPlaneClient, kyma),
+			Timeout, Interval).Should(Succeed())
 	})
 })
 
@@ -155,7 +153,7 @@ var _ = Describe("Kyma update Manifest CR", Ordered, func() {
 		}
 
 		By("Kyma CR should be in Ready state")
-		Eventually(GetKymaState, 20*time.Second, Interval).
+		Eventually(GetKymaState, Timeout, Interval).
 			WithArguments(kyma.GetName()).
 			Should(BeEquivalentTo(string(v1beta2.StateReady)))
 
@@ -264,19 +262,18 @@ func updateKCPModuleTemplateSpecData(kymaName, valueUpdated string) func() error
 			return err
 		}
 		for _, activeModule := range createdKyma.Spec.Modules {
-			return updateModuleTemplateSpec(controlPlaneClient, createdKyma, activeModule.Name, valueUpdated, false)
+			return updateModuleTemplateSpec(controlPlaneClient, createdKyma, activeModule.Name, valueUpdated)
 		}
 		return nil
 	}
 }
 
 func updateModuleTemplateSpec(clnt client.Client,
-	kyma *v1beta1.Kyma,
+	kyma *v1beta2.Kyma,
 	moduleName,
 	newValue string,
-	remote bool,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(moduleName, clnt, kyma, remote)
+	moduleTemplate, err := GetModuleTemplate(moduleName, clnt, kyma)
 	if err != nil {
 		return err
 	}
@@ -286,12 +283,11 @@ func updateModuleTemplateSpec(clnt client.Client,
 
 func expectModuleTemplateSpecGetReset(
 	clnt client.Client,
-	kyma *v1beta1.Kyma,
+	kyma *v1beta2.Kyma,
 	moduleName,
 	expectedValue string,
-	remote bool,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(moduleName, clnt, kyma, remote)
+	moduleTemplate, err := GetModuleTemplate(moduleName, clnt, kyma)
 	if err != nil {
 		return err
 	}

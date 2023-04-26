@@ -1,4 +1,4 @@
-apiVersion: operator.kyma-project.io/v1beta1
+apiVersion: operator.kyma-project.io/v1beta2
 kind: ModuleTemplate
 metadata:
   name: moduletemplate-template-operator
@@ -7,6 +7,7 @@ metadata:
     "operator.kyma-project.io/managed-by": "lifecycle-manager"
     "operator.kyma-project.io/controller-name": "manifest"
     "operator.kyma-project.io/module-name": "template-operator"
+    "operator.kyma-project.io/use-local-template": "true"
 spec:
   target: control-plane
   channel: regular
@@ -16,19 +17,15 @@ spec:
     metadata:
       name: sample-yaml
     spec:
-      resourceFilePath: "./module-data/yaml"
       initKey: initValue
+      resourceFilePath: "./module-data/yaml"
   descriptor:
     component:
       componentReferences: []
-      labels:
-        - name: scan.security.kyma-project.io
-          value:
-            scan: enabled
       name: kyma-project.io/template-operator
       provider: internal
       repositoryContexts:
-        - baseUrl: http://k3d-registry.localhost:5111
+        - baseUrl: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/template-operator
           componentNameMapping: urlPath
           type: ociRegistry
       resources:
@@ -38,28 +35,17 @@ spec:
           name: config
           relation: local
           type: yaml
-          version: v1.2.3
+          version: v1.7.1
         - access:
             digest: sha256:1735cfa45bf07b63427c8e11717278f8847e352a66af7633611db902386d18ed
             type: localOciBlob
           name: raw-manifest
           relation: local
           type: yaml
-          version: v1.2.3
-        - access:
-            imageReference: artifact.registry.hostname/path/to/the/registry/k8s-tools:v20221213-1840f45a
-            type: ociRegistry
-          labels:
-            - name: type.scan.security.kyma-project.io
-              value:
-                type: third-party-image
-          name: k8s-tools
-          relation: external
-          type: ociImage
-          version: v1.2.3
+          version: v1.7.1
       sources:
         - access:
-            commit: 11736fd1d8b12f978f2048195d458a60409a5ae8
+            commit: 4e4b9d47cb655ca23e5c706462485ff7605e8d71
             repoUrl: github.com/kyma-project/template-operator
             type: gitHub
           labels:
@@ -68,7 +54,7 @@ spec:
               version: v1
           name: module-sources
           type: git
-          version: v1.2.3
-      version: v1.2.3
+          version: v1.7.1
+      version: v1.7.1
     meta:
       schemaVersion: v2

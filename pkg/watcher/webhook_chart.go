@@ -101,9 +101,6 @@ func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrWebhookManagerConf
 }
 
 func resolveRemoteNamespace(kyma *v1beta2.Kyma) string {
-	if kyma.Spec.Sync.Namespace != "" {
-		return kyma.Spec.Sync.Namespace
-	}
 	return kyma.Namespace
 }
 

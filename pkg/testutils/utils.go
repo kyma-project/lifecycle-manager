@@ -47,9 +47,12 @@ func NewTestKyma(name string) *v1beta2.Kyma {
 			Kind:       string(v1beta2.KymaKind),
 		},
 		ObjectMeta: v1.ObjectMeta{
-			Name:        fmt.Sprintf("%s-%s", name, randString(randomStringLength)),
-			Namespace:   v1.NamespaceDefault,
-			Annotations: map[string]string{watcher.DomainAnnotation: "example.domain.com"},
+			Name:      fmt.Sprintf("%s-%s", name, randString(randomStringLength)),
+			Namespace: v1.NamespaceDefault,
+			Annotations: map[string]string{
+				watcher.DomainAnnotation:       "example.domain.com",
+				v1beta2.SyncStrategyAnnotation: v1beta2.SyncStrategyLocalClient,
+			},
 		},
 		Spec: v1beta2.KymaSpec{
 			Modules: []v1beta2.Module{},
@@ -188,7 +191,7 @@ func ModuleTemplateFactoryForSchema(
 }
 
 func readModuleTemplateWithV2Schema(moduleTemplate *v1beta2.ModuleTemplate) error {
-	template := "operator_v1beta1_moduletemplate_kcp-module.yaml"
+	template := "operator_v1beta2_moduletemplate_kcp-module.yaml"
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {
 		panic("Can't capture current filename!")
@@ -206,7 +209,7 @@ func readModuleTemplateWithV2Schema(moduleTemplate *v1beta2.ModuleTemplate) erro
 }
 
 func readModuleTemplateWithinPrivateRepo(moduleTemplate *v1beta2.ModuleTemplate) error {
-	template := "operator_v1beta1_moduletemplate_kcp-module-cred-label.yaml"
+	template := "operator_v1beta2_moduletemplate_kcp-module-cred-label.yaml"
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {
 		panic("Can't capture current filename!")
@@ -224,7 +227,7 @@ func readModuleTemplateWithinPrivateRepo(moduleTemplate *v1beta2.ModuleTemplate)
 }
 
 func readModuleTemplateWithV3Schema(moduleTemplate *v1beta2.ModuleTemplate) error {
-	template := "operator_v1beta1_moduletemplate_ocm.software.v3alpha1.yaml"
+	template := "operator_v1beta2_moduletemplate_ocm.software.v3alpha1.yaml"
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {
 		panic("Can't capture current filename!")

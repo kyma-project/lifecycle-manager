@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/go-logr/zapr"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/require"

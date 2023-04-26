@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )

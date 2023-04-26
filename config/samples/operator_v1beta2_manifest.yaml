@@ -1,4 +1,4 @@
-apiVersion: operator.kyma-project.io/v1beta1
+apiVersion: operator.kyma-project.io/v1beta2
 kind: Manifest
 metadata:
   labels:

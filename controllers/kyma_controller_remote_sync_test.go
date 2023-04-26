@@ -6,7 +6,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -32,12 +31,6 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Channel:        v1beta2.DefaultChannel,
 	}
 
-	kyma.Spec.Sync = v1beta2.Sync{
-		Enabled:      true,
-		Strategy:     v1beta2.SyncStrategyLocalClient,
-		Namespace:    metav1.NamespaceDefault,
-		NoModuleCopy: true,
-	}
 	kyma.Spec.Modules = append(kyma.Spec.Modules, *skrModule)
 
 	RegisterDefaultLifecycleForKyma(kyma)
@@ -54,7 +47,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	It("CR add from client should be synced in both clusters", func() {
 		By("Remote Kyma created")
 		Eventually(KymaExists, Timeout, Interval).
-			WithArguments(runtimeClient, kyma.GetName(), kyma.Spec.Sync.Namespace).
+			WithArguments(runtimeClient, kyma.GetName(), kyma.GetNamespace()).
 			Should(Succeed())
 
 		By("add skr-module-client to remoteKyma.spec.modules")
@@ -70,13 +63,6 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-remote-skr")
 
-	kyma.Spec.Sync = v1beta1.Sync{
-		Enabled:      true,
-		Strategy:     v1beta1.SyncStrategyLocalClient,
-		Namespace:    "sync-namespace",
-		NoModuleCopy: true,
-	}
-
 	kyma.Spec.Modules = append(
 		kyma.Spec.Modules, v1beta2.Module{
 			ControllerName: "manifest",
@@ -89,7 +75,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	It("Kyma CR should be synchronized in both clusters", func() {
 		By("Remote Kyma created")
 		Eventually(KymaExists, Timeout, Interval).
-			WithArguments(runtimeClient, kyma.GetName(), kyma.Spec.Sync.Namespace).
+			WithArguments(runtimeClient, kyma.GetName(), kyma.GetNamespace()).
 			Should(Succeed())
 
 		By("CR created in kcp")
@@ -99,7 +85,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("No spec.module in remote Kyma")
 		Eventually(func() error {
-			remoteKyma, err := GetKyma(ctx, runtimeClient, kyma.GetName(), kyma.Spec.Sync.Namespace)
+			remoteKyma, err := GetKyma(ctx, runtimeClient, kyma.GetName(), kyma.GetNamespace())
 			if err != nil {
 				return err
 			}
@@ -110,13 +96,13 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		}, Timeout, Interval)
 
 		By("Remote Module Catalog created")
-		Eventually(ModuleTemplatesExist(runtimeClient, kyma, true), Timeout, Interval).Should(Succeed())
+		Eventually(ModuleTemplatesExist(runtimeClient, kyma), Timeout, Interval).Should(Succeed())
 		Eventually(func() error {
-			remoteKyma, err := GetKyma(ctx, runtimeClient, kyma.GetName(), kyma.Spec.Sync.Namespace)
+			remoteKyma, err := GetKyma(ctx, runtimeClient, kyma.GetName(), kyma.GetNamespace())
 			if err != nil {
 				return err
 			}
-			if !remoteKyma.ContainsCondition(v1beta1.ConditionTypeModuleCatalog) {
+			if !remoteKyma.ContainsCondition(v1beta2.ConditionTypeModuleCatalog) {
 				return ErrNotContainsExpectedCondition
 			}
 			return nil
@@ -125,11 +111,11 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		By("Update SKR Module Template spec.data.spec field")
 		Eventually(updateModuleTemplateSpec,
 			Timeout, Interval).
-			WithArguments(runtimeClient, kyma, moduleToBeUpdated, "valueUpdated", true).
+			WithArguments(runtimeClient, kyma, moduleToBeUpdated, "valueUpdated").
 			Should(Succeed())
 
 		By("Expect SKR Module Template spec.data.spec field get reset")
 		Eventually(expectModuleTemplateSpecGetReset, Timeout, Interval).
-			WithArguments(runtimeClient, kyma, moduleToBeUpdated, "initValue", true).Should(Succeed())
+			WithArguments(runtimeClient, kyma, moduleToBeUpdated, "initValue").Should(Succeed())
 	})
 })

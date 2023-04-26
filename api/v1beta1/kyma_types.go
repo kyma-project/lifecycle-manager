@@ -37,15 +37,6 @@ type Kyma struct {
 	Status v1beta2.KymaStatus `json:"status,omitempty"`
 }
 
-// SyncStrategy determines how the Remote Cluster is synchronized with the Control Plane. This can influence secret
-// lookup, or other behavioral patterns when interacting with the remote cluster.
-type SyncStrategy string
-
-const (
-	SyncStrategyLocalSecret = "local-secret"
-	SyncStrategyLocalClient = "local-client"
-)
-
 // Sync defines settings used to apply the kyma synchronization to other clusters. This is defaulted to false
 // and NOT INTENDED FOR PRODUCTIVE USE.
 type Sync struct {
@@ -56,7 +47,7 @@ type Sync struct {
 
 	// +kubebuilder:default:=secret
 	// Strategy determines the way to look up the remotely synced kubeconfig, by default it is fetched from a secret
-	Strategy SyncStrategy `json:"strategy,omitempty"`
+	Strategy v1beta2.SyncStrategy `json:"strategy,omitempty"`
 
 	// The target namespace, if empty the namespace is reflected from the control plane
 	// Note that cleanup is currently not supported if you are switching the namespace, so you will

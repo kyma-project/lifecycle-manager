@@ -3,6 +3,8 @@ package remote
 import (
 	"context"
 	"errors"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 // syncContextKey is a singleton key.

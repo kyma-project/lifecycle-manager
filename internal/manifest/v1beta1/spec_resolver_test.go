@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/kyma-project/lifecycle-manager/internal"
+	manifestV1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 )
 
 //nolint:funlen
@@ -67,7 +68,7 @@ func Test_ParseInstallConfigs(t *testing.T) {
 		tcase := testCase
 		t.Run(tcase.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := v1beta2.ParseInstallConfigs(tcase.args.decodedConfig)
+			got, err := manifestV1beta1.ParseInstallConfigs(tcase.args.decodedConfig)
 			if (err != nil) != tcase.wantErr {
 				t.Errorf("parseInstallConfigs() error = %v, wantErr %v", err, tcase.wantErr)
 				return

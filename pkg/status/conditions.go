@@ -7,10 +7,9 @@ import (
 )
 
 // InitConditions initializes the required conditions in the Kyma CR and removes deprecated Conditions.
-func InitConditions(kyma *v1beta2.Kyma, watcherEnabled bool) {
+func InitConditions(kyma *v1beta2.Kyma, syncEnabled, watcherEnabled bool) {
 	removeDeprecatedConditions(kyma)
-	// Add required Conditions
-	for _, cond := range v1beta2.GetRequiredConditionTypes(kyma.Spec.Sync.Enabled, watcherEnabled) {
+	for _, cond := range v1beta2.GetRequiredConditionTypes(syncEnabled, watcherEnabled) {
 		kyma.UpdateCondition(cond, metav1.ConditionFalse)
 	}
 }

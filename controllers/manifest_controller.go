@@ -18,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
 	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
@@ -79,17 +80,17 @@ func ManifestReconciler(
 		Client: mgr.GetClient(),
 		Config: mgr.GetConfig(),
 	}
-	lookup := &internalv1beta2.RemoteClusterLookup{KCP: kcp}
+	lookup := &internalv1beta1.RemoteClusterLookup{KCP: kcp}
 	return declarative.NewFromManager(
 		mgr, &v1beta2.Manifest{},
 		declarative.WithSpecResolver(
-			internalv1beta2.NewManifestSpecResolver(kcp, codec),
+			internalv1beta1.NewManifestSpecResolver(kcp, codec),
 		),
-		declarative.WithCustomReadyCheck(internalv1beta2.NewManifestCustomResourceReadyCheck()),
+		declarative.WithCustomReadyCheck(internalv1beta1.NewManifestCustomResourceReadyCheck()),
 		declarative.WithRemoteTargetCluster(lookup.ConfigResolver),
-		internalv1beta2.WithClientCacheKey(),
-		declarative.WithPostRun{internalv1beta2.PostRunCreateCR},
-		declarative.WithPreDelete{internalv1beta2.PreDeleteDeleteCR},
+		internalv1beta1.WithClientCacheKey(),
+		declarative.WithPostRun{internalv1beta1.PostRunCreateCR},
+		declarative.WithPreDelete{internalv1beta1.PreDeleteDeleteCR},
 		declarative.WithPeriodicConsistencyCheck(checkInterval),
 	)
 }

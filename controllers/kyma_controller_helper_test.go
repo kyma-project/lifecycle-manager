@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	sampleCRDv1beta2 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
@@ -197,17 +198,10 @@ func getModule(kyma *v1beta2.Kyma, module v1beta2.Module) (*v1beta2.Manifest, er
 	)
 }
 
-func GetModuleTemplate(name string,
-	clnt client.Client,
-	kyma *v1beta2.Kyma,
-	remote bool,
-) (*v1beta2.ModuleTemplate, error) {
+func GetModuleTemplate(name string, clnt client.Client, kyma *v1beta2.Kyma) (*v1beta2.ModuleTemplate, error) {
 	moduleTemplateInCluster := &v1beta2.ModuleTemplate{}
-	moduleTemplateInCluster.SetNamespace(metav1.NamespaceDefault)
+	moduleTemplateInCluster.SetNamespace(kyma.Namespace)
 	moduleTemplateInCluster.SetName(name)
-	if remote && kyma.Spec.Sync.Namespace != "" {
-		moduleTemplateInCluster.SetNamespace(kyma.Spec.Sync.Namespace)
-	}
 	err := clnt.Get(ctx, client.ObjectKeyFromObject(moduleTemplateInCluster), moduleTemplateInCluster)
 	if err != nil {
 		return nil, err
@@ -223,10 +217,10 @@ func KymaExists(clnt client.Client, name, namespace string) error {
 	return nil
 }
 
-func ModuleTemplatesExist(clnt client.Client, kyma *v1beta2.Kyma, remote bool) func() error {
+func ModuleTemplatesExist(clnt client.Client, kyma *v1beta2.Kyma) func() error {
 	return func() error {
 		for _, module := range kyma.Spec.Modules {
-			if _, err := GetModuleTemplate(module.Name, clnt, kyma, remote); err != nil {
+			if _, err := GetModuleTemplate(module.Name, clnt, kyma); err != nil {
 				return err
 			}
 		}

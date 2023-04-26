@@ -2,6 +2,8 @@ package watcher
 
 import (
 	"context"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 type SKRWebhookManager interface {

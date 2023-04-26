@@ -15,21 +15,38 @@ func TestInitConditions(t *testing.T) {
 	t.Parallel()
 	type args struct {
 		watcherEnabled bool
+		syncEnabled    bool
 	}
 	tests := []struct {
 		name string
 		args args
 	}{
 		{
-			name: "Should Init Conditions properly with Watcher Enabled",
+			name: "Should Init Conditions properly with Watcher & Sync Enabled",
 			args: args{
 				watcherEnabled: true,
+				syncEnabled:    true,
 			},
 		},
 		{
-			name: "Should Init Conditions properly with Watcher Disabled",
+			name: "Should Init Conditions properly with Watcher & Sync Disabled",
 			args: args{
 				watcherEnabled: false,
+				syncEnabled:    false,
+			},
+		},
+		{
+			name: "Should Init Conditions properly with Watcher Enabled & Sync Disabled",
+			args: args{
+				watcherEnabled: true,
+				syncEnabled:    false,
+			},
+		},
+		{
+			name: "Should Init Conditions properly with Watcher Disabled & Sync Enabled",
+			args: args{
+				watcherEnabled: false,
+				syncEnabled:    true,
 			},
 		},
 	}
@@ -52,10 +69,9 @@ func TestInitConditions(t *testing.T) {
 				Reason:             "Deprecated",
 			})
 
-			status.InitConditions(kyma, tcase.args.watcherEnabled)
-
+			status.InitConditions(kyma, tcase.args.syncEnabled, tcase.args.watcherEnabled)
 			if !onlyRequiredKymaConditionsPresent(kyma, v1beta2.GetRequiredConditionTypes(
-				false, tcase.args.watcherEnabled)) {
+				tcase.args.syncEnabled, tcase.args.watcherEnabled)) {
 				t.Error("Incorrect Condition Initialization")
 				return
 			}
