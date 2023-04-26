@@ -9,10 +9,10 @@ The modules themselves are bundled containers based on the [OCI Image Format Spe
 If you use Kyma's [CLI](https://github.com/kyma-project/cli), please refer to the `kyma alpha create module --help` section to learn more about module's structure and how it is created. You might even be able to use its inbuilt auto-detection of [kubebuilder](https://kubebuilder.io) projects to easily bundle your module with little effort.
 
 The modules are installed and controlled by Lifecycle Manager. We use [Open Component Model](https://ocm.software) to describe all of our modules descriptively.
-Based on the [ModuleTemplate Custom Resource](../api/v1beta1/moduletemplate_types.go), the module is resolved from its individual layers and version and is used as a template for the [Manifest](api/v1beta1/manifest_types.go).
+Based on the [ModuleTemplate](../api/v1beta1/moduletemplate_types.go) CR, the module is resolved from its individual layers and version and is used as a template for the [Manifest](api/v1beta1/manifest_types.go).
 Whenever a module is accepted by Lifecycle Manager the ModuleTemplate gets translated into a Manifest, which describes the actual desired state of the module operator.
 
-The Lifecycle Manager then updates the [Kyma Custom Resource](../api/v1alpha1/kyma_types.go) of the cluster based on the observed status changes in the Module Custom Resources (similar to a native kubernetes deployment tracking availability).
+The Lifecycle Manager then updates the [Kyma](../api/v1alpha1/kyma_types.go) CR of the cluster based on the observed status changes in the Module Custom Resources (similar to a native kubernetes deployment tracking availability).
 
 Module operators only have to watch their own custom resources and reconcile modules in the target clusters to the desired state.
 
