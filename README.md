@@ -1,37 +1,47 @@
 # Lifecycle Manager
 
-Kyma is an opinionated set of Kubernetes based modular building blocks that includes the necessary capabilities to develop and run enterprise-grade cloud-native applications. Kyma's Lifecycle Manager is a tool that manages the lifecycle of these modules in your cluster.
+Kyma is an opinionated set of Kubernetes-based modular building blocks that includes the necessary capabilities to develop and run enterprise-grade cloud-native applications. Kyma's Lifecycle Manager is a tool that manages the lifecycle of these modules in your cluster.
 
 ## Modularization
 
 <!-- moved to [docs/modularization.md](docs/modularization.md) -->
 
-## Get Started
+## Quick Start
 
+Follow this quick start guide to set up the environment and use Lifecycle Manager to enable modules.
 
-### Prerequisites (environment setup)
+### Prerequisites
+
+To use Lifecycle Manager in a local setup, install the following:
 
 - [k3d](https://k3d.io/)
 - [istioctl](https://istio.io/latest/docs/setup/install/istioctl/)
 - [Kyma CLI](https://kyma-project.io/docs/kyma/latest/04-operation-guides/operations/01-install-kyma-CLI)
 
-### deploying the templates  
+### Steps
 
-1. Provision a local k3d cluster. Run:
+1. To set up the enviroment, provision a local k3d cluster and install Kyma. Run:
 
-```bash
-kyma provision k3d
-```
+  ```bash
+  kyma provision k3d
+  kyma alpha deploy
+  ```
 
-```bash
-kyma alpha deploy
-```
+2. Apply a module template. Run the following kubectl command:
 
-### enabling modules  
+  ```bash
+  kubectl apply -f cluster-ip-module-template-beta.yaml
+  ```
 
-### interactive tutorials?  
+3. Enable a module.
 
-If you are new to our Lifecycle Manager and want to get started quickly, we recommend that you follow our [Quick Start Guide](./docs/user/quick-start.md). This guide will walk you through the basic steps of setting up your local KCP cluster to installing the Lifecycle Manager, and using the main features.
+  ```bash
+  kyma alpha enable module cluster-ip
+  ```
+
+**TIP:** Check the [modular Kyma interactive tutorial](https://killercoda.com/kyma-project/scenario/modular-kyma) to play with enabling and disabling Kyma modules in both terminal and Busola.
+
+<!-- If you are new to our Lifecycle Manager and want to get started quickly, we recommend that you follow our [Quick Start Guide](./docs/user/quick-start.md). This guide will walk you through the basic steps of setting up your local KCP cluster to installing the Lifecycle Manager, and using the main features. ??? -->
 
 ## Deployment / Delivery models
 
