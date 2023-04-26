@@ -1,4 +1,4 @@
-apiVersion: operator.kyma-project.io/v1beta1
+apiVersion: operator.kyma-project.io/v1beta2
 kind: Watcher
 metadata:
   name: kyma-watcher
@@ -18,7 +18,7 @@ spec:
       matchLabels:
         "operator.kyma-project.io/watcher-gateway": "default"
 ---
-apiVersion: operator.kyma-project.io/v1beta1
+apiVersion: operator.kyma-project.io/v1beta2
 kind: Watcher
 metadata:
   name: manifest-watcher
