@@ -27,7 +27,7 @@ import (
 //+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
-// Kyma is the Schema for the kymas API
+// Kyma is the Schema for the kymas API.
 type Kyma struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -36,7 +36,7 @@ type Kyma struct {
 	Status KymaStatus `json:"status,omitempty"`
 }
 
-// KymaSpec defines the desired state of Kyma
+// KymaSpec defines the desired state of Kyma.
 type KymaSpec struct {
 	// Channel specifies the desired Channel of the Installation, usually targeting different module versions.
 	// +kubebuilder:validation:Pattern:=^[a-z]+$
@@ -301,7 +301,7 @@ func (kyma *Kyma) GetNoLongerExistingModuleStatus() []*ModuleStatus {
 
 //+kubebuilder:object:root=true
 
-// KymaList contains a list of Kyma
+// KymaList contains a list of Kyma.
 type KymaList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

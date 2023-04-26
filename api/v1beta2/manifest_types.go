@@ -66,7 +66,7 @@ type ManifestStatus declarative.Status
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 //+kubebuilder:storageversion
 
-// Manifest is the Schema for the manifests API
+// Manifest is the Schema for the manifests API.
 type Manifest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -75,23 +75,24 @@ type Manifest struct {
 	Status ManifestStatus `json:"status,omitempty"`
 }
 
-func (m *Manifest) GetStatus() declarative.Status {
-	return declarative.Status(m.Status)
+func (manifest *Manifest) GetStatus() declarative.Status {
+	return declarative.Status(manifest.Status)
 }
 
-func (m *Manifest) SetStatus(status declarative.Status) {
-	m.Status = ManifestStatus(status)
+func (manifest *Manifest) SetStatus(status declarative.Status) {
+	manifest.Status = ManifestStatus(status)
 }
 
 //+kubebuilder:object:root=true
 
-// ManifestList contains a list of Manifest
+// ManifestList contains a list of Manifest.
 type ManifestList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Manifest `json:"items"`
 }
 
+//nolint:gochecknoinits
 func init() {
 	SchemeBuilder.Register(&Manifest{}, &ManifestList{})
 }

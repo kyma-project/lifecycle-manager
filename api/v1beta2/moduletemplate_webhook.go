@@ -31,11 +31,11 @@ import (
 )
 
 // log is for logging in this package.
-var moduletemplatelog = logf.Log.WithName("moduletemplate-resource")
+var moduletemplatelog = logf.Log.WithName("moduletemplate-resource") //nolint:gochecknoglobals
 
-func (r *ModuleTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (m *ModuleTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
+		For(m).
 		Complete()
 }
 
@@ -44,20 +44,20 @@ func (r *ModuleTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Validator = &ModuleTemplate{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (r *ModuleTemplate) ValidateCreate() error {
-	moduletemplatelog.Info("validate create", "name", r.Name)
-	newDescriptor, err := r.Spec.GetDescriptor()
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
+func (m *ModuleTemplate) ValidateCreate() error {
+	moduletemplatelog.Info("validate create", "name", m.Name)
+	newDescriptor, err := m.Spec.GetDescriptor()
 	if err != nil {
 		return err
 	}
-	return Validate(nil, newDescriptor, r.Name)
+	return Validate(nil, newDescriptor, m.Name)
 }
 
-// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *ModuleTemplate) ValidateUpdate(old runtime.Object) error {
-	moduletemplatelog.Info("validate update", "name", r.Name)
-	newDescriptor, err := r.Spec.GetDescriptor()
+// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
+func (m *ModuleTemplate) ValidateUpdate(old runtime.Object) error {
+	moduletemplatelog.Info("validate update", "name", m.Name)
+	newDescriptor, err := m.Spec.GetDescriptor()
 	if err != nil {
 		return err
 	}
@@ -66,17 +66,17 @@ func (r *ModuleTemplate) ValidateUpdate(old runtime.Object) error {
 	if err != nil {
 		return err
 	}
-	return Validate(oldDescriptor, newDescriptor, r.Name)
+	return Validate(oldDescriptor, newDescriptor, m.Name)
 }
 
-// ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *ModuleTemplate) ValidateDelete() error {
-	moduletemplatelog.Info("validate delete", "name", r.Name)
-	newDescriptor, err := r.Spec.GetDescriptor()
+// ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
+func (m *ModuleTemplate) ValidateDelete() error {
+	moduletemplatelog.Info("validate delete", "name", m.Name)
+	newDescriptor, err := m.Spec.GetDescriptor()
 	if err != nil {
 		return err
 	}
-	return Validate(nil, newDescriptor, r.Name)
+	return Validate(nil, newDescriptor, m.Name)
 }
 
 func Validate(oldDescriptor, newDescriptor *Descriptor, newTemplateName string) error {

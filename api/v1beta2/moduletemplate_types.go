@@ -113,37 +113,38 @@ const (
 	TargetControlPlane Target = "control-plane"
 )
 
-func (in *ModuleTemplateSpec) GetDescriptor(opts ...compdesc.DecodeOption) (*Descriptor, error) {
-	if in.Descriptor.Object != nil {
-		return in.Descriptor.Object.(*Descriptor), nil
+func (spec *ModuleTemplateSpec) GetDescriptor(opts ...compdesc.DecodeOption) (*Descriptor, error) {
+	if spec.Descriptor.Object != nil {
+		return spec.Descriptor.Object.(*Descriptor), nil
 	}
 	desc, err := compdesc.Decode(
-		in.Descriptor.Raw, append([]compdesc.DecodeOption{compdesc.DisableValidation(true)}, opts...)...,
+		spec.Descriptor.Raw, append([]compdesc.DecodeOption{compdesc.DisableValidation(true)}, opts...)...,
 	)
 	if err != nil {
 		return nil, err
 	}
-	in.Descriptor.Object = &Descriptor{ComponentDescriptor: desc}
-	return in.Descriptor.Object.(*Descriptor), err
+	spec.Descriptor.Object = &Descriptor{ComponentDescriptor: desc}
+	return spec.Descriptor.Object.(*Descriptor), err
 }
 
 //+kubebuilder:object:root=true
 
-// ModuleTemplateList contains a list of ModuleTemplate
+// ModuleTemplateList contains a list of ModuleTemplate.
 type ModuleTemplateList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []ModuleTemplate `json:"items"`
 }
 
+//nolint:gochecknoinits
 func init() {
 	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{}, &Descriptor{})
 }
 
-func (in *ModuleTemplate) GetComponentDescriptorCacheKey() (string, error) {
-	descriptor, err := in.Spec.GetDescriptor()
+func (m *ModuleTemplate) GetComponentDescriptorCacheKey() (string, error) {
+	descriptor, err := m.Spec.GetDescriptor()
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s:%s:%s", in.Spec.Channel, descriptor.GetName(), descriptor.GetVersion()), nil
+	return fmt.Sprintf("%s:%s:%s", m.Spec.Channel, descriptor.GetName(), descriptor.GetVersion()), nil
 }

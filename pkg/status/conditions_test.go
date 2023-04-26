@@ -11,6 +11,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
+//nolint:funlen
 func TestInitConditions(t *testing.T) {
 	t.Parallel()
 	type args struct {

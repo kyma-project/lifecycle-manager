@@ -154,7 +154,7 @@ const (
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
 
-// Watcher is the Schema for the watchers API
+// Watcher is the Schema for the watchers API.
 type Watcher struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -163,22 +163,23 @@ type Watcher struct {
 	Status WatcherStatus `json:"status,omitempty"`
 }
 
-func (w *Watcher) GetModuleName() string {
-	if w.Labels == nil {
+func (watcher *Watcher) GetModuleName() string {
+	if watcher.Labels == nil {
 		return ""
 	}
-	return w.Labels[ManagedBy]
+	return watcher.Labels[ManagedBy]
 }
 
 //+kubebuilder:object:root=true
 
-// WatcherList contains a list of Watcher
+// WatcherList contains a list of Watcher.
 type WatcherList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Watcher `json:"items"`
 }
 
+//nolint:gochecknoinits
 func init() {
 	SchemeBuilder.Register(&Watcher{}, &WatcherList{})
 }

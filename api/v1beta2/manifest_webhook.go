@@ -18,15 +18,11 @@ package v1beta2
 
 import (
 	ctrl "sigs.k8s.io/controller-runtime"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-// log is for logging in this package.
-var manifestlog = logf.Log.WithName("manifest-resource")
-
-func (r *Manifest) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (manifest *Manifest) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
-		For(r).
+		For(manifest).
 		Complete()
 }
 
