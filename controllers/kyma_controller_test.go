@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -160,7 +161,7 @@ var _ = Describe("Kyma update Manifest CR", Ordered, func() {
 
 		By("Update Module Template spec.data.spec field")
 		valueUpdated := "valueUpdated"
-		Eventually(updateModuleTemplateSpecData(kyma.Name, valueUpdated), Timeout, Interval).Should(Succeed())
+		Eventually(updateKCPModuleTemplateSpecData(kyma.Name, valueUpdated), Timeout, Interval).Should(Succeed())
 
 		By("CR updated with new value in spec.resource.spec")
 		Eventually(expectManifestSpecDataEquals(kyma.Name, valueUpdated), Timeout, Interval).Should(Succeed())
@@ -207,7 +208,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 			Eventually(expectedBehavior, Timeout, Interval).Should(Succeed())
 		},
 		Entry("When update Module Template spec.data.spec field, module should not updated",
-			updateModuleTemplateSpecData(kyma.Name, "valueUpdated"),
+			updateKCPModuleTemplateSpecData(kyma.Name, "valueUpdated"),
 			expectManifestSpecDataEquals(kyma.Name, "initValue")),
 		Entry("When put manifest into progress, kyma spec.status.modules should not updated",
 			updateAllModules(kyma.Name, v1beta2.StateProcessing),
@@ -256,19 +257,54 @@ func updateAllModules(kymaName string, state v1beta2.State) func() error {
 	}
 }
 
-func updateModuleTemplateSpecData(kymaName, valueUpdated string) func() error {
+func updateKCPModuleTemplateSpecData(kymaName, valueUpdated string) func() error {
 	return func() error {
 		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 		if err != nil {
 			return err
 		}
 		for _, activeModule := range createdKyma.Spec.Modules {
-			moduleTemplate, err := GetModuleTemplate(activeModule.Name, controlPlaneClient, createdKyma, false)
-			Expect(err).ToNot(HaveOccurred())
-			moduleTemplate.Spec.Data.Object["spec"] = map[string]any{"initKey": valueUpdated}
-			err = controlPlaneClient.Update(ctx, moduleTemplate)
-			Expect(err).ToNot(HaveOccurred())
+			return updateModuleTemplateSpec(controlPlaneClient, createdKyma, activeModule.Name, valueUpdated, false)
 		}
 		return nil
 	}
+}
+
+func updateModuleTemplateSpec(clnt client.Client,
+	kyma *v1beta1.Kyma,
+	moduleName,
+	newValue string,
+	remote bool,
+) error {
+	moduleTemplate, err := GetModuleTemplate(moduleName, clnt, kyma, remote)
+	if err != nil {
+		return err
+	}
+	moduleTemplate.Spec.Data.Object["spec"] = map[string]any{"initKey": newValue}
+	return clnt.Update(ctx, moduleTemplate)
+}
+
+func expectModuleTemplateSpecGetReset(
+	clnt client.Client,
+	kyma *v1beta1.Kyma,
+	moduleName,
+	expectedValue string,
+	remote bool,
+) error {
+	moduleTemplate, err := GetModuleTemplate(moduleName, clnt, kyma, remote)
+	if err != nil {
+		return err
+	}
+	initKey, found := moduleTemplate.Spec.Data.Object["spec"]
+	if !found {
+		return ErrExpectedLabelNotReset
+	}
+	value, found := initKey.(map[string]any)["initKey"]
+	if !found {
+		return ErrExpectedLabelNotReset
+	}
+	if value.(string) != expectedValue {
+		return ErrExpectedLabelNotReset
+	}
+	return nil
 }
