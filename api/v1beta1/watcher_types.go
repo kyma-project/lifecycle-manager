@@ -196,21 +196,14 @@ func (w *Watcher) GetModuleName() string {
 }
 
 func (w *Watcher) InitializeConditions() {
-	_, idx := w.findWatcherCondition(WatcherConditionTypeVirtualService)
-	if idx != notFoundConditionIndex {
-		return
-	}
 	ltt := metav1.Now()
-	if len(w.Status.Conditions) == 0 {
-		w.Status.Conditions = make([]WatcherCondition, 0)
-	}
-	w.Status.Conditions = append(w.Status.Conditions, WatcherCondition{
+	w.Status.Conditions = []WatcherCondition{{
 		Type:               WatcherConditionTypeVirtualService,
 		Status:             ConditionStatusUnknown,
 		Message:            VirtualServiceNotConfiguredConditionMessage,
 		Reason:             ReadyConditionReason,
 		LastTransitionTime: &ltt,
-	})
+	}}
 }
 
 func (w *Watcher) findWatcherCondition(conditionType WatcherConditionType) (*WatcherCondition, int) {
