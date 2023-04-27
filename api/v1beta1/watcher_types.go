@@ -17,10 +17,9 @@ limitations under the License.
 package v1beta1
 
 import (
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-const notFoundConditionIndex = -1
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
@@ -100,34 +99,11 @@ type WatcherStatus struct {
 	// +kubebuilder:validation:Optional
 	// +listType=map
 	// +listMapKey=type
-	Conditions []WatcherCondition `json:"conditions"`
+	Conditions []metav1.Condition `json:"conditions"`
 
 	// ObservedGeneration
 	// +kubebuilder:validation:Optional
 	ObservedGeneration int64 `json:"observedGeneration"`
-}
-
-// WatcherCondition describes condition information for Watcher.
-type WatcherCondition struct {
-	// Type is used to reflect what type of condition we are dealing with.
-	// Most commonly WatcherConditionTypeReady it is used as extension marker in the future.
-	Type WatcherConditionType `json:"type"`
-
-	// Status of the Watcher Condition.
-	// Value can be one of ("True", "False", "Unknown").
-	Status WatcherConditionStatus `json:"status"`
-
-	// Human-readable message indicating details about the last status transition.
-	// +kubebuilder:validation:Optional
-	Message WatcherConditionMessage `json:"message"`
-
-	// Machine-readable text indicating the reason for the condition's last transition.
-	// +kubebuilder:validation:Optional
-	Reason WatcherConditionReason `json:"reason"`
-
-	// Timestamp for when Watcher last transitioned from one status to another.
-	// +kubebuilder:validation:Optional
-	LastTransitionTime *metav1.Time `json:"lastTransitionTime"`
 }
 
 type WatcherConditionType string
@@ -154,20 +130,16 @@ const (
 	VirtualServiceNotConfiguredConditionMessage WatcherConditionMessage = "VirtualService is not configured"
 )
 
-// +kubebuilder:validation:Enum=True;False;Unknown;
-
-type WatcherConditionStatus string
-
-// Valid WatcherConditionStatus.
+// Valid ConditionStatus.
 const (
-	// ConditionStatusTrue signifies WatcherConditionStatus true.
-	ConditionStatusTrue WatcherConditionStatus = "True"
+	// ConditionStatusTrue signifies ConditionStatus true.
+	ConditionStatusTrue metav1.ConditionStatus = "True"
 
-	// ConditionStatusFalse signifies WatcherConditionStatus false.
-	ConditionStatusFalse WatcherConditionStatus = "False"
+	// ConditionStatusFalse signifies ConditionStatus false.
+	ConditionStatusFalse metav1.ConditionStatus = "False"
 
-	// ConditionStatusUnknown signifies WatcherConditionStatus unknown.
-	ConditionStatusUnknown WatcherConditionStatus = "Unknown"
+	// ConditionStatusUnknown signifies ConditionStatus unknown.
+	ConditionStatusUnknown metav1.ConditionStatus = "Unknown"
 )
 
 // +kubebuilder:object:root=true
@@ -196,45 +168,34 @@ func (w *Watcher) GetModuleName() string {
 }
 
 func (w *Watcher) InitializeConditions() {
-	ltt := metav1.Now()
-	w.Status.Conditions = []WatcherCondition{{
-		Type:               WatcherConditionTypeVirtualService,
+	w.Status.Conditions = []metav1.Condition{{
+		Type:               string(WatcherConditionTypeVirtualService),
 		Status:             ConditionStatusUnknown,
-		Message:            VirtualServiceNotConfiguredConditionMessage,
-		Reason:             ReadyConditionReason,
-		LastTransitionTime: &ltt,
+		Message:            string(VirtualServiceNotConfiguredConditionMessage),
+		Reason:             string(ReadyConditionReason),
+		LastTransitionTime: metav1.Now(),
 	}}
 }
 
-func (w *Watcher) findWatcherCondition(conditionType WatcherConditionType) (*WatcherCondition, int) {
-	for i := range w.Status.Conditions {
-		if w.Status.Conditions[i].Type == conditionType {
-			return &w.Status.Conditions[i], i
-		}
-	}
-	return nil, notFoundConditionIndex
-}
-
-func (w *Watcher) UpdateWatcherConditionStatus(
-	conditionType WatcherConditionType,
-	conditionStatus WatcherConditionStatus,
-) (*WatcherCondition, int) {
-	condition, idx := w.findWatcherCondition(conditionType)
-	if idx == notFoundConditionIndex {
-		return nil, notFoundConditionIndex
+func (w *Watcher) UpdateWatcherConditionStatus(conditionType WatcherConditionType,
+	conditionStatus metav1.ConditionStatus,
+) {
+	newCondition := metav1.Condition{
+		Type:               string(conditionType),
+		Status:             conditionStatus,
+		Message:            string(VirtualServiceNotConfiguredConditionMessage),
+		Reason:             string(ReadyConditionReason),
+		LastTransitionTime: metav1.Now(),
 	}
 	switch conditionStatus {
 	case ConditionStatusTrue:
-		condition.Message = VirtualServiceConfiguredConditionMessage
+		newCondition.Message = string(VirtualServiceConfiguredConditionMessage)
 	case ConditionStatusFalse, ConditionStatusUnknown:
 		fallthrough
 	default:
-		condition.Message = VirtualServiceNotConfiguredConditionMessage
+		newCondition.Message = string(VirtualServiceNotConfiguredConditionMessage)
 	}
-	condition.Status = conditionStatus
-	ltt := metav1.Now()
-	condition.LastTransitionTime = &ltt
-	return condition, idx
+	meta.SetStatusCondition(&w.Status.Conditions, newCondition)
 }
 
 //+kubebuilder:object:root=true

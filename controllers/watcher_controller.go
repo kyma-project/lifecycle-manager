@@ -169,22 +169,14 @@ func (r *WatcherReconciler) updateWatcherState(ctx context.Context, watcherCR *v
 ) error {
 	watcherCR.Status.State = state
 	if state == v1beta1.WatcherStateReady {
-		updatedWatcherVsCondition, idx := watcherCR.UpdateWatcherConditionStatus(
-			v1beta1.WatcherConditionTypeVirtualService, v1beta1.ConditionStatusTrue)
-		if idx != notFoundConditionIndex {
-			watcherCR.Status.Conditions[idx] = *updatedWatcherVsCondition
-		}
+		watcherCR.UpdateWatcherConditionStatus(v1beta1.WatcherConditionTypeVirtualService, v1beta1.ConditionStatusTrue)
 	}
 	return r.updateWatcherStatusUsingSSA(ctx, watcherCR)
 }
 
 func (r *WatcherReconciler) updateWatcherToErrState(ctx context.Context, watcherCR *v1beta1.Watcher, err error) error {
 	watcherCR.Status.State = v1beta1.WatcherStateError
-	updatedWatcherVsCondition, idx := watcherCR.UpdateWatcherConditionStatus(
-		v1beta1.WatcherConditionTypeVirtualService, v1beta1.ConditionStatusFalse)
-	if idx != notFoundConditionIndex {
-		watcherCR.Status.Conditions[idx] = *updatedWatcherVsCondition
-	}
+	watcherCR.UpdateWatcherConditionStatus(v1beta1.WatcherConditionTypeVirtualService, v1beta1.ConditionStatusFalse)
 	r.EventRecorder.Event(watcherCR, "Warning", "WatcherStatusUpdate", err.Error())
 	// always return non nil err to requeue the CR for another reconciliation.
 	updateErr := r.updateWatcherStatusUsingSSA(ctx, watcherCR)
