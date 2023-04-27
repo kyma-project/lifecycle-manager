@@ -75,12 +75,10 @@ jobs:
           cd config/manager && kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
       - name: Set up k3d
         run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
-      - id: kyma
-        uses: jakobmoellersap/kyma-cli-action@v0.0.1-alpha1
-        with:
-          cache: false
-          version: ${{ matrix.cli-stability }}
-      - run: ln -s ${{ steps.kyma.outputs.path }} /usr/local/bin/kyma
+      - name: Download kyma cli
+        run: |
+          wget -qO kyma  https://storage.googleapis.com/kyma-cli-${{ matrix.cli-stability }}/kyma-linux
+          chmod +x kyma
       - name: Run Provision
         run: |
           kyma --ci provision k3d \
