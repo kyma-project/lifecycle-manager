@@ -77,9 +77,13 @@ jobs:
         run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
       - name: Download kyma cli
         run: |
-          wget -qO kyma  https://storage.googleapis.com/kyma-cli-${{ matrix.cli-stability }}/kyma-linux
-          chmod +x kyma
-          ln -s kyma /usr/local/bin/kyma
+          EXEC=kyma-${{ matrix.cli-stability }}
+          if [ ! -f "$EXEC" ]; then
+          echo "$EXEC was never downloaded, looking up."
+          wget -q https://storage.googleapis.com/kyma-cli-${{ matrix.cli-stability }}/kyma-linux
+          chmod +x kyma-linux && mv kyma-linux $EXEC
+          ln -s $EXEC /usr/local/bin/kyma
+          fi
       - name: Run Provision
         run: |
           kyma --ci provision k3d \
