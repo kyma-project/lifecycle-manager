@@ -4,7 +4,7 @@ Kyma is an opinionated set of Kubernetes-based modular building blocks that incl
 
 ## Basic Concepts and Modularization
 
-This list of basic concepts relating to Lifecycle Manager aims to help you understand its workflow better.
+See the list of basic concepts relating to Lifecycle Manager to understand its workflow better.
 
 - Kyma custom resource (CR) - [short description]
 - ModuleTemplate CR - [short description]
@@ -51,4 +51,4 @@ To use Lifecycle Manager in a local setup, install the following:
 
 <!-- If you are new to our Lifecycle Manager and want to get started quickly, we recommend that you follow our [Quick Start Guide](./docs/user/quick-start.md). This guide will walk you through the basic steps of setting up your local KCP cluster, installing the Lifecycle Manager, and using the main features. ??? -->
 
-To learn more about Lifecycle Manager and its components, go to the [`docs`](/docs/) directory.
+To find more details about Lifecycle Manager and its components, go to the [`docs`](/docs/) directory.
