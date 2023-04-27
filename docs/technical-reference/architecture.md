@@ -21,7 +21,7 @@ The diagram shows a sample deployment of Kyma Control Plane in interaction with 
 
 **CAUTION:** Please note that real deliveries can significantly differ from those presented in the diagram depending on the tradeoffs chosen for reconciliation.
 
-![Kyma Operator Architecture](assets/kyma-operator-architecture.svg)
+![Kyma Operator Architecture](/docs/assets/kyma-operator-architecture.svg)
 
 ## Stability
 
