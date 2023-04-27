@@ -9,9 +9,11 @@ import (
 	"path/filepath"
 	"reflect"
 
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
+
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/downloader"
 	"helm.sh/helm/v3/pkg/getter"
@@ -28,8 +30,6 @@ type ChartInfo struct {
 	ChartName   string
 	ReleaseName string
 }
-
-var ErrNoAuthSecretFound = errors.New("no auth secret found")
 
 type ManifestSpecResolver struct {
 	KCP *declarative.ClusterInfo
@@ -83,7 +83,7 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object)
 	case v1beta1.HelmChartType:
 		mode = declarative.RenderModeHelm
 	case v1beta1.OciRefType:
-		mode = declarative.RenderModeHelm
+		mode = declarative.RenderModeRaw
 	case v1beta1.KustomizeType:
 		mode = declarative.RenderModeKustomize
 	case v1beta1.NilRefType:
@@ -229,15 +229,15 @@ func (m *ManifestSpecResolver) getChartInfoForInstall(
 			return nil, err
 		}
 
-		// extract helm chart from layer digest
-		chartPath, err := GetPathFromExtractedTarGz(ctx, imageSpec, keyChain)
+		// extract raw manifest from layer digest
+		rawManifestPath, err := GetPathFromRawManifest(ctx, imageSpec, keyChain)
 		if err != nil {
 			return nil, err
 		}
 
 		return &ChartInfo{
 			ChartName: install.Name,
-			ChartPath: chartPath,
+			ChartPath: rawManifestPath,
 		}, nil
 	case v1beta1.KustomizeType:
 		var kustomizeSpec v1beta1.KustomizeSpec
@@ -252,11 +252,9 @@ func (m *ManifestSpecResolver) getChartInfoForInstall(
 		}, nil
 	case v1beta1.NilRefType:
 		return nil, ErrEmptyInstallType
+	default:
+		return nil, fmt.Errorf("%s is invalid: %w", specType, ErrUnsupportedInstallType)
 	}
-
-	return nil, fmt.Errorf(
-		"%s is invalid: %w", specType, ErrUnsupportedInstallType,
-	)
 }
 
 func parseChartConfigAndValues(
@@ -312,7 +310,7 @@ func (m *ManifestSpecResolver) lookupKeyChain(
 	var keyChain authn.Keychain
 	var err error
 	if imageSpec.CredSecretSelector != nil {
-		if keyChain, err = GetAuthnKeychain(ctx, imageSpec, m.KCP.Client); err != nil {
+		if keyChain, err = ocmextensions.GetAuthnKeychain(ctx, imageSpec.CredSecretSelector, m.KCP.Client); err != nil {
 			return nil, err
 		}
 	} else {

@@ -117,27 +117,44 @@ type WatcherCondition struct {
 
 	// Human-readable message indicating details about the last status transition.
 	// +kubebuilder:validation:Optional
-	Message string `json:"message"`
+	Message WatcherConditionMessage `json:"message"`
 
 	// Machine-readable text indicating the reason for the condition's last transition.
 	// +kubebuilder:validation:Optional
-	Reason string `json:"reason"`
+	Reason WatcherConditionReason `json:"reason"`
 
 	// Timestamp for when Watcher last transitioned from one status to another.
 	// +kubebuilder:validation:Optional
 	LastTransitionTime *metav1.Time `json:"lastTransitionTime"`
 }
 
-// +kubebuilder:validation:Enum=Ready
 type WatcherConditionType string
 
 const (
-	// WatcherConditionTypeReady represents WatcherConditionType Ready,
-	// meaning as soon as its true we will reconcile Watcher into WatcherStateReady.
-	WatcherConditionTypeReady WatcherConditionType = "Ready"
+	// WatcherConditionTypeVirtualService represents WatcherConditionType VirtualService,
+	WatcherConditionTypeVirtualService WatcherConditionType = "VirtualService"
 )
 
+// +kubebuilder:validation:Enum=Ready
+
+type WatcherConditionReason string
+
+const (
+	// ReadyConditionReason will be set to `Ready` on all Conditions. If the Condition is actual ready,
+	// can be determined by the state.
+	ReadyConditionReason WatcherConditionReason = "Ready"
+)
+
+type WatcherConditionMessage string
+
+const (
+	VirtualServiceConfiguredConditionMessage WatcherConditionMessage = "VirtualService is configured"
+	VirtualServiceNotConfiguredConditionMessage WatcherConditionMessage = "VirtualService is not configured"
+)
+
+
 // +kubebuilder:validation:Enum=True;False;Unknown;
+
 type WatcherConditionStatus string
 
 // Valid WatcherConditionStatus.
@@ -156,6 +173,7 @@ const (
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
+
 // Watcher is the Schema for the watchers API.
 type Watcher struct {
 	metav1.TypeMeta `json:",inline"`

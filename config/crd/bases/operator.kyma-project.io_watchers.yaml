@@ -154,6 +154,8 @@ spec:
                     reason:
                       description: Machine-readable text indicating the reason for
                         the condition's last transition.
+                      enum:
+                      - Ready
                       type: string
                     status:
                       description: Status of the Watcher Condition. Value can be one
@@ -167,8 +169,6 @@ spec:
                       description: Type is used to reflect what type of condition
                         we are dealing with. Most commonly WatcherConditionTypeReady
                         it is used as extension marker in the future.
-                      enum:
-                      - Ready
                       type: string
                   required:
                   - status
@@ -335,6 +335,8 @@ spec:
                     reason:
                       description: Machine-readable text indicating the reason for
                         the condition's last transition.
+                      enum:
+                      - Ready
                       type: string
                     status:
                       description: Status of the Watcher Condition. Value can be one
@@ -348,8 +350,6 @@ spec:
                       description: Type is used to reflect what type of condition
                         we are dealing with. Most commonly WatcherConditionTypeReady
                         it is used as extension marker in the future.
-                      enum:
-                      - Ready
                       type: string
                   required:
                   - status

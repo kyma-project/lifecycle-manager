@@ -152,8 +152,6 @@ func (c *RemoteCatalog) patchDiff(
 	ctx context.Context, diff *v1beta1.ModuleTemplate, syncContext *KymaSynchronizationContext,
 	deleteInsteadOfPatch bool,
 ) error {
-	diff.SetLastSync()
-
 	var err error
 	if deleteInsteadOfPatch {
 		err = syncContext.RuntimeClient.Delete(ctx, diff)

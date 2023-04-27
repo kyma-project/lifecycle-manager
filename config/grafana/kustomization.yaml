@@ -5,6 +5,9 @@ configMapGenerator:
   - name: overview
     files:
       - overview.json
+  - name: status
+    files:
+      - status.json
 
 generatorOptions:
   disableNameSuffixHash: true
