@@ -41,28 +41,6 @@ func expectManifestSpecDataEquals(kymaName, value string) func() error {
 	}
 }
 
-func expectManifestSpecRemoteMatched(kymaName string, remoteFlag bool) func() error {
-	return func() error {
-		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, metav1.NamespaceDefault)
-		if err != nil {
-			return err
-		}
-		for _, module := range createdKyma.Spec.Modules {
-			moduleInCluster, err := getModule(createdKyma, module)
-			if err != nil {
-				return err
-			}
-			if moduleInCluster.Spec.Remote != remoteFlag {
-				return ErrManifestRemoteIsNotMatch
-			}
-		}
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-}
-
 func expectManifestSpecNotContainsCredSecretSelector(kymaName string) func() error {
 	return func() error {
 		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
