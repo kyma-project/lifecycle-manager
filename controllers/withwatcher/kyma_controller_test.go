@@ -58,7 +58,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 
 	It("kyma reconciliation installs watcher helm chart with correct webhook config", func() {
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
-			kymaObjKey), Timeout, Interval).WithOffset(4).Should(Succeed())
+			kymaObjKey), Timeout, Interval).Should(Succeed())
 	})
 
 	It("kyma reconciliation replaces webhook-config when a new watcher is created and deleted", func() {
@@ -66,20 +66,20 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		By("Creating second watcher CR")
 		Expect(controlPlaneClient.Create(suiteCtx, secondWatcher)).To(Succeed())
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma, kymaObjKey),
-			Timeout, Interval).WithOffset(4).Should(Succeed())
+			Timeout, Interval).Should(Succeed())
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, secondWatcher, kymaObjKey),
-			Timeout, Interval).WithOffset(4).Should(Succeed())
+			Timeout, Interval).Should(Succeed())
 		By("Deleting second watcher CR")
 		Expect(controlPlaneClient.Delete(suiteCtx, secondWatcher)).To(Succeed())
 		By("Ensuring second watcher CR is properly deleted")
 		Eventually(isWatcherCrDeletionFinished, Timeout, Interval).WithArguments(secondWatcher).
-			WithOffset(4).Should(Succeed())
+			Should(Succeed())
 		By("ensuring skr resources are configured for the non-removed watcher CRs")
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma, kymaObjKey),
-			Timeout, Interval).WithOffset(4).Should(Succeed())
+			Timeout, Interval).Should(Succeed())
 		By("ensuring skr resources are not configured for the removed watcher CR")
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, secondWatcher, kymaObjKey),
-			Timeout, Interval).WithOffset(4).ShouldNot(Succeed())
+			Timeout, Interval).ShouldNot(Succeed())
 	})
 
 	It("SKR chart installation works correctly when watcher config is updated", func() {
@@ -91,7 +91,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Eventually(isWatcherCrLabelUpdated(client.ObjectKeyFromObject(watcherCrForKyma),
 			labelKey, labelValue), Timeout, Interval).Should(BeTrue())
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
-			kymaObjKey), Timeout, Interval).WithOffset(4).Should(Succeed())
+			kymaObjKey), Timeout, Interval).Should(Succeed())
 	})
 
 	It("kyma reconciliation removes watcher helm chart from SKR cluster when kyma is deleted", func() {
