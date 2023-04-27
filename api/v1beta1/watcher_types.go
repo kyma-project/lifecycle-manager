@@ -131,7 +131,7 @@ type WatcherCondition struct {
 type WatcherConditionType string
 
 const (
-	// WatcherConditionTypeVirtualService represents WatcherConditionType VirtualService,
+	// WatcherConditionTypeVirtualService represents WatcherConditionType VirtualService.
 	WatcherConditionTypeVirtualService WatcherConditionType = "VirtualService"
 )
 
@@ -148,10 +148,9 @@ const (
 type WatcherConditionMessage string
 
 const (
-	VirtualServiceConfiguredConditionMessage WatcherConditionMessage = "VirtualService is configured"
+	VirtualServiceConfiguredConditionMessage    WatcherConditionMessage = "VirtualService is configured"
 	VirtualServiceNotConfiguredConditionMessage WatcherConditionMessage = "VirtualService is not configured"
 )
-
 
 // +kubebuilder:validation:Enum=True;False;Unknown;
 

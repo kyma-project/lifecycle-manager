@@ -73,7 +73,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Expect(controlPlaneClient.Delete(suiteCtx, secondWatcher)).To(Succeed())
 		By("Ensuring second watcher CR is properly deleted")
 		Eventually(isWatcherCrDeletionFinished, Timeout, Interval).WithArguments(secondWatcher).
-			Should(Succeed())
+			Should(BeTrue())
 		By("ensuring skr resources are configured for the non-removed watcher CRs")
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma, kymaObjKey),
 			Timeout, Interval).Should(Succeed())
@@ -98,8 +98,8 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Expect(controlPlaneClient.Delete(suiteCtx, kyma)).To(Succeed())
 		Eventually(getSkrChartDeployment(suiteCtx, runtimeClient, kymaObjKey), Timeout, Interval).
 			ShouldNot(Succeed())
-		Eventually(isKymaCrDeletionFinished(client.ObjectKeyFromObject(kyma)), Timeout, Interval).
-			Should(BeTrue())
+		Eventually(isKymaCrDeletionFinished, Timeout, Interval).
+			WithArguments(client.ObjectKeyFromObject(kyma)).Should(BeTrue())
 	})
 })
 
@@ -122,7 +122,7 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta1.Kyma, watcher *v1b
 		Expect(controlPlaneClient.Delete(suiteCtx, watcher)).To(Succeed())
 		By("Ensuring watcher CR is properly deleted")
 		Eventually(isWatcherCrDeletionFinished, Timeout, Interval).WithArguments(watcher).
-			WithOffset(4).Should(Succeed())
+			Should(BeTrue())
 	})
 
 	BeforeEach(func() {
@@ -157,11 +157,9 @@ func isWatcherCrLabelUpdated(watcherObjKey client.ObjectKey, labelKey, expectedL
 	}
 }
 
-func isKymaCrDeletionFinished(kymaObjKey client.ObjectKey) func() bool {
-	return func() bool {
-		err := controlPlaneClient.Get(suiteCtx, kymaObjKey, &v1beta1.Kyma{})
-		return apierrors.IsNotFound(err)
-	}
+func isKymaCrDeletionFinished(kymaObjKey client.ObjectKey) bool {
+	err := controlPlaneClient.Get(suiteCtx, kymaObjKey, &v1beta1.Kyma{})
+	return apierrors.IsNotFound(err)
 }
 
 func getSkrChartDeployment(ctx context.Context, skrClient client.Client, kymaObjKey client.ObjectKey) func() error {
@@ -264,10 +262,7 @@ func verifyWebhookConfig(
 	return nil
 }
 
-func isWatcherCrDeletionFinished(watcherCR client.Object) error {
+func isWatcherCrDeletionFinished(watcherCR client.Object) bool {
 	err := controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(watcherCR), watcherCR)
-	if !apierrors.IsNotFound(err) {
-		return errWatcherExistsAfterDeletion
-	}
-	return nil
+	return apierrors.IsNotFound(err)
 }

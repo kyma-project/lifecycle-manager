@@ -130,7 +130,7 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 	istioConfig *istio.Config,
 ) error {
 	if r.RestConfig == nil {
-		return ErrRestConfigIsNotSet
+		return errRestConfigIsNotSet
 	}
 	var err error
 	r.IstioClient, err = istio.NewVersionedIstioClient(r.RestConfig, istioConfig, r.EventRecorder,

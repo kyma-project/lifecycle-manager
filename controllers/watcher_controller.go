@@ -44,7 +44,7 @@ const (
 )
 
 var (
-	ErrRestConfigIsNotSet = errors.New("reconciler rest config is not set")
+	errRestConfigIsNotSet = errors.New("reconciler rest config is not set")
 	errRemovingFinalizer  = errors.New("error removing finalizer")
 	errAddingFinalizer    = errors.New("error adding finalizer")
 )
