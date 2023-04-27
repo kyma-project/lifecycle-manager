@@ -79,6 +79,7 @@ jobs:
         run: |
           wget -qO kyma  https://storage.googleapis.com/kyma-cli-${{ matrix.cli-stability }}/kyma-linux
           chmod +x kyma
+          ln -s kyma /usr/local/bin/kyma
       - name: Run Provision
         run: |
           kyma --ci provision k3d \
