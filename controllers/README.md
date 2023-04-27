@@ -23,15 +23,14 @@ Its main responsibilities are:
 In order to synchronize remote clusters, the Kyma controller uses the concept of a _virtual_ resource.
 The virtual resource is a superset of the specification of the control plane and runtime data of a module.
 The synchronization of these is kept up-to-date with every reconciliation,
-and will only be triggered if `.spec.sync.enabled` is set.
+and will only be triggered if `operator.kyma-project.io/sync=true` label is set to Kyma CR.
+
 In this case, a so called `SyncContext` is initialized.
 Every time the Kyma on the control plane is enqueued for synchronization,
 it's spec is merged with the remote specification through our [custom synchronization handlers](../pkg/remote/kyma_synchronization_context.go).
 These are not only able to synchronize the Kyma resource in the remote,
 but they also replace the specification for all further parts of the reconciliation as a _virtual_ Kyma.
 For more information, checkout the `ReplaceWithVirtualKyma` function.
-
-On top of this, based on the  `.spec.sync.moduleCatalog` flag, the `syncModuleCatalog` is executed, which triggers a [reconciliation of all ModuleTemplates for discovery purposes]([custom synchronization handlers](../pkg/remote/remote_catalog.go).
 
 ## Manifest Controller
 
