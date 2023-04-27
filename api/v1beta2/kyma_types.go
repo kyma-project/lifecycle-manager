@@ -375,5 +375,5 @@ func (kyma *Kyma) AllModulesReady() bool {
 
 func (kyma *Kyma) SyncEnabled() bool {
 	// TODO: revisit it after 542 merged
-	return true
+	return false
 }
