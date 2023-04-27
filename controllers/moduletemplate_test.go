@@ -133,56 +133,6 @@ func expectCredSecretSelectorCorrect(installImageSpec *v1beta2.ImageSpec) error 
 	return nil
 }
 
-func updateModuleTemplateTarget(kymaName string, target v1beta2.Target) func() error {
-	return func() error {
-		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
-		if err != nil {
-			return err
-		}
-		for _, module := range createdKyma.Spec.Modules {
-			moduleTemplate, err := GetModuleTemplate(module.Name, controlPlaneClient, createdKyma)
-			if err != nil {
-				return err
-			}
-			moduleTemplate.Spec.Target = target
-			err = controlPlaneClient.Update(ctx, moduleTemplate)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-}
-
-var _ = Describe("Test ModuleTemplate CR", Ordered, func() {
-	kyma := NewTestKyma("kyma")
-
-	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1beta2.Module{
-			ControllerName: "manifest",
-			Name:           NewUniqModuleName(),
-			Channel:        v1beta2.DefaultChannel,
-		})
-
-	RegisterDefaultLifecycleForKyma(kyma)
-
-	DescribeTable("Test ModuleTemplate.Spec.Target",
-		func(givenCondition func() error, expectedBehavior func() error) {
-			Eventually(givenCondition, Timeout, Interval).Should(Succeed())
-			Eventually(expectedBehavior, Timeout, Interval).Should(Succeed())
-		},
-		Entry("When ModuleTemplate.Spec.Target not exist deployed, expect Manifest.Spec.remote=false",
-			noCondition(),
-			expectManifestSpecRemoteMatched(kyma.Name, false)),
-		Entry("When update ModuleTemplate.Spec.Target=remote, expect Manifest.Spec.remote=true",
-			updateModuleTemplateTarget(kyma.Name, v1beta2.TargetRemote),
-			expectManifestSpecRemoteMatched(kyma.Name, true)),
-		Entry("When update ModuleTemplate.Spec.Target=control-plane, expect Manifest.Spec.remote=false",
-			updateModuleTemplateTarget(kyma.Name, v1beta2.TargetControlPlane),
-			expectManifestSpecRemoteMatched(kyma.Name, false)),
-	)
-})
-
 var _ = Describe("Test ModuleTemplate.Spec.descriptor not contains RegistryCred label", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 

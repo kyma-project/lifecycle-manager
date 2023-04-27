@@ -43,7 +43,7 @@ patches:
   - patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --is-kyma-managed  
+        value: --in-kcp-mode
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --max-concurrent-manifest-reconciles=10

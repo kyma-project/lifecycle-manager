@@ -98,20 +98,7 @@ type ModuleTemplateSpec struct {
 	//
 	//+kubebuilder:pruning:PreserveUnknownFields
 	Descriptor runtime.RawExtension `json:"descriptor"`
-
-	// Target describes where the Module should later on be installed if parsed correctly. It is used as installation
-	// hint by downstream controllers to determine which client implementation to use for working with the Module
-	Target Target `json:"target"`
 }
-
-// Target serves as a potential Installation Hint for the Controller to determine which Client to use for installation.
-// +kubebuilder:validation:Enum=control-plane;remote
-type Target string
-
-const (
-	TargetRemote       Target = "remote"
-	TargetControlPlane Target = "control-plane"
-)
 
 func (spec *ModuleTemplateSpec) GetDescriptor(opts ...compdesc.DecodeOption) (*Descriptor, error) {
 	if spec.Descriptor.Object != nil {

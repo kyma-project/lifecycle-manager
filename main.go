@@ -273,7 +273,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
 			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
 		},
-		IsManagedKyma: flagVar.isKymaManaged,
+		InKCPMode: flagVar.inKCPMode,
 	}).SetupWithManager(
 		mgr, options, controllers.SetupUpSetting{
 			ListenerAddr:                 flagVar.kymaListenerAddr,

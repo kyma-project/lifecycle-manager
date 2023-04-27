@@ -157,19 +157,9 @@ spec:
                   referenced in the descriptor)"
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
-              target:
-                description: Target describes where the Module should later on be
-                  installed if parsed correctly. It is used as installation hint by
-                  downstream controllers to determine which client implementation
-                  to use for working with the Module
-                enum:
-                - control-plane
-                - remote
-                type: string
             required:
             - channel
             - descriptor
-            - target
             type: object
         type: object
     served: true

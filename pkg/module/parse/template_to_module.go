@@ -27,17 +27,32 @@ var (
 	ErrDefaultConfigParsing    = errors.New("defaultConfig could not be parsed")
 )
 
-func GenerateModulesFromTemplates(ctx context.Context,
+type Parser struct {
+	client.Client
+	InKCPMode bool
+	*ocmextensions.ComponentDescriptorCache
+}
+
+func NewParser(
+	clnt client.Client,
+	descriptorCache *ocmextensions.ComponentDescriptorCache,
+	inKCPMode bool,
+) *Parser {
+	return &Parser{
+		Client:                   clnt,
+		ComponentDescriptorCache: descriptorCache,
+		InKCPMode:                inKCPMode,
+	}
+}
+
+func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 	kyma *v1beta2.Kyma,
 	templates channel.ModuleTemplatesByModuleName,
 	verification signature.Verification,
-	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
-	clnt client.Client,
 ) (common.Modules, error) {
 	// these are the actual modules
-	modules, err := templatesToModules(ctx, kyma, templates,
-		&ModuleConversionSettings{Verification: verification},
-		componentDescriptorCache, clnt)
+	modules, err := p.templatesToModules(ctx, kyma, templates,
+		&ModuleConversionSettings{Verification: verification})
 	if err != nil {
 		return nil, fmt.Errorf("cannot convert templates: %w", err)
 	}
@@ -45,13 +60,11 @@ func GenerateModulesFromTemplates(ctx context.Context,
 	return modules, nil
 }
 
-func templatesToModules(
+func (p *Parser) templatesToModules(
 	ctx context.Context,
 	kyma *v1beta2.Kyma,
 	templates channel.ModuleTemplatesByModuleName,
 	settings *ModuleConversionSettings,
-	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
-	clnt client.Client,
 ) (common.Modules, error) {
 	// First, we fetch the module spec from the template and use it to resolve it into an arbitrary object
 	// (since we do not know which module we are dealing with)
@@ -80,10 +93,9 @@ func templatesToModules(
 			template.ModuleTemplate.Spec.Data.SetNamespace(kyma.GetNamespace())
 		}
 		var obj client.Object
-		if obj, err = NewManifestFromTemplate(ctx, module,
+		if obj, err = p.newManifestFromTemplate(ctx, module,
 			template.ModuleTemplate,
-			settings.Verification,
-			componentDescriptorCache, clnt); err != nil {
+			settings.Verification); err != nil {
 			return nil, err
 		}
 		// we name the manifest after the module name
@@ -103,16 +115,14 @@ func templatesToModules(
 	return modules, nil
 }
 
-func NewManifestFromTemplate(
+func (p *Parser) newManifestFromTemplate(
 	ctx context.Context,
 	module v1beta2.Module,
 	template *v1beta2.ModuleTemplate,
 	verification signature.Verification,
-	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
-	clnt client.Client,
 ) (*v1beta2.Manifest, error) {
 	manifest := &v1beta2.Manifest{}
-	manifest.Spec.Remote = ConvertTargetToRemote(template.Spec.Target)
+	manifest.Spec.Remote = p.InKCPMode
 
 	switch module.CustomResourcePolicy {
 	case v1beta2.CustomResourcePolicyIgnore:
@@ -138,8 +148,8 @@ func NewManifestFromTemplate(
 		if err != nil {
 			return nil, err
 		}
-		componentDescriptor, err = componentDescriptorCache.GetRemoteDescriptor(ctx,
-			descriptorCacheKey, descriptor, clnt)
+		componentDescriptor, err = p.ComponentDescriptorCache.GetRemoteDescriptor(ctx,
+			descriptorCacheKey, descriptor, p.Client)
 		if err != nil {
 			return nil, err
 		}
@@ -201,15 +211,4 @@ func insertLayerIntoManifest(
 	}
 
 	return nil
-}
-
-func ConvertTargetToRemote(remote v1beta2.Target) bool {
-	switch remote {
-	case v1beta2.TargetControlPlane:
-		return false
-	case v1beta2.TargetRemote:
-		return true
-	default:
-		panic(ErrUndefinedTargetToRemote)
-	}
 }

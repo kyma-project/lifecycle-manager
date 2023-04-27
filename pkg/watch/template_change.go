@@ -92,8 +92,5 @@ func manageable(template *v1beta2.ModuleTemplate) bool {
 	if controller, ok := lbls[v1beta2.ControllerName]; !ok || controller == "" {
 		return false
 	}
-	if template.Spec.Target == v1beta2.TargetControlPlane || template.Spec.Channel == "" {
-		return false
-	}
 	return true
 }

@@ -8,7 +8,9 @@ import (
 func (src *ModuleTemplate) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*v1beta2.ModuleTemplate)
 	dst.ObjectMeta = src.ObjectMeta
-	dst.Spec = src.Spec
+	dst.Spec.Channel = src.Spec.Channel
+	dst.Spec.Data = src.Spec.Data
+	dst.Spec.Descriptor = src.Spec.Descriptor
 	return nil
 }
 
@@ -16,6 +18,9 @@ func (src *ModuleTemplate) ConvertTo(dstRaw conversion.Hub) error {
 func (dst *ModuleTemplate) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*v1beta2.ModuleTemplate)
 	dst.ObjectMeta = src.ObjectMeta
-	dst.Spec = src.Spec
+	dst.Spec.Channel = src.Spec.Channel
+	dst.Spec.Data = src.Spec.Data
+	dst.Spec.Descriptor = src.Spec.Descriptor
+	dst.Spec.Target = TargetRemote
 	return nil
 }

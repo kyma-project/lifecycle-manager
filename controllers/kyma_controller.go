@@ -70,7 +70,7 @@ type KymaReconciler struct {
 	KcpRestConfig            *rest.Config
 	RemoteClientCache        *remote.ClientCache
 	ComponentDescriptorCache *ocmextensions.ComponentDescriptorCache
-	IsManagedKyma            bool
+	InKCPMode                bool
 }
 
 //nolint:lll
@@ -404,11 +404,9 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 	if err != nil {
 		return nil, err
 	}
-
+	parser := parse.NewParser(r.Client, r.ComponentDescriptorCache, r.InKCPMode)
 	// these are the actual modules
-	modules, err := parse.GenerateModulesFromTemplates(ctx, kyma, templates, verification,
-		r.ComponentDescriptorCache,
-		r.Client)
+	modules, err := parser.GenerateModulesFromTemplates(ctx, kyma, templates, verification)
 	if err != nil {
 		return nil, fmt.Errorf("cannot generate modules: %w", err)
 	}
@@ -475,5 +473,5 @@ func (r *KymaReconciler) WatcherEnabled(kyma *v1beta2.Kyma) bool {
 }
 
 func (r *KymaReconciler) IsKymaManaged() bool {
-	return r.IsManagedKyma
+	return r.InKCPMode
 }
