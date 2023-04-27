@@ -20,6 +20,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const notFoundConditionIndex = -1
+
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
@@ -191,6 +193,55 @@ func (w *Watcher) GetModuleName() string {
 		return ""
 	}
 	return w.Labels[ManagedBy]
+}
+
+func (w *Watcher) InitializeConditions() {
+	_, idx := w.findWatcherCondition(WatcherConditionTypeVirtualService)
+	if idx != notFoundConditionIndex {
+		return
+	}
+	ltt := metav1.Now()
+	if len(w.Status.Conditions) == 0 {
+		w.Status.Conditions = make([]WatcherCondition, 0)
+	}
+	w.Status.Conditions = append(w.Status.Conditions, WatcherCondition{
+		Type:               WatcherConditionTypeVirtualService,
+		Status:             ConditionStatusUnknown,
+		Message:            VirtualServiceNotConfiguredConditionMessage,
+		Reason:             ReadyConditionReason,
+		LastTransitionTime: &ltt,
+	})
+}
+
+func (w *Watcher) findWatcherCondition(conditionType WatcherConditionType) (*WatcherCondition, int) {
+	for i := range w.Status.Conditions {
+		if w.Status.Conditions[i].Type == conditionType {
+			return &w.Status.Conditions[i], i
+		}
+	}
+	return nil, notFoundConditionIndex
+}
+
+func (w *Watcher) UpdateWatcherConditionStatus(
+	conditionType WatcherConditionType,
+	conditionStatus WatcherConditionStatus,
+) (*WatcherCondition, int) {
+	condition, idx := w.findWatcherCondition(conditionType)
+	if idx == notFoundConditionIndex {
+		return nil, notFoundConditionIndex
+	}
+	switch conditionStatus {
+	case ConditionStatusTrue:
+		condition.Message = VirtualServiceConfiguredConditionMessage
+	case ConditionStatusFalse, ConditionStatusUnknown:
+		fallthrough
+	default:
+		condition.Message = VirtualServiceNotConfiguredConditionMessage
+	}
+	condition.Status = conditionStatus
+	ltt := metav1.Now()
+	condition.LastTransitionTime = &ltt
+	return condition, idx
 }
 
 //+kubebuilder:object:root=true

@@ -23,7 +23,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -96,10 +95,7 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{}, r.updateFinalizer(ctx, watcherObj)
 	}
 
-	err := r.initializeConditions(ctx, watcherObj)
-	if err != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to initialize required condition: %w", err)
-	}
+	watcherObj.InitializeConditions()
 
 	return r.stateHandling(ctx, watcherObj)
 }
@@ -173,7 +169,7 @@ func (r *WatcherReconciler) updateWatcherState(ctx context.Context, watcherCR *v
 ) error {
 	watcherCR.Status.State = state
 	if state == v1beta1.WatcherStateReady {
-		updatedWatcherVsCondition, idx := updateWatcherConditionStatus(watcherCR.Status.Conditions,
+		updatedWatcherVsCondition, idx := watcherCR.UpdateWatcherConditionStatus(
 			v1beta1.WatcherConditionTypeVirtualService, v1beta1.ConditionStatusTrue)
 		if idx != notFoundConditionIndex {
 			watcherCR.Status.Conditions[idx] = *updatedWatcherVsCondition
@@ -184,7 +180,7 @@ func (r *WatcherReconciler) updateWatcherState(ctx context.Context, watcherCR *v
 
 func (r *WatcherReconciler) updateWatcherToErrState(ctx context.Context, watcherCR *v1beta1.Watcher, err error) error {
 	watcherCR.Status.State = v1beta1.WatcherStateError
-	updatedWatcherVsCondition, idx := updateWatcherConditionStatus(watcherCR.Status.Conditions,
+	updatedWatcherVsCondition, idx := watcherCR.UpdateWatcherConditionStatus(
 		v1beta1.WatcherConditionTypeVirtualService, v1beta1.ConditionStatusFalse)
 	if idx != notFoundConditionIndex {
 		watcherCR.Status.Conditions[idx] = *updatedWatcherVsCondition
@@ -208,56 +204,4 @@ func (r *WatcherReconciler) updateWatcherStatusUsingSSA(ctx context.Context, wat
 		return fmt.Errorf("%s failed: %w", reason, err)
 	}
 	return nil
-}
-
-func (r *WatcherReconciler) initializeConditions(ctx context.Context, watcher *v1beta1.Watcher) error {
-	requiredCond, _ := findWatcherCondition(watcher.Status.Conditions, v1beta1.WatcherConditionTypeVirtualService)
-	if requiredCond != nil {
-		return nil
-	}
-	ltt := metav1.Now()
-	if len(watcher.Status.Conditions) == 0 {
-		watcher.Status.Conditions = make([]v1beta1.WatcherCondition, 0)
-	}
-	watcher.Status.Conditions = append(watcher.Status.Conditions, v1beta1.WatcherCondition{
-		Type:               v1beta1.WatcherConditionTypeVirtualService,
-		Status:             v1beta1.ConditionStatusUnknown,
-		Message:            v1beta1.VirtualServiceNotConfiguredConditionMessage,
-		Reason:             v1beta1.ReadyConditionReason,
-		LastTransitionTime: &ltt,
-	})
-	return r.updateWatcherStatusUsingSSA(ctx, watcher)
-}
-
-func findWatcherCondition(conditions []v1beta1.WatcherCondition,
-	conditionType v1beta1.WatcherConditionType,
-) (*v1beta1.WatcherCondition, int) {
-	for i := range conditions {
-		if conditions[i].Type == conditionType {
-			return &conditions[i], i
-		}
-	}
-	return nil, -1
-}
-
-func updateWatcherConditionStatus(conditions []v1beta1.WatcherCondition,
-	conditionType v1beta1.WatcherConditionType,
-	conditionStatus v1beta1.WatcherConditionStatus,
-) (*v1beta1.WatcherCondition, int) {
-	condition, idx := findWatcherCondition(conditions, conditionType)
-	if idx == notFoundConditionIndex {
-		return nil, notFoundConditionIndex
-	}
-	switch conditionStatus {
-	case v1beta1.ConditionStatusTrue:
-		condition.Message = v1beta1.VirtualServiceConfiguredConditionMessage
-	case v1beta1.ConditionStatusFalse, v1beta1.ConditionStatusUnknown:
-		fallthrough
-	default:
-		condition.Message = v1beta1.VirtualServiceNotConfiguredConditionMessage
-	}
-	condition.Status = conditionStatus
-	ltt := metav1.Now()
-	condition.LastTransitionTime = &ltt
-	return condition, idx
 }
