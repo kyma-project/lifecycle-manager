@@ -162,7 +162,7 @@ func ModuleNotExist(ctx context.Context, kyma *v1beta2.Kyma, module v1beta2.Modu
 	}
 }
 
-func SKRModuleExistWithOverwrites(kyma *v1beta2.Kyma, module v1beta2.Module) string {
+func KCPModuleExistWithOverwrites(kyma *v1beta2.Kyma, module v1beta2.Module) string {
 	kyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
 	Expect(err).ToNot(HaveOccurred())
 	moduleInCluster, err := getModule(kyma, module)
@@ -170,10 +170,10 @@ func SKRModuleExistWithOverwrites(kyma *v1beta2.Kyma, module v1beta2.Module) str
 	manifestSpec := moduleInCluster.Spec
 	body, err := json.Marshal(manifestSpec.Resource.Object["spec"])
 	Expect(err).ToNot(HaveOccurred())
-	skrModuleSpec := sampleCRDv1beta2.SKRModuleSpec{}
-	err = json.Unmarshal(body, &skrModuleSpec)
+	kcpModuleSpec := sampleCRDv1beta2.KCPModuleSpec{}
+	err = json.Unmarshal(body, &kcpModuleSpec)
 	Expect(err).ToNot(HaveOccurred())
-	return skrModuleSpec.InitKey
+	return kcpModuleSpec.InitKey
 }
 
 func getModule(kyma *v1beta2.Kyma, module v1beta2.Module) (*v1beta2.Manifest, error) {

@@ -8,7 +8,6 @@ metadata:
     "operator.kyma-project.io/controller-name": "manifest"
     "operator.kyma-project.io/module-name": "template-operator"
 spec:
-  target: control-plane
   channel: regular
   data:
     apiVersion: operator.kyma-project.io/v1alpha1

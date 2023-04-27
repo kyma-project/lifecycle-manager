@@ -9,7 +9,6 @@ metadata:
     "operator.kyma-project.io/module-name": "template-operator"
     "operator.kyma-project.io/use-local-template": "true"
 spec:
-  target: control-plane
   channel: regular
   data:
     apiVersion: operator.kyma-project.io/v1alpha1

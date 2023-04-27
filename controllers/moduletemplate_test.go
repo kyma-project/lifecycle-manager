@@ -33,7 +33,7 @@ func expectManifestSpecDataEquals(kymaName, value string) func() error {
 			return err
 		}
 		for _, module := range createdKyma.Spec.Modules {
-			if SKRModuleExistWithOverwrites(createdKyma, module) != value {
+			if KCPModuleExistWithOverwrites(createdKyma, module) != value {
 				return ErrSpecDataMismatch
 			}
 		}
