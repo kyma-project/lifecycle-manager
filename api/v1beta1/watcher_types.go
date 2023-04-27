@@ -130,18 +130,6 @@ const (
 	VirtualServiceNotConfiguredConditionMessage WatcherConditionMessage = "VirtualService is not configured"
 )
 
-// Valid ConditionStatus.
-const (
-	// ConditionStatusTrue signifies ConditionStatus true.
-	ConditionStatusTrue metav1.ConditionStatus = "True"
-
-	// ConditionStatusFalse signifies ConditionStatus false.
-	ConditionStatusFalse metav1.ConditionStatus = "False"
-
-	// ConditionStatusUnknown signifies ConditionStatus unknown.
-	ConditionStatusUnknown metav1.ConditionStatus = "Unknown"
-)
-
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:storageversion
@@ -170,7 +158,7 @@ func (w *Watcher) GetModuleName() string {
 func (w *Watcher) InitializeConditions() {
 	w.Status.Conditions = []metav1.Condition{{
 		Type:               string(WatcherConditionTypeVirtualService),
-		Status:             ConditionStatusUnknown,
+		Status:             metav1.ConditionUnknown,
 		Message:            string(VirtualServiceNotConfiguredConditionMessage),
 		Reason:             string(ReadyConditionReason),
 		LastTransitionTime: metav1.Now(),
@@ -188,9 +176,9 @@ func (w *Watcher) UpdateWatcherConditionStatus(conditionType WatcherConditionTyp
 		LastTransitionTime: metav1.Now(),
 	}
 	switch conditionStatus {
-	case ConditionStatusTrue:
+	case metav1.ConditionTrue:
 		newCondition.Message = string(VirtualServiceConfiguredConditionMessage)
-	case ConditionStatusFalse, ConditionStatusUnknown:
+	case metav1.ConditionFalse, metav1.ConditionUnknown:
 		fallthrough
 	default:
 		newCondition.Message = string(VirtualServiceNotConfiguredConditionMessage)
