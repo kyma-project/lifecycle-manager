@@ -154,12 +154,12 @@ type ModuleStatus struct {
 	FQDN string `json:"fqdn,omitempty"`
 
 	// Manifest contains the Information of a related Manifest
-	Manifest TrackingObject `json:"manifest,omitempty"`
+	Manifest *TrackingObject `json:"manifest,omitempty"`
 
 	// It contains information about the last parsed ModuleTemplate in Context of the Installation.
 	// This will update when Channel or the ModuleTemplate is changed.
 	// +optional
-	Template TrackingObject `json:"template,omitempty"`
+	Template *TrackingObject `json:"template,omitempty"`
 
 	// Channel tracks the active Channel of the Module. In Case it changes, the new Channel will have caused
 	// a new lookup to be necessary that maybe picks a different ModuleTemplate, which is why we need to reconcile.

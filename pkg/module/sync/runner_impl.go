@@ -154,11 +154,11 @@ func generateModuleStatus(module *common.Module) v1beta2.ModuleStatus {
 		State:   stateFromManifest(module.Object),
 		Channel: module.Template.Spec.Channel,
 		Version: module.Version,
-		Manifest: v1beta2.TrackingObject{
+		Manifest: &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMetaFromObject(module.Object),
 			TypeMeta:    metav1.TypeMeta{Kind: manifestKind, APIVersion: manifestAPIVersion},
 		},
-		Template: v1beta2.TrackingObject{
+		Template: &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMetaFromObject(module.Template),
 			TypeMeta:    metav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
 		},
