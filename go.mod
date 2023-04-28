@@ -4,8 +4,8 @@ go 1.19
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.0
-	github.com/cert-manager/cert-manager v1.11.0
-	github.com/go-logr/logr v1.2.3
+	github.com/cert-manager/cert-manager v1.11.1
+	github.com/go-logr/logr v1.2.4
 	github.com/go-logr/zapr v1.2.3
 	github.com/golang/mock v1.6.0
 	github.com/google/go-containerregistry v0.13.0
@@ -81,7 +81,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/cli v20.10.23+incompatible // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
-	github.com/docker/docker v20.10.23+incompatible // indirect
+	github.com/docker/docker v20.10.24+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.7.0 // indirect
 	github.com/docker/go v1.5.1-1.0.20160303222718-d30aec9fd63c // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
