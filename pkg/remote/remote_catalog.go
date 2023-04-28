@@ -58,16 +58,16 @@ func NewRemoteCatalog(
 // It uses Server-Side-Apply Patches to optimize the turnaround required.
 func (c *RemoteCatalog) CreateOrUpdate(
 	ctx context.Context,
-	kcp *v1beta1.ModuleTemplateList,
+	kcpModules []v1beta1.ModuleTemplate,
 ) error {
 	syncContext := SyncContextFromContext(ctx)
 
-	if err := c.createOrUpdateCatalog(ctx, kcp, syncContext); err != nil {
+	if err := c.createOrUpdateCatalog(ctx, kcpModules, syncContext); err != nil {
 		return err
 	}
 
-	moduleTemplatesRuntime := &v1beta1.ModuleTemplateList{}
-	if err := syncContext.RuntimeClient.List(ctx, moduleTemplatesRuntime); err != nil {
+	runtimeModules := &v1beta1.ModuleTemplateList{}
+	if err := syncContext.RuntimeClient.List(ctx, runtimeModules); err != nil {
 		// it can happen that the ModuleTemplate CRD is not caught during to apply if there are no modules to apply
 		// if this is the case and there is no CRD there can never be any module templates to delete
 		if meta.IsNoMatchError(err) {
@@ -76,15 +76,15 @@ func (c *RemoteCatalog) CreateOrUpdate(
 		return err
 	}
 
-	return c.deleteDiffCatalog(ctx, kcp, moduleTemplatesRuntime, syncContext)
+	return c.deleteDiffCatalog(ctx, kcpModules, runtimeModules.Items, syncContext)
 }
 
 func (c *RemoteCatalog) deleteDiffCatalog(ctx context.Context,
-	kcp *v1beta1.ModuleTemplateList,
-	moduleTemplatesRuntime *v1beta1.ModuleTemplateList,
+	kcpModules []v1beta1.ModuleTemplate,
+	runtimeModules []v1beta1.ModuleTemplate,
 	syncContext *KymaSynchronizationContext,
 ) error {
-	diffsToDelete := c.diffsToDelete(moduleTemplatesRuntime, kcp)
+	diffsToDelete := c.diffsToDelete(runtimeModules, kcpModules)
 	channelLength := len(diffsToDelete)
 	results := make(chan error, channelLength)
 	for _, diff := range diffsToDelete {
@@ -107,16 +107,16 @@ func (c *RemoteCatalog) deleteDiffCatalog(ctx context.Context,
 }
 
 func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
-	kcp *v1beta1.ModuleTemplateList,
+	kcpModules []v1beta1.ModuleTemplate,
 	syncContext *KymaSynchronizationContext,
 ) error {
-	channelLength := len(kcp.Items)
+	channelLength := len(kcpModules)
 	results := make(chan error, channelLength)
-	for kcpIndex := range kcp.Items {
+	for kcpIndex := range kcpModules {
 		kcpIndex := kcpIndex
 		go func() {
-			c.prepareForSSA(&kcp.Items[kcpIndex])
-			results <- c.patchDiff(ctx, &kcp.Items[kcpIndex], syncContext, false)
+			c.prepareForSSA(&kcpModules[kcpIndex])
+			results <- c.patchDiff(ctx, &kcpModules[kcpIndex], syncContext, false)
 		}()
 	}
 	var errs []error
@@ -170,18 +170,16 @@ func (c *RemoteCatalog) patchDiff(
 // diffsToDelete takes 2 v1beta1.ModuleTemplateList to then calculate any diffs.
 // Diffs are defined as any v1beta1.ModuleTemplate that is available in the skrList but not in the kcpList.
 func (c *RemoteCatalog) diffsToDelete(
-	skrList *v1beta1.ModuleTemplateList, kcpList *v1beta1.ModuleTemplateList,
+	skrList []v1beta1.ModuleTemplate, kcpList []v1beta1.ModuleTemplate,
 ) []*v1beta1.ModuleTemplate {
-	kcp := kcpList.Items
-	skr := skrList.Items
-	toDelete := make([]*v1beta1.ModuleTemplate, 0, len(skrList.Items))
-	presentInKCP := make(map[string]struct{}, len(kcp))
-	for i := range kcp {
-		presentInKCP[kcp[i].Namespace+kcp[i].Name] = struct{}{}
+	toDelete := make([]*v1beta1.ModuleTemplate, 0, len(skrList))
+	presentInKCP := make(map[string]struct{}, len(kcpList))
+	for i := range kcpList {
+		presentInKCP[kcpList[i].Namespace+kcpList[i].Name] = struct{}{}
 	}
-	for i := range skr {
-		if _, inKCP := presentInKCP[skr[i].Namespace+skr[i].Name]; !inKCP {
-			toDelete = append(toDelete, &skr[i])
+	for i := range skrList {
+		if _, inKCP := presentInKCP[skrList[i].Namespace+skrList[i].Name]; !inKCP {
+			toDelete = append(toDelete, &skrList[i])
 		}
 	}
 	return toDelete

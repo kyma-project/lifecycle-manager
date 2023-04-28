@@ -11,7 +11,7 @@ import (
 func InitConditions(kyma *v1beta1.Kyma, watcherEnabled bool) {
 	removeDeprecatedConditions(kyma)
 	// Add required Conditions
-	for _, cond := range v1beta1.GetRequiredConditionTypes(kyma.Spec.Sync.Enabled, watcherEnabled) {
+	for _, cond := range v1beta1.GetRequiredConditionTypes(kyma.SyncEnabled(), watcherEnabled) {
 		kyma.UpdateCondition(cond, metav1.ConditionFalse)
 	}
 }
