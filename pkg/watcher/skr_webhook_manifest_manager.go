@@ -31,7 +31,7 @@ type SkrWebhookManagerConfig struct {
 	// SKRWatcherPath represents the path of the webhook resources
 	// to be installed on SKR clusters upon reconciling kyma CRs.
 	SKRWatcherPath         string
-	SkrWatcherImage    string
+	SkrWatcherImage        string
 	SkrWebhookMemoryLimits string
 	SkrWebhookCPULimits    string
 	// IstioNamespace represents the cluster resource namepsace of istio

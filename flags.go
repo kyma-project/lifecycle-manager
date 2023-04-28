@@ -80,7 +80,9 @@ func defineFlagVar() *FlagVar {
 	flag.IntVar(&flagVar.listenerHTTPPortLocalMapping, "listener-http-local-mapping", defaultListenerPort,
 		"Port that is mapped to HTTP port of the local k3d cluster using --port 9080:80@loadbalancer when "+
 			"creating the KCP cluster")
-	flag.StringVar(&flagVar.skrWatcherImage, "skr-watcher-image", "", "Image of the SKR watcher")
+	flag.StringVar(&flagVar.skrWatcherImage, "skr-watcher-image", "", `Image of the SKR watcher 
+		defaults to "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher-skr:latest" when left empty. 
+		Used mainly for the watcher e2e testing`)
 	flag.BoolVar(&flagVar.pprof, "pprof", false, "Whether to start up a pprof server.")
 	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
 		"Timeout of Read / Write for the pprof server.")

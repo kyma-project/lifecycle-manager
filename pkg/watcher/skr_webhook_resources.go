@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 
-
 	"github.com/go-logr/logr"
 
 	registrationV1 "k8s.io/api/admissionregistration/v1"
