@@ -11,9 +11,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/partial"
 	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
-	"github.com/google/go-containerregistry/pkg/v1/partial"
-	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"

@@ -7,8 +7,6 @@ import (
 
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
