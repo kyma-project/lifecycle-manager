@@ -139,6 +139,7 @@ func generateModuleStatus(module *common.Module) v1beta2.ModuleStatus {
 	if module.Template.Err != nil {
 		return v1beta2.ModuleStatus{
 			Name:    module.ModuleName,
+			Channel: module.Template.DesiredChannel,
 			FQDN:    module.FQDN,
 			State:   v1beta2.StateError,
 			Message: module.Template.Err.Error(),

@@ -25,8 +25,9 @@ var (
 
 type ModuleTemplateTO struct {
 	*v1beta2.ModuleTemplate
-	Outdated bool
-	Err      error
+	Outdated       bool
+	Err            error
+	DesiredChannel string
 }
 
 type ModuleTemplatesByModuleName map[string]ModuleTemplateTO
@@ -171,6 +172,7 @@ func (c *TemplateLookup) WithContext(ctx context.Context) ModuleTemplateTO {
 	if err != nil {
 		return ModuleTemplateTO{
 			ModuleTemplate: nil,
+			DesiredChannel: desiredChannel,
 			Outdated:       false,
 			Err:            err,
 		}
@@ -183,6 +185,7 @@ func (c *TemplateLookup) WithContext(ctx context.Context) ModuleTemplateTO {
 		return ModuleTemplateTO{
 			ModuleTemplate: nil,
 			Outdated:       false,
+			DesiredChannel: desiredChannel,
 			Err: fmt.Errorf(
 				"no channel found on template for module: %s: %w",
 				c.module.Name, ErrNotDefaultChannelAllowed,
@@ -210,6 +213,7 @@ func (c *TemplateLookup) WithContext(ctx context.Context) ModuleTemplateTO {
 	return ModuleTemplateTO{
 		ModuleTemplate: template,
 		Outdated:       false,
+		DesiredChannel: desiredChannel,
 		Err:            nil,
 	}
 }
