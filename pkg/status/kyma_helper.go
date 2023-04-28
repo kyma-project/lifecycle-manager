@@ -56,7 +56,7 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 	if k.isManagedKyma {
 		fieldOwner = v1beta2.OperatorName
 	}
-	if err := k.Patch(ctx, kyma, client.Apply, subResourceOpts(client.ForceOwnership),
+	if err := k.Patch(ctx, kyma, client.Apply, SubResourceOpts(client.ForceOwnership),
 		client.FieldOwner(fieldOwner)); err != nil {
 		return fmt.Errorf("status could not be updated: %w", err)
 	}
@@ -68,6 +68,6 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 	return nil
 }
 
-func subResourceOpts(opts ...client.PatchOption) client.SubResourcePatchOption {
+func SubResourceOpts(opts ...client.PatchOption) client.SubResourcePatchOption {
 	return &client.SubResourcePatchOptions{PatchOptions: *(&client.PatchOptions{}).ApplyOptions(opts)}
 }

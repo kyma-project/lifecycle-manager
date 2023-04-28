@@ -40,9 +40,9 @@ type WatchableConfig struct {
 	StatusOnly bool              `json:"statusOnly"`
 }
 
-func generateWatchableConfigs(watchers []v1beta2.Watcher) map[string]WatchableConfig {
+func generateWatchableConfigs(watcherList *v1beta2.WatcherList) map[string]WatchableConfig {
 	chartCfg := make(map[string]WatchableConfig, 0)
-	for _, watcher := range watchers {
+	for _, watcher := range watcherList.Items {
 		statusOnly := watcher.Spec.Field == v1beta2.StatusField
 		chartCfg[watcher.GetModuleName()] = WatchableConfig{
 			Labels:     watcher.Spec.LabelsToWatch,
