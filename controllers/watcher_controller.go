@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -33,11 +34,11 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
-	watcherFinalizer       = "operator.kyma-project.io/watcher"
-	notFoundConditionIndex = -1
+	watcherFinalizer = "operator.kyma-project.io/watcher"
 )
 
 var (
@@ -174,7 +175,7 @@ func (r *WatcherReconciler) updateWatcherState(ctx context.Context, watcherCR *v
 
 func (r *WatcherReconciler) updateWatcherToErrState(ctx context.Context, watcherCR *v1beta2.Watcher, err error) error {
 	watcherCR.Status.State = v1beta2.WatcherStateError
-	watcherCR.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, v1beta2.ConditionFalse)
+	watcherCR.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, metav1.ConditionFalse)
 	r.EventRecorder.Event(watcherCR, "Warning", "WatcherStatusUpdate", err.Error())
 	// always return non nil err to requeue the CR for another reconciliation.
 	updateErr := r.updateWatcherStatusUsingSSA(ctx, watcherCR)
