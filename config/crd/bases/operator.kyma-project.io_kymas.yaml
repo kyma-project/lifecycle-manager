@@ -288,6 +288,10 @@ spec:
                               type: string
                           type: object
                       type: object
+                    message:
+                      description: Message is a human-readable message indicating
+                        details about the State.
+                      type: string
                     name:
                       description: Name defines the name of the Module in the Spec
                         that the status is used for. It can be any kind of Reference
@@ -613,6 +617,10 @@ spec:
                               type: string
                           type: object
                       type: object
+                    message:
+                      description: Message is a human-readable message indicating
+                        details about the State.
+                      type: string
                     name:
                       description: Name defines the name of the Module in the Spec
                         that the status is used for. It can be any kind of Reference

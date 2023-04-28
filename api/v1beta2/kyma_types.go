@@ -168,6 +168,9 @@ type ModuleStatus struct {
 	// Channel tracks the active Version of the Module.
 	Version string `json:"version"`
 
+	// Message is a human-readable message indicating details about the State.
+	Message string `json:"message,omitempty"`
+
 	// State of the Module in the currently tracked Generation
 	State State `json:"state"`
 }

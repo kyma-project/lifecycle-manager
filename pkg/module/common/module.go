@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -14,11 +15,10 @@ import (
 type (
 	Modules []*Module
 	Module  struct {
-		ModuleName       string
-		FQDN             string
-		Version          string
-		Template         *v1beta2.ModuleTemplate
-		TemplateOutdated bool
+		ModuleName string
+		FQDN       string
+		Version    string
+		Template   *channel.ModuleTemplateTO
 		client.Object
 	}
 )
@@ -60,7 +60,7 @@ func (m *Module) ApplyLabelsAndAnnotations(
 }
 
 func (m *Module) StateMismatchedWithModuleStatus(moduleStatus *v1beta2.ModuleStatus) bool {
-	templateStatusMismatch := m.TemplateOutdated &&
+	templateStatusMismatch := m.Template.Outdated &&
 		(moduleStatus.Template.Generation != m.Template.GetGeneration() ||
 			moduleStatus.Channel != m.Template.Spec.Channel)
 	return templateStatusMismatch || moduleStatus.Manifest.GetGeneration() != m.GetGeneration()

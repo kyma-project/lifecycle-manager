@@ -263,8 +263,8 @@ func (c *TemplateLookup) getTemplate(ctx context.Context, desiredChannel string)
 		return nil, NewMoreThanOneTemplateCandidateErr(c.module, templateList.Items)
 	}
 	if len(filteredTemplates) == 0 {
-		return nil, fmt.Errorf("no templates found in channel %s: %w", desiredChannel,
-			ErrNoTemplatesInListResult)
+		return nil, fmt.Errorf("no templates found in channel %s for module %s: %w",
+			desiredChannel, moduleIdentifier, ErrNoTemplatesInListResult)
 	}
 	return &filteredTemplates[0], nil
 }

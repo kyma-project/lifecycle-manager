@@ -49,23 +49,7 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 	kyma *v1beta2.Kyma,
 	templates channel.ModuleTemplatesByModuleName,
 	verification signature.Verification,
-) (common.Modules, error) {
-	// these are the actual modules
-	modules, err := p.templatesToModules(ctx, kyma, templates,
-		&ModuleConversionSettings{Verification: verification})
-	if err != nil {
-		return nil, fmt.Errorf("cannot convert templates: %w", err)
-	}
-
-	return modules, nil
-}
-
-func (p *Parser) templatesToModules(
-	ctx context.Context,
-	kyma *v1beta2.Kyma,
-	templates channel.ModuleTemplatesByModuleName,
-	settings *ModuleConversionSettings,
-) (common.Modules, error) {
+) common.Modules {
 	// First, we fetch the module spec from the template and use it to resolve it into an arbitrary object
 	// (since we do not know which module we are dealing with)
 	modules := make(common.Modules, 0)
@@ -73,11 +57,20 @@ func (p *Parser) templatesToModules(
 	for _, module := range kyma.Spec.Modules {
 		template := templates[module.Name]
 		if template.Err != nil {
+			modules = append(modules, &common.Module{
+				ModuleName: module.Name,
+				Template:   &template,
+			})
 			continue
 		}
 		descriptor, err := template.Spec.GetDescriptor()
 		if err != nil {
-			return nil, err
+			template.Err = err
+			modules = append(modules, &common.Module{
+				ModuleName: module.Name,
+				Template:   &template,
+			})
+			continue
 		}
 		fqdn := descriptor.GetName()
 		version := descriptor.GetVersion()
@@ -93,24 +86,28 @@ func (p *Parser) templatesToModules(
 		var obj client.Object
 		if obj, err = p.newManifestFromTemplate(ctx, module,
 			template.ModuleTemplate,
-			settings.Verification); err != nil {
-			return nil, err
+			verification); err != nil {
+			template.Err = err
+			modules = append(modules, &common.Module{
+				ModuleName: module.Name,
+				Template:   &template,
+			})
+			continue
 		}
 		// we name the manifest after the module name
 		obj.SetName(name)
 		// to have correct owner references, the manifest must always have the same namespace as kyma
 		obj.SetNamespace(kyma.GetNamespace())
 		modules = append(modules, &common.Module{
-			ModuleName:       module.Name,
-			FQDN:             fqdn,
-			Version:          version,
-			Template:         template.ModuleTemplate,
-			TemplateOutdated: template.Outdated,
-			Object:           obj,
+			ModuleName: module.Name,
+			FQDN:       fqdn,
+			Version:    version,
+			Template:   &template,
+			Object:     obj,
 		})
 	}
 
-	return modules, nil
+	return modules
 }
 
 func (p *Parser) newManifestFromTemplate(

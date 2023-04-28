@@ -44,6 +44,10 @@ func (r *RunnerImpl) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	results := make(chan error, len(modules))
 	for _, module := range modules {
 		go func(module *common.Module) {
+			if module.Template.Err != nil {
+				results <- nil
+				return
+			}
 			if err := r.updateManifests(ctx, kyma, module); err != nil {
 				results <- fmt.Errorf("could not update module %s: %w", module.GetName(), err)
 				return
@@ -121,29 +125,42 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(
 
 	for idx := range modules {
 		module := modules[idx]
-		manifestAPIVersion, manifestKind := module.Object.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
-		templateAPIVersion, templateKind := module.Template.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
-		latestModuleStatus := v1beta2.ModuleStatus{
-			Name:    module.ModuleName,
-			FQDN:    module.FQDN,
-			State:   stateFromManifest(module.Object),
-			Channel: module.Template.Spec.Channel,
-			Version: module.Version,
-			Manifest: v1beta2.TrackingObject{
-				PartialMeta: v1beta2.PartialMetaFromObject(module.Object),
-				TypeMeta:    metav1.TypeMeta{Kind: manifestKind, APIVersion: manifestAPIVersion},
-			},
-			Template: v1beta2.TrackingObject{
-				PartialMeta: v1beta2.PartialMetaFromObject(module.Template),
-				TypeMeta:    metav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
-			},
-		}
+		latestModuleStatus := generateModuleStatus(module)
 		moduleStatus, exists := moduleStatusMap[module.ModuleName]
 		if exists {
 			*moduleStatus = latestModuleStatus
 		} else {
 			kyma.Status.Modules = append(kyma.Status.Modules, latestModuleStatus)
 		}
+	}
+}
+
+func generateModuleStatus(module *common.Module) v1beta2.ModuleStatus {
+	if module.Template.Err != nil {
+		return v1beta2.ModuleStatus{
+			Name:    module.ModuleName,
+			FQDN:    module.FQDN,
+			State:   v1beta2.StateError,
+			Message: module.Template.Err.Error(),
+		}
+	}
+
+	manifestAPIVersion, manifestKind := module.Object.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
+	templateAPIVersion, templateKind := module.Template.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
+	return v1beta2.ModuleStatus{
+		Name:    module.ModuleName,
+		FQDN:    module.FQDN,
+		State:   stateFromManifest(module.Object),
+		Channel: module.Template.Spec.Channel,
+		Version: module.Version,
+		Manifest: v1beta2.TrackingObject{
+			PartialMeta: v1beta2.PartialMetaFromObject(module.Object),
+			TypeMeta:    metav1.TypeMeta{Kind: manifestKind, APIVersion: manifestAPIVersion},
+		},
+		Template: v1beta2.TrackingObject{
+			PartialMeta: v1beta2.PartialMetaFromObject(module.Template),
+			TypeMeta:    metav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
+		},
 	}
 }
 

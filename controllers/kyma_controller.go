@@ -406,13 +406,7 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 		return nil, err
 	}
 	parser := parse.NewParser(r.Client, r.ComponentDescriptorCache, r.InKCPMode)
-	// these are the actual modules
-	modules, err := parser.GenerateModulesFromTemplates(ctx, kyma, templates, verification)
-	if err != nil {
-		return nil, fmt.Errorf("cannot generate modules: %w", err)
-	}
-
-	return modules, nil
+	return parser.GenerateModulesFromTemplates(ctx, kyma, templates, verification), nil
 }
 
 func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma *v1beta2.Kyma) error {
