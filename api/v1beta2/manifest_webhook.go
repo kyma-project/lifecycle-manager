@@ -25,5 +25,3 @@ func (manifest *Manifest) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		For(manifest).
 		Complete()
 }
-
-// TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!

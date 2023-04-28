@@ -31,6 +31,8 @@ const (
 	// SkipReconcileLabel indicates this specific resource will be skipped during reconciliation.
 	SkipReconcileLabel = OperatorPrefix + Separator + "skip-reconciliation"
 	UnmanagedKyma      = "unmanaged-kyma"
+	InternalLabel      = OperatorPrefix + Separator + "internal"
+	BetaLabel          = OperatorPrefix + Separator + "beta"
 )
 
 func ModuleTemplatesByLabel(module *Module) client.MatchingLabels {
