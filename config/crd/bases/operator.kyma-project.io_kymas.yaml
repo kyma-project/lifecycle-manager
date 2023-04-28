@@ -357,10 +357,8 @@ spec:
                       description: Channel tracks the active Version of the Module.
                       type: string
                   required:
-                  - fqdn
                   - name
                   - state
-                  - version
                   type: object
                 type: array
               state:
@@ -686,10 +684,8 @@ spec:
                       description: Channel tracks the active Version of the Module.
                       type: string
                   required:
-                  - fqdn
                   - name
                   - state
-                  - version
                   type: object
                 type: array
               state:

@@ -151,7 +151,7 @@ type ModuleStatus struct {
 	// FQDN is the fully qualified domain name of the module.
 	// In the ModuleTemplate it is located in .spec.descriptor.component.name of the ModuleTemplate
 	// FQDN is used to calculate Namespace and Name of the Manifest for tracking.
-	FQDN string `json:"fqdn"`
+	FQDN string `json:"fqdn,omitempty"`
 
 	// Manifest contains the Information of a related Manifest
 	Manifest TrackingObject `json:"manifest,omitempty"`
@@ -159,14 +159,14 @@ type ModuleStatus struct {
 	// It contains information about the last parsed ModuleTemplate in Context of the Installation.
 	// This will update when Channel or the ModuleTemplate is changed.
 	// +optional
-	Template TrackingObject `json:"template"`
+	Template TrackingObject `json:"template,omitempty"`
 
 	// Channel tracks the active Channel of the Module. In Case it changes, the new Channel will have caused
 	// a new lookup to be necessary that maybe picks a different ModuleTemplate, which is why we need to reconcile.
 	Channel string `json:"channel,omitempty"`
 
 	// Channel tracks the active Version of the Module.
-	Version string `json:"version"`
+	Version string `json:"version,omitempty"`
 
 	// Message is a human-readable message indicating details about the State.
 	Message string `json:"message,omitempty"`
