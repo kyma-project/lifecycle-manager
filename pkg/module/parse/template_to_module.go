@@ -75,14 +75,7 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 		fqdn := descriptor.GetName()
 		version := descriptor.GetVersion()
 		name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
-		// if the default data does not contain a name, default it to the module name
-		if template.ModuleTemplate.Spec.Data.GetName() == "" {
-			template.ModuleTemplate.Spec.Data.SetName(name)
-		}
-		// if the default data does not contain a namespace, default it to the kyma namespace
-		if template.ModuleTemplate.Spec.Data.GetNamespace() == "" {
-			template.ModuleTemplate.Spec.Data.SetNamespace(kyma.GetNamespace())
-		}
+		overwriteNameAndNamespace(&template, name, kyma.Namespace)
 		var obj client.Object
 		if obj, err = p.newManifestFromTemplate(ctx, module,
 			template.ModuleTemplate,
@@ -108,6 +101,17 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 	}
 
 	return modules
+}
+
+func overwriteNameAndNamespace(template *channel.ModuleTemplateTO, name, namespace string) {
+	// if the default data does not contain a name, default it to the module name
+	if template.ModuleTemplate.Spec.Data.GetName() == "" {
+		template.ModuleTemplate.Spec.Data.SetName(name)
+	}
+	// if the default data does not contain a namespace, default it to the kyma namespace
+	if template.ModuleTemplate.Spec.Data.GetNamespace() == "" {
+		template.ModuleTemplate.Spec.Data.SetNamespace(namespace)
+	}
 }
 
 func (p *Parser) newManifestFromTemplate(
