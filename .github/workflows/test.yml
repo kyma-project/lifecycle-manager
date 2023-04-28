@@ -72,7 +72,7 @@ jobs:
       - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
         if: ${{ github.event_name == 'pull_request' }}
         run: |
-          cd config/manager && kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
+          cd config/manager && kustomize edit set image controller="europe-docker.pkg.dev/kyma-project/dev/lifecycle-manager:PR-${{ github.event.pull_request.number }}"
       - name: Set up k3d
         run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
       - id: kyma

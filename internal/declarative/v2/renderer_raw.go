@@ -115,7 +115,6 @@ func (r *RawRenderer) Render(_ context.Context, obj Object) ([]byte, error) {
 func (r *RawRenderer) RemovePrerequisites(ctx context.Context, obj Object) error {
 	crdLength := len(r.crds)
 	if crdLength == 0 {
-
 		return nil
 	}
 	status := obj.GetStatus()
