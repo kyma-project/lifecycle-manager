@@ -13,7 +13,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/index"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
@@ -32,15 +31,10 @@ type ModuleTemplate struct {
 type ModuleTemplatesByModuleName map[string]*ModuleTemplate
 
 func GetTemplates(
-	ctx context.Context, client client.Reader, kyma *v1beta2.Kyma,
+	ctx context.Context, kymaClient client.Reader, kyma *v1beta2.Kyma,
 ) (ModuleTemplatesByModuleName, error) {
 	logger := ctrlLog.FromContext(ctx)
 	templates := make(ModuleTemplatesByModuleName)
-
-	var runtimeClient client.Reader
-	if kyma.Spec.Sync.Enabled {
-		runtimeClient = remote.SyncContextFromContext(ctx).RuntimeClient
-	}
 
 	for _, module := range kyma.Spec.Modules {
 		var template *ModuleTemplate
@@ -49,7 +43,8 @@ func GetTemplates(
 		switch {
 		case module.RemoteModuleTemplateRef == "":
 			template, err = NewTemplateLookup(kymaClient, module, kyma.Spec.Channel).WithContext(ctx)
-		case kyma.Spec.Sync.Enabled:
+		case kyma.SyncEnabled():
+			runtimeClient := remote.SyncContextFromContext(ctx).RuntimeClient
 			originalModuleName := module.Name
 			module.Name = module.RemoteModuleTemplateRef // To search template with the Remote Ref
 			template, err = NewTemplateLookup(runtimeClient, module, kyma.Spec.Channel).WithContext(ctx)

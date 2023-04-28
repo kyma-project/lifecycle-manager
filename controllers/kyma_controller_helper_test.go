@@ -198,18 +198,10 @@ func getModule(kyma *v1beta2.Kyma, module v1beta2.Module) (*v1beta2.Manifest, er
 	)
 }
 
-func GetModuleTemplate(name string,
-	clnt client.Client,
-	kyma *v1beta2.Kyma,
-	remote bool,
-) (*v1beta2.ModuleTemplate, error) {
+func GetModuleTemplate(name string, clnt client.Client, kyma *v1beta2.Kyma) (*v1beta2.ModuleTemplate, error) {
 	moduleTemplateInCluster := &v1beta2.ModuleTemplate{}
 	moduleTemplateInCluster.SetNamespace(kyma.Namespace)
 	moduleTemplateInCluster.SetName(name)
-	if remote {
-		moduleTemplateInCluster.SetNamespace(kyma.Namespace)
-	}
-
 	err := clnt.Get(ctx, client.ObjectKeyFromObject(moduleTemplateInCluster), moduleTemplateInCluster)
 	if err != nil {
 		return nil, err
@@ -225,10 +217,10 @@ func KymaExists(clnt client.Client, name, namespace string) error {
 	return nil
 }
 
-func ModuleTemplatesExist(clnt client.Client, kyma *v1beta2.Kyma, remote bool) func() error {
+func ModuleTemplatesExist(clnt client.Client, kyma *v1beta2.Kyma) func() error {
 	return func() error {
 		for _, module := range kyma.Spec.Modules {
-			if _, err := GetModuleTemplate(module.Name, clnt, kyma, remote); err != nil {
+			if _, err := GetModuleTemplate(module.Name, clnt, kyma); err != nil {
 				return err
 			}
 		}
