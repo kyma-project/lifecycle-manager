@@ -18,7 +18,7 @@ commonLabels:
   app.kubernetes.io/managed-by: kustomize
 
 images:
-- name: eu.gcr.io/kyma-project/lifecycle-manager
+- name: europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager
 
 resources:
   - ../manager
