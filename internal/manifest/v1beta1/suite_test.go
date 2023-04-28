@@ -52,16 +52,17 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	k8sClient     client.Client                                       //nolint:gochecknoglobals
-	testEnv       *envtest.Environment                                //nolint:gochecknoglobals
-	k8sManager    ctrl.Manager                                        //nolint:gochecknoglobals
-	ctx           context.Context                                     //nolint:gochecknoglobals
-	cancel        context.CancelFunc                                  //nolint:gochecknoglobals
-	server        *httptest.Server                                    //nolint:gochecknoglobals
-	helmCacheRepo = filepath.Join(helmCacheHome, "repository")        //nolint:gochecknoglobals
-	helmRepoFile  = filepath.Join(helmCacheHome, "repositories.yaml") //nolint:gochecknoglobals
-	reconciler    *declarative.Reconciler                             //nolint:gochecknoglobals
-	cfg           *rest.Config                                        //nolint:gochecknoglobals
+	k8sClient       client.Client                                       //nolint:gochecknoglobals
+	testEnv         *envtest.Environment                                //nolint:gochecknoglobals
+	k8sManager      ctrl.Manager                                        //nolint:gochecknoglobals
+	ctx             context.Context                                     //nolint:gochecknoglobals
+	cancel          context.CancelFunc                                  //nolint:gochecknoglobals
+	server          *httptest.Server                                    //nolint:gochecknoglobals
+	helmCacheRepo   = filepath.Join(helmCacheHome, "repository")        //nolint:gochecknoglobals
+	helmRepoFile    = filepath.Join(helmCacheHome, "repositories.yaml") //nolint:gochecknoglobals
+	reconciler      *declarative.Reconciler                             //nolint:gochecknoglobals
+	cfg             *rest.Config                                        //nolint:gochecknoglobals
+	targetClusterFn declarative.ClusterFn                               //nolint:gochecknoglobals
 )
 
 const (
@@ -137,17 +138,16 @@ var _ = BeforeSuite(
 		k8sClient = k8sManager.GetClient()
 
 		kcp := &declarative.ClusterInfo{Config: cfg, Client: k8sClient}
+		targetClusterFn = func(_ context.Context, _ declarative.Object) (*declarative.ClusterInfo, error) {
+			return &declarative.ClusterInfo{Config: authUser.Config()}, nil
+		}
 		reconciler = declarative.NewFromManager(
 			k8sManager, &v1beta1.Manifest{},
 			declarative.WithSpecResolver(
 				internalv1beta1.NewManifestSpecResolver(kcp, codec),
 			),
 			declarative.WithPermanentConsistencyCheck(true),
-			declarative.WithRemoteTargetCluster(
-				func(_ context.Context, _ declarative.Object) (*declarative.ClusterInfo, error) {
-					return &declarative.ClusterInfo{Config: authUser.Config()}, nil
-				},
-			),
+			declarative.WithRemoteTargetCluster(targetClusterFn),
 			internalv1beta1.WithClientCacheKey(),
 			declarative.WithPostRun{internalv1beta1.PostRunCreateCR},
 			declarative.WithPreDelete{internalv1beta1.PreDeleteDeleteCR},

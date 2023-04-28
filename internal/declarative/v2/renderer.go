@@ -7,10 +7,7 @@ import (
 	"k8s.io/cli-runtime/pkg/resource"
 )
 
-var (
-	ErrConditionsNotYetRegistered = errors.New("conditions have not yet been registered in status")
-	ErrPrerequisitesNotFulfilled  = errors.New("prerequisites for installation are not fulfilled")
-)
+var ErrConditionsNotYetRegistered = errors.New("conditions have not yet been registered in status")
 
 type Prerequisites []*resource.Info
 
@@ -26,9 +23,7 @@ type Renderer interface {
 type RenderMode string
 
 const (
-	RenderModeHelm      RenderMode = "helm"
-	RenderModeKustomize RenderMode = "kustomize"
-	RenderModeRaw       RenderMode = "raw"
+	RenderModeRaw RenderMode = "raw"
 )
 
 func InitializeRenderer(
@@ -41,12 +36,6 @@ func InitializeRenderer(
 	var renderer Renderer
 
 	switch spec.Mode {
-	case RenderModeHelm:
-		renderer = NewHelmRenderer(spec, client, options)
-		renderer = WrapWithRendererCache(renderer, spec, options)
-	case RenderModeKustomize:
-		renderer = NewKustomizeRenderer(spec, options)
-		renderer = WrapWithRendererCache(renderer, spec, options)
 	case RenderModeRaw:
 		renderer = NewRawRenderer(spec, client, options)
 	}

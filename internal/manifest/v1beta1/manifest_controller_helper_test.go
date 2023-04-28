@@ -7,8 +7,9 @@ import (
 	"io/fs"
 	"net/url"
 	"os"
-	"os/user"
-	"path/filepath"
+
+	"github.com/google/go-containerregistry/pkg/v1/partial"
+	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
 	"github.com/google/go-containerregistry/pkg/v1/partial"
 	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
@@ -24,8 +25,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
-	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -105,40 +104,6 @@ func NewTestManifest(prefix string) *v1beta1.Manifest {
 				v1beta1.KymaName: string(uuid.NewUUID()),
 			},
 		},
-	}
-}
-
-func deleteHelmChartResources(imageSpec v1beta1.ImageSpec) {
-	chartYamlPath := filepath.Join(internalv1beta1.GetFsChartPath(imageSpec), "Chart.yaml")
-	Expect(os.RemoveAll(chartYamlPath)).Should(Succeed())
-	valuesYamlPath := filepath.Join(internalv1beta1.GetFsChartPath(imageSpec), "values.yaml")
-	Expect(os.RemoveAll(valuesYamlPath)).Should(Succeed())
-	templatesPath := filepath.Join(internalv1beta1.GetFsChartPath(imageSpec), "templates")
-	Expect(os.RemoveAll(templatesPath)).Should(Succeed())
-}
-
-func verifyHelmResourcesDeletion(imageSpec v1beta1.ImageSpec) {
-	_, err := os.Stat(filepath.Join(internalv1beta1.GetFsChartPath(imageSpec), "Chart.yaml"))
-	Expect(os.IsNotExist(err)).To(BeTrue())
-	_, err = os.Stat(filepath.Join(internalv1beta1.GetFsChartPath(imageSpec), "values.yaml"))
-	Expect(os.IsNotExist(err)).To(BeTrue())
-	_, err = os.Stat(filepath.Join(internalv1beta1.GetFsChartPath(imageSpec), "templates"))
-	Expect(os.IsNotExist(err)).To(BeTrue())
-}
-
-func skipExpect() func() bool {
-	return func() bool {
-		return true
-	}
-}
-
-func expectHelmClientCacheExist(expectExist bool) func(cacheKey string) bool {
-	return func(cacheKey string) bool {
-		clnt := reconciler.ClientCache.GetClientFromCache(cacheKey)
-		if expectExist {
-			return clnt != nil
-		}
-		return clnt == nil
 	}
 }
 
@@ -236,35 +201,5 @@ func deleteManifestAndVerify(manifest *v1beta1.Manifest) func() error {
 		newManifest := v1beta1.Manifest{}
 		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(manifest), &newManifest)
 		return client.IgnoreNotFound(err)
-	}
-}
-
-func addInstallSpec(specBytes []byte) func(manifest *v1beta1.Manifest) error {
-	return func(manifest *v1beta1.Manifest) error {
-		return installManifest(manifest, specBytes, false)
-	}
-}
-
-func addInstallSpecWithFilePermission(
-	specBytes []byte,
-	remote bool, fileMode os.FileMode,
-) func(manifest *v1beta1.Manifest) error {
-	return func(manifest *v1beta1.Manifest) error {
-		currentUser, err := user.Current()
-		Expect(err).ToNot(HaveOccurred())
-		if currentUser.Username == "root" {
-			Skip("This test is not suitable for user with root privileges")
-		}
-		// should not be run as root user
-		Expect(currentUser.Username).ToNot(Equal("root"))
-		Expect(os.Chmod(kustomizeLocalPath, fileMode)).ToNot(HaveOccurred())
-		return installManifest(manifest, specBytes, remote)
-	}
-}
-
-func expectFileNotExistError() func() bool {
-	return func() bool {
-		_, err := os.Stat(filepath.Join(kustomizeLocalPath, ManifestDir))
-		return os.IsNotExist(err)
 	}
 }

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
 	"reflect"
 
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
@@ -14,10 +13,6 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	"helm.sh/helm/v3/pkg/cli"
-	"helm.sh/helm/v3/pkg/downloader"
-	"helm.sh/helm/v3/pkg/getter"
-	"helm.sh/helm/v3/pkg/repo"
 	"helm.sh/helm/v3/pkg/strvals"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -80,12 +75,8 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object)
 
 	var mode declarative.RenderMode
 	switch specType {
-	case v1beta1.HelmChartType:
-		mode = declarative.RenderModeHelm
 	case v1beta1.OciRefType:
 		mode = declarative.RenderModeRaw
-	case v1beta1.KustomizeType:
-		mode = declarative.RenderModeKustomize
 	case v1beta1.NilRefType:
 		return nil, fmt.Errorf("could not determine render mode for %s: %w",
 			client.ObjectKeyFromObject(manifest), ErrRenderModeInvalid)
@@ -99,13 +90,6 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object)
 	path := chartInfo.ChartPath
 	if path == "" && chartInfo.URL != "" {
 		path = chartInfo.URL
-
-		if mode == declarative.RenderModeHelm {
-			path, err = m.downloadAndCacheHelmChart(chartInfo)
-			if err != nil {
-				return nil, err
-			}
-		}
 	}
 
 	return &declarative.Spec{
@@ -114,33 +98,6 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object)
 		Values:       values,
 		Mode:         mode,
 	}, nil
-}
-
-func (m *ManifestSpecResolver) downloadAndCacheHelmChart(chartInfo *ChartInfo) (string, error) {
-	filename := filepath.Join(m.ChartCache, chartInfo.ChartName)
-
-	if cachedChart, ok := m.cachedCharts[filename]; !ok {
-		getters := getter.All(cli.New())
-		chart, err := repo.FindChartInRepoURL(
-			chartInfo.URL,
-			chartInfo.ChartName, "", "", "", "", getters,
-		)
-		if err != nil {
-			return "", err
-		}
-		cachedChart, _, err := (&downloader.ChartDownloader{Getters: getters}).DownloadTo(
-			chart, "", m.ChartCache,
-		)
-		if err != nil {
-			return "", err
-		}
-		m.cachedCharts[filename] = cachedChart
-		filename = cachedChart
-	} else {
-		filename = cachedChart
-	}
-
-	return filename, nil
 }
 
 func (m *ManifestSpecResolver) getValuesFromConfig(
@@ -212,17 +169,6 @@ func (m *ManifestSpecResolver) getChartInfoForInstall(
 ) (*ChartInfo, error) {
 	var err error
 	switch specType {
-	case v1beta1.HelmChartType:
-		var helmChartSpec v1beta1.HelmChartSpec
-		if err = m.Codec.Decode(install.Source.Raw, &helmChartSpec, specType); err != nil {
-			return nil, err
-		}
-
-		return &ChartInfo{
-			ChartName: helmChartSpec.ChartName,
-			RepoName:  install.Name,
-			URL:       helmChartSpec.URL,
-		}, nil
 	case v1beta1.OciRefType:
 		var imageSpec v1beta1.ImageSpec
 		if err = m.Codec.Decode(install.Source.Raw, &imageSpec, specType); err != nil {
@@ -238,17 +184,6 @@ func (m *ManifestSpecResolver) getChartInfoForInstall(
 		return &ChartInfo{
 			ChartName: install.Name,
 			ChartPath: rawManifestPath,
-		}, nil
-	case v1beta1.KustomizeType:
-		var kustomizeSpec v1beta1.KustomizeSpec
-		if err = m.Codec.Decode(install.Source.Raw, &kustomizeSpec, specType); err != nil {
-			return nil, err
-		}
-
-		return &ChartInfo{
-			ChartName: install.Name,
-			ChartPath: kustomizeSpec.Path,
-			URL:       kustomizeSpec.URL,
 		}, nil
 	case v1beta1.NilRefType:
 		return nil, ErrEmptyInstallType

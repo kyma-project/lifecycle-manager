@@ -454,8 +454,7 @@ spec:
                     description: Name specifies a unique install name for Manifest
                     type: string
                   source:
-                    description: Source can either be described as ImageSpec, HelmChartSpec
-                      or KustomizeSpec
+                    description: Source can be described as ImageSpec
                     type: object
                     x-kubernetes-preserve-unknown-fields: true
                 required:

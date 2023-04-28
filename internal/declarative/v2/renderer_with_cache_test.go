@@ -44,7 +44,7 @@ func TestWrapWithRendererCache(t *testing.T) {
 			ManifestName: "test-manifest",
 			Path:         "test-path",
 			Values:       map[string]any{"test-key": "test-value"},
-			Mode:         RenderModeHelm,
+			Mode:         RenderModeRaw,
 		},
 	}
 	tests := []struct {
