@@ -33,13 +33,8 @@ func InitializeRenderer(
 	client Client,
 	options *Options,
 ) (Renderer, error) {
-	var renderer Renderer
 
-	switch spec.Mode {
-	case RenderModeRaw:
-		renderer = NewRawRenderer(spec, client, options)
-	}
-
+	renderer := NewRawRenderer(spec, client, options)
 	if err := renderer.Initialize(obj); err != nil {
 		return nil, err
 	}
