@@ -170,8 +170,8 @@ const (
 	VirtualServiceNotConfiguredConditionMessage WatcherConditionMessage = "VirtualService is not configured"
 )
 
-func (w *Watcher) InitializeConditions() {
-	w.Status.Conditions = []metav1.Condition{{
+func (watcher *Watcher) InitializeConditions() {
+	watcher.Status.Conditions = []metav1.Condition{{
 		Type:               string(WatcherConditionTypeVirtualService),
 		Status:             metav1.ConditionUnknown,
 		Message:            string(VirtualServiceNotConfiguredConditionMessage),
@@ -180,7 +180,7 @@ func (w *Watcher) InitializeConditions() {
 	}}
 }
 
-func (w *Watcher) UpdateWatcherConditionStatus(conditionType WatcherConditionType,
+func (watcher *Watcher) UpdateWatcherConditionStatus(conditionType WatcherConditionType,
 	conditionStatus metav1.ConditionStatus,
 ) {
 	newCondition := metav1.Condition{
@@ -198,5 +198,5 @@ func (w *Watcher) UpdateWatcherConditionStatus(conditionType WatcherConditionTyp
 	default:
 		newCondition.Message = string(VirtualServiceNotConfiguredConditionMessage)
 	}
-	meta.SetStatusCondition(&w.Status.Conditions, newCondition)
+	meta.SetStatusCondition(&watcher.Status.Conditions, newCondition)
 }
