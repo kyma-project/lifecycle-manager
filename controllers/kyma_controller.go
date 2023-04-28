@@ -192,8 +192,12 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta1.Ky
 		return fmt.Errorf("could not aggregate module templates for module catalog sync: %w", err)
 	}
 
-	//TODO: Filter by SyncEnabled() property
-	modulesToSync := moduleTemplateList.Items
+	modulesToSync := []v1beta1.ModuleTemplate{}
+	for _, mt := range moduleTemplateList.Items {
+		if mt.SyncEnabled() {
+			modulesToSync = append(modulesToSync, mt)
+		}
+	}
 
 	if err := remote.NewRemoteCatalogFromKyma(kyma).CreateOrUpdate(ctx, modulesToSync); err != nil {
 		return fmt.Errorf("could not synchronize remote module catalog: %w", err)
