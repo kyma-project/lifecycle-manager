@@ -72,10 +72,8 @@ func (p *Parser) templatesToModules(
 
 	for _, module := range kyma.Spec.Modules {
 		template := templates[module.Name]
-		if template == nil {
-			return nil, fmt.Errorf("could not resolve template for module %s in %s: %w",
-				module.Name, client.ObjectKeyFromObject(kyma), ErrTemplateNotFound,
-			)
+		if template.Err != nil {
+			continue
 		}
 		descriptor, err := template.Spec.GetDescriptor()
 		if err != nil {

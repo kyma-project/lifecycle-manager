@@ -23,39 +23,35 @@ var (
 	ErrInvalidRemoteModuleConfiguration = errors.New("invalid remote module template configuration")
 )
 
-type ModuleTemplate struct {
+type ModuleTemplateTO struct {
 	*v1beta2.ModuleTemplate
 	Outdated bool
+	Err      error
 }
 
-type ModuleTemplatesByModuleName map[string]*ModuleTemplate
+type ModuleTemplatesByModuleName map[string]ModuleTemplateTO
 
 func GetTemplates(
 	ctx context.Context, kymaClient client.Reader, kyma *v1beta2.Kyma,
-) (ModuleTemplatesByModuleName, error) {
+) ModuleTemplatesByModuleName {
 	logger := ctrlLog.FromContext(ctx)
 	templates := make(ModuleTemplatesByModuleName)
 
 	for _, module := range kyma.Spec.Modules {
-		var template *ModuleTemplate
-		var err error
+		var template ModuleTemplateTO
 
 		switch {
 		case module.RemoteModuleTemplateRef == "":
-			template, err = NewTemplateLookup(kymaClient, module, kyma.Spec.Channel).WithContext(ctx)
+			template = NewTemplateLookup(kymaClient, module, kyma.Spec.Channel).WithContext(ctx)
 		case kyma.SyncEnabled():
 			runtimeClient := remote.SyncContextFromContext(ctx).RuntimeClient
 			originalModuleName := module.Name
 			module.Name = module.RemoteModuleTemplateRef // To search template with the Remote Ref
-			template, err = NewTemplateLookup(runtimeClient, module, kyma.Spec.Channel).WithContext(ctx)
+			template = NewTemplateLookup(runtimeClient, module, kyma.Spec.Channel).WithContext(ctx)
 			module.Name = originalModuleName
 		default:
-			return nil, fmt.Errorf("enable sync to use a remote module template for %s: %w", module.Name,
+			template.Err = fmt.Errorf("enable sync to use a remote module template for %s: %w", module.Name,
 				ErrInvalidRemoteModuleConfiguration)
-		}
-
-		if err != nil {
-			return nil, err
 		}
 
 		templates[module.Name] = template
@@ -63,17 +59,18 @@ func GetTemplates(
 
 	CheckForOutdatedTemplates(logger, kyma, templates)
 
-	return templates, nil
+	return templates
 }
 
-func CheckForOutdatedTemplates(logger logr.Logger, k *v1beta2.Kyma, templates ModuleTemplatesByModuleName) {
+func CheckForOutdatedTemplates(logger logr.Logger, kyma *v1beta2.Kyma, templates ModuleTemplatesByModuleName) {
 	// in the case that the kyma spec did not change, we only have to verify
 	// that all desired templates are still referenced in the latest spec generation
 	for moduleName, moduleTemplate := range templates {
-		for i := range k.Status.Modules {
-			moduleStatus := &k.Status.Modules[i]
-			if moduleStatus.FQDN == moduleName && moduleTemplate != nil {
-				CheckForOutdatedTemplate(logger, moduleTemplate, moduleStatus)
+		moduleTemplate := moduleTemplate
+		for i := range kyma.Status.Modules {
+			moduleStatus := &kyma.Status.Modules[i]
+			if moduleStatus.FQDN == moduleName && moduleTemplate.ModuleTemplate != nil {
+				CheckForOutdatedTemplate(logger, &moduleTemplate, moduleStatus)
 			}
 		}
 	}
@@ -85,7 +82,7 @@ func CheckForOutdatedTemplates(logger logr.Logger, k *v1beta2.Kyma, templates Mo
 // 1. If the generation of ModuleTemplate changes, it means the spec is outdated
 // 2. If the channel of ModuleTemplate changes, it means the kyma has an old reference to a previous channel.
 func CheckForOutdatedTemplate(
-	logger logr.Logger, moduleTemplate *ModuleTemplate, moduleStatus *v1beta2.ModuleStatus,
+	logger logr.Logger, moduleTemplate *ModuleTemplateTO, moduleStatus *v1beta2.ModuleStatus,
 ) {
 	checkLog := logger.WithValues("module", moduleStatus.FQDN,
 		"template", moduleTemplate.Name,
@@ -148,7 +145,7 @@ func CheckForOutdatedTemplate(
 }
 
 type Lookup interface {
-	WithContext(ctx context.Context) (*ModuleTemplate, error)
+	WithContext(ctx context.Context) (*ModuleTemplateTO, error)
 }
 
 func NewTemplateLookup(client client.Reader, module v1beta2.Module,
@@ -167,22 +164,30 @@ type TemplateLookup struct {
 	defaultChannel string
 }
 
-func (c *TemplateLookup) WithContext(ctx context.Context) (*ModuleTemplate, error) {
+func (c *TemplateLookup) WithContext(ctx context.Context) ModuleTemplateTO {
 	desiredChannel := c.getDesiredChannel()
 
 	template, err := c.getTemplate(ctx, desiredChannel)
 	if err != nil {
-		return nil, err
+		return ModuleTemplateTO{
+			ModuleTemplate: nil,
+			Outdated:       false,
+			Err:            err,
+		}
 	}
 
 	actualChannel := template.Spec.Channel
 
 	// ModuleTemplates without a Channel are not allowed
 	if actualChannel == "" {
-		return nil, fmt.Errorf(
-			"no channel found on template for module: %s: %w",
-			c.module.Name, ErrNotDefaultChannelAllowed,
-		)
+		return ModuleTemplateTO{
+			ModuleTemplate: nil,
+			Outdated:       false,
+			Err: fmt.Errorf(
+				"no channel found on template for module: %s: %w",
+				c.module.Name, ErrNotDefaultChannelAllowed,
+			),
+		}
 	}
 
 	logger := ctrlLog.FromContext(ctx)
@@ -202,10 +207,11 @@ func (c *TemplateLookup) WithContext(ctx context.Context) (*ModuleTemplate, erro
 		)
 	}
 
-	return &ModuleTemplate{
+	return ModuleTemplateTO{
 		ModuleTemplate: template,
 		Outdated:       false,
-	}, nil
+		Err:            nil,
+	}
 }
 
 func (c *TemplateLookup) getDesiredChannel() string {

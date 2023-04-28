@@ -394,10 +394,11 @@ func (r *KymaReconciler) UpdateStatusWithEventFromErr(
 }
 
 func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *v1beta2.Kyma) (common.Modules, error) {
-	// fetch templates
-	templates, err := channel.GetTemplates(ctx, r, kyma)
-	if err != nil {
-		return nil, fmt.Errorf("templates could not be fetched: %w", err)
+	templates := channel.GetTemplates(ctx, r, kyma)
+	for _, template := range templates {
+		if template.Err != nil {
+			r.Event(kyma, "Warning", string(ModuleReconciliationError), template.Err.Error())
+		}
 	}
 
 	verification, err := r.VerificationSettings.NewVerification(ctx, kyma.GetNamespace())
