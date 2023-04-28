@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/go-logr/logr"
+
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -80,7 +82,7 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta1.K
 	}
 	logger.V(log.DebugLevel).Info("Successfully created Certificate", "kyma", kymaObjKey)
 
-	resources, err := m.getSKRClientObjectsForInstall(ctx, syncContext.ControlPlaneClient, kymaObjKey, remoteNs)
+	resources, err := m.getSKRClientObjectsForInstall(ctx, syncContext.ControlPlaneClient, kymaObjKey, remoteNs, logger)
 	if err != nil {
 		return err
 	}
@@ -130,7 +132,7 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta1.Ky
 }
 
 func (m *SKRWebhookManifestManager) getSKRClientObjectsForInstall(ctx context.Context, kcpClient client.Client,
-	kymaObjKey client.ObjectKey, remoteNs string,
+	kymaObjKey client.ObjectKey, remoteNs string, logger logr.Logger,
 ) ([]client.Object, error) {
 	var skrClientObjects []client.Object
 	resourcesConfig, err := m.getUnstructuredResourcesConfig(ctx, kcpClient, kymaObjKey, remoteNs)
@@ -142,7 +144,7 @@ func (m *SKRWebhookManifestManager) getSKRClientObjectsForInstall(ctx context.Co
 		return nil, err
 	}
 	skrClientObjects = append(skrClientObjects, resources...)
-	watchableConfigs, err := getWatchableConfigs(ctx, kcpClient)
+	watchableConfigs, err := getWatchableConfigs(ctx, kcpClient, logger)
 	if err != nil {
 		return nil, err
 	}

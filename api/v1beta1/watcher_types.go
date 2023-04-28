@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -98,64 +99,42 @@ type WatcherStatus struct {
 	// +kubebuilder:validation:Optional
 	// +listType=map
 	// +listMapKey=type
-	Conditions []WatcherCondition `json:"conditions"`
+	Conditions []metav1.Condition `json:"conditions"`
 
 	// ObservedGeneration
 	// +kubebuilder:validation:Optional
 	ObservedGeneration int64 `json:"observedGeneration"`
 }
 
-// WatcherCondition describes condition information for Watcher.
-type WatcherCondition struct {
-	// Type is used to reflect what type of condition we are dealing with.
-	// Most commonly WatcherConditionTypeReady it is used as extension marker in the future.
-	Type WatcherConditionType `json:"type"`
-
-	// Status of the Watcher Condition.
-	// Value can be one of ("True", "False", "Unknown").
-	Status WatcherConditionStatus `json:"status"`
-
-	// Human-readable message indicating details about the last status transition.
-	// +kubebuilder:validation:Optional
-	Message string `json:"message"`
-
-	// Machine-readable text indicating the reason for the condition's last transition.
-	// +kubebuilder:validation:Optional
-	Reason string `json:"reason"`
-
-	// Timestamp for when Watcher last transitioned from one status to another.
-	// +kubebuilder:validation:Optional
-	LastTransitionTime *metav1.Time `json:"lastTransitionTime"`
-}
-
-// +kubebuilder:validation:Enum=Ready
 type WatcherConditionType string
 
 const (
-	// WatcherConditionTypeReady represents WatcherConditionType Ready,
-	// meaning as soon as its true we will reconcile Watcher into WatcherStateReady.
-	WatcherConditionTypeReady WatcherConditionType = "Ready"
+	// WatcherConditionTypeVirtualService represents WatcherConditionType VirtualService.
+	WatcherConditionTypeVirtualService WatcherConditionType = "VirtualService"
 )
 
-// +kubebuilder:validation:Enum=True;False;Unknown;
-type WatcherConditionStatus string
+// +kubebuilder:validation:Enum=Ready
 
-// Valid WatcherConditionStatus.
+type WatcherConditionReason string
+
 const (
-	// ConditionStatusTrue signifies WatcherConditionStatus true.
-	ConditionStatusTrue WatcherConditionStatus = "True"
+	// ReadyConditionReason will be set to `Ready` on all Conditions. If the Condition is actual ready,
+	// can be determined by the state.
+	ReadyConditionReason WatcherConditionReason = "Ready"
+)
 
-	// ConditionStatusFalse signifies WatcherConditionStatus false.
-	ConditionStatusFalse WatcherConditionStatus = "False"
+type WatcherConditionMessage string
 
-	// ConditionStatusUnknown signifies WatcherConditionStatus unknown.
-	ConditionStatusUnknown WatcherConditionStatus = "Unknown"
+const (
+	VirtualServiceConfiguredConditionMessage    WatcherConditionMessage = "VirtualService is configured"
+	VirtualServiceNotConfiguredConditionMessage WatcherConditionMessage = "VirtualService is not configured"
 )
 
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:storageversion
 // +kubebuilder:subresource:status
+
 // Watcher is the Schema for the watchers API.
 type Watcher struct {
 	metav1.TypeMeta `json:",inline"`
@@ -174,6 +153,37 @@ func (w *Watcher) GetModuleName() string {
 		return ""
 	}
 	return w.Labels[ManagedBy]
+}
+
+func (w *Watcher) InitializeConditions() {
+	w.Status.Conditions = []metav1.Condition{{
+		Type:               string(WatcherConditionTypeVirtualService),
+		Status:             metav1.ConditionUnknown,
+		Message:            string(VirtualServiceNotConfiguredConditionMessage),
+		Reason:             string(ReadyConditionReason),
+		LastTransitionTime: metav1.Now(),
+	}}
+}
+
+func (w *Watcher) UpdateWatcherConditionStatus(conditionType WatcherConditionType,
+	conditionStatus metav1.ConditionStatus,
+) {
+	newCondition := metav1.Condition{
+		Type:               string(conditionType),
+		Status:             conditionStatus,
+		Message:            string(VirtualServiceNotConfiguredConditionMessage),
+		Reason:             string(ReadyConditionReason),
+		LastTransitionTime: metav1.Now(),
+	}
+	switch conditionStatus {
+	case metav1.ConditionTrue:
+		newCondition.Message = string(VirtualServiceConfiguredConditionMessage)
+	case metav1.ConditionFalse, metav1.ConditionUnknown:
+		fallthrough
+	default:
+		newCondition.Message = string(VirtualServiceNotConfiguredConditionMessage)
+	}
+	meta.SetStatusCondition(&w.Status.Conditions, newCondition)
 }
 
 //+kubebuilder:object:root=true
