@@ -80,7 +80,7 @@ patchesStrategicMerge:
 # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'.
 # Uncomment 'CERTMANAGER' sections in crd/kustomization.yaml to enable the CA injection in the admission webhooks.
 # 'CERTMANAGER' needs to be enabled to use ca injection
-  - patches/webhook_configuration_cainjection.yaml
+#  - patches/webhook_configuration_cainjection.yaml
   # We override the certificate name to ensure that Cert-Manager uses a unique cert in conjunction with other
   # kubebuilder operators.
   - patches/unique_certificate_name.yaml
