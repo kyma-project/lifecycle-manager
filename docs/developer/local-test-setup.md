@@ -45,7 +45,7 @@ This setup is deployed with the following security features enabled:
 
 4. Deploy lifecycle-manager on the cluster:
     ```shell
-    make local-deploy-with-watcher IMG=eu.gcr.io/kyma-project/lifecycle-manager:latest
+    make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:latest
     ```
    > **Hint:** If you get similar errors like the following, please wait a couple of seconds and rerun the command.
    > ```shell
