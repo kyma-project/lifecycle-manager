@@ -178,6 +178,9 @@ func KCPModuleExistWithOverwrites(kyma *v1beta2.Kyma, module v1beta2.Module) str
 
 func getModule(kyma *v1beta2.Kyma, module v1beta2.Module) (*v1beta2.Manifest, error) {
 	for _, moduleStatus := range kyma.Status.Modules {
+		if moduleStatus.Manifest == nil {
+			continue
+		}
 		if moduleStatus.Name == module.Name {
 			component := &v1beta2.Manifest{}
 			err := controlPlaneClient.Get(

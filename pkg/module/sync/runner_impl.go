@@ -182,6 +182,9 @@ func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context, kym
 	moduleStatus := kyma.GetNoLongerExistingModuleStatus()
 	for idx := range moduleStatus {
 		moduleStatus := moduleStatus[idx]
+		if moduleStatus.Manifest == nil {
+			continue
+		}
 		module := &unstructured.Unstructured{}
 		module.SetGroupVersionKind(moduleStatus.Manifest.GroupVersionKind())
 		module.SetName(moduleStatus.Manifest.GetName())

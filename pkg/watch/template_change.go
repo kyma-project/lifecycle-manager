@@ -53,6 +53,9 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 		for _, kyma := range kymas.Items {
 			templateUsed := false
 			for _, moduleStatus := range kyma.Status.Modules {
+				if moduleStatus.Template == nil {
+					continue
+				}
 				if moduleStatus.Template.GetName() == template.GetName() &&
 					moduleStatus.Template.GetNamespace() == template.GetNamespace() {
 					templateUsed = true

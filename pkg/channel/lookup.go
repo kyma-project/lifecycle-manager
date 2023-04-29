@@ -82,9 +82,15 @@ func CheckForOutdatedTemplates(logger logr.Logger, kyma *v1beta2.Kyma, templates
 // It does this by looking into selected key properties:
 // 1. If the generation of ModuleTemplate changes, it means the spec is outdated
 // 2. If the channel of ModuleTemplate changes, it means the kyma has an old reference to a previous channel.
+//
+//nolint:funlen
 func CheckForOutdatedTemplate(
 	logger logr.Logger, moduleTemplate *ModuleTemplateTO, moduleStatus *v1beta2.ModuleStatus,
 ) {
+	if moduleStatus.Template == nil {
+		return
+	}
+
 	checkLog := logger.WithValues("module", moduleStatus.FQDN,
 		"template", moduleTemplate.Name,
 		"newTemplateGeneration", moduleTemplate.GetGeneration(),

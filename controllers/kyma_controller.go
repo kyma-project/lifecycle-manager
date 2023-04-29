@@ -417,7 +417,10 @@ func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma
 	}
 	for i := range moduleStatus {
 		moduleStatus := moduleStatus[i]
-		err = r.deleteModule(ctx, moduleStatus)
+		if moduleStatus.Manifest == nil {
+			continue
+		}
+		err = r.deleteManifest(ctx, moduleStatus.Manifest)
 	}
 
 	if client.IgnoreNotFound(err) != nil {
@@ -426,11 +429,11 @@ func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma
 	return nil
 }
 
-func (r *KymaReconciler) deleteModule(ctx context.Context, moduleStatus *v1beta2.ModuleStatus) error {
+func (r *KymaReconciler) deleteManifest(ctx context.Context, trackedManifest *v1beta2.TrackingObject) error {
 	manifest := metav1.PartialObjectMetadata{}
-	manifest.SetGroupVersionKind(moduleStatus.Manifest.GroupVersionKind())
-	manifest.SetNamespace(moduleStatus.Manifest.GetNamespace())
-	manifest.SetName(moduleStatus.Manifest.GetName())
+	manifest.SetGroupVersionKind(trackedManifest.GroupVersionKind())
+	manifest.SetNamespace(trackedManifest.GetNamespace())
+	manifest.SetName(trackedManifest.GetName())
 	return r.Delete(ctx, &manifest, &client.DeleteOptions{})
 }
 

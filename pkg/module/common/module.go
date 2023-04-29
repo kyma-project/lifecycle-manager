@@ -59,13 +59,6 @@ func (m *Module) ApplyLabelsAndAnnotations(
 	m.SetAnnotations(anns)
 }
 
-func (m *Module) StateMismatchedWithModuleStatus(moduleStatus *v1beta2.ModuleStatus) bool {
-	templateStatusMismatch := m.Template.Outdated &&
-		(moduleStatus.Template.Generation != m.Template.GetGeneration() ||
-			moduleStatus.Channel != m.Template.Spec.Channel)
-	return templateStatusMismatch || moduleStatus.Manifest.GetGeneration() != m.GetGeneration()
-}
-
 func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {
 	if m.GetOwnerReferences() == nil {
 		return false
