@@ -56,7 +56,7 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 
 	for _, module := range kyma.Spec.Modules {
 		template := templates[module.Name]
-		if template.Err != nil {
+		if template.Err != nil && !errors.Is(template.Err, channel.ErrTemplateNotAllowed) {
 			modules = append(modules, &common.Module{
 				ModuleName: module.Name,
 				Template:   &template,

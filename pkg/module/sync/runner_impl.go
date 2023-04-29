@@ -2,11 +2,13 @@ package sync
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"k8s.io/apimachinery/pkg/api/errors"
+	"github.com/kyma-project/lifecycle-manager/pkg/channel"
+	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -44,6 +46,12 @@ func (r *RunnerImpl) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	results := make(chan error, len(modules))
 	for _, module := range modules {
 		go func(module *common.Module) {
+			// Due to module template visibility change, some module previously deployed should be removed.
+			if errors.Is(module.Template.Err, channel.ErrTemplateNotAllowed) {
+				results <- r.deleteManifest(ctx, module)
+				return
+			}
+			// Module template in other error status should be ignored.
 			if module.Template.Err != nil {
 				results <- nil
 				return
@@ -95,6 +103,14 @@ func (r *RunnerImpl) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	module.Object = manifestObj
 
 	return nil
+}
+
+func (r *RunnerImpl) deleteManifest(ctx context.Context, module *common.Module) error {
+	err := r.Delete(ctx, module.Object)
+	if apiErrors.IsNotFound(err) {
+		return nil
+	}
+	return err
 }
 
 func (r *RunnerImpl) setupModule(module *common.Module, kyma *v1beta2.Kyma) error {
@@ -190,7 +206,7 @@ func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context, kym
 		module.SetName(moduleStatus.Manifest.GetName())
 		module.SetNamespace(moduleStatus.Manifest.GetNamespace())
 		err := r.getModule(ctx, module)
-		if errors.IsNotFound(err) {
+		if apiErrors.IsNotFound(err) {
 			delete(moduleStatusMap, moduleStatus.Name)
 		} else {
 			moduleStatus.State = stateFromManifest(module)

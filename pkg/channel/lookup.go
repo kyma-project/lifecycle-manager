@@ -19,7 +19,7 @@ import (
 var (
 	ErrTemplateNotIdentified            = errors.New("no unique template could be identified")
 	ErrNotDefaultChannelAllowed         = errors.New("specifying no default channel is not allowed")
-	ErrNoTemplatesInListResult          = errors.New("no templates were found during listing")
+	ErrNoTemplatesInListResult          = errors.New("no templates were found")
 	ErrInvalidRemoteModuleConfiguration = errors.New("invalid remote module template configuration")
 	ErrTemplateNotAllowed               = errors.New("module template not allowed")
 )
@@ -72,11 +72,11 @@ func DetermineTemplatesVisibility(kyma *v1beta2.Kyma, templates ModuleTemplatesB
 		}
 
 		if moduleTemplate.IsInternal() && !kyma.IsInternal() {
-			moduleTemplate.Err = fmt.Errorf("module only for internal %w", ErrTemplateNotAllowed)
+			moduleTemplate.Err = fmt.Errorf("%w: internal module", ErrTemplateNotAllowed)
 			templates[moduleName] = moduleTemplate
 		}
 		if moduleTemplate.IsBeta() && !kyma.IsBeta() {
-			moduleTemplate.Err = fmt.Errorf("module only for beta %w", ErrTemplateNotAllowed)
+			moduleTemplate.Err = fmt.Errorf("%w: beta module", ErrTemplateNotAllowed)
 			templates[moduleName] = moduleTemplate
 		}
 	}
@@ -292,8 +292,8 @@ func (c *TemplateLookup) getTemplate(ctx context.Context, desiredChannel string)
 		return nil, NewMoreThanOneTemplateCandidateErr(c.module, templateList.Items)
 	}
 	if len(filteredTemplates) == 0 {
-		return nil, fmt.Errorf("no templates found in channel %s for module %s: %w",
-			desiredChannel, moduleIdentifier, ErrNoTemplatesInListResult)
+		return nil, fmt.Errorf("%w: in channel %s for module %s",
+			ErrNoTemplatesInListResult, desiredChannel, moduleIdentifier)
 	}
 	return &filteredTemplates[0], nil
 }
