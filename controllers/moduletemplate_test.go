@@ -48,7 +48,7 @@ func expectManifestSpecNotContainsCredSecretSelector(kymaName string) func() err
 			return err
 		}
 		for _, module := range createdKyma.Spec.Modules {
-			moduleInCluster, err := getValidManifest(createdKyma, module)
+			moduleInCluster, err := GetManifest(createdKyma, module)
 			if err != nil {
 				return err
 			}
@@ -72,7 +72,7 @@ func expectManifestSpecContainsCredSecretSelector(kymaName string) func() error 
 			return err
 		}
 		for _, module := range createdKyma.Spec.Modules {
-			moduleInCluster, err := getValidManifest(createdKyma, module)
+			moduleInCluster, err := GetManifest(createdKyma, module)
 			if err != nil {
 				return err
 			}

@@ -4,11 +4,9 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 var _ = Describe("Test ModuleTemplate installation", func() {
@@ -73,18 +71,7 @@ func givenKymaAndModuleTemplateCondition(
 func expectManifestInstalled(shouldInstalled bool) func(kyma *v1beta2.Kyma) error {
 	return func(kyma *v1beta2.Kyma) error {
 		for _, module := range kyma.Spec.Modules {
-			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false)
-			if err != nil {
-				return err
-			}
-			descriptor, err := template.Spec.GetDescriptor()
-			if err != nil {
-				return err
-			}
-
-			manifest, err := GetManifest(
-				common.CreateModuleName(descriptor.GetName(), kyma.Name, module.Name),
-				kyma.Namespace)
+			manifest, err := GetManifest(kyma, module)
 			if shouldInstalled && manifest != nil {
 				return nil
 			}

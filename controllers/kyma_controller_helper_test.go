@@ -9,6 +9,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	sampleCRDv1beta2 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -96,7 +97,7 @@ func UpdateModuleState(
 }
 
 func updateModuleState(kyma *v1beta2.Kyma, module v1beta2.Module, state v1beta2.State) error {
-	component, err := getValidManifest(kyma, module)
+	component, err := GetManifest(kyma, module)
 	if err != nil {
 		return err
 	}
@@ -110,7 +111,7 @@ func ModuleExists(ctx context.Context, kyma *v1beta2.Kyma, module v1beta2.Module
 		if err != nil {
 			return err
 		}
-		_, err = getValidManifest(kyma, module)
+		_, err = GetManifest(kyma, module)
 		return err
 	}
 }
@@ -154,7 +155,7 @@ func ModuleNotExist(ctx context.Context, kyma *v1beta2.Kyma, module v1beta2.Modu
 		if err != nil {
 			return err
 		}
-		_, err = getValidManifest(kyma, module)
+		_, err = GetManifest(kyma, module)
 		if k8serrors.IsNotFound(err) {
 			return nil
 		}
@@ -165,7 +166,7 @@ func ModuleNotExist(ctx context.Context, kyma *v1beta2.Kyma, module v1beta2.Modu
 func KCPModuleExistWithOverwrites(kyma *v1beta2.Kyma, module v1beta2.Module) string {
 	kyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
 	Expect(err).ToNot(HaveOccurred())
-	moduleInCluster, err := getValidManifest(kyma, module)
+	moduleInCluster, err := GetManifest(kyma, module)
 	Expect(err).ToNot(HaveOccurred())
 	manifestSpec := moduleInCluster.Spec
 	body, err := json.Marshal(manifestSpec.Resource.Object["spec"])
@@ -176,34 +177,26 @@ func KCPModuleExistWithOverwrites(kyma *v1beta2.Kyma, module v1beta2.Module) str
 	return kcpModuleSpec.InitKey
 }
 
-// Warning: This method relies on kyma CR contains moduleStatus, only for testing kyma CR contains valid module.
-func getValidManifest(kyma *v1beta2.Kyma, module v1beta2.Module) (*v1beta2.Manifest, error) {
-	for _, moduleStatus := range kyma.Status.Modules {
-		if moduleStatus.Manifest == nil {
-			continue
-		}
-		if moduleStatus.Name == module.Name {
-			return GetManifest(moduleStatus.Manifest.GetName(), moduleStatus.Manifest.GetNamespace())
-		}
+func GetManifest(kyma *v1beta2.Kyma, module v1beta2.Module) (*v1beta2.Manifest, error) {
+	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false)
+	if err != nil {
+		return nil, err
 	}
-	return nil, fmt.Errorf(
-		"no module status mapping exists for module %s: %w", module.Name,
-		k8serrors.NewNotFound(v1beta2.GroupVersionResource.GroupResource(), module.Name),
-	)
-}
-
-func GetManifest(name, namespace string) (*v1beta2.Manifest, error) {
-	component := &v1beta2.Manifest{}
-	err := controlPlaneClient.Get(
+	descriptor, err := template.Spec.GetDescriptor()
+	if err != nil {
+		return nil, err
+	}
+	manifest := &v1beta2.Manifest{}
+	err = controlPlaneClient.Get(
 		ctx, client.ObjectKey{
-			Namespace: namespace,
-			Name:      name,
-		}, component,
+			Namespace: kyma.Namespace,
+			Name:      common.CreateModuleName(descriptor.GetName(), kyma.Name, module.Name),
+		}, manifest,
 	)
 	if err != nil {
 		return nil, err
 	}
-	return component, nil
+	return manifest, nil
 }
 
 func GetModuleTemplate(name string, clnt client.Client, kyma *v1beta2.Kyma) (*v1beta2.ModuleTemplate, error) {
@@ -253,7 +246,7 @@ func getModuleTemplate(clnt client.Client, template *v1beta2.ModuleTemplate, kym
 
 func deleteModule(kyma *v1beta2.Kyma, module v1beta2.Module) func() error {
 	return func() error {
-		component, err := getValidManifest(kyma, module)
+		component, err := GetManifest(kyma, module)
 		if k8serrors.IsNotFound(err) {
 			return nil
 		}
