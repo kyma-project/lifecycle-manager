@@ -135,3 +135,19 @@ func (m *ModuleTemplate) GetComponentDescriptorCacheKey() (string, error) {
 	}
 	return fmt.Sprintf("%s:%s:%s", m.Spec.Channel, descriptor.GetName(), descriptor.GetVersion()), nil
 }
+
+func (m *ModuleTemplate) IsInternal() bool {
+	isInternal, found := m.GetLabels()[InternalLabel]
+	if found && isInternal == "true" {
+		return true
+	}
+	return false
+}
+
+func (m *ModuleTemplate) IsBeta() bool {
+	isBeta, found := m.Labels[BetaLabel]
+	if found && isBeta == "true" {
+		return true
+	}
+	return false
+}

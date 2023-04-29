@@ -21,6 +21,7 @@ var (
 	ErrNotDefaultChannelAllowed         = errors.New("specifying no default channel is not allowed")
 	ErrNoTemplatesInListResult          = errors.New("no templates were found during listing")
 	ErrInvalidRemoteModuleConfiguration = errors.New("invalid remote module template configuration")
+	ErrTemplateNotAllowed               = errors.New("module template not allowed")
 )
 
 type ModuleTemplateTO struct {
@@ -58,9 +59,27 @@ func GetTemplates(
 		templates[module.Name] = template
 	}
 
+	DetermineTemplatesVisibility(kyma, templates)
 	CheckForOutdatedTemplates(logger, kyma, templates)
 
 	return templates
+}
+
+func DetermineTemplatesVisibility(kyma *v1beta2.Kyma, templates ModuleTemplatesByModuleName) {
+	for moduleName, moduleTemplate := range templates {
+		if moduleTemplate.Err != nil {
+			continue
+		}
+
+		if moduleTemplate.IsInternal() && !kyma.IsInternal() {
+			moduleTemplate.Err = fmt.Errorf("module only for internal %w", ErrTemplateNotAllowed)
+			templates[moduleName] = moduleTemplate
+		}
+		if moduleTemplate.IsBeta() && !kyma.IsBeta() {
+			moduleTemplate.Err = fmt.Errorf("module only for beta %w", ErrTemplateNotAllowed)
+			templates[moduleName] = moduleTemplate
+		}
+	}
 }
 
 func CheckForOutdatedTemplates(logger logr.Logger, kyma *v1beta2.Kyma, templates ModuleTemplatesByModuleName) {

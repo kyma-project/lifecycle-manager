@@ -385,3 +385,19 @@ func (kyma *Kyma) SyncEnabled() bool {
 	// TODO: revisit it after 542 merged
 	return false
 }
+
+func (kyma *Kyma) IsInternal() bool {
+	isInternal, found := kyma.Labels[InternalLabel]
+	if found && isInternal == "true" {
+		return true
+	}
+	return false
+}
+
+func (kyma *Kyma) IsBeta() bool {
+	isBeta, found := kyma.Labels[BetaLabel]
+	if found && isBeta == "true" {
+		return true
+	}
+	return false
+}
