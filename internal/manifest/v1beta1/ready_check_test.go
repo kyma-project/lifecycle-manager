@@ -3,6 +3,7 @@ package v1beta1_test
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"path/filepath"
 
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
@@ -21,14 +22,22 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-const nginxControllerDeploymentSuffix = "nginx-ingress-controller"
-
 var _ = Describe("Custom Manifest consistency check, given Manifest CR with OCI specs", Ordered, func() {
+	customDir := "custom-dir"
+	installName := filepath.Join(customDir, "installs")
+	It(
+		"setup OCI", func() {
+			PushToRemoteOCIRegistry(installName)
+		},
+	)
+	BeforeEach(
+		func() {
+			Expect(os.RemoveAll(filepath.Join(os.TempDir(), customDir))).To(Succeed())
+		},
+	)
 	It("Install OCI specs including an nginx deployment", func() {
 		manifest := NewTestManifest("custom-check-oci")
 		manifestName := manifest.GetName()
-		mainOciTempDir := "main-dir"
-		installName := filepath.Join(mainOciTempDir, "installs")
 		validImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String())
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
@@ -37,7 +46,7 @@ var _ = Describe("Custom Manifest consistency check, given Manifest CR with OCI 
 		Eventually(expectManifestStateIn(declarative.StateReady), standardTimeout, standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
-		testClient, err := declarativeTestClient(ctx, manifest)
+		testClient, err := declarativeTestClient(ctx)
 		Expect(err).ToNot(HaveOccurred())
 		By("Verifying that deployment and Sample CR are deployed and ready")
 		deploy := &appsv1.Deployment{}
@@ -97,17 +106,10 @@ func prepareResourceInfosForCustomCheck(clt declarative.Client, deploy *appsv1.D
 	return []*resource.Info{deployInfo}, nil
 }
 
-func declarativeTestClient(ctx context.Context, obj declarative.Object) (declarative.Client, error) {
-	var err error
-
+func declarativeTestClient(ctx context.Context) (declarative.Client, error) {
 	cluster := &declarative.ClusterInfo{
 		Config: cfg,
 		Client: k8sClient,
-	}
-
-	cluster, err = targetClusterFn(ctx, obj)
-	if err != nil {
-		return nil, err
 	}
 
 	clt, err := declarative.NewSingletonClients(cluster, log.FromContext(ctx))

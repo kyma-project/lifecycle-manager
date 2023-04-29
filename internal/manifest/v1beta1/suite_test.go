@@ -52,27 +52,19 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	k8sClient       client.Client                                       //nolint:gochecknoglobals
-	testEnv         *envtest.Environment                                //nolint:gochecknoglobals
-	k8sManager      ctrl.Manager                                        //nolint:gochecknoglobals
-	ctx             context.Context                                     //nolint:gochecknoglobals
-	cancel          context.CancelFunc                                  //nolint:gochecknoglobals
-	server          *httptest.Server                                    //nolint:gochecknoglobals
-	helmCacheRepo   = filepath.Join(helmCacheHome, "repository")        //nolint:gochecknoglobals
-	helmRepoFile    = filepath.Join(helmCacheHome, "repositories.yaml") //nolint:gochecknoglobals
-	reconciler      *declarative.Reconciler                             //nolint:gochecknoglobals
-	cfg             *rest.Config                                        //nolint:gochecknoglobals
-	targetClusterFn declarative.ClusterFn                               //nolint:gochecknoglobals
+	k8sClient  client.Client           //nolint:gochecknoglobals
+	testEnv    *envtest.Environment    //nolint:gochecknoglobals
+	k8sManager ctrl.Manager            //nolint:gochecknoglobals
+	ctx        context.Context         //nolint:gochecknoglobals
+	cancel     context.CancelFunc      //nolint:gochecknoglobals
+	server     *httptest.Server        //nolint:gochecknoglobals
+	reconciler *declarative.Reconciler //nolint:gochecknoglobals
+	cfg        *rest.Config            //nolint:gochecknoglobals
 )
 
 const (
-	helmCacheHomeEnv   = "HELM_CACHE_HOME"
-	helmCacheHome      = "/tmp/caches"
-	helmCacheRepoEnv   = "HELM_REPOSITORY_CACHE"
-	helmRepoEnv        = "HELM_REPOSITORY_CONFIG"
-	kustomizeLocalPath = "../../../pkg/test_samples/kustomize"
-	standardTimeout    = 30 * time.Second
-	standardInterval   = 100 * time.Millisecond
+	standardTimeout  = 30 * time.Second
+	standardInterval = 100 * time.Millisecond
 )
 
 func TestAPIs(t *testing.T) {
@@ -84,10 +76,6 @@ func TestAPIs(t *testing.T) {
 
 var _ = BeforeSuite(
 	func() {
-		err := os.RemoveAll(helmCacheHome)
-		Expect(err != nil && !os.IsExist(err)).To(BeFalse())
-		Expect(os.MkdirAll(helmCacheHome, os.ModePerm)).NotTo(HaveOccurred())
-
 		ctx, cancel = context.WithCancel(context.TODO())
 		logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
 
@@ -101,6 +89,7 @@ var _ = BeforeSuite(
 			ErrorIfCRDPathMissing: false,
 		}
 
+		var err error
 		cfg, err = testEnv.Start()
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg).NotTo(BeNil())
@@ -126,8 +115,7 @@ var _ = BeforeSuite(
 		codec, err := v1beta1.NewCodec()
 		Expect(err).ToNot(HaveOccurred())
 
-		var authUser *envtest.AuthenticatedUser
-		authUser, err = testEnv.AddUser(
+		authUser, err := testEnv.AddUser(
 			envtest.User{
 				Name:   "skr-admin-account",
 				Groups: []string{"system:masters"},
@@ -138,16 +126,17 @@ var _ = BeforeSuite(
 		k8sClient = k8sManager.GetClient()
 
 		kcp := &declarative.ClusterInfo{Config: cfg, Client: k8sClient}
-		targetClusterFn = func(_ context.Context, _ declarative.Object) (*declarative.ClusterInfo, error) {
-			return &declarative.ClusterInfo{Config: authUser.Config()}, nil
-		}
 		reconciler = declarative.NewFromManager(
 			k8sManager, &v1beta1.Manifest{},
 			declarative.WithSpecResolver(
 				internalv1beta1.NewManifestSpecResolver(kcp, codec),
 			),
 			declarative.WithPermanentConsistencyCheck(true),
-			declarative.WithRemoteTargetCluster(targetClusterFn),
+			declarative.WithRemoteTargetCluster(
+				func(_ context.Context, _ declarative.Object) (*declarative.ClusterInfo, error) {
+					return &declarative.ClusterInfo{Config: authUser.Config()}, nil
+				},
+			),
 			internalv1beta1.WithClientCacheKey(),
 			declarative.WithPostRun{internalv1beta1.PostRunCreateCR},
 			declarative.WithPreDelete{internalv1beta1.PreDeleteDeleteCR},
@@ -182,7 +171,5 @@ var _ = AfterSuite(
 		By("tearing down the test environment")
 		server.Close()
 		Eventually(func() error { return testEnv.Stop() }, standardTimeout, standardInterval).Should(Succeed())
-		err := os.RemoveAll(helmCacheHome)
-		Expect(err).NotTo(HaveOccurred())
 	},
 )

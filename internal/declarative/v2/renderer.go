@@ -33,7 +33,6 @@ func InitializeRenderer(
 	client Client,
 	options *Options,
 ) (Renderer, error) {
-
 	renderer := NewRawRenderer(spec, client, options)
 	if err := renderer.Initialize(obj); err != nil {
 		return nil, err

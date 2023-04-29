@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/fs"
 	"net/url"
 	"os"
 
@@ -188,10 +187,6 @@ func getManifestStatus(manifestName string) (v2.Status, error) {
 
 func deleteManifestAndVerify(manifest *v1beta1.Manifest) func() error {
 	return func() error {
-		// reverting permissions for deletion - in case it was changed during tests
-		if err := os.Chmod(kustomizeLocalPath, fs.ModePerm); err != nil {
-			return err
-		}
 		if err := k8sClient.Delete(ctx, manifest); err != nil && !errors.IsNotFound(err) {
 			return err
 		}
