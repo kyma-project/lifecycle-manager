@@ -48,7 +48,7 @@ func expectManifestSpecNotContainsCredSecretSelector(kymaName string) func() err
 			return err
 		}
 		for _, module := range createdKyma.Spec.Modules {
-			moduleInCluster, err := getModule(createdKyma, module)
+			moduleInCluster, err := getValidManifest(createdKyma, module)
 			if err != nil {
 				return err
 			}
@@ -72,7 +72,7 @@ func expectManifestSpecContainsCredSecretSelector(kymaName string) func() error 
 			return err
 		}
 		for _, module := range createdKyma.Spec.Modules {
-			moduleInCluster, err := getModule(createdKyma, module)
+			moduleInCluster, err := getValidManifest(createdKyma, module)
 			if err != nil {
 				return err
 			}
@@ -124,7 +124,7 @@ var _ = Describe("Test ModuleTemplate.Spec.descriptor not contains RegistryCred 
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
 	It("expect Manifest.Spec.installs and Manifest.Spec.Config not contains credSecretSelector", func() {
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false)
+		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false)
 		Eventually(expectManifestSpecNotContainsCredSecretSelector(kyma.Name), Timeout*2, Interval).Should(Succeed())
 	})
 })
@@ -142,7 +142,7 @@ var _ = Describe("Test ModuleTemplate.Spec.descriptor contains RegistryCred labe
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
 	It("expect Manifest.Spec.installs and Manifest.Spec.Config contains credSecretSelector", func() {
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma, true)
+		DeployModuleTemplates(ctx, controlPlaneClient, kyma, true, false, false)
 		Eventually(expectManifestSpecContainsCredSecretSelector(kyma.Name), Timeout*2, Interval).Should(Succeed())
 	})
 })

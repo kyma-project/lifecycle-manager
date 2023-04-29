@@ -98,13 +98,36 @@ func DeployModuleTemplates(
 	ctx context.Context,
 	kcpClient client.Client,
 	kyma *v1beta2.Kyma,
-	onPrivateRepo bool,
+	onPrivateRepo,
+	isInternal,
+	isBeta bool,
 ) {
 	for _, module := range kyma.Spec.Modules {
-		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo)
-		Expect(err).ShouldNot(HaveOccurred())
-		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).WithArguments(template).Should(Succeed())
+		Eventually(DeployModuleTemplate, Timeout, Interval).WithContext(ctx).
+			WithArguments(kcpClient, module, onPrivateRepo, isInternal, isBeta).
+			Should(Succeed())
 	}
+}
+
+func DeployModuleTemplate(
+	ctx context.Context,
+	kcpClient client.Client,
+	module v1beta2.Module,
+	onPrivateRepo,
+	isInternal,
+	isBeta bool,
+) error {
+	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo)
+	if err != nil {
+		return err
+	}
+	if isInternal {
+		template.Labels[v1beta2.InternalLabel] = v1beta2.ActiveLabelValue
+	}
+	if isBeta {
+		template.Labels[v1beta2.BetaLabel] = v1beta2.ActiveLabelValue
+	}
+	return kcpClient.Create(ctx, template)
 }
 
 func DeleteModuleTemplates(
