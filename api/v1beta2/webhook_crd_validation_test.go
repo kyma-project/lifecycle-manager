@@ -30,7 +30,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 		Kind:    "SampleCRD",
 	})
 	It("should successfully fetch accept a moduletemplate based on a compliant crd", func() {
-		crd := GetCRD(v1beta2.OperatorPrefix, "samplecrd")
+		crd := GetCRD(v1beta2.OperatorPrefix, v1beta2.GroupVersion.Version, "samplecrd")
 		Eventually(k8sClient.Create, Timeout, Interval).
 			WithContext(webhookServerContext).
 			WithArguments(crd).Should(Succeed())
@@ -49,7 +49,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	})
 
 	It("should accept a moduletemplate based on a non-compliant crd in non-strict mode", func() {
-		crd := GetNonCompliantCRD(v1beta2.OperatorPrefix, "samplecrd")
+		crd := GetNonCompliantCRD(v1beta2.OperatorPrefix, v1beta2.GroupVersion.Version, "samplecrd")
 
 		Eventually(k8sClient.Create, Timeout, Interval).
 			WithContext(webhookServerContext).
@@ -68,7 +68,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	})
 
 	It("should deny a version downgrade when updating", func() {
-		crd := GetCRD(v1beta2.OperatorPrefix, "samplecrd")
+		crd := GetCRD(v1beta2.OperatorPrefix, v1beta2.GroupVersion.Version, "samplecrd")
 		Eventually(k8sClient.Create, Timeout, Interval).
 			WithContext(webhookServerContext).
 			WithArguments(crd).Should(Succeed())
@@ -113,10 +113,11 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 },
 )
 
-func GetCRD(group, sample string) *v1.CustomResourceDefinition {
+func GetCRD(group, version, sample string) *v1.CustomResourceDefinition {
 	crdFileName := fmt.Sprintf(
-		"%s_%s.yaml",
+		"%s_%s_%s.yaml",
 		group,
+		version,
 		sample,
 	)
 	modulePath := filepath.Join(testFiles, "crds", crdFileName)
@@ -132,8 +133,8 @@ func GetCRD(group, sample string) *v1.CustomResourceDefinition {
 	return &crd
 }
 
-func GetNonCompliantCRD(group, sample string) *v1.CustomResourceDefinition {
-	crd := GetCRD(group, sample)
+func GetNonCompliantCRD(group, version, sample string) *v1.CustomResourceDefinition {
+	crd := GetCRD(group, version, sample)
 	crd.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties["status"].Properties["state"] = v1.JSONSchemaProps{
 		Type: "string",
 		Enum: []v1.JSON{},

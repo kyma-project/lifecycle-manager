@@ -135,26 +135,26 @@ var _ = Describe(
 			},
 			Entry(
 				"When Manifest CR contains a valid install OCI image specification, "+
-					"expect state in ready and helmClient cache exist",
+					"expect state in ready",
 				withValidInstallImageSpec(installName, false),
 				expectManifestStateIn(declarative.StateReady),
 			),
 			Entry(
-				"When Manifest CR contains a valid install OCI image specification and enabled remote, "+
-					"expect state in ready and helmClient cache exist",
+				"When Manifest CR contains a valid install OCI image specification and enabled deploy resource, "+
+					"expect state in ready",
 				withValidInstallImageSpec(installName, true),
 				expectManifestStateIn(declarative.StateReady),
 			),
 			Entry(
-				"When Manifest CR contains valid install and CRD image specification, "+
-					"expect state in ready and helmClient cache exist",
-				withValidInstall(installName, true),
-				expectManifestStateIn(declarative.StateReady),
+				"When Manifest CR contains an invalid install OCI image specification, "+
+					"expect state in error",
+				withInvalidInstallImageSpec(false),
+				expectManifestStateIn(declarative.StateError),
 			),
 			Entry(
-				"When Manifest CR contains an invalid install OCI image specification, "+
-					"expect state in error and no helmClient cache exit",
-				withInvalidInstallImageSpec(false),
+				"When Manifest CR contains an invalid install OCI image specification and enabled deploy resource, "+
+					"expect state in ready",
+				withInvalidInstallImageSpec(true),
 				expectManifestStateIn(declarative.StateError),
 			),
 		)

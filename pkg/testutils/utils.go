@@ -13,6 +13,7 @@ import (
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	. "github.com/onsi/gomega" //nolint:stylecheck,revive
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/ocm.software/v3alpha1"
@@ -165,6 +166,16 @@ func CreateCR(ctx context.Context, clnt client.Client, obj client.Object) error 
 	return nil
 }
 
+func SyncKyma(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error {
+	err := clnt.Get(ctx, client.ObjectKey{
+		Name:      kyma.Name,
+		Namespace: kyma.Namespace,
+	}, kyma)
+	// It might happen in some test case, kyma get deleted, if you need to make sure Kyma should exist,
+	// write expected condition to check it specifically.
+	return client.IgnoreNotFound(err)
+}
+
 func GetKyma(ctx context.Context, testClient client.Client, name, namespace string) (*v1beta2.Kyma, error) {
 	kymaInCluster := &v1beta2.Kyma{}
 	if namespace == "" {
@@ -188,6 +199,45 @@ func IsKymaInState(ctx context.Context, kcpClient client.Client, kymaName string
 		}
 		return true
 	}
+}
+
+func GetManifestSpecRemote(
+	ctx context.Context,
+	clnt client.Client,
+	kyma *v1beta2.Kyma,
+	module v1beta2.Module,
+) (bool, error) {
+	manifest, err := GetManifest(ctx, clnt, kyma, module)
+	if err != nil {
+		return false, err
+	}
+	return manifest.Spec.Remote, nil
+}
+
+func GetManifest(ctx context.Context,
+	clnt client.Client,
+	kyma *v1beta2.Kyma,
+	module v1beta2.Module,
+) (*v1beta2.Manifest, error) {
+	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false)
+	if err != nil {
+		return nil, err
+	}
+	descriptor, err := template.Spec.GetDescriptor()
+	if err != nil {
+		return nil, err
+	}
+	manifest := &v1beta2.Manifest{}
+	err = clnt.Get(
+		ctx, client.ObjectKey{
+			Namespace: kyma.Namespace,
+			Name:      common.CreateModuleName(descriptor.GetName(), kyma.Name, module.Name),
+		}, manifest,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return manifest, nil
 }
 
 func ModuleTemplateFactory(

@@ -14,7 +14,6 @@ import (
 )
 
 var (
-	ErrManifestRemoteIsNotMatch              = errors.New("Manifest.Spec.Remote is not match")
 	ErrContainsUnexpectedCredSecretSelector  = errors.New("contains unexpected credSecretSelector")
 	ErrNotContainsExpectedCredSecretSelector = errors.New("not contains expected credSecretSelector")
 )
@@ -48,7 +47,7 @@ func expectManifestSpecNotContainsCredSecretSelector(kymaName string) func() err
 			return err
 		}
 		for _, module := range createdKyma.Spec.Modules {
-			moduleInCluster, err := GetManifest(createdKyma, module)
+			moduleInCluster, err := GetManifest(ctx, controlPlaneClient, createdKyma, module)
 			if err != nil {
 				return err
 			}
@@ -72,7 +71,7 @@ func expectManifestSpecContainsCredSecretSelector(kymaName string) func() error 
 			return err
 		}
 		for _, module := range createdKyma.Spec.Modules {
-			moduleInCluster, err := GetManifest(createdKyma, module)
+			moduleInCluster, err := GetManifest(ctx, controlPlaneClient, createdKyma, module)
 			if err != nil {
 				return err
 			}

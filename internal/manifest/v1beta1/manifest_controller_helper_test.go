@@ -142,35 +142,25 @@ func expectHelmClientCacheExist(expectExist bool) func(cacheKey string) bool {
 	}
 }
 
-func withInvalidInstallImageSpec(remote bool) func(manifest *v1beta2.Manifest) error {
+func withInvalidInstallImageSpec(enableResource bool) func(manifest *v1beta2.Manifest) error {
 	return func(manifest *v1beta2.Manifest) error {
 		invalidImageSpec := createOCIImageSpec("invalid-image-spec", "domain.invalid")
 		imageSpecByte, err := json.Marshal(invalidImageSpec)
 		Expect(err).ToNot(HaveOccurred())
-		return installManifest(manifest, imageSpecByte, remote)
+		return installManifest(manifest, imageSpecByte, enableResource)
 	}
 }
 
-func withValidInstallImageSpec(name string, remote bool) func(manifest *v1beta2.Manifest) error {
+func withValidInstallImageSpec(name string, enableResource bool) func(manifest *v1beta2.Manifest) error {
 	return func(manifest *v1beta2.Manifest) error {
 		validImageSpec := createOCIImageSpec(name, server.Listener.Addr().String())
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
-		return installManifest(manifest, imageSpecByte, remote)
+		return installManifest(manifest, imageSpecByte, enableResource)
 	}
 }
 
-func withValidInstall(installName string, remote bool) func(manifest *v1beta2.Manifest) error {
-	return func(manifest *v1beta2.Manifest) error {
-		validInstallImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String())
-		installSpecByte, err := json.Marshal(validInstallImageSpec)
-		Expect(err).ToNot(HaveOccurred())
-
-		return installManifest(manifest, installSpecByte, remote)
-	}
-}
-
-func installManifest(manifest *v1beta2.Manifest, installSpecByte []byte, remote bool) error {
+func installManifest(manifest *v1beta2.Manifest, installSpecByte []byte, enableResource bool) error {
 	if installSpecByte != nil {
 		manifest.Spec.Install = v1beta2.InstallInfo{
 			Source: runtime.RawExtension{
@@ -179,9 +169,8 @@ func installManifest(manifest *v1beta2.Manifest, installSpecByte []byte, remote 
 			Name: manifestInstallName,
 		}
 	}
-	// manifest.Spec.CRDs = crdSpec
-	if remote {
-		manifest.Spec.Remote = true
+	if enableResource {
+		// related CRD definition is in pkg/test_samples/oci/rendered.yaml
 		manifest.Spec.Resource = &unstructured.Unstructured{
 			Object: map[string]interface{}{
 				"apiVersion": "operator.kyma-project.io/v1alpha1",
@@ -247,7 +236,7 @@ func addInstallSpec(specBytes []byte) func(manifest *v1beta2.Manifest) error {
 
 func addInstallSpecWithFilePermission(
 	specBytes []byte,
-	remote bool, fileMode os.FileMode,
+	enableResource bool, fileMode os.FileMode,
 ) func(manifest *v1beta2.Manifest) error {
 	return func(manifest *v1beta2.Manifest) error {
 		currentUser, err := user.Current()
@@ -258,7 +247,7 @@ func addInstallSpecWithFilePermission(
 		// should not be run as root user
 		Expect(currentUser.Username).ToNot(Equal("root"))
 		Expect(os.Chmod(kustomizeLocalPath, fileMode)).ToNot(HaveOccurred())
-		return installManifest(manifest, specBytes, remote)
+		return installManifest(manifest, specBytes, enableResource)
 	}
 }
 

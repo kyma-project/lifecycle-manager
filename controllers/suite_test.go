@@ -139,6 +139,7 @@ var _ = BeforeSuite(func() {
 		RemoteClientCache:        remoteClientCache,
 		ComponentDescriptorCache: componentDescriptorCache,
 		KcpRestConfig:            k8sManager.GetConfig(),
+		InKCPMode:                false,
 	}).SetupWithManager(k8sManager, controller.Options{},
 		controllers.SetupUpSetting{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())
