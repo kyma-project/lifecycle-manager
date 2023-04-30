@@ -39,15 +39,15 @@ func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
 
 func RegisterDefaultLifecycleForKymaWithoutTemplate(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
-		Eventually(controlPlaneClient.Create, Timeout, Interval).
+		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(kyma).Should(Succeed())
+			WithArguments(controlPlaneClient, kyma).Should(Succeed())
 	})
 
 	AfterAll(func() {
-		Eventually(controlPlaneClient.Delete, Timeout, Interval).
+		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(kyma).Should(Succeed())
+			WithArguments(controlPlaneClient, kyma).Should(Succeed())
 	})
 
 	BeforeEach(func() {

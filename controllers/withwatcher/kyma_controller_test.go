@@ -51,13 +51,11 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer)
 
 	It("kyma reconciliation installs watcher helm chart with correct webhook config", func() {
-		Skip("TODO: revisit it after 542 merged")
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
 			kymaObjKey), Timeout, Interval).Should(Succeed())
 	})
 
 	It("kyma reconciliation replaces webhook-config when a new watcher is created and deleted", func() {
-		Skip("TODO: revisit it after 542 merged")
 		secondWatcher := createWatcherCR("second-manager", false)
 		By("Creating second watcher CR")
 		Expect(controlPlaneClient.Create(suiteCtx, secondWatcher)).To(Succeed())
@@ -66,7 +64,9 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, secondWatcher, kymaObjKey),
 			Timeout, Interval).Should(Succeed())
 		By("Deleting second watcher CR")
-		Expect(controlPlaneClient.Delete(suiteCtx, secondWatcher)).To(Succeed())
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(suiteCtx).
+			WithArguments(controlPlaneClient, secondWatcher).Should(Succeed())
 		By("Ensuring second watcher CR is properly deleted")
 		Eventually(isWatcherCrDeletionFinished, Timeout, Interval).WithArguments(secondWatcher).
 			Should(BeTrue())
@@ -79,7 +79,6 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	})
 
 	It("SKR chart installation works correctly when watcher config is updated", func() {
-		Skip("TODO: revisit it after 542 merged")
 		labelKey := "new-key"
 		labelValue := "new-value"
 		watcherCrForKyma.Spec.LabelsToWatch[labelKey] = labelValue
@@ -92,8 +91,9 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	})
 
 	It("kyma reconciliation removes watcher helm chart from SKR cluster when kyma is deleted", func() {
-		Skip("TODO: revisit it after 542 merged")
-		Expect(controlPlaneClient.Delete(suiteCtx, kyma)).To(Succeed())
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(suiteCtx).
+			WithArguments(controlPlaneClient, kyma).Should(Succeed())
 		Eventually(getSkrChartDeployment(suiteCtx, runtimeClient, kymaObjKey), Timeout, Interval).
 			ShouldNot(Succeed())
 		Eventually(isKymaCrDeletionFinished, Timeout, Interval).
@@ -117,7 +117,9 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1b
 
 	AfterAll(func() {
 		By("Deleting watcher CR")
-		Expect(controlPlaneClient.Delete(suiteCtx, watcher)).To(Succeed())
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(suiteCtx).
+			WithArguments(controlPlaneClient, watcher).Should(Succeed())
 		By("Ensuring watcher CR is properly deleted")
 		Eventually(isWatcherCrDeletionFinished, Timeout, Interval).WithArguments(watcher).
 			Should(BeTrue())

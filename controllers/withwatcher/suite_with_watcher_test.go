@@ -207,7 +207,9 @@ var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	// clean up istio resources
 	for _, istioResource := range istioResources {
-		Expect(controlPlaneClient.Delete(suiteCtx, istioResource)).To(Succeed())
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(suiteCtx).
+			WithArguments(controlPlaneClient, istioResource).Should(Succeed())
 	}
 	// cancel environment context
 	cancel()

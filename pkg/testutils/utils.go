@@ -19,6 +19,7 @@ import (
 	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	corev1 "k8s.io/api/core/v1"
 	apiExtensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
@@ -142,8 +143,26 @@ func DeleteModuleTemplates(
 	for _, module := range kyma.Spec.Modules {
 		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo)
 		Expect(err).ShouldNot(HaveOccurred())
-		Eventually(kcpClient.Delete, Timeout, Interval).WithContext(ctx).WithArguments(template).Should(Succeed())
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, template).Should(Succeed())
 	}
+}
+
+func DeleteCR(ctx context.Context, clnt client.Client, obj client.Object) error {
+	err := clnt.Delete(ctx, obj)
+	if !k8serrors.IsNotFound(err) {
+		return err
+	}
+	return nil
+}
+
+func CreateCR(ctx context.Context, clnt client.Client, obj client.Object) error {
+	err := clnt.Create(ctx, obj)
+	if !k8serrors.IsAlreadyExists(err) {
+		return err
+	}
+	return nil
 }
 
 func GetKyma(ctx context.Context, testClient client.Client, name, namespace string) (*v1beta2.Kyma, error) {

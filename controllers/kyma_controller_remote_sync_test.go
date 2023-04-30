@@ -38,9 +38,9 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	It("module template created", func() {
 		template, err := ModuleTemplateFactory(skrModuleFromClient, unstructured.Unstructured{}, false)
 		Expect(err).ShouldNot(HaveOccurred())
-		Eventually(controlPlaneClient.Create, Timeout, Interval).
+		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(template).
+			WithArguments(controlPlaneClient, template).
 			Should(Succeed())
 	})
 
@@ -106,7 +106,7 @@ var _ = Describe("Kyma with remote module templates", Ordered, func() {
 			Should(Succeed())
 		Consistently(ModuleTemplateExists, Timeout, Interval).
 			WithArguments(controlPlaneClient, templateInSkr.Name, templateInSkr.Namespace).
-			Should(Equal(ErrNotFound))
+			Should(MatchError(ErrNotFound))
 	})
 
 	It("Should reconcile Manifest in KCP using remote moduleInSkr template", func() {
@@ -116,19 +116,27 @@ var _ = Describe("Kyma with remote module templates", Ordered, func() {
 	})
 
 	It("Should not delete the module template on SKR upon Kyma deletion", func() {
-		Expect(controlPlaneClient.Delete(ctx, kyma)).Should(Succeed())
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma).Should(Succeed())
 		Consistently(ModuleTemplateExists, Timeout, Interval).
 			WithArguments(runtimeClient, templateInSkr.Name, templateInSkr.Namespace).
 			Should(Succeed())
 		Consistently(ModuleTemplateExists, Timeout, Interval).
 			WithArguments(controlPlaneClient, templateInSkr.Name, templateInSkr.Namespace).
-			Should(Equal(ErrNotFound))
+			Should(MatchError(ErrNotFound))
 	})
 
 	AfterAll(func() {
-		Expect(controlPlaneClient.Delete(ctx, templateInKcp)).To(Succeed())
-		Expect(runtimeClient.Delete(ctx, templateInKcp)).To(Succeed())
-		Expect(runtimeClient.Delete(ctx, templateInSkr)).To(Succeed())
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, templateInKcp).Should(Succeed())
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(runtimeClient, templateInKcp).Should(Succeed())
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(runtimeClient, templateInSkr).Should(Succeed())
 	})
 })
 
@@ -145,7 +153,6 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	RegisterDefaultLifecycleForKyma(kyma)
 
 	It("Kyma CR should be synchronized in both clusters", func() {
-		Skip("TODO: revisit it after 542 merged")
 		By("Remote Kyma created")
 		Eventually(KymaExists, Timeout, Interval).
 			WithArguments(runtimeClient, kyma.GetName(), kyma.GetNamespace()).

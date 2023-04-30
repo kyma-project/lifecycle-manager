@@ -3,7 +3,6 @@ package controllers_test
 import (
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
@@ -150,9 +149,9 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 		})
 
 	AfterAll(func() {
-		Eventually(controlPlaneClient.Delete, Timeout, Interval).
+		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(kyma).Should(Succeed())
+			WithArguments(controlPlaneClient, kyma).Should(Succeed())
 	})
 
 	BeforeAll(func() {
@@ -164,16 +163,18 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 
 	It(
 		"should create kyma with standard modules in default channel normally", func() {
-			Expect(controlPlaneClient.Create(ctx, kyma)).ToNot(HaveOccurred())
-			Eventually(GetKymaState, 20*time.Second, Interval).
+			Eventually(CreateCR, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma).Should(Succeed())
+			Eventually(GetKymaState, Timeout, Interval).
 				WithArguments(kyma.GetName()).
 				Should(BeEquivalentTo(string(v1beta2.StateProcessing)))
 			for _, module := range kyma.Spec.Modules {
 				Eventually(
-					UpdateModuleState(ctx, kyma, module, v1beta2.StateReady), 20*time.Second,
+					UpdateModuleState(ctx, kyma, module, v1beta2.StateReady), Timeout,
 					Interval).Should(Succeed())
 			}
-			Eventually(GetKymaState, 20*time.Second, Interval).
+			Eventually(GetKymaState, Timeout, Interval).
 				WithArguments(kyma.GetName()).
 				Should(BeEquivalentTo(string(v1beta2.StateReady)))
 		},
@@ -207,7 +208,7 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 	It(
 		"should lead to kyma being ready in the end of the channel switch", func() {
 			By("having updated the Kyma CR state to ready")
-			Eventually(GetKymaState, 20*time.Second, Interval).
+			Eventually(GetKymaState, Timeout, Interval).
 				WithArguments(kyma.GetName()).
 				Should(BeEquivalentTo(string(v1beta2.StateReady)))
 		},
@@ -222,14 +223,18 @@ func CleanupModuleTemplateSetsForKyma(kyma *v1beta2.Kyma) func() {
 			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false)
 			template.Name = fmt.Sprintf("%s-%s", template.Name, v1beta2.DefaultChannel)
 			Expect(err).ShouldNot(HaveOccurred())
-			Expect(controlPlaneClient.Delete(ctx, template)).To(Succeed())
+			Eventually(DeleteCR, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, template).Should(Succeed())
 		}
 		By("Cleaning up standard ModuleTemplate set in fast")
 		for _, module := range kyma.Spec.Modules {
 			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false)
 			template.Name = fmt.Sprintf("%s-%s", template.Name, FastChannel)
 			Expect(err).ShouldNot(HaveOccurred())
-			Expect(controlPlaneClient.Delete(ctx, template)).To(Succeed())
+			Eventually(DeleteCR, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, template).Should(Succeed())
 		}
 	}
 }
