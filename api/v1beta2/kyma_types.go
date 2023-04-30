@@ -390,7 +390,12 @@ func (kyma *Kyma) AllModulesReady() bool {
 }
 
 func (kyma *Kyma) SyncEnabled() bool {
-	// TODO: revisit it after 542 merged
+	if kyma.Labels == nil {
+		return false
+	}
+	if isSync, found := kyma.Labels[SyncLabel]; found && isSync == ActiveLabelValue {
+		return true
+	}
 	return false
 }
 

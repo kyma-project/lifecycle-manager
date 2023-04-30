@@ -76,27 +76,27 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 	var (
 		kyma      *v1beta2.Kyma
-		skrModule *v1beta2.Module
-		kcpModule *v1beta2.Module
+		skrModule v1beta2.Module
+		kcpModule v1beta2.Module
 	)
 	kyma = NewTestKyma("kyma-test-recreate")
-	skrModule = &v1beta2.Module{
+	skrModule = v1beta2.Module{
 		ControllerName: "manifest", // this is a module for SKR that should be installed by module-manager
 		Name:           "skr-module",
 		Channel:        v1beta2.DefaultChannel,
 	}
-	kcpModule = &v1beta2.Module{
+	kcpModule = v1beta2.Module{
 		ControllerName: "manifest", // this is a module for KCP that should be installed by module-manager
 		Name:           "kcp-module",
 		Channel:        v1beta2.DefaultChannel,
 	}
-	kyma.Spec.Modules = append(kyma.Spec.Modules, *skrModule, *kcpModule)
+	kyma.Spec.Modules = append(kyma.Spec.Modules, skrModule, kcpModule)
 	RegisterDefaultLifecycleForKyma(kyma)
 
 	It("CR should be created normally and then recreated after delete", func() {
 		By("CR created")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ModuleExists(ctx, kyma, activeModule), Timeout, Interval).Should(Succeed())
+			Eventually(ManifestExists, Timeout, Interval).WithArguments(kyma, activeModule).Should(Succeed())
 		}
 		By("Delete CR")
 		for _, activeModule := range kyma.Spec.Modules {
@@ -105,27 +105,27 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 
 		By("CR created again")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ModuleExists(ctx, kyma, activeModule), Timeout, Interval).Should(Succeed())
+			Eventually(ManifestExists, Timeout, Interval).WithArguments(kyma, activeModule).Should(Succeed())
 		}
 	})
 
 	It("CR should be deleted after removed from kyma.spec.modules", func() {
 		By("CR created")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ModuleExists(ctx, kyma, activeModule), Timeout, Interval).Should(Succeed())
+			Eventually(ManifestExists, Timeout, Interval).WithArguments(kyma, activeModule).Should(Succeed())
 		}
 		By("Remove kcp-module from kyma.spec.modules")
 		kyma.Spec.Modules = []v1beta2.Module{
-			*skrModule,
+			skrModule,
 		}
 		Eventually(controlPlaneClient.Update, Timeout, Interval).
 			WithContext(ctx).WithArguments(kyma).Should(Succeed())
 
 		By("kcp-module deleted")
-		Eventually(ModuleNotExist(ctx, kyma, *kcpModule), Timeout, Interval).Should(Succeed())
+		Eventually(ManifestExists, Timeout, Interval).WithArguments(kyma, kcpModule).Should(Equal(ErrNotFound))
 
 		By("skr-module exists")
-		Eventually(ModuleExists(ctx, kyma, *skrModule), Timeout, Interval).Should(Succeed())
+		Eventually(ManifestExists, Timeout, Interval).WithArguments(kyma, skrModule).Should(Succeed())
 	})
 })
 
@@ -144,7 +144,7 @@ var _ = Describe("Kyma update Manifest CR", Ordered, func() {
 	It("Manifest CR should be updated after module template changed", func() {
 		By("CR created")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ModuleExists(ctx, kyma, activeModule), Timeout, Interval).Should(Succeed())
+			Eventually(ManifestExists, Timeout, Interval).WithArguments(kyma, activeModule).Should(Succeed())
 		}
 
 		By("reacting to a change of its Modules when they are set to ready")
@@ -182,7 +182,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	It("Mark Kyma as skip Reconciliation", func() {
 		By("CR created")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ModuleExists(ctx, kyma, activeModule), Timeout, Interval).Should(Succeed())
+			Eventually(ManifestExists, Timeout, Interval).WithArguments(kyma, activeModule).Should(Succeed())
 		}
 
 		By("reacting to a change of its Modules when they are set to ready")
@@ -263,18 +263,18 @@ func updateKCPModuleTemplateSpecData(kymaName, valueUpdated string) func() error
 			return err
 		}
 		for _, activeModule := range createdKyma.Spec.Modules {
-			return updateModuleTemplateSpec(controlPlaneClient, createdKyma, activeModule.Name, valueUpdated)
+			return updateModuleTemplateSpec(controlPlaneClient, createdKyma.GetNamespace(), activeModule.Name, valueUpdated)
 		}
 		return nil
 	}
 }
 
 func updateModuleTemplateSpec(clnt client.Client,
-	kyma *v1beta2.Kyma,
+	moduleNamespace,
 	moduleName,
 	newValue string,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(moduleName, clnt, kyma)
+	moduleTemplate, err := GetModuleTemplate(clnt, moduleName, moduleNamespace)
 	if err != nil {
 		return err
 	}
@@ -284,11 +284,11 @@ func updateModuleTemplateSpec(clnt client.Client,
 
 func expectModuleTemplateSpecGetReset(
 	clnt client.Client,
-	kyma *v1beta2.Kyma,
+	moduleNamespace,
 	moduleName,
 	expectedValue string,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(moduleName, clnt, kyma)
+	moduleTemplate, err := GetModuleTemplate(clnt, moduleName, moduleNamespace)
 	if err != nil {
 		return err
 	}

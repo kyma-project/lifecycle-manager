@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	ErrKymaNotFound          = errors.New("kyma not exists")
+	ErrNotFound              = errors.New("resource not exists")
 	ErrExpectedLabelNotReset = errors.New("expected label not reset")
 )
 
@@ -105,17 +105,6 @@ func updateModuleState(kyma *v1beta2.Kyma, module v1beta2.Module, state v1beta2.
 	return k8sManager.GetClient().Status().Update(ctx, component)
 }
 
-func ModuleExists(ctx context.Context, kyma *v1beta2.Kyma, module v1beta2.Module) func() error {
-	return func() error {
-		kyma, err := GetKyma(ctx, controlPlaneClient, kyma.Name, kyma.Namespace)
-		if err != nil {
-			return err
-		}
-		_, err = GetManifest(kyma, module)
-		return err
-	}
-}
-
 func UpdateRemoteModule(
 	ctx context.Context,
 	client client.Client,
@@ -146,20 +135,6 @@ func UpdateKymaLabel(
 		}
 		kyma.Labels[labelKey] = labelValue
 		return client.Update(ctx, kyma)
-	}
-}
-
-func ModuleNotExist(ctx context.Context, kyma *v1beta2.Kyma, module v1beta2.Module) func() error {
-	return func() error {
-		kyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
-		if err != nil {
-			return err
-		}
-		_, err = GetManifest(kyma, module)
-		if k8serrors.IsNotFound(err) {
-			return nil
-		}
-		return err
 	}
 }
 
@@ -199,9 +174,9 @@ func GetManifest(kyma *v1beta2.Kyma, module v1beta2.Module) (*v1beta2.Manifest, 
 	return manifest, nil
 }
 
-func GetModuleTemplate(name string, clnt client.Client, kyma *v1beta2.Kyma) (*v1beta2.ModuleTemplate, error) {
+func GetModuleTemplate(clnt client.Client, name, namespace string) (*v1beta2.ModuleTemplate, error) {
 	moduleTemplateInCluster := &v1beta2.ModuleTemplate{}
-	moduleTemplateInCluster.SetNamespace(kyma.Namespace)
+	moduleTemplateInCluster.SetNamespace(namespace)
 	moduleTemplateInCluster.SetName(name)
 	err := clnt.Get(ctx, client.ObjectKeyFromObject(moduleTemplateInCluster), moduleTemplateInCluster)
 	if err != nil {
@@ -213,7 +188,23 @@ func GetModuleTemplate(name string, clnt client.Client, kyma *v1beta2.Kyma) (*v1
 func KymaExists(clnt client.Client, name, namespace string) error {
 	_, err := GetKyma(ctx, clnt, name, namespace)
 	if k8serrors.IsNotFound(err) {
-		return ErrKymaNotFound
+		return ErrNotFound
+	}
+	return nil
+}
+
+func ManifestExists(kyma *v1beta2.Kyma, module v1beta2.Module) error {
+	_, err := GetManifest(kyma, module)
+	if k8serrors.IsNotFound(err) {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func ModuleTemplateExists(client client.Client, name, namespace string) error {
+	_, err := GetModuleTemplate(client, name, namespace)
+	if k8serrors.IsNotFound(err) {
+		return ErrNotFound
 	}
 	return nil
 }
@@ -221,27 +212,13 @@ func KymaExists(clnt client.Client, name, namespace string) error {
 func ModuleTemplatesExist(clnt client.Client, kyma *v1beta2.Kyma) func() error {
 	return func() error {
 		for _, module := range kyma.Spec.Modules {
-			if _, err := GetModuleTemplate(module.Name, clnt, kyma); err != nil {
+			if err := ModuleTemplateExists(clnt, module.Name, kyma.GetNamespace()); err != nil {
 				return err
 			}
 		}
 
 		return nil
 	}
-}
-
-func ModuleTemplateExist(client client.Client, kyma *v1beta2.Kyma, template *v1beta2.ModuleTemplate) func() bool {
-	return func() bool {
-		err := getModuleTemplate(client, template, kyma, true)
-		return k8serrors.IsNotFound(err)
-	}
-}
-
-func getModuleTemplate(clnt client.Client, template *v1beta2.ModuleTemplate, kyma *v1beta2.Kyma, remote bool) error {
-	if remote {
-		template.SetNamespace(kyma.Namespace)
-	}
-	return clnt.Get(ctx, client.ObjectKeyFromObject(template), template)
 }
 
 func deleteModule(kyma *v1beta2.Kyma, module v1beta2.Module) func() error {

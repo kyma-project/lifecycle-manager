@@ -33,6 +33,7 @@ const (
 	UnmanagedKyma      = "unmanaged-kyma"
 	InternalLabel      = OperatorPrefix + Separator + "internal"
 	BetaLabel          = OperatorPrefix + Separator + "beta"
+	SyncLabel          = OperatorPrefix + Separator + "sync"
 )
 
 func ModuleTemplatesByLabel(module *Module) client.MatchingLabels {
