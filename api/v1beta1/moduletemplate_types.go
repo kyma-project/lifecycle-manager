@@ -18,6 +18,7 @@ package v1beta1
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -149,6 +150,39 @@ func (in *ModuleTemplate) GetComponentDescriptorCacheKey() (string, error) {
 }
 
 func (in *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
-	//TODO: implement
+
+	if in.syncDisabled() {
+		return false
+	}
+
+	if in.IsBeta() && !betaEnabled {
+		return false
+	}
+
+	if in.IsInternal() && !internalEnabled {
+		return false
+	}
+
+	return true
+}
+
+func (in *ModuleTemplate) syncDisabled() bool {
+	syncEnabledVal, found := in.GetLabels()[SyncLabel]
+	return found && len(syncEnabledVal) > 0 && strings.ToLower(syncEnabledVal) != "true"
+}
+
+func (in *ModuleTemplate) IsInternal() bool {
+	internalVal, found := in.GetLabels()[InternalLabel]
+	if found && strings.ToLower(internalVal) == "true" {
+		return true
+	}
+	return false
+}
+
+func (in *ModuleTemplate) IsBeta() bool {
+	betaVal, found := in.Labels[BetaLabel]
+	if found && strings.ToLower(betaVal) == "true" {
+		return true
+	}
 	return false
 }
