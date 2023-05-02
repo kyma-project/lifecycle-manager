@@ -199,6 +199,7 @@ func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context, kym
 	for idx := range moduleStatus {
 		moduleStatus := moduleStatus[idx]
 		if moduleStatus.Manifest == nil {
+			delete(moduleStatusMap, moduleStatus.Name)
 			continue
 		}
 		module := &unstructured.Unstructured{}
