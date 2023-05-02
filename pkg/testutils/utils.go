@@ -49,6 +49,7 @@ func NewTestKyma(name string) *v1beta1.Kyma {
 		ObjectMeta: v1.ObjectMeta{
 			Name:        fmt.Sprintf("%s-%s", name, randString(randomStringLength)),
 			Namespace:   v1.NamespaceDefault,
+			Labels:      map[string]string{v1beta1.SyncLabel: "false"},
 			Annotations: map[string]string{watcher.DomainAnnotation: "example.domain.com"},
 		},
 		Spec: v1beta1.KymaSpec{

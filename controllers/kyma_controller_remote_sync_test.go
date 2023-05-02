@@ -26,6 +26,8 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Channel:        v1beta1.DefaultChannel,
 	}
 	kyma = NewTestKyma("kyma-remote-sync")
+	kyma.Labels[v1beta1.SyncLabel] = "true"
+
 	skrModule = &v1beta1.Module{
 		ControllerName: "manifest",
 		Name:           "skr-module-sync",
@@ -68,6 +70,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 
 var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-remote-skr")
+	kyma.Labels[v1beta1.SyncLabel] = "true"
 
 	kyma.Spec.Sync = v1beta1.Sync{
 		Strategy:     v1beta1.SyncStrategyLocalClient,
