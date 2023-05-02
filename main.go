@@ -310,6 +310,7 @@ func setupPurgeReconciler(
 		ResolveRemoteClient:   resolveRemoteClientFunc,
 		PurgeFinalizerTimeout: flagVar.purgeFinalizerTimeout,
 		SkipCRDs:              controllers.CRDMatcherFor(flagVar.skipPurgingFor),
+		IsManagedKyma:         flagVar.isKymaManaged,
 	}).SetupWithManager(
 		mgr, options,
 	); err != nil {

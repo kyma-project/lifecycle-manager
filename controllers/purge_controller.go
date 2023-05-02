@@ -49,6 +49,7 @@ type PurgeReconciler struct {
 	ResolveRemoteClient   RemoteClientResolver
 	PurgeFinalizerTimeout time.Duration
 	SkipCRDs              CRDMatcher
+	IsManagedKyma         bool
 }
 
 func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -204,7 +205,9 @@ func (r *PurgeReconciler) UpdateStatus(
 
 func (r *PurgeReconciler) RecordKymaStatusMetrics(_ context.Context, _ *v1beta1.Kyma) {}
 
-func (r *PurgeReconciler) IsKymaManaged() bool { return false }
+func (r *PurgeReconciler) IsKymaManaged() bool {
+	return r.IsManagedKyma
+}
 
 func isKymaCR(crd apiextensions.CustomResourceDefinition) bool {
 	return crd.Spec.Group == v1beta1.GroupVersion.Group && crd.Spec.Names.Kind == string(v1beta1.KymaKind)
