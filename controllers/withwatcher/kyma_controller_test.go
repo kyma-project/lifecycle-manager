@@ -49,7 +49,6 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	tlsSecret := createTLSSecret(kymaObjKey)
 
 	kyma.Spec.Sync = v1beta1.Sync{
-		Enabled:      true,
 		Strategy:     v1beta1.SyncStrategyLocalClient,
 		Namespace:    metav1.NamespaceDefault,
 		NoModuleCopy: true,

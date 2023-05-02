@@ -98,7 +98,6 @@ type Sync struct {
 	// +kubebuilder:default:=false
 	// Enabled set to true will look up a kubeconfig for the remote cluster based on the strategy
 	// and synchronize its state there.
-	// TODO: Ensure no longer used in tests
 	Enabled bool `json:"enabled,omitempty"`
 
 	// +kubebuilder:default:=secret

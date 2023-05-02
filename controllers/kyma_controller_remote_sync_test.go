@@ -33,7 +33,6 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	}
 
 	kyma.Spec.Sync = v1beta1.Sync{
-		Enabled:      true,
 		Strategy:     v1beta1.SyncStrategyLocalClient,
 		Namespace:    metav1.NamespaceDefault,
 		NoModuleCopy: true,
@@ -71,7 +70,6 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-remote-skr")
 
 	kyma.Spec.Sync = v1beta1.Sync{
-		Enabled:      true,
 		Strategy:     v1beta1.SyncStrategyLocalClient,
 		Namespace:    "sync-namespace",
 		NoModuleCopy: true,

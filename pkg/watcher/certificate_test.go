@@ -32,7 +32,6 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				},
 				Spec: v1beta1.KymaSpec{
 					Sync: v1beta1.Sync{
-						Enabled:      true,
 						Strategy:     v1beta1.SyncStrategyLocalClient,
 						Namespace:    metav1.NamespaceDefault,
 						NoModuleCopy: true,
@@ -54,7 +53,6 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				},
 				Spec: v1beta1.KymaSpec{
 					Sync: v1beta1.Sync{
-						Enabled:      true,
 						Strategy:     v1beta1.SyncStrategyLocalClient,
 						Namespace:    metav1.NamespaceDefault,
 						NoModuleCopy: true,
@@ -75,7 +73,6 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				},
 				Spec: v1beta1.KymaSpec{
 					Sync: v1beta1.Sync{
-						Enabled:      true,
 						Strategy:     v1beta1.SyncStrategyLocalClient,
 						Namespace:    metav1.NamespaceDefault,
 						NoModuleCopy: true,
