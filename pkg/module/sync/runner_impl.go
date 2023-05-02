@@ -130,7 +130,7 @@ func (r *RunnerImpl) setupModule(module *common.Module, kyma *v1beta2.Kyma) erro
 
 func (r *RunnerImpl) SyncModuleStatus(ctx context.Context, kyma *v1beta2.Kyma, modules common.Modules) {
 	r.updateModuleStatusFromExistingModules(modules, kyma)
-	r.deleteNoLongerExistingModuleStatus(ctx, kyma)
+	DeleteNoLongerExistingModuleStatus(ctx, kyma, r.getModule)
 }
 
 func (r *RunnerImpl) updateModuleStatusFromExistingModules(
@@ -193,7 +193,11 @@ func stateFromManifest(obj client.Object) v1beta2.State {
 	}
 }
 
-func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1beta2.Kyma) {
+func DeleteNoLongerExistingModuleStatus(
+	ctx context.Context,
+	kyma *v1beta2.Kyma,
+	moduleFunc GetModuleFunc,
+) {
 	moduleStatusMap := kyma.GetModuleStatusMap()
 	moduleStatus := kyma.GetNoLongerExistingModuleStatus()
 	for idx := range moduleStatus {
@@ -206,7 +210,7 @@ func (r *RunnerImpl) deleteNoLongerExistingModuleStatus(ctx context.Context, kym
 		module.SetGroupVersionKind(moduleStatus.Manifest.GroupVersionKind())
 		module.SetName(moduleStatus.Manifest.GetName())
 		module.SetNamespace(moduleStatus.Manifest.GetNamespace())
-		err := r.getModule(ctx, module)
+		err := moduleFunc(ctx, module)
 		if apiErrors.IsNotFound(err) {
 			delete(moduleStatusMap, moduleStatus.Name)
 		} else {
