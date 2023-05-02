@@ -9,6 +9,16 @@ import (
 func TestSyncEnabled(t *testing.T) {
 	t.Parallel()
 
+	t.Run("sync enabled by default for nil labels map", func(t *testing.T) {
+		t.Parallel()
+		module := v1beta1.ModuleTemplate{}
+		module.Labels = nil
+		actual := module.SyncEnabled(false, false)
+		if !actual {
+			t.Error("Incorrect SyncEnabled value")
+		}
+	})
+
 	tests := []struct {
 		name               string
 		syncLabelValue     string
@@ -20,7 +30,7 @@ func TestSyncEnabled(t *testing.T) {
 	}{
 		{
 			expected:           true,
-			name:               "default case",
+			name:               "sync is enabled for missing or empty labels",
 			syncLabelValue:     "",
 			betaLabelValue:     "",
 			internalLabelValue: "",
@@ -29,7 +39,7 @@ func TestSyncEnabled(t *testing.T) {
 		},
 		{
 			expected:           true,
-			name:               "default with explicit label value",
+			name:               "sync is enabled for explicit label value",
 			syncLabelValue:     "true",
 			betaLabelValue:     "",
 			internalLabelValue: "",
@@ -38,7 +48,7 @@ func TestSyncEnabled(t *testing.T) {
 		},
 		{
 			expected:           false,
-			name:               "disable module",
+			name:               "sync is disabled for explicit label value",
 			syncLabelValue:     "false",
 			betaLabelValue:     "",
 			internalLabelValue: "",
@@ -47,7 +57,7 @@ func TestSyncEnabled(t *testing.T) {
 		},
 		{
 			expected:           false,
-			name:               "beta module must be explicitly enabled",
+			name:               "beta sync is disabled by default",
 			syncLabelValue:     "",
 			betaLabelValue:     "true",
 			internalLabelValue: "",
@@ -56,7 +66,7 @@ func TestSyncEnabled(t *testing.T) {
 		},
 		{
 			expected:           true,
-			name:               "beta module is explicitly enabled",
+			name:               "beta sync is enabled if explicitly enabled",
 			syncLabelValue:     "",
 			betaLabelValue:     "true",
 			internalLabelValue: "",
@@ -65,7 +75,7 @@ func TestSyncEnabled(t *testing.T) {
 		},
 		{
 			expected:           false,
-			name:               "internal module must be explicitly enabled",
+			name:               "internal sync is disabled by default",
 			syncLabelValue:     "",
 			betaLabelValue:     "",
 			internalLabelValue: "true",
@@ -74,7 +84,7 @@ func TestSyncEnabled(t *testing.T) {
 		},
 		{
 			expected:           true,
-			name:               "internal module is explicitly enabled",
+			name:               "internal sync is enabled if explicitly enabled",
 			syncLabelValue:     "",
 			betaLabelValue:     "",
 			internalLabelValue: "true",
@@ -83,7 +93,7 @@ func TestSyncEnabled(t *testing.T) {
 		},
 		{
 			expected:           false,
-			name:               "beta+internal module must be explicitly enabled (1)",
+			name:               "beta+internal sync is disabled by default",
 			syncLabelValue:     "",
 			betaLabelValue:     "true",
 			internalLabelValue: "true",
@@ -92,7 +102,7 @@ func TestSyncEnabled(t *testing.T) {
 		},
 		{
 			expected:           false,
-			name:               "beta+internal module must be explicitly enabled (2)",
+			name:               "beta+internal sync is disabled in only internal is enabled",
 			syncLabelValue:     "",
 			betaLabelValue:     "true",
 			internalLabelValue: "true",
@@ -101,7 +111,7 @@ func TestSyncEnabled(t *testing.T) {
 		},
 		{
 			expected:           true,
-			name:               "sync may be enabled for beta+internal module",
+			name:               "beta+internal sync is enabled if both beta and internal are explicitly enabled",
 			syncLabelValue:     "",
 			betaLabelValue:     "true",
 			internalLabelValue: "true",
