@@ -236,7 +236,7 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 
 	var errGroup errgroup.Group
 
-	if kyma.SyncEnabled() && kyma.Spec.Sync.ModuleCatalog {
+	if kyma.SyncEnabled() {
 		errGroup.Go(func() error { return r.syncModuleCatalogInParallel(ctx, kyma) })
 	}
 
