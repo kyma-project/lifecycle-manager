@@ -14,11 +14,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func ModuleDeletedSuccessfullyMock(_ context.Context, _ client.Object) error {
+func moduleDeletedSuccessfullyMock(_ context.Context, _ client.Object) error {
 	return apierrors.NewNotFound(schema.GroupResource{}, "module-no-longer-exists")
 }
 
-func ModuleStillExistsInClusterMock(_ context.Context, _ client.Object) error {
+func moduleStillExistsInClusterMock(_ context.Context, _ client.Object) error {
 	return apierrors.NewAlreadyExists(schema.GroupResource{}, "module-still-exists")
 }
 
@@ -41,7 +41,7 @@ func TestDeleteNoLongerExistingModuleStatus(t *testing.T) {
 			[]string{ModuleShouldKeep},
 			[]string{ModuleShouldKeep, ModuleToBeRemoved},
 			[]string{ModuleShouldKeep},
-			ModuleDeletedSuccessfullyMock,
+			moduleDeletedSuccessfullyMock,
 		},
 
 		{
@@ -50,7 +50,7 @@ func TestDeleteNoLongerExistingModuleStatus(t *testing.T) {
 			[]string{ModuleShouldKeep},
 			[]string{ModuleShouldKeep, InvalidModulePrefix + ModuleToBeRemoved},
 			[]string{ModuleShouldKeep},
-			ModuleDeletedSuccessfullyMock,
+			moduleDeletedSuccessfullyMock,
 		},
 		{
 			"When status.modules contains invalid modules in spec.module, " +
@@ -58,7 +58,7 @@ func TestDeleteNoLongerExistingModuleStatus(t *testing.T) {
 			[]string{InvalidModulePrefix + ModuleShouldKeep},
 			[]string{InvalidModulePrefix + ModuleShouldKeep, ModuleToBeRemoved},
 			[]string{InvalidModulePrefix + ModuleShouldKeep},
-			ModuleDeletedSuccessfullyMock,
+			moduleDeletedSuccessfullyMock,
 		},
 		{
 			"When status.modules contains valid modules not in spec.module, " +
@@ -66,7 +66,7 @@ func TestDeleteNoLongerExistingModuleStatus(t *testing.T) {
 			[]string{ModuleShouldKeep},
 			[]string{ModuleShouldKeep, ModuleToBeRemoved},
 			[]string{ModuleShouldKeep, ModuleToBeRemoved},
-			ModuleStillExistsInClusterMock,
+			moduleStillExistsInClusterMock,
 		},
 
 		{
@@ -75,7 +75,7 @@ func TestDeleteNoLongerExistingModuleStatus(t *testing.T) {
 			[]string{ModuleShouldKeep},
 			[]string{ModuleShouldKeep, InvalidModulePrefix + ModuleToBeRemoved},
 			[]string{ModuleShouldKeep},
-			ModuleStillExistsInClusterMock,
+			moduleStillExistsInClusterMock,
 		},
 		{
 			"When status.modules contains invalid modules in spec.module, " +
@@ -83,7 +83,7 @@ func TestDeleteNoLongerExistingModuleStatus(t *testing.T) {
 			[]string{InvalidModulePrefix + ModuleShouldKeep},
 			[]string{InvalidModulePrefix + ModuleShouldKeep, ModuleToBeRemoved},
 			[]string{InvalidModulePrefix + ModuleShouldKeep, ModuleToBeRemoved},
-			ModuleStillExistsInClusterMock,
+			moduleStillExistsInClusterMock,
 		},
 	}
 	for _, testCase := range tests {
