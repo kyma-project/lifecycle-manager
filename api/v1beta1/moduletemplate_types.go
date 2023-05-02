@@ -173,16 +173,16 @@ func (in *ModuleTemplate) syncDisabled() bool {
 
 func (in *ModuleTemplate) IsInternal() bool {
 	internalVal, found := in.GetLabels()[InternalLabel]
-	if found && strings.ToLower(internalVal) == "true" {
-		return true
+	if found {
+		return strings.ToLower(internalVal) == "true"
 	}
 	return false
 }
 
 func (in *ModuleTemplate) IsBeta() bool {
 	betaVal, found := in.Labels[BetaLabel]
-	if found && strings.ToLower(betaVal) == "true" {
-		return true
+	if found {
+		return strings.ToLower(betaVal) == "true"
 	}
 	return false
 }

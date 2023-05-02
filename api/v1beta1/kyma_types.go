@@ -17,6 +17,8 @@ limitations under the License.
 package v1beta1
 
 import (
+	"strings"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -423,16 +425,26 @@ func (kyma *Kyma) AllModulesReady() bool {
 }
 
 func (kyma *Kyma) SyncEnabled() bool {
-	//TODO: Implement proper logic based on labels
-	return false
+	syncVal, found := kyma.GetLabels()[SyncLabel]
+	if !found {
+		return true
+	}
+
+	return len(syncVal) == 0 || strings.ToLower(syncVal) == "true"
 }
 
 func (kyma *Kyma) BetaEnabled() bool {
-	//TODO: Implement proper logic based on labels
+	betaVal, found := kyma.GetLabels()[BetaLabel]
+	if found {
+		return strings.ToLower(betaVal) == "true"
+	}
 	return false
 }
 
 func (kyma *Kyma) InternalEnabled() bool {
-	//TODO: Implement proper logic based on labels
+	internalVal, found := kyma.GetLabels()[InternalLabel]
+	if found {
+		return strings.ToLower(internalVal) == "true"
+	}
 	return false
 }
