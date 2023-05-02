@@ -25,5 +25,3 @@ func (watcher *Watcher) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		For(watcher).
 		Complete()
 }
-
-// TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!

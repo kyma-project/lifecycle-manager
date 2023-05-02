@@ -25,5 +25,3 @@ func (kyma *Kyma) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		For(kyma).
 		Complete()
 }
-
-// TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
