@@ -140,7 +140,7 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(
 				PartialMeta: v1beta1.PartialMetaFromObject(module.Template),
 				TypeMeta:    metav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
 			},
-			Resource: v1beta1.TrackingObject{
+			Resource: &v1beta1.TrackingObject{
 				PartialMeta: v1beta1.PartialMetaFromObject(manifestObject.Spec.Resource),
 				TypeMeta:    metav1.TypeMeta{Kind: moduleCRKind, APIVersion: moduleCRAPIVersion},
 			},
