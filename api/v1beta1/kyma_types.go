@@ -392,8 +392,12 @@ func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType, conditionSt
 	return false
 }
 
+const (
+	labelValueTrue = "true"
+)
+
 func (kyma *Kyma) SkipReconciliation() bool {
-	return kyma.GetLabels() != nil && kyma.GetLabels()[SkipReconcileLabel] == "true"
+	return kyma.GetLabels() != nil && kyma.GetLabels()[SkipReconcileLabel] == labelValueTrue
 }
 
 func (kyma *Kyma) DetermineState() State {
@@ -429,13 +433,13 @@ func (kyma *Kyma) SyncEnabled() bool {
 		return true
 	}
 
-	return len(syncVal) == 0 || strings.ToLower(syncVal) == "true"
+	return len(syncVal) == 0 || strings.ToLower(syncVal) == labelValueTrue
 }
 
 func (kyma *Kyma) BetaEnabled() bool {
 	betaVal, found := kyma.GetLabels()[BetaLabel]
 	if found {
-		return strings.ToLower(betaVal) == "true"
+		return strings.ToLower(betaVal) == labelValueTrue
 	}
 	return false
 }
@@ -443,7 +447,7 @@ func (kyma *Kyma) BetaEnabled() bool {
 func (kyma *Kyma) InternalEnabled() bool {
 	internalVal, found := kyma.GetLabels()[InternalLabel]
 	if found {
-		return strings.ToLower(internalVal) == "true"
+		return strings.ToLower(internalVal) == labelValueTrue
 	}
 	return false
 }

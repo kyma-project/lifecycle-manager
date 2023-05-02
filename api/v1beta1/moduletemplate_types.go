@@ -150,7 +150,6 @@ func (in *ModuleTemplate) GetComponentDescriptorCacheKey() (string, error) {
 }
 
 func (in *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
-
 	if in.syncDisabled() {
 		return false
 	}
@@ -168,7 +167,7 @@ func (in *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
 
 func (in *ModuleTemplate) syncDisabled() bool {
 	syncEnabledVal, found := in.GetLabels()[SyncLabel]
-	return found && len(syncEnabledVal) > 0 && strings.ToLower(syncEnabledVal) != "true"
+	return found && len(syncEnabledVal) > 0 && strings.ToLower(syncEnabledVal) != labelValueTrue
 }
 
 func (in *ModuleTemplate) IsInternal() bool {
@@ -177,7 +176,7 @@ func (in *ModuleTemplate) IsInternal() bool {
 		return false
 	}
 
-	return strings.ToLower(internalVal) == "true"
+	return strings.ToLower(internalVal) == labelValueTrue
 }
 
 func (in *ModuleTemplate) IsBeta() bool {
@@ -185,5 +184,5 @@ func (in *ModuleTemplate) IsBeta() bool {
 	if !found {
 		return false
 	}
-	return strings.ToLower(betaVal) == "true"
+	return strings.ToLower(betaVal) == labelValueTrue
 }
