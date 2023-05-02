@@ -426,3 +426,13 @@ func (kyma *Kyma) SyncEnabled() bool {
 	//TODO: Implement proper logic based on labels
 	return false
 }
+
+func (kyma *Kyma) BetaEnabled() bool {
+	//TODO: Implement proper logic based on labels
+	return false
+}
+
+func (kyma *Kyma) InternalEnabled() bool {
+	//TODO: Implement proper logic based on labels
+	return false
+}

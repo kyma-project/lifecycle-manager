@@ -148,7 +148,7 @@ func (in *ModuleTemplate) GetComponentDescriptorCacheKey() (string, error) {
 	return fmt.Sprintf("%s:%s:%s", in.Spec.Channel, descriptor.GetName(), descriptor.GetVersion()), nil
 }
 
-func (in *ModuleTemplate) SyncEnabled() bool {
+func (in *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
 	//TODO: implement
 	return false
 }
