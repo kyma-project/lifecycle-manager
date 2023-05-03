@@ -123,7 +123,7 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 func (r *PurgeReconciler) SetupWithManager(mgr ctrl.Manager,
 	options controller.Options,
 ) error {
-	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta1.Kyma{}).WithOptions(options)
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).WithOptions(options)
 
 	if err := controllerBuilder.Complete(r); err != nil {
 		return fmt.Errorf("error occurred while building controller: %w", err)

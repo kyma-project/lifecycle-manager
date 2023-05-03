@@ -180,7 +180,7 @@ func (c *RemoteCatalog) diffsToDelete(
 		presentInKCP[kcpList[i].Namespace+kcpList[i].Name] = struct{}{}
 	}
 	for i := range skrList {
-		if _, inKCP := presentInKCP[skrList[i].Namespace+skrList[i].Name]; !inKCP  && isManagedByKcp(skrList[i]){
+		if _, inKCP := presentInKCP[skrList[i].Namespace+skrList[i].Name]; !inKCP && isManagedByKcp(skrList[i]) {
 			toDelete = append(toDelete, &skrList[i])
 		}
 	}

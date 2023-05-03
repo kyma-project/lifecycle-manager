@@ -18,6 +18,7 @@ package v1beta2
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -136,18 +137,39 @@ func (m *ModuleTemplate) GetComponentDescriptorCacheKey() (string, error) {
 	return fmt.Sprintf("%s:%s:%s", m.Spec.Channel, descriptor.GetName(), descriptor.GetVersion()), nil
 }
 
+// TODO: decision pending.
+func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
+	if m.syncDisabled() {
+		return false
+	}
+
+	if m.IsBeta() && !betaEnabled {
+		return false
+	}
+
+	if m.IsInternal() && !internalEnabled {
+		return false
+	}
+
+	return true
+}
+
+// TODO: decision pending.
+func (m *ModuleTemplate) syncDisabled() bool {
+	syncEnabledVal, found := m.GetLabels()[SyncLabel]
+	return found && len(syncEnabledVal) > 0 && strings.ToLower(syncEnabledVal) != ActiveLabelValue
+}
+
 func (m *ModuleTemplate) IsInternal() bool {
-	isInternal, found := m.GetLabels()[InternalLabel]
-	if found && isInternal == "true" {
-		return true
+	if isInternal, found := m.Labels[InternalLabel]; found {
+		return strings.ToLower(isInternal) == ActiveLabelValue
 	}
 	return false
 }
 
 func (m *ModuleTemplate) IsBeta() bool {
-	isBeta, found := m.Labels[BetaLabel]
-	if found && isBeta == "true" {
-		return true
+	if isBeta, found := m.Labels[BetaLabel]; found {
+		return strings.ToLower(isBeta) == ActiveLabelValue
 	}
 	return false
 }

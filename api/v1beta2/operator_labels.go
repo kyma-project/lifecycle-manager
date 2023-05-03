@@ -33,13 +33,13 @@ const (
 	SkipReconcileLabel = OperatorPrefix + Separator + "skip-reconciliation"
 	UnmanagedKyma      = "unmanaged-kyma"
 
-	InternalLabel      = OperatorPrefix + Separator + "internal"
-	BetaLabel          = OperatorPrefix + Separator + "beta"
+	InternalLabel = OperatorPrefix + Separator + "internal"
+	BetaLabel     = OperatorPrefix + Separator + "beta"
 
 	// Controls ModuleTemplate sync logic.
 	// If put on the Kyma object, allows to disable sync for all ModuleTemplatesByLabel
 	// If put on a single ModuleTemplate, allows to disable sync just for this object.
-	SyncLabel          = OperatorPrefix + Separator + "sync"
+	SyncLabel = OperatorPrefix + Separator + "sync"
 )
 
 func ModuleTemplatesByLabel(module *Module) client.MatchingLabels {

@@ -1,9 +1,9 @@
-package v1beta1_test
+package v1beta2_test
 
 import (
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 //nolint:funlen
@@ -12,7 +12,7 @@ func TestSyncEnabled(t *testing.T) {
 
 	t.Run("sync enabled by default for nil labels map", func(t *testing.T) {
 		t.Parallel()
-		module := v1beta1.ModuleTemplate{}
+		module := v1beta2.ModuleTemplate{}
 		module.Labels = nil
 		actual := module.SyncEnabled(false, false)
 		if !actual {
@@ -126,11 +126,11 @@ func TestSyncEnabled(t *testing.T) {
 		t.Run(tcase.name, func(t *testing.T) {
 			t.Parallel()
 
-			module := v1beta1.ModuleTemplate{}
+			module := v1beta2.ModuleTemplate{}
 			module.Labels = map[string]string{}
-			module.Labels[v1beta1.SyncLabel] = tcase.syncLabelValue
-			module.Labels[v1beta1.BetaLabel] = tcase.betaLabelValue
-			module.Labels[v1beta1.InternalLabel] = tcase.internalLabelValue
+			module.Labels[v1beta2.SyncLabel] = tcase.syncLabelValue
+			module.Labels[v1beta2.BetaLabel] = tcase.betaLabelValue
+			module.Labels[v1beta2.InternalLabel] = tcase.internalLabelValue
 
 			actual := module.SyncEnabled(tcase.betaEnabled, tcase.internalEnabled)
 			if actual != tcase.expected {

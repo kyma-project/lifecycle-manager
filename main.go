@@ -302,16 +302,16 @@ func setupPurgeReconciler(
 ) {
 	resolveRemoteClientFunc := func(ctx context.Context, key client.ObjectKey) (client.Client, error) {
 		kcpClient := remote.NewClientWithConfig(mgr.GetClient(), restConfig)
-		return remote.NewClientLookup(kcpClient, remoteClientCache, operatorv1beta1.SyncStrategyLocalSecret).Lookup(ctx, key)
+		return remote.NewClientLookup(kcpClient, remoteClientCache, operatorv1beta2.SyncStrategyLocalSecret).Lookup(ctx, key)
 	}
 
 	if err := (&controllers.PurgeReconciler{
 		Client:                mgr.GetClient(),
-		EventRecorder:         mgr.GetEventRecorderFor(operatorv1beta1.OperatorName),
+		EventRecorder:         mgr.GetEventRecorderFor(operatorv1beta2.OperatorName),
 		ResolveRemoteClient:   resolveRemoteClientFunc,
 		PurgeFinalizerTimeout: flagVar.purgeFinalizerTimeout,
 		SkipCRDs:              controllers.CRDMatcherFor(flagVar.skipPurgingFor),
-		IsManagedKyma:         flagVar.isKymaManaged,
+		IsManagedKyma:         flagVar.inKCPMode,
 	}).SetupWithManager(
 		mgr, options,
 	); err != nil {

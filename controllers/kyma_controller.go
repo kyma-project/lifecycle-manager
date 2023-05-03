@@ -194,7 +194,7 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta2.Ky
 
 	modulesToSync := []v1beta2.ModuleTemplate{}
 	for _, mt := range moduleTemplateList.Items {
-		if mt.SyncEnabled(kyma.BetaEnabled(), kyma.InternalEnabled()) {
+		if mt.SyncEnabled(kyma.IsBeta(), kyma.IsInternal()) {
 			modulesToSync = append(modulesToSync, mt)
 		}
 	}

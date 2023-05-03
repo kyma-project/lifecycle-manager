@@ -16,13 +16,8 @@ type ClientLookup struct {
 	strategy v1beta2.SyncStrategy
 }
 
-func NewClientLookup(kcp Client, cache *ClientCache, kyma *v1beta2.Kyma) *ClientLookup {
-	strategyValue, found := kyma.Annotations[v1beta2.SyncStrategyAnnotation]
-	strategy := v1beta2.SyncStrategyLocalSecret
-	if found && strategyValue == v1beta2.SyncStrategyLocalClient {
-		strategy = v1beta2.SyncStrategyLocalClient
-	}
-	return &ClientLookup{kcp: kcp, cache: cache, strategy: v1beta2.SyncStrategy(strategy)}
+func NewClientLookup(kcp Client, cache *ClientCache, strategy v1beta2.SyncStrategy) *ClientLookup {
+	return &ClientLookup{kcp: kcp, cache: cache, strategy: strategy}
 }
 
 func (l *ClientLookup) Lookup(ctx context.Context, key client.ObjectKey) (Client, error) {

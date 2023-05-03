@@ -36,7 +36,12 @@ type KymaSynchronizationContext struct {
 func InitializeKymaSynchronizationContext(
 	ctx context.Context, kcp Client, cache *ClientCache, kyma *v1beta2.Kyma,
 ) (*KymaSynchronizationContext, error) {
-	skr, err := NewClientLookup(kcp, cache, kyma).Lookup(ctx, client.ObjectKeyFromObject(kyma))
+	strategyValue, found := kyma.Annotations[v1beta2.SyncStrategyAnnotation]
+	syncStrategy := v1beta2.SyncStrategyLocalSecret
+	if found && strategyValue == v1beta2.SyncStrategyLocalClient {
+		syncStrategy = v1beta2.SyncStrategyLocalClient
+	}
+	skr, err := NewClientLookup(kcp, cache, v1beta2.SyncStrategy(syncStrategy)).Lookup(ctx, client.ObjectKeyFromObject(kyma))
 	if err != nil {
 		return nil, err
 	}
