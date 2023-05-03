@@ -11,11 +11,12 @@ const (
 	ControllerName = OperatorPrefix + Separator + "controller-name"
 	ChannelLabel   = OperatorPrefix + Separator + "channel"
 	// ManagedBy defines the controller managing the resource.
-	ManagedBy  = OperatorPrefix + Separator + "managed-by"
-	Finalizer  = OperatorPrefix + Separator + string(KymaKind)
-	KymaName   = OperatorPrefix + Separator + "kyma-name"
-	Signature  = OperatorPrefix + Separator + "signature"
-	ModuleName = OperatorPrefix + Separator + "module-name"
+	ManagedBy      = OperatorPrefix + Separator + "managed-by"
+	Finalizer      = OperatorPrefix + Separator + string(KymaKind)
+	PurgeFinalizer = OperatorPrefix + Separator + "purge-finalizer"
+	KymaName       = OperatorPrefix + Separator + "kyma-name"
+	Signature      = OperatorPrefix + Separator + "signature"
+	ModuleName     = OperatorPrefix + Separator + "module-name"
 	// Notice: This label is intended solely for testing purposes and should not be used in production module templates.
 	UseLocalTemplate = OperatorPrefix + Separator + "use-local-template"
 
@@ -52,7 +53,7 @@ func (kyma *Kyma) CheckLabelsAndFinalizers() bool {
 	}
 
 	updateRequired := false
-	if !controllerutil.ContainsFinalizer(kyma, Finalizer) {
+	if kyma.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(kyma, Finalizer) {
 		controllerutil.AddFinalizer(kyma, Finalizer)
 		updateRequired = true
 	}

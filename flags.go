@@ -21,6 +21,7 @@ const (
 	defaultCacheSyncTimeout               = 2 * time.Minute
 	defaultListenerPort                   = 9080
 	defaultLogLevel                       = log.WarnLevel
+	defaultPurgeFinalizerTimeout          = 5 * time.Minute
 )
 
 //nolint:funlen
@@ -101,6 +102,12 @@ func defineFlagVar() *FlagVar {
 	)
 	flag.BoolVar(&flagVar.inKCPMode, "in-kcp-mode", false,
 		"indicates lifecycle manager is deployed in control-plane mode")
+	flag.BoolVar(&flagVar.enablePurgeFinalizer, "enable-purge-finalizer", false,
+		"Enabling purge finalizer")
+	flag.DurationVar(&flagVar.purgeFinalizerTimeout, "purge-finalizer-timeout", defaultPurgeFinalizerTimeout,
+		"Indicates the SKR Purge Finalizers execution delay in seconds")
+	flag.StringVar(&flagVar.skipPurgingFor, "skip-finalizer-purging-for", "", "Exclude the passed CRDs"+
+		" from finalizer removal. Example: 'ingressroutetcps.traefik.containo.us,*.helm.cattle.io'.")
 	return flagVar
 }
 
@@ -140,4 +147,7 @@ type FlagVar struct {
 	enableDomainNameVerification           bool
 	logLevel                               int
 	inKCPMode                              bool
+	enablePurgeFinalizer                   bool
+	purgeFinalizerTimeout                  time.Duration
+	skipPurgingFor                         string
 }

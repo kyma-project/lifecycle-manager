@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"net/http"
 	"net/http/pprof"
@@ -285,7 +286,38 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		os.Exit(1)
 	}
 
+	if flagVar.enablePurgeFinalizer {
+		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options, kcpRestConfig)
+	}
+
 	metrics.Initialize()
+}
+
+func setupPurgeReconciler(
+	mgr ctrl.Manager,
+	remoteClientCache *remote.ClientCache,
+	flagVar *FlagVar,
+	options controller.Options,
+	restConfig *rest.Config,
+) {
+	resolveRemoteClientFunc := func(ctx context.Context, key client.ObjectKey) (client.Client, error) {
+		kcpClient := remote.NewClientWithConfig(mgr.GetClient(), restConfig)
+		return remote.NewClientLookup(kcpClient, remoteClientCache, operatorv1beta1.SyncStrategyLocalSecret).Lookup(ctx, key)
+	}
+
+	if err := (&controllers.PurgeReconciler{
+		Client:                mgr.GetClient(),
+		EventRecorder:         mgr.GetEventRecorderFor(operatorv1beta1.OperatorName),
+		ResolveRemoteClient:   resolveRemoteClientFunc,
+		PurgeFinalizerTimeout: flagVar.purgeFinalizerTimeout,
+		SkipCRDs:              controllers.CRDMatcherFor(flagVar.skipPurgingFor),
+		IsManagedKyma:         flagVar.isKymaManaged,
+	}).SetupWithManager(
+		mgr, options,
+	); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "PurgeReconciler")
+		os.Exit(1)
+	}
 }
 
 func setupManifestReconciler(
