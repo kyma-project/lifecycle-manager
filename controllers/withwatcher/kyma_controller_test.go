@@ -43,6 +43,8 @@ var (
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
 	kyma := NewTestKyma("kyma-remote-sync")
+	kyma.Labels[v1beta2.SyncLabel] = "true"
+
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
 	issuer := NewTestIssuer(metav1.NamespaceDefault)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)

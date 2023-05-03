@@ -192,7 +192,14 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta2.Ky
 		return fmt.Errorf("could not aggregate module templates for module catalog sync: %w", err)
 	}
 
-	if err := remote.NewRemoteCatalogFromKyma(kyma).CreateOrUpdate(ctx, moduleTemplateList); err != nil {
+	modulesToSync := []v1beta2.ModuleTemplate{}
+	for _, mt := range moduleTemplateList.Items {
+		if mt.SyncEnabled(kyma.BetaEnabled(), kyma.InternalEnabled()) {
+			modulesToSync = append(modulesToSync, mt)
+		}
+	}
+
+	if err := remote.NewRemoteCatalogFromKyma(kyma).CreateOrUpdate(ctx, modulesToSync); err != nil {
 		return fmt.Errorf("could not synchronize remote module catalog: %w", err)
 	}
 
@@ -228,9 +235,8 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 	logger := ctrlLog.FromContext(ctx)
 
 	var errGroup errgroup.Group
-	// TODO: revisit it after 542 merged
-	syncCatalog := true
-	if kyma.SyncEnabled() && syncCatalog {
+
+	if kyma.SyncEnabled() {
 		errGroup.Go(func() error { return r.syncModuleCatalogInParallel(ctx, kyma) })
 	}
 

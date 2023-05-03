@@ -126,6 +126,7 @@ func DeployModuleTemplate(
 	if err != nil {
 		return err
 	}
+	//TODO: add nil check
 	if isInternal {
 		template.Labels[v1beta2.InternalLabel] = v1beta2.ActiveLabelValue
 	}
