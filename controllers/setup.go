@@ -145,3 +145,16 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 		WithOptions(options).
 		Complete(r)
 }
+
+// SetupWithManager sets up the Purge controller with the Manager.
+func (r *PurgeReconciler) SetupWithManager(mgr ctrl.Manager,
+	options controller.Options,
+) error {
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta1.Kyma{}).WithOptions(options)
+
+	if err := controllerBuilder.Complete(r); err != nil {
+		return fmt.Errorf("error occurred while building controller: %w", err)
+	}
+
+	return nil
+}
