@@ -214,13 +214,12 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(
 	if !remoteKyma.GetDeletionTimestamp().IsZero() {
 		return nil
 	}
-
 	recorder := adapter.RecorderFromContext(ctx)
 
 	c.SyncWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma)
 	if err := c.RuntimeClient.Update(ctx, remoteKyma); err != nil {
-		recorder.Event(controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma "+
-			"watcher labels and annotations")
+		recorder.Event(controlPlaneKyma, "Warning", err.Error(), "could not synchronise runtime kyma "+
+			"spec, watcher labels and annotations")
 		return err
 	}
 
