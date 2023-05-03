@@ -2,6 +2,7 @@ package sync_test
 
 import (
 	"context"
+	"sort"
 	"strings"
 	"testing"
 
@@ -113,6 +114,8 @@ func TestDeleteNoLongerExistingModuleStatus(t *testing.T) {
 			for _, moduleStatus := range kyma.Status.Modules {
 				modulesInFinalModuleStatus = append(modulesInFinalModuleStatus, moduleStatus.Name)
 			}
+			sort.Strings(testCase.ExpectedModulesInKymaStatus)
+			sort.Strings(modulesInFinalModuleStatus)
 			assert.Equal(t, testCase.ExpectedModulesInKymaStatus, modulesInFinalModuleStatus)
 		})
 	}

@@ -41,7 +41,8 @@ func InitializeKymaSynchronizationContext(
 	if found && strategyValue == v1beta2.SyncStrategyLocalClient {
 		syncStrategy = v1beta2.SyncStrategyLocalClient
 	}
-	skr, err := NewClientLookup(kcp, cache, v1beta2.SyncStrategy(syncStrategy)).Lookup(ctx, client.ObjectKeyFromObject(kyma))
+	skr, err := NewClientLookup(kcp, cache, v1beta2.SyncStrategy(syncStrategy)).
+		Lookup(ctx, client.ObjectKeyFromObject(kyma))
 	if err != nil {
 		return nil, err
 	}
