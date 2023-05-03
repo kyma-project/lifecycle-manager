@@ -122,7 +122,9 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			return nil
 		}, Timeout, Interval)
 		By("Remote Kyma should contain Watcher labels and annotations")
-		Eventually(WatcherLabelsAnnotationsExist(runtimeClient, kyma), Timeout, Interval).Should(Succeed())
+		Eventually(WatcherLabelsAnnotationsExist, Timeout, Interval).
+			WithArguments(runtimeClient, kyma).
+			Should(Succeed())
 		moduleToBeUpdated := kyma.Spec.Modules[0].Name
 		By("Update SKR Module Template spec.data.spec field")
 		Eventually(updateModuleTemplateSpec,
