@@ -151,9 +151,10 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(
 	)
 
 	latestGeneration := strconv.FormatInt(crd.Generation, 10)
+	runtimeCRDGeneration := strconv.FormatInt(crdFromRuntime.Generation, 10)
 	if k8serrors.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta1.GroupVersion.Version) ||
 		!ContainsLatestCRDGeneration(kyma.Annotations[v1beta1.KcpKymaCRDGenerationAnnotation], latestGeneration) ||
-		!ContainsLatestCRDGeneration(kyma.Annotations[v1beta1.SkrKymaCRDGenerationAnnotation], strconv.FormatInt(crdFromRuntime.Generation, 10)) {
+		!ContainsLatestCRDGeneration(kyma.Annotations[v1beta1.SkrKymaCRDGenerationAnnotation], runtimeCRDGeneration) {
 		err = PatchCRD(ctx, c.RuntimeClient, crd)
 		if err == nil {
 			if kyma.Annotations == nil {
@@ -166,7 +167,7 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(
 			)
 			if err == nil {
 				kyma.Annotations[v1beta1.KcpKymaCRDGenerationAnnotation] = latestGeneration
-				kyma.Annotations[v1beta1.SkrKymaCRDGenerationAnnotation] = strconv.FormatInt(crdFromRuntime.Generation, 10)
+				kyma.Annotations[v1beta1.SkrKymaCRDGenerationAnnotation] = runtimeCRDGeneration
 				if err = c.ControlPlaneClient.Update(ctx, kyma); err != nil {
 					return err
 				}

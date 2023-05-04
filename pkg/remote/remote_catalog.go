@@ -243,9 +243,10 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 	}, crdFromRuntime)
 
 	latestGeneration := strconv.FormatInt(crd.Generation, 10)
+	runtimeCRDGeneration := strconv.FormatInt(crdFromRuntime.Generation, 10)
 	if k8serrors.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta1.GroupVersion.Version) ||
 		!ContainsLatestCRDGeneration(kyma.Annotations[v1beta1.KcpModuleTemplateCRDGenerationAnnotation], latestGeneration) ||
-		!ContainsLatestCRDGeneration(kyma.Annotations[v1beta1.SkrModuleTemplateCRDGenerationAnnotation], strconv.FormatInt(crdFromRuntime.Generation, 10)) {
+		!ContainsLatestCRDGeneration(kyma.Annotations[v1beta1.SkrModuleTemplateCRDGenerationAnnotation], runtimeCRDGeneration) {
 		err = PatchCRD(ctx, syncContext.RuntimeClient, crd)
 		if err == nil {
 			if kyma.Annotations == nil {
@@ -256,7 +257,7 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 			}, crdFromRuntime)
 			if err == nil {
 				kyma.Annotations[v1beta1.KcpModuleTemplateCRDGenerationAnnotation] = latestGeneration
-				kyma.Annotations[v1beta1.SkrModuleTemplateCRDGenerationAnnotation] = strconv.FormatInt(crdFromRuntime.Generation, 10)
+				kyma.Annotations[v1beta1.SkrModuleTemplateCRDGenerationAnnotation] = runtimeCRDGeneration
 				if err = syncContext.ControlPlaneClient.Update(ctx, kyma); err != nil {
 					return err
 				}
