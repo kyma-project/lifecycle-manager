@@ -56,7 +56,7 @@ func NewTestKyma(name string) *v1beta2.Kyma {
 				v1beta2.SyncStrategyAnnotation: v1beta2.SyncStrategyLocalClient,
 			},
 			Labels: map[string]string{
-				v1beta2.SyncLabel: v1beta2.ActiveLabelValue,
+				v1beta2.SyncLabel: v1beta2.EnableLabelValue,
 			},
 		},
 		Spec: v1beta2.KymaSpec{
@@ -127,10 +127,10 @@ func DeployModuleTemplate(
 		return err
 	}
 	if isInternal {
-		template.Labels[v1beta2.InternalLabel] = v1beta2.ActiveLabelValue
+		template.Labels[v1beta2.InternalLabel] = v1beta2.EnableLabelValue
 	}
 	if isBeta {
-		template.Labels[v1beta2.BetaLabel] = v1beta2.ActiveLabelValue
+		template.Labels[v1beta2.BetaLabel] = v1beta2.EnableLabelValue
 	}
 	return kcpClient.Create(ctx, template)
 }

@@ -137,7 +137,6 @@ func (m *ModuleTemplate) GetComponentDescriptorCacheKey() (string, error) {
 	return fmt.Sprintf("%s:%s:%s", m.Spec.Channel, descriptor.GetName(), descriptor.GetVersion()), nil
 }
 
-// TODO: decision pending.
 func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
 	if m.syncDisabled() {
 		return false
@@ -154,22 +153,23 @@ func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
 	return true
 }
 
-// TODO: decision pending.
 func (m *ModuleTemplate) syncDisabled() bool {
-	syncEnabledVal, found := m.GetLabels()[SyncLabel]
-	return found && len(syncEnabledVal) > 0 && strings.ToLower(syncEnabledVal) != ActiveLabelValue
+	if isSync, found := m.Labels[SyncLabel]; found {
+		return strings.ToLower(isSync) == DisableLabelValue
+	}
+	return false
 }
 
 func (m *ModuleTemplate) IsInternal() bool {
 	if isInternal, found := m.Labels[InternalLabel]; found {
-		return strings.ToLower(isInternal) == ActiveLabelValue
+		return strings.ToLower(isInternal) == EnableLabelValue
 	}
 	return false
 }
 
 func (m *ModuleTemplate) IsBeta() bool {
 	if isBeta, found := m.Labels[BetaLabel]; found {
-		return strings.ToLower(isBeta) == ActiveLabelValue
+		return strings.ToLower(isBeta) == EnableLabelValue
 	}
 	return false
 }

@@ -8,6 +8,12 @@ import (
 func (src *Kyma) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*v1beta2.Kyma)
 	dst.ObjectMeta = src.ObjectMeta
+	if !src.Spec.Sync.Enabled {
+		if dst.ObjectMeta.Labels == nil {
+			dst.ObjectMeta.Labels = make(map[string]string)
+		}
+		dst.ObjectMeta.Labels[v1beta2.SyncLabel] = v1beta2.DisableLabelValue
+	}
 	dst.Spec.Channel = src.Spec.Channel
 	dst.Spec.Modules = src.Spec.Modules
 	dst.Status = src.Status

@@ -55,10 +55,10 @@ func givenKymaAndModuleTemplateCondition(
 			kyma.Labels = map[string]string{}
 		}
 		if isKymaInternal {
-			kyma.Labels[v1beta2.InternalLabel] = v1beta2.ActiveLabelValue
+			kyma.Labels[v1beta2.InternalLabel] = v1beta2.EnableLabelValue
 		}
 		if isKymaBeta {
-			kyma.Labels[v1beta2.BetaLabel] = v1beta2.ActiveLabelValue
+			kyma.Labels[v1beta2.BetaLabel] = v1beta2.EnableLabelValue
 		}
 		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, isModuleTemplateInternal, isModuleTemplateBeta)
 		Eventually(controlPlaneClient.Create, Timeout, Interval).

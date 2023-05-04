@@ -352,10 +352,13 @@ func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType, conditionSt
 	return false
 }
 
-const ActiveLabelValue = "true"
+const (
+	EnableLabelValue  = "true"
+	DisableLabelValue = "false"
+)
 
 func (kyma *Kyma) SkipReconciliation() bool {
-	if isSkip, found := kyma.Labels[SkipReconcileLabel]; found && isSkip == ActiveLabelValue {
+	if isSkip, found := kyma.Labels[SkipReconcileLabel]; found && isSkip == EnableLabelValue {
 		return true
 	}
 	return false
@@ -388,24 +391,23 @@ func (kyma *Kyma) AllModulesReady() bool {
 	return true
 }
 
-// TODO: decision pending.
 func (kyma *Kyma) SyncEnabled() bool {
 	if isSync, found := kyma.Labels[SyncLabel]; found {
-		return strings.ToLower(isSync) == ActiveLabelValue
+		return strings.ToLower(isSync) == EnableLabelValue
 	}
-	return false
+	return true
 }
 
 func (kyma *Kyma) IsInternal() bool {
 	if isInternal, found := kyma.Labels[InternalLabel]; found {
-		return strings.ToLower(isInternal) == ActiveLabelValue
+		return strings.ToLower(isInternal) == EnableLabelValue
 	}
 	return false
 }
 
 func (kyma *Kyma) IsBeta() bool {
 	if isBeta, found := kyma.Labels[BetaLabel]; found {
-		return strings.ToLower(isBeta) == ActiveLabelValue
+		return strings.ToLower(isBeta) == EnableLabelValue
 	}
 	return false
 }
