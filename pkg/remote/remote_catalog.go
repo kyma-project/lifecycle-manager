@@ -242,6 +242,10 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 		Name: fmt.Sprintf("%s.%s", plural, v1beta1.GroupVersion.Group),
 	}, crdFromRuntime)
 
+	if err != nil {
+		return err
+	}
+
 	latestGeneration := strconv.FormatInt(crd.Generation, 10)
 	if k8serrors.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta1.GroupVersion.Version) ||
 		!ContainsLatestCRDGeneration(kyma.Annotations[v1beta1.KcpModuleTemplateCRDGenerationAnnotation], latestGeneration) ||
