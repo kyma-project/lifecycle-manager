@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	corev1 "k8s.io/api/core/v1"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -126,7 +127,8 @@ func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Con
 	return nil
 }
 
-func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plural string) error {
+func (c *KymaSynchronizationContext) CreateOrUpdateCRD(
+	ctx context.Context, plural string, kyma *v1beta1.Kyma) error {
 	crd := &v1extensions.CustomResourceDefinition{}
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
 	var err error
@@ -148,8 +150,29 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 		}, crdFromRuntime,
 	)
 
-	if k8serrors.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta1.GroupVersion.Version) {
-		return PatchCRD(ctx, c.RuntimeClient, crd)
+	latestGeneration := strconv.FormatInt(crd.Generation, 10)
+	if k8serrors.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta1.GroupVersion.Version) ||
+		!ContainsLatestCRDGeneration(kyma.Annotations[v1beta1.KcpKymaCRDGenerationAnnotation], latestGeneration) ||
+		!ContainsLatestCRDGeneration(kyma.Annotations[v1beta1.SkrKymaCRDGenerationAnnotation], strconv.FormatInt(crdFromRuntime.Generation, 10)) {
+		err = PatchCRD(ctx, c.RuntimeClient, crd)
+		if err == nil {
+			if kyma.Annotations == nil {
+				kyma.Annotations = make(map[string]string)
+			}
+			err = c.RuntimeClient.Get(
+				ctx, client.ObjectKey{
+					Name: fmt.Sprintf("%s.%s", plural, v1beta1.GroupVersion.Group),
+				}, crdFromRuntime,
+			)
+			if err == nil {
+				kyma.Annotations[v1beta1.KcpKymaCRDGenerationAnnotation] = latestGeneration
+				kyma.Annotations[v1beta1.SkrKymaCRDGenerationAnnotation] = strconv.FormatInt(crdFromRuntime.Generation, 10)
+				if err = c.ControlPlaneClient.Update(ctx, kyma); err != nil {
+					return err
+				}
+			}
+		}
+		return err
 	}
 
 	if err != nil {
@@ -173,13 +196,13 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 
 	err := c.RuntimeClient.Get(ctx, client.ObjectKeyFromObject(remoteKyma), remoteKyma)
 
-	if meta.IsNoMatchError(err) {
-		recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
-
-		if err := c.CreateOrUpdateCRD(ctx, v1beta1.KymaKind.Plural()); err != nil {
+	if meta.IsNoMatchError(err) || err == nil {
+		if meta.IsNoMatchError(err) {
+			recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
+		}
+		if err = c.CreateOrUpdateCRD(ctx, v1beta1.KymaKind.Plural(), kyma); err != nil {
 			return nil, err
 		}
-
 		recorder.Event(kyma, "Normal", "CRDInstallation", "CRDs were installed to SKR")
 		// the NoMatch error we previously encountered is now fixed through the CRD installation
 		err = nil

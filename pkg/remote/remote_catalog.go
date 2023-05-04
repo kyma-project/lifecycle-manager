@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -59,10 +60,11 @@ func NewRemoteCatalog(
 func (c *RemoteCatalog) CreateOrUpdate(
 	ctx context.Context,
 	kcp *v1beta1.ModuleTemplateList,
+	kyma *v1beta1.Kyma,
 ) error {
 	syncContext := SyncContextFromContext(ctx)
 
-	if err := c.createOrUpdateCatalog(ctx, kcp, syncContext); err != nil {
+	if err := c.createOrUpdateCatalog(ctx, kcp, syncContext, kyma); err != nil {
 		return err
 	}
 
@@ -109,6 +111,7 @@ func (c *RemoteCatalog) deleteDiffCatalog(ctx context.Context,
 func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 	kcp *v1beta1.ModuleTemplateList,
 	syncContext *KymaSynchronizationContext,
+	kyma *v1beta1.Kyma,
 ) error {
 	channelLength := len(kcp.Items)
 	results := make(chan error, channelLength)
@@ -127,8 +130,8 @@ func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 	}
 
 	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster when we apply it and retry
-	if containsMetaIsNoMatchErr(errs) {
-		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1beta1.ModuleTemplateKind.Plural()); err != nil {
+	if containsMetaIsNoMatchErr(errs) || len(errs) == 0 {
+		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1beta1.ModuleTemplateKind.Plural(), kyma); err != nil {
 			return err
 		}
 	}
@@ -218,7 +221,7 @@ func (c *RemoteCatalog) Delete(
 	return nil
 }
 
-func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, plural string) error {
+func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, plural string, kyma *v1beta1.Kyma) error {
 	crd := &v1extensions.CustomResourceDefinition{}
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
 
@@ -239,8 +242,27 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 		Name: fmt.Sprintf("%s.%s", plural, v1beta1.GroupVersion.Group),
 	}, crdFromRuntime)
 
-	if k8serrors.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta1.GroupVersion.Version) {
-		return PatchCRD(ctx, syncContext.RuntimeClient, crd)
+	latestGeneration := strconv.FormatInt(crd.Generation, 10)
+	if k8serrors.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta1.GroupVersion.Version) ||
+		!ContainsLatestCRDGeneration(kyma.Annotations[v1beta1.KcpModuleTemplateCRDGenerationAnnotation], latestGeneration) ||
+		!ContainsLatestCRDGeneration(kyma.Annotations[v1beta1.SkrModuleTemplateCRDGenerationAnnotation], strconv.FormatInt(crdFromRuntime.Generation, 10)) {
+		err = PatchCRD(ctx, syncContext.RuntimeClient, crd)
+		if err == nil {
+			if kyma.Annotations == nil {
+				kyma.Annotations = make(map[string]string)
+			}
+			err = syncContext.RuntimeClient.Get(ctx, client.ObjectKey{
+				Name: fmt.Sprintf("%s.%s", plural, v1beta1.GroupVersion.Group),
+			}, crdFromRuntime)
+			if err == nil {
+				kyma.Annotations[v1beta1.KcpModuleTemplateCRDGenerationAnnotation] = latestGeneration
+				kyma.Annotations[v1beta1.SkrModuleTemplateCRDGenerationAnnotation] = strconv.FormatInt(crdFromRuntime.Generation, 10)
+				if err = syncContext.ControlPlaneClient.Update(ctx, kyma); err != nil {
+					return err
+				}
+			}
+		}
+		return err
 	}
 
 	if !crdReady(crdFromRuntime) {
