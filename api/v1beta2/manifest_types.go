@@ -64,7 +64,6 @@ type ManifestStatus declarative.Status
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-//+kubebuilder:storageversion
 
 // Manifest is the Schema for the manifests API.
 type Manifest struct {
