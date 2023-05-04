@@ -156,23 +156,27 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(
 		!ContainsLatestCRDGeneration(kyma.Annotations[v1beta1.KcpKymaCRDGenerationAnnotation], latestGeneration) ||
 		!ContainsLatestCRDGeneration(kyma.Annotations[v1beta1.SkrKymaCRDGenerationAnnotation], runtimeCRDGeneration) {
 		err = PatchCRD(ctx, c.RuntimeClient, crd)
-		if err == nil {
-			if kyma.Annotations == nil {
-				kyma.Annotations = make(map[string]string)
-			}
-			err = c.RuntimeClient.Get(
-				ctx, client.ObjectKey{
-					Name: fmt.Sprintf("%s.%s", plural, v1beta1.GroupVersion.Group),
-				}, crdFromRuntime,
-			)
-			if err == nil {
-				kyma.Annotations[v1beta1.KcpKymaCRDGenerationAnnotation] = latestGeneration
-				kyma.Annotations[v1beta1.SkrKymaCRDGenerationAnnotation] = runtimeCRDGeneration
-				if err = c.ControlPlaneClient.Update(ctx, kyma); err != nil {
-					return err
-				}
-			}
+		if err != nil {
+			return err
 		}
+		if kyma.Annotations == nil {
+			kyma.Annotations = make(map[string]string)
+		}
+		err = c.RuntimeClient.Get(
+			ctx, client.ObjectKey{
+				Name: fmt.Sprintf("%s.%s", plural, v1beta1.GroupVersion.Group),
+			}, crdFromRuntime,
+		)
+		if err != nil {
+			return err
+		}
+
+		kyma.Annotations[v1beta1.KcpKymaCRDGenerationAnnotation] = latestGeneration
+		kyma.Annotations[v1beta1.SkrKymaCRDGenerationAnnotation] = runtimeCRDGeneration
+		if err = c.ControlPlaneClient.Update(ctx, kyma); err != nil {
+			return err
+		}
+
 		return err
 	}
 

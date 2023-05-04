@@ -248,21 +248,25 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 		!ContainsLatestCRDGeneration(kyma.Annotations[v1beta1.KcpModuleTemplateCRDGenerationAnnotation], latestGeneration) ||
 		!ContainsLatestCRDGeneration(kyma.Annotations[v1beta1.SkrModuleTemplateCRDGenerationAnnotation], runtimeCRDGeneration) {
 		err = PatchCRD(ctx, syncContext.RuntimeClient, crd)
-		if err == nil {
-			if kyma.Annotations == nil {
-				kyma.Annotations = make(map[string]string)
-			}
-			err = syncContext.RuntimeClient.Get(ctx, client.ObjectKey{
-				Name: fmt.Sprintf("%s.%s", plural, v1beta1.GroupVersion.Group),
-			}, crdFromRuntime)
-			if err == nil {
-				kyma.Annotations[v1beta1.KcpModuleTemplateCRDGenerationAnnotation] = latestGeneration
-				kyma.Annotations[v1beta1.SkrModuleTemplateCRDGenerationAnnotation] = runtimeCRDGeneration
-				if err = syncContext.ControlPlaneClient.Update(ctx, kyma); err != nil {
-					return err
-				}
-			}
+		if err != nil {
+			return err
 		}
+
+		if kyma.Annotations == nil {
+			kyma.Annotations = make(map[string]string)
+		}
+		err = syncContext.RuntimeClient.Get(ctx, client.ObjectKey{
+			Name: fmt.Sprintf("%s.%s", plural, v1beta1.GroupVersion.Group),
+		}, crdFromRuntime)
+		if err != nil {
+			return err
+		}
+		kyma.Annotations[v1beta1.KcpModuleTemplateCRDGenerationAnnotation] = latestGeneration
+		kyma.Annotations[v1beta1.SkrModuleTemplateCRDGenerationAnnotation] = runtimeCRDGeneration
+		if err = syncContext.ControlPlaneClient.Update(ctx, kyma); err != nil {
+			return err
+		}
+
 		return err
 	}
 
