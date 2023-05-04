@@ -161,7 +161,17 @@ func generateModuleStatus(module *common.Module) v1beta2.ModuleStatus {
 			Message: module.Template.Err.Error(),
 		}
 	}
-	manifestObject := module.Object.(*v1beta2.Manifest)
+	manifestObject, ok := module.Object.(*v1beta2.Manifest)
+	if !ok {
+		// TODO: impossible case, remove casting check after module use typed Manifest instead of client.Object
+		return v1beta2.ModuleStatus{
+			Name:    module.ModuleName,
+			Channel: module.Template.DesiredChannel,
+			FQDN:    module.FQDN,
+			State:   v1beta2.StateError,
+			Message: ErrManifestConversion.Error(),
+		}
+	}
 	manifestAPIVersion, manifestKind := manifestObject.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	templateAPIVersion, templateKind := module.Template.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	var moduleResource *v1beta2.TrackingObject
@@ -177,7 +187,7 @@ func generateModuleStatus(module *common.Module) v1beta2.ModuleStatus {
 	return v1beta2.ModuleStatus{
 		Name:    module.ModuleName,
 		FQDN:    module.FQDN,
-		State:   stateFromManifest(module.Object),
+		State:   v1beta2.State(manifestObject.Status.State),
 		Channel: module.Template.Spec.Channel,
 		Version: module.Version,
 		Manifest: &v1beta2.TrackingObject{

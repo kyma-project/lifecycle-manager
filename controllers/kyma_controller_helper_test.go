@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	ErrKymaNotFound             = errors.New("kyma not exists")
+	ErrNotFound                 = errors.New("resource not exists")
 	ErrExpectedLabelNotReset    = errors.New("expected label not reset")
 	ErrWatcherLabelMissing      = errors.New("watcher label missing")
 	ErrWatcherAnnotationMissing = errors.New("watcher annotation missing")
