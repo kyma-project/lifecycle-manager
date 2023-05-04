@@ -3,6 +3,7 @@ kind: Kyma
 metadata:
   labels:
     "operator.kyma-project.io/managed-by": "lifecycle-manager"
+    "operator.kyma-project.io/sync": "false"
   name: default-kyma
   namespace: kyma-system
 spec:
