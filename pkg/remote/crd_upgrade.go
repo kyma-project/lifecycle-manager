@@ -32,9 +32,5 @@ func ContainsLatestVersion(crdFromRuntime *v1extensions.CustomResourceDefinition
 }
 
 func ContainsLatestCRDGeneration(storedGeneration string, latestGeneration string) bool {
-	if storedGeneration != latestGeneration {
-		return false
-	}
-
-	return true
+	return storedGeneration == latestGeneration
 }
