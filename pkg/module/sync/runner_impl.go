@@ -161,9 +161,19 @@ func generateModuleStatus(module *common.Module) v1beta2.ModuleStatus {
 			Message: module.Template.Err.Error(),
 		}
 	}
-
-	manifestAPIVersion, manifestKind := module.Object.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
+	manifestObject := module.Object.(*v1beta2.Manifest)
+	manifestAPIVersion, manifestKind := manifestObject.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	templateAPIVersion, templateKind := module.Template.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
+	var moduleResource *v1beta2.TrackingObject
+	if manifestObject.Spec.Resource != nil {
+		moduleCRAPIVersion, moduleCRKind := manifestObject.Spec.Resource.
+			GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
+		moduleResource = &v1beta2.TrackingObject{
+			PartialMeta: v1beta2.PartialMetaFromObject(manifestObject.Spec.Resource),
+			TypeMeta:    metav1.TypeMeta{Kind: moduleCRKind, APIVersion: moduleCRAPIVersion},
+		}
+	}
+
 	return v1beta2.ModuleStatus{
 		Name:    module.ModuleName,
 		FQDN:    module.FQDN,
@@ -171,13 +181,14 @@ func generateModuleStatus(module *common.Module) v1beta2.ModuleStatus {
 		Channel: module.Template.Spec.Channel,
 		Version: module.Version,
 		Manifest: &v1beta2.TrackingObject{
-			PartialMeta: v1beta2.PartialMetaFromObject(module.Object),
+			PartialMeta: v1beta2.PartialMetaFromObject(manifestObject),
 			TypeMeta:    metav1.TypeMeta{Kind: manifestKind, APIVersion: manifestAPIVersion},
 		},
 		Template: &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMetaFromObject(module.Template),
 			TypeMeta:    metav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
 		},
+		Resource: moduleResource,
 	}
 }
 

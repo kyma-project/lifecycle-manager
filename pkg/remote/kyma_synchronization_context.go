@@ -208,20 +208,23 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(
 	ctx context.Context,
 	controlPlaneKyma, remoteKyma *v1beta2.Kyma,
 ) error {
+	if !remoteKyma.GetDeletionTimestamp().IsZero() {
+		return nil
+	}
 	recorder := adapter.RecorderFromContext(ctx)
 
-	remoteKyma.Status = controlPlaneKyma.Status
+	c.SyncWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma)
+	if err := c.RuntimeClient.Update(ctx, remoteKyma); err != nil {
+		recorder.Event(controlPlaneKyma, "Warning", err.Error(), "could not synchronise runtime kyma "+
+			"spec, watcher labels and annotations")
+		return err
+	}
 
+	remoteKyma.Status = controlPlaneKyma.Status
 	if err := c.RuntimeClient.Status().Update(ctx, remoteKyma); err != nil {
 		recorder.Event(controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
 		return err
 	}
-
-	if !remoteKyma.GetDeletionTimestamp().IsZero() {
-		return nil
-	}
-
-	c.InsertWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma)
 
 	return nil
 }
@@ -259,9 +262,9 @@ func GetRemoteObjectKey(kyma *v1beta2.Kyma) client.ObjectKey {
 	return client.ObjectKey{Namespace: namespace, Name: name}
 }
 
-// InsertWatcherLabelsAnnotations inserts labels into the given KymaCR, which are needed to ensure
+// SyncWatcherLabelsAnnotations inserts labels into the given KymaCR, which are needed to ensure
 // a working e2e-flow for the runtime-watcher.
-func (c *KymaSynchronizationContext) InsertWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma *v1beta2.Kyma) {
+func (c *KymaSynchronizationContext) SyncWatcherLabelsAnnotations(controlPlaneKyma, remoteKyma *v1beta2.Kyma) {
 	if remoteKyma.Labels == nil {
 		remoteKyma.Labels = make(map[string]string)
 	}
