@@ -19,6 +19,7 @@ linters:
     - structcheck # deprecated (since v1.49.0) and replaced by 'unused'
     - sqlclosecheck # not needed for this project
     - varcheck # deprecated (since v1.49.0) and replaced by 'unused'
+    - varnamelen # too many false positives
     - wsl # too strict and mostly code is not more readable
     - wrapcheck # TODO enable and fix
 linters-settings:

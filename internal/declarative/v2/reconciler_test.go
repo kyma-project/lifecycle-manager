@@ -1,22 +1,27 @@
+//nolint:testpackage,lll
 package v2
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 
 	"k8s.io/cli-runtime/pkg/resource"
 )
 
 func TestPruneKymaSystem(t *testing.T) {
+	t.Parallel()
 	obj1 := &resource.Info{Object: &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "kube-system"}, TypeMeta: metav1.TypeMeta{Kind: "Namespace"}}}
 	obj2 := &resource.Info{Object: &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "some-service"}, TypeMeta: metav1.TypeMeta{Kind: "Service"}}}
 	obj3 := &resource.Info{Object: &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "kyma-system"}, TypeMeta: metav1.TypeMeta{Kind: "Namespace"}}}
 	obj4 := &resource.Info{Object: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "some-deploy"}, TypeMeta: metav1.TypeMeta{Kind: "Deployment"}}}
 
 	t.Run("contains kyma-system", func(t *testing.T) {
+		t.Parallel()
+
 		infos := []*resource.Info{
 			obj1,
 			obj2,
@@ -31,6 +36,8 @@ func TestPruneKymaSystem(t *testing.T) {
 	})
 
 	t.Run("does not contain kyma-system", func(t *testing.T) {
+		t.Parallel()
+
 		infos := []*resource.Info{
 			obj1,
 			obj2,
