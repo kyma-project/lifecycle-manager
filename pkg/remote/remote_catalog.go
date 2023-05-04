@@ -266,8 +266,6 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 		if err = syncContext.ControlPlaneClient.Update(ctx, kyma); err != nil {
 			return err
 		}
-
-		return err
 	}
 
 	if !crdReady(crdFromRuntime) {

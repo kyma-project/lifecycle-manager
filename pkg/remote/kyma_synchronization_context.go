@@ -176,8 +176,6 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(
 		if err = c.ControlPlaneClient.Update(ctx, kyma); err != nil {
 			return err
 		}
-
-		return err
 	}
 
 	if err != nil {
