@@ -124,11 +124,14 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(
 		manifestObject := module.Object.(*v1beta1.Manifest)
 		manifestAPIVersion, manifestKind := manifestObject.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 		templateAPIVersion, templateKind := module.Template.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
-		moduleCRAPIVersion := ""
-		moduleCRKind := ""
+		var moduleResource *v1beta1.TrackingObject
 		if manifestObject.Spec.Resource != nil {
-			moduleCRAPIVersion, moduleCRKind = manifestObject.Spec.Resource.
+			moduleCRAPIVersion, moduleCRKind := manifestObject.Spec.Resource.
 				GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
+			moduleResource = &v1beta1.TrackingObject{
+				PartialMeta: v1beta1.PartialMetaFromObject(manifestObject.Spec.Resource),
+				TypeMeta:    metav1.TypeMeta{Kind: moduleCRKind, APIVersion: moduleCRAPIVersion},
+			}
 		}
 		latestModuleStatus := v1beta1.ModuleStatus{
 			Name:    module.ModuleName,
@@ -144,10 +147,7 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(
 				PartialMeta: v1beta1.PartialMetaFromObject(module.Template),
 				TypeMeta:    metav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
 			},
-			Resource: &v1beta1.TrackingObject{
-				PartialMeta: v1beta1.PartialMetaFromObject(manifestObject.Spec.Resource),
-				TypeMeta:    metav1.TypeMeta{Kind: moduleCRKind, APIVersion: moduleCRAPIVersion},
-			},
+			Resource: moduleResource,
 		}
 		moduleStatus, exists := moduleStatusMap[module.ModuleName]
 		if exists {
