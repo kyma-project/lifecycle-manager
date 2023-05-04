@@ -357,7 +357,7 @@ func (r *Reconciler) renderTargetResources(
 func (r *Reconciler) pruneDiff(
 	ctx context.Context, clnt Client, obj Object, renderer Renderer, diff []*resource.Info,
 ) error {
-	if err := r.deleteResources(ctx, clnt, obj, diff); err != nil {
+	if err := r.deleteResources(ctx, clnt, obj, r.pruneKymaSystem(diff)); err != nil {
 		return err
 	}
 
@@ -366,6 +366,20 @@ func (r *Reconciler) pruneDiff(
 	}
 
 	return renderer.RemovePrerequisites(ctx, obj)
+}
+
+func (r *Reconciler) pruneKymaSystem(diff []*resource.Info) []*resource.Info {
+	for i, info := range diff {
+		obj := info.Object.(client.Object)
+		if obj.GetObjectKind().GroupVersionKind().Kind != "Namespace" {
+			continue
+		}
+		if obj.GetName() != "kyma-system" {
+			continue
+		}
+		return append(diff[:i], diff[i+1:]...)
+	}
+	return diff
 }
 
 func (r *Reconciler) getTargetClient(
