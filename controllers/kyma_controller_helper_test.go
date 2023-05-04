@@ -240,7 +240,7 @@ func ModuleTemplatesExist(clnt client.Client, kyma *v1beta1.Kyma, remote bool) f
 }
 
 func WatcherLabelsAnnotationsExist(clnt client.Client, kyma *v1beta1.Kyma) error {
-	remoteKyma, err := GetKyma(ctx, clnt, kyma.GetName(), kyma.Spec.Sync.Namespace)
+	remoteKyma, err := GetKyma(ctx, clnt, kyma.GetName(), kyma.GetNamespace())
 	if err != nil {
 		return err
 	}
