@@ -22,8 +22,10 @@ import (
 )
 
 var (
-	ErrKymaNotFound          = errors.New("kyma not exists")
-	ErrExpectedLabelNotReset = errors.New("expected label not reset")
+	ErrKymaNotFound             = errors.New("kyma not exists")
+	ErrExpectedLabelNotReset    = errors.New("expected label not reset")
+	ErrWatcherLabelMissing      = errors.New("watcher label missing")
+	ErrWatcherAnnotationMissing = errors.New("watcher annotation missing")
 )
 
 func RegisterDefaultLifecycleForKyma(kyma *v1beta1.Kyma) {
@@ -235,6 +237,21 @@ func ModuleTemplatesExist(clnt client.Client, kyma *v1beta1.Kyma, remote bool) f
 
 		return nil
 	}
+}
+
+func WatcherLabelsAnnotationsExist(clnt client.Client, kyma *v1beta1.Kyma) error {
+	remoteKyma, err := GetKyma(ctx, clnt, kyma.GetName(), kyma.Spec.Sync.Namespace)
+	if err != nil {
+		return err
+	}
+	if remoteKyma.Labels[v1beta1.WatchedByLabel] != v1beta1.OperatorName {
+		return ErrWatcherLabelMissing
+	}
+	if remoteKyma.Annotations[v1beta1.OwnedByAnnotation] != fmt.Sprintf(v1beta1.OwnedByFormat,
+		kyma.GetNamespace(), kyma.GetName()) {
+		return ErrWatcherAnnotationMissing
+	}
+	return nil
 }
 
 func deleteModule(kyma *v1beta1.Kyma, module v1beta1.Module) func() error {
