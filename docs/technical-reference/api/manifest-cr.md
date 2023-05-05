@@ -20,7 +20,7 @@ spec:
   remote: true
 ```
 
-will use the value `kyma-sample` to lookup a secret with the same value `kyma-sample`. The lookup mechanism works the same as for the `Kyma` with `.spec.sync.enabled`.
+will use the value `kyma-sample` to lookup a secret with the same value `kyma-sample`.
 
 ### `.spec.config`
 

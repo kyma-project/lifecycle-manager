@@ -7,7 +7,7 @@ lifecycle-manager (and module operators) can run in 2 modes:
 - in-cluster - regular deployment in the kubernetes cluster where kyma should be deployed, control-plane manages itself
 - control-plane - deployment on central kubernetes cluster that manages multiple kyma installations remotely (installing kyma on the remote clusters based on a secret providing connectivity details)
 
-Which mode is used is based on the `.spec.target` attribute in the `ModuleTemplate`, determining wether a Module needs to be installed in the remote cluster or not.
+Which mode is used is based on the lifecycle-manager deployment argument (`--in-kcp-mode`), when it's enabled, Module will be installed in the remote cluster.
 
 They both target different use cases. While in-cluster mode is useful for classical deployment of kyma with 1 cluster in play, the general consensus is that for large scale operations, it is recommended to either use an aggregated API-Server or use Clusters to manage other Clusters (nowadays known as Control-Plane)
 

@@ -4,17 +4,17 @@ import (
 	"errors"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	"github.com/kyma-project/lifecycle-manager/controllers"
-	"github.com/kyma-project/lifecycle-manager/pkg/istio"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/controllers"
+	"github.com/kyma-project/lifecycle-manager/pkg/istio"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 func crSpecUpdates(_ *istio.Client) error {
@@ -24,7 +24,7 @@ func crSpecUpdates(_ *istio.Client) error {
 			return err
 		}
 		watcherCR.Spec.ServiceInfo.Port = 9090
-		watcherCR.Spec.Field = v1beta1.StatusField
+		watcherCR.Spec.Field = v1beta2.StatusField
 		if err := controlPlaneClient.Update(suiteCtx, watcherCR); err != nil {
 			return err
 		}
@@ -122,7 +122,7 @@ func watcherCRIsReady(watcherName string) error {
 	if err != nil {
 		return err
 	}
-	if watcher.Status.State != v1beta1.WatcherStateReady {
+	if watcher.Status.State != v1beta2.WatcherStateReady {
 		return errWatcherNotReady
 	}
 	return nil

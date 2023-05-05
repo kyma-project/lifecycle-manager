@@ -22,51 +22,6 @@ spec:
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
-    name: v1alpha1
-    schema:
-      openAPIV3Schema:
-        description: SKRModule is the Schema for the moduletemplates API.
-        properties:
-          apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
-            type: string
-          kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
-            type: string
-          metadata:
-            type: object
-          spec:
-            description: SKRModuleSpec defines the desired state of SKRModule.
-            properties:
-              initKey:
-                type: string
-            type: object
-          status:
-            description: SKRModuleStatus defines the observed state of Manifest.
-            properties:
-              state:
-                enum:
-                - Processing
-                - Deleting
-                - Ready
-                - Error
-                type: string
-            type: object
-        type: object
-    served: true
-    storage: true
-    subresources: {}
-  - additionalPrinterColumns:
-    - jsonPath: .status.state
-      name: State
-      type: string
-    - jsonPath: .metadata.creationTimestamp
-      name: Age
-      type: date
     name: v1beta1
     schema:
       openAPIV3Schema:
@@ -106,4 +61,51 @@ spec:
         type: object
     served: true
     storage: false
+    subresources: {}
+  - additionalPrinterColumns:
+    - jsonPath: .status.state
+      name: State
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1beta2
+    schema:
+      openAPIV3Schema:
+        description: SKRModule is the Schema for the moduletemplates API.
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: SKRModuleSpec defines the desired state of SKRModule.
+            properties:
+              initKey:
+                type: string
+              newKey:
+                type: string
+            type: object
+          status:
+            description: SKRModuleStatus defines the observed state of Manifest.
+            properties:
+              state:
+                enum:
+                - Processing
+                - Deleting
+                - Ready
+                - Error
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
     subresources: {}

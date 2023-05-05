@@ -27,7 +27,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/kyma-project/lifecycle-manager/api"
-	operatorv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	operatorv1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -102,7 +102,7 @@ var _ = BeforeSuite(func() {
 
 	purgeReconciler = &controllers.PurgeReconciler{
 		Client:                k8sManager.GetClient(),
-		EventRecorder:         k8sManager.GetEventRecorderFor(operatorv1beta1.OperatorName),
+		EventRecorder:         k8sManager.GetEventRecorderFor(operatorv1beta2.OperatorName),
 		ResolveRemoteClient:   useLocalClient,
 		PurgeFinalizerTimeout: time.Second,
 		SkipCRDs:              controllers.CRDMatcherFor(skipFinalizerRemovalForCRDs),

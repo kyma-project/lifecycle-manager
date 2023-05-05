@@ -7,7 +7,6 @@ The [Kyma](../../../api/v1beta1/kyma_types.go) custom resource (CR) contains 3 f
 Additionally one can add a specific channel (if `.spec.channel`) should not be used. 
 On Top of that one can specify a `controller`, which serves as a Multi-Tenant Enabler. 
 It can be used to only listen to ModuleTemplates provided under the same controller-name. Last but not least, it includes a `customResourcePolicy` which can be used for specifying defaulting behavior when initialising modules in a cluster.
-3. `.spec.sync`: Various settings to enable synchronization of the `Kyma` and `ModuleTemplate` CustomResources into a remote cluster that is separate from the control-plane (the cluster where Lifecycle Manager is deployed).
 
 ### `.spec.channel` and `.spec.modules[].channel`
 
@@ -53,7 +52,6 @@ metadata:
     "operator.kyma-project.io/module-name": "module-name-from-label"
 spec:
   channel: regular
-  target: control-plane
   data: {}
   descriptor:
     component:
@@ -95,55 +93,6 @@ The module mentioned above can be referenced in one of 3 ways
 In addition to this very flexible way of referencing modules, there is also another flag that can be important for users requiring more flexibility during module initialization: `customResourcePolicy` is used to define one of `CreateAndDelete` and `Ignore`. 
 While `CreateAndDelete` will cause the ModuleTemplate's `.spec.data` to be created and deleted to initialize a module with preconfigured defaults, `Ignore` can be used to only initialize the operator without initializing any default data. 
 This allows users to be fully flexible when and how to initialize their Module.
-
-### `.spec.sync`
-
-The remote section of `Kyma` is used to control synchronization imperatives that should be used while control-plane and runtime cluster are different from each other, thus requiring a certain set of synchronization data between them. 
-To enable cluster synchronization, the `.spec.sync.enabled` can be used, and it will be off by default. 
-If enabled, the `Kyma` CustomResourceDefinition will be also installed in the runtime cluster. 
-After that, for every reconciliation, the Kyma Resource will be synchronized to the remote cluster and it's state will be kept in sync with the status of the `Kyma` equivalent on the control plane. 
-
-The field `.spec.sync.strategy` can be used to target different clusters based on strategy (or even target the control-plane again, just in a different namespace). 
-By default, the strategy `local-secret` will attempt to lookup a Secret based on the label `operator.kyma-project.io/kyma-name` which should be equivalent to the `.metadata.name` of the Kyma that should use the secret. 
-The secret should contain a field named `config` which contains a base64 encoded `kubeconfig.yaml` with a service-account for the cluster.
-
-`.spec.sync.namespace` allows to use different namespaces than the origin namespace of the `Kyma` for synchronization. By default, if the namespace is not set, it will replicate the namespace of the `Kyma`. E.g. for a Kyma
-
-```yaml
-apiVersion: operator.kyma-project.io/v1beta1
-kind: Kyma
-metadata:
-  name: my-kyma
-  namespace: kyma-system
-spec:
-  sync:
-    enabled: true
-```
-
-It would attempt to create a namespace `kyma-system` in the remote target if not existing and then create the synchronized Kyma CustomResource in this namespace. Alternatively using a custom namespace it would use the custom namespace instead of `.metadata.namespace`:
-
-```yaml
-apiVersion: operator.kyma-project.io/v1beta1
-kind: Kyma
-metadata:
-  name: my-kyma
-  namespace: kyma-system
-spec:
-  sync:
-    enabled: true
-    namespace: custom-sync-namespace
-```
-
-The flag `.spec.sync.moduleCatalog` flag, which is enabled by default, causes all `ModuleTemplates` to be synchronized from the control plane into the runtime. This causes two side-effects:
-
-1. There can only be a `ModuleTemplate` in the runtime cluster if it also exists in the control-plane
-2. All ModuleTemplates can be read for value-help and discovery purposes so it is easier to interact with the `Kyma` in the runtime cluster without ever gaining direct Access to the control-plane.
-
-For `.spec.sync.noModuleCopy`, one can derive how `.spec.modules[]` should be initialized when synchronizing the `Kyma` into the remote cluster. 
-When set to its default value `true`, it will always create the `Kyma` resource with an empty set of desired modules. 
-This does not mean however, that the desired state has no modules as well. It simply means that all modules that are already activated before the synchronziation will not be replicated to the remote cluster. 
-This might be less confusing as disabling it, as even if one would remove a module in the remote cluster, if it is still present in the control-plane specification, it would not be removed.
-
 
 ### `.status.state`
 

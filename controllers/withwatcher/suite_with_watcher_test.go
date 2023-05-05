@@ -26,6 +26,7 @@ import (
 
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-logr/logr"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -47,7 +48,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kyma-project/lifecycle-manager/api"
-	operatorv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
@@ -170,7 +170,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.KymaReconciler{
 		Client:            k8sManager.GetClient(),
-		EventRecorder:     k8sManager.GetEventRecorderFor(operatorv1beta1.OperatorName),
+		EventRecorder:     k8sManager.GetEventRecorderFor(v1beta2.OperatorName),
 		RequeueIntervals:  intervals,
 		SKRWebhookManager: skrWebhookChartManager,
 		VerificationSettings: signature.VerificationSettings{
@@ -207,7 +207,9 @@ var _ = AfterSuite(func() {
 	By("tearing down the test environment")
 	// clean up istio resources
 	for _, istioResource := range istioResources {
-		Expect(controlPlaneClient.Delete(suiteCtx, istioResource)).To(Succeed())
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(suiteCtx).
+			WithArguments(controlPlaneClient, istioResource).Should(Succeed())
 	}
 	// cancel environment context
 	cancel()

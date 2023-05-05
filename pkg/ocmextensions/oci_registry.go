@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"regexp"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/cpi"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
@@ -44,7 +44,7 @@ func NoSchemeURL(url string) string {
 }
 
 func getRemoteDescriptor(ctx context.Context,
-	descriptor *v1beta1.Descriptor,
+	descriptor *v1beta2.Descriptor,
 	clnt client.Client,
 ) (*compdesc.ComponentDescriptor, error) {
 	repositoryContext := descriptor.GetEffectiveRepositoryContext()
@@ -67,12 +67,12 @@ func getRemoteDescriptor(ctx context.Context,
 }
 
 func GetRepo(ctx context.Context,
-	descriptor *v1beta1.Descriptor,
+	descriptor *v1beta2.Descriptor,
 	clnt client.Client,
 	repoTyped runtime.TypedObject,
 ) (cpi.Repository, error) {
 	genericSpec := repoTyped.(*genericocireg.RepositorySpec)
-	if registryCredValue, found := descriptor.GetLabels().Get(v1beta1.OCIRegistryCredLabel); found {
+	if registryCredValue, found := descriptor.GetLabels().Get(v1beta2.OCIRegistryCredLabel); found {
 		ociRegistry, err := NewOCIRegistry(genericSpec.Name())
 		if err != nil {
 			return nil, err
