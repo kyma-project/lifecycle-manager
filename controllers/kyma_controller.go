@@ -236,15 +236,18 @@ func (r *KymaReconciler) handleInitialState(ctx context.Context, kyma *v1beta2.K
 
 func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Kyma) error {
 	logger := ctrlLog.FromContext(ctx)
-	// set ready condition if applicable
-	if err := r.reconcileManifests(ctx, kyma); err != nil {
-		return r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta2.StateError, err)
-	}
-	if kyma.AllModulesReady() {
-		kyma.UpdateCondition(v1beta2.ConditionTypeModules, metav1.ConditionTrue)
-	}
 
 	var errGroup errgroup.Group
+	errGroup.Go(func() error {
+		err := r.reconcileManifests(ctx, kyma)
+		if err != nil {
+			return fmt.Errorf("could not reconciling manifest: %w", err)
+		}
+		if kyma.AllModulesReady() {
+			kyma.UpdateCondition(v1beta2.ConditionTypeModules, metav1.ConditionTrue)
+		}
+		return nil
+	})
 	if kyma.SyncEnabled() {
 		errGroup.Go(func() error {
 			if err := r.syncModuleCatalog(ctx, kyma); err != nil {
