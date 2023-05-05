@@ -5,29 +5,29 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
 )
 
-func createKyma(kymaName string, annotations map[string]string) *v1beta1.Kyma {
-	return &v1beta1.Kyma{
+func createKyma(kymaName string, annotations map[string]string) *v1beta2.Kyma {
+	return &v1beta2.Kyma{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: v1beta1.GroupVersion.String(),
-			Kind:       string(v1beta1.KymaKind),
+			APIVersion: v1beta2.GroupVersion.String(),
+			Kind:       string(v1beta2.KymaKind),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        kymaName,
 			Namespace:   v1.NamespaceDefault,
 			Annotations: annotations,
 		},
-		Spec: v1beta1.KymaSpec{
-			Modules: []v1beta1.Module{},
-			Channel: v1beta1.DefaultChannel,
+		Spec: v1beta2.KymaSpec{
+			Modules: []v1beta2.Module{},
+			Channel: v1beta2.DefaultChannel,
 		},
 	}
 }

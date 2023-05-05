@@ -3,21 +3,7 @@ package sync
 import (
 	"context"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type Runner interface {
-	// Sync takes care of interpreting the given modules to acquire a new desired state for the kyma.
-	Sync(
-		ctx context.Context,
-		kyma *v1beta1.Kyma,
-		modules common.Modules,
-	) (bool, error)
-
-	SyncModuleStatus(
-		ctx context.Context,
-		kyma *v1beta1.Kyma,
-		modules common.Modules,
-	) bool
-}
+type GetModuleFunc func(ctx context.Context, module client.Object) error

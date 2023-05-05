@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
@@ -15,7 +16,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	manifestv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/types"
@@ -67,8 +67,8 @@ func WithClientCacheKey() declarative.WithClientCacheKeyOption {
 	cacheKey := func(ctx context.Context, resource declarative.Object) (any, bool) {
 		logger := log.FromContext(ctx)
 
-		manifest := resource.(*manifestv1beta1.Manifest)
-		labelValue, err := internal.GetResourceLabel(resource, manifestv1beta1.KymaName)
+		manifest := resource.(*v1beta2.Manifest)
+		labelValue, err := internal.GetResourceLabel(resource, v1beta2.KymaName)
 		objectKey := client.ObjectKeyFromObject(resource)
 		var labelErr *types.LabelNotFoundError
 		if errors.As(err, &labelErr) {

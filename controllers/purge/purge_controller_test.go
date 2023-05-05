@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -60,12 +60,12 @@ var _ = Describe("When kyma is not deleted within configured timeout", Ordered, 
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(updateKymaStatus(ctx, controlPlaneClient, purgeReconciler.UpdateStatus,
-				client.ObjectKeyFromObject(kyma), v1beta1.StateDeleting), Timeout, Interval).
+				client.ObjectKeyFromObject(kyma), v1beta2.StateDeleting), Timeout, Interval).
 				Should(Succeed())
 		})
 
 		By("Target finalizers should be dropped", func() {
-			Eventually(IsKymaInState(ctx, controlPlaneClient, kyma.GetName(), v1beta1.StateDeleting),
+			Eventually(IsKymaInState(ctx, controlPlaneClient, kyma.GetName(), v1beta2.StateDeleting),
 				Timeout, Interval).Should(BeTrue())
 			Eventually(getIssuerFinalizers, Timeout, Interval).
 				WithContext(ctx).
@@ -242,7 +242,7 @@ func createIssuerObj() *unstructured.Unstructured {
 	return &res
 }
 
-func createDestinationRuleFor(kyma *v1beta1.Kyma, nameSuffix string) *unstructured.Unstructured {
+func createDestinationRuleFor(kyma *v1beta2.Kyma, nameSuffix string) *unstructured.Unstructured {
 	res := createDestinationRuleObj()
 	name := kyma.Name
 	if nameSuffix != "" {
@@ -269,7 +269,7 @@ func createDestinationRuleFor(kyma *v1beta1.Kyma, nameSuffix string) *unstructur
 	return res
 }
 
-func createIssuerFor(kyma *v1beta1.Kyma, nameSuffix string) *unstructured.Unstructured {
+func createIssuerFor(kyma *v1beta2.Kyma, nameSuffix string) *unstructured.Unstructured {
 	res := createIssuerObj()
 	name := kyma.Name
 	if nameSuffix != "" {
@@ -304,11 +304,11 @@ func getDestinationRuleFinalizers(ctx context.Context, key client.ObjectKey, cl 
 	return res.GetFinalizers()
 }
 
-func updateKymaStatus(ctx context.Context, client client.Client, updateStatus func(context.Context, *v1beta1.Kyma,
-	v1beta1.State, string) error, key client.ObjectKey, state v1beta1.State,
+func updateKymaStatus(ctx context.Context, client client.Client, updateStatus func(context.Context, *v1beta2.Kyma,
+	v1beta2.State, string) error, key client.ObjectKey, state v1beta2.State,
 ) func() error {
 	return func() error {
-		kyma := v1beta1.Kyma{}
+		kyma := v1beta2.Kyma{}
 
 		err := client.Get(ctx, key, &kyma)
 		if err != nil {

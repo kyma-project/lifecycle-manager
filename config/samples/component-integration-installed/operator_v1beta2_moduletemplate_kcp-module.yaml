@@ -1,0 +1,59 @@
+apiVersion: operator.kyma-project.io/v1beta2
+kind: ModuleTemplate
+metadata:
+  name: moduletemplate-template-operator
+  namespace: default
+  labels:
+    "operator.kyma-project.io/managed-by": "lifecycle-manager"
+    "operator.kyma-project.io/controller-name": "manifest"
+    "operator.kyma-project.io/module-name": "template-operator"
+    "operator.kyma-project.io/use-local-template": "true"
+spec:
+  channel: regular
+  data:
+    apiVersion: operator.kyma-project.io/v1alpha1
+    kind: Sample
+    metadata:
+      name: sample-yaml
+    spec:
+      initKey: initValue
+      resourceFilePath: "./module-data/yaml"
+  descriptor:
+    component:
+      componentReferences: []
+      name: kyma-project.io/template-operator
+      provider: internal
+      repositoryContexts:
+        - baseUrl: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/template-operator
+          componentNameMapping: urlPath
+          type: ociRegistry
+      resources:
+        - access:
+            digest: sha256:db86408caca4c94250d8291aa79655b84146f9cc45e0da49f05a52b3722d74a0
+            type: localOciBlob
+          name: config
+          relation: local
+          type: yaml
+          version: v1.7.1
+        - access:
+            digest: sha256:1735cfa45bf07b63427c8e11717278f8847e352a66af7633611db902386d18ed
+            type: localOciBlob
+          name: raw-manifest
+          relation: local
+          type: yaml
+          version: v1.7.1
+      sources:
+        - access:
+            commit: 4e4b9d47cb655ca23e5c706462485ff7605e8d71
+            repoUrl: github.com/kyma-project/template-operator
+            type: gitHub
+          labels:
+            - name: git.kyma-project.io/ref
+              value: refs/heads/main
+              version: v1
+          name: module-sources
+          type: git
+          version: v1.7.1
+      version: v1.7.1
+    meta:
+      schemaVersion: v2

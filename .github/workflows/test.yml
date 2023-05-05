@@ -76,11 +76,11 @@ jobs:
       - name: Set up k3d
         run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
       - id: kyma
-        uses: jakobmoellersap/kyma-cli-action@v0.0.1-alpha1
-        with:
-          cache: false
-          version: ${{ matrix.cli-stability }}
-      - run: ln -s ${{ steps.kyma.outputs.path }} /usr/local/bin/kyma
+        run: |
+          wget -q https://storage.googleapis.com/kyma-cli-${{ matrix.cli-stability }}/kyma-linux
+          chmod +x kyma-linux && mv kyma-linux /usr/local/bin/kyma-${{ matrix.cli-stability }}
+          echo "PATH=/usr/local/bin/kyma-${{ matrix.cli-stability }}" >> $GITHUB_OUTPUT
+      - run: ln -s /usr/local/bin/kyma-${{ matrix.cli-stability }} /usr/local/bin/kyma
       - name: Run Provision
         run: |
           kyma --ci provision k3d \
@@ -134,7 +134,7 @@ jobs:
               name: lifecycle-manager-controller-manager
               namespace: kcp-system
           EOF
-          kubectl apply -f config/samples/component-integration-installed/operator_v1beta1_moduletemplate_kcp-module.yaml
+          kubectl apply -f config/samples/component-integration-installed/operator_v1beta2_moduletemplate_kcp-module.yaml
           kyma alpha enable module template-operator -c regular -n kyma-system -k default-kyma
       - run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
       - name: Set up Go for ${{ github.repository }}

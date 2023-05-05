@@ -44,9 +44,9 @@ If the deployment is successful, you should see the following main resources:
 - A Kyma CR that uses the global `alpha` channel but without any module configured, sync disabled, named `default-kyma` under `kyma-system` namespace
 
 ### Manage modules in single cluster mode
-By default, all Module Templates deployed by Kyma CLI will be configured for single cluster mode (`spec.target=control-plane`), which means the module will be deployed in the Control Plane cluster, together with Kyma Lifecycle Manager.
+To allow Kyma Lifecycle Manager manages Kyma modules in signle cluster, the Lifecycle Manager must deploy with default kustomize profile.
 
-To help you get started with Kyma CLI and learn how to use its features effectively, we have prepared an interactive tutorial that guides you through the basic commands and scenarios. The tutorial is designed to be easy to follow and fun to complete. You can access it by clicking this Interactive tutorial link below.
+We have prepared an interactive tutorial that guides you through the basic commands and scenarios. The tutorial is designed to be easy to follow and fun to complete. You can access it by clicking this Interactive tutorial link below.
 
 https://killercoda.com/kyma-project/scenario/modular-kyma
 
@@ -55,13 +55,8 @@ We highly recommend you trying it out and see for yourself how Kyma CLI can enha
 ### Manage modules in remote cluster mode
 To allow Kyma Lifecycle Manager manages Kyma modules in remote cluster, two prerequisite must be fulfilled.
 
-1. For the module to be deployed remotely, the related Module Template must be configured as `remote` in `spec.target`.
+1. The Lifecycle Manager must deploy with control-plane kustomize profile.
 2. A kubernetes secret resource which contains remote cluster kubeconfig access data must be deployed into control plane cluster upfront.
-
-The Module Template persists in [kyma official repository](https://github.com/kyma-project/kyma/tree/main/modules) are configured as `remote` by default, you can use following command deploy them:
-```
-kubectl apply -k https://github.com/kyma-project/kyma//modules
-```
 
 In order to manage remote cluster modules, Kyma Lifecycle Manager needs to know the authentication credential, like other native Kubernetes tools, the nature way to communicate with Kubernetes API server is through kubeconfig file. 
 

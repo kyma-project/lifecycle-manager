@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -86,16 +86,16 @@ func kymaReady(namespace string, name string) features.Func {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := v1beta1.AddToScheme(resourcesFromConfig.GetScheme()); err != nil {
+		if err := v1beta2.AddToScheme(resourcesFromConfig.GetScheme()); err != nil {
 			t.Fatal(err)
 		}
 
-		var kyma v1beta1.Kyma
+		var kyma v1beta2.Kyma
 		if err := wait.For(func() (bool, error) {
 			if err := resourcesFromConfig.Get(ctx, name, namespace, &kyma); err != nil {
 				t.Fatal(err)
 			}
-			return kyma.Status.State == v1beta1.StateReady, nil
+			return kyma.Status.State == v1beta2.StateReady, nil
 		}); err != nil {
 			t.Fatal(err)
 		}
@@ -171,7 +171,7 @@ func deploymentExists(namespace, name string) features.Func {
 	}
 }
 
-func logKymaStatus(ctx context.Context, t *testing.T, r *resources.Resources, kyma v1beta1.Kyma) {
+func logKymaStatus(ctx context.Context, t *testing.T, r *resources.Resources, kyma v1beta2.Kyma) {
 	t.Helper()
 	errCheckCtx, cancelErrCheck := context.WithTimeout(ctx, 5*time.Second)
 	defer cancelErrCheck()
@@ -204,19 +204,19 @@ func ControllerManagerDeployment(namespace string, name string) appsv1.Deploymen
 	}
 }
 
-func NewTestKyma(namespace, name string) *v1beta1.Kyma {
-	return &v1beta1.Kyma{
+func NewTestKyma(namespace, name string) *v1beta2.Kyma {
+	return &v1beta2.Kyma{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: v1beta1.GroupVersion.String(),
-			Kind:       string(v1beta1.KymaKind),
+			APIVersion: v1beta2.GroupVersion.String(),
+			Kind:       string(v1beta2.KymaKind),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      envconf.RandomName(name, 8),
 			Namespace: namespace,
 		},
-		Spec: v1beta1.KymaSpec{
-			Modules: []v1beta1.Module{},
-			Channel: v1beta1.DefaultChannel,
+		Spec: v1beta2.KymaSpec{
+			Modules: []v1beta2.Module{},
+			Channel: v1beta2.DefaultChannel,
 		},
 	}
 }
