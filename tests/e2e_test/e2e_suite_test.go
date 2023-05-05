@@ -1,6 +1,3 @@
-//go:build e2e
-// +build e2e
-
 /*
 Copyright 2022.
 
@@ -35,8 +32,6 @@ import (
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
 
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -52,17 +47,23 @@ import (
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
-const kcpConfigEnvVar = "KCP_KUBECONFIG"
-const skrConfigEnvVar = "SKR_KUBECONFIG"
+const (
+	kcpConfigEnvVar = "KCP_KUBECONFIG"
+	skrConfigEnvVar = "SKR_KUBECONFIG"
+)
 
 var (
-	controlPlaneClient client.Client        //nolint:gochecknoglobals
-	k8sManager         manager.Manager      //nolint:gochecknoglobals
-	controlPlaneEnv    *envtest.Environment //nolint:gochecknoglobals
-	runtimeEnv         *envtest.Environment //nolint:gochecknoglobals
-	ctx                context.Context      //nolint:gochecknoglobals
-	cancel             context.CancelFunc   //nolint:gochecknoglobals
-	cfg                *rest.Config         //nolint:gochecknoglobals
+	controlPlaneEnv        *envtest.Environment //nolint:gochecknoglobals
+	controlPlaneClient     client.Client        //nolint:gochecknoglobals
+	controlPlaneRESTConfig *rest.Config         //nolint:gochecknoglobals
+
+	runtimeEnv        *envtest.Environment //nolint:gochecknoglobals
+	runtimeClient     client.Client        //nolint:gochecknoglobals
+	runtimeRESTConfig *rest.Config         //nolint:gochecknoglobals
+
+	ctx    context.Context    //nolint:gochecknoglobals
+	cancel context.CancelFunc //nolint:gochecknoglobals
+
 )
 
 func TestAPIs(t *testing.T) {
@@ -92,10 +93,11 @@ var _ = BeforeSuite(func() {
 	Expect(yaml2.Unmarshal(moduleFile, &controlplaneCrd)).To(Succeed())
 
 	// k8s configs
-	kcpConfig, _, err := getConfigs()
+	controlPlaneConfig, runtimeConfig, err := getConfigs()
 	Expect(err).ToNot(HaveOccurred())
 	existingCluster := true
-	controlPlaneEnvConfig, err := clientcmd.RESTConfigFromKubeConfig(kcpConfig)
+	controlPlaneRESTConfig, err = clientcmd.RESTConfigFromKubeConfig(controlPlaneConfig)
+	runtimeRESTConfig, err = clientcmd.RESTConfigFromKubeConfig(runtimeConfig)
 	Expect(err).NotTo(HaveOccurred())
 
 	controlPlaneEnv = &envtest.Environment{
@@ -103,12 +105,16 @@ var _ = BeforeSuite(func() {
 		CRDs:                  append([]*v1.CustomResourceDefinition{controlplaneCrd}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 		UseExistingCluster:    &existingCluster,
-		Config:                controlPlaneEnvConfig,
+		Config:                controlPlaneRESTConfig,
 	}
-
-	cfg, err = controlPlaneEnv.Start()
+	controlPlaneClient, err = client.New(controlPlaneRESTConfig, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
-	Expect(cfg).NotTo(BeNil())
+	runtimeClient, err = client.New(runtimeRESTConfig, client.Options{Scheme: scheme.Scheme})
+	Expect(err).NotTo(HaveOccurred())
+
+	_, err = controlPlaneEnv.Start()
+	Expect(err).NotTo(HaveOccurred())
+	Expect(controlPlaneEnv.Config).NotTo(BeNil())
 
 	Expect(api.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
@@ -130,23 +136,23 @@ var _ = AfterSuite(func() {
 })
 
 func getConfigs() ([]byte, []byte, error) {
-	kcpConfigFile := os.Getenv(kcpConfigEnvVar)
-	if kcpConfigFile == "" {
+	controlplaneConfigFile := os.Getenv(kcpConfigEnvVar)
+	if controlplaneConfigFile == "" {
 		return nil, nil, errors.New(fmt.Sprintf("'%s' is empty", kcpConfigEnvVar))
 	}
-	kcpConfig, err := os.ReadFile(kcpConfigFile)
+	controlplaneConfig, err := os.ReadFile(controlplaneConfigFile)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	skrConfigFile := os.Getenv(skrConfigEnvVar)
-	if skrConfigFile == "" {
+	runtimeConfigFile := os.Getenv(skrConfigEnvVar)
+	if runtimeConfigFile == "" {
 		return nil, nil, errors.New(fmt.Sprintf("'%s' is empty", skrConfigEnvVar))
 	}
-	skrConfig, err := os.ReadFile(skrConfigFile)
+	runtimeConfig, err := os.ReadFile(runtimeConfigFile)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return kcpConfig, skrConfig, nil
+	return controlplaneConfig, runtimeConfig, nil
 }
