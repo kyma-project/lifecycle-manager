@@ -9,8 +9,8 @@ const (
 	OwnedByAnnotation                        = OperatorPrefix + Separator + "owned-by"
 	OwnedByFormat                            = "%s/%s"
 	SyncStrategyAnnotation                   = "sync-strategy"
-	SkrKymaCRDGenerationAnnotation           = OperatorPrefix + Separator + "skr-kyma-crd-generation"
-	KcpKymaCRDGenerationAnnotation           = OperatorPrefix + Separator + "kcp-kyma-crd-generation"
-	SkrModuleTemplateCRDGenerationAnnotation = OperatorPrefix + Separator + "skr-moduletemplate-crd-generation"
-	KcpModuleTemplateCRDGenerationAnnotation = OperatorPrefix + Separator + "kcp-moduletemplate-crd-generation"
+	SkrKymaCRDGenerationAnnotation           = "skr-kyma-crd-generation"
+	KcpKymaCRDGenerationAnnotation           = "kcp-kyma-crd-generation"
+	SkrModuleTemplateCRDGenerationAnnotation = "skr-moduletemplate-crd-generation"
+	KcpModuleTemplateCRDGenerationAnnotation = "kcp-moduletemplate-crd-generation"
 )
