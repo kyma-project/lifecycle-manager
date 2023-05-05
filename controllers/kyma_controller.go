@@ -102,7 +102,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		// requeue (we'll need to wait for a new notification), and we can get them
 		// on deleted requests.
 		if apierrors.IsNotFound(err) {
-			logger.Info("Deleted successfully!")
+			logger.Info(fmt.Sprintf("can not found Kyma %s, assume deleted successfully", kyma.GetName()))
 		}
 
 		return ctrl.Result{}, client.IgnoreNotFound(err) //nolint:wrapcheck
