@@ -3,33 +3,51 @@ package status_test
 import (
 	"testing"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
+//nolint:funlen
 func TestInitConditions(t *testing.T) {
 	t.Parallel()
 	type args struct {
 		watcherEnabled bool
+		syncEnabled    bool
 	}
 	tests := []struct {
 		name string
 		args args
 	}{
 		{
-			name: "Should Init Conditions properly with Watcher Enabled",
+			name: "Should Init Conditions properly with Watcher & Sync Enabled",
 			args: args{
 				watcherEnabled: true,
+				syncEnabled:    true,
 			},
 		},
 		{
-			name: "Should Init Conditions properly with Watcher Disabled",
+			name: "Should Init Conditions properly with Watcher & Sync Disabled",
 			args: args{
 				watcherEnabled: false,
+				syncEnabled:    false,
+			},
+		},
+		{
+			name: "Should Init Conditions properly with Watcher Enabled & Sync Disabled",
+			args: args{
+				watcherEnabled: true,
+				syncEnabled:    false,
+			},
+		},
+		{
+			name: "Should Init Conditions properly with Watcher Disabled & Sync Enabled",
+			args: args{
+				watcherEnabled: false,
+				syncEnabled:    true,
 			},
 		},
 	}
@@ -40,7 +58,7 @@ func TestInitConditions(t *testing.T) {
 
 			kyma := NewTestKyma("kyma")
 			kyma.Status.Conditions = append(kyma.Status.Conditions, metav1.Condition{
-				Type:               string(v1beta1.DeprecatedConditionTypeReady),
+				Type:               string(v1beta2.DeprecatedConditionTypeReady),
 				Status:             metav1.ConditionFalse,
 				ObservedGeneration: kyma.GetGeneration(),
 				Reason:             "Deprecated",
@@ -52,10 +70,9 @@ func TestInitConditions(t *testing.T) {
 				Reason:             "Deprecated",
 			})
 
-			status.InitConditions(kyma, tcase.args.watcherEnabled)
-
-			if !onlyRequiredKymaConditionsPresent(kyma, v1beta1.GetRequiredConditionTypes(
-				false, tcase.args.watcherEnabled)) {
+			status.InitConditions(kyma, tcase.args.syncEnabled, tcase.args.watcherEnabled)
+			if !onlyRequiredKymaConditionsPresent(kyma, v1beta2.GetRequiredConditionTypes(
+				tcase.args.syncEnabled, tcase.args.watcherEnabled)) {
 				t.Error("Incorrect Condition Initialization")
 				return
 			}
@@ -63,7 +80,7 @@ func TestInitConditions(t *testing.T) {
 	}
 }
 
-func onlyRequiredKymaConditionsPresent(kyma *v1beta1.Kyma, requiredConditions []v1beta1.KymaConditionType) bool {
+func onlyRequiredKymaConditionsPresent(kyma *v1beta2.Kyma, requiredConditions []v1beta2.KymaConditionType) bool {
 	if len(kyma.Status.Conditions) != len(requiredConditions) {
 		return false
 	}

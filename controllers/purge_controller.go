@@ -25,7 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
@@ -59,7 +59,7 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
 
 	// check if kyma resource exists
-	kyma := &v1beta1.Kyma{}
+	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
@@ -98,12 +98,12 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}, nil
 }
 
-func (r *PurgeReconciler) EnsurePurgeFinalizer(ctx context.Context, kyma *v1beta1.Kyma) error {
-	if controllerutil.ContainsFinalizer(kyma, v1beta1.PurgeFinalizer) {
+func (r *PurgeReconciler) EnsurePurgeFinalizer(ctx context.Context, kyma *v1beta2.Kyma) error {
+	if controllerutil.ContainsFinalizer(kyma, v1beta2.PurgeFinalizer) {
 		return nil
 	}
 
-	controllerutil.AddFinalizer(kyma, v1beta1.PurgeFinalizer)
+	controllerutil.AddFinalizer(kyma, v1beta2.PurgeFinalizer)
 	if err := r.Update(ctx, kyma); err != nil {
 		r.Event(kyma, "Warning", "SettingPurgeFinalizerError", fmt.Errorf("could not set purge finalizer: %w", err).Error())
 		return err
@@ -111,9 +111,9 @@ func (r *PurgeReconciler) EnsurePurgeFinalizer(ctx context.Context, kyma *v1beta
 	return nil
 }
 
-func (r *PurgeReconciler) DropPurgeFinalizer(ctx context.Context, kyma *v1beta1.Kyma) error {
-	if controllerutil.ContainsFinalizer(kyma, v1beta1.PurgeFinalizer) {
-		controllerutil.RemoveFinalizer(kyma, v1beta1.PurgeFinalizer)
+func (r *PurgeReconciler) DropPurgeFinalizer(ctx context.Context, kyma *v1beta2.Kyma) error {
+	if controllerutil.ContainsFinalizer(kyma, v1beta2.PurgeFinalizer) {
+		controllerutil.RemoveFinalizer(kyma, v1beta2.PurgeFinalizer)
 		if err := r.Update(ctx, kyma); err != nil {
 			r.Event(kyma, "Warning", "SettingPurgeFinalizerError",
 				fmt.Errorf("could not remove purge finalizer: %w", err).Error())
@@ -195,7 +195,7 @@ func purgeStaleResources(ctx context.Context, remoteClient client.Client,
 }
 
 func (r *PurgeReconciler) UpdateStatus(
-	ctx context.Context, kyma *v1beta1.Kyma, state v1beta1.State, message string,
+	ctx context.Context, kyma *v1beta2.Kyma, state v1beta2.State, message string,
 ) error {
 	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, message); err != nil {
 		return fmt.Errorf("error while updating status to %s because of %s: %w", state, message, err)
@@ -203,14 +203,14 @@ func (r *PurgeReconciler) UpdateStatus(
 	return nil
 }
 
-func (r *PurgeReconciler) RecordKymaStatusMetrics(_ context.Context, _ *v1beta1.Kyma) {}
+func (r *PurgeReconciler) RecordKymaStatusMetrics(_ context.Context, _ *v1beta2.Kyma) {}
 
 func (r *PurgeReconciler) IsKymaManaged() bool {
 	return r.IsManagedKyma
 }
 
 func isKymaCR(crd apiextensions.CustomResourceDefinition) bool {
-	return crd.Spec.Group == v1beta1.GroupVersion.Group && crd.Spec.Names.Kind == string(v1beta1.KymaKind)
+	return crd.Spec.Group == v1beta2.GroupVersion.Group && crd.Spec.Names.Kind == string(v1beta2.KymaKind)
 }
 
 // CRDMatcherFor returns a CRDMatcher for a comma-separated list of CRDs.

@@ -13,7 +13,7 @@ import (
 	"regexp"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 
@@ -26,7 +26,7 @@ import (
 const manifestFileName = "raw-manifest.yaml"
 
 func GetPathFromRawManifest(ctx context.Context,
-	imageSpec v1beta1.ImageSpec,
+	imageSpec v1beta2.ImageSpec,
 	keyChain authn.Keychain,
 ) (string, error) {
 	imageRef := fmt.Sprintf("%s/%s@%s", imageSpec.Repo, imageSpec.Name, imageSpec.Ref)
@@ -74,7 +74,7 @@ func GetPathFromRawManifest(ctx context.Context,
 }
 
 func GetPathFromExtractedTarGz(ctx context.Context,
-	imageSpec v1beta1.ImageSpec,
+	imageSpec v1beta2.ImageSpec,
 	keyChain authn.Keychain,
 ) (string, error) {
 	imageRef := fmt.Sprintf("%s/%s@%s", imageSpec.Repo, imageSpec.Name, imageSpec.Ref)
@@ -180,7 +180,7 @@ func handleExtractedHeaderFile(
 }
 
 func DecodeUncompressedYAMLLayer(ctx context.Context,
-	imageSpec v1beta1.ImageSpec,
+	imageSpec v1beta2.ImageSpec,
 	keyChain authn.Keychain,
 ) (interface{}, error) {
 	configFilePath := GetConfigFilePath(imageSpec)

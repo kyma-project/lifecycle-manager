@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/registry"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap/zapcore"
@@ -41,7 +42,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/kyma-project/lifecycle-manager/api"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
@@ -118,11 +118,11 @@ var _ = BeforeSuite(
 			cfg, ctrl.Options{
 				MetricsBindAddress: metricsBindAddress,
 				Scheme:             scheme.Scheme,
-				NewCache:           internal.GetCacheFunc(labels.Set{v1beta1.ManagedBy: v1beta1.OperatorName}),
+				NewCache:           internal.GetCacheFunc(labels.Set{v1beta2.ManagedBy: v1beta2.OperatorName}),
 			},
 		)
 		Expect(err).ToNot(HaveOccurred())
-		codec, err := v1beta1.NewCodec()
+		codec, err := v1beta2.NewCodec()
 		Expect(err).ToNot(HaveOccurred())
 
 		var authUser *envtest.AuthenticatedUser
@@ -138,7 +138,7 @@ var _ = BeforeSuite(
 
 		kcp := &declarative.ClusterInfo{Config: cfg, Client: k8sClient}
 		reconciler = declarative.NewFromManager(
-			k8sManager, &v1beta1.Manifest{},
+			k8sManager, &v1beta2.Manifest{},
 			declarative.WithSpecResolver(
 				internalv1beta1.NewManifestSpecResolver(kcp, codec),
 			),
@@ -155,7 +155,7 @@ var _ = BeforeSuite(
 		)
 
 		err = ctrl.NewControllerManagedBy(k8sManager).
-			For(&v1beta1.Manifest{}).
+			For(&v1beta2.Manifest{}).
 			Watches(&source.Kind{Type: &v1.Secret{}}, handler.Funcs{}).
 			WithOptions(
 				controller.Options{

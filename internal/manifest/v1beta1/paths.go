@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 const (
@@ -13,10 +13,10 @@ const (
 	configsFolder  = "configs"
 )
 
-func GetFsChartPath(imageSpec v1beta1.ImageSpec) string {
+func GetFsChartPath(imageSpec v1beta2.ImageSpec) string {
 	return filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s", imageSpec.Name, imageSpec.Ref))
 }
 
-func GetConfigFilePath(config v1beta1.ImageSpec) string {
+func GetConfigFilePath(config v1beta2.ImageSpec) string {
 	return filepath.Join(os.TempDir(), configsFolder, config.Ref, configFileName)
 }

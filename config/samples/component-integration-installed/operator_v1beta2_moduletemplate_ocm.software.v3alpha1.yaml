@@ -1,0 +1,76 @@
+apiVersion: operator.kyma-project.io/v1beta2
+kind: ModuleTemplate
+metadata:
+  name: moduletemplate-template-operator
+  namespace: default
+  labels:
+    "operator.kyma-project.io/managed-by": "lifecycle-manager"
+    "operator.kyma-project.io/controller-name": "manifest"
+    "operator.kyma-project.io/module-name": "template-operator"
+spec:
+  channel: regular
+  data:
+    apiVersion: operator.kyma-project.io/v1alpha1
+    kind: Sample
+    metadata:
+      name: sample-yaml
+    spec:
+      resourceFilePath: "./module-data/yaml"
+  descriptor:
+    apiVersion: ocm.software/v3alpha1
+    kind: ComponentVersion
+    metadata:
+      name: kyma-project.io/template-operator
+      provider:
+        labels:
+          - name: kyma-project.io/built-by
+            value: cli
+            version: v1
+        name: kyma-project.io
+      version: v0.0.1
+    repositoryContexts:
+      - baseUrl: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/ocm-software-v3alpha1
+        componentNameMapping: urlPath
+        type: OCIRegistry
+    spec:
+      resources:
+        - access:
+            globalAccess:
+              digest: sha256:c515d440efce8112e08d62fed35bddd03381e34c49ede7c568b58096b29a509a
+              mediaType: application/gzip
+              ref: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/ocm-software-v3alpha1/component-descriptors/kyma-project.io/template-operator
+              size: 3856
+              type: ociBlob
+            localReference: sha256:c515d440efce8112e08d62fed35bddd03381e34c49ede7c568b58096b29a509a
+            mediaType: application/gzip
+            type: localBlob
+          name: template-operator
+          relation: local
+          type: helm-chart
+          version: v0.0.1
+        - access:
+            globalAccess:
+              digest: sha256:db86408caca4c94250d8291aa79655b84146f9cc45e0da49f05a52b3722d74a0
+              mediaType: application/octet-stream
+              ref: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/ocm-software-v3alpha1/component-descriptors/kyma-project.io/template-operator
+              size: 250
+              type: ociBlob
+            localReference: sha256:db86408caca4c94250d8291aa79655b84146f9cc45e0da49f05a52b3722d74a0
+            mediaType: application/octet-stream
+            type: localBlob
+          name: config
+          relation: local
+          type: yaml
+          version: v0.0.1
+      sources:
+        - access:
+            commit: 60f2474a6673be4c823b42c69846676d49a49937
+            repoUrl: github.com/kyma-project/template-operator
+            type: gitHub
+          labels:
+            - name: git.kyma-project.io/ref
+              value: refs/heads/main
+              version: v1
+          name: module-sources
+          type: Github
+          version: v0.0.1

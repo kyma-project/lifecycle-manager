@@ -17,13 +17,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	"fmt"
-
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // ModuleTemplate is a representation of a Template used for creating Module Instances within the Module Lifecycle.
@@ -33,37 +30,14 @@ import (
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-// +kubebuilder:storageversion
+//+kubebuilder:deprecatedversion:warning="kyma-project.io/v1beta1 ModuleTemplate is deprecated. Use v1beta2 instead."
+//+kubebuilder:storageversion
+
 type ModuleTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec ModuleTemplateSpec `json:"spec,omitempty"`
-}
-
-// +k8s:deepcopy-gen=false
-type Descriptor struct {
-	*compdesc.ComponentDescriptor
-}
-
-func (d *Descriptor) SetGroupVersionKind(kind schema.GroupVersionKind) {
-	d.Version = kind.Version
-}
-
-func (d *Descriptor) GroupVersionKind() schema.GroupVersionKind {
-	return schema.GroupVersionKind{
-		Group:   "ocm.kyma-project.io",
-		Version: d.Metadata.ConfiguredVersion,
-		Kind:    "Descriptor",
-	}
-}
-
-func (d *Descriptor) GetObjectKind() schema.ObjectKind {
-	return d
-}
-
-func (d *Descriptor) DeepCopyObject() runtime.Object {
-	return &Descriptor{ComponentDescriptor: d.Copy()}
 }
 
 // ModuleTemplateSpec defines the desired state of ModuleTemplate.
@@ -103,20 +77,6 @@ type ModuleTemplateSpec struct {
 	Target Target `json:"target"`
 }
 
-func (in *ModuleTemplateSpec) GetDescriptor(opts ...compdesc.DecodeOption) (*Descriptor, error) {
-	if in.Descriptor.Object != nil {
-		return in.Descriptor.Object.(*Descriptor), nil
-	}
-	desc, err := compdesc.Decode(
-		in.Descriptor.Raw, append([]compdesc.DecodeOption{compdesc.DisableValidation(true)}, opts...)...,
-	)
-	if err != nil {
-		return nil, err
-	}
-	in.Descriptor.Object = &Descriptor{ComponentDescriptor: desc}
-	return in.Descriptor.Object.(*Descriptor), err
-}
-
 //+kubebuilder:object:root=true
 
 // ModuleTemplateList contains a list of ModuleTemplate.
@@ -137,13 +97,5 @@ const (
 
 //nolint:gochecknoinits
 func init() {
-	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{}, &Descriptor{})
-}
-
-func (in *ModuleTemplate) GetComponentDescriptorCacheKey() (string, error) {
-	descriptor, err := in.Spec.GetDescriptor()
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%s:%s:%s", in.Spec.Channel, descriptor.GetName(), descriptor.GetVersion()), nil
+	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{}, &v1beta2.Descriptor{})
 }
