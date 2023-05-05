@@ -179,6 +179,10 @@ func (r *KymaReconciler) syncRemoteKymaSpecAndStatus(
 
 	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx, controlPlaneKyma)
 	if err != nil {
+		if errors.Is(err, remote.ErrNotFoundAndKCPKymaUnderDeleting) {
+			//remote kyma not found because it's deleted, should not continue
+			return nil
+		}
 		return fmt.Errorf("could not create or fetch remote kyma: %w", err)
 	}
 	if err := syncContext.SynchronizeRemoteKyma(ctx, controlPlaneKyma, remoteKyma); err != nil {
@@ -195,7 +199,7 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta2.Ky
 		return fmt.Errorf("could not aggregate module templates for module catalog sync: %w", err)
 	}
 
-	modulesToSync := []v1beta2.ModuleTemplate{}
+	var modulesToSync []v1beta2.ModuleTemplate
 	for _, mt := range moduleTemplateList.Items {
 		if mt.SyncEnabled(kyma.IsBeta(), kyma.IsInternal()) {
 			modulesToSync = append(modulesToSync, mt)

@@ -24,8 +24,9 @@ import (
 type ClientFunc func() *rest.Config
 
 var (
-	LocalClient             ClientFunc //nolint:gochecknoglobals
-	ErrNoLocalClientDefined = errors.New("no local client defined")
+	LocalClient                        ClientFunc //nolint:gochecknoglobals
+	ErrNoLocalClientDefined            = errors.New("no local client defined")
+	ErrNotFoundAndKCPKymaUnderDeleting = errors.New("not found and kcp kyma under deleting")
 )
 
 type KymaSynchronizationContext struct {
@@ -184,6 +185,9 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 	}
 
 	if k8serrors.IsNotFound(err) {
+		if !kyma.DeletionTimestamp.IsZero() {
+			return nil, ErrNotFoundAndKCPKymaUnderDeleting
+		}
 		kyma.Spec.DeepCopyInto(&remoteKyma.Spec)
 
 		// if KCP Kyma contains some modules during initialization, not sync them into remote.
