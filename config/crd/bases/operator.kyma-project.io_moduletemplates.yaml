@@ -19,6 +19,90 @@ spec:
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
+    - jsonPath: .spec.channel
+      name: Channel
+      type: string
+    - jsonPath: .spec.target
+      name: Target
+      type: string
+    deprecated: true
+    deprecationWarning: kyma-project.io/v1alpha1 ModuleTemplate is deprecated. Use
+      v1beta1 instead.
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ModuleTemplateSpec defines the desired state of ModuleTemplate.
+            properties:
+              channel:
+                description: Channel is the targeted channel of the ModuleTemplate.
+                  It will be used to directly assign a Template to a target channel.
+                  It has to be provided at any given time.
+                maxLength: 32
+                minLength: 3
+                pattern: ^[a-z]+$
+                type: string
+              data:
+                description: Data is the default set of attributes that are used to
+                  generate the Module. It contains a default set of values for a given
+                  channel, and is thus different from default values allocated during
+                  struct parsing of the Module. While Data can change after the initial
+                  creation of ModuleTemplate, it is not expected to be propagated
+                  to downstream modules as it is considered a set of default values.
+                  This means that an update of the data block will only propagate
+                  to new Modules created form ModuleTemplate, not any existing Module.
+                type: object
+                x-kubernetes-embedded-resource: true
+                x-kubernetes-preserve-unknown-fields: true
+              descriptor:
+                description: "The Descriptor is the Open Component Model Descriptor
+                  of a Module, containing all relevant information to correctly initialize
+                  a module (e.g. Charts, Manifests, References to Binaries and/or
+                  configuration) Name more information on Component Descriptors, see
+                  https://github.com/open-component-model/ocm \n It is translated
+                  inside the Lifecycle of the Cluster and will be used by downstream
+                  controllers to bootstrap and manage the module. This part is also
+                  propagated for every change of the template. This means for upgrades
+                  of the Descriptor, downstream controllers will also update the dependant
+                  modules (e.g. by updating the controller binary linked in a chart
+                  referenced in the descriptor)"
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
+              target:
+                description: Target describes where the Module should later on be
+                  installed if parsed correctly. It is used as installation hint by
+                  downstream controllers to determine which client implementation
+                  to use for working with the Module
+                enum:
+                - control-plane
+                - remote
+                type: string
+            required:
+            - channel
+            - descriptor
+            - target
+            type: object
+        type: object
+    served: false
+    storage: false
+    subresources: {}
+  - additionalPrinterColumns:
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
     deprecated: true
     deprecationWarning: kyma-project.io/v1beta1 ModuleTemplate is deprecated. Use
       v1beta2 instead.
