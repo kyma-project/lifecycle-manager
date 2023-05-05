@@ -238,7 +238,7 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 	logger := ctrlLog.FromContext(ctx)
 	// set ready condition if applicable
 	if err := r.reconcileManifests(ctx, kyma); err != nil {
-		return fmt.Errorf("could not reconcile manifest: %w", err)
+		return r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta2.StateError, err)
 	}
 	if kyma.AllModulesReady() {
 		kyma.UpdateCondition(v1beta2.ConditionTypeModules, metav1.ConditionTrue)
