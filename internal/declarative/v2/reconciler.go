@@ -24,6 +24,10 @@ var (
 	ErrObjectHasEmptyState                       = errors.New("object has an empty state")
 )
 
+const (
+	kymaSystem = "kyma-system"
+)
+
 func NewFromManager(mgr manager.Manager, prototype Object, options ...Option) *Reconciler {
 	r := &Reconciler{}
 	r.prototype = prototype
@@ -369,12 +373,12 @@ func (r *Reconciler) pruneDiff(
 }
 
 func pruneKymaSystem(diff []*resource.Info) []*resource.Info {
-	for i, info := range diff {
+	for i, info := range diff { //nolint:varnamelen
 		obj := info.Object.(client.Object)
 		if obj.GetObjectKind().GroupVersionKind().Kind != "Namespace" {
 			continue
 		}
-		if obj.GetName() != "kyma-system" {
+		if obj.GetName() != kymaSystem {
 			continue
 		}
 		return append(diff[:i], diff[i+1:]...)

@@ -14,41 +14,41 @@ import (
 
 func TestPruneKymaSystem(t *testing.T) {
 	t.Parallel()
-	obj1 := &resource.Info{Object: &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "kube-system"}, TypeMeta: metav1.TypeMeta{Kind: "Namespace"}}}
-	obj2 := &resource.Info{Object: &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "some-service"}, TypeMeta: metav1.TypeMeta{Kind: "Service"}}}
-	obj3 := &resource.Info{Object: &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "kyma-system"}, TypeMeta: metav1.TypeMeta{Kind: "Namespace"}}}
-	obj4 := &resource.Info{Object: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "some-deploy"}, TypeMeta: metav1.TypeMeta{Kind: "Deployment"}}}
+	kubeNs := &resource.Info{Object: &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "kube-system"}, TypeMeta: metav1.TypeMeta{Kind: "Namespace"}}}
+	service := &resource.Info{Object: &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "some-service"}, TypeMeta: metav1.TypeMeta{Kind: "Service"}}}
+	kymaNs := &resource.Info{Object: &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "kyma-system"}, TypeMeta: metav1.TypeMeta{Kind: "Namespace"}}}
+	deployment := &resource.Info{Object: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "some-deploy"}, TypeMeta: metav1.TypeMeta{Kind: "Deployment"}}}
 
 	t.Run("contains kyma-system", func(t *testing.T) {
 		t.Parallel()
 
 		infos := []*resource.Info{
-			obj1,
-			obj2,
-			obj3,
-			obj4,
+			kubeNs,
+			service,
+			kymaNs,
+			deployment,
 		}
 
 		result := pruneKymaSystem(infos)
 
 		require.Len(t, result, 3)
-		require.NotContains(t, result, obj3)
+		require.NotContains(t, result, kymaNs)
 	})
 
 	t.Run("does not contain kyma-system", func(t *testing.T) {
 		t.Parallel()
 
 		infos := []*resource.Info{
-			obj1,
-			obj2,
-			obj4,
+			kubeNs,
+			service,
+			deployment,
 		}
 
 		result := pruneKymaSystem(infos)
 
 		require.Len(t, result, 3)
-		require.Contains(t, result, obj1)
-		require.Contains(t, result, obj2)
-		require.Contains(t, result, obj4)
+		require.Contains(t, result, kubeNs)
+		require.Contains(t, result, service)
+		require.Contains(t, result, deployment)
 	})
 }
