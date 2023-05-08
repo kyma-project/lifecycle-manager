@@ -180,7 +180,9 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		}, Timeout, Interval)
 
 		By("Remote Module Catalog created")
-		Eventually(ModuleTemplatesExist(runtimeClient, kyma, controllers.DefaultRemoteSyncNamespace), Timeout, Interval).Should(Succeed())
+		Eventually(ModuleTemplatesExist(runtimeClient, kyma, controllers.DefaultRemoteSyncNamespace),
+			Timeout, Interval).
+			Should(Succeed())
 		Eventually(func() error {
 			remoteKyma, err := GetKyma(ctx, runtimeClient, kyma.GetName(), kyma.GetNamespace())
 			if err != nil {
@@ -206,6 +208,8 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("Expect SKR Module Template spec.data.spec field get reset")
 		Eventually(expectModuleTemplateSpecGetReset, Timeout, Interval).
-			WithArguments(runtimeClient, controllers.DefaultRemoteSyncNamespace, moduleToBeUpdated, "initValue").Should(Succeed())
+			WithArguments(runtimeClient, controllers.DefaultRemoteSyncNamespace,
+				moduleToBeUpdated, "initValue").
+			Should(Succeed())
 	})
 })
