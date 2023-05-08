@@ -25,7 +25,7 @@ var (
 )
 
 const (
-	kymaSystem = "kyma-system"
+	namespaceNotBeRemoved = "kyma-system"
 )
 
 func NewFromManager(mgr manager.Manager, prototype Object, options ...Option) *Reconciler {
@@ -378,7 +378,7 @@ func pruneKymaSystem(diff []*resource.Info) []*resource.Info {
 		if obj.GetObjectKind().GroupVersionKind().Kind != "Namespace" {
 			continue
 		}
-		if obj.GetName() != kymaSystem {
+		if obj.GetName() != namespaceNotBeRemoved {
 			continue
 		}
 		return append(diff[:i], diff[i+1:]...)
