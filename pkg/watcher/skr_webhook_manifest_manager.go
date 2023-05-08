@@ -83,7 +83,8 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 	}
 	logger.V(log.DebugLevel).Info("Successfully created Certificate", "kyma", kymaObjKey)
 
-	resources, err := m.getSKRClientObjectsForInstall(ctx, syncContext.ControlPlaneClient, kymaObjKey, m.config.RemoteSyncNamespace, logger)
+	resources, err := m.getSKRClientObjectsForInstall(
+		ctx, syncContext.ControlPlaneClient, kymaObjKey, m.config.RemoteSyncNamespace, logger)
 	if err != nil {
 		return err
 	}
@@ -116,7 +117,8 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 	}
 
 	skrClientObjects := m.getBaseClientObjects()
-	genClientObjects := getGeneratedClientObjects(&unstructuredResourcesConfig{}, map[string]WatchableConfig{}, m.config.RemoteSyncNamespace)
+	genClientObjects := getGeneratedClientObjects(
+		&unstructuredResourcesConfig{}, map[string]WatchableConfig{}, m.config.RemoteSyncNamespace)
 	skrClientObjects = append(skrClientObjects, genClientObjects...)
 	err = runResourceOperationWithGroupedErrors(ctx, syncContext.RuntimeClient, skrClientObjects,
 		func(ctx context.Context, clt client.Client, resource client.Object) error {

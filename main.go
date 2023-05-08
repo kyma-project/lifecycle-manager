@@ -234,8 +234,7 @@ func NewClient(
 func setupKymaReconciler(mgr ctrl.Manager,
 	remoteClientCache *remote.ClientCache,
 	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
-	flagVar *FlagVar,
-	options controller.Options,
+	flagVar *FlagVar, options controller.Options,
 ) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentKymaReconciles
 
