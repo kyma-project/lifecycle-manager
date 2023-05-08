@@ -108,8 +108,8 @@ func defineFlagVar() *FlagVar {
 		"Indicates the SKR Purge Finalizers execution delay in seconds")
 	flag.StringVar(&flagVar.skipPurgingFor, "skip-finalizer-purging-for", "", "Exclude the passed CRDs"+
 		" from finalizer removal. Example: 'ingressroutetcps.traefik.containo.us,*.helm.cattle.io'.")
-	flag.StringVar(&flagVar.remoteKymaNamespace, "sync-namespace", "kyma-system",
-		"Name of the namespace for syncing remote Kyma objects")
+	flag.StringVar(&flagVar.remoteSyncNamespace, "sync-namespace", "kyma-system",
+		"Name of the namespace for syncing remote Kyma and module catalog")
 	return flagVar
 }
 
@@ -152,5 +152,5 @@ type FlagVar struct {
 	enablePurgeFinalizer                   bool
 	purgeFinalizerTimeout                  time.Duration
 	skipPurgingFor                         string
-	remoteKymaNamespace                    string
+	remoteSyncNamespace                    string
 }

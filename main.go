@@ -253,6 +253,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 			WatcherLocalTestingEnabled: flagVar.enableWatcherLocalTesting,
 			GatewayHTTPPortMapping:     flagVar.listenerHTTPPortLocalMapping,
 			IstioNamespace:             flagVar.istioNamespace,
+			RemoteSyncNamespace:        flagVar.remoteSyncNamespace,
 		}
 		skrWebhookManager, err = watcher.NewSKRWebhookManifestManager(kcpRestConfig, skrWebhookConfig)
 		if err != nil {
@@ -274,7 +275,8 @@ func setupKymaReconciler(mgr ctrl.Manager,
 			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
 			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
 		},
-		InKCPMode: flagVar.inKCPMode,
+		InKCPMode:           flagVar.inKCPMode,
+		RemoteSyncNamespace: flagVar.remoteSyncNamespace,
 	}).SetupWithManager(
 		mgr, options, controllers.SetupUpSetting{
 			ListenerAddr:                 flagVar.kymaListenerAddr,

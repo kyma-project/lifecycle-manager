@@ -35,12 +35,12 @@ type Catalog interface {
 	Delete(ctx context.Context) error
 }
 
-func NewRemoteCatalogFromKyma(kyma *v1beta2.Kyma) *RemoteCatalog {
+func NewRemoteCatalogFromKyma(remoteSyncNamespace string) *RemoteCatalog {
 	force := true
 	return NewRemoteCatalog(
 		Settings{
 			SSAPatchOptions: &client.PatchOptions{FieldManager: moduleCatalogSyncFieldManager, Force: &force},
-			Namespace:       kyma.Namespace,
+			Namespace:       remoteSyncNamespace,
 		},
 	)
 }

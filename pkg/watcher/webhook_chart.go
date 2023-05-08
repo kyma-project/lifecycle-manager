@@ -100,10 +100,6 @@ func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrWebhookManagerConf
 	return net.JoinHostPort(externalIP, strconv.Itoa(int(port))), nil
 }
 
-func resolveRemoteNamespace(kyma *v1beta2.Kyma) string {
-	return kyma.Namespace
-}
-
 func ResolveTLSCertName(kymaName string) string {
 	return fmt.Sprintf(webhookTLSCfgNameTpl, kymaName)
 }
