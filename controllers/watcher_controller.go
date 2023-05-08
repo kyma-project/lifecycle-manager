@@ -129,7 +129,7 @@ func (r *WatcherReconciler) stateHandling(ctx context.Context, watcherCR *v1beta
 }
 
 func (r *WatcherReconciler) handleDeletingState(ctx context.Context, watcherCR *v1beta2.Watcher) error {
-	err := r.IstioClient.RemoveVirtualServiceConfigForCR(ctx, client.ObjectKeyFromObject(watcherCR))
+	err := r.IstioClient.RemoveVirtualServiceForCR(ctx, client.ObjectKeyFromObject(watcherCR))
 	if err != nil {
 		vsConfigDelErr := fmt.Errorf("failed to delete virtual service (config): %w", err)
 		r.EventRecorder.Event(watcherCR, "Warning", "WatcherDeletionErr", err.Error())

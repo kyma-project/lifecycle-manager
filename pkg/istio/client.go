@@ -9,7 +9,6 @@ import (
 	istioapi "istio.io/api/networking/v1beta1"
 	istioclientapi "istio.io/client-go/pkg/apis/networking/v1beta1"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
@@ -210,43 +209,11 @@ func contentDiffers(target []string, source []string) bool {
 	return false
 }
 
-func (c *Client) RemoveVirtualServiceConfigForCR(ctx context.Context, watcherObjKey client.ObjectKey,
+func (c *Client) RemoveVirtualServiceForCR(ctx context.Context, watcherObjKey client.ObjectKey,
 ) error {
-	virtualService, err := c.GetVirtualService(ctx, watcherObjKey.Name)
-	if apierrors.IsNotFound(err) {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-	if len(virtualService.Spec.Http) <= vsDeletionThreshold {
-		// last http route is being deleted: remove the virtual service resource
-		return c.NetworkingV1beta1().
-			VirtualServices(metav1.NamespaceDefault).
-			Delete(ctx, watcherObjKey.Name, metav1.DeleteOptions{})
-	}
-
-	routeIdx := lookupHTTPRouteByObjectKey(virtualService.Spec.Http, watcherObjKey)
-	if routeIdx == notFoundRouteIndex {
-		return nil
-	}
-	l := len(virtualService.Spec.Http)
-	copy(virtualService.Spec.Http[routeIdx:], virtualService.Spec.Http[routeIdx+1:])
-	virtualService.Spec.Http[l-1] = nil
-	virtualService.Spec.Http = virtualService.Spec.Http[:l-1]
-	return c.UpdateVirtualService(ctx, virtualService)
-}
-
-func lookupHTTPRouteByObjectKey(routes []*istioapi.HTTPRoute, watcherObjKey client.ObjectKey) int {
-	if len(routes) == 0 {
-		return notFoundRouteIndex
-	}
-	for idx, route := range routes {
-		if route.Name == watcherObjKey.String() {
-			return idx
-		}
-	}
-	return notFoundRouteIndex
+	return c.NetworkingV1beta1().
+		VirtualServices(metav1.NamespaceDefault).
+		Delete(ctx, watcherObjKey.Name, metav1.DeleteOptions{})
 }
 
 func IsRouteConfigEqual(route1 *istioapi.HTTPRoute, route2 *istioapi.HTTPRoute) bool {

@@ -26,8 +26,6 @@ import (
 
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-logr/logr"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	istioscheme "istio.io/client-go/pkg/clientset/versioned/scheme"
@@ -46,6 +44,9 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/controllers"
@@ -182,7 +183,7 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager, controller.Options{}, controllers.SetupUpSetting{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
-	istioCfg := istio.NewConfig(virtualServiceName, false)
+	istioCfg := istio.NewConfig(false)
 	err = (&controllers.WatcherReconciler{
 		Client:           k8sManager.GetClient(),
 		RestConfig:       k8sManager.GetConfig(),
