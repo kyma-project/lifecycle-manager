@@ -21,8 +21,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -32,9 +30,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/status"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -143,19 +145,23 @@ func (r *WatcherReconciler) handleDeletingState(ctx context.Context, watcherCR *
 }
 
 func (r *WatcherReconciler) handleProcessingState(ctx context.Context, watcherCR *v1beta2.Watcher) error {
-	virtualService, err := r.IstioClient.GetVirtualService(ctx)
+	// Create virtualService in Memory
+	virtualSvc, err := r.IstioClient.NewVirtualService(ctx, watcherCR)
+
+	_, err = r.IstioClient.GetVirtualService(ctx, watcherCR.Name)
 	if client.IgnoreNotFound(err) != nil {
 		return err
 	}
 	if apierrors.IsNotFound(err) {
-		_, err := r.IstioClient.CreateVirtualService(ctx, watcherCR)
+		err = r.IstioClient.CreateVirtualService(ctx, virtualSvc)
 		if err != nil {
 			vsCreateErr := fmt.Errorf("failed to create virtual service: %w", err)
 			return r.updateWatcherToErrState(ctx, watcherCR, vsCreateErr)
 		}
 		return r.updateWatcherState(ctx, watcherCR, v1beta2.WatcherStateReady)
 	}
-	err = r.IstioClient.UpdateVirtualServiceConfig(ctx, watcherCR, virtualService)
+
+	err = r.IstioClient.UpdateVirtualService(ctx, virtualSvc)
 	if err != nil {
 		vsUpdateErr := fmt.Errorf("failed to update virtual service: %w", err)
 		return r.updateWatcherToErrState(ctx, watcherCR, vsUpdateErr)

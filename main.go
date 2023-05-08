@@ -341,7 +341,7 @@ func setupManifestReconciler(
 func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, flagVar *FlagVar) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentWatcherReconciles
 
-	istioConfig := istio.NewConfig(flagVar.virtualServiceName, flagVar.enableWatcherLocalTesting)
+	istioConfig := istio.NewConfig(flagVar.enableWatcherLocalTesting)
 
 	if err := (&controllers.WatcherReconciler{
 		Client:        mgr.GetClient(),
