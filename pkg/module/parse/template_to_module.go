@@ -52,14 +52,11 @@ func NewParser(
 		remoteSyncNamespace:      remoteSyncNamespace,
 		EnableVerification:       enableVerification,
 		PublicKeyFilePath:        publicKeyFilePath}
-	}
 }
 
-func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
+func (parser *Parser) GenerateModulesFromTemplates(ctx context.Context,
 	kyma *v1beta2.Kyma,
 	templates channel.ModuleTemplatesByModuleName,
-	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
-	clnt client.Client,
 ) common.Modules {
 	// First, we fetch the module spec from the template and use it to resolve it into an arbitrary object
 	// (since we do not know which module we are dealing with)
@@ -86,11 +83,10 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 		fqdn := descriptor.GetName()
 		version := descriptor.GetVersion()
 		name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
-		overwriteNameAndNamespace(&template, name, p.remoteSyncNamespace)
+		overwriteNameAndNamespace(&template, name, parser.remoteSyncNamespace)
 		var obj client.Object
-		if obj, err = p.newManifestFromTemplate(ctx, module,
-			template.ModuleTemplate,
-			verification); err != nil {
+		if obj, err = parser.newManifestFromTemplate(ctx, module,
+			template.ModuleTemplate); err != nil {
 			template.Err = err
 			modules = append(modules, &common.Module{
 				ModuleName: module.Name,
@@ -129,10 +125,9 @@ func (parser *Parser) newManifestFromTemplate(
 	ctx context.Context,
 	module v1beta2.Module,
 	template *v1beta2.ModuleTemplate,
-	verification signature.Verification,
 ) (*v1beta2.Manifest, error) {
 	manifest := &v1beta2.Manifest{}
-	manifest.Spec.Remote = p.InKCPMode
+	manifest.Spec.Remote = parser.InKCPMode
 
 	switch module.CustomResourcePolicy {
 	case v1beta2.CustomResourcePolicyIgnore:
