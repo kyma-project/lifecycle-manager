@@ -4,6 +4,7 @@ import (
 	"flag"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
@@ -108,7 +109,7 @@ func defineFlagVar() *FlagVar {
 		"Indicates the SKR Purge Finalizers execution delay in seconds")
 	flag.StringVar(&flagVar.skipPurgingFor, "skip-finalizer-purging-for", "", "Exclude the passed CRDs"+
 		" from finalizer removal. Example: 'ingressroutetcps.traefik.containo.us,*.helm.cattle.io'.")
-	flag.StringVar(&flagVar.remoteSyncNamespace, "sync-namespace", "kyma-system",
+	flag.StringVar(&flagVar.remoteSyncNamespace, "sync-namespace", controllers.DefaultRemoteSyncNamespace,
 		"Name of the namespace for syncing remote Kyma and module catalog")
 	return flagVar
 }

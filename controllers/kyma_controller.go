@@ -52,9 +52,10 @@ import (
 type EventErrorType string
 
 const (
-	ModuleReconciliationError EventErrorType = "ModuleReconciliationError"
-	SyncContextError          EventErrorType = "SyncContextError"
-	DeletionError             EventErrorType = "DeletionError"
+	ModuleReconciliationError  EventErrorType = "ModuleReconciliationError"
+	SyncContextError           EventErrorType = "SyncContextError"
+	DeletionError              EventErrorType = "DeletionError"
+	DefaultRemoteSyncNamespace string         = "kyma-system"
 )
 
 type RequeueIntervals struct {

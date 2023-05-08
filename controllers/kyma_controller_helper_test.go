@@ -101,11 +101,11 @@ func UpdateRemoteModule(
 	ctx context.Context,
 	client client.Client,
 	kyma *v1beta2.Kyma,
-	remoteNamespace string,
+	remoteSyncNamespace string,
 	modules []v1beta2.Module,
 ) func() error {
 	return func() error {
-		kyma, err := GetKyma(ctx, client, kyma.Name, remoteNamespace)
+		kyma, err := GetKyma(ctx, client, kyma.Name, remoteSyncNamespace)
 		if err != nil {
 			return err
 		}
@@ -201,7 +201,6 @@ func WatcherLabelsAnnotationsExist(clnt client.Client, kyma *v1beta2.Kyma, remot
 		return ErrWatcherLabelMissing
 	}
 	if remoteKyma.Annotations[v1beta2.OwnedByAnnotation] != fmt.Sprintf(v1beta2.OwnedByFormat,
-		//TODO: Is it OK?
 		kyma.GetNamespace(), kyma.GetName()) {
 		return ErrWatcherAnnotationMissing
 	}
