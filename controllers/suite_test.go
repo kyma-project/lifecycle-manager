@@ -140,6 +140,7 @@ var _ = BeforeSuite(func() {
 		ComponentDescriptorCache: componentDescriptorCache,
 		KcpRestConfig:            k8sManager.GetConfig(),
 		InKCPMode:                false,
+		RemoteSyncNamespace:      "kyma-system",
 	}).SetupWithManager(k8sManager, controller.Options{},
 		controllers.SetupUpSetting{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())

@@ -137,9 +137,10 @@ var _ = BeforeSuite(func() {
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
 		},
-		RemoteClientCache: remoteClientCache,
-		KcpRestConfig:     k8sManager.GetConfig(),
-		InKCPMode:         true,
+		RemoteClientCache:   remoteClientCache,
+		KcpRestConfig:       k8sManager.GetConfig(),
+		InKCPMode:           true,
+		RemoteSyncNamespace: "kyma-system",
 	}).SetupWithManager(k8sManager, controller.Options{},
 		controllers.SetupUpSetting{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())
