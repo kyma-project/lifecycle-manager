@@ -1,5 +1,3 @@
-// contains internal tests that should not be exposed, thus no v2_test
-//
 //nolint:testpackage
 package v2
 
