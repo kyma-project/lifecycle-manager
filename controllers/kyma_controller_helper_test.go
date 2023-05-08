@@ -101,10 +101,11 @@ func UpdateRemoteModule(
 	ctx context.Context,
 	client client.Client,
 	kyma *v1beta2.Kyma,
+	remoteNamespace string,
 	modules []v1beta2.Module,
 ) func() error {
 	return func() error {
-		kyma, err := GetKyma(ctx, client, kyma.Name, kyma.Namespace)
+		kyma, err := GetKyma(ctx, client, kyma.Name, remoteNamespace)
 		if err != nil {
 			return err
 		}
@@ -179,10 +180,10 @@ func ModuleTemplateExists(client client.Client, name, namespace string) error {
 	return nil
 }
 
-func ModuleTemplatesExist(clnt client.Client, kyma *v1beta2.Kyma) func() error {
+func ModuleTemplatesExist(clnt client.Client, kyma *v1beta2.Kyma, remoteSyncNamespace string) func() error {
 	return func() error {
 		for _, module := range kyma.Spec.Modules {
-			if err := ModuleTemplateExists(clnt, module.Name, kyma.GetNamespace()); err != nil {
+			if err := ModuleTemplateExists(clnt, module.Name, remoteSyncNamespace); err != nil {
 				return err
 			}
 		}
@@ -191,8 +192,8 @@ func ModuleTemplatesExist(clnt client.Client, kyma *v1beta2.Kyma) func() error {
 	}
 }
 
-func WatcherLabelsAnnotationsExist(clnt client.Client, kyma *v1beta2.Kyma) error {
-	remoteKyma, err := GetKyma(ctx, clnt, kyma.GetName(), kyma.GetNamespace())
+func WatcherLabelsAnnotationsExist(clnt client.Client, kyma *v1beta2.Kyma, remoteSyncNamespace string) error {
+	remoteKyma, err := GetKyma(ctx, clnt, kyma.GetName(), remoteSyncNamespace)
 	if err != nil {
 		return err
 	}
@@ -200,6 +201,7 @@ func WatcherLabelsAnnotationsExist(clnt client.Client, kyma *v1beta2.Kyma) error
 		return ErrWatcherLabelMissing
 	}
 	if remoteKyma.Annotations[v1beta2.OwnedByAnnotation] != fmt.Sprintf(v1beta2.OwnedByFormat,
+		//TODO: Is it OK?
 		kyma.GetNamespace(), kyma.GetName()) {
 		return ErrWatcherAnnotationMissing
 	}

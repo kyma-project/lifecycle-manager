@@ -48,11 +48,11 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	It("CR add from client should be synced in both clusters", func() {
 		By("Remote Kyma created")
 		Eventually(KymaExists, Timeout, Interval).
-			WithArguments(runtimeClient, kyma.GetName(), kyma.GetNamespace()).
+			WithArguments(runtimeClient, kyma.GetName(), "kyma-system").
 			Should(Succeed())
 
 		By("add skr-module-client to remoteKyma.spec.modules")
-		Eventually(UpdateRemoteModule(ctx, runtimeClient, kyma, []v1beta2.Module{
+		Eventually(UpdateRemoteModule(ctx, runtimeClient, kyma, "kyma-system", []v1beta2.Module{
 			skrModuleFromClient,
 		}), Timeout, Interval).Should(Succeed())
 
@@ -158,7 +158,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	It("Kyma CR should be synchronized in both clusters", func() {
 		By("Remote Kyma created")
 		Eventually(KymaExists, Timeout, Interval).
-			WithArguments(runtimeClient, kyma.GetName(), kyma.GetNamespace()).
+			WithArguments(runtimeClient, kyma.GetName(), "kyma-system").
 			Should(Succeed())
 
 		By("CR created in kcp")
@@ -179,7 +179,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		}, Timeout, Interval)
 
 		By("Remote Module Catalog created")
-		Eventually(ModuleTemplatesExist(runtimeClient, kyma), Timeout, Interval).Should(Succeed())
+		Eventually(ModuleTemplatesExist(runtimeClient, kyma, "kyma-system"), Timeout, Interval).Should(Succeed())
 		Eventually(func() error {
 			remoteKyma, err := GetKyma(ctx, runtimeClient, kyma.GetName(), kyma.GetNamespace())
 			if err != nil {
@@ -193,18 +193,18 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("Remote Kyma should contain Watcher labels and annotations")
 		Eventually(WatcherLabelsAnnotationsExist, Timeout, Interval).
-			WithArguments(runtimeClient, kyma).
+			WithArguments(runtimeClient, kyma, "kyma-system").
 			Should(Succeed())
 		moduleToBeUpdated := kyma.Spec.Modules[0].Name
 
 		By("Update SKR Module Template spec.data.spec field")
 		Eventually(updateModuleTemplateSpec,
 			Timeout, Interval).
-			WithArguments(runtimeClient, kyma.GetNamespace(), moduleToBeUpdated, "valueUpdated").
+			WithArguments(runtimeClient, "kyma-system", moduleToBeUpdated, "valueUpdated").
 			Should(Succeed())
 
 		By("Expect SKR Module Template spec.data.spec field get reset")
 		Eventually(expectModuleTemplateSpecGetReset, Timeout, Interval).
-			WithArguments(runtimeClient, kyma.GetNamespace(), moduleToBeUpdated, "initValue").Should(Succeed())
+			WithArguments(runtimeClient, "kyma-system", moduleToBeUpdated, "initValue").Should(Succeed())
 	})
 })
