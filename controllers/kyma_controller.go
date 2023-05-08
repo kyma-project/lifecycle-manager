@@ -184,7 +184,7 @@ func (r *KymaReconciler) syncRemoteKymaSpecAndStatus(
 	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx, controlPlaneKyma, r.RemoteSyncNamespace)
 	if err != nil {
 		if errors.Is(err, remote.ErrNotFoundAndKCPKymaUnderDeleting) {
-
+			// remote kyma not found because it's deleted, should not continue
 			return nil
 		}
 		return fmt.Errorf("could not create or fetch remote kyma: %w", err)
