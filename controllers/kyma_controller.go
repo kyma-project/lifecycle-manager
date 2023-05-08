@@ -104,7 +104,9 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		// requeue (we'll need to wait for a new notification), and we can get them
 		// on deleted requests.
 		if apierrors.IsNotFound(err) {
-			logger.Info(fmt.Sprintf("can not found Kyma %s, assume deleted successfully", req.NamespacedName))
+			// TODO: revisit this after runtime-controller get upgraded to newer version
+			// Related issue: https://github.com/kyma-project/lifecycle-manager/issues/579
+			logger.V(log.DebugLevel).Info(fmt.Sprintf("can not found Kyma %s, assume deleted", req.NamespacedName))
 		}
 
 		return ctrl.Result{}, client.IgnoreNotFound(err) //nolint:wrapcheck
@@ -182,7 +184,6 @@ func (r *KymaReconciler) syncRemoteKymaSpecAndStatus(
 	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx, controlPlaneKyma, r.RemoteSyncNamespace)
 	if err != nil {
 		if errors.Is(err, remote.ErrNotFoundAndKCPKymaUnderDeleting) {
-			//remote kyma not found because it's deleted, should not continue
 			return nil
 		}
 		return fmt.Errorf("could not create or fetch remote kyma: %w", err)
