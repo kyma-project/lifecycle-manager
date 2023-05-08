@@ -11,8 +11,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/kubectl/pkg/util/openapi"
-	apiValidation "k8s.io/kubectl/pkg/util/openapi/validation"
 	"k8s.io/kubectl/pkg/validation"
+	apiValidation "k8s.io/kubectl/pkg/validation"
 )
 
 // Checking compliance with the interface methods implemented below.
