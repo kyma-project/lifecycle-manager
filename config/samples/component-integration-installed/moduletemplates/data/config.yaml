@@ -1,4 +1,0 @@
-configs:
-  - name: nginx-ingress
-    clientConfig: "CreateNamespace=true,Namespace=jakobs-new"
-    overrides: "x=4"

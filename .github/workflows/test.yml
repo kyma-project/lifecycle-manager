@@ -70,17 +70,17 @@ jobs:
             -qO - "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash -s "$KUSTOMIZE_VERSION"
           mv kustomize /usr/local/bin/
       - name: Override Kustomize Controller Image TAG in Pull Request to PR Image
-        if: github.event_name == 'pull_request'
+        if: ${{ github.event_name == 'pull_request' }}
         run: |
-          cd config/manager && kustomize edit set image controller="*:PR-${{ github.event.pull_request.number }}"
+          cd config/manager && kustomize edit set image controller="europe-docker.pkg.dev/kyma-project/dev/lifecycle-manager:PR-${{ github.event.pull_request.number }}"
       - name: Set up k3d
         run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
       - id: kyma
-        uses: jakobmoellersap/kyma-cli-action@v0.0.1-alpha1
-        with:
-          cache: false
-          version: ${{ matrix.cli-stability }}
-      - run: ln -s ${{ steps.kyma.outputs.path }} /usr/local/bin/kyma
+        run: |
+          wget -q https://storage.googleapis.com/kyma-cli-${{ matrix.cli-stability }}/kyma-linux
+          chmod +x kyma-linux && mv kyma-linux /usr/local/bin/kyma-${{ matrix.cli-stability }}
+          echo "PATH=/usr/local/bin/kyma-${{ matrix.cli-stability }}" >> $GITHUB_OUTPUT
+      - run: ln -s /usr/local/bin/kyma-${{ matrix.cli-stability }} /usr/local/bin/kyma
       - name: Run Provision
         run: |
           kyma --ci provision k3d \
@@ -92,7 +92,7 @@ jobs:
       - name: Update Kubeconfigs
         run: k3d kubeconfig merge -a -d
       - name: Setup Control-Plane requirements
-        if: ${{ matrix.target }} == 'control-plane'
+        if: ${{ matrix.target  == 'control-plane' }}
         run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           chmod +x kubectl
@@ -108,6 +108,34 @@ jobs:
           
           kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/crds/crd-servicemonitors.yaml
       - run: kyma --ci alpha deploy -k config/${{ matrix.target }}
+      - name: Deploy template operator module template and enable module
+        if: ${{ matrix.target  == 'default' }}
+        run: |
+          cat << EOF | kubectl apply -f - 
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRole
+          metadata:
+            name: kyma-cli-provisioned-wildcard
+          rules:
+            - apiGroups: ["*"]
+              resources: ["*"]
+              verbs: ["*"]
+          ---
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: ClusterRoleBinding
+          metadata:
+            name: lifecycle-manager-wildcard
+          roleRef:
+            apiGroup: rbac.authorization.k8s.io
+            kind: ClusterRole
+            name: kyma-cli-provisioned-wildcard
+          subjects:
+            - kind: ServiceAccount
+              name: lifecycle-manager-controller-manager
+              namespace: kcp-system
+          EOF
+          kubectl apply -f config/samples/component-integration-installed/operator_v1beta2_moduletemplate_kcp-module.yaml
+          kyma alpha enable module template-operator -c regular -n kyma-system -k default-kyma
       - run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
       - name: Set up Go for ${{ github.repository }}
         uses: actions/setup-go@v3

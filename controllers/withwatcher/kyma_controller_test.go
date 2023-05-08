@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
@@ -17,7 +18,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
@@ -43,22 +43,18 @@ var (
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
 	kyma := NewTestKyma("kyma-remote-sync")
+	kyma.Labels[v1beta2.SyncLabel] = "true"
+
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
 	issuer := NewTestIssuer(metav1.NamespaceDefault)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	tlsSecret := createTLSSecret(kymaObjKey)
 
-	kyma.Spec.Sync = v1beta1.Sync{
-		Enabled:      true,
-		Strategy:     v1beta1.SyncStrategyLocalClient,
-		Namespace:    metav1.NamespaceDefault,
-		NoModuleCopy: true,
-	}
 	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer)
 
 	It("kyma reconciliation installs watcher helm chart with correct webhook config", func() {
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
-			kymaObjKey), Timeout, Interval).WithOffset(4).Should(Succeed())
+			kymaObjKey), Timeout, Interval).Should(Succeed())
 	})
 
 	It("kyma reconciliation replaces webhook-config when a new watcher is created and deleted", func() {
@@ -66,18 +62,22 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		By("Creating second watcher CR")
 		Expect(controlPlaneClient.Create(suiteCtx, secondWatcher)).To(Succeed())
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma, kymaObjKey),
-			Timeout, Interval).WithOffset(4).Should(Succeed())
+			Timeout, Interval).Should(Succeed())
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, secondWatcher, kymaObjKey),
-			Timeout, Interval).WithOffset(4).Should(Succeed())
+			Timeout, Interval).Should(Succeed())
 		By("Deleting second watcher CR")
-		Expect(controlPlaneClient.Delete(suiteCtx, secondWatcher)).To(Succeed())
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(suiteCtx).
+			WithArguments(controlPlaneClient, secondWatcher).Should(Succeed())
 		By("Ensuring second watcher CR is properly deleted")
-		Eventually(isWatcherCrDeletionFinished(client.ObjectKeyFromObject(secondWatcher)), Timeout, Interval).
+		Eventually(isWatcherCrDeletionFinished, Timeout, Interval).WithArguments(secondWatcher).
 			Should(BeTrue())
+		By("ensuring skr resources are configured for the non-removed watcher CRs")
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma, kymaObjKey),
-			Timeout, Interval).WithOffset(4).Should(Succeed())
+			Timeout, Interval).Should(Succeed())
+		By("ensuring skr resources are not configured for the removed watcher CR")
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, secondWatcher, kymaObjKey),
-			Timeout, Interval).WithOffset(4).ShouldNot(Succeed())
+			Timeout, Interval).ShouldNot(Succeed())
 	})
 
 	It("SKR chart installation works correctly when watcher config is updated", func() {
@@ -89,19 +89,21 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Eventually(isWatcherCrLabelUpdated(client.ObjectKeyFromObject(watcherCrForKyma),
 			labelKey, labelValue), Timeout, Interval).Should(BeTrue())
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
-			kymaObjKey), Timeout, Interval).WithOffset(4).Should(Succeed())
+			kymaObjKey), Timeout, Interval).Should(Succeed())
 	})
 
 	It("kyma reconciliation removes watcher helm chart from SKR cluster when kyma is deleted", func() {
-		Expect(controlPlaneClient.Delete(suiteCtx, kyma)).To(Succeed())
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(suiteCtx).
+			WithArguments(controlPlaneClient, kyma).Should(Succeed())
 		Eventually(getSkrChartDeployment(suiteCtx, runtimeClient, kymaObjKey), Timeout, Interval).
 			ShouldNot(Succeed())
-		Eventually(isKymaCrDeletionFinished(client.ObjectKeyFromObject(kyma)), Timeout, Interval).
-			Should(BeTrue())
+		Eventually(isKymaCrDeletionFinished, Timeout, Interval).
+			WithArguments(client.ObjectKeyFromObject(kyma)).Should(BeTrue())
 	})
 })
 
-func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta1.Kyma, watcher *v1beta1.Watcher,
+func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1beta2.Watcher,
 	tlsSecret *corev1.Secret, issuer *v1.Issuer,
 ) {
 	BeforeAll(func() {
@@ -117,15 +119,17 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta1.Kyma, watcher *v1b
 
 	AfterAll(func() {
 		By("Deleting watcher CR")
-		Expect(controlPlaneClient.Delete(suiteCtx, watcher)).To(Succeed())
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(suiteCtx).
+			WithArguments(controlPlaneClient, watcher).Should(Succeed())
 		By("Ensuring watcher CR is properly deleted")
-		Eventually(isWatcherCrDeletionFinished(client.ObjectKeyFromObject(watcher)), Timeout, Interval).
+		Eventually(isWatcherCrDeletionFinished, Timeout, Interval).WithArguments(watcher).
 			Should(BeTrue())
 	})
 
 	BeforeEach(func() {
 		By("asserting only one kyma CR exists")
-		kcpKymas := &v1beta1.KymaList{}
+		kcpKymas := &v1beta2.KymaList{}
 		Expect(controlPlaneClient.List(suiteCtx, kcpKymas)).To(Succeed())
 		Expect(kcpKymas.Items).NotTo(BeEmpty())
 		Expect(kcpKymas.Items).To(HaveLen(1))
@@ -142,7 +146,7 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta1.Kyma, watcher *v1b
 
 func isWatcherCrLabelUpdated(watcherObjKey client.ObjectKey, labelKey, expectedLabelValue string) func() bool {
 	return func() bool {
-		watcher := &v1beta1.Watcher{}
+		watcher := &v1beta2.Watcher{}
 		err := controlPlaneClient.Get(suiteCtx, watcherObjKey, watcher)
 		if err != nil {
 			return false
@@ -155,11 +159,9 @@ func isWatcherCrLabelUpdated(watcherObjKey client.ObjectKey, labelKey, expectedL
 	}
 }
 
-func isKymaCrDeletionFinished(kymaObjKey client.ObjectKey) func() bool {
-	return func() bool {
-		err := controlPlaneClient.Get(suiteCtx, kymaObjKey, &v1beta1.Kyma{})
-		return apierrors.IsNotFound(err)
-	}
+func isKymaCrDeletionFinished(kymaObjKey client.ObjectKey) bool {
+	err := controlPlaneClient.Get(suiteCtx, kymaObjKey, &v1beta2.Kyma{})
+	return apierrors.IsNotFound(err)
 }
 
 func getSkrChartDeployment(ctx context.Context, skrClient client.Client, kymaObjKey client.ObjectKey) func() error {
@@ -171,7 +173,7 @@ func getSkrChartDeployment(ctx context.Context, skrClient client.Client, kymaObj
 	}
 }
 
-func latestWebhookIsConfigured(ctx context.Context, skrClient client.Client, watcher *v1beta1.Watcher,
+func latestWebhookIsConfigured(ctx context.Context, skrClient client.Client, watcher *v1beta2.Watcher,
 	kymaObjKey client.ObjectKey,
 ) func() error {
 	return func() error {
@@ -194,7 +196,7 @@ func getSKRWebhookConfig(ctx context.Context, skrClient client.Client,
 	return webhookCfg, err
 }
 
-func isWebhookConfigured(watcher *v1beta1.Watcher, webhookConfig *admissionv1.ValidatingWebhookConfiguration,
+func isWebhookConfigured(watcher *v1beta2.Watcher, webhookConfig *admissionv1.ValidatingWebhookConfiguration,
 	kymaName string,
 ) error {
 	if len(webhookConfig.Webhooks) < 1 {
@@ -209,7 +211,7 @@ func isWebhookConfigured(watcher *v1beta1.Watcher, webhookConfig *admissionv1.Va
 	return verifyWebhookConfig(webhookConfig.Webhooks[idx], watcher)
 }
 
-func lookupWebhookConfigForCR(webhooks []admissionv1.ValidatingWebhook, watcher *v1beta1.Watcher) int {
+func lookupWebhookConfigForCR(webhooks []admissionv1.ValidatingWebhook, watcher *v1beta2.Watcher) int {
 	cfgIdx := -1
 	for idx, webhook := range webhooks {
 		webhookNameParts := strings.Split(webhook.Name, ".")
@@ -227,14 +229,14 @@ func lookupWebhookConfigForCR(webhooks []admissionv1.ValidatingWebhook, watcher 
 
 func verifyWebhookConfig(
 	webhook admissionv1.ValidatingWebhook,
-	watcherCR *v1beta1.Watcher,
+	watcherCR *v1beta2.Watcher,
 ) error {
 	webhookNameParts := strings.Split(webhook.Name, ".")
 	if len(webhookNameParts) != expectedWebhookNamePartsLength {
 		return fmt.Errorf("%w: (webhook=%s)", ErrWebhookNamePartsNumberMismatch, webhook.Name)
 	}
 	moduleName := webhookNameParts[0]
-	expectedModuleName, exists := watcherCR.Labels[v1beta1.ManagedBy]
+	expectedModuleName, exists := watcherCR.Labels[v1beta2.ManagedBy]
 	if !exists {
 		return fmt.Errorf("%w: (labels=%v)", ErrManagedByLabelNotFound, watcherCR.Labels)
 	}
@@ -251,20 +253,18 @@ func verifyWebhookConfig(
 		return fmt.Errorf("%w: (expected=%v, got=%v)", ErrWatchLabelsMismatch,
 			watcherCR.Spec.LabelsToWatch, webhook.ObjectSelector.MatchLabels)
 	}
-	if watcherCR.Spec.Field == v1beta1.StatusField && webhook.Rules[0].Resources[0] != statusSubresources {
+	if watcherCR.Spec.Field == v1beta2.StatusField && webhook.Rules[0].Resources[0] != statusSubresources {
 		return fmt.Errorf("%w: (expected=%s, got=%s)", ErrStatusSubResourcesMismatch,
 			statusSubresources, webhook.Rules[0].Resources[0])
 	}
-	if watcherCR.Spec.Field == v1beta1.SpecField && webhook.Rules[0].Resources[0] != specSubresources {
+	if watcherCR.Spec.Field == v1beta2.SpecField && webhook.Rules[0].Resources[0] != specSubresources {
 		return fmt.Errorf("%w: (expected=%s, got=%s)", ErrSpecSubResourcesMismatch,
 			specSubresources, webhook.Rules[0].Resources[0])
 	}
 	return nil
 }
 
-func isWatcherCrDeletionFinished(watcherObjKey client.ObjectKey) func(g Gomega) bool {
-	return func(g Gomega) bool {
-		err := controlPlaneClient.Get(suiteCtx, watcherObjKey, &v1beta1.Watcher{})
-		return apierrors.IsNotFound(err)
-	}
+func isWatcherCrDeletionFinished(watcherCR client.Object) bool {
+	err := controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(watcherCR), watcherCR)
+	return apierrors.IsNotFound(err)
 }

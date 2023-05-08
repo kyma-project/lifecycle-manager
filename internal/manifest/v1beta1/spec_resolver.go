@@ -9,11 +9,11 @@ import (
 	"path/filepath"
 	"reflect"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 
 	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/downloader"
 	"helm.sh/helm/v3/pkg/getter"
@@ -34,13 +34,13 @@ type ChartInfo struct {
 type ManifestSpecResolver struct {
 	KCP *declarative.ClusterInfo
 
-	*v1beta1.Codec
+	*v1beta2.Codec
 
 	ChartCache   string
 	cachedCharts map[string]string
 }
 
-func NewManifestSpecResolver(kcp *declarative.ClusterInfo, codec *v1beta1.Codec) *ManifestSpecResolver {
+func NewManifestSpecResolver(kcp *declarative.ClusterInfo, codec *v1beta2.Codec) *ManifestSpecResolver {
 	return &ManifestSpecResolver{
 		KCP:          kcp,
 		Codec:        codec,
@@ -55,7 +55,7 @@ var (
 )
 
 func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object) (*declarative.Spec, error) {
-	manifest, ok := obj.(*v1beta1.Manifest)
+	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
 		return nil, fmt.Errorf(
 			"invalid type %s: %w", reflect.TypeOf(obj),
@@ -63,7 +63,7 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object)
 		)
 	}
 
-	specType, err := v1beta1.GetSpecType(manifest.Spec.Install.Source.Raw)
+	specType, err := v1beta2.GetSpecType(manifest.Spec.Install.Source.Raw)
 	if err != nil {
 		return nil, err
 	}
@@ -80,13 +80,13 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object)
 
 	var mode declarative.RenderMode
 	switch specType {
-	case v1beta1.HelmChartType:
+	case v1beta2.HelmChartType:
 		mode = declarative.RenderModeHelm
-	case v1beta1.OciRefType:
+	case v1beta2.OciRefType:
 		mode = declarative.RenderModeRaw
-	case v1beta1.KustomizeType:
+	case v1beta2.KustomizeType:
 		mode = declarative.RenderModeKustomize
-	case v1beta1.NilRefType:
+	case v1beta2.NilRefType:
 		return nil, fmt.Errorf("could not determine render mode for %s: %w",
 			client.ObjectKeyFromObject(manifest), ErrRenderModeInvalid)
 	}
@@ -144,7 +144,7 @@ func (m *ManifestSpecResolver) downloadAndCacheHelmChart(chartInfo *ChartInfo) (
 }
 
 func (m *ManifestSpecResolver) getValuesFromConfig(
-	ctx context.Context, config v1beta1.ImageSpec, name string, keyChain authn.Keychain,
+	ctx context.Context, config v1beta2.ImageSpec, name string, keyChain authn.Keychain,
 ) (map[string]any, error) {
 	var configs []any
 	if config.Type.NotEmpty() { //nolint:nestif
@@ -183,7 +183,7 @@ func ParseInstallConfigs(decodedConfig interface{}) ([]interface{}, error) {
 	}
 	installConfigObj, decodeOk := decodedConfig.(map[string]interface{})
 	if !decodeOk {
-		return nil, fmt.Errorf("reading install %s resulted in an error: %w", v1beta1.ManifestKind,
+		return nil, fmt.Errorf("reading install %s resulted in an error: %w", v1beta2.ManifestKind,
 			ErrConfigObjectInvalid)
 	}
 	if installConfigObj["configs"] != nil {
@@ -191,7 +191,7 @@ func ParseInstallConfigs(decodedConfig interface{}) ([]interface{}, error) {
 		configs, configOk = installConfigObj["configs"].([]interface{})
 		if !configOk {
 			return nil, fmt.Errorf(
-				"reading install %s resulted in an error: %w ", v1beta1.ManifestKind,
+				"reading install %s resulted in an error: %w ", v1beta2.ManifestKind,
 				ErrChartConfigObjectInvalid,
 			)
 		}
@@ -206,14 +206,14 @@ var (
 
 func (m *ManifestSpecResolver) getChartInfoForInstall(
 	ctx context.Context,
-	install v1beta1.InstallInfo,
-	specType v1beta1.RefTypeMetadata,
+	install v1beta2.InstallInfo,
+	specType v1beta2.RefTypeMetadata,
 	keyChain authn.Keychain,
 ) (*ChartInfo, error) {
 	var err error
 	switch specType {
-	case v1beta1.HelmChartType:
-		var helmChartSpec v1beta1.HelmChartSpec
+	case v1beta2.HelmChartType:
+		var helmChartSpec v1beta2.HelmChartSpec
 		if err = m.Codec.Decode(install.Source.Raw, &helmChartSpec, specType); err != nil {
 			return nil, err
 		}
@@ -223,8 +223,8 @@ func (m *ManifestSpecResolver) getChartInfoForInstall(
 			RepoName:  install.Name,
 			URL:       helmChartSpec.URL,
 		}, nil
-	case v1beta1.OciRefType:
-		var imageSpec v1beta1.ImageSpec
+	case v1beta2.OciRefType:
+		var imageSpec v1beta2.ImageSpec
 		if err = m.Codec.Decode(install.Source.Raw, &imageSpec, specType); err != nil {
 			return nil, err
 		}
@@ -239,8 +239,8 @@ func (m *ManifestSpecResolver) getChartInfoForInstall(
 			ChartName: install.Name,
 			ChartPath: rawManifestPath,
 		}, nil
-	case v1beta1.KustomizeType:
-		var kustomizeSpec v1beta1.KustomizeSpec
+	case v1beta2.KustomizeType:
+		var kustomizeSpec v1beta2.KustomizeSpec
 		if err = m.Codec.Decode(install.Source.Raw, &kustomizeSpec, specType); err != nil {
 			return nil, err
 		}
@@ -250,7 +250,7 @@ func (m *ManifestSpecResolver) getChartInfoForInstall(
 			ChartPath: kustomizeSpec.Path,
 			URL:       kustomizeSpec.URL,
 		}, nil
-	case v1beta1.NilRefType:
+	case v1beta2.NilRefType:
 		return nil, ErrEmptyInstallType
 	default:
 		return nil, fmt.Errorf("%s is invalid: %w", specType, ErrUnsupportedInstallType)
@@ -287,7 +287,7 @@ func getConfigAndValuesForInstall(configs []interface{}, name string) (
 		mappedConfig, configExists := config.(map[string]interface{})
 		if !configExists {
 			return "", fmt.Errorf(
-				"reading install %s resulted in an error: %w", v1beta1.ManifestKind, ErrConfigDoesNotExist,
+				"reading install %s resulted in an error: %w", v1beta2.ManifestKind, ErrConfigDoesNotExist,
 			)
 		}
 		if mappedConfig["name"] == name {
@@ -295,7 +295,7 @@ func getConfigAndValuesForInstall(configs []interface{}, name string) (
 			if !configExists {
 				return "", fmt.Errorf(
 					"reading install %s resulted in an error: %w",
-					v1beta1.ManifestKind, ErrConfigOverridesDoNotExist,
+					v1beta2.ManifestKind, ErrConfigOverridesDoNotExist,
 				)
 			}
 			break
@@ -305,7 +305,7 @@ func getConfigAndValuesForInstall(configs []interface{}, name string) (
 }
 
 func (m *ManifestSpecResolver) lookupKeyChain(
-	ctx context.Context, imageSpec v1beta1.ImageSpec,
+	ctx context.Context, imageSpec v1beta2.ImageSpec,
 ) (authn.Keychain, error) {
 	var keyChain authn.Keychain
 	var err error

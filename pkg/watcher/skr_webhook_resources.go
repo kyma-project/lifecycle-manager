@@ -7,6 +7,7 @@ import (
 	"io"
 
 	"github.com/go-logr/logr"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	registrationV1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -17,7 +18,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
@@ -86,7 +86,7 @@ func generateValidatingWebhookConfigFromWatchableConfigs(webhookObjKey, svcObjKe
 			Rules: []registrationV1.RuleWithOperations{
 				{
 					Rule: registrationV1.Rule{
-						APIGroups:   []string{v1beta1.GroupVersion.Group},
+						APIGroups:   []string{v1beta2.GroupVersion.Group},
 						APIVersions: []string{"*"},
 						Resources:   []string{watchableResources},
 					},
@@ -202,16 +202,19 @@ func getGeneratedClientObjects(resourcesConfig *unstructuredResourcesConfig,
 	return append(genClientObjects, skrSecret)
 }
 
-func getWatchableConfigs(ctx context.Context, kcpClient client.Client) (map[string]WatchableConfig, error) {
+func getWatchableConfigs(ctx context.Context, kcpClient client.Client,
+	logger logr.Logger,
+) (map[string]WatchableConfig, error) {
 	watchableConfigs := map[string]WatchableConfig{}
-	watcherList := &v1beta1.WatcherList{}
+	watcherList := &v1beta2.WatcherList{}
 	if err := kcpClient.List(ctx, watcherList); err != nil {
 		return nil, fmt.Errorf("error listing watcher CRs: %w", err)
 	}
 
-	watchers := watcherList.Items
-	if len(watchers) != 0 {
-		watchableConfigs = generateWatchableConfigs(watchers)
+	watcherCount := len(watcherList.Items)
+	logger.V(log.InfoLevel).Info(fmt.Sprintf("generating watchable configs from %d watchers", watcherCount))
+	if watcherCount != 0 {
+		watchableConfigs = generateWatchableConfigs(watcherList)
 	}
 	return watchableConfigs, nil
 }

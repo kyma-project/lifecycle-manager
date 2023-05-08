@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	ocmv1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
 	"github.com/open-component-model/ocm/pkg/signing"
@@ -15,8 +16,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 var ErrNoSignatureFound = errors.New("no signature was found")
@@ -108,7 +107,7 @@ func CreateRSAVerifierFromSecrets(
 	secretList := &v1.SecretList{}
 
 	secretSelector := &metav1.LabelSelector{
-		MatchLabels: k8slabels.Set{v1beta1.Signature: ValidSignatureName, v1beta1.ModuleName: moduleName},
+		MatchLabels: k8slabels.Set{v1beta2.Signature: ValidSignatureName, v1beta2.ModuleName: moduleName},
 	}
 	selector, err := metav1.LabelSelectorAsSelector(secretSelector)
 	if err != nil {
@@ -117,7 +116,7 @@ func CreateRSAVerifierFromSecrets(
 	if err := k8sClient.List(ctx, secretList, &client.ListOptions{LabelSelector: selector}); err != nil {
 		return nil, err
 	} else if len(secretList.Items) < 1 {
-		gr := v1.SchemeGroupVersion.WithResource(fmt.Sprintf("secrets with label %s", v1beta1.KymaName)).GroupResource()
+		gr := v1.SchemeGroupVersion.WithResource(fmt.Sprintf("secrets with label %s", v1beta2.KymaName)).GroupResource()
 		return nil, k8serrors.NewNotFound(gr, selector.String())
 	}
 	registry := signing.NewKeyRegistry()
@@ -128,6 +127,7 @@ func CreateRSAVerifierFromSecrets(
 			return nil, err
 		}
 		registry.RegisterPublicKey(ValidSignatureName, key)
+		registry.RegisterPublicKey(item.Labels[v1beta2.Signature], key)
 	}
 	return CreateMultiRSAVerifier(registry)
 }

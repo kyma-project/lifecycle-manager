@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -16,8 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	"github.com/kyma-project/lifecycle-manager/pkg/index"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 	"github.com/kyma-project/lifecycle-manager/pkg/watch"
@@ -39,17 +38,17 @@ const (
 func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 	options controller.Options, settings SetupUpSetting,
 ) error {
-	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta1.Kyma{}).WithOptions(options).
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).WithOptions(options).
 		Watches(
-			&source.Kind{Type: &v1beta1.ModuleTemplate{}},
+			&source.Kind{Type: &v1beta2.ModuleTemplate{}},
 			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch(context.TODO())),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		// here we define a watch on secrets for the lifecycle-manager so that the cache is picking up changes
 		Watches(&source.Kind{Type: &corev1.Secret{}}, handler.Funcs{})
 
-	controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: &v1beta1.Manifest{}},
-		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1beta1.Kyma{}, IsController: true})
+	controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: &v1beta2.Manifest{}},
+		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1beta2.Kyma{}, IsController: true})
 
 	var runnableListener *listener.SKREventListener
 	var eventChannel *source.Channel
@@ -66,7 +65,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 	// register listener component incl. domain name verification
 	runnableListener, eventChannel = listener.RegisterListenerComponent(
 		settings.ListenerAddr,
-		v1beta1.OperatorName,
+		v1beta2.OperatorName,
 		verifyFunc,
 	)
 
@@ -77,36 +76,10 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 		return err
 	}
 
-	if err := r.configureIndexing(context.TODO(), mgr); err != nil {
-		return err
-	}
-
 	if err := controllerBuilder.Complete(r); err != nil {
 		return fmt.Errorf("error occurred while building controller: %w", err)
 	}
 
-	return nil
-}
-
-func (r *KymaReconciler) configureIndexing(ctx context.Context, mgr ctrl.Manager) error {
-	if err := index.TemplateChannel().With(ctx, mgr.GetFieldIndexer()); err != nil {
-		return fmt.Errorf(
-			"error while setting up ModuleTemplate Channel Field Indexer, "+
-				"make sure you installed all CRDs: %w", err,
-		)
-	}
-	if err := index.TemplateFQDN().With(ctx, mgr.GetFieldIndexer()); err != nil {
-		return fmt.Errorf(
-			"error while setting up ModuleTemplate FQDN Field Indexer, "+
-				"make sure you installed all CRDs: %w", err,
-		)
-	}
-	if err := index.TemplateName().With(ctx, mgr.GetFieldIndexer()); err != nil {
-		return fmt.Errorf(
-			"error while setting up ModuleTemplate Name Field Indexer, "+
-				"make sure you installed all CRDs: %w", err,
-		)
-	}
 	return nil
 }
 
@@ -127,10 +100,10 @@ func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, e
 
 // SetupWithManager sets up the Watcher controller with the Manager.
 func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options,
-	istioConfig istio.Config,
+	istioConfig *istio.Config,
 ) error {
 	if r.RestConfig == nil {
-		return ErrRestConfigIsNotSet
+		return errRestConfigIsNotSet
 	}
 	var err error
 	r.IstioClient, err = istio.NewVersionedIstioClient(r.RestConfig, istioConfig, r.EventRecorder,
@@ -140,8 +113,21 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1beta1.Watcher{}).
+		For(&v1beta2.Watcher{}).
 		Named(WatcherControllerName).
 		WithOptions(options).
 		Complete(r)
+}
+
+// SetupWithManager sets up the Purge controller with the Manager.
+func (r *PurgeReconciler) SetupWithManager(mgr ctrl.Manager,
+	options controller.Options,
+) error {
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).WithOptions(options)
+
+	if err := controllerBuilder.Complete(r); err != nil {
+		return fmt.Errorf("error occurred while building controller: %w", err)
+	}
+
+	return nil
 }

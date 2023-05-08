@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
 	"io"
 	"os"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/types"
 
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -114,7 +115,6 @@ func (r *RawRenderer) Render(_ context.Context, obj Object) ([]byte, error) {
 func (r *RawRenderer) RemovePrerequisites(ctx context.Context, obj Object) error {
 	crdLength := len(r.crds)
 	if crdLength == 0 {
-		//nothing to remove
 		return nil
 	}
 	status := obj.GetStatus()

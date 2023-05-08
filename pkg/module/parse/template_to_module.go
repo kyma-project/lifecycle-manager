@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"github.com/kyma-project/lifecycle-manager/pkg/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
@@ -28,107 +28,116 @@ var (
 	ErrDefaultConfigParsing    = errors.New("defaultConfig could not be parsed")
 )
 
-type TemplateParser struct {
+type Parser struct {
 	client.Client
+	InKCPMode           bool
+	remoteSyncNamespace string
 	*ocmextensions.ComponentDescriptorCache
 	EnableVerification bool
 	PublicKeyFilePath  string
 }
 
-func NewTemplateParser(clnt client.Client,
-	cache *ocmextensions.ComponentDescriptorCache,
+func NewParser(
+	clnt client.Client,
+	descriptorCache *ocmextensions.ComponentDescriptorCache,
+	inKCPMode bool,
+	remoteSyncNamespace string,
 	enableVerification bool,
 	publicKeyFilePath string,
-) *TemplateParser {
-	return &TemplateParser{Client: clnt,
-		ComponentDescriptorCache: cache,
+) *Parser {
+	return &Parser{
+		Client:                   clnt,
+		ComponentDescriptorCache: descriptorCache,
+		InKCPMode:                inKCPMode,
+		remoteSyncNamespace:      remoteSyncNamespace,
 		EnableVerification:       enableVerification,
 		PublicKeyFilePath:        publicKeyFilePath}
-}
-
-func (parser *TemplateParser) GenerateModulesFromTemplates(ctx context.Context,
-	kyma *v1beta1.Kyma,
-	templates channel.ModuleTemplatesByModuleName,
-) (common.Modules, error) {
-	// these are the actual modules
-	modules, err := parser.templatesToModules(ctx, kyma, templates)
-	if err != nil {
-		return nil, fmt.Errorf("cannot convert templates: %w", err)
 	}
-
-	return modules, nil
 }
 
-func (parser *TemplateParser) templatesToModules(
-	ctx context.Context,
-	kyma *v1beta1.Kyma,
+func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
+	kyma *v1beta2.Kyma,
 	templates channel.ModuleTemplatesByModuleName,
-) (common.Modules, error) {
+	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
+	clnt client.Client,
+) common.Modules {
 	// First, we fetch the module spec from the template and use it to resolve it into an arbitrary object
 	// (since we do not know which module we are dealing with)
 	modules := make(common.Modules, 0)
 
 	for _, module := range kyma.Spec.Modules {
 		template := templates[module.Name]
-		if template == nil {
-			return nil, fmt.Errorf("could not resolve template for module %s in %s: %w",
-				module.Name, client.ObjectKeyFromObject(kyma), ErrTemplateNotFound,
-			)
+		if template.Err != nil && !errors.Is(template.Err, channel.ErrTemplateNotAllowed) {
+			modules = append(modules, &common.Module{
+				ModuleName: module.Name,
+				Template:   &template,
+			})
+			continue
 		}
 		descriptor, err := template.Spec.GetDescriptor()
 		if err != nil {
-			return nil, err
+			template.Err = err
+			modules = append(modules, &common.Module{
+				ModuleName: module.Name,
+				Template:   &template,
+			})
+			continue
 		}
 		fqdn := descriptor.GetName()
 		version := descriptor.GetVersion()
 		name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
-		// if the default data does not contain a name, default it to the module name
-		if template.ModuleTemplate.Spec.Data.GetName() == "" {
-			template.ModuleTemplate.Spec.Data.SetName(name)
-		}
-		// if the default data does not contain a namespace, default it to either the sync-namespace
-		// or the kyma namespace
-		if template.ModuleTemplate.Spec.Data.GetNamespace() == "" {
-			if kyma.Spec.Sync.Namespace != "" {
-				template.ModuleTemplate.Spec.Data.SetNamespace(kyma.Spec.Sync.Namespace)
-			} else {
-				template.ModuleTemplate.Spec.Data.SetNamespace(kyma.GetNamespace())
-			}
-		}
+		overwriteNameAndNamespace(&template, name, p.remoteSyncNamespace)
 		var obj client.Object
-		if obj, err = parser.NewManifestFromTemplate(ctx, module,
-			template.ModuleTemplate); err != nil {
-			return nil, err
+		if obj, err = p.newManifestFromTemplate(ctx, module,
+			template.ModuleTemplate,
+			verification); err != nil {
+			template.Err = err
+			modules = append(modules, &common.Module{
+				ModuleName: module.Name,
+				Template:   &template,
+			})
+			continue
 		}
 		// we name the manifest after the module name
 		obj.SetName(name)
 		// to have correct owner references, the manifest must always have the same namespace as kyma
 		obj.SetNamespace(kyma.GetNamespace())
 		modules = append(modules, &common.Module{
-			ModuleName:       module.Name,
-			FQDN:             fqdn,
-			Version:          version,
-			Template:         template.ModuleTemplate,
-			TemplateOutdated: template.Outdated,
-			Object:           obj,
+			ModuleName: module.Name,
+			FQDN:       fqdn,
+			Version:    version,
+			Template:   &template,
+			Object:     obj,
 		})
 	}
 
-	return modules, nil
+	return modules
 }
 
-func (parser *TemplateParser) NewManifestFromTemplate(
+func overwriteNameAndNamespace(template *channel.ModuleTemplateTO, name, namespace string) {
+	// if the default data does not contain a name, default it to the module name
+	if template.ModuleTemplate.Spec.Data.GetName() == "" {
+		template.ModuleTemplate.Spec.Data.SetName(name)
+	}
+	// if the default data does not contain a namespace, default it to the provided namespace
+	if template.ModuleTemplate.Spec.Data.GetNamespace() == "" {
+		template.ModuleTemplate.Spec.Data.SetNamespace(namespace)
+	}
+}
+
+func (parser *Parser) newManifestFromTemplate(
 	ctx context.Context,
-	module v1beta1.Module,
-	template *v1beta1.ModuleTemplate,
-) (*v1beta1.Manifest, error) {
-	manifest := &v1beta1.Manifest{}
-	manifest.Spec.Remote = ConvertTargetToRemote(template.Spec.Target)
+	module v1beta2.Module,
+	template *v1beta2.ModuleTemplate,
+	verification signature.Verification,
+) (*v1beta2.Manifest, error) {
+	manifest := &v1beta2.Manifest{}
+	manifest.Spec.Remote = p.InKCPMode
 
 	switch module.CustomResourcePolicy {
-	case v1beta1.CustomResourcePolicyIgnore:
+	case v1beta2.CustomResourcePolicyIgnore:
 		manifest.Spec.Resource = nil
-	case v1beta1.CustomResourcePolicyCreateAndDelete:
+	case v1beta2.CustomResourcePolicyCreateAndDelete:
 		fallthrough
 	default:
 		manifest.Spec.Resource = template.Spec.Data.DeepCopy()
@@ -141,7 +150,7 @@ func (parser *TemplateParser) NewManifestFromTemplate(
 		return nil, err
 	}
 	var componentDescriptor *compdesc.ComponentDescriptor
-	useLocalTemplate, found := template.GetLabels()[v1beta1.UseLocalTemplate]
+	useLocalTemplate, found := template.GetLabels()[v1beta2.UseLocalTemplate]
 	if found && useLocalTemplate == "true" {
 		componentDescriptor = descriptor.ComponentDescriptor
 	} else {
@@ -181,7 +190,7 @@ func (parser *TemplateParser) NewManifestFromTemplate(
 }
 
 func translateLayersAndMergeIntoManifest(
-	manifest *v1beta1.Manifest, layers img.Layers,
+	manifest *v1beta2.Manifest, layers img.Layers,
 ) error {
 	for _, layer := range layers {
 		if err := insertLayerIntoManifest(manifest, layer); err != nil {
@@ -192,7 +201,7 @@ func translateLayersAndMergeIntoManifest(
 }
 
 func insertLayerIntoManifest(
-	manifest *v1beta1.Manifest, layer img.Layer,
+	manifest *v1beta2.Manifest, layer img.Layer,
 ) error {
 	switch layer.LayerName {
 	case img.CRDsLayer:
@@ -202,7 +211,7 @@ func insertLayerIntoManifest(
 		if !ok {
 			return fmt.Errorf("%w: not an OCIImage", ErrDefaultConfigParsing)
 		}
-		manifest.Spec.Config = v1beta1.ImageSpec{
+		manifest.Spec.Config = v1beta2.ImageSpec{
 			Repo:               ociImage.Repo,
 			Name:               ociImage.Name,
 			Ref:                ociImage.Ref,
@@ -214,22 +223,11 @@ func insertLayerIntoManifest(
 		if err != nil {
 			return fmt.Errorf("error while merging the generic install representation: %w", err)
 		}
-		manifest.Spec.Install = v1beta1.InstallInfo{
+		manifest.Spec.Install = v1beta2.InstallInfo{
 			Source: runtime.RawExtension{Raw: installRaw},
 			Name:   string(layer.LayerName),
 		}
 	}
 
 	return nil
-}
-
-func ConvertTargetToRemote(remote v1beta1.Target) bool {
-	switch remote {
-	case v1beta1.TargetControlPlane:
-		return false
-	case v1beta1.TargetRemote:
-		return true
-	default:
-		panic(ErrUndefinedTargetToRemote)
-	}
 }

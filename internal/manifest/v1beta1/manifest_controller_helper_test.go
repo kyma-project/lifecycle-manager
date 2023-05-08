@@ -11,7 +11,8 @@ import (
 	"path/filepath"
 
 	"github.com/google/go-containerregistry/pkg/v1/partial"
-	"github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -23,7 +24,6 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/types"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -83,8 +83,8 @@ func PushToRemoteOCIRegistry(layerName string) {
 	Expect(gotHash).To(Equal(digest))
 }
 
-func createOCIImageSpec(name, repo string) v1beta1.ImageSpec {
-	imageSpec := v1beta1.ImageSpec{
+func createOCIImageSpec(name, repo string) v1beta2.ImageSpec {
+	imageSpec := v1beta2.ImageSpec{
 		Name: name,
 		Repo: repo,
 		Type: "oci-ref",
@@ -96,19 +96,19 @@ func createOCIImageSpec(name, repo string) v1beta1.ImageSpec {
 	return imageSpec
 }
 
-func NewTestManifest(prefix string) *v1beta1.Manifest {
-	return &v1beta1.Manifest{
+func NewTestManifest(prefix string) *v1beta2.Manifest {
+	return &v1beta2.Manifest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", prefix, rand.Intn(999999)),
 			Namespace: metav1.NamespaceDefault,
 			Labels: map[string]string{
-				v1beta1.KymaName: string(uuid.NewUUID()),
+				v1beta2.KymaName: string(uuid.NewUUID()),
 			},
 		},
 	}
 }
 
-func deleteHelmChartResources(imageSpec v1beta1.ImageSpec) {
+func deleteHelmChartResources(imageSpec v1beta2.ImageSpec) {
 	chartYamlPath := filepath.Join(internalv1beta1.GetFsChartPath(imageSpec), "Chart.yaml")
 	Expect(os.RemoveAll(chartYamlPath)).Should(Succeed())
 	valuesYamlPath := filepath.Join(internalv1beta1.GetFsChartPath(imageSpec), "values.yaml")
@@ -117,7 +117,7 @@ func deleteHelmChartResources(imageSpec v1beta1.ImageSpec) {
 	Expect(os.RemoveAll(templatesPath)).Should(Succeed())
 }
 
-func verifyHelmResourcesDeletion(imageSpec v1beta1.ImageSpec) {
+func verifyHelmResourcesDeletion(imageSpec v1beta2.ImageSpec) {
 	_, err := os.Stat(filepath.Join(internalv1beta1.GetFsChartPath(imageSpec), "Chart.yaml"))
 	Expect(os.IsNotExist(err)).To(BeTrue())
 	_, err = os.Stat(filepath.Join(internalv1beta1.GetFsChartPath(imageSpec), "values.yaml"))
@@ -142,46 +142,35 @@ func expectHelmClientCacheExist(expectExist bool) func(cacheKey string) bool {
 	}
 }
 
-func withInvalidInstallImageSpec(remote bool) func(manifest *v1beta1.Manifest) error {
-	return func(manifest *v1beta1.Manifest) error {
+func withInvalidInstallImageSpec(enableResource bool) func(manifest *v1beta2.Manifest) error {
+	return func(manifest *v1beta2.Manifest) error {
 		invalidImageSpec := createOCIImageSpec("invalid-image-spec", "domain.invalid")
 		imageSpecByte, err := json.Marshal(invalidImageSpec)
 		Expect(err).ToNot(HaveOccurred())
-		return installManifest(manifest, imageSpecByte, remote)
+		return installManifest(manifest, imageSpecByte, enableResource)
 	}
 }
 
-func withValidInstallImageSpec(name string, remote bool) func(manifest *v1beta1.Manifest) error {
-	return func(manifest *v1beta1.Manifest) error {
+func withValidInstallImageSpec(name string, enableResource bool) func(manifest *v1beta2.Manifest) error {
+	return func(manifest *v1beta2.Manifest) error {
 		validImageSpec := createOCIImageSpec(name, server.Listener.Addr().String())
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
-		return installManifest(manifest, imageSpecByte, remote)
+		return installManifest(manifest, imageSpecByte, enableResource)
 	}
 }
 
-func withValidInstall(installName string, remote bool) func(manifest *v1beta1.Manifest) error {
-	return func(manifest *v1beta1.Manifest) error {
-		validInstallImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String())
-		installSpecByte, err := json.Marshal(validInstallImageSpec)
-		Expect(err).ToNot(HaveOccurred())
-
-		return installManifest(manifest, installSpecByte, remote)
-	}
-}
-
-func installManifest(manifest *v1beta1.Manifest, installSpecByte []byte, remote bool) error {
+func installManifest(manifest *v1beta2.Manifest, installSpecByte []byte, enableResource bool) error {
 	if installSpecByte != nil {
-		manifest.Spec.Install = v1beta1.InstallInfo{
+		manifest.Spec.Install = v1beta2.InstallInfo{
 			Source: runtime.RawExtension{
 				Raw: installSpecByte,
 			},
 			Name: manifestInstallName,
 		}
 	}
-	// manifest.Spec.CRDs = crdSpec
-	if remote {
-		manifest.Spec.Remote = true
+	if enableResource {
+		// related CRD definition is in pkg/test_samples/oci/rendered.yaml
 		manifest.Spec.Resource = &unstructured.Unstructured{
 			Object: map[string]interface{}{
 				"apiVersion": "operator.kyma-project.io/v1alpha1",
@@ -211,7 +200,7 @@ func expectManifestStateIn(state v2.State) func(manifestName string) error {
 }
 
 func getManifestStatus(manifestName string) (v2.Status, error) {
-	manifest := &v1beta1.Manifest{}
+	manifest := &v1beta2.Manifest{}
 	err := k8sClient.Get(
 		ctx, client.ObjectKey{
 			Namespace: metav1.NamespaceDefault,
@@ -224,7 +213,7 @@ func getManifestStatus(manifestName string) (v2.Status, error) {
 	return v2.Status(manifest.Status), nil
 }
 
-func deleteManifestAndVerify(manifest *v1beta1.Manifest) func() error {
+func deleteManifestAndVerify(manifest *v1beta2.Manifest) func() error {
 	return func() error {
 		// reverting permissions for deletion - in case it was changed during tests
 		if err := os.Chmod(kustomizeLocalPath, fs.ModePerm); err != nil {
@@ -233,23 +222,23 @@ func deleteManifestAndVerify(manifest *v1beta1.Manifest) func() error {
 		if err := k8sClient.Delete(ctx, manifest); err != nil && !errors.IsNotFound(err) {
 			return err
 		}
-		newManifest := v1beta1.Manifest{}
+		newManifest := v1beta2.Manifest{}
 		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(manifest), &newManifest)
 		return client.IgnoreNotFound(err)
 	}
 }
 
-func addInstallSpec(specBytes []byte) func(manifest *v1beta1.Manifest) error {
-	return func(manifest *v1beta1.Manifest) error {
+func addInstallSpec(specBytes []byte) func(manifest *v1beta2.Manifest) error {
+	return func(manifest *v1beta2.Manifest) error {
 		return installManifest(manifest, specBytes, false)
 	}
 }
 
 func addInstallSpecWithFilePermission(
 	specBytes []byte,
-	remote bool, fileMode os.FileMode,
-) func(manifest *v1beta1.Manifest) error {
-	return func(manifest *v1beta1.Manifest) error {
+	enableResource bool, fileMode os.FileMode,
+) func(manifest *v1beta2.Manifest) error {
+	return func(manifest *v1beta2.Manifest) error {
 		currentUser, err := user.Current()
 		Expect(err).ToNot(HaveOccurred())
 		if currentUser.Username == "root" {
@@ -258,7 +247,7 @@ func addInstallSpecWithFilePermission(
 		// should not be run as root user
 		Expect(currentUser.Username).ToNot(Equal("root"))
 		Expect(os.Chmod(kustomizeLocalPath, fileMode)).ToNot(HaveOccurred())
-		return installManifest(manifest, specBytes, remote)
+		return installManifest(manifest, specBytes, enableResource)
 	}
 }
 

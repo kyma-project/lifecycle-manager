@@ -3,10 +3,9 @@ package remote
 import (
 	"context"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 func PatchCRD(ctx context.Context, clnt client.Client, crd *v1extensions.CustomResourceDefinition) error {
@@ -19,7 +18,7 @@ func PatchCRD(ctx context.Context, clnt client.Client, crd *v1extensions.CustomR
 	return clnt.Patch(ctx, crdToApply,
 		client.Apply,
 		client.ForceOwnership,
-		client.FieldOwner(v1beta1.OperatorName))
+		client.FieldOwner(v1beta2.OperatorName))
 }
 
 func ContainsLatestVersion(crdFromRuntime *v1extensions.CustomResourceDefinition, latestVersion string) bool {

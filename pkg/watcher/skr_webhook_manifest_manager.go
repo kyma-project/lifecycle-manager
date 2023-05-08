@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
+	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -12,7 +15,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 )
@@ -31,8 +33,10 @@ type SkrWebhookManagerConfig struct {
 	SKRWatcherPath         string
 	SkrWebhookMemoryLimits string
 	SkrWebhookCPULimits    string
-	// IstioNamespace represents the cluster resource namepsace of istio
+	// IstioNamespace represents the cluster resource namespace of istio
 	IstioNamespace string
+	// RemoteSyncNamespace indicates the sync namespace for Kyma and module catalog
+	RemoteSyncNamespace string
 	// WatcherLocalTestingEnabled indicates if the chart manager is running in local testing mode
 	WatcherLocalTestingEnabled bool
 	// GatewayHTTPPortMapping indicates the port used to expose the KCP cluster locally for the watcher callbacks
@@ -63,11 +67,10 @@ func NewSKRWebhookManifestManager(kcpRestConfig *rest.Config, managerConfig *Skr
 	}, nil
 }
 
-func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta1.Kyma) error {
+func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.Kyma) error {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
-	remoteNs := resolveRemoteNamespace(kyma)
 
 	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
 	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma,
@@ -80,13 +83,14 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta1.K
 	}
 	logger.V(log.DebugLevel).Info("Successfully created Certificate", "kyma", kymaObjKey)
 
-	resources, err := m.getSKRClientObjectsForInstall(ctx, syncContext.ControlPlaneClient, kymaObjKey, remoteNs)
+	resources, err := m.getSKRClientObjectsForInstall(
+		ctx, syncContext.ControlPlaneClient, kymaObjKey, m.config.RemoteSyncNamespace, logger)
 	if err != nil {
 		return err
 	}
 	err = runResourceOperationWithGroupedErrors(ctx, syncContext.RuntimeClient, resources,
 		func(ctx context.Context, clt client.Client, resource client.Object) error {
-			resource.SetNamespace(remoteNs)
+			resource.SetNamespace(m.config.RemoteSyncNamespace)
 			return clt.Patch(ctx, resource, client.Apply, client.ForceOwnership, skrChartFieldOwner)
 		})
 	if err != nil {
@@ -97,11 +101,10 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta1.K
 	return nil
 }
 
-func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta1.Kyma) error {
+func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Kyma) error {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext := remote.SyncContextFromContext(ctx)
-	remoteNs := resolveRemoteNamespace(kyma)
 
 	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma,
 		m.config.IstioNamespace, false)
@@ -114,11 +117,12 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta1.Ky
 	}
 
 	skrClientObjects := m.getBaseClientObjects()
-	genClientObjects := getGeneratedClientObjects(&unstructuredResourcesConfig{}, map[string]WatchableConfig{}, remoteNs)
+	genClientObjects := getGeneratedClientObjects(
+		&unstructuredResourcesConfig{}, map[string]WatchableConfig{}, m.config.RemoteSyncNamespace)
 	skrClientObjects = append(skrClientObjects, genClientObjects...)
 	err = runResourceOperationWithGroupedErrors(ctx, syncContext.RuntimeClient, skrClientObjects,
 		func(ctx context.Context, clt client.Client, resource client.Object) error {
-			resource.SetNamespace(remoteNs)
+			resource.SetNamespace(m.config.RemoteSyncNamespace)
 			return clt.Delete(ctx, resource)
 		})
 	if err != nil && !apierrors.IsNotFound(err) {
@@ -130,7 +134,7 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta1.Ky
 }
 
 func (m *SKRWebhookManifestManager) getSKRClientObjectsForInstall(ctx context.Context, kcpClient client.Client,
-	kymaObjKey client.ObjectKey, remoteNs string,
+	kymaObjKey client.ObjectKey, remoteNs string, logger logr.Logger,
 ) ([]client.Object, error) {
 	var skrClientObjects []client.Object
 	resourcesConfig, err := m.getUnstructuredResourcesConfig(ctx, kcpClient, kymaObjKey, remoteNs)
@@ -142,7 +146,7 @@ func (m *SKRWebhookManifestManager) getSKRClientObjectsForInstall(ctx context.Co
 		return nil, err
 	}
 	skrClientObjects = append(skrClientObjects, resources...)
-	watchableConfigs, err := getWatchableConfigs(ctx, kcpClient)
+	watchableConfigs, err := getWatchableConfigs(ctx, kcpClient, logger)
 	if err != nil {
 		return nil, err
 	}

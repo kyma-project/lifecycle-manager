@@ -17,11 +17,11 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
@@ -47,7 +47,7 @@ type ManifestSpec struct {
 	Remote bool `json:"remote"`
 
 	// Config specifies OCI image configuration for Manifest
-	Config v1beta1.ImageSpec `json:"config,omitempty"`
+	Config v1beta2.ImageSpec `json:"config,omitempty"`
 
 	// Installs specifies a list of installations for Manifest
 	Installs []InstallInfo `json:"installs"`
@@ -59,7 +59,7 @@ type ManifestSpec struct {
 	Resource *unstructured.Unstructured `json:"resource,omitempty"`
 
 	// CRDs specifies the custom resource definitions' ImageSpec
-	CRDs v1beta1.ImageSpec `json:"crds,omitempty"`
+	CRDs v1beta2.ImageSpec `json:"crds,omitempty"`
 }
 
 // ManifestStatus defines the observed state of Manifest.
@@ -70,6 +70,7 @@ type ManifestStatus declarative.Status
 // +kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:deprecatedversion:warning="kyma-project.io/v1alpha1 Manifest is deprecated. Use v1beta1 instead."
+//+kubebuilder:unservedversion
 
 // Manifest is the Schema for the manifests API.
 type Manifest struct {

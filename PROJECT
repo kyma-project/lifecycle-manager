@@ -13,49 +13,6 @@ resources:
 - api:
     crdVersion: v1
     namespaced: true
-  controller: true
-  domain: kyma-project.io
-  group: operator
-  kind: Kyma
-  path: github.com/kyma-project/lifecycle-manager/api/v1alpha1
-  version: v1alpha1
-- api:
-    crdVersion: v1
-    namespaced: true
-  domain: kyma-project.io
-  group: operator
-  kind: ModuleTemplate
-  path: github.com/kyma-project/lifecycle-manager/api/v1alpha1
-  version: v1alpha1
-  webhooks:
-    defaulting: true
-    validation: true
-    webhookVersion: v1
-- api:
-    crdVersion: v1
-    namespaced: true
-  domain: kyma-project.io
-  group: operator
-  kind: Watcher
-  path: github.com/kyma-project/lifecycle-manager/api/v1alpha1
-  version: v1alpha1
-- api:
-    crdVersion: v1
-    namespaced: true
-  controller: true
-  domain: kyma-project.io
-  group: operator
-  kind: Manifest
-  path: github.com/kyma-project/module-manager/api/v1alpha1
-  version: v1alpha1
-  webhooks:
-    conversion: true
-    defaulting: true
-    validation: true
-    webhookVersion: v1
-- api:
-    crdVersion: v1
-    namespaced: true
   domain: kyma-project.io
   group: operator
   kind: Manifest
@@ -104,5 +61,50 @@ resources:
     conversion: true
     defaulting: true
     validation: true
+    webhookVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: kyma-project.io
+  group: operator
+  kind: Kyma
+  path: github.com/kyma-project/lifecycle-manager/api/v1beta2
+  version: v1beta2
+  webhooks:
+    conversion: true
+    webhookVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: kyma-project.io
+  group: operator
+  kind: Manifest
+  path: github.com/kyma-project/lifecycle-manager/api/v1beta2
+  version: v1beta2
+  webhooks:
+    conversion: true
+    webhookVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: kyma-project.io
+  group: operator
+  kind: ModuleTemplate
+  path: github.com/kyma-project/lifecycle-manager/api/v1beta2
+  version: v1beta2
+  webhooks:
+    conversion: true
+    validation: true
+    webhookVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: kyma-project.io
+  group: operator
+  kind: Watcher
+  path: github.com/kyma-project/lifecycle-manager/api/v1beta2
+  version: v1beta2
+  webhooks:
+    conversion: true
     webhookVersion: v1
 version: "3"

@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -16,7 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
@@ -49,13 +49,13 @@ func SetupWithManager(
 		return err
 	}
 
-	codec, err := v1beta1.NewCodec()
+	codec, err := v1beta2.NewCodec()
 	if err != nil {
 		return fmt.Errorf("unable to initialize codec: %w", err)
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&v1beta1.Manifest{}).
+		For(&v1beta2.Manifest{}).
 		Watches(&source.Kind{Type: &v1.Secret{}}, handler.Funcs{}).
 		Watches(
 			eventChannel, &handler.Funcs{
@@ -73,7 +73,7 @@ func SetupWithManager(
 }
 
 func ManifestReconciler(
-	mgr manager.Manager, codec *v1beta1.Codec,
+	mgr manager.Manager, codec *v1beta2.Codec,
 	checkInterval time.Duration,
 ) *declarative.Reconciler {
 	kcp := &declarative.ClusterInfo{
@@ -82,7 +82,7 @@ func ManifestReconciler(
 	}
 	lookup := &internalv1beta1.RemoteClusterLookup{KCP: kcp}
 	return declarative.NewFromManager(
-		mgr, &v1beta1.Manifest{},
+		mgr, &v1beta2.Manifest{},
 		declarative.WithSpecResolver(
 			internalv1beta1.NewManifestSpecResolver(kcp, codec),
 		),

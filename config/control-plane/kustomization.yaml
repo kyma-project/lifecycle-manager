@@ -18,7 +18,7 @@ commonLabels:
   app.kubernetes.io/managed-by: kustomize
 
 images:
-- name: eu.gcr.io/kyma-project/lifecycle-manager
+- name: europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager
 
 resources:
   - ../manager
@@ -36,20 +36,23 @@ components:
   - ../webhook
   # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
   - ../prometheus
-  # [GRAFANA] To enable prometheus monitor, uncomment all sections with 'GRAFANA'.
+  # [GRAFANA] To enable grafana, uncomment all sections with 'GRAFANA'.
   - ../grafana
 
 patches:
   - patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --is-kyma-managed  
+        value: --in-kcp-mode
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --max-concurrent-manifest-reconciles=10
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --max-concurrent-kyma-reconciles=10
+        value: --max-concurrent-kyma-reconciles=2      
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --failure-max-delay=5m
     target:
       kind: Deployment
 
@@ -60,17 +63,12 @@ patchesJson6902:
     target:
       version: v1
       kind: ConfigMap
-      name: klm-controller-resources-metrics
-  - path: patches/dashboard_cm_patch.yaml
-    target:
-      version: v1
-      kind: ConfigMap
-      name: klm-controller-runtime-metrics
-  - path: patches/dashboard_cm_patch.yaml
-    target:
-      version: v1
-      kind: ConfigMap
       name: klm-overview
+  - path: patches/dashboard_cm_patch.yaml
+    target:
+      version: v1
+      kind: ConfigMap
+      name: klm-status
 
 patchesStrategicMerge:
   # We expect a kcp-system namespace to be already present in KCP

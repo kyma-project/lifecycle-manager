@@ -35,6 +35,7 @@ import (
 // +kubebuilder:printcolumn:name="Channel",type=string,JSONPath=".spec.channel"
 // +kubebuilder:printcolumn:name="Target",type=string,JSONPath=".spec.target"
 // +kubebuilder:deprecatedversion:warning="kyma-project.io/v1alpha1 ModuleTemplate is deprecated. Use v1beta1 instead."
+//+kubebuilder:unservedversion
 
 type ModuleTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
