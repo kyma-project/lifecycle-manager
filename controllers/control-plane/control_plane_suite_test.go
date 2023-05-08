@@ -140,7 +140,7 @@ var _ = BeforeSuite(func() {
 		RemoteClientCache:   remoteClientCache,
 		KcpRestConfig:       k8sManager.GetConfig(),
 		InKCPMode:           true,
-		RemoteSyncNamespace: "kyma-system",
+		RemoteSyncNamespace: controllers.DefaultRemoteSyncNamespace,
 	}).SetupWithManager(k8sManager, controller.Options{},
 		controllers.SetupUpSetting{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())

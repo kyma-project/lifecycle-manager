@@ -165,7 +165,7 @@ var _ = BeforeSuite(func() {
 		SkrWebhookMemoryLimits: "200Mi",
 		SkrWebhookCPULimits:    "1",
 		IstioNamespace:         metav1.NamespaceDefault,
-		RemoteSyncNamespace:    "kyma-system",
+		RemoteSyncNamespace:    controllers.DefaultRemoteSyncNamespace,
 	}
 
 	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(restCfg, skrChartCfg)
@@ -181,7 +181,7 @@ var _ = BeforeSuite(func() {
 		RemoteClientCache:        remoteClientCache,
 		ComponentDescriptorCache: componentDescriptorCache,
 		KcpRestConfig:            k8sManager.GetConfig(),
-		RemoteSyncNamespace:      "kyma-system",
+		RemoteSyncNamespace:      controllers.DefaultRemoteSyncNamespace,
 	}).SetupWithManager(k8sManager, controller.Options{}, controllers.SetupUpSetting{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
