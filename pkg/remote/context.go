@@ -13,7 +13,9 @@ type syncContextKey = struct{}
 
 var ErrIsNoSyncContext = errors.New("the given value is not a pointer to a kyma synchronization context")
 
-func InitializeSyncContext(ctx context.Context, kyma *v1beta2.Kyma, syncNamespace string, kcp Client, cache *ClientCache) (context.Context, error) {
+func InitializeSyncContext(ctx context.Context, kyma *v1beta2.Kyma,
+	syncNamespace string, kcp Client, cache *ClientCache,
+) (context.Context, error) {
 	syncContext, err := InitializeKymaSynchronizationContext(ctx, kcp, cache, kyma, syncNamespace)
 	if err != nil {
 		return ctx, fmt.Errorf("initializing sync context failed: %w", err)

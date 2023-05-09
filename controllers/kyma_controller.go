@@ -122,7 +122,8 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 	if kyma.SyncEnabled() {
 		var err error
 		remoteClient := remote.NewClientWithConfig(r.Client, r.KcpRestConfig)
-		if ctx, err = remote.InitializeSyncContext(ctx, kyma, r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache); err != nil {
+		if ctx, err = remote.InitializeSyncContext(ctx, kyma,
+			r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache); err != nil {
 			r.enqueueWarningEvent(kyma, syncContextError, err)
 			return r.requeueWithError(ctx, kyma, err)
 		}
@@ -361,7 +362,9 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta2.Ky
 	return nil
 }
 
-func (r *KymaReconciler) updateStatus(ctx context.Context, kyma *v1beta2.Kyma, state v1beta2.State, message string) error {
+func (r *KymaReconciler) updateStatus(ctx context.Context, kyma *v1beta2.Kyma,
+	state v1beta2.State, message string,
+) error {
 	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, message); err != nil {
 		return fmt.Errorf("error while updating status to %s because of %s: %w", state, message, err)
 	}
