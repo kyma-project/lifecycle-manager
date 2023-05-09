@@ -143,9 +143,7 @@ func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 		}
 
 		UpdateKymaAnnotations(kyma, kcpCrd, skrCrd)
-		if err = syncContext.ControlPlaneClient.Update(ctx, kyma); err != nil {
-			return err
-		}
+		syncContext.ControlPlaneClient.Update(ctx, kyma)
 	}
 
 	if len(errs) != 0 {
