@@ -148,11 +148,7 @@ func (c *KymaSynchronizationContext) UpdateKymaAnnotations(
 
 	kyma.Annotations[kcpAnnotation] = strconv.FormatInt(kcpCRD.Generation, 10)
 	kyma.Annotations[skrAnnotation] = strconv.FormatInt(skrCRD.Generation, 10)
-	if err := c.ControlPlaneClient.Update(ctx, kyma); err != nil {
-		return err
-	}
-
-	return nil
+	return c.ControlPlaneClient.Update(ctx, kyma)
 }
 
 func CreateOrUpdateCRD(
