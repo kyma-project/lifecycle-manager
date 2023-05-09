@@ -67,15 +67,15 @@ func TestUpdateKymaAnnotations(t *testing.T) {
 			},
 		},
 	}
-	for _, testCase := range tests {
-		tt := testCase
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		testCase := test
+		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			tt.args.skrCRD.SetGeneration(2)
-			tt.args.kcpCRD.SetGeneration(1)
-			remote.UpdateKymaAnnotations(tt.args.kyma, tt.args.kcpCRD, tt.args.skrCRD)
-			assert.Equal(t, "1", tt.args.kyma.Annotations[tt.args.kcpAnnotationName])
-			assert.Equal(t, "2", tt.args.kyma.Annotations[tt.args.skrAnnotationName])
+			testCase.args.skrCRD.SetGeneration(2)
+			testCase.args.kcpCRD.SetGeneration(1)
+			remote.UpdateKymaAnnotations(testCase.args.kyma, testCase.args.kcpCRD, testCase.args.skrCRD)
+			assert.Equal(t, "1", testCase.args.kyma.Annotations[testCase.args.kcpAnnotationName])
+			assert.Equal(t, "2", testCase.args.kyma.Annotations[testCase.args.skrAnnotationName])
 		})
 	}
 }
