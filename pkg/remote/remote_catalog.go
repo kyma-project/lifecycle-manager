@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -142,9 +143,12 @@ func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 			return err
 		}
 
-		UpdateKymaAnnotations(kyma, kcpCrd, skrCrd)
-		if err = syncContext.ControlPlaneClient.Update(ctx, kyma); err != nil {
-			return err
+		if !ContainsLatestCRDGeneration(kyma.Annotations[v1beta2.KcpModuleTemplateCRDGenerationAnnotation], strconv.FormatInt(kcpCrd.Generation, 10)) ||
+			!ContainsLatestCRDGeneration(kyma.Annotations[v1beta2.SkrModuleTemplateCRDGenerationAnnotation], strconv.FormatInt(skrCrd.Generation, 10)) {
+			UpdateKymaAnnotations(kyma, kcpCrd, skrCrd)
+			if err = syncContext.ControlPlaneClient.Update(ctx, kyma); err != nil {
+				return err
+			}
 		}
 	}
 
