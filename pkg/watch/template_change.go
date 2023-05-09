@@ -32,10 +32,6 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 			return requests
 		}
 
-		if !manageable(template) {
-			return requests
-		}
-
 		kymas := &v1beta2.KymaList{}
 		listOptions := &client.ListOptions{
 			LabelSelector: labels.SelectorFromSet(labels.Set{v1beta2.ManagedBy: v1beta2.OperatorName}),
@@ -84,16 +80,4 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 
 		return requests
 	}
-}
-
-func manageable(template *v1beta2.ModuleTemplate) bool {
-	lbls := template.GetLabels()
-
-	if managedBy, ok := lbls[v1beta2.ManagedBy]; !ok || managedBy != v1beta2.OperatorName {
-		return false
-	}
-	if controller, ok := lbls[v1beta2.ControllerName]; !ok || controller == "" {
-		return false
-	}
-	return true
 }

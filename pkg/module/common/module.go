@@ -32,23 +32,13 @@ func (m *Module) Logger(base logr.Logger) logr.Logger {
 	)
 }
 
-func (m *Module) ApplyLabelsAndAnnotations(
-	kyma *v1beta2.Kyma,
-) {
+func (m *Module) ApplyLabelsAndAnnotations(kyma *v1beta2.Kyma) {
 	lbls := m.GetLabels()
 	if lbls == nil {
 		lbls = make(map[string]string)
 	}
 	lbls[v1beta2.KymaName] = kyma.Name
-
-	templateLabels := m.Template.GetLabels()
-	if templateLabels != nil {
-		lbls[v1beta2.ControllerName] = m.Template.GetLabels()[v1beta2.ControllerName]
-	}
 	lbls[v1beta2.ChannelLabel] = m.Template.Spec.Channel
-
-	lbls[v1beta2.ManagedBy] = v1beta2.OperatorName
-
 	m.SetLabels(lbls)
 
 	anns := m.GetAnnotations()

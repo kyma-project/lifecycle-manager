@@ -277,7 +277,6 @@ func ModuleTemplateFactoryForSchema(
 		moduleTemplate.Labels = make(map[string]string)
 	}
 	moduleTemplate.Labels[v1beta2.ModuleName] = module.Name
-	moduleTemplate.Labels[v1beta2.ControllerName] = module.ControllerName
 	moduleTemplate.Spec.Channel = module.Channel
 	if data.GetKind() != "" {
 		moduleTemplate.Spec.Data = data
