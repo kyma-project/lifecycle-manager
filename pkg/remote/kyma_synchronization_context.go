@@ -130,11 +130,9 @@ func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Con
 }
 
 func UpdateKymaAnnotations(
-	ctx context.Context,
 	kyma *v1beta2.Kyma,
 	kcpCRD *v1extensions.CustomResourceDefinition,
-	skrCRD *v1extensions.CustomResourceDefinition,
-	controlPlaneClient Client) error {
+	skrCRD *v1extensions.CustomResourceDefinition) {
 	if kyma.Annotations == nil {
 		kyma.Annotations = make(map[string]string)
 	}
@@ -149,7 +147,6 @@ func UpdateKymaAnnotations(
 
 	kyma.Annotations[kcpAnnotation] = strconv.FormatInt(kcpCRD.Generation, 10)
 	kyma.Annotations[skrAnnotation] = strconv.FormatInt(skrCRD.Generation, 10)
-	return controlPlaneClient.Update(ctx, kyma)
 }
 
 func CreateOrUpdateCRD(
@@ -235,7 +232,8 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 			ctx, v1beta2.KymaKind.Plural(), kyma, c.RuntimeClient, c.ControlPlaneClient); err != nil {
 			return nil, err
 		}
-		if err = UpdateKymaAnnotations(ctx, kyma, kcpCrd, skrCrd, c.ControlPlaneClient); err != nil {
+		UpdateKymaAnnotations(kyma, kcpCrd, skrCrd)
+		if err = c.ControlPlaneClient.Update(ctx, kyma); err != nil {
 			recorder.Event(kyma, "Warning", err.Error(), "Couldn't update Kyma CR with CRD generations.")
 		}
 
