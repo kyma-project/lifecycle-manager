@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -133,7 +132,7 @@ func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 
 	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster when we apply it and retry
 	if containsMetaIsNoMatchErr(errs) || len(errs) == 0 {
-		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1beta2.ModuleTemplateKind.Plural(), kyma); err != nil {
+		if err := CreateOrUpdateCRD(ctx, v1beta2.KymaKind.Plural(), kyma, syncContext.RuntimeClient, syncContext.ControlPlaneClient); err != nil {
 			return err
 		}
 	}
@@ -229,65 +228,6 @@ func (c *RemoteCatalog) Delete(
 			}
 		}
 	}
-	return nil
-}
-
-func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, plural string, kyma *v1beta2.Kyma) error {
-	crd := &v1extensions.CustomResourceDefinition{}
-	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
-
-	syncContext := SyncContextFromContext(ctx)
-
-	var err error
-	err = syncContext.ControlPlaneClient.Get(ctx, client.ObjectKey{
-		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
-		// name changes, this also has to be adjusted here. We can think of making this configurable later
-		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
-	}, crd)
-
-	if err != nil {
-		return err
-	}
-
-	err = syncContext.RuntimeClient.Get(ctx, client.ObjectKey{
-		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
-	}, crdFromRuntime)
-
-	latestGeneration := strconv.FormatInt(crd.Generation, 10)
-	runtimeCRDGeneration := strconv.FormatInt(crdFromRuntime.Generation, 10)
-	if k8serrors.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta2.GroupVersion.Version) ||
-		!ContainsLatestCRDGeneration(kyma.Annotations[v1beta2.KcpModuleTemplateCRDGenerationAnnotation], latestGeneration) ||
-		!ContainsLatestCRDGeneration(
-			kyma.Annotations[v1beta2.SkrModuleTemplateCRDGenerationAnnotation], runtimeCRDGeneration) {
-		err = PatchCRD(ctx, syncContext.RuntimeClient, crd)
-		if err != nil {
-			return err
-		}
-
-		if kyma.Annotations == nil {
-			kyma.Annotations = make(map[string]string)
-		}
-		err = syncContext.RuntimeClient.Get(ctx, client.ObjectKey{
-			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
-		}, crdFromRuntime)
-		if err != nil {
-			return err
-		}
-		kyma.Annotations[v1beta2.KcpModuleTemplateCRDGenerationAnnotation] = latestGeneration
-		kyma.Annotations[v1beta2.SkrModuleTemplateCRDGenerationAnnotation] = runtimeCRDGeneration
-		if err = syncContext.ControlPlaneClient.Update(ctx, kyma); err != nil {
-			return err
-		}
-	}
-
-	if !crdReady(crdFromRuntime) {
-		return ErrTemplateCRDNotReady
-	}
-
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
