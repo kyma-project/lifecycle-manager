@@ -1,7 +1,6 @@
 package v1beta1_test
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -44,7 +43,7 @@ var _ = Describe("Custom Manifest consistency check, given Manifest CR with OCI 
 		Eventually(expectManifestStateIn(declarative.StateReady), standardTimeout, standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
-		testClient, err := declarativeTestClient(ctx)
+		testClient, err := declarativeTestClient()
 		Expect(err).ToNot(HaveOccurred())
 		By("Verifying that deployment and Sample CR are deployed and ready")
 		deploy := &appsv1.Deployment{}
@@ -104,7 +103,7 @@ func prepareResourceInfosForCustomCheck(clt declarative.Client, deploy *appsv1.D
 	return []*resource.Info{deployInfo}, nil
 }
 
-func declarativeTestClient(ctx context.Context) (declarative.Client, error) {
+func declarativeTestClient() (declarative.Client, error) {
 	cluster := &declarative.ClusterInfo{
 		Config: cfg,
 		Client: k8sClient,

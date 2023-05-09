@@ -101,7 +101,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj)
 	}
 
-	clnt, err := r.getTargetClient(ctx, obj, spec)
+	clnt, err := r.getTargetClient(ctx, obj)
 	if err != nil {
 		r.Event(obj, "Warning", "ClientInitialization", err.Error())
 		obj.SetStatus(obj.GetStatus().WithState(StateError).WithErr(err))
@@ -382,9 +382,7 @@ func pruneKymaSystem(diff []*resource.Info) []*resource.Info {
 	return diff
 }
 
-func (r *Reconciler) getTargetClient(
-	ctx context.Context, obj Object, spec *Spec,
-) (Client, error) {
+func (r *Reconciler) getTargetClient(ctx context.Context, obj Object) (Client, error) {
 	var err error
 	var clnt Client
 	if r.ClientCacheKeyFn == nil {
