@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/google/go-containerregistry/pkg/v1/partial"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
@@ -21,8 +22,6 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/types"
-	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
-	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -105,8 +104,8 @@ func NewTestManifest(prefix string) *v1beta2.Manifest {
 	}
 }
 
-func withInvalidInstallImageSpec(remote bool) func(manifest *v1beta1.Manifest) error {
-	return func(manifest *v1beta1.Manifest) error {
+func withInvalidInstallImageSpec(enableResource bool) func(manifest *v1beta2.Manifest) error {
+	return func(manifest *v1beta2.Manifest) error {
 		invalidImageSpec := createOCIImageSpec("invalid-image-spec", "domain.invalid")
 		imageSpecByte, err := json.Marshal(invalidImageSpec)
 		Expect(err).ToNot(HaveOccurred())

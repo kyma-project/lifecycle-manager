@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"reflect"
 
@@ -13,17 +12,13 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 
 	"github.com/google/go-containerregistry/pkg/authn"
-	"helm.sh/helm/v3/pkg/strvals"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// ChartInfo defines helm chart information.
-type ChartInfo struct {
-	ChartPath   string
-	RepoName    string
-	URL         string
-	ChartName   string
-	ReleaseName string
+// RawManifestInfo defines raw manifest information.
+type RawManifestInfo struct {
+	Path string
+	Name string
 }
 
 type ManifestSpecResolver struct {
@@ -68,7 +63,7 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object)
 		return nil, err
 	}
 
-	chartInfo, err := m.getChartInfoForInstall(ctx, manifest.Spec.Install, specType, keyChain)
+	rawManifestInfo, err := m.getRawManifestForInstall(ctx, manifest.Spec.Install, specType, keyChain)
 	if err != nil {
 		return nil, err
 	}
@@ -82,50 +77,11 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object)
 			client.ObjectKeyFromObject(manifest), ErrRenderModeInvalid)
 	}
 
-	values, err := m.getValuesFromConfig(ctx, manifest.Spec.Config, manifest.Spec.Install.Name, keyChain)
-	if err != nil {
-		return nil, err
-	}
-
-	path := chartInfo.ChartPath
-	if path == "" && chartInfo.URL != "" {
-		path = chartInfo.URL
-	}
-
 	return &declarative.Spec{
 		ManifestName: manifest.Spec.Install.Name,
-		Path:         path,
-		Values:       values,
+		Path:         rawManifestInfo.Path,
 		Mode:         mode,
 	}, nil
-}
-
-func (m *ManifestSpecResolver) getValuesFromConfig(
-	ctx context.Context, config v1beta2.ImageSpec, name string, keyChain authn.Keychain,
-) (map[string]any, error) {
-	var configs []any
-	if config.Type.NotEmpty() { //nolint:nestif
-		decodedConfig, err := DecodeUncompressedYAMLLayer(ctx, config, keyChain)
-		if err != nil {
-			// if EOF error, we should proceed without config
-			if !errors.Is(err, io.EOF) {
-				return nil, err
-			}
-		} else {
-			var err error
-			configs, err = ParseInstallConfigs(decodedConfig)
-			if err != nil {
-				return nil, fmt.Errorf("value parsing for %s encountered an err: %w", name, err)
-			}
-		}
-	}
-
-	// filter config for install
-	chartValues, err := parseChartConfigAndValues(configs, name)
-	if err != nil {
-		return nil, err
-	}
-	return chartValues, nil
 }
 
 var (
@@ -161,12 +117,12 @@ var (
 	ErrEmptyInstallType       = errors.New("empty install type")
 )
 
-func (m *ManifestSpecResolver) getChartInfoForInstall(
+func (m *ManifestSpecResolver) getRawManifestForInstall(
 	ctx context.Context,
 	install v1beta2.InstallInfo,
 	specType v1beta2.RefTypeMetadata,
 	keyChain authn.Keychain,
-) (*ChartInfo, error) {
+) (*RawManifestInfo, error) {
 	var err error
 	switch specType {
 	case v1beta2.OciRefType:
@@ -181,62 +137,15 @@ func (m *ManifestSpecResolver) getChartInfoForInstall(
 			return nil, err
 		}
 
-		return &ChartInfo{
-			ChartName: install.Name,
-			ChartPath: rawManifestPath,
+		return &RawManifestInfo{
+			Name: install.Name,
+			Path: rawManifestPath,
 		}, nil
 	case v1beta2.NilRefType:
 		return nil, ErrEmptyInstallType
 	default:
 		return nil, fmt.Errorf("%s is invalid: %w", specType, ErrUnsupportedInstallType)
 	}
-}
-
-func parseChartConfigAndValues(
-	configs []interface{}, name string,
-) (map[string]interface{}, error) {
-	valuesString, err := getConfigAndValuesForInstall(configs, name)
-	if err != nil {
-		return nil, fmt.Errorf("manifest encountered an error while parsing chart config: %w", err)
-	}
-
-	values := map[string]interface{}{}
-	if err := strvals.ParseInto(valuesString, values); err != nil {
-		return nil, err
-	}
-
-	return values, nil
-}
-
-var (
-	ErrConfigDoesNotExist        = errors.New("config object does not exist")
-	ErrConfigOverridesDoNotExist = errors.New("config object overrides do not exist")
-)
-
-func getConfigAndValuesForInstall(configs []interface{}, name string) (
-	string, error,
-) {
-	var defaultOverrides string
-
-	for _, config := range configs {
-		mappedConfig, configExists := config.(map[string]interface{})
-		if !configExists {
-			return "", fmt.Errorf(
-				"reading install %s resulted in an error: %w", v1beta2.ManifestKind, ErrConfigDoesNotExist,
-			)
-		}
-		if mappedConfig["name"] == name {
-			defaultOverrides, configExists = mappedConfig["overrides"].(string)
-			if !configExists {
-				return "", fmt.Errorf(
-					"reading install %s resulted in an error: %w",
-					v1beta2.ManifestKind, ErrConfigOverridesDoNotExist,
-				)
-			}
-			break
-		}
-	}
-	return defaultOverrides, nil
 }
 
 func (m *ManifestSpecResolver) lookupKeyChain(

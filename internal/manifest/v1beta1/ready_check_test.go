@@ -15,11 +15,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/resource"
 
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var _ = Describe("Custom Manifest consistency check, given Manifest CR with OCI specs", Ordered, func() {
@@ -112,21 +110,5 @@ func declarativeTestClient(ctx context.Context) (declarative.Client, error) {
 		Client: k8sClient,
 	}
 
-	clt, err := declarative.NewSingletonClients(cluster, log.FromContext(ctx))
-	if err != nil {
-		return nil, err
-	}
-	clt.Install().Atomic = false
-	clt.Install().Replace = true
-	clt.Install().DryRun = true
-	clt.Install().IncludeCRDs = false
-	clt.Install().CreateNamespace = false
-	clt.Install().UseReleaseName = false
-	clt.Install().IsUpgrade = true
-	clt.Install().DisableHooks = true
-	clt.Install().DisableOpenAPIValidation = true
-	if clt.Install().Version == "" && clt.Install().Devel {
-		clt.Install().Version = ">0.0.0-0"
-	}
-	return clt, nil
+	return declarative.NewSingletonClients(cluster)
 }

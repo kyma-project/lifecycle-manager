@@ -104,18 +104,6 @@ var _ = Describe(
 			fmt.Sprintf("Starting Controller and Testing Declarative Reconciler (Run %s)", runID),
 			tableTest,
 			Entry(
-				"Create simple raw from CR without modifications and CRDs condition becomes ready",
-				testv1.TestAPISpec{ManifestName: "simple-raw-crd"},
-				DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), map[string]any{}, RenderModeRaw),
-				[]Option{},
-				func(ctx context.Context, key client.ObjectKey, source *CustomSpecFns) {
-					EventuallyDeclarativeStatusShould(
-						ctx, key,
-						HaveConditionWithStatus(ConditionTypeRawManifestCRDs, metav1.ConditionTrue),
-					)
-				},
-			),
-			Entry(
 				"Create simple raw manifest with a different Control Plane and Runtime Client",
 				testv1.TestAPISpec{ManifestName: "custom-client"},
 				DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), map[string]any{}, RenderModeRaw),

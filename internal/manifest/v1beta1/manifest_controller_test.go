@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -31,7 +31,7 @@ var _ = Describe(
 		DescribeTable(
 			"Test OCI specs",
 			func(
-				givenCondition func(manifest *v1beta1.Manifest) error,
+				givenCondition func(manifest *v1beta2.Manifest) error,
 				expectManifestState func(manifestName string) error,
 			) {
 				manifest := NewTestManifest("oci")
@@ -43,25 +43,19 @@ var _ = Describe(
 			},
 			Entry(
 				"When Manifest CR contains a valid install OCI image specification, "+
-					"expect state in ready and helmClient cache exist",
+					"expect state in ready",
 				withValidInstallImageSpec(installName, false),
 				expectManifestStateIn(declarative.StateReady),
 			),
 			Entry(
-				"When Manifest CR contains a valid install OCI image specification and enabled remote, "+
-					"expect state in ready and helmClient cache exist",
+				"When Manifest CR contains a valid install OCI image specification and enabled deploy resource, "+
+					"expect state in ready",
 				withValidInstallImageSpec(installName, true),
 				expectManifestStateIn(declarative.StateReady),
 			),
 			Entry(
-				"When Manifest CR contains valid install and CRD image specification, "+
-					"expect state in ready and helmClient cache exist",
-				withValidInstall(installName, true),
-				expectManifestStateIn(declarative.StateReady),
-			),
-			Entry(
 				"When Manifest CR contains an invalid install OCI image specification, "+
-					"expect state in error and no helmClient cache exit",
+					"expect state in error",
 				withInvalidInstallImageSpec(false),
 				expectManifestStateIn(declarative.StateError),
 			),
@@ -91,7 +85,7 @@ var _ = Describe(
 					WithArguments(manifestWithInstall).Should(Succeed())
 				manifest2WithInstall := NewTestManifest("multi-oci2")
 				// copy owner label over to the new manifest resource
-				manifest2WithInstall.Labels[v1beta1.KymaName] = manifestWithInstall.Labels[v1beta1.KymaName]
+				manifest2WithInstall.Labels[v1beta2.KymaName] = manifestWithInstall.Labels[v1beta2.KymaName]
 				Eventually(withValidInstallImageSpec(installName, false), standardTimeout, standardInterval).
 					WithArguments(manifest2WithInstall).Should(Succeed())
 				Eventually(

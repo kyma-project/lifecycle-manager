@@ -26,14 +26,8 @@ const (
 	RenderModeRaw RenderMode = "raw"
 )
 
-func InitializeRenderer(
-	ctx context.Context,
-	obj Object,
-	spec *Spec,
-	client Client,
-	options *Options,
-) (Renderer, error) {
-	renderer := NewRawRenderer(spec, client, options)
+func InitializeRenderer(ctx context.Context, obj Object, spec *Spec, options *Options) (Renderer, error) {
+	renderer := NewRawRenderer(spec, options)
 	if err := renderer.Initialize(obj); err != nil {
 		return nil, err
 	}

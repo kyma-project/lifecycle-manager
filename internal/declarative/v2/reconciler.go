@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"helm.sh/helm/v3/pkg/kube"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -111,7 +110,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	converter := NewResourceToInfoConverter(clnt, r.Namespace)
 
-	renderer, err := InitializeRenderer(ctx, obj, spec, clnt, r.Options)
+	renderer, err := InitializeRenderer(ctx, obj, spec, r.Options)
 	if err != nil {
 		return r.ssaStatus(ctx, obj)
 	}
@@ -121,7 +120,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj)
 	}
 
-	diff := kube.ResourceList(current).Difference(target)
+	diff := ResourceList(current).Difference(target)
 	if err := r.pruneDiff(ctx, clnt, obj, renderer, diff); errors.Is(err, ErrDeletionNotFinished) {
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
@@ -201,7 +200,7 @@ func (r *Reconciler) renderResources(
 	status := obj.GetStatus()
 
 	var err error
-	var target, current kube.ResourceList
+	var target, current ResourceList
 
 	if target, err = r.renderTargetResources(ctx, renderer, converter, obj, spec); err != nil {
 		return nil, nil, err
@@ -261,9 +260,6 @@ func (r *Reconciler) checkTargetReadiness(
 	status := obj.GetStatus()
 
 	resourceReadyCheck := r.CustomReadyCheck
-	if resourceReadyCheck == nil {
-		resourceReadyCheck = NewHelmReadyCheck(clnt)
-	}
 
 	err := resourceReadyCheck.Run(ctx, clnt, obj, target)
 
@@ -328,7 +324,7 @@ func (r *Reconciler) renderTargetResources(
 		// we no longer want to have any target resources and want to clean up all existing resources.
 		// Thus, we empty the target here so the difference will be the entire current
 		// resource list in the cluster.
-		return kube.ResourceList{}, nil
+		return ResourceList{}, nil
 	}
 
 	status := obj.GetStatus()
@@ -392,7 +388,7 @@ func (r *Reconciler) getTargetClient(
 	var err error
 	var clnt Client
 	if r.ClientCacheKeyFn == nil {
-		return r.configClient(ctx, obj, spec.ManifestName)
+		return r.configClient(ctx, obj)
 	}
 
 	clientsCacheKey, found := r.ClientCacheKeyFn(ctx, obj)
@@ -401,18 +397,14 @@ func (r *Reconciler) getTargetClient(
 	}
 
 	if clnt == nil {
-		clnt, err = r.configClient(ctx, obj, spec.ManifestName)
+		clnt, err = r.configClient(ctx, obj)
 		if err != nil {
 			return nil, err
 		}
 		r.SetClientInCache(clientsCacheKey, clnt)
 	}
 
-	clnt.Install().Namespace = r.Namespace
-	clnt.KubeClient().Namespace = r.Namespace
-
-	if r.Namespace != metav1.NamespaceNone && r.Namespace != metav1.NamespaceDefault &&
-		clnt.Install().CreateNamespace {
+	if r.Namespace != metav1.NamespaceNone && r.Namespace != metav1.NamespaceDefault {
 		err := clnt.Patch(
 			ctx, &v1.Namespace{
 				TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
@@ -427,7 +419,7 @@ func (r *Reconciler) getTargetClient(
 	return clnt, nil
 }
 
-func (r *Reconciler) configClient(ctx context.Context, obj Object, releaseName string) (Client, error) {
+func (r *Reconciler) configClient(ctx context.Context, obj Object) (Client, error) {
 	var err error
 
 	cluster := &ClusterInfo{
@@ -442,23 +434,10 @@ func (r *Reconciler) configClient(ctx context.Context, obj Object, releaseName s
 		}
 	}
 
-	clnt, err := NewSingletonClients(cluster, log.FromContext(ctx))
+	clnt, err := NewSingletonClients(cluster)
 	if err != nil {
 		return nil, err
 	}
-	clnt.Install().Atomic = false
-	clnt.Install().Replace = true
-	clnt.Install().DryRun = true
-	clnt.Install().IncludeCRDs = false
-	clnt.Install().CreateNamespace = r.CreateNamespace
-	clnt.Install().UseReleaseName = false
-	clnt.Install().IsUpgrade = true
-	clnt.Install().DisableHooks = true
-	clnt.Install().DisableOpenAPIValidation = true
-	if clnt.Install().Version == "" && clnt.Install().Devel {
-		clnt.Install().Version = ">0.0.0-0"
-	}
-	clnt.Install().ReleaseName = releaseName
 	return clnt, nil
 }
 
