@@ -29,7 +29,8 @@ var (
 
 type Parser struct {
 	client.Client
-	InKCPMode bool
+	InKCPMode           bool
+	remoteSyncNamespace string
 	*ocmextensions.ComponentDescriptorCache
 }
 
@@ -37,11 +38,13 @@ func NewParser(
 	clnt client.Client,
 	descriptorCache *ocmextensions.ComponentDescriptorCache,
 	inKCPMode bool,
+	remoteSyncNamespace string,
 ) *Parser {
 	return &Parser{
 		Client:                   clnt,
 		ComponentDescriptorCache: descriptorCache,
 		InKCPMode:                inKCPMode,
+		remoteSyncNamespace:      remoteSyncNamespace,
 	}
 }
 
@@ -75,7 +78,7 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 		fqdn := descriptor.GetName()
 		version := descriptor.GetVersion()
 		name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
-		overwriteNameAndNamespace(&template, name, kyma.Namespace)
+		overwriteNameAndNamespace(&template, name, p.remoteSyncNamespace)
 		var obj client.Object
 		if obj, err = p.newManifestFromTemplate(ctx, module,
 			template.ModuleTemplate,
@@ -108,7 +111,7 @@ func overwriteNameAndNamespace(template *channel.ModuleTemplateTO, name, namespa
 	if template.ModuleTemplate.Spec.Data.GetName() == "" {
 		template.ModuleTemplate.Spec.Data.SetName(name)
 	}
-	// if the default data does not contain a namespace, default it to the kyma namespace
+	// if the default data does not contain a namespace, default it to the provided namespace
 	if template.ModuleTemplate.Spec.Data.GetNamespace() == "" {
 		template.ModuleTemplate.Spec.Data.SetNamespace(namespace)
 	}
