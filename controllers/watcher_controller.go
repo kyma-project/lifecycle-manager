@@ -146,9 +146,9 @@ func (r *WatcherReconciler) handleDeletingState(ctx context.Context, watcherCR *
 
 func (r *WatcherReconciler) handleProcessingState(ctx context.Context, watcherCR *v1beta2.Watcher) error {
 	// Create virtualService in Memory
-	virtualSvc, err := r.IstioClient.NewVirtualService(ctx, watcherCR)
+	virtualSvc, _ := r.IstioClient.NewVirtualService(ctx, watcherCR)
 
-	_, err = r.IstioClient.GetVirtualService(ctx, watcherCR.Name)
+	_, err := r.IstioClient.GetVirtualService(ctx, watcherCR.Name)
 	if client.IgnoreNotFound(err) != nil {
 		return err
 	}

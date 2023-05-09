@@ -108,6 +108,7 @@ func (c *Client) CreateVirtualService(ctx context.Context, virtualSvc *istioclie
 		Create(ctx, virtualSvc, metav1.CreateOptions{})
 	return err
 }
+
 func addGateways(gateways []*istioclientapi.Gateway, virtualSvc *istioclientapi.VirtualService) {
 	gatewayLists := convertToGatewayList(gateways)
 	virtualSvc.Spec.Gateways = gatewayLists
@@ -130,7 +131,7 @@ func addHosts(gateways []*istioclientapi.Gateway, virtualSvc *istioclientapi.Vir
 	return nil
 }
 
-// TODO: Create Test to handle hosts
+// TODO: Create Test to handle hosts.
 func getHosts(gateways []*istioclientapi.Gateway) ([]string, error) {
 	hosts := make([]string, 0)
 
