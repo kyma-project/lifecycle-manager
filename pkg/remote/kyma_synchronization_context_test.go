@@ -12,6 +12,7 @@ import (
 
 // nolint:funlen
 func TestUpdateKymaAnnotations(t *testing.T) {
+	t.Parallel()
 	type args struct {
 		kyma              *v1beta2.Kyma
 		kcpCRD            *v1extensions.CustomResourceDefinition
