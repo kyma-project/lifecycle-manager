@@ -233,8 +233,10 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 			return nil, err
 		}
 
-		if !ContainsLatestCRDGeneration(kyma.Annotations[v1beta2.KcpKymaCRDGenerationAnnotation], strconv.FormatInt(kcpCrd.Generation, 10)) ||
-			!ContainsLatestCRDGeneration(kyma.Annotations[v1beta2.SkrKymaCRDGenerationAnnotation], strconv.FormatInt(skrCrd.Generation, 10)) {
+		if !ContainsLatestCRDGeneration(kyma.Annotations[v1beta2.KcpKymaCRDGenerationAnnotation],
+			strconv.FormatInt(kcpCrd.Generation, 10)) ||
+			!ContainsLatestCRDGeneration(kyma.Annotations[v1beta2.SkrKymaCRDGenerationAnnotation],
+				strconv.FormatInt(skrCrd.Generation, 10)) {
 			UpdateKymaAnnotations(kyma, kcpCrd, skrCrd)
 			if err = c.ControlPlaneClient.Update(ctx, kyma); err != nil {
 				recorder.Event(kyma, "Warning", err.Error(), "Couldn't update Kyma CR with CRD generations.")

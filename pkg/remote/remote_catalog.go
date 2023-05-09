@@ -143,8 +143,10 @@ func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 			return err
 		}
 
-		if !ContainsLatestCRDGeneration(kyma.Annotations[v1beta2.KcpModuleTemplateCRDGenerationAnnotation], strconv.FormatInt(kcpCrd.Generation, 10)) ||
-			!ContainsLatestCRDGeneration(kyma.Annotations[v1beta2.SkrModuleTemplateCRDGenerationAnnotation], strconv.FormatInt(skrCrd.Generation, 10)) {
+		if !ContainsLatestCRDGeneration(kyma.Annotations[v1beta2.KcpModuleTemplateCRDGenerationAnnotation],
+			strconv.FormatInt(kcpCrd.Generation, 10)) ||
+			!ContainsLatestCRDGeneration(kyma.Annotations[v1beta2.SkrModuleTemplateCRDGenerationAnnotation],
+				strconv.FormatInt(skrCrd.Generation, 10)) {
 			UpdateKymaAnnotations(kyma, kcpCrd, skrCrd)
 			if err = syncContext.ControlPlaneClient.Update(ctx, kyma); err != nil {
 				return err
