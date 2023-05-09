@@ -181,34 +181,6 @@ func (c *Client) UpdateVirtualService(ctx context.Context, virtualService *istio
 	return err
 }
 
-func contentDiffers(target []string, source []string) bool {
-	if len(source) != len(target) {
-		return true
-	}
-
-	targetMap := make(map[string]bool)
-	for i := range target {
-		targetMap[target[i]] = false
-	}
-	for i := range source {
-		_, exists := targetMap[source[i]]
-		if exists {
-			targetMap[source[i]] = true
-		} else {
-			// source item not in target
-			return true
-		}
-	}
-	// check not matched target item
-	for _, exists := range targetMap {
-		if !exists {
-			return true
-		}
-	}
-
-	return false
-}
-
 func (c *Client) RemoveVirtualServiceForCR(ctx context.Context, watcherObjKey client.ObjectKey,
 ) error {
 	return c.NetworkingV1beta1().
