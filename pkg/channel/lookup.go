@@ -89,11 +89,15 @@ func CheckForOutdatedTemplates(logger logr.Logger, kyma *v1beta2.Kyma, templates
 		moduleTemplate := moduleTemplate
 		for i := range kyma.Status.Modules {
 			moduleStatus := &kyma.Status.Modules[i]
-			if moduleStatus.FQDN == moduleName && moduleTemplate.ModuleTemplate != nil {
+			if moduleMatch(moduleStatus, moduleName) && moduleTemplate.ModuleTemplate != nil {
 				CheckForOutdatedTemplate(logger, &moduleTemplate, moduleStatus)
 			}
 		}
 	}
+}
+
+func moduleMatch(moduleStatus *v1beta2.ModuleStatus, moduleName string) bool {
+	return moduleStatus.FQDN == moduleName || moduleStatus.Name == moduleName
 }
 
 // CheckForOutdatedTemplate verifies if the given ModuleTemplate is outdated and sets their Outdated Flag based on
