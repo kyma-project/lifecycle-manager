@@ -129,8 +129,32 @@ func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Con
 	return nil
 }
 
+func (c *KymaSynchronizationContext) UpdateKymaAnnotations(
+	ctx context.Context, kyma *v1beta2.Kyma, kcpCRD *v1extensions.CustomResourceDefinition, skrCRD *v1extensions.CustomResourceDefinition) error {
+	if kyma.Annotations == nil {
+		kyma.Annotations = make(map[string]string)
+	}
+
+	kcpAnnotation := v1beta2.KcpKymaCRDGenerationAnnotation
+	skrAnnotation := v1beta2.SkrKymaCRDGenerationAnnotation
+
+	if kcpCRD.Kind == string(v1beta2.ModuleTemplateKind) {
+		kcpAnnotation = v1beta2.KcpModuleTemplateCRDGenerationAnnotation
+		skrAnnotation = v1beta2.SkrModuleTemplateCRDGenerationAnnotation
+	}
+
+	kyma.Annotations[kcpAnnotation] = strconv.FormatInt(kcpCRD.Generation, 10)
+	kyma.Annotations[skrAnnotation] = strconv.FormatInt(skrCRD.Generation, 10)
+	if err := c.ControlPlaneClient.Update(ctx, kyma); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func CreateOrUpdateCRD(
-	ctx context.Context, plural string, kyma *v1beta2.Kyma, runtimeClient Client, controlPlaneClient Client) error {
+	ctx context.Context, plural string, kyma *v1beta2.Kyma, runtimeClient Client, controlPlaneClient Client) (
+	*v1extensions.CustomResourceDefinition, *v1extensions.CustomResourceDefinition, error) {
 	crd := &v1extensions.CustomResourceDefinition{}
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
 	var err error
@@ -143,7 +167,7 @@ func CreateOrUpdateCRD(
 	)
 
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
 	err = runtimeClient.Get(
@@ -167,36 +191,28 @@ func CreateOrUpdateCRD(
 		!ContainsLatestCRDGeneration(kyma.Annotations[skrAnnotation], runtimeCRDGeneration) {
 		err = PatchCRD(ctx, runtimeClient, crd)
 		if err != nil {
-			return err
+			return nil, nil, err
 		}
-		if kyma.Annotations == nil {
-			kyma.Annotations = make(map[string]string)
-		}
+
 		err = runtimeClient.Get(
 			ctx, client.ObjectKey{
 				Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
 			}, crdFromRuntime,
 		)
 		if err != nil {
-			return err
-		}
-
-		kyma.Annotations[v1beta2.KcpKymaCRDGenerationAnnotation] = latestGeneration
-		kyma.Annotations[v1beta2.SkrKymaCRDGenerationAnnotation] = runtimeCRDGeneration
-		if err = controlPlaneClient.Update(ctx, kyma); err != nil {
-			return err
+			return nil, nil, err
 		}
 	}
 
 	if plural == v1beta2.ModuleTemplateKind.Plural() && !crdReady(crdFromRuntime) {
-		return ErrTemplateCRDNotReady
+		return nil, nil, ErrTemplateCRDNotReady
 	}
 
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
-	return nil
+	return crd, crdFromRuntime, nil
 }
 
 func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
@@ -214,8 +230,13 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 		if meta.IsNoMatchError(err) {
 			recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
 		}
-		if err = CreateOrUpdateCRD(ctx, v1beta2.KymaKind.Plural(), kyma, c.RuntimeClient, c.ControlPlaneClient); err != nil {
+		var kcpCrd, skrCrd *v1extensions.CustomResourceDefinition
+		if kcpCrd, skrCrd, err = CreateOrUpdateCRD(ctx, v1beta2.KymaKind.Plural(), kyma, c.RuntimeClient, c.ControlPlaneClient); err != nil {
 			return nil, err
+		}
+		if err = c.UpdateKymaAnnotations(ctx, kyma, kcpCrd, skrCrd); err != nil {
+			recorder.Event(kyma, "Warning", err.Error(), "Couldn't update Kyma CR with CRD generations.")
+			err = nil
 		}
 
 		recorder.Event(kyma, "Normal", "CRDInstallation", "CRDs were installed to SKR")
