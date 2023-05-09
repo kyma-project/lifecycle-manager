@@ -102,7 +102,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		if apierrors.IsNotFound(err) {
 			// TODO: revisit after runtime-controller gets upgraded
 			// Related issue: https://github.com/kyma-project/lifecycle-manager/issues/579
-			logger.V(log.DebugLevel).Info(fmt.Sprintf("unable to find Kyma %s, probably already deleted", req.NamespacedName))
+			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted", req.NamespacedName))
 		}
 
 		return ctrl.Result{}, client.IgnoreNotFound(err)
