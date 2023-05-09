@@ -10,6 +10,7 @@ import (
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
+// nolint:funlen
 func TestUpdateKymaAnnotations(t *testing.T) {
 	type args struct {
 		kyma              *v1beta2.Kyma
