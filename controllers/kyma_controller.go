@@ -49,13 +49,15 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type EventErrorType string
+type EventReason string
 
 const (
-	ModuleReconciliationError  EventErrorType = "ModuleReconciliationError"
-	SyncContextError           EventErrorType = "SyncContextError"
-	DeletionError              EventErrorType = "DeletionError"
-	DefaultRemoteSyncNamespace string         = "kyma-system"
+	moduleReconciliationError  EventReason = "ModuleReconciliationError"
+	syncContextError           EventReason = "SyncContextError"
+	deletionError              EventReason = "DeletionError"
+	updateStatus               EventReason = "StatusUpdate"
+	webhookChartRemoval        EventReason = "WebhookChartRemoval"
+	DefaultRemoteSyncNamespace string      = "kyma-system"
 )
 
 type RequeueIntervals struct {
@@ -100,7 +102,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		if apierrors.IsNotFound(err) {
 			// TODO: revisit after runtime-controller gets upgraded
 			// Related issue: https://github.com/kyma-project/lifecycle-manager/issues/579
-			logger.V(log.DebugLevel).Info(fmt.Sprintf("unable to find Kyma %s, probably due to deletion", req.NamespacedName))
+			logger.V(log.DebugLevel).Info(fmt.Sprintf("unable to find Kyma %s, probably already deleted", req.NamespacedName))
 		}
 
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -119,62 +121,64 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if kyma.SyncEnabled() {
 		var err error
-		if ctx, err = remote.InitializeSyncContext(ctx, kyma, r.RemoteSyncNamespace,
-			remote.NewClientWithConfig(r.Client, r.KcpRestConfig), r.RemoteClientCache); err != nil {
-			err := fmt.Errorf("initializing sync context failed: %w", err)
-			r.Event(kyma, "Warning", string(SyncContextError), err.Error())
+		remoteClient := remote.NewClientWithConfig(r.Client, r.KcpRestConfig)
+		if ctx, err = remote.InitializeSyncContext(ctx, kyma, r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache); err != nil {
+			r.enqueueWarningEvent(kyma, syncContextError, err)
 			return r.requeueWithError(ctx, kyma, err)
 		}
 	}
 
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != v1beta2.StateDeleting {
-		return r.deleteKyma(ctx, kyma)
-	}
-
-	// check finalizer
-	if kyma.CheckLabelsAndFinalizers() {
-		if err := r.Update(ctx, kyma); err != nil {
-			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma after finalizer check: %w", err))
+		if err := r.deleteRemoteKyma(ctx, kyma); err != nil {
+			return r.requeueWithError(ctx, kyma, err)
+		}
+		if err := r.updateStatus(ctx, kyma, v1beta2.StateDeleting, "waiting for modules to be deleted"); err != nil {
+			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma status after triggering deletion: %w", err))
 		}
 		return ctrl.Result{}, nil
 	}
 
-	// update the remote kyma with the state of the control plane
+	if needsUpdate := kyma.EnsureLabelsAndFinalizers(); needsUpdate {
+		if err := r.Update(ctx, kyma); err != nil {
+			return r.requeueWithError(ctx, kyma, fmt.Errorf("failed to update kyma after finalizer check: %w", err))
+		}
+		return ctrl.Result{}, nil
+	}
+
 	if kyma.SyncEnabled() {
-		if err := r.syncRemoteKymaSpecAndStatus(ctx, kyma); err != nil {
+		if err := r.syncRemoteKyma(ctx, kyma); err != nil {
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not synchronize remote kyma: %w", err))
 		}
 	}
 
-	// state handling
-	return r.stateHandling(ctx, kyma)
+	return r.processKymaState(ctx, kyma)
+}
+
+func (r *KymaReconciler) deleteRemoteKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
+	logger := ctrlLog.FromContext(ctx).V(log.InfoLevel)
+	if kyma.SyncEnabled() {
+		if err := remote.DeleteRemotelySyncedKyma(ctx, kyma, r.RemoteSyncNamespace); client.IgnoreNotFound(err) != nil {
+			logger.Error(err, "Failed to be deleted remotely!")
+			return fmt.Errorf("error occurred while trying to delete remotely synced kyma: %w", err)
+		}
+		logger.Info("Successfully deleted remotely!")
+	}
+	return nil
 }
 
 func (r *KymaReconciler) requeueWithError(ctx context.Context, kyma *v1beta2.Kyma, err error) (ctrl.Result, error) {
-	return ctrl.Result{Requeue: true}, r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta2.StateError, err)
+	return ctrl.Result{Requeue: true}, r.updateStatusWithError(ctx, kyma, err)
 }
 
-func (r *KymaReconciler) deleteKyma(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
-	if err := r.TriggerKymaDeletion(ctx, kyma); err != nil {
-		return r.requeueWithError(ctx, kyma, err)
-	}
-
-	// if the status is not yet set to deleting, also update the status of the control-plane
-	// in the next sync cycle
-	if err := status.Helper(r).UpdateStatusForExistingModules(
-		ctx, kyma, v1beta2.StateDeleting, "waiting for modules to be deleted",
-	); err != nil {
-		return r.requeueWithError(ctx, kyma, fmt.Errorf(
-			"could not update kyma status after triggering deletion: %w", err))
-	}
-	return ctrl.Result{}, nil
+func (r *KymaReconciler) enqueueWarningEvent(kyma *v1beta2.Kyma, reason EventReason, err error) {
+	r.Event(kyma, "Warning", string(reason), err.Error())
 }
 
-// synchronizeRemote replaces the given pointer to the Kyma Instance with an instance that contains the merged
-// specification of the Control Plane and the Runtime.
-func (r *KymaReconciler) syncRemoteKymaSpecAndStatus(
-	ctx context.Context, controlPlaneKyma *v1beta2.Kyma,
-) error {
+func (r *KymaReconciler) enqueueNormalEvent(kyma *v1beta2.Kyma, reason EventReason, message string) {
+	r.Event(kyma, "Normal", string(reason), message)
+}
+
+func (r *KymaReconciler) syncRemoteKyma(ctx context.Context, controlPlaneKyma *v1beta2.Kyma) error {
 	syncContext := remote.SyncContextFromContext(ctx)
 
 	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx, controlPlaneKyma, r.RemoteSyncNamespace)
@@ -193,27 +197,7 @@ func (r *KymaReconciler) syncRemoteKymaSpecAndStatus(
 	return nil
 }
 
-func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta2.Kyma) error {
-	moduleTemplateList := &v1beta2.ModuleTemplateList{}
-	if err := r.List(ctx, moduleTemplateList, &client.ListOptions{}); err != nil {
-		return fmt.Errorf("could not aggregate module templates for module catalog sync: %w", err)
-	}
-
-	var modulesToSync []v1beta2.ModuleTemplate
-	for _, mt := range moduleTemplateList.Items {
-		if mt.SyncEnabled(kyma.IsBeta(), kyma.IsInternal()) {
-			modulesToSync = append(modulesToSync, mt)
-		}
-	}
-
-	if err := remote.NewRemoteCatalogFromKyma(r.RemoteSyncNamespace).CreateOrUpdate(ctx, modulesToSync); err != nil {
-		return fmt.Errorf("could not synchronize remote module catalog: %w", err)
-	}
-
-	return nil
-}
-
-func (r *KymaReconciler) stateHandling(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
+func (r *KymaReconciler) processKymaState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	switch kyma.Status.State {
 	case "":
 		return ctrl.Result{}, r.handleInitialState(ctx, kyma)
@@ -235,7 +219,12 @@ func (r *KymaReconciler) stateHandling(ctx context.Context, kyma *v1beta2.Kyma) 
 }
 
 func (r *KymaReconciler) handleInitialState(ctx context.Context, kyma *v1beta2.Kyma) error {
-	return r.UpdateStatusWithEvent(ctx, kyma, v1beta2.StateProcessing, "started processing")
+	const msg = "started processing"
+	if err := r.updateStatus(ctx, kyma, v1beta2.StateProcessing, msg); err != nil {
+		return err
+	}
+	r.enqueueNormalEvent(kyma, updateStatus, msg)
+	return nil
 }
 
 func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Kyma) error {
@@ -275,24 +264,59 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 	}
 
 	if err := errGroup.Wait(); err != nil {
-		return r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta2.StateError, err)
+		return r.updateStatusWithError(ctx, kyma, err)
 	}
 
 	state := kyma.DetermineState()
 
 	if state == v1beta2.StateReady {
-		const message = "kyma is ready"
+		const msg = "kyma is ready"
 		if kyma.Status.State != v1beta2.StateReady {
-			logger.Info(message)
+			logger.Info(msg)
 		}
-		return r.UpdateStatus(ctx, kyma, state, message)
+		return r.updateStatus(ctx, kyma, state, msg)
 	}
 
-	if err := r.UpdateStatus(ctx, kyma, state, "waiting for all modules to become ready"); err != nil {
-		return fmt.Errorf("error while updating status for condition change: %w", err)
+	return r.updateStatus(ctx, kyma, state, "waiting for all modules to become ready")
+}
+
+func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
+	logger := ctrlLog.FromContext(ctx).V(log.InfoLevel)
+
+	if r.WatcherEnabled(kyma) {
+		if err := r.SKRWebhookManager.Remove(ctx, kyma); err != nil {
+			// error is expected, try again
+			r.enqueueNormalEvent(kyma, webhookChartRemoval, err.Error())
+			return true, nil
+		}
 	}
 
-	return nil
+	if kyma.SyncEnabled() {
+		if err := remote.NewRemoteCatalogFromKyma(r.RemoteSyncNamespace).Delete(ctx); err != nil {
+			err = fmt.Errorf("could not delete remote module catalog: %w", err)
+			r.enqueueWarningEvent(kyma, deletionError, err)
+			return false, err
+		}
+
+		r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
+		if err := remote.RemoveFinalizerFromRemoteKyma(ctx, kyma, r.RemoteSyncNamespace); client.IgnoreNotFound(err) != nil {
+			err = fmt.Errorf("error while trying to remove finalizer from remote: %w", err)
+			r.enqueueWarningEvent(kyma, deletionError, err)
+			return false, err
+		}
+
+		logger.Info("removed remote finalizer")
+	}
+
+	controllerutil.RemoveFinalizer(kyma, v1beta2.Finalizer)
+
+	if err := r.Update(ctx, kyma); err != nil {
+		err = fmt.Errorf("error while updating kyma during deletion: %w", err)
+		r.enqueueWarningEvent(kyma, deletionError, err)
+		return false, err
+	}
+
+	return false, nil
 }
 
 func (r *KymaReconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma) error {
@@ -317,83 +341,38 @@ func (r *KymaReconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.K
 	return nil
 }
 
-func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
-	logger := ctrlLog.FromContext(ctx).V(log.InfoLevel)
+func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta2.Kyma) error {
+	moduleTemplateList := &v1beta2.ModuleTemplateList{}
+	if err := r.List(ctx, moduleTemplateList, &client.ListOptions{}); err != nil {
+		return fmt.Errorf("could not aggregate module templates for module catalog sync: %w", err)
+	}
 
-	if r.WatcherEnabled(kyma) {
-		if err := r.SKRWebhookManager.Remove(ctx, kyma); err != nil {
-			// here we expect that an error is normal and means we have to try again if it didn't work
-			r.Event(kyma, "Normal", "WebhookChartRemoval", err.Error())
-			return true, nil
+	var modulesToSync []v1beta2.ModuleTemplate
+	for _, mt := range moduleTemplateList.Items {
+		if mt.SyncEnabled(kyma.IsBeta(), kyma.IsInternal()) {
+			modulesToSync = append(modulesToSync, mt)
 		}
 	}
 
-	if kyma.SyncEnabled() {
-		if err := remote.NewRemoteCatalogFromKyma(r.RemoteSyncNamespace).Delete(ctx); err != nil {
-			err := fmt.Errorf("could not delete remote module catalog: %w", err)
-			r.Event(kyma, "Warning", string(DeletionError), err.Error())
-			return false, err
-		}
-
-		r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
-		if err := remote.RemoveFinalizerFromRemoteKyma(ctx, kyma, r.RemoteSyncNamespace); client.IgnoreNotFound(err) != nil {
-			err := fmt.Errorf("error while trying to remove finalizer from remote: %w", err)
-			r.Event(kyma, "Warning", string(DeletionError), err.Error())
-			return false, err
-		}
-
-		logger.Info("removed remote finalizer")
+	if err := remote.NewRemoteCatalogFromKyma(r.RemoteSyncNamespace).CreateOrUpdate(ctx, modulesToSync); err != nil {
+		return fmt.Errorf("could not synchronize remote module catalog: %w", err)
 	}
 
-	controllerutil.RemoveFinalizer(kyma, v1beta2.Finalizer)
-
-	if err := r.Update(ctx, kyma); err != nil {
-		err := fmt.Errorf("error while trying to udpate kyma during deletion: %w", err)
-		r.Event(kyma, "Warning", string(DeletionError), err.Error())
-		return false, err
-	}
-
-	return false, nil
-}
-
-func (r *KymaReconciler) TriggerKymaDeletion(ctx context.Context, kyma *v1beta2.Kyma) error {
-	logger := ctrlLog.FromContext(ctx).V(log.InfoLevel)
-	if kyma.SyncEnabled() {
-		if err := remote.DeleteRemotelySyncedKyma(ctx, kyma, r.RemoteSyncNamespace); client.IgnoreNotFound(err) != nil {
-			logger.Error(err, "Failed to be deleted remotely!")
-			return fmt.Errorf("error occurred while trying to delete remotely synced kyma: %w", err)
-		}
-		logger.Info("Successfully deleted remotely!")
-	}
 	return nil
 }
 
-func (r *KymaReconciler) UpdateStatus(
-	ctx context.Context, kyma *v1beta2.Kyma, state v1beta2.State, message string,
-) error {
+func (r *KymaReconciler) updateStatus(ctx context.Context, kyma *v1beta2.Kyma, state v1beta2.State, message string) error {
 	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, message); err != nil {
 		return fmt.Errorf("error while updating status to %s because of %s: %w", state, message, err)
 	}
 	return nil
 }
 
-func (r *KymaReconciler) UpdateStatusWithEvent(
-	ctx context.Context, kyma *v1beta2.Kyma, state v1beta2.State, message string,
-) error {
-	if err := r.UpdateStatus(ctx, kyma, state, message); err != nil {
-		return err
+func (r *KymaReconciler) updateStatusWithError(ctx context.Context, kyma *v1beta2.Kyma, err error) error {
+	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, v1beta2.StateError, err.Error()); err != nil {
+		return fmt.Errorf("error while updating status to %s: %w", v1beta2.StateError, err)
 	}
-	r.Event(kyma, "Normal", "StatusUpdate", message)
-	return nil
-}
-
-func (r *KymaReconciler) UpdateStatusWithEventFromErr(
-	ctx context.Context, kyma *v1beta2.Kyma, state v1beta2.State, err error,
-) error {
-	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, err.Error()); err != nil {
-		return fmt.Errorf("error while updating status to %s: %w", state, err)
-	}
-	r.Event(kyma, "Warning", string(ModuleReconciliationError), err.Error())
+	r.enqueueWarningEvent(kyma, moduleReconciliationError, err)
 	return nil
 }
 
@@ -401,7 +380,7 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 	templates := channel.GetTemplates(ctx, r, kyma)
 	for _, template := range templates {
 		if template.Err != nil {
-			r.Event(kyma, "Warning", string(ModuleReconciliationError), template.Err.Error())
+			r.enqueueWarningEvent(kyma, moduleReconciliationError, template.Err)
 		}
 	}
 
@@ -468,10 +447,7 @@ func (r *KymaReconciler) RecordKymaStatusMetrics(ctx context.Context, kyma *v1be
 }
 
 func (r *KymaReconciler) WatcherEnabled(kyma *v1beta2.Kyma) bool {
-	if kyma.SyncEnabled() && r.SKRWebhookManager != nil {
-		return true
-	}
-	return false
+	return kyma.SyncEnabled() && r.SKRWebhookManager != nil
 }
 
 func (r *KymaReconciler) IsKymaManaged() bool {

@@ -57,6 +57,11 @@ func TestInitConditions(t *testing.T) {
 			t.Parallel()
 
 			kyma := NewTestKyma("kyma")
+			syncEnabledValue := v1beta2.DisableLabelValue
+			if tcase.args.syncEnabled {
+				syncEnabledValue = v1beta2.EnableLabelValue
+			}
+			kyma.Labels[v1beta2.SyncLabel] = syncEnabledValue
 			kyma.Status.Conditions = append(kyma.Status.Conditions, metav1.Condition{
 				Type:               string(v1beta2.DeprecatedConditionTypeReady),
 				Status:             metav1.ConditionFalse,
@@ -70,7 +75,7 @@ func TestInitConditions(t *testing.T) {
 				Reason:             "Deprecated",
 			})
 
-			status.InitConditions(kyma, tcase.args.syncEnabled, tcase.args.watcherEnabled)
+			status.InitConditions(kyma, tcase.args.watcherEnabled)
 			if !onlyRequiredKymaConditionsPresent(kyma, v1beta2.GetRequiredConditionTypes(
 				tcase.args.syncEnabled, tcase.args.watcherEnabled)) {
 				t.Error("Incorrect Condition Initialization")

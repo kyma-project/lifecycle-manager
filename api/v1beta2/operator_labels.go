@@ -52,7 +52,7 @@ func ModuleTemplatesByLabel(module *Module) client.MatchingLabels {
 	return selector
 }
 
-func (kyma *Kyma) CheckLabelsAndFinalizers() bool {
+func (kyma *Kyma) EnsureLabelsAndFinalizers() bool {
 	if controllerutil.ContainsFinalizer(kyma, "foregroundDeletion") {
 		return false
 	}

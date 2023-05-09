@@ -37,7 +37,6 @@ const (
 	randomStringLength = 8
 	letterBytes        = "abcdefghijklmnopqrstuvwxyz"
 	defaultBufferSize  = 2048
-	httpClientTimeout  = 2 * time.Second
 	Timeout            = time.Second * 10
 	Interval           = time.Millisecond * 250
 )
