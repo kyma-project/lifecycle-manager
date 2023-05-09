@@ -132,7 +132,8 @@ func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 
 	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster when we apply it and retry
 	if containsMetaIsNoMatchErr(errs) || len(errs) == 0 {
-		if _, _, err := CreateOrUpdateCRD(ctx, v1beta2.KymaKind.Plural(), kyma, syncContext.RuntimeClient, syncContext.ControlPlaneClient); err != nil {
+		if _, _, err := CreateOrUpdateCRD(
+			ctx, v1beta2.KymaKind.Plural(), kyma, syncContext.RuntimeClient, syncContext.ControlPlaneClient); err != nil {
 			return err
 		}
 	}

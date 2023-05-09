@@ -130,7 +130,10 @@ func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Con
 }
 
 func (c *KymaSynchronizationContext) UpdateKymaAnnotations(
-	ctx context.Context, kyma *v1beta2.Kyma, kcpCRD *v1extensions.CustomResourceDefinition, skrCRD *v1extensions.CustomResourceDefinition) error {
+	ctx context.Context,
+	kyma *v1beta2.Kyma,
+	kcpCRD *v1extensions.CustomResourceDefinition,
+	skrCRD *v1extensions.CustomResourceDefinition) error {
 	if kyma.Annotations == nil {
 		kyma.Annotations = make(map[string]string)
 	}
@@ -231,12 +234,12 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 			recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
 		}
 		var kcpCrd, skrCrd *v1extensions.CustomResourceDefinition
-		if kcpCrd, skrCrd, err = CreateOrUpdateCRD(ctx, v1beta2.KymaKind.Plural(), kyma, c.RuntimeClient, c.ControlPlaneClient); err != nil {
+		if kcpCrd, skrCrd, err = CreateOrUpdateCRD(
+			ctx, v1beta2.KymaKind.Plural(), kyma, c.RuntimeClient, c.ControlPlaneClient); err != nil {
 			return nil, err
 		}
 		if err = c.UpdateKymaAnnotations(ctx, kyma, kcpCrd, skrCrd); err != nil {
 			recorder.Event(kyma, "Warning", err.Error(), "Couldn't update Kyma CR with CRD generations.")
-			err = nil
 		}
 
 		recorder.Event(kyma, "Normal", "CRDInstallation", "CRDs were installed to SKR")
