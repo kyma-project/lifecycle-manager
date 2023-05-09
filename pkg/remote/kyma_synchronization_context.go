@@ -223,10 +223,11 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 
 	err := c.RuntimeClient.Get(ctx, client.ObjectKeyFromObject(remoteKyma), remoteKyma)
 
+	if meta.IsNoMatchError(err) {
+		recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
+	}
+
 	if meta.IsNoMatchError(err) || err == nil {
-		if meta.IsNoMatchError(err) {
-			recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
-		}
 		var kcpCrd, skrCrd *v1extensions.CustomResourceDefinition
 		if kcpCrd, skrCrd, err = CreateOrUpdateCRD(
 			ctx, v1beta2.KymaKind.Plural(), kyma, c.RuntimeClient, c.ControlPlaneClient); err != nil {
