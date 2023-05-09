@@ -33,7 +33,6 @@ func DefaultOptions() *Options {
 		WithFinalizer(FinalizerDefault),
 		WithFieldOwner(FieldOwnerDefault),
 		WithPostRenderTransform(
-			managedByDeclarativeV2,
 			watchedByOwnedBy,
 			kymaComponentTransform,
 			disclaimerTransform,
