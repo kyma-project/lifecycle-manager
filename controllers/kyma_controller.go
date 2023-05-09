@@ -49,13 +49,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type EventErrorType string
+type EventReason string
 
 const (
-	ModuleReconciliationError  EventErrorType = "ModuleReconciliationError"
-	SyncContextError           EventErrorType = "SyncContextError"
-	DeletionError              EventErrorType = "DeletionError"
-	DefaultRemoteSyncNamespace string         = "kyma-system"
+	moduleReconciliationError  EventReason = "ModuleReconciliationError"
+	syncContextError           EventReason = "SyncContextError"
+	deletionError              EventReason = "DeletionError"
+	DefaultRemoteSyncNamespace string      = "kyma-system"
+)
+
+var (
+	errInitSyncCtxFailed = errors.New("initializing sync context failed")
 )
 
 type RequeueIntervals struct {
@@ -97,37 +101,49 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	logger.V(log.InfoLevel).Info("reconciling")
 
 	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
-	// check if kyma resource exists
+
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
-		// we'll ignore not-found errors, since they can't be fixed by an immediate
-		// requeue (we'll need to wait for a new notification), and we can get them
-		// on deleted requests.
 		if apierrors.IsNotFound(err) {
 			logger.Info(fmt.Sprintf("can not found Kyma %s, assume deleted successfully", req.NamespacedName))
 		}
-
-		return ctrl.Result{}, client.IgnoreNotFound(err) //nolint:wrapcheck
+		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	status.InitConditions(kyma, kyma.SyncEnabled(), r.WatcherEnabled(kyma))
+	status.InitConditions(kyma, r.WatcherEnabled(kyma))
 
 	if kyma.SkipReconciliation() {
 		logger.V(log.DebugLevel).Info("kyma gets skipped because of label")
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
 	}
 
+	return r.reconcile(ctx, kyma)
+}
+
+func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (result ctrl.Result, err error) {
+	defer func() {
+		if err == nil {
+			result = ctrl.Result{}
+			return
+		}
+
+		if errors.Is(errInitSyncCtxFailed, err) {
+			r.enqueueWarningEvent(kyma, syncContextError, err)
+			err = r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta2.StateError, err)
+			result = ctrl.Result{Requeue: true}
+			return
+		}
+
+	}()
+
 	if kyma.SyncEnabled() {
-		var err error
-		if ctx, err = remote.InitializeSyncContext(ctx, kyma, r.RemoteSyncNamespace,
-			remote.NewClientWithConfig(r.Client, r.KcpRestConfig), r.RemoteClientCache); err != nil {
-			err := fmt.Errorf("initializing sync context failed: %w", err)
-			r.Event(kyma, "Warning", string(SyncContextError), err.Error())
-			return r.CtrlErr(ctx, kyma, err)
+		remoteClient := remote.NewClientWithConfig(r.Client, r.KcpRestConfig)
+		_, syncErr := remote.InitializeSyncContext(ctx, kyma, r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache)
+		if syncErr != nil {
+			return result, reconciliationErr(errInitSyncCtxFailed, syncErr)
 		}
 	}
 
-	// check if deletionTimestamp is set, retry until it gets fully deleted
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != v1beta2.StateDeleting {
 		return r.deleteKyma(ctx, kyma)
 	}
@@ -149,6 +165,14 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	// state handling
 	return r.stateHandling(ctx, kyma)
+}
+
+func reconciliationErr(wrapper error, orig error) error {
+	return fmt.Errorf("%w: %w", wrapper, orig)
+}
+
+func (r *KymaReconciler) enqueueWarningEvent(kyma *v1beta2.Kyma, reason EventReason, err error) {
+	r.Event(kyma, "Warning", string(reason), err.Error())
 }
 
 func (r *KymaReconciler) deleteKyma(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
@@ -333,14 +357,14 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 	if kyma.SyncEnabled() {
 		if err := remote.NewRemoteCatalogFromKyma(r.RemoteSyncNamespace).Delete(ctx); err != nil {
 			err := fmt.Errorf("could not delete remote module catalog: %w", err)
-			r.Event(kyma, "Warning", string(DeletionError), err.Error())
+			r.Event(kyma, "Warning", string(deletionError), err.Error())
 			return false, err
 		}
 
 		r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
 		if err := remote.RemoveFinalizerFromRemoteKyma(ctx, kyma, r.RemoteSyncNamespace); client.IgnoreNotFound(err) != nil {
 			err := fmt.Errorf("error while trying to remove finalizer from remote: %w", err)
-			r.Event(kyma, "Warning", string(DeletionError), err.Error())
+			r.Event(kyma, "Warning", string(deletionError), err.Error())
 			return false, err
 		}
 
@@ -351,7 +375,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 
 	if err := r.Update(ctx, kyma); err != nil {
 		err := fmt.Errorf("error while trying to udpate kyma during deletion: %w", err)
-		r.Event(kyma, "Warning", string(DeletionError), err.Error())
+		r.Event(kyma, "Warning", string(deletionError), err.Error())
 		return false, err
 	}
 
@@ -395,7 +419,7 @@ func (r *KymaReconciler) UpdateStatusWithEventFromErr(
 	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, err.Error()); err != nil {
 		return fmt.Errorf("error while updating status to %s: %w", state, err)
 	}
-	r.Event(kyma, "Warning", string(ModuleReconciliationError), err.Error())
+	r.Event(kyma, "Warning", string(moduleReconciliationError), err.Error())
 	return nil
 }
 
@@ -403,7 +427,7 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 	templates := channel.GetTemplates(ctx, r, kyma)
 	for _, template := range templates {
 		if template.Err != nil {
-			r.Event(kyma, "Warning", string(ModuleReconciliationError), template.Err.Error())
+			r.Event(kyma, "Warning", string(moduleReconciliationError), template.Err.Error())
 		}
 	}
 
