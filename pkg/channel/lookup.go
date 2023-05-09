@@ -31,7 +31,7 @@ type ModuleTemplateTO struct {
 	DesiredChannel string
 }
 
-type ModuleTemplatesByModuleName map[string]ModuleTemplateTO
+type ModuleTemplatesByModuleName map[string]*ModuleTemplateTO
 
 func GetTemplates(
 	ctx context.Context, kymaClient client.Reader, kyma *v1beta2.Kyma,
@@ -56,7 +56,7 @@ func GetTemplates(
 				ErrInvalidRemoteModuleConfiguration)
 		}
 
-		templates[module.Name] = template
+		templates[module.Name] = &template
 	}
 
 	DetermineTemplatesVisibility(kyma, templates)
@@ -87,12 +87,19 @@ func CheckForOutdatedTemplates(logger logr.Logger, kyma *v1beta2.Kyma, templates
 	// that all desired templates are still referenced in the latest spec generation
 	for moduleName, moduleTemplate := range templates {
 		moduleTemplate := moduleTemplate
+		found := false
 		for i := range kyma.Status.Modules {
 			moduleStatus := &kyma.Status.Modules[i]
 			if moduleMatch(moduleStatus, moduleName) && moduleTemplate.ModuleTemplate != nil {
-				CheckForOutdatedTemplate(logger, &moduleTemplate, moduleStatus)
+				found = true
+				CheckForOutdatedTemplate(logger, moduleTemplate, moduleStatus)
 			}
 		}
+		if !found {
+			// if not found in Status.Modules, means module is not deployed yet.
+			moduleTemplate.Outdated = true
+		}
+		templates[moduleName] = moduleTemplate
 	}
 }
 
@@ -165,7 +172,7 @@ func CheckForOutdatedTemplate(
 		// of module versions here (fast: v2.0.0 get downgraded to regular: v1.0.0). In this
 		// case we want to suspend updating the module until we reach v2.0.0 in regular, since downgrades
 		// are not supported. To circumvent this, a module can be uninstalled and then reinstalled in the old channel.
-		if versionInStatus.GreaterThan(versionInTemplate) {
+		if !v1beta2.IsValidVersionChange(versionInTemplate, versionInStatus) {
 			checkLog.Info("ignore channel skew, as a higher version of the module was previously installed")
 			return
 		}

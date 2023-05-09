@@ -56,6 +56,10 @@ func (r *RunnerImpl) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 				results <- nil
 				return
 			}
+			if !module.Template.Outdated {
+				results <- nil
+				return
+			}
 			if err := r.updateManifests(ctx, kyma, module); err != nil {
 				results <- fmt.Errorf("could not update module %s: %w", module.GetName(), err)
 				return

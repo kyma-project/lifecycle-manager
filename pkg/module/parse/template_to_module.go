@@ -62,7 +62,7 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 		if template.Err != nil && !errors.Is(template.Err, channel.ErrTemplateNotAllowed) {
 			modules = append(modules, &common.Module{
 				ModuleName: module.Name,
-				Template:   &template,
+				Template:   template,
 			})
 			continue
 		}
@@ -71,14 +71,14 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 			template.Err = err
 			modules = append(modules, &common.Module{
 				ModuleName: module.Name,
-				Template:   &template,
+				Template:   template,
 			})
 			continue
 		}
 		fqdn := descriptor.GetName()
 		version := descriptor.GetVersion()
 		name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
-		overwriteNameAndNamespace(&template, name, p.remoteSyncNamespace)
+		overwriteNameAndNamespace(template, name, p.remoteSyncNamespace)
 		var obj client.Object
 		if obj, err = p.newManifestFromTemplate(ctx, module,
 			template.ModuleTemplate,
@@ -86,7 +86,7 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 			template.Err = err
 			modules = append(modules, &common.Module{
 				ModuleName: module.Name,
-				Template:   &template,
+				Template:   template,
 			})
 			continue
 		}
@@ -98,7 +98,7 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 			ModuleName: module.Name,
 			FQDN:       fqdn,
 			Version:    version,
-			Template:   &template,
+			Template:   template,
 			Object:     obj,
 		})
 	}

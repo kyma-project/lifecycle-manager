@@ -13,37 +13,37 @@ func Test_ValidateVersion(t *testing.T) {
 		name       string
 		newVersion string
 		oldVersion string
-		wantErr    bool
+		isValid    bool
 	}{
 		{
 			name:       "valid version update due to version increment",
 			newVersion: "v1.0.1",
 			oldVersion: "v1.0.0",
-			wantErr:    false,
+			isValid:    true,
 		},
 		{
 			name:       "valid version update due to same version with different Prerelease",
 			newVersion: "v1.0.0-RC2",
 			oldVersion: "v1.0.0-RC1",
-			wantErr:    false,
+			isValid:    true,
 		},
 		{
 			name:       "valid version update due to same version with different Prerelease",
 			newVersion: "v1.0.0-RC2",
 			oldVersion: "v1.0.0-RC1",
-			wantErr:    false,
+			isValid:    true,
 		},
 		{
 			name:       "invalid version update due to version decrease",
 			newVersion: "v1.0.0",
 			oldVersion: "v1.0.1",
-			wantErr:    true,
+			isValid:    false,
 		},
 		{
 			name:       "invalid version update due to version decrease with Prerelease",
 			newVersion: "v1.0.0-RC1",
 			oldVersion: "v1.0.1-RC1",
-			wantErr:    true,
+			isValid:    false,
 		},
 	}
 	for _, testCase := range tests {
@@ -52,9 +52,8 @@ func Test_ValidateVersion(t *testing.T) {
 			t.Parallel()
 			newVersion, _ := semver.NewVersion(testCase.newVersion)
 			oldVersion, _ := semver.NewVersion(testCase.oldVersion)
-			err := validateVersionUpgrade(newVersion, oldVersion, "test_template")
-			if (err != nil) != testCase.wantErr {
-				t.Errorf("validateVersionUpgrade() error = %v, wantErr %v", err, testCase.wantErr)
+			if got := IsValidVersionChange(newVersion, oldVersion); got != testCase.isValid {
+				t.Errorf("IsValidVersionChange() = %v, isValid %v", got, testCase.isValid)
 			}
 		})
 	}
