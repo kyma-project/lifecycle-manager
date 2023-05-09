@@ -4,7 +4,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	ctrlMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
-	kymaTypes "github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 const (
@@ -32,8 +32,8 @@ func Initialize() {
 }
 
 // SetKymaStateGauge adjusts the metric that tracks the current "Status.state" of the Kyma object.
-func SetKymaStateGauge(currentState kymaTypes.State, kymaName, shoot, instanceID string) {
-	states := kymaTypes.AllKymaStates()
+func SetKymaStateGauge(currentState v1beta2.State, kymaName, shoot, instanceID string) {
+	states := v1beta2.AllKymaStates()
 	for _, state := range states {
 		mtr := kymaStateGauge.With(
 			prometheus.Labels{
@@ -51,8 +51,8 @@ func SetKymaStateGauge(currentState kymaTypes.State, kymaName, shoot, instanceID
 }
 
 // SetModuleStateGauge adjusts the metric that tracks the current "Status.state" of the Kyma object's modules.
-func SetModuleStateGauge(currentState kymaTypes.State, moduleName, kymaName, shoot, instanceID string) {
-	states := kymaTypes.AllKymaStates()
+func SetModuleStateGauge(currentState v1beta2.State, moduleName, kymaName, shoot, instanceID string) {
+	states := v1beta2.AllKymaStates()
 	for _, state := range states {
 		mtr := moduleStateGauge.With(
 			prometheus.Labels{

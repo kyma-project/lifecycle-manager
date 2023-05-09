@@ -3,7 +3,7 @@ package v1beta1_test
 import (
 	"os"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -43,8 +43,8 @@ var _ = Describe(
 func createOCIImageSpecWithCredSelect(
 	name, repo, digest string,
 	credSecretSelector metav1.LabelSelector,
-) v1beta1.ImageSpec {
-	imageSpec := v1beta1.ImageSpec{
+) v1beta2.ImageSpec {
+	imageSpec := v1beta2.ImageSpec{
 		Name:               name,
 		Repo:               repo,
 		Type:               "oci-ref",

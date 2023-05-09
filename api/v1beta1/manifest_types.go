@@ -17,54 +17,15 @@ limitations under the License.
 package v1beta1
 
 import (
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
-
-const ManifestKind = "Manifest"
-
-// InstallInfo defines installation information.
-type InstallInfo struct {
-	// Source can be described as ImageSpec
-	//+kubebuilder:pruning:PreserveUnknownFields
-	Source runtime.RawExtension `json:"source"`
-
-	// Name specifies a unique install name for Manifest
-	Name string `json:"name"`
-}
-
-func (i InstallInfo) Raw() []byte {
-	return i.Source.Raw
-}
-
-// ManifestSpec defines the desired state of Manifest.
-type ManifestSpec struct {
-	// Remote indicates if Manifest should be installed on a remote cluster
-	Remote bool `json:"remote"`
-
-	// Config specifies OCI image configuration for Manifest
-	Config ImageSpec `json:"config,omitempty"`
-
-	// Install specifies a list of installations for Manifest
-	Install InstallInfo `json:"install"`
-
-	//+kubebuilder:pruning:PreserveUnknownFields
-	//+kubebuilder:validation:XEmbeddedResource
-	//+nullable
-	// Resource specifies a resource to be watched for state updates
-	Resource *unstructured.Unstructured `json:"resource,omitempty"`
-}
-
-// ManifestStatus defines the observed state of Manifest.
-type ManifestStatus declarative.Status
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+//+kubebuilder:deprecatedversion:warning="kyma-project.io/v1beta1 Manifest is deprecated. Use v1beta2 instead."
 //+kubebuilder:storageversion
 
 // Manifest is the Schema for the manifests API.
@@ -72,16 +33,8 @@ type Manifest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ManifestSpec   `json:"spec,omitempty"`
-	Status ManifestStatus `json:"status,omitempty"`
-}
-
-func (m *Manifest) GetStatus() declarative.Status {
-	return declarative.Status(m.Status)
-}
-
-func (m *Manifest) SetStatus(status declarative.Status) {
-	m.Status = ManifestStatus(status)
+	Spec   v1beta2.ManifestSpec   `json:"spec,omitempty"`
+	Status v1beta2.ManifestStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true

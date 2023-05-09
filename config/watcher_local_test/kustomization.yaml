@@ -37,7 +37,7 @@ patches:
       value: kcp-system
   target:
     group: operator.kyma-project.io
-    version: v1beta1
+    version: v1beta2
     kind: Watcher
     name: kyma-watcher
 - patch: |-
@@ -46,7 +46,7 @@ patches:
       value: kcp-system
   target:
     group: operator.kyma-project.io
-    version: v1beta1
+    version: v1beta2
     kind: Watcher
     name: manifest-watcher
 - patch: |-

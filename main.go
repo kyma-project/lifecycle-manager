@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
 	"net/http"
 	"net/http/pprof"
@@ -49,9 +50,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	operatorv1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	//+kubebuilder:scaffold:imports
 	"github.com/kyma-project/lifecycle-manager/api"
-	operatorv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -88,6 +89,7 @@ func init() {
 	utilruntime.Must(v1extensions.AddToScheme(scheme))
 	utilruntime.Must(certManagerV1.AddToScheme(scheme))
 
+	utilruntime.Must(operatorv1beta2.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -176,22 +178,22 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 }
 
 func enableWebhooks(mgr manager.Manager) {
-	if err := (&operatorv1beta1.ModuleTemplate{}).
+	if err := (&operatorv1beta2.ModuleTemplate{}).
 		SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
 		os.Exit(1)
 	}
 
-	if err := (&operatorv1beta1.Kyma{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&operatorv1beta2.Kyma{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Kyma")
 		os.Exit(1)
 	}
-	if err := (&operatorv1beta1.Watcher{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&operatorv1beta2.Watcher{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Watcher")
 		os.Exit(1)
 	}
 
-	if err := (&operatorv1beta1.Manifest{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&operatorv1beta2.Manifest{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Manifest")
 		os.Exit(1)
 	}
@@ -232,8 +234,7 @@ func NewClient(
 func setupKymaReconciler(mgr ctrl.Manager,
 	remoteClientCache *remote.ClientCache,
 	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
-	flagVar *FlagVar,
-	options controller.Options,
+	flagVar *FlagVar, options controller.Options,
 ) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentKymaReconciles
 
@@ -251,6 +252,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 			WatcherLocalTestingEnabled: flagVar.enableWatcherLocalTesting,
 			GatewayHTTPPortMapping:     flagVar.listenerHTTPPortLocalMapping,
 			IstioNamespace:             flagVar.istioNamespace,
+			RemoteSyncNamespace:        flagVar.remoteSyncNamespace,
 		}
 		skrWebhookManager, err = watcher.NewSKRWebhookManifestManager(kcpRestConfig, skrWebhookConfig)
 		if err != nil {
@@ -260,7 +262,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 
 	if err := (&controllers.KymaReconciler{
 		Client:                   mgr.GetClient(),
-		EventRecorder:            mgr.GetEventRecorderFor(operatorv1beta1.OperatorName),
+		EventRecorder:            mgr.GetEventRecorderFor(operatorv1beta2.OperatorName),
 		KcpRestConfig:            kcpRestConfig,
 		RemoteClientCache:        remoteClientCache,
 		ComponentDescriptorCache: componentDescriptorCache,
@@ -272,7 +274,8 @@ func setupKymaReconciler(mgr ctrl.Manager,
 			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
 			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
 		},
-		IsManagedKyma: flagVar.isKymaManaged,
+		InKCPMode:           flagVar.inKCPMode,
+		RemoteSyncNamespace: flagVar.remoteSyncNamespace,
 	}).SetupWithManager(
 		mgr, options, controllers.SetupUpSetting{
 			ListenerAddr:                 flagVar.kymaListenerAddr,
@@ -284,7 +287,38 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		os.Exit(1)
 	}
 
+	if flagVar.enablePurgeFinalizer {
+		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options, kcpRestConfig)
+	}
+
 	metrics.Initialize()
+}
+
+func setupPurgeReconciler(
+	mgr ctrl.Manager,
+	remoteClientCache *remote.ClientCache,
+	flagVar *FlagVar,
+	options controller.Options,
+	restConfig *rest.Config,
+) {
+	resolveRemoteClientFunc := func(ctx context.Context, key client.ObjectKey) (client.Client, error) {
+		kcpClient := remote.NewClientWithConfig(mgr.GetClient(), restConfig)
+		return remote.NewClientLookup(kcpClient, remoteClientCache, operatorv1beta2.SyncStrategyLocalSecret).Lookup(ctx, key)
+	}
+
+	if err := (&controllers.PurgeReconciler{
+		Client:                mgr.GetClient(),
+		EventRecorder:         mgr.GetEventRecorderFor(operatorv1beta2.OperatorName),
+		ResolveRemoteClient:   resolveRemoteClientFunc,
+		PurgeFinalizerTimeout: flagVar.purgeFinalizerTimeout,
+		SkipCRDs:              controllers.CRDMatcherFor(flagVar.skipPurgingFor),
+		IsManagedKyma:         flagVar.inKCPMode,
+	}).SetupWithManager(
+		mgr, options,
+	); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "PurgeReconciler")
+		os.Exit(1)
+	}
 }
 
 func setupManifestReconciler(

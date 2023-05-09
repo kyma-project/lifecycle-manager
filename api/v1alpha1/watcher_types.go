@@ -17,14 +17,14 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 //+kubebuilder:object:root=true
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:deprecatedversion:warning="kyma-project.io/v1alpha1 Watcher is deprecated. Use v1beta1 instead."
+//+kubebuilder:unservedversion
 
 // Watcher is the Schema for the watchers API.
 type Watcher struct {
@@ -34,9 +34,9 @@ type Watcher struct {
 	metav1.ObjectMeta `json:"metadata"`
 
 	// +kubebuilder:validation:Optional
-	Spec v1beta1.WatcherSpec `json:"spec"`
+	Spec v1beta2.WatcherSpec `json:"spec"`
 
-	Status v1beta1.WatcherStatus `json:"status,omitempty"`
+	Status v1beta2.WatcherStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true

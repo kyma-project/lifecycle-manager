@@ -9,12 +9,12 @@ import (
 	"testing"
 
 	"github.com/go-logr/zapr"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
 )
@@ -111,7 +111,7 @@ var _ = Describe("Verify Request using SAN", Ordered, func() {
 
 	tests := []struct {
 		name    string
-		kyma    *v1beta1.Kyma
+		kyma    *v1beta2.Kyma
 		args    args
 		wantErr bool
 	}{

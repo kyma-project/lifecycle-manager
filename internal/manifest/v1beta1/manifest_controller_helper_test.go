@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/google/go-containerregistry/pkg/v1/partial"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -20,7 +21,8 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/types"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -78,8 +80,8 @@ func PushToRemoteOCIRegistry(layerName string) {
 	Expect(gotHash).To(Equal(digest))
 }
 
-func createOCIImageSpec(name, repo string) v1beta1.ImageSpec {
-	imageSpec := v1beta1.ImageSpec{
+func createOCIImageSpec(name, repo string) v1beta2.ImageSpec {
+	imageSpec := v1beta2.ImageSpec{
 		Name: name,
 		Repo: repo,
 		Type: "oci-ref",
@@ -91,13 +93,13 @@ func createOCIImageSpec(name, repo string) v1beta1.ImageSpec {
 	return imageSpec
 }
 
-func NewTestManifest(prefix string) *v1beta1.Manifest {
-	return &v1beta1.Manifest{
+func NewTestManifest(prefix string) *v1beta2.Manifest {
+	return &v1beta2.Manifest{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%d", prefix, rand.Intn(999999)),
 			Namespace: metav1.NamespaceDefault,
 			Labels: map[string]string{
-				v1beta1.KymaName: string(uuid.NewUUID()),
+				v1beta2.KymaName: string(uuid.NewUUID()),
 			},
 		},
 	}
@@ -108,41 +110,30 @@ func withInvalidInstallImageSpec(remote bool) func(manifest *v1beta1.Manifest) e
 		invalidImageSpec := createOCIImageSpec("invalid-image-spec", "domain.invalid")
 		imageSpecByte, err := json.Marshal(invalidImageSpec)
 		Expect(err).ToNot(HaveOccurred())
-		return installManifest(manifest, imageSpecByte, remote)
+		return installManifest(manifest, imageSpecByte, enableResource)
 	}
 }
 
-func withValidInstallImageSpec(name string, remote bool) func(manifest *v1beta1.Manifest) error {
-	return func(manifest *v1beta1.Manifest) error {
+func withValidInstallImageSpec(name string, enableResource bool) func(manifest *v1beta2.Manifest) error {
+	return func(manifest *v1beta2.Manifest) error {
 		validImageSpec := createOCIImageSpec(name, server.Listener.Addr().String())
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
-		return installManifest(manifest, imageSpecByte, remote)
+		return installManifest(manifest, imageSpecByte, enableResource)
 	}
 }
 
-func withValidInstall(installName string, remote bool) func(manifest *v1beta1.Manifest) error {
-	return func(manifest *v1beta1.Manifest) error {
-		validInstallImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String())
-		installSpecByte, err := json.Marshal(validInstallImageSpec)
-		Expect(err).ToNot(HaveOccurred())
-
-		return installManifest(manifest, installSpecByte, remote)
-	}
-}
-
-func installManifest(manifest *v1beta1.Manifest, installSpecByte []byte, remote bool) error {
+func installManifest(manifest *v1beta2.Manifest, installSpecByte []byte, enableResource bool) error {
 	if installSpecByte != nil {
-		manifest.Spec.Install = v1beta1.InstallInfo{
+		manifest.Spec.Install = v1beta2.InstallInfo{
 			Source: runtime.RawExtension{
 				Raw: installSpecByte,
 			},
 			Name: manifestInstallName,
 		}
 	}
-	// manifest.Spec.CRDs = crdSpec
-	if remote {
-		manifest.Spec.Remote = true
+	if enableResource {
+		// related CRD definition is in pkg/test_samples/oci/rendered.yaml
 		manifest.Spec.Resource = &unstructured.Unstructured{
 			Object: map[string]interface{}{
 				"apiVersion": "operator.kyma-project.io/v1alpha1",
@@ -185,12 +176,12 @@ func getManifestStatus(manifestName string) (v2.Status, error) {
 	return v2.Status(manifest.Status), nil
 }
 
-func deleteManifestAndVerify(manifest *v1beta1.Manifest) func() error {
+func deleteManifestAndVerify(manifest *v1beta2.Manifest) func() error {
 	return func() error {
 		if err := k8sClient.Delete(ctx, manifest); err != nil && !errors.IsNotFound(err) {
 			return err
 		}
-		newManifest := v1beta1.Manifest{}
+		newManifest := v1beta2.Manifest{}
 		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(manifest), &newManifest)
 		return client.IgnoreNotFound(err)
 	}

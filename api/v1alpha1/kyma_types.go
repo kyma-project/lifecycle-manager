@@ -17,6 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
@@ -28,6 +29,7 @@ import (
 //+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 //+kubebuilder:deprecatedversion:warning="kyma-project.io/v1alpha1 Kyma is deprecated. Use v1beta1 instead."
+//+kubebuilder:unservedversion
 
 // Kyma is the Schema for the kymas API.
 type Kyma struct {
@@ -35,7 +37,7 @@ type Kyma struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   v1beta1.KymaSpec   `json:"spec,omitempty"`
-	Status v1beta1.KymaStatus `json:"status,omitempty"`
+	Status v1beta2.KymaStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true

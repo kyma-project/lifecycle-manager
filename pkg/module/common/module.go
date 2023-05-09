@@ -6,20 +6,19 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"k8s.io/apimachinery/pkg/util/validation"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 type (
 	Modules []*Module
 	Module  struct {
-		ModuleName       string
-		FQDN             string
-		Version          string
-		Template         *v1beta1.ModuleTemplate
-		TemplateOutdated bool
+		ModuleName string
+		FQDN       string
+		Version    string
+		Template   *channel.ModuleTemplateTO
 		client.Object
 	}
 )
@@ -34,21 +33,21 @@ func (m *Module) Logger(base logr.Logger) logr.Logger {
 }
 
 func (m *Module) ApplyLabelsAndAnnotations(
-	kyma *v1beta1.Kyma,
+	kyma *v1beta2.Kyma,
 ) {
 	lbls := m.GetLabels()
 	if lbls == nil {
 		lbls = make(map[string]string)
 	}
-	lbls[v1beta1.KymaName] = kyma.Name
+	lbls[v1beta2.KymaName] = kyma.Name
 
 	templateLabels := m.Template.GetLabels()
 	if templateLabels != nil {
-		lbls[v1beta1.ControllerName] = m.Template.GetLabels()[v1beta1.ControllerName]
+		lbls[v1beta2.ControllerName] = m.Template.GetLabels()[v1beta2.ControllerName]
 	}
-	lbls[v1beta1.ChannelLabel] = m.Template.Spec.Channel
+	lbls[v1beta2.ChannelLabel] = m.Template.Spec.Channel
 
-	lbls[v1beta1.ManagedBy] = v1beta1.OperatorName
+	lbls[v1beta2.ManagedBy] = v1beta2.OperatorName
 
 	m.SetLabels(lbls)
 
@@ -56,15 +55,8 @@ func (m *Module) ApplyLabelsAndAnnotations(
 	if anns == nil {
 		anns = make(map[string]string)
 	}
-	anns[v1beta1.FQDN] = m.FQDN
+	anns[v1beta2.FQDN] = m.FQDN
 	m.SetAnnotations(anns)
-}
-
-func (m *Module) StateMismatchedWithModuleStatus(moduleStatus *v1beta1.ModuleStatus) bool {
-	templateStatusMismatch := m.TemplateOutdated &&
-		(moduleStatus.Template.Generation != m.Template.GetGeneration() ||
-			moduleStatus.Channel != m.Template.Spec.Channel)
-	return templateStatusMismatch || moduleStatus.Manifest.GetGeneration() != m.GetGeneration()
 }
 
 func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {
