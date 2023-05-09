@@ -49,24 +49,19 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type EventReason string
+type EventErrorType string
 
 const (
-	moduleReconciliationError  EventReason = "ModuleReconciliationError"
-	syncContextError           EventReason = "SyncContextError"
-	deletionError              EventReason = "DeletionError"
-	DefaultRemoteSyncNamespace string      = "kyma-system"
-)
-
-var (
-	errInitSyncCtxFailed = errors.New("initializing sync context failed")
+	ModuleReconciliationError  EventErrorType = "ModuleReconciliationError"
+	SyncContextError           EventErrorType = "SyncContextError"
+	DeletionError              EventErrorType = "DeletionError"
+	DefaultRemoteSyncNamespace string         = "kyma-system"
 )
 
 type RequeueIntervals struct {
 	Success time.Duration
 }
 
-// KymaReconciler reconciles a Kyma object.
 type KymaReconciler struct {
 	client.Client
 	record.EventRecorder
@@ -94,8 +89,6 @@ type KymaReconciler struct {
 //+kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch
 //+kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;create;update;delete;patch
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
 func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := ctrlLog.FromContext(ctx)
 	logger.V(log.InfoLevel).Info("reconciling")
@@ -105,8 +98,11 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
 		if apierrors.IsNotFound(err) {
-			logger.Info(fmt.Sprintf("can not found Kyma %s, assume deleted successfully", req.NamespacedName))
+			// TODO: revisit after runtime-controller gets upgraded
+			// Related issue: https://github.com/kyma-project/lifecycle-manager/issues/579
+			logger.V(log.DebugLevel).Info(fmt.Sprintf("unable to find Kyma %s, probably due to deletion", req.NamespacedName))
 		}
+
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
@@ -120,27 +116,14 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return r.reconcile(ctx, kyma)
 }
 
-func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (result ctrl.Result, err error) {
-	defer func() {
-		if err == nil {
-			result = ctrl.Result{}
-			return
-		}
-
-		if errors.Is(errInitSyncCtxFailed, err) {
-			r.enqueueWarningEvent(kyma, syncContextError, err)
-			err = r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta2.StateError, err)
-			result = ctrl.Result{Requeue: true}
-			return
-		}
-
-	}()
-
+func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if kyma.SyncEnabled() {
-		remoteClient := remote.NewClientWithConfig(r.Client, r.KcpRestConfig)
-		_, syncErr := remote.InitializeSyncContext(ctx, kyma, r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache)
-		if syncErr != nil {
-			return result, reconciliationErr(errInitSyncCtxFailed, syncErr)
+		var err error
+		if ctx, err = remote.InitializeSyncContext(ctx, kyma, r.RemoteSyncNamespace,
+			remote.NewClientWithConfig(r.Client, r.KcpRestConfig), r.RemoteClientCache); err != nil {
+			err := fmt.Errorf("initializing sync context failed: %w", err)
+			r.Event(kyma, "Warning", string(SyncContextError), err.Error())
+			return r.requeueWithError(ctx, kyma, err)
 		}
 	}
 
@@ -151,7 +134,7 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (res
 	// check finalizer
 	if kyma.CheckLabelsAndFinalizers() {
 		if err := r.Update(ctx, kyma); err != nil {
-			return r.CtrlErr(ctx, kyma, fmt.Errorf("could not update kyma after finalizer check: %w", err))
+			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma after finalizer check: %w", err))
 		}
 		return ctrl.Result{}, nil
 	}
@@ -159,7 +142,7 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (res
 	// update the remote kyma with the state of the control plane
 	if kyma.SyncEnabled() {
 		if err := r.syncRemoteKymaSpecAndStatus(ctx, kyma); err != nil {
-			return r.CtrlErr(ctx, kyma, fmt.Errorf("could not synchronize remote kyma: %w", err))
+			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not synchronize remote kyma: %w", err))
 		}
 	}
 
@@ -167,17 +150,13 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (res
 	return r.stateHandling(ctx, kyma)
 }
 
-func reconciliationErr(wrapper error, orig error) error {
-	return fmt.Errorf("%w: %w", wrapper, orig)
-}
-
-func (r *KymaReconciler) enqueueWarningEvent(kyma *v1beta2.Kyma, reason EventReason, err error) {
-	r.Event(kyma, "Warning", string(reason), err.Error())
+func (r *KymaReconciler) requeueWithError(ctx context.Context, kyma *v1beta2.Kyma, err error) (ctrl.Result, error) {
+	return ctrl.Result{Requeue: true}, r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta2.StateError, err)
 }
 
 func (r *KymaReconciler) deleteKyma(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if err := r.TriggerKymaDeletion(ctx, kyma); err != nil {
-		return r.CtrlErr(ctx, kyma, err)
+		return r.requeueWithError(ctx, kyma, err)
 	}
 
 	// if the status is not yet set to deleting, also update the status of the control-plane
@@ -185,15 +164,10 @@ func (r *KymaReconciler) deleteKyma(ctx context.Context, kyma *v1beta2.Kyma) (ct
 	if err := status.Helper(r).UpdateStatusForExistingModules(
 		ctx, kyma, v1beta2.StateDeleting, "waiting for modules to be deleted",
 	); err != nil {
-		return r.CtrlErr(ctx, kyma, fmt.Errorf(
+		return r.requeueWithError(ctx, kyma, fmt.Errorf(
 			"could not update kyma status after triggering deletion: %w", err))
 	}
 	return ctrl.Result{}, nil
-}
-
-func (r *KymaReconciler) CtrlErr(ctx context.Context, kyma *v1beta2.Kyma, err error) (ctrl.Result, error) {
-	return ctrl.Result{Requeue: true},
-		r.UpdateStatusWithEventFromErr(ctx, kyma, v1beta2.StateError, err)
 }
 
 // synchronizeRemote replaces the given pointer to the Kyma Instance with an instance that contains the merged
@@ -206,7 +180,7 @@ func (r *KymaReconciler) syncRemoteKymaSpecAndStatus(
 	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx, controlPlaneKyma, r.RemoteSyncNamespace)
 	if err != nil {
 		if errors.Is(err, remote.ErrNotFoundAndKCPKymaUnderDeleting) {
-			//remote kyma not found because it's deleted, should not continue
+			// remote kyma not found because it's deleted, should not continue
 			return nil
 		}
 		return fmt.Errorf("could not create or fetch remote kyma: %w", err)
@@ -357,14 +331,14 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 	if kyma.SyncEnabled() {
 		if err := remote.NewRemoteCatalogFromKyma(r.RemoteSyncNamespace).Delete(ctx); err != nil {
 			err := fmt.Errorf("could not delete remote module catalog: %w", err)
-			r.Event(kyma, "Warning", string(deletionError), err.Error())
+			r.Event(kyma, "Warning", string(DeletionError), err.Error())
 			return false, err
 		}
 
 		r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
 		if err := remote.RemoveFinalizerFromRemoteKyma(ctx, kyma, r.RemoteSyncNamespace); client.IgnoreNotFound(err) != nil {
 			err := fmt.Errorf("error while trying to remove finalizer from remote: %w", err)
-			r.Event(kyma, "Warning", string(deletionError), err.Error())
+			r.Event(kyma, "Warning", string(DeletionError), err.Error())
 			return false, err
 		}
 
@@ -375,7 +349,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 
 	if err := r.Update(ctx, kyma); err != nil {
 		err := fmt.Errorf("error while trying to udpate kyma during deletion: %w", err)
-		r.Event(kyma, "Warning", string(deletionError), err.Error())
+		r.Event(kyma, "Warning", string(DeletionError), err.Error())
 		return false, err
 	}
 
@@ -419,7 +393,7 @@ func (r *KymaReconciler) UpdateStatusWithEventFromErr(
 	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, err.Error()); err != nil {
 		return fmt.Errorf("error while updating status to %s: %w", state, err)
 	}
-	r.Event(kyma, "Warning", string(moduleReconciliationError), err.Error())
+	r.Event(kyma, "Warning", string(ModuleReconciliationError), err.Error())
 	return nil
 }
 
@@ -427,7 +401,7 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 	templates := channel.GetTemplates(ctx, r, kyma)
 	for _, template := range templates {
 		if template.Err != nil {
-			r.Event(kyma, "Warning", string(moduleReconciliationError), template.Err.Error())
+			r.Event(kyma, "Warning", string(ModuleReconciliationError), template.Err.Error())
 		}
 	}
 
