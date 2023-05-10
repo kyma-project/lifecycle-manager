@@ -16,6 +16,10 @@ func AddToScheme(scheme *runtime.Scheme) error {
 		return err
 	}
 
+	if err := scheme.SetVersionPriority(v1beta2.GroupVersion, v1beta1.GroupVersion); err != nil {
+		return err
+	}
+
 	if err := scheme.AddConversionFunc(&v1beta1.Manifest{}, &v1beta2.Manifest{},
 		func(a, b interface{}, scope conversion.Scope) error {
 			return a.(*v1beta1.Manifest).ConvertTo(b.(*v1beta2.Manifest))
