@@ -87,7 +87,7 @@ func Validate(oldDescriptor, newDescriptor *Descriptor, newTemplateName string) 
 	newVersion, err := semver.NewVersion(newDescriptor.Version)
 	if err != nil {
 		return apierrors.NewInvalid(
-			schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
+			schema.GroupKind{Group: GroupVersion.Group, Kind: string(ModuleTemplateKind)},
 			newTemplateName, field.ErrorList{field.Invalid(
 				field.NewPath("spec").Child("descriptor").
 					Child("version"),
@@ -102,13 +102,13 @@ func Validate(oldDescriptor, newDescriptor *Descriptor, newTemplateName string) 
 		if err != nil {
 			return err
 		}
-		return validateVersionUpgrade(newVersion, oldVersion, newTemplateName)
+		return ValidateVersionUpgrade(newVersion, oldVersion, newTemplateName)
 	}
 
 	return nil
 }
 
-func validateVersionUpgrade(newVersion *semver.Version, oldVersion *semver.Version, templateName string) error {
+func ValidateVersionUpgrade(newVersion *semver.Version, oldVersion *semver.Version, templateName string) error {
 	filteredNewVersion := filterVersion(newVersion)
 	filteredOldVersion := filterVersion(oldVersion)
 	if filteredNewVersion.LessThan(filteredOldVersion) {
