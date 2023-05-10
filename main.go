@@ -375,18 +375,19 @@ func dropV1alpha1FromStoredVersions(mgr manager.Manager) {
 		setupLog.V(log.DebugLevel).Error(err, "unable to list CRDs")
 	}
 
-	for _, crd := range crdList.Items {
-		if crd.Spec.Group != "operator.kyma-project.io" {
+	for _, crdItem := range crdList.Items {
+		if crdItem.Spec.Group != "operator.kyma-project.io" {
 			continue
 		}
-		oldStoredVersions := crd.Status.StoredVersions
+		oldStoredVersions := crdItem.Status.StoredVersions
 		newStoredVersions := make([]string, 0, len(oldStoredVersions))
 		for _, stored := range oldStoredVersions {
-			if stored != "v1alpha1" {
+			if stored != "v1beta2" {
 				newStoredVersions = append(newStoredVersions, stored)
 			}
 		}
-		crd.Status.StoredVersions = newStoredVersions
+		crdItem.Status.StoredVersions = newStoredVersions
+		crd := crdItem
 		if _, err := kcpClient.ApiextensionsV1().CustomResourceDefinitions().UpdateStatus(ctx, &crd, v1.UpdateOptions{}); err != nil {
 			setupLog.V(log.DebugLevel).Error(err, "Failed to update CRD to remove v1alpha1 from stored versions")
 		}
