@@ -28,11 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
-// log is for logging in this package.
-var (
-	kymalog            = logf.Log.WithName("kyma-resource")
-	ErrDuplicateModule = errors.New("duplicate module")
-)
+var ErrDuplicateModule = errors.New("duplicate module")
 
 func (kyma *Kyma) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
@@ -40,25 +36,27 @@ func (kyma *Kyma) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
+//nolint:lll
 //+kubebuilder:webhook:path=/validate-operator-kyma-project-io-v1beta2-kyma,mutating=false,failurePolicy=fail,sideEffects=None,groups=operator.kyma-project.io,resources=kymas,verbs=create;update,versions=v1beta2,name=vkyma.kb.io,admissionReviewVersions=v1
 
 var _ webhook.Validator = &Kyma{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (kyma *Kyma) ValidateCreate() error {
-	kymalog.Info("validate create", "name", kyma.Name)
+	logf.Log.WithName("kyma-resource").
+		Info("validate create", "name", kyma.Name)
 	return ValidateKymaModule(kyma)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (kyma *Kyma) ValidateUpdate(_ runtime.Object) error {
-	kymalog.Info("validate update", "name", kyma.Name)
+	logf.Log.WithName("kyma-resource").
+		Info("validate update", "name", kyma.Name)
 	return ValidateKymaModule(kyma)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (kyma *Kyma) ValidateDelete() error {
-	kymalog.Info("validate delete", "name", kyma.Name)
 	return nil
 }
 
@@ -71,9 +69,8 @@ func ValidateKymaModule(kyma *Kyma) error {
 				kyma.Name, field.ErrorList{field.Invalid(
 					field.NewPath("spec").Child("modules"),
 					module.Name, ErrDuplicateModule.Error())})
-		} else {
-			moduleSet[module.Name] = true
 		}
+		moduleSet[module.Name] = true
 	}
 	return nil
 }
