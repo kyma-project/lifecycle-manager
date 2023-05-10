@@ -2,6 +2,7 @@ package withwatcher_test
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -96,15 +97,12 @@ func expectWatcherCRRemoved(watcherName string) error {
 }
 
 func expectVirtualServiceRemoved(customIstioClient *istio.Client) error {
-	for _, component := range centralComponents {
-		watcherCR, err := getWatcher(component)
-		if err != nil {
-			return err
-		}
-		_, err = customIstioClient.GetVirtualService(suiteCtx, watcherCR.Name)
-		if client.IgnoreNotFound(err) != nil {
-			return err
-		}
+	listVirtualServices, err := customIstioClient.ListVirtualServices(suiteCtx)
+	if !apierrors.IsNotFound(err) {
+		return err
+	}
+	if len(listVirtualServices.Items) != 0 {
+		return fmt.Errorf("VirtualServiceList is not empty: %d", len(listVirtualServices.Items))
 	}
 	return nil
 }

@@ -72,6 +72,16 @@ func (c *Client) GetVirtualService(ctx context.Context, vsName string) (*istiocl
 	return virtualService, nil
 }
 
+func (c *Client) ListVirtualServices(ctx context.Context) (*istioclientapi.VirtualServiceList, error) {
+	virtualServiceList, err := c.NetworkingV1beta1().
+		VirtualServices(metav1.NamespaceDefault).
+		List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to list virtual services %w", err)
+	}
+	return virtualServiceList, nil
+}
+
 func (c *Client) NewVirtualService(ctx context.Context, watcher *v1beta2.Watcher,
 ) (*istioclientapi.VirtualService, error) {
 	if watcher == nil {
@@ -175,10 +185,16 @@ func (c *Client) LookupGateways(ctx context.Context, watcher *v1beta2.Watcher) (
 	return gateways.Items, nil
 }
 
-func (c *Client) UpdateVirtualService(ctx context.Context, virtualService *istioclientapi.VirtualService) error {
+func (c *Client) UpdateVirtualService(ctx context.Context, virtualService,
+	virtualServiceRemote *istioclientapi.VirtualService,
+) error {
+	virtualServiceRemote.Name = virtualService.Name
+	virtualServiceRemote.Namespace = virtualService.Namespace
+	virtualService.Spec.DeepCopyInto(&virtualServiceRemote.Spec)
+
 	_, err := c.NetworkingV1beta1().
-		VirtualServices(virtualService.Namespace).
-		Update(ctx, virtualService, metav1.UpdateOptions{})
+		VirtualServices(virtualServiceRemote.Namespace).
+		Update(ctx, virtualServiceRemote, metav1.UpdateOptions{})
 	return err
 }
 
