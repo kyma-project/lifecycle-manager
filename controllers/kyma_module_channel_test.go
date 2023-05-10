@@ -199,6 +199,17 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 		),
 	)
 
+	It("When all modules are reverted to regular channel,"+
+		" expect Modules to stay in fast channel", func() {
+		Eventually(whenUpdatingEveryModuleChannel(kyma.Name, v1beta2.DefaultChannel), Timeout, Interval).
+			Should(Succeed())
+		Consistently(expectEveryModuleStatusToHaveChannel(kyma.Name, FastChannel), ConsistentCheckTimeout, Interval).
+			Should(Succeed())
+		Consistently(expectEveryManifestToHaveChannel, ConsistentCheckTimeout, Interval).
+			WithArguments(kyma.Name, FastChannel).
+			Should(Succeed())
+	})
+
 	It(
 		"should lead to kyma being ready in the end of the channel switch", func() {
 			Eventually(GetKymaState, Timeout, Interval).
@@ -206,19 +217,6 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 				Should(BeEquivalentTo(string(v1beta2.StateReady)))
 		},
 	)
-
-	It("When all modules are reverted to regular channel,"+
-		" expect Modules to stay in fast channel", func() {
-		Eventually(whenUpdatingEveryModuleChannel(kyma.Name, v1beta2.DefaultChannel), Timeout, Interval).Should(Succeed())
-		Consistently(expectEveryModuleStatusToHaveChannel(kyma.Name, FastChannel), Timeout, Interval).Should(Succeed())
-	})
-
-	It(
-		"should lead to kyma being error in the end of the channel switch", func() {
-			Eventually(GetKymaState, Timeout, Interval).
-				WithArguments(kyma.GetName()).
-				Should(BeEquivalentTo(string(v1beta2.StateError)))
-		})
 },
 )
 
@@ -249,6 +247,33 @@ func expectEveryModuleStatusToHaveChannel(kymaName, channel string) func() error
 	return func() error {
 		return TemplateInfosMatchChannel(kymaName, channel)
 	}
+}
+
+func expectEveryManifestToHaveChannel(kymaName, channel string) error {
+	kyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
+	if err != nil {
+		return err
+	}
+	for _, module := range kyma.Spec.Modules {
+		component, err := GetManifest(ctx, controlPlaneClient, kyma, module)
+		if err != nil {
+			return err
+		}
+		manifestChannel, found := component.Labels[v1beta2.ChannelLabel]
+		if found {
+			if manifestChannel != channel {
+				return fmt.Errorf(
+					"%w: %s should be %s",
+					ErrTemplateInfoChannelMismatch, manifestChannel, channel,
+				)
+			}
+			return nil
+		}
+	}
+	return fmt.Errorf(
+		"%w: no %s found",
+		ErrTemplateInfoChannelMismatch, channel,
+	)
 }
 
 func whenUpdatingEveryModuleChannel(kymaName, channel string) func() error {
