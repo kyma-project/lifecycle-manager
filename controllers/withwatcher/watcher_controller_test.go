@@ -102,7 +102,7 @@ func expectVirtualServiceRemoved(customIstioClient *istio.Client) error {
 		return err
 	}
 	if len(listVirtualServices.Items) != 0 {
-		return fmt.Errorf("VirtualServiceList is not empty: %d", len(listVirtualServices.Items))
+		return fmt.Errorf("VirtualServiceList is not empty: %d", len(listVirtualServices.Items)) //nolint:goerr113
 	}
 	return nil
 }
