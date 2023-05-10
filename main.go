@@ -388,7 +388,8 @@ func dropV1alpha1FromStoredVersions(mgr manager.Manager) {
 		}
 		crdItem.Status.StoredVersions = newStoredVersions
 		crd := crdItem
-		if _, err := kcpClient.ApiextensionsV1().CustomResourceDefinitions().UpdateStatus(ctx, &crd, v1.UpdateOptions{}); err != nil {
+		if _, err := kcpClient.ApiextensionsV1().CustomResourceDefinitions().
+			UpdateStatus(ctx, &crd, v1.UpdateOptions{}); err != nil {
 			setupLog.V(log.DebugLevel).Error(err, "Failed to update CRD to remove v1alpha1 from stored versions")
 		}
 	}
