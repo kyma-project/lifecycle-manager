@@ -103,7 +103,6 @@ func main() {
 	}
 
 	setupManager(flagVar, controllers.NewCacheFunc(), scheme)
-
 }
 
 func pprofStartServer(addr string, timeout time.Duration) {
