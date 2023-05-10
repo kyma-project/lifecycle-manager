@@ -67,7 +67,7 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 		Expect(
 			kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModuleCatalog, metav1.ConditionTrue)).To(BeTrue())
 		By("Module Catalog created")
-		Eventually(ModuleTemplatesExist(controlPlaneClient, kyma),
+		Eventually(ModuleTemplatesExist(controlPlaneClient, kyma, kyma.GetNamespace()),
 			Timeout, Interval).Should(Succeed())
 	})
 })

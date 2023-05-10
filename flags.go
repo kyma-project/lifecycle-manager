@@ -4,6 +4,7 @@ import (
 	"flag"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
@@ -101,13 +102,15 @@ func defineFlagVar() *FlagVar {
 		"indicates the current log-level, enter negative values to increase verbosity (e.g. 9)",
 	)
 	flag.BoolVar(&flagVar.inKCPMode, "in-kcp-mode", false,
-		"indicates lifecycle manager is deployed in control-plane mode")
+		"Indicates lifecycle manager is deployed in control-plane mode")
 	flag.BoolVar(&flagVar.enablePurgeFinalizer, "enable-purge-finalizer", false,
 		"Enabling purge finalizer")
 	flag.DurationVar(&flagVar.purgeFinalizerTimeout, "purge-finalizer-timeout", defaultPurgeFinalizerTimeout,
 		"Indicates the SKR Purge Finalizers execution delay in seconds")
 	flag.StringVar(&flagVar.skipPurgingFor, "skip-finalizer-purging-for", "", "Exclude the passed CRDs"+
 		" from finalizer removal. Example: 'ingressroutetcps.traefik.containo.us,*.helm.cattle.io'.")
+	flag.StringVar(&flagVar.remoteSyncNamespace, "sync-namespace", controllers.DefaultRemoteSyncNamespace,
+		"Name of the namespace for syncing remote Kyma and module catalog")
 	return flagVar
 }
 
@@ -150,4 +153,5 @@ type FlagVar struct {
 	enablePurgeFinalizer                   bool
 	purgeFinalizerTimeout                  time.Duration
 	skipPurgingFor                         string
+	remoteSyncNamespace                    string
 }
