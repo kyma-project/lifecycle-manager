@@ -21,11 +21,7 @@ type ModuleConversionSettings struct {
 	signature.Verification
 }
 
-var (
-	ErrTemplateNotFound        = errors.New("template was not found")
-	ErrUndefinedTargetToRemote = errors.New("target to remote relation undefined")
-	ErrDefaultConfigParsing    = errors.New("defaultConfig could not be parsed")
-)
+var ErrDefaultConfigParsing = errors.New("defaultConfig could not be parsed")
 
 type Parser struct {
 	client.Client

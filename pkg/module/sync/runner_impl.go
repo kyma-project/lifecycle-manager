@@ -56,10 +56,6 @@ func (r *RunnerImpl) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 				results <- nil
 				return
 			}
-			if !module.Template.Outdated {
-				results <- nil
-				return
-			}
 			if err := r.updateManifests(ctx, kyma, module); err != nil {
 				results <- fmt.Errorf("could not update module %s: %w", module.GetName(), err)
 				return
@@ -145,8 +141,8 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(
 
 	for idx := range modules {
 		module := modules[idx]
-		latestModuleStatus := generateModuleStatus(module)
 		moduleStatus, exists := moduleStatusMap[module.ModuleName]
+		latestModuleStatus := generateModuleStatus(module, moduleStatus)
 		if exists {
 			*moduleStatus = latestModuleStatus
 		} else {
@@ -155,7 +151,13 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(
 	}
 }
 
-func generateModuleStatus(module *common.Module) v1beta2.ModuleStatus {
+func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStatus) v1beta2.ModuleStatus {
+	if errors.Is(module.Template.Err, channel.ErrTemplateUpdateNotAllowed) {
+		newModuleStatus := existStatus.DeepCopy()
+		newModuleStatus.State = v1beta2.StateError
+		newModuleStatus.Message = module.Template.Err.Error()
+		return *newModuleStatus
+	}
 	if module.Template.Err != nil {
 		return v1beta2.ModuleStatus{
 			Name:    module.ModuleName,

@@ -197,22 +197,28 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 			whenUpdatingEveryModuleChannel(kyma.Name, FastChannel),
 			expectEveryModuleStatusToHaveChannel(kyma.Name, FastChannel),
 		),
-		Entry(
-			"When all modules are reverted to regular channel,"+
-				" expect Modules to stay in fast channel",
-			whenUpdatingEveryModuleChannel(kyma.Name, v1beta2.DefaultChannel),
-			expectEveryModuleStatusToHaveChannel(kyma.Name, FastChannel),
-		),
 	)
 
 	It(
 		"should lead to kyma being ready in the end of the channel switch", func() {
-			By("having updated the Kyma CR state to ready")
 			Eventually(GetKymaState, Timeout, Interval).
 				WithArguments(kyma.GetName()).
 				Should(BeEquivalentTo(string(v1beta2.StateReady)))
 		},
 	)
+
+	It("When all modules are reverted to regular channel,"+
+		" expect Modules to stay in fast channel", func() {
+		Eventually(whenUpdatingEveryModuleChannel(kyma.Name, v1beta2.DefaultChannel), Timeout, Interval).Should(Succeed())
+		Consistently(expectEveryModuleStatusToHaveChannel(kyma.Name, FastChannel), Timeout, Interval).Should(Succeed())
+	})
+
+	It(
+		"should lead to kyma being error in the end of the channel switch", func() {
+			Eventually(GetKymaState, Timeout, Interval).
+				WithArguments(kyma.GetName()).
+				Should(BeEquivalentTo(string(v1beta2.StateError)))
+		})
 },
 )
 
