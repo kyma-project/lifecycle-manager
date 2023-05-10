@@ -86,7 +86,7 @@ func Validate(oldDescriptor, newDescriptor *Descriptor, newTemplateName string) 
 
 	newVersion, err := semver.NewVersion(newDescriptor.Version)
 	if err != nil {
-		return validationErr(newTemplateName, newVersion.String(), err)
+		return validationErr(newTemplateName, newVersion.String(), err.Error())
 	}
 
 	if oldDescriptor != nil {
@@ -97,20 +97,20 @@ func Validate(oldDescriptor, newDescriptor *Descriptor, newTemplateName string) 
 		}
 		if !IsValidVersionChange(newVersion, oldVersion) {
 			return validationErr(newTemplateName, newVersion.String(),
-				fmt.Errorf("version of templates can never be decremented (previously %s)", oldVersion))
+				fmt.Sprintf("version of templates can never be decremented (previously %s)", oldVersion))
 		}
 	}
 
 	return nil
 }
 
-func validationErr(newTemplateName string, newVersion string, err error) *apierrors.StatusError {
+func validationErr(newTemplateName string, newVersion string, errMsg string) *apierrors.StatusError {
 	return apierrors.NewInvalid(
 		schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
 		newTemplateName, field.ErrorList{field.Invalid(
 			field.NewPath("spec").Child("descriptor").
 				Child("version"),
-			newVersion, err.Error(),
+			newVersion, errMsg,
 		)},
 	)
 }
@@ -118,10 +118,7 @@ func validationErr(newTemplateName string, newVersion string, err error) *apierr
 func IsValidVersionChange(newVersion *semver.Version, oldVersion *semver.Version) bool {
 	filteredNewVersion := filterVersion(newVersion)
 	filteredOldVersion := filterVersion(oldVersion)
-	if filteredNewVersion.LessThan(filteredOldVersion) {
-		return false
-	}
-	return true
+	return !filteredNewVersion.LessThan(filteredOldVersion)
 }
 
 func filterVersion(version *semver.Version) *semver.Version {
