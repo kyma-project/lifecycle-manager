@@ -73,8 +73,6 @@ func defineFlagVar() *FlagVar {
 		"The resources.limits.memory for skr webhook.")
 	flag.StringVar(&flagVar.skrWebhookCPULimits, "skr-webhook-cpu-limits", "0.1",
 		"The resources.limits.cpu for skr webhook.")
-	flag.StringVar(&flagVar.virtualServiceName, "virtual-svc-name", "kcp-events",
-		"Name of the virtual service resource to be reconciled by the watcher control loop.")
 	flag.BoolVar(&flagVar.enableWatcherLocalTesting, "enable-watcher-local-testing", false,
 		"Enabling KCP Watcher two-cluster setup to be tested locally using k3d")
 	flag.StringVar(&flagVar.istioNamespace, "istio-namespace", "istio-system",
@@ -133,7 +131,6 @@ type FlagVar struct {
 	skrWatcherPath                                                  string
 	skrWebhookMemoryLimits                                          string
 	skrWebhookCPULimits                                             string
-	virtualServiceName                                              string
 	enableWatcherLocalTesting                                       bool
 	istioNamespace                                                  string
 	// listenerHTTPPortLocalMapping is used to enable the user
