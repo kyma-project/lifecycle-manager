@@ -7,13 +7,14 @@ import (
 	"io"
 	"os"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	istioclientapi "istio.io/client-go/pkg/apis/networking/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
@@ -128,10 +129,11 @@ func getWatcher(name string) (*v1beta2.Watcher, error) {
 }
 
 func isVirtualServiceHostsConfigured(ctx context.Context,
+	vsName string,
 	istioClient *istio.Client,
 	gateway *istioclientapi.Gateway,
 ) error {
-	virtualService, err := istioClient.GetVirtualService(ctx)
+	virtualService, err := istioClient.GetVirtualService(ctx, vsName)
 	if err != nil {
 		return err
 	}
@@ -152,7 +154,7 @@ func contains(source []string, target string) bool {
 
 func isListenerHTTPRouteConfigured(ctx context.Context, clt *istio.Client, watcher *v1beta2.Watcher,
 ) error {
-	virtualService, err := clt.GetVirtualService(ctx)
+	virtualService, err := clt.GetVirtualService(ctx, watcher.Name)
 	if err != nil {
 		return err
 	}
@@ -174,7 +176,7 @@ func isListenerHTTPRouteConfigured(ctx context.Context, clt *istio.Client, watch
 }
 
 func listenerHTTPRouteExists(ctx context.Context, clt *istio.Client, watcherObjKey client.ObjectKey) error {
-	virtualService, err := clt.GetVirtualService(ctx)
+	virtualService, err := clt.GetVirtualService(ctx, watcherObjKey.Name)
 	if err != nil {
 		return err
 	}

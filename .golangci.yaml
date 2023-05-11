@@ -38,6 +38,9 @@ linters-settings:
       - Client
       - record.EventRecorder
       - client.Object
+  gomoddirectives:
+    replace-allow-list:
+      - github.com/Venafi/vcert/v4
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
