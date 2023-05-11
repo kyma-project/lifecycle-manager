@@ -60,7 +60,8 @@ func NewRemoteCatalog(
 // It uses Server-Side-Apply Patches to optimize the turnaround required.
 func (c *RemoteCatalog) CreateOrUpdate(
 	ctx context.Context,
-	kcpModules []v1beta2.ModuleTemplate) error {
+	kcpModules []v1beta2.ModuleTemplate,
+) error {
 	syncContext := SyncContextFromContext(ctx)
 
 	if err := c.createOrUpdateCatalog(ctx, kcpModules, syncContext); err != nil {
@@ -109,7 +110,8 @@ func (c *RemoteCatalog) deleteDiffCatalog(ctx context.Context,
 
 func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 	kcpModules []v1beta2.ModuleTemplate,
-	syncContext *KymaSynchronizationContext) error {
+	syncContext *KymaSynchronizationContext,
+) error {
 	channelLength := len(kcpModules)
 	results := make(chan error, channelLength)
 	for kcpIndex := range kcpModules {
@@ -131,7 +133,6 @@ func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1beta2.ModuleTemplateKind.Plural()); err != nil {
 			return err
 		}
-
 	}
 
 	if len(errs) != 0 {
@@ -263,6 +264,7 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 
 	return nil
 }
+
 func crdReady(crd *v1extensions.CustomResourceDefinition) bool {
 	for _, cond := range crd.Status.Conditions {
 		if cond.Type == v1extensions.Established &&
