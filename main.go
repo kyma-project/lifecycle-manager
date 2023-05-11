@@ -381,7 +381,7 @@ func dropV1alpha1FromStoredVersions(mgr manager.Manager) {
 		oldStoredVersions := crdItem.Status.StoredVersions
 		newStoredVersions := make([]string, 0, len(oldStoredVersions))
 		for _, stored := range oldStoredVersions {
-			if stored != "v1beta2" {
+			if stored != "v1alpha1" {
 				newStoredVersions = append(newStoredVersions, stored)
 			}
 		}
