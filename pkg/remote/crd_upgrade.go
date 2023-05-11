@@ -36,9 +36,9 @@ const (
 	SKR CrdType = "SKR"
 )
 
-func CreateOrUpdateCRD(
+func updateRemoteCRD(
 	ctx context.Context, plural string, kyma *v1beta2.Kyma, runtimeClient Client, controlPlaneClient Client) (
-	*v1extensions.CustomResourceDefinition, *v1extensions.CustomResourceDefinition, error) {
+	bool, *v1extensions.CustomResourceDefinition, error) {
 	crd := &v1extensions.CustomResourceDefinition{}
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
 	var err error
@@ -51,7 +51,7 @@ func CreateOrUpdateCRD(
 	)
 
 	if err != nil {
-		return nil, nil, err
+		return false, nil, err
 	}
 
 	err = runtimeClient.Get(
@@ -63,7 +63,7 @@ func CreateOrUpdateCRD(
 	if ShouldPatchRemoteCRD(crdFromRuntime, crd, kyma, err) {
 		err = PatchCRD(ctx, runtimeClient, crd)
 		if err != nil {
-			return nil, nil, err
+			return false, nil, err
 		}
 
 		err = runtimeClient.Get(
@@ -72,19 +72,17 @@ func CreateOrUpdateCRD(
 			}, crdFromRuntime,
 		)
 		if err != nil {
-			return nil, nil, err
+			return false, nil, err
 		}
-	}
 
-	if plural == v1beta2.ModuleTemplateKind.Plural() && !crdReady(crdFromRuntime) {
-		return nil, nil, ErrTemplateCRDNotReady
+		return true, crd, nil
 	}
 
 	if err != nil {
-		return nil, nil, err
+		return false, nil, err
 	}
 
-	return crd, crdFromRuntime, nil
+	return false, nil, nil
 }
 
 func ShouldPatchRemoteCRD(
@@ -98,30 +96,8 @@ func ShouldPatchRemoteCRD(
 
 	latestGeneration := strconv.FormatInt(kcpCrd.Generation, 10)
 	runtimeCRDGeneration := strconv.FormatInt(runtimeCrd.Generation, 10)
-	return !containsLatestVersion(runtimeCrd, v1beta2.GroupVersion.Version) ||
-		!containsLatestCRDGeneration(kyma.Annotations[kcpAnnotation], latestGeneration) ||
+	return !containsLatestCRDGeneration(kyma.Annotations[kcpAnnotation], latestGeneration) ||
 		!containsLatestCRDGeneration(kyma.Annotations[skrAnnotation], runtimeCRDGeneration)
-}
-
-func CreateRemoteCRD(ctx context.Context, kyma *v1beta2.Kyma, runtimeClient Client,
-	controlPlaneClient Client, plural string) error {
-	var kcpCrd, skrCrd *v1extensions.CustomResourceDefinition
-	var err error
-	if kcpCrd, skrCrd, err = CreateOrUpdateCRD(
-		ctx, plural, kyma, runtimeClient, controlPlaneClient); err != nil {
-		return err
-	}
-
-	if ShouldPatchRemoteCRD(skrCrd, kcpCrd, kyma, err) {
-		if err = updateKymaAnnotations(kyma, kcpCrd, KCP); err != nil {
-			return err
-		}
-		if err = updateKymaAnnotations(kyma, skrCrd, SKR); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func updateKymaAnnotations(kyma *v1beta2.Kyma, crd *v1extensions.CustomResourceDefinition, crdType CrdType) error {
@@ -156,7 +132,39 @@ func getAnnotation(crd *v1extensions.CustomResourceDefinition, crdType CrdType) 
 	return "", ErrNotSupportedAnnotation
 }
 
-func containsLatestVersion(crdFromRuntime *v1extensions.CustomResourceDefinition, latestVersion string) bool {
+func SyncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma,
+	runtimeClient Client, controlPlaneClient Client) (bool, error) {
+	kymaCrdUpdated, kymaCrd, err := updateRemoteCRD(ctx, v1beta2.KymaKind.Plural(), kyma, runtimeClient, controlPlaneClient)
+	if err != nil {
+		return false, nil
+	}
+	if kymaCrdUpdated {
+		if err := updateKymaAnnotations(kyma, kymaCrd, KCP); err != nil {
+			return false, err
+		}
+		if err := updateKymaAnnotations(kyma, kymaCrd, SKR); err != nil {
+			return false, err
+		}
+	}
+
+	moduleTemplateCrdUpdated, moduleTemplateCrd, err := updateRemoteCRD(ctx, v1beta2.ModuleTemplateKind.Plural(),
+		kyma, runtimeClient, controlPlaneClient)
+	if err != nil {
+		return false, nil
+	}
+	if moduleTemplateCrdUpdated {
+		if err := updateKymaAnnotations(kyma, moduleTemplateCrd, KCP); err != nil {
+			return false, err
+		}
+		if err := updateKymaAnnotations(kyma, moduleTemplateCrd, SKR); err != nil {
+			return false, err
+		}
+	}
+
+	return kymaCrdUpdated || moduleTemplateCrdUpdated, nil
+}
+
+func ContainsLatestVersion(crdFromRuntime *v1extensions.CustomResourceDefinition, latestVersion string) bool {
 	for _, version := range crdFromRuntime.Spec.Versions {
 		if latestVersion == version.Name {
 			return true

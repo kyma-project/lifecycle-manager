@@ -16,7 +16,6 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 	type args struct {
 		runtimeCrdGeneration      int64
 		kcpCrdGeneration          int64
-		runtimeCrdVersion         string
 		kymaKcpCrdAnnotationValue string
 		kymaSkrCrdAnnotationValue string
 		err                       error
@@ -32,7 +31,6 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 				err:                       nil,
 				runtimeCrdGeneration:      1,
 				kcpCrdGeneration:          1,
-				runtimeCrdVersion:         v1beta2.GroupVersion.Version,
 				kymaKcpCrdAnnotationValue: "1",
 				kymaSkrCrdAnnotationValue: "0",
 			},
@@ -44,7 +42,6 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 				err:                       nil,
 				runtimeCrdGeneration:      1,
 				kcpCrdGeneration:          1,
-				runtimeCrdVersion:         v1beta2.GroupVersion.Version,
 				kymaKcpCrdAnnotationValue: "0",
 				kymaSkrCrdAnnotationValue: "1",
 			},
@@ -56,23 +53,10 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 				err:                       nil,
 				runtimeCrdGeneration:      1,
 				kcpCrdGeneration:          1,
-				runtimeCrdVersion:         v1beta2.GroupVersion.Version,
 				kymaKcpCrdAnnotationValue: "1",
 				kymaSkrCrdAnnotationValue: "1",
 			},
 			want: false,
-		},
-		{
-			name: "Different Version",
-			args: args{
-				err:                       nil,
-				runtimeCrdGeneration:      1,
-				kcpCrdGeneration:          1,
-				runtimeCrdVersion:         "v1alpha1",
-				kymaKcpCrdAnnotationValue: "0",
-				kymaSkrCrdAnnotationValue: "1",
-			},
-			want: true,
 		},
 	}
 	for _, tt := range tests {
@@ -84,11 +68,6 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 					Generation: testCase.args.runtimeCrdGeneration,
 				},
 				Spec: v1extensions.CustomResourceDefinitionSpec{
-					Versions: []v1extensions.CustomResourceDefinitionVersion{
-						{
-							Name: testCase.args.runtimeCrdVersion,
-						},
-					},
 					Names: v1extensions.CustomResourceDefinitionNames{
 						Kind: "ModuleTemplate",
 					},
