@@ -134,7 +134,8 @@ func getAnnotation(crd *v1extensions.CustomResourceDefinition, crdType CrdType) 
 
 func SyncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma,
 	runtimeClient Client, controlPlaneClient Client) (bool, error) {
-	kymaCrdUpdated, kymaCrd, err := updateRemoteCRD(ctx, v1beta2.KymaKind.Plural(), kyma, runtimeClient, controlPlaneClient)
+	kymaCrdUpdated, kymaCrd, err := updateRemoteCRD(ctx, v1beta2.KymaKind.Plural(),
+		kyma, runtimeClient, controlPlaneClient)
 	if err != nil {
 		return false, err
 	}
