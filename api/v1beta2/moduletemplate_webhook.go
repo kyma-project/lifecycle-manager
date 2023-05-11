@@ -30,9 +30,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
-// log is for logging in this package.
-var moduletemplatelog = logf.Log.WithName("moduletemplate-resource") //nolint:gochecknoglobals
-
 func (m *ModuleTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(m).
@@ -46,7 +43,8 @@ var _ webhook.Validator = &ModuleTemplate{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (m *ModuleTemplate) ValidateCreate() error {
-	moduletemplatelog.Info("validate create", "name", m.Name)
+	logf.Log.WithName("moduletemplate-resource").
+		Info("validate create", "name", m.Name)
 	newDescriptor, err := m.Spec.GetDescriptor()
 	if err != nil {
 		return err
@@ -56,7 +54,8 @@ func (m *ModuleTemplate) ValidateCreate() error {
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (m *ModuleTemplate) ValidateUpdate(old runtime.Object) error {
-	moduletemplatelog.Info("validate update", "name", m.Name)
+	logf.Log.WithName("moduletemplate-resource").
+		Info("validate update", "name", m.Name)
 	newDescriptor, err := m.Spec.GetDescriptor()
 	if err != nil {
 		return err
@@ -71,12 +70,7 @@ func (m *ModuleTemplate) ValidateUpdate(old runtime.Object) error {
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (m *ModuleTemplate) ValidateDelete() error {
-	moduletemplatelog.Info("validate delete", "name", m.Name)
-	newDescriptor, err := m.Spec.GetDescriptor()
-	if err != nil {
-		return err
-	}
-	return Validate(nil, newDescriptor, m.Name)
+	return nil
 }
 
 func Validate(oldDescriptor, newDescriptor *Descriptor, newTemplateName string) error {
