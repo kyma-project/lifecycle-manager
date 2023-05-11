@@ -636,7 +636,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "rate(controller_runtime_reconcile_time_seconds_sum{name=\"manifest\"}[$__rate_interval])\n/\nrate(controller_runtime_reconcile_time_seconds_count{name=\"manifest\"}[$__rate_interval])",
+          "expr": "rate(controller_runtime_reconcile_time_seconds_sum{controller=\"manifest\"}[$__rate_interval])\n/\nrate(controller_runtime_reconcile_time_seconds_count{controller=\"manifest\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "{{controller}}",
           "refId": "A"
@@ -647,7 +647,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "rate(controller_runtime_reconcile_time_seconds_sum{name=\"kyma\"}[$__rate_interval])\n/\nrate(controller_runtime_reconcile_time_seconds_count{name=\"kyma\"}[$__rate_interval])",
+          "expr": "rate(controller_runtime_reconcile_time_seconds_sum{controller=\"kyma\"}[$__rate_interval])\n/\nrate(controller_runtime_reconcile_time_seconds_count{controller=\"kyma\"}[$__rate_interval])",
           "hide": false,
           "interval": "",
           "legendFormat": "{{controller}}",
