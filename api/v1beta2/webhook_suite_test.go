@@ -25,9 +25,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/api"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/open-component-model/ocm/pkg/contexts/oci"
@@ -37,6 +34,10 @@ import (
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+
+	"github.com/kyma-project/lifecycle-manager/api"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	//+kubebuilder:scaffold:imports
@@ -128,6 +129,9 @@ func SetupWebhook() {
 	Expect(err).NotTo(HaveOccurred())
 
 	Expect((&v1beta2.ModuleTemplate{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
+	Expect((&v1beta2.Kyma{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
+	Expect((&v1beta2.Manifest{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
+	Expect((&v1beta2.Watcher{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:webhook
 

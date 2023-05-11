@@ -2,9 +2,12 @@ module github.com/kyma-project/lifecycle-manager
 
 go 1.19
 
+// remove once https://github.com/cert-manager/cert-manager/issues/5953 is fixed
+replace github.com/Venafi/vcert/v4 => github.com/jetstack/vcert/v4 v4.9.6-0.20230127103832-3aa3dfd6613d
+
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
-	github.com/cert-manager/cert-manager v1.11.0
+	github.com/cert-manager/cert-manager v1.11.2
 	github.com/go-logr/logr v1.2.4
 	github.com/go-logr/zapr v1.2.3
 	github.com/golang/mock v1.6.0
@@ -26,13 +29,12 @@ require (
 	helm.sh/helm/v3 v3.11.2
 	istio.io/api v0.0.0-20230217221049-9d422bf48675
 	istio.io/client-go v1.17.1
-	k8s.io/api v0.26.3
-	k8s.io/apiextensions-apiserver v0.26.3
-	k8s.io/apimachinery v0.26.3
-	k8s.io/cli-runtime v0.26.3
-	k8s.io/client-go v0.26.3
-	k8s.io/kubectl v0.26.3
-	k8s.io/utils v0.0.0-20230202215443-34013725500c
+	k8s.io/api v0.26.4
+	k8s.io/apiextensions-apiserver v0.26.4
+	k8s.io/apimachinery v0.26.4
+	k8s.io/cli-runtime v0.26.4
+	k8s.io/client-go v0.26.4
+	k8s.io/kubectl v0.26.4
 	sigs.k8s.io/controller-runtime v0.14.6
 	sigs.k8s.io/e2e-framework v0.1.0
 	sigs.k8s.io/kustomize/api v0.12.1
@@ -79,7 +81,7 @@ require (
 	github.com/containers/storage v1.38.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker/cli v20.10.23+incompatible // indirect
+	github.com/docker/cli v20.10.24+incompatible // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/docker/docker v20.10.24+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.7.0 // indirect
@@ -198,10 +200,11 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	k8s.io/apiserver v0.26.3 // indirect
-	k8s.io/component-base v0.26.3 // indirect
+	k8s.io/apiserver v0.26.4 // indirect
+	k8s.io/component-base v0.26.4 // indirect
 	k8s.io/klog/v2 v2.90.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20230202010329-39b3636cbaa3 // indirect
+	k8s.io/utils v0.0.0-20230202215443-34013725500c // indirect
 	oras.land/oras-go v1.2.2 // indirect
 	sigs.k8s.io/gateway-api v0.6.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
