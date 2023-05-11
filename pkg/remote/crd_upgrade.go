@@ -136,7 +136,7 @@ func SyncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma,
 	runtimeClient Client, controlPlaneClient Client) (bool, error) {
 	kymaCrdUpdated, kymaCrd, err := updateRemoteCRD(ctx, v1beta2.KymaKind.Plural(), kyma, runtimeClient, controlPlaneClient)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 	if kymaCrdUpdated {
 		if err := updateKymaAnnotations(kyma, kymaCrd, KCP); err != nil {
@@ -150,7 +150,7 @@ func SyncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma,
 	moduleTemplateCrdUpdated, moduleTemplateCrd, err := updateRemoteCRD(ctx, v1beta2.ModuleTemplateKind.Plural(),
 		kyma, runtimeClient, controlPlaneClient)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 	if moduleTemplateCrdUpdated {
 		if err := updateKymaAnnotations(kyma, moduleTemplateCrd, KCP); err != nil {
