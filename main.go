@@ -39,6 +39,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/utils/strings/slices"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -374,8 +376,11 @@ func dropV1alpha1FromStoredVersions(mgr manager.Manager) {
 		setupLog.V(log.DebugLevel).Error(err, "unable to list CRDs")
 	}
 
+	crdsToPatch := []string{string(operatorv1beta2.ModuleTemplateKind), string(operatorv1beta2.WatcherKind),
+		operatorv1beta2.ManifestKind, string(operatorv1beta2.KymaKind)}
+
 	for _, crdItem := range crdList.Items {
-		if crdItem.Spec.Group != "operator.kyma-project.io" {
+		if crdItem.Spec.Group != "operator.kyma-project.io" && !slices.Contains(crdsToPatch, crdItem.Spec.Names.Kind) {
 			continue
 		}
 		oldStoredVersions := crdItem.Status.StoredVersions
