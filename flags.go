@@ -130,7 +130,6 @@ type FlagVar struct {
 	skrWatcherPath                         string
 	skrWebhookMemoryLimits                 string
 	skrWebhookCPULimits                    string
-	virtualServiceName                     string
 	enableWatcherLocalTesting              bool
 	istioNamespace                         string
 	// listenerHTTPPortLocalMapping is used to enable the user

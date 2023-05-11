@@ -51,7 +51,8 @@ func NewParser(
 		InKCPMode:                inKCPMode,
 		remoteSyncNamespace:      remoteSyncNamespace,
 		EnableVerification:       enableVerification,
-		PublicKeyFilePath:        publicKeyFilePath}
+		PublicKeyFilePath:        publicKeyFilePath,
+	}
 }
 
 func (parser *Parser) GenerateModulesFromTemplates(ctx context.Context,
