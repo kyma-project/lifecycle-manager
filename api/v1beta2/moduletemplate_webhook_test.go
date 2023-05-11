@@ -1,10 +1,10 @@
-//nolint:testpackage
-package v1beta2
+package v1beta2_test
 
 import (
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 func Test_ValidateVersion(t *testing.T) {
@@ -52,9 +52,9 @@ func Test_ValidateVersion(t *testing.T) {
 			t.Parallel()
 			newVersion, _ := semver.NewVersion(testCase.newVersion)
 			oldVersion, _ := semver.NewVersion(testCase.oldVersion)
-			err := validateVersionUpgrade(newVersion, oldVersion, "test_template")
+			err := v1beta2.ValidateVersionUpgrade(newVersion, oldVersion, "test_template")
 			if (err != nil) != testCase.wantErr {
-				t.Errorf("validateVersionUpgrade() error = %v, wantErr %v", err, testCase.wantErr)
+				t.Errorf("ValidateVersionUpgrade() error = %v, wantErr %v", err, testCase.wantErr)
 			}
 		})
 	}
