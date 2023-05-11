@@ -29,6 +29,13 @@ func PatchCRD(ctx context.Context, clnt client.Client, crd *v1extensions.CustomR
 		client.FieldOwner(v1beta2.OperatorName))
 }
 
+type CrdType string
+
+const (
+	KCP CrdType = "KCP"
+	SKR CrdType = "SKR"
+)
+
 func CreateOrUpdateCRD(
 	ctx context.Context, plural string, kyma *v1beta2.Kyma, runtimeClient Client, controlPlaneClient Client) (
 	*v1extensions.CustomResourceDefinition, *v1extensions.CustomResourceDefinition, error) {
@@ -53,12 +60,13 @@ func CreateOrUpdateCRD(
 		}, crdFromRuntime,
 	)
 
-	kcpAnnotation := v1beta2.KcpKymaCRDGenerationAnnotation
-	skrAnnotation := v1beta2.SkrKymaCRDGenerationAnnotation
-
-	if plural == v1beta2.ModuleTemplateKind.Plural() {
-		kcpAnnotation = v1beta2.KcpModuleTemplateCRDGenerationAnnotation
-		skrAnnotation = v1beta2.SkrModuleTemplateCRDGenerationAnnotation
+	kcpAnnotation, err := getAnnotation(crd, KCP)
+	if err != nil {
+		return nil, nil, err
+	}
+	skrAnnotation, err := getAnnotation(crd, SKR)
+	if err != nil {
+		return nil, nil, err
 	}
 
 	if ShouldPatchRemoteCRD(crdFromRuntime, crd, kyma, kcpAnnotation, skrAnnotation, err) {
@@ -119,13 +127,6 @@ func CreateRemoteCRD(ctx context.Context, kyma *v1beta2.Kyma, runtimeClient Clie
 
 	return nil
 }
-
-type CrdType string
-
-const (
-	KCP CrdType = "KCP"
-	SKR CrdType = "SKR"
-)
 
 func updateKymaAnnotations(kyma *v1beta2.Kyma, crd *v1extensions.CustomResourceDefinition, crdType CrdType) error {
 	if kyma.Annotations == nil {
