@@ -30,6 +30,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
+// log is for logging in this package.
+var moduletemplatelog = logf.Log.WithName("moduletemplate-resource") //nolint:gochecknoglobals
+
 func (m *ModuleTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(m).
@@ -43,8 +46,7 @@ var _ webhook.Validator = &ModuleTemplate{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
 func (m *ModuleTemplate) ValidateCreate() error {
-	logf.Log.WithName("moduletemplate-resource").
-		Info("validate create", "name", m.Name)
+	moduletemplatelog.Info("validate create", "name", m.Name)
 	newDescriptor, err := m.Spec.GetDescriptor()
 	if err != nil {
 		return err
@@ -54,8 +56,7 @@ func (m *ModuleTemplate) ValidateCreate() error {
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
 func (m *ModuleTemplate) ValidateUpdate(old runtime.Object) error {
-	logf.Log.WithName("moduletemplate-resource").
-		Info("validate update", "name", m.Name)
+	moduletemplatelog.Info("validate update", "name", m.Name)
 	newDescriptor, err := m.Spec.GetDescriptor()
 	if err != nil {
 		return err
@@ -70,7 +71,12 @@ func (m *ModuleTemplate) ValidateUpdate(old runtime.Object) error {
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
 func (m *ModuleTemplate) ValidateDelete() error {
-	return nil
+	moduletemplatelog.Info("validate delete", "name", m.Name)
+	newDescriptor, err := m.Spec.GetDescriptor()
+	if err != nil {
+		return err
+	}
+	return Validate(nil, newDescriptor, m.Name)
 }
 
 func Validate(oldDescriptor, newDescriptor *Descriptor, newTemplateName string) error {
@@ -80,14 +86,7 @@ func Validate(oldDescriptor, newDescriptor *Descriptor, newTemplateName string) 
 
 	newVersion, err := semver.NewVersion(newDescriptor.Version)
 	if err != nil {
-		return apierrors.NewInvalid(
-			schema.GroupKind{Group: GroupVersion.Group, Kind: string(ModuleTemplateKind)},
-			newTemplateName, field.ErrorList{field.Invalid(
-				field.NewPath("spec").Child("descriptor").
-					Child("version"),
-				newDescriptor.Version, err.Error(),
-			)},
-		)
+		return validationErr(newTemplateName, newVersion.String(), err.Error())
 	}
 
 	if oldDescriptor != nil {
@@ -96,29 +95,30 @@ func Validate(oldDescriptor, newDescriptor *Descriptor, newTemplateName string) 
 		if err != nil {
 			return err
 		}
-		return ValidateVersionUpgrade(newVersion, oldVersion, newTemplateName)
+		if !IsValidVersionChange(newVersion, oldVersion) {
+			return validationErr(newTemplateName, newVersion.String(),
+				fmt.Sprintf("version of templates can never be decremented (previously %s)", oldVersion))
+		}
 	}
 
 	return nil
 }
 
-func ValidateVersionUpgrade(newVersion *semver.Version, oldVersion *semver.Version, templateName string) error {
+func validationErr(newTemplateName string, newVersion string, errMsg string) *apierrors.StatusError {
+	return apierrors.NewInvalid(
+		schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
+		newTemplateName, field.ErrorList{field.Invalid(
+			field.NewPath("spec").Child("descriptor").
+				Child("version"),
+			newVersion, errMsg,
+		)},
+	)
+}
+
+func IsValidVersionChange(newVersion *semver.Version, oldVersion *semver.Version) bool {
 	filteredNewVersion := filterVersion(newVersion)
 	filteredOldVersion := filterVersion(oldVersion)
-	if filteredNewVersion.LessThan(filteredOldVersion) {
-		return apierrors.NewInvalid(
-			schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
-			templateName, field.ErrorList{field.Invalid(
-				field.NewPath("spec").Child("descriptor").
-					Child("version"),
-				newVersion.String(), fmt.Sprintf(
-					"version of templates can never be decremented (previously %s)",
-					oldVersion,
-				),
-			)},
-		)
-	}
-	return nil
+	return !filteredNewVersion.LessThan(filteredOldVersion)
 }
 
 func filterVersion(version *semver.Version) *semver.Version {
