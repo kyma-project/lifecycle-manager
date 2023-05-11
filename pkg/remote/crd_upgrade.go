@@ -98,7 +98,7 @@ func ShouldPatchRemoteCRD(
 
 	latestGeneration := strconv.FormatInt(kcpCrd.Generation, 10)
 	runtimeCRDGeneration := strconv.FormatInt(runtimeCrd.Generation, 10)
-	return k8serrors.IsNotFound(err) || !containsLatestVersion(runtimeCrd, v1beta2.GroupVersion.Version) ||
+	return !containsLatestVersion(runtimeCrd, v1beta2.GroupVersion.Version) ||
 		!containsLatestCRDGeneration(kyma.Annotations[kcpAnnotation], latestGeneration) ||
 		!containsLatestCRDGeneration(kyma.Annotations[skrAnnotation], runtimeCRDGeneration)
 }
