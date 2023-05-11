@@ -147,6 +147,9 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		if err := r.syncRemoteKymaSpecAndStatus(ctx, kyma); err != nil {
 			return r.CtrlErr(ctx, kyma, fmt.Errorf("could not synchronize remote kyma: %w", err))
 		}
+		if err := r.Update(ctx, kyma); err != nil {
+			return r.CtrlErr(ctx, kyma, fmt.Errorf("could not update kyma after syncing: %w", err))
+		}
 	}
 
 	// state handling

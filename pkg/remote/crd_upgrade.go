@@ -115,9 +115,6 @@ func CreateRemoteCRD(ctx context.Context, kyma *v1beta2.Kyma, runtimeClient Clie
 		if err = updateKymaAnnotations(kyma, skrCrd, SKR); err != nil {
 			return err
 		}
-		if err = controlPlaneClient.Update(ctx, kyma); err != nil {
-			return err
-		}
 	}
 
 	return nil
