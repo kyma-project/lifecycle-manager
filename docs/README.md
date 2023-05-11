@@ -11,7 +11,6 @@ The table of contents lists all the documents in repository with their short des
 - [Developer tutorials](./developer-tutorials/README.md) - a directory containing infrastructure-related guides for developers
   - [Provide credential for private OCI registry authentication](./developer-tutorials/config-private-registry.md)
   - [Local test setup in two-cluster-mode using k3d](./developer-tutorials/local-test-setup.md)
-  - [Managing module initialization with the CustomResourcePolicy](./developer-tutorials/manage-module-with-custom-resource-policy.md)
   - [Create a test environment on Google Container Registry (GCR)](./developer-tutorials/prepare-gcr-registry.md)
   - [Provision cluster and OCI registry](./developer-tutorials/provision-cluster-and-registry.md)
   - [Enabling Webhooks in lifecycle-manager](./developer-tutorials/starting-operator-with-webhooks.md)
@@ -27,5 +26,6 @@ The table of contents lists all the documents in repository with their short des
   - [Internal Manifest Reconciliation Library Extensions](../internal/manifest/README.md)
   - [Smoke tests](../tests/smoke_test/README.md)
 - User tutorials
+  - [Managing module initialization with the CustomResourcePolicy](./user-tutorials/manage-module-with-custom-resource-policy.md)
   - [Quick Start](./user-tutorials/quick-start.md)
 - [Modularization](modularization.md) - describes the modularization concept and its building blocks in the context of Lifecycle Manager
