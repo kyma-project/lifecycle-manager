@@ -165,18 +165,10 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 	}
 
 	if meta.IsNoMatchError(err) || err == nil {
-		var kcpCrd, skrCrd *v1extensions.CustomResourceDefinition
-		if kcpCrd, skrCrd, err = CreateOrUpdateCRD(
-			ctx, v1beta2.KymaKind.Plural(), kyma, c.RuntimeClient, c.ControlPlaneClient); err != nil {
+		err = CreateRemoteCRD(ctx, kyma, c.RuntimeClient, c.ControlPlaneClient,
+			v1beta2.KcpKymaCRDGenerationAnnotation, v1beta2.SkrKymaCRDGenerationAnnotation, v1beta2.KymaKind.Plural())
+		if err != nil {
 			return nil, err
-		}
-
-		if ShouldPatchRemoteCRD(skrCrd, kcpCrd, kyma, v1beta2.KcpKymaCRDGenerationAnnotation,
-			v1beta2.SkrKymaCRDGenerationAnnotation, err) {
-			UpdateKymaAnnotations(kyma, kcpCrd, skrCrd)
-			if err = c.ControlPlaneClient.Update(ctx, kyma); err != nil {
-				recorder.Event(kyma, "Warning", err.Error(), "Couldn't update Kyma CR with CRD generations.")
-			}
 		}
 		recorder.Event(kyma, "Normal", "CRDInstallation", "CRDs were installed to SKR")
 		// the NoMatch error we previously encountered is now fixed through the CRD installation

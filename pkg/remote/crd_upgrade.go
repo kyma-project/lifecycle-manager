@@ -88,12 +88,32 @@ func ShouldPatchRemoteCRD(
 	kyma *v1beta2.Kyma, kcpAnnotation string, skrAnnotation string, err error) bool {
 	latestGeneration := strconv.FormatInt(kcpCrd.Generation, 10)
 	runtimeCRDGeneration := strconv.FormatInt(runtimeCrd.Generation, 10)
-	return k8serrors.IsNotFound(err) || !ContainsLatestVersion(runtimeCrd, v1beta2.GroupVersion.Version) ||
+	return k8serrors.IsNotFound(err) || !containsLatestVersion(runtimeCrd, v1beta2.GroupVersion.Version) ||
 		!containsLatestCRDGeneration(kyma.Annotations[kcpAnnotation], latestGeneration) ||
 		!containsLatestCRDGeneration(kyma.Annotations[skrAnnotation], runtimeCRDGeneration)
 }
 
-func ContainsLatestVersion(crdFromRuntime *v1extensions.CustomResourceDefinition, latestVersion string) bool {
+func CreateRemoteCRD(ctx context.Context, kyma *v1beta2.Kyma, runtimeClient Client, controlPlaneClient Client,
+	kcpCrdGenerationAnnotation string, skrCrdGenerationAnnotation string, plural string) error {
+	var kcpCrd, skrCrd *v1extensions.CustomResourceDefinition
+	var err error
+	if kcpCrd, skrCrd, err = CreateOrUpdateCRD(
+		ctx, plural, kyma, runtimeClient, controlPlaneClient); err != nil {
+		return err
+	}
+
+	if ShouldPatchRemoteCRD(skrCrd, kcpCrd, kyma, kcpCrdGenerationAnnotation,
+		skrCrdGenerationAnnotation, err) {
+		UpdateKymaAnnotations(kyma, kcpCrd, skrCrd)
+		if err = controlPlaneClient.Update(ctx, kyma); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func containsLatestVersion(crdFromRuntime *v1extensions.CustomResourceDefinition, latestVersion string) bool {
 	for _, version := range crdFromRuntime.Spec.Versions {
 		if latestVersion == version.Name {
 			return true
