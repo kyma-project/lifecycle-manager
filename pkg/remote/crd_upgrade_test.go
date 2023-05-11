@@ -19,8 +19,6 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 		runtimeCrdVersion         string
 		kymaKcpCrdAnnotationValue string
 		kymaSkrCrdAnnotationValue string
-		kcpAnnotation             string
-		skrAnnotation             string
 		err                       error
 	}
 	tests := []struct {
@@ -37,8 +35,6 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 				runtimeCrdVersion:         v1beta2.GroupVersion.Version,
 				kymaKcpCrdAnnotationValue: "1",
 				kymaSkrCrdAnnotationValue: "0",
-				kcpAnnotation:             v1beta2.KcpModuleTemplateCRDGenerationAnnotation,
-				skrAnnotation:             v1beta2.SkrModuleTemplateCRDGenerationAnnotation,
 			},
 			want: true,
 		},
@@ -51,8 +47,6 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 				runtimeCrdVersion:         v1beta2.GroupVersion.Version,
 				kymaKcpCrdAnnotationValue: "0",
 				kymaSkrCrdAnnotationValue: "1",
-				kcpAnnotation:             v1beta2.KcpModuleTemplateCRDGenerationAnnotation,
-				skrAnnotation:             v1beta2.SkrModuleTemplateCRDGenerationAnnotation,
 			},
 			want: true,
 		},
@@ -65,8 +59,6 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 				runtimeCrdVersion:         v1beta2.GroupVersion.Version,
 				kymaKcpCrdAnnotationValue: "1",
 				kymaSkrCrdAnnotationValue: "1",
-				kcpAnnotation:             v1beta2.KcpModuleTemplateCRDGenerationAnnotation,
-				skrAnnotation:             v1beta2.SkrModuleTemplateCRDGenerationAnnotation,
 			},
 			want: false,
 		},
@@ -79,8 +71,6 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 				runtimeCrdVersion:         "v1alpha1",
 				kymaKcpCrdAnnotationValue: "0",
 				kymaSkrCrdAnnotationValue: "1",
-				kcpAnnotation:             v1beta2.KcpModuleTemplateCRDGenerationAnnotation,
-				skrAnnotation:             v1beta2.SkrModuleTemplateCRDGenerationAnnotation,
 			},
 			want: true,
 		},
@@ -99,6 +89,9 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 							Name: testCase.args.runtimeCrdVersion,
 						},
 					},
+					Names: v1extensions.CustomResourceDefinitionNames{
+						Kind: "ModuleTemplate",
+					},
 				},
 			}
 
@@ -106,20 +99,23 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 				ObjectMeta: metav1.ObjectMeta{
 					Generation: testCase.args.kcpCrdGeneration,
 				},
+				Spec: v1extensions.CustomResourceDefinitionSpec{
+					Names: v1extensions.CustomResourceDefinitionNames{
+						Kind: "ModuleTemplate",
+					},
+				},
 			}
 
 			kyma := &v1beta2.Kyma{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						testCase.args.skrAnnotation: testCase.args.kymaSkrCrdAnnotationValue,
-						testCase.args.kcpAnnotation: testCase.args.kymaKcpCrdAnnotationValue,
+						v1beta2.SkrModuleTemplateCRDGenerationAnnotation: testCase.args.kymaSkrCrdAnnotationValue,
+						v1beta2.KcpModuleTemplateCRDGenerationAnnotation: testCase.args.kymaKcpCrdAnnotationValue,
 					},
 				},
 			}
-			assert.Equalf(t, testCase.want, remote.ShouldPatchRemoteCRD(runtimeCrd, kcpCrd, kyma, testCase.args.kcpAnnotation,
-				testCase.args.skrAnnotation, testCase.args.err),
-				"ShouldPatchRemoteCRD(%v, %v, %v, %v, %v, %v)", runtimeCrd, kcpCrd, kyma, testCase.args.kcpAnnotation,
-				testCase.args.skrAnnotation, testCase.args.err)
+			assert.Equalf(t, testCase.want, remote.ShouldPatchRemoteCRD(runtimeCrd, kcpCrd, kyma, testCase.args.err),
+				"ShouldPatchRemoteCRD(%v, %v, %v, %v)", runtimeCrd, kcpCrd, kyma, testCase.args.err)
 		})
 	}
 }
