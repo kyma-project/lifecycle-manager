@@ -38,7 +38,7 @@ const (
 
 func updateRemoteCRD(
 	ctx context.Context, plural string, kyma *v1beta2.Kyma, runtimeClient Client, controlPlaneClient Client) (
-	bool, *v1extensions.CustomResourceDefinition, error) {
+	bool, *v1extensions.CustomResourceDefinition, *v1extensions.CustomResourceDefinition, error) {
 	crd := &v1extensions.CustomResourceDefinition{}
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
 	var err error
@@ -51,7 +51,7 @@ func updateRemoteCRD(
 	)
 
 	if err != nil {
-		return false, nil, err
+		return false, nil, nil, err
 	}
 
 	err = runtimeClient.Get(
@@ -63,7 +63,7 @@ func updateRemoteCRD(
 	if ShouldPatchRemoteCRD(crdFromRuntime, crd, kyma, err) {
 		err = PatchCRD(ctx, runtimeClient, crd)
 		if err != nil {
-			return false, nil, err
+			return false, nil, nil, err
 		}
 
 		err = runtimeClient.Get(
@@ -72,17 +72,17 @@ func updateRemoteCRD(
 			}, crdFromRuntime,
 		)
 		if err != nil {
-			return false, nil, err
+			return false, nil, nil, err
 		}
 
-		return true, crd, nil
+		return true, crdFromRuntime, crd, nil
 	}
 
 	if err != nil {
-		return false, nil, err
+		return false, nil, nil, err
 	}
 
-	return false, nil, nil
+	return false, nil, nil, nil
 }
 
 func ShouldPatchRemoteCRD(
@@ -134,30 +134,30 @@ func getAnnotation(crd *v1extensions.CustomResourceDefinition, crdType CrdType) 
 
 func SyncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma,
 	runtimeClient Client, controlPlaneClient Client) (bool, error) {
-	kymaCrdUpdated, kymaCrd, err := updateRemoteCRD(ctx, v1beta2.KymaKind.Plural(),
+	kymaCrdUpdated, kymaSkrCrd, kymaKcpCrd, err := updateRemoteCRD(ctx, v1beta2.KymaKind.Plural(),
 		kyma, runtimeClient, controlPlaneClient)
 	if err != nil {
 		return false, err
 	}
 	if kymaCrdUpdated {
-		if err := updateKymaAnnotations(kyma, kymaCrd, KCP); err != nil {
+		if err := updateKymaAnnotations(kyma, kymaKcpCrd, KCP); err != nil {
 			return false, err
 		}
-		if err := updateKymaAnnotations(kyma, kymaCrd, SKR); err != nil {
+		if err := updateKymaAnnotations(kyma, kymaSkrCrd, SKR); err != nil {
 			return false, err
 		}
 	}
 
-	moduleTemplateCrdUpdated, moduleTemplateCrd, err := updateRemoteCRD(ctx, v1beta2.ModuleTemplateKind.Plural(),
-		kyma, runtimeClient, controlPlaneClient)
+	moduleTemplateCrdUpdated, moduleTemplateSkrCrd, moduleTemplateKcpCrd, err := updateRemoteCRD(ctx,
+		v1beta2.ModuleTemplateKind.Plural(), kyma, runtimeClient, controlPlaneClient)
 	if err != nil {
 		return false, err
 	}
 	if moduleTemplateCrdUpdated {
-		if err := updateKymaAnnotations(kyma, moduleTemplateCrd, KCP); err != nil {
+		if err := updateKymaAnnotations(kyma, moduleTemplateKcpCrd, KCP); err != nil {
 			return false, err
 		}
-		if err := updateKymaAnnotations(kyma, moduleTemplateCrd, SKR); err != nil {
+		if err := updateKymaAnnotations(kyma, moduleTemplateSkrCrd, SKR); err != nil {
 			return false, err
 		}
 	}
