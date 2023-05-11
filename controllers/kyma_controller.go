@@ -108,12 +108,10 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			// Related issue: https://github.com/kyma-project/lifecycle-manager/issues/579
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("can not found Kyma %s, assume deleted", req.NamespacedName))
 		}
-
 		return ctrl.Result{}, client.IgnoreNotFound(err) //nolint:wrapcheck
 	}
 
 	status.InitConditions(kyma, kyma.SyncEnabled(), r.WatcherEnabled(kyma))
-
 	if kyma.SkipReconciliation() {
 		logger.V(log.DebugLevel).Info("kyma gets skipped because of label")
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
@@ -147,7 +145,6 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		if err := r.syncRemoteKymaSpecAndStatus(ctx, kyma); err != nil {
 			return r.CtrlErr(ctx, kyma, fmt.Errorf("could not synchronize remote kyma: %w", err))
 		}
-
 		if err := r.syncCrdsAndUpdateKymaAnnotations(ctx, kyma); err != nil {
 			return r.CtrlErr(ctx, kyma, fmt.Errorf("could not update kyma or sync CRDs: %w", err))
 		}
