@@ -148,7 +148,6 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		if err := r.syncCrdsAndUpdateKymaAnnotations(ctx, kyma); err != nil {
 			return r.CtrlErr(ctx, kyma, fmt.Errorf("could not update kyma or sync CRDs: %w", err))
 		}
-		return ctrl.Result{}, nil
 	}
 
 	// state handling
