@@ -103,7 +103,8 @@ func ShouldPatchRemoteCRD(
 		!containsLatestCRDGeneration(kyma.Annotations[skrAnnotation], runtimeCRDGeneration)
 }
 
-func CreateRemoteCRD(ctx context.Context, kyma *v1beta2.Kyma, runtimeClient Client, controlPlaneClient Client, plural string) error {
+func CreateRemoteCRD(ctx context.Context, kyma *v1beta2.Kyma, runtimeClient Client,
+	controlPlaneClient Client, plural string) error {
 	var kcpCrd, skrCrd *v1extensions.CustomResourceDefinition
 	var err error
 	if kcpCrd, skrCrd, err = CreateOrUpdateCRD(
