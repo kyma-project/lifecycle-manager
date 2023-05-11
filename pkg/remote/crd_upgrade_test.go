@@ -10,13 +10,16 @@ import (
 )
 
 func TestShouldPatchRemoteCRD(t *testing.T) {
+	t.Parallel()
 	type args struct {
-		runtimeCrd    *v1extensions.CustomResourceDefinition
-		kcpCrd        *v1extensions.CustomResourceDefinition
-		kyma          *v1beta2.Kyma
-		kcpAnnotation string
-		skrAnnotation string
-		err           error
+		runtimeCrdGeneration      int64
+		kcpCrdGeneration          int64
+		runtimeCrdVersion         string
+		kymaKcpCrdAnnotationValue string
+		kymaSkrCrdAnnotationValue string
+		kcpAnnotation             string
+		skrAnnotation             string
+		err                       error
 	}
 	tests := []struct {
 		name string
@@ -26,143 +29,93 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 		{
 			name: "Different Skr Generation",
 			args: args{
-				err: nil,
-				runtimeCrd: &v1extensions.CustomResourceDefinition{
-					ObjectMeta: metav1.ObjectMeta{
-						Generation: 1,
-					},
-					Spec: v1extensions.CustomResourceDefinitionSpec{
-						Versions: []v1extensions.CustomResourceDefinitionVersion{
-							{
-								Name: v1beta2.GroupVersion.Version,
-							},
-						},
-					},
-				},
-				kcpCrd: &v1extensions.CustomResourceDefinition{
-					ObjectMeta: metav1.ObjectMeta{
-						Generation: 1,
-					},
-				},
-				kyma: &v1beta2.Kyma{
-					ObjectMeta: metav1.ObjectMeta{
-						Annotations: map[string]string{
-							v1beta2.SkrModuleTemplateCRDGenerationAnnotation: "0",
-							v1beta2.KcpModuleTemplateCRDGenerationAnnotation: "1",
-						},
-					},
-				},
-				kcpAnnotation: v1beta2.KcpModuleTemplateCRDGenerationAnnotation,
-				skrAnnotation: v1beta2.SkrModuleTemplateCRDGenerationAnnotation,
+				err:                       nil,
+				runtimeCrdGeneration:      1,
+				kcpCrdGeneration:          1,
+				runtimeCrdVersion:         v1beta2.GroupVersion.Version,
+				kymaKcpCrdAnnotationValue: "1",
+				kymaSkrCrdAnnotationValue: "0",
+				kcpAnnotation:             v1beta2.KcpModuleTemplateCRDGenerationAnnotation,
+				skrAnnotation:             v1beta2.SkrModuleTemplateCRDGenerationAnnotation,
 			},
 			want: true,
 		},
 		{
 			name: "Different Kcp Generation",
 			args: args{
-				err: nil,
-				runtimeCrd: &v1extensions.CustomResourceDefinition{
-					ObjectMeta: metav1.ObjectMeta{
-						Generation: 1,
-					},
-					Spec: v1extensions.CustomResourceDefinitionSpec{
-						Versions: []v1extensions.CustomResourceDefinitionVersion{
-							{
-								Name: v1beta2.GroupVersion.Version,
-							},
-						},
-					},
-				},
-				kcpCrd: &v1extensions.CustomResourceDefinition{
-					ObjectMeta: metav1.ObjectMeta{
-						Generation: 1,
-					},
-				},
-				kyma: &v1beta2.Kyma{
-					ObjectMeta: metav1.ObjectMeta{
-						Annotations: map[string]string{
-							v1beta2.SkrModuleTemplateCRDGenerationAnnotation: "1",
-							v1beta2.KcpModuleTemplateCRDGenerationAnnotation: "0",
-						},
-					},
-				},
-				kcpAnnotation: v1beta2.KcpModuleTemplateCRDGenerationAnnotation,
-				skrAnnotation: v1beta2.SkrModuleTemplateCRDGenerationAnnotation,
+				err:                       nil,
+				runtimeCrdGeneration:      1,
+				kcpCrdGeneration:          1,
+				runtimeCrdVersion:         v1beta2.GroupVersion.Version,
+				kymaKcpCrdAnnotationValue: "0",
+				kymaSkrCrdAnnotationValue: "1",
+				kcpAnnotation:             v1beta2.KcpModuleTemplateCRDGenerationAnnotation,
+				skrAnnotation:             v1beta2.SkrModuleTemplateCRDGenerationAnnotation,
 			},
 			want: true,
 		},
 		{
 			name: "Same Generations",
 			args: args{
-				err: nil,
-				runtimeCrd: &v1extensions.CustomResourceDefinition{
-					ObjectMeta: metav1.ObjectMeta{
-						Generation: 1,
-					},
-					Spec: v1extensions.CustomResourceDefinitionSpec{
-						Versions: []v1extensions.CustomResourceDefinitionVersion{
-							{
-								Name: v1beta2.GroupVersion.Version,
-							},
-						},
-					},
-				},
-				kcpCrd: &v1extensions.CustomResourceDefinition{
-					ObjectMeta: metav1.ObjectMeta{
-						Generation: 1,
-					},
-				},
-				kyma: &v1beta2.Kyma{
-					ObjectMeta: metav1.ObjectMeta{
-						Annotations: map[string]string{
-							v1beta2.SkrModuleTemplateCRDGenerationAnnotation: "1",
-							v1beta2.KcpModuleTemplateCRDGenerationAnnotation: "1",
-						},
-					},
-				},
-				kcpAnnotation: v1beta2.KcpModuleTemplateCRDGenerationAnnotation,
-				skrAnnotation: v1beta2.SkrModuleTemplateCRDGenerationAnnotation,
+				err:                       nil,
+				runtimeCrdGeneration:      1,
+				kcpCrdGeneration:          1,
+				runtimeCrdVersion:         v1beta2.GroupVersion.Version,
+				kymaKcpCrdAnnotationValue: "1",
+				kymaSkrCrdAnnotationValue: "1",
+				kcpAnnotation:             v1beta2.KcpModuleTemplateCRDGenerationAnnotation,
+				skrAnnotation:             v1beta2.SkrModuleTemplateCRDGenerationAnnotation,
 			},
 			want: false,
 		},
 		{
 			name: "Different Version",
 			args: args{
-				err: nil,
-				runtimeCrd: &v1extensions.CustomResourceDefinition{
-					ObjectMeta: metav1.ObjectMeta{
-						Generation: 1,
-					},
-					Spec: v1extensions.CustomResourceDefinitionSpec{
-						Versions: []v1extensions.CustomResourceDefinitionVersion{
-							{
-								Name: "v1alpha1",
-							},
-						},
-					},
-				},
-				kcpCrd: &v1extensions.CustomResourceDefinition{
-					ObjectMeta: metav1.ObjectMeta{
-						Generation: 1,
-					},
-				},
-				kyma: &v1beta2.Kyma{
-					ObjectMeta: metav1.ObjectMeta{
-						Annotations: map[string]string{
-							v1beta2.SkrModuleTemplateCRDGenerationAnnotation: "1",
-							v1beta2.KcpModuleTemplateCRDGenerationAnnotation: "1",
-						},
-					},
-				},
-				kcpAnnotation: v1beta2.KcpModuleTemplateCRDGenerationAnnotation,
-				skrAnnotation: v1beta2.SkrModuleTemplateCRDGenerationAnnotation,
+				err:                       nil,
+				runtimeCrdGeneration:      1,
+				kcpCrdGeneration:          1,
+				runtimeCrdVersion:         "v1alpha1",
+				kymaKcpCrdAnnotationValue: "0",
+				kymaSkrCrdAnnotationValue: "1",
+				kcpAnnotation:             v1beta2.KcpModuleTemplateCRDGenerationAnnotation,
+				skrAnnotation:             v1beta2.SkrModuleTemplateCRDGenerationAnnotation,
 			},
 			want: true,
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, ShouldPatchRemoteCRD(tt.args.runtimeCrd, tt.args.kcpCrd, tt.args.kyma, tt.args.kcpAnnotation, tt.args.skrAnnotation, tt.args.err), "ShouldPatchRemoteCRD(%v, %v, %v, %v, %v, %v)", tt.args.runtimeCrd, tt.args.kcpCrd, tt.args.kyma, tt.args.kcpAnnotation, tt.args.skrAnnotation, tt.args.err)
+		testCase := tt
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			runtimeCrd := &v1extensions.CustomResourceDefinition{
+				ObjectMeta: metav1.ObjectMeta{
+					Generation: testCase.args.runtimeCrdGeneration,
+				},
+				Spec: v1extensions.CustomResourceDefinitionSpec{
+					Versions: []v1extensions.CustomResourceDefinitionVersion{
+						{
+							Name: testCase.args.runtimeCrdVersion,
+						},
+					},
+				},
+			}
+
+			kcpCrd := &v1extensions.CustomResourceDefinition{
+				ObjectMeta: metav1.ObjectMeta{
+					Generation: testCase.args.kcpCrdGeneration,
+				},
+			}
+
+			kyma := &v1beta2.Kyma{
+				ObjectMeta: metav1.ObjectMeta{
+					Annotations: map[string]string{
+						testCase.args.skrAnnotation: testCase.args.kymaSkrCrdAnnotationValue,
+						testCase.args.kcpAnnotation: testCase.args.kymaKcpCrdAnnotationValue,
+					},
+				},
+			}
+			assert.Equalf(t, testCase.want, ShouldPatchRemoteCRD(runtimeCrd, kcpCrd, kyma, testCase.args.kcpAnnotation, testCase.args.skrAnnotation, testCase.args.err),
+				"ShouldPatchRemoteCRD(%v, %v, %v, %v, %v, %v)", runtimeCrd, kcpCrd, kyma, testCase.args.kcpAnnotation, testCase.args.skrAnnotation, testCase.args.err)
 		})
 	}
 }
