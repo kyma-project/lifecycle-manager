@@ -60,12 +60,10 @@ func NewRemoteCatalog(
 // It uses Server-Side-Apply Patches to optimize the turnaround required.
 func (c *RemoteCatalog) CreateOrUpdate(
 	ctx context.Context,
-	kcpModules []v1beta2.ModuleTemplate,
-	kyma *v1beta2.Kyma,
-) error {
+	kcpModules []v1beta2.ModuleTemplate) error {
 	syncContext := SyncContextFromContext(ctx)
 
-	if err := c.createOrUpdateCatalog(ctx, kcpModules, syncContext, kyma); err != nil {
+	if err := c.createOrUpdateCatalog(ctx, kcpModules, syncContext); err != nil {
 		return err
 	}
 
@@ -111,9 +109,7 @@ func (c *RemoteCatalog) deleteDiffCatalog(ctx context.Context,
 
 func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 	kcpModules []v1beta2.ModuleTemplate,
-	syncContext *KymaSynchronizationContext,
-	kyma *v1beta2.Kyma,
-) error {
+	syncContext *KymaSynchronizationContext) error {
 	channelLength := len(kcpModules)
 	results := make(chan error, channelLength)
 	for kcpIndex := range kcpModules {
@@ -131,9 +127,8 @@ func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 	}
 
 	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster when we apply it and retry
-	if containsMetaIsNoMatchErr(errs) || len(errs) == 0 {
-		if err := CreateRemoteCRD(ctx, kyma, syncContext.RuntimeClient, syncContext.ControlPlaneClient,
-			v1beta2.ModuleTemplateKind.Plural()); err != nil {
+	if containsMetaIsNoMatchErr(errs) {
+		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1beta2.ModuleTemplateKind.Plural()); err != nil {
 			return err
 		}
 
@@ -233,6 +228,41 @@ func (c *RemoteCatalog) Delete(
 	return nil
 }
 
+func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, plural string) error {
+	crd := &v1extensions.CustomResourceDefinition{}
+	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
+
+	syncContext := SyncContextFromContext(ctx)
+
+	var err error
+	err = syncContext.ControlPlaneClient.Get(ctx, client.ObjectKey{
+		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
+		// name changes, this also has to be adjusted here. We can think of making this configurable later
+		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
+	}, crd)
+
+	if err != nil {
+		return err
+	}
+
+	err = syncContext.RuntimeClient.Get(ctx, client.ObjectKey{
+		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
+	}, crdFromRuntime)
+
+	if k8serrors.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta2.GroupVersion.Version) {
+		return PatchCRD(ctx, syncContext.RuntimeClient, crd)
+	}
+
+	if !crdReady(crdFromRuntime) {
+		return ErrTemplateCRDNotReady
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 func crdReady(crd *v1extensions.CustomResourceDefinition) bool {
 	for _, cond := range crd.Status.Conditions {
 		if cond.Type == v1extensions.Established &&

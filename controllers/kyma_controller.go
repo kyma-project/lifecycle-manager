@@ -210,7 +210,7 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta2.Ky
 		}
 	}
 
-	if err := remote.NewRemoteCatalogFromKyma(r.RemoteSyncNamespace).CreateOrUpdate(ctx, modulesToSync, kyma); err != nil {
+	if err := remote.NewRemoteCatalogFromKyma(r.RemoteSyncNamespace).CreateOrUpdate(ctx, modulesToSync); err != nil {
 		return fmt.Errorf("could not synchronize remote module catalog: %w", err)
 	}
 

@@ -8,6 +8,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	corev1 "k8s.io/api/core/v1"
+	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -127,6 +128,39 @@ func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Con
 	return nil
 }
 
+func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plural string) error {
+	crd := &v1extensions.CustomResourceDefinition{}
+	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
+	var err error
+	err = c.ControlPlaneClient.Get(
+		ctx, client.ObjectKey{
+			// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
+			// name changes, this also has to be adjusted here. We can think of making this configurable later
+			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
+		}, crd,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	err = c.RuntimeClient.Get(
+		ctx, client.ObjectKey{
+			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
+		}, crdFromRuntime,
+	)
+
+	if k8serrors.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta2.GroupVersion.Version) {
+		return PatchCRD(ctx, c.RuntimeClient, crd)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 	ctx context.Context, kyma *v1beta2.Kyma, remoteSyncNamespace string,
 ) (*v1beta2.Kyma, error) {
@@ -140,13 +174,11 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 
 	if meta.IsNoMatchError(err) {
 		recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
-	}
 
-	if meta.IsNoMatchError(err) || err == nil {
-		err = CreateRemoteCRD(ctx, kyma, c.RuntimeClient, c.ControlPlaneClient, v1beta2.KymaKind.Plural())
-		if err != nil {
+		if err := c.CreateOrUpdateCRD(ctx, v1beta2.KymaKind.Plural()); err != nil {
 			return nil, err
 		}
+
 		recorder.Event(kyma, "Normal", "CRDInstallation", "CRDs were installed to SKR")
 		// the NoMatch error we previously encountered is now fixed through the CRD installation
 		err = nil
