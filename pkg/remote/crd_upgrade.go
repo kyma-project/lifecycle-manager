@@ -2,6 +2,7 @@ package remote
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -104,13 +105,55 @@ func CreateRemoteCRD(ctx context.Context, kyma *v1beta2.Kyma, runtimeClient Clie
 
 	if ShouldPatchRemoteCRD(skrCrd, kcpCrd, kyma, kcpCrdGenerationAnnotation,
 		skrCrdGenerationAnnotation, err) {
-		UpdateKymaAnnotations(kyma, kcpCrd, skrCrd)
+		if err = updateKymaAnnotations(kyma, kcpCrd, KCP); err != nil {
+			return err
+		}
+		if err = updateKymaAnnotations(kyma, skrCrd, SKR); err != nil {
+			return err
+		}
 		if err = controlPlaneClient.Update(ctx, kyma); err != nil {
 			return err
 		}
 	}
 
 	return nil
+}
+
+type CrdType string
+
+const (
+	KCP CrdType = "KCP"
+	SKR CrdType = "SKR"
+)
+
+func updateKymaAnnotations(kyma *v1beta2.Kyma, crd *v1extensions.CustomResourceDefinition, crdType CrdType) error {
+	if kyma.Annotations == nil {
+		kyma.Annotations = make(map[string]string)
+	}
+	annotation, err := getAnnotation(crd, crdType)
+	if err != nil {
+		return err
+	}
+	kyma.Annotations[annotation] = strconv.FormatInt(crd.Generation, 10)
+	return nil
+}
+
+func getAnnotation(crd *v1extensions.CustomResourceDefinition, crdType CrdType) (string, error) {
+	if crdType == SKR {
+		if crd.Spec.Names.Kind == string(v1beta2.KymaKind) {
+			return v1beta2.SkrKymaCRDGenerationAnnotation, nil
+		} else if crd.Spec.Names.Kind == string(v1beta2.ModuleTemplateKind) {
+			return v1beta2.SkrModuleTemplateCRDGenerationAnnotation, nil
+		}
+	} else if crdType == KCP {
+		if crd.Spec.Names.Kind == string(v1beta2.KymaKind) {
+			return v1beta2.KcpKymaCRDGenerationAnnotation, nil
+		} else if crd.Spec.Names.Kind == string(v1beta2.ModuleTemplateKind) {
+			return v1beta2.KcpModuleTemplateCRDGenerationAnnotation, nil
+		}
+	}
+
+	return "", errors.New("Not Supported Annotation")
 }
 
 func containsLatestVersion(crdFromRuntime *v1extensions.CustomResourceDefinition, latestVersion string) bool {

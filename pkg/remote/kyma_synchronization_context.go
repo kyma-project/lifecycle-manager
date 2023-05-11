@@ -5,11 +5,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	corev1 "k8s.io/api/core/v1"
-	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -127,26 +125,6 @@ func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Con
 	}
 
 	return nil
-}
-
-func UpdateKymaAnnotations(
-	kyma *v1beta2.Kyma,
-	kcpCRD *v1extensions.CustomResourceDefinition,
-	skrCRD *v1extensions.CustomResourceDefinition) {
-	if kyma.Annotations == nil {
-		kyma.Annotations = make(map[string]string)
-	}
-
-	kcpAnnotation := v1beta2.KcpKymaCRDGenerationAnnotation
-	skrAnnotation := v1beta2.SkrKymaCRDGenerationAnnotation
-
-	if kcpCRD.Spec.Names.Kind == string(v1beta2.ModuleTemplateKind) {
-		kcpAnnotation = v1beta2.KcpModuleTemplateCRDGenerationAnnotation
-		skrAnnotation = v1beta2.SkrModuleTemplateCRDGenerationAnnotation
-	}
-
-	kyma.Annotations[kcpAnnotation] = strconv.FormatInt(kcpCRD.Generation, 10)
-	kyma.Annotations[skrAnnotation] = strconv.FormatInt(skrCRD.Generation, 10)
 }
 
 func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
