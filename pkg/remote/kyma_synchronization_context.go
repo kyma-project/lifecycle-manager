@@ -233,23 +233,20 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(
 	return nil
 }
 
-// ReplaceWithVirtualKyma creates a virtual kyma instance from a control plane Kyma and N Remote Kymas,
+// ReplaceWithVirtualKyma creates a virtual kyma instance from a control plane Kyma and one Remote Kymas,
 // merging the module specification in the process.
-func (c *KymaSynchronizationContext) ReplaceWithVirtualKyma(
+func ReplaceWithVirtualKyma(
 	kyma *v1beta2.Kyma,
-	remotes ...*v1beta2.Kyma,
+	remoteKyma *v1beta2.Kyma,
 ) {
 	totalModuleAmount := len(kyma.Spec.Modules)
-	for _, remote := range remotes {
-		totalModuleAmount += len(remote.Spec.Modules)
-	}
+	totalModuleAmount += len(remoteKyma.Spec.Modules)
 	modules := make(map[string]v1beta2.Module, totalModuleAmount)
 
-	for _, remote := range remotes {
-		for _, m := range remote.Spec.Modules {
-			modules[m.Name] = m
-		}
+	for _, m := range remoteKyma.Spec.Modules {
+		modules[m.Name] = m
 	}
+
 	for _, m := range kyma.Spec.Modules {
 		modules[m.Name] = m
 	}
@@ -258,6 +255,7 @@ func (c *KymaSynchronizationContext) ReplaceWithVirtualKyma(
 	for _, m := range modules {
 		kyma.Spec.Modules = append(kyma.Spec.Modules, m)
 	}
+	kyma.Spec.Channel = remoteKyma.Spec.Channel
 }
 
 func GetRemoteObjectKey(kyma *v1beta2.Kyma, remoteSyncNamespace string) client.ObjectKey {
