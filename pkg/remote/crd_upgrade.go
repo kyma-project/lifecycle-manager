@@ -12,6 +12,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+var (
+	ErrNotSupportedAnnotation = errors.New("not supported annotation")
+)
+
 func PatchCRD(ctx context.Context, clnt client.Client, crd *v1extensions.CustomResourceDefinition) error {
 	crdToApply := &v1extensions.CustomResourceDefinition{}
 	crdToApply.SetGroupVersionKind(crd.GroupVersionKind())
@@ -145,7 +149,9 @@ func getAnnotation(crd *v1extensions.CustomResourceDefinition, crdType CrdType) 
 		} else if crd.Spec.Names.Kind == string(v1beta2.ModuleTemplateKind) {
 			return v1beta2.SkrModuleTemplateCRDGenerationAnnotation, nil
 		}
-	} else if crdType == KCP {
+	}
+
+	if crdType == KCP {
 		if crd.Spec.Names.Kind == string(v1beta2.KymaKind) {
 			return v1beta2.KcpKymaCRDGenerationAnnotation, nil
 		} else if crd.Spec.Names.Kind == string(v1beta2.ModuleTemplateKind) {
@@ -153,7 +159,7 @@ func getAnnotation(crd *v1extensions.CustomResourceDefinition, crdType CrdType) 
 		}
 	}
 
-	return "", errors.New("Not Supported Annotation")
+	return "", ErrNotSupportedAnnotation
 }
 
 func containsLatestVersion(crdFromRuntime *v1extensions.CustomResourceDefinition, latestVersion string) bool {
