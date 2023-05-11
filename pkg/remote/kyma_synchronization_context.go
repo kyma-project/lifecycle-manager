@@ -143,8 +143,7 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 	}
 
 	if meta.IsNoMatchError(err) || err == nil {
-		err = CreateRemoteCRD(ctx, kyma, c.RuntimeClient, c.ControlPlaneClient,
-			v1beta2.KcpKymaCRDGenerationAnnotation, v1beta2.SkrKymaCRDGenerationAnnotation, v1beta2.KymaKind.Plural())
+		err = CreateRemoteCRD(ctx, kyma, c.RuntimeClient, c.ControlPlaneClient, v1beta2.KymaKind.Plural())
 		if err != nil {
 			return nil, err
 		}

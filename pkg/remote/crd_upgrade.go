@@ -60,16 +60,7 @@ func CreateOrUpdateCRD(
 		}, crdFromRuntime,
 	)
 
-	kcpAnnotation, err := getAnnotation(crd, KCP)
-	if err != nil {
-		return nil, nil, err
-	}
-	skrAnnotation, err := getAnnotation(crd, SKR)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if ShouldPatchRemoteCRD(crdFromRuntime, crd, kyma, kcpAnnotation, skrAnnotation, err) {
+	if ShouldPatchRemoteCRD(crdFromRuntime, crd, kyma, err) {
 		err = PatchCRD(ctx, runtimeClient, crd)
 		if err != nil {
 			return nil, nil, err
@@ -98,7 +89,13 @@ func CreateOrUpdateCRD(
 
 func ShouldPatchRemoteCRD(
 	runtimeCrd *v1extensions.CustomResourceDefinition, kcpCrd *v1extensions.CustomResourceDefinition,
-	kyma *v1beta2.Kyma, kcpAnnotation string, skrAnnotation string, err error) bool {
+	kyma *v1beta2.Kyma, err error) bool {
+	if k8serrors.IsNotFound(err) {
+		return true
+	}
+	kcpAnnotation, _ := getAnnotation(kcpCrd, KCP)
+	skrAnnotation, _ := getAnnotation(runtimeCrd, SKR)
+
 	latestGeneration := strconv.FormatInt(kcpCrd.Generation, 10)
 	runtimeCRDGeneration := strconv.FormatInt(runtimeCrd.Generation, 10)
 	return k8serrors.IsNotFound(err) || !containsLatestVersion(runtimeCrd, v1beta2.GroupVersion.Version) ||
@@ -106,8 +103,7 @@ func ShouldPatchRemoteCRD(
 		!containsLatestCRDGeneration(kyma.Annotations[skrAnnotation], runtimeCRDGeneration)
 }
 
-func CreateRemoteCRD(ctx context.Context, kyma *v1beta2.Kyma, runtimeClient Client, controlPlaneClient Client,
-	kcpCrdGenerationAnnotation string, skrCrdGenerationAnnotation string, plural string) error {
+func CreateRemoteCRD(ctx context.Context, kyma *v1beta2.Kyma, runtimeClient Client, controlPlaneClient Client, plural string) error {
 	var kcpCrd, skrCrd *v1extensions.CustomResourceDefinition
 	var err error
 	if kcpCrd, skrCrd, err = CreateOrUpdateCRD(
@@ -115,8 +111,7 @@ func CreateRemoteCRD(ctx context.Context, kyma *v1beta2.Kyma, runtimeClient Clie
 		return err
 	}
 
-	if ShouldPatchRemoteCRD(skrCrd, kcpCrd, kyma, kcpCrdGenerationAnnotation,
-		skrCrdGenerationAnnotation, err) {
+	if ShouldPatchRemoteCRD(skrCrd, kcpCrd, kyma, err) {
 		if err = updateKymaAnnotations(kyma, kcpCrd, KCP); err != nil {
 			return err
 		}
