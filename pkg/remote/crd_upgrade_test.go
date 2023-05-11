@@ -10,6 +10,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+//nolint:funlen
 func TestShouldPatchRemoteCRD(t *testing.T) {
 	t.Parallel()
 	type args struct {
@@ -115,8 +116,10 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 					},
 				},
 			}
-			assert.Equalf(t, testCase.want, remote.ShouldPatchRemoteCRD(runtimeCrd, kcpCrd, kyma, testCase.args.kcpAnnotation, testCase.args.skrAnnotation, testCase.args.err),
-				"ShouldPatchRemoteCRD(%v, %v, %v, %v, %v, %v)", runtimeCrd, kcpCrd, kyma, testCase.args.kcpAnnotation, testCase.args.skrAnnotation, testCase.args.err)
+			assert.Equalf(t, testCase.want, remote.ShouldPatchRemoteCRD(runtimeCrd, kcpCrd, kyma, testCase.args.kcpAnnotation,
+				testCase.args.skrAnnotation, testCase.args.err),
+				"ShouldPatchRemoteCRD(%v, %v, %v, %v, %v, %v)", runtimeCrd, kcpCrd, kyma, testCase.args.kcpAnnotation,
+				testCase.args.skrAnnotation, testCase.args.err)
 		})
 	}
 }
