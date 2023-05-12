@@ -77,7 +77,6 @@ type KymaReconciler struct {
 }
 
 //nolint:lll
-//nolint:funlen
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/finalizers,verbs=update
@@ -93,6 +92,8 @@ type KymaReconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
+//
+//nolint:funlen
 func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := ctrlLog.FromContext(ctx)
 	logger.V(log.InfoLevel).Info("reconciling")
@@ -142,15 +143,15 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	// update the remote kyma with the state of the control plane
-	if kyma.SyncEnabled() {
+	if kyma.SyncEnabled() { //nolint:nestif
 		if err := r.syncRemoteKymaSpecAndStatus(ctx, kyma); err != nil {
 			return r.CtrlErr(ctx, kyma, fmt.Errorf("could not synchronize remote kyma: %w", err))
 		}
-		updateRequired, err := r.syncCrdsAndUpdateKymaAnnotations(ctx, kyma)
+		updateKymaRequired, err := r.syncCrdsAndUpdateKymaAnnotations(ctx, kyma)
 		if err != nil {
 			return r.CtrlErr(ctx, kyma, fmt.Errorf("could not update sync CRDS: %w", err))
 		}
-		if updateRequired {
+		if updateKymaRequired {
 			if err := r.Update(ctx, kyma); err != nil {
 				return r.CtrlErr(ctx, kyma, fmt.Errorf("could not update kyma annotations: %w", err))
 			}
