@@ -141,8 +141,8 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(
 
 	for idx := range modules {
 		module := modules[idx]
-		latestModuleStatus := generateModuleStatus(module)
 		moduleStatus, exists := moduleStatusMap[module.ModuleName]
+		latestModuleStatus := generateModuleStatus(module, moduleStatus)
 		if exists {
 			*moduleStatus = latestModuleStatus
 		} else {
@@ -151,7 +151,15 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(
 	}
 }
 
-func generateModuleStatus(module *common.Module) v1beta2.ModuleStatus {
+func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStatus) v1beta2.ModuleStatus {
+	if errors.Is(module.Template.Err, channel.ErrTemplateUpdateNotAllowed) {
+		newModuleStatus := existStatus.DeepCopy()
+		// TODO: consider change this state to warning after this issue finished
+		// https://github.com/kyma-project/lifecycle-manager/issues/525
+		newModuleStatus.State = v1beta2.StateReady
+		newModuleStatus.Message = module.Template.Err.Error()
+		return *newModuleStatus
+	}
 	if module.Template.Err != nil {
 		return v1beta2.ModuleStatus{
 			Name:    module.ModuleName,

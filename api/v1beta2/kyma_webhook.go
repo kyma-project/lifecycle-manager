@@ -17,11 +17,60 @@ limitations under the License.
 package v1beta2
 
 import (
+	"errors"
+
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
+
+var ErrDuplicateModule = errors.New("duplicate module")
 
 func (kyma *Kyma) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(kyma).
 		Complete()
+}
+
+//nolint:lll
+//+kubebuilder:webhook:path=/validate-operator-kyma-project-io-v1beta2-kyma,mutating=false,failurePolicy=fail,sideEffects=None,groups=operator.kyma-project.io,resources=kymas,verbs=create;update,versions=v1beta2,name=vkyma.kb.io,admissionReviewVersions=v1
+
+var _ webhook.Validator = &Kyma{}
+
+// ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
+func (kyma *Kyma) ValidateCreate() error {
+	logf.Log.WithName("kyma-resource").
+		Info("validate create", "name", kyma.Name)
+	return ValidateKymaModule(kyma)
+}
+
+// ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
+func (kyma *Kyma) ValidateUpdate(_ runtime.Object) error {
+	logf.Log.WithName("kyma-resource").
+		Info("validate update", "name", kyma.Name)
+	return ValidateKymaModule(kyma)
+}
+
+// ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
+func (kyma *Kyma) ValidateDelete() error {
+	return nil
+}
+
+func ValidateKymaModule(kyma *Kyma) error {
+	moduleSet := map[string]bool{}
+	for _, module := range kyma.Spec.Modules {
+		if _, found := moduleSet[module.Name]; found {
+			return apierrors.NewInvalid(
+				schema.GroupKind{Group: GroupVersion.Group, Kind: string(KymaKind)},
+				kyma.Name, field.ErrorList{field.Invalid(
+					field.NewPath("spec").Child("modules"),
+					module.Name, ErrDuplicateModule.Error())})
+		}
+		moduleSet[module.Name] = true
+	}
+	return nil
 }

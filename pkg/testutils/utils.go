@@ -34,12 +34,12 @@ import (
 )
 
 const (
-	randomStringLength = 8
-	letterBytes        = "abcdefghijklmnopqrstuvwxyz"
-	defaultBufferSize  = 2048
-	httpClientTimeout  = 2 * time.Second
-	Timeout            = time.Second * 10
-	Interval           = time.Millisecond * 250
+	randomStringLength     = 8
+	letterBytes            = "abcdefghijklmnopqrstuvwxyz"
+	defaultBufferSize      = 2048
+	Timeout                = time.Second * 20
+	ConsistentCheckTimeout = time.Second * 10
+	Interval               = time.Millisecond * 250
 )
 
 func NewTestKyma(name string) *v1beta2.Kyma {
