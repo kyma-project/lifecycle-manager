@@ -175,7 +175,10 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
-	dropV1alpha1FromStoredVersions(mgr)
+
+	go func() {
+		dropVersionFromStoredVersions(mgr, "v1alpha1")
+	}()
 
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
@@ -364,7 +367,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, fla
 	}
 }
 
-func dropV1alpha1FromStoredVersions(mgr manager.Manager) {
+func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved string) {
 	cfg := mgr.GetConfig()
 	kcpClient, err := apiextension.NewForConfig(cfg)
 	if err != nil {
@@ -386,7 +389,7 @@ func dropV1alpha1FromStoredVersions(mgr manager.Manager) {
 		oldStoredVersions := crdItem.Status.StoredVersions
 		newStoredVersions := make([]string, 0, len(oldStoredVersions))
 		for _, stored := range oldStoredVersions {
-			if stored != "v1alpha1" {
+			if stored != versionToBeRemoved {
 				newStoredVersions = append(newStoredVersions, stored)
 			}
 		}
