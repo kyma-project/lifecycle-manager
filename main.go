@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -371,7 +372,7 @@ func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved strin
 	cfg := mgr.GetConfig()
 	kcpClient, err := apiextension.NewForConfig(cfg)
 	if err != nil {
-		setupLog.V(log.DebugLevel).Error(err, "unable to initialize client to remove v1alpha1")
+		setupLog.V(log.DebugLevel).Error(err, fmt.Sprintf("unable to initialize client to remove %s", versionToBeRemoved))
 	}
 	ctx := context.TODO()
 	var crdList *v1extensions.CustomResourceDefinitionList
@@ -397,7 +398,7 @@ func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved strin
 		crd := crdItem
 		if _, err := kcpClient.ApiextensionsV1().CustomResourceDefinitions().
 			UpdateStatus(ctx, &crd, v1.UpdateOptions{}); err != nil {
-			setupLog.V(log.DebugLevel).Error(err, "Failed to update CRD to remove v1alpha1 from stored versions")
+			setupLog.V(log.DebugLevel).Error(err, fmt.Sprintf("Failed to update CRD to remove %s from stored versions", versionToBeRemoved))
 		}
 	}
 
