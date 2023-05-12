@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -35,9 +36,12 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/utils/strings/slices"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -143,6 +147,7 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 			NewClient:              NewClient,
 		},
 	)
+
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
@@ -172,6 +177,11 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
+
+	go func() {
+		dropVersionFromStoredVersions(mgr, "v1alpha1")
+	}()
+
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
@@ -359,4 +369,40 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, fla
 		setupLog.Error(err, "unable to create controller", "controller", controllers.WatcherControllerName)
 		os.Exit(1)
 	}
+}
+
+func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved string) {
+	cfg := mgr.GetConfig()
+	kcpClient, err := apiextension.NewForConfig(cfg)
+	if err != nil {
+		setupLog.V(log.DebugLevel).Error(err, fmt.Sprintf("unable to initialize client to remove %s", versionToBeRemoved))
+	}
+	ctx := context.TODO()
+	var crdList *v1extensions.CustomResourceDefinitionList
+	if crdList, err = kcpClient.ApiextensionsV1().CustomResourceDefinitions().List(ctx, v1.ListOptions{}); err != nil {
+		setupLog.V(log.DebugLevel).Error(err, "unable to list CRDs")
+	}
+
+	crdsToPatch := []string{string(operatorv1beta2.ModuleTemplateKind), string(operatorv1beta2.WatcherKind),
+		operatorv1beta2.ManifestKind, string(operatorv1beta2.KymaKind)}
+
+	for _, crdItem := range crdList.Items {
+		if crdItem.Spec.Group != "operator.kyma-project.io" && !slices.Contains(crdsToPatch, crdItem.Spec.Names.Kind) {
+			continue
+		}
+		oldStoredVersions := crdItem.Status.StoredVersions
+		newStoredVersions := make([]string, 0, len(oldStoredVersions))
+		for _, stored := range oldStoredVersions {
+			if stored != versionToBeRemoved {
+				newStoredVersions = append(newStoredVersions, stored)
+			}
+		}
+		crdItem.Status.StoredVersions = newStoredVersions
+		crd := crdItem
+		if _, err := kcpClient.ApiextensionsV1().CustomResourceDefinitions().
+			UpdateStatus(ctx, &crd, v1.UpdateOptions{}); err != nil {
+			setupLog.V(log.DebugLevel).Error(err, fmt.Sprintf("Failed to update CRD to remove %s from stored versions", versionToBeRemoved))
+		}
+	}
+
 }
