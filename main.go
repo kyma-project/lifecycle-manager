@@ -380,7 +380,7 @@ func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved strin
 	ctx := context.TODO()
 	var crdList *v1extensions.CustomResourceDefinitionList
 	if crdList, err = kcpClient.ApiextensionsV1().CustomResourceDefinitions().List(ctx, v1.ListOptions{}); err != nil {
-		setupLog.V(log.DebugLevel).Error(err, "unable to list CRDs")
+		setupLog.V(log.InfoLevel).Error(err, "unable to list CRDs")
 	}
 
 	crdsToPatch := []string{string(operatorv1beta2.ModuleTemplateKind), string(operatorv1beta2.WatcherKind),
@@ -390,6 +390,7 @@ func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved strin
 		if crdItem.Spec.Group != "operator.kyma-project.io" && !slices.Contains(crdsToPatch, crdItem.Spec.Names.Kind) {
 			continue
 		}
+		setupLog.V(log.InfoLevel).Info(fmt.Sprintf("Checking the storedVersions for %s crd", crdItem.Spec.Names.Kind))
 		oldStoredVersions := crdItem.Status.StoredVersions
 		newStoredVersions := make([]string, 0, len(oldStoredVersions))
 		for _, stored := range oldStoredVersions {
@@ -398,10 +399,11 @@ func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved strin
 			}
 		}
 		crdItem.Status.StoredVersions = newStoredVersions
+		setupLog.V(log.InfoLevel).Info(fmt.Sprintf("The new storedVersions are %v", newStoredVersions))
 		crd := crdItem
 		if _, err := kcpClient.ApiextensionsV1().CustomResourceDefinitions().
 			UpdateStatus(ctx, &crd, v1.UpdateOptions{}); err != nil {
-			setupLog.V(log.DebugLevel).Error(err, fmt.Sprintf("Failed to update CRD to remove %s from stored versions", versionToBeRemoved))
+			setupLog.V(log.InfoLevel).Error(err, fmt.Sprintf("Failed to update CRD to remove %s from stored versions", versionToBeRemoved))
 		}
 	}
 
