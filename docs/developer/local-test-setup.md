@@ -124,7 +124,7 @@ k3d cluster create skr-local
    data:
       config: $(k3d kubeconfig get skr-local | sed 's/0\.0\.0\.0/host.k3d.internal/' | base64 | tr -d '\n')
    ---
-   apiVersion: operator.kyma-project.io/v1beta1
+   apiVersion: operator.kyma-project.io/v1beta2
    kind: Kyma
    metadata:
       annotations:
@@ -133,9 +133,6 @@ k3d cluster create skr-local
       namespace: kcp-system
    spec:
       channel: regular
-      sync:
-        enabled: true
-        namespace: kcp-system
       modules:
         - name: template-operator
    EOF
