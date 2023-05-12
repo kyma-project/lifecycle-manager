@@ -96,8 +96,8 @@ func ShouldPatchRemoteCRD(
 
 	latestGeneration := strconv.FormatInt(kcpCrd.Generation, 10)
 	runtimeCRDGeneration := strconv.FormatInt(runtimeCrd.Generation, 10)
-	return !containsLatestCRDGeneration(kyma.Annotations[kcpAnnotation], latestGeneration) ||
-		!containsLatestCRDGeneration(kyma.Annotations[skrAnnotation], runtimeCRDGeneration)
+	return kyma.Annotations[kcpAnnotation] != latestGeneration ||
+		kyma.Annotations[skrAnnotation] != runtimeCRDGeneration
 }
 
 func updateKymaAnnotations(kyma *v1beta2.Kyma, crd *v1extensions.CustomResourceDefinition, crdType CrdType) error {
@@ -172,8 +172,4 @@ func ContainsLatestVersion(crdFromRuntime *v1extensions.CustomResourceDefinition
 		}
 	}
 	return false
-}
-
-func containsLatestCRDGeneration(storedGeneration string, latestGeneration string) bool {
-	return storedGeneration == latestGeneration
 }
