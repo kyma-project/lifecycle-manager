@@ -31,57 +31,18 @@ const (
 	SKR CrdType = "SKR"
 )
 
-func updateRemoteCRD(
-	ctx context.Context, plural string, kyma *v1beta2.Kyma, runtimeClient Client, controlPlaneClient Client) (
-	bool, *v1extensions.CustomResourceDefinition, *v1extensions.CustomResourceDefinition, error) {
-	crd := &v1extensions.CustomResourceDefinition{}
-	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
-	var err error
-	err = controlPlaneClient.Get(
-		ctx, client.ObjectKey{
-			// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
-			// name changes, this also has to be adjusted here. We can think of making this configurable later
-			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
-		}, crd,
-	)
-
-	if err != nil {
-		return false, nil, nil, err
-	}
-
-	err = runtimeClient.Get(
-		ctx, client.ObjectKey{
-			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
-		}, crdFromRuntime,
-	)
-
-	if err != nil {
-		return false, nil, nil, err
-	}
-
-	if ShouldPatchRemoteCRD(crdFromRuntime, crd, kyma) {
-		err = PatchCRD(ctx, runtimeClient, crd)
+func updateRemoteCRD(ctx context.Context, kyma *v1beta2.Kyma, runtimeClient Client,
+	crdFromRuntime *v1extensions.CustomResourceDefinition, kcpCrd *v1extensions.CustomResourceDefinition) (bool, error) {
+	if ShouldPatchRemoteCRD(crdFromRuntime, kcpCrd, kyma) {
+		err := PatchCRD(ctx, runtimeClient, kcpCrd)
 		if err != nil {
-			return false, nil, nil, err
+			return false, err
 		}
 
-		err = runtimeClient.Get(
-			ctx, client.ObjectKey{
-				Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
-			}, crdFromRuntime,
-		)
-		if err != nil {
-			return false, nil, nil, err
-		}
-
-		return true, crdFromRuntime, crd, nil
+		return true, nil
 	}
 
-	if err != nil {
-		return false, nil, nil, err
-	}
-
-	return false, nil, nil, nil
+	return false, nil
 }
 
 func ShouldPatchRemoteCRD(
@@ -96,13 +57,12 @@ func ShouldPatchRemoteCRD(
 		kyma.Annotations[skrAnnotation] != runtimeCRDGeneration
 }
 
-func updateKymaAnnotations(kyma *v1beta2.Kyma, crd *v1extensions.CustomResourceDefinition, crdType CrdType) error {
+func updateKymaAnnotations(kyma *v1beta2.Kyma, crd *v1extensions.CustomResourceDefinition, crdType CrdType) {
 	if kyma.Annotations == nil {
 		kyma.Annotations = make(map[string]string)
 	}
 	annotation := getAnnotation(crd, crdType)
 	kyma.Annotations[annotation] = strconv.FormatInt(crd.Generation, 10)
-	return nil
 }
 
 func getAnnotation(crd *v1extensions.CustomResourceDefinition, crdType CrdType) string {
@@ -111,35 +71,80 @@ func getAnnotation(crd *v1extensions.CustomResourceDefinition, crdType CrdType) 
 
 func SyncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma,
 	runtimeClient Client, controlPlaneClient Client) (bool, error) {
-	kymaCrdUpdated, kymaSkrCrd, kymaKcpCrd, err := updateRemoteCRD(ctx, v1beta2.KymaKind.Plural(),
-		kyma, runtimeClient, controlPlaneClient)
+	kcpKymaCrd, skrKymaCrd, err := fetchCrds(ctx, controlPlaneClient, runtimeClient, v1beta2.KymaKind.Plural())
+	if err != nil {
+		return false, err
+	}
+	kymaCrdUpdated, err := updateRemoteCRD(ctx, kyma, runtimeClient, skrKymaCrd, kcpKymaCrd)
 	if err != nil {
 		return false, err
 	}
 	if kymaCrdUpdated {
-		if err := updateKymaAnnotations(kyma, kymaKcpCrd, KCP); err != nil {
+		err = runtimeClient.Get(
+			ctx, client.ObjectKey{
+				Name: fmt.Sprintf("%s.%s", v1beta2.KymaKind.Plural(), v1beta2.GroupVersion.Group),
+			}, skrKymaCrd,
+		)
+		if err != nil {
 			return false, err
 		}
-		if err := updateKymaAnnotations(kyma, kymaSkrCrd, SKR); err != nil {
-			return false, err
-		}
+		updateKymaAnnotations(kyma, kcpKymaCrd, KCP)
+		updateKymaAnnotations(kyma, skrKymaCrd, SKR)
 	}
 
-	moduleTemplateCrdUpdated, moduleTemplateSkrCrd, moduleTemplateKcpCrd, err := updateRemoteCRD(ctx,
-		v1beta2.ModuleTemplateKind.Plural(), kyma, runtimeClient, controlPlaneClient)
+	kcpModuleTemplateCrd, skrModuleTemplateCrd, err := fetchCrds(ctx, controlPlaneClient, runtimeClient,
+		v1beta2.ModuleTemplateKind.Plural())
+	if err != nil {
+		return false, err
+	}
+	moduleTemplateCrdUpdated, err := updateRemoteCRD(ctx, kyma, runtimeClient, skrModuleTemplateCrd, kcpModuleTemplateCrd)
 	if err != nil {
 		return false, err
 	}
 	if moduleTemplateCrdUpdated {
-		if err := updateKymaAnnotations(kyma, moduleTemplateKcpCrd, KCP); err != nil {
+		err = runtimeClient.Get(
+			ctx, client.ObjectKey{
+				Name: fmt.Sprintf("%s.%s", v1beta2.ModuleTemplateKind.Plural(), v1beta2.GroupVersion.Group),
+			}, skrModuleTemplateCrd,
+		)
+		if err != nil {
 			return false, err
 		}
-		if err := updateKymaAnnotations(kyma, moduleTemplateSkrCrd, SKR); err != nil {
-			return false, err
-		}
+		updateKymaAnnotations(kyma, kcpModuleTemplateCrd, KCP)
+		updateKymaAnnotations(kyma, skrModuleTemplateCrd, SKR)
 	}
 
 	return kymaCrdUpdated || moduleTemplateCrdUpdated, nil
+}
+
+func fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Client, plural string) (
+	*v1extensions.CustomResourceDefinition, *v1extensions.CustomResourceDefinition, error) {
+	crd := &v1extensions.CustomResourceDefinition{}
+	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
+	var err error
+	err = controlPlaneClient.Get(
+		ctx, client.ObjectKey{
+			// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
+			// name changes, this also has to be adjusted here. We can think of making this configurable later
+			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
+		}, crd,
+	)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	err = runtimeClient.Get(
+		ctx, client.ObjectKey{
+			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
+		}, crdFromRuntime,
+	)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return crd, crdFromRuntime, nil
 }
 
 func ContainsLatestVersion(crdFromRuntime *v1extensions.CustomResourceDefinition, latestVersion string) bool {
