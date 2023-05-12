@@ -40,6 +40,14 @@ func Test_defaultTransforms(t *testing.T) {
 			},
 		},
 		{
+			"empty managedByDeclarativeV2",
+			managedByDeclarativeV2,
+			[]*unstructured.Unstructured{},
+			func(testingT assert.TestingT, err error, i ...interface{}) bool {
+				return assert.NoError(testingT, err)
+			},
+		},
+		{
 			"simple disclaimerTransform",
 			disclaimerTransform,
 			[]*unstructured.Unstructured{{Object: map[string]any{}}},
@@ -69,6 +77,22 @@ func Test_defaultTransforms(t *testing.T) {
 				assert.Contains(testingT, unstruct.GetLabels(), "app.kubernetes.io/component")
 				assert.Contains(testingT, unstruct.GetLabels(), "app.kubernetes.io/part-of")
 				assert.Equal(testingT, "Kyma", unstruct.GetLabels()["app.kubernetes.io/part-of"])
+				return true
+			},
+		},
+		{
+			"simple managedByDeclarativeV2",
+			managedByDeclarativeV2,
+			[]*unstructured.Unstructured{{Object: map[string]any{}}},
+			func(testingT assert.TestingT, err error, i ...interface{}) bool {
+				assert.NoError(testingT, err)
+				unstructs, ok := i[0].([]*unstructured.Unstructured)
+				assert.True(testingT, ok)
+				unstruct := unstructs[0]
+				assert.NotEmpty(testingT, unstruct)
+				assert.NotNil(testingT, unstruct.GetLabels())
+				assert.Contains(testingT, unstruct.GetLabels(), ManagedByLabel)
+				assert.Equal(testingT, managedByLabelValue, unstruct.GetLabels()[ManagedByLabel])
 				return true
 			},
 		},

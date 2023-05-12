@@ -12,6 +12,9 @@ const (
 	OperatorPrefix = "operator.kyma-project.io"
 	Separator      = "/"
 
+	ManagedByLabel      = OperatorPrefix + Separator + "managed-by"
+	managedByLabelValue = "declarative-v2"
+
 	DisclaimerAnnotation      = OperatorPrefix + Separator + "managed-by-reconciler-disclaimer"
 	disclaimerAnnotationValue = "DO NOT EDIT - This resource is managed by Kyma.\n" +
 		"Any modifications are discarded and the resource is reverted to the original state."
@@ -50,13 +53,26 @@ func kymaComponentTransform(_ context.Context, obj Object, resources []*unstruct
 	return nil
 }
 
+func managedByDeclarativeV2(_ context.Context, _ Object, resources []*unstructured.Unstructured) error {
+	for _, resource := range resources {
+		lbls := resource.GetLabels()
+		if lbls == nil {
+			lbls = make(map[string]string)
+		}
+		// legacy managed by value
+		lbls[ManagedByLabel] = managedByLabelValue
+		resource.SetLabels(lbls)
+	}
+	return nil
+}
+
 func watchedByOwnedBy(_ context.Context, obj Object, resources []*unstructured.Unstructured) error {
 	for _, resource := range resources {
 		lbls := resource.GetLabels()
 		if lbls == nil {
 			lbls = make(map[string]string)
 		}
-		// legacy watched by value
+		// legacy managed by value
 		lbls[WatchedByLabel] = OperatorName
 
 		annotations := resource.GetAnnotations()
