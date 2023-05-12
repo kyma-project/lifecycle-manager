@@ -93,7 +93,7 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 					},
 				},
 			}
-			assert.Equalf(t, testCase.want, remote.ShouldPatchRemoteCRD(runtimeCrd, kcpCrd, kyma, testCase.args.err),
+			assert.Equalf(t, testCase.want, remote.ShouldPatchRemoteCRD(runtimeCrd, kcpCrd, kyma),
 				"ShouldPatchRemoteCRD(%v, %v, %v, %v)", runtimeCrd, kcpCrd, kyma, testCase.args.err)
 		})
 	}

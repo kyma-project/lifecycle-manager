@@ -8,7 +8,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -60,7 +59,11 @@ func updateRemoteCRD(
 		}, crdFromRuntime,
 	)
 
-	if ShouldPatchRemoteCRD(crdFromRuntime, crd, kyma, err) {
+	if err != nil {
+		return false, nil, nil, err
+	}
+
+	if ShouldPatchRemoteCRD(crdFromRuntime, crd, kyma) {
 		err = PatchCRD(ctx, runtimeClient, crd)
 		if err != nil {
 			return false, nil, nil, err
@@ -87,10 +90,7 @@ func updateRemoteCRD(
 
 func ShouldPatchRemoteCRD(
 	runtimeCrd *v1extensions.CustomResourceDefinition, kcpCrd *v1extensions.CustomResourceDefinition,
-	kyma *v1beta2.Kyma, err error) bool {
-	if k8serrors.IsNotFound(err) {
-		return true
-	}
+	kyma *v1beta2.Kyma) bool {
 	kcpAnnotation, _ := getAnnotation(kcpCrd, KCP)
 	skrAnnotation, _ := getAnnotation(runtimeCrd, SKR)
 
