@@ -403,7 +403,8 @@ func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved strin
 		crd := crdItem
 		if _, err := kcpClient.ApiextensionsV1().CustomResourceDefinitions().
 			UpdateStatus(ctx, &crd, v1.UpdateOptions{}); err != nil {
-			setupLog.V(log.InfoLevel).Error(err, fmt.Sprintf("Failed to update CRD to remove %s from stored versions", versionToBeRemoved))
+			setupLog.V(log.InfoLevel).Error(err,
+				fmt.Sprintf("Failed to update CRD to remove %s from stored versions", versionToBeRemoved))
 		}
 	}
 

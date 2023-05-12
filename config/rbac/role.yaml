@@ -55,6 +55,12 @@ rules:
   - list
   - watch
 - apiGroups:
+  - apiextensions.k8s.io
+  resources:
+  - customresourcedefinitions/status
+  verbs:
+  - update
+- apiGroups:
   - cert-manager.io
   resources:
   - certificates
