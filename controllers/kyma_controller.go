@@ -149,7 +149,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		}
 		updateKymaRequired, err := r.syncCrdsAndUpdateKymaAnnotations(ctx, kyma)
 		if err != nil {
-			return r.CtrlErr(ctx, kyma, fmt.Errorf("could not update sync CRDS: %w", err))
+			return r.CtrlErr(ctx, kyma, fmt.Errorf("could not sync CRDS: %w", err))
 		}
 		if updateKymaRequired {
 			if err := r.Update(ctx, kyma); err != nil {
