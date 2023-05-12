@@ -399,7 +399,7 @@ func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved strin
 			}
 		}
 		crdItem.Status.StoredVersions = newStoredVersions
-		setupLog.V(log.InfoLevel).Info(fmt.Sprintf("The new storedVersions are %s", newStoredVersions))
+		setupLog.V(log.InfoLevel).Info(fmt.Sprintf("The new storedVersions are %v", newStoredVersions))
 		crd := crdItem
 		if _, err := kcpClient.ApiextensionsV1().CustomResourceDefinitions().
 			UpdateStatus(ctx, &crd, v1.UpdateOptions{}); err != nil {
