@@ -48,6 +48,9 @@ func updateRemoteCRD(ctx context.Context, kyma *v1beta2.Kyma, runtimeClient Clie
 func ShouldPatchRemoteCRD(
 	runtimeCrd *v1extensions.CustomResourceDefinition, kcpCrd *v1extensions.CustomResourceDefinition,
 	kyma *v1beta2.Kyma) bool {
+	if runtimeCrd == nil {
+		return true
+	}
 	kcpAnnotation := getAnnotation(kcpCrd, KCP)
 	skrAnnotation := getAnnotation(runtimeCrd, SKR)
 
@@ -139,10 +142,6 @@ func fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Cli
 			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
 		}, crdFromRuntime,
 	)
-
-	if err != nil {
-		return nil, nil, err
-	}
 
 	return crd, crdFromRuntime, nil
 }
