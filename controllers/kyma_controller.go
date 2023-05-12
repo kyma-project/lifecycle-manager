@@ -146,7 +146,11 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		if err := r.syncRemoteKymaSpecAndStatus(ctx, kyma); err != nil {
 			return r.CtrlErr(ctx, kyma, fmt.Errorf("could not synchronize remote kyma: %w", err))
 		}
-		if r.syncCrdsAndUpdateKymaAnnotations(ctx, kyma) {
+		updateRequired, err := r.syncCrdsAndUpdateKymaAnnotations(ctx, kyma)
+		if err != nil {
+			return r.CtrlErr(ctx, kyma, fmt.Errorf("could not update sync CRDS: %w", err))
+		}
+		if updateRequired {
 			if err := r.Update(ctx, kyma); err != nil {
 				return r.CtrlErr(ctx, kyma, fmt.Errorf("could not update kyma annotations: %w", err))
 			}
@@ -158,15 +162,15 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return r.stateHandling(ctx, kyma)
 }
 
-func (r *KymaReconciler) syncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma) bool {
+func (r *KymaReconciler) syncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
 	syncContext := remote.SyncContextFromContext(ctx)
 	updateRequired, err := remote.SyncCrdsAndUpdateKymaAnnotations(
 		ctx, kyma, syncContext.RuntimeClient, syncContext.ControlPlaneClient)
 	if err != nil {
-		return false
+		return false, err
 	}
 
-	return updateRequired
+	return updateRequired, nil
 }
 
 func (r *KymaReconciler) deleteKyma(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
