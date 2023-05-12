@@ -26,6 +26,7 @@ import (
 	"time"
 
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/open-component-model/ocm/pkg/contexts/oci"
 	"github.com/open-component-model/ocm/pkg/contexts/oci/repositories/ocireg"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm"
@@ -327,6 +328,8 @@ func setupManifestReconciler(
 	options controller.Options,
 ) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentManifestReconciles
+	options.RateLimiter = internal.ManifestRateLimiter(flagVar.failureBaseDelay,
+		flagVar.failureMaxDelay, flagVar.rateLimiterFrequency, flagVar.rateLimiterBurst)
 
 	if err := controllers.SetupWithManager(
 		mgr, options, flagVar.manifestRequeueSuccessInterval, controllers.SetupUpSetting{
