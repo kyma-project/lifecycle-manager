@@ -88,8 +88,8 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 			kyma := &v1beta2.Kyma{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						v1beta2.SkrModuleTemplateCRDGenerationAnnotation: testCase.args.kymaSkrCrdAnnotationValue,
-						v1beta2.KcpModuleTemplateCRDGenerationAnnotation: testCase.args.kymaKcpCrdAnnotationValue,
+						"moduletemplate-skr-crd-generation": testCase.args.kymaSkrCrdAnnotationValue,
+						"moduletemplate-kcp-crd-generation": testCase.args.kymaKcpCrdAnnotationValue,
 					},
 				},
 			}

@@ -2,17 +2,13 @@ package remote
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-)
-
-var (
-	ErrNotSupportedAnnotation = errors.New("not supported annotation")
 )
 
 func PatchCRD(ctx context.Context, clnt client.Client, crd *v1extensions.CustomResourceDefinition) error {
@@ -91,8 +87,8 @@ func updateRemoteCRD(
 func ShouldPatchRemoteCRD(
 	runtimeCrd *v1extensions.CustomResourceDefinition, kcpCrd *v1extensions.CustomResourceDefinition,
 	kyma *v1beta2.Kyma) bool {
-	kcpAnnotation, _ := getAnnotation(kcpCrd, KCP)
-	skrAnnotation, _ := getAnnotation(runtimeCrd, SKR)
+	kcpAnnotation := getAnnotation(kcpCrd, KCP)
+	skrAnnotation := getAnnotation(runtimeCrd, SKR)
 
 	latestGeneration := strconv.FormatInt(kcpCrd.Generation, 10)
 	runtimeCRDGeneration := strconv.FormatInt(runtimeCrd.Generation, 10)
@@ -104,32 +100,13 @@ func updateKymaAnnotations(kyma *v1beta2.Kyma, crd *v1extensions.CustomResourceD
 	if kyma.Annotations == nil {
 		kyma.Annotations = make(map[string]string)
 	}
-	annotation, err := getAnnotation(crd, crdType)
-	if err != nil {
-		return err
-	}
+	annotation := getAnnotation(crd, crdType)
 	kyma.Annotations[annotation] = strconv.FormatInt(crd.Generation, 10)
 	return nil
 }
 
-func getAnnotation(crd *v1extensions.CustomResourceDefinition, crdType CrdType) (string, error) {
-	if crdType == SKR {
-		if crd.Spec.Names.Kind == string(v1beta2.KymaKind) {
-			return v1beta2.SkrKymaCRDGenerationAnnotation, nil
-		} else if crd.Spec.Names.Kind == string(v1beta2.ModuleTemplateKind) {
-			return v1beta2.SkrModuleTemplateCRDGenerationAnnotation, nil
-		}
-	}
-
-	if crdType == KCP {
-		if crd.Spec.Names.Kind == string(v1beta2.KymaKind) {
-			return v1beta2.KcpKymaCRDGenerationAnnotation, nil
-		} else if crd.Spec.Names.Kind == string(v1beta2.ModuleTemplateKind) {
-			return v1beta2.KcpModuleTemplateCRDGenerationAnnotation, nil
-		}
-	}
-
-	return "", ErrNotSupportedAnnotation
+func getAnnotation(crd *v1extensions.CustomResourceDefinition, crdType CrdType) string {
+	return fmt.Sprintf("%s-%s-crd-generation", strings.ToLower(crd.Spec.Names.Kind), strings.ToLower(string(crdType)))
 }
 
 func SyncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma,
