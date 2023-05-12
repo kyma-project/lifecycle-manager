@@ -148,6 +148,10 @@ func fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Cli
 		err = nil
 	}
 
+	if err != nil {
+		return nil, nil, err
+	}
+
 	return crd, crdFromRuntime, nil
 }
 
