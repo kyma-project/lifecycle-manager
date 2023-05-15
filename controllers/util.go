@@ -13,8 +13,7 @@ func NewCacheFunc() cache.NewCacheFunc {
 	)
 	return cache.BuilderWithOptions(cache.Options{
 		SelectorsByObject: cache.SelectorsByObject{
-			&v1beta2.ModuleTemplate{}: {Label: cacheLabelSelector},
-			&corev1.Secret{}:          {Label: cacheLabelSelector},
+			&corev1.Secret{}: {Label: cacheLabelSelector},
 			&corev1.Service{}: {Label: labels.SelectorFromSet(labels.Set{
 				"app": "istio-ingressgateway",
 			})},
