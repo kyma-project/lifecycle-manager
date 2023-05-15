@@ -393,7 +393,7 @@ func (kyma *Kyma) AllModulesReady() bool {
 	return true
 }
 
-func (kyma *Kyma) SyncEnabled() bool {
+func (kyma *Kyma) HasSyncLabelEnabled() bool {
 	if isSync, found := kyma.Labels[SyncLabel]; found {
 		return strings.ToLower(isSync) == EnableLabelValue
 	}

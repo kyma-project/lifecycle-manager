@@ -65,7 +65,7 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 		Expect(
 			kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModules, metav1.ConditionTrue)).To(BeTrue())
 		Expect(
-			kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModuleCatalog, metav1.ConditionTrue)).To(BeTrue())
+			kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModuleCatalog, metav1.ConditionTrue)).To(BeFalse())
 		By("Module Catalog created")
 		Eventually(ModuleTemplatesExist(controlPlaneClient, kyma, kyma.GetNamespace()),
 			Timeout, Interval).Should(Succeed())
@@ -279,28 +279,4 @@ func updateModuleTemplateSpec(clnt client.Client,
 	}
 	moduleTemplate.Spec.Data.Object["spec"] = map[string]any{"initKey": newValue}
 	return clnt.Update(ctx, moduleTemplate)
-}
-
-func expectModuleTemplateSpecGetReset(
-	clnt client.Client,
-	moduleNamespace,
-	moduleName,
-	expectedValue string,
-) error {
-	moduleTemplate, err := GetModuleTemplate(clnt, moduleName, moduleNamespace)
-	if err != nil {
-		return err
-	}
-	initKey, found := moduleTemplate.Spec.Data.Object["spec"]
-	if !found {
-		return ErrExpectedLabelNotReset
-	}
-	value, found := initKey.(map[string]any)["initKey"]
-	if !found {
-		return ErrExpectedLabelNotReset
-	}
-	if value.(string) != expectedValue {
-		return ErrExpectedLabelNotReset
-	}
-	return nil
 }

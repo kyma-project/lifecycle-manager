@@ -1,4 +1,4 @@
-package controllers_test
+package control_plane_test
 
 import (
 	"errors"
@@ -35,7 +35,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 
 	kyma.Spec.Modules = append(kyma.Spec.Modules, skrModule)
 
-	RegisterDefaultLifecycleForKyma(kyma)
+	RegisterControlPlaneLifecycleForKyma(kyma)
 
 	It("module template created", func() {
 		template, err := ModuleTemplateFactory(skrModuleFromClient, unstructured.Unstructured{}, false)
@@ -154,7 +154,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			Channel:        v1beta2.DefaultChannel,
 		})
 
-	RegisterDefaultLifecycleForKyma(kyma)
+	RegisterControlPlaneLifecycleForKyma(kyma)
 
 	It("Kyma CR should be synchronized in both clusters", func() {
 		By("Remote Kyma created")

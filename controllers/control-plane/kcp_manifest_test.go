@@ -16,7 +16,7 @@ var _ = Describe("Test Manifest.Spec.Remote in KCP mode", Ordered, func() {
 		Channel:        v1beta2.DefaultChannel,
 	}
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
-	registerControlPlaneLifecycleForKyma(kyma)
+	RegisterControlPlaneLifecycleForKyma(kyma)
 
 	It("expect Manifest.Spec.Remote=true", func() {
 		Eventually(GetManifestSpecRemote, Timeout, Interval).
