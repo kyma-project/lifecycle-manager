@@ -147,7 +147,6 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 			NewClient:              NewClient,
 		},
 	)
-
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
@@ -383,8 +382,10 @@ func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved strin
 		setupLog.V(log.DebugLevel).Error(err, "unable to list CRDs")
 	}
 
-	crdsToPatch := []string{string(operatorv1beta2.ModuleTemplateKind), string(operatorv1beta2.WatcherKind),
-		operatorv1beta2.ManifestKind, string(operatorv1beta2.KymaKind)}
+	crdsToPatch := []string{
+		string(operatorv1beta2.ModuleTemplateKind), string(operatorv1beta2.WatcherKind),
+		operatorv1beta2.ManifestKind, string(operatorv1beta2.KymaKind),
+	}
 
 	for _, crdItem := range crdList.Items {
 		if crdItem.Spec.Group != "operator.kyma-project.io" && !slices.Contains(crdsToPatch, crdItem.Spec.Names.Kind) {
@@ -401,8 +402,8 @@ func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved strin
 		crd := crdItem
 		if _, err := kcpClient.ApiextensionsV1().CustomResourceDefinitions().
 			UpdateStatus(ctx, &crd, v1.UpdateOptions{}); err != nil {
-			setupLog.V(log.DebugLevel).Error(err, fmt.Sprintf("Failed to update CRD to remove %s from stored versions", versionToBeRemoved))
+			msg := fmt.Sprintf("Failed to update CRD to remove %s from stored versions", versionToBeRemoved)
+			setupLog.V(log.DebugLevel).Error(err, msg)
 		}
 	}
-
 }
