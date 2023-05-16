@@ -2,18 +2,18 @@
 
 ## Deployment / Delivery models
 
-lifecycle-manager (and module operators) can run in 2 modes:
+Lifecycle Manager (and module operators) can run in 2 modes:
 
-- in-cluster - regular deployment in the kubernetes cluster where kyma should be deployed, control-plane manages itself
-- control-plane - deployment on central kubernetes cluster that manages multiple kyma installations remotely (installing kyma on the remote clusters based on a secret providing connectivity details)
+- in-cluster - regular deployment in a Kubernetes cluster where Kyma should be deployed, Control Plane manages itself
+- control-plane - deployment on the central Kubernetes cluster that manages multiple Kyma installations remotely (installing Kyma on the remote clusters based on a secret providing connectivity details)
 
-Which mode is used is based on the lifecycle-manager deployment argument (`--in-kcp-mode`), when it's enabled, Module will be installed in the remote cluster.
+To determin the mode for Lifecycle Manager, use the `in-kcp-mode` command-line flag. By default the flag is set to `false`. If set to `true`, modules are installed in the remote clutser.
 
-They both target different use cases. While in-cluster mode is useful for classical deployment of kyma with 1 cluster in play, the general consensus is that for large scale operations, it is recommended to either use an aggregated API-Server or use Clusters to manage other Clusters (nowadays known as Control-Plane)
+The modes target different use cases. While in-cluster mode is useful for the "classic deployment" of Kyma with 1 cluster in play, the general consensus is that for large scale operations, it is recommended to either use an aggregated API-Server or use clusters to manage other clusters (Control Plane).
 
-This means that, depending on your environment you might be running lifecycle-manager in one or the other mode.
+This means that depending on your environment you might be running Lifecycle Manager in one or the other mode.
 
-For local development, as well as for testing and verification purposes in integration testing, we recommend to use single-cluster mode. For E2E Testing,
+For local development, as well as for testing and verification purposes in integration testing, we recommend to use the single-cluster mode. For E2E Testing,
 and testing of scalability as well as remote reconciliation, we recommend the use of a separate control-plane cluster.
 
 ### Release Lifecycles for Modules 
