@@ -166,7 +166,7 @@ func (parser *Parser) newManifestFromTemplate(
 	}
 
 	if err := signature.Verify(componentDescriptor, verification); err != nil {
-		return nil, fmt.Errorf("could not verify descriptor: %w", err)
+		return nil, fmt.Errorf("could not verify signature: %w", err)
 	}
 
 	if layers, err = img.Parse(componentDescriptor); err != nil {
