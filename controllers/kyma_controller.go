@@ -193,7 +193,7 @@ func (r *KymaReconciler) syncRemoteKymaSpecAndStatus(
 	if err := syncContext.SynchronizeRemoteKyma(ctx, controlPlaneKyma, remoteKyma); err != nil {
 		return fmt.Errorf("sync run failure: %w", err)
 	}
-	syncContext.ReplaceWithVirtualKyma(controlPlaneKyma, remoteKyma)
+	remote.ReplaceWithVirtualKyma(controlPlaneKyma, remoteKyma)
 
 	return nil
 }
