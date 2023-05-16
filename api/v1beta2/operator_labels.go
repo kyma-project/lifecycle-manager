@@ -1,7 +1,6 @@
 package v1beta2
 
 import (
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -41,16 +40,6 @@ const (
 	// If put on a single ModuleTemplate, allows to disable sync just for this object.
 	SyncLabel = OperatorPrefix + Separator + "sync"
 )
-
-func ModuleTemplatesByLabel(module *Module) client.MatchingLabels {
-	selector := client.MatchingLabels{
-		ModuleName: module.Name,
-	}
-	if module.ControllerName != "" {
-		selector[ControllerName] = module.ControllerName
-	}
-	return selector
-}
 
 func (kyma *Kyma) EnsureLabelsAndFinalizers() bool {
 	if controllerutil.ContainsFinalizer(kyma, "foregroundDeletion") {
