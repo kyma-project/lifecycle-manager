@@ -58,7 +58,8 @@ func TestInitConditions(t *testing.T) {
 		},
 	}
 
-	for _, testcase := range testcases {
+	for i := range testcases {
+		testcase := testcases[i]
 		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -66,11 +67,13 @@ func TestInitConditions(t *testing.T) {
 				WithCondition(metav1.Condition{
 					Type:   string(v1beta2.DeprecatedConditionTypeReady),
 					Status: metav1.ConditionFalse,
-					Reason: "Deprecated"}).
+					Reason: "Deprecated",
+				}).
 				WithCondition(metav1.Condition{
 					Type:   "ThisConditionShouldBeRemoved",
 					Status: metav1.ConditionFalse,
-					Reason: "Deprecated"})
+					Reason: "Deprecated",
+				})
 
 			if testcase.hasSyncLabel {
 				labelValue := v1beta2.DisableLabelValue
