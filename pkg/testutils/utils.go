@@ -91,10 +91,15 @@ func NewUniqModuleName() string {
 	return randString(randomStringLength)
 }
 
-func randString(n int) string {
-	b := make([]byte, n)
+// randomName creates a random string [a-z] with a length of 8
+func randomName() string {
+	return randString(randomStringLength)
+}
+
+func randString(length int) string {
+	b := make([]byte, length)
 	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))] //nolint:gosec
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
 	return string(b)
 }
