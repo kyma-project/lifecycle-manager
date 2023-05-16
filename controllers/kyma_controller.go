@@ -409,13 +409,10 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 			r.Event(kyma, "Warning", string(ModuleReconciliationError), template.Err.Error())
 		}
 	}
+	parser := parse.NewParser(r.Client, r.ComponentDescriptorCache, r.InKCPMode,
+		r.RemoteSyncNamespace, r.EnableVerification, r.PublicKeyFilePath)
 
-	verification, err := r.VerificationSettings.NewVerification(ctx, kyma.GetNamespace())
-	if err != nil {
-		return nil, err
-	}
-	parser := parse.NewParser(r.Client, r.ComponentDescriptorCache, r.InKCPMode, r.RemoteSyncNamespace)
-	return parser.GenerateModulesFromTemplates(ctx, kyma, templates, verification), nil
+	return parser.GenerateModulesFromTemplates(ctx, kyma, templates), nil
 }
 
 func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma *v1beta2.Kyma) error {

@@ -60,9 +60,8 @@ func defineFlagVar() *FlagVar {
 	flag.IntVar(&flagVar.clientBurst, "k8s-client-burst", defaultClientBurst, "kubernetes client Burst")
 	flag.StringVar(&flagVar.moduleVerificationKeyFilePath, "module-verification-key-file", "",
 		"This verification key is used to verify modules against their signature")
-	flag.StringVar(&flagVar.moduleVerificationSignatureNames, "module-verification-signature-names",
-		"kyma-module-signature:kyma-extension-signature",
-		"This verification key list is used to verify modules against their signature")
+	flag.BoolVar(&flagVar.enableVerification, "enable-verification", false,
+		"Enabling verify modules against their signature")
 	flag.BoolVar(&flagVar.enableWebhooks, "enable-webhooks", false,
 		"Enabling Validation/Conversion Webhooks.")
 	flag.BoolVar(&flagVar.enableKcpWatcher, "enable-kcp-watcher", false,
@@ -113,26 +112,26 @@ func defineFlagVar() *FlagVar {
 }
 
 type FlagVar struct {
-	metricsAddr                                                     string
-	enableLeaderElection                                            bool
-	probeAddr                                                       string
-	kymaListenerAddr, manifestListenerAddr                          string
-	maxConcurrentKymaReconciles                                     int
-	maxConcurrentManifestReconciles                                 int
-	maxConcurrentWatcherReconciles                                  int
-	kymaRequeueSuccessInterval                                      time.Duration
-	manifestRequeueSuccessInterval                                  time.Duration
-	watcherRequeueSuccessInterval                                   time.Duration
-	moduleVerificationKeyFilePath, moduleVerificationSignatureNames string
-	clientQPS                                                       float64
-	clientBurst                                                     int
-	enableWebhooks                                                  bool
-	enableKcpWatcher                                                bool
-	skrWatcherPath                                                  string
-	skrWebhookMemoryLimits                                          string
-	skrWebhookCPULimits                                             string
-	enableWatcherLocalTesting                                       bool
-	istioNamespace                                                  string
+	metricsAddr                            string
+	enableLeaderElection                   bool
+	probeAddr                              string
+	kymaListenerAddr, manifestListenerAddr string
+	maxConcurrentKymaReconciles            int
+	maxConcurrentManifestReconciles        int
+	maxConcurrentWatcherReconciles         int
+	kymaRequeueSuccessInterval             time.Duration
+	manifestRequeueSuccessInterval         time.Duration
+	watcherRequeueSuccessInterval          time.Duration
+	moduleVerificationKeyFilePath          string
+	clientQPS                              float64
+	clientBurst                            int
+	enableWebhooks                         bool
+	enableKcpWatcher                       bool
+	skrWatcherPath                         string
+	skrWebhookMemoryLimits                 string
+	skrWebhookCPULimits                    string
+	enableWatcherLocalTesting              bool
+	istioNamespace                         string
 	// listenerHTTPPortLocalMapping is used to enable the user
 	// to specify the port used to expose the KCP cluster for the watcher
 	// when testing locally using dual-k3d cluster-setup
@@ -151,4 +150,5 @@ type FlagVar struct {
 	purgeFinalizerTimeout                  time.Duration
 	skipPurgingFor                         string
 	remoteSyncNamespace                    string
+	enableVerification                     bool
 }
