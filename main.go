@@ -19,6 +19,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -26,6 +27,7 @@ import (
 	"time"
 
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/open-component-model/ocm/pkg/contexts/oci"
 	"github.com/open-component-model/ocm/pkg/contexts/oci/repositories/ocireg"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm"
@@ -34,9 +36,12 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/utils/strings/slices"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -171,6 +176,11 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
+
+	go func() {
+		dropVersionFromStoredVersions(mgr, "v1alpha1")
+	}()
+
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
@@ -327,6 +337,8 @@ func setupManifestReconciler(
 	options controller.Options,
 ) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentManifestReconciles
+	options.RateLimiter = internal.ManifestRateLimiter(flagVar.failureBaseDelay,
+		flagVar.failureMaxDelay, flagVar.rateLimiterFrequency, flagVar.rateLimiterBurst)
 
 	if err := controllers.SetupWithManager(
 		mgr, options, flagVar.manifestRequeueSuccessInterval, controllers.SetupUpSetting{
@@ -342,7 +354,7 @@ func setupManifestReconciler(
 func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, flagVar *FlagVar) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentWatcherReconciles
 
-	istioConfig := istio.NewConfig(flagVar.virtualServiceName, flagVar.enableWatcherLocalTesting)
+	istioConfig := istio.NewConfig(flagVar.enableWatcherLocalTesting)
 
 	if err := (&controllers.WatcherReconciler{
 		Client:        mgr.GetClient(),
@@ -355,5 +367,45 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, fla
 	}).SetupWithManager(mgr, options, istioConfig); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controllers.WatcherControllerName)
 		os.Exit(1)
+	}
+}
+
+func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved string) {
+	cfg := mgr.GetConfig()
+	kcpClient, err := apiextension.NewForConfig(cfg)
+	if err != nil {
+		setupLog.V(log.DebugLevel).Error(err, fmt.Sprintf("unable to initialize client to remove %s", versionToBeRemoved))
+	}
+	ctx := context.TODO()
+	var crdList *v1extensions.CustomResourceDefinitionList
+	if crdList, err = kcpClient.ApiextensionsV1().CustomResourceDefinitions().List(ctx, v1.ListOptions{}); err != nil {
+		setupLog.V(log.InfoLevel).Error(err, "unable to list CRDs")
+	}
+
+	crdsToPatch := []string{
+		string(operatorv1beta2.ModuleTemplateKind), string(operatorv1beta2.WatcherKind),
+		operatorv1beta2.ManifestKind, string(operatorv1beta2.KymaKind),
+	}
+
+	for _, crdItem := range crdList.Items {
+		if crdItem.Spec.Group != "operator.kyma-project.io" && !slices.Contains(crdsToPatch, crdItem.Spec.Names.Kind) {
+			continue
+		}
+		setupLog.V(log.InfoLevel).Info(fmt.Sprintf("Checking the storedVersions for %s crd", crdItem.Spec.Names.Kind))
+		oldStoredVersions := crdItem.Status.StoredVersions
+		newStoredVersions := make([]string, 0, len(oldStoredVersions))
+		for _, stored := range oldStoredVersions {
+			if stored != versionToBeRemoved {
+				newStoredVersions = append(newStoredVersions, stored)
+			}
+		}
+		crdItem.Status.StoredVersions = newStoredVersions
+		setupLog.V(log.InfoLevel).Info(fmt.Sprintf("The new storedVersions are %v", newStoredVersions))
+		crd := crdItem
+		if _, err := kcpClient.ApiextensionsV1().CustomResourceDefinitions().
+			UpdateStatus(ctx, &crd, v1.UpdateOptions{}); err != nil {
+			msg := fmt.Sprintf("Failed to update CRD to remove %s from stored versions", versionToBeRemoved)
+			setupLog.V(log.InfoLevel).Error(err, msg)
+		}
 	}
 }

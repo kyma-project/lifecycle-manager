@@ -34,12 +34,12 @@ import (
 )
 
 const (
-	randomStringLength = 8
-	letterBytes        = "abcdefghijklmnopqrstuvwxyz"
-	defaultBufferSize  = 2048
-	httpClientTimeout  = 2 * time.Second
-	Timeout            = time.Second * 10
-	Interval           = time.Millisecond * 250
+	randomStringLength     = 8
+	letterBytes            = "abcdefghijklmnopqrstuvwxyz"
+	defaultBufferSize      = 2048
+	Timeout                = time.Second * 20
+	ConsistentCheckTimeout = time.Second * 10
+	Interval               = time.Millisecond * 250
 )
 
 func NewTestKyma(name string) *v1beta2.Kyma {
@@ -277,7 +277,6 @@ func ModuleTemplateFactoryForSchema(
 		moduleTemplate.Labels = make(map[string]string)
 	}
 	moduleTemplate.Labels[v1beta2.ModuleName] = module.Name
-	moduleTemplate.Labels[v1beta2.ControllerName] = module.ControllerName
 	moduleTemplate.Spec.Channel = module.Channel
 	if data.GetKind() != "" {
 		moduleTemplate.Spec.Data = data

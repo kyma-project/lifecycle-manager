@@ -1,4 +1,4 @@
-# Controllers used within Lifecycle-Manager
+# Controllers used within Lifecycle Manager
 
 This package contains all controllers that can be registered within the Lifecycle Manager.
 For more information on how the API behaves after the controller finishes up the synchronization, please look at the [API reference documentation](../api/README.md).
