@@ -21,12 +21,7 @@ type ModuleConversionSettings struct {
 	signature.Verification
 }
 
-var (
-	ErrTemplateNotFound        = errors.New("template was not found")
-	ErrTemplateNoRequiredLabel = errors.New("template not contains required label")
-	ErrUndefinedTargetToRemote = errors.New("target to remote relation undefined")
-	ErrDefaultConfigParsing    = errors.New("defaultConfig could not be parsed")
-)
+var ErrDefaultConfigParsing = errors.New("defaultConfig could not be parsed")
 
 type Parser struct {
 	client.Client
@@ -68,7 +63,7 @@ func (parser *Parser) GenerateModulesFromTemplates(ctx context.Context,
 		if template.Err != nil && !errors.Is(template.Err, channel.ErrTemplateNotAllowed) {
 			modules = append(modules, &common.Module{
 				ModuleName: module.Name,
-				Template:   &template,
+				Template:   template,
 			})
 			continue
 		}
@@ -77,21 +72,21 @@ func (parser *Parser) GenerateModulesFromTemplates(ctx context.Context,
 			template.Err = err
 			modules = append(modules, &common.Module{
 				ModuleName: module.Name,
-				Template:   &template,
+				Template:   template,
 			})
 			continue
 		}
 		fqdn := descriptor.GetName()
 		version := descriptor.GetVersion()
 		name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
-		overwriteNameAndNamespace(&template, name, parser.remoteSyncNamespace)
+		overwriteNameAndNamespace(template, name, parser.remoteSyncNamespace)
 		var obj client.Object
 		if obj, err = parser.newManifestFromTemplate(ctx, module,
 			template.ModuleTemplate); err != nil {
 			template.Err = err
 			modules = append(modules, &common.Module{
 				ModuleName: module.Name,
-				Template:   &template,
+				Template:   template,
 			})
 			continue
 		}
@@ -103,7 +98,7 @@ func (parser *Parser) GenerateModulesFromTemplates(ctx context.Context,
 			ModuleName: module.Name,
 			FQDN:       fqdn,
 			Version:    version,
-			Template:   &template,
+			Template:   template,
 			Object:     obj,
 		})
 	}

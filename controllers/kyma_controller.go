@@ -89,6 +89,7 @@ type KymaReconciler struct {
 //+kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
 //+kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch
 //+kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;create;update;delete;patch
+//+kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions/status,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -192,7 +193,7 @@ func (r *KymaReconciler) syncRemoteKymaSpecAndStatus(
 	if err := syncContext.SynchronizeRemoteKyma(ctx, controlPlaneKyma, remoteKyma); err != nil {
 		return fmt.Errorf("sync run failure: %w", err)
 	}
-	syncContext.ReplaceWithVirtualKyma(controlPlaneKyma, remoteKyma)
+	remote.ReplaceWithVirtualKyma(controlPlaneKyma, remoteKyma)
 
 	return nil
 }

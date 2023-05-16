@@ -80,14 +80,7 @@ func Validate(oldDescriptor, newDescriptor *Descriptor, newTemplateName string) 
 
 	newVersion, err := semver.NewVersion(newDescriptor.Version)
 	if err != nil {
-		return apierrors.NewInvalid(
-			schema.GroupKind{Group: GroupVersion.Group, Kind: string(ModuleTemplateKind)},
-			newTemplateName, field.ErrorList{field.Invalid(
-				field.NewPath("spec").Child("descriptor").
-					Child("version"),
-				newDescriptor.Version, err.Error(),
-			)},
-		)
+		return validationErr(newTemplateName, newVersion.String(), err.Error())
 	}
 
 	if oldDescriptor != nil {
@@ -96,29 +89,30 @@ func Validate(oldDescriptor, newDescriptor *Descriptor, newTemplateName string) 
 		if err != nil {
 			return err
 		}
-		return ValidateVersionUpgrade(newVersion, oldVersion, newTemplateName)
+		if !IsValidVersionChange(newVersion, oldVersion) {
+			return validationErr(newTemplateName, newVersion.String(),
+				fmt.Sprintf("version of templates can never be decremented (previously %s)", oldVersion))
+		}
 	}
 
 	return nil
 }
 
-func ValidateVersionUpgrade(newVersion *semver.Version, oldVersion *semver.Version, templateName string) error {
+func validationErr(newTemplateName string, newVersion string, errMsg string) *apierrors.StatusError {
+	return apierrors.NewInvalid(
+		schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
+		newTemplateName, field.ErrorList{field.Invalid(
+			field.NewPath("spec").Child("descriptor").
+				Child("version"),
+			newVersion, errMsg,
+		)},
+	)
+}
+
+func IsValidVersionChange(newVersion *semver.Version, oldVersion *semver.Version) bool {
 	filteredNewVersion := filterVersion(newVersion)
 	filteredOldVersion := filterVersion(oldVersion)
-	if filteredNewVersion.LessThan(filteredOldVersion) {
-		return apierrors.NewInvalid(
-			schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
-			templateName, field.ErrorList{field.Invalid(
-				field.NewPath("spec").Child("descriptor").
-					Child("version"),
-				newVersion.String(), fmt.Sprintf(
-					"version of templates can never be decremented (previously %s)",
-					oldVersion,
-				),
-			)},
-		)
-	}
-	return nil
+	return !filteredNewVersion.LessThan(filteredOldVersion)
 }
 
 func filterVersion(version *semver.Version) *semver.Version {
