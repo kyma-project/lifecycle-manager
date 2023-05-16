@@ -22,16 +22,16 @@ var (
 	ErrNoTemplatesInListResult          = errors.New("no templates were found")
 	ErrInvalidRemoteModuleConfiguration = errors.New("invalid remote module template configuration")
 	ErrTemplateNotAllowed               = errors.New("module template not allowed")
+	ErrTemplateUpdateNotAllowed         = errors.New("module template update not allowed")
 )
 
 type ModuleTemplateTO struct {
 	*v1beta2.ModuleTemplate
-	Outdated       bool
 	Err            error
 	DesiredChannel string
 }
 
-type ModuleTemplatesByModuleName map[string]ModuleTemplateTO
+type ModuleTemplatesByModuleName map[string]*ModuleTemplateTO
 
 func GetTemplates(
 	ctx context.Context, kymaClient client.Reader, kyma *v1beta2.Kyma,
@@ -56,11 +56,11 @@ func GetTemplates(
 				ErrInvalidRemoteModuleConfiguration)
 		}
 
-		templates[module.Name] = template
+		templates[module.Name] = &template
 	}
 
 	DetermineTemplatesVisibility(kyma, templates)
-	CheckForOutdatedTemplates(logger, kyma, templates)
+	CheckValidTemplatesUpdate(logger, kyma, templates)
 
 	return templates
 }
@@ -82,28 +82,33 @@ func DetermineTemplatesVisibility(kyma *v1beta2.Kyma, templates ModuleTemplatesB
 	}
 }
 
-func CheckForOutdatedTemplates(logger logr.Logger, kyma *v1beta2.Kyma, templates ModuleTemplatesByModuleName) {
+func CheckValidTemplatesUpdate(logger logr.Logger, kyma *v1beta2.Kyma, templates ModuleTemplatesByModuleName) {
 	// in the case that the kyma spec did not change, we only have to verify
 	// that all desired templates are still referenced in the latest spec generation
 	for moduleName, moduleTemplate := range templates {
 		moduleTemplate := moduleTemplate
 		for i := range kyma.Status.Modules {
 			moduleStatus := &kyma.Status.Modules[i]
-			if moduleStatus.FQDN == moduleName && moduleTemplate.ModuleTemplate != nil {
-				CheckForOutdatedTemplate(logger, &moduleTemplate, moduleStatus)
+			if moduleMatch(moduleStatus, moduleName) && moduleTemplate.ModuleTemplate != nil {
+				CheckValidTemplateUpdate(logger, moduleTemplate, moduleStatus)
 			}
 		}
+		templates[moduleName] = moduleTemplate
 	}
 }
 
-// CheckForOutdatedTemplate verifies if the given ModuleTemplate is outdated and sets their Outdated Flag based on
-// provided Modules, provided by the Cluster as a status of the last known module state.
+func moduleMatch(moduleStatus *v1beta2.ModuleStatus, moduleName string) bool {
+	return moduleStatus.FQDN == moduleName || moduleStatus.Name == moduleName
+}
+
+// CheckValidTemplateUpdate verifies if the given ModuleTemplate is valid for update and sets their IsValidUpdate Flag
+// based on provided Modules, provided by the Cluster as a status of the last known module state.
 // It does this by looking into selected key properties:
 // 1. If the generation of ModuleTemplate changes, it means the spec is outdated
 // 2. If the channel of ModuleTemplate changes, it means the kyma has an old reference to a previous channel.
 //
 //nolint:funlen
-func CheckForOutdatedTemplate(
+func CheckValidTemplateUpdate(
 	logger logr.Logger, moduleTemplate *ModuleTemplateTO, moduleStatus *v1beta2.ModuleStatus,
 ) {
 	if moduleStatus.Template == nil {
@@ -118,34 +123,30 @@ func CheckForOutdatedTemplate(
 		"previousTemplateChannel", moduleStatus.Channel,
 	)
 
-	// generation skews always have to be handled. We are not in need of checking downgrades here,
-	// since these are catched by our validating webhook. We do not support downgrades of Versions
-	// in ModuleTemplates, meaning the only way the generation can be changed is by changing the target
-	// channel (valid change) or a version increase
-	if moduleTemplate.GetGeneration() != moduleStatus.Template.Generation {
-		checkLog.Info("outdated ModuleTemplate: generation skew")
-		moduleTemplate.Outdated = true
-		return
-	}
-
 	if moduleTemplate.Spec.Channel != moduleStatus.Channel {
 		checkLog.Info("outdated ModuleTemplate: channel skew")
 
 		descriptor, err := moduleTemplate.Spec.GetDescriptor()
 		if err != nil {
-			checkLog.Error(err, "could not handle channel skew as descriptor from template cannot be fetched")
+			msg := "could not handle channel skew as descriptor from template cannot be fetched"
+			checkLog.Error(err, msg)
+			moduleTemplate.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
 			return
 		}
 
 		versionInTemplate, err := semver.NewVersion(descriptor.Version)
 		if err != nil {
-			checkLog.Error(err, "could not handle channel skew as descriptor from template contains invalid version")
+			msg := "could not handle channel skew as descriptor from template contains invalid version"
+			checkLog.Error(err, msg)
+			moduleTemplate.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
 			return
 		}
 
 		versionInStatus, err := semver.NewVersion(moduleStatus.Version)
 		if err != nil {
-			checkLog.Error(err, "could not handle channel skew as Modules contains invalid version")
+			msg := "could not handle channel skew as Modules contains invalid version"
+			checkLog.Error(err, msg)
+			moduleTemplate.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
 			return
 		}
 
@@ -161,12 +162,23 @@ func CheckForOutdatedTemplate(
 		// of module versions here (fast: v2.0.0 get downgraded to regular: v1.0.0). In this
 		// case we want to suspend updating the module until we reach v2.0.0 in regular, since downgrades
 		// are not supported. To circumvent this, a module can be uninstalled and then reinstalled in the old channel.
-		if versionInStatus.GreaterThan(versionInTemplate) {
-			checkLog.Info("ignore channel skew, as a higher version of the module was previously installed")
+		if !v1beta2.IsValidVersionChange(versionInTemplate, versionInStatus) {
+			msg := "ignore channel skew, as a higher version of the module was previously installed"
+			checkLog.Info(msg)
+			moduleTemplate.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
 			return
 		}
 
-		moduleTemplate.Outdated = true
+		return
+	}
+
+	// generation skews always have to be handled. We are not in need of checking downgrades here,
+	// since these are caught by our validating webhook. We do not support downgrades of Versions
+	// in ModuleTemplates, meaning the only way the generation can be changed is by changing the target
+	// channel (valid change) or a version increase
+	if moduleTemplate.GetGeneration() != moduleStatus.Template.Generation {
+		checkLog.Info("outdated ModuleTemplate: generation skew")
+		return
 	}
 }
 
@@ -198,7 +210,6 @@ func (c *TemplateLookup) WithContext(ctx context.Context) ModuleTemplateTO {
 		return ModuleTemplateTO{
 			ModuleTemplate: nil,
 			DesiredChannel: desiredChannel,
-			Outdated:       false,
 			Err:            err,
 		}
 	}
@@ -209,7 +220,6 @@ func (c *TemplateLookup) WithContext(ctx context.Context) ModuleTemplateTO {
 	if actualChannel == "" {
 		return ModuleTemplateTO{
 			ModuleTemplate: nil,
-			Outdated:       false,
 			DesiredChannel: desiredChannel,
 			Err: fmt.Errorf(
 				"no channel found on template for module: %s: %w",
@@ -237,7 +247,6 @@ func (c *TemplateLookup) WithContext(ctx context.Context) ModuleTemplateTO {
 
 	return ModuleTemplateTO{
 		ModuleTemplate: template,
-		Outdated:       false,
 		DesiredChannel: desiredChannel,
 		Err:            nil,
 	}
