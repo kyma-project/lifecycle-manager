@@ -50,7 +50,7 @@ func NewParser(
 	}
 }
 
-func (parser *Parser) GenerateModulesFromTemplates(ctx context.Context,
+func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 	kyma *v1beta2.Kyma,
 	templates channel.ModuleTemplatesByModuleName,
 ) common.Modules {
@@ -79,9 +79,9 @@ func (parser *Parser) GenerateModulesFromTemplates(ctx context.Context,
 		fqdn := descriptor.GetName()
 		version := descriptor.GetVersion()
 		name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
-		overwriteNameAndNamespace(template, name, parser.remoteSyncNamespace)
+		overwriteNameAndNamespace(template, name, p.remoteSyncNamespace)
 		var obj client.Object
-		if obj, err = parser.newManifestFromTemplate(ctx, module,
+		if obj, err = p.newManifestFromTemplate(ctx, module,
 			template.ModuleTemplate); err != nil {
 			template.Err = err
 			modules = append(modules, &common.Module{
@@ -117,13 +117,13 @@ func overwriteNameAndNamespace(template *channel.ModuleTemplateTO, name, namespa
 	}
 }
 
-func (parser *Parser) newManifestFromTemplate(
+func (p *Parser) newManifestFromTemplate(
 	ctx context.Context,
 	module v1beta2.Module,
 	template *v1beta2.ModuleTemplate,
 ) (*v1beta2.Manifest, error) {
 	manifest := &v1beta2.Manifest{}
-	manifest.Spec.Remote = parser.InKCPMode
+	manifest.Spec.Remote = p.InKCPMode
 
 	switch module.CustomResourcePolicy {
 	case v1beta2.CustomResourcePolicyIgnore:
@@ -149,17 +149,17 @@ func (parser *Parser) newManifestFromTemplate(
 		if err != nil {
 			return nil, err
 		}
-		componentDescriptor, err = parser.ComponentDescriptorCache.GetRemoteDescriptor(ctx,
-			descriptorCacheKey, descriptor, parser.Client)
+		componentDescriptor, err = p.ComponentDescriptorCache.GetRemoteDescriptor(ctx,
+			descriptorCacheKey, descriptor, p.Client)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	verification, err := signature.NewVerification(ctx,
-		parser.Client,
-		parser.EnableVerification,
-		parser.PublicKeyFilePath,
+		p.Client,
+		p.EnableVerification,
+		p.PublicKeyFilePath,
 		module.Name)
 	if err != nil {
 		return nil, err
