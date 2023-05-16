@@ -16,7 +16,7 @@ This means that depending on your environment you might be running Lifecycle Man
 For local development, as well as for testing and verification purposes in integration testing, we recommend to use the single-cluster mode. For E2E Testing,
 and testing of scalability as well as remote reconciliation, we recommend the use of a separate control-plane cluster.
 
-### Release Lifecycles for Modules 
+### Release Lifecycles for Modules
 
 Teams providing module operators should work (and release) independently from lifecycle-manager. In other words, lifecycle-manager should not have hard-coded dependencies to any module operator. 
 As such, all module interactions are abstracted through the [ModuleTemplate](api/v1beta1/moduletemplate_types.go).
