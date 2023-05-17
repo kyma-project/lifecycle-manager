@@ -18,7 +18,6 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 		kcpCrdGeneration          int64
 		kymaKcpCrdAnnotationValue string
 		kymaSkrCrdAnnotationValue string
-		err                       error
 	}
 	tests := []struct {
 		name string
@@ -26,37 +25,34 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "Different Skr Generation",
-			args: args{
-				err:                       nil,
-				runtimeCrdGeneration:      1,
-				kcpCrdGeneration:          1,
-				kymaKcpCrdAnnotationValue: "1",
-				kymaSkrCrdAnnotationValue: "0",
+			"Different Skr Generation",
+			args{
+				1,
+				2,
+				"1",
+				"1",
 			},
-			want: true,
+			true,
 		},
 		{
-			name: "Different Kcp Generation",
-			args: args{
-				err:                       nil,
-				runtimeCrdGeneration:      1,
-				kcpCrdGeneration:          1,
-				kymaKcpCrdAnnotationValue: "0",
-				kymaSkrCrdAnnotationValue: "1",
+			"Different Kcp Generation",
+			args{
+				2,
+				1,
+				"1",
+				"1",
 			},
-			want: true,
+			true,
 		},
 		{
-			name: "Same Generations",
-			args: args{
-				err:                       nil,
-				runtimeCrdGeneration:      1,
-				kcpCrdGeneration:          1,
-				kymaKcpCrdAnnotationValue: "1",
-				kymaSkrCrdAnnotationValue: "1",
+			"Same Generations",
+			args{
+				1,
+				1,
+				"1",
+				"1",
 			},
-			want: false,
+			false,
 		},
 	}
 	for _, tt := range tests {
@@ -94,7 +90,7 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 				},
 			}
 			assert.Equalf(t, testCase.want, remote.ShouldPatchRemoteCRD(runtimeCrd, kcpCrd, kyma),
-				"ShouldPatchRemoteCRD(%v, %v, %v, %v)", runtimeCrd, kcpCrd, kyma, testCase.args.err)
+				"ShouldPatchRemoteCRD(%v, %v, %v)", runtimeCrd, kcpCrd, kyma)
 		})
 	}
 }

@@ -75,50 +75,45 @@ func getAnnotation(crd *v1extensions.CustomResourceDefinition, crdType CrdType) 
 
 func SyncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma,
 	runtimeClient Client, controlPlaneClient Client) (bool, error) {
-	kcpKymaCrd, skrKymaCrd, err := fetchCrds(ctx, controlPlaneClient, runtimeClient, v1beta2.KymaKind.Plural())
+	kymaCrdUpdated, err := fetchCrdsAndUpdateKymaAnnotations(ctx, controlPlaneClient,
+		runtimeClient, kyma, v1beta2.KymaKind.Plural())
 	if err != nil {
 		return false, err
-	}
-	kymaCrdUpdated, err := updateRemoteCRD(ctx, kyma, runtimeClient, skrKymaCrd, kcpKymaCrd)
-	if err != nil {
-		return false, err
-	}
-	if kymaCrdUpdated {
-		err = runtimeClient.Get(
-			ctx, client.ObjectKey{
-				Name: fmt.Sprintf("%s.%s", v1beta2.KymaKind.Plural(), v1beta2.GroupVersion.Group),
-			}, skrKymaCrd,
-		)
-		if err != nil {
-			return false, err
-		}
-		updateKymaAnnotations(kyma, kcpKymaCrd, KCP)
-		updateKymaAnnotations(kyma, skrKymaCrd, SKR)
 	}
 
-	kcpModuleTemplateCrd, skrModuleTemplateCrd, err := fetchCrds(ctx, controlPlaneClient, runtimeClient,
-		v1beta2.ModuleTemplateKind.Plural())
+	moduleTemplateCrdUpdated, err := fetchCrdsAndUpdateKymaAnnotations(ctx, controlPlaneClient,
+		runtimeClient, kyma, v1beta2.ModuleTemplateKind.Plural())
 	if err != nil {
 		return false, err
-	}
-	moduleTemplateCrdUpdated, err := updateRemoteCRD(ctx, kyma, runtimeClient, skrModuleTemplateCrd, kcpModuleTemplateCrd)
-	if err != nil {
-		return false, err
-	}
-	if moduleTemplateCrdUpdated {
-		err = runtimeClient.Get(
-			ctx, client.ObjectKey{
-				Name: fmt.Sprintf("%s.%s", v1beta2.ModuleTemplateKind.Plural(), v1beta2.GroupVersion.Group),
-			}, skrModuleTemplateCrd,
-		)
-		if err != nil {
-			return false, err
-		}
-		updateKymaAnnotations(kyma, kcpModuleTemplateCrd, KCP)
-		updateKymaAnnotations(kyma, skrModuleTemplateCrd, SKR)
 	}
 
 	return kymaCrdUpdated || moduleTemplateCrdUpdated, nil
+}
+
+func fetchCrdsAndUpdateKymaAnnotations(ctx context.Context, controlPlaneClient Client,
+	runtimeClient Client, kyma *v1beta2.Kyma, plural string) (bool, error) {
+	kcpCrd, skrCrd, err := fetchCrds(ctx, controlPlaneClient, runtimeClient, plural)
+	if err != nil {
+		return false, err
+	}
+	crdUpdated, err := updateRemoteCRD(ctx, kyma, runtimeClient, skrCrd, kcpCrd)
+	if err != nil {
+		return false, err
+	}
+	if crdUpdated {
+		err = runtimeClient.Get(
+			ctx, client.ObjectKey{
+				Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
+			}, skrCrd,
+		)
+		if err != nil {
+			return false, err
+		}
+		updateKymaAnnotations(kyma, kcpCrd, KCP)
+		updateKymaAnnotations(kyma, skrCrd, SKR)
+	}
+
+	return crdUpdated, nil
 }
 
 func fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Client, plural string) (
