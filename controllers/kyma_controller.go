@@ -49,15 +49,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type EventReason string
+type EventReasonError string
+type EventReasonInfo string
 
 const (
-	moduleReconciliationError  EventReason = "ModuleReconciliationError"
-	syncContextError           EventReason = "SyncContextError"
-	deletionError              EventReason = "DeletionError"
-	updateStatus               EventReason = "StatusUpdate"
-	webhookChartRemoval        EventReason = "WebhookChartRemoval"
-	DefaultRemoteSyncNamespace string      = "kyma-system"
+	moduleReconciliationError  EventReasonError = "ModuleReconciliationError"
+	syncContextError           EventReasonError = "SyncContextError"
+	deletionError              EventReasonError = "DeletionError"
+	updateStatus               EventReasonInfo  = "StatusUpdate"
+	webhookChartRemoval        EventReasonInfo  = "WebhookChartRemoval"
+	DefaultRemoteSyncNamespace string           = "kyma-system"
 )
 
 type RequeueIntervals struct {
@@ -172,11 +173,11 @@ func (r *KymaReconciler) requeueWithError(ctx context.Context, kyma *v1beta2.Kym
 	return ctrl.Result{Requeue: true}, r.updateStatusWithError(ctx, kyma, err)
 }
 
-func (r *KymaReconciler) enqueueWarningEvent(kyma *v1beta2.Kyma, reason EventReason, err error) {
+func (r *KymaReconciler) enqueueWarningEvent(kyma *v1beta2.Kyma, reason EventReasonError, err error) {
 	r.Event(kyma, "Warning", string(reason), err.Error())
 }
 
-func (r *KymaReconciler) enqueueNormalEvent(kyma *v1beta2.Kyma, reason EventReason, message string) {
+func (r *KymaReconciler) enqueueNormalEvent(kyma *v1beta2.Kyma, reason EventReasonInfo, message string) {
 	r.Event(kyma, "Normal", string(reason), message)
 }
 
