@@ -1,7 +1,6 @@
 package v1beta2
 
 import (
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -42,17 +41,7 @@ const (
 	SyncLabel = OperatorPrefix + Separator + "sync"
 )
 
-func ModuleTemplatesByLabel(module *Module) client.MatchingLabels {
-	selector := client.MatchingLabels{
-		ModuleName: module.Name,
-	}
-	if module.ControllerName != "" {
-		selector[ControllerName] = module.ControllerName
-	}
-	return selector
-}
-
-func (kyma *Kyma) CheckLabelsAndFinalizers() bool {
+func (kyma *Kyma) EnsureLabelsAndFinalizers() bool {
 	if controllerutil.ContainsFinalizer(kyma, "foregroundDeletion") {
 		return false
 	}
