@@ -138,7 +138,7 @@ func fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Cli
 		}, crdFromRuntime,
 	)
 
-	return crd, crdFromRuntime, err
+	return crd, crdFromRuntime, nil
 }
 
 func ContainsLatestVersion(crdFromRuntime *v1extensions.CustomResourceDefinition, latestVersion string) bool {
