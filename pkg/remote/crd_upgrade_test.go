@@ -27,30 +27,30 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 		{
 			"Different Skr Generation",
 			args{
-				1,
-				2,
-				"1",
-				"1",
+				runtimeCrdGeneration:      1,
+				kcpCrdGeneration:          2,
+				kymaKcpCrdAnnotationValue: "1",
+				kymaSkrCrdAnnotationValue: "1",
 			},
 			true,
 		},
 		{
 			"Different Kcp Generation",
 			args{
-				2,
-				1,
-				"1",
-				"1",
+				runtimeCrdGeneration:      2,
+				kcpCrdGeneration:          1,
+				kymaKcpCrdAnnotationValue: "1",
+				kymaSkrCrdAnnotationValue: "1",
 			},
 			true,
 		},
 		{
 			"Same Generations",
 			args{
-				1,
-				1,
-				"1",
-				"1",
+				runtimeCrdGeneration:      1,
+				kcpCrdGeneration:          1,
+				kymaKcpCrdAnnotationValue: "1",
+				kymaSkrCrdAnnotationValue: "1",
 			},
 			false,
 		},
@@ -90,7 +90,7 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 				},
 			}
 			assert.Equalf(t, testCase.want, remote.ShouldPatchRemoteCRD(runtimeCrd, kcpCrd, kyma),
-				"ShouldPatchRemoteCRD(%v, %v, %v)", runtimeCrd, kcpCrd, kyma)
+				"ShouldPatchRemoteCRD(%v, %v, %v, %v)", runtimeCrd, kcpCrd, kyma)
 		})
 	}
 }
