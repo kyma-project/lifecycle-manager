@@ -61,11 +61,11 @@ func TestReplaceWithVirtualKyma(t *testing.T) {
 			remoteKyma := createKyma(testCase.remoteKyma.channel, testCase.remoteKyma.modules)
 			remote.ReplaceWithVirtualKyma(kcpKyma, remoteKyma)
 			assert.Equal(t, testCase.expectedKyma.channel, kcpKyma.Spec.Channel)
-			virtualModules := []string{}
+			var virtualModules []string
 			for _, module := range kcpKyma.Spec.Modules {
 				virtualModules = append(virtualModules, module.Name)
 			}
-			//assert.Equal(t, testCase.expectedKyma.modules, virtualModules)
+
 			require.ElementsMatch(t, testCase.expectedKyma.modules, virtualModules)
 		})
 	}
