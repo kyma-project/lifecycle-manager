@@ -34,8 +34,6 @@ type KymaSynchronizationContext struct {
 	RuntimeClient      Client
 }
 
-const DefaultRemoteKymaName = "default"
-
 func InitializeKymaSynchronizationContext(
 	ctx context.Context, kcp Client, cache *ClientCache, kyma *v1beta2.Kyma, syncNamespace string,
 ) (*KymaSynchronizationContext, error) {
@@ -169,7 +167,7 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 	recorder := adapter.RecorderFromContext(ctx)
 	remoteKyma := &v1beta2.Kyma{}
 
-	remoteKyma.Name = DefaultRemoteKymaName
+	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
 	remoteKyma.Namespace = remoteSyncNamespace
 
 	err := c.RuntimeClient.Get(ctx, client.ObjectKeyFromObject(remoteKyma), remoteKyma)

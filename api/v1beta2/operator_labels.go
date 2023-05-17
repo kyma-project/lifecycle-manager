@@ -29,11 +29,11 @@ const (
 	PurposeLabel = OperatorPrefix + Separator + "purpose"
 	CertManager  = "klm-watcher-cert-manager"
 	// SkipReconcileLabel indicates this specific resource will be skipped during reconciliation.
-	SkipReconcileLabel = OperatorPrefix + Separator + "skip-reconciliation"
-	UnmanagedKyma      = "unmanaged-kyma"
-
-	InternalLabel = OperatorPrefix + Separator + "internal"
-	BetaLabel     = OperatorPrefix + Separator + "beta"
+	SkipReconcileLabel    = OperatorPrefix + Separator + "skip-reconciliation"
+	UnmanagedKyma         = "unmanaged-kyma"
+	DefaultRemoteKymaName = "default"
+	InternalLabel         = OperatorPrefix + Separator + "internal"
+	BetaLabel             = OperatorPrefix + Separator + "beta"
 
 	// Controls ModuleTemplate sync logic.
 	// If put on the Kyma object, allows to disable sync for all ModuleTemplatesByLabel
