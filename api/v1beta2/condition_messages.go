@@ -18,12 +18,12 @@ const (
 
 	ConditionMessageModuleInReadyState        = "all modules are in ready state"
 	ConditionMessageModuleNotInReadyState     = "not all modules are in ready state"
-	ConditionMessageModuleCatalogIsSynced     = "module catalog is synchronized"
-	ConditionMessageModuleCatalogIsOutOfSync  = "module catalog is out of sync and needs to be resynchronized"
+	ConditionMessageModuleCatalogIsSynced     = "module templates are synchronized"
+	ConditionMessageModuleCatalogIsOutOfSync  = "module templates are out of sync and need to be resynchronized"
 	ConditionMessageSKRWebhookIsSynced        = "skrwebhook is synchronized"
 	ConditionMessageSKRWebhookIsOutOfSync     = "skrwebhook is out of sync and needs to be resynchronized"
 	ConditionMessageModuleStateUnknown        = "modules state is unknown"
-	ConditionMessageModuleCatalogStateUnknown = "module catalog state is unknown"
+	ConditionMessageModuleCatalogStateUnknown = "module templates synchronization state is unknown"
 )
 
 func GenerateMessage(conditionType KymaConditionType, status metav1.ConditionStatus) string {
