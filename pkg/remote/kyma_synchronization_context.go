@@ -23,9 +23,9 @@ import (
 
 type ClientFunc func() *rest.Config
 
+//nolint:gochecknoglobals
 var (
-	LocalClient                        ClientFunc //nolint:gochecknoglobals
-	ErrNoLocalClientDefined            = errors.New("no local client defined")
+	LocalClient                        ClientFunc
 	ErrNotFoundAndKCPKymaUnderDeleting = errors.New("not found and kcp kyma under deleting")
 )
 
@@ -34,8 +34,8 @@ type KymaSynchronizationContext struct {
 	RuntimeClient      Client
 }
 
-func InitializeKymaSynchronizationContext(
-	ctx context.Context, kcp Client, cache *ClientCache, kyma *v1beta2.Kyma, syncNamespace string,
+func InitializeKymaSynchronizationContext(ctx context.Context, kcp Client, cache *ClientCache,
+	kyma *v1beta2.Kyma, syncNamespace string,
 ) (*KymaSynchronizationContext, error) {
 	strategyValue, found := kyma.Annotations[v1beta2.SyncStrategyAnnotation]
 	syncStrategy := v1beta2.SyncStrategyLocalSecret

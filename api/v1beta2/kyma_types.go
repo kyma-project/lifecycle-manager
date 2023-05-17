@@ -354,18 +354,6 @@ func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType, conditionSt
 	return false
 }
 
-const (
-	EnableLabelValue  = "true"
-	DisableLabelValue = "false"
-)
-
-func (kyma *Kyma) SkipReconciliation() bool {
-	if isSkip, found := kyma.Labels[SkipReconcileLabel]; found && isSkip == EnableLabelValue {
-		return true
-	}
-	return false
-}
-
 func (kyma *Kyma) DetermineState() State {
 	status := &kyma.Status
 	for _, moduleStatus := range status.Modules {
@@ -393,23 +381,29 @@ func (kyma *Kyma) AllModulesReady() bool {
 	return true
 }
 
+const (
+	EnableLabelValue  = "true"
+	DisableLabelValue = "false"
+)
+
 func (kyma *Kyma) SyncEnabled() bool {
-	if isSync, found := kyma.Labels[SyncLabel]; found {
-		return strings.ToLower(isSync) == EnableLabelValue
+	if sync, found := kyma.Labels[SyncLabel]; found {
+		return strings.ToLower(sync) == EnableLabelValue
 	}
-	return true
+	return true // missing label defaults to enabled sync
+}
+
+func (kyma *Kyma) SkipReconciliation() bool {
+	skip, found := kyma.Labels[SkipReconcileLabel]
+	return found && strings.ToLower(skip) == EnableLabelValue
 }
 
 func (kyma *Kyma) IsInternal() bool {
-	if isInternal, found := kyma.Labels[InternalLabel]; found {
-		return strings.ToLower(isInternal) == EnableLabelValue
-	}
-	return false
+	internal, found := kyma.Labels[InternalLabel]
+	return found && strings.ToLower(internal) == EnableLabelValue
 }
 
 func (kyma *Kyma) IsBeta() bool {
-	if isBeta, found := kyma.Labels[BetaLabel]; found {
-		return strings.ToLower(isBeta) == EnableLabelValue
-	}
-	return false
+	beta, found := kyma.Labels[BetaLabel]
+	return found && strings.ToLower(beta) == EnableLabelValue
 }
