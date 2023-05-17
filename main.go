@@ -285,6 +285,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		},
 		InKCPMode:           flagVar.inKCPMode,
 		RemoteSyncNamespace: flagVar.remoteSyncNamespace,
+		IsManagedKyma:       flagVar.isKymaManaged,
 	}).SetupWithManager(
 		mgr, options, controllers.SetupUpSetting{
 			ListenerAddr:                 flagVar.kymaListenerAddr,
@@ -321,7 +322,7 @@ func setupPurgeReconciler(
 		ResolveRemoteClient:   resolveRemoteClientFunc,
 		PurgeFinalizerTimeout: flagVar.purgeFinalizerTimeout,
 		SkipCRDs:              controllers.CRDMatcherFor(flagVar.skipPurgingFor),
-		IsManagedKyma:         flagVar.inKCPMode,
+		InKcpMode:             flagVar.inKCPMode,
 	}).SetupWithManager(
 		mgr, options,
 	); err != nil {
