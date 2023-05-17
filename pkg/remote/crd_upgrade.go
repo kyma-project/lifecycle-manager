@@ -132,7 +132,7 @@ func fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Cli
 		return nil, nil, err
 	}
 
-	err = runtimeClient.Get(
+	runtimeClient.Get(
 		ctx, client.ObjectKey{
 			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
 		}, crdFromRuntime,
