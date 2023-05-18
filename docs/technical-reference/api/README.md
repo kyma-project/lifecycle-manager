@@ -21,17 +21,19 @@ Read more about the custom resource definitions (CRDs) in the respective documen
 ## Synchronization of Module Catalog with remote clusters
 
 Lifecycle Manager ensures that the Module Catalog is correctly synchronized with users' runtimes.
-The Module Catalog consists of all modules that are available for a user. The Module Catalog portfolio may vary for different users.
+The Module Catalog consists of all modules, represented by ModuleTemplates CR, that are available for a user. The Module Catalog portfolio may vary for different users.
 The synchronization mechanism described below is essential to allow users to enable modules in their clusters.
-The mechanism is controlled by the set of flags that are configured on Kyma and ModuleTemplate CRs in the Control Plane. The flags are: `operator.kyma-project.io/sync`, `operator.kyma-project.io/internal`, and `operator.kyma-project.io/beta`.
+The mechanism is controlled by the set of labels that are configured on Kyma and ModuleTemplate CRs in the Control Plane. The labels are: `operator.kyma-project.io/sync`, `operator.kyma-project.io/internal`, and `operator.kyma-project.io/beta`.
 The v1beta2 API introduces three groups of modules:
 
-- Standard modules, synchronized by default.
+- Default modules, synchronized by default.
 - Internal modules, synchronized per-cluster only if configured explicitly on the corresponding Kyma CRs. To mark a ModuleTemplate CR as `internal`, use the `operator.kyma-project.io/internal` label and set it to `true`.
 - Beta modules, synchronized per-cluster only if configured explicitly on the corresponding Kyma CRs. To mark a ModuleTemplate CR as `beta`, use the `operator.kyma-project.io/beta` label and set it to `true`.
 
-By default, without any flags configured on Kyma and ModuleTemplate CRs, the `standard` ModuleTemplate CR is synchronized with the remote cluster.
+By default, without any labels configured on Kyma and ModuleTemplate CRs, a ModuleTemplate CR is synchronized with remote clusters.
 
-**NOTE:** Disabling synchronization for already synchronized ModuleTemplates CRs does not remove them from remote clusters. The CRs remain as they are, but any subsequent changes to these ModuleTemplate CRs in the Control Plane are not synchronized.
+**NOTE:** The ModuleTemplate CRs synchronization is enabled only when Lifecycle Manager runs in the [control-plane mode](../../technical-reference/running-modes). Lifecycle Manager running in the single-cluster mode, doesn't require any CR synchronization.
+
+**NOTE:** Disabling synchronization for already synchronized ModuleTemplates CRs doesn't remove them from remote clusters. The CRs remain as they are, but any subsequent changes to these ModuleTemplate CRs in the Control Plane are not synchronized.
 
 For details, read about [the Kyma CR synchronization labels](../api/kyma-cr.md#operatorkyma-projectio-labels) and [the ModuleTemplate CR synchronization labels](../api/moduleTemplate-cr.md#operatorkyma-projectio-labels).
