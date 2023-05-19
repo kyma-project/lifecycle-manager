@@ -28,7 +28,7 @@ func (dst *Kyma) ConvertFrom(srcRaw conversion.Hub) error {
 	dst.ObjectMeta = src.ObjectMeta
 	dst.Spec.Channel = src.Spec.Channel
 	dst.Spec.Modules = src.Spec.Modules
-	if src.SyncEnabled() {
+	if src.HasSyncLabelEnabled() {
 		dst.Spec.Sync.Enabled = true
 	} else {
 		dst.Spec.Sync.Enabled = false
