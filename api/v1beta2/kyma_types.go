@@ -388,7 +388,7 @@ const (
 	DisableLabelValue = "false"
 )
 
-func (kyma *Kyma) SyncEnabled() bool {
+func (kyma *Kyma) HasSyncLabelEnabled() bool {
 	if sync, found := kyma.Labels[SyncLabel]; found {
 		return strings.ToLower(sync) == EnableLabelValue
 	}

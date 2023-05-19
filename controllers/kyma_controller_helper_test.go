@@ -20,13 +20,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var (
-	ErrNotFound                 = errors.New("resource not exists")
-	ErrExpectedLabelNotReset    = errors.New("expected label not reset")
-	ErrWatcherLabelMissing      = errors.New("watcher label missing")
-	ErrWatcherAnnotationMissing = errors.New("watcher annotation missing")
-)
-
 func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
 		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false)
@@ -97,23 +90,6 @@ func updateModuleState(kyma *v1beta2.Kyma, module v1beta2.Module, state v1beta2.
 	return k8sManager.GetClient().Status().Update(ctx, component)
 }
 
-func UpdateRemoteModule(
-	ctx context.Context,
-	client client.Client,
-	kyma *v1beta2.Kyma,
-	remoteSyncNamespace string,
-	modules []v1beta2.Module,
-) func() error {
-	return func() error {
-		kyma, err := GetKyma(ctx, client, kyma.Name, remoteSyncNamespace)
-		if err != nil {
-			return err
-		}
-		kyma.Spec.Modules = modules
-		return client.Update(ctx, kyma)
-	}
-}
-
 func UpdateKymaLabel(
 	ctx context.Context,
 	client client.Client,
@@ -143,68 +119,6 @@ func KCPModuleExistWithOverwrites(kyma *v1beta2.Kyma, module v1beta2.Module) str
 	err = json.Unmarshal(body, &kcpModuleSpec)
 	Expect(err).ToNot(HaveOccurred())
 	return kcpModuleSpec.InitKey
-}
-
-func GetModuleTemplate(clnt client.Client, name, namespace string) (*v1beta2.ModuleTemplate, error) {
-	moduleTemplateInCluster := &v1beta2.ModuleTemplate{}
-	moduleTemplateInCluster.SetNamespace(namespace)
-	moduleTemplateInCluster.SetName(name)
-	err := clnt.Get(ctx, client.ObjectKeyFromObject(moduleTemplateInCluster), moduleTemplateInCluster)
-	if err != nil {
-		return nil, err
-	}
-	return moduleTemplateInCluster, nil
-}
-
-func KymaExists(clnt client.Client, name, namespace string) error {
-	_, err := GetKyma(ctx, clnt, name, namespace)
-	if k8serrors.IsNotFound(err) {
-		return ErrNotFound
-	}
-	return nil
-}
-
-func ManifestExists(kyma *v1beta2.Kyma, module v1beta2.Module) error {
-	_, err := GetManifest(ctx, controlPlaneClient, kyma, module)
-	if k8serrors.IsNotFound(err) {
-		return ErrNotFound
-	}
-	return nil
-}
-
-func ModuleTemplateExists(client client.Client, name, namespace string) error {
-	_, err := GetModuleTemplate(client, name, namespace)
-	if k8serrors.IsNotFound(err) {
-		return ErrNotFound
-	}
-	return nil
-}
-
-func ModuleTemplatesExist(clnt client.Client, kyma *v1beta2.Kyma, remoteSyncNamespace string) func() error {
-	return func() error {
-		for _, module := range kyma.Spec.Modules {
-			if err := ModuleTemplateExists(clnt, module.Name, remoteSyncNamespace); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}
-}
-
-func WatcherLabelsAnnotationsExist(clnt client.Client, kyma *v1beta2.Kyma, remoteSyncNamespace string) error {
-	remoteKyma, err := GetKyma(ctx, clnt, kyma.GetName(), remoteSyncNamespace)
-	if err != nil {
-		return err
-	}
-	if remoteKyma.Labels[v1beta2.WatchedByLabel] != v1beta2.OperatorName {
-		return ErrWatcherLabelMissing
-	}
-	if remoteKyma.Annotations[v1beta2.OwnedByAnnotation] != fmt.Sprintf(v1beta2.OwnedByFormat,
-		kyma.GetNamespace(), kyma.GetName()) {
-		return ErrWatcherAnnotationMissing
-	}
-	return nil
 }
 
 func deleteModule(kyma *v1beta2.Kyma, module v1beta2.Module) func() error {
