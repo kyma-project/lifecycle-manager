@@ -255,7 +255,6 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		}
 		skrWebhookConfig := &watcher.SkrWebhookManagerConfig{
 			SKRWatcherPath:             flagVar.skrWatcherPath,
-			SkrWebhookCPULimits:        flagVar.skrWebhookCPULimits,
 			SkrWebhookMemoryLimits:     flagVar.skrWebhookMemoryLimits,
 			WatcherLocalTestingEnabled: flagVar.enableWatcherLocalTesting,
 			GatewayHTTPPortMapping:     flagVar.listenerHTTPPortLocalMapping,

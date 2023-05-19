@@ -164,7 +164,6 @@ var _ = BeforeSuite(func() {
 	skrChartCfg := &watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         skrWatcherPath,
 		SkrWebhookMemoryLimits: "200Mi",
-		SkrWebhookCPULimits:    "1",
 		IstioNamespace:         metav1.NamespaceDefault,
 		RemoteSyncNamespace:    controllers.DefaultRemoteSyncNamespace,
 	}

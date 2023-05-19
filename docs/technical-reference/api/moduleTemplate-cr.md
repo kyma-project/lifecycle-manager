@@ -36,7 +36,6 @@ spec:
       resources:
         operator:
           limits:
-            cpu: "800m"
             memory: "200Mi"
           requests:
             cpu: "300m"

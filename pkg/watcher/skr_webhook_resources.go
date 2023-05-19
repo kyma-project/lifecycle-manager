@@ -161,16 +161,11 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 		return nil, ErrExpectedNonEmptyPodContainers
 	}
 	serverContainer := deployment.Spec.Template.Spec.Containers[0]
-	cpuResQty, err := resource.ParseQuantity(cfg.cpuResLimit)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing CPU resource limit: %w", err)
-	}
 	memResQty, err := resource.ParseQuantity(cfg.memResLimit)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing memory resource limit: %w", err)
 	}
 	serverContainer.Resources.Limits = map[corev1.ResourceName]resource.Quantity{
-		corev1.ResourceCPU:    cpuResQty,
 		corev1.ResourceMemory: memResQty,
 	}
 	deployment.Spec.Template.Spec.Containers[0] = serverContainer
@@ -220,12 +215,12 @@ func getWatchableConfigs(ctx context.Context, kcpClient client.Client,
 }
 
 type unstructuredResourcesConfig struct {
-	contractVersion          string
-	kcpAddress               string
-	secretResVer             string
-	cpuResLimit, memResLimit string
-	caCert, tlsCert, tlsKey  []byte
-	remoteNs                 string
+	contractVersion         string
+	kcpAddress              string
+	secretResVer            string
+	memResLimit             string
+	caCert, tlsCert, tlsKey []byte
+	remoteNs                string
 }
 
 func configureUnstructuredObject(cfg *unstructuredResourcesConfig, object *unstructured.Unstructured,
