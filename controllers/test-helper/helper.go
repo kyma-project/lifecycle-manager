@@ -1,4 +1,4 @@
-package test_helper
+package helper
 
 import (
 	"context"
@@ -14,7 +14,8 @@ var (
 	ErrNotFound = errors.New("resource not exists")
 )
 
-func GetModuleTemplate(ctx context.Context, clnt client.Client, name, namespace string) (*v1beta2.ModuleTemplate, error) {
+func GetModuleTemplate(ctx context.Context,
+	clnt client.Client, name, namespace string) (*v1beta2.ModuleTemplate, error) {
 	moduleTemplateInCluster := &v1beta2.ModuleTemplate{}
 	moduleTemplateInCluster.SetNamespace(namespace)
 	moduleTemplateInCluster.SetName(name)
