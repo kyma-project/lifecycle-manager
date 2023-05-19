@@ -28,6 +28,8 @@ type Parser struct {
 	InKCPMode           bool
 	remoteSyncNamespace string
 	*ocmextensions.ComponentDescriptorCache
+	EnableVerification bool
+	PublicKeyFilePath  string
 }
 
 func NewParser(
@@ -35,19 +37,22 @@ func NewParser(
 	descriptorCache *ocmextensions.ComponentDescriptorCache,
 	inKCPMode bool,
 	remoteSyncNamespace string,
+	enableVerification bool,
+	publicKeyFilePath string,
 ) *Parser {
 	return &Parser{
 		Client:                   clnt,
 		ComponentDescriptorCache: descriptorCache,
 		InKCPMode:                inKCPMode,
 		remoteSyncNamespace:      remoteSyncNamespace,
+		EnableVerification:       enableVerification,
+		PublicKeyFilePath:        publicKeyFilePath,
 	}
 }
 
 func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 	kyma *v1beta2.Kyma,
 	templates channel.ModuleTemplatesByModuleName,
-	verification signature.Verification,
 ) common.Modules {
 	// First, we fetch the module spec from the template and use it to resolve it into an arbitrary object
 	// (since we do not know which module we are dealing with)
@@ -77,8 +82,7 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 		overwriteNameAndNamespace(template, name, p.remoteSyncNamespace)
 		var obj client.Object
 		if obj, err = p.newManifestFromTemplate(ctx, module,
-			template.ModuleTemplate,
-			verification); err != nil {
+			template.ModuleTemplate); err != nil {
 			template.Err = err
 			modules = append(modules, &common.Module{
 				ModuleName: module.Name,
@@ -117,7 +121,6 @@ func (p *Parser) newManifestFromTemplate(
 	ctx context.Context,
 	module v1beta2.Module,
 	template *v1beta2.ModuleTemplate,
-	verification signature.Verification,
 ) (*v1beta2.Manifest, error) {
 	manifest := &v1beta2.Manifest{}
 	manifest.Spec.Remote = p.InKCPMode
@@ -153,8 +156,17 @@ func (p *Parser) newManifestFromTemplate(
 		}
 	}
 
+	verification, err := signature.NewVerification(ctx,
+		p.Client,
+		p.EnableVerification,
+		p.PublicKeyFilePath,
+		module.Name)
+	if err != nil {
+		return nil, err
+	}
+
 	if err := signature.Verify(componentDescriptor, verification); err != nil {
-		return nil, fmt.Errorf("could not verify descriptor: %w", err)
+		return nil, fmt.Errorf("could not verify signature: %w", err)
 	}
 
 	if layers, err = img.Parse(componentDescriptor); err != nil {

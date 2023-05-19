@@ -8,23 +8,22 @@ import (
 const (
 	// DeprecatedConditionTypeReady was introduced by a bug. Ths condition needs to be removed on all KymaCRs.
 	DeprecatedConditionTypeReady KymaConditionType = "Ready"
-
-	// Determines the Type of a Condition.
-	ConditionTypeModules       KymaConditionType = "Modules"
-	ConditionTypeModuleCatalog KymaConditionType = "ModuleCatalog"
-	ConditionTypeSKRWebhook    KymaConditionType = "SKRWebhook"
+	ConditionTypeModules         KymaConditionType = "Modules"
+	ConditionTypeModuleCatalog   KymaConditionType = "ModuleCatalog"
+	ConditionTypeSKRWebhook      KymaConditionType = "SKRWebhook"
 
 	// ConditionReason will be set to `Ready` on all Conditions. If the Condition is actual ready,
 	// can be determined by the state.
 	ConditionReason KymaConditionReason = "Ready"
 
-	// ConditionMessage represents the current state of a Condition in a human readable format.
-	ConditionMessageModuleInReadyState       = "all modules are in ready state"
-	ConditionMessageModuleNotInReadyState    = "not all modules are in ready state"
-	ConditionMessageModuleCatalogIsSynced    = "module catalog is synchronized"
-	ConditionMessageModuleCatalogIsOutOfSync = "module catalog is out of sync and needs to be resynchronized"
-	ConditionMessageSKRWebhookIsSynced       = "skrwebhook is synchronized"
-	ConditionMessageSKRWebhookIsOutOfSync    = "skrwebhook is out of sync and needs to be resynchronized"
+	ConditionMessageModuleInReadyState        = "all modules are in ready state"
+	ConditionMessageModuleNotInReadyState     = "not all modules are in ready state"
+	ConditionMessageModuleCatalogIsSynced     = "module templates are synchronized"
+	ConditionMessageModuleCatalogIsOutOfSync  = "module templates are out of sync and need to be resynchronized"
+	ConditionMessageSKRWebhookIsSynced        = "skrwebhook is synchronized"
+	ConditionMessageSKRWebhookIsOutOfSync     = "skrwebhook is out of sync and needs to be resynchronized"
+	ConditionMessageModuleStateUnknown        = "modules state is unknown"
+	ConditionMessageModuleCatalogStateUnknown = "module templates synchronization state is unknown"
 )
 
 func GenerateMessage(conditionType KymaConditionType, status metav1.ConditionStatus) string {
@@ -34,6 +33,7 @@ func GenerateMessage(conditionType KymaConditionType, status metav1.ConditionSta
 		case metav1.ConditionTrue:
 			return ConditionMessageModuleInReadyState
 		case metav1.ConditionUnknown:
+			return ConditionMessageModuleStateUnknown
 		case metav1.ConditionFalse:
 		}
 
@@ -43,6 +43,7 @@ func GenerateMessage(conditionType KymaConditionType, status metav1.ConditionSta
 		case metav1.ConditionTrue:
 			return ConditionMessageModuleCatalogIsSynced
 		case metav1.ConditionUnknown:
+			return ConditionMessageModuleCatalogStateUnknown
 		case metav1.ConditionFalse:
 		}
 

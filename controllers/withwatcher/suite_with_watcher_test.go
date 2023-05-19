@@ -183,6 +183,7 @@ var _ = BeforeSuite(func() {
 		ComponentDescriptorCache: componentDescriptorCache,
 		KcpRestConfig:            k8sManager.GetConfig(),
 		RemoteSyncNamespace:      controllers.DefaultRemoteSyncNamespace,
+		InKCPMode:                true,
 	}).SetupWithManager(k8sManager, controller.Options{}, controllers.SetupUpSetting{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
