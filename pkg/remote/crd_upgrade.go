@@ -119,8 +119,7 @@ func fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Cli
 	*v1extensions.CustomResourceDefinition, *v1extensions.CustomResourceDefinition, error) {
 	crd := &v1extensions.CustomResourceDefinition{}
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
-	var err error
-	err = controlPlaneClient.Get(
+	err := controlPlaneClient.Get(
 		ctx, client.ObjectKey{
 			// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
 			// name changes, this also has to be adjusted here. We can think of making this configurable later
