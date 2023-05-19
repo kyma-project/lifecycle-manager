@@ -43,7 +43,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	})
 }
 
-func UpdateRemoteModule(
+func updateRemoteModule(
 	ctx context.Context,
 	client client.Client,
 	kyma *v1beta2.Kyma,
@@ -60,7 +60,7 @@ func UpdateRemoteModule(
 	}
 }
 
-func GetModuleTemplate(clnt client.Client, name, namespace string) (*v1beta2.ModuleTemplate, error) {
+func getModuleTemplate(clnt client.Client, name, namespace string) (*v1beta2.ModuleTemplate, error) {
 	moduleTemplateInCluster := &v1beta2.ModuleTemplate{}
 	moduleTemplateInCluster.SetNamespace(namespace)
 	moduleTemplateInCluster.SetName(name)
@@ -71,7 +71,7 @@ func GetModuleTemplate(clnt client.Client, name, namespace string) (*v1beta2.Mod
 	return moduleTemplateInCluster, nil
 }
 
-func KymaExists(clnt client.Client, name, namespace string) error {
+func kymaExists(clnt client.Client, name, namespace string) error {
 	_, err := GetKyma(ctx, clnt, name, namespace)
 	if k8serrors.IsNotFound(err) {
 		return ErrNotFound
@@ -79,7 +79,7 @@ func KymaExists(clnt client.Client, name, namespace string) error {
 	return nil
 }
 
-func ManifestExists(kyma *v1beta2.Kyma, module v1beta2.Module) error {
+func manifestExists(kyma *v1beta2.Kyma, module v1beta2.Module) error {
 	_, err := GetManifest(ctx, controlPlaneClient, kyma, module)
 	if k8serrors.IsNotFound(err) {
 		return ErrNotFound
@@ -87,18 +87,18 @@ func ManifestExists(kyma *v1beta2.Kyma, module v1beta2.Module) error {
 	return nil
 }
 
-func ModuleTemplateExists(client client.Client, name, namespace string) error {
-	_, err := GetModuleTemplate(client, name, namespace)
+func moduleTemplateExists(client client.Client, name, namespace string) error {
+	_, err := getModuleTemplate(client, name, namespace)
 	if k8serrors.IsNotFound(err) {
 		return ErrNotFound
 	}
 	return nil
 }
 
-func ModuleTemplatesExist(clnt client.Client, kyma *v1beta2.Kyma, remoteSyncNamespace string) func() error {
+func moduleTemplatesExist(clnt client.Client, kyma *v1beta2.Kyma, remoteSyncNamespace string) func() error {
 	return func() error {
 		for _, module := range kyma.Spec.Modules {
-			if err := ModuleTemplateExists(clnt, module.Name, remoteSyncNamespace); err != nil {
+			if err := moduleTemplateExists(clnt, module.Name, remoteSyncNamespace); err != nil {
 				return err
 			}
 		}
@@ -107,7 +107,7 @@ func ModuleTemplatesExist(clnt client.Client, kyma *v1beta2.Kyma, remoteSyncName
 	}
 }
 
-func WatcherLabelsAnnotationsExist(clnt client.Client, kyma *v1beta2.Kyma, remoteSyncNamespace string) error {
+func watcherLabelsAnnotationsExist(clnt client.Client, kyma *v1beta2.Kyma, remoteSyncNamespace string) error {
 	remoteKyma, err := GetKyma(ctx, clnt, kyma.GetName(), remoteSyncNamespace)
 	if err != nil {
 		return err
@@ -128,7 +128,7 @@ func expectModuleTemplateSpecGetReset(
 	moduleName,
 	expectedValue string,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(clnt, moduleName, moduleNamespace)
+	moduleTemplate, err := getModuleTemplate(clnt, moduleName, moduleNamespace)
 	if err != nil {
 		return err
 	}
@@ -151,7 +151,7 @@ func updateModuleTemplateSpec(clnt client.Client,
 	moduleName,
 	newValue string,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(clnt, moduleName, moduleNamespace)
+	moduleTemplate, err := getModuleTemplate(clnt, moduleName, moduleNamespace)
 	if err != nil {
 		return err
 	}
