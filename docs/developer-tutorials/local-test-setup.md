@@ -18,9 +18,7 @@ This setup is deployed with the following security features enabled:
 
 1. Create a local control-plane (KCP) cluster:
     ```shell
-    k3d cluster create kcp-local --port 9443:443@loadbalancer \
-    --registry-create k3d-registry.localhost:0.0.0.0:5111 \
-    --k3s-arg '--disable=traefik@server:0'
+    kyma provision k3d --name=kcp-local -p 9080:80@loadbalancer -p 9443:443@loadbalancer --ci
     ```
 
 2. Open `/etc/hosts` file on your local system:

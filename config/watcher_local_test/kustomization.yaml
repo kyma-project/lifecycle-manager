@@ -3,7 +3,9 @@
 # that we do not want in the default configuration (e.g. vendor-specific gateway implementation)
 # but are necessary for testing the watcher on locally provisioned clusters using k3d.
 resources:
-- ../default
+- ../control-plane
+# In control-plane we expect a kcp-system and kyma-system namespace to be already present, thus for testing we need to create it
+- patches/namespace_create.yaml
 
 # [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
 # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
@@ -14,6 +16,10 @@ components:
 
 generatorOptions:
   disableNameSuffixHash: true
+
+patchesStrategicMerge:
+  - patches/servicemonitor_delete.yaml
+
 
 # Patches enable the local testing mode for the KLM
 # and sets the namespace for the watcher resources to `kcp-system`.
@@ -39,20 +45,10 @@ patches:
     group: operator.kyma-project.io
     version: v1beta2
     kind: Watcher
-    name: kyma-watcher
-- patch: |-
-    - op: replace
-      path: /metadata/namespace
-      value: kcp-system
-  target:
-    group: operator.kyma-project.io
-    version: v1beta2
-    kind: Watcher
-    name: manifest-watcher
 - patch: |-
     - op: replace
       path: /metadata/name
-      value: lifecycle-manager-event-service
+      value: klm-event-service
     - op: replace
       path: /metadata/namespace
       value: kcp-system

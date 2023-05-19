@@ -20,13 +20,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"testing"
+
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"go.uber.org/zap/zapcore"
 	"k8s.io/client-go/rest"
-	"os"
-	"path/filepath"
-	"testing"
 
 	//nolint:gci
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -52,14 +53,17 @@ const (
 	skrConfigEnvVar = "SKR_KUBECONFIG"
 )
 
+var errEmptyEnvVar = errors.New("environment variable is empty;")
+
 var (
 	controlPlaneEnv        *envtest.Environment //nolint:gochecknoglobals
 	controlPlaneClient     client.Client        //nolint:gochecknoglobals
 	controlPlaneRESTConfig *rest.Config         //nolint:gochecknoglobals
+	controlPlaneConfig     *[]byte              //nolint:gochecknoglobals
 
-	runtimeEnv        *envtest.Environment //nolint:gochecknoglobals
-	runtimeClient     client.Client        //nolint:gochecknoglobals
-	runtimeRESTConfig *rest.Config         //nolint:gochecknoglobals
+	runtimeClient     client.Client //nolint:gochecknoglobals
+	runtimeRESTConfig *rest.Config  //nolint:gochecknoglobals
+	runtimeConfig     *[]byte       //nolint:gochecknoglobals
 
 	ctx    context.Context    //nolint:gochecknoglobals
 	cancel context.CancelFunc //nolint:gochecknoglobals
@@ -84,25 +88,28 @@ var _ = BeforeSuite(func() {
 		"istio-v1.17.1.crds.yaml")
 
 	// kcpModule CRD
-	controlplaneCrd := &v1.CustomResourceDefinition{}
+	controlPlaneCrd := &v1.CustomResourceDefinition{}
 	modulePath := filepath.Join("../..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(moduleFile).ToNot(BeEmpty())
-	Expect(yaml2.Unmarshal(moduleFile, &controlplaneCrd)).To(Succeed())
+	Expect(yaml2.Unmarshal(moduleFile, &controlPlaneCrd)).To(Succeed())
 
 	// k8s configs
-	controlPlaneConfig, runtimeConfig, err := getConfigs()
+	controlPlaneConfig, runtimeConfig, err = getKubeConfigs()
 	Expect(err).ToNot(HaveOccurred())
 	existingCluster := true
-	controlPlaneRESTConfig, err = clientcmd.RESTConfigFromKubeConfig(controlPlaneConfig)
-	runtimeRESTConfig, err = clientcmd.RESTConfigFromKubeConfig(runtimeConfig)
+	controlPlaneRESTConfig, err = clientcmd.RESTConfigFromKubeConfig(*controlPlaneConfig)
+	Expect(err).ToNot(HaveOccurred())
+	runtimeRESTConfig, err = clientcmd.RESTConfigFromKubeConfig(*runtimeConfig)
+	Expect(err).ToNot(HaveOccurred())
+
 	Expect(err).NotTo(HaveOccurred())
 
 	controlPlaneEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("../..", "config", "crd", "bases")},
-		CRDs:                  append([]*v1.CustomResourceDefinition{controlplaneCrd}, externalCRDs...),
+		CRDs:                  append([]*v1.CustomResourceDefinition{controlPlaneCrd}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 		UseExistingCluster:    &existingCluster,
 		Config:                controlPlaneRESTConfig,
@@ -135,24 +142,24 @@ var _ = AfterSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 })
 
-func getConfigs() ([]byte, []byte, error) {
-	controlplaneConfigFile := os.Getenv(kcpConfigEnvVar)
-	if controlplaneConfigFile == "" {
-		return nil, nil, errors.New(fmt.Sprintf("'%s' is empty", kcpConfigEnvVar))
+func getKubeConfigs() (*[]byte, *[]byte, error) {
+	controlPlaneConfigFile := os.Getenv(kcpConfigEnvVar)
+	if controlPlaneConfigFile == "" {
+		return nil, nil, fmt.Errorf("%w: %s", errEmptyEnvVar, kcpConfigEnvVar)
 	}
-	controlplaneConfig, err := os.ReadFile(controlplaneConfigFile)
+	controlPlaneConfig, err := os.ReadFile(controlPlaneConfigFile)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	runtimeConfigFile := os.Getenv(skrConfigEnvVar)
 	if runtimeConfigFile == "" {
-		return nil, nil, errors.New(fmt.Sprintf("'%s' is empty", skrConfigEnvVar))
+		return nil, nil, fmt.Errorf("%w: %s", errEmptyEnvVar, skrConfigEnvVar)
 	}
 	runtimeConfig, err := os.ReadFile(runtimeConfigFile)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return controlplaneConfig, runtimeConfig, nil
+	return &controlPlaneConfig, &runtimeConfig, nil
 }
