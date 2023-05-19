@@ -230,7 +230,7 @@ func (c *TemplateLookup) WithContext(ctx context.Context) ModuleTemplateTO {
 
 	logger := ctrlLog.FromContext(ctx)
 	if actualChannel != c.defaultChannel {
-		logger.Info(
+		logger.V(log.DebugLevel).Info(
 			fmt.Sprintf(
 				"using %s (instead of %s) for module %s",
 				actualChannel, c.defaultChannel, c.module.Name,

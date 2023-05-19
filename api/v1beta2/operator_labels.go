@@ -41,7 +41,7 @@ const (
 	SyncLabel = OperatorPrefix + Separator + "sync"
 )
 
-func (kyma *Kyma) CheckLabelsAndFinalizers() bool {
+func (kyma *Kyma) EnsureLabelsAndFinalizers() bool {
 	if controllerutil.ContainsFinalizer(kyma, "foregroundDeletion") {
 		return false
 	}
