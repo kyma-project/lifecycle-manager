@@ -246,7 +246,6 @@ func setupKymaReconciler(mgr ctrl.Manager,
 	flagVar *FlagVar, options controller.Options,
 ) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentKymaReconciles
-
 	kcpRestConfig := mgr.GetConfig()
 	var skrWebhookManager watcher.SKRWebhookManager
 	if flagVar.enableKcpWatcher {
