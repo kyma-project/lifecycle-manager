@@ -8,6 +8,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -92,7 +93,7 @@ func SyncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma,
 func fetchCrdsAndUpdateKymaAnnotations(ctx context.Context, controlPlaneClient Client,
 	runtimeClient Client, kyma *v1beta2.Kyma, plural string) (bool, error) {
 	kcpCrd, skrCrd, err := fetchCrds(ctx, controlPlaneClient, runtimeClient, plural)
-	if err != nil && skrCrd != nil {
+	if err != nil {
 		return false, err
 	}
 	crdUpdated, err := updateRemoteCRD(ctx, kyma, runtimeClient, skrCrd, kcpCrd)
@@ -136,6 +137,10 @@ func fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Cli
 			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
 		}, crdFromRuntime,
 	)
+
+	if k8serrors.IsNotFound(err) {
+		return crd, crdFromRuntime, nil
+	}
 
 	if err != nil {
 		return nil, nil, err
