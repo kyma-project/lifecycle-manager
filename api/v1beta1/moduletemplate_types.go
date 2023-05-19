@@ -75,6 +75,17 @@ type ModuleTemplateSpec struct {
 	// Target describes where the Module should later on be installed if parsed correctly. It is used as installation
 	// hint by downstream controllers to determine which client implementation to use for working with the Module
 	Target Target `json:"target"`
+
+	// CustomStateCheck for advanced Module State determination
+	CustomStateCheck *CustomStateCheck `json:"customStateCheck,omitempty"`
+}
+
+type CustomStateCheck struct {
+	// JsonPath specifies the JSON path to the state variable in the Module CR
+	JsonPath string `json:"jsonPath"`
+
+	// Value is the value at the JsonPath for which the Module CR state is set to "Ready" in Kyma CR
+	Value string `json:"value"`
 }
 
 //+kubebuilder:object:root=true
