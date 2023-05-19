@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	helper "github.com/kyma-project/lifecycle-manager/controllers/test-helper"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -16,7 +15,6 @@ import (
 )
 
 var (
-	ErrNotFound                 = errors.New("resource not exists")
 	ErrExpectedLabelNotReset    = errors.New("expected label not reset")
 	ErrWatcherLabelMissing      = errors.New("watcher label missing")
 	ErrWatcherAnnotationMissing = errors.New("watcher annotation missing")
@@ -90,7 +88,7 @@ func expectModuleTemplateSpecGetReset(
 	moduleName,
 	expectedValue string,
 ) error {
-	moduleTemplate, err := helper.GetModuleTemplate(ctx, clnt, moduleName, moduleNamespace)
+	moduleTemplate, err := GetModuleTemplate(ctx, clnt, moduleName, moduleNamespace)
 	if err != nil {
 		return err
 	}
@@ -113,7 +111,7 @@ func updateModuleTemplateSpec(clnt client.Client,
 	moduleName,
 	newValue string,
 ) error {
-	moduleTemplate, err := helper.GetModuleTemplate(ctx, clnt, moduleName, moduleNamespace)
+	moduleTemplate, err := GetModuleTemplate(ctx, clnt, moduleName, moduleNamespace)
 	if err != nil {
 		return err
 	}

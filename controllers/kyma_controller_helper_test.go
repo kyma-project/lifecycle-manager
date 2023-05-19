@@ -20,10 +20,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var (
-	ErrNotFound = errors.New("resource not exists")
-)
-
 func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
 		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false)

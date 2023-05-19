@@ -5,7 +5,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/controllers"
-	helper "github.com/kyma-project/lifecycle-manager/controllers/test-helper"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -59,7 +58,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		}), Timeout, Interval).Should(Succeed())
 
 		By("skr-module-client created in kcp")
-		Eventually(helper.ManifestExists, Timeout, Interval).WithArguments(ctx, kyma,
+		Eventually(ManifestExists, Timeout, Interval).WithArguments(ctx, kyma,
 			skrModuleFromClient, controlPlaneClient).Should(Succeed())
 	})
 })
@@ -106,16 +105,16 @@ var _ = Describe("Kyma with remote module templates", Ordered, func() {
 	})
 
 	It("Should not sync the moduleInSkr template in KCP and keep it only in SKR", func() {
-		Eventually(helper.ModuleTemplateExists, Timeout, Interval).
+		Eventually(ModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, runtimeClient, templateInSkr.Name, templateInSkr.Namespace).
 			Should(Succeed())
-		Consistently(helper.ModuleTemplateExists, Timeout, Interval).
+		Consistently(ModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, templateInSkr.Name, templateInSkr.Namespace).
 			Should(MatchError(ErrNotFound))
 	})
 
 	It("Should reconcile Manifest in KCP using remote moduleInSkr template", func() {
-		Eventually(helper.ManifestExists, Timeout, Interval).
+		Eventually(ManifestExists, Timeout, Interval).
 			WithArguments(ctx, kyma, moduleInSkr, controlPlaneClient).
 			Should(Succeed())
 	})
@@ -124,10 +123,10 @@ var _ = Describe("Kyma with remote module templates", Ordered, func() {
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(controlPlaneClient, kyma).Should(Succeed())
-		Consistently(helper.ModuleTemplateExists, Timeout, Interval).
+		Consistently(ModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, runtimeClient, templateInSkr.Name, templateInSkr.Namespace).
 			Should(Succeed())
-		Consistently(helper.ModuleTemplateExists, Timeout, Interval).
+		Consistently(ModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, templateInSkr.Name, templateInSkr.Namespace).
 			Should(MatchError(ErrNotFound))
 	})
@@ -166,7 +165,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("CR created in kcp")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(helper.ManifestExists, Timeout, Interval).WithArguments(
+			Eventually(ManifestExists, Timeout, Interval).WithArguments(
 				ctx, kyma, activeModule, controlPlaneClient).Should(Succeed())
 		}
 
@@ -183,7 +182,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		}, Timeout, Interval)
 
 		By("Remote Module Catalog created")
-		Eventually(helper.ModuleTemplatesExist(ctx, runtimeClient, kyma, controllers.DefaultRemoteSyncNamespace),
+		Eventually(ModuleTemplatesExist(ctx, runtimeClient, kyma, controllers.DefaultRemoteSyncNamespace),
 			Timeout, Interval).
 			Should(Succeed())
 		Eventually(func() error {
