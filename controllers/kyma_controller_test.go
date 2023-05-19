@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	helper "github.com/kyma-project/lifecycle-manager/controllers/test-helper"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -67,7 +68,7 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 		Expect(
 			kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModuleCatalog, metav1.ConditionTrue)).To(BeFalse())
 		By("Module Catalog created")
-		Eventually(ModuleTemplatesExist(controlPlaneClient, kyma, kyma.GetNamespace()),
+		Eventually(helper.ModuleTemplatesExist(ctx, controlPlaneClient, kyma, kyma.GetNamespace()),
 			Timeout, Interval).Should(Succeed())
 	})
 })
@@ -95,7 +96,8 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 	It("CR should be created normally and then recreated after delete", func() {
 		By("CR created")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ManifestExists, Timeout, Interval).WithArguments(kyma, activeModule).Should(Succeed())
+			Eventually(helper.ManifestExists, Timeout, Interval).WithArguments(
+				ctx, kyma, activeModule, controlPlaneClient).Should(Succeed())
 		}
 		By("Delete CR")
 		for _, activeModule := range kyma.Spec.Modules {
@@ -104,14 +106,16 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 
 		By("CR created again")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ManifestExists, Timeout, Interval).WithArguments(kyma, activeModule).Should(Succeed())
+			Eventually(helper.ManifestExists, Timeout, Interval).WithArguments(
+				ctx, kyma, activeModule, controlPlaneClient).Should(Succeed())
 		}
 	})
 
 	It("CR should be deleted after removed from kyma.spec.modules", func() {
 		By("CR created")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ManifestExists, Timeout, Interval).WithArguments(kyma, activeModule).Should(Succeed())
+			Eventually(helper.ManifestExists, Timeout, Interval).WithArguments(
+				ctx, kyma, activeModule, controlPlaneClient).Should(Succeed())
 		}
 		By("Remove kcp-module from kyma.spec.modules")
 		kyma.Spec.Modules = []v1beta2.Module{
@@ -121,10 +125,12 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 			WithContext(ctx).WithArguments(kyma).Should(Succeed())
 
 		By("kcp-module deleted")
-		Eventually(ManifestExists, Timeout, Interval).WithArguments(kyma, kcpModule).Should(MatchError(ErrNotFound))
+		Eventually(helper.ManifestExists, Timeout, Interval).WithArguments(
+			ctx, kyma, kcpModule, controlPlaneClient).Should(MatchError(ErrNotFound))
 
 		By("skr-module exists")
-		Eventually(ManifestExists, Timeout, Interval).WithArguments(kyma, skrModule).Should(Succeed())
+		Eventually(helper.ManifestExists, Timeout, Interval).WithArguments(
+			ctx, kyma, skrModule, controlPlaneClient).Should(Succeed())
 	})
 })
 
@@ -143,7 +149,8 @@ var _ = Describe("Kyma update Manifest CR", Ordered, func() {
 	It("Manifest CR should be updated after module template changed", func() {
 		By("CR created")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ManifestExists, Timeout, Interval).WithArguments(kyma, activeModule).Should(Succeed())
+			Eventually(helper.ManifestExists, Timeout, Interval).WithArguments(
+				ctx, kyma, activeModule, controlPlaneClient).Should(Succeed())
 		}
 
 		By("reacting to a change of its Modules when they are set to ready")
@@ -181,7 +188,8 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	It("Mark Kyma as skip Reconciliation", func() {
 		By("CR created")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ManifestExists, Timeout, Interval).WithArguments(kyma, activeModule).Should(Succeed())
+			Eventually(helper.ManifestExists, Timeout, Interval).WithArguments(
+				ctx, kyma, activeModule, controlPlaneClient).Should(Succeed())
 		}
 
 		By("reacting to a change of its Modules when they are set to ready")
@@ -273,7 +281,7 @@ func updateModuleTemplateSpec(clnt client.Client,
 	moduleName,
 	newValue string,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(clnt, moduleName, moduleNamespace)
+	moduleTemplate, err := helper.GetModuleTemplate(ctx, clnt, moduleName, moduleNamespace)
 	if err != nil {
 		return err
 	}

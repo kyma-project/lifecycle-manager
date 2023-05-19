@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	helper "github.com/kyma-project/lifecycle-manager/controllers/test-helper"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -60,51 +61,12 @@ func updateRemoteModule(
 	}
 }
 
-func getModuleTemplate(clnt client.Client, name, namespace string) (*v1beta2.ModuleTemplate, error) {
-	moduleTemplateInCluster := &v1beta2.ModuleTemplate{}
-	moduleTemplateInCluster.SetNamespace(namespace)
-	moduleTemplateInCluster.SetName(name)
-	err := clnt.Get(ctx, client.ObjectKeyFromObject(moduleTemplateInCluster), moduleTemplateInCluster)
-	if err != nil {
-		return nil, err
-	}
-	return moduleTemplateInCluster, nil
-}
-
 func kymaExists(clnt client.Client, name, namespace string) error {
 	_, err := GetKyma(ctx, clnt, name, namespace)
 	if k8serrors.IsNotFound(err) {
 		return ErrNotFound
 	}
 	return nil
-}
-
-func manifestExists(kyma *v1beta2.Kyma, module v1beta2.Module) error {
-	_, err := GetManifest(ctx, controlPlaneClient, kyma, module)
-	if k8serrors.IsNotFound(err) {
-		return ErrNotFound
-	}
-	return nil
-}
-
-func moduleTemplateExists(client client.Client, name, namespace string) error {
-	_, err := getModuleTemplate(client, name, namespace)
-	if k8serrors.IsNotFound(err) {
-		return ErrNotFound
-	}
-	return nil
-}
-
-func moduleTemplatesExist(clnt client.Client, kyma *v1beta2.Kyma, remoteSyncNamespace string) func() error {
-	return func() error {
-		for _, module := range kyma.Spec.Modules {
-			if err := moduleTemplateExists(clnt, module.Name, remoteSyncNamespace); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}
 }
 
 func watcherLabelsAnnotationsExist(clnt client.Client, kyma *v1beta2.Kyma, remoteSyncNamespace string) error {
@@ -128,7 +90,7 @@ func expectModuleTemplateSpecGetReset(
 	moduleName,
 	expectedValue string,
 ) error {
-	moduleTemplate, err := getModuleTemplate(clnt, moduleName, moduleNamespace)
+	moduleTemplate, err := helper.GetModuleTemplate(ctx, clnt, moduleName, moduleNamespace)
 	if err != nil {
 		return err
 	}
@@ -151,7 +113,7 @@ func updateModuleTemplateSpec(clnt client.Client,
 	moduleName,
 	newValue string,
 ) error {
-	moduleTemplate, err := getModuleTemplate(clnt, moduleName, moduleNamespace)
+	moduleTemplate, err := helper.GetModuleTemplate(ctx, clnt, moduleName, moduleNamespace)
 	if err != nil {
 		return err
 	}

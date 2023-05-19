@@ -9,7 +9,7 @@ import (
 
 var _ = Describe("Kyma with managed fields", Ordered, func() {
 	kyma := NewTestKyma("managed-kyma")
-	RegisterControlPlaneLifecycleForKyma(kyma)
+	registerControlPlaneLifecycleForKyma(kyma)
 
 	It("Should result in a managed field with manager named 'lifecycle-manager'", func() {
 		Eventually(ExpectKymaManagerField, Timeout, Interval).
