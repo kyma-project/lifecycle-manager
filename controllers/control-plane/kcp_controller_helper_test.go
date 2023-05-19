@@ -21,7 +21,7 @@ var (
 	ErrWatcherAnnotationMissing = errors.New("watcher annotation missing")
 )
 
-func RegisterControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
+func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
 		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false)
 		Eventually(CreateCR, Timeout, Interval).
