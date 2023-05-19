@@ -49,7 +49,6 @@ type PurgeReconciler struct {
 	ResolveRemoteClient   RemoteClientResolver
 	PurgeFinalizerTimeout time.Duration
 	SkipCRDs              CRDMatcher
-	InKcpMode             bool
 	IsManagedKyma         bool
 }
 
@@ -205,10 +204,6 @@ func (r *PurgeReconciler) UpdateStatus(
 }
 
 func (r *PurgeReconciler) RecordKymaStatusMetrics(_ context.Context, _ *v1beta2.Kyma) {}
-
-func (r *PurgeReconciler) IsInKcp() bool {
-	return r.InKcpMode
-}
 
 func (r *PurgeReconciler) IsKymaManaged() bool {
 	return r.IsManagedKyma
