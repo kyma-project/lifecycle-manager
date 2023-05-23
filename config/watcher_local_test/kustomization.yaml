@@ -23,6 +23,8 @@ patches:
     - op: add
       path: /spec/template/spec/containers/0/args/-
       value: --enable-watcher-local-testing
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
       value: --in-kcp-mode=true
     - op: add
       path: /spec/template/spec/containers/0/args/-
