@@ -180,8 +180,6 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 		}
 
 		recorder.Event(kyma, "Normal", "CRDInstallation", "CRDs were installed to SKR")
-		// the NoMatch error we previously encountered is now fixed through the CRD installation
-		err = nil
 	}
 
 	if k8serrors.IsNotFound(err) {
