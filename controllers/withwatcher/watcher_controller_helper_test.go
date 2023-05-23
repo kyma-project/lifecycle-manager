@@ -14,7 +14,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
@@ -67,25 +68,25 @@ func isEven(idx int) bool {
 	return idx%2 == 0
 }
 
-func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta1.Watcher {
-	field := v1beta1.SpecField
+func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watcher {
+	field := v1beta2.SpecField
 	if statusOnly {
-		field = v1beta1.StatusField
+		field = v1beta2.StatusField
 	}
-	return &v1beta1.Watcher{
+	return &v1beta2.Watcher{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       string(v1beta1.WatcherKind),
-			APIVersion: v1beta1.GroupVersion.String(),
+			Kind:       string(v1beta2.WatcherKind),
+			APIVersion: v1beta2.GroupVersion.String(),
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      managerInstanceName,
 			Namespace: metav1.NamespaceDefault,
 			Labels: map[string]string{
-				v1beta1.ManagedBy: managerInstanceName,
+				v1beta2.ManagedBy: managerInstanceName,
 			},
 		},
-		Spec: v1beta1.WatcherSpec{
-			ServiceInfo: v1beta1.Service{
+		Spec: v1beta2.WatcherSpec{
+			ServiceInfo: v1beta2.Service{
 				Port:      8082,
 				Name:      fmt.Sprintf("%s-svc", managerInstanceName),
 				Namespace: metav1.NamespaceDefault,
@@ -93,14 +94,14 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta1.Watch
 			LabelsToWatch: map[string]string{
 				fmt.Sprintf("%s-watchable", managerInstanceName): "true",
 			},
-			ResourceToWatch: v1beta1.WatchableGVR{
-				Group:    v1beta1.GroupVersionResource.Group,
-				Version:  v1beta1.GroupVersionResource.Version,
-				Resource: v1beta1.GroupVersionResource.Resource,
+			ResourceToWatch: v1beta2.WatchableGVR{
+				Group:    v1beta2.GroupVersionResource.Group,
+				Version:  v1beta2.GroupVersionResource.Version,
+				Resource: v1beta2.GroupVersionResource.Resource,
 			},
 			Field: field,
-			Gateway: v1beta1.GatewayConfig{
-				LabelSelector: v1beta1.DefaultIstioGatewaySelector(),
+			Gateway: v1beta2.GatewayConfig{
+				LabelSelector: v1beta2.DefaultIstioGatewaySelector(),
 			},
 		},
 	}
@@ -112,7 +113,7 @@ func createTLSSecret(kymaObjKey client.ObjectKey) *corev1.Secret {
 			Name:      watcher.ResolveTLSCertName(kymaObjKey.Name),
 			Namespace: kymaObjKey.Namespace,
 			Labels: map[string]string{
-				v1beta1.ManagedBy: v1beta1.OperatorName,
+				v1beta2.ManagedBy: v1beta2.OperatorName,
 			},
 		},
 		Data: map[string][]byte{
@@ -124,8 +125,8 @@ func createTLSSecret(kymaObjKey client.ObjectKey) *corev1.Secret {
 	}
 }
 
-func getWatcher(name string) (*v1beta1.Watcher, error) {
-	watcherCR := &v1beta1.Watcher{}
+func getWatcher(name string) (*v1beta2.Watcher, error) {
+	watcherCR := &v1beta2.Watcher{}
 	err := controlPlaneClient.Get(suiteCtx,
 		client.ObjectKey{Name: name, Namespace: metav1.NamespaceDefault},
 		watcherCR)
@@ -133,10 +134,11 @@ func getWatcher(name string) (*v1beta1.Watcher, error) {
 }
 
 func isVirtualServiceHostsConfigured(ctx context.Context,
+	vsName string,
 	istioClient *istio.Client,
 	gateway *istioclientapi.Gateway,
 ) error {
-	virtualService, err := istioClient.GetVirtualService(ctx)
+	virtualService, err := istioClient.GetVirtualService(ctx, vsName)
 	if err != nil {
 		return err
 	}
@@ -155,9 +157,9 @@ func contains(source []string, target string) bool {
 	return false
 }
 
-func isListenerHTTPRouteConfigured(ctx context.Context, clt *istio.Client, watcher *v1beta1.Watcher,
+func isListenerHTTPRouteConfigured(ctx context.Context, clt *istio.Client, watcher *v1beta2.Watcher,
 ) error {
-	virtualService, err := clt.GetVirtualService(ctx)
+	virtualService, err := clt.GetVirtualService(ctx, watcher.Name)
 	if err != nil {
 		return err
 	}
@@ -179,7 +181,7 @@ func isListenerHTTPRouteConfigured(ctx context.Context, clt *istio.Client, watch
 }
 
 func listenerHTTPRouteExists(ctx context.Context, clt *istio.Client, watcherObjKey client.ObjectKey) error {
-	virtualService, err := clt.GetVirtualService(ctx)
+	virtualService, err := clt.GetVirtualService(ctx, watcherObjKey.Name)
 	if err != nil {
 		return err
 	}

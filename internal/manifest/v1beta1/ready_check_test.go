@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	internalV1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -24,7 +24,7 @@ const nginxControllerDeploymentSuffix = "nginx-ingress-controller"
 
 var _ = Describe("Custom Manifest consistency check, given Manifest CR with Helm specs", Ordered, func() {
 	setHelmEnv()
-	validHelmChartSpec := v1beta1.HelmChartSpec{
+	validHelmChartSpec := v1beta2.HelmChartSpec{
 		ChartName: "nginx-ingress",
 		URL:       "https://helm.nginx.com/stable",
 		Type:      "helm-chart",
@@ -40,7 +40,7 @@ var _ = Describe("Custom Manifest consistency check, given Manifest CR with Helm
 			WithArguments(manifest).Should(Succeed())
 		Eventually(expectManifestStateIn(declarative.StateReady), standardTimeout, standardInterval).
 			WithArguments(manifestName).Should(Succeed())
-		cacheKey := internalV1beta1.GenerateCacheKey(manifest.GetLabels()[v1beta1.KymaName],
+		cacheKey := internalV1beta1.GenerateCacheKey(manifest.GetLabels()[v1beta2.KymaName],
 			strconv.FormatBool(manifest.Spec.Remote), manifest.GetNamespace())
 		cachedClient := reconciler.ClientCache.GetClientFromCache(cacheKey)
 

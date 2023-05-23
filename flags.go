@@ -4,6 +4,7 @@ import (
 	"flag"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
@@ -21,6 +22,7 @@ const (
 	defaultCacheSyncTimeout               = 2 * time.Minute
 	defaultListenerPort                   = 9080
 	defaultLogLevel                       = log.WarnLevel
+	defaultPurgeFinalizerTimeout          = 5 * time.Minute
 )
 
 //nolint:funlen
@@ -58,9 +60,8 @@ func defineFlagVar() *FlagVar {
 	flag.IntVar(&flagVar.clientBurst, "k8s-client-burst", defaultClientBurst, "kubernetes client Burst")
 	flag.StringVar(&flagVar.moduleVerificationKeyFilePath, "module-verification-key-file", "",
 		"This verification key is used to verify modules against their signature")
-	flag.StringVar(&flagVar.moduleVerificationSignatureNames, "module-verification-signature-names",
-		"kyma-module-signature:kyma-extension-signature",
-		"This verification key list is used to verify modules against their signature")
+	flag.BoolVar(&flagVar.enableVerification, "enable-verification", false,
+		"Enabling verify modules against their signature")
 	flag.BoolVar(&flagVar.enableWebhooks, "enable-webhooks", false,
 		"Enabling Validation/Conversion Webhooks.")
 	flag.BoolVar(&flagVar.enableKcpWatcher, "enable-kcp-watcher", false,
@@ -71,8 +72,6 @@ func defineFlagVar() *FlagVar {
 		"The resources.limits.memory for skr webhook.")
 	flag.StringVar(&flagVar.skrWebhookCPULimits, "skr-webhook-cpu-limits", "0.1",
 		"The resources.limits.cpu for skr webhook.")
-	flag.StringVar(&flagVar.virtualServiceName, "virtual-svc-name", "kcp-events",
-		"Name of the virtual service resource to be reconciled by the watcher control loop.")
 	flag.BoolVar(&flagVar.enableWatcherLocalTesting, "enable-watcher-local-testing", false,
 		"Enabling KCP Watcher two-cluster setup to be tested locally using k3d")
 	flag.StringVar(&flagVar.istioNamespace, "istio-namespace", "istio-system",
@@ -102,32 +101,40 @@ func defineFlagVar() *FlagVar {
 		&flagVar.logLevel, "log-level", defaultLogLevel,
 		"indicates the current log-level, enter negative values to increase verbosity (e.g. 9)",
 	)
-	flag.BoolVar(&flagVar.isKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
+	flag.BoolVar(&flagVar.inKCPMode, "in-kcp-mode", false,
+		"Indicates lifecycle manager is deployed in control-plane mode")
+	flag.BoolVar(&flagVar.enablePurgeFinalizer, "enable-purge-finalizer", false,
+		"Enabling purge finalizer")
+	flag.DurationVar(&flagVar.purgeFinalizerTimeout, "purge-finalizer-timeout", defaultPurgeFinalizerTimeout,
+		"Indicates the SKR Purge Finalizers execution delay in seconds")
+	flag.StringVar(&flagVar.skipPurgingFor, "skip-finalizer-purging-for", "", "Exclude the passed CRDs"+
+		" from finalizer removal. Example: 'ingressroutetcps.traefik.containo.us,*.helm.cattle.io'.")
+	flag.StringVar(&flagVar.remoteSyncNamespace, "sync-namespace", controllers.DefaultRemoteSyncNamespace,
+		"Name of the namespace for syncing remote Kyma and module catalog")
 	return flagVar
 }
 
 type FlagVar struct {
-	metricsAddr                                                     string
-	enableLeaderElection                                            bool
-	probeAddr                                                       string
-	kymaListenerAddr, manifestListenerAddr                          string
-	maxConcurrentKymaReconciles                                     int
-	maxConcurrentManifestReconciles                                 int
-	maxConcurrentWatcherReconciles                                  int
-	kymaRequeueSuccessInterval                                      time.Duration
-	manifestRequeueSuccessInterval                                  time.Duration
-	watcherRequeueSuccessInterval                                   time.Duration
-	moduleVerificationKeyFilePath, moduleVerificationSignatureNames string
-	clientQPS                                                       float64
-	clientBurst                                                     int
-	enableWebhooks                                                  bool
-	enableKcpWatcher                                                bool
-	skrWatcherPath                                                  string
-	skrWebhookMemoryLimits                                          string
-	skrWebhookCPULimits                                             string
-	virtualServiceName                                              string
-	enableWatcherLocalTesting                                       bool
-	istioNamespace                                                  string
+	metricsAddr                            string
+	enableLeaderElection                   bool
+	probeAddr                              string
+	kymaListenerAddr, manifestListenerAddr string
+	maxConcurrentKymaReconciles            int
+	maxConcurrentManifestReconciles        int
+	maxConcurrentWatcherReconciles         int
+	kymaRequeueSuccessInterval             time.Duration
+	manifestRequeueSuccessInterval         time.Duration
+	watcherRequeueSuccessInterval          time.Duration
+	moduleVerificationKeyFilePath          string
+	clientQPS                              float64
+	clientBurst                            int
+	enableWebhooks                         bool
+	enableKcpWatcher                       bool
+	skrWatcherPath                         string
+	skrWebhookMemoryLimits                 string
+	skrWebhookCPULimits                    string
+	enableWatcherLocalTesting              bool
+	istioNamespace                         string
 	// listenerHTTPPortLocalMapping is used to enable the user
 	// to specify the port used to expose the KCP cluster for the watcher
 	// when testing locally using dual-k3d cluster-setup
@@ -142,5 +149,10 @@ type FlagVar struct {
 	cacheSyncTimeout                       time.Duration
 	enableDomainNameVerification           bool
 	logLevel                               int
-	isKymaManaged                          bool
+	inKCPMode                              bool
+	enablePurgeFinalizer                   bool
+	purgeFinalizerTimeout                  time.Duration
+	skipPurgingFor                         string
+	remoteSyncNamespace                    string
+	enableVerification                     bool
 }

@@ -8,14 +8,13 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 )
 
 // TODO PKI move consts into other file if they are not needed here.
@@ -27,7 +26,7 @@ const (
 	IngressServiceName           = "istio-ingressgateway"
 	defaultK3dLocalhostMapping   = "host.k3d.internal"
 	defaultBufferSize            = 2048
-	skrChartFieldOwner           = client.FieldOwner(v1beta1.OperatorName)
+	skrChartFieldOwner           = client.FieldOwner(v1beta2.OperatorName)
 	version                      = "v1"
 	webhookTimeOutInSeconds      = 15
 	allResourcesWebhookRule      = "*"
@@ -82,13 +81,6 @@ func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrWebhookManagerConf
 		}
 	}
 	return net.JoinHostPort(externalIP, strconv.Itoa(int(port))), nil
-}
-
-func resolveRemoteNamespace(kyma *v1beta1.Kyma) string {
-	if kyma.Spec.Sync.Namespace != "" {
-		return kyma.Spec.Sync.Namespace
-	}
-	return kyma.Namespace
 }
 
 func ResolveTLSCertName(kymaName string) string {

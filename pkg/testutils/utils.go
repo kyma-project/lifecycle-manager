@@ -12,12 +12,15 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	. "github.com/onsi/gomega" //nolint:stylecheck,revive
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/ocm.software/v3alpha1"
 	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	corev1 "k8s.io/api/core/v1"
 	apiExtensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
@@ -26,34 +29,41 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
 const (
-	randomStringLength = 8
-	letterBytes        = "abcdefghijklmnopqrstuvwxyz"
-	defaultBufferSize  = 2048
-	httpClientTimeout  = 2 * time.Second
-	Timeout            = time.Second * 10
-	Interval           = time.Millisecond * 250
+	randomStringLength     = 8
+	letterBytes            = "abcdefghijklmnopqrstuvwxyz"
+	defaultBufferSize      = 2048
+	Timeout                = time.Second * 20
+	ConsistentCheckTimeout = time.Second * 10
+	Interval               = time.Millisecond * 250
 )
 
-func NewTestKyma(name string) *v1beta1.Kyma {
-	return &v1beta1.Kyma{
+var ErrNotFound = errors.New("resource not exists")
+
+func NewTestKyma(name string) *v1beta2.Kyma {
+	return &v1beta2.Kyma{
 		TypeMeta: v1.TypeMeta{
-			APIVersion: v1beta1.GroupVersion.String(),
-			Kind:       string(v1beta1.KymaKind),
+			APIVersion: v1beta2.GroupVersion.String(),
+			Kind:       string(v1beta2.KymaKind),
 		},
 		ObjectMeta: v1.ObjectMeta{
-			Name:        fmt.Sprintf("%s-%s", name, randString(randomStringLength)),
-			Namespace:   v1.NamespaceDefault,
-			Annotations: map[string]string{watcher.DomainAnnotation: "example.domain.com"},
+			Name:      fmt.Sprintf("%s-%s", name, randString(randomStringLength)),
+			Namespace: v1.NamespaceDefault,
+			Annotations: map[string]string{
+				watcher.DomainAnnotation:       "example.domain.com",
+				v1beta2.SyncStrategyAnnotation: v1beta2.SyncStrategyLocalClient,
+			},
+			Labels: map[string]string{
+				v1beta2.SyncLabel: v1beta2.EnableLabelValue,
+			},
 		},
-		Spec: v1beta1.KymaSpec{
-			Modules: []v1beta1.Module{},
-			Channel: v1beta1.DefaultChannel,
+		Spec: v1beta2.KymaSpec{
+			Modules: []v1beta2.Module{},
+			Channel: v1beta2.DefaultChannel,
 		},
 	}
 }
@@ -83,10 +93,16 @@ func NewUniqModuleName() string {
 	return randString(randomStringLength)
 }
 
-func randString(n int) string {
-	b := make([]byte, n)
+// randomName creates a random string [a-z] with a length of 8.
+func randomName() string {
+	return randString(randomStringLength)
+}
+
+func randString(length int) string {
+	b := make([]byte, length)
 	for i := range b {
-		b[i] = letterBytes[rand.Intn(len(letterBytes))] //nolint:gosec
+		//nolint:gosec
+		b[i] = letterBytes[rand.Intn(len(letterBytes))]
 	}
 	return string(b)
 }
@@ -94,31 +110,82 @@ func randString(n int) string {
 func DeployModuleTemplates(
 	ctx context.Context,
 	kcpClient client.Client,
-	kyma *v1beta1.Kyma,
-	onPrivateRepo bool,
+	kyma *v1beta2.Kyma,
+	onPrivateRepo,
+	isInternal,
+	isBeta bool,
 ) {
 	for _, module := range kyma.Spec.Modules {
-		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo)
-		Expect(err).ShouldNot(HaveOccurred())
-		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).WithArguments(template).Should(Succeed())
+		Eventually(DeployModuleTemplate, Timeout, Interval).WithContext(ctx).
+			WithArguments(kcpClient, module, onPrivateRepo, isInternal, isBeta).
+			Should(Succeed())
 	}
+}
+
+func DeployModuleTemplate(
+	ctx context.Context,
+	kcpClient client.Client,
+	module v1beta2.Module,
+	onPrivateRepo,
+	isInternal,
+	isBeta bool,
+) error {
+	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo)
+	if err != nil {
+		return err
+	}
+	if isInternal {
+		template.Labels[v1beta2.InternalLabel] = v1beta2.EnableLabelValue
+	}
+	if isBeta {
+		template.Labels[v1beta2.BetaLabel] = v1beta2.EnableLabelValue
+	}
+	return kcpClient.Create(ctx, template)
 }
 
 func DeleteModuleTemplates(
 	ctx context.Context,
 	kcpClient client.Client,
-	kyma *v1beta1.Kyma,
+	kyma *v1beta2.Kyma,
 	onPrivateRepo bool,
 ) {
 	for _, module := range kyma.Spec.Modules {
 		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo)
 		Expect(err).ShouldNot(HaveOccurred())
-		Eventually(kcpClient.Delete, Timeout, Interval).WithContext(ctx).WithArguments(template).Should(Succeed())
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, template).Should(Succeed())
 	}
 }
 
-func GetKyma(ctx context.Context, testClient client.Client, name, namespace string) (*v1beta1.Kyma, error) {
-	kymaInCluster := &v1beta1.Kyma{}
+func DeleteCR(ctx context.Context, clnt client.Client, obj client.Object) error {
+	err := clnt.Delete(ctx, obj)
+	if !k8serrors.IsNotFound(err) {
+		return err
+	}
+	return nil
+}
+
+func CreateCR(ctx context.Context, clnt client.Client, obj client.Object) error {
+	err := clnt.Create(ctx, obj)
+	if !k8serrors.IsAlreadyExists(err) {
+		return err
+	}
+	return nil
+}
+
+func SyncKyma(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error {
+	err := clnt.Get(ctx, client.ObjectKey{
+		Name:      kyma.Name,
+		Namespace: kyma.Namespace,
+	}, kyma)
+	// It might happen in some test case, kyma get deleted, if you need to make sure Kyma should exist,
+	// write expected condition to check it specifically.
+	return client.IgnoreNotFound(err)
+}
+
+func GetKyma(ctx context.Context, testClient client.Client, name, namespace string) (*v1beta2.Kyma, error) {
+	kymaInCluster := &v1beta2.Kyma{}
 	if namespace == "" {
 		namespace = v1.NamespaceDefault
 	}
@@ -132,7 +199,7 @@ func GetKyma(ctx context.Context, testClient client.Client, name, namespace stri
 	return kymaInCluster, nil
 }
 
-func IsKymaInState(ctx context.Context, kcpClient client.Client, kymaName string, state v1beta1.State) func() bool {
+func IsKymaInState(ctx context.Context, kcpClient client.Client, kymaName string, state v1beta2.State) func() bool {
 	return func() bool {
 		kymaFromCluster, err := GetKyma(ctx, kcpClient, kymaName, "")
 		if err != nil || kymaFromCluster.Status.State != state {
@@ -142,21 +209,60 @@ func IsKymaInState(ctx context.Context, kcpClient client.Client, kymaName string
 	}
 }
 
+func GetManifestSpecRemote(
+	ctx context.Context,
+	clnt client.Client,
+	kyma *v1beta2.Kyma,
+	module v1beta2.Module,
+) (bool, error) {
+	manifest, err := GetManifest(ctx, clnt, kyma, module)
+	if err != nil {
+		return false, err
+	}
+	return manifest.Spec.Remote, nil
+}
+
+func GetManifest(ctx context.Context,
+	clnt client.Client,
+	kyma *v1beta2.Kyma,
+	module v1beta2.Module,
+) (*v1beta2.Manifest, error) {
+	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false)
+	if err != nil {
+		return nil, err
+	}
+	descriptor, err := template.Spec.GetDescriptor()
+	if err != nil {
+		return nil, err
+	}
+	manifest := &v1beta2.Manifest{}
+	err = clnt.Get(
+		ctx, client.ObjectKey{
+			Namespace: kyma.Namespace,
+			Name:      common.CreateModuleName(descriptor.GetName(), kyma.Name, module.Name),
+		}, manifest,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return manifest, nil
+}
+
 func ModuleTemplateFactory(
-	module v1beta1.Module,
+	module v1beta2.Module,
 	data unstructured.Unstructured,
 	onPrivateRepo bool,
-) (*v1beta1.ModuleTemplate, error) {
+) (*v1beta2.ModuleTemplate, error) {
 	return ModuleTemplateFactoryForSchema(module, data, compdesc2.SchemaVersion, onPrivateRepo)
 }
 
 func ModuleTemplateFactoryForSchema(
-	module v1beta1.Module,
+	module v1beta2.Module,
 	data unstructured.Unstructured,
 	schemaVersion compdesc.SchemaVersion,
 	onPrivateRepo bool,
-) (*v1beta1.ModuleTemplate, error) {
-	var moduleTemplate v1beta1.ModuleTemplate
+) (*v1beta2.ModuleTemplate, error) {
+	var moduleTemplate v1beta2.ModuleTemplate
 	var err error
 	switch schemaVersion {
 	case compdesc2.SchemaVersion:
@@ -178,8 +284,7 @@ func ModuleTemplateFactoryForSchema(
 	if moduleTemplate.Labels == nil {
 		moduleTemplate.Labels = make(map[string]string)
 	}
-	moduleTemplate.Labels[v1beta1.ModuleName] = module.Name
-	moduleTemplate.Labels[v1beta1.ControllerName] = module.ControllerName
+	moduleTemplate.Labels[v1beta2.ModuleName] = module.Name
 	moduleTemplate.Spec.Channel = module.Channel
 	if data.GetKind() != "" {
 		moduleTemplate.Spec.Data = data
@@ -187,8 +292,8 @@ func ModuleTemplateFactoryForSchema(
 	return &moduleTemplate, nil
 }
 
-func readModuleTemplateWithV2Schema(moduleTemplate *v1beta1.ModuleTemplate) error {
-	template := "operator_v1beta1_moduletemplate_kcp-module.yaml"
+func readModuleTemplateWithV2Schema(moduleTemplate *v1beta2.ModuleTemplate) error {
+	template := "operator_v1beta2_moduletemplate_kcp-module.yaml"
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {
 		panic("Can't capture current filename!")
@@ -205,8 +310,8 @@ func readModuleTemplateWithV2Schema(moduleTemplate *v1beta1.ModuleTemplate) erro
 	return err
 }
 
-func readModuleTemplateWithinPrivateRepo(moduleTemplate *v1beta1.ModuleTemplate) error {
-	template := "operator_v1beta1_moduletemplate_kcp-module-cred-label.yaml"
+func readModuleTemplateWithinPrivateRepo(moduleTemplate *v1beta2.ModuleTemplate) error {
+	template := "operator_v1beta2_moduletemplate_kcp-module-cred-label.yaml"
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {
 		panic("Can't capture current filename!")
@@ -223,8 +328,8 @@ func readModuleTemplateWithinPrivateRepo(moduleTemplate *v1beta1.ModuleTemplate)
 	return err
 }
 
-func readModuleTemplateWithV3Schema(moduleTemplate *v1beta1.ModuleTemplate) error {
-	template := "operator_v1beta1_moduletemplate_ocm.software.v3alpha1.yaml"
+func readModuleTemplateWithV3Schema(moduleTemplate *v1beta2.ModuleTemplate) error {
+	template := "operator_v1beta2_moduletemplate_ocm.software.v3alpha1.yaml"
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {
 		panic("Can't capture current filename!")
@@ -305,4 +410,49 @@ func ExpectKymaManagerField(
 	}
 
 	return false, nil
+}
+
+func GetModuleTemplate(ctx context.Context,
+	clnt client.Client, name, namespace string,
+) (*v1beta2.ModuleTemplate, error) {
+	moduleTemplateInCluster := &v1beta2.ModuleTemplate{}
+	moduleTemplateInCluster.SetNamespace(namespace)
+	moduleTemplateInCluster.SetName(name)
+	err := clnt.Get(ctx, client.ObjectKeyFromObject(moduleTemplateInCluster), moduleTemplateInCluster)
+	if err != nil {
+		return nil, err
+	}
+	return moduleTemplateInCluster, nil
+}
+
+func ManifestExists(ctx context.Context,
+	kyma *v1beta2.Kyma, module v1beta2.Module, controlPlaneClient client.Client,
+) error {
+	_, err := GetManifest(ctx, controlPlaneClient, kyma, module)
+	if k8serrors.IsNotFound(err) {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func ModuleTemplateExists(ctx context.Context, client client.Client, name, namespace string) error {
+	_, err := GetModuleTemplate(ctx, client, name, namespace)
+	if k8serrors.IsNotFound(err) {
+		return ErrNotFound
+	}
+	return nil
+}
+
+func ModuleTemplatesExist(ctx context.Context,
+	clnt client.Client, kyma *v1beta2.Kyma, remoteSyncNamespace string,
+) func() error {
+	return func() error {
+		for _, module := range kyma.Spec.Modules {
+			if err := ModuleTemplateExists(ctx, clnt, module.Name, remoteSyncNamespace); err != nil {
+				return err
+			}
+		}
+
+		return nil
+	}
 }

@@ -1,22 +1,15 @@
 # Running Modes
 
-## Deployment / Delivery models
+Lifecycle Manager can run in two modes:
 
-lifecycle-manager (and module operators) can run in 2 modes:
+- single-cluster - deployment mode in which Lifecycle Manager is running on the same clutser on which you deploy Kyma. This mode doesn't require Kyma or ModuleTemplate CRs [synchronization](../technical-reference/api/README.md#synchronization-of-module-catalog-with-remote-clusters).
+- control-plane - deployment mode in which Lifecycle Manager is running on the central Kubernetes cluster that manages multiple remote clusters that are targets for Kyma installations. In this mode, Kyma and ModuleTemplate CRs are synchronized between the central cluster and remote ones. Access to remote clusters is enabled using centrally-managed K8s Secrets with the required connection configuration.
 
-- in-cluster - regular deployment in the kubernetes cluster where kyma should be deployed, control-plane manages itself
-- control-plane - deployment on central kubernetes cluster that manages multiple kyma installations remotely (installing kyma on the remote clusters based on a secret providing connectivity details)
+To configure the mode for Lifecycle Manager, use the `in-kcp-mode` command-line flag. By default, the flag is set to `false`. If set to `true`, Lifecycle Manager runs in the control-plane mode.
 
-Which mode is used is based on the `.spec.target` attribute in the `ModuleTemplate`, determining wether a Module needs to be installed in the remote cluster or not.
+Use the single-cluster mode for local development and testing. For E2E testing, testing of scalability and remote reconciliation, we recommend to use a separate Control Plane cluster.
 
-They both target different use cases. While in-cluster mode is useful for classical deployment of kyma with 1 cluster in play, the general consensus is that for large scale operations, it is recommended to either use an aggregated API-Server or use Clusters to manage other Clusters (nowadays known as Control-Plane)
-
-This means that, depending on your environment you might be running lifecycle-manager in one or the other mode.
-
-For local development, as well as for testing and verification purposes in integration testing, we recommend to use single-cluster mode. For E2E Testing,
-and testing of scalability as well as remote reconciliation, we recommend the use of a separate control-plane cluster.
-
-### Release Lifecycles for Modules 
+## Release Lifecycles for Modules
 
 Teams providing module operators should work (and release) independently from lifecycle-manager. In other words, lifecycle-manager should not have hard-coded dependencies to any module operator. 
 As such, all module interactions are abstracted through the [ModuleTemplate](api/v1beta1/moduletemplate_types.go).
@@ -26,12 +19,12 @@ This abstraction of a template is used for generically deploying instances of a 
 These serve as small-scale BOM's for all contents included in a module and can be interpreted by Lifecycle Manager and [Module Manager](https://github.com/kyma-project/module-manager/)
 to correctly install a module. (for more information, please have a look at the respective chapter in the [Kyma Modularization Concept](https://github.com/kyma-project/community/tree/main/concepts/modularization#component-descriptor))
 
-### Versioning and Releasing
+## Versioning and Releasing
 
 Kyma up to Version 2.x was always a single release. However, the vision of lifecycle-manager is to fully encapsulate individual Modules, with each providing a (possibly fully independent) Release Cycle.
 However, Control-Plane deliveries are by design continuously shipped and improved. As a result, even if we will continue to support versioned Module Deliveries, the Lifecycle-Manager and its adjacent infrastructure will be maintained and delivered continously and it is recommended to track upstream as close as possible.
 
-### Comparison to the Old Reconciler
+## Comparison to the Old Reconciler
 
 Traditionally, Kyma was installed with the [Kyma Reconciler](https://github.com/kyma-incubator/reconciler), a Control-Plane implementation of our architecture based on polling and a SQL Store for tracking reconciliations.
 While this worked great for smaller and medium scale deliveries, we had trouble to scale and maintain it when put under significant load.

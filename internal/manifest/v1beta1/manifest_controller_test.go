@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	internalV1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -28,7 +28,7 @@ func setHelmEnv() {
 
 var _ = Describe(
 	"Given manifest with kustomize specs", func() {
-		remoteKustomizeSpec := v1beta1.KustomizeSpec{
+		remoteKustomizeSpec := v1beta2.KustomizeSpec{
 			URL:  "https://github.com/kubernetes-sigs/kustomize//examples/helloWorld/?ref=v3.3.1",
 			Type: "kustomize",
 		}
@@ -37,7 +37,7 @@ var _ = Describe(
 
 		absoluteKustomizeLocalPath, err := filepath.Abs(kustomizeLocalPath)
 		Expect(err).ToNot(HaveOccurred())
-		localKustomizeSpec := v1beta1.KustomizeSpec{
+		localKustomizeSpec := v1beta2.KustomizeSpec{
 			Path: absoluteKustomizeLocalPath,
 			Type: "kustomize",
 		}
@@ -45,7 +45,7 @@ var _ = Describe(
 		localKustomizeSpecBytes, err := json.Marshal(localKustomizeSpec)
 		Expect(err).ToNot(HaveOccurred())
 
-		invalidKustomizeSpec := v1beta1.KustomizeSpec{
+		invalidKustomizeSpec := v1beta2.KustomizeSpec{
 			Path: "./invalidPath",
 			Type: "kustomize",
 		}
@@ -66,7 +66,7 @@ var _ = Describe(
 		DescribeTable(
 			"Testing Kustomize test entries",
 			func(
-				givenCondition func(manifest *v1beta1.Manifest) error,
+				givenCondition func(manifest *v1beta2.Manifest) error,
 				expectedManifestState func(manifestName string) error, expectedFileState func() bool,
 			) {
 				manifest := NewTestManifest("kust")
@@ -123,7 +123,7 @@ var _ = Describe(
 		DescribeTable(
 			"Test OCI specs",
 			func(
-				givenCondition func(manifest *v1beta1.Manifest) error,
+				givenCondition func(manifest *v1beta2.Manifest) error,
 				expectManifestState func(manifestName string) error,
 			) {
 				manifest := NewTestManifest("oci")
@@ -135,26 +135,26 @@ var _ = Describe(
 			},
 			Entry(
 				"When Manifest CR contains a valid install OCI image specification, "+
-					"expect state in ready and helmClient cache exist",
+					"expect state in ready",
 				withValidInstallImageSpec(installName, false),
 				expectManifestStateIn(declarative.StateReady),
 			),
 			Entry(
-				"When Manifest CR contains a valid install OCI image specification and enabled remote, "+
-					"expect state in ready and helmClient cache exist",
+				"When Manifest CR contains a valid install OCI image specification and enabled deploy resource, "+
+					"expect state in ready",
 				withValidInstallImageSpec(installName, true),
 				expectManifestStateIn(declarative.StateReady),
 			),
 			Entry(
-				"When Manifest CR contains valid install and CRD image specification, "+
-					"expect state in ready and helmClient cache exist",
-				withValidInstall(installName, true),
-				expectManifestStateIn(declarative.StateReady),
+				"When Manifest CR contains an invalid install OCI image specification, "+
+					"expect state in error",
+				withInvalidInstallImageSpec(false),
+				expectManifestStateIn(declarative.StateError),
 			),
 			Entry(
-				"When Manifest CR contains an invalid install OCI image specification, "+
-					"expect state in error and no helmClient cache exit",
-				withInvalidInstallImageSpec(false),
+				"When Manifest CR contains an invalid install OCI image specification and enabled deploy resource, "+
+					"expect state in ready",
+				withInvalidInstallImageSpec(true),
 				expectManifestStateIn(declarative.StateError),
 			),
 		)
@@ -164,7 +164,7 @@ var _ = Describe(
 var _ = Describe(
 	"Given Manifest CR with Helm specs", func() {
 		setHelmEnv()
-		validHelmChartSpec := v1beta1.HelmChartSpec{
+		validHelmChartSpec := v1beta2.HelmChartSpec{
 			ChartName: "nginx-ingress",
 			URL:       "https://helm.nginx.com/stable",
 			Type:      "helm-chart",
@@ -175,7 +175,7 @@ var _ = Describe(
 		DescribeTable(
 			"Test Helm specs",
 			func(
-				givenCondition func(manifest *v1beta1.Manifest) error,
+				givenCondition func(manifest *v1beta2.Manifest) error,
 				expectedBehavior func(manifestName string) error,
 			) {
 				manifest := NewTestManifest("helm")
@@ -215,14 +215,14 @@ var _ = Describe(
 					WithArguments(manifestWithInstall).Should(Succeed())
 				validImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String())
 				Eventually(expectHelmClientCacheExist(true), standardTimeout, standardInterval).
-					WithArguments(internalV1beta1.GenerateCacheKey(manifestWithInstall.GetLabels()[v1beta1.KymaName],
+					WithArguments(internalV1beta1.GenerateCacheKey(manifestWithInstall.GetLabels()[v1beta2.KymaName],
 						strconv.FormatBool(manifestWithInstall.Spec.Remote), manifestWithInstall.GetNamespace())).
 					Should(BeTrue())
 				// this will ensure only manifest.yaml remains
 				deleteHelmChartResources(validImageSpec)
 				manifest2WithInstall := NewTestManifest("multi-oci2")
 				// copy owner label over to the new manifest resource
-				manifest2WithInstall.Labels[v1beta1.KymaName] = manifestWithInstall.Labels[v1beta1.KymaName]
+				manifest2WithInstall.Labels[v1beta2.KymaName] = manifestWithInstall.Labels[v1beta2.KymaName]
 				Eventually(withValidInstallImageSpec(installName, false), standardTimeout, standardInterval).
 					WithArguments(manifest2WithInstall).Should(Succeed())
 				// verify no new Helm resources were created

@@ -2,19 +2,21 @@ package withwatcher_test
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	"github.com/kyma-project/lifecycle-manager/controllers"
-	"github.com/kyma-project/lifecycle-manager/pkg/istio"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
+	"github.com/kyma-project/lifecycle-manager/controllers"
+	"github.com/kyma-project/lifecycle-manager/pkg/istio"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 func crSpecUpdates(_ *istio.Client) error {
@@ -24,7 +26,7 @@ func crSpecUpdates(_ *istio.Client) error {
 			return err
 		}
 		watcherCR.Spec.ServiceInfo.Port = 9090
-		watcherCR.Spec.Field = v1beta1.StatusField
+		watcherCR.Spec.Field = v1beta2.StatusField
 		if err := controlPlaneClient.Update(suiteCtx, watcherCR); err != nil {
 			return err
 		}
@@ -63,7 +65,7 @@ func expectVirtualServiceConfiguredCorrectly(customIstioClient *istio.Client) er
 			return err
 		}
 		Expect(gateways).To(HaveLen(1))
-		if err := isVirtualServiceHostsConfigured(suiteCtx, customIstioClient, gateways[0]); err != nil {
+		if err := isVirtualServiceHostsConfigured(suiteCtx, watcherCR.Name, customIstioClient, gateways[0]); err != nil {
 			return err
 		}
 	}
@@ -95,8 +97,14 @@ func expectWatcherCRRemoved(watcherName string) error {
 }
 
 func expectVirtualServiceRemoved(customIstioClient *istio.Client) error {
-	_, err := customIstioClient.GetVirtualService(suiteCtx)
-	return client.IgnoreNotFound(err)
+	listVirtualServices, err := customIstioClient.ListVirtualServices(suiteCtx)
+	if !apierrors.IsNotFound(err) {
+		return err
+	}
+	if len(listVirtualServices.Items) != 0 {
+		return fmt.Errorf("VirtualServiceList is not empty: %d", len(listVirtualServices.Items)) //nolint:goerr113
+	}
+	return nil
 }
 
 func deleteWatcher(name string) error {
@@ -122,7 +130,7 @@ func watcherCRIsReady(watcherName string) error {
 	if err != nil {
 		return err
 	}
-	if watcher.Status.State != v1beta1.WatcherStateReady {
+	if watcher.Status.State != v1beta2.WatcherStateReady {
 		return errWatcherNotReady
 	}
 	return nil
@@ -158,7 +166,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	var customIstioClient *istio.Client
 	var err error
 	BeforeAll(func() {
-		istioCfg := istio.NewConfig(virtualServiceName, false)
+		istioCfg := istio.NewConfig(false)
 		customIstioClient, err = istio.NewVersionedIstioClient(restCfg, istioCfg,
 			k8sManager.GetEventRecorderFor(controllers.WatcherControllerName), ctrl.Log.WithName("istioClient"))
 		Expect(err).ToNot(HaveOccurred())

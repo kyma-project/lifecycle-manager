@@ -7,7 +7,7 @@ import (
 	"io"
 
 	"github.com/go-logr/logr"
-
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	registrationV1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -18,7 +18,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
@@ -58,15 +57,15 @@ func createSKRSecret(cfg *unstructuredResourcesConfig, secretObjKey client.Objec
 	}
 }
 
-func ResolveWebhookRuleResources(resource string, fieldName v1beta1.FieldName) []string {
-	if fieldName == v1beta1.StatusField {
+func ResolveWebhookRuleResources(resource string, fieldName v1beta2.FieldName) []string {
+	if fieldName == v1beta2.StatusField {
 		return []string{fmt.Sprintf("%s/%s", resource, fieldName)}
 	}
 	return []string{resource}
 }
 
 func generateValidatingWebhookConfigFromWatchers(webhookObjKey,
-	svcObjKey client.ObjectKey, caCert []byte, watchers []v1beta1.Watcher,
+	svcObjKey client.ObjectKey, caCert []byte, watchers []v1beta2.Watcher,
 ) *registrationV1.ValidatingWebhookConfiguration {
 	webhooks := make([]registrationV1.ValidatingWebhook, 0)
 	for _, watcher := range watchers {
@@ -189,7 +188,7 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 }
 
 func getGeneratedClientObjects(resourcesConfig *unstructuredResourcesConfig,
-	watchers []v1beta1.Watcher, remoteNs string,
+	watchers []v1beta2.Watcher, remoteNs string,
 ) []client.Object {
 	var genClientObjects []client.Object
 	webhookCfgObjKey := client.ObjectKey{
@@ -212,8 +211,8 @@ func getGeneratedClientObjects(resourcesConfig *unstructuredResourcesConfig,
 	return append(genClientObjects, skrSecret)
 }
 
-func getWatchers(ctx context.Context, kcpClient client.Client) ([]v1beta1.Watcher, error) {
-	watcherList := &v1beta1.WatcherList{}
+func getWatchers(ctx context.Context, kcpClient client.Client) ([]v1beta2.Watcher, error) {
+	watcherList := &v1beta2.WatcherList{}
 	if err := kcpClient.List(ctx, watcherList); err != nil {
 		return nil, fmt.Errorf("error listing watcher CRs: %w", err)
 	}

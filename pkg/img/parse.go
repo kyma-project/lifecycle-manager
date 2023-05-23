@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods/localblob"
@@ -129,7 +129,7 @@ func getOCIRef(
 	} else {
 		layerRef.Ref = ref
 	}
-	if registryCredValue, found := labels.Get(v1beta1.OCIRegistryCredLabel); found {
+	if registryCredValue, found := labels.Get(v1beta2.OCIRegistryCredLabel); found {
 		credSecretSelector, err := ocmextensions.GenerateLabelSelector(registryCredValue)
 		if err != nil {
 			return nil, err

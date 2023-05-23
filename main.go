@@ -17,14 +17,16 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"flag"
+	"fmt"
 	"net/http"
 	"net/http/pprof"
 	"os"
-	"strings"
 	"time"
 
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/open-component-model/ocm/pkg/contexts/oci"
 	"github.com/open-component-model/ocm/pkg/contexts/oci/repositories/ocireg"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm"
@@ -33,9 +35,12 @@ import (
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/utils/strings/slices"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -49,9 +54,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	operatorv1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	//+kubebuilder:scaffold:imports
 	"github.com/kyma-project/lifecycle-manager/api"
-	operatorv1beta1 "github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -88,6 +93,7 @@ func init() {
 	utilruntime.Must(v1extensions.AddToScheme(scheme))
 	utilruntime.Must(certManagerV1.AddToScheme(scheme))
 
+	utilruntime.Must(operatorv1beta2.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -169,6 +175,11 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
+
+	go func() {
+		dropVersionFromStoredVersions(mgr, "v1alpha1")
+	}()
+
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
@@ -176,22 +187,22 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 }
 
 func enableWebhooks(mgr manager.Manager) {
-	if err := (&operatorv1beta1.ModuleTemplate{}).
+	if err := (&operatorv1beta2.ModuleTemplate{}).
 		SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
 		os.Exit(1)
 	}
 
-	if err := (&operatorv1beta1.Kyma{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&operatorv1beta2.Kyma{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Kyma")
 		os.Exit(1)
 	}
-	if err := (&operatorv1beta1.Watcher{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&operatorv1beta2.Watcher{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Watcher")
 		os.Exit(1)
 	}
 
-	if err := (&operatorv1beta1.Manifest{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&operatorv1beta2.Manifest{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Manifest")
 		os.Exit(1)
 	}
@@ -232,8 +243,7 @@ func NewClient(
 func setupKymaReconciler(mgr ctrl.Manager,
 	remoteClientCache *remote.ClientCache,
 	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
-	flagVar *FlagVar,
-	options controller.Options,
+	flagVar *FlagVar, options controller.Options,
 ) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentKymaReconciles
 
@@ -244,7 +254,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		if err != nil || !watcherChartDirInfo.IsDir() {
 			setupLog.Error(err, "failed to read local skr chart")
 		}
-		skrWebhookConfig := &watcher.SkrWebhookManagerConfig{
+		skrWebhookManager, err = watcher.NewSKRWebhookManifestManager(kcpRestConfig, &watcher.SkrWebhookManagerConfig{
 			SKRWatcherPath:             flagVar.skrWatcherPath,
 			SkrWatcherImage:            flagVar.skrWatcherImage,
 			SkrWebhookCPULimits:        flagVar.skrWebhookCPULimits,
@@ -252,8 +262,8 @@ func setupKymaReconciler(mgr ctrl.Manager,
 			WatcherLocalTestingEnabled: flagVar.enableWatcherLocalTesting,
 			GatewayHTTPPortMapping:     flagVar.listenerHTTPPortLocalMapping,
 			IstioNamespace:             flagVar.istioNamespace,
-		}
-		skrWebhookManager, err = watcher.NewSKRWebhookManifestManager(kcpRestConfig, skrWebhookConfig)
+			RemoteSyncNamespace:        flagVar.remoteSyncNamespace,
+		})
 		if err != nil {
 			setupLog.Error(err, "failed to create webhook chart manager")
 		}
@@ -261,7 +271,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 
 	if err := (&controllers.KymaReconciler{
 		Client:                   mgr.GetClient(),
-		EventRecorder:            mgr.GetEventRecorderFor(operatorv1beta1.OperatorName),
+		EventRecorder:            mgr.GetEventRecorderFor(operatorv1beta2.OperatorName),
 		KcpRestConfig:            kcpRestConfig,
 		RemoteClientCache:        remoteClientCache,
 		ComponentDescriptorCache: componentDescriptorCache,
@@ -270,22 +280,53 @@ func setupKymaReconciler(mgr ctrl.Manager,
 			Success: flagVar.kymaRequeueSuccessInterval,
 		},
 		VerificationSettings: signature.VerificationSettings{
-			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
-			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
+			EnableVerification: flagVar.enableVerification,
+			PublicKeyFilePath:  flagVar.moduleVerificationKeyFilePath,
 		},
-		IsManagedKyma: flagVar.isKymaManaged,
-	}).SetupWithManager(
-		mgr, options, controllers.SetupUpSetting{
+		InKCPMode:           flagVar.inKCPMode,
+		RemoteSyncNamespace: flagVar.remoteSyncNamespace,
+	}).
+		SetupWithManager(mgr, options, controllers.SetupUpSetting{
 			ListenerAddr:                 flagVar.kymaListenerAddr,
 			EnableDomainNameVerification: flagVar.enableDomainNameVerification,
 			IstioNamespace:               flagVar.istioNamespace,
-		},
-	); err != nil {
+		}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
 
+	if flagVar.enablePurgeFinalizer {
+		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options, kcpRestConfig)
+	}
+
 	metrics.Initialize()
+}
+
+func setupPurgeReconciler(
+	mgr ctrl.Manager,
+	remoteClientCache *remote.ClientCache,
+	flagVar *FlagVar,
+	options controller.Options,
+	restConfig *rest.Config,
+) {
+	resolveRemoteClientFunc := func(ctx context.Context, key client.ObjectKey) (client.Client, error) {
+		kcpClient := remote.NewClientWithConfig(mgr.GetClient(), restConfig)
+		return remote.NewClientLookup(kcpClient, remoteClientCache, operatorv1beta2.SyncStrategyLocalSecret).Lookup(ctx, key)
+	}
+
+	if err := (&controllers.PurgeReconciler{
+		Client:                mgr.GetClient(),
+		EventRecorder:         mgr.GetEventRecorderFor(operatorv1beta2.OperatorName),
+		ResolveRemoteClient:   resolveRemoteClientFunc,
+		PurgeFinalizerTimeout: flagVar.purgeFinalizerTimeout,
+		SkipCRDs:              controllers.CRDMatcherFor(flagVar.skipPurgingFor),
+		IsManagedKyma:         flagVar.inKCPMode,
+	}).SetupWithManager(
+		mgr, options,
+	); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "PurgeReconciler")
+		os.Exit(1)
+	}
 }
 
 func setupManifestReconciler(
@@ -294,6 +335,8 @@ func setupManifestReconciler(
 	options controller.Options,
 ) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentManifestReconciles
+	options.RateLimiter = internal.ManifestRateLimiter(flagVar.failureBaseDelay,
+		flagVar.failureMaxDelay, flagVar.rateLimiterFrequency, flagVar.rateLimiterBurst)
 
 	if err := controllers.SetupWithManager(
 		mgr, options, flagVar.manifestRequeueSuccessInterval, controllers.SetupUpSetting{
@@ -309,7 +352,7 @@ func setupManifestReconciler(
 func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, flagVar *FlagVar) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentWatcherReconciles
 
-	istioConfig := istio.NewConfig(flagVar.virtualServiceName, flagVar.enableWatcherLocalTesting)
+	istioConfig := istio.NewConfig(flagVar.enableWatcherLocalTesting)
 
 	if err := (&controllers.WatcherReconciler{
 		Client:        mgr.GetClient(),
@@ -322,5 +365,45 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, fla
 	}).SetupWithManager(mgr, options, istioConfig); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controllers.WatcherControllerName)
 		os.Exit(1)
+	}
+}
+
+func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved string) {
+	cfg := mgr.GetConfig()
+	kcpClient, err := apiextension.NewForConfig(cfg)
+	if err != nil {
+		setupLog.V(log.DebugLevel).Error(err, fmt.Sprintf("unable to initialize client to remove %s", versionToBeRemoved))
+	}
+	ctx := context.TODO()
+	var crdList *v1extensions.CustomResourceDefinitionList
+	if crdList, err = kcpClient.ApiextensionsV1().CustomResourceDefinitions().List(ctx, v1.ListOptions{}); err != nil {
+		setupLog.V(log.InfoLevel).Error(err, "unable to list CRDs")
+	}
+
+	crdsToPatch := []string{
+		string(operatorv1beta2.ModuleTemplateKind), string(operatorv1beta2.WatcherKind),
+		operatorv1beta2.ManifestKind, string(operatorv1beta2.KymaKind),
+	}
+
+	for _, crdItem := range crdList.Items {
+		if crdItem.Spec.Group != "operator.kyma-project.io" && !slices.Contains(crdsToPatch, crdItem.Spec.Names.Kind) {
+			continue
+		}
+		setupLog.V(log.InfoLevel).Info(fmt.Sprintf("Checking the storedVersions for %s crd", crdItem.Spec.Names.Kind))
+		oldStoredVersions := crdItem.Status.StoredVersions
+		newStoredVersions := make([]string, 0, len(oldStoredVersions))
+		for _, stored := range oldStoredVersions {
+			if stored != versionToBeRemoved {
+				newStoredVersions = append(newStoredVersions, stored)
+			}
+		}
+		crdItem.Status.StoredVersions = newStoredVersions
+		setupLog.V(log.InfoLevel).Info(fmt.Sprintf("The new storedVersions are %v", newStoredVersions))
+		crd := crdItem
+		if _, err := kcpClient.ApiextensionsV1().CustomResourceDefinitions().
+			UpdateStatus(ctx, &crd, v1.UpdateOptions{}); err != nil {
+			msg := fmt.Sprintf("Failed to update CRD to remove %s from stored versions", versionToBeRemoved)
+			setupLog.V(log.InfoLevel).Error(err, msg)
+		}
 	}
 }
