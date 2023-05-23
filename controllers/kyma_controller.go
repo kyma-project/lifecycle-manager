@@ -470,7 +470,7 @@ func (r *KymaReconciler) RecordKymaStatusMetrics(ctx context.Context, kyma *v1be
 }
 
 func (r *KymaReconciler) WatcherEnabled(kyma *v1beta2.Kyma) bool {
-	return kyma.HasSyncLabelEnabled() && r.SKRWebhookManager != nil
+	return r.SyncKymaEnabled(kyma) && r.SKRWebhookManager != nil
 }
 
 func (r *KymaReconciler) IsKymaManaged() bool {
