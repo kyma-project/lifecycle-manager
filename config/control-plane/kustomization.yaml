@@ -49,7 +49,7 @@ patches:
         value: --max-concurrent-manifest-reconciles=10
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --max-concurrent-kyma-reconciles=5      
+        value: --max-concurrent-kyma-reconciles=10      
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --failure-max-delay=5m
