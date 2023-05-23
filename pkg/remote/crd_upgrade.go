@@ -74,13 +74,13 @@ func SyncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma,
 	kymaCrdUpdated, err := fetchCrdsAndUpdateKymaAnnotations(ctx, controlPlaneClient,
 		runtimeClient, kyma, v1beta2.KymaKind.Plural())
 	if err != nil {
-		return false, err
+		return false, client.IgnoreNotFound(err)
 	}
 
 	moduleTemplateCrdUpdated, err := fetchCrdsAndUpdateKymaAnnotations(ctx, controlPlaneClient,
 		runtimeClient, kyma, v1beta2.ModuleTemplateKind.Plural())
 	if err != nil {
-		return false, err
+		return false, client.IgnoreNotFound(err)
 	}
 
 	return kymaCrdUpdated || moduleTemplateCrdUpdated, nil
