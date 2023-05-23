@@ -55,9 +55,10 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 			Should(Succeed())
 
 		By("add skr-module-client to remoteKyma.spec.modules")
-		Eventually(updateRemoteModule(ctx, runtimeClient, remoteKyma, controllers.DefaultRemoteSyncNamespace, []v1beta2.Module{
-			skrModuleFromClient,
-		}), Timeout, Interval).Should(Succeed())
+		Eventually(updateRemoteModule(ctx, runtimeClient, remoteKyma, controllers.DefaultRemoteSyncNamespace,
+			[]v1beta2.Module{
+				skrModuleFromClient,
+			}), Timeout, Interval).Should(Succeed())
 
 		By("skr-module-client created in kcp")
 		Eventually(ManifestExists, Timeout, Interval).WithArguments(ctx, kyma,
