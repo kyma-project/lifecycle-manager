@@ -49,8 +49,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type EventReasonError string
-type EventReasonInfo string
+type (
+	EventReasonError string
+	EventReasonInfo  string
+)
 
 const (
 	moduleReconciliationError  EventReasonError = "ModuleReconciliationError"
@@ -148,13 +150,34 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 		return ctrl.Result{}, nil
 	}
 
-	if r.SyncKymaEnabled(kyma) {
+	if r.SyncKymaEnabled(kyma) { //nolint:nestif
+		updateKymaRequired, err := r.syncCrdsAndUpdateKymaAnnotations(ctx, kyma)
+		if err != nil {
+			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not sync CRDs: %w", err))
+		}
+		if updateKymaRequired {
+			if err := r.Update(ctx, kyma); err != nil {
+				return r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma annotations: %w", err))
+			}
+			return ctrl.Result{}, nil
+		}
 		if err := r.syncRemoteKyma(ctx, kyma); err != nil {
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not synchronize remote kyma: %w", err))
 		}
 	}
 
 	return r.processKymaState(ctx, kyma)
+}
+
+func (r *KymaReconciler) syncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
+	syncContext := remote.SyncContextFromContext(ctx)
+	updateRequired, err := remote.SyncCrdsAndUpdateKymaAnnotations(
+		ctx, kyma, syncContext.RuntimeClient, syncContext.ControlPlaneClient)
+	if err != nil {
+		return false, err
+	}
+
+	return updateRequired, nil
 }
 
 func (r *KymaReconciler) deleteRemoteKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
@@ -449,7 +472,7 @@ func (r *KymaReconciler) RecordKymaStatusMetrics(ctx context.Context, kyma *v1be
 }
 
 func (r *KymaReconciler) WatcherEnabled(kyma *v1beta2.Kyma) bool {
-	return kyma.HasSyncLabelEnabled() && r.SKRWebhookManager != nil
+	return r.SyncKymaEnabled(kyma) && r.SKRWebhookManager != nil
 }
 
 func (r *KymaReconciler) IsKymaManaged() bool {
