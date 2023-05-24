@@ -2,6 +2,7 @@ package control_plane_test
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/controllers"
@@ -213,5 +214,72 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			WithArguments(runtimeClient, controllers.DefaultRemoteSyncNamespace,
 				moduleToBeUpdated, "initValue").
 			Should(Succeed())
+	})
+})
+
+var _ = FDescribe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered, func() {
+	kyma := NewTestKyma("kyma-test-crd-update")
+	kyma.Labels[v1beta2.SyncLabel] = v1beta2.EnableLabelValue
+	moduleInKcp := v1beta2.Module{
+		ControllerName: "manifest",
+		Name:           "test-module-in-kcp",
+		Channel:        v1beta2.DefaultChannel,
+	}
+	kyma.Spec.Modules = []v1beta2.Module{moduleInKcp}
+	registerControlPlaneLifecycleForKyma(kyma)
+
+	It("module template created", func() {
+		template, err := ModuleTemplateFactory(moduleInKcp, unstructured.Unstructured{}, false)
+		Expect(err).ShouldNot(HaveOccurred())
+		Eventually(CreateCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, template).
+			Should(Succeed())
+	})
+
+	It("CRDs generation annotation should exist in KCP kyma", func() {
+		Eventually(func() error {
+			kcpKyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+			if err != nil {
+				return err
+			}
+
+			annotationsToBeFound := []string{
+				"moduletemplate-skr-crd-generation",
+				"moduletemplate-kcp-crd-generation",
+				"kyma-skr-crd-generation",
+				"kyma-kcp-crd-generation",
+			}
+			for _, annotation := range annotationsToBeFound {
+				if _, ok := kcpKyma.Annotations[annotation]; !ok {
+					return errors.New(fmt.Sprintf("annotation: %s doesn't exit", annotation))
+				}
+			}
+
+			return nil
+		}, Timeout, Interval).Should(Succeed())
+	})
+
+	It("CRDs generation annotation shouldn't exist in SKR kyma", func() {
+		Eventually(func() error {
+			skrKyma, err := GetKyma(ctx, runtimeClient, kyma.GetName(), kyma.GetNamespace())
+			if err != nil {
+				return err
+			}
+
+			annotations := []string{
+				"moduletemplate-skr-crd-generation",
+				"moduletemplate-kcp-crd-generation",
+				"kyma-skr-crd-generation",
+				"kyma-kcp-crd-generation",
+			}
+			for _, annotation := range annotations {
+				if _, ok := skrKyma.Annotations[annotation]; ok {
+					return errors.New(fmt.Sprintf("annotation: %s exits in skr kyma but it shouldn't", annotation))
+				}
+			}
+
+			return nil
+		}, Timeout, Interval).Should(Succeed())
 	})
 })
