@@ -155,9 +155,6 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 	}
 
 	if r.SyncKymaEnabled(kyma) { //nolint:nestif
-		if err := r.syncRemoteKyma(ctx, kyma); err != nil {
-			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not synchronize remote kyma: %w", err))
-		}
 		updateKymaRequired, err := r.syncCrdsAndUpdateKymaAnnotations(ctx, kyma)
 		if err != nil {
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not sync CRDs: %w", err))
@@ -167,6 +164,9 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 				return r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma annotations: %w", err))
 			}
 			return ctrl.Result{}, nil
+		}
+		if err := r.syncRemoteKyma(ctx, kyma); err != nil {
+			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not synchronize remote kyma: %w", err))
 		}
 	}
 

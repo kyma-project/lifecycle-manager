@@ -443,16 +443,14 @@ func ModuleTemplateExists(ctx context.Context, client client.Client, name, names
 	return nil
 }
 
-func ModuleTemplatesExist(ctx context.Context,
+func AllModuleTemplatesExists(ctx context.Context,
 	clnt client.Client, kyma *v1beta2.Kyma, remoteSyncNamespace string,
-) func() error {
-	return func() error {
-		for _, module := range kyma.Spec.Modules {
-			if err := ModuleTemplateExists(ctx, clnt, module.Name, remoteSyncNamespace); err != nil {
-				return err
-			}
+) error {
+	for _, module := range kyma.Spec.Modules {
+		if err := ModuleTemplateExists(ctx, clnt, module.Name, remoteSyncNamespace); err != nil {
+			return err
 		}
-
-		return nil
 	}
+
+	return nil
 }
