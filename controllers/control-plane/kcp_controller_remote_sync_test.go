@@ -2,19 +2,24 @@ package control_plane_test
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var (
-	ErrContainsUnexpectedModules    = errors.New("kyma CR contains unexpected modules")
-	ErrNotContainsExpectedCondition = errors.New("kyma CR not contains expected condition")
+	ErrContainsUnexpectedModules     = errors.New("kyma CR contains unexpected modules")
+	ErrNotContainsExpectedCondition  = errors.New("kyma CR not contains expected condition")
+	ErrNotContainsExpectedAnnotation = errors.New("kyma CR not contains expected CRD annotation")
+	ErrContainsUnexpectedAnnotation  = errors.New("kyma CR contains unexpected CRD annotation")
+	ErrAnnotationNotUpdated          = errors.New("kyma CR annotation not updated")
 )
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
@@ -220,5 +225,109 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			WithArguments(runtimeClient, controllers.DefaultRemoteSyncNamespace,
 				moduleInSkr.Name, "initValue").
 			Should(Succeed())
+	})
+})
+
+var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered, func() {
+	kyma := NewTestKyma("kyma-test-crd-update")
+	kyma.Labels[v1beta2.SyncLabel] = v1beta2.EnableLabelValue
+	moduleInKcp := v1beta2.Module{
+		ControllerName: "manifest",
+		Name:           "test-module-in-kcp",
+		Channel:        v1beta2.DefaultChannel,
+	}
+	kyma.Spec.Modules = []v1beta2.Module{moduleInKcp}
+	registerControlPlaneLifecycleForKyma(kyma)
+	annotations := []string{
+		"moduletemplate-skr-crd-generation",
+		"moduletemplate-kcp-crd-generation",
+		"kyma-skr-crd-generation",
+		"kyma-kcp-crd-generation",
+	}
+
+	It("module template created", func() {
+		template, err := ModuleTemplateFactory(moduleInKcp, unstructured.Unstructured{}, false)
+		Expect(err).ShouldNot(HaveOccurred())
+		Eventually(CreateCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, template).
+			Should(Succeed())
+	})
+
+	It("CRDs generation annotation should exist in KCP kyma", func() {
+		Eventually(func() error {
+			kcpKyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+			if err != nil {
+				return err
+			}
+
+			for _, annotation := range annotations {
+				if _, ok := kcpKyma.Annotations[annotation]; !ok {
+					return ErrNotContainsExpectedAnnotation
+				}
+			}
+
+			return nil
+		}, Timeout, Interval).Should(Succeed())
+	})
+
+	It("CRDs generation annotation shouldn't exist in SKR kyma", func() {
+		Eventually(func() error {
+			skrKyma, err := GetKyma(ctx, runtimeClient, kyma.GetName(), controllers.DefaultRemoteSyncNamespace)
+			if err != nil {
+				return err
+			}
+
+			for _, annotation := range annotations {
+				if _, ok := skrKyma.Annotations[annotation]; ok {
+					return ErrContainsUnexpectedAnnotation
+				}
+			}
+
+			return nil
+		}, Timeout, Interval).Should(Succeed())
+	})
+
+	It("Kyma CRD should sync to SKR and annotations get updated", func() {
+		var kcpKymaCrd *v1.CustomResourceDefinition
+		var skrKymaCrd *v1.CustomResourceDefinition
+		By("Update KCP Kyma CRD")
+		Eventually(func() string {
+			var err error
+			kcpKymaCrd, err = updateKymaCRD(controlPlaneClient)
+			if err != nil {
+				return ""
+			}
+
+			return getCrdSpec(kcpKymaCrd).Properties["channel"].Description
+		}, Timeout, Interval).Should(Equal("test change"))
+
+		By("SKR Kyma CRD should be updated")
+		Eventually(func() *v1.CustomResourceValidation {
+			var err error
+			skrKymaCrd, err = fetchCrd(runtimeClient, v1beta2.KymaKind)
+			if err != nil {
+				return nil
+			}
+
+			return skrKymaCrd.Spec.Versions[0].Schema
+		}, Timeout, Interval).Should(Equal(kcpKymaCrd.Spec.Versions[0].Schema))
+
+		By("Kyma CR generation annotations should be updated")
+		Eventually(func() error {
+			kcpKyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+			if err != nil {
+				return err
+			}
+
+			if kcpKyma.Annotations["kyma-skr-crd-generation"] != fmt.Sprint(skrKymaCrd.Generation) {
+				return ErrAnnotationNotUpdated
+			}
+			if kcpKyma.Annotations["kyma-kcp-crd-generation"] != fmt.Sprint(skrKymaCrd.Generation) {
+				return ErrAnnotationNotUpdated
+			}
+
+			return nil
+		}, Timeout, Interval).Should(Succeed())
 	})
 })
