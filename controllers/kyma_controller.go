@@ -110,14 +110,14 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 	if !kyma.DeletionTimestamp.IsZero() {
 		if err := metrics.RemoveKymaStateMetrics(kyma); err != nil {
-			logger.V(log.InfoLevel).Info(fmt.Sprintf("error occured while removing kyma state metrics: %s", err))
+			logger.V(log.DebugLevel).Info(fmt.Sprintf("error occured while removing kyma state metrics: %s", err))
 		}
 	}
 
 	status.InitConditions(kyma, r.SyncKymaEnabled(kyma), r.WatcherEnabled(kyma))
 
 	if kyma.SkipReconciliation() {
-		logger.V(log.DebugLevel).Info("kyma gets skipped because of label")
+		logger.V(log.DebugLevel).Info(fmt.Sprintf("skipping reconciliation for Kyma: %s", kyma.Name))
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
 	}
 
@@ -449,7 +449,7 @@ func (r *KymaReconciler) deleteManifest(ctx context.Context, trackedManifest *v1
 
 func (r *KymaReconciler) UpdateMetrics(ctx context.Context, kyma *v1beta2.Kyma) {
 	if err := metrics.UpdateAll(kyma); err != nil {
-		ctrlLog.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("error occured while updating all metrics: %s", err))
+		ctrlLog.FromContext(ctx).V(log.DebugLevel).Info(fmt.Sprintf("error occured while updating all metrics: %s", err))
 	}
 }
 

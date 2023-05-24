@@ -1,8 +1,10 @@
 package remote_test
 
 import (
-	"github.com/stretchr/testify/require"
 	"testing"
+
+
+	"github.com/stretchr/testify/require"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"

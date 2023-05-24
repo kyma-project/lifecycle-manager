@@ -32,7 +32,8 @@ const (
 )
 
 func updateRemoteCRD(ctx context.Context, kyma *v1beta2.Kyma, runtimeClient Client,
-	crdFromRuntime *v1extensions.CustomResourceDefinition, kcpCrd *v1extensions.CustomResourceDefinition) (bool, error) {
+	crdFromRuntime *v1extensions.CustomResourceDefinition, kcpCrd *v1extensions.CustomResourceDefinition,
+) (bool, error) {
 	if ShouldPatchRemoteCRD(crdFromRuntime, kcpCrd, kyma) {
 		err := PatchCRD(ctx, runtimeClient, kcpCrd)
 		if err != nil {
@@ -47,7 +48,8 @@ func updateRemoteCRD(ctx context.Context, kyma *v1beta2.Kyma, runtimeClient Clie
 
 func ShouldPatchRemoteCRD(
 	runtimeCrd *v1extensions.CustomResourceDefinition, kcpCrd *v1extensions.CustomResourceDefinition,
-	kyma *v1beta2.Kyma) bool {
+	kyma *v1beta2.Kyma,
+) bool {
 	kcpAnnotation := getAnnotation(kcpCrd, KCP)
 	skrAnnotation := getAnnotation(runtimeCrd, SKR)
 
@@ -70,7 +72,8 @@ func getAnnotation(crd *v1extensions.CustomResourceDefinition, crdType CrdType) 
 }
 
 func SyncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma,
-	runtimeClient Client, controlPlaneClient Client) (bool, error) {
+	runtimeClient Client, controlPlaneClient Client,
+) (bool, error) {
 	kymaCrdUpdated, err := fetchCrdsAndUpdateKymaAnnotations(ctx, controlPlaneClient,
 		runtimeClient, kyma, v1beta2.KymaKind.Plural())
 	if err != nil {
@@ -87,7 +90,8 @@ func SyncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma,
 }
 
 func fetchCrdsAndUpdateKymaAnnotations(ctx context.Context, controlPlaneClient Client,
-	runtimeClient Client, kyma *v1beta2.Kyma, plural string) (bool, error) {
+	runtimeClient Client, kyma *v1beta2.Kyma, plural string,
+) (bool, error) {
 	kcpCrd, skrCrd, err := fetchCrds(ctx, controlPlaneClient, runtimeClient, plural)
 	if err != nil {
 		return false, err
@@ -113,7 +117,8 @@ func fetchCrdsAndUpdateKymaAnnotations(ctx context.Context, controlPlaneClient C
 }
 
 func fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Client, plural string) (
-	*v1extensions.CustomResourceDefinition, *v1extensions.CustomResourceDefinition, error) {
+	*v1extensions.CustomResourceDefinition, *v1extensions.CustomResourceDefinition, error,
+) {
 	crd := &v1extensions.CustomResourceDefinition{}
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
 	err := controlPlaneClient.Get(
@@ -123,7 +128,6 @@ func fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Cli
 			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
 		}, crd,
 	)
-
 	if err != nil {
 		return nil, nil, err
 	}

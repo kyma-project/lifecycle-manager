@@ -3,9 +3,10 @@ package metrics
 import (
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/prometheus/client_golang/prometheus"
 	ctrlMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
-	"strings"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
@@ -38,7 +39,7 @@ func Initialize() {
 
 var metricErr = errors.New("failed to update metrics")
 
-// UpdateAll sets both metrics 'lifecycle_mgr_kyma_state' and 'lifecycle_mgr_module_state' to the new state of given Kyma
+// UpdateAll sets both metrics 'lifecycle_mgr_kyma_state' and 'lifecycle_mgr_module_state' to the new state of given Kyma.
 func UpdateAll(kyma *v1beta2.Kyma) error {
 	shootID, err := extractShootID(kyma)
 	if err != nil {
@@ -56,7 +57,7 @@ func UpdateAll(kyma *v1beta2.Kyma) error {
 	return nil
 }
 
-// RemoveKymaStateMetrics deletes all 'lifecycle_mgr_kyma_state' metrics for the matching Kyma
+// RemoveKymaStateMetrics deletes all 'lifecycle_mgr_kyma_state' metrics for the matching Kyma.
 func RemoveKymaStateMetrics(kyma *v1beta2.Kyma) error {
 	shootID, err := extractShootID(kyma)
 	if err != nil {
@@ -76,7 +77,7 @@ func RemoveKymaStateMetrics(kyma *v1beta2.Kyma) error {
 	return nil
 }
 
-// RemoveModuleStateMetrics deletes all 'lifecycle_mgr_module_state' metrics with matching labels of module name, kyma name, shoot id and instance id
+// RemoveModuleStateMetrics deletes all 'lifecycle_mgr_module_state' metrics with matching labels of module name, kyma name, shoot id and instance id.
 func RemoveModuleStateMetrics(kyma *v1beta2.Kyma, moduleName string) error {
 	shootID, err := extractShootID(kyma)
 	if err != nil {
