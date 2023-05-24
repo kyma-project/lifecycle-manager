@@ -108,6 +108,11 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
+	if !kyma.DeletionTimestamp.IsZero() {
+		if err := metrics.RemoveKymaStateMetrics(kyma); err != nil {
+			logger.V(log.InfoLevel).Info(fmt.Sprintf("error occured while removing kyma state metrics: %s", err))
+		}
+	}
 
 	status.InitConditions(kyma, r.SyncKymaEnabled(kyma), r.WatcherEnabled(kyma))
 
@@ -443,9 +448,8 @@ func (r *KymaReconciler) deleteManifest(ctx context.Context, trackedManifest *v1
 }
 
 func (r *KymaReconciler) UpdateMetrics(ctx context.Context, kyma *v1beta2.Kyma) {
-	logger := ctrlLog.FromContext(ctx).V(log.InfoLevel)
 	if err := metrics.UpdateAll(kyma); err != nil {
-		logger.Info(fmt.Sprintf("error occured while updating all metrics: %s", err))
+		ctrlLog.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("error occured while updating all metrics: %s", err))
 	}
 }
 
