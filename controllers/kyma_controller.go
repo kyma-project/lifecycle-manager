@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -443,29 +442,10 @@ func (r *KymaReconciler) deleteManifest(ctx context.Context, trackedManifest *v1
 	return r.Delete(ctx, &manifest, &client.DeleteOptions{})
 }
 
-// RecordKymaStatusMetrics updates prometheus metrics defined to track changes to the Kyma status.
-func (r *KymaReconciler) RecordKymaStatusMetrics(ctx context.Context, kyma *v1beta2.Kyma) {
+func (r *KymaReconciler) UpdateMetrics(ctx context.Context, kyma *v1beta2.Kyma) {
 	logger := ctrlLog.FromContext(ctx).V(log.InfoLevel)
-	shoot := ""
-	shootFQDN, keyExists := kyma.Annotations[v1beta2.SKRDomainAnnotation]
-	if keyExists {
-		parts := strings.Split(shootFQDN, ".")
-		minFqdnParts := 2
-		if len(parts) > minFqdnParts {
-			shoot = parts[0] // hostname
-		}
-	} else {
-		logger.Info(fmt.Sprintf("expected annotation: %s not found when setting metric", v1beta2.SKRDomainAnnotation))
-	}
-
-	instanceID, keyExists := kyma.Labels[v1beta2.InstanceIDLabel]
-	if !keyExists {
-		logger.Info(fmt.Sprintf("expected label: %s not found when setting metric", v1beta2.InstanceIDLabel))
-	}
-
-	metrics.SetKymaStateGauge(kyma.Status.State, kyma.Name, shoot, instanceID)
-	for _, moduleStatus := range kyma.Status.Modules {
-		metrics.SetModuleStateGauge(moduleStatus.State, moduleStatus.Name, kyma.Name, shoot, instanceID)
+	if err := metrics.UpdateAll(kyma); err != nil {
+		logger.Info(fmt.Sprintf("error occured while updating all metrics: %s", err))
 	}
 }
 
