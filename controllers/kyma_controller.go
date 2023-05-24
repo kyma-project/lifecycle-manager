@@ -110,11 +110,6 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	if !kyma.DeletionTimestamp.IsZero() {
-		if err := metrics.RemoveKymaStateMetrics(kyma); err != nil {
-			logger.V(log.DebugLevel).Info(fmt.Sprintf("error occurred while removing kyma state metrics: %s", err))
-		}
-	}
 
 	status.InitConditions(kyma, r.SyncKymaEnabled(kyma), r.WatcherEnabled(kyma))
 
@@ -141,9 +136,11 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 		if err := r.deleteRemoteKyma(ctx, kyma); err != nil {
 			return r.requeueWithError(ctx, kyma, err)
 		}
+
 		if err := r.updateStatus(ctx, kyma, v1beta2.StateDeleting, "waiting for modules to be deleted"); err != nil {
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma status after triggering deletion: %w", err))
 		}
+
 		return ctrl.Result{}, nil
 	}
 
@@ -344,6 +341,10 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		err = fmt.Errorf("error while updating kyma during deletion: %w", err)
 		r.enqueueWarningEvent(kyma, deletionError, err)
 		return false, err
+	}
+
+	if err := metrics.RemoveKymaStateMetrics(kyma); err != nil {
+		logger.V(log.DebugLevel).Info(fmt.Sprintf("error occurred while removing kyma state metrics: %s", err))
 	}
 
 	return false, nil
