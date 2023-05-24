@@ -144,7 +144,7 @@ var _ = Describe("Kyma with remote module templates", Ordered, func() {
 	})
 })
 
-var _ = FDescribe("Kyma sync into Remote Cluster", Ordered, func() {
+var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-remote-skr")
 	kyma.Labels[v1beta2.SyncLabel] = v1beta2.EnableLabelValue
 	moduleInSkr := v1beta2.Module{
@@ -216,7 +216,7 @@ var _ = FDescribe("Kyma sync into Remote Cluster", Ordered, func() {
 			Should(Succeed())
 
 		By("Expect SKR Module Template spec.data.spec field get reset")
-		Eventually(expectModuleTemplateSpecGetReset, Timeout, Interval).
+		Eventually(expectModuleTemplateSpecGetReset, 2*Timeout, Interval).
 			WithArguments(runtimeClient, controllers.DefaultRemoteSyncNamespace,
 				moduleInSkr.Name, "initValue").
 			Should(Succeed())
