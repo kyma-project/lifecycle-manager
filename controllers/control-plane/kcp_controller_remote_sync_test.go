@@ -260,7 +260,8 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 
 			for _, annotation := range annotations {
 				if _, ok := kcpKyma.Annotations[annotation]; !ok {
-					return errors.New(fmt.Sprintf("annotation: %s doesn't exit", annotation))
+					err := errors.New(fmt.Sprintf("annotation: %s doesn't exit", annotation))
+					return err
 				}
 			}
 
@@ -277,7 +278,8 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 
 			for _, annotation := range annotations {
 				if _, ok := skrKyma.Annotations[annotation]; ok {
-					return errors.New(fmt.Sprintf("annotation: %s exits in skr kyma but it shouldn't", annotation))
+					err := errors.New(fmt.Sprintf("annotation: %s exits in skr kyma but it shouldn't", annotation))
+					return err
 				}
 			}
 
@@ -318,10 +320,12 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 			}
 
 			if kcpKyma.Annotations["kyma-skr-crd-generation"] != fmt.Sprint(skrKymaCrd.Generation) {
-				return errors.New("kyma-skr-crd-generation not updated in kcp kyma CR")
+				err := errors.New("kyma-skr-crd-generation not updated in kcp kyma CR")
+				return err
 			}
 			if kcpKyma.Annotations["kyma-kcp-crd-generation"] != fmt.Sprint(skrKymaCrd.Generation) {
-				return errors.New("kyma-kcp-crd-generation not updated in kcp kyma CR")
+				err := errors.New("kyma-kcp-crd-generation not updated in kcp kyma CR")
+				return err
 			}
 
 			return nil
