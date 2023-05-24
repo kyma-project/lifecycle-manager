@@ -48,8 +48,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type EventReasonError string
-type EventReasonInfo string
+type (
+	EventReasonError string
+	EventReasonInfo  string
+)
 
 const (
 	moduleReconciliationError  EventReasonError = "ModuleReconciliationError"
@@ -110,7 +112,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 	if !kyma.DeletionTimestamp.IsZero() {
 		if err := metrics.RemoveKymaStateMetrics(kyma); err != nil {
-			logger.V(log.DebugLevel).Info(fmt.Sprintf("error occured while removing kyma state metrics: %s", err))
+			logger.V(log.DebugLevel).Info(fmt.Sprintf("error occurred while removing kyma state metrics: %s", err))
 		}
 	}
 
@@ -449,7 +451,7 @@ func (r *KymaReconciler) deleteManifest(ctx context.Context, trackedManifest *v1
 
 func (r *KymaReconciler) UpdateMetrics(ctx context.Context, kyma *v1beta2.Kyma) {
 	if err := metrics.UpdateAll(kyma); err != nil {
-		ctrlLog.FromContext(ctx).V(log.DebugLevel).Info(fmt.Sprintf("error occured while updating all metrics: %s", err))
+		ctrlLog.FromContext(ctx).V(log.DebugLevel).Info(fmt.Sprintf("error occurred while updating all metrics: %s", err))
 	}
 }
 

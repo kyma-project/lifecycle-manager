@@ -37,17 +37,17 @@ func Initialize() {
 	ctrlMetrics.Registry.MustRegister(moduleStateGauge)
 }
 
-var metricErr = errors.New("failed to update metrics")
+var errMetric = errors.New("failed to update metrics")
 
-// UpdateAll sets both metrics 'lifecycle_mgr_kyma_state' and 'lifecycle_mgr_module_state' to the new state of given Kyma.
+// UpdateAll sets both metrics 'lifecycle_mgr_kyma_state' and 'lifecycle_mgr_module_state' to new states.
 func UpdateAll(kyma *v1beta2.Kyma) error {
 	shootID, err := extractShootID(kyma)
 	if err != nil {
-		return errors.Join(metricErr, err)
+		return errors.Join(errMetric, err)
 	}
 	instanceID, err := extractInstanceID(kyma)
 	if err != nil {
-		return errors.Join(metricErr, err)
+		return errors.Join(errMetric, err)
 	}
 
 	setKymaStateGauge(kyma.Status.State, kyma.Name, shootID, instanceID)
@@ -73,11 +73,10 @@ func RemoveKymaStateMetrics(kyma *v1beta2.Kyma) error {
 		shootIDLabel:    shootID,
 		instanceIDLabel: instanceID,
 	})
-
 	return nil
 }
 
-// RemoveModuleStateMetrics deletes all 'lifecycle_mgr_module_state' metrics with matching labels of module name, kyma name, shoot id and instance id.
+// RemoveModuleStateMetrics deletes all 'lifecycle_mgr_module_state' metrics for the matching module.
 func RemoveModuleStateMetrics(kyma *v1beta2.Kyma, moduleName string) error {
 	shootID, err := extractShootID(kyma)
 	if err != nil {
@@ -94,7 +93,6 @@ func RemoveModuleStateMetrics(kyma *v1beta2.Kyma, moduleName string) error {
 		shootIDLabel:    shootID,
 		instanceIDLabel: instanceID,
 	})
-
 	return nil
 }
 
@@ -125,6 +123,11 @@ func setModuleStateGauge(newState v1beta2.State, moduleName, kymaName, shootID, 
 	}
 }
 
+var (
+	errMissingShootAnnotation = fmt.Errorf("expected annotation '%s' not found", v1beta2.SKRDomainAnnotation)
+	errShootAnnotationNoValue = fmt.Errorf("annotation '%s' has empty value", v1beta2.SKRDomainAnnotation)
+)
+
 func extractShootID(kyma *v1beta2.Kyma) (string, error) {
 	shoot := ""
 	shootFQDN, keyExists := kyma.Annotations[v1beta2.SKRDomainAnnotation]
@@ -136,27 +139,32 @@ func extractShootID(kyma *v1beta2.Kyma) (string, error) {
 		}
 	}
 	if !keyExists {
-		return "", fmt.Errorf("expected annotation '%s' not found", v1beta2.SKRDomainAnnotation)
+		return "", errMissingShootAnnotation
 	}
 	if shoot == "" {
-		return shoot, fmt.Errorf("annotation '%s' has empty value", v1beta2.SKRDomainAnnotation)
+		return shoot, errShootAnnotationNoValue
 	}
 	return shoot, nil
 }
 
+var (
+	errMissingInstanceLabel = fmt.Errorf("expected label '%s' not found", v1beta2.InstanceIDLabel)
+	errInstanceLabelNoValue = fmt.Errorf("label '%s' has empty value", v1beta2.InstanceIDLabel)
+)
+
 func extractInstanceID(kyma *v1beta2.Kyma) (string, error) {
 	instanceID, keyExists := kyma.Labels[v1beta2.InstanceIDLabel]
 	if !keyExists {
-		return "", fmt.Errorf("expected label '%s' not found", v1beta2.InstanceIDLabel)
+		return "", errMissingInstanceLabel
 	}
 	if instanceID == "" {
-		return instanceID, fmt.Errorf("label '%s' has empty value", v1beta2.InstanceIDLabel)
+		return instanceID, errInstanceLabelNoValue
 	}
 	return instanceID, nil
 }
 
-func calcStateValue(state, new v1beta2.State) float64 {
-	if state == new {
+func calcStateValue(state, newState v1beta2.State) float64 {
+	if state == newState {
 		return 1
 	}
 	return 0
