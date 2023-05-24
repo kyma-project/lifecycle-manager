@@ -8,6 +8,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -224,7 +225,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	})
 })
 
-var _ = FDescribe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered, func() {
+var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-crd-update")
 	kyma.Labels[v1beta2.SyncLabel] = v1beta2.EnableLabelValue
 	moduleInKcp := v1beta2.Module{
@@ -285,10 +286,45 @@ var _ = FDescribe("CRDs sync to SKR and annotations updated in KCP kyma", Ordere
 	})
 
 	It("Kyma CRD should sync to SKR and annotations get updated", func() {
-		By("Update SKR Module Template spec.data.spec field")
-		Eventually(updateModuleTemplateSpec,
-			Timeout, Interval).
-			WithArguments(runtimeClient, controllers.DefaultRemoteSyncNamespace, moduleInSkr.Name, "valueUpdated").
-			Should(Succeed())
+		var kcpKymaCrd *v1.CustomResourceDefinition
+		var skrKymaCrd *v1.CustomResourceDefinition
+		By("Update KCP Kyma CRD")
+		Eventually(func() string {
+			var err error
+			kcpKymaCrd, err = updateKymaCRD(controlPlaneClient)
+			if err != nil {
+				return ""
+			}
+
+			return getCrdSpec(kcpKymaCrd).Properties["channel"].Description
+		}, Timeout, Interval).Should(Equal("test change"))
+
+		By("SKR Kyma CRD should be updated")
+		Eventually(func() *v1.CustomResourceValidation {
+			var err error
+			skrKymaCrd, err = fetchCrd(runtimeClient, v1beta2.KymaKind)
+			if err != nil {
+				return nil
+			}
+
+			return skrKymaCrd.Spec.Versions[0].Schema
+		}, Timeout, Interval).Should(Equal(kcpKymaCrd.Spec.Versions[0].Schema))
+
+		By("Kyma CR generation annotations should be updated")
+		Eventually(func() error {
+			kcpKyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+			if err != nil {
+				return err
+			}
+
+			if kcpKyma.Annotations["kyma-skr-crd-generation"] != fmt.Sprint(skrKymaCrd.Generation) {
+				return errors.New("kyma-skr-crd-generation not updated in kcp kyma CR")
+			}
+			if kcpKyma.Annotations["kyma-kcp-crd-generation"] != fmt.Sprint(skrKymaCrd.Generation) {
+				return errors.New("kyma-kcp-crd-generation not updated in kcp kyma CR")
+			}
+
+			return nil
+		}, Timeout, Interval).Should(Succeed())
 	})
 })
