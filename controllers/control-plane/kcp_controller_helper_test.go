@@ -15,9 +15,10 @@ import (
 )
 
 var (
-	ErrExpectedLabelNotReset    = errors.New("expected label not reset")
-	ErrWatcherLabelMissing      = errors.New("watcher label missing")
-	ErrWatcherAnnotationMissing = errors.New("watcher annotation missing")
+	ErrExpectedLabelNotReset         = errors.New("expected label not reset")
+	ErrWatcherLabelMissing           = errors.New("watcher label missing")
+	ErrWatcherAnnotationMissing      = errors.New("watcher annotation missing")
+	ErrNotContainsExpectedAnnotation = errors.New("expected annotation missing")
 )
 
 func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
@@ -117,4 +118,37 @@ func updateModuleTemplateSpec(clnt client.Client,
 	}
 	moduleTemplate.Spec.Data.Object["spec"] = map[string]any{"initKey": newValue}
 	return clnt.Update(ctx, moduleTemplate)
+}
+
+func containsModuleTemplateCondition(clnt client.Client, kymaName, kymaNamespace string) error {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+	if !kyma.ContainsCondition(v1beta2.ConditionTypeModuleCatalog) {
+		return ErrNotContainsExpectedCondition
+	}
+	return nil
+}
+
+func containsNoModulesInSpec(clnt client.Client, kymaName, kymaNamespace string) error {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+	if len(kyma.Spec.Modules) != 0 {
+		return ErrContainsUnexpectedModules
+	}
+	return nil
+}
+
+func addModuleToKyma(clnt client.Client, kymaName, kymaNamespace string, module v1beta2.Module) error {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+
+	kyma.Spec.Modules = append(
+		kyma.Spec.Modules, module)
+	return runtimeClient.Update(ctx, kyma)
 }
