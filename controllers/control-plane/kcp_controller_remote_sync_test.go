@@ -234,6 +234,12 @@ var _ = FDescribe("CRDs sync to SKR and annotations updated in KCP kyma", Ordere
 	}
 	kyma.Spec.Modules = []v1beta2.Module{moduleInKcp}
 	registerControlPlaneLifecycleForKyma(kyma)
+	annotations := []string{
+		"moduletemplate-skr-crd-generation",
+		"moduletemplate-kcp-crd-generation",
+		"kyma-skr-crd-generation",
+		"kyma-kcp-crd-generation",
+	}
 
 	It("module template created", func() {
 		template, err := ModuleTemplateFactory(moduleInKcp, unstructured.Unstructured{}, false)
@@ -251,13 +257,7 @@ var _ = FDescribe("CRDs sync to SKR and annotations updated in KCP kyma", Ordere
 				return err
 			}
 
-			annotationsToBeFound := []string{
-				"moduletemplate-skr-crd-generation",
-				"moduletemplate-kcp-crd-generation",
-				"kyma-skr-crd-generation",
-				"kyma-kcp-crd-generation",
-			}
-			for _, annotation := range annotationsToBeFound {
+			for _, annotation := range annotations {
 				if _, ok := kcpKyma.Annotations[annotation]; !ok {
 					return errors.New(fmt.Sprintf("annotation: %s doesn't exit", annotation))
 				}
@@ -269,17 +269,11 @@ var _ = FDescribe("CRDs sync to SKR and annotations updated in KCP kyma", Ordere
 
 	It("CRDs generation annotation shouldn't exist in SKR kyma", func() {
 		Eventually(func() error {
-			skrKyma, err := GetKyma(ctx, runtimeClient, kyma.GetName(), kyma.GetNamespace())
+			skrKyma, err := GetKyma(ctx, runtimeClient, kyma.GetName(), controllers.DefaultRemoteSyncNamespace)
 			if err != nil {
 				return err
 			}
 
-			annotations := []string{
-				"moduletemplate-skr-crd-generation",
-				"moduletemplate-kcp-crd-generation",
-				"kyma-skr-crd-generation",
-				"kyma-kcp-crd-generation",
-			}
 			for _, annotation := range annotations {
 				if _, ok := skrKyma.Annotations[annotation]; ok {
 					return errors.New(fmt.Sprintf("annotation: %s exits in skr kyma but it shouldn't", annotation))
@@ -288,5 +282,13 @@ var _ = FDescribe("CRDs sync to SKR and annotations updated in KCP kyma", Ordere
 
 			return nil
 		}, Timeout, Interval).Should(Succeed())
+	})
+
+	It("Kyma CRD should sync to SKR and annotations get updated", func() {
+		By("Update SKR Module Template spec.data.spec field")
+		Eventually(updateModuleTemplateSpec,
+			Timeout, Interval).
+			WithArguments(runtimeClient, controllers.DefaultRemoteSyncNamespace, moduleInSkr.Name, "valueUpdated").
+			Should(Succeed())
 	})
 })
