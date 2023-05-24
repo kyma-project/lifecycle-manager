@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -115,7 +114,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	status.InitConditions(kyma, r.SyncKymaEnabled(kyma), r.WatcherEnabled(kyma))
 
 	if kyma.SkipReconciliation() {
-		logger.V(log.DebugLevel).Info("kyma gets skipped because of label")
+		logger.V(log.DebugLevel).Info(fmt.Sprintf("skipping reconciliation for Kyma: %s", kyma.Name))
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
 	}
 
@@ -137,9 +136,11 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 		if err := r.deleteRemoteKyma(ctx, kyma); err != nil {
 			return r.requeueWithError(ctx, kyma, err)
 		}
+
 		if err := r.updateStatus(ctx, kyma, v1beta2.StateDeleting, "waiting for modules to be deleted"); err != nil {
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma status after triggering deletion: %w", err))
 		}
+
 		return ctrl.Result{}, nil
 	}
 
@@ -342,6 +343,10 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		return false, err
 	}
 
+	if err := metrics.RemoveKymaStateMetrics(kyma); err != nil {
+		logger.V(log.DebugLevel).Info(fmt.Sprintf("error occurred while removing kyma state metrics: %s", err))
+	}
+
 	return false, nil
 }
 
@@ -445,29 +450,9 @@ func (r *KymaReconciler) deleteManifest(ctx context.Context, trackedManifest *v1
 	return r.Delete(ctx, &manifest, &client.DeleteOptions{})
 }
 
-// RecordKymaStatusMetrics updates prometheus metrics defined to track changes to the Kyma status.
-func (r *KymaReconciler) RecordKymaStatusMetrics(ctx context.Context, kyma *v1beta2.Kyma) {
-	logger := ctrlLog.FromContext(ctx).V(log.InfoLevel)
-	shoot := ""
-	shootFQDN, keyExists := kyma.Annotations[v1beta2.SKRDomainAnnotation]
-	if keyExists {
-		parts := strings.Split(shootFQDN, ".")
-		minFqdnParts := 2
-		if len(parts) > minFqdnParts {
-			shoot = parts[0] // hostname
-		}
-	} else {
-		logger.Info(fmt.Sprintf("expected annotation: %s not found when setting metric", v1beta2.SKRDomainAnnotation))
-	}
-
-	instanceID, keyExists := kyma.Labels[v1beta2.InstanceIDLabel]
-	if !keyExists {
-		logger.Info(fmt.Sprintf("expected label: %s not found when setting metric", v1beta2.InstanceIDLabel))
-	}
-
-	metrics.SetKymaStateGauge(kyma.Status.State, kyma.Name, shoot, instanceID)
-	for _, moduleStatus := range kyma.Status.Modules {
-		metrics.SetModuleStateGauge(moduleStatus.State, moduleStatus.Name, kyma.Name, shoot, instanceID)
+func (r *KymaReconciler) UpdateMetrics(ctx context.Context, kyma *v1beta2.Kyma) {
+	if err := metrics.UpdateAll(kyma); err != nil {
+		ctrlLog.FromContext(ctx).V(log.DebugLevel).Info(fmt.Sprintf("error occurred while updating all metrics: %s", err))
 	}
 }
 
