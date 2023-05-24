@@ -15,8 +15,11 @@ import (
 )
 
 var (
-	ErrContainsUnexpectedModules    = errors.New("kyma CR contains unexpected modules")
-	ErrNotContainsExpectedCondition = errors.New("kyma CR not contains expected condition")
+	ErrContainsUnexpectedModules     = errors.New("kyma CR contains unexpected modules")
+	ErrNotContainsExpectedCondition  = errors.New("kyma CR not contains expected condition")
+	ErrNotContainsExpectedAnnotation = errors.New("kyma CR not contains expected CRD annotation")
+	ErrContainsUnexpectedAnnotation  = errors.New("kyma CR contains unexpected CRD annotation")
+	ErrAnnotationNotUpdated          = errors.New("kyma CR annotation not updated")
 )
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
@@ -260,8 +263,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 
 			for _, annotation := range annotations {
 				if _, ok := kcpKyma.Annotations[annotation]; !ok {
-					err := fmt.Errorf("annotation: %s doesn't exit", annotation)
-					return err
+					return ErrNotContainsExpectedAnnotation
 				}
 			}
 
@@ -278,8 +280,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 
 			for _, annotation := range annotations {
 				if _, ok := skrKyma.Annotations[annotation]; ok {
-					err := fmt.Errorf("annotation: %s exits in skr kyma but it shouldn't", annotation)
-					return err
+					return ErrContainsUnexpectedAnnotation
 				}
 			}
 
@@ -320,12 +321,10 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 			}
 
 			if kcpKyma.Annotations["kyma-skr-crd-generation"] != fmt.Sprint(skrKymaCrd.Generation) {
-				err := fmt.Errorf("kyma-skr-crd-generation not updated in kcp kyma CR")
-				return err
+				return ErrAnnotationNotUpdated
 			}
 			if kcpKyma.Annotations["kyma-kcp-crd-generation"] != fmt.Sprint(skrKymaCrd.Generation) {
-				err := fmt.Errorf("kyma-kcp-crd-generation not updated in kcp kyma CR")
-				return err
+				return ErrAnnotationNotUpdated
 			}
 
 			return nil
