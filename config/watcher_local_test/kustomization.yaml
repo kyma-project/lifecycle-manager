@@ -34,9 +34,6 @@ patches:
       value: --in-kcp-mode=true
     - op: add
       path: /spec/template/spec/containers/0/args/-
-      value: --in-kcp-mode=true
-    - op: add
-      path: /spec/template/spec/containers/0/args/-
       value: --listener-http-local-mapping=9443
     - op: add
       path: /spec/template/spec/containers/0/args/-
