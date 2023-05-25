@@ -7,12 +7,12 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
@@ -118,6 +118,24 @@ func updateModuleTemplateSpec(clnt client.Client,
 	}
 	moduleTemplate.Spec.Data.Object["spec"] = map[string]any{"initKey": newValue}
 	return clnt.Update(ctx, moduleTemplate)
+}
+
+func kymaHasCondition(conditionType v1beta2.KymaConditionType, reason string, status metav1.ConditionStatus) func(
+	clnt client.Client, kymaName, kymaNamespace string) error {
+	return func(clnt client.Client, kymaName, kymaNamespace string) error {
+		kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+		if err != nil {
+			return err
+		}
+
+		for _, cnd := range kyma.Status.Conditions {
+			if cnd.Type == string(conditionType) && cnd.Reason == reason && cnd.Status == status {
+				return nil
+			}
+		}
+
+		return ErrNotContainsExpectedCondition
+	}
 }
 
 func containsModuleTemplateCondition(clnt client.Client, kymaName, kymaNamespace string) error {

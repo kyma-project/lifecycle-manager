@@ -121,6 +121,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return r.reconcile(ctx, kyma)
 }
 
+//nolint:cyclop
 func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if r.SyncKymaEnabled(kyma) {
 		var err error
@@ -162,12 +163,25 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 			}
 			return ctrl.Result{}, nil
 		}
-		if err := r.syncRemoteKyma(ctx, kyma); err != nil {
-			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not synchronize remote kyma: %w", err))
+		// update the control-plane kyma with the changes to the spec of the remote Kyma
+		if err := r.mergeSpecFromRemote(ctx, kyma); err != nil {
+			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not merge remote kyma spec into original one: %w", err))
 		}
 	}
 
-	return r.processKymaState(ctx, kyma)
+	res, err := r.processKymaState(ctx, kyma)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if r.SyncKymaEnabled(kyma) {
+		// update the remote kyma with the state of the control plane
+		if err := r.syncStatusToRemote(ctx, kyma); err != nil {
+			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not synchronize remote kyma status: %w", err))
+		}
+	}
+
+	return res, err
 }
 
 func (r *KymaReconciler) syncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
@@ -205,22 +219,51 @@ func (r *KymaReconciler) enqueueNormalEvent(kyma *v1beta2.Kyma, reason EventReas
 	r.Event(kyma, "Normal", string(reason), message)
 }
 
-func (r *KymaReconciler) syncRemoteKyma(ctx context.Context, controlPlaneKyma *v1beta2.Kyma) error {
+func (r *KymaReconciler) fetchRemoteKyma(ctx context.Context, controlPlaneKyma *v1beta2.Kyma) (*v1beta2.Kyma, error) {
 	syncContext := remote.SyncContextFromContext(ctx)
 
 	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx, controlPlaneKyma, r.RemoteSyncNamespace)
 	if err != nil {
 		if errors.Is(err, remote.ErrNotFoundAndKCPKymaUnderDeleting) {
+			return nil, err
+		}
+		return nil, fmt.Errorf("could not create or fetch remote kyma: %w", err)
+	}
+	return remoteKyma, nil
+}
+
+// syncStatusToRemote updates the status of a remote copy of given Kyma instance.
+func (r *KymaReconciler) syncStatusToRemote(ctx context.Context, controlPlaneKyma *v1beta2.Kyma) error {
+	remoteKyma, err := r.fetchRemoteKyma(ctx, controlPlaneKyma)
+	if err != nil {
+		if errors.Is(err, remote.ErrNotFoundAndKCPKymaUnderDeleting) {
 			// remote kyma not found because it's deleted, should not continue
 			return nil
 		}
-		return fmt.Errorf("could not create or fetch remote kyma: %w", err)
+		return err
 	}
+
+	syncContext := remote.SyncContextFromContext(ctx)
 	if err := syncContext.SynchronizeRemoteKyma(ctx, controlPlaneKyma, remoteKyma); err != nil {
 		return fmt.Errorf("sync run failure: %w", err)
 	}
-	remote.ReplaceWithVirtualKyma(controlPlaneKyma, remoteKyma)
+	return nil
+}
 
+// mergeSpecFromRemote modifies the given Kyma Instance Spec with the merged
+// representation of the Control Plane and the Runtime.
+func (r *KymaReconciler) mergeSpecFromRemote(
+	ctx context.Context, controlPlaneKyma *v1beta2.Kyma,
+) error {
+	remoteKyma, err := r.fetchRemoteKyma(ctx, controlPlaneKyma)
+	if err != nil {
+		if errors.Is(err, remote.ErrNotFoundAndKCPKymaUnderDeleting) {
+			// remote kyma not found because it's deleted, should not continue
+			return nil
+		}
+		return err
+	}
+	remote.MergeModules(controlPlaneKyma, remoteKyma)
 	return nil
 }
 
