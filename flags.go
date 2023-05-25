@@ -108,6 +108,7 @@ func defineFlagVar() *FlagVar {
 		" from finalizer removal. Example: 'ingressroutetcps.traefik.containo.us,*.helm.cattle.io'.")
 	flag.StringVar(&flagVar.remoteSyncNamespace, "sync-namespace", controllers.DefaultRemoteSyncNamespace,
 		"Name of the namespace for syncing remote Kyma and module catalog")
+	flag.BoolVar(&flagVar.isKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
 	return flagVar
 }
 
@@ -151,4 +152,5 @@ type FlagVar struct {
 	skipPurgingFor                         string
 	remoteSyncNamespace                    string
 	enableVerification                     bool
+	isKymaManaged                          bool
 }

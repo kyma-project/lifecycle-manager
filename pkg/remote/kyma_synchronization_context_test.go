@@ -60,7 +60,7 @@ func TestReplaceWithVirtualKyma(t *testing.T) {
 			t.Parallel()
 			kcpKyma := createKyma(testCase.kcpKyma.channel, testCase.kcpKyma.modules)
 			remoteKyma := createKyma(testCase.remoteKyma.channel, testCase.remoteKyma.modules)
-			remote.ReplaceWithVirtualKyma(kcpKyma, remoteKyma)
+			remote.MergeModules(kcpKyma, remoteKyma)
 			assert.Equal(t, testCase.expectedKyma.channel, kcpKyma.Spec.Channel)
 			var virtualModules []string
 			for _, module := range kcpKyma.Spec.Modules {
