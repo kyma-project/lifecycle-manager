@@ -39,8 +39,10 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	kyma.Labels[v1beta2.SyncLabel] = v1beta2.EnableLabelValue
 
 	kyma.Spec.Modules = append(kyma.Spec.Modules, skrModule)
-	remoteKyma := kyma
+	remoteKyma := &v1beta2.Kyma{}
+
 	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
+	remoteKyma.Namespace = controllers.DefaultRemoteSyncNamespace
 
 	registerControlPlaneLifecycleForKyma(kyma)
 
@@ -161,8 +163,10 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	}
 	template, err := ModuleTemplateFactory(moduleInSkr, unstructured.Unstructured{}, false)
 	Expect(err).ShouldNot(HaveOccurred())
-	remoteKyma := kyma
+	remoteKyma := &v1beta2.Kyma{}
+
 	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
+	remoteKyma.Namespace = controllers.DefaultRemoteSyncNamespace
 	registerControlPlaneLifecycleForKyma(kyma)
 
 	It("Kyma CR should be synchronized in both clusters", func() {
@@ -251,8 +255,10 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	}
 	kyma.Spec.Modules = []v1beta2.Module{moduleInKcp}
 
-	remoteKyma := kyma
+	remoteKyma := &v1beta2.Kyma{}
+
 	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
+	remoteKyma.Namespace = controllers.DefaultRemoteSyncNamespace
 	registerControlPlaneLifecycleForKyma(kyma)
 	annotations := []string{
 		"moduletemplate-skr-crd-generation",
