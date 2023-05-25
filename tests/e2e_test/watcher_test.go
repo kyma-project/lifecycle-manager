@@ -19,6 +19,7 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -106,9 +107,26 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 			test := true
 			Expect(test).Should(BeTrue())
 		})
+
+		It("Should delete Kyma CR on remote cluster", func() {
+			Eventually(deleteKymaCR, timeout, interval).
+				WithContext(ctx).
+				WithArguments(kymaName, kymaNamespace, channel, controlPlaneClient).
+				Should(Succeed())
+
+			Eventually(deleteKymaSecret, timeout, interval).
+				WithContext(ctx).
+				WithArguments(kymaName, kymaNamespace, channel, controlPlaneClient).
+				Should(Succeed())
+
+			Eventually(checkRemoteKymaCRDeleted, timeout, interval).
+				WithContext(ctx).
+				WithArguments(kymaName, remoteNamespace, runtimeClient).
+				Should(Succeed())
+		})
 	})
 
-func createKymaCR(ctx context.Context, kymaName, kymaNamespace, channel string, k8sclient client.Client) error {
+func createKymaCR(ctx context.Context, kymaName, kymaNamespace, channel string, k8sClient client.Client) error {
 	kyma := &v1beta2.Kyma{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:        kymaName,
@@ -120,10 +138,10 @@ func createKymaCR(ctx context.Context, kymaName, kymaNamespace, channel string, 
 			Modules: nil,
 		},
 	}
-	return k8sclient.Create(ctx, kyma)
+	return k8sClient.Create(ctx, kyma)
 }
 
-func createKymaSecret(ctx context.Context, kymaName, kymaNamespace, channel string, k8sclient client.Client) error {
+func createKymaSecret(ctx context.Context, kymaName, kymaNamespace, channel string, k8sClient client.Client) error {
 	patchedRuntimeConfig := strings.ReplaceAll(string(*runtimeConfig), "0.0.0.0", "host.k3d.internal")
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -136,14 +154,34 @@ func createKymaSecret(ctx context.Context, kymaName, kymaNamespace, channel stri
 		},
 		Data: map[string][]byte{"config": []byte(patchedRuntimeConfig)},
 	}
-	return k8sclient.Create(ctx, secret)
+	return k8sClient.Create(ctx, secret)
+}
+
+func deleteKymaSecret(ctx context.Context, kymaName, kymaNamespace, channel string, k8sClient client.Client) error {
+	secret := &corev1.Secret{}
+	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, secret)
+	if k8serrors.IsNotFound(err) {
+		return nil
+	}
+	Expect(err).ToNot(HaveOccurred())
+	return k8sClient.Delete(ctx, secret)
+}
+
+func deleteKymaCR(ctx context.Context, kymaName, kymaNamespace, channel string, k8sClient client.Client) error {
+	kyma := &v1beta2.Kyma{}
+	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma)
+	if k8serrors.IsNotFound(err) {
+		return nil
+	}
+	Expect(err).ToNot(HaveOccurred())
+	return k8sClient.Delete(ctx, kyma)
 }
 
 func checkRemoteKymaCR(ctx context.Context,
-	kymaName, kymaNamespace string, wantedModules []v1beta2.Module, k8sclient client.Client,
+	kymaName, kymaNamespace string, wantedModules []v1beta2.Module, k8sClient client.Client,
 ) error {
 	kyma := &v1beta2.Kyma{}
-	err := k8sclient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma)
+	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma)
 	if err != nil {
 		return err
 	}
@@ -165,17 +203,28 @@ func checkRemoteKymaCR(ctx context.Context,
 	return nil
 }
 
-func changeKymaCRChannel(ctx context.Context,
-	kymaName, kymaNamespace string, channel string, k8sclient client.Client,
+func checkRemoteKymaCRDeleted(ctx context.Context,
+	kymaName, kymaNamespace string, k8sClient client.Client,
 ) error {
 	kyma := &v1beta2.Kyma{}
-	if err := k8sclient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
+	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma)
+	if k8serrors.IsNotFound(err) {
+		return nil
+	}
+	return err
+}
+
+func changeKymaCRChannel(ctx context.Context,
+	kymaName, kymaNamespace string, channel string, k8sClient client.Client,
+) error {
+	kyma := &v1beta2.Kyma{}
+	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
 		return err
 	}
 
 	kyma.Spec.Channel = channel
 
-	return k8sclient.Update(ctx, kyma)
+	return k8sClient.Update(ctx, kyma)
 }
 
 func checkKLMLogs(ctx context.Context, logMsg string, config *rest.Config, k8sClient client.Client) error {
@@ -232,21 +281,21 @@ func getPodLogs(ctx context.Context, config *rest.Config, pod *corev1.Pod) (stri
 	return str, nil
 }
 
-func deleteWatcherDeployment(ctx context.Context, watcherName, watcherNamespace string, k8sclient client.Client) error {
+func deleteWatcherDeployment(ctx context.Context, watcherName, watcherNamespace string, k8sClient client.Client) error {
 	watcherDeployment := &v1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      watcherName,
 			Namespace: watcherNamespace,
 		},
 	}
-	return k8sclient.Delete(ctx, watcherDeployment)
+	return k8sClient.Delete(ctx, watcherDeployment)
 }
 
 func checkWatcherDeploymentReady(ctx context.Context,
-	deploymentName, deploymentNamespace string, k8sclient client.Client,
+	deploymentName, deploymentNamespace string, k8sClient client.Client,
 ) error {
 	watcherDeployment := &v1.Deployment{}
-	if err := k8sclient.Get(ctx,
+	if err := k8sClient.Get(ctx,
 		client.ObjectKey{Name: deploymentName, Namespace: deploymentNamespace},
 		watcherDeployment,
 	); err != nil {
@@ -261,7 +310,7 @@ func checkWatcherDeploymentReady(ctx context.Context,
 }
 
 func deleteCertificateSecret(ctx context.Context,
-	secretName, secretNamespace string, k8sclient client.Client,
+	secretName, secretNamespace string, k8sClient client.Client,
 ) error {
 	certificateSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -269,14 +318,14 @@ func deleteCertificateSecret(ctx context.Context,
 			Namespace: secretNamespace,
 		},
 	}
-	return k8sclient.Delete(ctx, certificateSecret)
+	return k8sClient.Delete(ctx, certificateSecret)
 }
 
 func checkCertificateSecretExists(ctx context.Context,
-	secretName, secretNamespace string, k8sclient client.Client,
+	secretName, secretNamespace string, k8sClient client.Client,
 ) error {
 	certificateSecret := &corev1.Secret{}
-	return k8sclient.Get(ctx,
+	return k8sClient.Get(ctx,
 		client.ObjectKey{Name: secretName, Namespace: secretNamespace},
 		certificateSecret,
 	)
