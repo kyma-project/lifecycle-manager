@@ -25,10 +25,10 @@ import (
 
 const (
 	timeout      = 10 * time.Second
-	readyTimeout = 30 * time.Second
+	readyTimeout = 1 * time.Minute
 	interval     = 1 * time.Second
 
-	watcherPodPrefix    = "skr-webhook-"
+	watcherPodPrefix    = "skr-webhook"
 	watcherPodContainer = "server"
 
 	KLMPodPrefix    = "klm-controller-manager"
@@ -247,7 +247,7 @@ func checkKLMLogs(ctx context.Context, logMsg string, config *rest.Config, k8sCl
 	if err != nil {
 		return err
 	}
-	return fmt.Errorf("%w\n Expected: %s\n Given: %s Watcher-Server-Logs: %s", errLogNotFound, logMsg, logs, watcherLogs)
+	return fmt.Errorf("%w\n Expected: %s\n Given KLM logs: %s Watcher-Server-Logs: %s", errLogNotFound, logMsg, logs, watcherLogs)
 }
 
 func getPodLogs(ctx context.Context, config *rest.Config, k8sClient client.Client, podPrefix, container string) (string, error) {
@@ -256,6 +256,7 @@ func getPodLogs(ctx context.Context, config *rest.Config, k8sClient client.Clien
 	if err := k8sClient.List(ctx, podList, &client.ListOptions{Namespace: "kcp-system"}); err != nil {
 		return "", err
 	}
+	fmt.Printf("Found Pods:  %v", &podList)
 
 	for _, p := range podList.Items {
 		pod = &p
