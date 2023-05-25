@@ -291,7 +291,7 @@ func getPodLogs(ctx context.Context, config *rest.Config, k8sClient client.Clien
 	}
 	str := buf.String()
 
-	return str, errors.New("test")
+	return str, nil
 }
 
 func deleteWatcherDeployment(ctx context.Context, watcherName, watcherNamespace string, k8sClient client.Client) error {
