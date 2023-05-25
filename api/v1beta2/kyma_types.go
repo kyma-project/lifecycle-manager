@@ -18,6 +18,7 @@ package v1beta2
 
 import (
 	"strings"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -398,6 +399,11 @@ func (kyma *Kyma) HasSyncLabelEnabled() bool {
 func (kyma *Kyma) SkipReconciliation() bool {
 	skip, found := kyma.Labels[SkipReconcileLabel]
 	return found && strings.ToLower(skip) == EnableLabelValue
+}
+
+func (kyma *Kyma) WithInReadyInterval(interval time.Duration) bool {
+	diff := time.Since(kyma.Status.LastUpdateTime.Time)
+	return diff < interval && kyma.Status.State == StateReady
 }
 
 func (kyma *Kyma) IsInternal() bool {

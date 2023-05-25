@@ -112,6 +112,12 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	if kyma.WithInReadyInterval(r.RequeueIntervals.Success) {
+		logger.V(log.DebugLevel).
+			Info(fmt.Sprintf("lastOperation within %+v, skip reconciliation", r.RequeueIntervals.Success))
+		return ctrl.Result{}, nil
+	}
+
 	status.InitConditions(kyma, r.SyncKymaEnabled(kyma), r.WatcherEnabled(kyma))
 
 	if kyma.SkipReconciliation() {
