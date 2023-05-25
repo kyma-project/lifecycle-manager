@@ -15,7 +15,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 )
 
 const (
@@ -198,14 +197,10 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnersReferences(object metav1.Obj
 	return nil
 }
 
-var _ inject.Scheme = &RestrictedEnqueueRequestForOwner{}
-
 // InjectScheme is called by the Controller to provide a singleton scheme to the EnqueueRequestForOwner.
 func (e *RestrictedEnqueueRequestForOwner) InjectScheme(s *runtime.Scheme) error {
 	return e.parseOwnerTypeGroupKind(s)
 }
-
-var _ inject.Mapper = &RestrictedEnqueueRequestForOwner{}
 
 // InjectMapper  is called by the Controller to provide the rest mapper used by the manager.
 func (e *RestrictedEnqueueRequestForOwner) InjectMapper(m meta.RESTMapper) error {
