@@ -3,6 +3,8 @@ package remote_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -58,13 +60,14 @@ func TestReplaceWithVirtualKyma(t *testing.T) {
 			t.Parallel()
 			kcpKyma := createKyma(testCase.kcpKyma.channel, testCase.kcpKyma.modules)
 			remoteKyma := createKyma(testCase.remoteKyma.channel, testCase.remoteKyma.modules)
-			remote.ReplaceWithVirtualKyma(kcpKyma, remoteKyma)
+			remote.MergeModules(kcpKyma, remoteKyma)
 			assert.Equal(t, testCase.expectedKyma.channel, kcpKyma.Spec.Channel)
-			virtualModules := []string{}
+			var virtualModules []string
 			for _, module := range kcpKyma.Spec.Modules {
 				virtualModules = append(virtualModules, module.Name)
 			}
-			assert.Equal(t, testCase.expectedKyma.modules, virtualModules)
+
+			require.ElementsMatch(t, testCase.expectedKyma.modules, virtualModules)
 		})
 	}
 }

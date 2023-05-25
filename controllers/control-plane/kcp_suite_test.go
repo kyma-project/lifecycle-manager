@@ -63,6 +63,7 @@ const UseRandomPort = "0"
 
 var (
 	controlPlaneClient client.Client        //nolint:gochecknoglobals
+	runtimeClient      client.Client        //nolint:gochecknoglobals
 	k8sManager         manager.Manager      //nolint:gochecknoglobals
 	controlPlaneEnv    *envtest.Environment //nolint:gochecknoglobals
 	runtimeEnv         *envtest.Environment //nolint:gochecknoglobals
@@ -141,12 +142,13 @@ var _ = BeforeSuite(func() {
 		KcpRestConfig:       k8sManager.GetConfig(),
 		InKCPMode:           true,
 		RemoteSyncNamespace: controllers.DefaultRemoteSyncNamespace,
+		IsManagedKyma:       true,
 	}).SetupWithManager(k8sManager, controller.Options{},
 		controllers.SetupUpSetting{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())
 
 	controlPlaneClient = k8sManager.GetClient()
-	_, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
+	runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
 
 	go func() {
 		defer GinkgoRecover()

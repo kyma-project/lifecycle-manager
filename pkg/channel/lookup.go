@@ -34,7 +34,7 @@ type ModuleTemplateTO struct {
 type ModuleTemplatesByModuleName map[string]*ModuleTemplateTO
 
 func GetTemplates(
-	ctx context.Context, kymaClient client.Reader, kyma *v1beta2.Kyma,
+	ctx context.Context, kymaClient client.Reader, kyma *v1beta2.Kyma, syncEnabled bool,
 ) ModuleTemplatesByModuleName {
 	logger := ctrlLog.FromContext(ctx)
 	templates := make(ModuleTemplatesByModuleName)
@@ -45,7 +45,7 @@ func GetTemplates(
 		switch {
 		case module.RemoteModuleTemplateRef == "":
 			template = NewTemplateLookup(kymaClient, module, kyma.Spec.Channel).WithContext(ctx)
-		case kyma.SyncEnabled():
+		case syncEnabled:
 			runtimeClient := remote.SyncContextFromContext(ctx).RuntimeClient
 			originalModuleName := module.Name
 			module.Name = module.RemoteModuleTemplateRef // To search template with the Remote Ref
@@ -163,7 +163,9 @@ func CheckValidTemplateUpdate(
 		// case we want to suspend updating the module until we reach v2.0.0 in regular, since downgrades
 		// are not supported. To circumvent this, a module can be uninstalled and then reinstalled in the old channel.
 		if !v1beta2.IsValidVersionChange(versionInTemplate, versionInStatus) {
-			msg := "ignore channel skew, as a higher version of the module was previously installed"
+			msg := fmt.Sprintf("ignore channel skew (from %s to %s), "+
+				"as a higher version (%s) of the module was previously installed",
+				moduleStatus.Channel, moduleTemplate.Spec.Channel, versionInStatus.String())
 			checkLog.Info(msg)
 			moduleTemplate.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
 			return
@@ -230,7 +232,7 @@ func (c *TemplateLookup) WithContext(ctx context.Context) ModuleTemplateTO {
 
 	logger := ctrlLog.FromContext(ctx)
 	if actualChannel != c.defaultChannel {
-		logger.Info(
+		logger.V(log.DebugLevel).Info(
 			fmt.Sprintf(
 				"using %s (instead of %s) for module %s",
 				actualChannel, c.defaultChannel, c.module.Name,
