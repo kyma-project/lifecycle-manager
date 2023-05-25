@@ -99,6 +99,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	spec, err := r.Spec(ctx, obj)
 	if err != nil {
+		if !obj.GetDeletionTimestamp().IsZero() {
+			return r.removeFinalizer(ctx, obj)
+		}
 		return r.ssaStatus(ctx, obj)
 	}
 
@@ -113,6 +116,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	renderer, err := InitializeRenderer(ctx, obj, spec, clnt, r.Options)
 	if err != nil {
+		if !obj.GetDeletionTimestamp().IsZero() {
+			return r.removeFinalizer(ctx, obj)
+		}
 		return r.ssaStatus(ctx, obj)
 	}
 
@@ -129,20 +135,23 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if !obj.GetDeletionTimestamp().IsZero() {
-		if controllerutil.RemoveFinalizer(obj, r.Finalizer) {
-			return ctrl.Result{}, r.Update(ctx, obj) // no SSA since delete does not work for finalizers.
-		}
-		msg := fmt.Sprintf("waiting as other finalizers are present: %s", obj.GetFinalizers())
-		r.Event(obj, "Normal", "FinalizerRemoval", msg)
-		obj.SetStatus(obj.GetStatus().WithState(StateDeleting).WithOperation(msg))
-		return r.ssaStatus(ctx, obj)
+		return r.removeFinalizer(ctx, obj)
 	}
-
 	if err := r.syncResources(ctx, clnt, obj, target); err != nil {
 		return r.ssaStatus(ctx, obj)
 	}
 
 	return r.CtrlOnSuccess, nil
+}
+
+func (r *Reconciler) removeFinalizer(ctx context.Context, obj Object) (ctrl.Result, error) {
+	if controllerutil.RemoveFinalizer(obj, r.Finalizer) {
+		return ctrl.Result{}, r.Update(ctx, obj) // no SSA since delete does not work for finalizers.
+	}
+	msg := fmt.Sprintf("waiting as other finalizers are present: %s", obj.GetFinalizers())
+	r.Event(obj, "Normal", "FinalizerRemoval", msg)
+	obj.SetStatus(obj.GetStatus().WithState(StateDeleting).WithOperation(msg))
+	return r.ssaStatus(ctx, obj)
 }
 
 func (r *Reconciler) partialObjectMetadata(obj Object) *metav1.PartialObjectMetadata {
