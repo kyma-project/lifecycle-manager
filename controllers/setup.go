@@ -2,11 +2,8 @@ package controllers
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	corev1 "k8s.io/api/core/v1"
@@ -37,26 +34,20 @@ const (
 	WatcherControllerName = "watcher"
 )
 
-var (
-	errConvertingWatched      = errors.New("error converting watched to object key")
-	errParsingWatched         = errors.New("error getting watched object from unstructured event")
-	errConvertingWatcherEvent = errors.New("error converting watched object to unstructured event")
-)
-
 // SetupWithManager sets up the Kyma controller with the Manager.
 func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 	options controller.Options, settings SetupUpSetting,
 ) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).WithOptions(options).
 		Watches(
-			&source.Kind{Type: &v1beta2.ModuleTemplate{}},
-			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch(context.TODO())),
+			&v1beta2.ModuleTemplate{},
+			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch()),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		// here we define a watch on secrets for the lifecycle-manager so that the cache is picking up changes
-		Watches(&source.Kind{Type: &corev1.Secret{}}, handler.Funcs{})
+		Watches(&corev1.Secret{}, handler.Funcs{})
 
-	controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: &v1beta2.Manifest{}},
+	controllerBuilder = controllerBuilder.Watches(&v1beta2.Manifest{},
 		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1beta2.Kyma{}, IsController: true})
 
 	var runnableListener *listener.SKREventListener
@@ -93,36 +84,15 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 }
 
 func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, eventChannel *source.Channel) {
-	controllerBuilder.Watches(eventChannel, &handler.Funcs{
-		GenericFunc: func(event event.GenericEvent, queue workqueue.RateLimitingInterface) {
-
-			logger := ctrl.Log.WithName("listener")
-			unstructWatcherEvt, conversionOk := event.Object.(*unstructured.Unstructured)
-			if !conversionOk {
-				logger.Error(errConvertingWatcherEvent, fmt.Sprintf("event: %v", event.Object))
-				return
-			}
-
-			// get owner object from unstructured event, owner = KymaCR object reference in KCP
-			unstructuredOwner, ok := unstructWatcherEvt.Object["owner"]
-			if !ok {
-				logger.Error(errParsingWatched, fmt.Sprintf("unstructured event: %v", unstructWatcherEvt))
-				return
-			}
-
-			ownerObjectKey, conversionOk := unstructuredOwner.(client.ObjectKey)
-			if !conversionOk {
-				logger.Error(errConvertingWatched, fmt.Sprintf("unstructured Owner object: %v", unstructuredOwner))
-				return
-			}
-
-			logger.Info(
-				fmt.Sprintf("event received from SKR, adding %s to queue",
-					ownerObjectKey),
+	controllerBuilder.WatchesRawSource(eventChannel, &handler.Funcs{
+		GenericFunc: func(ctx context.Context, event event.GenericEvent, queue workqueue.RateLimitingInterface) {
+			ctrl.Log.WithName("listener").Info(
+				fmt.Sprintf("event coming from SKR, adding %s to queue",
+					client.ObjectKeyFromObject(event.Object).String()),
 			)
 
 			queue.Add(ctrl.Request{
-				NamespacedName: ownerObjectKey,
+				NamespacedName: client.ObjectKeyFromObject(event.Object),
 			})
 		},
 	})

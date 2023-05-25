@@ -14,6 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -61,24 +62,22 @@ func InitializeKymaSynchronizationContext(ctx context.Context, kcp Client, cache
 }
 
 func (c *KymaSynchronizationContext) GetRemotelySyncedKyma(
-	ctx context.Context, remoteSyncNamespace string,
+	ctx context.Context, controlPlaneKyma *v1beta2.Kyma, remoteSyncNamespace string,
 ) (*v1beta2.Kyma, error) {
 	remoteKyma := &v1beta2.Kyma{}
-	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
-	remoteKyma.Namespace = remoteSyncNamespace
-	if err := c.RuntimeClient.Get(ctx, client.ObjectKeyFromObject(remoteKyma), remoteKyma); err != nil {
-		return remoteKyma, err
+	if err := c.RuntimeClient.Get(ctx, GetRemoteObjectKey(controlPlaneKyma, remoteSyncNamespace), remoteKyma); err != nil {
+		return nil, err
 	}
 
 	return remoteKyma, nil
 }
 
 func RemoveFinalizerFromRemoteKyma(
-	ctx context.Context, remoteSyncNamespace string,
+	ctx context.Context, kyma *v1beta2.Kyma, remoteSyncNamespace string,
 ) error {
 	syncContext := SyncContextFromContext(ctx)
 
-	remoteKyma, err := syncContext.GetRemotelySyncedKyma(ctx, remoteSyncNamespace)
+	remoteKyma, err := syncContext.GetRemotelySyncedKyma(ctx, kyma, remoteSyncNamespace)
 	if err != nil {
 		return err
 	}
@@ -89,10 +88,10 @@ func RemoveFinalizerFromRemoteKyma(
 }
 
 func DeleteRemotelySyncedKyma(
-	ctx context.Context, remoteSyncNamespace string,
+	ctx context.Context, kyma *v1beta2.Kyma, remoteSyncNamespace string,
 ) error {
 	syncContext := SyncContextFromContext(ctx)
-	remoteKyma, err := syncContext.GetRemotelySyncedKyma(ctx, remoteSyncNamespace)
+	remoteKyma, err := syncContext.GetRemotelySyncedKyma(ctx, kyma, remoteSyncNamespace)
 	if err != nil {
 		return err
 	}
@@ -167,9 +166,14 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 	ctx context.Context, kyma *v1beta2.Kyma, remoteSyncNamespace string,
 ) (*v1beta2.Kyma, error) {
 	recorder := adapter.RecorderFromContext(ctx)
+	remoteKyma := &v1beta2.Kyma{}
 
-	remoteKyma, err := c.GetRemotelySyncedKyma(ctx, remoteSyncNamespace)
-	if meta.IsNoMatchError(err) || CRDNotFoundErr(err) {
+	remoteKyma.Name = kyma.Name
+	remoteKyma.Namespace = remoteSyncNamespace
+
+	err := c.RuntimeClient.Get(ctx, client.ObjectKeyFromObject(remoteKyma), remoteKyma)
+
+	if meta.IsNoMatchError(err) || discovery.IsGroupDiscoveryFailedError(err) {
 		recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
 
 		if err := c.CreateOrUpdateCRD(ctx, v1beta2.KymaKind.Plural()); err != nil {
@@ -200,7 +204,7 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 		return nil, err
 	}
 
-	return remoteKyma, nil
+	return remoteKyma, err
 }
 
 func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(
@@ -224,6 +228,7 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(
 		recorder.Event(controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
 		return err
 	}
+
 	return nil
 }
 
@@ -249,6 +254,12 @@ func MergeModules(
 		controlPlaneKyma.Spec.Modules = append(controlPlaneKyma.Spec.Modules, m)
 	}
 	controlPlaneKyma.Spec.Channel = remoteKyma.Spec.Channel
+}
+
+func GetRemoteObjectKey(kyma *v1beta2.Kyma, remoteSyncNamespace string) client.ObjectKey {
+	name := kyma.Name
+	namespace := remoteSyncNamespace
+	return client.ObjectKey{Namespace: namespace, Name: name}
 }
 
 // SyncWatcherLabelsAnnotations inserts labels into the given KymaCR, which are needed to ensure

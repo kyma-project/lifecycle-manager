@@ -5,18 +5,19 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func NewCacheFunc() cache.NewCacheFunc {
+func NewCacheOptions() cache.Options {
 	cacheLabelSelector := labels.SelectorFromSet(
 		labels.Set{v1beta2.ManagedBy: v1beta2.OperatorName},
 	)
-	return cache.BuilderWithOptions(cache.Options{
-		SelectorsByObject: cache.SelectorsByObject{
+	return cache.Options{
+		ByObject: map[client.Object]cache.ByObject{
 			&corev1.Secret{}: {Label: cacheLabelSelector},
 			&corev1.Service{}: {Label: labels.SelectorFromSet(labels.Set{
 				"app": "istio-ingressgateway",
 			})},
 		},
-	})
+	}
 }

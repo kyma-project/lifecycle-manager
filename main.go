@@ -41,7 +41,6 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/strings/slices"
-
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -105,7 +104,7 @@ func main() {
 		go pprofStartServer(flagVar.pprofAddr, flagVar.pprofServerTimeout)
 	}
 
-	setupManager(flagVar, controllers.NewCacheFunc(), scheme)
+	setupManager(flagVar, controllers.NewCacheOptions(), scheme)
 }
 
 func pprofStartServer(addr string, timeout time.Duration) {
@@ -129,7 +128,7 @@ func pprofStartServer(addr string, timeout time.Duration) {
 	}
 }
 
-func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *runtime.Scheme) {
+func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *runtime.Scheme) {
 	config := ctrl.GetConfigOrDie()
 	config.QPS = float32(flagVar.clientQPS)
 	config.Burst = flagVar.clientBurst
@@ -138,12 +137,10 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 		config, ctrl.Options{
 			Scheme:                 scheme,
 			MetricsBindAddress:     flagVar.metricsAddr,
-			Port:                   port,
 			HealthProbeBindAddress: flagVar.probeAddr,
 			LeaderElection:         flagVar.enableLeaderElection,
 			LeaderElectionID:       "893110f7.kyma-project.io",
-			NewCache:               newCacheFunc,
-			NewClient:              NewClient,
+			Cache:                  newCacheOptions,
 		},
 	)
 	if err != nil {
@@ -219,25 +216,6 @@ func controllerOptionsFromFlagVar(flagVar *FlagVar) controller.Options {
 
 		CacheSyncTimeout: flagVar.cacheSyncTimeout,
 	}
-}
-
-func NewClient(
-	cache cache.Cache,
-	config *rest.Config,
-	options client.Options,
-	uncachedObjects ...client.Object,
-) (client.Client, error) {
-	clnt, err := client.New(config, options)
-	if err != nil {
-		return nil, err
-	}
-	return client.NewDelegatingClient(
-		client.NewDelegatingClientInput{
-			CacheReader:     cache,
-			Client:          clnt,
-			UncachedObjects: uncachedObjects,
-		},
-	)
 }
 
 func setupKymaReconciler(mgr ctrl.Manager,
