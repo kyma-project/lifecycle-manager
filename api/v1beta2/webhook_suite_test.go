@@ -132,7 +132,6 @@ func SetupWebhook() {
 	Expect((&v1beta2.Kyma{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
 	Expect((&v1beta2.Manifest{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
 	Expect((&v1beta2.Watcher{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
-
 	//+kubebuilder:scaffold:webhook
 
 	go func() {
