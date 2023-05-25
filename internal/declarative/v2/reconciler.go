@@ -75,8 +75,7 @@ func newResourcesCondition(obj Object) metav1.Condition {
 }
 
 //nolint:funlen
-//nolint:cyclop
-func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) { //nolint:cyclop
 	obj := r.prototype.DeepCopyObject().(Object)
 	if err := r.Get(ctx, req.NamespacedName, obj); err != nil {
 		log.FromContext(ctx).Info(req.NamespacedName.String() + " got deleted!")
