@@ -77,6 +77,7 @@ type KymaReconciler struct {
 	ComponentDescriptorCache *ocmextensions.ComponentDescriptorCache
 	InKCPMode                bool
 	RemoteSyncNamespace      string
+	IsManagedKyma            bool
 }
 
 //nolint:lll
@@ -503,7 +504,7 @@ func (r *KymaReconciler) WatcherEnabled(kyma *v1beta2.Kyma) bool {
 	return r.SyncKymaEnabled(kyma) && r.SKRWebhookManager != nil
 }
 
-func (r *KymaReconciler) IsKymaManaged() bool {
+func (r *KymaReconciler) IsInKcp() bool {
 	return r.InKCPMode
 }
 
@@ -513,4 +514,8 @@ func (r *KymaReconciler) SyncKymaEnabled(kyma *v1beta2.Kyma) bool {
 	}
 
 	return kyma.HasSyncLabelEnabled()
+}
+
+func (r *KymaReconciler) IsKymaManaged() bool {
+	return r.IsManagedKyma
 }
