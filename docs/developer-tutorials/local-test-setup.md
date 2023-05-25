@@ -27,7 +27,7 @@ This setup is deployed with the following security features enabled:
    ```
    Add entry for your local k3d registry created in the previous steps
    ```
-   127.0.0.1 k3d-registry.localhost
+   127.0.0.1 k3d-kcp-local-registry
    ```
 
 3. Install other pre-requisites required by the lifecycle-manager
@@ -68,11 +68,11 @@ This setup is deployed with the following security features enabled:
 
    ```shell
    kyma alpha create module -p ../template-operator --version 1.2.3 \
-   --registry k3d-registry.localhost:5111 --insecure
+   --registry k3d-kcp-local-registry:5001 --insecure
    ```
 6. Verify images has been pushed to local registry:
    ```shell
-   curl http://k3d-registry.localhost:5111/v2/_catalog\?n\=100
+   curl http://k3d-kcp-local-registry:5001/v2/_catalog\?n\=100
    ```
    The output should look like the following:
    ```shell
@@ -81,13 +81,13 @@ This setup is deployed with the following security features enabled:
 7. Open the generated `template.yaml` file and change the following line:
    ```yaml
     <...>
-      - baseUrl: k3d-registry.localhost:5111
+      - baseUrl: k3d-kcp-local-registry:5001
     <...>
    ```
    To the following:
     ```yaml
     <...>
-      - baseUrl: k3d-registry.localhost:5000
+      - baseUrl: k3d-kcp-local-registry:5000
     <...>
    ```
    This needs to be done since the operators are running inside of two local k3d cluster, and the internal port for the k3d registry is set by default to `5000`.
@@ -127,6 +127,7 @@ k3d cluster create skr-local
    metadata:
       annotations:
         skr-domain: "example.domain.com"
+        operator.kyma-project.io/sync: "true"
       name: kyma-sample
       namespace: kcp-system
    spec:

@@ -62,7 +62,7 @@ function provision_k3d() {
 
   FILE=/etc/hosts
   if [ -f "$FILE" ]; then
-      echo "127.0.0.1 k3d-registry.localhost" >> $FILE
+      echo "127.0.0.1 k3d-kcp-registry" >> $FILE
   else
       log::error "$FILE does not exist."
       exit 1
@@ -91,12 +91,12 @@ installKcpComponents
 pwd
 cd $KLM_SOURCES_DIR
 pwd
-if make local-deploy-with-watcher IMG=jaythedevil666/klm:klme2e; then
+if make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:latest; then
   log::success "KLM deployed successfully"
 else
   log::error "Deploy encountered some error, will retry"
   sleep 20
-  make local-deploy-with-watcher IMG=jaythedevil666/klm:klme2e
+  make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:latest
 fi
 
 cd tests/e2e_test
