@@ -154,7 +154,7 @@ var _ = Describe("Kyma with remote module templates", Ordered, func() {
 	})
 })
 
-var _ = FDescribe("Kyma sync into Remote Cluster", Ordered, func() {
+var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-remote-skr")
 	kyma.Labels[v1beta2.SyncLabel] = v1beta2.EnableLabelValue
 	moduleInSkr := v1beta2.Module{
