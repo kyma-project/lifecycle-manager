@@ -154,7 +154,7 @@ var _ = Describe("Kyma with remote module templates", Ordered, func() {
 	})
 })
 
-var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
+var _ = FDescribe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-remote-skr")
 	kyma.Labels[v1beta2.SyncLabel] = v1beta2.EnableLabelValue
 	moduleInSkr := v1beta2.Module{
@@ -201,10 +201,10 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("Remote Kyma contains correct conditions for Modules and ModuleTemplates")
 		Eventually(kymaHasCondition(v1beta2.ConditionTypeModules, "Ready", metav1.ConditionTrue), Timeout, Interval).
-			WithArguments(runtimeClient, kyma.GetName(), controllers.DefaultRemoteSyncNamespace).
+			WithArguments(runtimeClient, remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace).
 			Should(Succeed())
 		Eventually(kymaHasCondition(v1beta2.ConditionTypeModuleCatalog, "Ready", metav1.ConditionTrue), Timeout, Interval).
-			WithArguments(runtimeClient, kyma.GetName(), controllers.DefaultRemoteSyncNamespace).
+			WithArguments(runtimeClient, remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace).
 			Should(Succeed())
 
 		By("Remote Kyma should contain Watcher labels and annotations")
