@@ -25,7 +25,7 @@ import (
 
 const (
 	timeout      = 10 * time.Second
-	readyTimeout = 1 * time.Minute
+	readyTimeout = 30 * time.Second
 	interval     = 1 * time.Second
 
 	watcherPodPrefix    = "skr-webhook"
@@ -33,6 +33,9 @@ const (
 
 	KLMPodPrefix    = "klm-controller-manager"
 	KLMPodContainer = "manager"
+
+	controlPlaneNamespace = "kcp-system"
+	runtimeNamespace      = "kyma-system"
 )
 
 var (
@@ -234,7 +237,7 @@ func changeKymaCRChannel(ctx context.Context,
 }
 
 func checkKLMLogs(ctx context.Context, logMsg string, config *rest.Config, k8sClient, runtimeClient client.Client) error {
-	logs, err := getPodLogs(ctx, config, k8sClient, KLMPodPrefix, KLMPodContainer)
+	logs, err := getPodLogs(ctx, config, k8sClient, controlPlaneNamespace, KLMPodPrefix, KLMPodContainer)
 	if err != nil {
 		return err
 	}
@@ -243,23 +246,23 @@ func checkKLMLogs(ctx context.Context, logMsg string, config *rest.Config, k8sCl
 		return nil
 	}
 
-	watcherLogs, err := getPodLogs(ctx, config, runtimeClient, watcherPodPrefix, watcherPodContainer)
+	watcherLogs, err := getPodLogs(ctx, config, runtimeClient, runtimeNamespace, watcherPodPrefix, watcherPodContainer)
 	if err != nil {
 		return err
 	}
 	return fmt.Errorf("%w\n Expected: %s\n Given KLM logs: %s Watcher-Server-Logs: %s", errLogNotFound, logMsg, logs, watcherLogs)
 }
 
-func getPodLogs(ctx context.Context, config *rest.Config, k8sClient client.Client, podPrefix, container string) (string, error) {
+func getPodLogs(ctx context.Context, config *rest.Config, k8sClient client.Client, namespace, podPrefix, container string) (string, error) {
 	pod := &corev1.Pod{}
 	podList := &corev1.PodList{}
-	if err := k8sClient.List(ctx, podList, &client.ListOptions{Namespace: "kcp-system"}); err != nil {
+	if err := k8sClient.List(ctx, podList, &client.ListOptions{Namespace: namespace}); err != nil {
 		return "", err
 	}
-	fmt.Printf("Found Pods:  %v", &podList)
 
 	for _, p := range podList.Items {
 		pod = &p
+		GinkgoWriter.Printf("Found Pods:  %s/%s\n", pod.Namespace, pod.Name)
 		if strings.HasPrefix(pod.Name, podPrefix) {
 			break
 		}
@@ -288,7 +291,7 @@ func getPodLogs(ctx context.Context, config *rest.Config, k8sClient client.Clien
 	}
 	str := buf.String()
 
-	return str, nil
+	return str, errors.New("test")
 }
 
 func deleteWatcherDeployment(ctx context.Context, watcherName, watcherNamespace string, k8sClient client.Client) error {

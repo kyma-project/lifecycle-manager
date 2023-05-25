@@ -35,7 +35,7 @@ help: ## Display this help.
 
 .PHONY: test
 test: ## Runs the E2E Test
-	go test ./... -coverprofile cover.out --tags=e2e
+	go test ./... -coverprofile cover.out --tags=e2e -v
 
 
 .PHONY: test-verbose

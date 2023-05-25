@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"go.uber.org/zap/zapcore"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/kyma-project/lifecycle-manager/api"
-	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"go.uber.org/zap/zapcore"
 	"k8s.io/client-go/rest"
 
 	//nolint:gci
@@ -51,7 +51,6 @@ var (
 
 	ctx    context.Context    //nolint:gochecknoglobals
 	cancel context.CancelFunc //nolint:gochecknoglobals
-
 )
 
 func TestAPIs(t *testing.T) {
