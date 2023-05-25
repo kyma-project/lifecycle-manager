@@ -52,6 +52,11 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 				WithArguments(kymaName, kymaNamespace, channel, controlPlaneClient).
 				Should(Succeed())
 
+			Eventually(createKymaSecret, timeout, interval).
+				WithContext(ctx).
+				WithArguments(kymaName, kymaNamespace, channel, controlPlaneClient).
+				Should(Succeed())
+
 			Eventually(checkRemoteKymaCR, timeout, interval).
 				WithContext(ctx).
 				WithArguments(kymaName, remoteNamespace, []v1beta2.Module{}, runtimeClient).
@@ -104,6 +109,21 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 	})
 
 func createKymaCR(ctx context.Context, kymaName, kymaNamespace, channel string, k8sclient client.Client) error {
+	kyma := &v1beta2.Kyma{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        kymaName,
+			Namespace:   kymaNamespace,
+			Annotations: map[string]string{"skr-domain": "example.domain.com"},
+		},
+		Spec: v1beta2.KymaSpec{
+			Channel: channel,
+			Modules: nil,
+		},
+	}
+	return k8sclient.Create(ctx, kyma)
+}
+
+func createKymaSecret(ctx context.Context, kymaName, kymaNamespace, channel string, k8sclient client.Client) error {
 	patchedRuntimeConfig := strings.ReplaceAll(string(*runtimeConfig), "0.0.0.0", "host.k3d.internal")
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -116,27 +136,7 @@ func createKymaCR(ctx context.Context, kymaName, kymaNamespace, channel string, 
 		},
 		Data: map[string][]byte{"config": []byte(patchedRuntimeConfig)},
 	}
-	err := k8sclient.Create(ctx, secret)
-	if err != nil {
-		return err
-	}
-
-	kyma := &v1beta2.Kyma{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:        kymaName,
-			Namespace:   kymaNamespace,
-			Annotations: map[string]string{"skr-domain": "example.domain.com"},
-		},
-		Spec: v1beta2.KymaSpec{
-			Channel: channel,
-			Modules: nil,
-		},
-	}
-	err = k8sclient.Create(ctx, kyma)
-	if err != nil {
-		return err
-	}
-	return nil
+	return k8sclient.Create(ctx, secret)
 }
 
 func checkRemoteKymaCR(ctx context.Context,
