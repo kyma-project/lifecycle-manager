@@ -192,8 +192,7 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 			kyma.Spec.DeepCopyInto(&remoteKyma.Spec)
 			// if KCP Kyma contains some modules during initialization, not sync them into remote.
 			remoteKyma.Spec.Modules = []v1beta2.Module{}
-		}
-		if err != nil && !k8serrors.IsNotFound(err) {
+		} else if err != nil {
 			return nil, err
 		}
 
