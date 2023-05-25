@@ -129,9 +129,12 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 func createKymaCR(ctx context.Context, kymaName, kymaNamespace, channel string, k8sClient client.Client) error {
 	kyma := &v1beta2.Kyma{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:        kymaName,
-			Namespace:   kymaNamespace,
-			Annotations: map[string]string{"skr-domain": "example.domain.com"},
+			Name:      kymaName,
+			Namespace: kymaNamespace,
+			Annotations: map[string]string{
+				"skr-domain":                    "example.domain.com",
+				"operator.kyma-project.io/sync": "true",
+			},
 		},
 		Spec: v1beta2.KymaSpec{
 			Channel: channel,
