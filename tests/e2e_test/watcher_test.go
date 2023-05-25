@@ -1,6 +1,3 @@
-//go:build e2e
-// +build e2e
-
 package e2e_test
 
 import (
@@ -30,10 +27,16 @@ const (
 	timeout      = 10 * time.Second
 	readyTimeout = 30 * time.Second
 	interval     = 1 * time.Second
+
+	watcherPodPrefix    = "skr-webhook-"
+	watcherPodContainer = "server"
+
+	KLMPodPrefix    = "klm-controller-manager"
+	KLMPodContainer = "manager"
 )
 
 var (
-	errKLMPodNotFound            = errors.New("could not find KLM pod")
+	errPodNotFound               = errors.New("could not find pod")
 	errWatcherDeploymentNotReady = errors.New("watcher Deployment is not ready")
 	errModuleNotExisting         = errors.New("module does not exists in KymaCR")
 	errLogNotFound               = errors.New("logMsg was not found in log")
@@ -102,7 +105,7 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 
 			Eventually(checkKLMLogs, timeout, interval).
 				WithContext(ctx).
-				WithArguments(incomingRequestMsg, controlPlaneRESTConfig, controlPlaneClient).
+				WithArguments(incomingRequestMsg, controlPlaneRESTConfig, controlPlaneClient, runtimeClient).
 				Should(Succeed())
 			test := true
 			Expect(test).Should(BeTrue())
@@ -230,25 +233,8 @@ func changeKymaCRChannel(ctx context.Context,
 	return k8sClient.Update(ctx, kyma)
 }
 
-func checkKLMLogs(ctx context.Context, logMsg string, config *rest.Config, k8sClient client.Client) error {
-	klmPod := &corev1.Pod{}
-	podList := &corev1.PodList{}
-	if err := k8sClient.List(ctx, podList, &client.ListOptions{Namespace: "kcp-system"}); err != nil {
-		return err
-	}
-
-	for _, pod := range podList.Items {
-		pod := pod
-		if strings.HasPrefix(pod.Name, "klm-controller-manager") {
-			klmPod = &pod
-			break
-		}
-	}
-	if klmPod.Name == "" {
-		return errKLMPodNotFound
-	}
-
-	logs, err := getPodLogs(ctx, config, klmPod)
+func checkKLMLogs(ctx context.Context, logMsg string, config *rest.Config, k8sClient, runtimeClient client.Client) error {
+	logs, err := getPodLogs(ctx, config, k8sClient, KLMPodPrefix, KLMPodContainer)
 	if err != nil {
 		return err
 	}
@@ -257,17 +243,37 @@ func checkKLMLogs(ctx context.Context, logMsg string, config *rest.Config, k8sCl
 		return nil
 	}
 
-	return fmt.Errorf("%w: %s", errLogNotFound, logMsg)
+	watcherLogs, err := getPodLogs(ctx, config, runtimeClient, watcherPodPrefix, watcherPodContainer)
+	if err != nil {
+		return err
+	}
+	return fmt.Errorf("%w\n Expected: %s\n Given: %s Watcher-Server-Logs: %s", errLogNotFound, logMsg, logs, watcherLogs)
 }
 
-func getPodLogs(ctx context.Context, config *rest.Config, pod *corev1.Pod) (string, error) {
+func getPodLogs(ctx context.Context, config *rest.Config, k8sClient client.Client, podPrefix, container string) (string, error) {
+	pod := &corev1.Pod{}
+	podList := &corev1.PodList{}
+	if err := k8sClient.List(ctx, podList, &client.ListOptions{Namespace: "kcp-system"}); err != nil {
+		return "", err
+	}
+
+	for _, p := range podList.Items {
+		pod = &p
+		if strings.HasPrefix(pod.Name, podPrefix) {
+			break
+		}
+	}
+	if pod.Name == "" {
+		return "", fmt.Errorf("%w: Prefix: %s Container: %s", errPodNotFound, podPrefix, container)
+	}
+
 	// temporary clientset, since controller-runtime client library does not support non-CRUD subresources
 	// Open issue: https://github.com/kubernetes-sigs/controller-runtime/issues/452
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return "", err
 	}
-	req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{Container: "manager"})
+	req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{Container: container})
 	podLogs, err := req.Stream(ctx)
 	if err != nil {
 		return "", err
