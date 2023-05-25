@@ -186,17 +186,30 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 		if !kyma.DeletionTimestamp.IsZero() {
 			return nil, ErrNotFoundAndKCPKymaUnderDeleting
 		}
-		kyma.Spec.DeepCopyInto(&remoteKyma.Spec)
+		oldRemoteKyma := remoteKyma
+		oldRemoteKyma.Name = kyma.Name
+		err := c.RuntimeClient.Get(ctx, client.ObjectKeyFromObject(oldRemoteKyma), oldRemoteKyma)
+		if k8serrors.IsNotFound(err) {
+			kyma.Spec.DeepCopyInto(&remoteKyma.Spec)
 
-		// if KCP Kyma contains some modules during initialization, not sync them into remote.
-		remoteKyma.Spec.Modules = []v1beta2.Module{}
+			// if KCP Kyma contains some modules during initialization, not sync them into remote.
+			remoteKyma.Spec.Modules = []v1beta2.Module{}
 
-		err = c.RuntimeClient.Create(ctx, remoteKyma)
-		if err != nil {
-			recorder.Event(kyma, "Normal", "RemoteInstallation", "Kyma was installed to SKR")
+			err = c.RuntimeClient.Create(ctx, remoteKyma)
+			if err != nil {
+				recorder.Event(kyma, "Normal", "RemoteInstallation", "Kyma was installed to SKR")
 
-			return nil, err
+				return nil, err
+			}
+		} else {
+			oldRemoteKyma.Name = v1beta2.DefaultRemoteKymaName
+			err = c.RuntimeClient.Update(ctx, oldRemoteKyma)
+			if err != nil {
+				return nil, err
+			}
+			return oldRemoteKyma, nil
 		}
+
 	} else if err != nil {
 		recorder.Event(kyma, "Warning", err.Error(), "Client could not fetch remote Kyma")
 
