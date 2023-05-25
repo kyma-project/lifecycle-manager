@@ -101,8 +101,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if err != nil {
 		if !obj.GetDeletionTimestamp().IsZero() {
 			return r.removeFinalizer(ctx, obj)
+		} else {
+			return r.ssaStatus(ctx, obj)
 		}
-		return r.ssaStatus(ctx, obj)
 	}
 
 	clnt, err := r.getTargetClient(ctx, obj, spec)
@@ -118,8 +119,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if err != nil {
 		if !obj.GetDeletionTimestamp().IsZero() {
 			return r.removeFinalizer(ctx, obj)
+		} else {
+			return r.ssaStatus(ctx, obj)
 		}
-		return r.ssaStatus(ctx, obj)
 	}
 
 	target, current, err := r.renderResources(ctx, obj, spec, renderer, converter)
