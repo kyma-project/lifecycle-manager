@@ -99,6 +99,9 @@ else
   make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:latest
 fi
 
+kubectl get crd
+kubectl get crd kymas.operator.kyma-project.io -oyaml
+
 cd tests/e2e_test
 make test
 
