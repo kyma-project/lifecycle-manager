@@ -250,6 +250,9 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 		Channel:        v1beta2.DefaultChannel,
 	}
 	kyma.Spec.Modules = []v1beta2.Module{moduleInKcp}
+
+	remoteKyma := kyma
+	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
 	registerControlPlaneLifecycleForKyma(kyma)
 	annotations := []string{
 		"moduletemplate-skr-crd-generation",
@@ -286,7 +289,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 
 	It("CRDs generation annotation shouldn't exist in SKR kyma", func() {
 		Eventually(func() error {
-			skrKyma, err := GetKyma(ctx, runtimeClient, kyma.GetName(), controllers.DefaultRemoteSyncNamespace)
+			skrKyma, err := GetKyma(ctx, runtimeClient, remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace)
 			if err != nil {
 				return err
 			}
