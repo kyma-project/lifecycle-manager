@@ -163,7 +163,9 @@ func CheckValidTemplateUpdate(
 		// case we want to suspend updating the module until we reach v2.0.0 in regular, since downgrades
 		// are not supported. To circumvent this, a module can be uninstalled and then reinstalled in the old channel.
 		if !v1beta2.IsValidVersionChange(versionInTemplate, versionInStatus) {
-			msg := "ignore channel skew, as a higher version of the module was previously installed"
+			msg := fmt.Sprintf("ignore channel skew (from %s to %s), "+
+				"as a higher version (%s) of the module was previously installed",
+				moduleStatus.Channel, moduleTemplate.Spec.Channel, versionInStatus.String())
 			checkLog.Info(msg)
 			moduleTemplate.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
 			return
