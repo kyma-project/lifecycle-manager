@@ -188,10 +188,12 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 			return nil, ErrNotFoundAndKCPKymaUnderDeleting
 		}
 
-		if err = c.copyOldKymaCRIfExisting(ctx, kyma, remoteSyncNamespace, remoteKyma, recorder); err != nil {
+		if err = c.copyOldKymaCRIfExisting(ctx, kyma, remoteSyncNamespace, remoteKyma, recorder); k8serrors.IsNotFound(err) {
 			kyma.Spec.DeepCopyInto(&remoteKyma.Spec)
 			// if KCP Kyma contains some modules during initialization, not sync them into remote.
 			remoteKyma.Spec.Modules = []v1beta2.Module{}
+		} else {
+			return nil, err
 		}
 
 		err = c.RuntimeClient.Create(ctx, remoteKyma)
