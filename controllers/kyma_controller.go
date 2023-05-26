@@ -115,7 +115,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	if kyma.WithInReadyInterval(r.RequeueIntervals.Success) {
 		logger.V(log.DebugLevel).
 			Info(fmt.Sprintf("lastOperation within %+v, skip reconciliation", r.RequeueIntervals.Success))
-		return ctrl.Result{}, nil
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	status.InitConditions(kyma, r.SyncKymaEnabled(kyma), r.WatcherEnabled(kyma))
@@ -289,7 +289,7 @@ func (r *KymaReconciler) processKymaState(ctx context.Context, kyma *v1beta2.Kym
 	case v1beta2.StateError:
 		return ctrl.Result{Requeue: true}, r.handleProcessingState(ctx, kyma)
 	case v1beta2.StateReady:
-		return ctrl.Result{Requeue: true, RequeueAfter: r.RequeueIntervals.Success}, r.handleProcessingState(ctx, kyma)
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, r.handleProcessingState(ctx, kyma)
 	}
 
 	return ctrl.Result{}, nil
