@@ -27,7 +27,7 @@ const ManifestKind = "Manifest"
 
 // InstallInfo defines installation information.
 type InstallInfo struct {
-	// Source convert to ImageSpec
+	// Source in the ImageSpec format
 	//+kubebuilder:pruning:PreserveUnknownFields
 	Source runtime.RawExtension `json:"source"`
 
