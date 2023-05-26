@@ -282,7 +282,7 @@ func (r *KymaReconciler) processKymaState(ctx context.Context, kyma *v1beta2.Kym
 		}
 	case v1beta2.StateError:
 		return ctrl.Result{Requeue: true}, r.handleProcessingState(ctx, kyma)
-	case v1beta2.StateReady:
+	case v1beta2.StateReady, v1beta2.StateWarning:
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, r.handleProcessingState(ctx, kyma)
 	}
 
