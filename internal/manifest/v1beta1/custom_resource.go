@@ -14,8 +14,6 @@ import (
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
-const CustomResourceManager = "resource.kyma-project.io/finalizer"
-
 var ErrWaitingForAsyncCustomResourceDeletion = errors.New(
 	"deletion of custom resource was triggered and is now waiting to be completed",
 )
@@ -32,7 +30,7 @@ func PostRunCreateCR(
 	resource := manifest.Spec.Resource.DeepCopy()
 
 	if err := skr.Create(
-		ctx, resource, client.FieldOwner(CustomResourceManager),
+		ctx, resource, client.FieldOwner(declarative.CustomResourceManager),
 	); err != nil && !k8serrors.IsAlreadyExists(err) {
 		return err
 	}
@@ -42,9 +40,9 @@ func PostRunCreateCR(
 	oMeta.SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
 	oMeta.SetNamespace(obj.GetNamespace())
 	oMeta.SetFinalizers(obj.GetFinalizers())
-	if added := controllerutil.AddFinalizer(oMeta, CustomResourceManager); added {
+	if added := controllerutil.AddFinalizer(oMeta, declarative.CustomResourceManager); added {
 		if err := kcp.Patch(
-			ctx, oMeta, client.Apply, client.ForceOwnership, client.FieldOwner(CustomResourceManager),
+			ctx, oMeta, client.Apply, client.ForceOwnership, client.FieldOwner(declarative.CustomResourceManager),
 		); err != nil {
 			return err
 		}
@@ -87,9 +85,9 @@ func PreDeleteDeleteCR(
 	if err != nil {
 		return err
 	}
-	if removed := controllerutil.RemoveFinalizer(onCluster, CustomResourceManager); removed {
+	if removed := controllerutil.RemoveFinalizer(onCluster, declarative.CustomResourceManager); removed {
 		if err := kcp.Update(
-			ctx, onCluster, client.FieldOwner(CustomResourceManager),
+			ctx, onCluster, client.FieldOwner(declarative.CustomResourceManager),
 		); err != nil {
 			return err
 		}
