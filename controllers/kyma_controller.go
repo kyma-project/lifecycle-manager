@@ -122,7 +122,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return r.reconcile(ctx, kyma)
 }
 
-//nolint:funlen,cyclop
+//nolint:funlen,cyclop,gocognit
 func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if r.SyncKymaEnabled(kyma) { //nolint:nestif
 		var err error
