@@ -122,10 +122,9 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return r.reconcile(ctx, kyma)
 }
 
-//nolint:cyclop
-//nolint:funlen
+//nolint:funlen,cyclop
 func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
-	if r.SyncKymaEnabled(kyma) {
+	if r.SyncKymaEnabled(kyma) { //nolint:nestif
 		var err error
 		remoteClient := remote.NewClientWithConfig(r.Client, r.KcpRestConfig)
 		if ctx, err = remote.InitializeSyncContext(ctx, kyma,
