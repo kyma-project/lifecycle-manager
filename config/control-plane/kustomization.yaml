@@ -46,13 +46,25 @@ patches:
         value: --in-kcp-mode
       - op: add
         path: /spec/template/spec/containers/0/args/-
+        value: --rate-limiter-burst=2000
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --rate-limiter-frequency=1000
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --cache-sync-timeout=60m
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
         value: --max-concurrent-manifest-reconciles=10
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --max-concurrent-kyma-reconciles=5      
+        value: --max-concurrent-kyma-reconciles=50      
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --failure-max-delay=5m
+        value: --failure-max-delay=30s
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --is-kyma-managed
     target:
       kind: Deployment
 

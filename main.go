@@ -23,7 +23,6 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
-	"strings"
 	"time"
 
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -247,7 +246,6 @@ func setupKymaReconciler(mgr ctrl.Manager,
 	flagVar *FlagVar, options controller.Options,
 ) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentKymaReconciles
-
 	kcpRestConfig := mgr.GetConfig()
 	var skrWebhookManager watcher.SKRWebhookManager
 	if flagVar.enableKcpWatcher {
@@ -281,11 +279,12 @@ func setupKymaReconciler(mgr ctrl.Manager,
 			Success: flagVar.kymaRequeueSuccessInterval,
 		},
 		VerificationSettings: signature.VerificationSettings{
-			PublicKeyFilePath:   flagVar.moduleVerificationKeyFilePath,
-			ValidSignatureNames: strings.Split(flagVar.moduleVerificationSignatureNames, ":"),
+			EnableVerification: flagVar.enableVerification,
+			PublicKeyFilePath:  flagVar.moduleVerificationKeyFilePath,
 		},
 		InKCPMode:           flagVar.inKCPMode,
 		RemoteSyncNamespace: flagVar.remoteSyncNamespace,
+		IsManagedKyma:       flagVar.isKymaManaged,
 	}).SetupWithManager(
 		mgr, options, controllers.SetupUpSetting{
 			ListenerAddr:                 flagVar.kymaListenerAddr,
@@ -322,7 +321,7 @@ func setupPurgeReconciler(
 		ResolveRemoteClient:   resolveRemoteClientFunc,
 		PurgeFinalizerTimeout: flagVar.purgeFinalizerTimeout,
 		SkipCRDs:              controllers.CRDMatcherFor(flagVar.skipPurgingFor),
-		IsManagedKyma:         flagVar.inKCPMode,
+		IsManagedKyma:         flagVar.isKymaManaged,
 	}).SetupWithManager(
 		mgr, options,
 	); err != nil {
