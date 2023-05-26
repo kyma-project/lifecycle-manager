@@ -123,6 +123,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 }
 
 //nolint:cyclop
+//nolint:funlen
 func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if r.SyncKymaEnabled(kyma) {
 		var err error

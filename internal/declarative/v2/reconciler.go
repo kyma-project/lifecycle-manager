@@ -77,7 +77,7 @@ func newResourcesCondition(obj Object) metav1.Condition {
 }
 
 //nolint:funlen
-func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) { //nolint:cyclop
 	obj := r.prototype.DeepCopyObject().(Object)
 	if err := r.Get(ctx, req.NamespacedName, obj); err != nil {
 		log.FromContext(ctx).Info(req.NamespacedName.String() + " got deleted!")
@@ -144,7 +144,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return r.CtrlOnSuccess, nil
 }
 
-func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizersToRemove []string) (ctrl.Result, error) {
+func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizersToRemove []string) (
+	ctrl.Result, error) {
 	finalizerRemoved := false
 	for _, f := range finalizersToRemove {
 		if controllerutil.RemoveFinalizer(obj, f) {
