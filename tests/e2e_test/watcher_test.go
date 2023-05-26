@@ -108,7 +108,7 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 
 			Eventually(checkKLMLogs, timeout, interval).
 				WithContext(ctx).
-				WithArguments(incomingRequestMsg, controlPlaneRESTConfig, controlPlaneClient, runtimeClient).
+				WithArguments(incomingRequestMsg, controlPlaneRESTConfig, runtimeRESTConfig, controlPlaneClient, runtimeClient).
 				Should(Succeed())
 			test := true
 			Expect(test).Should(BeTrue())
@@ -236,8 +236,8 @@ func changeKymaCRChannel(ctx context.Context,
 	return k8sClient.Update(ctx, kyma)
 }
 
-func checkKLMLogs(ctx context.Context, logMsg string, config *rest.Config, k8sClient, runtimeClient client.Client) error {
-	logs, err := getPodLogs(ctx, config, k8sClient, controlPlaneNamespace, KLMPodPrefix, KLMPodContainer)
+func checkKLMLogs(ctx context.Context, logMsg string, controlPlaneConfig, runtimeConfig *rest.Config, k8sClient, runtimeClient client.Client) error {
+	logs, err := getPodLogs(ctx, controlPlaneConfig, k8sClient, controlPlaneNamespace, KLMPodPrefix, KLMPodContainer)
 	if err != nil {
 		return err
 	}
@@ -247,7 +247,7 @@ func checkKLMLogs(ctx context.Context, logMsg string, config *rest.Config, k8sCl
 		return nil
 	}
 
-	watcherLogs, err := getPodLogs(ctx, config, runtimeClient, runtimeNamespace, watcherPodPrefix, watcherPodContainer)
+	watcherLogs, err := getPodLogs(ctx, runtimeConfig, runtimeClient, runtimeNamespace, watcherPodPrefix, watcherPodContainer)
 	if err != nil {
 		return err
 	}
