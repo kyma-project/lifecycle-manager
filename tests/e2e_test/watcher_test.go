@@ -281,8 +281,12 @@ func getPodLogs(ctx context.Context, config *rest.Config, k8sClient client.Clien
 		return "", err
 	}
 	req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{Container: container})
+	GinkgoWriter.Printf("Request: %#v", req)
+	GinkgoWriter.Printf("Request URL: %s", req.URL())
 	podLogs, err := req.Stream(ctx)
 	if err != nil {
+		// In prow it errors here with
+		// Error while stream %!w(*errors.StatusError=&{{{ } {   <nil>} Failure pods "skr-webhook-67cc9d96d7-2tczg" not found NotFound 0xc000513c20 404}})
 		GinkgoWriter.Printf("Error while stream %w\n", err)
 		return "", err
 	}
