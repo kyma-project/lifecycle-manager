@@ -242,6 +242,7 @@ func checkKLMLogs(ctx context.Context, logMsg string, config *rest.Config, k8sCl
 		return err
 	}
 
+	GinkgoWriter.Printf("KLM Logs:  %s\n", logs)
 	if strings.Contains(logs, logMsg) {
 		return nil
 	}
@@ -262,8 +263,9 @@ func getPodLogs(ctx context.Context, config *rest.Config, k8sClient client.Clien
 
 	for _, p := range podList.Items {
 		pod = &p
-		GinkgoWriter.Printf("Found Pods:  %s/%s\n", pod.Namespace, pod.Name)
+		GinkgoWriter.Printf("Found Pod:  %s/%s\n", pod.Namespace, pod.Name)
 		if strings.HasPrefix(pod.Name, podPrefix) {
+			GinkgoWriter.Printf("Pod has Prefix %s:  %s/%s\n", podPrefix, pod.Namespace, pod.Name)
 			break
 		}
 	}
@@ -271,6 +273,7 @@ func getPodLogs(ctx context.Context, config *rest.Config, k8sClient client.Clien
 		return "", fmt.Errorf("%w: Prefix: %s Container: %s", errPodNotFound, podPrefix, container)
 	}
 
+	GinkgoWriter.Printf("Pod has prefix:  %s/%s\n", pod.Namespace, pod.Name)
 	// temporary clientset, since controller-runtime client library does not support non-CRUD subresources
 	// Open issue: https://github.com/kubernetes-sigs/controller-runtime/issues/452
 	clientset, err := kubernetes.NewForConfig(config)
@@ -280,6 +283,7 @@ func getPodLogs(ctx context.Context, config *rest.Config, k8sClient client.Clien
 	req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{Container: container})
 	podLogs, err := req.Stream(ctx)
 	if err != nil {
+		GinkgoWriter.Printf("Error while stream %w\n", err)
 		return "", err
 	}
 	defer podLogs.Close()
@@ -287,6 +291,7 @@ func getPodLogs(ctx context.Context, config *rest.Config, k8sClient client.Clien
 	buf := new(bytes.Buffer)
 	_, err = io.Copy(buf, podLogs)
 	if err != nil {
+		GinkgoWriter.Printf("Error while copy %w\n", err)
 		return "", err
 	}
 	str := buf.String()
