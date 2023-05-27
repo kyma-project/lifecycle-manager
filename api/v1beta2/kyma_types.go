@@ -179,6 +179,9 @@ type ModuleStatus struct {
 
 	// Resource contains information about the created module CR.
 	Resource *TrackingObject `json:"resource,omitempty"`
+
+	// CustomStateCheck for advanced Module State determination
+	CustomStateCheck *CustomStateCheck `json:"customStateCheck,omitempty"`
 }
 
 // TrackingObject contains metav1.TypeMeta and PartialMeta to allow a generation based object tracking.
