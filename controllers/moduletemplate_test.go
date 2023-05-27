@@ -140,7 +140,7 @@ var _ = Describe("Custom State Check can be used", Ordered, func() {
 
 	It("Should create manifest", func() {
 		Eventually(ManifestExists, Timeout, Interval).
-			WithArguments(kyma, module).
+			WithArguments(ctx, kyma, module, controlPlaneClient).
 			Should(Succeed())
 	})
 
