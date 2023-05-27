@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/metrics"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"github.com/tidwall/gjson"
@@ -258,11 +260,15 @@ func DeleteNoLongerExistingModuleStatus(
 	kyma *v1beta2.Kyma,
 	moduleFunc GetModuleFunc,
 ) {
+	logger := ctrlLog.FromContext(ctx).V(log.DebugLevel)
 	moduleStatusMap := kyma.GetModuleStatusMap()
 	moduleStatus := kyma.GetNoLongerExistingModuleStatus()
 	for idx := range moduleStatus {
 		moduleStatus := moduleStatus[idx]
 		if moduleStatus.Manifest == nil {
+			if err := metrics.RemoveModuleStateMetrics(kyma, moduleStatus.Name); err != nil {
+				logger.Info(fmt.Sprintf("error occurred while removing module state metrics: %s", err))
+			}
 			delete(moduleStatusMap, moduleStatus.Name)
 			continue
 		}
@@ -272,6 +278,9 @@ func DeleteNoLongerExistingModuleStatus(
 		module.SetNamespace(moduleStatus.Manifest.GetNamespace())
 		err := moduleFunc(ctx, module)
 		if apiErrors.IsNotFound(err) {
+			if err := metrics.RemoveModuleStateMetrics(kyma, moduleStatus.Name); err != nil {
+				logger.Info(fmt.Sprintf("error occurred while removing module state metrics: %s", err))
+			}
 			delete(moduleStatusMap, moduleStatus.Name)
 		} else {
 			moduleStatus.State = stateFromManifest(module, moduleStatus.CustomStateCheck)
