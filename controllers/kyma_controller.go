@@ -124,6 +124,9 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 //nolint:cyclop
 func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
+	logger := ctrlLog.FromContext(ctx).V(log.DebugLevel)
+	logger.Info(fmt.Sprintf("Kyma: %s - starting reconciliation", kyma.Name))
+
 	if r.SyncKymaEnabled(kyma) {
 		var err error
 		remoteClient := remote.NewClientWithConfig(r.Client, r.KcpRestConfig)
@@ -135,6 +138,7 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 	}
 
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != v1beta2.StateDeleting {
+		logger.Info(fmt.Sprintf("Kyma: %s - deleting remote Kyma", kyma.Name))
 		if err := r.deleteRemoteKyma(ctx, kyma); err != nil {
 			return r.requeueWithError(ctx, kyma, err)
 		}
@@ -147,6 +151,7 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 	}
 
 	if needsUpdate := kyma.EnsureLabelsAndFinalizers(); needsUpdate {
+		logger.Info(fmt.Sprintf("Kyma: %s - needs update after ensuring finalizers", kyma.Name))
 		if err := r.Update(ctx, kyma); err != nil {
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("failed to update kyma after finalizer check: %w", err))
 		}
@@ -154,11 +159,13 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 	}
 
 	if r.SyncKymaEnabled(kyma) { //nolint:nestif
+		logger.Info(fmt.Sprintf("Kyma: %s - checking remote CRDs", kyma.Name))
 		updateKymaRequired, err := r.syncCrdsAndUpdateKymaAnnotations(ctx, kyma)
 		if err != nil {
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not sync CRDs: %w", err))
 		}
 		if updateKymaRequired {
+			logger.Info(fmt.Sprintf("Kyma: %s - needs update after CRD sync", kyma.Name))
 			if err := r.Update(ctx, kyma); err != nil {
 				return r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma annotations: %w", err))
 			}
@@ -170,13 +177,14 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 		}
 	}
 
+	logger.Info(fmt.Sprintf("Kyma: %s - processing Kyma state", kyma.Name))
 	res, err := r.processKymaState(ctx, kyma)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
 	if r.SyncKymaEnabled(kyma) {
-		// update the remote kyma with the state of the control plane
+		logger.Info(fmt.Sprintf("Kyma: %s - update remote Kyma with control plane state", kyma.Name))
 		if err := r.syncStatusToRemote(ctx, kyma); err != nil {
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not synchronize remote kyma status: %w", err))
 		}
