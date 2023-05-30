@@ -11,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/time/rate"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/rand"
@@ -21,7 +20,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -106,21 +104,9 @@ var _ = Describe(
 			fmt.Sprintf("Starting Controller and Testing Declarative Reconciler (Run %s)", runID),
 			tableTest,
 			Entry(
-				"Create simple chart from CR without modifications and become ready",
-				testv1.TestAPISpec{ManifestName: "simple-helm"},
-				DefaultSpec(filepath.Join(testSamplesDir, "module-chart"), map[string]any{}, RenderModeHelm),
-				[]Option{},
-				func(ctx context.Context, key client.ObjectKey, source *CustomSpecFns) {
-					EventuallyDeclarativeStatusShould(
-						ctx, key,
-						HaveConditionWithStatus(ConditionTypeHelmCRDs, metav1.ConditionTrue),
-					)
-				},
-			),
-			Entry(
-				"Create simple chart with a different Control Plane and Runtime Client",
+				"Create simple raw manifest with a different Control Plane and Runtime Client",
 				testv1.TestAPISpec{ManifestName: "custom-client"},
-				DefaultSpec(filepath.Join(testSamplesDir, "module-chart"), map[string]any{}, RenderModeHelm),
+				DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), RenderModeRaw),
 				[]Option{WithRemoteTargetCluster(
 					func(context.Context, Object) (*ClusterInfo, error) {
 						return &ClusterInfo{
@@ -131,144 +117,11 @@ var _ = Describe(
 				nil,
 			),
 			Entry(
-				"Create simple chart from CR from TGZ with CRDs and become ready",
-				testv1.TestAPISpec{ManifestName: "tgz-with-crds"},
-				DefaultSpec(
-					filepath.Join(testSamplesDir, "oci", "helm_chart_with_crds.tgz"), map[string]any{},
-					RenderModeHelm,
-				),
-				[]Option{},
-				func(ctx context.Context, key client.ObjectKey, source *CustomSpecFns) {
-					EventuallyDeclarativeStatusShould(
-						ctx, key,
-						HaveConditionWithStatus(ConditionTypeHelmCRDs, metav1.ConditionTrue),
-					)
-				},
-			),
-			Entry(
-				"Create simple kustomization",
-				testv1.TestAPISpec{ManifestName: "simple-kustomization"},
-				DefaultSpec(
-					filepath.Join(testSamplesDir, "kustomize"), map[string]any{"AddManagedbyLabel": true},
-					RenderModeKustomize,
-				),
-				[]Option{},
-				nil,
-			),
-			Entry(
 				"Create simple Raw manifest",
 				testv1.TestAPISpec{ManifestName: "simple-raw"},
-				DefaultSpec(
-					filepath.Join(testSamplesDir, "raw-manifest.yaml"), map[string]any{}, RenderModeRaw,
-				),
+				DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), RenderModeRaw),
 				[]Option{},
 				nil,
-			),
-			Entry(
-				"Recreation of resources after external delete",
-				testv1.TestAPISpec{ManifestName: "recreation-of-resources"},
-				DefaultSpec(
-					filepath.Join(testSamplesDir, "module-chart"), map[string]any{}, RenderModeHelm,
-				),
-				[]Option{},
-				func(ctx context.Context, key client.ObjectKey, source *CustomSpecFns) {
-					obj := &testv1.TestAPI{}
-					Expect(testClient.Get(ctx, key, obj)).To(Succeed())
-					Eventually(removeResourcesInCluster, standardTimeout, standardInterval).
-						WithContext(ctx).
-						WithArguments(obj).
-						Should(Succeed())
-					Eventually(expectResourceRecreated, standardTimeout, standardInterval).
-						WithContext(ctx).
-						WithArguments(obj).
-						Should(Succeed())
-				},
-			),
-			Entry(
-				"Change values.yaml input and expect new Resource to be synced",
-				testv1.TestAPISpec{ManifestName: "helm-values-change"},
-				DefaultSpec(
-					filepath.Join(testSamplesDir, "module-chart"),
-					map[string]any{},
-					RenderModeHelm,
-				),
-				[]Option{},
-				func(ctx context.Context, key client.ObjectKey, source *CustomSpecFns) {
-					obj := &testv1.TestAPI{}
-					Expect(testClient.Get(ctx, key, obj)).To(Succeed())
-					oldAmount := len(obj.GetStatus().Synced)
-					EventuallyDeclarativeStatusShould(
-						ctx, key,
-						HaveSyncedResources(oldAmount),
-						BeInState(StateReady),
-					)
-					source.ValuesFn = func(_ context.Context, _ Object) any {
-						return map[string]any{"autoscaling": map[string]any{"enabled": true}}
-					}
-					EventuallyDeclarativeStatusShould(
-						ctx, key,
-						HaveSyncedResources(oldAmount+1),
-						BeInState(StateReady),
-					)
-					source.ValuesFn = func(_ context.Context, _ Object) any {
-						return map[string]any{"autoscaling": map[string]any{"enabled": false}}
-					}
-					EventuallyDeclarativeStatusShould(
-						ctx, key,
-						HaveSyncedResources(oldAmount),
-						BeInState(StateReady),
-					)
-				},
-			),
-			Entry(
-				"Custom Hooks",
-				testv1.TestAPISpec{ManifestName: "custom-pre-post-hooks"},
-				DefaultSpec(
-					filepath.Join(testSamplesDir, "module-chart"),
-					map[string]any{},
-					RenderModeHelm,
-				),
-				[]Option{
-					WithPostRun{func(ctx context.Context, skr Client, kcp client.Client, obj Object) error {
-						hookID := fmt.Sprintf("%s-%s", obj.GetName(), "test-hooks")
-						configMap := &v1.ConfigMap{}
-						configMap.SetName(hookID)
-						configMap.SetNamespace(customResourceNamespace.GetName())
-						if err := skr.Create(ctx, configMap); err != nil && !errors.IsAlreadyExists(err) {
-							return err
-						}
-						if added := controllerutil.AddFinalizer(obj, hookID); added {
-							if err := kcp.Update(ctx, obj); err != nil {
-								return err
-							}
-							obj.SetManagedFields(nil)
-						}
-						return nil
-					}},
-					WithPreDelete{func(ctx context.Context, skr Client, kcp client.Client, obj Object) error {
-						hookID := fmt.Sprintf("%s-%s", obj.GetName(), "test-hooks")
-						configMap := &v1.ConfigMap{}
-						configMap.SetName(hookID)
-						configMap.SetNamespace(customResourceNamespace.GetName())
-						if err := skr.Delete(ctx, configMap); err != nil && !errors.IsNotFound(err) {
-							return err
-						}
-						if removed := controllerutil.RemoveFinalizer(obj, hookID); removed {
-							if err := kcp.Update(ctx, obj); err != nil {
-								return err
-							}
-							obj.SetManagedFields(nil)
-						}
-						return nil
-					}},
-				},
-				func(ctx context.Context, key client.ObjectKey, source *CustomSpecFns) {
-					hookKey := client.ObjectKey{
-						Name:      fmt.Sprintf("%s-%s", key.Name, "test-hooks"),
-						Namespace: key.Namespace,
-					}
-					Expect(testClient.Get(ctx, hookKey, &v1.ConfigMap{})).Should(Succeed())
-				},
 			),
 		)
 	},
@@ -342,32 +195,6 @@ func StatusOnCluster(g Gomega, ctx context.Context, key client.ObjectKey) Status
 	obj := &testv1.TestAPI{}
 	g.Expect(testClient.Get(ctx, key, obj)).To(Succeed())
 	return obj.GetStatus()
-}
-
-func removeResourcesInCluster(ctx context.Context, obj *testv1.TestAPI) error {
-	synced := obj.GetStatus().Synced
-	for i := range synced {
-		unstruct := synced[i].ToUnstructured()
-		ExpectWithOffset(1, testClient.Delete(ctx, unstruct)).To(Succeed())
-	}
-	return nil
-}
-
-func expectResourceRecreated(ctx context.Context, obj *testv1.TestAPI) error {
-	if err := testClient.Get(ctx, client.ObjectKeyFromObject(obj), obj); err != nil {
-		return err
-	}
-
-	synced := obj.GetStatus().Synced
-
-	for i := range synced {
-		unstruct := synced[i].ToUnstructured()
-		if err := testClient.Get(ctx, client.ObjectKeyFromObject(unstruct), unstruct); err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func WithClientCacheKey() WithClientCacheKeyOption {
