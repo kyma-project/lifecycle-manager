@@ -122,7 +122,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return r.reconcile(ctx, kyma)
 }
 
-//nolint:cyclop
+//nolint:cyclop,funlen
 func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	logger := ctrlLog.FromContext(ctx).V(log.DebugLevel)
 	logger.Info(fmt.Sprintf("Kyma: %s - starting reconciliation", kyma.Name))
