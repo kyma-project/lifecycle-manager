@@ -19,9 +19,9 @@ To run, Lifecycle Manager uses the following workflow:
 
 1. Each module consists of its manager and custom resource. For example, Keda Manager and a Keda CR represent Keda module.
 
-2. A runtime Admin adds and/or removes modules using a Kyma CR. The Kyma CR repersents Kyma installation on a cluster. It includes a list of installed modules and their statuses. Lifecycle Manager watches the CR and uses the synchronization mechanism to update it on a cluster. Together with Kyma CR, Lifecycle Manager reads also kubeconfig Secret to access the Kyma Runtime.
+2. A runtime Admin adds and/or removes modules using a Kyma CR. The Kyma CR repersents Kyma installation on a cluster. It includes a list of installed modules and their statuses. Lifecycle Manager watches the CR and uses the synchronization mechanism to update it on a cluster. Together with the Kyma CR, Lifecycle Manager reads also the kubeconfig Secret to access the Kyma Runtime.
 
-3. To manage a module, Lifecycle Manager requires a ModuleTemplate CR. ModuleTemplate CR contains module's metadata. It represents a module in a particular version. All ModuleTemplate CRs exist in Kyma Control Plane which is the central cluster with Kyma infrastructure. Lifecycle Manager uses those ModuleTemplate CRs to create a Module Catalog with ModuleTenplate CRs available for a particluar Kyma rutime. Lifecycle Manager creates the Module Catalog basing on labels, such as `internal`, `beta`, etc., and uses the synchronization mechanism to update the the Module Catalog porfolio.
+3. To manage a module, Lifecycle Manager requires a ModuleTemplate CR. ModuleTemplate CR contains module's metadata. It represents a module in a particular version. All ModuleTemplate CRs exist in Kyma Control Plane which is the central cluster with Kyma infrastructure. Lifecycle Manager uses those ModuleTemplate CRs to create a Module Catalog with ModuleTemplate CRs available for a particluar Kyma rutime. Lifecycle Manager creates the Module Catalog based on labels, such as `internal`, or `beta`, and uses the synchronization mechanism to update the the Module Catalog porfolio.
 
 4. Lifecycle Manager reads a ModuleTemplate CR and creates a Manifest CR. The Manifest CR represents resources that make up a module and are to be installed by Lifecycle Manager. The Manifest CR is a rendered module installed on a particular cluster.
 
