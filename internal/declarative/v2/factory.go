@@ -5,13 +5,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/go-logr/logr"
-	"helm.sh/helm/v3/pkg/action"
-	"helm.sh/helm/v3/pkg/kube"
-	"helm.sh/helm/v3/pkg/storage"
-	"helm.sh/helm/v3/pkg/storage/driver"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/resource"
@@ -24,8 +18,6 @@ import (
 	"k8s.io/client-go/restmapper"
 	"k8s.io/kubectl/pkg/util/openapi"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/internal"
 )
 
 const (
@@ -34,7 +26,7 @@ const (
 )
 
 // SingletonClients serves as a single-minded client interface that combines
-// all kubernetes Client APIs (Helm, Kustomize, Kubernetes, Client-Go) under the hood.
+// all kubernetes Client APIs (Kubernetes, Client-Go) under the hood.
 // It offers a simple initialization lifecycle during creation, but delegates all
 // heavy-duty work to deferred discovery logic and a single http client
 // as well as a client cache to support GV-based clients.
@@ -56,10 +48,6 @@ type SingletonClients struct {
 	kubernetesClient *kubernetes.Clientset
 	dynamicClient    dynamic.Interface
 
-	// helm client with factory delegating to other clients
-	helmClient *kube.Client
-	install    *action.Install
-
 	// OpenAPI document parser singleton
 	openAPIParser *openapi.CachedOpenAPIParser
 
@@ -75,8 +63,7 @@ type SingletonClients struct {
 	unstructuredRESTClientCache map[string]resource.RESTClient
 }
 
-//nolint:funlen
-func NewSingletonClients(info *ClusterInfo, logger logr.Logger) (*SingletonClients, error) {
+func NewSingletonClients(info *ClusterInfo) (*SingletonClients, error) {
 	if err := setKubernetesDefaults(info.Config); err != nil {
 		return nil, err
 	}
@@ -134,33 +121,6 @@ func NewSingletonClients(info *ClusterInfo, logger logr.Logger) (*SingletonClien
 		unstructuredRESTClientCache: map[string]resource.RESTClient{},
 		Client:                      runtimeClient,
 	}
-	clients.helmClient = &kube.Client{
-		Factory: clients,
-		Log: func(msg string, args ...interface{}) {
-			logger.V(internal.DebugLogLevel).Info(fmt.Sprintf(msg, args...))
-		},
-		Namespace: metav1.NamespaceDefault,
-	}
-
-	// DO NOT CALL INIT
-	actionConfig := new(action.Configuration)
-	actionConfig.KubeClient = clients.helmClient
-	actionConfig.Log = clients.helmClient.Log
-	var store *storage.Storage
-	var drv *driver.Memory
-	if actionConfig.Releases != nil {
-		if mem, ok := actionConfig.Releases.Driver.(*driver.Memory); ok {
-			drv = mem
-		}
-	}
-	if drv == nil {
-		drv = driver.NewMemory()
-	}
-	drv.SetNamespace(metav1.NamespaceDefault)
-	store = storage.Init(drv)
-	actionConfig.Releases = store
-	actionConfig.RESTClientGetter = clients
-	clients.install = action.NewInstall(actionConfig)
 
 	return clients, nil
 }
@@ -200,15 +160,6 @@ func (s *SingletonClients) ResourceInfo(obj *unstructured.Unstructured, retryOnN
 	info.Object = obj
 	info.ResourceVersion = obj.GetResourceVersion()
 	return info, nil
-}
-
-func (s *SingletonClients) KubeClient() *kube.Client {
-	return s.helmClient
-}
-
-// Install returns the helm action install interface.
-func (s *SingletonClients) Install() *action.Install {
-	return s.install
 }
 
 func setKubernetesDefaults(config *rest.Config) error {
