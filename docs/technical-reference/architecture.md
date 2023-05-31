@@ -7,11 +7,11 @@ You can compare it with [Operator Lifecycle Manager](https://olm.operatorframewo
 Lifecycle Manager:
 
 - manages operators free of dependency trees
-- reconciles many clusters in Kyma Control Plane at a time
+- reconciles many clusters in Kyma Control Plane (KCP) at a time
 - centralizes the effort on managed Runtimes by providing the reconciliation mechanism
 - uses the release channels concept to manage operators delivery
 
-The diagram shows a sample deployment of Kyma Control Plane in interaction with a Kyma runtime.
+The diagram shows a sample deployment of KCP in interaction with a Kyma runtime.
 
 ![Lifecycle Manager Architecture](/docs/assets/lifecycle-manager-architecture.svg)
 
@@ -27,11 +27,11 @@ To run, Lifecycle Manager uses the following workflow:
 
 ## Controllers
 
-Apart from the custom resources, Lifecycle Manager uses also three controllers:
+Apart from the custom resources, Lifecycle Manager uses also Kyma, Manifest and Watcher controllers:
 
-- [Kyma Controller](../../controllers/kyma_controller.go) - in active development (continuous) - Expect Bugs and fast-paced development of new features
-- [Manifest Controller](../../controllers/manifest_controller.go) - directs to the [Declarative Library](../../internal/declarative/v2), a reconciliation library we use to install all modules
-- [Watcher Controller](../../controllers/watcher_controller.go) - maintains VirtualService entries for events coming from runtime clusters, mostly stable
+- [Kyma controller](../../controllers/kyma_controller.go) - reconciles the Kyma CR which means creating Manifest CRs for each Kyma module enabled in the Kyma CR and deleting them when modules are disabled in the Kyma CR. It is also responsible for synchronising ModuleTemplate CRs between KCP and Kyma runtimes.
+- [Manifest controller](../../controllers/manifest_controller.go) - reconciles the Manifest CRs created by the Kyma controller, which means, installing components specified in the Manifest CR on the target SKR cluster and removing them when the Manifest CRs are flagged for deletion.
+- [Watcher controller](../../controllers/watcher_controller.go) - reconciles the Watcher CR which means creating Istio Virtual Service resources on KCP when a Watcher CR is created and removing the same resources when it is deleted. This is done in order to configure the routing of the messages coming from the watcher agent installed on each Kyma runtime and going to a listener agent deployed on KCP.
 
 ## Read more
 
