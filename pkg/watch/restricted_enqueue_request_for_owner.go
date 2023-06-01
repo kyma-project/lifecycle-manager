@@ -18,17 +18,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 )
 
-const (
-	Status = "status"
-	State  = "state"
-)
-
 var (
 	ErrNoUniqueKind = errors.New("multiple kind candidates are invalid")
-	ErrStateInvalid = errors.New("state from component object could not be interpreted")
 )
 
-// EnqueueRequestForOwner enqueues Requests for the Owners of an object.  E.g. the object that created
+// RestrictedEnqueueRequestForOwner enqueues Requests for the Owners of an object.  E.g. the object that created
 // the object that was the source of the Event.
 //
 // If a ReplicaSet creates Pods, users may reconcile the ReplicaSet in response to Pod Events using:
@@ -54,6 +48,7 @@ type RestrictedEnqueueRequestForOwner struct {
 
 // Create implements EventHandler.
 func (e *RestrictedEnqueueRequestForOwner) Create(evt event.CreateEvent, q workqueue.RateLimitingInterface) {
+	e.Log.V(2).Info("RestrictedEnqueueRequestForOwner.Create")
 	reqs := map[reconcile.Request]any{}
 	e.getOwnerReconcileRequest(nil, evt.Object, reqs)
 	for req := range reqs {
@@ -63,6 +58,7 @@ func (e *RestrictedEnqueueRequestForOwner) Create(evt event.CreateEvent, q workq
 
 // Update implements EventHandler.
 func (e *RestrictedEnqueueRequestForOwner) Update(evt event.UpdateEvent, q workqueue.RateLimitingInterface) {
+	e.Log.V(2).Info("RestrictedEnqueueRequestForOwner.Update")
 	reqs := map[reconcile.Request]any{}
 	e.getOwnerReconcileRequest(evt.ObjectOld, evt.ObjectNew, reqs)
 	for req := range reqs {
@@ -72,6 +68,7 @@ func (e *RestrictedEnqueueRequestForOwner) Update(evt event.UpdateEvent, q workq
 
 // Delete implements EventHandler.
 func (e *RestrictedEnqueueRequestForOwner) Delete(evt event.DeleteEvent, q workqueue.RateLimitingInterface) {
+	e.Log.V(2).Info("RestrictedEnqueueRequestForOwner.Delete")
 	reqs := map[reconcile.Request]any{}
 	e.getOwnerReconcileRequest(nil, evt.Object, reqs)
 	for req := range reqs {
@@ -81,6 +78,7 @@ func (e *RestrictedEnqueueRequestForOwner) Delete(evt event.DeleteEvent, q workq
 
 // Generic implements EventHandler.
 func (e *RestrictedEnqueueRequestForOwner) Generic(evt event.GenericEvent, q workqueue.RateLimitingInterface) {
+	e.Log.V(2).Info("RestrictedEnqueueRequestForOwner.Generic")
 	reqs := map[reconcile.Request]any{}
 	e.getOwnerReconcileRequest(nil, evt.Object, reqs)
 	for req := range reqs {
@@ -148,6 +146,11 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequestFromOwnerRefe
 	request := reconcile.Request{NamespacedName: types.NamespacedName{
 		Name: ref.Name,
 	}}
+	e.Log.V(2).Info(fmt.Sprintf("Adding new request for %s-%s-%s-%s",
+		request.Name,
+		request.Namespace,
+		request.NamespacedName,
+		request.String()))
 
 	// if owner is not namespaced then we should set the namespace to the empty
 	mapping, err := e.mapper.RESTMapping(e.groupKind, refGV.Version)

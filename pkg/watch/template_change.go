@@ -2,14 +2,14 @@ package watch
 
 import (
 	"context"
-
+	"fmt"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -25,6 +25,9 @@ func NewTemplateChangeHandler(handlerClient ChangeHandlerClient) *TemplateChange
 
 func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 	return func(o client.Object) []reconcile.Request {
+		logger := ctrlLog.FromContext(ctx).V(2)
+		logger.Info("Handling Template change")
+
 		requests := make([]reconcile.Request, 0)
 		template := &v1beta2.ModuleTemplate{}
 
@@ -41,11 +44,11 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 		}
 		err := h.List(ctx, kymas, listOptions)
 		if err != nil {
+			logger.Info("No Kymas matching")
 			return requests
 		}
 
-		logger := log.FromContext(ctx)
-
+		logger.Info(fmt.Sprintf("Found %d Kymas", len(kymas.Items)))
 		for _, kyma := range kymas.Items {
 			templateUsed := false
 			for _, moduleStatus := range kyma.Status.Modules {
@@ -70,7 +73,7 @@ func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
 				Namespace: kyma.GetNamespace(),
 				Name:      kyma.GetName(),
 			}
-
+			logger.Info("Scheduling Kyma CR reconciliation due to ModuleTemplate change")
 			logger.WithValues("template", templateName.String(), "kyma", kymaName.String()).Info(
 				"Kyma CR instance is scheduled for reconciliation because a relevant ModuleTemplate changed",
 			)

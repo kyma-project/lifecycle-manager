@@ -44,11 +44,14 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch(context.TODO())),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
-		// here we define a watch on secrets for the lifecycle-manager so that the cache is picking up changes
-		Watches(&source.Kind{Type: &corev1.Secret{}}, handler.Funcs{})
-
-	controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: &v1beta2.Manifest{}},
-		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1beta2.Kyma{}, IsController: true})
+		Watches(
+			&source.Kind{Type: &corev1.Secret{}},
+			handler.Funcs{},
+		).
+		Watches(
+			&source.Kind{Type: &v1beta2.Manifest{}},
+			&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1beta2.Kyma{}, IsController: true},
+		)
 
 	var runnableListener *listener.SKREventListener
 	var eventChannel *source.Channel
