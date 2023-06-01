@@ -11,8 +11,11 @@ Lifecycle Manager was introduced along with the concept of Kyma modularization. 
 See the list of basic concepts relating to Lifecycle Manager to understand its workflow better.
 
 - Kyma custom resource (CR) - represents Kyma installation in a cluster. It contains the list of modules and their state.
-- ModuleTemplate CR - contains modules' metadata with links to their images and manifests. Based on this resource you can enable or disable modules in your cluster.
-- Module CR - allows you to configure the behavior of the module. This is a per-module CR.
+- ModuleTemplate CR - contains modules' metadata with links to their images and manifests. ModuleTemplate CR represents a module in a particular version. Based on this resource Lifecycle Manager enables or disables modules in your cluster.
+- Manifest CR - represents resources that make up a module and are to be installed by Lifecycle Manager. The Manifest CR is a rendered module enabled on a particular cluster.
+- Module CR, such as Keda CR - allows you to configure the behavior of a module. This is a per-module CR.
+
+For the worklow details, read the [Architecture](./docs/technical-reference/architecture.md) document.
 
 ## Quick Start
 
@@ -50,8 +53,6 @@ To use Lifecycle Manager in a local setup, install the following:
   ```
 
 **TIP:** Check the [modular Kyma interactive tutorial](https://killercoda.com/kyma-project/scenario/modular-kyma) to play with enabling and disabling Kyma modules in both terminal and Busola.
-
-<!-- If you are new to our Lifecycle Manager and want to get started quickly, we recommend that you follow our [Quick Start Guide](./docs/user/quick-start.md). This guide will walk you through the basic steps of setting up your local KCP cluster, installing the Lifecycle Manager, and using the main features. ??? -->
 
 ## Read More
 
