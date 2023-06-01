@@ -140,7 +140,7 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 	}
 	crd := kcpCrdsCache.Get(kcpCrdNamespacedName)
 	if crd == nil {
-		crd := &v1extensions.CustomResourceDefinition{}
+		crd = &v1extensions.CustomResourceDefinition{}
 		err = c.ControlPlaneClient.Get(
 			ctx, kcpCrdNamespacedName, crd,
 		)

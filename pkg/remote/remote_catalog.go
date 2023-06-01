@@ -247,7 +247,7 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 	}
 	crd := kcpCrdsCache.Get(kcpCrdNamespacedName)
 	if crd == nil {
-		crd := &v1extensions.CustomResourceDefinition{}
+		crd = &v1extensions.CustomResourceDefinition{}
 		err = syncContext.ControlPlaneClient.Get(ctx, kcpCrdNamespacedName, crd)
 
 		if err != nil {
