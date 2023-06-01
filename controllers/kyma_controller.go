@@ -502,13 +502,14 @@ const (
 
 // requeueSuccessWithMargin adds a margin of requeueMargin to the RequeueIntervals.Success
 // if it is greater than minInterval, so the actual RequeueIntervals.Success deviates +/- the skew.
+// This is used because the majority of Kymas are usually in Ready state and worker queues will have access spike.
 func (r *KymaReconciler) requeueSuccessWithMargin() ctrl.Result {
-	if r.RequeueIntervals.Success < minInterval*time.Second {
+	if r.RequeueIntervals.Success < minInterval {
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}
 	}
 	//nolint:gosec
-	offset := time.Duration(rand.Int63n(requeueMargin.Nanoseconds()))
-	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success - (skew * time.Second) + offset}
+	offset := time.Duration(rand.Int63n(int64(requeueMargin)))
+	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success - skew + offset}
 }
 
 func (r *KymaReconciler) UpdateMetrics(ctx context.Context, kyma *v1beta2.Kyma) {
