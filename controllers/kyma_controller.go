@@ -20,12 +20,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"golang.org/x/sync/errgroup"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -33,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -116,7 +116,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	if kyma.SkipReconciliation() {
 		logger.V(log.DebugLevel).Info(fmt.Sprintf("skipping reconciliation for Kyma: %s", kyma.Name))
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
+		return r.requeueSuccessWithMargin(), nil
 	}
 
 	return r.reconcile(ctx, kyma)
@@ -283,7 +283,7 @@ func (r *KymaReconciler) processKymaState(ctx context.Context, kyma *v1beta2.Kym
 	case v1beta2.StateError:
 		return ctrl.Result{Requeue: true}, r.handleProcessingState(ctx, kyma)
 	case v1beta2.StateReady:
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, r.handleProcessingState(ctx, kyma)
+		return r.requeueSuccessWithMargin(), r.handleProcessingState(ctx, kyma)
 	}
 
 	return ctrl.Result{}, nil
@@ -492,6 +492,19 @@ func (r *KymaReconciler) deleteManifest(ctx context.Context, trackedManifest *v1
 	manifest.SetNamespace(trackedManifest.GetNamespace())
 	manifest.SetName(trackedManifest.GetName())
 	return r.Delete(ctx, &manifest, &client.DeleteOptions{})
+}
+
+const requeueMargin, minInterval, skew = 10, 20, 5
+
+// requeueSuccessWithMargin adds a margin of requeueMargin to the RequeueIntervals.Success
+// if it is greater than minInterval, so the actual RequeueIntervals.Success deviates +/- the skew.
+func (r *KymaReconciler) requeueSuccessWithMargin() ctrl.Result {
+	if r.RequeueIntervals.Success < minInterval*time.Second {
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}
+	}
+	//nolint:gosec
+	offset := time.Duration(rand.Intn(requeueMargin))
+	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success - (skew * time.Second) + offset}
 }
 
 func (r *KymaReconciler) UpdateMetrics(ctx context.Context, kyma *v1beta2.Kyma) {
