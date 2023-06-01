@@ -12,6 +12,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 )
 
+const (
+	ManifestFilePrefix = "manifest"
+)
+
 type ManifestParser interface {
 	Parse(ctx context.Context, renderer Renderer, obj Object, spec *Spec) (*internal.ManifestResources, error)
 }
@@ -30,10 +34,8 @@ type InMemoryManifestCache struct {
 func (c *InMemoryManifestCache) Parse(
 	ctx context.Context, renderer Renderer, obj Object, spec *Spec,
 ) (*internal.ManifestResources, error) {
-	file := filepath.Join(manifest, spec.Path, spec.ManifestName)
-	hashedValues, _ := internal.CalculateHash(spec.Values)
-	hash := fmt.Sprintf("%v", hashedValues)
-	key := fmt.Sprintf("%s-%s-%s", file, spec.Mode, hash)
+	file := filepath.Join(ManifestFilePrefix, spec.Path, spec.ManifestName)
+	key := fmt.Sprintf("%s-%s", file, spec.Mode)
 
 	item := c.Cache.Get(key)
 	if item != nil {

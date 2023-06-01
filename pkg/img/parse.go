@@ -78,14 +78,7 @@ func parseLayersByName(repo *genericocireg.RepositorySpec, descriptor *compdesc.
 				return nil, fmt.Errorf("building the digest url: %w", err)
 			}
 			layerRepresentation = layerRef
-		case ocmextensions.HelmChartRepositoryType:
-			accessSpec := spec.(*ocmextensions.HelmChartRepositoryAccess)
-			layerRepresentation = &Helm{
-				ChartName: accessSpec.HelmChartName,
-				URL:       accessSpec.HelmChartRepoURL,
-				Version:   accessSpec.HelmChartVersion,
-				Type:      HelmRepresentationType,
-			}
+
 		// this resource type is not relevant for module rendering but for security scanning only
 		case ociartifact.Type:
 			fallthrough

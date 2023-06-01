@@ -1,7 +1,0 @@
-apiVersion: operator.kyma-project.io/v1alpha1
-kind: KustomCRD
-metadata:
-  name: kustom-crd-from-manifest
-  namespace: default
-spec:
-  randomkey: kustomvalue
