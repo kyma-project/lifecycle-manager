@@ -494,7 +494,11 @@ func (r *KymaReconciler) deleteManifest(ctx context.Context, trackedManifest *v1
 	return r.Delete(ctx, &manifest, &client.DeleteOptions{})
 }
 
-const requeueMargin, minInterval, skew = 10, 20, 5
+const (
+	requeueMargin = 10 * time.Second
+	minInterval   = 20 * time.Second
+	skew          = 5 * time.Second
+)
 
 // requeueSuccessWithMargin adds a margin of requeueMargin to the RequeueIntervals.Success
 // if it is greater than minInterval, so the actual RequeueIntervals.Success deviates +/- the skew.
@@ -503,7 +507,7 @@ func (r *KymaReconciler) requeueSuccessWithMargin() ctrl.Result {
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}
 	}
 	//nolint:gosec
-	offset := time.Duration(rand.Intn(requeueMargin))
+	offset := time.Duration(rand.Int63n(requeueMargin.Nanoseconds()))
 	return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success - (skew * time.Second) + offset}
 }
 
