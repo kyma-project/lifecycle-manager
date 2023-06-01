@@ -131,7 +131,6 @@ func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Con
 
 func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plural string,
 	kcpCrdsCache *internal.CustomResourceDefinitionCache) error {
-	crd := &v1extensions.CustomResourceDefinition{}
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
 	var err error
 	kcpCrdNamespacedName := client.ObjectKey{
@@ -139,7 +138,9 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 		// name changes, this also has to be adjusted here. We can think of making this configurable later
 		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
 	}
-	if crd = kcpCrdsCache.Get(kcpCrdNamespacedName); crd == nil {
+	crd := kcpCrdsCache.Get(kcpCrdNamespacedName)
+	if crd == nil {
+		crd := &v1extensions.CustomResourceDefinition{}
 		err = c.ControlPlaneClient.Get(
 			ctx, kcpCrdNamespacedName, crd,
 		)

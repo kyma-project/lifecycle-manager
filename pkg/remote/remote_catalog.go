@@ -235,7 +235,6 @@ func (c *RemoteCatalog) Delete(
 
 func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, plural string,
 	kcpCrdsCache *internal.CustomResourceDefinitionCache) error {
-	crd := &v1extensions.CustomResourceDefinition{}
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
 
 	syncContext := SyncContextFromContext(ctx)
@@ -246,7 +245,9 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 		// name changes, this also has to be adjusted here. We can think of making this configurable later
 		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
 	}
-	if crd = kcpCrdsCache.Get(kcpCrdNamespacedName); crd == nil {
+	crd := kcpCrdsCache.Get(kcpCrdNamespacedName)
+	if crd == nil {
+		crd := &v1extensions.CustomResourceDefinition{}
 		err = syncContext.ControlPlaneClient.Get(ctx, kcpCrdNamespacedName, crd)
 
 		if err != nil {
