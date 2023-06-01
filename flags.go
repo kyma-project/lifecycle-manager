@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	defaultKymaRequeueSuccessInterval     = 20 * time.Second
-	defaultManifestRequeueSuccessInterval = 20 * time.Second
-	defaultWatcherRequeueSuccessInterval  = 20 * time.Second
+	defaultKymaRequeueSuccessInterval     = 60 * time.Second
+	defaultManifestRequeueSuccessInterval = 60 * time.Second
+	defaultWatcherRequeueSuccessInterval  = 60 * time.Second
 	defaultClientQPS                      = 150
 	defaultClientBurst                    = 150
 	defaultPprofServerTimeout             = 90 * time.Second
@@ -21,7 +21,7 @@ const (
 	failureMaxDelayDefault                = 5 * time.Second
 	defaultCacheSyncTimeout               = 2 * time.Minute
 	defaultListenerPort                   = 9080
-	defaultLogLevel                       = log.WarnLevel
+	defaultLogLevel                       = log.DebugLevel
 	defaultPurgeFinalizerTimeout          = 5 * time.Minute
 )
 
