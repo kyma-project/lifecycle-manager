@@ -22,6 +22,7 @@ linters:
     - wsl # too strict and mostly code is not more readable
     - wrapcheck # TODO enable and fix
     - gomnd
+    - varnamelen
 linters-settings:
   gci:
     sections:
