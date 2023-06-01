@@ -9,9 +9,9 @@ import (
 )
 
 const (
-	defaultKymaRequeueSuccessInterval     = 20 * time.Second
-	defaultManifestRequeueSuccessInterval = 20 * time.Second
-	defaultWatcherRequeueSuccessInterval  = 20 * time.Second
+	defaultKymaRequeueSuccessInterval     = 30 * time.Second
+	defaultManifestRequeueSuccessInterval = 30 * time.Second
+	defaultWatcherRequeueSuccessInterval  = 30 * time.Second
 	defaultClientQPS                      = 150
 	defaultClientBurst                    = 150
 	defaultPprofServerTimeout             = 90 * time.Second
