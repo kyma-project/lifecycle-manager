@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal"
 	"golang.org/x/sync/errgroup"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -78,6 +79,7 @@ type KymaReconciler struct {
 	InKCPMode                bool
 	RemoteSyncNamespace      string
 	IsManagedKyma            bool
+	KcpCrdsCache             *internal.CustomResourceDefinitionCache
 }
 
 //nolint:lll
@@ -188,7 +190,7 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 func (r *KymaReconciler) syncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
 	syncContext := remote.SyncContextFromContext(ctx)
 	updateRequired, err := remote.SyncCrdsAndUpdateKymaAnnotations(
-		ctx, kyma, syncContext.RuntimeClient, syncContext.ControlPlaneClient)
+		ctx, kyma, syncContext.RuntimeClient, syncContext.ControlPlaneClient, r.KcpCrdsCache)
 	if err != nil {
 		return false, err
 	}
@@ -223,7 +225,7 @@ func (r *KymaReconciler) enqueueNormalEvent(kyma *v1beta2.Kyma, reason EventReas
 func (r *KymaReconciler) fetchRemoteKyma(ctx context.Context, controlPlaneKyma *v1beta2.Kyma) (*v1beta2.Kyma, error) {
 	syncContext := remote.SyncContextFromContext(ctx)
 
-	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx, controlPlaneKyma, r.RemoteSyncNamespace)
+	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx, controlPlaneKyma, r.RemoteSyncNamespace, r.KcpCrdsCache)
 	if err != nil {
 		if errors.Is(err, remote.ErrNotFoundAndKCPKymaUnderDeleting) {
 			return nil, err
@@ -429,7 +431,8 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta2.Ky
 		}
 	}
 
-	if err := remote.NewRemoteCatalogFromKyma(r.RemoteSyncNamespace).CreateOrUpdate(ctx, modulesToSync); err != nil {
+	if err := remote.NewRemoteCatalogFromKyma(r.RemoteSyncNamespace).CreateOrUpdate(ctx, modulesToSync,
+		r.KcpCrdsCache); err != nil {
 		return fmt.Errorf("could not synchronize remote module catalog: %w", err)
 	}
 

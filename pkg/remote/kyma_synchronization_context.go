@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal"
 	corev1 "k8s.io/api/core/v1"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -128,20 +129,25 @@ func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Con
 	return nil
 }
 
-func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plural string) error {
+func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plural string,
+	kcpCrdsCache *internal.CustomResourceDefinitionCache) error {
 	crd := &v1extensions.CustomResourceDefinition{}
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
 	var err error
-	err = c.ControlPlaneClient.Get(
-		ctx, client.ObjectKey{
-			// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
-			// name changes, this also has to be adjusted here. We can think of making this configurable later
-			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
-		}, crd,
-	)
+	kcpCrdNamespacedName := client.ObjectKey{
+		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
+		// name changes, this also has to be adjusted here. We can think of making this configurable later
+		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
+	}
+	if crd = kcpCrdsCache.Get(kcpCrdNamespacedName); crd == nil {
+		err = c.ControlPlaneClient.Get(
+			ctx, kcpCrdNamespacedName, crd,
+		)
 
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
+		kcpCrdsCache.Set(kcpCrdNamespacedName, crd)
 	}
 
 	err = c.RuntimeClient.Get(
@@ -163,6 +169,7 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 
 func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 	ctx context.Context, kyma *v1beta2.Kyma, remoteSyncNamespace string,
+	kcpCrdsCache *internal.CustomResourceDefinitionCache,
 ) (*v1beta2.Kyma, error) {
 	recorder := adapter.RecorderFromContext(ctx)
 	remoteKyma := &v1beta2.Kyma{}
@@ -175,7 +182,7 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 	if meta.IsNoMatchError(err) {
 		recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
 
-		if err := c.CreateOrUpdateCRD(ctx, v1beta2.KymaKind.Plural()); err != nil {
+		if err := c.CreateOrUpdateCRD(ctx, v1beta2.KymaKind.Plural(), kcpCrdsCache); err != nil {
 			return nil, err
 		}
 

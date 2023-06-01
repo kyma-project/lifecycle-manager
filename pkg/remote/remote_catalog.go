@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -61,10 +62,11 @@ func NewRemoteCatalog(
 func (c *RemoteCatalog) CreateOrUpdate(
 	ctx context.Context,
 	kcpModules []v1beta2.ModuleTemplate,
+	kcpCrdsCache *internal.CustomResourceDefinitionCache,
 ) error {
 	syncContext := SyncContextFromContext(ctx)
 
-	if err := c.createOrUpdateCatalog(ctx, kcpModules, syncContext); err != nil {
+	if err := c.createOrUpdateCatalog(ctx, kcpModules, syncContext, kcpCrdsCache); err != nil {
 		return err
 	}
 
@@ -111,6 +113,7 @@ func (c *RemoteCatalog) deleteDiffCatalog(ctx context.Context,
 func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 	kcpModules []v1beta2.ModuleTemplate,
 	syncContext *KymaSynchronizationContext,
+	kcpCrdsCache *internal.CustomResourceDefinitionCache,
 ) error {
 	channelLength := len(kcpModules)
 	results := make(chan error, channelLength)
@@ -130,7 +133,8 @@ func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 
 	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster when we apply it and retry
 	if containsMetaIsNoMatchErr(errs) {
-		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1beta2.ModuleTemplateKind.Plural()); err != nil {
+		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1beta2.ModuleTemplateKind.Plural(),
+			kcpCrdsCache); err != nil {
 			return err
 		}
 	}
@@ -229,21 +233,26 @@ func (c *RemoteCatalog) Delete(
 	return nil
 }
 
-func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, plural string) error {
+func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, plural string,
+	kcpCrdsCache *internal.CustomResourceDefinitionCache) error {
 	crd := &v1extensions.CustomResourceDefinition{}
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
 
 	syncContext := SyncContextFromContext(ctx)
 
 	var err error
-	err = syncContext.ControlPlaneClient.Get(ctx, client.ObjectKey{
+	kcpCrdNamespacedName := client.ObjectKey{
 		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
 		// name changes, this also has to be adjusted here. We can think of making this configurable later
 		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
-	}, crd)
+	}
+	if crd = kcpCrdsCache.Get(kcpCrdNamespacedName); crd == nil {
+		err = syncContext.ControlPlaneClient.Get(ctx, kcpCrdNamespacedName, crd)
 
-	if err != nil {
-		return err
+		if err != nil {
+			return err
+		}
+		kcpCrdsCache.Set(kcpCrdNamespacedName, crd)
 	}
 
 	err = syncContext.RuntimeClient.Get(ctx, client.ObjectKey{

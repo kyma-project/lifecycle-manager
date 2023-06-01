@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -72,16 +73,16 @@ func getAnnotation(crd *v1extensions.CustomResourceDefinition, crdType CrdType) 
 }
 
 func SyncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma,
-	runtimeClient Client, controlPlaneClient Client,
+	runtimeClient Client, controlPlaneClient Client, kcpCrdsCache *internal.CustomResourceDefinitionCache,
 ) (bool, error) {
 	kymaCrdUpdated, err := fetchCrdsAndUpdateKymaAnnotations(ctx, controlPlaneClient,
-		runtimeClient, kyma, v1beta2.KymaKind.Plural())
+		runtimeClient, kyma, v1beta2.KymaKind.Plural(), kcpCrdsCache)
 	if err != nil {
 		return false, client.IgnoreNotFound(err)
 	}
 
 	moduleTemplateCrdUpdated, err := fetchCrdsAndUpdateKymaAnnotations(ctx, controlPlaneClient,
-		runtimeClient, kyma, v1beta2.ModuleTemplateKind.Plural())
+		runtimeClient, kyma, v1beta2.ModuleTemplateKind.Plural(), kcpCrdsCache)
 	if err != nil {
 		return false, client.IgnoreNotFound(err)
 	}
@@ -90,9 +91,9 @@ func SyncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma,
 }
 
 func fetchCrdsAndUpdateKymaAnnotations(ctx context.Context, controlPlaneClient Client,
-	runtimeClient Client, kyma *v1beta2.Kyma, plural string,
+	runtimeClient Client, kyma *v1beta2.Kyma, plural string, kcpCrdsCache *internal.CustomResourceDefinitionCache,
 ) (bool, error) {
-	kcpCrd, skrCrd, err := fetchCrds(ctx, controlPlaneClient, runtimeClient, plural)
+	kcpCrd, skrCrd, err := fetchCrds(ctx, controlPlaneClient, runtimeClient, plural, kcpCrdsCache)
 	if err != nil {
 		return false, err
 	}
@@ -116,23 +117,28 @@ func fetchCrdsAndUpdateKymaAnnotations(ctx context.Context, controlPlaneClient C
 	return crdUpdated, nil
 }
 
-func fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Client, plural string) (
+func fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Client, plural string,
+	kcpCrdsCache *internal.CustomResourceDefinitionCache) (
 	*v1extensions.CustomResourceDefinition, *v1extensions.CustomResourceDefinition, error,
 ) {
 	crd := &v1extensions.CustomResourceDefinition{}
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
-	err := controlPlaneClient.Get(
-		ctx, client.ObjectKey{
-			// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
-			// name changes, this also has to be adjusted here. We can think of making this configurable later
-			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
-		}, crd,
-	)
-	if err != nil {
-		return nil, nil, err
+
+	kcpNamespacedNameCrd := client.ObjectKey{
+		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
+		// name changes, this also has to be adjusted here. We can think of making this configurable later
+		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group)}
+	if crd = kcpCrdsCache.Get(kcpNamespacedNameCrd); crd == nil {
+		err := controlPlaneClient.Get(
+			ctx, kcpNamespacedNameCrd, crd,
+		)
+		if err != nil {
+			return nil, nil, err
+		}
+		kcpCrdsCache.Set(kcpNamespacedNameCrd, crd)
 	}
 
-	err = runtimeClient.Get(
+	err := runtimeClient.Get(
 		ctx, client.ObjectKey{
 			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
 		}, crdFromRuntime,

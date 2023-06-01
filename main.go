@@ -156,7 +156,8 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 	remoteClientCache := remote.NewClientCache()
 
 	componentDescriptorCache := ocmextensions.NewComponentDescriptorCache()
-	setupKymaReconciler(mgr, remoteClientCache, componentDescriptorCache, flagVar, options)
+	kcpCrdsCache := internal.NewCustomResourceDefinitionCache()
+	setupKymaReconciler(mgr, remoteClientCache, componentDescriptorCache, flagVar, options, kcpCrdsCache)
 	setupManifestReconciler(mgr, flagVar, options)
 
 	if flagVar.enableKcpWatcher {
@@ -244,6 +245,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 	remoteClientCache *remote.ClientCache,
 	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
 	flagVar *FlagVar, options controller.Options,
+	kcpCrdsCache *internal.CustomResourceDefinitionCache,
 ) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentKymaReconciles
 	kcpRestConfig := mgr.GetConfig()
@@ -285,6 +287,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		InKCPMode:           flagVar.inKCPMode,
 		RemoteSyncNamespace: flagVar.remoteSyncNamespace,
 		IsManagedKyma:       flagVar.isKymaManaged,
+		KcpCrdsCache:        kcpCrdsCache,
 	}).SetupWithManager(
 		mgr, options, controllers.SetupUpSetting{
 			ListenerAddr:                 flagVar.kymaListenerAddr,
