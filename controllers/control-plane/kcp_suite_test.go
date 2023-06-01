@@ -24,6 +24,7 @@ import (
 	"time"
 
 	operatorv1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/open-component-model/ocm/pkg/contexts/oci"
 	"github.com/open-component-model/ocm/pkg/contexts/oci/repositories/ocireg"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm"
@@ -70,6 +71,7 @@ var (
 	ctx                context.Context      //nolint:gochecknoglobals
 	cancel             context.CancelFunc   //nolint:gochecknoglobals
 	cfg                *rest.Config         //nolint:gochecknoglobals
+	kcpCrdsCache       *internal.CustomResourceDefinitionCache
 )
 
 func TestAPIs(t *testing.T) {
@@ -131,6 +133,7 @@ var _ = BeforeSuite(func() {
 	}
 
 	remoteClientCache := remote.NewClientCache()
+	kcpCrdsCache = internal.NewCustomResourceDefinitionCache()
 	err = (&controllers.KymaReconciler{
 		Client:           k8sManager.GetClient(),
 		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1beta2.OperatorName),
@@ -143,6 +146,7 @@ var _ = BeforeSuite(func() {
 		InKCPMode:           true,
 		RemoteSyncNamespace: controllers.DefaultRemoteSyncNamespace,
 		IsManagedKyma:       true,
+		KcpCrdsCache:        kcpCrdsCache,
 	}).SetupWithManager(k8sManager, controller.Options{},
 		controllers.SetupUpSetting{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())
