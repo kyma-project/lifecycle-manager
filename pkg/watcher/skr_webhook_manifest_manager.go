@@ -32,6 +32,7 @@ type SkrWebhookManagerConfig struct {
 	// to be installed on SKR clusters upon reconciling kyma CRs.
 	SKRWatcherPath         string
 	SkrWebhookMemoryLimits string
+	SkrWebhookCPULimits    string
 	// IstioNamespace represents the cluster resource namespace of istio
 	IstioNamespace string
 	// RemoteSyncNamespace indicates the sync namespace for Kyma and module catalog
@@ -189,6 +190,7 @@ func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.C
 		contractVersion: version,
 		kcpAddress:      m.kcpAddr,
 		secretResVer:    tlsSecret.ResourceVersion,
+		cpuResLimit:     m.config.SkrWebhookCPULimits,
 		memResLimit:     m.config.SkrWebhookMemoryLimits,
 		caCert:          tlsSecret.Data[caCertKey],
 		tlsCert:         tlsSecret.Data[tlsCertKey],
