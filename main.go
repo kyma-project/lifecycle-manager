@@ -298,11 +298,9 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
-
 	if flagVar.enablePurgeFinalizer {
 		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options, kcpRestConfig)
 	}
-
 	metrics.Initialize()
 }
 
