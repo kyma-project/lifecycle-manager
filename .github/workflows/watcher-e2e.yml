@@ -10,20 +10,20 @@ jobs:
         cli-stability: [ "unstable" ]
         target: [ "control-plane" ]
     name: "Run Watcher E2E tests"
-    runs-on: ubuntu-latest
+    runs-on: docker-in-docker
+    container: docker:cli
     env:
-      LIFECYCLE_MANAGER: ${{ github.repository }}
       K3D_VERSION: v5.4.7
       ISTIO_VERSION: 1.17.1
     steps:
+      - name: Install prerequisites
+        run: apk update && apk upgrade && apk --no-cache add git curl wget make bash musl-dev go
       - name: Set up k3d
         run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
-      - id: kyma
+      - name: Provision SKR cluster
         run: |
-          wget -q https://storage.googleapis.com/kyma-cli-${{ matrix.cli-stability }}/kyma-linux
-          chmod +x kyma-linux && mv kyma-linux /usr/local/bin/kyma-${{ matrix.cli-stability }}
-          echo "PATH=/usr/local/bin/kyma-${{ matrix.cli-stability }}" >> $GITHUB_OUTPUT
-      - run: ln -s /usr/local/bin/kyma-${{ matrix.cli-stability }} /usr/local/bin/kyma
+          k3d cluster create skr --agents 2 \
+          --k3s-arg '--disable=traefik@server:0'
       - name: Provision KCP cluster
         run: |
           k3d cluster create kcp --agents 2 \
@@ -42,30 +42,43 @@ jobs:
               exit 1
           fi
           echo "/etc/hosts file patched"
-      - name: Setup Control-Plane requirements
-        if: ${{ matrix.target  == 'control-plane' }}
+      - name: Export required Kubeconfig Env vars
         run: |
-          ##--install kubectl--##
+          export KCP_KUBECONFIG=$(k3d kubeconfig write kcp) && \
+          export SKR_KUBECONFIG=$(k3d kubeconfig write skr)
+      - name: checkout repo
+        uses: actions/checkout@v2.3.4
+      - name: Install kubectl
+        run: |
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           chmod +x kubectl
           mv kubectl /usr/local/bin
-
-          ##--install istio--##
+      - name: Switch kubeconfig context to KCP cluster
+        run: kubectl config use-context k3d-kcp
+      - name: Install Istio
+        run: |
           curl -L https://istio.io/downloadIstio | TARGET_ARCH=x86_64 sh -
           chmod +x istio-$ISTIO_VERSION/bin/istioctl
           mv istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin
           istioctl install -y
-
-          ##--install cert manager--##
+      - name: Install Cert Manager
+        run: |
           kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
-
-          ##--create necessary namespaces--##
+      - name: Create necessary namespaces
+        run: |
           kubectl create namespace kyma-system
           kubectl create namespace kcp-system
+      - name: print working directory and list its contents
+        run: |
+          pwd && ls -al
       - name: build and push LM to local registry
         run: |
           make docker-build IMG=k3d-kyma-registry.localhost:5111/lifecycle-manager:0.0.1 && \
           make docker-push IMG=k3d-kyma-registry.localhost:5111/lifecycle-manager:0.0.1
+      - name: Set up Go for ${{ github.repository }}
+        run: |
+          export GOROOT=/usr/lib/go && export GOPATH=/go && export PATH=/go/bin:$PATH && \
+          mkdir -p ${GOPATH}/src ${GOPATH}/bin
       - name: Deploy LM local testing kustomize
         run: |
           if make local-deploy-with-watcher IMG=k3d-kyma-registry.localhost:5111/lifecycle-manager:0.0.1; then
@@ -75,12 +88,5 @@ jobs:
             sleep 30
             make local-deploy-with-watcher IMG=k3d-kyma-registry.localhost:5111/lifecycle-manager:0.0.1
           fi
-      - run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-      - name: Set up Go for ${{ github.repository }}
-        uses: actions/setup-go@v3
-        with:
-          cache: true
-          go-version-file: 'go.mod'
-          cache-dependency-path: 'go.sum'
       - name: Run Watcher E2E Tests
         run: make -C tests/e2e_test test-watcher-e2e

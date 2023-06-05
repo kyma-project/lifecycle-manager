@@ -34,7 +34,7 @@ help: ## Display this help.
 ##@ E2E Tests
 
 .PHONY: test-watcher-e2e
-test: ## Runs the E2E Test
+test-watcher-e2e: ## Runs the E2E Test
 	go test ./... -coverprofile cover.out --tags=e2e -v
 
 
