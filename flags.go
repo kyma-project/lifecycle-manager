@@ -11,7 +11,7 @@ import (
 const (
 	defaultKymaRequeueSuccessInterval     = 30 * time.Second
 	defaultKymaRequeueErrInterval         = 2 * time.Second
-	defaultKymaRequeueBusyInterval        = 3 * time.Second
+	defaultKymaRequeueBusyInterval        = 5 * time.Second
 	defaultManifestRequeueSuccessInterval = 30 * time.Second
 	defaultWatcherRequeueSuccessInterval  = 30 * time.Second
 	defaultClientQPS                      = 150
