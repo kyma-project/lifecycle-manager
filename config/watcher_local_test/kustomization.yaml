@@ -19,6 +19,7 @@ generatorOptions:
 
 patchesStrategicMerge:
   - patches/servicemonitor_delete.yaml
+  - patches/adjust_resources_for_local_setup.yaml
 
 
 # Patches enable the local testing mode for the KLM

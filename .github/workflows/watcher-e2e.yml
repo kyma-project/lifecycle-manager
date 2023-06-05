@@ -1,0 +1,86 @@
+name: Watcher E2E
+
+on:
+  schedule:
+    - cron: '20 7 * * 1-5'
+jobs:
+  watcher-integration:
+    strategy:
+      matrix:
+        cli-stability: [ "unstable" ]
+        target: [ "control-plane" ]
+    name: "Run Watcher E2E tests"
+    runs-on: ubuntu-latest
+    env:
+      LIFECYCLE_MANAGER: ${{ github.repository }}
+      K3D_VERSION: v5.4.7
+      ISTIO_VERSION: 1.17.1
+    steps:
+      - name: Set up k3d
+        run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
+      - id: kyma
+        run: |
+          wget -q https://storage.googleapis.com/kyma-cli-${{ matrix.cli-stability }}/kyma-linux
+          chmod +x kyma-linux && mv kyma-linux /usr/local/bin/kyma-${{ matrix.cli-stability }}
+          echo "PATH=/usr/local/bin/kyma-${{ matrix.cli-stability }}" >> $GITHUB_OUTPUT
+      - run: ln -s /usr/local/bin/kyma-${{ matrix.cli-stability }} /usr/local/bin/kyma
+      - name: Provision KCP cluster
+        run: |
+          k3d cluster create kcp --agents 2 \
+          -p 9443:443@loadbalancer -p 9080:80@loadbalancer \
+          --registry-create k3d-kyma-registry.localhost:5111 \
+          --k3s-arg '--disable=traefik@server:0'
+      - name: Update Kubeconfigs
+        run: k3d kubeconfig merge -a -d
+      - name: Update /etc/hosts
+        run: |
+          FILE=/etc/hosts
+          if [ -f "$FILE" ]; then
+              echo "127.0.0.1 k3d-kyma-registry" >> $FILE
+          else
+              echo "$FILE does not exist."
+              exit 1
+          fi
+          echo "/etc/hosts file patched"
+      - name: Setup Control-Plane requirements
+        if: ${{ matrix.target  == 'control-plane' }}
+        run: |
+          ##--install kubectl--##
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          mv kubectl /usr/local/bin
+
+          ##--install istio--##
+          curl -L https://istio.io/downloadIstio | TARGET_ARCH=x86_64 sh -
+          chmod +x istio-$ISTIO_VERSION/bin/istioctl
+          mv istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin
+          istioctl install -y
+
+          ##--install cert manager--##
+          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
+
+          ##--create necessary namespaces--##
+          kubectl create namespace kyma-system
+          kubectl create namespace kcp-system
+      - name: build and push LM to local registry
+        run: |
+          make docker-build IMG=k3d-kyma-registry.localhost:5111/lifecycle-manager:0.0.1 && \
+          make docker-push IMG=k3d-kyma-registry.localhost:5111/lifecycle-manager:0.0.1
+      - name: Deploy LM local testing kustomize
+        run: |
+          if make local-deploy-with-watcher IMG=k3d-kyma-registry.localhost:5111/lifecycle-manager:0.0.1; then
+            echo "KLM deployed successfully"
+          else
+            echo "Deploy encountered some error, will retry after 30 seconds"
+            sleep 30
+            make local-deploy-with-watcher IMG=k3d-kyma-registry.localhost:5111/lifecycle-manager:0.0.1
+          fi
+      - run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+      - name: Set up Go for ${{ github.repository }}
+        uses: actions/setup-go@v3
+        with:
+          cache: true
+          go-version-file: 'go.mod'
+          cache-dependency-path: 'go.sum'
+      - name: Run Watcher E2E Tests
+        run: make -C tests/e2e_test test-watcher-e2e
