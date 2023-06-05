@@ -270,7 +270,7 @@ func (r *Reconciler) checkTargetReadiness(
 
 	resourceReadyCheck := r.CustomReadyCheck
 
-	err := resourceReadyCheck.Run(ctx, clnt, obj, target)
+	state, err := resourceReadyCheck.Run(ctx, clnt, obj, target)
 
 	if errors.Is(err, ErrResourcesNotReady) || errors.Is(err, ErrCustomResourceStateNotFound) ||
 		errors.Is(err, ErrDeploymentNotReady) {
@@ -287,11 +287,11 @@ func (r *Reconciler) checkTargetReadiness(
 	}
 
 	installationCondition := newInstallationCondition(obj)
-	if !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) || status.State != StateReady {
+	if !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) || status.State != state {
 		r.Event(obj, "Normal", installationCondition.Reason, installationCondition.Message)
 		installationCondition.Status = metav1.ConditionTrue
 		meta.SetStatusCondition(&status.Conditions, installationCondition)
-		obj.SetStatus(status.WithState(StateReady).WithOperation(installationCondition.Message))
+		obj.SetStatus(status.WithState(state).WithOperation(installationCondition.Message))
 		return ErrInstallationConditionRequiresUpdate
 	}
 

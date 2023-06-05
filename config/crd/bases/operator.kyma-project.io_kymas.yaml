@@ -351,6 +351,7 @@ spec:
                       - Ready
                       - Error
                       - ""
+                      - Warning
                       type: string
                     template:
                       description: It contains information about the last parsed ModuleTemplate
@@ -416,6 +417,7 @@ spec:
                 - Ready
                 - Error
                 - ""
+                - Warning
                 type: string
             type: object
         type: object
@@ -727,6 +729,7 @@ spec:
                       - Ready
                       - Error
                       - ""
+                      - Warning
                       type: string
                     template:
                       description: It contains information about the last parsed ModuleTemplate
@@ -792,6 +795,7 @@ spec:
                 - Ready
                 - Error
                 - ""
+                - Warning
                 type: string
             type: object
         type: object
