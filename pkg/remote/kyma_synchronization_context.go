@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -167,7 +168,7 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 	recorder := adapter.RecorderFromContext(ctx)
 	remoteKyma := &v1beta2.Kyma{}
 
-	remoteKyma.Name = kyma.Name
+	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
 	remoteKyma.Namespace = remoteSyncNamespace
 
 	err := c.RuntimeClient.Get(ctx, client.ObjectKeyFromObject(remoteKyma), remoteKyma)
@@ -186,10 +187,10 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 		if !kyma.DeletionTimestamp.IsZero() {
 			return nil, ErrNotFoundAndKCPKymaUnderDeleting
 		}
-		kyma.Spec.DeepCopyInto(&remoteKyma.Spec)
 
-		// if KCP Kyma contains some modules during initialization, not sync them into remote.
-		remoteKyma.Spec.Modules = []v1beta2.Module{}
+		if err = c.copyOldKymaCRIfExisting(ctx, kyma, remoteSyncNamespace, remoteKyma, recorder); err != nil {
+			return nil, err
+		}
 
 		err = c.RuntimeClient.Create(ctx, remoteKyma)
 		if err != nil {
@@ -197,13 +198,39 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 
 			return nil, err
 		}
+
 	} else if err != nil {
 		recorder.Event(kyma, "Warning", err.Error(), "Client could not fetch remote Kyma")
 
 		return nil, err
 	}
 
-	return remoteKyma, err
+	return remoteKyma, nil
+}
+
+func (c *KymaSynchronizationContext) copyOldKymaCRIfExisting(
+	ctx context.Context, kyma *v1beta2.Kyma, remoteSyncNamespace string,
+	remoteKyma *v1beta2.Kyma, recorder record.EventRecorder) error {
+	oldRemoteKyma := &v1beta2.Kyma{}
+	oldRemoteKyma.Name = kyma.Name
+	oldRemoteKyma.Namespace = remoteSyncNamespace
+	err := c.RuntimeClient.Get(ctx, client.ObjectKeyFromObject(oldRemoteKyma), oldRemoteKyma)
+	if k8serrors.IsNotFound(err) {
+		kyma.Spec.DeepCopyInto(&remoteKyma.Spec)
+		// if KCP Kyma contains some modules during initialization, not sync them into remote.
+		remoteKyma.Spec.Modules = []v1beta2.Module{}
+		return nil
+	} else if err != nil {
+		return err
+	}
+
+	oldRemoteKyma.Spec.DeepCopyInto(&remoteKyma.Spec)
+	err = c.RuntimeClient.Delete(ctx, oldRemoteKyma)
+	if err != nil {
+		recorder.Event(kyma, "Warning", "OldKymaCRDeletion", "Couldn't delete old Kyma CR")
+	}
+
+	return nil
 }
 
 func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(
