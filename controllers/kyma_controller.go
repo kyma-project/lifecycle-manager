@@ -274,15 +274,15 @@ func (r *KymaReconciler) processKymaState(ctx context.Context, kyma *v1beta2.Kym
 	case "":
 		return ctrl.Result{}, r.handleInitialState(ctx, kyma)
 	case v1beta2.StateProcessing:
-		return ctrl.Result{Requeue: true}, r.handleProcessingState(ctx, kyma)
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, r.handleProcessingState(ctx, kyma)
 	case v1beta2.StateDeleting:
 		if dependentsDeleting, err := r.handleDeletingState(ctx, kyma); err != nil {
 			return ctrl.Result{}, err
 		} else if dependentsDeleting {
-			return ctrl.Result{Requeue: true}, nil
+			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
 		}
 	case v1beta2.StateError:
-		return ctrl.Result{Requeue: true}, r.handleProcessingState(ctx, kyma)
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Error}, r.handleProcessingState(ctx, kyma)
 	case v1beta2.StateReady:
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, r.handleProcessingState(ctx, kyma)
 	}
