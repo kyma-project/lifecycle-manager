@@ -54,14 +54,17 @@ func (c *ManifestCustomResourceReadyCheck) Run(
 		return declarative.ErrCustomResourceStateNotFound
 	}
 
-	if state := declarative.State(state); state != declarative.StateReady {
+	if !stableState(declarative.State(state)) {
 		return fmt.Errorf(
-			"custom resource state is %s but expected %s: %w", state, declarative.StateReady,
-			declarative.ErrResourcesNotReady,
+			"custom resource state is %s: %w", state, declarative.ErrResourcesNotReady,
 		)
 	}
 
 	return nil
+}
+
+func stableState(state declarative.State) bool {
+	return state == declarative.StateReady || state == declarative.StateWarning
 }
 
 var ErrDeploymentResNotFound = errors.New("deployment resource is not found")
