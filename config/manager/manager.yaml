@@ -32,6 +32,7 @@ spec:
         args:
         - --leader-elect
         - --log-level=2
+        - --max-concurrent-kyma-reconciles=50
         image: controller:latest
         ports:
           - containerPort: 8082

@@ -146,11 +146,6 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequestFromOwnerRefe
 	request := reconcile.Request{NamespacedName: types.NamespacedName{
 		Name: ref.Name,
 	}}
-	e.Log.V(2).Info(fmt.Sprintf("Adding new request for %s-%s-%s-%s",
-		request.Name,
-		request.Namespace,
-		request.NamespacedName,
-		request.String()))
 
 	// if owner is not namespaced then we should set the namespace to the empty
 	mapping, err := e.mapper.RESTMapping(e.groupKind, refGV.Version)
@@ -173,11 +168,21 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequestFromOwnerRefe
 		}
 
 		if oldState != newState {
+			e.Log.V(2).Info(fmt.Sprintf("Adding new request for %s-%s-%s-%s for oldState differs from newState",
+				request.Name,
+				request.Namespace,
+				request.NamespacedName,
+				request.String()))
 			result[request] = ref
 		}
 		return
 	}
 
+	e.Log.V(2).Info(fmt.Sprintf("Adding new request for %s-%s-%s-%s for oldIfAny is not existing",
+		request.Name,
+		request.Namespace,
+		request.NamespacedName,
+		request.String()))
 	result[request] = ref
 }
 
