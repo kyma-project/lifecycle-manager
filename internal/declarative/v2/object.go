@@ -21,9 +21,9 @@ type Object interface {
 // +k8s:deepcopy-gen=true
 type Status struct {
 	// State signifies current state of CustomObject.
-	// Value can be one of ("Ready", "Processing", "Error", "Deleting").
+	// Value can be one of ("Ready", "Processing", "Error", "Deleting", "Warning").
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error
+	// +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error;Warning
 	State State `json:"state,omitempty"`
 
 	// Conditions contain a set of conditionals to determine the State of Status.

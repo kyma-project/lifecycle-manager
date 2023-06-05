@@ -218,7 +218,7 @@ type PartialMeta struct {
 
 const DefaultChannel = "regular"
 
-// +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error;""
+// +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error;"";Warning
 type State string
 
 // Valid States.

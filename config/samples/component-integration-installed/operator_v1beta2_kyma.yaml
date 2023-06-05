@@ -9,3 +9,4 @@ metadata:
 spec:
   channel: regular
   modules:
+    - name: template-operator
