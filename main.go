@@ -240,6 +240,7 @@ func NewClient(
 	)
 }
 
+//nolint:funlen
 func setupKymaReconciler(mgr ctrl.Manager,
 	remoteClientCache *remote.ClientCache,
 	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
