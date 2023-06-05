@@ -277,6 +277,8 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		SKRWebhookManager:        skrWebhookManager,
 		RequeueIntervals: controllers.RequeueIntervals{
 			Success: flagVar.kymaRequeueSuccessInterval,
+			Busy:    flagVar.kymaRequeueBusyInterval,
+			Error:   flagVar.kymaRequeueErrInterval,
 		},
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: flagVar.enableVerification,
@@ -361,7 +363,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, fla
 		Scheme:        mgr.GetScheme(),
 		RestConfig:    mgr.GetConfig(),
 		RequeueIntervals: controllers.RequeueIntervals{
-			Success: flagVar.kymaRequeueSuccessInterval,
+			Success: flagVar.watcherRequeueSuccessInterval,
 		},
 	}).SetupWithManager(mgr, options, istioConfig); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controllers.WatcherControllerName)

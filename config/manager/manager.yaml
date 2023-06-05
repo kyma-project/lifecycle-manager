@@ -31,7 +31,6 @@ spec:
         - /manager
         args:
         - --leader-elect
-        - --kyma-requeue-success-interval=2m
         image: controller:latest
         ports:
           - containerPort: 8082
