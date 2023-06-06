@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	ErrResourceSyncStateDiff                     = errors.New("resource syncTarget state diff detected")
+	ErrResourceSyncStateDiff                     = errors.New("resource syncTarget state diff detected, try to recover by evict cache") //nolint:lll
 	ErrInstallationConditionRequiresUpdate       = errors.New("installation condition needs an update")
 	ErrDeletionTimestampSetButNotInDeletingState = errors.New("resource is not set to deleting yet")
 	ErrObjectHasEmptyState                       = errors.New("object has an empty state")
@@ -137,6 +137,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.removeFinalizer(ctx, obj)
 	}
 	if err := r.syncResources(ctx, clnt, obj, target); err != nil {
+		if errors.Is(err, ErrResourceSyncStateDiff) {
+			r.EvictCache(spec)
+		}
 		return r.ssaStatus(ctx, obj)
 	}
 
