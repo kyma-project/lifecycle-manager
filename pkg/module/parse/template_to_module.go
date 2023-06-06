@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -140,22 +139,6 @@ func (p *Parser) newManifestFromTemplate(
 	if err != nil {
 		return nil, err
 	}
-	var componentDescriptor *compdesc.ComponentDescriptor
-	useLocalTemplate, found := template.GetLabels()[v1beta2.UseLocalTemplate]
-	if found && useLocalTemplate == "true" {
-		componentDescriptor = descriptor.ComponentDescriptor
-	} else {
-		descriptorCacheKey, err := template.GetComponentDescriptorCacheKey()
-		if err != nil {
-			return nil, err
-		}
-		componentDescriptor, err = p.ComponentDescriptorCache.GetRemoteDescriptor(ctx,
-			descriptorCacheKey, descriptor, p.Client)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	verification, err := signature.NewVerification(ctx,
 		p.Client,
 		p.EnableVerification,
@@ -165,11 +148,11 @@ func (p *Parser) newManifestFromTemplate(
 		return nil, err
 	}
 
-	if err := signature.Verify(componentDescriptor, verification); err != nil {
+	if err := signature.Verify(descriptor.ComponentDescriptor, verification); err != nil {
 		return nil, fmt.Errorf("could not verify signature: %w", err)
 	}
 
-	if layers, err = img.Parse(componentDescriptor); err != nil {
+	if layers, err = img.Parse(descriptor.ComponentDescriptor); err != nil {
 		return nil, fmt.Errorf("could not parse descriptor: %w", err)
 	}
 

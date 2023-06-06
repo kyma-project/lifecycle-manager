@@ -198,7 +198,6 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 
 			return nil, err
 		}
-
 	} else if err != nil {
 		recorder.Event(kyma, "Warning", err.Error(), "Client could not fetch remote Kyma")
 
@@ -210,7 +209,8 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 
 func (c *KymaSynchronizationContext) copyOldKymaCRIfExisting(
 	ctx context.Context, kyma *v1beta2.Kyma, remoteSyncNamespace string,
-	remoteKyma *v1beta2.Kyma, recorder record.EventRecorder) error {
+	remoteKyma *v1beta2.Kyma, recorder record.EventRecorder,
+) error {
 	oldRemoteKyma := &v1beta2.Kyma{}
 	oldRemoteKyma.Name = kyma.Name
 	oldRemoteKyma.Namespace = remoteSyncNamespace
