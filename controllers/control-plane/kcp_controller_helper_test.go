@@ -68,8 +68,9 @@ func kymaExists(clnt client.Client, name, namespace string) error {
 	return nil
 }
 
-func watcherLabelsAnnotationsExist(clnt client.Client, kyma *v1beta2.Kyma, remoteSyncNamespace string) error {
-	remoteKyma, err := GetKyma(ctx, clnt, kyma.GetName(), remoteSyncNamespace)
+func watcherLabelsAnnotationsExist(clnt client.Client, remoteKyma *v1beta2.Kyma, kyma *v1beta2.Kyma,
+	remoteSyncNamespace string) error {
+	remoteKyma, err := GetKyma(ctx, clnt, remoteKyma.GetName(), remoteSyncNamespace)
 	if err != nil {
 		return err
 	}
