@@ -75,11 +75,11 @@ func ConsistencyParseManifest(manifest string) (*ManifestResources, error) {
 		return nil, err
 	}
 	for i := 0; i < ParseRetries; i++ {
-		temp, err := ParseManifestStringToObjects(manifest)
+		tempResources, err := ParseManifestStringToObjects(manifest)
 		if err != nil {
 			return nil, err
 		}
-		if len(temp.Items) != len(resources.Items) {
+		if len(tempResources.Items) != len(resources.Items) {
 			return nil, ErrParseInconsistent
 		}
 	}
