@@ -5,6 +5,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
 var _ = Describe("Test Manifest.Spec.Remote in KCP mode", Ordered, func() {
@@ -17,10 +18,17 @@ var _ = Describe("Test Manifest.Spec.Remote in KCP mode", Ordered, func() {
 	}
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 	registerControlPlaneLifecycleForKyma(kyma)
-
+	var runtimeEnv *envtest.Environment
+	BeforeAll(func() {
+		_, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
+	})
 	It("expect Manifest.Spec.Remote=true", func() {
 		Eventually(GetManifestSpecRemote, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, kyma, module).
 			Should(Equal(true))
+	})
+
+	AfterAll(func() {
+		Expect(runtimeEnv.Stop()).Should(Succeed())
 	})
 })
