@@ -186,6 +186,10 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 		if !kyma.DeletionTimestamp.IsZero() {
 			return nil, ErrNotFoundAndKCPKymaUnderDeleting
 		}
+		kyma.Spec.DeepCopyInto(&remoteKyma.Spec)
+
+		// if KCP Kyma contains some modules during initialization, not sync them into remote.
+		remoteKyma.Spec.Modules = []v1beta2.Module{}
 
 		err = c.RuntimeClient.Create(ctx, remoteKyma)
 		if err != nil {
