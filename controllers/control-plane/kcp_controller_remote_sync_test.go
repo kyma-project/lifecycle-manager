@@ -46,12 +46,12 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
 	remoteKyma.Namespace = controllers.DefaultRemoteSyncNamespace
 
-	registerControlPlaneLifecycleForKyma(kyma)
 	var runtimeClient client.Client
 	var runtimeEnv *envtest.Environment
 	BeforeAll(func() {
 		runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
 	})
+	registerControlPlaneLifecycleForKyma(kyma)
 
 	It("module template created", func() {
 		template, err := ModuleTemplateFactory(skrModuleFromClient, unstructured.Unstructured{}, false)
@@ -182,13 +182,12 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
 	remoteKyma.Namespace = controllers.DefaultRemoteSyncNamespace
-	registerControlPlaneLifecycleForKyma(kyma)
-
 	var runtimeClient client.Client
 	var runtimeEnv *envtest.Environment
 	BeforeAll(func() {
 		runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
 	})
+	registerControlPlaneLifecycleForKyma(kyma)
 
 	It("Kyma CR should be synchronized in both clusters", func() {
 		By("Remote Kyma created")
