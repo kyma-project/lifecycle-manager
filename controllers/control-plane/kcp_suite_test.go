@@ -148,7 +148,6 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	controlPlaneClient = k8sManager.GetClient()
-	runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
 
 	go func() {
 		defer GinkgoRecover()
@@ -162,7 +161,5 @@ var _ = AfterSuite(func() {
 	cancel()
 
 	err := controlPlaneEnv.Stop()
-	Expect(err).NotTo(HaveOccurred())
-	err = runtimeEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
