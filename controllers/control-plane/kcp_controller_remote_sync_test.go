@@ -87,6 +87,7 @@ var _ = Describe("Kyma with remote module templates", Ordered, func() {
 
 	BeforeAll(func() {
 		Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
+		runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
 	})
 
 	templateInKcp, err := ModuleTemplateFactory(moduleInKcp, unstructured.Unstructured{}, false)
@@ -146,6 +147,8 @@ var _ = Describe("Kyma with remote module templates", Ordered, func() {
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(runtimeClient, templateInSkr).Should(Succeed())
+		err := runtimeEnv.Stop()
+		Expect(err).NotTo(HaveOccurred())
 	})
 })
 
