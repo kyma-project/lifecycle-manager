@@ -23,7 +23,6 @@ var (
 
 func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
-		runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
 		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false)
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
@@ -35,8 +34,6 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 			WithContext(ctx).
 			WithArguments(controlPlaneClient, kyma).Should(Succeed())
 		DeleteModuleTemplates(ctx, controlPlaneClient, kyma, false)
-		err := runtimeEnv.Stop()
-		Expect(err).NotTo(HaveOccurred())
 	})
 
 	BeforeEach(func() {

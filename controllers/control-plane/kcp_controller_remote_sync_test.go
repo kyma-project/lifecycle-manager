@@ -12,6 +12,8 @@ import (
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
 var (
@@ -45,6 +47,11 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	remoteKyma.Namespace = controllers.DefaultRemoteSyncNamespace
 
 	registerControlPlaneLifecycleForKyma(kyma)
+	var runtimeClient client.Client
+	var runtimeEnv *envtest.Environment
+	BeforeAll(func() {
+		runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
+	})
 
 	It("module template created", func() {
 		template, err := ModuleTemplateFactory(skrModuleFromClient, unstructured.Unstructured{}, false)
@@ -71,6 +78,10 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Eventually(ManifestExists, Timeout, Interval).WithArguments(ctx, kyma,
 			skrModuleFromClient, controlPlaneClient).Should(Succeed())
 	})
+
+	AfterAll(func() {
+		Expect(runtimeEnv.Stop()).Should(Succeed())
+	})
 })
 
 var _ = Describe("Kyma with remote module templates", Ordered, func() {
@@ -90,6 +101,8 @@ var _ = Describe("Kyma with remote module templates", Ordered, func() {
 	}
 	kyma.Spec.Modules = []v1beta2.Module{moduleInSkr, moduleInKcp}
 
+	var runtimeClient client.Client
+	var runtimeEnv *envtest.Environment
 	BeforeAll(func() {
 		Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
 		runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
@@ -152,8 +165,7 @@ var _ = Describe("Kyma with remote module templates", Ordered, func() {
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(runtimeClient, templateInSkr).Should(Succeed())
-		err := runtimeEnv.Stop()
-		Expect(err).NotTo(HaveOccurred())
+		Expect(runtimeEnv.Stop()).Should(Succeed())
 	})
 })
 
@@ -171,6 +183,12 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
 	remoteKyma.Namespace = controllers.DefaultRemoteSyncNamespace
 	registerControlPlaneLifecycleForKyma(kyma)
+
+	var runtimeClient client.Client
+	var runtimeEnv *envtest.Environment
+	BeforeAll(func() {
+		runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
+	})
 
 	It("Kyma CR should be synchronized in both clusters", func() {
 		By("Remote Kyma created")
@@ -246,6 +264,10 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 				moduleInSkr.Name, "initValue").
 			Should(Succeed())
 	})
+
+	AfterAll(func() {
+		Expect(runtimeEnv.Stop()).Should(Succeed())
+	})
 })
 
 var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered, func() {
@@ -262,6 +284,11 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 
 	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
 	remoteKyma.Namespace = controllers.DefaultRemoteSyncNamespace
+	var runtimeClient client.Client
+	var runtimeEnv *envtest.Environment
+	BeforeAll(func() {
+		runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
+	})
 	registerControlPlaneLifecycleForKyma(kyma)
 	annotations := []string{
 		"moduletemplate-skr-crd-generation",
@@ -354,5 +381,9 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 
 			return nil
 		}, Timeout, Interval).Should(Succeed())
+	})
+
+	AfterAll(func() {
+		Expect(runtimeEnv.Stop()).Should(Succeed())
 	})
 })
