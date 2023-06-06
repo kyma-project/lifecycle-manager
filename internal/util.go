@@ -30,12 +30,14 @@ const (
 	OthersReadExecuteFilePermission = 0o755
 	DebugLogLevel                   = 2
 	TraceLogLevel                   = 3
+	ParseRetries                    = 3
 )
 
 var (
 	ErrPathContainsDoubleDot      = errors.New("path contains '..', which is illegal")
 	ErrPathContainsDriveSeperator = errors.New("path contains ':', which is illegal")
 	ErrPathIsAbsolute             = errors.New("path is absolute, which is illegal")
+	ErrParseInconsistent          = errors.New("parse manifest is inconsistent")
 )
 
 func CleanFilePathJoin(root, destDir string) (string, error) {
@@ -65,6 +67,23 @@ func CleanFilePathJoin(root, destDir string) (string, error) {
 	newPath := filepath.Join(root, filepath.Clean(destDir))
 
 	return filepath.ToSlash(newPath), nil
+}
+
+func ConsistencyParseManifest(manifest string) (*ManifestResources, error) {
+	resources, err := ParseManifestStringToObjects(manifest)
+	if err != nil {
+		return nil, err
+	}
+	for i := 0; i < ParseRetries; i++ {
+		temp, err := ParseManifestStringToObjects(manifest)
+		if err != nil {
+			return nil, err
+		}
+		if len(temp.Items) != len(resources.Items) {
+			return nil, ErrParseInconsistent
+		}
+	}
+	return resources, nil
 }
 
 func ParseManifestStringToObjects(manifest string) (*ManifestResources, error) {

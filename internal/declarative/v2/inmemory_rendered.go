@@ -57,7 +57,7 @@ func (c *InMemoryManifestCache) Parse(
 		return nil, err
 	}
 
-	resources, err := internal.ParseManifestStringToObjects(string(rendered))
+	resources, err := internal.ConsistencyParseManifest(string(rendered))
 	if err != nil {
 		return nil, err
 	}
