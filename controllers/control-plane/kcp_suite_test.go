@@ -63,10 +63,8 @@ const UseRandomPort = "0"
 
 var (
 	controlPlaneClient client.Client        //nolint:gochecknoglobals
-	runtimeClient      client.Client        //nolint:gochecknoglobals
 	k8sManager         manager.Manager      //nolint:gochecknoglobals
 	controlPlaneEnv    *envtest.Environment //nolint:gochecknoglobals
-	runtimeEnv         *envtest.Environment //nolint:gochecknoglobals
 	ctx                context.Context      //nolint:gochecknoglobals
 	cancel             context.CancelFunc   //nolint:gochecknoglobals
 	cfg                *rest.Config         //nolint:gochecknoglobals
