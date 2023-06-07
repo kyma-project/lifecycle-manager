@@ -1,14 +1,11 @@
 package v2
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"time"
 
 	"github.com/jellydator/ttlcache/v3"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
 	"github.com/kyma-project/lifecycle-manager/internal"
 )
 
@@ -17,7 +14,7 @@ const (
 )
 
 type ManifestParser interface {
-	Parse(ctx context.Context, renderer Renderer, obj Object, spec *Spec) (*internal.ManifestResources, error)
+	Parse(spec *Spec) (internal.ManifestResources, error)
 }
 
 func NewInMemoryCachedManifestParser(ttl time.Duration) *InMemoryManifestCache {
@@ -31,9 +28,8 @@ type InMemoryManifestCache struct {
 	*ttlcache.Cache[string, internal.ManifestResources]
 }
 
-func (c *InMemoryManifestCache) Parse(
-	ctx context.Context, renderer Renderer, obj Object, spec *Spec,
-) (*internal.ManifestResources, error) {
+func (c *InMemoryManifestCache) Parse(spec *Spec,
+) (internal.ManifestResources, error) {
 	file := filepath.Join(ManifestFilePrefix, spec.Path, spec.ManifestName)
 	key := fmt.Sprintf("%s-%s", file, spec.Mode)
 
@@ -41,36 +37,15 @@ func (c *InMemoryManifestCache) Parse(
 	if item != nil {
 		resources := item.Value()
 
-		copied := &internal.ManifestResources{
-			Items: make([]*unstructured.Unstructured, 0, len(resources.Items)),
-			Blobs: resources.Blobs,
-		}
-		for _, res := range resources.Items {
-			copied.Items = append(copied.Items, res.DeepCopy())
-		}
-
-		return copied, nil
+		return resources, nil
 	}
 
-	rendered, err := renderer.Render(ctx, obj)
+	resources, err := internal.ParseManifestToObjects(spec.Path)
 	if err != nil {
-		return nil, err
+		return internal.ManifestResources{}, err
 	}
 
-	resources, err := internal.ParseManifestStringToObjects(string(rendered))
-	if err != nil {
-		return nil, err
-	}
+	c.Cache.Set(key, resources, c.TTL)
 
-	c.Cache.Set(key, *resources, c.TTL)
-
-	copied := &internal.ManifestResources{
-		Items: make([]*unstructured.Unstructured, 0, len(resources.Items)),
-		Blobs: resources.Blobs,
-	}
-	for _, res := range resources.Items {
-		copied.Items = append(copied.Items, res.DeepCopy())
-	}
-
-	return copied, nil
+	return resources, nil
 }
