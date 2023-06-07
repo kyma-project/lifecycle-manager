@@ -1,5 +1,4 @@
 //go:build e2e
-// +build e2e
 
 package e2e_test
 
@@ -11,6 +10,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/kyma-project/lifecycle-manager/api"
@@ -38,6 +38,7 @@ import (
 const (
 	kcpConfigEnvVar = "KCP_KUBECONFIG"
 	skrConfigEnvVar = "SKR_KUBECONFIG"
+	dockerInDocker  = "DIND"
 )
 
 var errEmptyEnvVar = errors.New("environment variable is empty;")
@@ -54,6 +55,7 @@ var (
 
 	ctx    context.Context    //nolint:gochecknoglobals
 	cancel context.CancelFunc //nolint:gochecknoglobals
+	isDinD bool               //nolint:gochecknoglobals
 )
 
 func TestAPIs(t *testing.T) {
@@ -81,6 +83,10 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(moduleFile).ToNot(BeEmpty())
 	Expect(yaml2.Unmarshal(moduleFile, &controlPlaneCrd)).To(Succeed())
+
+	//dind
+	isDinD, err = getTestRuntimeEnvironment()
+	Expect(err).NotTo(HaveOccurred())
 
 	// k8s configs
 	controlPlaneConfig, runtimeConfig, err = getKubeConfigs()
@@ -127,6 +133,14 @@ var _ = AfterSuite(func() {
 	err := controlPlaneEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
+
+func getTestRuntimeEnvironment() (bool, error) {
+	dockerInDockerValue := os.Getenv(dockerInDocker)
+	if dockerInDockerValue == "" {
+		return false, fmt.Errorf("%w: %s", errEmptyEnvVar, kcpConfigEnvVar)
+	}
+	return strings.ToLower(dockerInDocker) == "true", nil
+}
 
 func getKubeConfigs() (*[]byte, *[]byte, error) {
 	controlPlaneConfigFile := os.Getenv(kcpConfigEnvVar)

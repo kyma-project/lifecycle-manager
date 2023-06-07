@@ -8,7 +8,6 @@ jobs:
     strategy:
       matrix:
         cli-stability: [ "unstable" ]
-        target: [ "control-plane" ]
     name: "Run Watcher E2E tests"
     runs-on: docker-in-docker
     container: docker:cli
@@ -44,8 +43,8 @@ jobs:
           echo "/etc/hosts file patched"
       - name: Export required Kubeconfig Env vars
         run: |
-          export KCP_KUBECONFIG=$(k3d kubeconfig write kcp) && \
-          export SKR_KUBECONFIG=$(k3d kubeconfig write skr)
+          echo "KCP_KUBECONFIG=$(k3d kubeconfig write kcp)" >> $GITHUB_ENV
+          echo "SKR_KUBECONFIG=$(k3d kubeconfig write skr)" >> $GITHUB_ENV
       - name: checkout repo
         uses: actions/checkout@v2.3.4
       - name: Install kubectl
@@ -77,7 +76,8 @@ jobs:
           make docker-push IMG=k3d-kyma-registry.localhost:5111/lifecycle-manager:0.0.1
       - name: Set up Go for ${{ github.repository }}
         run: |
-          export GOROOT=/usr/lib/go && export GOPATH=/go && export PATH=/go/bin:$PATH && \
+          export GOPATH=$(go env GOPATH) && \
+          echo "GOPATH=$GOPATH" >> $GITHUB_ENV && \
           mkdir -p ${GOPATH}/src ${GOPATH}/bin
       - name: Deploy LM local testing kustomize
         run: |
@@ -88,5 +88,9 @@ jobs:
             sleep 30
             make local-deploy-with-watcher IMG=k3d-kyma-registry.localhost:5111/lifecycle-manager:0.0.1
           fi
+      - name: Export DinD ENV var
+        run: echo "DIND=true" >> $GITHUB_ENV
       - name: Run Watcher E2E Tests
-        run: make -C tests/e2e_test test-watcher-e2e
+        run: |
+          export DIND="true" && \
+          make -C tests/e2e_test test-watcher-e2e

@@ -1,5 +1,4 @@
 //go:build e2e
-// +build e2e
 
 package e2e_test
 
@@ -9,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"strings"
 	"time"
 
@@ -39,6 +39,9 @@ const (
 
 	controlPlaneNamespace = "kcp-system"
 	runtimeNamespace      = "kyma-system"
+	k3dHostname           = "host.k3d.internal"
+	dInDHostname          = "host.docker.internal"
+	localHostname         = "0.0.0.0"
 )
 
 var (
@@ -48,6 +51,14 @@ var (
 	errLogNotFound               = errors.New("logMsg was not found in log")
 )
 
+func resolveHostToBeReplaced() string {
+	if isDinD {
+		return dInDHostname
+	} else {
+		return localHostname
+	}
+}
+
 var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation using the Watcher",
 	Ordered, func() {
 		channel := "regular"
@@ -55,6 +66,12 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 		kymaNamespace := "kcp-system"
 		remoteNamespace := "kyma-system"
 		incomingRequestMsg := fmt.Sprintf("event coming from SKR, adding %s/%s to queue", kymaNamespace, kymaName)
+
+		BeforeAll(func() {
+			//make sure we can list Kymas to ensure CRDs have been installed
+			err := controlPlaneClient.List(ctx, &v1beta2.KymaList{})
+			Expect(meta.IsNoMatchError(err)).To(BeFalse())
+		})
 
 		It("Should create empty Kyma CR on remote cluster", func() {
 			Eventually(createKymaCR, timeout, interval).
@@ -154,7 +171,8 @@ func createKymaCR(ctx context.Context, kymaName, kymaNamespace, channel string, 
 }
 
 func createKymaSecret(ctx context.Context, kymaName, kymaNamespace, channel string, k8sClient client.Client) error {
-	patchedRuntimeConfig := strings.ReplaceAll(string(*runtimeConfig), "0.0.0.0", "host.k3d.internal")
+	hostnameToBeReplaced := resolveHostToBeReplaced()
+	patchedRuntimeConfig := strings.ReplaceAll(string(*runtimeConfig), hostnameToBeReplaced, k3dHostname)
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kymaName,
