@@ -192,7 +192,6 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 
 			return nil, err
 		}
-
 	} else if err != nil {
 		recorder.Event(kyma, "Warning", err.Error(), "Client could not fetch remote Kyma")
 
