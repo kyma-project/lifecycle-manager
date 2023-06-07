@@ -2,13 +2,13 @@
 
 ## Overview
 
-The Lifecycle Manager API types consist of three major pillars. Each of these deals with a specific aspect of reconciling modules into their corresponding states.
+The Lifecycle Manager API types consist of three major custom resources (CRs). Each of these deals with a specific aspect of reconciling modules into their corresponding states.
 
-1. The introduction of a single entry point CustomResourceDefinition to control a cluster and it's desired state: [Kyma custom resource(CR)](../../../api/v1beta2/kyma_types.go).
+1. The introduction of a single entry point CustomResourceDefinition to control a cluster and it's desired state: [Kyma CR](../../../api/v1beta2/kyma_types.go).
 2. The introduction of a single entry point CustomResourceDefinition to control a module and it's desired state: [Manifest CR](../../../api/v1beta2/manifest_types.go)
 3. The [ModuleTemplate CR](../../../api/v1beta2/moduletemplate_types.go) which contains all reference data for the modules to be installed correctly. It is a standardized desired state for a module available in a given release channel.
 
-Additionally, we maintain the [Watcher custom resource](../../../api/v1beta2/watcher_types.go) to define the callback functionality for synchronized remote clusters that allows lower latencies before changes are detected by the Control Plane.
+Additionally, we maintain the [Watcher CR](../../../api/v1beta2/watcher_types.go) to define the callback functionality for synchronized remote clusters that allows lower latencies before changes are detected by the Control Plane.
 
 ## Custom Resource Definitions
 
@@ -37,3 +37,14 @@ By default, without any labels configured on Kyma and ModuleTemplate CRs, a Modu
 **NOTE:** Disabling synchronization for already synchronized ModuleTemplates CRs doesn't remove them from remote clusters. The CRs remain as they are, but any subsequent changes to these ModuleTemplate CRs in the Control Plane are not synchronized.
 
 For details, read about [the Kyma CR synchronization labels](../api/kyma-cr.md#operatorkyma-projectio-labels) and [the ModuleTemplate CR synchronization labels](../api/moduleTemplate-cr.md#operatorkyma-projectio-labels).
+
+## Stability
+
+See the list of CRs involved in Lifecycle Manager's workflow and their stability status:
+
+| Version | Name                                                | Stability                                                                                                                                                                                                    |
+|:--------|-----------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| v1beta2 | [Kyma](../../api/v1beta2/kyma_types.go)                         | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
+| v1beta2 | [ModuleTemplate](../../api/v1beta2/moduletemplate_types.go)     | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
+| v1beta2 | [Manifest](../../api/v1beta2/manifest_types.go)                 | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
+| v1beta2 | [Watcher](../../api/v1beta2/watcher_types.go)                   | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
