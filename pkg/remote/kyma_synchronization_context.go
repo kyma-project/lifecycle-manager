@@ -167,8 +167,8 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 	recorder := adapter.RecorderFromContext(ctx)
 	remoteKyma := &v1beta2.Kyma{}
 
-	remoteKymeObjectKey := GetRemoteKymaObjectKey(remoteSyncNamespace)
-	err := c.RuntimeClient.Get(ctx, remoteKymeObjectKey, remoteKyma)
+	remoteKymaObjectKey := GetRemoteKymaObjectKey(remoteSyncNamespace)
+	err := c.RuntimeClient.Get(ctx, remoteKymaObjectKey, remoteKyma)
 
 	if meta.IsNoMatchError(err) {
 		recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
