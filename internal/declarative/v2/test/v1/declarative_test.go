@@ -2,11 +2,15 @@ package v1_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
+	"path"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/time/rate"
@@ -14,6 +18,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
@@ -27,6 +32,12 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	testv1 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
 )
+
+type ResourceData struct {
+	apiVersion string
+	kind       string
+	metadata   metav1.TypeMeta
+}
 
 //nolint:gochecknoglobals
 var (
@@ -47,6 +58,7 @@ var (
 		TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
 		ObjectMeta: metav1.ObjectMeta{Name: "kyma-system"},
 	}
+	matchingResourcesError = errors.New("resources didn't get updated in the status.synced")
 )
 
 func TestAPIs(t *testing.T) {
@@ -131,6 +143,7 @@ var _ = FDescribe("Test Manifest Reconciliation for module upgrade", Ordered, fu
 	var ctx context.Context
 	var cancel context.CancelFunc
 	var reconciler *Reconciler
+	var oldStatus Status
 
 	runID := fmt.Sprintf("run-%s", rand.String(4))
 	obj := &testv1.TestAPI{Spec: testv1.TestAPISpec{ManifestName: "updating-manifest"}}
@@ -138,6 +151,7 @@ var _ = FDescribe("Test Manifest Reconciliation for module upgrade", Ordered, fu
 	// this namespace is different form the test-run and path as we may need to test namespace creation
 	obj.SetNamespace(customResourceNamespace.Name)
 	obj.SetName(runID)
+
 	key := client.ObjectKeyFromObject(obj)
 
 	opts := []Option{WithRemoteTargetCluster(
@@ -164,27 +178,41 @@ var _ = FDescribe("Test Manifest Reconciliation for module upgrade", Ordered, fu
 		)
 
 		Expect(testClient.Get(ctx, key, obj)).To(Succeed())
-		Expect(obj.GetStatus()).To(HaveAllSyncedResourcesExistingInCluster(ctx))
+		oldStatus = obj.GetStatus()
+		Expect(oldStatus).To(HaveAllSyncedResourcesExistingInCluster(ctx))
 	})
 
-	It("Should start reconciliation for the updated manifest", func() {
-		source = WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "updated-raw-manifest.yaml"), RenderModeRaw))
+	It("Should start reconciliation for the updated manifest and rmeove old deployed resources", func() {
+		source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "updated-raw-manifest.yaml"),
+			RenderModeRaw))
 		reconciler.SpecResolver = source
+		oldData, err := os.ReadFile(path.Join(testSamplesDir, "raw-manifest.yaml"))
+		Expect(err).NotTo(HaveOccurred())
+		var oldDeployedResources []ResourceData
+		Expect(yaml.Unmarshal(oldData, &oldDeployedResources)).To(Succeed())
+		Eventually(func() error {
+			testClient.Get(ctx, key, obj)
+			for _, newResource := range obj.Status.Synced {
+				for _, oldResource := range oldStatus.Synced {
+					if newResource == oldResource {
+						return matchingResourcesError
+					}
+				}
+			}
+			return nil
+		}, testutils.Timeout, testutils.Interval).
+			WithContext(ctx).
+			Should(Succeed())
+	})
 
-		// NOTWORKINGGGGGG with the new manifesttt
-		time.Sleep(100000)
-		EventuallyDeclarativeStatusShould(
-			ctx, key,
-			BeInState(StateReady),
-			HaveConditionWithStatus(ConditionTypeResources, metav1.ConditionTrue),
-			HaveConditionWithStatus(ConditionTypeInstallation, metav1.ConditionTrue),
-		)
-
+	It("Should", func() {
 		Expect(testClient.Get(ctx, key, obj)).To(Succeed())
 		Expect(obj.GetStatus()).To(HaveAllSyncedResourcesExistingInCluster(ctx))
 	})
 
-	AfterAll(func() { cancel() })
+	AfterAll(func() {
+		cancel()
+	})
 })
 
 // StartDeclarativeReconcilerForRun starts the declarative reconciler based on a runID.
@@ -249,6 +277,7 @@ func StartDeclarativeReconcilerForRun(
 	go func() {
 		Expect(mgr.Start(ctx)).To(Succeed(), "failed to run manager")
 	}()
+
 	return reconciler.(*Reconciler)
 }
 
