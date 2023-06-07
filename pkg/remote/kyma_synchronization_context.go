@@ -65,7 +65,7 @@ func (c *KymaSynchronizationContext) GetRemotelySyncedKyma(
 ) (*v1beta2.Kyma, error) {
 	remoteKyma := &v1beta2.Kyma{}
 	if err := c.RuntimeClient.Get(ctx, GetRemoteKymaObjectKey(remoteSyncNamespace), remoteKyma); err != nil {
-		return nil, err
+		return remoteKyma, err
 	}
 
 	return remoteKyma, nil
