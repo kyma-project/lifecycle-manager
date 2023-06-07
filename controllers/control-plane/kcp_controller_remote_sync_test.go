@@ -83,6 +83,11 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 			WithArguments(runtimeClient, remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace).
 			Should(Succeed())
 
+		By("Remote Kyma contains global channel")
+		Eventually(kymaChannelMatch, Timeout, Interval).
+			WithArguments(runtimeClient, remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace, kyma.Spec.Channel).
+			Should(Succeed())
+
 		By("add skr-module-client to remoteKyma.spec.modules")
 		Eventually(updateRemoteModule(ctx, runtimeClient, remoteKyma, controllers.DefaultRemoteSyncNamespace,
 			[]v1beta2.Module{
