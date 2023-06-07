@@ -63,10 +63,8 @@ const UseRandomPort = "0"
 
 var (
 	controlPlaneClient client.Client        //nolint:gochecknoglobals
-	runtimeClient      client.Client        //nolint:gochecknoglobals
 	k8sManager         manager.Manager      //nolint:gochecknoglobals
 	controlPlaneEnv    *envtest.Environment //nolint:gochecknoglobals
-	runtimeEnv         *envtest.Environment //nolint:gochecknoglobals
 	ctx                context.Context      //nolint:gochecknoglobals
 	cancel             context.CancelFunc   //nolint:gochecknoglobals
 	cfg                *rest.Config         //nolint:gochecknoglobals
@@ -148,7 +146,6 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	controlPlaneClient = k8sManager.GetClient()
-	runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
 
 	go func() {
 		defer GinkgoRecover()
@@ -162,7 +159,5 @@ var _ = AfterSuite(func() {
 	cancel()
 
 	err := controlPlaneEnv.Stop()
-	Expect(err).NotTo(HaveOccurred())
-	err = runtimeEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
