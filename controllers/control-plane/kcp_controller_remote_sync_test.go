@@ -50,8 +50,23 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	var runtimeEnv *envtest.Environment
 	BeforeAll(func() {
 		runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
+
+		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false)
+		Eventually(CreateCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma).Should(Succeed())
 	})
-	registerControlPlaneLifecycleForKyma(kyma)
+
+	AfterAll(func() {
+		DeleteModuleTemplates(ctx, controlPlaneClient, kyma, false)
+		Expect(runtimeEnv.Stop()).Should(Succeed())
+	})
+
+	BeforeEach(func() {
+		By("get latest kyma CR")
+		Eventually(SyncKyma, Timeout, Interval).
+			WithContext(ctx).WithArguments(controlPlaneClient, kyma).Should(Succeed())
+	})
 
 	It("module template created", func() {
 		template, err := ModuleTemplateFactory(skrModuleFromClient, unstructured.Unstructured{}, false)
@@ -79,8 +94,16 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 			skrModuleFromClient, controlPlaneClient).Should(Succeed())
 	})
 
-	AfterAll(func() {
-		Expect(runtimeEnv.Stop()).Should(Succeed())
+	It("Remote SKR Kyma get deleted when KCP Kyma get deleted", func() {
+		By("Delete KCP Kyma")
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma).Should(Succeed())
+
+		By("Expect SKR Kyma get deleted")
+		Eventually(kymaExists, Timeout, Interval).
+			WithArguments(runtimeClient, remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace).
+			Should(Equal(ErrNotFound))
 	})
 })
 
