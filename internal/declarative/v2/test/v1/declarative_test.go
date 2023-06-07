@@ -127,12 +127,72 @@ var _ = Describe(
 	},
 )
 
+var _ = FDescribe("Test Manifest Reconciliation for module upgrade", Ordered, func() {
+	var ctx context.Context
+	var cancel context.CancelFunc
+	var reconciler *Reconciler
+
+	runID := fmt.Sprintf("run-%s", rand.String(4))
+	obj := &testv1.TestAPI{Spec: testv1.TestAPISpec{ManifestName: "updating-manifest"}}
+	obj.SetLabels(labels.Set{testRunLabel: runID})
+	// this namespace is different form the test-run and path as we may need to test namespace creation
+	obj.SetNamespace(customResourceNamespace.Name)
+	obj.SetName(runID)
+	key := client.ObjectKeyFromObject(obj)
+
+	opts := []Option{WithRemoteTargetCluster(
+		func(context.Context, Object) (*ClusterInfo, error) {
+			return &ClusterInfo{
+				Config: cfg,
+			}, nil
+		},
+	)}
+	source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), RenderModeRaw))
+	BeforeAll(func() {
+		ctx, cancel = context.WithCancel(context.TODO())
+		reconciler = StartDeclarativeReconcilerForRun(ctx, runID, append(opts, WithSpecResolver(source))...)
+	})
+
+	It("Should create manifest resources", func() {
+		Expect(testClient.Create(ctx, obj)).To(Succeed())
+
+		EventuallyDeclarativeStatusShould(
+			ctx, key,
+			BeInState(StateReady),
+			HaveConditionWithStatus(ConditionTypeResources, metav1.ConditionTrue),
+			HaveConditionWithStatus(ConditionTypeInstallation, metav1.ConditionTrue),
+		)
+
+		Expect(testClient.Get(ctx, key, obj)).To(Succeed())
+		Expect(obj.GetStatus()).To(HaveAllSyncedResourcesExistingInCluster(ctx))
+	})
+
+	It("Should start reconciliation for the updated manifest", func() {
+		source = WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "updated-raw-manifest.yaml"), RenderModeRaw))
+		reconciler.SpecResolver = source
+
+		// NOTWORKINGGGGGG with the new manifesttt
+		time.Sleep(100000)
+		EventuallyDeclarativeStatusShould(
+			ctx, key,
+			BeInState(StateReady),
+			HaveConditionWithStatus(ConditionTypeResources, metav1.ConditionTrue),
+			HaveConditionWithStatus(ConditionTypeInstallation, metav1.ConditionTrue),
+		)
+
+		Expect(testClient.Get(ctx, key, obj)).To(Succeed())
+		Expect(obj.GetStatus()).To(HaveAllSyncedResourcesExistingInCluster(ctx))
+	})
+
+	AfterAll(func() { cancel() })
+})
+
 // StartDeclarativeReconcilerForRun starts the declarative reconciler based on a runID.
 func StartDeclarativeReconcilerForRun(
 	ctx context.Context,
 	runID string,
 	options ...Option,
-) {
+) *Reconciler {
 	var (
 		namespace  = fmt.Sprintf("%s-%s", "test", runID)
 		finalizer  = fmt.Sprintf("%s-%s", FinalizerDefault, runID)
@@ -189,6 +249,7 @@ func StartDeclarativeReconcilerForRun(
 	go func() {
 		Expect(mgr.Start(ctx)).To(Succeed(), "failed to run manager")
 	}()
+	return reconciler.(*Reconciler)
 }
 
 func StatusOnCluster(g Gomega, ctx context.Context, key client.ObjectKey) Status { //nolint:revive
