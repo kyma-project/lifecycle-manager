@@ -104,6 +104,11 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 		Eventually(kymaExists, Timeout, Interval).
 			WithArguments(runtimeClient, remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace).
 			Should(Equal(ErrNotFound))
+
+		By("Make sure SKR Kyma not recreated")
+		Consistently(kymaExists, Timeout, Interval).
+			WithArguments(runtimeClient, remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace).
+			Should(Equal(ErrNotFound))
 	})
 })
 
