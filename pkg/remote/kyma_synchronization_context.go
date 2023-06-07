@@ -64,7 +64,9 @@ func (c *KymaSynchronizationContext) GetRemotelySyncedKyma(
 	ctx context.Context, remoteSyncNamespace string,
 ) (*v1beta2.Kyma, error) {
 	remoteKyma := &v1beta2.Kyma{}
-	if err := c.RuntimeClient.Get(ctx, GetRemoteKymaObjectKey(remoteSyncNamespace), remoteKyma); err != nil {
+	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
+	remoteKyma.Namespace = remoteSyncNamespace
+	if err := c.RuntimeClient.Get(ctx, client.ObjectKeyFromObject(remoteKyma), remoteKyma); err != nil {
 		return remoteKyma, err
 	}
 
@@ -248,12 +250,6 @@ func MergeModules(
 		controlPlaneKyma.Spec.Modules = append(controlPlaneKyma.Spec.Modules, m)
 	}
 	controlPlaneKyma.Spec.Channel = remoteKyma.Spec.Channel
-}
-
-func GetRemoteKymaObjectKey(remoteSyncNamespace string) client.ObjectKey {
-	name := v1beta2.DefaultRemoteKymaName
-	namespace := remoteSyncNamespace
-	return client.ObjectKey{Namespace: namespace, Name: name}
 }
 
 // SyncWatcherLabelsAnnotations inserts labels into the given KymaCR, which are needed to ensure
