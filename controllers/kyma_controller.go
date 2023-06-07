@@ -199,7 +199,7 @@ func (r *KymaReconciler) syncCrdsAndUpdateKymaAnnotations(ctx context.Context, k
 func (r *KymaReconciler) deleteRemoteKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
 	logger := ctrlLog.FromContext(ctx).V(log.InfoLevel)
 	if r.SyncKymaEnabled(kyma) {
-		if err := remote.DeleteRemotelySyncedKyma(ctx, kyma, r.RemoteSyncNamespace); client.IgnoreNotFound(err) != nil {
+		if err := remote.DeleteRemotelySyncedKyma(ctx, r.RemoteSyncNamespace); client.IgnoreNotFound(err) != nil {
 			logger.Error(err, "Failed to be deleted remotely!")
 			return fmt.Errorf("error occurred while trying to delete remotely synced kyma: %w", err)
 		}
@@ -370,7 +370,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		}
 
 		r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
-		if err := remote.RemoveFinalizerFromRemoteKyma(ctx, kyma, r.RemoteSyncNamespace); client.IgnoreNotFound(err) != nil {
+		if err := remote.RemoveFinalizerFromRemoteKyma(ctx, r.RemoteSyncNamespace); client.IgnoreNotFound(err) != nil {
 			err = fmt.Errorf("error while trying to remove finalizer from remote: %w", err)
 			r.enqueueWarningEvent(kyma, deletionError, err)
 			return false, err

@@ -61,10 +61,10 @@ func InitializeKymaSynchronizationContext(ctx context.Context, kcp Client, cache
 }
 
 func (c *KymaSynchronizationContext) GetRemotelySyncedKyma(
-	ctx context.Context, controlPlaneKyma *v1beta2.Kyma, remoteSyncNamespace string,
+	ctx context.Context, remoteSyncNamespace string,
 ) (*v1beta2.Kyma, error) {
 	remoteKyma := &v1beta2.Kyma{}
-	if err := c.RuntimeClient.Get(ctx, GetRemoteObjectKey(controlPlaneKyma, remoteSyncNamespace), remoteKyma); err != nil {
+	if err := c.RuntimeClient.Get(ctx, GetRemoteKymaObjectKey(remoteSyncNamespace), remoteKyma); err != nil {
 		return nil, err
 	}
 
@@ -72,11 +72,11 @@ func (c *KymaSynchronizationContext) GetRemotelySyncedKyma(
 }
 
 func RemoveFinalizerFromRemoteKyma(
-	ctx context.Context, kyma *v1beta2.Kyma, remoteSyncNamespace string,
+	ctx context.Context, remoteSyncNamespace string,
 ) error {
 	syncContext := SyncContextFromContext(ctx)
 
-	remoteKyma, err := syncContext.GetRemotelySyncedKyma(ctx, kyma, remoteSyncNamespace)
+	remoteKyma, err := syncContext.GetRemotelySyncedKyma(ctx, remoteSyncNamespace)
 	if err != nil {
 		return err
 	}
@@ -87,10 +87,10 @@ func RemoveFinalizerFromRemoteKyma(
 }
 
 func DeleteRemotelySyncedKyma(
-	ctx context.Context, kyma *v1beta2.Kyma, remoteSyncNamespace string,
+	ctx context.Context, remoteSyncNamespace string,
 ) error {
 	syncContext := SyncContextFromContext(ctx)
-	remoteKyma, err := syncContext.GetRemotelySyncedKyma(ctx, kyma, remoteSyncNamespace)
+	remoteKyma, err := syncContext.GetRemotelySyncedKyma(ctx, remoteSyncNamespace)
 	if err != nil {
 		return err
 	}
@@ -256,8 +256,8 @@ func MergeModules(
 	controlPlaneKyma.Spec.Channel = remoteKyma.Spec.Channel
 }
 
-func GetRemoteObjectKey(kyma *v1beta2.Kyma, remoteSyncNamespace string) client.ObjectKey {
-	name := kyma.Name
+func GetRemoteKymaObjectKey(remoteSyncNamespace string) client.ObjectKey {
+	name := v1beta2.DefaultRemoteKymaName
 	namespace := remoteSyncNamespace
 	return client.ObjectKey{Namespace: namespace, Name: name}
 }
