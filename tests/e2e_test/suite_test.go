@@ -137,9 +137,9 @@ var _ = AfterSuite(func() {
 func getTestRuntimeEnvironment() (bool, error) {
 	dockerInDockerValue := os.Getenv(dockerInDocker)
 	if dockerInDockerValue == "" {
-		return false, fmt.Errorf("%w: %s", errEmptyEnvVar, kcpConfigEnvVar)
+		return false, fmt.Errorf("%w: %s", errEmptyEnvVar, dockerInDocker)
 	}
-	return strings.ToLower(dockerInDocker) == "true", nil
+	return strings.ToLower(dockerInDockerValue) == "true", nil
 }
 
 func getKubeConfigs() (*[]byte, *[]byte, error) {

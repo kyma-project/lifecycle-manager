@@ -92,5 +92,4 @@ jobs:
         run: echo "DIND=true" >> $GITHUB_ENV
       - name: Run Watcher E2E Tests
         run: |
-          export DIND="true" && \
           make -C tests/e2e_test test-watcher-e2e
