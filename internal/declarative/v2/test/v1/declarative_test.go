@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -14,11 +15,17 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/time/rate"
+	v12 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+	v13 "k8s.io/api/rbac/v1"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
@@ -32,12 +39,6 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	testv1 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
 )
-
-type ResourceData struct {
-	apiVersion string
-	kind       string
-	metadata   metav1.TypeMeta
-}
 
 //nolint:gochecknoglobals
 var (
@@ -58,7 +59,8 @@ var (
 		TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
 		ObjectMeta: metav1.ObjectMeta{Name: "kyma-system"},
 	}
-	matchingResourcesError = errors.New("resources didn't get updated in the status.synced")
+	ErrOldResourcesStillDeployed = errors.New("old resources still exist in the cluster")
+	ErrNewResourcesNotInSynced   = errors.New("new resources don't exist in the status.synced")
 )
 
 func TestAPIs(t *testing.T) {
@@ -139,16 +141,14 @@ var _ = Describe(
 	},
 )
 
-var _ = FDescribe("Test Manifest Reconciliation for module upgrade", Ordered, func() {
+var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, func() {
 	var ctx context.Context
 	var cancel context.CancelFunc
 	var reconciler *Reconciler
-	var oldStatus Status
 
 	runID := fmt.Sprintf("run-%s", rand.String(4))
 	obj := &testv1.TestAPI{Spec: testv1.TestAPISpec{ManifestName: "updating-manifest"}}
 	obj.SetLabels(labels.Set{testRunLabel: runID})
-	// this namespace is different form the test-run and path as we may need to test namespace creation
 	obj.SetNamespace(customResourceNamespace.Name)
 	obj.SetName(runID)
 
@@ -178,35 +178,64 @@ var _ = FDescribe("Test Manifest Reconciliation for module upgrade", Ordered, fu
 		)
 
 		Expect(testClient.Get(ctx, key, obj)).To(Succeed())
-		oldStatus = obj.GetStatus()
-		Expect(oldStatus).To(HaveAllSyncedResourcesExistingInCluster(ctx))
+		Expect(obj.GetStatus()).To(HaveAllSyncedResourcesExistingInCluster(ctx))
 	})
 
-	It("Should start reconciliation for the updated manifest and rmeove old deployed resources", func() {
+	It("Should start reconciliation for the updated manifest and remove old deployed resources", func() {
 		source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "updated-raw-manifest.yaml"),
 			RenderModeRaw))
 		reconciler.SpecResolver = source
 		oldData, err := os.ReadFile(path.Join(testSamplesDir, "raw-manifest.yaml"))
 		Expect(err).NotTo(HaveOccurred())
-		var oldDeployedResources []ResourceData
-		Expect(yaml.Unmarshal(oldData, &oldDeployedResources)).To(Succeed())
+		oldDeployedResources := getResourcesData(oldData)
+
 		Eventually(func() error {
-			testClient.Get(ctx, key, obj)
-			for _, newResource := range obj.Status.Synced {
-				for _, oldResource := range oldStatus.Synced {
-					if newResource == oldResource {
-						return matchingResourcesError
-					}
+			for _, res := range oldDeployedResources {
+				currentRes := &unstructured.Unstructured{}
+				currentRes.SetGroupVersionKind(schema.GroupVersionKind{
+					Group:   res.Group,
+					Version: res.Version,
+					Kind:    res.Kind,
+				})
+				currentRes.SetName(res.Name)
+				currentRes.SetNamespace(customResourceNamespace.Name)
+				err := testClient.Get(ctx, client.ObjectKeyFromObject(currentRes), currentRes)
+				if !k8serrors.IsNotFound(err) {
+					return ErrOldResourcesStillDeployed
 				}
 			}
 			return nil
-		}, testutils.Timeout, testutils.Interval).
-			WithContext(ctx).
-			Should(Succeed())
+		}, testutils.Timeout, testutils.Interval).WithContext(ctx).Should(Succeed())
+
 	})
 
-	It("Should", func() {
+	It("Should deploy new manifest resources and have them in status.synced", func() {
+		EventuallyDeclarativeStatusShould(
+			ctx, key,
+			BeInState(StateReady),
+			HaveConditionWithStatus(ConditionTypeResources, metav1.ConditionTrue),
+			HaveConditionWithStatus(ConditionTypeInstallation, metav1.ConditionTrue),
+		)
+
 		Expect(testClient.Get(ctx, key, obj)).To(Succeed())
+		newData, err := os.ReadFile(path.Join(testSamplesDir, "updated-raw-manifest.yaml"))
+		Expect(err).NotTo(HaveOccurred())
+		newDeployedResources := getResourcesData(newData)
+		Eventually(func() error {
+			for _, res := range newDeployedResources {
+				found := false
+				for _, s := range obj.Status.Synced {
+					if s == res {
+						found = true
+					}
+				}
+				if !found {
+					return ErrNewResourcesNotInSynced
+				}
+			}
+			return nil
+		}, testutils.Timeout, testutils.Interval).WithContext(ctx).Should(Succeed())
+
 		Expect(obj.GetStatus()).To(HaveAllSyncedResourcesExistingInCluster(ctx))
 	})
 
@@ -214,6 +243,75 @@ var _ = FDescribe("Test Manifest Reconciliation for module upgrade", Ordered, fu
 		cancel()
 	})
 })
+
+func getResourcesData(resourcesDataBytes []byte) []Resource {
+	var resourcesData []Resource
+	decode := serializer.NewCodecFactory(env.Scheme).UniversalDeserializer().Decode
+	for _, res := range strings.Split(string(resourcesDataBytes), "---") {
+		obj, gvk, _ := decode([]byte(res), nil, nil)
+		var currentRes Resource
+		switch obj.(type) {
+		case *apiextensions.CustomResourceDefinition:
+			currentRes = Resource{
+				Name:      obj.(*apiextensions.CustomResourceDefinition).Name,
+				Namespace: obj.(*apiextensions.CustomResourceDefinition).Namespace,
+			}
+		case *v1.Namespace:
+			currentRes = Resource{
+				Name:      obj.(*v1.Namespace).Name,
+				Namespace: obj.(*v1.Namespace).Namespace,
+			}
+		case *v12.Deployment:
+			currentRes = Resource{
+				Name:      obj.(*v12.Deployment).Name,
+				Namespace: obj.(*v12.Deployment).Namespace,
+			}
+		case *v1.ConfigMap:
+			currentRes = Resource{
+				Name:      obj.(*v1.ConfigMap).Name,
+				Namespace: obj.(*v1.ConfigMap).Namespace,
+			}
+		case *v1.ServiceAccount:
+			currentRes = Resource{
+				Name:      obj.(*v1.ServiceAccount).Name,
+				Namespace: obj.(*v1.ServiceAccount).Namespace,
+			}
+		case *v13.ClusterRole:
+			currentRes = Resource{
+				Name:      obj.(*v13.ClusterRole).Name,
+				Namespace: obj.(*v13.ClusterRole).Namespace,
+			}
+		case *v13.ClusterRoleBinding:
+			currentRes = Resource{
+				Name:      obj.(*v13.ClusterRoleBinding).Name,
+				Namespace: obj.(*v13.ClusterRoleBinding).Namespace,
+			}
+		case *v13.Role:
+			currentRes = Resource{
+				Name:      obj.(*v13.Role).Name,
+				Namespace: obj.(*v13.Role).Namespace,
+			}
+		case *v13.RoleBinding:
+			currentRes = Resource{
+				Name:      obj.(*v13.RoleBinding).Name,
+				Namespace: obj.(*v13.RoleBinding).Namespace,
+			}
+		case *v1.Service:
+			currentRes = Resource{
+				Name:      obj.(*v1.Service).Name,
+				Namespace: obj.(*v1.Service).Namespace,
+			}
+		}
+		currentRes.GroupVersionKind = metav1.GroupVersionKind{
+			Group:   gvk.Group,
+			Version: gvk.Version,
+			Kind:    gvk.Kind,
+		}
+		resourcesData = append(resourcesData, currentRes)
+
+	}
+	return resourcesData
+}
 
 // StartDeclarativeReconcilerForRun starts the declarative reconciler based on a runID.
 func StartDeclarativeReconcilerForRun(
