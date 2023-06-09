@@ -1,7 +1,6 @@
 package v2
 
 import (
-	"helm.sh/helm/v3/pkg/kube"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,9 +13,6 @@ import (
 	apiValidation "k8s.io/kubectl/pkg/util/openapi/validation"
 	"k8s.io/kubectl/pkg/validation"
 )
-
-// Checking compliance with the interface methods implemented below.
-var _ kube.Factory = &SingletonClients{}
 
 // OpenAPISchema returns metadata and structural information about
 // Kubernetes object definitions.

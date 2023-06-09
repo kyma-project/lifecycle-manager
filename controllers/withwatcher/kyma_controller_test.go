@@ -49,7 +49,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 
 	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer)
 
-	It("kyma reconciliation installs watcher resources with correct webhook config", func() {
+	It("kyma reconciliation installs watcher with correct webhook config", func() {
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
 			kymaObjKey), Timeout, Interval).Should(Succeed())
 	})
@@ -89,7 +89,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 			kymaObjKey), Timeout, Interval).Should(Succeed())
 	})
 
-	It("kyma reconciliation removes watcher helm chart from SKR cluster when kyma is deleted", func() {
+	It("kyma reconciliation removes watcher from SKR cluster when kyma is deleted", func() {
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(suiteCtx).
 			WithArguments(controlPlaneClient, kyma).Should(Succeed())

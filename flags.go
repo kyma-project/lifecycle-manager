@@ -102,7 +102,7 @@ func defineFlagVar() *FlagVar {
 		"indicates the current log-level, enter negative values to increase verbosity (e.g. 9)",
 	)
 	flag.BoolVar(&flagVar.inKCPMode, "in-kcp-mode", false,
-		"Indicates lifecycle manager is deployed in control-plane mode")
+		"Indicates lifecycle manager is deployed in control-plane mode (multiple clusters mode)")
 	flag.BoolVar(&flagVar.enablePurgeFinalizer, "enable-purge-finalizer", false,
 		"Enabling purge finalizer")
 	flag.DurationVar(&flagVar.purgeFinalizerTimeout, "purge-finalizer-timeout", defaultPurgeFinalizerTimeout,
@@ -111,6 +111,7 @@ func defineFlagVar() *FlagVar {
 		" from finalizer removal. Example: 'ingressroutetcps.traefik.containo.us,*.helm.cattle.io'.")
 	flag.StringVar(&flagVar.remoteSyncNamespace, "sync-namespace", controllers.DefaultRemoteSyncNamespace,
 		"Name of the namespace for syncing remote Kyma and module catalog")
+	flag.BoolVar(&flagVar.isKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
 	return flagVar
 }
 
@@ -155,4 +156,5 @@ type FlagVar struct {
 	skipPurgingFor                         string
 	remoteSyncNamespace                    string
 	enableVerification                     bool
+	isKymaManaged                          bool
 }

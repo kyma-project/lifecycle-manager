@@ -203,7 +203,7 @@ func (r *PurgeReconciler) UpdateStatus(
 	return nil
 }
 
-func (r *PurgeReconciler) RecordKymaStatusMetrics(_ context.Context, _ *v1beta2.Kyma) {}
+func (r *PurgeReconciler) UpdateMetrics(_ context.Context, _ *v1beta2.Kyma) {}
 
 func (r *PurgeReconciler) IsKymaManaged() bool {
 	return r.IsManagedKyma

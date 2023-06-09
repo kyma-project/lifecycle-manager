@@ -426,8 +426,7 @@ func GetModuleTemplate(ctx context.Context,
 }
 
 func ManifestExists(ctx context.Context,
-	kyma *v1beta2.Kyma, module v1beta2.Module, controlPlaneClient client.Client,
-) error {
+	kyma *v1beta2.Kyma, module v1beta2.Module, controlPlaneClient client.Client) error {
 	_, err := GetManifest(ctx, controlPlaneClient, kyma, module)
 	if k8serrors.IsNotFound(err) {
 		return ErrNotFound
@@ -443,16 +442,14 @@ func ModuleTemplateExists(ctx context.Context, client client.Client, name, names
 	return nil
 }
 
-func ModuleTemplatesExist(ctx context.Context,
+func AllModuleTemplatesExists(ctx context.Context,
 	clnt client.Client, kyma *v1beta2.Kyma, remoteSyncNamespace string,
-) func() error {
-	return func() error {
-		for _, module := range kyma.Spec.Modules {
-			if err := ModuleTemplateExists(ctx, clnt, module.Name, remoteSyncNamespace); err != nil {
-				return err
-			}
+) error {
+	for _, module := range kyma.Spec.Modules {
+		if err := ModuleTemplateExists(ctx, clnt, module.Name, remoteSyncNamespace); err != nil {
+			return err
 		}
-
-		return nil
 	}
+
+	return nil
 }

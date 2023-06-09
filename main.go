@@ -246,7 +246,6 @@ func setupKymaReconciler(mgr ctrl.Manager,
 	flagVar *FlagVar, options controller.Options,
 ) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentKymaReconciles
-
 	kcpRestConfig := mgr.GetConfig()
 	var skrWebhookManager watcher.SKRWebhookManager
 	if flagVar.enableKcpWatcher {
@@ -285,12 +284,14 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		},
 		InKCPMode:           flagVar.inKCPMode,
 		RemoteSyncNamespace: flagVar.remoteSyncNamespace,
-	}).
-		SetupWithManager(mgr, options, controllers.SetupUpSetting{
+		IsManagedKyma:       flagVar.isKymaManaged,
+	}).SetupWithManager(
+		mgr, options, controllers.SetupUpSetting{
 			ListenerAddr:                 flagVar.kymaListenerAddr,
 			EnableDomainNameVerification: flagVar.enableDomainNameVerification,
 			IstioNamespace:               flagVar.istioNamespace,
-		}); err != nil {
+		},
+	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
@@ -320,7 +321,7 @@ func setupPurgeReconciler(
 		ResolveRemoteClient:   resolveRemoteClientFunc,
 		PurgeFinalizerTimeout: flagVar.purgeFinalizerTimeout,
 		SkipCRDs:              controllers.CRDMatcherFor(flagVar.skipPurgingFor),
-		IsManagedKyma:         flagVar.inKCPMode,
+		IsManagedKyma:         flagVar.isKymaManaged,
 	}).SetupWithManager(
 		mgr, options,
 	); err != nil {
