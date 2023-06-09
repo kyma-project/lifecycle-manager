@@ -2,9 +2,9 @@
 
 ## Context
 
-To make local testing easier, webhooks are disabled by default. To enable webhooks running with the operator, you must change some kustomization.yaml files as well as introduce a flag that will enable the webhook server.
+To make local testing easier, webhooks are disabled by default. To enable webhooks running with the operator, you must change some `kustomization.yaml` files as well as introduce a flag that will enable the webhook server.
 
-For further information, read the [kubebuilder tutorial](https://book.kubebuilder.io/cronjob-tutorial/running-webhook.html)
+For further information, read the [kubebuilder tutorial](https://book.kubebuilder.io/cronjob-tutorial/running-webhook.html).
 
 ## Procedure
 

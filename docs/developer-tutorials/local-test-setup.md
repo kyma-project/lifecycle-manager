@@ -5,12 +5,12 @@
 The following steps provide you with a quick tour of how to configure a fully working e2e test setup including the following components:
 
 - Lifecycle Manager
-- The runtime-`Watcher` on a remote cluster
-- Example `template-operator` on a remote cluster
+- runtime Watcher on a remote cluster
+- `template-operator` on a remote cluster as an example
 
 This setup is deployed with the following security features enabled:
 
-- Strict mTLS connection between KCP and SKR cluster
+- Strict mTLS connection between Kyma Control Plane (KCP) and SKR clusters
 - SAN Pinning (SAN of client TLS certificate needs to match DNS annotation of corresponding Kyma CR)
 
 > **NOTE:** If you want to use remote clusters instead of a local k3d setup or external registries, please refer to the following guides for the cluster and registry setup:
@@ -20,7 +20,7 @@ This setup is deployed with the following security features enabled:
 
 ## Procedure
 
-### Kyma Control Plane (KCP) cluster setup
+### KCP cluster setup
 
 1. Create a local KCP cluster:
 
@@ -81,7 +81,7 @@ This setup is deployed with the following security features enabled:
 
    </details>
 
-5. Create a ModuleTemplate CR using [Kyma CLI](https://github.com/kyma-project/cli)
+5. Create a ModuleTemplate CR using [Kyma CLI](https://github.com/kyma-project/cli).
    The ModuleTemplate CR includes component descriptors for module installations.
 
    In this tutorial, we will create a ModuleTemplate CR from the [`template-operator`](https://github.com/kyma-project/template-operator) repository.
@@ -120,7 +120,7 @@ This setup is deployed with the following security features enabled:
     <...>
    ```
 
-   You need the change because the operators are running inside of two local k3d cluster, and the internal port for the k3d registry is set by default to `5000`.
+   You need the change because the operators are running inside of two local k3d clusters, and the internal port for the k3d registry is set by default to `5000`.
 
 8. Apply the template:
 
@@ -136,9 +136,9 @@ Create a local Kyma runtime (SKR) cluster:
 k3d cluster create skr-local
 ```
 
-### Create Kyma CR and remote Secret
+### Create a Kyma CR and a remote Secret
 
-1. Switch the context for using KCP cluster:
+1. Switch the context for using the KCP cluster:
 
     ```shell
     kubectl config use-context k3d-kcp-local
@@ -177,37 +177,39 @@ k3d cluster create skr-local
     ```
 
    <details>
-      <summary>**TIP:** Running Lifecycle Manager on a local machine and not in-cluster</summary>
+      <summary>Running Lifecycle Manager on a local machine and not in-cluster</summary>
       If you are running Lifecycle Manager on your local machine and not as a deployment in a cluster, use the following to create a Kyma CR and Secret:
-   ```shell  
-    cat << EOF | kubectl apply -f -
-    ---
-    apiVersion: v1
-    kind: Secret
-    metadata:
-      name: kyma-sample
-      namespace: kcp-system
-      labels:
-        "operator.kyma-project.io/kyma-name": "kyma-sample"
-        "operator.kyma-project.io/managed-by": "lifecycle-manager"
-    data:
-      config: $(k3d kubeconfig get skr-local | base64 | tr -d '\n')
-    ---
-    apiVersion: operator.kyma-project.io/v1beta1
-    kind: Kyma
-    metadata:
-      annotations:
-        skr-domain: "example.domain.com"
-      name: kyma-sample
-      namespace: kcp-system
-    spec:
-      channel: regular
-      sync:
-        enabled: true
-      modules:
-      - name: template-operator
-    EOF
+
+      ```shell  
+      cat << EOF | kubectl apply -f -
+      ---
+      apiVersion: v1
+      kind: Secret
+      metadata:
+         name: kyma-sample
+         namespace: kcp-system
+         labels:
+         "operator.kyma-project.io/kyma-name": "kyma-sample"
+         "operator.kyma-project.io/managed-by": "lifecycle-manager"
+      data:
+         config: $(k3d kubeconfig get skr-local | base64 | tr -d '\n')
+      ---
+      apiVersion: operator.kyma-project.io/v1beta1
+      kind: Kyma
+      metadata:
+         annotations:
+         skr-domain: "example.domain.com"
+         name: kyma-sample
+         namespace: kcp-system
+      spec:
+         channel: regular
+         sync:
+         enabled: true
+         modules:
+         - name: template-operator
+      EOF
    ```
+
    </details>
 
 ### Watcher and module installation verification
@@ -269,7 +271,7 @@ status:
 
 ### Verify logs
 
-1. By watching the `skr-webhook` deployment's logs, verify that the KCP request is sent successfully:
+1. By watching the `skr-webhook` deployment logs, verify if the KCP request is sent successfully:
 
     ```log
     1.6711877286771238e+09    INFO    skr-webhook    Kyma UPDATE validated from webhook 

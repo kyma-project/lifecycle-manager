@@ -12,7 +12,7 @@ This tutorial assumes that you have a GCP project called `sap-kyma-jellyfish-dev
 
 ### Create your repository
 
-1. Create an Artifact Registry repository. For the tutorial purposes, call it `operator-test`.
+1. Create an Artifact Registry repository. For tutorial purposes, call it `operator-test`.
 
    ```sh
    gcloud artifacts repositories create operator-test \
@@ -37,7 +37,7 @@ Under the assumption you're [creating and using a service account](https://kuber
 
 ### Create a service account in Google Cloud
 
-1. For productive purposes, create a service account. For the tutorial purposes, call it `operator-test-sa`.
+1. For productive purposes, create a service account. For tutorial purposes, call it `operator-test-sa`.
 
    ```sh
    gcloud iam service-accounts create operator-test-sa \

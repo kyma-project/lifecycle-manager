@@ -6,13 +6,13 @@ If you use a private OCI registry for hosting module resources, follow the instr
 
 ## Prerequisites
 
-For a private registry that requires access permissions, each major registry provider offers standard Docker access credentials with the username and password combination.
+For a private registry that requires access permissions, each major registry provider offers standard Docker access credentials with a username and password combination.
 
-As an example, Docker Hub lets you create personal [access tokens](https://docs.docker.com/docker-hub/access-tokens/) as alternatives to your password.
+As an example, Docker Hub lets you create personal [access tokens](https://docs.docker.com/docker-hub/access-tokens/) as an alternative to your password.
 
 Before you proceed, prepare your registry credentials. Check also how to deal with the credentials rotation as is not covered in this guide.
 
-**TIP:** To comply with the principle of least privilege (PoLP), make sure these credentials have no more than the read-only permissions granted.
+> **TIP:** To comply with the principle of least privilege (PoLP), make sure these credentials have no more than the read-only permissions granted.
 
 ## Procedure
 
@@ -35,7 +35,7 @@ Before you proceed, prepare your registry credentials. Check also how to deal wi
         "operator.kyma-project.io/oci-registry-cred": "test-operator"
    ```
 
-   **NOTE:** The `"operator.kyma-project.io/managed-by": "lifecycle-manager"` label is mandatory for the Lifecycle Manager runtime controller to know which resources to cache.
+   > **NOTE:** The `"operator.kyma-project.io/managed-by": "lifecycle-manager"` label is mandatory for the Lifecycle Manager runtime controller to know which resources to cache.
 
 3. Deploy to the KCP cluster in each environment.
 
@@ -51,7 +51,7 @@ For example, you can run the following command to push your module image and gen
    kyma alpha create module -n [name]  --version [module version] --registry [private oci registry] -w -c [access credential with write permission] --registry-cred-selector=operator.kyma-project.io/oci-registry-cred=test-operator
    ```
 
-Verify in each component descriptor resources layer, if it contains the `oci-registry-cred` label.
+Verify in each **descriptor.component.resources** layer, if it contains the `oci-registry-cred` label.
 
    ```yaml
    descriptor:
