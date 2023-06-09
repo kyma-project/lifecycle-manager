@@ -1,28 +1,31 @@
-# Provide credential for private OCI registry authentication
+# Provide credentials for private OCI registry authentication
+
+## Context
+
+If you use a private OCI registry for hosting module resources, follow the instructions to provide your authentication credentials.
 
 ## Prerequisites
 
-You are using private OCI registry for hosting module resources. The following instructions guide you to provide the credential for authentication.
+For a private registry that requires access permissions, each major registry provider offers standard Docker access credentials with the username and password combination.
 
-## Instructions
+As an example, Docker Hub lets you create personal [access tokens](https://docs.docker.com/docker-hub/access-tokens/) as alternatives to your password.
 
-### Get registry credentials
+Before you proceed, prepare your registry credentials. Check also how to deal with the credentials rotation as is not covered in this guide.
 
-For private registry which requires access permissions, normally each major registry provider offers standard docker access credential with username and password as combination.
+**TIP:** To comply with the principle of least privilege (PoLP), make sure these credentials have no more than the read-only permissions granted.
 
-As an example, Docker Hub lets you create personal [access tokens](https://docs.docker.com/docker-hub/access-tokens/) as alternatives to your password. 
+## Procedure
 
-Prepare your credential first before next steps. Be aware, how to deal with credential rotation is not covered in this guide.
+### Prepare a docker-registry Secret manifest
 
-_Notice, to compliance least privileges principle, make sure this credential only have read only permission._
+1. Create a docker-registry Secret manifest. Run:
 
-### Prepare a docker-registry secret manifest
-
-1. Create a docker-registry secret manifest
    ```sh
    kubectl create secret docker-registry [secret name] --docker-server=[your oci registry host] --docker-username=[username] --docker-password=[password/token]  --dry-run=client -oyaml > registry_cred_secret.yaml
+   ```
 
-2. Add some labels to the secret so that it can be configured later in the module template as label selector.
+2. Add the following labels to the Secret so that it can be configured later in the ModuleTemplate custom resource (CR) as a label selector.
+
    ```yaml
    apiVersion: v1
    kind: Secret
@@ -30,22 +33,26 @@ _Notice, to compliance least privileges principle, make sure this credential onl
       labels:
         "operator.kyma-project.io/managed-by": "lifecycle-manager"
         "operator.kyma-project.io/oci-registry-cred": "test-operator"
-   ```   
-   Please be aware, the `"operator.kyma-project.io/managed-by": "lifecycle-manager"` is mandatory to have, it's for the Lifecycle Manager runtime controller to know which resources to cache.
+   ```
+
+   **NOTE:** The `"operator.kyma-project.io/managed-by": "lifecycle-manager"` label is mandatory for the Lifecycle Manager runtime controller to know which resources to cache.
 
 3. Deploy to the KCP cluster in each environment.
 
-### Generate Module Template with `oci-registry-cred` label
+### Generate a ModuleTemplate CR with the `oci-registry-cred` label
 
-`oci-registry-cred` label in module template allows lifecycle manager parsing the secret label selector and propagate to manifest CR so that Lifecycle Manager knows which credential secret to lookup.
+The `oci-registry-cred` label in a ModuleTemplate CR allows Lifecycle Manager to parse the Secret label selector and propagate it to the Manifest CR so that Lifecycle Manager knows which credentials Secret to look up.
 
-The most convenient way to support module template with `oci-registry-cred` label is using Kyma CLI with `registry-cred-selector`flag for create module command.
+To support the ModuleTemplate CR with the `oci-registry-cred` label, use Kyma CLI with the `registry-cred-selector` flag for creating a module command.
 
-For example, you can run following command to push your module image and generate the module template with `oci-registry-cred` label
+For example, you can run the following command to push your module image and generate a ModuleTemplate CR with the `oci-registry-cred` label:
+
    ```sh
-   kyma alpha create module -n [name]  --version [module version] --registry [private oci registry] -w -c [access credental with write permission] --registry-cred-selector=operator.kyma-project.io/oci-registry-cred=test-operator
+   kyma alpha create module -n [name]  --version [module version] --registry [private oci registry] -w -c [access credential with write permission] --registry-cred-selector=operator.kyma-project.io/oci-registry-cred=test-operator
    ```
-Verify in each component descriptor resources layer, it should contains `oci-registry-cred` label.
+
+Verify in each component descriptor resources layer, if it contains the `oci-registry-cred` label.
+
    ```yaml
    descriptor:
     component:
@@ -58,4 +65,5 @@ Verify in each component descriptor resources layer, it should contains `oci-reg
           value:
             operator.kyma-project.io/oci-registry-cred: test-operator
    ```
-With this module template, Lifecycle Manager should access private oci registry with no authentication problem.
+
+With this ModuleTemplate CR, Lifecycle Manager should access a private OCI registry without any authentication problems.

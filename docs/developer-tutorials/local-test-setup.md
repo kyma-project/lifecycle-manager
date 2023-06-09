@@ -1,22 +1,29 @@
-# Local test setup in two-cluster-mode using k3d
+# Local test setup in the control-plane mode using k3d
 
-The following steps provide you with a quick tour of how to set up a fully working e2e setup including the following components:
-- kyma-lifecycle-manager (short `KLM`)
-- The runtime-`Watcher` on remote cluster
-- Example `template-operator` on remote cluster
+## Context
+
+The following steps provide you with a quick tour of how to configure a fully working e2e test setup including the following components:
+
+- Lifecycle Manager
+- The runtime-`Watcher` on a remote cluster
+- Example `template-operator` on a remote cluster
 
 This setup is deployed with the following security features enabled:
+
 - Strict mTLS connection between KCP and SKR cluster
 - SAN Pinning (SAN of client TLS certificate needs to match DNS annotation of corresponding Kyma CR)
 
-> **Optional -** 
-> If you want to use remote clusters instead of a local k3d setup or external registries, please refer to the following guides for the cluster and registry setup:
+> **NOTE:** If you want to use remote clusters instead of a local k3d setup or external registries, please refer to the following guides for the cluster and registry setup:
+>
 > - [Provision cluster and OCI registry](./provision-cluster-and-registry.md)
 > - [Create a test environment on Google Container Registry (GCR)](./prepare-gcr-registry.md)
 
-### KCP cluster setup
+## Procedure
 
-1. Create a local control-plane (KCP) cluster:
+### Kyma Control Plane (KCP) cluster setup
+
+1. Create a local KCP cluster:
+
     ```shell
     k3d cluster create kcp-local --port 9443:443@loadbalancer \
     --registry-create k3d-registry.localhost:0.0.0.0:5111 \
@@ -24,93 +31,121 @@ This setup is deployed with the following security features enabled:
     ```
 
 2. Open `/etc/hosts` file on your local system:
+
    ```shell
    sudo nano /etc/hosts
    ```
-   Add entry for your local k3d registry created in the previous steps
-   ```
+
+   Add an entry for your local k3d registry created in step 1:
+
+   ```txt
    127.0.0.1 k3d-registry.localhost
    ```
 
-3. Install other pre-requisites required by the lifecycle-manager
-   1. `Istio` CRDs using `istioctl`
+3. Install the following prerequisites required by Lifecycle Manager:
+
+   1. Istio CRDs using `istioctl`:
+
       ```shell
       brew install istioctl && \
       istioctl install --set profile=demo -y
       ```
-   2. `cert-manager` by Jetstack
+
+   2. `cert-manager` by Jetstack:
+
        ```shell
        kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
        ```
 
-4. Deploy lifecycle-manager on the cluster:
+4. Deploy Lifecycle Manager on the cluster:
+
     ```shell
     make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:latest
     ```
-   > **Hint:** If you get similar errors like the following, please wait a couple of seconds and rerun the command.
+
+   > **TIP:** If you get similar errors like the following, wait a couple of seconds and rerun the command.
+   >
    > ```shell
    > Error from server (InternalError): error when creating "STDIN": Internal error occurred: failed calling webhook "webhook.cert-manager.io": failed to call webhook: Post "https://cert-manager-webhook.cert-manager.svc:443/mutate?timeout=10s": no endpoints available for service "cert-manager-webhook"
    > ```
+
    <details>
-      <summary>deploying custom image</summary>
-      If you want to test a custom image of the KLM. Adapt the `IMG` variable in the Makefile and run the following:
-   
-   ```shell
-   make docker-build
-   make docker-push
-   make local-deploy-with-watcher IMG=<image-name>:<image-tag>
-   ```
+      <summary>Custom Lifecycle Manager image deployment</summary>
+      If you want to test a custom image of Lifecycle Manager, adapt the `IMG` variable in `Makefile` and run the following:
+
+      ```shell
+      make docker-build
+      make docker-push
+      make local-deploy-with-watcher IMG=<image-name>:<image-tag>
+      ```
+
    </details>
 
-5. Create `module-template` by using [kyma-cli](https://github.com/kyma-project/cli)
-   which serves the role of a component-descriptor for module installations.
+5. Create a ModuleTemplate CR using [Kyma CLI](https://github.com/kyma-project/cli)
+   The ModuleTemplate CR includes component descriptors for module installations.
 
-   For this setup, we will create a module template from the [template-operator](https://github.com/kyma-project/template-operator) repository as reference.
-   Adjust your path to your template-operator local directory or any other reference module operator accordingly.
+   In this tutorial, we will create a ModuleTemplate CR from the [`template-operator`](https://github.com/kyma-project/template-operator) repository.
+   Adjust the path to your `template-operator` local directory or any other reference module operator accordingly.
 
    ```shell
    kyma alpha create module -p ../template-operator --version 1.2.3 \
    --registry k3d-registry.localhost:5111 --insecure
    ```
-6. Verify images has been pushed to local registry:
+
+6. Verify images pushed to the local registry:
+
    ```shell
    curl http://k3d-registry.localhost:5111/v2/_catalog\?n\=100
    ```
+
    The output should look like the following:
+
    ```shell
    {"repositories":["component-descriptors/kyma-project.io/template-operator"]}
    ```
+
 7. Open the generated `template.yaml` file and change the following line:
+
    ```yaml
     <...>
       - baseUrl: k3d-registry.localhost:5111
     <...>
    ```
+
    To the following:
+
     ```yaml
     <...>
       - baseUrl: k3d-registry.localhost:5000
     <...>
    ```
-   This needs to be done since the operators are running inside of two local k3d cluster, and the internal port for the k3d registry is set by default to `5000`.
+
+   You need the change because the operators are running inside of two local k3d cluster, and the internal port for the k3d registry is set by default to `5000`.
+
 8. Apply the template:
+
    ```shell
    kubectl apply -f template.yaml
    ```
 
 ### SKR cluster setup
-Create a local kyma-runtime (SKR) cluster:
+
+Create a local Kyma runtime (SKR) cluster:
+
 ```shell
 k3d cluster create skr-local
 ```
 
+### Create Kyma CR and remote Secret
 
-### Create Kyma CR and remote secret
 1. Switch the context for using KCP cluster:
+
     ```shell
     kubectl config use-context k3d-kcp-local
     ```
-2. Generate and apply sample `Kyma CR` and its corresponding secret on KCP:
+
+2. Generate and apply a sample Kyma CR and its corresponding Secret on KCP:
+
     ```shell
     cat <<EOF | kubectl apply -f -
    apiVersion: v1
@@ -140,9 +175,10 @@ k3d cluster create skr-local
         - name: template-operator
    EOF
     ```
+
    <details>
-      <summary>Hint: Running KLM on local machine and not in-cluster</summary>
-      If you are running the KLM on your local machine and not as a deployment in a cluster, please use the following to create a Kyma CR and Secret:
+      <summary>**TIP:** Running Lifecycle Manager on a local machine and not in-cluster</summary>
+      If you are running Lifecycle Manager on your local machine and not as a deployment in a cluster, use the following to create a Kyma CR and Secret:
    ```shell  
     cat << EOF | kubectl apply -f -
     ---
@@ -176,8 +212,8 @@ k3d cluster create skr-local
 
 ### Watcher and module installation verification
 
-By checking the `Kyma CR` events, verify that the `SKRWebhookIsReady` condition is set to `True`.
-And the state of the `template-operator` is `Ready`, as well as the overall `state`.
+By checking the Kyma CR events, verify if the `SKRWebhookIsReady` condition is set to `True`.
+Also make sure if the state of the `template-operator` is `Ready` and check the overall `state`.
 
 ```yaml
 status:
@@ -215,22 +251,26 @@ status:
    state: Ready
 ```
 
-### (Optional) Check functionality of Watcher component
+### (Optional) Check the functionality of the Watcher component
 
-1. Switch the context for using SKR cluster
+1. Switch the context to use the SKR cluster:
+
     ```shell
     kubectl config use-context k3d-skr-local
     ```
-2. Change the channel of the `template-operator` module to trigger a watcher event to KCP
+
+2. Change the channel of the `template-operator` module to trigger a watcher event to KCP:
+
     ```yaml
       modules:
       - name: template-operator
         channel: fast
     ```
-   
+
 ### Verify logs
 
-1. By watching the `skr-webhook` deployment's logs, verify that the KCP request is sent successfully
+1. By watching the `skr-webhook` deployment's logs, verify that the KCP request is sent successfully:
+
     ```log
     1.6711877286771238e+09    INFO    skr-webhook    Kyma UPDATE validated from webhook 
     1.6711879279507768e+09    INFO    skr-webhook    incoming admission review for: operator.kyma-project.io/v1alpha1, Kind=Kyma 
@@ -238,7 +278,9 @@ status:
     1.6711879280545895e+09    INFO    skr-webhook    sent request to KCP successfully for resource default/kyma-sample 
     1.6711879280546305e+09    INFO    skr-webhook    kcp request succeeded
     ```
-2. By watching the lifecycle-manager logs, verify that the listener is logging messages indicating the reception of a message from the watcher
+
+2. In Lifecycle Manager's logs, verify if the listener is logging messages indicating the reception of a message from the watcher:
+
     ```log
     {"level":"INFO","date":"2023-01-05T09:21:51.01093031Z","caller":"event/skr_events_listener.go:111","msg":"dispatched event object into channel","context":{"Module":"Listener","resource-name":"kyma-sample"}}
     {"level":"INFO","date":"2023-01-05T09:21:51.010985Z","logger":"listener","caller":"controllers/setup.go:100","msg":"event coming from SKR, adding default/kyma-sample to queue","context":{}}                                                                            
@@ -248,7 +290,7 @@ status:
 
 ### Cleanup
 
-Run the following command to remove the local testing clusters
+Run the following command to remove the local testing clusters:
 
 ```shell
 k3d cluster rm kcp-local skr-local

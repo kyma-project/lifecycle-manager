@@ -1,21 +1,25 @@
 # Create a test environment on Google Container Registry (GCR)
 
+## Context
+
+If you use the GCP Artifact Registry, follow these instructions to create a test environment.
+
 ## Prerequisites
 
-You are using GCP Artifact Registry. The following instructions assume that you have a GCP project called `sap-kyma-jellyfish-dev`.
+This tutorial assumes that you have a GCP project called `sap-kyma-jellyfish-dev`.
 
-## Instructions
+## Procedure
 
 ### Create your repository
 
-1. Create an Artifact Registry repository. For this example, call it `operator-test`:
+1. Create an Artifact Registry repository. For the tutorial purposes, call it `operator-test`.
 
    ```sh
    gcloud artifacts repositories create operator-test \
        --repository-format=docker \
        --location europe-west3
 
-2. To make it work with remote clusters such as in Gardener, specify that Read access to the repository, if possible anonymously:
+2. To make it work with remote clusters such as in Gardener, specify the Read access to the repository, if possible anonymously:
 
    ```sh
    gcloud artifacts repositories add-iam-policy-binding operator-test \
@@ -23,7 +27,7 @@ You are using GCP Artifact Registry. The following instructions assume that you 
 
 ### Authenticate locally
 
-Under the assumption you're [creating and using a service-account](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/) called `operator-test-sa`.
+Under the assumption you're [creating and using a service account](https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/) called `operator-test-sa`, follow these steps:
 
 1. Authenticate against your registry:
 
@@ -33,7 +37,7 @@ Under the assumption you're [creating and using a service-account](https://kuber
 
 ### Create a service account in Google Cloud
 
-1. For productive purposes, create a service account. In this example, call it `operator-test-sa`.
+1. For productive purposes, create a service account. For the tutorial purposes, call it `operator-test-sa`.
 
    ```sh
    gcloud iam service-accounts create operator-test-sa \
@@ -60,12 +64,15 @@ Under the assumption you're [creating and using a service-account](https://kuber
    ```sh
    gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com | docker login -u oauth2accesstoken --password-stdin https://europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/operator-test
    ```
-   export `GCR_DOCKER_PASSWORD` for `docker-push` make command:
+
+   Export `GCR_DOCKER_PASSWORD` for the `docker-push` make command:
+
    ```sh
    export GCR_DOCKER_PASSWORD=$(gcloud auth print-access-token --impersonate-service-account operator-test-sa@sap-kyma-jellyfish-dev.iam.gserviceaccount.com)
    ```
-   
-5. Adjust the `docker-push` command in `Makefile`
+
+5. Adjust the `docker-push` command in `Makefile`:
+
    ```makefile
    .PHONY: docker-push
    docker-push: ## Push docker image with the manager.
@@ -74,7 +81,9 @@ Under the assumption you're [creating and using a service-account](https://kuber
    endif
    docker push ${IMG}
    ```
-6. Use the following setup in conjunction with the kyma CLI:
+
+6. Use the following setup in conjunction with the Kyma CLI:
+
    ```sh
    kyma alpha create module kyma-project.io/module/template 0.0.1 . -w -c oauth2accesstoken:$GCR_DOCKER_PASSWORD
    ```
