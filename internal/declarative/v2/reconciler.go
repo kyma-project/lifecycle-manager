@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,14 +18,15 @@ import (
 
 var (
 	WarningResourceSyncStateDiff                 = errors.New("resource syncTarget state diff detected")
-	ErrResourceSyncDiffInSameOCILayer            = errors.New("resource syncTarget diff detected but in same oci, prevent sync resource to be deleted")
+	ErrResourceSyncDiffInSameOCILayer            = errors.New("resource syncTarget diff detected but in same oci layer, prevent sync resource to be deleted")
 	ErrInstallationConditionRequiresUpdate       = errors.New("installation condition needs an update")
 	ErrDeletionTimestampSetButNotInDeletingState = errors.New("resource is not set to deleting yet")
 	ErrObjectHasEmptyState                       = errors.New("object has an empty state")
 )
 
 const (
-	namespaceNotBeRemoved = "kyma-system"
+	namespaceNotBeRemoved  = "kyma-system"
+	SyncedOCIRefAnnotation = "sync-oci-ref"
 )
 
 func NewFromManager(mgr manager.Manager, prototype Object, options ...Option) *Reconciler {
@@ -384,7 +384,7 @@ func (r *Reconciler) pruneDiff(
 	spec *Spec,
 ) error {
 	diff = pruneKymaSystem(diff)
-	if len(diff) > 0 && ociRefNotChange(obj, spec.OCIRef) {
+	if detectDiffAndManifestNotUnderDeleting(diff, obj, spec) {
 		// This case should not happen normally, but if happens, it means the resources read from cache is incomplete,
 		// and we should prevent diff resources to be deleted. Meanwhile, evict cache to hope newly created resources back to normal.
 		r.Event(obj, "Warning", "PruneDiff", ErrResourceSyncDiffInSameOCILayer.Error())
@@ -403,13 +403,17 @@ func (r *Reconciler) pruneDiff(
 	return renderer.RemovePrerequisites(ctx, obj)
 }
 
+func detectDiffAndManifestNotUnderDeleting(diff []*resource.Info, obj Object, spec *Spec) bool {
+	return len(diff) > 0 && ociRefNotChange(obj, spec.OCIRef) && obj.GetDeletionTimestamp().IsZero()
+}
+
 func ociRefNotChange(obj Object, ref string) bool {
-	syncedOCIRef, found := obj.GetAnnotations()[v1beta2.SyncedOCIRefAnnotation]
+	syncedOCIRef, found := obj.GetAnnotations()[SyncedOCIRefAnnotation]
 	return found && syncedOCIRef == ref
 }
 
 func syncedOCIRefUpdateRequired(obj Object, ref string) bool {
-	syncedOCIRef, found := obj.GetAnnotations()[v1beta2.SyncedOCIRefAnnotation]
+	syncedOCIRef, found := obj.GetAnnotations()[SyncedOCIRefAnnotation]
 	if found && syncedOCIRef == ref {
 		return false
 	}
@@ -417,7 +421,7 @@ func syncedOCIRefUpdateRequired(obj Object, ref string) bool {
 	if annotations == nil {
 		annotations = make(map[string]string)
 	}
-	annotations[v1beta2.SyncedOCIRefAnnotation] = ref
+	annotations[SyncedOCIRefAnnotation] = ref
 	obj.SetAnnotations(annotations)
 	return true
 }

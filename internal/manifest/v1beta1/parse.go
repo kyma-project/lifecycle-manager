@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -28,7 +29,7 @@ func GetPathFromRawManifest(ctx context.Context,
 
 	// check existing file
 	// if file exists return existing file path
-	installPath := GetFsChartPath(imageSpec)
+	installPath := getFsChartPath(imageSpec)
 	manifestPath := path.Join(installPath, manifestFileName)
 	dir, err := os.Open(manifestPath)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
@@ -75,4 +76,8 @@ func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (v
 		return crane.PullLayer(noSchemeImageRef, crane.Insecure, crane.WithAuthFromKeychain(keyChain))
 	}
 	return crane.PullLayer(noSchemeImageRef, crane.WithAuthFromKeychain(keyChain), crane.WithContext(ctx))
+}
+
+func getFsChartPath(imageSpec v1beta2.ImageSpec) string {
+	return filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s", imageSpec.Name, imageSpec.Ref))
 }

@@ -64,6 +64,7 @@ var _ = Describe(
 		BeforeEach(func() { runID = fmt.Sprintf("run-%s", rand.String(4)) })
 		BeforeEach(func() { ctx, cancel = context.WithCancel(context.TODO()) })
 		AfterEach(func() { cancel() })
+		const ocirefSynced = "sha256:synced"
 
 		tableTest := func(
 			spec testv1.TestAPISpec,
@@ -106,7 +107,7 @@ var _ = Describe(
 			Entry(
 				"Create simple raw manifest with a different Control Plane and Runtime Client",
 				testv1.TestAPISpec{ManifestName: "custom-client"},
-				DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), "ociref", RenderModeRaw),
+				DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), ocirefSynced, RenderModeRaw),
 				[]Option{WithRemoteTargetCluster(
 					func(context.Context, Object) (*ClusterInfo, error) {
 						return &ClusterInfo{
@@ -119,7 +120,7 @@ var _ = Describe(
 			Entry(
 				"Create simple Raw manifest",
 				testv1.TestAPISpec{ManifestName: "simple-raw"},
-				DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), "ociref", RenderModeRaw),
+				DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), ocirefSynced, RenderModeRaw),
 				[]Option{},
 				nil,
 			),
