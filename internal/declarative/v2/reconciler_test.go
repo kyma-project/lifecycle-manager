@@ -51,7 +51,7 @@ func TestPruneResource(t *testing.T) {
 
 		result := pruneResource(infos, "CustomResourceDefinition", "some-crd")
 
-		require.Len(t, result, 3)
+		require.Len(t, result, 4)
 		require.NotContains(t, result, crd)
 	})
 
