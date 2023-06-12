@@ -364,7 +364,6 @@ func StartDeclarativeReconcilerForRun(
 		metav1.LabelSelector{MatchLabels: labels.Set{testRunLabel: runID}},
 	)
 	Expect(err).ToNot(HaveOccurred())
-
 	Expect(
 		ctrl.NewControllerManagedBy(mgr).WithEventFilter(testWatchPredicate).
 			WithOptions(
@@ -377,7 +376,6 @@ func StartDeclarativeReconcilerForRun(
 	go func() {
 		Expect(mgr.Start(ctx)).To(Succeed(), "failed to run manager")
 	}()
-
 	return reconciler.(*Reconciler)
 }
 
