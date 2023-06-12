@@ -426,7 +426,8 @@ func GetModuleTemplate(ctx context.Context,
 }
 
 func ManifestExists(ctx context.Context,
-	kyma *v1beta2.Kyma, module v1beta2.Module, controlPlaneClient client.Client) error {
+	kyma *v1beta2.Kyma, module v1beta2.Module, controlPlaneClient client.Client,
+) error {
 	_, err := GetManifest(ctx, controlPlaneClient, kyma, module)
 	if k8serrors.IsNotFound(err) {
 		return ErrNotFound
