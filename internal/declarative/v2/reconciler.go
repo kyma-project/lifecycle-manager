@@ -17,8 +17,8 @@ import (
 )
 
 var (
-	WarningResourceSyncStateDiff                 = errors.New("resource syncTarget state diff detected")
-	ErrResourceSyncDiffInSameOCILayer            = errors.New("resource syncTarget diff detected but in same oci layer, prevent sync resource to be deleted")
+	ErrWarningResourceSyncStateDiff              = errors.New("resource syncTarget state diff detected")
+	ErrResourceSyncDiffInSameOCILayer            = errors.New("resource syncTarget diff detected but in same oci layer, prevent sync resource to be deleted") //nolint:lll
 	ErrInstallationConditionRequiresUpdate       = errors.New("installation condition needs an update")
 	ErrDeletionTimestampSetButNotInDeletingState = errors.New("resource is not set to deleting yet")
 	ErrObjectHasEmptyState                       = errors.New("object has an empty state")
@@ -257,8 +257,8 @@ func (r *Reconciler) syncResources(
 	status.Synced = newSynced
 
 	if len(oldSynced) != len(newSynced) {
-		obj.SetStatus(status.WithState(StateProcessing).WithOperation(WarningResourceSyncStateDiff.Error()))
-		return WarningResourceSyncStateDiff
+		obj.SetStatus(status.WithState(StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
+		return ErrWarningResourceSyncStateDiff
 	}
 
 	for i := range r.PostRuns {
@@ -386,9 +386,10 @@ func (r *Reconciler) pruneDiff(
 	diff = pruneKymaSystem(diff)
 	if detectDiffAndManifestNotUnderDeleting(diff, obj, spec) {
 		// This case should not happen normally, but if happens, it means the resources read from cache is incomplete,
-		// and we should prevent diff resources to be deleted. Meanwhile, evict cache to hope newly created resources back to normal.
+		// and we should prevent diff resources to be deleted.
+		// Meanwhile, evict cache to hope newly created resources back to normal.
 		r.Event(obj, "Warning", "PruneDiff", ErrResourceSyncDiffInSameOCILayer.Error())
-		obj.SetStatus(obj.GetStatus().WithState(StateError).WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()))
+		obj.SetStatus(obj.GetStatus().WithState(StateWarning).WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()))
 		r.ManifestParser.EvictCache(spec)
 		return ErrResourceSyncDiffInSameOCILayer
 	}
