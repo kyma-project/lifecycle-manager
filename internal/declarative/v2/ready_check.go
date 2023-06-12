@@ -15,7 +15,7 @@ var (
 )
 
 type ReadyCheck interface {
-	Run(ctx context.Context, clnt Client, obj Object, resources []*resource.Info) error
+	Run(ctx context.Context, clnt Client, obj Object, resources []*resource.Info) (State, error)
 }
 
 func NewExistsReadyCheck() ReadyCheck {
@@ -24,16 +24,16 @@ func NewExistsReadyCheck() ReadyCheck {
 
 type ExistsReadyCheck struct{}
 
-func (c *ExistsReadyCheck) Run(ctx context.Context, clnt Client, _ Object, resources []*resource.Info) error {
+func (c *ExistsReadyCheck) Run(ctx context.Context, clnt Client, _ Object, resources []*resource.Info) (State, error) {
 	for i := range resources {
 		obj, ok := resources[i].Object.(client.Object)
 		if !ok {
 			//nolint:goerr113
-			return errors.New("object in resource info is not a valid client object")
+			return StateError, errors.New("object in resource info is not a valid client object")
 		}
 		if err := clnt.Get(ctx, client.ObjectKeyFromObject(obj), obj); client.IgnoreNotFound(err) != nil {
-			return err
+			return StateError, err
 		}
 	}
-	return nil
+	return StateReady, nil
 }

@@ -211,10 +211,10 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 	})
 
 	It(
-		"should lead to kyma being ready in the end of the channel switch", func() {
+		"should lead to kyma being warning in the end of the channel switch", func() {
 			Eventually(GetKymaState, Timeout, Interval).
 				WithArguments(kyma.GetName()).
-				Should(BeEquivalentTo(string(v1beta2.StateReady)))
+				Should(BeEquivalentTo(string(v1beta2.StateWarning)))
 		},
 	)
 },

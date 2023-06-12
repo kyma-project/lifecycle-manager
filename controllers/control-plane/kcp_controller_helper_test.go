@@ -19,6 +19,7 @@ var (
 	ErrExpectedLabelNotReset    = errors.New("expected label not reset")
 	ErrWatcherLabelMissing      = errors.New("watcher label missing")
 	ErrWatcherAnnotationMissing = errors.New("watcher annotation missing")
+	ErrGlobalChannelMisMatch    = errors.New("kyma global channel mismatch")
 )
 
 func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
@@ -64,6 +65,17 @@ func kymaExists(clnt client.Client, name, namespace string) error {
 	_, err := GetKyma(ctx, clnt, name, namespace)
 	if k8serrors.IsNotFound(err) {
 		return ErrNotFound
+	}
+	return nil
+}
+
+func kymaChannelMatch(clnt client.Client, name, namespace, channel string) error {
+	kyma, err := GetKyma(ctx, clnt, name, namespace)
+	if err != nil {
+		return err
+	}
+	if kyma.Spec.Channel != channel {
+		return ErrGlobalChannelMisMatch
 	}
 	return nil
 }
