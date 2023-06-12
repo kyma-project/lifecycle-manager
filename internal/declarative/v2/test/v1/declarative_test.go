@@ -244,62 +244,64 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 	})
 })
 
+//nolint:funlen
 func getResourcesData(resourcesDataBytes []byte) []Resource {
-	var resourcesData []Resource
+	resources := strings.Split(string(resourcesDataBytes), "---")
+	resourcesData := make([]Resource, 0, len(resources))
 	decode := serializer.NewCodecFactory(env.Scheme).UniversalDeserializer().Decode
-	for _, res := range strings.Split(string(resourcesDataBytes), "---") {
+	for _, res := range resources {
 		obj, gvk, _ := decode([]byte(res), nil, nil)
 		var currentRes Resource
-		switch obj.(type) {
+		switch objType := obj.(type) {
 		case *apiextensions.CustomResourceDefinition:
 			currentRes = Resource{
-				Name:      obj.(*apiextensions.CustomResourceDefinition).Name,
-				Namespace: obj.(*apiextensions.CustomResourceDefinition).Namespace,
+				Name:      objType.Name,
+				Namespace: objType.Namespace,
 			}
 		case *v1.Namespace:
 			currentRes = Resource{
-				Name:      obj.(*v1.Namespace).Name,
-				Namespace: obj.(*v1.Namespace).Namespace,
+				Name:      objType.Name,
+				Namespace: objType.Namespace,
 			}
 		case *v12.Deployment:
 			currentRes = Resource{
-				Name:      obj.(*v12.Deployment).Name,
-				Namespace: obj.(*v12.Deployment).Namespace,
+				Name:      objType.Name,
+				Namespace: objType.Namespace,
 			}
 		case *v1.ConfigMap:
 			currentRes = Resource{
-				Name:      obj.(*v1.ConfigMap).Name,
-				Namespace: obj.(*v1.ConfigMap).Namespace,
+				Name:      objType.Name,
+				Namespace: objType.Namespace,
 			}
 		case *v1.ServiceAccount:
 			currentRes = Resource{
-				Name:      obj.(*v1.ServiceAccount).Name,
-				Namespace: obj.(*v1.ServiceAccount).Namespace,
+				Name:      objType.Name,
+				Namespace: objType.Namespace,
 			}
 		case *v13.ClusterRole:
 			currentRes = Resource{
-				Name:      obj.(*v13.ClusterRole).Name,
-				Namespace: obj.(*v13.ClusterRole).Namespace,
+				Name:      objType.Name,
+				Namespace: objType.Namespace,
 			}
 		case *v13.ClusterRoleBinding:
 			currentRes = Resource{
-				Name:      obj.(*v13.ClusterRoleBinding).Name,
-				Namespace: obj.(*v13.ClusterRoleBinding).Namespace,
+				Name:      objType.Name,
+				Namespace: objType.Namespace,
 			}
 		case *v13.Role:
 			currentRes = Resource{
-				Name:      obj.(*v13.Role).Name,
-				Namespace: obj.(*v13.Role).Namespace,
+				Name:      objType.Name,
+				Namespace: objType.Namespace,
 			}
 		case *v13.RoleBinding:
 			currentRes = Resource{
-				Name:      obj.(*v13.RoleBinding).Name,
-				Namespace: obj.(*v13.RoleBinding).Namespace,
+				Name:      objType.Name,
+				Namespace: objType.Namespace,
 			}
 		case *v1.Service:
 			currentRes = Resource{
-				Name:      obj.(*v1.Service).Name,
-				Namespace: obj.(*v1.Service).Namespace,
+				Name:      objType.Name,
+				Namespace: objType.Namespace,
 			}
 		}
 		currentRes.GroupVersionKind = metav1.GroupVersionKind{
