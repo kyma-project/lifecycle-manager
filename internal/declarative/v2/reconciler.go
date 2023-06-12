@@ -384,7 +384,7 @@ func (r *Reconciler) pruneDiff(
 	spec *Spec,
 ) error {
 	diff = pruneKymaSystem(diff)
-	if detectDiffAndManifestNotUnderDeleting(diff, obj, spec) {
+	if manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff, obj, spec) {
 		// This case should not happen normally, but if happens, it means the resources read from cache is incomplete,
 		// and we should prevent diff resources to be deleted.
 		// Meanwhile, evict cache to hope newly created resources back to normal.
@@ -404,7 +404,7 @@ func (r *Reconciler) pruneDiff(
 	return renderer.RemovePrerequisites(ctx, obj)
 }
 
-func detectDiffAndManifestNotUnderDeleting(diff []*resource.Info, obj Object, spec *Spec) bool {
+func manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff []*resource.Info, obj Object, spec *Spec) bool {
 	return len(diff) > 0 && ociRefNotChange(obj, spec.OCIRef) && obj.GetDeletionTimestamp().IsZero()
 }
 
