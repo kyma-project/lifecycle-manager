@@ -168,6 +168,7 @@ func StartDeclarativeReconcilerForRun(
 			WithCustomReadyCheck(NewExistsReadyCheck()),
 			WithCustomResourceLabels(labels.Set{testRunLabel: runID}),
 			WithPeriodicConsistencyCheck(2*time.Second),
+			WithCRDName(func(obj Object) string { return "" }),
 		)...,
 	)
 
