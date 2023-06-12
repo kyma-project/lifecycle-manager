@@ -34,7 +34,7 @@ func TestPruneResource(t *testing.T) {
 
 		result := pruneResource(infos, "Namespace", namespaceNotBeRemoved)
 
-		require.Len(t, result, 3)
+		require.Len(t, result, 4)
 		require.NotContains(t, result, kymaNs)
 	})
 
