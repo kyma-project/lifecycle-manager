@@ -366,7 +366,13 @@ func (r *Reconciler) renderTargetResources(
 func (r *Reconciler) pruneDiff(
 	ctx context.Context, clnt Client, obj Object, renderer Renderer, diff []*resource.Info,
 ) error {
-	if err := r.deleteResources(ctx, clnt, obj, pruneKymaSystem(diff)); err != nil {
+	diff = pruneResource(diff, "Namespace", namespaceNotBeRemoved)
+
+	resourceName := r.CRDName(obj)
+	if resourceName != "" {
+		diff = pruneResource(diff, "CustomResourceDefinition", resourceName)
+	}
+	if err := r.deleteResources(ctx, clnt, obj, diff); err != nil {
 		return err
 	}
 
@@ -377,17 +383,18 @@ func (r *Reconciler) pruneDiff(
 	return renderer.RemovePrerequisites(ctx, obj)
 }
 
-func pruneKymaSystem(diff []*resource.Info) []*resource.Info {
-	for i, info := range diff { //nolint:varnamelen
+func pruneResource(diff []*resource.Info, resourceType string, resourceName string) []*resource.Info {
+	for i, info := range diff {
 		obj := info.Object.(client.Object)
-		if obj.GetObjectKind().GroupVersionKind().Kind != "Namespace" {
+		if obj.GetObjectKind().GroupVersionKind().Kind != resourceType {
 			continue
 		}
-		if obj.GetName() != namespaceNotBeRemoved {
+		if obj.GetName() != resourceName {
 			continue
 		}
 		return append(diff[:i], diff[i+1:]...)
 	}
+
 	return diff
 }
 

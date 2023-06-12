@@ -141,6 +141,7 @@ var _ = BeforeSuite(
 			declarative.WithPostRun{internalv1beta1.PostRunCreateCR},
 			declarative.WithPreDelete{internalv1beta1.PreDeleteDeleteCR},
 			declarative.WithCustomReadyCheck(declarative.NewExistsReadyCheck()),
+			declarative.WithCRDName(internalv1beta1.GetCRDName),
 		)
 
 		err = ctrl.NewControllerManagedBy(k8sManager).
