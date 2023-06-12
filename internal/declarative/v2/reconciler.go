@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,7 +18,8 @@ import (
 )
 
 var (
-	ErrResourceSyncStateDiff                     = errors.New("resource syncTarget state diff detected")
+	WarningResourceSyncStateDiff                 = errors.New("resource syncTarget state diff detected")
+	ErrResourceSyncDiffInSameOCILayer            = errors.New("resource syncTarget diff detected but in same oci, prevent sync resource to be deleted")
 	ErrInstallationConditionRequiresUpdate       = errors.New("installation condition needs an update")
 	ErrDeletionTimestampSetButNotInDeletingState = errors.New("resource is not set to deleting yet")
 	ErrObjectHasEmptyState                       = errors.New("object has an empty state")
@@ -104,6 +106,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj)
 	}
 
+	if syncedOCIRefUpdateRequired(obj, spec.OCIRef) {
+		return ctrl.Result{Requeue: true}, r.Update(ctx, obj)
+	}
+
 	clnt, err := r.getTargetClient(ctx, obj)
 	if err != nil {
 		r.Event(obj, "Warning", "ClientInitialization", err.Error())
@@ -127,7 +133,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	diff := ResourceList(current).Difference(target)
-	if err := r.pruneDiff(ctx, clnt, obj, renderer, diff); errors.Is(err, ErrDeletionNotFinished) {
+	if err := r.pruneDiff(ctx, clnt, obj, renderer, diff, spec); errors.Is(err, ErrDeletionNotFinished) {
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
 		return r.ssaStatus(ctx, obj)
@@ -250,9 +256,9 @@ func (r *Reconciler) syncResources(
 	newSynced := NewInfoToResourceConverter().InfosToResources(target)
 	status.Synced = newSynced
 
-	if len(ResourcesDiff(oldSynced, newSynced)) > 0 {
-		obj.SetStatus(status.WithState(StateProcessing).WithOperation(ErrResourceSyncStateDiff.Error()))
-		return ErrResourceSyncStateDiff
+	if len(oldSynced) != len(newSynced) {
+		obj.SetStatus(status.WithState(StateProcessing).WithOperation(WarningResourceSyncStateDiff.Error()))
+		return WarningResourceSyncStateDiff
 	}
 
 	for i := range r.PostRuns {
@@ -370,9 +376,23 @@ func (r *Reconciler) renderTargetResources(
 }
 
 func (r *Reconciler) pruneDiff(
-	ctx context.Context, clnt Client, obj Object, renderer Renderer, diff []*resource.Info,
+	ctx context.Context,
+	clnt Client,
+	obj Object,
+	renderer Renderer,
+	diff []*resource.Info,
+	spec *Spec,
 ) error {
-	if err := r.deleteResources(ctx, clnt, obj, pruneKymaSystem(diff)); err != nil {
+	diff = pruneKymaSystem(diff)
+	if len(diff) > 0 && ociRefNotChange(obj, spec.OCIRef) {
+		// This case should not happen normally, but if happens, it means the resources read from cache is incomplete,
+		// and we should prevent diff resources to be deleted. Meanwhile, evict cache to hope newly created resources back to normal.
+		r.Event(obj, "Warning", "PruneDiff", ErrResourceSyncDiffInSameOCILayer.Error())
+		obj.SetStatus(obj.GetStatus().WithState(StateError).WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()))
+		r.ManifestParser.EvictCache(spec)
+		return ErrResourceSyncDiffInSameOCILayer
+	}
+	if err := r.deleteResources(ctx, clnt, obj, diff); err != nil {
 		return err
 	}
 
@@ -381,6 +401,25 @@ func (r *Reconciler) pruneDiff(
 	}
 
 	return renderer.RemovePrerequisites(ctx, obj)
+}
+
+func ociRefNotChange(obj Object, ref string) bool {
+	syncedOCIRef, found := obj.GetAnnotations()[v1beta2.SyncedOCIRefAnnotation]
+	return found && syncedOCIRef == ref
+}
+
+func syncedOCIRefUpdateRequired(obj Object, ref string) bool {
+	syncedOCIRef, found := obj.GetAnnotations()[v1beta2.SyncedOCIRefAnnotation]
+	if found && syncedOCIRef == ref {
+		return false
+	}
+	annotations := obj.GetAnnotations()
+	if annotations == nil {
+		annotations = make(map[string]string)
+	}
+	annotations[v1beta2.SyncedOCIRefAnnotation] = ref
+	obj.SetAnnotations(annotations)
+	return true
 }
 
 func pruneKymaSystem(diff []*resource.Info) []*resource.Info {

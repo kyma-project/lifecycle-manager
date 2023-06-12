@@ -106,7 +106,7 @@ var _ = Describe(
 			Entry(
 				"Create simple raw manifest with a different Control Plane and Runtime Client",
 				testv1.TestAPISpec{ManifestName: "custom-client"},
-				DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), RenderModeRaw),
+				DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), "ociref", RenderModeRaw),
 				[]Option{WithRemoteTargetCluster(
 					func(context.Context, Object) (*ClusterInfo, error) {
 						return &ClusterInfo{
@@ -119,7 +119,7 @@ var _ = Describe(
 			Entry(
 				"Create simple Raw manifest",
 				testv1.TestAPISpec{ManifestName: "simple-raw"},
-				DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), RenderModeRaw),
+				DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), "ociref", RenderModeRaw),
 				[]Option{},
 				nil,
 			),

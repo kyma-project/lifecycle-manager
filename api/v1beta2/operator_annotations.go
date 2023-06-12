@@ -9,4 +9,5 @@ const (
 	OwnedByAnnotation      = OperatorPrefix + Separator + "owned-by"
 	OwnedByFormat          = "%s/%s"
 	SyncStrategyAnnotation = "sync-strategy"
+	SyncedOCIRefAnnotation = "sync-oci-ref"
 )
