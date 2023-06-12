@@ -123,21 +123,18 @@ func fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Cli
 ) {
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
 
-	kcpNamespacedNameCrd := client.ObjectKey{
-		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
-		// name changes, this also has to be adjusted here. We can think of making this configurable later
-		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group)}
+	kcpCrdName := fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group)
 
-	crd := kcpCrdsCache.Get(kcpNamespacedNameCrd)
+	crd := kcpCrdsCache.Get(kcpCrdName)
 	if crd == nil {
 		crd = &v1extensions.CustomResourceDefinition{}
 		err := controlPlaneClient.Get(
-			ctx, kcpNamespacedNameCrd, crd,
+			ctx, client.ObjectKey{Name: kcpCrdName}, crd,
 		)
 		if err != nil {
 			return nil, nil, err
 		}
-		kcpCrdsCache.Set(kcpNamespacedNameCrd, crd)
+		kcpCrdsCache.Set(kcpCrdName, crd)
 	}
 
 	err := runtimeClient.Get(

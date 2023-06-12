@@ -240,20 +240,16 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 	syncContext := SyncContextFromContext(ctx)
 
 	var err error
-	kcpCrdNamespacedName := client.ObjectKey{
-		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
-		// name changes, this also has to be adjusted here. We can think of making this configurable later
-		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
-	}
-	crd := kcpCrdsCache.Get(kcpCrdNamespacedName)
+	kcpCrdName := fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group)
+	crd := kcpCrdsCache.Get(kcpCrdName)
 	if crd == nil {
 		crd = &v1extensions.CustomResourceDefinition{}
-		err = syncContext.ControlPlaneClient.Get(ctx, kcpCrdNamespacedName, crd)
+		err = syncContext.ControlPlaneClient.Get(ctx, client.ObjectKey{Name: kcpCrdName}, crd)
 
 		if err != nil {
 			return err
 		}
-		kcpCrdsCache.Set(kcpCrdNamespacedName, crd)
+		kcpCrdsCache.Set(kcpCrdName, crd)
 	}
 
 	err = syncContext.RuntimeClient.Get(ctx, client.ObjectKey{
