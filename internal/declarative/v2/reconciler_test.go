@@ -19,7 +19,7 @@ func TestPruneResource(t *testing.T) {
 	service := &resource.Info{Object: &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "some-service"}, TypeMeta: metav1.TypeMeta{Kind: "Service"}}}
 	kymaNs := &resource.Info{Object: &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "kyma-system"}, TypeMeta: metav1.TypeMeta{Kind: "Namespace"}}}
 	deployment := &resource.Info{Object: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "some-deploy"}, TypeMeta: metav1.TypeMeta{Kind: "Deployment"}}}
-	crd := &resource.Info{Object: &apiextensions.CustomResourceDefinition{ObjectMeta: metav1.ObjectMeta{Name: "some-crd"}, TypeMeta: metav1.TypeMeta{Kind: "CustomResourceDefinition"}}}
+	crd := &resource.Info{Object: &apiextensions.CustomResourceDefinition{ObjectMeta: metav1.ObjectMeta{Name: "btpoperator"}, TypeMeta: metav1.TypeMeta{Kind: "CustomResourceDefinition"}}}
 
 	t.Run("contains kyma-system", func(t *testing.T) {
 		t.Parallel()
@@ -29,12 +29,11 @@ func TestPruneResource(t *testing.T) {
 			service,
 			kymaNs,
 			deployment,
-			crd,
 		}
 
 		result := pruneResource(infos, "Namespace", namespaceNotBeRemoved)
 
-		require.Len(t, result, 4)
+		require.Len(t, result, 3)
 		require.NotContains(t, result, kymaNs)
 	})
 
@@ -49,7 +48,7 @@ func TestPruneResource(t *testing.T) {
 			crd,
 		}
 
-		result := pruneResource(infos, "CustomResourceDefinition", "some-crd")
+		result := pruneResource(infos, "CustomResourceDefinition", "btpoperator")
 
 		require.Len(t, result, 4)
 		require.NotContains(t, result, crd)

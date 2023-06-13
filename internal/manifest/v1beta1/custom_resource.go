@@ -87,7 +87,7 @@ func PreDeleteDeleteCR(
 	}
 
 	var crd unstructured.Unstructured
-	crd.SetName(GetCRDName(obj))
+	crd.SetName(GetModuleCRDName(obj))
 	crd.SetGroupVersionKind(schema.GroupVersionKind{
 		Version: "v1",
 		Group:   "apiextensions.k8s.io",
@@ -121,7 +121,7 @@ func PreDeleteDeleteCR(
 	return nil
 }
 
-func GetCRDName(obj declarative.Object) string {
+func GetModuleCRDName(obj declarative.Object) string {
 	manifest := obj.(*v1beta2.Manifest)
 	if manifest.Spec.Resource != nil {
 		group := manifest.Spec.Resource.GroupVersionKind().Group

@@ -62,7 +62,7 @@ type Options struct {
 	Namespace       string
 	CreateNamespace bool
 
-	CRDName func(obj Object) string
+	ModuleCRDName func(obj Object) string
 
 	Finalizer string
 
@@ -121,10 +121,10 @@ func (o WithFinalizer) Apply(options *Options) {
 	options.Finalizer = string(o)
 }
 
-type WithCRDName func(obj Object) string
+type WithModuleCRDName func(obj Object) string
 
-func (o WithCRDName) Apply(options *Options) {
-	options.CRDName = o
+func (o WithModuleCRDName) Apply(options *Options) {
+	options.ModuleCRDName = o
 }
 
 type WithManagerOption struct {

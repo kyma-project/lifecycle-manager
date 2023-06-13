@@ -367,7 +367,7 @@ func (r *Reconciler) pruneDiff(
 	ctx context.Context, clnt Client, obj Object, renderer Renderer, diff []*resource.Info,
 ) error {
 	diff = pruneResource(diff, "Namespace", namespaceNotBeRemoved)
-	resourceName := r.CRDName(obj)
+	resourceName := r.ModuleCRDName(obj)
 	if resourceName != "" {
 		diff = pruneResource(diff, "CustomResourceDefinition", resourceName)
 	}
