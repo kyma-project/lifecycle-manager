@@ -21,6 +21,7 @@ import (
 
 const manifestFileName = "raw-manifest.yaml"
 
+//nolint:gochecknoglobals
 var fileMutexMap = sync.Map{}
 
 func GetPathFromRawManifest(ctx context.Context,
@@ -34,12 +35,7 @@ func GetPathFromRawManifest(ctx context.Context,
 	installPath := GetFsChartPath(imageSpec)
 	manifestPath := path.Join(installPath, manifestFileName)
 
-	//We need to sync file access per installPath
-	fileMutex, ok := fileMutexMap.Load(installPath)
-	if !ok {
-		fileMutex, ok := fileMutexMap.LoadOrStore(installPath, sync.Mutex{})
-	}
-
+	fileMutex := getMutexForPath(installPath)
 	fileMutex.Lock()
 	defer fileMutex.Unlock()
 
@@ -88,4 +84,14 @@ func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (v
 		return crane.PullLayer(noSchemeImageRef, crane.Insecure, crane.WithAuthFromKeychain(keyChain))
 	}
 	return crane.PullLayer(noSchemeImageRef, crane.WithAuthFromKeychain(keyChain), crane.WithContext(ctx))
+}
+
+func getMutexForPath(path string) sync.Locker {
+	val, ok := fileMutexMap.Load(path)
+	if !ok {
+		val, _ = fileMutexMap.LoadOrStore(path, &sync.Mutex{})
+	}
+
+	res := val.(*sync.Mutex)
+	return res
 }
