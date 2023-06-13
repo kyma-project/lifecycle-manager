@@ -7,6 +7,7 @@ import (
 
 	"github.com/jellydator/ttlcache/v3"
 	"github.com/kyma-project/lifecycle-manager/internal"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 const (
@@ -38,21 +39,25 @@ func (c *InMemoryManifestCache) Parse(spec *Spec,
 ) (internal.ManifestResources, error) {
 	key := generateCacheKey(spec)
 
+	var err error
 	item := c.Cache.Get(key)
+	resources := internal.ManifestResources{}
 	if item != nil {
-		resources := item.Value()
-
-		return resources, nil
+		resources = item.Value()
+	} else {
+		resources, err = internal.ParseManifestToObjects(spec.Path)
+		if err != nil {
+			return internal.ManifestResources{}, err
+		}
+		c.Cache.Set(key, resources, c.TTL)
 	}
-
-	resources, err := internal.ParseManifestToObjects(spec.Path)
-	if err != nil {
-		return internal.ManifestResources{}, err
+	copied := &internal.ManifestResources{
+		Items: make([]*unstructured.Unstructured, 0, len(resources.Items)),
 	}
-
-	c.Cache.Set(key, resources, c.TTL)
-
-	return resources, nil
+	for _, res := range resources.Items {
+		copied.Items = append(copied.Items, res.DeepCopy())
+	}
+	return *copied, nil
 }
 
 func generateCacheKey(spec *Spec) string {
