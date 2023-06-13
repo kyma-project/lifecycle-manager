@@ -106,7 +106,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj)
 	}
 
-	if syncedOCIRefUpdateRequired(obj, spec.OCIRef) {
+	if notContainsSyncedOCIRefAnnotation(obj) {
+		updateSyncedOCIRefAnnotation(obj, spec.OCIRef)
 		return ctrl.Result{Requeue: true}, r.Update(ctx, obj)
 	}
 
@@ -146,6 +147,12 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj)
 	}
 
+	// This situation happens when manifest get new installation layer to update resources,
+	// we need to make sure all updates successfully before we can update synced oci ref
+	if requireUpdateSyncedOCIRefAnnotation(obj, spec.OCIRef) {
+		updateSyncedOCIRefAnnotation(obj, spec.OCIRef)
+		return ctrl.Result{Requeue: true}, r.Update(ctx, obj)
+	}
 	return r.CtrlOnSuccess, nil
 }
 
@@ -413,18 +420,26 @@ func ociRefNotChange(obj Object, ref string) bool {
 	return found && syncedOCIRef == ref
 }
 
-func syncedOCIRefUpdateRequired(obj Object, ref string) bool {
+func notContainsSyncedOCIRefAnnotation(obj Object) bool {
+	_, found := obj.GetAnnotations()[SyncedOCIRefAnnotation]
+	return !found
+}
+
+func requireUpdateSyncedOCIRefAnnotation(obj Object, ref string) bool {
 	syncedOCIRef, found := obj.GetAnnotations()[SyncedOCIRefAnnotation]
-	if found && syncedOCIRef == ref {
-		return false
+	if found && syncedOCIRef != ref {
+		return true
 	}
+	return false
+}
+
+func updateSyncedOCIRefAnnotation(obj Object, ref string) {
 	annotations := obj.GetAnnotations()
 	if annotations == nil {
 		annotations = make(map[string]string)
 	}
 	annotations[SyncedOCIRefAnnotation] = ref
 	obj.SetAnnotations(annotations)
-	return true
 }
 
 func pruneKymaSystem(diff []*resource.Info) []*resource.Info {
