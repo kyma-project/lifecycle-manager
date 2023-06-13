@@ -4,27 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/time/rate"
-	v12 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
-	v13 "k8s.io/api/rbac/v1"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -185,19 +179,13 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 		source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "updated-raw-manifest.yaml"),
 			RenderModeRaw))
 		reconciler.SpecResolver = source
-		oldData, err := os.ReadFile(path.Join(testSamplesDir, "raw-manifest.yaml"))
+		oldDeployedResources, err := internal.ParseManifestToObjects(path.Join(testSamplesDir, "raw-manifest.yaml"))
 		Expect(err).NotTo(HaveOccurred())
-		oldDeployedResources := getResourcesData(oldData)
-
 		Eventually(func() error {
-			for _, res := range oldDeployedResources {
+			for _, res := range oldDeployedResources.Items {
 				currentRes := &unstructured.Unstructured{}
-				currentRes.SetGroupVersionKind(schema.GroupVersionKind{
-					Group:   res.Group,
-					Version: res.Version,
-					Kind:    res.Kind,
-				})
-				currentRes.SetName(res.Name)
+				currentRes.SetGroupVersionKind(res.GroupVersionKind())
+				currentRes.SetName(res.GetName())
 				currentRes.SetNamespace(customResourceNamespace.Name)
 				err := testClient.Get(ctx, client.ObjectKeyFromObject(currentRes), currentRes)
 				if !k8serrors.IsNotFound(err) {
@@ -218,14 +206,14 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 		)
 
 		Expect(testClient.Get(ctx, key, obj)).To(Succeed())
-		newData, err := os.ReadFile(path.Join(testSamplesDir, "updated-raw-manifest.yaml"))
+		newDeployedResources, err := internal.ParseManifestToObjects(path.Join(testSamplesDir,
+			"updated-raw-manifest.yaml"))
 		Expect(err).NotTo(HaveOccurred())
-		newDeployedResources := getResourcesData(newData)
 		Eventually(func() error {
-			for _, res := range newDeployedResources {
+			for _, res := range newDeployedResources.Items {
 				found := false
 				for _, s := range obj.Status.Synced {
-					if s == res {
+					if isResourceFoundInSynced(res, s) {
 						found = true
 					}
 				}
@@ -244,75 +232,16 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 	})
 })
 
-//nolint:funlen
-func getResourcesData(resourcesDataBytes []byte) []Resource {
-	resources := strings.Split(string(resourcesDataBytes), "---")
-	resourcesData := make([]Resource, 0, len(resources))
-	decode := serializer.NewCodecFactory(env.Scheme).UniversalDeserializer().Decode
-	for _, res := range resources {
-		obj, gvk, _ := decode([]byte(res), nil, nil)
-		var currentRes Resource
-		switch objType := obj.(type) {
-		case *apiextensions.CustomResourceDefinition:
-			currentRes = Resource{
-				Name:      objType.Name,
-				Namespace: objType.Namespace,
-			}
-		case *v1.Namespace:
-			currentRes = Resource{
-				Name:      objType.Name,
-				Namespace: objType.Namespace,
-			}
-		case *v12.Deployment:
-			currentRes = Resource{
-				Name:      objType.Name,
-				Namespace: objType.Namespace,
-			}
-		case *v1.ConfigMap:
-			currentRes = Resource{
-				Name:      objType.Name,
-				Namespace: objType.Namespace,
-			}
-		case *v1.ServiceAccount:
-			currentRes = Resource{
-				Name:      objType.Name,
-				Namespace: objType.Namespace,
-			}
-		case *v13.ClusterRole:
-			currentRes = Resource{
-				Name:      objType.Name,
-				Namespace: objType.Namespace,
-			}
-		case *v13.ClusterRoleBinding:
-			currentRes = Resource{
-				Name:      objType.Name,
-				Namespace: objType.Namespace,
-			}
-		case *v13.Role:
-			currentRes = Resource{
-				Name:      objType.Name,
-				Namespace: objType.Namespace,
-			}
-		case *v13.RoleBinding:
-			currentRes = Resource{
-				Name:      objType.Name,
-				Namespace: objType.Namespace,
-			}
-		case *v1.Service:
-			currentRes = Resource{
-				Name:      objType.Name,
-				Namespace: objType.Namespace,
-			}
-		}
-		currentRes.GroupVersionKind = metav1.GroupVersionKind{
-			Group:   gvk.Group,
-			Version: gvk.Version,
-			Kind:    gvk.Kind,
-		}
-		resourcesData = append(resourcesData, currentRes)
-
+func isResourceFoundInSynced(res *unstructured.Unstructured, status Resource) bool {
+	return status == Resource{
+		Name:      res.GetName(),
+		Namespace: res.GetNamespace(),
+		GroupVersionKind: metav1.GroupVersionKind{
+			Group:   res.GroupVersionKind().Group,
+			Version: res.GroupVersionKind().Version,
+			Kind:    res.GetKind(),
+		},
 	}
-	return resourcesData
 }
 
 // StartDeclarativeReconcilerForRun starts the declarative reconciler based on a runID.
