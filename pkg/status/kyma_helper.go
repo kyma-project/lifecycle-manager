@@ -38,7 +38,7 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 	kyma.ManagedFields = nil
 
 	switch newState {
-	case v1beta2.StateReady:
+	case v1beta2.StateReady, v1beta2.StateWarning:
 		kyma.SetActiveChannel()
 	case "":
 	case v1beta2.StateDeleting:

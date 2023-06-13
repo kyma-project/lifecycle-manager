@@ -235,12 +235,13 @@ spec:
                 type: object
               state:
                 description: State signifies current state of CustomObject. Value
-                  can be one of ("Ready", "Processing", "Error", "Deleting").
+                  can be one of ("Ready", "Processing", "Error", "Deleting", "Warning").
                 enum:
                 - Processing
                 - Deleting
                 - Ready
                 - Error
+                - Warning
                 type: string
               synced:
                 description: Synced determine a list of Resources that are currently
@@ -491,12 +492,13 @@ spec:
                 type: object
               state:
                 description: State signifies current state of CustomObject. Value
-                  can be one of ("Ready", "Processing", "Error", "Deleting").
+                  can be one of ("Ready", "Processing", "Error", "Deleting", "Warning").
                 enum:
                 - Processing
                 - Deleting
                 - Ready
                 - Error
+                - Warning
                 type: string
               synced:
                 description: Synced determine a list of Resources that are currently
