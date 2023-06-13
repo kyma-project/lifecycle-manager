@@ -3,8 +3,10 @@ kind: Kyma
 metadata:
   labels:
     "operator.kyma-project.io/managed-by": "lifecycle-manager"
+    "operator.kyma-project.io/beta": "true"
   name: default-kyma
-  namespace: kyma-system
+  namespace: kcp-system
 spec:
-  channel: alpha
+  channel: regular
   modules:
+    - name: template-operator
