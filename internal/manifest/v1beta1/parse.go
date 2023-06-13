@@ -23,8 +23,7 @@ const manifestFileName = "raw-manifest.yaml"
 
 var (
 	//nolint:gochecknoglobals
-	fileMutexMap                         = sync.Map{}
-	ErrUnknownTypeDuringHeaderExtraction = errors.New("unknown type encountered during header extraction")
+	fileMutexMap = sync.Map{}
 )
 
 func GetPathFromRawManifest(ctx context.Context,
