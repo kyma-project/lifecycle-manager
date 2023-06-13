@@ -126,8 +126,12 @@ func GetModuleCRDName(obj declarative.Object) string {
 	if manifest.Spec.Resource != nil {
 		group := manifest.Spec.Resource.GroupVersionKind().Group
 		name := manifest.Spec.Resource.GroupVersionKind().Kind
-		return fmt.Sprintf("%ss.%s", strings.ToLower(name), group)
+		return fmt.Sprintf("%s.%s", getPlural(name), group)
 	}
 
 	return ""
+}
+
+func getPlural(moduleName string) string {
+	return strings.ToLower(moduleName) + "s"
 }
