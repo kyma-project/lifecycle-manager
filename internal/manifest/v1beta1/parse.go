@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"sync"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -20,6 +21,8 @@ import (
 
 const manifestFileName = "raw-manifest.yaml"
 
+var fileMutexMap = sync.Map{}
+
 func GetPathFromRawManifest(ctx context.Context,
 	imageSpec v1beta2.ImageSpec,
 	keyChain authn.Keychain,
@@ -30,6 +33,16 @@ func GetPathFromRawManifest(ctx context.Context,
 	// if file exists return existing file path
 	installPath := GetFsChartPath(imageSpec)
 	manifestPath := path.Join(installPath, manifestFileName)
+
+	//We need to sync file access per installPath
+	fileMutex, ok := fileMutexMap.Load(installPath)
+	if !ok {
+		fileMutex, ok := fileMutexMap.LoadOrStore(installPath, sync.Mutex{})
+	}
+
+	fileMutex.Lock()
+	defer fileMutex.Unlock()
+
 	dir, err := os.Open(manifestPath)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("opening dir for installs caused an error %s: %w", imageRef, err)
