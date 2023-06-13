@@ -21,8 +21,11 @@ import (
 
 const manifestFileName = "raw-manifest.yaml"
 
-//nolint:gochecknoglobals
-var fileMutexMap = sync.Map{}
+var (
+	//nolint:gochecknoglobals
+	fileMutexMap                         = sync.Map{}
+	ErrUnknownTypeDuringHeaderExtraction = errors.New("unknown type encountered during header extraction")
+)
 
 func GetPathFromRawManifest(ctx context.Context,
 	imageSpec v1beta2.ImageSpec,
@@ -35,7 +38,7 @@ func GetPathFromRawManifest(ctx context.Context,
 	installPath := GetFsChartPath(imageSpec)
 	manifestPath := path.Join(installPath, manifestFileName)
 
-	fileMutex := getMutexForPath(installPath)
+	fileMutex := getLockerForPath(installPath)
 	fileMutex.Lock()
 	defer fileMutex.Unlock()
 
@@ -86,7 +89,8 @@ func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (v
 	return crane.PullLayer(noSchemeImageRef, crane.WithAuthFromKeychain(keyChain), crane.WithContext(ctx))
 }
 
-func getMutexForPath(path string) sync.Locker {
+// getLockerForPath always returns the same sync.Locker instance for given path argument.
+func getLockerForPath(path string) sync.Locker {
 	val, ok := fileMutexMap.Load(path)
 	if !ok {
 		val, _ = fileMutexMap.LoadOrStore(path, &sync.Mutex{})
