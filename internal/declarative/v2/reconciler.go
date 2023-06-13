@@ -121,7 +121,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj)
 	}
 
-	target, current, err := r.renderResources(ctx, obj, spec, renderer, converter)
+	target, current, err := r.renderResources(ctx, obj, spec, converter)
 	if err != nil {
 		return r.ssaStatus(ctx, obj)
 	}
@@ -203,7 +203,10 @@ func (r *Reconciler) Spec(ctx context.Context, obj Object) (*Spec, error) {
 }
 
 func (r *Reconciler) renderResources(
-	ctx context.Context, obj Object, spec *Spec, renderer Renderer, converter ResourceToInfoConverter,
+	ctx context.Context,
+	obj Object,
+	spec *Spec,
+	converter ResourceToInfoConverter,
 ) ([]*resource.Info, []*resource.Info, error) {
 	resourceCondition := newResourcesCondition(obj)
 	status := obj.GetStatus()
@@ -211,7 +214,7 @@ func (r *Reconciler) renderResources(
 	var err error
 	var target, current ResourceList
 
-	if target, err = r.renderTargetResources(ctx, renderer, converter, obj, spec); err != nil {
+	if target, err = r.renderTargetResources(ctx, converter, obj, spec); err != nil {
 		return nil, nil, err
 	}
 
@@ -326,7 +329,10 @@ func (r *Reconciler) deleteResources(
 }
 
 func (r *Reconciler) renderTargetResources(
-	ctx context.Context, renderer Renderer, converter ResourceToInfoConverter, obj Object, spec *Spec,
+	ctx context.Context,
+	converter ResourceToInfoConverter,
+	obj Object,
+	spec *Spec,
 ) ([]*resource.Info, error) {
 	if !obj.GetDeletionTimestamp().IsZero() {
 		// if we are deleting the resources,
@@ -338,7 +344,7 @@ func (r *Reconciler) renderTargetResources(
 
 	status := obj.GetStatus()
 
-	targetResources, err := r.ManifestParser.Parse(ctx, renderer, obj, spec)
+	targetResources, err := r.ManifestParser.Parse(spec)
 	if err != nil {
 		r.Event(obj, "Warning", "ManifestParsing", err.Error())
 		obj.SetStatus(status.WithState(StateError).WithErr(err))
