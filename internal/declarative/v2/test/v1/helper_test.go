@@ -82,16 +82,17 @@ func (matcher *HaveConditionMatcher) NegatedFailureMessage(actual interface{}) s
 	)
 }
 
-func EventuallyDeclarativeStatusShould(ctx context.Context, key client.ObjectKey, matchers ...types.GomegaMatcher) {
+func EventuallyDeclarativeStatusShould(ctx context.Context, key client.ObjectKey, testClient client.Client,
+	matchers ...types.GomegaMatcher) {
 	EventuallyWithOffset(1, StatusOnCluster).
 		WithContext(ctx).
-		WithArguments(key).
+		WithArguments(key, testClient).
 		WithPolling(standardInterval).
 		WithTimeout(standardTimeout).
 		Should(And(matchers...))
 }
 
-func EventuallyDeclarativeShouldBeUninstalled(ctx context.Context, obj *testv1.TestAPI) {
+func EventuallyDeclarativeShouldBeUninstalled(ctx context.Context, obj *testv1.TestAPI, testClient client.Client) {
 	EventuallyWithOffset(1, testClient.Get).
 		WithContext(ctx).
 		WithArguments(client.ObjectKeyFromObject(obj), &testv1.TestAPI{}).
@@ -108,12 +109,14 @@ func EventuallyDeclarativeShouldBeUninstalled(ctx context.Context, obj *testv1.T
 }
 
 // HaveAllSyncedResourcesExistingInCluster determines if all synced resources actually exist in the cluster.
-func HaveAllSyncedResourcesExistingInCluster(ctx context.Context) *SyncedResourcesExistingMatcher {
-	return &SyncedResourcesExistingMatcher{ctx: &ctx}
+func HaveAllSyncedResourcesExistingInCluster(ctx context.Context,
+	testClient client.Client) *SyncedResourcesExistingMatcher {
+	return &SyncedResourcesExistingMatcher{ctx: &ctx, testClient: testClient}
 }
 
 type SyncedResourcesExistingMatcher struct {
-	ctx *context.Context
+	ctx        *context.Context
+	testClient client.Client
 }
 
 func (matcher *SyncedResourcesExistingMatcher) Match(actual interface{}) (bool, error) {
@@ -128,7 +131,7 @@ func (matcher *SyncedResourcesExistingMatcher) Match(actual interface{}) (bool, 
 
 	for i := range synced {
 		unstruct := synced[i].ToUnstructured()
-		if err := testClient.Get(*ctx, client.ObjectKeyFromObject(unstruct), unstruct); err != nil {
+		if err := matcher.testClient.Get(*ctx, client.ObjectKeyFromObject(unstruct), unstruct); err != nil {
 			return false, err
 		}
 	}

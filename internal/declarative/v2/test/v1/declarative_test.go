@@ -15,6 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/time/rate"
 	v1 "k8s.io/api/core/v1"
+	apiExtensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -41,11 +42,7 @@ var (
 	// (e.g. cached manifests).
 	testDir        string
 	testSamplesDir = filepath.Join("..", "..", "..", "..", "..", "pkg", "test_samples")
-
-	env        *envtest.Environment
-	cfg        *rest.Config
-	testClient client.Client
-
+	testAPICRD     *apiExtensionsv1.CustomResourceDefinition
 	// this namespace determines where the CustomResource instances will be created. It is purposefully static,
 	// not because it would not be possible to make it random, but because the CRs should be able to install
 	// and even create other namespaces than this one dynamically, and we will need to test this.
@@ -55,6 +52,7 @@ var (
 	}
 	ErrOldResourcesStillDeployed = errors.New("old resources still exist in the cluster")
 	ErrNewResourcesNotInSynced   = errors.New("new resources don't exist in the status.synced")
+	ErrOldResourcesStillInSynced = errors.New("old resources still exist in the status.synced")
 )
 
 func TestAPIs(t *testing.T) {
@@ -65,13 +63,23 @@ func TestAPIs(t *testing.T) {
 }
 
 var _ = Describe(
-	"Test Declarative Reconciliation", func() {
+	"Test Declarative Reconciliation", Ordered, func() {
 		var runID string
 		var ctx context.Context
 		var cancel context.CancelFunc
-		BeforeEach(func() { runID = fmt.Sprintf("run-%s", rand.String(4)) })
-		BeforeEach(func() { ctx, cancel = context.WithCancel(context.TODO()) })
-		AfterEach(func() { cancel() })
+		var env *envtest.Environment
+		var cfg *rest.Config
+		var testClient client.Client
+		BeforeAll(func() {
+			runID = fmt.Sprintf("run-%s", rand.String(4))
+			env, cfg = StartEnv()
+			testClient = GetTestClient(cfg)
+			ctx, cancel = context.WithCancel(context.TODO())
+		})
+		AfterAll(func() {
+			cancel()
+			Expect(env.Stop()).To(Succeed())
+		})
 
 		tableTest := func(
 			spec testv1.TestAPISpec,
@@ -79,7 +87,7 @@ var _ = Describe(
 			opts []Option,
 			testCase func(ctx context.Context, key client.ObjectKey, source *CustomSpecFns),
 		) {
-			StartDeclarativeReconcilerForRun(ctx, runID, append(opts, WithSpecResolver(source))...)
+			StartDeclarativeReconcilerForRun(ctx, runID, cfg, append(opts, WithSpecResolver(source))...)
 
 			obj := &testv1.TestAPI{Spec: spec}
 			obj.SetLabels(labels.Set{testRunLabel: runID})
@@ -90,14 +98,14 @@ var _ = Describe(
 			key := client.ObjectKeyFromObject(obj)
 
 			EventuallyDeclarativeStatusShould(
-				ctx, key,
+				ctx, key, testClient,
 				BeInState(StateReady),
 				HaveConditionWithStatus(ConditionTypeResources, metav1.ConditionTrue),
 				HaveConditionWithStatus(ConditionTypeInstallation, metav1.ConditionTrue),
 			)
 
 			Expect(testClient.Get(ctx, key, obj)).To(Succeed())
-			Expect(obj.GetStatus()).To(HaveAllSyncedResourcesExistingInCluster(ctx))
+			Expect(obj.GetStatus()).To(HaveAllSyncedResourcesExistingInCluster(ctx, testClient))
 
 			if testCase != nil {
 				testCase(ctx, key, source)
@@ -105,7 +113,7 @@ var _ = Describe(
 
 			Expect(testClient.Delete(ctx, obj)).To(Succeed())
 
-			EventuallyDeclarativeShouldBeUninstalled(ctx, obj)
+			EventuallyDeclarativeShouldBeUninstalled(ctx, obj, testClient)
 		}
 
 		DescribeTable(
@@ -139,6 +147,9 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 	var ctx context.Context
 	var cancel context.CancelFunc
 	var reconciler *Reconciler
+	var env *envtest.Environment
+	var cfg *rest.Config
+	var testClient client.Client
 
 	runID := fmt.Sprintf("run-%s", rand.String(4))
 	obj := &testv1.TestAPI{Spec: testv1.TestAPISpec{ManifestName: "updating-manifest"}}
@@ -157,22 +168,24 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 	)}
 	source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), RenderModeRaw))
 	BeforeAll(func() {
+		env, cfg = StartEnv()
+		testClient = GetTestClient(cfg)
 		ctx, cancel = context.WithCancel(context.TODO())
-		reconciler = StartDeclarativeReconcilerForRun(ctx, runID, append(opts, WithSpecResolver(source))...)
+		reconciler = StartDeclarativeReconcilerForRun(ctx, runID, cfg, append(opts, WithSpecResolver(source))...)
 	})
 
 	It("Should create manifest resources", func() {
 		Expect(testClient.Create(ctx, obj)).To(Succeed())
 
 		EventuallyDeclarativeStatusShould(
-			ctx, key,
+			ctx, key, testClient,
 			BeInState(StateReady),
 			HaveConditionWithStatus(ConditionTypeResources, metav1.ConditionTrue),
 			HaveConditionWithStatus(ConditionTypeInstallation, metav1.ConditionTrue),
 		)
 
 		Expect(testClient.Get(ctx, key, obj)).To(Succeed())
-		Expect(obj.GetStatus()).To(HaveAllSyncedResourcesExistingInCluster(ctx))
+		Expect(obj.GetStatus()).To(HaveAllSyncedResourcesExistingInCluster(ctx, testClient))
 	})
 
 	It("Should start reconciliation for the updated manifest and remove old deployed resources", func() {
@@ -199,7 +212,7 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 
 	It("Should deploy new manifest resources and have them in status.synced", func() {
 		EventuallyDeclarativeStatusShould(
-			ctx, key,
+			ctx, key, testClient,
 			BeInState(StateReady),
 			HaveConditionWithStatus(ConditionTypeResources, metav1.ConditionTrue),
 			HaveConditionWithStatus(ConditionTypeInstallation, metav1.ConditionTrue),
@@ -224,11 +237,106 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 			return nil
 		}, testutils.Timeout, testutils.Interval).WithContext(ctx).Should(Succeed())
 
-		Expect(obj.GetStatus()).To(HaveAllSyncedResourcesExistingInCluster(ctx))
+		Expect(obj.GetStatus()).To(HaveAllSyncedResourcesExistingInCluster(ctx, testClient))
 	})
 
 	AfterAll(func() {
 		cancel()
+		Expect(env.Stop()).To(Succeed())
+	})
+})
+
+var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, func() {
+	var ctx context.Context
+	var cancel context.CancelFunc
+	var reconciler *Reconciler
+	var env *envtest.Environment
+	var cfg *rest.Config
+	var testClient client.Client
+
+	runID := fmt.Sprintf("run-%s", rand.String(4))
+	obj := &testv1.TestAPI{Spec: testv1.TestAPISpec{ManifestName: "deletion-manifest"}}
+	obj.SetLabels(labels.Set{testRunLabel: runID})
+	obj.SetNamespace(customResourceNamespace.Name)
+	obj.SetName(runID)
+
+	key := client.ObjectKeyFromObject(obj)
+
+	opts := []Option{WithRemoteTargetCluster(
+		func(context.Context, Object) (*ClusterInfo, error) {
+			return &ClusterInfo{
+				Config: cfg,
+			}, nil
+		},
+	)}
+	source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), RenderModeRaw))
+	oldDeployedResources, err := internal.ParseManifestToObjects(path.Join(testSamplesDir, "raw-manifest.yaml"))
+	Expect(err).NotTo(HaveOccurred())
+
+	BeforeAll(func() {
+		env, cfg = StartEnv()
+		testClient = GetTestClient(cfg)
+		ctx, cancel = context.WithCancel(context.TODO())
+		reconciler = StartDeclarativeReconcilerForRun(ctx, runID, cfg, append(opts, WithSpecResolver(source))...)
+	})
+
+	It("Should create manifest resources", func() {
+		Expect(testClient.Create(ctx, obj)).To(Succeed())
+
+		EventuallyDeclarativeStatusShould(
+			ctx, key, testClient,
+			BeInState(StateReady),
+			HaveConditionWithStatus(ConditionTypeResources, metav1.ConditionTrue),
+			HaveConditionWithStatus(ConditionTypeInstallation, metav1.ConditionTrue),
+		)
+
+		Expect(testClient.Get(ctx, key, obj)).To(Succeed())
+		Expect(obj.GetStatus()).To(HaveAllSyncedResourcesExistingInCluster(ctx, testClient))
+	})
+
+	It("Should remove deployed module resources after its deletion", func() {
+		source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "empty-file.yaml"), RenderModeRaw))
+		reconciler.SpecResolver = source
+		Eventually(func() error {
+			for _, res := range oldDeployedResources.Items {
+				currentRes := &unstructured.Unstructured{}
+				currentRes.SetGroupVersionKind(res.GroupVersionKind())
+				currentRes.SetName(res.GetName())
+				currentRes.SetNamespace(customResourceNamespace.Name)
+				err := testClient.Get(ctx, client.ObjectKeyFromObject(currentRes), currentRes)
+				if !k8serrors.IsNotFound(err) {
+					return ErrOldResourcesStillDeployed
+				}
+			}
+			return nil
+		}, testutils.Timeout, testutils.Interval).WithContext(ctx).Should(Succeed())
+
+	})
+
+	It("Should remove module resources from status.synced", func() {
+		EventuallyDeclarativeStatusShould(
+			ctx, key, testClient,
+			BeInState(StateReady),
+			HaveConditionWithStatus(ConditionTypeResources, metav1.ConditionTrue),
+			HaveConditionWithStatus(ConditionTypeInstallation, metav1.ConditionTrue),
+		)
+
+		Eventually(func() error {
+			testClient.Get(ctx, key, obj)
+			for _, res := range oldDeployedResources.Items {
+				for _, s := range obj.Status.Synced {
+					if isResourceFoundInSynced(res, s) {
+						return ErrOldResourcesStillInSynced
+					}
+				}
+			}
+			return nil
+		}, testutils.Timeout, testutils.Interval).WithContext(ctx).Should(Succeed())
+	})
+
+	AfterAll(func() {
+		cancel()
+		Expect(env.Stop()).To(Succeed())
 	})
 })
 
@@ -248,6 +356,7 @@ func isResourceFoundInSynced(res *unstructured.Unstructured, status Resource) bo
 func StartDeclarativeReconcilerForRun(
 	ctx context.Context,
 	runID string,
+	cfg *rest.Config,
 	options ...Option,
 ) *Reconciler {
 	var (
@@ -308,7 +417,8 @@ func StartDeclarativeReconcilerForRun(
 	return reconciler.(*Reconciler)
 }
 
-func StatusOnCluster(g Gomega, ctx context.Context, key client.ObjectKey) Status { //nolint:revive
+func StatusOnCluster(g Gomega, ctx context.Context, key client.ObjectKey,
+	testClient client.Client) Status { //nolint:revive
 	obj := &testv1.TestAPI{}
 	g.Expect(testClient.Get(ctx, key, obj)).To(Succeed())
 	return obj.GetStatus()
@@ -319,4 +429,28 @@ func WithClientCacheKey() WithClientCacheKeyOption {
 		return client.ObjectKeyFromObject(resource), true
 	}
 	return WithClientCacheKeyOption{ClientCacheKeyFn: cacheKey}
+}
+
+func StartEnv() (*envtest.Environment, *rest.Config) {
+	env := &envtest.Environment{
+		CRDs:   []*apiExtensionsv1.CustomResourceDefinition{testAPICRD},
+		Scheme: scheme.Scheme,
+	}
+	cfg, err := env.Start()
+	Expect(err).NotTo(HaveOccurred())
+	Expect(cfg).NotTo(BeNil())
+
+	return env, cfg
+}
+
+func GetTestClient(cfg *rest.Config) client.Client {
+	testClient, err := client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	Expect(testClient.List(context.Background(), &testv1.TestAPIList{})).To(
+		Succeed(), "Test API should be available",
+	)
+	Expect(err).NotTo(HaveOccurred())
+	customResourceNamespace.SetResourceVersion("")
+	Expect(testClient.Create(context.Background(), customResourceNamespace)).To(Succeed())
+
+	return testClient
 }
