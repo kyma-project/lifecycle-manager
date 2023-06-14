@@ -384,7 +384,7 @@ func (r *Reconciler) pruneDiff(
 func pruneResource(diff []*resource.Info, resourceType string, resourceName string) []*resource.Info {
 	for i, info := range diff { //nolint:varnamelen
 		obj := info.Object.(client.Object)
-		if obj.GetObjectKind().GroupVersionKind().Kind == resourceType && obj.GetName() != resourceName {
+		if obj.GetObjectKind().GroupVersionKind().Kind == resourceType && obj.GetName() == resourceName {
 			return append(diff[:i], diff[i+1:]...)
 		}
 	}
