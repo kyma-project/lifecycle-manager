@@ -2,6 +2,7 @@ package remote
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -157,9 +158,11 @@ func ContainsLatestVersion(crdFromRuntime *v1extensions.CustomResourceDefinition
 }
 
 func CRDNotFoundErr(err error) bool {
-	status, ok := err.(k8serrors.APIStatus)
-	if ok && status.Status().Details != nil {
-		for _, cause := range status.Status().Details.Causes {
+	var apiStatusErr k8serrors.APIStatus
+	ok := errors.As(err, &apiStatusErr)
+
+	if ok && apiStatusErr.Status().Details != nil {
+		for _, cause := range apiStatusErr.Status().Details.Causes {
 			if cause.Type == metav1.CauseTypeUnexpectedServerResponse &&
 				strings.Contains(cause.Message, "not found") {
 				return true
