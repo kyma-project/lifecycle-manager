@@ -257,7 +257,6 @@ func StartDeclarativeReconcilerForRun(
 		reconciler reconcile.Reconciler
 		err        error
 	)
-
 	mgr, err = ctrl.NewManager(
 		cfg, ctrl.Options{
 			// these bind addreses cause conflicts when run concurrently so we disable them
@@ -285,6 +284,7 @@ func StartDeclarativeReconcilerForRun(
 			WithCustomReadyCheck(NewExistsReadyCheck()),
 			WithCustomResourceLabels(labels.Set{testRunLabel: runID}),
 			WithPeriodicConsistencyCheck(2*time.Second),
+			WithModuleCRDName(func(obj Object) string { return "" }),
 		)...,
 	)
 
