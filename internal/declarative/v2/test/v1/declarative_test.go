@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/time/rate"
@@ -206,7 +206,7 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 				}
 			}
 			return nil
-		}, testutils.Timeout, testutils.Interval).WithContext(ctx).Should(Succeed())
+		}, Timeout, Interval).WithContext(ctx).Should(Succeed())
 
 	})
 
@@ -235,7 +235,7 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 				}
 			}
 			return nil
-		}, testutils.Timeout, testutils.Interval).WithContext(ctx).Should(Succeed())
+		}, Timeout, Interval).WithContext(ctx).Should(Succeed())
 
 		Expect(obj.GetStatus()).To(HaveAllSyncedResourcesExistingInCluster(ctx, testClient))
 	})
@@ -309,7 +309,7 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 				}
 			}
 			return nil
-		}, testutils.Timeout, testutils.Interval).WithContext(ctx).Should(Succeed())
+		}, Timeout, Interval).WithContext(ctx).Should(Succeed())
 
 	})
 
@@ -331,7 +331,7 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 				}
 			}
 			return nil
-		}, testutils.Timeout, testutils.Interval).WithContext(ctx).Should(Succeed())
+		}, Timeout, Interval).WithContext(ctx).Should(Succeed())
 	})
 
 	AfterAll(func() {
@@ -417,10 +417,10 @@ func StartDeclarativeReconcilerForRun(
 	return reconciler.(*Reconciler)
 }
 
-func StatusOnCluster(g Gomega, ctx context.Context, key client.ObjectKey,
-	testClient client.Client) Status { //nolint:revive
+func StatusOnCluster(ctx context.Context, key client.ObjectKey,
+	testClient client.Client) Status {
 	obj := &testv1.TestAPI{}
-	g.Expect(testClient.Get(ctx, key, obj)).To(Succeed())
+	Expect(testClient.Get(ctx, key, obj)).To(Succeed())
 	return obj.GetStatus()
 }
 
