@@ -88,7 +88,6 @@ var _ = Describe(
 			testCase func(ctx context.Context, key client.ObjectKey, source *CustomSpecFns),
 		) {
 			StartDeclarativeReconcilerForRun(ctx, runID, cfg, append(opts, WithSpecResolver(source))...)
-
 			obj := &testv1.TestAPI{Spec: spec}
 			obj.SetLabels(labels.Set{testRunLabel: runID})
 			// this namespace is different form the test-run and path as we may need to test namespace creation
