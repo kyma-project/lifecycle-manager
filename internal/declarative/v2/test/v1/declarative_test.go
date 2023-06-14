@@ -194,19 +194,10 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 		reconciler.SpecResolver = source
 		oldDeployedResources, err := internal.ParseManifestToObjects(path.Join(testSamplesDir, "raw-manifest.yaml"))
 		Expect(err).NotTo(HaveOccurred())
-		Eventually(func() error {
-			for _, res := range oldDeployedResources.Items {
-				currentRes := &unstructured.Unstructured{}
-				currentRes.SetGroupVersionKind(res.GroupVersionKind())
-				currentRes.SetName(res.GetName())
-				currentRes.SetNamespace(customResourceNamespace.Name)
-				err := testClient.Get(ctx, client.ObjectKeyFromObject(currentRes), currentRes)
-				if !k8serrors.IsNotFound(err) {
-					return ErrOldResourcesStillDeployed
-				}
-			}
-			return nil
-		}, Timeout, Interval).WithContext(ctx).Should(Succeed())
+		Eventually(validateOldResourcesNotLongerDeployed, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(ctx, oldDeployedResources, testClient).
+			Should(Succeed())
 
 	})
 
@@ -222,20 +213,10 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 		newDeployedResources, err := internal.ParseManifestToObjects(path.Join(testSamplesDir,
 			"updated-raw-manifest.yaml"))
 		Expect(err).NotTo(HaveOccurred())
-		Eventually(func() error {
-			for _, res := range newDeployedResources.Items {
-				found := false
-				for _, s := range obj.Status.Synced {
-					if isResourceFoundInSynced(res, s) {
-						found = true
-					}
-				}
-				if !found {
-					return ErrNewResourcesNotInSynced
-				}
-			}
-			return nil
-		}, Timeout, Interval).WithContext(ctx).Should(Succeed())
+		Eventually(validateNewResourcesAreInStatusSynced, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(newDeployedResources, obj).
+			Should(Succeed())
 
 		Expect(obj.GetStatus()).To(HaveAllSyncedResourcesExistingInCluster(ctx, testClient))
 	})
@@ -297,19 +278,10 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 	It("Should remove deployed module resources after its deletion", func() {
 		source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "empty-file.yaml"), RenderModeRaw))
 		reconciler.SpecResolver = source
-		Eventually(func() error {
-			for _, res := range oldDeployedResources.Items {
-				currentRes := &unstructured.Unstructured{}
-				currentRes.SetGroupVersionKind(res.GroupVersionKind())
-				currentRes.SetName(res.GetName())
-				currentRes.SetNamespace(customResourceNamespace.Name)
-				err := testClient.Get(ctx, client.ObjectKeyFromObject(currentRes), currentRes)
-				if !k8serrors.IsNotFound(err) {
-					return ErrOldResourcesStillDeployed
-				}
-			}
-			return nil
-		}, Timeout, Interval).WithContext(ctx).Should(Succeed())
+		Eventually(validateOldResourcesNotLongerDeployed, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(ctx, oldDeployedResources, testClient).
+			Should(Succeed())
 
 	})
 
@@ -321,17 +293,10 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 			HaveConditionWithStatus(ConditionTypeInstallation, metav1.ConditionTrue),
 		)
 
-		Eventually(func() error {
-			Expect(testClient.Get(ctx, key, obj)).To(Succeed())
-			for _, res := range oldDeployedResources.Items {
-				for _, s := range obj.Status.Synced {
-					if isResourceFoundInSynced(res, s) {
-						return ErrOldResourcesStillInSynced
-					}
-				}
-			}
-			return nil
-		}, Timeout, Interval).WithContext(ctx).Should(Succeed())
+		Eventually(validateOldResourcesAreRemovedFromStatusSynced, Timeout, Interval).
+			WithArguments(ctx, testClient, key, oldDeployedResources).
+			WithContext(ctx).
+			Should(Succeed())
 	})
 
 	AfterAll(func() {
@@ -453,4 +418,51 @@ func GetTestClient(cfg *rest.Config) client.Client {
 	Expect(testClient.Create(context.Background(), customResourceNamespace)).To(Succeed())
 
 	return testClient
+}
+
+func validateOldResourcesNotLongerDeployed(ctx context.Context,
+	resources internal.ManifestResources,
+	testClient client.Client) error {
+	for _, res := range resources.Items {
+		currentRes := &unstructured.Unstructured{}
+		currentRes.SetGroupVersionKind(res.GroupVersionKind())
+		currentRes.SetName(res.GetName())
+		currentRes.SetNamespace(customResourceNamespace.Name)
+		err := testClient.Get(ctx, client.ObjectKeyFromObject(currentRes), currentRes)
+		if !k8serrors.IsNotFound(err) {
+			return ErrOldResourcesStillDeployed
+		}
+	}
+	return nil
+}
+
+func validateNewResourcesAreInStatusSynced(
+	resources internal.ManifestResources, obj *testv1.TestAPI) error {
+	for _, res := range resources.Items {
+		found := false
+		for _, s := range obj.Status.Synced {
+			if isResourceFoundInSynced(res, s) {
+				found = true
+			}
+		}
+		if !found {
+			return ErrNewResourcesNotInSynced
+		}
+	}
+	return nil
+}
+
+func validateOldResourcesAreRemovedFromStatusSynced(
+	ctx context.Context, testClient client.Client, key client.ObjectKey,
+	resources internal.ManifestResources) error {
+	var obj testv1.TestAPI
+	Expect(testClient.Get(ctx, key, &obj)).To(Succeed())
+	for _, res := range resources.Items {
+		for _, s := range obj.Status.Synced {
+			if isResourceFoundInSynced(res, s) {
+				return ErrOldResourcesStillInSynced
+			}
+		}
+	}
+	return nil
 }
