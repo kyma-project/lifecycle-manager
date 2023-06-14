@@ -236,6 +236,21 @@ spec:
                         lookup to be necessary that maybe picks a different ModuleTemplate,
                         which is why we need to reconcile.
                       type: string
+                    customStateCheck:
+                      description: CustomStateCheck for advanced Module State determination
+                      properties:
+                        jsonPath:
+                          description: JSONPath specifies the JSON path to the state
+                            variable in the Module CR
+                          type: string
+                        value:
+                          description: Value is the value at the JSONPath for which
+                            the Module CR state is set to "Ready" in Kyma CR
+                          type: string
+                      required:
+                      - jsonPath
+                      - value
+                      type: object
                     fqdn:
                       description: FQDN is the fully qualified domain name of the
                         module. In the ModuleTemplate it is located in .spec.descriptor.component.name
@@ -351,6 +366,7 @@ spec:
                       - Ready
                       - Error
                       - ""
+                      - Warning
                       type: string
                     template:
                       description: It contains information about the last parsed ModuleTemplate
@@ -416,6 +432,7 @@ spec:
                 - Ready
                 - Error
                 - ""
+                - Warning
                 type: string
             type: object
         type: object
@@ -612,6 +629,21 @@ spec:
                         lookup to be necessary that maybe picks a different ModuleTemplate,
                         which is why we need to reconcile.
                       type: string
+                    customStateCheck:
+                      description: CustomStateCheck for advanced Module State determination
+                      properties:
+                        jsonPath:
+                          description: JSONPath specifies the JSON path to the state
+                            variable in the Module CR
+                          type: string
+                        value:
+                          description: Value is the value at the JSONPath for which
+                            the Module CR state is set to "Ready" in Kyma CR
+                          type: string
+                      required:
+                      - jsonPath
+                      - value
+                      type: object
                     fqdn:
                       description: FQDN is the fully qualified domain name of the
                         module. In the ModuleTemplate it is located in .spec.descriptor.component.name
@@ -727,6 +759,7 @@ spec:
                       - Ready
                       - Error
                       - ""
+                      - Warning
                       type: string
                     template:
                       description: It contains information about the last parsed ModuleTemplate
@@ -792,6 +825,7 @@ spec:
                 - Ready
                 - Error
                 - ""
+                - Warning
                 type: string
             type: object
         type: object

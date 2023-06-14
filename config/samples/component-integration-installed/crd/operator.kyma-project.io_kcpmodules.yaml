@@ -57,11 +57,13 @@ spec:
                   - Deleting
                   - Ready
                   - Error
+                  - Warning
                 - enum:
                   - Ready
                   - Processing
                   - Error
                   - Deleting
+                  - Warning
                 type: string
             required:
             - state
@@ -112,11 +114,13 @@ spec:
                   - Deleting
                   - Ready
                   - Error
+                  - Warning
                 - enum:
                   - Ready
                   - Processing
                   - Error
                   - Deleting
+                  - Warning
                 type: string
             required:
             - state

@@ -31,37 +31,40 @@ var ErrNoDeterminedState = errors.New("could not determine state")
 
 func (c *ManifestCustomResourceReadyCheck) Run(
 	ctx context.Context, clnt declarative.Client, obj declarative.Object, resources []*resource.Info,
-) error {
+) (declarative.State, error) {
 	if err := checkDeploymentState(clnt, resources); err != nil {
-		return err
+		return declarative.StateError, err
 	}
 	manifest := obj.(*v1beta2.Manifest)
 	if manifest.Spec.Resource == nil {
-		return nil
+		return declarative.StateReady, nil
 	}
 	res := manifest.Spec.Resource.DeepCopy()
 	if err := clnt.Get(ctx, client.ObjectKeyFromObject(res), res); err != nil {
-		return err
+		return declarative.StateError, err
 	}
 	state, stateExists, err := unstructured.NestedString(res.Object, strings.Split(customResourceStatePath, ".")...)
 	if err != nil {
-		return fmt.Errorf(
+		return declarative.StateError, fmt.Errorf(
 			"could not get state from custom resource %s at path %s to determine readiness: %w",
 			res.GetName(), customResourceStatePath, ErrNoDeterminedState,
 		)
 	}
 	if !stateExists {
-		return declarative.ErrCustomResourceStateNotFound
+		return declarative.StateError, declarative.ErrCustomResourceStateNotFound
 	}
-
-	if state := declarative.State(state); state != declarative.StateReady {
-		return fmt.Errorf(
-			"custom resource state is %s but expected %s: %w", state, declarative.StateReady,
-			declarative.ErrResourcesNotReady,
+	typedState := declarative.State(state)
+	if !stableState(typedState) {
+		return declarative.StateError, fmt.Errorf(
+			"custom resource state is %s: %w", state, declarative.ErrResourcesNotReady,
 		)
 	}
 
-	return nil
+	return typedState, nil
+}
+
+func stableState(state declarative.State) bool {
+	return state == declarative.StateReady || state == declarative.StateWarning
 }
 
 var ErrDeploymentResNotFound = errors.New("deployment resource is not found")
