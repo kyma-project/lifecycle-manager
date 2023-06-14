@@ -1,7 +1,6 @@
 package v1_test
 
 import (
-	"context"
 	"os"
 	"path/filepath"
 	"time"
@@ -10,8 +9,6 @@ import (
 	. "github.com/onsi/gomega"
 	apiExtensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/yaml"
@@ -37,33 +34,12 @@ var _ = BeforeSuite(
 		log.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 		Expect(testv1.AddToScheme(scheme.Scheme)).To(Succeed())
 
-		testAPICRD := &apiExtensionsv1.CustomResourceDefinition{}
+		testAPICRD = &apiExtensionsv1.CustomResourceDefinition{}
 		testAPICRDRaw, err := os.ReadFile(
 			filepath.Join(crds, "test.declarative.kyma-project.io_testapis.yaml"),
 		)
+
 		Expect(err).ToNot(HaveOccurred())
 		Expect(yaml.Unmarshal(testAPICRDRaw, testAPICRD)).To(Succeed())
-
-		env = &envtest.Environment{
-			CRDs:   []*apiExtensionsv1.CustomResourceDefinition{testAPICRD},
-			Scheme: scheme.Scheme,
-		}
-		cfg, err = env.Start()
-		Expect(err).NotTo(HaveOccurred())
-		Expect(cfg).NotTo(BeNil())
-
-		testClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
-		Expect(testClient.List(context.Background(), &testv1.TestAPIList{})).To(
-			Succeed(), "Test API should be available",
-		)
-		Expect(err).NotTo(HaveOccurred())
-
-		Expect(testClient.Create(context.Background(), customResourceNamespace)).To(Succeed())
-	},
-)
-
-var _ = AfterSuite(
-	func() {
-		Expect(env.Stop()).To(Succeed())
 	},
 )
