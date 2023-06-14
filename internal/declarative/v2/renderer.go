@@ -2,12 +2,9 @@ package v2
 
 import (
 	"context"
-	"errors"
 
 	"k8s.io/cli-runtime/pkg/resource"
 )
-
-var ErrConditionsNotYetRegistered = errors.New("conditions have not yet been registered in status")
 
 type Prerequisites []*resource.Info
 

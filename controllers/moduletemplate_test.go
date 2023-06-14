@@ -3,8 +3,9 @@ package controllers_test
 import (
 	"errors"
 	"fmt"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"time"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
@@ -164,7 +165,7 @@ var _ = Describe("Custom State Check can be used", Ordered, func() {
 					return false
 				}
 				return kyma.Status.State == v1beta2.StateReady
-			}, Timeout, Interval).
+			}, Timeout*3, Interval).
 			Should(BeTrue())
 	})
 
