@@ -17,16 +17,14 @@ import (
 )
 
 var (
-	ErrWarningResourceSyncStateDiff              = errors.New("resource syncTarget state diff detected")
-	ErrResourceSyncDiffInSameOCILayer            = errors.New("resource syncTarget diff detected but in same oci layer, prevent sync resource to be deleted") //nolint:lll
+	ErrResourceSyncStateDiff                     = errors.New("resource syncTarget state diff detected")
 	ErrInstallationConditionRequiresUpdate       = errors.New("installation condition needs an update")
 	ErrDeletionTimestampSetButNotInDeletingState = errors.New("resource is not set to deleting yet")
 	ErrObjectHasEmptyState                       = errors.New("object has an empty state")
 )
 
 const (
-	namespaceNotBeRemoved  = "kyma-system"
-	SyncedOCIRefAnnotation = "sync-oci-ref"
+	namespaceNotBeRemoved = "kyma-system"
 )
 
 func NewFromManager(mgr manager.Manager, prototype Object, options ...Option) *Reconciler {
@@ -106,11 +104,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj)
 	}
 
-	if notContainsSyncedOCIRefAnnotation(obj) {
-		updateSyncedOCIRefAnnotation(obj, spec.OCIRef)
-		return ctrl.Result{Requeue: true}, r.Update(ctx, obj)
-	}
-
 	clnt, err := r.getTargetClient(ctx, obj)
 	if err != nil {
 		r.Event(obj, "Warning", "ClientInitialization", err.Error())
@@ -134,7 +127,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	diff := ResourceList(current).Difference(target)
-	if err := r.pruneDiff(ctx, clnt, obj, renderer, diff, spec); errors.Is(err, ErrDeletionNotFinished) {
+	if err := r.pruneDiff(ctx, clnt, obj, renderer, diff); errors.Is(err, ErrDeletionNotFinished) {
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
 		return r.ssaStatus(ctx, obj)
@@ -147,12 +140,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj)
 	}
 
-	// This situation happens when manifest get new installation layer to update resources,
-	// we need to make sure all updates successfully before we can update synced oci ref
-	if requireUpdateSyncedOCIRefAnnotation(obj, spec.OCIRef) {
-		updateSyncedOCIRefAnnotation(obj, spec.OCIRef)
-		return ctrl.Result{Requeue: true}, r.Update(ctx, obj)
-	}
 	return r.CtrlOnSuccess, nil
 }
 
@@ -263,9 +250,9 @@ func (r *Reconciler) syncResources(
 	newSynced := NewInfoToResourceConverter().InfosToResources(target)
 	status.Synced = newSynced
 
-	if len(oldSynced) != len(newSynced) {
-		obj.SetStatus(status.WithState(StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
-		return ErrWarningResourceSyncStateDiff
+	if len(ResourcesDiff(oldSynced, newSynced)) > 0 {
+		obj.SetStatus(status.WithState(StateProcessing).WithOperation(ErrResourceSyncStateDiff.Error()))
+		return ErrResourceSyncStateDiff
 	}
 
 	for i := range r.PostRuns {
@@ -383,23 +370,12 @@ func (r *Reconciler) renderTargetResources(
 }
 
 func (r *Reconciler) pruneDiff(
-	ctx context.Context,
-	clnt Client,
-	obj Object,
-	renderer Renderer,
-	diff []*resource.Info,
-	spec *Spec,
+	ctx context.Context, clnt Client, obj Object, renderer Renderer, diff []*resource.Info,
 ) error {
-	diff = pruneKymaSystem(diff)
-	if manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff, obj, spec) {
-		// This case should not happen normally, but if happens, it means the resources read from cache is incomplete,
-		// and we should prevent diff resources to be deleted.
-		// Meanwhile, evict cache to hope newly created resources back to normal.
-		r.Event(obj, "Warning", "PruneDiff", ErrResourceSyncDiffInSameOCILayer.Error())
-		obj.SetStatus(obj.GetStatus().WithState(StateWarning).WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()))
-		r.ManifestParser.EvictCache(spec)
-		return ErrResourceSyncDiffInSameOCILayer
-	}
+	diff = pruneResource(diff, "Namespace", namespaceNotBeRemoved)
+	resourceName := r.ModuleCRDName(obj)
+	diff = pruneResource(diff, "CustomResourceDefinition", resourceName)
+
 	if err := r.deleteResources(ctx, clnt, obj, diff); err != nil {
 		return err
 	}
@@ -411,48 +387,14 @@ func (r *Reconciler) pruneDiff(
 	return renderer.RemovePrerequisites(ctx, obj)
 }
 
-func manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff []*resource.Info, obj Object, spec *Spec) bool {
-	return len(diff) > 0 && ociRefNotChange(obj, spec.OCIRef) && obj.GetDeletionTimestamp().IsZero()
-}
-
-func ociRefNotChange(obj Object, ref string) bool {
-	syncedOCIRef, found := obj.GetAnnotations()[SyncedOCIRefAnnotation]
-	return found && syncedOCIRef == ref
-}
-
-func notContainsSyncedOCIRefAnnotation(obj Object) bool {
-	_, found := obj.GetAnnotations()[SyncedOCIRefAnnotation]
-	return !found
-}
-
-func requireUpdateSyncedOCIRefAnnotation(obj Object, ref string) bool {
-	syncedOCIRef, found := obj.GetAnnotations()[SyncedOCIRefAnnotation]
-	if found && syncedOCIRef != ref {
-		return true
-	}
-	return false
-}
-
-func updateSyncedOCIRefAnnotation(obj Object, ref string) {
-	annotations := obj.GetAnnotations()
-	if annotations == nil {
-		annotations = make(map[string]string)
-	}
-	annotations[SyncedOCIRefAnnotation] = ref
-	obj.SetAnnotations(annotations)
-}
-
-func pruneKymaSystem(diff []*resource.Info) []*resource.Info {
+func pruneResource(diff []*resource.Info, resourceType string, resourceName string) []*resource.Info {
 	for i, info := range diff { //nolint:varnamelen
 		obj := info.Object.(client.Object)
-		if obj.GetObjectKind().GroupVersionKind().Kind != "Namespace" {
-			continue
+		if obj.GetObjectKind().GroupVersionKind().Kind == resourceType && obj.GetName() == resourceName {
+			return append(diff[:i], diff[i+1:]...)
 		}
-		if obj.GetName() != namespaceNotBeRemoved {
-			continue
-		}
-		return append(diff[:i], diff[i+1:]...)
 	}
+
 	return diff
 }
 
