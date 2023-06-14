@@ -360,7 +360,6 @@ func StartDeclarativeReconcilerForRun(
 			WithModuleCRDName(func(obj Object) string { return "" }),
 		)...,
 	)
-
 	// in case there is any leak of CRs from another test run, but this is most likely never necessary
 	testWatchPredicate, err := predicate.LabelSelectorPredicate(
 		metav1.LabelSelector{MatchLabels: labels.Set{testRunLabel: runID}},
