@@ -322,7 +322,7 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 		)
 
 		Eventually(func() error {
-			testClient.Get(ctx, key, obj)
+			Expect(testClient.Get(ctx, key, obj)).To(Succeed())
 			for _, res := range oldDeployedResources.Items {
 				for _, s := range obj.Status.Synced {
 					if isResourceFoundInSynced(res, s) {
