@@ -151,7 +151,6 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 	var cfg *rest.Config
 	var testClient client.Client
 	const ocirefSynced = "sha256:synced"
-
 	runID := fmt.Sprintf("run-%s", rand.String(4))
 	obj := &testv1.TestAPI{Spec: testv1.TestAPISpec{ManifestName: "updating-manifest"}}
 	obj.SetLabels(labels.Set{testRunLabel: runID})
@@ -192,7 +191,7 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 
 	It("Should start reconciliation for the updated manifest and remove old deployed resources", func() {
 		source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "updated-raw-manifest.yaml"),
-			ocirefSynced, RenderModeRaw))
+			"", RenderModeRaw))
 		reconciler.SpecResolver = source
 		oldDeployedResources, err := internal.ParseManifestToObjects(path.Join(testSamplesDir, "raw-manifest.yaml"))
 		Expect(err).NotTo(HaveOccurred())
@@ -281,7 +280,7 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 
 	It("Should remove deployed module resources after its deletion", func() {
 		source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "empty-file.yaml"),
-			ocirefSynced, RenderModeRaw))
+			"", RenderModeRaw))
 		reconciler.SpecResolver = source
 		Eventually(validateOldResourcesNotLongerDeployed, Timeout, Interval).
 			WithContext(ctx).
