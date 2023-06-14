@@ -253,7 +253,8 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 			}, nil
 		},
 	)}
-	source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), RenderModeRaw))
+	source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), ocirefSynced,
+		RenderModeRaw))
 	oldDeployedResources, err := internal.ParseManifestToObjects(path.Join(testSamplesDir, "raw-manifest.yaml"))
 	Expect(err).NotTo(HaveOccurred())
 
