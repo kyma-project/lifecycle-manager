@@ -36,8 +36,3 @@ help: ## Display this help.
 .PHONY: test-watcher-e2e
 test-watcher-e2e: ## Runs the E2E Test
 	go test ./... -coverprofile cover.out --tags=e2e -v
-
-
-.PHONY: test-verbose
-test-verbose: ## Runs the E2E Test with Verbose output
-	go test --tags=e2e e2e_test.go -v
