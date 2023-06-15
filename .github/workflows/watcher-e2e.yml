@@ -25,7 +25,7 @@ jobs:
           --k3s-arg '--disable=traefik@server:0'
       - name: Provision KCP cluster
         run: |
-          k3d cluster create kcp --agents 2 \
+          k3d cluster create kcp --agents 4 \
           -p 9443:443@loadbalancer -p 9080:80@loadbalancer \
           --registry-create k3d-kyma-registry.localhost:5111 \
           --k3s-arg '--disable=traefik@server:0'
@@ -63,6 +63,7 @@ jobs:
       - name: Install Cert Manager
         run: |
           kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
+          kubectl wait --for=jsonpath='{.status.phase}'=Running pod --all -n cert-manager --timeout=90s
       - name: build and push LM to local registry
         run: |
           make docker-build IMG=k3d-kyma-registry.localhost:5111/lifecycle-manager:0.0.1 && \

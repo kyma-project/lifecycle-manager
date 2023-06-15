@@ -9,7 +9,7 @@ This setup is deployed with the following security features enabled:
 - Strict mTLS connection between KCP and SKR cluster
 - SAN Pinning (SAN of client TLS certificate needs to match DNS annotation of corresponding Kyma CR)
 
-> **Optional -** 
+> **Optional -**
 > If you want to use remote clusters instead of a local k3d setup or external registries, please refer to the following guides for the cluster and registry setup:
 > - [Provision cluster and OCI registry](./provision-cluster-and-registry.md)
 > - [Create a test environment on Google Container Registry (GCR)](./prepare-gcr-registry.md)
@@ -18,7 +18,9 @@ This setup is deployed with the following security features enabled:
 
 1. Create a local control-plane (KCP) cluster:
     ```shell
-    kyma provision k3d --name=kcp-local -p 9080:80@loadbalancer -p 9443:443@loadbalancer --ci
+    k3d cluster create kcp-local --port 9443:443@loadbalancer \
+    --registry-create k3d-registry.localhost:0.0.0.0:5111 \
+    --k3s-arg '--disable=traefik@server:0'
     ```
 
 2. Open `/etc/hosts` file on your local system:
@@ -27,7 +29,7 @@ This setup is deployed with the following security features enabled:
    ```
    Add entry for your local k3d registry created in the previous steps
    ```
-   127.0.0.1 k3d-kcp-local-registry
+   127.0.0.1 k3d-registry.localhost
    ```
 
 3. Install other pre-requisites required by the lifecycle-manager
@@ -52,7 +54,7 @@ This setup is deployed with the following security features enabled:
    <details>
       <summary>deploying custom image</summary>
       If you want to test a custom image of the KLM. Adapt the `IMG` variable in the Makefile and run the following:
-   
+
    ```shell
    make docker-build
    make docker-push
@@ -68,11 +70,11 @@ This setup is deployed with the following security features enabled:
 
    ```shell
    kyma alpha create module -p ../template-operator --version 1.2.3 \
-   --registry k3d-kcp-local-registry:5001 --insecure
+   --registry k3d-registry.localhost:5111 --insecure
    ```
 6. Verify images has been pushed to local registry:
    ```shell
-   curl http://k3d-kcp-local-registry:5001/v2/_catalog\?n\=100
+   curl http://k3d-registry.localhost:5111/v2/_catalog\?n\=100
    ```
    The output should look like the following:
    ```shell
@@ -81,13 +83,13 @@ This setup is deployed with the following security features enabled:
 7. Open the generated `template.yaml` file and change the following line:
    ```yaml
     <...>
-      - baseUrl: k3d-kcp-local-registry:5001
+      - baseUrl: k3d-registry.localhost:5111
     <...>
    ```
    To the following:
     ```yaml
     <...>
-      - baseUrl: k3d-kcp-local-registry:5000
+      - baseUrl: k3d-registry.localhost:5000
     <...>
    ```
    This needs to be done since the operators are running inside of two local k3d cluster, and the internal port for the k3d registry is set by default to `5000`.
@@ -122,16 +124,18 @@ k3d cluster create skr-local
    data:
       config: $(k3d kubeconfig get skr-local | sed 's/0\.0\.0\.0/host.k3d.internal/' | base64 | tr -d '\n')
    ---
-   apiVersion: operator.kyma-project.io/v1beta2
+   apiVersion: operator.kyma-project.io/v1beta1
    kind: Kyma
    metadata:
       annotations:
         skr-domain: "example.domain.com"
-        operator.kyma-project.io/sync: "true"
       name: kyma-sample
       namespace: kcp-system
    spec:
       channel: regular
+      sync:
+        enabled: true
+        namespace: kcp-system
       modules:
         - name: template-operator
    EOF
@@ -153,7 +157,7 @@ k3d cluster create skr-local
     data:
       config: $(k3d kubeconfig get skr-local | base64 | tr -d '\n')
     ---
-    apiVersion: operator.kyma-project.io/v1beta2
+    apiVersion: operator.kyma-project.io/v1beta1
     kind: Kyma
     metadata:
       annotations:
@@ -223,7 +227,7 @@ status:
       - name: template-operator
         channel: fast
     ```
-   
+
 ### Verify logs
 
 1. By watching the `skr-webhook` deployment's logs, verify that the KCP request is sent successfully
