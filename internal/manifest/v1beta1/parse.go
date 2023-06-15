@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"sync"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -20,6 +21,11 @@ import (
 
 const manifestFileName = "raw-manifest.yaml"
 
+var (
+	//nolint:gochecknoglobals
+	fileMutexMap = sync.Map{}
+)
+
 func GetPathFromRawManifest(ctx context.Context,
 	imageSpec v1beta2.ImageSpec,
 	keyChain authn.Keychain,
@@ -30,6 +36,11 @@ func GetPathFromRawManifest(ctx context.Context,
 	// if file exists return existing file path
 	installPath := GetFsChartPath(imageSpec)
 	manifestPath := path.Join(installPath, manifestFileName)
+
+	fileMutex := getLockerForPath(installPath)
+	fileMutex.Lock()
+	defer fileMutex.Unlock()
+
 	dir, err := os.Open(manifestPath)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return "", fmt.Errorf("opening dir for installs caused an error %s: %w", imageRef, err)
@@ -75,4 +86,15 @@ func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (v
 		return crane.PullLayer(noSchemeImageRef, crane.Insecure, crane.WithAuthFromKeychain(keyChain))
 	}
 	return crane.PullLayer(noSchemeImageRef, crane.WithAuthFromKeychain(keyChain), crane.WithContext(ctx))
+}
+
+// getLockerForPath always returns the same sync.Locker instance for given path argument.
+func getLockerForPath(path string) sync.Locker {
+	val, ok := fileMutexMap.Load(path)
+	if !ok {
+		val, _ = fileMutexMap.LoadOrStore(path, &sync.Mutex{})
+	}
+
+	res := val.(*sync.Mutex)
+	return res
 }
