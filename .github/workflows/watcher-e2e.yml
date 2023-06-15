@@ -63,13 +63,6 @@ jobs:
       - name: Install Cert Manager
         run: |
           kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
-      - name: Create necessary namespaces
-        run: |
-          kubectl create namespace kyma-system
-          kubectl create namespace kcp-system
-      - name: print working directory and list its contents
-        run: |
-          pwd && ls -al
       - name: build and push LM to local registry
         run: |
           make docker-build IMG=k3d-kyma-registry.localhost:5111/lifecycle-manager:0.0.1 && \

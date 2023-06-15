@@ -5,7 +5,6 @@ Those tests are written to run inside a pipeline. But they can also be run on a 
 
 ## Content
 
-- [Pipeline script](./scripts/klm-e2e.sh): runs inside Prow pipeline to set up test environment and runs the tests
 - [Test  Suite](./e2e_suite_test.go): Sets up needed clients and configurations.
 - [Watcher end-to-end tests](./e2e_watcher_test.go): Tests the end-to-end workflow of the watcher.
 
