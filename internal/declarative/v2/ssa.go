@@ -99,7 +99,7 @@ func (c *ConcurrentDefaultSSA) serverSideApplyResourceInfo(
 			"%s is not a valid client-go object: %w", info.ObjectName(), ErrClientObjectConversionFailed,
 		)
 	}
-
+	obj.SetManagedFields(nil)
 	err := c.clnt.Patch(ctx, obj, client.Apply, client.ForceOwnership, c.owner)
 	if err != nil {
 		return fmt.Errorf(
