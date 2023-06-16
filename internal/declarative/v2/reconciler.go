@@ -415,17 +415,12 @@ func (r *Reconciler) pruneDiff(
 }
 
 func manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff []*resource.Info, obj Object, spec *Spec) bool {
-	return len(diff) > 0 && ociRefNotChange(obj, spec.OCIRef) && obj.GetDeletionTimestamp().IsZero()
+	return len(diff) > 0 && ociRefNotChanged(obj, spec.OCIRef) && obj.GetDeletionTimestamp().IsZero()
 }
 
-func ociRefNotChange(obj Object, ref string) bool {
+func ociRefNotChanged(obj Object, ref string) bool {
 	syncedOCIRef, found := obj.GetAnnotations()[SyncedOCIRefAnnotation]
 	return found && syncedOCIRef == ref
-}
-
-func notContainsSyncedOCIRefAnnotation(obj Object) bool {
-	_, found := obj.GetAnnotations()[SyncedOCIRefAnnotation]
-	return !found
 }
 
 func requireUpdateSyncedOCIRefAnnotation(obj Object, ref string) bool {
@@ -434,6 +429,11 @@ func requireUpdateSyncedOCIRefAnnotation(obj Object, ref string) bool {
 		return true
 	}
 	return false
+}
+
+func notContainsSyncedOCIRefAnnotation(obj Object) bool {
+	_, found := obj.GetAnnotations()[SyncedOCIRefAnnotation]
+	return !found
 }
 
 func updateSyncedOCIRefAnnotation(obj Object, ref string) {
