@@ -8,6 +8,10 @@ metadata:
 spec:
   labelsToWatch:
     "operator.kyma-project.io/watched-by": "lifecycle-manager"
+  resourceToWatch:
+    group: operator.kyma-project.io
+    version: "*"
+    resource: kymas
   field: "spec"
   serviceInfo:
     name: klm-event-service
@@ -28,6 +32,10 @@ metadata:
 spec:
   labelsToWatch:
     operator.kyma-project.io/watched-by: "module-manager"
+  resourceToWatch:
+    group: operator.kyma-project.io
+    version: "*"
+    resource: "*"
   field: "status"
   serviceInfo:
     name: klm-event-service

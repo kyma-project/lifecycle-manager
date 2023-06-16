@@ -23,11 +23,14 @@ import (
 
 // WatcherSpec defines the desired state of Watcher.
 type WatcherSpec struct {
-	// ServiceInfo describes the service information of the operator
+	// ServiceInfo describes the service information of the listener
 	ServiceInfo Service `json:"serviceInfo"`
 
 	// LabelsToWatch describes the labels that should be watched
 	LabelsToWatch map[string]string `json:"labelsToWatch"`
+
+	// ResourceToWatch is the GroupVersionResource of the resource that should be watched.
+	ResourceToWatch WatchableGVR `json:"resourceToWatch"`
 
 	// Field describes the subresource that should be watched
 	// Value can be one of ("spec", "status")
@@ -36,6 +39,13 @@ type WatcherSpec struct {
 	// Gateway configures the Istio Gateway for the VirtualService that is created/updated during processing
 	// of the Watcher CR.
 	Gateway GatewayConfig `json:"gateway"`
+}
+
+// WatchableGVR unambiguously identifies the resource that should be watched.
+type WatchableGVR struct {
+	Group    string `json:"group"`
+	Version  string `json:"version"`
+	Resource string `json:"resource"`
 }
 
 // +kubebuilder:validation:Enum=spec;status;
