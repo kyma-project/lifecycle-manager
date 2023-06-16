@@ -1,19 +1,21 @@
 # E2e Tests
 
-This Subdirectory contains e2e tests used for E2E Verification.
-Those tests are written to run inside a pipeline. But they can also be run on a local machine, as described in the next section.
+This subdirectory contains e2e tests used for the e2e verification of the watcher component.
+Those tests are written to run inside a pipeline. But they can also be run on a local machine.
+See the [Run the e2e tests locally](#run-the-e2e-tests-locally) section for details.
 
-## Content
+## Contents
 
-- [Test  Suite](./e2e_suite_test.go): Sets up needed clients and configurations.
-- [Watcher end-to-end tests](./e2e_watcher_test.go): Tests the end-to-end workflow of the watcher.
+- [Test suite](./e2e_suite_test.go) that sets up required clients and configurations.
+- [Watcher end-to-end tests](./e2e_watcher_test.go) that includes tests and the end-to-end workflow of the watcher.
+- [Makefile](./Makefile) that includes targets to execute the watcher e2e test suite.
 
-## Run the Tests locally
+## Run the e2e tests locally
 
-1. Setup local environment using [this guide](../../docs/developer/local-test-setup.md). Only cluster creation and pre-requisites steps are needed, rest can be skipped. 
-2. Export K8s Configurations into environment variables
+1. Set up your local environment using steps 1 to 3 from [this guide](../../docs/developer-tutorials/local-test-setup.md). Create a cluster, and install Istio CRDs and `cert-manager`. Skip all the remaining steps from the guide. 
+2. Export the following  K8s configurations as environment variables:
     ```shell
     export KCP_KUBECONFIG=$(k3d kubeconfig write kcp-local)
     export SKR_KUBECONFIG=$(k3d kubeconfig write skr-local)
     ```
-3. Run `make`
+3. Run `make test-watcher-e2e`.
