@@ -9,7 +9,7 @@ This setup is deployed with the following security features enabled:
 - Strict mTLS connection between KCP and SKR cluster
 - SAN Pinning (SAN of client TLS certificate needs to match DNS annotation of corresponding Kyma CR)
 
-> **Optional -**
+> **Optional -** 
 > If you want to use remote clusters instead of a local k3d setup or external registries, please refer to the following guides for the cluster and registry setup:
 > - [Provision cluster and OCI registry](./provision-cluster-and-registry.md)
 > - [Create a test environment on Google Container Registry (GCR)](./prepare-gcr-registry.md)
@@ -54,7 +54,7 @@ This setup is deployed with the following security features enabled:
    <details>
       <summary>deploying custom image</summary>
       If you want to test a custom image of the KLM. Adapt the `IMG` variable in the Makefile and run the following:
-
+   
    ```shell
    make docker-build
    make docker-push
@@ -227,7 +227,7 @@ status:
       - name: template-operator
         channel: fast
     ```
-
+   
 ### Verify logs
 
 1. By watching the `skr-webhook` deployment's logs, verify that the KCP request is sent successfully
