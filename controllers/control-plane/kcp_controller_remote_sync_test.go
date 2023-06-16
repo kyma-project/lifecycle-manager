@@ -415,6 +415,34 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 		}, Timeout, Interval).Should(Succeed())
 	})
 
+	It("Should regenerate Kyma CRD in SKR when deleted", func() {
+		kymaCrd, err := fetchCrd(runtimeClient, v1beta2.KymaKind)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(runtimeClient.Delete, Timeout, Interval).
+			WithArguments(ctx, kymaCrd).
+			WithContext(ctx).
+			Should(Succeed())
+
+		Eventually(func() error {
+			_, err := fetchCrd(runtimeClient, v1beta2.KymaKind)
+			return err
+		}, Timeout, Interval).WithContext(ctx).Should(Not(HaveOccurred()))
+	})
+
+	It("Should regenerate ModuleTemplate CRD in SKR when deleted", func() {
+		moduleTemplateCrd, err := fetchCrd(runtimeClient, v1beta2.ModuleTemplateKind)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(runtimeClient.Delete, Timeout, Interval).
+			WithArguments(ctx, moduleTemplateCrd).
+			WithContext(ctx).
+			Should(Succeed())
+
+		Eventually(func() error {
+			_, err := fetchCrd(runtimeClient, v1beta2.ModuleTemplateKind)
+			return err
+		}, Timeout, Interval).WithContext(ctx).Should(Not(HaveOccurred()))
+	})
+
 	AfterAll(func() {
 		Expect(runtimeEnv.Stop()).Should(Succeed())
 	})
