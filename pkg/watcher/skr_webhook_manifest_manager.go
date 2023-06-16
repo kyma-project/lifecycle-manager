@@ -75,7 +75,7 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 
 	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
 	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma,
-		m.config.IstioNamespace, m.config.WatcherLocalTestingEnabled)
+		m.config.IstioNamespace, m.config.RemoteSyncNamespace, m.config.WatcherLocalTestingEnabled)
 	if err != nil {
 		return fmt.Errorf("error while creating new CertificateManager struct: %w", err)
 	}
@@ -108,7 +108,7 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 	syncContext := remote.SyncContextFromContext(ctx)
 
 	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma,
-		m.config.IstioNamespace, false)
+		m.config.IstioNamespace, m.config.RemoteSyncNamespace, false)
 	if err != nil {
 		logger.Error(err, "Error while creating new CertificateManager")
 		return err

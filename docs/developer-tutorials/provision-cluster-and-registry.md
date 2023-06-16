@@ -1,53 +1,59 @@
-# Provision cluster and OCI registry
+# Provision a cluster and OCI registry
 
-In this document, you will learn how to set up a cluster in different environments.
+## Context
 
-For a dual cluster setup, with control plane (KCP) and Kyma runtime (SKR); create **two separate clusters** following the instructions below.
+This tutorial shows how to set up a cluster in different environments.
 
-## Local cluster setup
+For the in-cluster mode, with Kyma Control Plane (KCP) and Kyma runtime (SKR), create **two separate clusters** following the instructions below.
+
+## Procedure
+
+### Local cluster setup
 
 1. Create a `k3d` cluster:
 
    ```sh
    k3d cluster create op-kcp --registry-create op-kcp-registry.localhost:8888
    
-   # also add for dual cluster mode only
+   # also add for the in-cluster mode only
    k3d cluster create op-skr --registry-create op-skr-registry.localhost:8888
    ```
-2. Configure the local `k3d` registry. 
-   1. To reach the registries using `localhost`, add the following code to your `/etc/hosts` file:
+
+2. Configure the local `k3d` registry. To reach the registries using `localhost`, add the following code to your `/etc/hosts` file:
+
+   ```sh
+   # Added for Operator Registries
+   127.0.0.1 op-kcp-registry.localhost
+   
+   # also add for the in-cluster mode only
+   127.0.0.1 op-skr-registry.localhost
+   ```
+
+3. Set the `IMG` environment variable for the `docker-build` and `docker-push` commands, to make sure images are accessible by local k3d clusters.
+
+   - For **single cluster mode**:
 
       ```sh
-      # Added for Operator Registries
-      127.0.0.1 op-kcp-registry.localhost
-   
-      # also add for dual cluster mode only
-      127.0.0.1 op-skr-registry.localhost
+      # pointing to KCP registry in dual cluster mode  
+      export IMG=op-kcp-registry.localhost:8888/unsigned/operator-images
       ```
 
-3. Set `IMG` environment variable for `docker-build` and `docker-push` commands, to make sure images are accessible by local k3d clusters.
-      
-   In **_single cluster mode_**:
-   ```sh
-   # pointing to KCP registry in dual cluster mode  
-   export IMG=op-kcp-registry.localhost:8888/unsigned/operator-images
-   ```
-   In **_dual cluster mode_**:
-   ```sh
-   # pointing to SKR registry in dual cluster mode
-   export IMG=op-skr-registry.localhost:8888/unsigned/operator-images
-   ```
+   - For **in-cluster mode**:
 
-4. After pushing your image, verify the content. For browsing through the content of the local container registry, e.g. `http://op-kcp-registry.localhost:8888/v2/_catalog?n=100`.
+      ```sh
+      # pointing to SKR registry in dual cluster mode
+      export IMG=op-skr-registry.localhost:8888/unsigned/operator-images
+      ```
 
+4. Once you pushed your image, verify the content. For browsing through the content of the local container registry, use, for example, `http://op-kcp-registry.localhost:8888/v2/_catalog?n=100`.
 
-## Remote cluster setup
+### Remote cluster setup
 
 Learn how to use a Gardener cluster for testing.
 
 1. Go to the [Gardener account](https://dashboard.garden.canary.k8s.ondemand.com/account) and download your `Access Kubeconfig`.
 
-2. Provision a compliant remote cluster with the [`kyma-cli`](https://github.com/kyma-project/cli):
+2. Provision a compliant remote cluster using [Kyma CLI](https://github.com/kyma-project/cli):
 
    ```sh
    # gardener_project - Gardener project name
@@ -56,17 +62,18 @@ Learn how to use a Gardener cluster for testing.
    kyma provision gardener gcp --name op-kcpskr --project ${gardener_project} -s ${gcp_secret} -c ${gardener_account_kubeconfig}
    ```
 
-   For example, this could look like `kyma provision gardener gcp --name op-kcpskr --project jellyfish -s gcp-jellyfish-secret -c .kube/kubeconfig-garden-jellyfish.yaml`
+   For example, this could look like `kyma provision gardener gcp --name op-kcpskr --project jellyfish -s gcp-jellyfish-secret -c .kube/kubeconfig-garden-jellyfish.yaml`.
 
-3. Create an external registry
+3. Create an external registry.
 
    When using an external registry, make sure that the Gardener cluster (`op-kcpskr`) can reach your registry.
 
    You can follow the guide to [set up a GCP-hosted artifact registry (GCR)](prepare-gcr-registry.md).
 
-   _Disclaimer: For private registries, you may have to configure additional settings not covered in this tutorial._
+   > **CAUTION:** For private registries, you may have to configure additional settings not covered in this tutorial.
 
-4. Set `IMG` environment variable for `docker-build` and `docker-push` commands.
+4. Set the `IMG` environment variable for the `docker-build` and `docker-push` commands.
+
    ```sh
    # this an example
    # sap-kyma-jellyfish-dev is the GCP project

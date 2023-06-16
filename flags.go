@@ -9,9 +9,11 @@ import (
 )
 
 const (
-	defaultKymaRequeueSuccessInterval     = 20 * time.Second
-	defaultManifestRequeueSuccessInterval = 20 * time.Second
-	defaultWatcherRequeueSuccessInterval  = 20 * time.Second
+	defaultKymaRequeueSuccessInterval     = 30 * time.Second
+	defaultKymaRequeueErrInterval         = 2 * time.Second
+	defaultKymaRequeueBusyInterval        = 5 * time.Second
+	defaultManifestRequeueSuccessInterval = 30 * time.Second
+	defaultWatcherRequeueSuccessInterval  = 30 * time.Second
 	defaultClientQPS                      = 150
 	defaultClientBurst                    = 150
 	defaultPprofServerTimeout             = 90 * time.Second
@@ -50,6 +52,12 @@ func defineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.kymaRequeueSuccessInterval, "kyma-requeue-success-interval",
 		defaultKymaRequeueSuccessInterval, "determines the duration after which an already successfully "+
 			"reconciled Kyma is enqueued for checking if it's still in a consistent state.")
+	flag.DurationVar(&flagVar.kymaRequeueErrInterval, "kyma-requeue-error-interval",
+		defaultKymaRequeueErrInterval, "determines the duration after which a Kyma in Error state "+
+			"is enqueued for reconciliation.")
+	flag.DurationVar(&flagVar.kymaRequeueBusyInterval, "kyma-requeue-busy-interval",
+		defaultKymaRequeueBusyInterval, "determines the duration after which a Kyma in Processing state "+
+			"is enqueued for reconciliation.")
 	flag.DurationVar(&flagVar.manifestRequeueSuccessInterval, "manifest-requeue-success-interval",
 		defaultManifestRequeueSuccessInterval, "determines the duration after which an already successfully "+
 			"reconciled Kyma is enqueued for checking if it's still in a consistent state.")
@@ -124,6 +132,8 @@ type FlagVar struct {
 	maxConcurrentManifestReconciles        int
 	maxConcurrentWatcherReconciles         int
 	kymaRequeueSuccessInterval             time.Duration
+	kymaRequeueErrInterval                 time.Duration
+	kymaRequeueBusyInterval                time.Duration
 	manifestRequeueSuccessInterval         time.Duration
 	watcherRequeueSuccessInterval          time.Duration
 	moduleVerificationKeyFilePath          string

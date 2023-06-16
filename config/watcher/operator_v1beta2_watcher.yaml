@@ -14,7 +14,7 @@ spec:
     resource: kymas
   field: "spec"
   serviceInfo:
-    name: lifecycle-manager-event-service
+    name: klm-event-service
     port: 8082
     namespace: kcp-system
   gateway:
@@ -38,7 +38,7 @@ spec:
     resource: "*"
   field: "status"
   serviceInfo:
-    name: lifecycle-manager-event-service
+    name: klm-event-service
     port: 8083
     namespace: kcp-system
   gateway:
@@ -53,7 +53,7 @@ metadata:
   namespace: system
 spec:
   selector:
-    app.kubernetes.io/name: kcp-lifecycle-manager
+    app.kubernetes.io/name: klm-lifecycle-manager
   ports:
     - protocol: TCP
       name: klm

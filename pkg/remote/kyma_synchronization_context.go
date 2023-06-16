@@ -224,7 +224,6 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(
 		recorder.Event(controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
 		return err
 	}
-
 	return nil
 }
 

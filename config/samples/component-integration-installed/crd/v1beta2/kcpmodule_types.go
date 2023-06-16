@@ -46,12 +46,12 @@ type KCPModule struct {
 	Status KCPModuleStatus `json:"status,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error
+// +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error;Warning
 type KCPModuleState string
 
 // ManifestStatus defines the observed state of Manifest.
 type KCPModuleStatus struct {
-	// +kubebuilder:validation:Enum=Ready;Processing;Error;Deleting;
+	// +kubebuilder:validation:Enum=Ready;Processing;Error;Deleting;Warning
 	State KCPModuleState `json:"state"`
 }
 

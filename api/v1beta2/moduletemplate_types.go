@@ -145,7 +145,8 @@ func (m *ModuleTemplate) GetComponentDescriptorCacheKey() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s:%s:%s", m.Spec.Channel, descriptor.GetName(), descriptor.GetVersion()), nil
+	return fmt.Sprintf("%s:%s:%s:%s", m.Spec.Channel, m.ResourceVersion, descriptor.GetName(),
+		descriptor.GetVersion()), nil
 }
 
 func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {

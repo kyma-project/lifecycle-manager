@@ -22,10 +22,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"golang.org/x/sync/errgroup"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -33,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -64,6 +63,8 @@ const (
 
 type RequeueIntervals struct {
 	Success time.Duration
+	Busy    time.Duration
+	Error   time.Duration
 }
 
 type KymaReconciler struct {
@@ -273,16 +274,16 @@ func (r *KymaReconciler) processKymaState(ctx context.Context, kyma *v1beta2.Kym
 	case "":
 		return ctrl.Result{}, r.handleInitialState(ctx, kyma)
 	case v1beta2.StateProcessing:
-		return ctrl.Result{Requeue: true}, r.handleProcessingState(ctx, kyma)
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, r.handleProcessingState(ctx, kyma)
 	case v1beta2.StateDeleting:
 		if dependentsDeleting, err := r.handleDeletingState(ctx, kyma); err != nil {
 			return ctrl.Result{}, err
 		} else if dependentsDeleting {
-			return ctrl.Result{Requeue: true}, nil
+			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
 		}
 	case v1beta2.StateError:
-		return ctrl.Result{Requeue: true}, r.handleProcessingState(ctx, kyma)
-	case v1beta2.StateReady:
+		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Error}, r.handleProcessingState(ctx, kyma)
+	case v1beta2.StateReady, v1beta2.StateWarning:
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, r.handleProcessingState(ctx, kyma)
 	}
 

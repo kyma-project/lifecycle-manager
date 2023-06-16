@@ -85,34 +85,6 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object)
 }
 
 var (
-	ErrChartConfigObjectInvalid = errors.New("chart config object of .spec.config is invalid")
-	ErrConfigObjectInvalid      = errors.New(".spec.config is invalid")
-)
-
-func ParseInstallConfigs(decodedConfig interface{}) ([]interface{}, error) {
-	var configs []interface{}
-	if decodedConfig == nil {
-		return configs, nil
-	}
-	installConfigObj, decodeOk := decodedConfig.(map[string]interface{})
-	if !decodeOk {
-		return nil, fmt.Errorf("reading install %s resulted in an error: %w", v1beta2.ManifestKind,
-			ErrConfigObjectInvalid)
-	}
-	if installConfigObj["configs"] != nil {
-		var configOk bool
-		configs, configOk = installConfigObj["configs"].([]interface{})
-		if !configOk {
-			return nil, fmt.Errorf(
-				"reading install %s resulted in an error: %w ", v1beta2.ManifestKind,
-				ErrChartConfigObjectInvalid,
-			)
-		}
-	}
-	return configs, nil
-}
-
-var (
 	ErrUnsupportedInstallType = errors.New("install type is not supported")
 	ErrEmptyInstallType       = errors.New("empty install type")
 )

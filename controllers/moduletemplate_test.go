@@ -165,7 +165,7 @@ var _ = Describe("Custom State Check can be used", Ordered, func() {
 					return false
 				}
 				return kyma.Status.State == v1beta2.StateReady
-			}, Timeout, Interval).
+			}, Timeout*3, Interval).
 			Should(BeTrue())
 	})
 
