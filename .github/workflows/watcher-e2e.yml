@@ -17,8 +17,6 @@ jobs:
       ISTIO_VERSION: 1.18.0
       CM_VERSION: 1.12.0
     steps:
-#      - name: Install prerequisites
-#        run: apk update && apk upgrade && apk --no-cache add git curl wget make bash musl-dev go
       - name: Set up k3d
         run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
       - name: Provision SKR cluster
@@ -36,7 +34,7 @@ jobs:
         run: |
           FILE=/etc/hosts
           if [ -f "$FILE" ]; then
-              sudo echo "127.0.0.1 k3d-kyma-registry" >> $FILE
+              sudo echo "127.0.0.1 k3d-kyma-registry" | sudo tee -a $FILE
           else
               echo "$FILE does not exist."
               exit 1
