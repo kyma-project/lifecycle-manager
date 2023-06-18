@@ -27,15 +27,10 @@ jobs:
               exit 1
           fi
           echo "/etc/hosts file patched"
-      - name: Install kubectl
+      - name: Install prerequisites
         run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          chmod +x ./kubectl
-          sudo mv ./kubectl /usr/local/bin/kubectl
-          sudo chown root: /usr/local/bin/kubectl
+          brew install kubernetes-cli k3d istioctl cmctl
           kubectl version --client
-      - name: Set up k3d
-        run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
       - name: Provision SKR cluster
         run: |
           k3d cluster create skr --k3s-arg '--disable=traefik@server:0'
@@ -63,15 +58,8 @@ jobs:
         run: kubectl config use-context k3d-kcp
       - name: Install Istio
         run: |
-          curl -L https://istio.io/downloadIstio | TARGET_ARCH=x86_64 sh -
-          chmod +x istio-$ISTIO_VERSION/bin/istioctl
-          mv istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin
+          istioctl x precheck
           istioctl install -y
-      - name: Install CMCTL
-        run: |
-          OS=$(go env GOOS); ARCH=$(go env GOARCH); curl -fsSL -o cmctl.tar.gz https://github.com/cert-manager/cert-manager/releases/latest/download/cmctl-$OS-$ARCH.tar.gz
-          tar xzf cmctl.tar.gz
-          mv cmctl /usr/local/bin
       - name: Install Cert Manager
         run: |
           kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/$CM_VERSION/cert-manager.yaml
