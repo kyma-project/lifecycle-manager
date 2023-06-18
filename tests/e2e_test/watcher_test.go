@@ -87,7 +87,7 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 				WithArguments(kymaName, kymaNamespace, channel, controlPlaneClient).
 				Should(Succeed())
 			By("verifying kyma is ready")
-			Eventually(checkKymaReady, timeout, interval).
+			Eventually(checkKymaReady, timeout, readyTimeout).
 				WithContext(ctx).
 				WithArguments(kymaName, kymaNamespace, controlPlaneClient).
 				Should(Succeed())
