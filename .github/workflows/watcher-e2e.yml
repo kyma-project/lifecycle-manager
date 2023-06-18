@@ -87,7 +87,7 @@ jobs:
             make local-deploy-with-watcher IMG=k3d-kyma-registry.localhost:5111/lifecycle-manager:0.0.1
           fi
       - name: Export DinD ENV var
-        run: echo "DIND=true" >> $GITHUB_ENV
+        run: echo "DIND=false" >> $GITHUB_ENV
       - name: Run Watcher E2E Tests
         run: |
           make -C tests/e2e_test test-watcher-e2e
