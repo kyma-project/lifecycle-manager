@@ -29,7 +29,7 @@ jobs:
           echo "/etc/hosts file patched"
       - name: Install prerequisites
         run: |
-          brew install kubernetes-cli k3d istioctl cmctl docker
+          brew install kubernetes-cli k3d istioctl cmctl docker colima
           kubectl version --client
       - name: Start colima
         run: |
