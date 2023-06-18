@@ -11,7 +11,7 @@ jobs:
       matrix:
         cli-stability: [ "unstable" ]
     name: "Run Watcher E2E tests"
-    runs-on: macos-13
+    runs-on: ubuntu-22.04
     env:
       K3D_VERSION: v5.4.7
       ISTIO_VERSION: 1.18.0
@@ -29,11 +29,8 @@ jobs:
           echo "/etc/hosts file patched"
       - name: Install prerequisites
         run: |
-          brew install kubernetes-cli k3d istioctl cmctl docker colima
+          brew install kubernetes-cli k3d istioctl cmctl
           kubectl version --client
-      - name: Start colima
-        run: |
-          colima start --cpu 2 --memory 10
       - name: Provision SKR cluster
         run: |
           k3d cluster create skr --k3s-arg '--disable=traefik@server:0'
