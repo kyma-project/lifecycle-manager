@@ -68,7 +68,7 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 		kymaName := "kyma-sample"
 		kymaNamespace := "kcp-system"
 		remoteNamespace := "kyma-system"
-		incomingRequestMsg := fmt.Sprintf("event coming from SKR, adding %s/%s to queue", kymaNamespace, kymaName)
+		incomingRequestMsg := fmt.Sprintf("event coming from SKR, adding %s/%s to queue", remoteNamespace, remoteKymaName)
 
 		BeforeAll(func() {
 			//make sure we can list Kymas to ensure CRDs have been installed
@@ -175,6 +175,7 @@ func createKymaCR(ctx context.Context, kymaName, kymaNamespace, channel string, 
 			Name:      kymaName,
 			Namespace: kymaNamespace,
 			Labels: map[string]string{
+				"operator.kyma-project.io/watched-by": "lifecycle-manager",
 				"operator.kyma-project.io/sync": "true",
 			},
 			Annotations: map[string]string{
