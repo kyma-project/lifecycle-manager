@@ -36,7 +36,7 @@ jobs:
         run: |
           FILE=/etc/hosts
           if [ -f "$FILE" ]; then
-              echo "127.0.0.1 k3d-kyma-registry" >> $FILE
+              sudo echo "127.0.0.1 k3d-kyma-registry" >> $FILE
           else
               echo "$FILE does not exist."
               exit 1
