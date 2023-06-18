@@ -27,6 +27,9 @@ jobs:
               exit 1
           fi
           echo "/etc/hosts file patched"
+      - name: Set up Homebrew
+        id: set-up-homebrew
+        uses: Homebrew/actions/setup-homebrew@master
       - name: Install prerequisites
         run: |
           brew install kubernetes-cli k3d istioctl cmctl
