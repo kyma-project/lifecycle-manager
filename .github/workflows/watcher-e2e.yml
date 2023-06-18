@@ -15,8 +15,18 @@ jobs:
     env:
       K3D_VERSION: v5.4.7
       ISTIO_VERSION: 1.18.0
-      CM_VERSION: 1.12.0
+      CM_VERSION: v1.12.0
     steps:
+      - name: Update /etc/hosts
+        run: |
+          FILE=/etc/hosts
+          if [ -f "$FILE" ]; then
+              sudo echo "127.0.0.1 k3d-kyma-registry" | sudo tee -a $FILE
+          else
+              echo "$FILE does not exist."
+              exit 1
+          fi
+          echo "/etc/hosts file patched"
       - name: Set up k3d
         run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
       - name: Provision SKR cluster
@@ -30,16 +40,6 @@ jobs:
           --k3s-arg '--disable=traefik@server:0'
       - name: Update Kubeconfigs
         run: k3d kubeconfig merge -a -d
-      - name: Update /etc/hosts
-        run: |
-          FILE=/etc/hosts
-          if [ -f "$FILE" ]; then
-              sudo echo "127.0.0.1 k3d-kyma-registry" | sudo tee -a $FILE
-          else
-              echo "$FILE does not exist."
-              exit 1
-          fi
-          echo "/etc/hosts file patched"
       - name: Export required Kubeconfig Env vars
         run: |
           echo "KCP_KUBECONFIG=$(k3d kubeconfig write kcp)" >> $GITHUB_ENV
