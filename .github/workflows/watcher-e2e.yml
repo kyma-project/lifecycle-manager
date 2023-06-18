@@ -2,7 +2,7 @@ name: Watcher E2E
 
 on:
   schedule:
-    - cron: '20 7 * * 1-5'
+    - cron: '40 16 * * *'
 jobs:
   watcher-integration:
     strategy:
