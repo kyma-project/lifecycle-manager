@@ -29,8 +29,11 @@ jobs:
           echo "/etc/hosts file patched"
       - name: Install prerequisites
         run: |
-          brew install kubernetes-cli k3d istioctl cmctl
+          brew install kubernetes-cli k3d istioctl cmctl docker
           kubectl version --client
+      - name: Start colima
+        run: |
+          colima start
       - name: Provision SKR cluster
         run: |
           k3d cluster create skr --k3s-arg '--disable=traefik@server:0'
