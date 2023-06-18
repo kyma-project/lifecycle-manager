@@ -13,7 +13,8 @@ jobs:
     container: docker:cli
     env:
       K3D_VERSION: v5.4.7
-      ISTIO_VERSION: 1.17.1
+      ISTIO_VERSION: 1.18.0
+      CM_VERSION: 1.12.0
     steps:
       - name: Install prerequisites
         run: apk update && apk upgrade && apk --no-cache add git curl wget make bash musl-dev go
@@ -21,11 +22,10 @@ jobs:
         run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
       - name: Provision SKR cluster
         run: |
-          k3d cluster create skr --agents 2 \
-          --k3s-arg '--disable=traefik@server:0'
+          k3d cluster create skr --k3s-arg '--disable=traefik@server:0'
       - name: Provision KCP cluster
         run: |
-          k3d cluster create kcp --agents 4 \
+          k3d cluster create kcp --agents 2 \
           -p 9443:443@loadbalancer -p 9080:80@loadbalancer \
           --registry-create k3d-kyma-registry.localhost:5111 \
           --k3s-arg '--disable=traefik@server:0'
@@ -60,10 +60,15 @@ jobs:
           chmod +x istio-$ISTIO_VERSION/bin/istioctl
           mv istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin
           istioctl install -y
+      - name: Install CMCTL
+        run: |
+          OS=$(go env GOOS); ARCH=$(go env GOARCH); curl -fsSL -o cmctl.tar.gz https://github.com/cert-manager/cert-manager/releases/latest/download/cmctl-$OS-$ARCH.tar.gz
+          tar xzf cmctl.tar.gz
+          mv cmctl /usr/local/bin
       - name: Install Cert Manager
         run: |
-          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
-          kubectl wait --for=jsonpath='{.status.phase}'=Running pod --all -n cert-manager --timeout=90s
+          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/$CM_VERSION/cert-manager.yaml
+          cmctl check api --wait=2m
       - name: build and push LM to local registry
         run: |
           make docker-build IMG=k3d-kyma-registry.localhost:5111/lifecycle-manager:0.0.1 && \
