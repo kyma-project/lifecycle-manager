@@ -11,15 +11,14 @@ jobs:
       matrix:
         cli-stability: [ "unstable" ]
     name: "Run Watcher E2E tests"
-    runs-on: docker-in-docker
-    container: docker:cli
+    runs-on: ubuntu-22.04
     env:
       K3D_VERSION: v5.4.7
       ISTIO_VERSION: 1.18.0
       CM_VERSION: 1.12.0
     steps:
-      - name: Install prerequisites
-        run: apk update && apk upgrade && apk --no-cache add git curl wget make bash musl-dev go
+#      - name: Install prerequisites
+#        run: apk update && apk upgrade && apk --no-cache add git curl wget make bash musl-dev go
       - name: Set up k3d
         run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
       - name: Provision SKR cluster
