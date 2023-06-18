@@ -33,7 +33,7 @@ jobs:
           kubectl version --client
       - name: Start colima
         run: |
-          colima start
+          colima start --cpu 2 --memory 10
       - name: Provision SKR cluster
         run: |
           k3d cluster create skr --k3s-arg '--disable=traefik@server:0'
