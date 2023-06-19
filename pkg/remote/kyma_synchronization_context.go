@@ -135,7 +135,11 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
 	var err error
 	err = c.ControlPlaneClient.Get(
-		ctx, client.ObjectKey{Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group)}, crd,
+		ctx, client.ObjectKey{
+			// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
+			// name changes, this also has to be adjusted here. We can think of making this configurable later
+			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
+		}, crd,
 	)
 
 	if err != nil {
@@ -160,7 +164,8 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 }
 
 func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
-	ctx context.Context, kyma *v1beta2.Kyma, remoteSyncNamespace string) (*v1beta2.Kyma, error) {
+	ctx context.Context, kyma *v1beta2.Kyma, remoteSyncNamespace string,
+) (*v1beta2.Kyma, error) {
 	recorder := adapter.RecorderFromContext(ctx)
 
 	remoteKyma, err := c.GetRemotelySyncedKyma(ctx, remoteSyncNamespace)
