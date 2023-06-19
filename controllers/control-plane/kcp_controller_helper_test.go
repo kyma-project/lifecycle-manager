@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/cache"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -210,8 +211,12 @@ func updateKymaCRD(clnt client.Client) (*v1extensions.CustomResourceDefinition, 
 		client.FieldOwner(v1beta2.OperatorName)); err != nil {
 		return nil, err
 	}
-
 	crd, err = fetchCrd(clnt, v1beta2.KymaKind)
+	kymaCrdName := fmt.Sprintf("%s.%s", v1beta2.KymaKind.Plural(), v1beta2.GroupVersion.Group)
+
+	if _, ok := cache.GetCachedCRD(kymaCrdName); ok {
+		cache.SetCRDInCache(kymaCrdName, *crd)
+	}
 	if err != nil {
 		return nil, err
 	}
