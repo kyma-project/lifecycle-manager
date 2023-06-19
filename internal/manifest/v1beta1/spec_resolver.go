@@ -17,8 +17,9 @@ import (
 
 // RawManifestInfo defines raw manifest information.
 type RawManifestInfo struct {
-	Path string
-	Name string
+	Path   string
+	OCIRef string
+	Name   string
 }
 
 type ManifestSpecResolver struct {
@@ -80,6 +81,7 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object)
 	return &declarative.Spec{
 		ManifestName: manifest.Spec.Install.Name,
 		Path:         rawManifestInfo.Path,
+		OCIRef:       rawManifestInfo.OCIRef,
 		Mode:         mode,
 	}, nil
 }
@@ -110,8 +112,9 @@ func (m *ManifestSpecResolver) getRawManifestForInstall(
 		}
 
 		return &RawManifestInfo{
-			Name: install.Name,
-			Path: rawManifestPath,
+			Name:   install.Name,
+			Path:   rawManifestPath,
+			OCIRef: imageSpec.Ref,
 		}, nil
 	case v1beta2.NilRefType:
 		return nil, ErrEmptyInstallType
