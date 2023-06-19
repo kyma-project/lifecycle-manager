@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal"
 	"golang.org/x/sync/errgroup"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"
@@ -80,7 +79,6 @@ type KymaReconciler struct {
 	InKCPMode                bool
 	RemoteSyncNamespace      string
 	IsManagedKyma            bool
-	KcpCrdsCache             *internal.CustomResourceDefinitionCache
 }
 
 //nolint:lll
@@ -191,7 +189,7 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 func (r *KymaReconciler) syncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
 	syncContext := remote.SyncContextFromContext(ctx)
 	updateRequired, err := remote.SyncCrdsAndUpdateKymaAnnotations(
-		ctx, kyma, syncContext.RuntimeClient, syncContext.ControlPlaneClient, r.KcpCrdsCache)
+		ctx, kyma, syncContext.RuntimeClient, syncContext.ControlPlaneClient)
 	if err != nil {
 		return false, err
 	}

@@ -212,12 +212,6 @@ func updateKymaCRD(clnt client.Client) (*v1extensions.CustomResourceDefinition, 
 	}
 
 	crd, err = fetchCrd(clnt, v1beta2.KymaKind)
-	kymaCrdName := fmt.Sprintf("%s.%s", v1beta2.KymaKind.Plural(), v1beta2.GroupVersion.Group)
-
-	if cachedCrd := kcpCrdsCache.Get(kymaCrdName); cachedCrd != nil {
-		kcpCrdsCache.Set(kymaCrdName, crd)
-	}
-
 	if err != nil {
 		return nil, err
 	}
