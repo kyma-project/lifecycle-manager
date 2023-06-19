@@ -226,7 +226,7 @@ func (r *KymaReconciler) enqueueNormalEvent(kyma *v1beta2.Kyma, reason EventReas
 func (r *KymaReconciler) fetchRemoteKyma(ctx context.Context, controlPlaneKyma *v1beta2.Kyma) (*v1beta2.Kyma, error) {
 	syncContext := remote.SyncContextFromContext(ctx)
 
-	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx, controlPlaneKyma, r.RemoteSyncNamespace, r.KcpCrdsCache)
+	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx, controlPlaneKyma, r.RemoteSyncNamespace)
 	if err != nil {
 		if errors.Is(err, remote.ErrNotFoundAndKCPKymaUnderDeleting) {
 			return nil, err
@@ -432,8 +432,7 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta2.Ky
 		}
 	}
 
-	if err := remote.NewRemoteCatalogFromKyma(r.RemoteSyncNamespace).CreateOrUpdate(ctx, modulesToSync,
-		r.KcpCrdsCache); err != nil {
+	if err := remote.NewRemoteCatalogFromKyma(r.RemoteSyncNamespace).CreateOrUpdate(ctx, modulesToSync); err != nil {
 		return fmt.Errorf("could not synchronize remote module catalog: %w", err)
 	}
 

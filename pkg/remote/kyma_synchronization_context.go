@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal"
 	corev1 "k8s.io/api/core/v1"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -131,22 +130,16 @@ func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Con
 	return nil
 }
 
-func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plural string,
-	kcpCrdsCache *internal.CustomResourceDefinitionCache) error {
+func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plural string) error {
+	crd := &v1extensions.CustomResourceDefinition{}
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
 	var err error
-	kcpCrdName := fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group)
-	crd := kcpCrdsCache.Get(kcpCrdName)
-	if crd == nil {
-		crd = &v1extensions.CustomResourceDefinition{}
-		err = c.ControlPlaneClient.Get(
-			ctx, client.ObjectKey{Name: kcpCrdName}, crd,
-		)
+	err = c.ControlPlaneClient.Get(
+		ctx, client.ObjectKey{Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group)}, crd,
+	)
 
-		if err != nil {
-			return err
-		}
-		kcpCrdsCache.Set(kcpCrdName, crd)
+	if err != nil {
+		return err
 	}
 
 	err = c.RuntimeClient.Get(
@@ -167,16 +160,14 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 }
 
 func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
-	ctx context.Context, kyma *v1beta2.Kyma, remoteSyncNamespace string,
-	kcpCrdsCache *internal.CustomResourceDefinitionCache,
-) (*v1beta2.Kyma, error) {
+	ctx context.Context, kyma *v1beta2.Kyma, remoteSyncNamespace string) (*v1beta2.Kyma, error) {
 	recorder := adapter.RecorderFromContext(ctx)
 
 	remoteKyma, err := c.GetRemotelySyncedKyma(ctx, remoteSyncNamespace)
 	if meta.IsNoMatchError(err) || CRDNotFoundErr(err) {
 		recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
 
-		if err := c.CreateOrUpdateCRD(ctx, v1beta2.KymaKind.Plural(), kcpCrdsCache); err != nil {
+		if err := c.CreateOrUpdateCRD(ctx, v1beta2.KymaKind.Plural()); err != nil {
 			return nil, err
 		}
 
