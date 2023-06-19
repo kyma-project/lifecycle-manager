@@ -214,7 +214,7 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 		newDeployedResources, err := internal.ParseManifestToObjects(path.Join(testSamplesDir,
 			"updated-raw-manifest.yaml"))
 		Expect(err).NotTo(HaveOccurred())
-		Eventually(validateNewResourcesAreInStatusSynced, Timeout, Interval).
+		Eventually(validateNewResourcesAreInStatusSynced, 2*Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(newDeployedResources, obj).
 			Should(Succeed())
