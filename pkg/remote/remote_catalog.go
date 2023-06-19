@@ -129,7 +129,7 @@ func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 	}
 
 	// it can happen that the ModuleTemplate CRD is not existing in the Remote Cluster when we apply it and retry
-	if containsMetaIsNoMatchErr(errs) {
+	if containsCRDNotFoundError(errs) {
 		if err := c.CreateModuleTemplateCRDInRuntime(ctx, v1beta2.ModuleTemplateKind.Plural()); err != nil {
 			return err
 		}
@@ -141,9 +141,10 @@ func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 	return nil
 }
 
-func containsMetaIsNoMatchErr(errs []error) bool {
+func containsCRDNotFoundError(errs []error) bool {
 	for _, err := range errs {
-		if meta.IsNoMatchError(errors.Unwrap(err)) {
+		unwrappedError := errors.Unwrap(err)
+		if meta.IsNoMatchError(unwrappedError) || CRDNotFoundErr(unwrappedError) {
 			return true
 		}
 	}

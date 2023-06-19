@@ -2,12 +2,15 @@ package remote
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -151,5 +154,21 @@ func ContainsLatestVersion(crdFromRuntime *v1extensions.CustomResourceDefinition
 			return true
 		}
 	}
+	return false
+}
+
+func CRDNotFoundErr(err error) bool {
+	var apiStatusErr k8serrors.APIStatus
+	ok := errors.As(err, &apiStatusErr)
+
+	if ok && apiStatusErr.Status().Details != nil {
+		for _, cause := range apiStatusErr.Status().Details.Causes {
+			if cause.Type == metav1.CauseTypeUnexpectedServerResponse &&
+				strings.Contains(cause.Message, "not found") {
+				return true
+			}
+		}
+	}
+
 	return false
 }

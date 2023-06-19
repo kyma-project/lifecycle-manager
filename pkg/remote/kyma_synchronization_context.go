@@ -169,7 +169,7 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 	recorder := adapter.RecorderFromContext(ctx)
 
 	remoteKyma, err := c.GetRemotelySyncedKyma(ctx, remoteSyncNamespace)
-	if meta.IsNoMatchError(err) {
+	if meta.IsNoMatchError(err) || CRDNotFoundErr(err) {
 		recorder.Event(kyma, "Normal", err.Error(), "CRDs are missing in SKR and will be installed")
 
 		if err := c.CreateOrUpdateCRD(ctx, v1beta2.KymaKind.Plural()); err != nil {
@@ -224,7 +224,6 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(
 		recorder.Event(controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
 		return err
 	}
-
 	return nil
 }
 
