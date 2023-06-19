@@ -3,11 +3,15 @@ package v1beta1
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -16,8 +20,11 @@ import (
 
 const CustomResourceManager = "resource.kyma-project.io/finalizer"
 
-var ErrWaitingForAsyncCustomResourceDeletion = errors.New(
-	"deletion of custom resource was triggered and is now waiting to be completed",
+var (
+	ErrWaitingForAsyncCustomResourceDeletion = errors.New(
+		"deletion of custom resource was triggered and is now waiting to be completed")
+	ErrWaitingForAsyncCustomResourceDefinitionDeletion = errors.New(
+		"deletion of custom resource definition was triggered and is now waiting to be completed")
 )
 
 // PostRunCreateCR is a hook for creating the manifest default custom resource if not available in the cluster
@@ -79,6 +86,23 @@ func PreDeleteDeleteCR(
 		return err
 	}
 
+	var crd unstructured.Unstructured
+	crd.SetName(GetModuleCRDName(obj))
+	crd.SetGroupVersionKind(schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "apiextensions.k8s.io",
+		Kind:    "CustomResourceDefinition",
+	})
+	crdCopy := crd.DeepCopy()
+	err = skr.Delete(ctx, crdCopy, &client.DeleteOptions{PropagationPolicy: &propagation})
+	if err == nil {
+		return ErrWaitingForAsyncCustomResourceDefinitionDeletion
+	}
+
+	if !k8serrors.IsNotFound(err) && !meta.IsNoMatchError(err) {
+		return err
+	}
+
 	onCluster := manifest.DeepCopy()
 	err = kcp.Get(ctx, client.ObjectKeyFromObject(obj), onCluster)
 	if k8serrors.IsNotFound(err) {
@@ -95,4 +119,19 @@ func PreDeleteDeleteCR(
 		}
 	}
 	return nil
+}
+
+func GetModuleCRDName(obj declarative.Object) string {
+	manifest := obj.(*v1beta2.Manifest)
+	if manifest.Spec.Resource != nil {
+		group := manifest.Spec.Resource.GroupVersionKind().Group
+		name := manifest.Spec.Resource.GroupVersionKind().Kind
+		return fmt.Sprintf("%s.%s", getPlural(name), group)
+	}
+
+	return ""
+}
+
+func getPlural(moduleName string) string {
+	return strings.ToLower(moduleName) + "s"
 }

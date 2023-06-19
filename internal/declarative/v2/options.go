@@ -62,6 +62,8 @@ type Options struct {
 	Namespace       string
 	CreateNamespace bool
 
+	ModuleCRDName func(obj Object) string
+
 	Finalizer string
 
 	ServerSideApply bool
@@ -117,6 +119,12 @@ type WithFinalizer string
 
 func (o WithFinalizer) Apply(options *Options) {
 	options.Finalizer = string(o)
+}
+
+type WithModuleCRDName func(obj Object) string
+
+func (o WithModuleCRDName) Apply(options *Options) {
+	options.ModuleCRDName = o
 }
 
 type WithManagerOption struct {
@@ -239,8 +247,6 @@ func (o WithDeleteCRDs) Apply(options *Options) {
 }
 
 type ManifestCache string
-
-const NoManifestCache ManifestCache = "no-cache"
 
 type WithManifestCache ManifestCache
 

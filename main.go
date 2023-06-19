@@ -256,16 +256,16 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		if err != nil || !watcherChartDirInfo.IsDir() {
 			setupLog.Error(err, "failed to read local skr chart")
 		}
-		skrWebhookConfig := &watcher.SkrWebhookManagerConfig{
+		skrWebhookManager, err = watcher.NewSKRWebhookManifestManager(kcpRestConfig, &watcher.SkrWebhookManagerConfig{
 			SKRWatcherPath:             flagVar.skrWatcherPath,
+			SkrWatcherImage:            flagVar.skrWatcherImage,
 			SkrWebhookCPULimits:        flagVar.skrWebhookCPULimits,
 			SkrWebhookMemoryLimits:     flagVar.skrWebhookMemoryLimits,
 			WatcherLocalTestingEnabled: flagVar.enableWatcherLocalTesting,
 			GatewayHTTPPortMapping:     flagVar.listenerHTTPPortLocalMapping,
 			IstioNamespace:             flagVar.istioNamespace,
 			RemoteSyncNamespace:        flagVar.remoteSyncNamespace,
-		}
-		skrWebhookManager, err = watcher.NewSKRWebhookManifestManager(kcpRestConfig, skrWebhookConfig)
+		})
 		if err != nil {
 			setupLog.Error(err, "failed to create webhook chart manager")
 		}

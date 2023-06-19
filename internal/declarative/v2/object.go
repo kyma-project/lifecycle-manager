@@ -67,23 +67,6 @@ func (s Status) WithState(state State) Status {
 	return s
 }
 
-func ResourcesDiff(resourcesA, resourcesB []Resource) []Resource {
-	if len(resourcesA) < len(resourcesB) {
-		return ResourcesDiff(resourcesB, resourcesA)
-	}
-	freqMap := make(map[string]struct{}, len(resourcesB))
-	for _, x := range resourcesB {
-		freqMap[x.ID()] = struct{}{}
-	}
-	var diff []Resource
-	for _, x := range resourcesA {
-		if _, found := freqMap[x.ID()]; !found {
-			diff = append(diff, x)
-		}
-	}
-	return diff
-}
-
 type Resource struct {
 	Name                    string `json:"name"`
 	Namespace               string `json:"namespace"`
