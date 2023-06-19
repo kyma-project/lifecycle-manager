@@ -8,7 +8,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
-var _ = Describe("Kyma with managed fields", Ordered, func() {
+var _ = Describe("Kyma with managed fields in kcp mode", Ordered, func() {
 	kyma := NewTestKyma("managed-kyma")
 	var runtimeEnv *envtest.Environment
 	BeforeAll(func() {

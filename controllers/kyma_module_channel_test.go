@@ -24,7 +24,7 @@ const (
 	HigherVersion           = "0.0.2"
 )
 
-var _ = Describe("valid channel should be deployed successful", func() {
+var _ = Describe("valid kyma.spec.channel should be deployed successful", func() {
 	kyma := NewTestKyma("kyma")
 	It("should create kyma with standard modules in a valid channel", func() {
 		kyma.Spec.Channel = ValidChannel
@@ -138,7 +138,7 @@ func givenKymaSpecModulesWithInvalidChannel(channel string) func() error {
 	}
 }
 
-var _ = Describe("Switching of a Channel with higher version leading to an Upgrade", Ordered, func() {
+var _ = Describe("Channel switch", Ordered, func() {
 	kyma := NewTestKyma("empty-module-kyma")
 
 	kyma.Spec.Modules = append(
