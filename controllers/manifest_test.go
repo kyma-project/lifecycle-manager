@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Test Manifest.Spec.Remote in default mode", Ordered, func() {
+var _ = Describe("Manifest.Spec.Remote in default mode", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 
 	module := v1beta2.Module{

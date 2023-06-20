@@ -113,7 +113,7 @@ func expectCredSecretSelectorCorrect(installImageSpec *v1beta2.ImageSpec) error 
 	return nil
 }
 
-var _ = Describe("Custom State Check can be used", Ordered, func() {
+var _ = Describe("Custom State Check", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 
 	module := v1beta2.Module{
@@ -174,7 +174,7 @@ var _ = Describe("Custom State Check can be used", Ordered, func() {
 	})
 })
 
-var _ = Describe("Test ModuleTemplate.Spec.descriptor not contains RegistryCred label", Ordered, func() {
+var _ = Describe("ModuleTemplate.Spec.descriptor not contains RegistryCred label", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 
 	kyma.Spec.Modules = append(
@@ -186,13 +186,13 @@ var _ = Describe("Test ModuleTemplate.Spec.descriptor not contains RegistryCred 
 
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
-	It("expect Manifest.Spec.installs and Manifest.Spec.Config not contains credSecretSelector", func() {
+	It("expect Manifest.Spec.installs not contains credSecretSelector", func() {
 		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false)
 		Eventually(expectManifestSpecNotContainsCredSecretSelector(kyma.Name), Timeout*2, Interval).Should(Succeed())
 	})
 })
 
-var _ = Describe("Test ModuleTemplate.Spec.descriptor contains RegistryCred label", Ordered, func() {
+var _ = Describe("ModuleTemplate.Spec.descriptor contains RegistryCred label", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 
 	kyma.Spec.Modules = append(
@@ -204,7 +204,7 @@ var _ = Describe("Test ModuleTemplate.Spec.descriptor contains RegistryCred labe
 
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
-	It("expect Manifest.Spec.installs and Manifest.Spec.Config contains credSecretSelector", func() {
+	It("expect Manifest.Spec.installs contains credSecretSelector", func() {
 		DeployModuleTemplates(ctx, controlPlaneClient, kyma, true, false, false)
 		Eventually(expectManifestSpecContainsCredSecretSelector(kyma.Name), Timeout*2, Interval).Should(Succeed())
 	})
