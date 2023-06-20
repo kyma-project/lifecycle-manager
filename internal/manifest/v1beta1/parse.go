@@ -22,10 +22,8 @@ import (
 
 const manifestFileName = "raw-manifest.yaml"
 
-var (
-	//nolint:gochecknoglobals
-	fileMutexMap = sync.Map{}
-)
+//nolint:gochecknoglobals
+var fileMutexMap = sync.Map{}
 
 func GetPathFromRawManifest(ctx context.Context,
 	imageSpec v1beta2.ImageSpec,
