@@ -14,8 +14,8 @@ const (
 	defaultKymaRequeueBusyInterval        = 5 * time.Second
 	defaultManifestRequeueSuccessInterval = 30 * time.Second
 	defaultWatcherRequeueSuccessInterval  = 30 * time.Second
-	defaultClientQPS                      = 150
-	defaultClientBurst                    = 150
+	defaultClientQPS                      = 300
+	defaultClientBurst                    = 600
 	defaultPprofServerTimeout             = 90 * time.Second
 	rateLimiterBurstDefault               = 200
 	rateLimiterFrequencyDefault           = 30
