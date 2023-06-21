@@ -125,7 +125,7 @@ var _ = Describe("Custom State Check", Ordered, func() {
 
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
-	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false)
+	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false)
 	Expect(err).ShouldNot(HaveOccurred())
 	template.Spec.CustomStateCheck = &v1beta2.CustomStateCheck{
 		JSONPath: ".metadata.labels.test-status",

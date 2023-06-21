@@ -162,7 +162,7 @@ func TemplateInfosMatchChannel(kymaName, channel string) error {
 
 func CreateModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, channel string) error {
 	for _, module := range modules {
-		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false)
+		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false)
 		if err != nil {
 			return err
 		}

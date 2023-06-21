@@ -35,12 +35,11 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 			WithContext(webhookServerContext).
 			WithArguments(crd).Should(Succeed())
 
-		template, err := testutils.ModuleTemplateFactory(
-			v1beta2.Module{
-				ControllerName: "manifest",
-				Name:           "example-module-name",
-				Channel:        v1beta2.DefaultChannel,
-			}, data, false)
+		template, err := testutils.ModuleTemplateFactory(v1beta2.Module{
+			ControllerName: "manifest",
+			Name:           "example-module-name",
+			Channel:        v1beta2.DefaultChannel,
+		}, data, false, false, false)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
 		Expect(k8sClient.Delete(webhookServerContext, template)).Should(Succeed())
@@ -54,12 +53,11 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 		Eventually(k8sClient.Create, Timeout, Interval).
 			WithContext(webhookServerContext).
 			WithArguments(crd).Should(Succeed())
-		template, err := testutils.ModuleTemplateFactory(
-			v1beta2.Module{
-				ControllerName: "manifest",
-				Name:           "example-module-name",
-				Channel:        v1beta2.DefaultChannel,
-			}, data, false)
+		template, err := testutils.ModuleTemplateFactory(v1beta2.Module{
+			ControllerName: "manifest",
+			Name:           "example-module-name",
+			Channel:        v1beta2.DefaultChannel,
+		}, data, false, false, false)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
 		Expect(k8sClient.Delete(webhookServerContext, template)).Should(Succeed())
@@ -72,12 +70,11 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 		Eventually(k8sClient.Create, Timeout, Interval).
 			WithContext(webhookServerContext).
 			WithArguments(crd).Should(Succeed())
-		template, err := testutils.ModuleTemplateFactory(
-			v1beta2.Module{
-				ControllerName: "manifest",
-				Name:           "example-module-name",
-				Channel:        v1beta2.DefaultChannel,
-			}, data, false)
+		template, err := testutils.ModuleTemplateFactory(v1beta2.Module{
+			ControllerName: "manifest",
+			Name:           "example-module-name",
+			Channel:        v1beta2.DefaultChannel,
+		}, data, false, false, false)
 
 		Expect(err).ToNot(HaveOccurred())
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())

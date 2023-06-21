@@ -47,9 +47,9 @@ var _ = Describe("Kyma with remote module templates", Ordered, func() {
 		runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
 	})
 
-	templateInKcp, err := ModuleTemplateFactory(moduleInKcp, unstructured.Unstructured{}, false)
+	templateInKcp, err := ModuleTemplateFactory(moduleInKcp, unstructured.Unstructured{}, false, false, false)
 	Expect(err).ShouldNot(HaveOccurred())
-	templateInSkr, err := ModuleTemplateFactory(moduleInSkr, unstructured.Unstructured{}, false)
+	templateInSkr, err := ModuleTemplateFactory(moduleInSkr, unstructured.Unstructured{}, false, false, false)
 	Expect(err).ShouldNot(HaveOccurred())
 
 	It("Should create moduleInKcp template in KCP", func() {
@@ -110,11 +110,17 @@ var _ = Describe("Kyma with remote module templates", Ordered, func() {
 
 var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-remote-skr")
-	moduleInSkr := v1beta2.Module{
-		Name:    "skr-remote-module",
-		Channel: v1beta2.DefaultChannel,
+	moduleInSKR := v1beta2.Module{
+		Name: "skr-remote-module",
 	}
-	template, err := ModuleTemplateFactory(moduleInSkr, unstructured.Unstructured{}, false)
+	moduleInKCP := v1beta2.Module{
+		Name: "test-module-in-kcp",
+	}
+	kyma.Spec.Modules = []v1beta2.Module{moduleInKCP}
+
+	SKRTemplate, err := ModuleTemplateFactory(moduleInSKR, unstructured.Unstructured{}, false, false, false)
+	Expect(err).ShouldNot(HaveOccurred())
+	KCPTemplate, err := ModuleTemplateFactory(moduleInKCP, unstructured.Unstructured{}, false, false, false)
 	Expect(err).ShouldNot(HaveOccurred())
 	remoteKyma := &v1beta2.Kyma{}
 
@@ -130,30 +136,36 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	It("Kyma CR should be synchronized in both clusters", func() {
 		By("Remote Kyma created")
 		Eventually(kymaExists, Timeout, Interval).
-			WithArguments(runtimeClient, remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace).
+			WithArguments(runtimeClient, remoteKyma.GetName(), remoteKyma.Namespace).
 			Should(Succeed())
 
 		By("Remote Kyma contains global channel")
 		Eventually(kymaChannelMatch, Timeout, Interval).
-			WithArguments(runtimeClient, remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace, kyma.Spec.Channel).
+			WithArguments(runtimeClient, remoteKyma.GetName(), remoteKyma.Namespace, kyma.Spec.Channel).
 			Should(Succeed())
 
 		By("Module Template created")
-		Eventually(DeployModuleTemplate, Timeout, Interval).WithContext(ctx).
-			WithArguments(controlPlaneClient, moduleInSkr, false, false, false).
+		Eventually(controlPlaneClient.Create, Timeout, Interval).WithContext(ctx).
+			WithArguments(controlPlaneClient, SKRTemplate).
+			Should(Succeed())
+		Eventually(controlPlaneClient.Create, Timeout, Interval).WithContext(ctx).
+			WithArguments(controlPlaneClient, KCPTemplate).
 			Should(Succeed())
 		Eventually(ModuleTemplateExists, Timeout, Interval).
-			WithArguments(ctx, controlPlaneClient, template.Name, template.Namespace).
+			WithArguments(ctx, controlPlaneClient, SKRTemplate.Name, SKRTemplate.Namespace).
+			Should(Succeed())
+		Eventually(ModuleTemplateExists, Timeout, Interval).
+			WithArguments(ctx, controlPlaneClient, KCPTemplate.Name, KCPTemplate.Namespace).
 			Should(Succeed())
 
 		By("No module synced to remote Kyma")
 		Eventually(containsNoModulesInSpec, Timeout, Interval).
-			WithArguments(runtimeClient, remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace).
+			WithArguments(runtimeClient, remoteKyma.GetName(), remoteKyma.Namespace).
 			Should(Succeed())
 
 		By("Remote Module Catalog created")
 		Eventually(ModuleTemplateExists, Timeout, Interval).
-			WithArguments(ctx, runtimeClient, template.Name, controllers.DefaultRemoteSyncNamespace).
+			WithArguments(ctx, runtimeClient, SKRTemplate.Name, controllers.DefaultRemoteSyncNamespace).
 			Should(Succeed())
 		Eventually(containsModuleTemplateCondition, Timeout, Interval).
 			WithArguments(runtimeClient, remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace).
@@ -179,7 +191,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	It("Enable module in SKR Kyma CR", func() {
 		By("add module to remote Kyma")
 		Eventually(addModuleToKyma, Timeout, Interval).
-			WithArguments(runtimeClient, remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace, moduleInSkr).
+			WithArguments(runtimeClient, remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace, moduleInSKR).
 			Should(Succeed())
 
 		By("SKR module not sync back to KCP Kyma")
@@ -189,7 +201,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("Manifest CR created in KCP")
 		Eventually(ManifestExists, Timeout, Interval).
-			WithArguments(ctx, kyma, moduleInSkr, controlPlaneClient).
+			WithArguments(ctx, kyma, moduleInSKR, controlPlaneClient).
 			Should(Succeed())
 	})
 
@@ -197,13 +209,13 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		By("Update SKR Module Template spec.data.spec field")
 		Eventually(updateModuleTemplateSpec,
 			Timeout, Interval).
-			WithArguments(runtimeClient, controllers.DefaultRemoteSyncNamespace, moduleInSkr.Name, "valueUpdated").
+			WithArguments(runtimeClient, controllers.DefaultRemoteSyncNamespace, moduleInSKR.Name, "valueUpdated").
 			Should(Succeed())
 
 		By("Expect SKR Module Template spec.data.spec field get reset")
 		Eventually(expectModuleTemplateSpecGetReset, 2*Timeout, Interval).
 			WithArguments(runtimeClient, controllers.DefaultRemoteSyncNamespace,
-				moduleInSkr.Name, "initValue").
+				moduleInSKR.Name, "initValue").
 			Should(Succeed())
 	})
 
@@ -256,7 +268,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	}
 
 	It("module template created", func() {
-		template, err := ModuleTemplateFactory(moduleInKcp, unstructured.Unstructured{}, false)
+		template, err := ModuleTemplateFactory(moduleInKcp, unstructured.Unstructured{}, false, false, false)
 		Expect(err).ShouldNot(HaveOccurred())
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
