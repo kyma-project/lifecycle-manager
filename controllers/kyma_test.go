@@ -50,8 +50,8 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 		Eventually(GetKymaConditions(kyma.GetName()), Timeout, Interval).ShouldNot(BeEmpty())
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(UpdateModuleState(ctx, kyma, activeModule, v1beta2.StateReady),
-				Timeout, Interval).Should(Succeed())
+			Eventually(UpdateManifestState, Timeout, Interval).
+				WithArguments(ctx, controlPlaneClient, kyma, activeModule, v1beta2.StateReady).Should(Succeed())
 		}
 
 		By("having updated the Kyma CR state to ready")
@@ -155,8 +155,8 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(UpdateModuleState(ctx, kyma, activeModule, v1beta2.StateReady),
-				Timeout, Interval).Should(Succeed())
+			Eventually(UpdateManifestState, Timeout, Interval).
+				WithArguments(ctx, controlPlaneClient, kyma, activeModule, v1beta2.StateReady).Should(Succeed())
 		}
 
 		By("Kyma CR should be in Ready state")
@@ -178,7 +178,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 			updateKCPModuleTemplateSpecData(kyma.Name, "valueUpdated"),
 			expectManifestSpecDataEquals(kyma.Name, "initValue")),
 		Entry("When put manifest into progress, kyma spec.status.modules should not updated",
-			updateAllModules(kyma.Name, v1beta2.StateProcessing),
+			UpdateAllManifestState(kyma.Name, v1beta2.StateProcessing),
 			expectKymaStatusModules(kyma.Name, v1beta2.StateReady)),
 	)
 })
@@ -203,21 +203,6 @@ func expectKymaStatusModules(kymaName string, state v1beta2.State) func() error 
 		for _, moduleStatus := range createdKyma.Status.Modules {
 			if moduleStatus.State != state {
 				return ErrStatusModuleStateMismatch
-			}
-		}
-		return nil
-	}
-}
-
-func updateAllModules(kymaName string, state v1beta2.State) func() error {
-	return func() error {
-		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
-		if err != nil {
-			return err
-		}
-		for _, activeModule := range createdKyma.Spec.Modules {
-			if updateModuleState(createdKyma, activeModule, state) != nil {
-				return err
 			}
 		}
 		return nil

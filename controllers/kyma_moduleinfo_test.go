@@ -50,21 +50,6 @@ func expectmoduleStatusStateBecomeReady(kymaName string) func() error {
 	}
 }
 
-func updateAllModuleState(kymaName string, state v1beta2.State) func() error {
-	return func() error {
-		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
-		if err != nil {
-			return err
-		}
-		for _, module := range createdKyma.Spec.Modules {
-			if err := updateModuleState(createdKyma, module, state); err != nil {
-				return err
-			}
-		}
-		return nil
-	}
-}
-
 func removeModule(kymaName string) func() error {
 	return func() error {
 		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
@@ -94,7 +79,7 @@ var _ = Describe("Kyma module control", Ordered, func() {
 		Entry("When deploy module, expect number of Manifests matches spec.modules",
 			noCondition(), expectCorrectNumberOfmoduleStatus(kyma.Name)),
 		Entry("When module state become ready, expect Manifests state become ready",
-			updateAllModuleState(kyma.Name, v1beta2.StateReady), expectmoduleStatusStateBecomeReady(kyma.Name)),
+			UpdateAllManifestState(kyma.Name, v1beta2.StateReady), expectmoduleStatusStateBecomeReady(kyma.Name)),
 		Entry("When remove module in spec, expect number of Manifests matches spec.modules",
 			removeModule(kyma.Name), expectCorrectNumberOfmoduleStatus(kyma.Name)),
 	)

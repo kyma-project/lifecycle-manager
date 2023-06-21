@@ -13,6 +13,7 @@ import (
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	. "github.com/onsi/gomega" //nolint:stylecheck,revive
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
@@ -457,4 +458,19 @@ func AllModuleTemplatesExists(ctx context.Context,
 	}
 
 	return nil
+}
+
+func UpdateManifestState(
+	ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma, module v1beta2.Module, state v1beta2.State,
+) error {
+	kyma, err := GetKyma(ctx, clnt, kyma.GetName(), kyma.GetNamespace())
+	if err != nil {
+		return err
+	}
+	component, err := GetManifest(ctx, clnt, kyma, module)
+	if err != nil {
+		return err
+	}
+	component.Status.State = declarative.State(state)
+	return clnt.Status().Update(ctx, component)
 }

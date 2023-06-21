@@ -170,9 +170,8 @@ var _ = Describe("Channel switch", Ordered, func() {
 				WithArguments(kyma.GetName()).
 				Should(BeEquivalentTo(string(v1beta2.StateProcessing)))
 			for _, module := range kyma.Spec.Modules {
-				Eventually(
-					UpdateModuleState(ctx, kyma, module, v1beta2.StateReady), Timeout,
-					Interval).Should(Succeed())
+				Eventually(UpdateManifestState, Timeout, Interval).
+					WithArguments(ctx, controlPlaneClient, kyma, module, v1beta2.StateReady).Should(Succeed())
 			}
 			Eventually(GetKymaState, Timeout, Interval).
 				WithArguments(kyma.GetName()).

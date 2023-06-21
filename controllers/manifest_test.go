@@ -46,8 +46,8 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(UpdateModuleState(ctx, kyma, activeModule, v1beta2.StateReady),
-				Timeout, Interval).Should(Succeed())
+			Eventually(UpdateManifestState, Timeout, Interval).
+				WithArguments(ctx, controlPlaneClient, kyma, activeModule, v1beta2.StateReady).Should(Succeed())
 		}
 
 		By("Kyma CR should be in Ready state")
