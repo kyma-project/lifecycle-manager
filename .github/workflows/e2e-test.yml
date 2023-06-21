@@ -3,6 +3,8 @@ name: E2E Tests
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 jobs:
   e2e-integration:
     name: "Run E2E tests"
@@ -33,7 +35,8 @@ jobs:
             brew install gcc
             kubectl version --client
       - name: Install Prerequisites
-        run: brew install kubectl k3d istioctl cmctl go kyma-cli
+        run: |
+          brew install kubectl k3d istioctl cmctl go kyma-cli
       - name: Provision SKR cluster
         run: |
           k3d cluster create skr --k3s-arg '--disable=traefik@server:0'
