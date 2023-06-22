@@ -3,75 +3,91 @@ name: E2E Tests
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 jobs:
   e2e-integration:
+    strategy:
+      matrix:
+        cli-stability: [ "unstable" ]
     name: "Run E2E tests"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     env:
       K3D_VERSION: v5.4.7
       ISTIO_VERSION: 1.18.0
       CM_VERSION: v1.12.0
     steps:
-      - name: Update /etc/hosts
+      - name: Install prerequisites
         run: |
-          FILE=/etc/hosts
-          if [ -f "$FILE" ]; then
-              sudo echo "127.0.0.1 k3d-kyma-registry" | sudo tee -a $FILE
-          else
-              echo "$FILE does not exist."
-              exit 1
-          fi
-          echo "/etc/hosts file patched"
-      - name: Install homebrew and Prerequisites
+          sudo apt update -y
+          sudo apt upgrade -y
+          sudo apt install git curl wget make bash golang-go -y
+      - name: Install kubectl
         run: |
-            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-            (echo; echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"') >> /root/.profile
-            eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-            sudo apt-get update -y
-            sudo apt-get install build-essential -y
-            mv brew /usr/local/bin
-            brew install gcc
-            kubectl version --client
-      - name: Install Prerequisites
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          mv kubectl /usr/local/bin
+      - name: Install Kyma CLI
         run: |
-          brew install kubectl k3d istioctl cmctl go kyma-cli
+          wget -q https://storage.googleapis.com/kyma-cli-${{ matrix.cli-stability }}/kyma-linux
+          chmod +x kyma-linux && mv kyma-linux /usr/local/bin/kyma-${{ matrix.cli-stability }}
+          echo "PATH=/usr/local/bin/kyma-${{ matrix.cli-stability }}" >> $GITHUB_OUTPUT
+      - run: ln -s /usr/local/bin/kyma-${{ matrix.cli-stability }} /usr/local/bin/kyma
+      - name: Install Istio CLI
+        run: |
+          curl -L https://istio.io/downloadIstio | TARGET_ARCH=x86_64 sh -
+          chmod +x istio-$ISTIO_VERSION/bin/istioctl
+          mv istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin
+      - name: Install Cert Manager Command Line Tool
+        run: |
+          OS=$(go env GOOS); ARCH=$(go env GOARCH); curl -fsSL -o cmctl.tar.gz https://github.com/cert-manager/cert-manager/releases/latest/download/cmctl-$OS-$ARCH.tar.gz
+          tar xzf cmctl.tar.gz
+          sudo mv cmctl /usr/local/bin
+      - name: Install k3d
+        run: wget -qO - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | TAG=$K3D_VERSION bash
       - name: Provision SKR cluster
         run: |
-          k3d cluster create skr --k3s-arg '--disable=traefik@server:0'
+          k3d cluster create skr -p 10080:80@loadbalancer -p 10443:443@loadbalancer --k3s-arg '--disable=traefik@server:0'
       - name: Provision KCP cluster
         run: |
-          k3d cluster create kcp --agents 4 \
-          -p 9443:443@loadbalancer -p 9080:80@loadbalancer \
-          --registry-create k3d-kyma-registry.localhost:5111 \
-          --k3s-arg '--disable=traefik@server:0'
+          kyma provision k3d --name=kcp -p 9080:80@loadbalancer -p 9443:443@loadbalancer --ci
       - name: Update Kubeconfigs
         run: k3d kubeconfig merge -a -d
       - name: Export required Kubeconfig Env vars
         run: |
           echo "KCP_KUBECONFIG=$(k3d kubeconfig write kcp)" >> $GITHUB_ENV
           echo "SKR_KUBECONFIG=$(k3d kubeconfig write skr)" >> $GITHUB_ENV
-      - name: checkout repo
-        uses: actions/checkout@v2.3.4
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          cache: true
-          go-version-file: 'go.mod'
-          cache-dependency-path: 'go.sum'
+      - name: Patch /etc/hosts
+        run: |
+          FILE=/etc/hosts
+          if [ -f "$FILE" ]; then
+              sudo echo "127.0.0.1 k3d-kcp-registry" | sudo tee -a $FILE
+          else
+              echo "$FILE does not exist."
+              exit 1
+          fi
+          echo "/etc/hosts file patched"
       - name: Switch kubeconfig context to KCP cluster
         run: kubectl config use-context k3d-kcp
-      - name: Install Istio
+      - name: Deploy Istio on KCP Cluster
         run: |
           curl -L https://istio.io/downloadIstio | TARGET_ARCH=x86_64 sh -
           chmod +x istio-$ISTIO_VERSION/bin/istioctl
           mv istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin
           istioctl install -y
-      - name: Install Cert Manager
+      - name: Deploy Cert Manager on KCP Cluster
         run: |
+          OS=$(go env GOOS); ARCH=$(go env GOARCH); curl -fsSL -o cmctl.tar.gz https://github.com/cert-manager/cert-manager/releases/latest/download/cmctl-$OS-$ARCH.tar.gz
+          tar xzf cmctl.tar.gz
+          sudo mv cmctl /usr/local/bin
           kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/$CM_VERSION/cert-manager.yaml
           cmctl check api --wait=2m
+      - name: Checkout repo
+        uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          cache: true
+          go-version-file: 'go.mod'
+          cache-dependency-path: 'go.sum'
       - name: build and push LM to local registry
         run: |
           make docker-build IMG=k3d-kyma-registry.localhost:5111/lifecycle-manager:0.0.1 && \
