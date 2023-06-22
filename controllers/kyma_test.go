@@ -17,7 +17,7 @@ var (
 	ErrStatusModuleStateMismatch = errors.New("status.modules.state not match")
 )
 
-var _ = Describe("Kyma with no ModuleTemplate", Ordered, func() {
+var _ = Describe("Kyma with no Module", Ordered, func() {
 	kyma := NewTestKyma("no-module-kyma")
 	RegisterDefaultLifecycleForKyma(kyma)
 
@@ -28,7 +28,7 @@ var _ = Describe("Kyma with no ModuleTemplate", Ordered, func() {
 	})
 })
 
-var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
+var _ = Describe("Kyma enable one Module", Ordered, func() {
 	kyma := NewTestKyma("empty-module-kyma")
 
 	kyma.Spec.Modules = append(
@@ -50,8 +50,8 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 		Eventually(GetKymaConditions(kyma.GetName()), Timeout, Interval).ShouldNot(BeEmpty())
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(UpdateModuleState(ctx, kyma, activeModule, v1beta2.StateReady),
-				Timeout, Interval).Should(Succeed())
+			Eventually(UpdateManifestState, Timeout, Interval).
+				WithArguments(ctx, controlPlaneClient, kyma, activeModule, v1beta2.StateReady).Should(Succeed())
 		}
 
 		By("having updated the Kyma CR state to ready")
@@ -73,7 +73,7 @@ var _ = Describe("Kyma with empty ModuleTemplate", Ordered, func() {
 	})
 })
 
-var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
+var _ = Describe("Kyma enable multiple modules", Ordered, func() {
 	var (
 		kyma      *v1beta2.Kyma
 		skrModule v1beta2.Module
@@ -81,12 +81,12 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 	)
 	kyma = NewTestKyma("kyma-test-recreate")
 	skrModule = v1beta2.Module{
-		ControllerName: "manifest", // this is a module for SKR that should be installed by module-manager
+		ControllerName: "manifest",
 		Name:           "skr-module",
 		Channel:        v1beta2.DefaultChannel,
 	}
 	kcpModule = v1beta2.Module{
-		ControllerName: "manifest", // this is a module for KCP that should be installed by module-manager
+		ControllerName: "manifest",
 		Name:           "kcp-module",
 		Channel:        v1beta2.DefaultChannel,
 	}
@@ -134,45 +134,6 @@ var _ = Describe("Kyma with multiple module CRs", Ordered, func() {
 	})
 })
 
-var _ = Describe("Kyma update Manifest CR", Ordered, func() {
-	kyma := NewTestKyma("kyma-test-update")
-
-	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1beta2.Module{
-			ControllerName: "manifest",
-			Name:           "skr-module-update",
-			Channel:        v1beta2.DefaultChannel,
-		})
-
-	RegisterDefaultLifecycleForKyma(kyma)
-
-	It("Manifest CR should be updated after module template changed", func() {
-		By("CR created")
-		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ManifestExists, Timeout, Interval).WithArguments(
-				ctx, kyma, activeModule, controlPlaneClient).Should(Succeed())
-		}
-
-		By("reacting to a change of its Modules when they are set to ready")
-		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(UpdateModuleState(ctx, kyma, activeModule, v1beta2.StateReady),
-				Timeout, Interval).Should(Succeed())
-		}
-
-		By("Kyma CR should be in Ready state")
-		Eventually(GetKymaState, Timeout, Interval).
-			WithArguments(kyma.GetName()).
-			Should(BeEquivalentTo(string(v1beta2.StateReady)))
-
-		By("Update Module Template spec.data.spec field")
-		valueUpdated := "valueUpdated"
-		Eventually(updateKCPModuleTemplateSpecData(kyma.Name, valueUpdated), Timeout, Interval).Should(Succeed())
-
-		By("CR updated with new value in spec.resource.spec")
-		Eventually(expectManifestSpecDataEquals(kyma.Name, valueUpdated), Timeout, Interval).Should(Succeed())
-	})
-})
-
 var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-update")
 
@@ -194,8 +155,8 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(UpdateModuleState(ctx, kyma, activeModule, v1beta2.StateReady),
-				Timeout, Interval).Should(Succeed())
+			Eventually(UpdateManifestState, Timeout, Interval).
+				WithArguments(ctx, controlPlaneClient, kyma, activeModule, v1beta2.StateReady).Should(Succeed())
 		}
 
 		By("Kyma CR should be in Ready state")
@@ -217,12 +178,12 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 			updateKCPModuleTemplateSpecData(kyma.Name, "valueUpdated"),
 			expectManifestSpecDataEquals(kyma.Name, "initValue")),
 		Entry("When put manifest into progress, kyma spec.status.modules should not updated",
-			updateAllModules(kyma.Name, v1beta2.StateProcessing),
+			UpdateAllManifestState(kyma.Name, v1beta2.StateProcessing),
 			expectKymaStatusModules(kyma.Name, v1beta2.StateReady)),
 	)
 })
 
-var _ = Describe("Kyma with managed fields", Ordered, func() {
+var _ = Describe("Kyma with managed fields not in kcp mode", Ordered, func() {
 	kyma := NewTestKyma("unmanaged-kyma")
 	RegisterDefaultLifecycleForKyma(kyma)
 
@@ -242,21 +203,6 @@ func expectKymaStatusModules(kymaName string, state v1beta2.State) func() error 
 		for _, moduleStatus := range createdKyma.Status.Modules {
 			if moduleStatus.State != state {
 				return ErrStatusModuleStateMismatch
-			}
-		}
-		return nil
-	}
-}
-
-func updateAllModules(kymaName string, state v1beta2.State) func() error {
-	return func() error {
-		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
-		if err != nil {
-			return err
-		}
-		for _, activeModule := range createdKyma.Spec.Modules {
-			if updateModuleState(createdKyma, activeModule, state) != nil {
-				return err
 			}
 		}
 		return nil

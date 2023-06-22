@@ -24,7 +24,7 @@ const (
 	HigherVersion           = "0.0.2"
 )
 
-var _ = Describe("valid channel should be deployed successful", func() {
+var _ = Describe("valid kyma.spec.channel should be deployed successful", func() {
 	kyma := NewTestKyma("kyma")
 	It("should create kyma with standard modules in a valid channel", func() {
 		kyma.Spec.Channel = ValidChannel
@@ -138,7 +138,7 @@ func givenKymaSpecModulesWithInvalidChannel(channel string) func() error {
 	}
 }
 
-var _ = Describe("Switching of a Channel with higher version leading to an Upgrade", Ordered, func() {
+var _ = Describe("Channel switch", Ordered, func() {
 	kyma := NewTestKyma("empty-module-kyma")
 
 	kyma.Spec.Modules = append(
@@ -170,9 +170,8 @@ var _ = Describe("Switching of a Channel with higher version leading to an Upgra
 				WithArguments(kyma.GetName()).
 				Should(BeEquivalentTo(string(v1beta2.StateProcessing)))
 			for _, module := range kyma.Spec.Modules {
-				Eventually(
-					UpdateModuleState(ctx, kyma, module, v1beta2.StateReady), Timeout,
-					Interval).Should(Succeed())
+				Eventually(UpdateManifestState, Timeout, Interval).
+					WithArguments(ctx, controlPlaneClient, kyma, module, v1beta2.StateReady).Should(Succeed())
 			}
 			Eventually(GetKymaState, Timeout, Interval).
 				WithArguments(kyma.GetName()).
@@ -224,7 +223,7 @@ func CleanupModuleTemplateSetsForKyma(kyma *v1beta2.Kyma) func() {
 	return func() {
 		By("Cleaning up decremented ModuleTemplate set in regular")
 		for _, module := range kyma.Spec.Modules {
-			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false)
+			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false)
 			template.Name = fmt.Sprintf("%s-%s", template.Name, v1beta2.DefaultChannel)
 			Expect(err).ShouldNot(HaveOccurred())
 			Eventually(DeleteCR, Timeout, Interval).
@@ -233,7 +232,7 @@ func CleanupModuleTemplateSetsForKyma(kyma *v1beta2.Kyma) func() {
 		}
 		By("Cleaning up standard ModuleTemplate set in fast")
 		for _, module := range kyma.Spec.Modules {
-			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false)
+			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false)
 			template.Name = fmt.Sprintf("%s-%s", template.Name, FastChannel)
 			Expect(err).ShouldNot(HaveOccurred())
 			Eventually(DeleteCR, Timeout, Interval).
