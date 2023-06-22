@@ -31,6 +31,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
@@ -44,7 +46,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type (
@@ -123,57 +124,14 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return r.reconcile(ctx, kyma)
 }
 
-//nolint:funlen,cyclop,gocognit
 func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
-	if r.SyncKymaEnabled(kyma) { //nolint:nestif
-		var err error
-		remoteClient := remote.NewClientWithConfig(r.Client, r.KcpRestConfig)
-		if ctx, err = remote.InitializeSyncContext(ctx, kyma,
-			r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache); err != nil {
-			if !kyma.DeletionTimestamp.IsZero() && apierrors.IsNotFound(err) {
-				if err = r.removeFinalizerAndUpdateKyma(ctx, kyma); err != nil {
-					return r.requeueWithError(ctx, kyma, err)
-				}
-				return ctrl.Result{}, nil
-			}
-			r.enqueueWarningEvent(kyma, syncContextError, err)
+	if r.SyncKymaEnabled(kyma) {
+		if err := r.handleSyncKymaEnabled(ctx, kyma); err != nil {
 			return r.requeueWithError(ctx, kyma, err)
 		}
-	}
-
-	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != v1beta2.StateDeleting {
-		if err := r.deleteRemoteKyma(ctx, kyma); err != nil {
+	} else {
+		if err := r.handleSyncKymaDisabled(ctx, kyma); err != nil {
 			return r.requeueWithError(ctx, kyma, err)
-		}
-
-		if err := r.updateStatus(ctx, kyma, v1beta2.StateDeleting, "waiting for modules to be deleted"); err != nil {
-			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma status after triggering deletion: %w", err))
-		}
-
-		return ctrl.Result{}, nil
-	}
-
-	if needsUpdate := kyma.EnsureLabelsAndFinalizers(); needsUpdate {
-		if err := r.Update(ctx, kyma); err != nil {
-			return r.requeueWithError(ctx, kyma, fmt.Errorf("failed to update kyma after finalizer check: %w", err))
-		}
-		return ctrl.Result{}, nil
-	}
-
-	if r.SyncKymaEnabled(kyma) { //nolint:nestif
-		updateKymaRequired, err := r.syncCrdsAndUpdateKymaAnnotations(ctx, kyma)
-		if err != nil {
-			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not sync CRDs: %w", err))
-		}
-		if updateKymaRequired {
-			if err := r.Update(ctx, kyma); err != nil {
-				return r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma annotations: %w", err))
-			}
-			return ctrl.Result{}, nil
-		}
-		// update the control-plane kyma with the changes to the spec of the remote Kyma
-		if err := r.mergeSpecFromRemote(ctx, kyma); err != nil {
-			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not merge remote kyma spec into original one: %w", err))
 		}
 	}
 
@@ -183,13 +141,58 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 	}
 
 	if r.SyncKymaEnabled(kyma) {
-		// update the remote kyma with the state of the control plane
 		if err := r.syncStatusToRemote(ctx, kyma); err != nil {
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not synchronize remote kyma status: %w", err))
 		}
 	}
 
 	return res, err
+}
+
+func (r *KymaReconciler) handleSyncKymaEnabled(ctx context.Context, kyma *v1beta2.Kyma) error {
+	remoteClient := remote.NewClientWithConfig(r.Client, r.KcpRestConfig)
+	ctx, err := remote.InitializeSyncContext(ctx, kyma, r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache)
+	if err != nil {
+		return err
+	}
+
+	if err = r.mergeSpecFromRemote(ctx, kyma); err != nil {
+		return fmt.Errorf("could not merge remote kyma spec into original one: %w", err)
+	}
+
+	updateKymaRequired, err := r.syncCrdsAndUpdateKymaAnnotations(ctx, kyma)
+	if err != nil {
+		return fmt.Errorf("could not sync CRDs: %w", err)
+	}
+
+	if updateKymaRequired {
+		if err := r.Update(ctx, kyma); err != nil {
+			return fmt.Errorf("could not update kyma annotations: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (r *KymaReconciler) handleSyncKymaDisabled(ctx context.Context, kyma *v1beta2.Kyma) error {
+	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != v1beta2.StateDeleting {
+		if err := r.deleteRemoteKyma(ctx, kyma); err != nil {
+			return err
+		}
+
+		err := r.updateStatus(ctx, kyma, v1beta2.StateDeleting, "waiting for modules to be deleted")
+		if err != nil {
+			return fmt.Errorf("could not update kyma status after triggering deletion: %w", err)
+		}
+	}
+
+	if needsUpdate := kyma.EnsureLabelsAndFinalizers(); needsUpdate {
+		if err := r.Update(ctx, kyma); err != nil {
+			return fmt.Errorf("failed to update kyma after finalizer check: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func (r *KymaReconciler) syncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {

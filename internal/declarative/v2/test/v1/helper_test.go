@@ -83,7 +83,8 @@ func (matcher *HaveConditionMatcher) NegatedFailureMessage(actual interface{}) s
 }
 
 func EventuallyDeclarativeStatusShould(ctx context.Context, key client.ObjectKey, testClient client.Client,
-	matchers ...types.GomegaMatcher) {
+	matchers ...types.GomegaMatcher,
+) {
 	EventuallyWithOffset(1, StatusOnCluster).
 		WithContext(ctx).
 		WithArguments(key, testClient).
@@ -110,7 +111,8 @@ func EventuallyDeclarativeShouldBeUninstalled(ctx context.Context, obj *testv1.T
 
 // HaveAllSyncedResourcesExistingInCluster determines if all synced resources actually exist in the cluster.
 func HaveAllSyncedResourcesExistingInCluster(ctx context.Context,
-	testClient client.Client) *SyncedResourcesExistingMatcher {
+	testClient client.Client,
+) *SyncedResourcesExistingMatcher {
 	return &SyncedResourcesExistingMatcher{ctx: &ctx, testClient: testClient}
 }
 

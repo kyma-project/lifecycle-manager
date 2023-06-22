@@ -199,7 +199,6 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 			WithContext(ctx).
 			WithArguments(ctx, oldDeployedResources, testClient).
 			Should(Succeed())
-
 	})
 
 	It("Should deploy new manifest resources and have them in status.synced", func() {
@@ -286,7 +285,6 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 			WithContext(ctx).
 			WithArguments(ctx, oldDeployedResources, testClient).
 			Should(Succeed())
-
 	})
 
 	It("Should remove module resources from status.synced", func() {
@@ -386,7 +384,8 @@ func StartDeclarativeReconcilerForRun(
 }
 
 func StatusOnCluster(ctx context.Context, key client.ObjectKey,
-	testClient client.Client) Status {
+	testClient client.Client,
+) Status {
 	obj := &testv1.TestAPI{}
 	Expect(testClient.Get(ctx, key, obj)).To(Succeed())
 	return obj.GetStatus()
@@ -425,7 +424,8 @@ func GetTestClient(cfg *rest.Config) client.Client {
 
 func validateOldResourcesNotLongerDeployed(ctx context.Context,
 	resources internal.ManifestResources,
-	testClient client.Client) error {
+	testClient client.Client,
+) error {
 	for _, res := range resources.Items {
 		currentRes := &unstructured.Unstructured{}
 		currentRes.SetGroupVersionKind(res.GroupVersionKind())
@@ -440,7 +440,8 @@ func validateOldResourcesNotLongerDeployed(ctx context.Context,
 }
 
 func validateNewResourcesAreInStatusSynced(
-	resources internal.ManifestResources, obj *testv1.TestAPI) error {
+	resources internal.ManifestResources, obj *testv1.TestAPI,
+) error {
 	for _, res := range resources.Items {
 		found := false
 		for _, s := range obj.Status.Synced {
@@ -457,7 +458,8 @@ func validateNewResourcesAreInStatusSynced(
 
 func validateOldResourcesAreRemovedFromStatusSynced(
 	ctx context.Context, testClient client.Client, key client.ObjectKey,
-	resources internal.ManifestResources) error {
+	resources internal.ManifestResources,
+) error {
 	var obj testv1.TestAPI
 	Expect(testClient.Get(ctx, key, &obj)).To(Succeed())
 	for _, res := range resources.Items {
