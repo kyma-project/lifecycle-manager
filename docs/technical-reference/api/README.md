@@ -4,9 +4,9 @@
 
 The Lifecycle Manager API types consist of three major custom resources (CRs). Each of these deals with a specific aspect of reconciling modules into their corresponding states.
 
-1. The introduction of a single entry point CustomResourceDefinition to control a cluster and it's desired state: [Kyma CR](../../../api/v1beta2/kyma_types.go).
-2. The introduction of a single entry point CustomResourceDefinition to control a module and it's desired state: [Manifest CR](../../../api/v1beta2/manifest_types.go)
-3. The [ModuleTemplate CR](../../../api/v1beta2/moduletemplate_types.go) which contains all reference data for the modules to be installed correctly. It is a standardized desired state for a module available in a given release channel.
+1. [Kyma CR](../../../api/v1beta2/kyma_types.go) that introduces a single entry point CustomResourceDefinition to control a cluster and it's desired state.
+2. [Manifest CR](../../../api/v1beta2/manifest_types.go) that introduces a single entry point CustomResourceDefinition to control a module and it's desired state.
+3. [ModuleTemplate CR](../../../api/v1beta2/moduletemplate_types.go) that contains all reference data for the modules to be installed correctly. It is a standardized desired state for a module available in a given release channel.
 
 Additionally, we maintain the [Watcher CR](../../../api/v1beta2/watcher_types.go) to define the callback functionality for synchronized remote clusters that allows lower latencies before changes are detected by the Control Plane.
 

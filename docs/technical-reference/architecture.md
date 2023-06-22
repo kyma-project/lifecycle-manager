@@ -33,6 +33,8 @@ Apart from the custom resources, Lifecycle Manager uses also Kyma, Manifest and 
 - [Manifest controller](../../controllers/manifest_controller.go) - reconciles the Manifest CRs created by the Kyma controller, which means, installing components specified in the Manifest CR on the target SKR cluster and removing them when the Manifest CRs are flagged for deletion.
 - [Watcher controller](../../controllers/watcher_controller.go) - reconciles the Watcher CR which means creating Istio Virtual Service resources on KCP when a Watcher CR is created and removing the same resources when it is deleted. This is done in order to configure the routing of the messages coming from the watcher agent installed on each Kyma runtime and going to a listener agent deployed on KCP.
 
+For more details about Lifecycle Manager controllers, read the [Controllers](controllers.md) document.
+
 ## Read more
 
 The architecture is based on Kubernetes API and resources, and on best practices for building Kubernetes operators. To learn more, read the following:
