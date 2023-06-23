@@ -1,6 +1,6 @@
 # ModuleTemplate Custom Resource
 
-The core of our modular discovery, the [ModuleTemplate custom resource (CR)](../../../api/v1beta2/moduletemplate_types.go) contains 3 main parts that are used to initialize and resolve modules.
+The core of our modular discovery, the [ModuleTemplate custom resource (CR)](../../../api/v1beta2/moduletemplate_types.go) contains 4 main parts that are used to initialize and resolve modules.
 
 ### **.spec.channel**
 
@@ -19,7 +19,21 @@ spec:
 
 the module will be referenced by any Kyma CR asking for it in the `regular` channel.
 
-### **.spec.data**
+### **.spec.descriptor**
+
+The core of any ModuleTemplate CR, the descriptor can be one of the schemas mentioned in the latest version of the [OCM Software Specification](https://ocm.software/spec/). While it is a `runtime.RawExtension` in the Go types, it will be resolved via ValidatingWebhook into an internal descriptor with the help of the official [OCM library](https://github.com/open-component-model/ocm).
+
+By default, it will most likely be easiest to use [Kyma CLI](https://github.com/kyma-project/cli/tree/main) and its `create module` command to create a template with a valid descriptor, but it can also be generated manually, for example using [OCM CLI](https://github.com/open-component-model/ocm/tree/main/cmds/ocm).
+
+### `operator.kyma-project.io` labels
+
+These are the synchronization labels available on the ModuleTemplate CR:
+
+- `operator.kyma-project.io/sync`: A boolean value. If set to `false`, this ModuleTemplate CR is not synchronized with any remote cluster. The default value is `true`.
+- `operator.kyma-project.io/internal`: A boolean value. If set to `true`, marks the ModuleTemplate CR as an `internal` module. It is then synchronized only for these remote clusters which are managed by the Kyma CR with the same `operator.kyma-project.io/internal` label explicitly set to `true`. The default value is `false`.
+- `operator.kyma-project.io/beta` A boolean value. If set to `true`, marks the ModuleTemplate CR as a `beta` module. It is then synchronized only for these remote clusters which are managed by the Kyma CR with the same `operator.kyma-project.io/beta` label explicitly set to `true`. The default value is `false`.
+
+### **.spec.data** (optional)
 
 The data that should be used for the initialization of a custom resource after the module has been installed. It is only used if the `customResourcePolicy` is set to `CreateAndDelete` and it is filled with a valid custom resource (that can be of any type available in the API-Server _after_  module initialization). If set to `Ignore` by the module specification of the Kyma CR, it is entirely ignored, even when filled.
 
@@ -45,16 +59,17 @@ spec:
 
 If not specified, the **namespace** of the resource mentioned in **.spec.data** will be controlled by the `sync-namespace` flag; otherwise, it will be respected. All other attributes (including **.metadata.name**, **apiVersion**, and **kind**) are taken over as stated. Note that since it behaves similarly to a `template`, any subresources, such as **status**, are ignored, even if specified in the field.
 
-### **.spec.descriptor**
+### **.spec.customStateCheck** (optional)
 
-The core of any ModuleTemplate CR, the descriptor can be one of the schemas mentioned in the latest version of the [OCM Software Specification](https://ocm.software/spec/). While it is a `runtime.RawExtension` in the Go types, it will be resolved via ValidatingWebhook into an internal descriptor with the help of the official [OCM library](https://github.com/open-component-model/ocm).
+By default, the Lifecycle-Manager uses the `status.state` field of the Module as a reference to the current state of it. Using the `customStateCheck` it is possible to override this behaviour. If used, `jsonPath` and `value` needs to be provided.
 
-By default, it will most likely be easiest to use [Kyma CLI](https://github.com/kyma-project/cli/tree/main) and its `create module` command to create a template with a valid descriptor, but it can also be generated manually, for example using [OCM CLI](https://github.com/open-component-model/ocm/tree/main/cmds/ocm).
+An example could look like this:
 
-### `operator.kyma-project.io` labels
+```yaml
+spec:
+  customStateCheck:
+    jsonPath: .metadata.labels.test-status
+    value: ALLSET
+```
 
-These are the synchronization labels available on the ModuleTemplate CR:
-
-- `operator.kyma-project.io/sync`: A boolean value. If set to `false`, this ModuleTemplate CR is not synchronized with any remote cluster. The default value is `true`.
-- `operator.kyma-project.io/internal`: A boolean value. If set to `true`, marks the ModuleTemplate CR as an `internal` module. It is then synchronized only for these remote clusters which are managed by the Kyma CR with the same `operator.kyma-project.io/internal` label explicitly set to `true`. The default value is `false`.
-- `operator.kyma-project.io/beta` A boolean value. If set to `true`, marks the ModuleTemplate CR as a `beta` module. It is then synchronized only for these remote clusters which are managed by the Kyma CR with the same `operator.kyma-project.io/beta` label explicitly set to `true`. The default value is `false`.
+This example would override the default state check and instead check if a label with the name `test-status` has been set with the value `ALLSET`. If that is the case, the Module CR status of the corresponding Kyma CR will be set to `READY`.
