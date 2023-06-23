@@ -49,21 +49,6 @@ spec:
                 minLength: 3
                 pattern: ^[a-z]+$
                 type: string
-              customStateCheck:
-                description: CustomStateCheck for advanced Module State determination
-                properties:
-                  jsonPath:
-                    description: JSONPath specifies the JSON path to the state variable
-                      in the Module CR
-                    type: string
-                  value:
-                    description: Value is the value at the JSONPath for which the
-                      Module CR state is set to "Ready" in Kyma CR
-                    type: string
-                required:
-                - jsonPath
-                - value
-                type: object
               data:
                 description: Data is the default set of attributes that are used to
                   generate the Module. It contains a default set of values for a given
@@ -139,21 +124,6 @@ spec:
                 minLength: 3
                 pattern: ^[a-z]+$
                 type: string
-              customStateCheck:
-                description: CustomStateCheck for advanced Module State determination
-                properties:
-                  jsonPath:
-                    description: JSONPath specifies the JSON path to the state variable
-                      in the Module CR
-                    type: string
-                  value:
-                    description: Value is the value at the JSONPath for which the
-                      Module CR state is set to "Ready" in Kyma CR
-                    type: string
-                required:
-                - jsonPath
-                - value
-                type: object
               data:
                 description: Data is the default set of attributes that are used to
                   generate the Module. It contains a default set of values for a given
