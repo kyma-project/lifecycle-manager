@@ -3,9 +3,11 @@ package control_plane_test
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/controllers"
+	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -396,6 +398,62 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	})
 
 	AfterAll(func() {
+		Expect(runtimeEnv.Stop()).Should(Succeed())
+	})
+})
+
+var _ = Describe("Kyma with remote module templates from private registries", Ordered, func() {
+	kyma := NewTestKyma("remote-module-template-kyma")
+
+	moduleInSkr := v1beta2.Module{
+		ControllerName:          "manifest",
+		Name:                    "test-module-in-skr",
+		Channel:                 v1beta2.DefaultChannel,
+		RemoteModuleTemplateRef: "test-module-in-skr",
+	}
+	kyma.Spec.Modules = []v1beta2.Module{moduleInSkr}
+
+	var runtimeClient client.Client
+	var runtimeEnv *envtest.Environment
+	BeforeAll(func() {
+		Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
+		runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
+	})
+
+	templateInSkr, err := ModuleTemplateFactory(moduleInSkr, unstructured.Unstructured{}, true,
+		false, false)
+	Expect(err).ShouldNot(HaveOccurred())
+
+	It("Should create moduleInSkr template in SKR", func() {
+		templateInSkr.Namespace = kyma.Namespace
+		Eventually(runtimeClient.Create, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(templateInSkr).
+			Should(Succeed())
+	})
+
+	It("Kyma should be in Error state with no auth secret found error message", func() {
+		Eventually(IsKymaInState, Timeout, Interval).
+			WithArguments(ctx, controlPlaneClient, kyma.GetName(), v1beta2.StateError).
+			Should(BeTrue())
+
+		Eventually(func() bool {
+			kyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), "")
+			if err == nil {
+				return false
+			}
+			if strings.Contains(kyma.Status.Modules[0].Message, ocmextensions.ErrNoAuthSecretFound.Error()) {
+				return true
+			}
+			return false
+		}, Timeout, Interval).
+			Should(BeTrue())
+	})
+
+	AfterAll(func() {
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(runtimeClient, templateInSkr).Should(Succeed())
 		Expect(runtimeEnv.Stop()).Should(Succeed())
 	})
 })
