@@ -65,9 +65,8 @@ func (m *Module) IsRemoteModuleTemplate(kyma *v1beta2.Kyma) bool {
 		if module.Name == m.ModuleName {
 			if module.RemoteModuleTemplateRef == "" {
 				return false
-			} else {
-				return true
 			}
+			return true
 		}
 	}
 

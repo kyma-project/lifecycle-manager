@@ -118,6 +118,7 @@ func overwriteNameAndNamespace(template *channel.ModuleTemplateTO, name, namespa
 	}
 }
 
+// nolint:funlen
 func (p *Parser) newManifestFromTemplate(
 	ctx context.Context,
 	module v1beta2.Module,
@@ -155,7 +156,6 @@ func (p *Parser) newManifestFromTemplate(
 		if err != nil {
 			return nil, err
 		}
-
 		componentDescriptor, err = p.ComponentDescriptorCache.GetRemoteDescriptor(ctx,
 			descriptorCacheKey, descriptor, clusterClient)
 		if err != nil {
