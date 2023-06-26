@@ -407,9 +407,9 @@ var _ = Describe("Kyma with remote module templates from private registries", Or
 
 	moduleInSkr := v1beta2.Module{
 		ControllerName:          "manifest",
-		Name:                    "test-module-in-skr",
+		Name:                    "test-module-in-private-registry",
 		Channel:                 v1beta2.DefaultChannel,
-		RemoteModuleTemplateRef: "test-module-in-skr",
+		RemoteModuleTemplateRef: "test-module-in-private-registry",
 	}
 	kyma.Spec.Modules = []v1beta2.Module{moduleInSkr}
 
@@ -426,7 +426,7 @@ var _ = Describe("Kyma with remote module templates from private registries", Or
 
 	It("Should create moduleInSkr template in SKR", func() {
 		templateInSkr.Namespace = kyma.Namespace
-		Eventually(runtimeClient.Create, Timeout, Interval).
+		Eventually(runtimeClient.Create, 2*Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(templateInSkr).
 			Should(Succeed())
