@@ -19,7 +19,7 @@ import (
 
 var (
 	ErrManifestStateMisMatch = errors.New("ManifestState mismatch")
-	ErrAuthSecretErrNotFound = errors.New("auth secret error not found in manifest")
+	ErrAuthSecretNotFound    = errors.New("auth secret error not found in manifest")
 	ErrNotInErrorState       = errors.New("manifest not found in error state")
 )
 
@@ -138,7 +138,7 @@ var _ = Describe(
 					return ErrNotInErrorState
 				}
 				if !strings.Contains(status.LastOperation.Operation, ocmextensions.ErrNoAuthSecretFound.Error()) {
-					return ErrAuthSecretErrNotFound
+					return ErrAuthSecretNotFound
 				}
 				return nil
 			}, standardTimeout, standardInterval).
