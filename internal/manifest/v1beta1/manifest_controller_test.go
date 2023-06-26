@@ -4,15 +4,24 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/uuid"
+	"k8s.io/apimachinery/pkg/util/yaml"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
-var ErrManifestStateMisMatch = errors.New("ManifestState mismatch")
+var (
+	ErrManifestStateMisMatch = errors.New("ManifestState mismatch")
+	ErrAuthSecretErrNotFound = errors.New("auth secret error not found in manifest")
+	ErrNotInErrorState       = errors.New("manifest not found in error state")
+)
 
 var _ = Describe(
 	"Given manifest with OCI specs", func() {
@@ -96,5 +105,44 @@ var _ = Describe(
 				).Should(Succeed())
 			},
 		)
+	},
+)
+
+var _ = Describe(
+	"Given manifest with private registry", func() {
+		manifest := &v1beta2.Manifest{}
+		manifestPath := filepath.Join("../../../pkg/test_samples/oci", "private-registry-manifest.yaml")
+		manifestFile, err := os.ReadFile(manifestPath)
+		Expect(err).ToNot(HaveOccurred())
+		err = yaml.Unmarshal(manifestFile, manifest)
+		manifest.SetNamespace(metav1.NamespaceDefault)
+		manifest.SetName("private-registry-manifest")
+		manifest.SetLabels(map[string]string{
+			v1beta2.KymaName: string(uuid.NewUUID()),
+		})
+		manifest.SetResourceVersion("")
+		Expect(err).ToNot(HaveOccurred())
+
+		It("Should create Manifest", func() {
+			Expect(k8sClient.Create(ctx, manifest)).To(Succeed())
+		})
+
+		It("Manifest should be in Error state with no auth secret found error message", func() {
+			Eventually(func() error {
+				status, err := getManifestStatus(manifest.GetName())
+				if err != nil {
+					return err
+				}
+
+				if status.State != declarative.StateError {
+					return ErrNotInErrorState
+				}
+				if !strings.Contains(status.LastOperation.Operation, ocmextensions.ErrNoAuthSecretFound.Error()) {
+					return ErrAuthSecretErrNotFound
+				}
+				return nil
+			}, standardTimeout, standardInterval).
+				Should(Succeed())
+		})
 	},
 )
