@@ -403,7 +403,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 })
 
 var _ = Describe("Kyma with remote module templates from private registries", Ordered, func() {
-	kyma := NewTestKyma("remote-module-template-kyma")
+	kyma := NewTestKyma("remote-module-template-private-registry")
 
 	moduleInSkr := v1beta2.Module{
 		ControllerName:          "manifest",
