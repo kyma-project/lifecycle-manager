@@ -63,10 +63,7 @@ func (m *Module) ApplyLabelsAndAnnotations(
 func (m *Module) IsRemoteModuleTemplate(kyma *v1beta2.Kyma) bool {
 	for _, module := range kyma.Spec.Modules {
 		if module.Name == m.ModuleName {
-			if module.RemoteModuleTemplateRef == "" {
-				return false
-			}
-			return true
+			return module.RemoteModuleTemplateRef != ""
 		}
 	}
 
