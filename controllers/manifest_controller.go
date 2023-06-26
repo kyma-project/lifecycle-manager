@@ -85,7 +85,7 @@ func ManifestReconciler(
 	return declarative.NewFromManager(
 		mgr, &v1beta2.Manifest{},
 		declarative.WithSpecResolver(
-			internalv1beta1.NewManifestSpecResolver(codec),
+			internalv1beta1.NewManifestSpecResolver(kcp, codec),
 		),
 		declarative.WithCustomReadyCheck(internalv1beta1.NewManifestCustomResourceReadyCheck()),
 		declarative.WithRemoteTargetCluster(lookup.ConfigResolver),

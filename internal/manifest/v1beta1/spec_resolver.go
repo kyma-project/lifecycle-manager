@@ -23,14 +23,17 @@ type RawManifestInfo struct {
 }
 
 type ManifestSpecResolver struct {
+	KCP *declarative.ClusterInfo
+
 	*v1beta2.Codec
 
 	ChartCache   string
 	cachedCharts map[string]string
 }
 
-func NewManifestSpecResolver(codec *v1beta2.Codec) *ManifestSpecResolver {
+func NewManifestSpecResolver(kcp *declarative.ClusterInfo, codec *v1beta2.Codec) *ManifestSpecResolver {
 	return &ManifestSpecResolver{
+		KCP:          kcp,
 		Codec:        codec,
 		ChartCache:   os.TempDir(),
 		cachedCharts: make(map[string]string),
@@ -43,7 +46,7 @@ var (
 )
 
 func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object,
-	targetClient declarative.Client) (*declarative.Spec, error) {
+	remoteClient client.Client) (*declarative.Spec, error) {
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
 		return nil, fmt.Errorf(
@@ -55,6 +58,11 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object,
 	specType, err := v1beta2.GetSpecType(manifest.Spec.Install.Source.Raw)
 	if err != nil {
 		return nil, err
+	}
+
+	targetClient := m.KCP.Client
+	if manifest.Labels[v1beta2.IsRemoteModuleTemplate] == "true" {
+		targetClient = remoteClient
 	}
 
 	keyChain, err := m.lookupKeyChain(ctx, manifest.Spec.Config, targetClient)
@@ -122,7 +130,7 @@ func (m *ManifestSpecResolver) getRawManifestForInstall(
 }
 
 func (m *ManifestSpecResolver) lookupKeyChain(
-	ctx context.Context, imageSpec v1beta2.ImageSpec, targetClient declarative.Client,
+	ctx context.Context, imageSpec v1beta2.ImageSpec, targetClient client.Client,
 ) (authn.Keychain, error) {
 	var keyChain authn.Keychain
 	var err error

@@ -2,10 +2,12 @@ package v2
 
 import (
 	"context"
+
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type SpecResolver interface {
-	Spec(ctx context.Context, object Object, targetClient Client) (*Spec, error)
+	Spec(ctx context.Context, object Object, remoteClient client.Client) (*Spec, error)
 }
 
 type Spec struct {
@@ -33,7 +35,7 @@ type CustomSpecFns struct {
 }
 
 func (s *CustomSpecFns) Spec(
-	ctx context.Context, obj Object, _ Client,
+	ctx context.Context, obj Object, _ client.Client,
 ) (*Spec, error) {
 	return &Spec{
 		ManifestName: s.ManifestNameFn(ctx, obj),

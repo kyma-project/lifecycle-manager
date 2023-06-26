@@ -125,10 +125,11 @@ var _ = BeforeSuite(
 
 		k8sClient = k8sManager.GetClient()
 
+		kcp := &declarative.ClusterInfo{Config: cfg, Client: k8sClient}
 		reconciler = declarative.NewFromManager(
 			k8sManager, &v1beta2.Manifest{},
 			declarative.WithSpecResolver(
-				internalv1beta1.NewManifestSpecResolver(codec),
+				internalv1beta1.NewManifestSpecResolver(kcp, codec),
 			),
 			declarative.WithPermanentConsistencyCheck(true),
 			declarative.WithRemoteTargetCluster(
