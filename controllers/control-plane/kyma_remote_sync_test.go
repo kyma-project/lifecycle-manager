@@ -426,7 +426,7 @@ var _ = Describe("Kyma with remote module templates from private registries", Or
 
 	It("Should create moduleInSkr template in SKR", func() {
 		templateInSkr.Namespace = kyma.Namespace
-		Eventually(runtimeClient.Create, 2*Timeout, Interval).
+		Eventually(runtimeClient.Create, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(templateInSkr).
 			Should(Succeed())
