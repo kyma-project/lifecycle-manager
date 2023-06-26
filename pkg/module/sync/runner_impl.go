@@ -2,17 +2,14 @@ package sync
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/metrics"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
-	"github.com/tidwall/gjson"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -164,34 +161,26 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 		return *newModuleStatus
 	}
 	if module.Template.Err != nil {
-		status := v1beta2.ModuleStatus{
+		return v1beta2.ModuleStatus{
 			Name:    module.ModuleName,
 			Channel: module.Template.DesiredChannel,
 			FQDN:    module.FQDN,
 			State:   v1beta2.StateError,
 			Message: module.Template.Err.Error(),
 		}
-		if module.Template.ModuleTemplate != nil {
-			status.CustomStateCheck = module.Template.Spec.CustomStateCheck
-		}
-		return status
 	}
 	manifestObject, ok := module.Object.(*v1beta2.Manifest)
 	if !ok {
 		// TODO: impossible case, remove casting check after module use typed Manifest instead of client.Object
 		return v1beta2.ModuleStatus{
-			Name:             module.ModuleName,
-			Channel:          module.Template.DesiredChannel,
-			FQDN:             module.FQDN,
-			State:            v1beta2.StateError,
-			Message:          ErrManifestConversion.Error(),
-			CustomStateCheck: module.Template.Spec.CustomStateCheck,
+			Name:    module.ModuleName,
+			Channel: module.Template.DesiredChannel,
+			FQDN:    module.FQDN,
+			State:   v1beta2.StateError,
+			Message: ErrManifestConversion.Error(),
 		}
 	}
-	return generateDefaultModuleStatus(module, manifestObject)
-}
 
-func generateDefaultModuleStatus(module *common.Module, manifestObject *v1beta2.Manifest) v1beta2.ModuleStatus {
 	manifestAPIVersion, manifestKind := manifestObject.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	templateAPIVersion, templateKind := module.Template.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	var moduleResource *v1beta2.TrackingObject
@@ -207,7 +196,7 @@ func generateDefaultModuleStatus(module *common.Module, manifestObject *v1beta2.
 	return v1beta2.ModuleStatus{
 		Name:    module.ModuleName,
 		FQDN:    module.FQDN,
-		State:   stateFromManifest(module.Object, module.Template.Spec.CustomStateCheck),
+		State:   v1beta2.State(manifestObject.Status.State),
 		Channel: module.Template.Spec.Channel,
 		Version: module.Version,
 		Manifest: &v1beta2.TrackingObject{
@@ -218,42 +207,19 @@ func generateDefaultModuleStatus(module *common.Module, manifestObject *v1beta2.
 			PartialMeta: v1beta2.PartialMetaFromObject(module.Template),
 			TypeMeta:    metav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
 		},
-		Resource:         moduleResource,
-		CustomStateCheck: module.Template.Spec.CustomStateCheck,
+		Resource: moduleResource,
 	}
 }
 
-func stateFromManifest(obj client.Object, customStateCheck *v1beta2.CustomStateCheck) v1beta2.State {
-	if customStateCheck == nil {
-		switch manifest := obj.(type) {
-		case *v1beta2.Manifest:
-			return v1beta2.State(manifest.Status.State)
-		case *unstructured.Unstructured:
-			state, _, _ := unstructured.NestedString(manifest.Object, "status", "state")
-			return v1beta2.State(state)
-		default:
-			return ""
-		}
-	} else {
-		return processCustomStateCheck(obj, customStateCheck)
-	}
-}
-
-func processCustomStateCheck(obj client.Object, customStateCheck *v1beta2.CustomStateCheck) v1beta2.State {
-	marshalledObj, err := json.Marshal(obj)
-	if err != nil {
-		return v1beta2.StateError
-	}
-
-	customStateCheck.JSONPath, _ = strings.CutPrefix(customStateCheck.JSONPath, ".")
-	result := gjson.Get(string(marshalledObj), customStateCheck.JSONPath)
-
-	if valueFromManifest, ok := result.Value().(string); ok && customStateCheck.Value == valueFromManifest {
-		return v1beta2.StateReady
-	} else if !result.Exists() {
-		return v1beta2.StateError
-	} else {
-		return v1beta2.StateProcessing
+func stateFromManifest(obj client.Object) v1beta2.State {
+	switch manifest := obj.(type) {
+	case *v1beta2.Manifest:
+		return v1beta2.State(manifest.Status.State)
+	case *unstructured.Unstructured:
+		state, _, _ := unstructured.NestedString(manifest.Object, "status", "state")
+		return v1beta2.State(state)
+	default:
+		return ""
 	}
 }
 
@@ -285,7 +251,7 @@ func DeleteNoLongerExistingModuleStatus(
 			}
 			delete(moduleStatusMap, moduleStatus.Name)
 		} else {
-			moduleStatus.State = stateFromManifest(module, moduleStatus.CustomStateCheck)
+			moduleStatus.State = stateFromManifest(module)
 		}
 	}
 	kyma.Status.Modules = convertToNewModuleStatus(moduleStatusMap)
