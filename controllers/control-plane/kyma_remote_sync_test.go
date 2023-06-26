@@ -439,7 +439,7 @@ var _ = Describe("Kyma with remote module templates from private registries", Or
 
 		Eventually(func() bool {
 			kyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), "")
-			if err == nil {
+			if err != nil {
 				return false
 			}
 			if strings.Contains(kyma.Status.Modules[0].Message, ocmextensions.ErrNoAuthSecretFound.Error()) {
