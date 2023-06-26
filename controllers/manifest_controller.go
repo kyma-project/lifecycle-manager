@@ -80,11 +80,12 @@ func ManifestReconciler(
 		Client: mgr.GetClient(),
 		Config: mgr.GetConfig(),
 	}
+
 	lookup := &internalv1beta1.RemoteClusterLookup{KCP: kcp}
 	return declarative.NewFromManager(
 		mgr, &v1beta2.Manifest{},
 		declarative.WithSpecResolver(
-			internalv1beta1.NewManifestSpecResolver(kcp, codec),
+			internalv1beta1.NewManifestSpecResolver(codec),
 		),
 		declarative.WithCustomReadyCheck(internalv1beta1.NewManifestCustomResourceReadyCheck()),
 		declarative.WithRemoteTargetCluster(lookup.ConfigResolver),

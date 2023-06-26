@@ -17,7 +17,7 @@ import (
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
-const customResourceStatePath = "status.state"
+const customResourceStatePath = "status.status"
 
 // NewManifestCustomResourceReadyCheck creates a readiness check that verifies that the Resource in the Manifest
 // returns the ready state, if not it returns not ready.

@@ -23,17 +23,14 @@ type RawManifestInfo struct {
 }
 
 type ManifestSpecResolver struct {
-	KCP *declarative.ClusterInfo
-
 	*v1beta2.Codec
 
 	ChartCache   string
 	cachedCharts map[string]string
 }
 
-func NewManifestSpecResolver(kcp *declarative.ClusterInfo, codec *v1beta2.Codec) *ManifestSpecResolver {
+func NewManifestSpecResolver(codec *v1beta2.Codec) *ManifestSpecResolver {
 	return &ManifestSpecResolver{
-		KCP:          kcp,
 		Codec:        codec,
 		ChartCache:   os.TempDir(),
 		cachedCharts: make(map[string]string),
@@ -45,7 +42,8 @@ var (
 	ErrInvalidObjectPassedToSpecResolution = errors.New("invalid object passed to spec resolution")
 )
 
-func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object) (*declarative.Spec, error) {
+func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object,
+	targetClient declarative.Client) (*declarative.Spec, error) {
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
 		return nil, fmt.Errorf(
@@ -59,7 +57,7 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object)
 		return nil, err
 	}
 
-	keyChain, err := m.lookupKeyChain(ctx, manifest.Spec.Config)
+	keyChain, err := m.lookupKeyChain(ctx, manifest.Spec.Config, targetClient)
 	if err != nil {
 		return nil, err
 	}
@@ -124,12 +122,12 @@ func (m *ManifestSpecResolver) getRawManifestForInstall(
 }
 
 func (m *ManifestSpecResolver) lookupKeyChain(
-	ctx context.Context, imageSpec v1beta2.ImageSpec,
+	ctx context.Context, imageSpec v1beta2.ImageSpec, targetClient declarative.Client,
 ) (authn.Keychain, error) {
 	var keyChain authn.Keychain
 	var err error
 	if imageSpec.CredSecretSelector != nil {
-		if keyChain, err = ocmextensions.GetAuthnKeychain(ctx, imageSpec.CredSecretSelector, m.KCP.Client); err != nil {
+		if keyChain, err = ocmextensions.GetAuthnKeychain(ctx, imageSpec.CredSecretSelector, targetClient); err != nil {
 			return nil, err
 		}
 	} else {

@@ -5,7 +5,7 @@ import (
 )
 
 type SpecResolver interface {
-	Spec(ctx context.Context, object Object) (*Spec, error)
+	Spec(ctx context.Context, object Object, targetClient Client) (*Spec, error)
 }
 
 type Spec struct {
@@ -33,7 +33,7 @@ type CustomSpecFns struct {
 }
 
 func (s *CustomSpecFns) Spec(
-	ctx context.Context, obj Object,
+	ctx context.Context, obj Object, _ Client,
 ) (*Spec, error) {
 	return &Spec{
 		ManifestName: s.ManifestNameFn(ctx, obj),
