@@ -18,8 +18,9 @@ import (
 
 // RawManifestInfo defines raw manifest information.
 type RawManifestInfo struct {
-	Path string
-	Name string
+	Path   string
+	OCIRef string
+	Name   string
 }
 
 type ManifestSpecResolver struct {
@@ -81,36 +82,9 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object)
 	return &declarative.Spec{
 		ManifestName: manifest.Spec.Install.Name,
 		Path:         rawManifestInfo.Path,
+		OCIRef:       rawManifestInfo.OCIRef,
 		Mode:         mode,
 	}, nil
-}
-
-var (
-	ErrChartConfigObjectInvalid = errors.New("chart config object of .spec.config is invalid")
-	ErrConfigObjectInvalid      = errors.New(".spec.config is invalid")
-)
-
-func ParseInstallConfigs(decodedConfig interface{}) ([]interface{}, error) {
-	var configs []interface{}
-	if decodedConfig == nil {
-		return configs, nil
-	}
-	installConfigObj, decodeOk := decodedConfig.(map[string]interface{})
-	if !decodeOk {
-		return nil, fmt.Errorf("reading install %s resulted in an error: %w", v1beta2.ManifestKind,
-			ErrConfigObjectInvalid)
-	}
-	if installConfigObj["configs"] != nil {
-		var configOk bool
-		configs, configOk = installConfigObj["configs"].([]interface{})
-		if !configOk {
-			return nil, fmt.Errorf(
-				"reading install %s resulted in an error: %w ", v1beta2.ManifestKind,
-				ErrChartConfigObjectInvalid,
-			)
-		}
-	}
-	return configs, nil
 }
 
 var (
@@ -139,8 +113,9 @@ func (m *ManifestSpecResolver) getRawManifestForInstall(
 		}
 
 		return &RawManifestInfo{
-			Name: install.Name,
-			Path: rawManifestPath,
+			Name:   install.Name,
+			Path:   rawManifestPath,
+			OCIRef: imageSpec.Ref,
 		}, nil
 	case v1beta2.NilRefType:
 		return nil, ErrEmptyInstallType

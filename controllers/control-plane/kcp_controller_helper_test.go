@@ -1,11 +1,11 @@
 package control_plane_test
 
 import (
-	"context"
 	"errors"
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/cache"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -42,23 +42,6 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 		Eventually(SyncKyma, Timeout, Interval).
 			WithContext(ctx).WithArguments(controlPlaneClient, kyma).Should(Succeed())
 	})
-}
-
-func updateRemoteModule(
-	ctx context.Context,
-	client client.Client,
-	kyma *v1beta2.Kyma,
-	remoteSyncNamespace string,
-	modules []v1beta2.Module,
-) func() error {
-	return func() error {
-		kyma, err := GetKyma(ctx, client, kyma.Name, remoteSyncNamespace)
-		if err != nil {
-			return err
-		}
-		kyma.Spec.Modules = modules
-		return client.Update(ctx, kyma)
-	}
 }
 
 func kymaExists(clnt client.Client, name, namespace string) error {
@@ -134,22 +117,26 @@ func updateModuleTemplateSpec(clnt client.Client,
 	return clnt.Update(ctx, moduleTemplate)
 }
 
-func kymaHasCondition(conditionType v1beta2.KymaConditionType, reason string, status metav1.ConditionStatus) func(
-	clnt client.Client, kymaName, kymaNamespace string) error {
-	return func(clnt client.Client, kymaName, kymaNamespace string) error {
-		kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
-		if err != nil {
-			return err
-		}
-
-		for _, cnd := range kyma.Status.Conditions {
-			if cnd.Type == string(conditionType) && cnd.Reason == reason && cnd.Status == status {
-				return nil
-			}
-		}
-
-		return ErrNotContainsExpectedCondition
+func kymaHasCondition(
+	clnt client.Client,
+	conditionType v1beta2.KymaConditionType,
+	reason string,
+	status metav1.ConditionStatus,
+	kymaName,
+	kymaNamespace string,
+) error {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return err
 	}
+
+	for _, cnd := range kyma.Status.Conditions {
+		if cnd.Type == string(conditionType) && cnd.Reason == reason && cnd.Status == status {
+			return nil
+		}
+	}
+
+	return ErrNotContainsExpectedCondition
 }
 
 func containsModuleTemplateCondition(clnt client.Client, kymaName, kymaNamespace string) error {
@@ -163,14 +150,17 @@ func containsModuleTemplateCondition(clnt client.Client, kymaName, kymaNamespace
 	return nil
 }
 
-func containsNoModulesInSpec(clnt client.Client, kymaName, kymaNamespace string) error {
+func notContainsModuleInSpec(clnt client.Client, kymaName, kymaNamespace, moduleName string) error {
 	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
 	if err != nil {
 		return err
 	}
-	if len(kyma.Spec.Modules) != 0 {
-		return ErrContainsUnexpectedModules
+	for _, module := range kyma.Spec.Modules {
+		if module.Name == moduleName {
+			return ErrContainsUnexpectedModules
+		}
 	}
+
 	return nil
 }
 
@@ -210,8 +200,14 @@ func updateKymaCRD(clnt client.Client) (*v1extensions.CustomResourceDefinition, 
 		client.FieldOwner(v1beta2.OperatorName)); err != nil {
 		return nil, err
 	}
-
 	crd, err = fetchCrd(clnt, v1beta2.KymaKind)
+	kymaCrdName := fmt.Sprintf("%s.%s", v1beta2.KymaKind.Plural(), v1beta2.GroupVersion.Group)
+
+	// Replacing the CRD in cache after updating the KCP CRD in order to validate the
+	//generation numbers get updated correctly.
+	if _, ok := cache.GetCachedCRD(kymaCrdName); ok {
+		cache.SetCRDInCache(kymaCrdName, *crd)
+	}
 	if err != nil {
 		return nil, err
 	}

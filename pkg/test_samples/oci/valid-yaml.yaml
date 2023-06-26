@@ -1,0 +1,5 @@
+invalidKey: invalidValue
+kind: InvalidKind1
+---
+invalidKey: invalidValue
+kind: InvalidKind2

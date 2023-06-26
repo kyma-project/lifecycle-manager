@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Test ModuleTemplate installation", func() {
+var _ = Describe("ModuleTemplate installation", func() {
 	DescribeTable("Test Modules",
 		func(givenCondition func(kyma *v1beta2.Kyma) error, expectedBehavior func(kyma *v1beta2.Kyma) error) {
 			kyma := NewTestKyma("kyma")

@@ -240,6 +240,7 @@ func NewClient(
 	)
 }
 
+//nolint:funlen
 func setupKymaReconciler(mgr ctrl.Manager,
 	remoteClientCache *remote.ClientCache,
 	componentDescriptorCache *ocmextensions.ComponentDescriptorCache,
@@ -253,16 +254,16 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		if err != nil || !watcherChartDirInfo.IsDir() {
 			setupLog.Error(err, "failed to read local skr chart")
 		}
-		skrWebhookConfig := &watcher.SkrWebhookManagerConfig{
+		skrWebhookManager, err = watcher.NewSKRWebhookManifestManager(kcpRestConfig, &watcher.SkrWebhookManagerConfig{
 			SKRWatcherPath:             flagVar.skrWatcherPath,
+			SkrWatcherImage:            flagVar.skrWatcherImage,
 			SkrWebhookCPULimits:        flagVar.skrWebhookCPULimits,
 			SkrWebhookMemoryLimits:     flagVar.skrWebhookMemoryLimits,
 			WatcherLocalTestingEnabled: flagVar.enableWatcherLocalTesting,
 			GatewayHTTPPortMapping:     flagVar.listenerHTTPPortLocalMapping,
 			IstioNamespace:             flagVar.istioNamespace,
 			RemoteSyncNamespace:        flagVar.remoteSyncNamespace,
-		}
-		skrWebhookManager, err = watcher.NewSKRWebhookManifestManager(kcpRestConfig, skrWebhookConfig)
+		})
 		if err != nil {
 			setupLog.Error(err, "failed to create webhook chart manager")
 		}
@@ -277,6 +278,8 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		SKRWebhookManager:        skrWebhookManager,
 		RequeueIntervals: controllers.RequeueIntervals{
 			Success: flagVar.kymaRequeueSuccessInterval,
+			Busy:    flagVar.kymaRequeueBusyInterval,
+			Error:   flagVar.kymaRequeueErrInterval,
 		},
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: flagVar.enableVerification,
@@ -295,11 +298,9 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
-
 	if flagVar.enablePurgeFinalizer {
 		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options, kcpRestConfig)
 	}
-
 	metrics.Initialize()
 }
 
@@ -361,7 +362,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, fla
 		Scheme:        mgr.GetScheme(),
 		RestConfig:    mgr.GetConfig(),
 		RequeueIntervals: controllers.RequeueIntervals{
-			Success: flagVar.kymaRequeueSuccessInterval,
+			Success: flagVar.watcherRequeueSuccessInterval,
 		},
 	}).SetupWithManager(mgr, options, istioConfig); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controllers.WatcherControllerName)

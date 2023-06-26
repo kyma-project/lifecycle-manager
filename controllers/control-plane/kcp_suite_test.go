@@ -126,6 +126,8 @@ var _ = BeforeSuite(func() {
 
 	intervals := controllers.RequeueIntervals{
 		Success: 3 * time.Second,
+		Busy:    100 * time.Millisecond,
+		Error:   100 * time.Millisecond,
 	}
 
 	remoteClientCache := remote.NewClientCache()

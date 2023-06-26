@@ -79,7 +79,6 @@ var (
 const (
 	skrWatcherPath         = "../../skr-webhook"
 	istioResourcesFilePath = "../../config/samples/tests/istio-test-resources.yaml"
-	virtualServiceName     = "kcp-events"
 )
 
 func TestAPIs(t *testing.T) {
@@ -160,7 +159,6 @@ var _ = BeforeSuite(func() {
 
 	remoteClientCache = remote.NewClientCache()
 	componentDescriptorCache := ocmextensions.NewComponentDescriptorCache()
-
 	skrChartCfg := &watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         skrWatcherPath,
 		SkrWebhookMemoryLimits: "200Mi",

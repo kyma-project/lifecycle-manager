@@ -9,11 +9,13 @@ import (
 )
 
 const (
-	defaultKymaRequeueSuccessInterval     = 20 * time.Second
-	defaultManifestRequeueSuccessInterval = 20 * time.Second
-	defaultWatcherRequeueSuccessInterval  = 20 * time.Second
-	defaultClientQPS                      = 150
-	defaultClientBurst                    = 150
+	defaultKymaRequeueSuccessInterval     = 30 * time.Second
+	defaultKymaRequeueErrInterval         = 2 * time.Second
+	defaultKymaRequeueBusyInterval        = 5 * time.Second
+	defaultManifestRequeueSuccessInterval = 30 * time.Second
+	defaultWatcherRequeueSuccessInterval  = 30 * time.Second
+	defaultClientQPS                      = 300
+	defaultClientBurst                    = 600
 	defaultPprofServerTimeout             = 90 * time.Second
 	rateLimiterBurstDefault               = 200
 	rateLimiterFrequencyDefault           = 30
@@ -50,6 +52,12 @@ func defineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.kymaRequeueSuccessInterval, "kyma-requeue-success-interval",
 		defaultKymaRequeueSuccessInterval, "determines the duration after which an already successfully "+
 			"reconciled Kyma is enqueued for checking if it's still in a consistent state.")
+	flag.DurationVar(&flagVar.kymaRequeueErrInterval, "kyma-requeue-error-interval",
+		defaultKymaRequeueErrInterval, "determines the duration after which a Kyma in Error state "+
+			"is enqueued for reconciliation.")
+	flag.DurationVar(&flagVar.kymaRequeueBusyInterval, "kyma-requeue-busy-interval",
+		defaultKymaRequeueBusyInterval, "determines the duration after which a Kyma in Processing state "+
+			"is enqueued for reconciliation.")
 	flag.DurationVar(&flagVar.manifestRequeueSuccessInterval, "manifest-requeue-success-interval",
 		defaultManifestRequeueSuccessInterval, "determines the duration after which an already successfully "+
 			"reconciled Kyma is enqueued for checking if it's still in a consistent state.")
@@ -79,6 +87,9 @@ func defineFlagVar() *FlagVar {
 	flag.IntVar(&flagVar.listenerHTTPPortLocalMapping, "listener-http-local-mapping", defaultListenerPort,
 		"Port that is mapped to HTTP port of the local k3d cluster using --port 9080:80@loadbalancer when "+
 			"creating the KCP cluster")
+	flag.StringVar(&flagVar.skrWatcherImage, "skr-watcher-image", "", `Image of the SKR watcher 
+		defaults to "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher-skr:latest" when left empty. 
+		Used mainly for the watcher e2e testing`)
 	flag.BoolVar(&flagVar.pprof, "pprof", false, "Whether to start up a pprof server.")
 	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
 		"Timeout of Read / Write for the pprof server.")
@@ -121,6 +132,8 @@ type FlagVar struct {
 	maxConcurrentManifestReconciles        int
 	maxConcurrentWatcherReconciles         int
 	kymaRequeueSuccessInterval             time.Duration
+	kymaRequeueErrInterval                 time.Duration
+	kymaRequeueBusyInterval                time.Duration
 	manifestRequeueSuccessInterval         time.Duration
 	watcherRequeueSuccessInterval          time.Duration
 	moduleVerificationKeyFilePath          string
@@ -138,6 +151,7 @@ type FlagVar struct {
 	// when testing locally using dual-k3d cluster-setup
 	// (only k3d clusters are supported for watcher local testing)
 	listenerHTTPPortLocalMapping           int
+	skrWatcherImage                        string
 	pprof                                  bool
 	pprofAddr                              string
 	pprofServerTimeout                     time.Duration
