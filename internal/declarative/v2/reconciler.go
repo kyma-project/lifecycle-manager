@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"helm.sh/helm/v3/pkg/kube"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,14 +17,16 @@ import (
 )
 
 var (
-	ErrResourceSyncStateDiff                     = errors.New("resource syncTarget state diff detected")
+	ErrWarningResourceSyncStateDiff              = errors.New("resource syncTarget state diff detected")
+	ErrResourceSyncDiffInSameOCILayer            = errors.New("resource syncTarget diff detected but in same oci layer, prevent sync resource to be deleted") //nolint:lll
 	ErrInstallationConditionRequiresUpdate       = errors.New("installation condition needs an update")
 	ErrDeletionTimestampSetButNotInDeletingState = errors.New("resource is not set to deleting yet")
 	ErrObjectHasEmptyState                       = errors.New("object has an empty state")
 )
 
 const (
-	namespaceNotBeRemoved = "kyma-system"
+	namespaceNotBeRemoved  = "kyma-system"
+	SyncedOCIRefAnnotation = "sync-oci-ref"
 )
 
 func NewFromManager(mgr manager.Manager, prototype Object, options ...Option) *Reconciler {
@@ -74,7 +75,7 @@ func newResourcesCondition(obj Object) metav1.Condition {
 	}
 }
 
-//nolint:funlen
+//nolint:funlen,cyclop
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	obj := r.prototype.DeepCopyObject().(Object)
 	if err := r.Get(ctx, req.NamespacedName, obj); err != nil {
@@ -99,10 +100,18 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	spec, err := r.Spec(ctx, obj)
 	if err != nil {
+		if !obj.GetDeletionTimestamp().IsZero() {
+			return r.removeFinalizer(ctx, obj)
+		}
 		return r.ssaStatus(ctx, obj)
 	}
 
-	clnt, err := r.getTargetClient(ctx, obj, spec)
+	if notContainsSyncedOCIRefAnnotation(obj) {
+		updateSyncedOCIRefAnnotation(obj, spec.OCIRef)
+		return ctrl.Result{Requeue: true}, r.Update(ctx, obj)
+	}
+
+	clnt, err := r.getTargetClient(ctx, obj)
 	if err != nil {
 		r.Event(obj, "Warning", "ClientInitialization", err.Error())
 		obj.SetStatus(obj.GetStatus().WithState(StateError).WithErr(err))
@@ -111,38 +120,50 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	converter := NewResourceToInfoConverter(clnt, r.Namespace)
 
-	renderer, err := InitializeRenderer(ctx, obj, spec, clnt, r.Options)
+	renderer, err := InitializeRenderer(ctx, obj, spec, r.Options)
+	if err != nil {
+		if !obj.GetDeletionTimestamp().IsZero() {
+			return r.removeFinalizer(ctx, obj)
+		}
+		return r.ssaStatus(ctx, obj)
+	}
+
+	target, current, err := r.renderResources(ctx, obj, spec, converter)
 	if err != nil {
 		return r.ssaStatus(ctx, obj)
 	}
 
-	target, current, err := r.renderResources(ctx, obj, spec, renderer, converter)
-	if err != nil {
-		return r.ssaStatus(ctx, obj)
-	}
-
-	diff := kube.ResourceList(current).Difference(target)
-	if err := r.pruneDiff(ctx, clnt, obj, renderer, diff); errors.Is(err, ErrDeletionNotFinished) {
+	diff := ResourceList(current).Difference(target)
+	if err := r.pruneDiff(ctx, clnt, obj, renderer, diff, spec); errors.Is(err, ErrDeletionNotFinished) {
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
 		return r.ssaStatus(ctx, obj)
 	}
 
 	if !obj.GetDeletionTimestamp().IsZero() {
-		if controllerutil.RemoveFinalizer(obj, r.Finalizer) {
-			return ctrl.Result{}, r.Update(ctx, obj) // no SSA since delete does not work for finalizers.
-		}
-		msg := fmt.Sprintf("waiting as other finalizers are present: %s", obj.GetFinalizers())
-		r.Event(obj, "Normal", "FinalizerRemoval", msg)
-		obj.SetStatus(obj.GetStatus().WithState(StateDeleting).WithOperation(msg))
-		return r.ssaStatus(ctx, obj)
+		return r.removeFinalizer(ctx, obj)
 	}
-
 	if err := r.syncResources(ctx, clnt, obj, target); err != nil {
 		return r.ssaStatus(ctx, obj)
 	}
 
+	// This situation happens when manifest get new installation layer to update resources,
+	// we need to make sure all updates successfully before we can update synced oci ref
+	if requireUpdateSyncedOCIRefAnnotation(obj, spec.OCIRef) {
+		updateSyncedOCIRefAnnotation(obj, spec.OCIRef)
+		return ctrl.Result{Requeue: true}, r.Update(ctx, obj)
+	}
 	return r.CtrlOnSuccess, nil
+}
+
+func (r *Reconciler) removeFinalizer(ctx context.Context, obj Object) (ctrl.Result, error) {
+	if controllerutil.RemoveFinalizer(obj, r.Finalizer) {
+		return ctrl.Result{}, r.Update(ctx, obj) // no SSA since delete does not work for finalizers.
+	}
+	msg := fmt.Sprintf("waiting as other finalizers are present: %s", obj.GetFinalizers())
+	r.Event(obj, "Normal", "FinalizerRemoval", msg)
+	obj.SetStatus(obj.GetStatus().WithState(StateDeleting).WithOperation(msg))
+	return r.ssaStatus(ctx, obj)
 }
 
 func (r *Reconciler) partialObjectMetadata(obj Object) *metav1.PartialObjectMetadata {
@@ -195,15 +216,18 @@ func (r *Reconciler) Spec(ctx context.Context, obj Object) (*Spec, error) {
 }
 
 func (r *Reconciler) renderResources(
-	ctx context.Context, obj Object, spec *Spec, renderer Renderer, converter ResourceToInfoConverter,
+	ctx context.Context,
+	obj Object,
+	spec *Spec,
+	converter ResourceToInfoConverter,
 ) ([]*resource.Info, []*resource.Info, error) {
 	resourceCondition := newResourcesCondition(obj)
 	status := obj.GetStatus()
 
 	var err error
-	var target, current kube.ResourceList
+	var target, current ResourceList
 
-	if target, err = r.renderTargetResources(ctx, renderer, converter, obj, spec); err != nil {
+	if target, err = r.renderTargetResources(ctx, converter, obj, spec); err != nil {
 		return nil, nil, err
 	}
 
@@ -239,9 +263,9 @@ func (r *Reconciler) syncResources(
 	newSynced := NewInfoToResourceConverter().InfosToResources(target)
 	status.Synced = newSynced
 
-	if len(ResourcesDiff(oldSynced, newSynced)) > 0 {
-		obj.SetStatus(status.WithState(StateProcessing).WithOperation(ErrResourceSyncStateDiff.Error()))
-		return ErrResourceSyncStateDiff
+	if len(oldSynced) != len(newSynced) {
+		obj.SetStatus(status.WithState(StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
+		return ErrWarningResourceSyncStateDiff
 	}
 
 	for i := range r.PostRuns {
@@ -261,11 +285,8 @@ func (r *Reconciler) checkTargetReadiness(
 	status := obj.GetStatus()
 
 	resourceReadyCheck := r.CustomReadyCheck
-	if resourceReadyCheck == nil {
-		resourceReadyCheck = NewHelmReadyCheck(clnt)
-	}
 
-	err := resourceReadyCheck.Run(ctx, clnt, obj, target)
+	state, err := resourceReadyCheck.Run(ctx, clnt, obj, target)
 
 	if errors.Is(err, ErrResourcesNotReady) || errors.Is(err, ErrCustomResourceStateNotFound) ||
 		errors.Is(err, ErrDeploymentNotReady) {
@@ -282,11 +303,11 @@ func (r *Reconciler) checkTargetReadiness(
 	}
 
 	installationCondition := newInstallationCondition(obj)
-	if !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) || status.State != StateReady {
+	if !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) || status.State != state {
 		r.Event(obj, "Normal", installationCondition.Reason, installationCondition.Message)
 		installationCondition.Status = metav1.ConditionTrue
 		meta.SetStatusCondition(&status.Conditions, installationCondition)
-		obj.SetStatus(status.WithState(StateReady).WithOperation(installationCondition.Message))
+		obj.SetStatus(status.WithState(state).WithOperation(installationCondition.Message))
 		return ErrInstallationConditionRequiresUpdate
 	}
 
@@ -321,19 +342,22 @@ func (r *Reconciler) deleteResources(
 }
 
 func (r *Reconciler) renderTargetResources(
-	ctx context.Context, renderer Renderer, converter ResourceToInfoConverter, obj Object, spec *Spec,
+	ctx context.Context,
+	converter ResourceToInfoConverter,
+	obj Object,
+	spec *Spec,
 ) ([]*resource.Info, error) {
 	if !obj.GetDeletionTimestamp().IsZero() {
 		// if we are deleting the resources,
 		// we no longer want to have any target resources and want to clean up all existing resources.
 		// Thus, we empty the target here so the difference will be the entire current
 		// resource list in the cluster.
-		return kube.ResourceList{}, nil
+		return ResourceList{}, nil
 	}
 
 	status := obj.GetStatus()
 
-	targetResources, err := r.ManifestParser.Parse(ctx, renderer, obj, spec)
+	targetResources, err := r.ManifestParser.Parse(spec)
 	if err != nil {
 		r.Event(obj, "Warning", "ManifestParsing", err.Error())
 		obj.SetStatus(status.WithState(StateError).WithErr(err))
@@ -359,9 +383,27 @@ func (r *Reconciler) renderTargetResources(
 }
 
 func (r *Reconciler) pruneDiff(
-	ctx context.Context, clnt Client, obj Object, renderer Renderer, diff []*resource.Info,
+	ctx context.Context,
+	clnt Client,
+	obj Object,
+	renderer Renderer,
+	diff []*resource.Info,
+	spec *Spec,
 ) error {
-	if err := r.deleteResources(ctx, clnt, obj, pruneKymaSystem(diff)); err != nil {
+	diff = pruneResource(diff, "Namespace", namespaceNotBeRemoved)
+	resourceName := r.ModuleCRDName(obj)
+	diff = pruneResource(diff, "CustomResourceDefinition", resourceName)
+
+	if manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff, obj, spec) {
+		// This case should not happen normally, but if happens, it means the resources read from cache is incomplete,
+		// and we should prevent diff resources to be deleted.
+		// Meanwhile, evict cache to hope newly created resources back to normal.
+		r.Event(obj, "Warning", "PruneDiff", ErrResourceSyncDiffInSameOCILayer.Error())
+		obj.SetStatus(obj.GetStatus().WithState(StateWarning).WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()))
+		r.ManifestParser.EvictCache(spec)
+		return ErrResourceSyncDiffInSameOCILayer
+	}
+	if err := r.deleteResources(ctx, clnt, obj, diff); err != nil {
 		return err
 	}
 
@@ -372,27 +414,53 @@ func (r *Reconciler) pruneDiff(
 	return renderer.RemovePrerequisites(ctx, obj)
 }
 
-func pruneKymaSystem(diff []*resource.Info) []*resource.Info {
+func manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff []*resource.Info, obj Object, spec *Spec) bool {
+	return len(diff) > 0 && ociRefNotChanged(obj, spec.OCIRef) && obj.GetDeletionTimestamp().IsZero()
+}
+
+func ociRefNotChanged(obj Object, ref string) bool {
+	syncedOCIRef, found := obj.GetAnnotations()[SyncedOCIRefAnnotation]
+	return found && syncedOCIRef == ref
+}
+
+func requireUpdateSyncedOCIRefAnnotation(obj Object, ref string) bool {
+	syncedOCIRef, found := obj.GetAnnotations()[SyncedOCIRefAnnotation]
+	if found && syncedOCIRef != ref {
+		return true
+	}
+	return false
+}
+
+func notContainsSyncedOCIRefAnnotation(obj Object) bool {
+	_, found := obj.GetAnnotations()[SyncedOCIRefAnnotation]
+	return !found
+}
+
+func updateSyncedOCIRefAnnotation(obj Object, ref string) {
+	annotations := obj.GetAnnotations()
+	if annotations == nil {
+		annotations = make(map[string]string)
+	}
+	annotations[SyncedOCIRefAnnotation] = ref
+	obj.SetAnnotations(annotations)
+}
+
+func pruneResource(diff []*resource.Info, resourceType string, resourceName string) []*resource.Info {
 	for i, info := range diff { //nolint:varnamelen
 		obj := info.Object.(client.Object)
-		if obj.GetObjectKind().GroupVersionKind().Kind != "Namespace" {
-			continue
+		if obj.GetObjectKind().GroupVersionKind().Kind == resourceType && obj.GetName() == resourceName {
+			return append(diff[:i], diff[i+1:]...)
 		}
-		if obj.GetName() != namespaceNotBeRemoved {
-			continue
-		}
-		return append(diff[:i], diff[i+1:]...)
 	}
+
 	return diff
 }
 
-func (r *Reconciler) getTargetClient(
-	ctx context.Context, obj Object, spec *Spec,
-) (Client, error) {
+func (r *Reconciler) getTargetClient(ctx context.Context, obj Object) (Client, error) {
 	var err error
 	var clnt Client
 	if r.ClientCacheKeyFn == nil {
-		return r.configClient(ctx, obj, spec.ManifestName)
+		return r.configClient(ctx, obj)
 	}
 
 	clientsCacheKey, found := r.ClientCacheKeyFn(ctx, obj)
@@ -401,18 +469,14 @@ func (r *Reconciler) getTargetClient(
 	}
 
 	if clnt == nil {
-		clnt, err = r.configClient(ctx, obj, spec.ManifestName)
+		clnt, err = r.configClient(ctx, obj)
 		if err != nil {
 			return nil, err
 		}
 		r.SetClientInCache(clientsCacheKey, clnt)
 	}
 
-	clnt.Install().Namespace = r.Namespace
-	clnt.KubeClient().Namespace = r.Namespace
-
-	if r.Namespace != metav1.NamespaceNone && r.Namespace != metav1.NamespaceDefault &&
-		clnt.Install().CreateNamespace {
+	if r.Namespace != metav1.NamespaceNone && r.Namespace != metav1.NamespaceDefault {
 		err := clnt.Patch(
 			ctx, &v1.Namespace{
 				TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
@@ -427,7 +491,7 @@ func (r *Reconciler) getTargetClient(
 	return clnt, nil
 }
 
-func (r *Reconciler) configClient(ctx context.Context, obj Object, releaseName string) (Client, error) {
+func (r *Reconciler) configClient(ctx context.Context, obj Object) (Client, error) {
 	var err error
 
 	cluster := &ClusterInfo{
@@ -442,23 +506,10 @@ func (r *Reconciler) configClient(ctx context.Context, obj Object, releaseName s
 		}
 	}
 
-	clnt, err := NewSingletonClients(cluster, log.FromContext(ctx))
+	clnt, err := NewSingletonClients(cluster)
 	if err != nil {
 		return nil, err
 	}
-	clnt.Install().Atomic = false
-	clnt.Install().Replace = true
-	clnt.Install().DryRun = true
-	clnt.Install().IncludeCRDs = false
-	clnt.Install().CreateNamespace = r.CreateNamespace
-	clnt.Install().UseReleaseName = false
-	clnt.Install().IsUpgrade = true
-	clnt.Install().DisableHooks = true
-	clnt.Install().DisableOpenAPIValidation = true
-	if clnt.Install().Version == "" && clnt.Install().Devel {
-		clnt.Install().Version = ">0.0.0-0"
-	}
-	clnt.Install().ReleaseName = releaseName
 	return clnt, nil
 }
 

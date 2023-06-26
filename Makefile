@@ -126,7 +126,7 @@ lt-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified
 	$(KUSTOMIZE) build config/load_test | kubectl apply -f -
 
 .PHONY: local-deploy-with-watcher
-local-deploy-with-watcher: install manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+local-deploy-with-watcher: generate install ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/watcher_local_test | kubectl apply -f -
 
@@ -173,16 +173,3 @@ fmt: ## Run go fmt against code.
 lint: ## Run golangci-lint against code.
 	GOBIN=$(LOCALBIN) go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANG_CI_LINT_VERSION)
 	$(LOCALBIN)/golangci-lint -v run
-
-CRD_FILE_PATH ?= ./config/samples/tests/crds/operator.kyma-project.io_samplecrd.yaml
-ARCHIVES_DST ?= ./pkg/test_samples/oci
-HELM_CHART_PATH ?= ./pkg/test_samples/helm
-OCI_GEN_SCRIPT ?= $(ARCHIVES_DST)/generate_oci_archives.sh
-
-# Use this whenever you change the content of the sample CRD file located under
-# ./config/samples/tests/crds/operator.kyma-project.io_samplecrd.yaml
-# and/or any of the contents of the sample helm chart used by manifest reconciler tests located in
-# ./pkg/test_samples/helm
-.PHONY: gen-oci-archives
-gen-oci-archives: ## Generate OCI Layers archives used for testing
-	$(OCI_GEN_SCRIPT) $(HELM_CHART_PATH) $(CRD_FILE_PATH) $(ARCHIVES_DST)

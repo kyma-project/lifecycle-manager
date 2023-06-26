@@ -10,8 +10,7 @@ import (
 type LayerName string
 
 const (
-	OCIRepresentationType  = "oci-ref"
-	HelmRepresentationType = "helm-chart"
+	OCIRepresentationType = "oci-ref"
 )
 
 const (
@@ -37,21 +36,6 @@ func (o *OCI) ToInstallRaw() ([]byte, error) {
 
 func (o *OCI) String() string {
 	return fmt.Sprintf("%s/%s:%s", o.Repo, o.Name, o.Ref)
-}
-
-type Helm struct {
-	ChartName string `json:"chartName"`
-	URL       string `json:"url"`
-	Version   string `json:"version"`
-	Type      string `json:"type"`
-}
-
-func (h *Helm) ToInstallRaw() ([]byte, error) {
-	return json.Marshal(h)
-}
-
-func (h *Helm) String() string {
-	return fmt.Sprintf("%s/%s:%s", h.URL, h.ChartName, h.Version)
 }
 
 type (

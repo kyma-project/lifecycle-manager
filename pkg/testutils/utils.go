@@ -13,6 +13,7 @@ import (
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	. "github.com/onsi/gomega" //nolint:stylecheck,revive
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
@@ -37,7 +38,7 @@ const (
 	randomStringLength     = 8
 	letterBytes            = "abcdefghijklmnopqrstuvwxyz"
 	defaultBufferSize      = 2048
-	Timeout                = time.Second * 20
+	Timeout                = time.Second * 40
 	ConsistentCheckTimeout = time.Second * 10
 	Interval               = time.Millisecond * 250
 )
@@ -56,9 +57,6 @@ func NewTestKyma(name string) *v1beta2.Kyma {
 			Annotations: map[string]string{
 				watcher.DomainAnnotation:       "example.domain.com",
 				v1beta2.SyncStrategyAnnotation: v1beta2.SyncStrategyLocalClient,
-			},
-			Labels: map[string]string{
-				v1beta2.SyncLabel: v1beta2.EnableLabelValue,
 			},
 		},
 		Spec: v1beta2.KymaSpec{
@@ -130,16 +128,11 @@ func DeployModuleTemplate(
 	isInternal,
 	isBeta bool,
 ) error {
-	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo)
+	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo, isInternal, isBeta)
 	if err != nil {
 		return err
 	}
-	if isInternal {
-		template.Labels[v1beta2.InternalLabel] = v1beta2.EnableLabelValue
-	}
-	if isBeta {
-		template.Labels[v1beta2.BetaLabel] = v1beta2.EnableLabelValue
-	}
+
 	return kcpClient.Create(ctx, template)
 }
 
@@ -150,7 +143,7 @@ func DeleteModuleTemplates(
 	onPrivateRepo bool,
 ) {
 	for _, module := range kyma.Spec.Modules {
-		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo)
+		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo, false, false)
 		Expect(err).ShouldNot(HaveOccurred())
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
@@ -227,7 +220,7 @@ func GetManifest(ctx context.Context,
 	kyma *v1beta2.Kyma,
 	module v1beta2.Module,
 ) (*v1beta2.Manifest, error) {
-	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false)
+	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -252,8 +245,20 @@ func ModuleTemplateFactory(
 	module v1beta2.Module,
 	data unstructured.Unstructured,
 	onPrivateRepo bool,
+	isInternal bool,
+	isBeta bool,
 ) (*v1beta2.ModuleTemplate, error) {
-	return ModuleTemplateFactoryForSchema(module, data, compdesc2.SchemaVersion, onPrivateRepo)
+	template, err := ModuleTemplateFactoryForSchema(module, data, compdesc2.SchemaVersion, onPrivateRepo)
+	if err != nil {
+		return nil, err
+	}
+	if isInternal {
+		template.Labels[v1beta2.InternalLabel] = v1beta2.EnableLabelValue
+	}
+	if isBeta {
+		template.Labels[v1beta2.BetaLabel] = v1beta2.EnableLabelValue
+	}
+	return template, nil
 }
 
 func ModuleTemplateFactoryForSchema(
@@ -453,4 +458,19 @@ func AllModuleTemplatesExists(ctx context.Context,
 	}
 
 	return nil
+}
+
+func UpdateManifestState(
+	ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma, module v1beta2.Module, state v1beta2.State,
+) error {
+	kyma, err := GetKyma(ctx, clnt, kyma.GetName(), kyma.GetNamespace())
+	if err != nil {
+		return err
+	}
+	component, err := GetManifest(ctx, clnt, kyma, module)
+	if err != nil {
+		return err
+	}
+	component.Status.State = declarative.State(state)
+	return clnt.Status().Update(ctx, component)
 }

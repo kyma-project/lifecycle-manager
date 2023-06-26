@@ -20,8 +20,8 @@ The table of contents lists all the documents in repository with their short des
     - [Manifest CR](./technical-reference/api/manifest-cr.md)
     - [ModuleTemplate CR](./technical-reference/api/moduleTemplate-cr.md)
   - [Architecure](./technical-reference/architecture.md) - describes Lifecycle Manager's architecture
-  - [Running Modes](./technical-reference/running-modes.md)
-  - [Controllers used within Lifecycle Manager](../controllers/README.md) - describes Kyma, Manifest and Watcher controllers
+  - [Controllers](./technical-reference/controllers.md) - describes Kyma, Manifest and Watcher controllers
+  - [Running Modes](./technical-reference/running-modes.md) - describes Lifecycle Manager's running modes
   - [Declarative Reconciliation Library Reference Documentation](../internal/declarative/README.md)
   - [Internal Manifest Reconciliation Library Extensions](../internal/manifest/README.md)
   - [Smoke tests](../tests/smoke_test/README.md)

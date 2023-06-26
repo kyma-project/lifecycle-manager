@@ -16,7 +16,7 @@ metadata:
   namespace: istio-system
 spec:
   dnsNames:
-    - 'listener.kyma.cloud.sap' # this dnsNames should be overwritten based on deployment environment
+    - 'listener.kyma.cloud.sap' # this dnsName should be overwritten based on deployment environment, i.e. listener.dev.kyma.cloud.sap
   isCA: true
   commonName: klm-watcher-selfsigned-ca
   secretName: klm-watcher-root-secret # this secret will not be prefixed, since it's not managed by kustomize

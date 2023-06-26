@@ -2,12 +2,16 @@ package remote
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/cache"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -119,20 +123,23 @@ func fetchCrdsAndUpdateKymaAnnotations(ctx context.Context, controlPlaneClient C
 func fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Client, plural string) (
 	*v1extensions.CustomResourceDefinition, *v1extensions.CustomResourceDefinition, error,
 ) {
-	crd := &v1extensions.CustomResourceDefinition{}
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
-	err := controlPlaneClient.Get(
-		ctx, client.ObjectKey{
-			// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
-			// name changes, this also has to be adjusted here. We can think of making this configurable later
-			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
-		}, crd,
-	)
-	if err != nil {
-		return nil, nil, err
+
+	kcpCrdName := fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group)
+
+	crd, ok := cache.GetCachedCRD(kcpCrdName)
+	if !ok {
+		crd = v1extensions.CustomResourceDefinition{}
+		err := controlPlaneClient.Get(
+			ctx, client.ObjectKey{Name: kcpCrdName}, &crd,
+		)
+		if err != nil {
+			return nil, nil, err
+		}
+		cache.SetCRDInCache(kcpCrdName, crd)
 	}
 
-	err = runtimeClient.Get(
+	err := runtimeClient.Get(
 		ctx, client.ObjectKey{
 			Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
 		}, crdFromRuntime,
@@ -142,7 +149,7 @@ func fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Cli
 		return nil, nil, err
 	}
 
-	return crd, crdFromRuntime, nil
+	return &crd, crdFromRuntime, nil
 }
 
 func ContainsLatestVersion(crdFromRuntime *v1extensions.CustomResourceDefinition, latestVersion string) bool {
@@ -151,5 +158,21 @@ func ContainsLatestVersion(crdFromRuntime *v1extensions.CustomResourceDefinition
 			return true
 		}
 	}
+	return false
+}
+
+func CRDNotFoundErr(err error) bool {
+	var apiStatusErr k8serrors.APIStatus
+	ok := errors.As(err, &apiStatusErr)
+
+	if ok && apiStatusErr.Status().Details != nil {
+		for _, cause := range apiStatusErr.Status().Details.Causes {
+			if cause.Type == metav1.CauseTypeUnexpectedServerResponse &&
+				strings.Contains(cause.Message, "not found") {
+				return true
+			}
+		}
+	}
+
 	return false
 }

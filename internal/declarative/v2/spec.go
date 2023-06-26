@@ -11,15 +11,15 @@ type SpecResolver interface {
 type Spec struct {
 	ManifestName string
 	Path         string
-	Values       any
+	OCIRef       string
 	Mode         RenderMode
 }
 
-func DefaultSpec(path string, values any, mode RenderMode) *CustomSpecFns {
+func DefaultSpec(path, ociref string, mode RenderMode) *CustomSpecFns {
 	return &CustomSpecFns{
 		ManifestNameFn: func(_ context.Context, obj Object) string { return obj.GetName() },
 		PathFn:         func(_ context.Context, _ Object) string { return path },
-		ValuesFn:       func(_ context.Context, _ Object) any { return values },
+		OCIRefFn:       func(_ context.Context, _ Object) string { return ociref },
 		ModeFn:         func(_ context.Context, _ Object) RenderMode { return mode },
 	}
 }
@@ -28,7 +28,7 @@ func DefaultSpec(path string, values any, mode RenderMode) *CustomSpecFns {
 type CustomSpecFns struct {
 	ManifestNameFn func(ctx context.Context, obj Object) string
 	PathFn         func(ctx context.Context, obj Object) string
-	ValuesFn       func(ctx context.Context, obj Object) any
+	OCIRefFn       func(ctx context.Context, obj Object) string
 	ModeFn         func(ctx context.Context, obj Object) RenderMode
 }
 
@@ -38,7 +38,7 @@ func (s *CustomSpecFns) Spec(
 	return &Spec{
 		ManifestName: s.ManifestNameFn(ctx, obj),
 		Path:         s.PathFn(ctx, obj),
-		Values:       s.ValuesFn(ctx, obj),
+		OCIRef:       s.OCIRefFn(ctx, obj),
 		Mode:         s.ModeFn(ctx, obj),
 	}, nil
 }

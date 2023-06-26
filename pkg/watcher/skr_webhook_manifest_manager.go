@@ -31,6 +31,7 @@ type SkrWebhookManagerConfig struct {
 	// SKRWatcherPath represents the path of the webhook resources
 	// to be installed on SKR clusters upon reconciling kyma CRs.
 	SKRWatcherPath         string
+	SkrWatcherImage        string
 	SkrWebhookMemoryLimits string
 	SkrWebhookCPULimits    string
 	// IstioNamespace represents the cluster resource namespace of istio
@@ -74,7 +75,7 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 
 	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
 	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma,
-		m.config.IstioNamespace, m.config.WatcherLocalTestingEnabled)
+		m.config.IstioNamespace, m.config.RemoteSyncNamespace, m.config.WatcherLocalTestingEnabled)
 	if err != nil {
 		return fmt.Errorf("error while creating new CertificateManager struct: %w", err)
 	}
@@ -107,7 +108,7 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 	syncContext := remote.SyncContextFromContext(ctx)
 
 	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma,
-		m.config.IstioNamespace, false)
+		m.config.IstioNamespace, m.config.RemoteSyncNamespace, false)
 	if err != nil {
 		logger.Error(err, "Error while creating new CertificateManager")
 		return err
@@ -117,8 +118,8 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 	}
 
 	skrClientObjects := m.getBaseClientObjects()
-	genClientObjects := getGeneratedClientObjects(
-		&unstructuredResourcesConfig{}, map[string]WatchableConfig{}, m.config.RemoteSyncNamespace)
+	genClientObjects := getGeneratedClientObjects(&unstructuredResourcesConfig{}, []v1beta2.Watcher{},
+		m.config.RemoteSyncNamespace)
 	skrClientObjects = append(skrClientObjects, genClientObjects...)
 	err = runResourceOperationWithGroupedErrors(ctx, syncContext.RuntimeClient, skrClientObjects,
 		func(ctx context.Context, clt client.Client, resource client.Object) error {
@@ -146,11 +147,12 @@ func (m *SKRWebhookManifestManager) getSKRClientObjectsForInstall(ctx context.Co
 		return nil, err
 	}
 	skrClientObjects = append(skrClientObjects, resources...)
-	watchableConfigs, err := getWatchableConfigs(ctx, kcpClient, logger)
+	watchers, err := getWatchers(ctx, kcpClient)
 	if err != nil {
 		return nil, err
 	}
-	genClientObjects := getGeneratedClientObjects(resourcesConfig, watchableConfigs, remoteNs)
+	logger.Info(fmt.Sprintf("using %d watchers to generate webhook configs", len(watchers)))
+	genClientObjects := getGeneratedClientObjects(resourcesConfig, watchers, remoteNs)
 	return append(skrClientObjects, genClientObjects...), nil
 }
 
@@ -192,6 +194,7 @@ func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.C
 		secretResVer:    tlsSecret.ResourceVersion,
 		cpuResLimit:     m.config.SkrWebhookCPULimits,
 		memResLimit:     m.config.SkrWebhookMemoryLimits,
+		skrWatcherImage: m.config.SkrWatcherImage,
 		caCert:          tlsSecret.Data[caCertKey],
 		tlsCert:         tlsSecret.Data[tlsCertKey],
 		tlsKey:          tlsSecret.Data[tlsPrivateKeyKey],

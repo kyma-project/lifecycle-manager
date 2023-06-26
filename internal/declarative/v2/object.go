@@ -21,9 +21,9 @@ type Object interface {
 // +k8s:deepcopy-gen=true
 type Status struct {
 	// State signifies current state of CustomObject.
-	// Value can be one of ("Ready", "Processing", "Error", "Deleting").
+	// Value can be one of ("Ready", "Processing", "Error", "Deleting", "Warning").
 	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error
+	// +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error;Warning
 	State State `json:"state,omitempty"`
 
 	// Conditions contain a set of conditionals to determine the State of Status.
@@ -56,28 +56,15 @@ const (
 	// StateDeleting signifies CustomObject is being deleted. This is the state that is used
 	// when a deletionTimestamp was detected and Finalizers are picked up.
 	StateDeleting State = "Deleting"
+
+	// StateWarning signifies specified resource has been deployed, but cannot be used due to misconfiguration,
+	// usually it means that user interaction is required.
+	StateWarning State = "Warning"
 )
 
 func (s Status) WithState(state State) Status {
 	s.State = state
 	return s
-}
-
-func ResourcesDiff(resourcesA, resourcesB []Resource) []Resource {
-	if len(resourcesA) < len(resourcesB) {
-		return ResourcesDiff(resourcesB, resourcesA)
-	}
-	freqMap := make(map[string]struct{}, len(resourcesB))
-	for _, x := range resourcesB {
-		freqMap[x.ID()] = struct{}{}
-	}
-	var diff []Resource
-	for _, x := range resourcesA {
-		if _, found := freqMap[x.ID()]; !found {
-			diff = append(diff, x)
-		}
-	}
-	return diff
 }
 
 type Resource struct {

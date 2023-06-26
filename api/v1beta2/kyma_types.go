@@ -219,7 +219,7 @@ type PartialMeta struct {
 
 const DefaultChannel = "regular"
 
-// +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error;""
+// +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error;"";Warning
 type State string
 
 // Valid States.
@@ -239,10 +239,14 @@ const (
 	// StateDeleting signifies specified resource is being deleted. This is the state that is used when a deletionTimestamp
 	// was detected and Finalizers are picked up.
 	StateDeleting State = "Deleting"
+
+	// StateWarning signifies specified resource has been deployed, but cannot be used due to misconfiguration,
+	// usually it means that user interaction is required.
+	StateWarning State = "Warning"
 )
 
 func AllKymaStates() []State {
-	return []State{StateReady, StateProcessing, StateError, StateDeleting}
+	return []State{StateReady, StateProcessing, StateError, StateDeleting, StateWarning}
 }
 
 func PartialMetaFromObject(object metav1.Object) PartialMeta {
@@ -359,10 +363,26 @@ func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType, conditionSt
 
 func (kyma *Kyma) DetermineState() State {
 	status := &kyma.Status
+	stateMap := map[State]bool{}
 	for _, moduleStatus := range status.Modules {
 		if moduleStatus.State == StateError {
-			return StateError
+			stateMap[StateError] = true
 		}
+		if moduleStatus.State == StateWarning {
+			stateMap[StateWarning] = true
+		}
+		if moduleStatus.State == StateProcessing {
+			stateMap[StateProcessing] = true
+		}
+	}
+
+	switch {
+	case stateMap[StateError]:
+		return StateError
+	case stateMap[StateWarning]:
+		return StateWarning
+	case stateMap[StateProcessing]:
+		return StateProcessing
 	}
 
 	for _, condition := range status.Conditions {

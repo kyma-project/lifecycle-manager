@@ -8,7 +8,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	crdV1beta2 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1beta2"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -67,27 +66,6 @@ func GetKymaConditions(kymaName string) func() []metav1.Condition {
 		}
 		return createdKyma.Status.Conditions
 	}
-}
-
-func UpdateModuleState(
-	ctx context.Context, kyma *v1beta2.Kyma, module v1beta2.Module, state v1beta2.State,
-) func() error {
-	return func() error {
-		kyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
-		if err != nil {
-			return err
-		}
-		return updateModuleState(kyma, module, state)
-	}
-}
-
-func updateModuleState(kyma *v1beta2.Kyma, module v1beta2.Module, state v1beta2.State) error {
-	component, err := GetManifest(ctx, controlPlaneClient, kyma, module)
-	if err != nil {
-		return err
-	}
-	component.Status.State = declarative.State(state)
-	return k8sManager.GetClient().Status().Update(ctx, component)
 }
 
 func UpdateKymaLabel(
@@ -162,7 +140,7 @@ func TemplateInfosMatchChannel(kymaName, channel string) error {
 
 func CreateModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, channel string) error {
 	for _, module := range modules {
-		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false)
+		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false)
 		if err != nil {
 			return err
 		}
@@ -184,4 +162,19 @@ func CreateModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, 
 		}
 	}
 	return nil
+}
+
+func UpdateAllManifestState(kymaName string, state v1beta2.State) func() error {
+	return func() error {
+		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
+		if err != nil {
+			return err
+		}
+		for _, module := range createdKyma.Spec.Modules {
+			if err := UpdateManifestState(ctx, controlPlaneClient, createdKyma, module, state); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 }

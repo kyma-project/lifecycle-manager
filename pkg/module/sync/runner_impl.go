@@ -156,9 +156,7 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(
 func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStatus) v1beta2.ModuleStatus {
 	if errors.Is(module.Template.Err, channel.ErrTemplateUpdateNotAllowed) {
 		newModuleStatus := existStatus.DeepCopy()
-		// TODO: consider change this state to warning after this issue finished
-		// https://github.com/kyma-project/lifecycle-manager/issues/525
-		newModuleStatus.State = v1beta2.StateReady
+		newModuleStatus.State = v1beta2.StateWarning
 		newModuleStatus.Message = module.Template.Err.Error()
 		return *newModuleStatus
 	}
@@ -182,6 +180,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 			Message: ErrManifestConversion.Error(),
 		}
 	}
+
 	manifestAPIVersion, manifestKind := manifestObject.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	templateAPIVersion, templateKind := module.Template.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	var moduleResource *v1beta2.TrackingObject
