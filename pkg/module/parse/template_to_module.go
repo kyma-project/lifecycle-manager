@@ -12,7 +12,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"github.com/kyma-project/lifecycle-manager/pkg/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
-	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 )
 
@@ -26,26 +25,23 @@ type Parser struct {
 	client.Client
 	InKCPMode           bool
 	remoteSyncNamespace string
-	*ocmextensions.ComponentDescriptorCache
-	EnableVerification bool
-	PublicKeyFilePath  string
+	EnableVerification  bool
+	PublicKeyFilePath   string
 }
 
 func NewParser(
 	clnt client.Client,
-	descriptorCache *ocmextensions.ComponentDescriptorCache,
 	inKCPMode bool,
 	remoteSyncNamespace string,
 	enableVerification bool,
 	publicKeyFilePath string,
 ) *Parser {
 	return &Parser{
-		Client:                   clnt,
-		ComponentDescriptorCache: descriptorCache,
-		InKCPMode:                inKCPMode,
-		remoteSyncNamespace:      remoteSyncNamespace,
-		EnableVerification:       enableVerification,
-		PublicKeyFilePath:        publicKeyFilePath,
+		Client:              clnt,
+		InKCPMode:           inKCPMode,
+		remoteSyncNamespace: remoteSyncNamespace,
+		EnableVerification:  enableVerification,
+		PublicKeyFilePath:   publicKeyFilePath,
 	}
 }
 
