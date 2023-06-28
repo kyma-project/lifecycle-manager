@@ -116,6 +116,7 @@ type WatcherStatus struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:subresource:status
+// +kubebuilder:storageversion
 
 // Watcher is the Schema for the watchers API.
 type Watcher struct {
