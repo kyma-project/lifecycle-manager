@@ -27,7 +27,6 @@ import (
 //+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
 //+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 //+kubebuilder:deprecatedversion:warning="kyma-project.io/v1beta1 Kyma is deprecated. Use v1beta2 instead."
-//+kubebuilder:storageversion
 
 // Kyma is the Schema for the kymas API.
 type Kyma struct {
