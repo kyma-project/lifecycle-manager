@@ -316,12 +316,15 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 		}
 		if kyma.AllModulesReady() {
 			kyma.UpdateCondition(v1beta2.ConditionTypeModules, metav1.ConditionTrue)
+		} else {
+			kyma.UpdateCondition(v1beta2.ConditionTypeModules, metav1.ConditionFalse)
 		}
 		return nil
 	})
 	if r.SyncKymaEnabled(kyma) {
 		errGroup.Go(func() error {
 			if err := r.syncModuleCatalog(ctx, kyma); err != nil {
+				kyma.UpdateCondition(v1beta2.ConditionTypeModules, metav1.ConditionFalse)
 				return fmt.Errorf("could not synchronize remote module catalog: %w", err)
 			}
 			kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, metav1.ConditionTrue)
@@ -334,6 +337,8 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 			if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
 				if !errors.Is(err, &watcher.CertificateNotReadyError{}) {
 					return err
+				} else {
+					kyma.UpdateCondition(v1beta2.ConditionTypeModules, metav1.ConditionFalse)
 				}
 			}
 			kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, metav1.ConditionTrue)
