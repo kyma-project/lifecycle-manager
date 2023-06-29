@@ -203,8 +203,8 @@ func updateKymaCRD(clnt client.Client) (*v1extensions.CustomResourceDefinition, 
 	crd, err = fetchCrd(clnt, v1beta2.KymaKind)
 	kymaCrdName := fmt.Sprintf("%s.%s", v1beta2.KymaKind.Plural(), v1beta2.GroupVersion.Group)
 
-	// Replacing the CRD in cache after updating the KCP CRD in order to validate the
-
+	// Replace the cached CRD after updating the KCP CRD to validate that
+	// the Generation values are updated correctly
 	if _, ok := cache.GetCachedCRD(kymaCrdName); ok {
 		cache.SetCRDInCache(kymaCrdName, *crd)
 	}
