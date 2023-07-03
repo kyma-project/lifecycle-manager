@@ -37,7 +37,7 @@ Before you proceed, prepare your registry credentials. Check also how to deal wi
 
    > **NOTE:** The `"operator.kyma-project.io/managed-by": "lifecycle-manager"` label is mandatory for the Lifecycle Manager runtime controller to know which resources to cache.
 
-3. Deploy the secret in the same cluster where the ModuleTemplate is to be located i.e if the ModuleTemplate is in the SKR cluster, then the secret should be deployed to the SKR, otherwise it should be deployed to the KCP cluster.
+3. Deploy the Secret in the same cluster where the ModuleTemplate is to be located. For example, if the ModuleTemplate is in the SKR cluster, then the Secret should be deployed to the SKR, otherwise, it should be deployed to the KCP cluster.
 
 ### Generate a ModuleTemplate CR with the `oci-registry-cred` label
 
