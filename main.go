@@ -66,10 +66,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
-const (
-	port = 9443
-)
-
 var (
 	scheme   = runtime.NewScheme()        //nolint:gochecknoglobals
 	setupLog = ctrl.Log.WithName("setup") //nolint:gochecknoglobals
