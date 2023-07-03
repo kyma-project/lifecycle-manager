@@ -53,7 +53,8 @@ type RestrictedEnqueueRequestForOwner struct {
 }
 
 // Create implements EventHandler.
-func (e *RestrictedEnqueueRequestForOwner) Create(ctx context.Context, evt event.CreateEvent, q workqueue.RateLimitingInterface) {
+func (e *RestrictedEnqueueRequestForOwner) Create(_ context.Context,
+	evt event.CreateEvent, q workqueue.RateLimitingInterface) {
 	reqs := map[reconcile.Request]any{}
 	e.getOwnerReconcileRequest(nil, evt.Object, reqs)
 	for req := range reqs {
@@ -62,7 +63,8 @@ func (e *RestrictedEnqueueRequestForOwner) Create(ctx context.Context, evt event
 }
 
 // Update implements EventHandler.
-func (e *RestrictedEnqueueRequestForOwner) Update(ctx context.Context, evt event.UpdateEvent, q workqueue.RateLimitingInterface) {
+func (e *RestrictedEnqueueRequestForOwner) Update(_ context.Context, evt event.UpdateEvent,
+	q workqueue.RateLimitingInterface) {
 	reqs := map[reconcile.Request]any{}
 	e.getOwnerReconcileRequest(evt.ObjectOld, evt.ObjectNew, reqs)
 	for req := range reqs {
@@ -71,7 +73,9 @@ func (e *RestrictedEnqueueRequestForOwner) Update(ctx context.Context, evt event
 }
 
 // Delete implements EventHandler.
-func (e *RestrictedEnqueueRequestForOwner) Delete(ctx context.Context, evt event.DeleteEvent, q workqueue.RateLimitingInterface) {
+func (e *RestrictedEnqueueRequestForOwner) Delete(_ context.Context, evt event.DeleteEvent,
+	q workqueue.RateLimitingInterface,
+) {
 	reqs := map[reconcile.Request]any{}
 	e.getOwnerReconcileRequest(nil, evt.Object, reqs)
 	for req := range reqs {
@@ -80,7 +84,9 @@ func (e *RestrictedEnqueueRequestForOwner) Delete(ctx context.Context, evt event
 }
 
 // Generic implements EventHandler.
-func (e *RestrictedEnqueueRequestForOwner) Generic(ctx context.Context, evt event.GenericEvent, q workqueue.RateLimitingInterface) {
+func (e *RestrictedEnqueueRequestForOwner) Generic(_ context.Context, evt event.GenericEvent,
+	q workqueue.RateLimitingInterface,
+) {
 	reqs := map[reconcile.Request]any{}
 	e.getOwnerReconcileRequest(nil, evt.Object, reqs)
 	for req := range reqs {
