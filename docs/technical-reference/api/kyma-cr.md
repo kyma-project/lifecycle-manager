@@ -105,7 +105,7 @@ This allows users to be fully flexible in regard to when and how to initialize t
 
 ### **.spec.modules[].remoteModuleTemplateRef**
 The `remoteModuleTemplateRef` flag allows the users to have their ModuleTemplate fetched from the SKR cluster instead of the control-plane. It should be the reference (FQDN,
-Namespace/Name, or module name label) to the ModuleTemplate. If not specified, the ModuleTemplate is fetched from the KCP cluster.
+Namespace/Name, or module name label) to the ModuleTemplate CR. If not specified, the ModuleTemplate CR is fetched from the KCP cluster.
 
 ### **.status.state**
 
