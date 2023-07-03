@@ -10,7 +10,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/kubectl/pkg/util/openapi"
-	"k8s.io/kubectl/pkg/validation"
 	apiValidation "k8s.io/kubectl/pkg/validation"
 )
 
@@ -110,9 +109,9 @@ func (s *SingletonClients) RESTClient() (*rest.RESTClient, error) {
 // Validator returns a schema that can validate objects stored on disk.
 func (s *SingletonClients) Validator(
 	validationDirective string,
-) (validation.Schema, error) {
+) (apiValidation.Schema, error) {
 	if validationDirective == metav1.FieldValidationIgnore {
-		return validation.NullSchema{}, nil
+		return apiValidation.NullSchema{}, nil
 	}
 
 	resources, err := s.OpenAPISchema()
@@ -120,9 +119,9 @@ func (s *SingletonClients) Validator(
 		return nil, err
 	}
 
-	conjSchema := validation.ConjunctiveSchema{
+	conjSchema := apiValidation.ConjunctiveSchema{
 		apiValidation.NewSchemaValidation(resources),
-		validation.NoDoubleKeySchema{},
+		apiValidation.NoDoubleKeySchema{},
 	}
-	return validation.NewParamVerifyingSchema(conjSchema, nil, validationDirective), nil
+	return apiValidation.NewParamVerifyingSchema(conjSchema, nil, validationDirective), nil
 }
