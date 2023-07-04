@@ -61,7 +61,7 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object,
 	}
 
 	targetClient := m.KCP.Client
-	if manifest.Labels[v1beta2.IsRemoteModuleTemplate] == "true" {
+	if manifest.Labels[v1beta2.IsRemoteModuleTemplate] == v1beta2.EnableLabelValue {
 		targetClient = remoteClient
 	}
 
