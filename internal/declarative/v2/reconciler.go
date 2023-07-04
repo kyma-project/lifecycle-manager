@@ -22,10 +22,12 @@ var (
 	ErrInstallationConditionRequiresUpdate       = errors.New("installation condition needs an update")
 	ErrDeletionTimestampSetButNotInDeletingState = errors.New("resource is not set to deleting yet")
 	ErrObjectHasEmptyState                       = errors.New("object has an empty state")
+	ErrKubeconfigFetchFailed                     = errors.New("could not fetch kubeconfig")
 )
 
 const (
 	namespaceNotBeRemoved  = "kyma-system"
+	CustomResourceManager  = "resource.kyma-project.io/finalizer"
 	SyncedOCIRefAnnotation = "sync-oci-ref"
 )
 
@@ -101,7 +103,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	spec, err := r.Spec(ctx, obj)
 	if err != nil {
 		if !obj.GetDeletionTimestamp().IsZero() {
-			return r.removeFinalizer(ctx, obj)
+			return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
 		}
 		return r.ssaStatus(ctx, obj)
 	}
@@ -113,6 +115,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	clnt, err := r.getTargetClient(ctx, obj)
 	if err != nil {
+		if !obj.GetDeletionTimestamp().IsZero() && errors.Is(err, ErrKubeconfigFetchFailed) {
+			return r.removeFinalizers(ctx, obj, []string{r.Finalizer, CustomResourceManager})
+		}
 		r.Event(obj, "Warning", "ClientInitialization", err.Error())
 		obj.SetStatus(obj.GetStatus().WithState(StateError).WithErr(err))
 		return r.ssaStatus(ctx, obj)
@@ -123,7 +128,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	renderer, err := InitializeRenderer(ctx, obj, spec, r.Options)
 	if err != nil {
 		if !obj.GetDeletionTimestamp().IsZero() {
-			return r.removeFinalizer(ctx, obj)
+			return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
 		}
 		return r.ssaStatus(ctx, obj)
 	}
@@ -141,7 +146,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if !obj.GetDeletionTimestamp().IsZero() {
-		return r.removeFinalizer(ctx, obj)
+		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
 	}
 	if err := r.syncResources(ctx, clnt, obj, target); err != nil {
 		return r.ssaStatus(ctx, obj)
@@ -156,8 +161,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	return r.CtrlOnSuccess, nil
 }
 
-func (r *Reconciler) removeFinalizer(ctx context.Context, obj Object) (ctrl.Result, error) {
-	if controllerutil.RemoveFinalizer(obj, r.Finalizer) {
+func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizersToRemove []string) (
+	ctrl.Result, error) {
+	finalizerRemoved := false
+	for _, f := range finalizersToRemove {
+		if controllerutil.RemoveFinalizer(obj, f) {
+			finalizerRemoved = true
+		}
+	}
+	if finalizerRemoved {
 		return ctrl.Result{}, r.Update(ctx, obj) // no SSA since delete does not work for finalizers.
 	}
 	msg := fmt.Sprintf("waiting as other finalizers are present: %s", obj.GetFinalizers())

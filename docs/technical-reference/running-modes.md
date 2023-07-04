@@ -12,7 +12,7 @@ Use the single-cluster mode for local development and testing. For E2E testing, 
 ## Release Lifecycles for Modules
 
 Teams providing module operators should work (and release) independently from lifecycle-manager. In other words, lifecycle-manager should not have hard-coded dependencies to any module operator. 
-As such, all module interactions are abstracted through the [ModuleTemplate](api/v1beta1/moduletemplate_types.go).
+As such, all module interactions are abstracted through the [ModuleTemplate](../../../api/v1beta2/moduletemplate_types.go).
 
 This abstraction of a template is used for generically deploying instances of a module within a Kyma Runtime at a specific Release Group we call `Channel` (for more information, visit the respective Chapter in the [Concept for Modularization](https://github.com/kyma-project/community/tree/main/concepts/modularization#release-channels)). It contains not only a specification of a Module with it's different components through [OCM Component Descriptors](https://github.com/gardener/component-spec/blob/master/doc/proposal/02-component-descriptor.md).
 
