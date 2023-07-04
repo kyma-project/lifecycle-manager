@@ -162,7 +162,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 }
 
 func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizersToRemove []string) (
-	ctrl.Result, error) {
+	ctrl.Result, error,
+) {
 	finalizerRemoved := false
 	for _, f := range finalizersToRemove {
 		if controllerutil.RemoveFinalizer(obj, f) {
@@ -458,7 +459,7 @@ func updateSyncedOCIRefAnnotation(obj Object, ref string) {
 }
 
 func pruneResource(diff []*resource.Info, resourceType string, resourceName string) []*resource.Info {
-	for i, info := range diff { //nolint:varnamelen
+	for i, info := range diff {
 		obj := info.Object.(client.Object)
 		if obj.GetObjectKind().GroupVersionKind().Kind == resourceType && obj.GetName() == resourceName {
 			return append(diff[:i], diff[i+1:]...)
