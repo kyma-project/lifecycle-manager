@@ -95,29 +95,34 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, eventChannel *source.Channel) {
 	controllerBuilder.Watches(eventChannel, &handler.Funcs{
 		GenericFunc: func(event event.GenericEvent, queue workqueue.RateLimitingInterface) {
+
 			logger := ctrl.Log.WithName("listener")
 			unstructWatcherEvt, conversionOk := event.Object.(*unstructured.Unstructured)
 			if !conversionOk {
 				logger.Error(errConvertingWatcherEvent, fmt.Sprintf("event: %v", event.Object))
 				return
 			}
-			watched, ok := unstructWatcherEvt.Object["watched"]
+
+			// get owner object from unstructured event, owner = KymaCR object reference in KCP
+			unstructuredOwner, ok := unstructWatcherEvt.Object["owner"]
 			if !ok {
 				logger.Error(errParsingWatched, fmt.Sprintf("unstructured event: %v", unstructWatcherEvt))
 				return
 			}
-			watchedObjectKey, conversionOk := watched.(client.ObjectKey)
+
+			ownerObjectKey, conversionOk := unstructuredOwner.(client.ObjectKey)
 			if !conversionOk {
-				logger.Error(errConvertingWatched, fmt.Sprintf("watched object: %v", watched))
+				logger.Error(errConvertingWatched, fmt.Sprintf("unstructured Owner object: %v", unstructuredOwner))
 				return
 			}
+
 			logger.Info(
-				fmt.Sprintf("event coming from SKR, adding %s to queue",
-					watchedObjectKey.String()),
+				fmt.Sprintf("event received from SKR, adding %s to queue",
+					ownerObjectKey),
 			)
 
 			queue.Add(ctrl.Request{
-				NamespacedName: watchedObjectKey,
+				NamespacedName: ownerObjectKey,
 			})
 		},
 	})
