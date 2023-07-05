@@ -6,11 +6,29 @@ on:
   pull_request:
     branches: [ "main" ]
 jobs:
+  wait-for-img:
+    name: "Wait for Image Build"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: autotelic/action-wait-for-status-check@v1
+        id: wait-for-build
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # Context for which we should look for the matching status
+          statusName: ${{ 'main-lifecycle-mgr-build' }}
+          timeoutSeconds: 300 # 5 mins due to flakiness of build speed in prow
+          intervalSeconds: 10
+      - name: Exit If Failing Build Requirement
+        if: steps.wait-for-build.outputs.state != 'success'
+        run: |
+          echo "Image build did not succeed, skipping Smoke Test!"
+          exit 1
   e2e-integration:
     strategy:
       matrix:
         cli-stability: [ "unstable" ]
     name: "Run E2E tests"
+    needs: [wait-for-img]
     runs-on: ubuntu-latest
     env:
       K3D_VERSION: v5.4.7
@@ -50,7 +68,7 @@ jobs:
           k3d cluster create skr -p 10080:80@loadbalancer -p 10443:443@loadbalancer --k3s-arg '--disable=traefik@server:0'
       - name: Provision KCP cluster
         run: |
-          kyma provision k3d --name=kcp -p 9080:80@loadbalancer -p 9443:443@loadbalancer --ci
+          kyma provision k3d --name=kcp -p 9080:80@loadbalancer -p 9443:443@loadbalancer --ci --registry-port 5111
       - name: Update Kubeconfigs
         run: k3d kubeconfig merge -a -d
       - name: Export required Kubeconfig Env vars
@@ -74,7 +92,7 @@ jobs:
           curl -L https://istio.io/downloadIstio | TARGET_ARCH=x86_64 sh -
           chmod +x istio-$ISTIO_VERSION/bin/istioctl
           mv istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin
-          istioctl install -y
+          istioctl install --set profile=demo -y
       - name: Deploy Cert Manager on KCP Cluster
         run: |
           OS=$(go env GOOS); ARCH=$(go env GOARCH); curl -fsSL -o cmctl.tar.gz https://github.com/cert-manager/cert-manager/releases/latest/download/cmctl-$OS-$ARCH.tar.gz

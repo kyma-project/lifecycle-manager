@@ -1,4 +1,4 @@
-//go:build e2e
+// //go:build e2e
 
 package e2e_test
 
@@ -176,7 +176,7 @@ func createKymaCR(ctx context.Context, kymaName, kymaNamespace, channel string, 
 			Namespace: kymaNamespace,
 			Labels: map[string]string{
 				"operator.kyma-project.io/watched-by": "lifecycle-manager",
-				"operator.kyma-project.io/sync": "true",
+				"operator.kyma-project.io/sync":       "true",
 			},
 			Annotations: map[string]string{
 				"operator.kyma-project.io/sync": "true",
