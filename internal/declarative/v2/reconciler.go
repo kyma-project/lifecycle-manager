@@ -162,7 +162,8 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 }
 
 func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizersToRemove []string) (
-	ctrl.Result, error) {
+	ctrl.Result, error,
+) {
 	finalizerRemoved := false
 	for _, f := range finalizersToRemove {
 		if controllerutil.RemoveFinalizer(obj, f) {
