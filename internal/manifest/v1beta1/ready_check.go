@@ -2,6 +2,7 @@ package v1beta1
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -43,24 +44,43 @@ func (c *ManifestCustomResourceReadyCheck) Run(
 	if err := clnt.Get(ctx, client.ObjectKeyFromObject(res), res); err != nil {
 		return declarative.StateError, err
 	}
-	state, stateExists, err := unstructured.NestedString(res.Object, strings.Split(customResourceStatePath, ".")...)
+	customStateCheck, err := parseCustomStateCheck(manifest)
+	if err != nil {
+		return declarative.StateError, err
+	}
+	stateFromCR, stateExists, err := unstructured.NestedString(res.Object, strings.Split(customStateCheck.JSONPath, ".")...)
 	if err != nil {
 		return declarative.StateError, fmt.Errorf(
 			"could not get state from custom resource %s at path %s to determine readiness: %w",
-			res.GetName(), customResourceStatePath, ErrNoDeterminedState,
+			res.GetName(), customStateCheck.JSONPath, ErrNoDeterminedState,
 		)
 	}
 	if !stateExists {
 		return declarative.StateError, declarative.ErrCustomResourceStateNotFound
 	}
-	typedState := declarative.State(state)
+	typedState := declarative.State(stateFromCR)
+	if customStateCheck.Value == stateFromCR {
+		typedState = declarative.StateReady
+	}
 	if !stableState(typedState) {
 		return declarative.StateError, fmt.Errorf(
-			"custom resource state is %s: %w", state, declarative.ErrResourcesNotReady,
+			"custom resource state is %s: %w", stateFromCR, declarative.ErrResourcesNotReady,
 		)
 	}
 
 	return typedState, nil
+}
+
+func parseCustomStateCheck(manifest *v1beta2.Manifest) (v1beta2.CustomStateCheck, error) {
+	customStateCheckAnnotation, found := manifest.Annotations[v1beta2.CustomStateCheckAnnotation]
+	if !found {
+		return v1beta2.CustomStateCheck{JSONPath: customResourceStatePath, Value: string(v1beta2.StateReady)}, nil
+	}
+	customStateCheck := v1beta2.CustomStateCheck{}
+	if err := json.Unmarshal([]byte(customStateCheckAnnotation), &customStateCheck); err != nil {
+		return customStateCheck, err
+	}
+	return customStateCheck, nil
 }
 
 func stableState(state declarative.State) bool {
