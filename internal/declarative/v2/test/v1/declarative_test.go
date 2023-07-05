@@ -80,6 +80,7 @@ var _ = Describe(
 			cancel()
 			Expect(env.Stop()).To(Succeed())
 		})
+		const ocirefSynced = "sha256:synced"
 
 		tableTest := func(
 			spec testv1.TestAPISpec,
@@ -121,7 +122,7 @@ var _ = Describe(
 			Entry(
 				"Create simple raw manifest with a different Control Plane and Runtime Client",
 				testv1.TestAPISpec{ManifestName: "custom-client"},
-				DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), RenderModeRaw),
+				DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), ocirefSynced, RenderModeRaw),
 				[]Option{WithRemoteTargetCluster(
 					func(context.Context, Object) (*ClusterInfo, error) {
 						return &ClusterInfo{
@@ -134,7 +135,7 @@ var _ = Describe(
 			Entry(
 				"Create simple Raw manifest",
 				testv1.TestAPISpec{ManifestName: "simple-raw"},
-				DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), RenderModeRaw),
+				DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), ocirefSynced, RenderModeRaw),
 				[]Option{},
 				nil,
 			),
@@ -149,7 +150,7 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 	var env *envtest.Environment
 	var cfg *rest.Config
 	var testClient client.Client
-
+	const ocirefSynced = "sha256:synced"
 	runID := fmt.Sprintf("run-%s", rand.String(4))
 	obj := &testv1.TestAPI{Spec: testv1.TestAPISpec{ManifestName: "updating-manifest"}}
 	obj.SetLabels(labels.Set{testRunLabel: runID})
@@ -165,7 +166,8 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 			}, nil
 		},
 	)}
-	source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), RenderModeRaw))
+	source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"),
+		ocirefSynced, RenderModeRaw))
 	BeforeAll(func() {
 		env, cfg = StartEnv()
 		testClient = GetTestClient(cfg)
@@ -189,7 +191,7 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 
 	It("Should start reconciliation for the updated manifest and remove old deployed resources", func() {
 		source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "updated-raw-manifest.yaml"),
-			RenderModeRaw))
+			"", RenderModeRaw))
 		reconciler.SpecResolver = source
 		oldDeployedResources, err := internal.ParseManifestToObjects(path.Join(testSamplesDir, "raw-manifest.yaml"))
 		Expect(err).NotTo(HaveOccurred())
@@ -197,7 +199,6 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 			WithContext(ctx).
 			WithArguments(ctx, oldDeployedResources, testClient).
 			Should(Succeed())
-
 	})
 
 	It("Should deploy new manifest resources and have them in status.synced", func() {
@@ -212,7 +213,7 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 		newDeployedResources, err := internal.ParseManifestToObjects(path.Join(testSamplesDir,
 			"updated-raw-manifest.yaml"))
 		Expect(err).NotTo(HaveOccurred())
-		Eventually(validateNewResourcesAreInStatusSynced, Timeout, Interval).
+		Eventually(validateNewResourcesAreInStatusSynced, 2*Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(newDeployedResources, obj).
 			Should(Succeed())
@@ -233,6 +234,7 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 	var env *envtest.Environment
 	var cfg *rest.Config
 	var testClient client.Client
+	const ocirefSynced = "sha256:synced"
 
 	runID := fmt.Sprintf("run-%s", rand.String(4))
 	obj := &testv1.TestAPI{Spec: testv1.TestAPISpec{ManifestName: "deletion-manifest"}}
@@ -249,7 +251,8 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 			}, nil
 		},
 	)}
-	source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), RenderModeRaw))
+	source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), ocirefSynced,
+		RenderModeRaw))
 	oldDeployedResources, err := internal.ParseManifestToObjects(path.Join(testSamplesDir, "raw-manifest.yaml"))
 	Expect(err).NotTo(HaveOccurred())
 
@@ -275,13 +278,13 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 	})
 
 	It("Should remove deployed module resources after its deletion", func() {
-		source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "empty-file.yaml"), RenderModeRaw))
+		source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "empty-file.yaml"),
+			"", RenderModeRaw))
 		reconciler.SpecResolver = source
 		Eventually(validateOldResourcesNotLongerDeployed, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(ctx, oldDeployedResources, testClient).
 			Should(Succeed())
-
 	})
 
 	It("Should remove module resources from status.synced", func() {
@@ -381,7 +384,8 @@ func StartDeclarativeReconcilerForRun(
 }
 
 func StatusOnCluster(ctx context.Context, key client.ObjectKey,
-	testClient client.Client) Status {
+	testClient client.Client,
+) Status {
 	obj := &testv1.TestAPI{}
 	Expect(testClient.Get(ctx, key, obj)).To(Succeed())
 	return obj.GetStatus()
@@ -420,7 +424,8 @@ func GetTestClient(cfg *rest.Config) client.Client {
 
 func validateOldResourcesNotLongerDeployed(ctx context.Context,
 	resources internal.ManifestResources,
-	testClient client.Client) error {
+	testClient client.Client,
+) error {
 	for _, res := range resources.Items {
 		currentRes := &unstructured.Unstructured{}
 		currentRes.SetGroupVersionKind(res.GroupVersionKind())
@@ -435,7 +440,8 @@ func validateOldResourcesNotLongerDeployed(ctx context.Context,
 }
 
 func validateNewResourcesAreInStatusSynced(
-	resources internal.ManifestResources, obj *testv1.TestAPI) error {
+	resources internal.ManifestResources, obj *testv1.TestAPI,
+) error {
 	for _, res := range resources.Items {
 		found := false
 		for _, s := range obj.Status.Synced {
@@ -452,7 +458,8 @@ func validateNewResourcesAreInStatusSynced(
 
 func validateOldResourcesAreRemovedFromStatusSynced(
 	ctx context.Context, testClient client.Client, key client.ObjectKey,
-	resources internal.ManifestResources) error {
+	resources internal.ManifestResources,
+) error {
 	var obj testv1.TestAPI
 	Expect(testClient.Get(ctx, key, &obj)).To(Succeed())
 	for _, res := range resources.Items {

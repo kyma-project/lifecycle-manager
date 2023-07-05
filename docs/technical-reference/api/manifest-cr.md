@@ -24,7 +24,7 @@ will use the value `kyma-sample` to lookup a secret with the same value `kyma-sa
 
 ### `.spec.config`
 
-The config reference uses an image layer reference that contains configuration data that can be used to further influence any potential rendering process while the resources are processed by the [declarative library](../pkg/declarative/README.md#resource-rendering). It is resolved through a translation of the `ModuleTemplate` to the `Manifest` during the [resolution of the modules](../pkg/module/parse/template_to_module.go) in the `Kyma` control loop.
+The config reference uses an image layer reference that contains configuration data that can be used to further influence any potential rendering process while the resources are processed by the [declarative library](../../../internal/declarative/README.md#resource-rendering). It is resolved through a translation of the `ModuleTemplate` to the `Manifest` during the [resolution of the modules](../../../pkg/module/parse/template_to_module.go) in the `Kyma` control loop.
 
 There can be at most one config layer, and it is referenced by the name `config` with type `yaml` as `localOciBlob` or `OCIBlob`:
 
@@ -51,7 +51,7 @@ spec:
 
 ### `.spec.install`
 
-The install layer contains the relevant data required to determine the resources for the [renderer during the manifest reconciliation](../pkg/declarative/README.md#resource-rendering).
+The install layer contains the relevant data required to determine the resources for the [renderer during the manifest reconciliation](../../../internal/declarative/README.md#resource-rendering).
 
 It is mapped from an access type layer in the descriptor:
 
@@ -77,7 +77,7 @@ install:
       type: oci-ref
 ```
 
-The [internal spec resolver](../internal/manifest/v1beta1/spec_resolver.go) will use this layer to resolve the correct specification style and renderer type from the layer data.
+The [internal spec resolver](../../../internal/manifest/v1beta1/spec_resolver.go) will use this layer to resolve the correct specification style and renderer type from the layer data.
 
 ### `.spec.resource`
 
@@ -86,4 +86,4 @@ The resource is the default data that should be initialized for the module and i
 
 ### `.status`
 
-The Manifest status is an unmodified version of the [declarative status](../pkg/declarative/README.md#resource-tracking), so the tracking process of the library applies. There is no custom API for this.
+The Manifest status is an unmodified version of the [declarative status](../../../internal/declarative/README.md#resource-tracking), so the tracking process of the library applies. There is no custom API for this.

@@ -16,12 +16,18 @@ const (
 
 type ManifestParser interface {
 	Parse(spec *Spec) (internal.ManifestResources, error)
+	EvictCache(spec *Spec)
 }
 
 func NewInMemoryCachedManifestParser(ttl time.Duration) *InMemoryManifestCache {
 	cache := ttlcache.New[string, internal.ManifestResources]()
 	go cache.Start()
 	return &InMemoryManifestCache{Cache: cache, TTL: ttl}
+}
+
+func (c *InMemoryManifestCache) EvictCache(spec *Spec) {
+	key := generateCacheKey(spec)
+	c.Cache.Delete(key)
 }
 
 type InMemoryManifestCache struct {
@@ -31,8 +37,7 @@ type InMemoryManifestCache struct {
 
 func (c *InMemoryManifestCache) Parse(spec *Spec,
 ) (internal.ManifestResources, error) {
-	file := filepath.Join(ManifestFilePrefix, spec.Path, spec.ManifestName)
-	key := fmt.Sprintf("%s-%s", file, spec.Mode)
+	key := generateCacheKey(spec)
 
 	var err error
 	item := c.Cache.Get(key)
@@ -53,4 +58,9 @@ func (c *InMemoryManifestCache) Parse(spec *Spec,
 		copied.Items = append(copied.Items, res.DeepCopy())
 	}
 	return *copied, nil
+}
+
+func generateCacheKey(spec *Spec) string {
+	file := filepath.Join(ManifestFilePrefix, spec.Path, spec.ManifestName)
+	return fmt.Sprintf("%s-%s", file, spec.Mode)
 }

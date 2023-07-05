@@ -8,7 +8,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
 
-var _ = Describe("Test Manifest.Spec.Remote in KCP mode", Ordered, func() {
+var _ = Describe("Manifest.Spec.Remote in KCP mode", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 
 	module := v1beta2.Module{

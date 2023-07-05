@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"sync"
 
@@ -21,10 +22,8 @@ import (
 
 const manifestFileName = "raw-manifest.yaml"
 
-var (
-	//nolint:gochecknoglobals
-	fileMutexMap = sync.Map{}
-)
+//nolint:gochecknoglobals
+var fileMutexMap = sync.Map{}
 
 func GetPathFromRawManifest(ctx context.Context,
 	imageSpec v1beta2.ImageSpec,
@@ -34,7 +33,7 @@ func GetPathFromRawManifest(ctx context.Context,
 
 	// check existing file
 	// if file exists return existing file path
-	installPath := GetFsChartPath(imageSpec)
+	installPath := getFsChartPath(imageSpec)
 	manifestPath := path.Join(installPath, manifestFileName)
 
 	fileMutex := getLockerForPath(installPath)
@@ -86,6 +85,10 @@ func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (v
 		return crane.PullLayer(noSchemeImageRef, crane.Insecure, crane.WithAuthFromKeychain(keyChain))
 	}
 	return crane.PullLayer(noSchemeImageRef, crane.WithAuthFromKeychain(keyChain), crane.WithContext(ctx))
+}
+
+func getFsChartPath(imageSpec v1beta2.ImageSpec) string {
+	return filepath.Join(os.TempDir(), fmt.Sprintf("%s-%s", imageSpec.Name, imageSpec.Ref))
 }
 
 // getLockerForPath always returns the same sync.Locker instance for given path argument.

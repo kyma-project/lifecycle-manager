@@ -21,8 +21,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/types"
 )
 
-var ErrKubeconfigFetchFailed = errors.New("could not fetch kubeconfig")
-
 type ClusterClient struct {
 	DefaultClient client.Client
 }
@@ -46,7 +44,7 @@ func (cc *ClusterClient) GetRESTConfig(
 		key := client.ObjectKey{Name: kymaOwner, Namespace: namespace}
 		if err := cc.DefaultClient.Get(ctx, key, kubeConfigSecret); err != nil {
 			return nil, fmt.Errorf("could not get by key (%s) or selector (%s): %w",
-				key, labelSelector.String(), ErrKubeconfigFetchFailed)
+				key, labelSelector.String(), declarative.ErrKubeconfigFetchFailed)
 		}
 	} else {
 		kubeConfigSecret = &kubeConfigSecretList.Items[0]

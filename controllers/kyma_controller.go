@@ -123,13 +123,19 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return r.reconcile(ctx, kyma)
 }
 
-//nolint:cyclop
+//nolint:funlen,cyclop,gocognit
 func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
-	if r.SyncKymaEnabled(kyma) {
+	if r.SyncKymaEnabled(kyma) { //nolint:nestif
 		var err error
 		remoteClient := remote.NewClientWithConfig(r.Client, r.KcpRestConfig)
 		if ctx, err = remote.InitializeSyncContext(ctx, kyma,
 			r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache); err != nil {
+			if !kyma.DeletionTimestamp.IsZero() && apierrors.IsNotFound(err) {
+				if err = r.removeFinalizerAndUpdateKyma(ctx, kyma); err != nil {
+					return r.requeueWithError(ctx, kyma, err)
+				}
+				return ctrl.Result{}, nil
+			}
 			r.enqueueWarningEvent(kyma, syncContextError, err)
 			return r.requeueWithError(ctx, kyma, err)
 		}
@@ -310,12 +316,15 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 		}
 		if kyma.AllModulesReady() {
 			kyma.UpdateCondition(v1beta2.ConditionTypeModules, metav1.ConditionTrue)
+		} else {
+			kyma.UpdateCondition(v1beta2.ConditionTypeModules, metav1.ConditionFalse)
 		}
 		return nil
 	})
 	if r.SyncKymaEnabled(kyma) {
 		errGroup.Go(func() error {
 			if err := r.syncModuleCatalog(ctx, kyma); err != nil {
+				kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, metav1.ConditionFalse)
 				return fmt.Errorf("could not synchronize remote module catalog: %w", err)
 			}
 			kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, metav1.ConditionTrue)
@@ -326,9 +335,11 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 	if r.WatcherEnabled(kyma) {
 		errGroup.Go(func() error {
 			if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
-				if !errors.Is(err, &watcher.CertificateNotReadyError{}) {
-					return err
+				if errors.Is(err, &watcher.CertificateNotReadyError{}) {
+					kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, metav1.ConditionFalse)
+					return nil
 				}
+				return err
 			}
 			kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, metav1.ConditionTrue)
 			return nil
@@ -380,11 +391,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		logger.Info("removed remote finalizer")
 	}
 
-	controllerutil.RemoveFinalizer(kyma, v1beta2.Finalizer)
-
-	if err := r.Update(ctx, kyma); err != nil {
-		err = fmt.Errorf("error while updating kyma during deletion: %w", err)
-		r.enqueueWarningEvent(kyma, deletionError, err)
+	if err := r.removeFinalizerAndUpdateKyma(ctx, kyma); err != nil {
 		return false, err
 	}
 
@@ -393,6 +400,18 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 	}
 
 	return false, nil
+}
+
+func (r *KymaReconciler) removeFinalizerAndUpdateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
+	controllerutil.RemoveFinalizer(kyma, v1beta2.Finalizer)
+
+	if err := r.Update(ctx, kyma); err != nil {
+		err = fmt.Errorf("error while updating kyma during deletion: %w", err)
+		r.enqueueWarningEvent(kyma, deletionError, err)
+		return err
+	}
+
+	return nil
 }
 
 func (r *KymaReconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma) error {
