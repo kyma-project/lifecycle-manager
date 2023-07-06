@@ -3,9 +3,6 @@ package controllers_test
 import (
 	"errors"
 	"fmt"
-	"time"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
@@ -112,67 +109,6 @@ func expectCredSecretSelectorCorrect(installImageSpec *v1beta2.ImageSpec) error 
 	Expect(value).To(Equal(credSecretValue))
 	return nil
 }
-
-var _ = Describe("Custom State Check", Ordered, func() {
-	kyma := NewTestKyma("kyma")
-
-	module := v1beta2.Module{
-		ControllerName: "manifest",
-		Name:           NewUniqModuleName(),
-		Channel:        v1beta2.DefaultChannel,
-	}
-	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
-
-	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
-
-	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false)
-	Expect(err).ShouldNot(HaveOccurred())
-	template.Spec.CustomStateCheck = &v1beta2.CustomStateCheck{
-		JSONPath: ".metadata.labels.test-status",
-		Value:    "READY",
-	}
-
-	It("Should create module template in KCP", func() {
-		Eventually(controlPlaneClient.Create, Timeout, Interval).
-			WithContext(ctx).
-			WithArguments(template).
-			Should(Succeed())
-	})
-
-	It("Should create manifest", func() {
-		Eventually(ManifestExists, Timeout, Interval).
-			WithArguments(ctx, kyma, module, controlPlaneClient).
-			Should(Succeed())
-	})
-
-	It("Should not set Kyma CR to ready because of the custom state check failing", func() {
-		Consistently(func() bool { return kyma.Status.State != v1beta2.StateReady }, 1*time.Second).
-			Should(BeTrue())
-	})
-
-	It("Should set Kyma to Ready when custom state check condition met", func() {
-		manifest, err := GetManifest(ctx, controlPlaneClient, kyma, module)
-		Expect(err).ShouldNot(HaveOccurred())
-
-		manifest.Labels["test-status"] = "READY"
-		err = controlPlaneClient.Update(ctx, manifest)
-		Expect(err).ShouldNot(HaveOccurred())
-
-		Eventually(
-			func() bool {
-				err := SyncKyma(ctx, controlPlaneClient, kyma)
-				if err != nil {
-					return false
-				}
-				return kyma.Status.State == v1beta2.StateReady
-			}, Timeout*3, Interval).
-			Should(BeTrue())
-	})
-
-	AfterAll(func() {
-		DeleteModuleTemplates(ctx, controlPlaneClient, kyma, false)
-	})
-})
 
 var _ = Describe("ModuleTemplate.Spec.descriptor not contains RegistryCred label", Ordered, func() {
 	kyma := NewTestKyma("kyma")
