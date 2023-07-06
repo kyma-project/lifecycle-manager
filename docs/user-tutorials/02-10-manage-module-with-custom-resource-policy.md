@@ -1,5 +1,7 @@
 # Manage module enablement with the CustomResourcePolicy
 
+## Context
+
 During the Module CR enablement, the default behavior of Lifecycle Manager is to:
 
 1. Apply the configuration from the ModuleTemplate CR to the module CR,
@@ -9,7 +11,7 @@ This can be inconvenient for some use cases that require more flexibility and ex
 
 To address this issue, we propose a CustomResourcePolicy feature that allows users to specify how Lifecycle Manager should handle the configuration of the module CR during enablement and reconciliation.
 
-## Use Kyma CLI
+## Procedure
 
 With Kyma CLI, enable a module with the [`kyma alpha enable`](https://github.com/kyma-project/cli/blob/main/docs/gen-docs/kyma_alpha_enable.md) command. Using the CLI, you can manage the CustomResourcePolicy for each module individually.
 

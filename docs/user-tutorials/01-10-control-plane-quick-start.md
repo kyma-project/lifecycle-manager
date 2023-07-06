@@ -1,5 +1,7 @@
 # Control Plane Quick Start
 
+## Context
+
 This quick start guide shows how to:
 
 - provision a Kyma Control Plane (KCP) cluster and deploy Lifecycle Manager using Kyma CLI
@@ -14,7 +16,9 @@ To use Lifecycle Manager in a local setup, you need the following prerequisites:
 - [istioctl](https://istio.io/latest/docs/setup/install/istioctl/)
 - [Kyma CLI](https://kyma-project.io/docs/kyma/latest/04-operation-guides/operations/01-install-kyma-CLI)
 
-## Provision a KCP cluster
+## Procedure
+
+### Provision a KCP cluster
 
 1. Provision a local k3d cluster as KCP. By default, a cluster named `k3d-kyma` is created. Run:
 
@@ -36,7 +40,7 @@ To use Lifecycle Manager in a local setup, you need the following prerequisites:
 
 You can also follow the official [Prometheus Operator quick start](https://prometheus-operator.dev/docs/prologue/quick-start/) guide to deploy a full set of Prometheus Operator features into your cluster.
 
-## Deploy Lifecycle Manager
+### Deploy Lifecycle Manager
 
 We recommend deploying Lifecycle Manager with the KCP kustomize profile. You must create the `kcp-system` and `kyma-system` Namespaces before the actual deployment. Run:
 
