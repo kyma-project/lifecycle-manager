@@ -1,4 +1,4 @@
-# Manage module enablement with the CustomResourcePolicy
+# Manage module enablement with CustomResourcePolicy
 
 ## Context
 

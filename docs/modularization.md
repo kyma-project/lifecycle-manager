@@ -10,7 +10,7 @@ The modules themselves are built and distributed as OCI artifacts. The internal 
 
 ![Kyma Module Structure](/docs/assets/kyma-module-template-structure.svg)
 
-If you use Kyma [CLI](https://github.com/kyma-project/cli), you can create a Kyma module by running `kyma alpha create module`. This command creates a component descriptor in the configured descriptor path (`./mod` as default) and packages all the contents on the provided path as an OCI artifact. Refer to the `kyma alpha create module --help` section to learn more about module structure and how it is created. You can also use the module's inbuilt auto-detection of [Kubebuilder](https://kubebuilder.io) projects to easily bundle your module with little effort.
+If you use Kyma [CLI](https://github.com/kyma-project/cli), you can create a Kyma module by running `kyma alpha create module`. This command creates a component descriptor in the configured descriptor path (`./mod` as default) and packages all the contents on the provided path as an OCI artifact. Refer to the `kyma alpha create module --help` section to learn more about the module structure and how it is created. You can also use the module's inbuilt auto-detection of [Kubebuilder](https://kubebuilder.io) projects to easily bundle your module with little effort.
 
 The modules are installed and controlled by Lifecycle Manager. We use [Open Component Model](https://ocm.software) to describe all of our modules descriptively.
 Based on the [ModuleTemplate CR](../api/v1beta2/moduletemplate_types.go), the module is resolved from its layers and version and is used as a template for the [Manifest CR](api/v1beta1/manifest_types.go).
@@ -36,9 +36,9 @@ spec:
 
 The creation of the Kyma CR triggers a reconciliation that:
 
-1. Looks for a ModuleTemplate CR based on the search criteria, for example, the OCM Component Name of the module or simply the name of the ModuleTemplate CR
-2. Creates a Manifest CR for `my-module` based on a ModuleTemplate CR found in the cluster by resolving all relevant image layers for the installation
-3. Installs the content of the modules operator by applying it to the cluster, and observing its state
+1. Looks for a ModuleTemplate CR based on the search criteria, for example, the OCM Component Name of the module or simply the name of the ModuleTemplate CR.
+2. Creates a Manifest CR for `my-module` based on a ModuleTemplate CR found in the cluster by resolving all relevant image layers for the installation.
+3. Installs the content of the modules operator by applying it to the cluster, and observing its state.
 4. Reports back all states observed in the Manifest CR which then get propagated to the Kyma CR on the cluster.
    Lifecycle Manager then uses the observed states to aggregate and combine the readiness condition of the cluster and determine the installation state or trigger more reconciliation loops as needed.
 
