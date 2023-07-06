@@ -141,20 +141,9 @@ func (p *Parser) newManifestFromTemplate(
 	if err != nil {
 		return nil, err
 	}
-	var componentDescriptor *compdesc.ComponentDescriptor
-	useLocalTemplate, found := template.GetLabels()[v1beta2.UseLocalTemplate]
-	if found && useLocalTemplate == "true" {
-		componentDescriptor = descriptor.ComponentDescriptor
-	} else {
-		descriptorCacheKey, err := template.GetComponentDescriptorCacheKey()
-		if err != nil {
-			return nil, err
-		}
-		componentDescriptor, err = p.ComponentDescriptorCache.GetRemoteDescriptor(ctx,
-			descriptorCacheKey, descriptor, p.Client)
-		if err != nil {
-			return nil, err
-		}
+	componentDescriptor, err := p.getComponentDescriptor(ctx, template, descriptor)
+	if err != nil {
+		return nil, err
 	}
 
 	verification, err := signature.NewVerification(ctx,
@@ -183,6 +172,28 @@ func (p *Parser) newManifestFromTemplate(
 	}
 
 	return manifest, nil
+}
+
+func (p *Parser) getComponentDescriptor(ctx context.Context,
+	template *v1beta2.ModuleTemplate,
+	descriptor *v1beta2.Descriptor,
+) (*compdesc.ComponentDescriptor, error) {
+	var componentDescriptor *compdesc.ComponentDescriptor
+	useLocalTemplate, found := template.GetLabels()[v1beta2.UseLocalTemplate]
+	if found && useLocalTemplate == "true" {
+		componentDescriptor = descriptor.ComponentDescriptor
+	} else {
+		descriptorCacheKey, err := template.GetComponentDescriptorCacheKey()
+		if err != nil {
+			return nil, err
+		}
+		componentDescriptor, err = p.ComponentDescriptorCache.GetRemoteDescriptor(ctx,
+			descriptorCacheKey, descriptor, p.Client)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return componentDescriptor, nil
 }
 
 func appendOptionalCustomStateCheck(manifest *v1beta2.Manifest, stateCheck *v1beta2.CustomStateCheck) error {

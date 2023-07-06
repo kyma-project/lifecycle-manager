@@ -48,7 +48,8 @@ func (c *ManifestCustomResourceReadyCheck) Run(
 	if err != nil {
 		return declarative.StateError, err
 	}
-	stateFromCR, stateExists, err := unstructured.NestedString(res.Object, strings.Split(customStateCheck.JSONPath, ".")...)
+	stateFromCR, stateExists, err := unstructured.NestedString(res.Object,
+		strings.Split(customStateCheck.JSONPath, ".")...)
 	if err != nil {
 		return declarative.StateError, fmt.Errorf(
 			"could not get state from custom resource %s at path %s to determine readiness: %w",
