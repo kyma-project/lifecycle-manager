@@ -38,8 +38,8 @@ func (c *ManifestCustomResourceReadyCheck) Run(ctx context.Context,
 	obj declarative.Object,
 	resources []*resource.Info,
 ) (declarative.StateInfo, error) {
-	if err := checkDeploymentState(clnt, resources); err != nil {
-		return declarative.StateInfo{State: declarative.StateProcessing, Info: err.Error()}, nil
+	if !isDeploymentReady(clnt, resources) {
+		return declarative.StateInfo{State: declarative.StateProcessing, Info: "module operator deployment is not ready"}, nil
 	}
 	manifest := obj.(*v1beta2.Manifest)
 	if manifest.Spec.Resource == nil {
@@ -73,8 +73,10 @@ func (c *ManifestCustomResourceReadyCheck) Run(ctx context.Context,
 	}
 
 	if !typedState.IsSupportedState() {
-		return declarative.StateInfo{State: declarative.StateWarning,
-			Info: "module CR state is not supported, this module might not be default kyma module"}, nil
+		return declarative.StateInfo{
+			State: declarative.StateWarning,
+			Info:  "module CR state is not supported, this module might not be default kyma module",
+		}, nil
 	}
 
 	if typedState == declarative.StateDeleting || typedState == declarative.StateError {
@@ -95,7 +97,7 @@ func parseCustomStateCheck(manifest *v1beta2.Manifest) (v1beta2.CustomStateCheck
 	return customStateCheck, nil
 }
 
-func checkDeploymentState(clt declarative.Client, resources []*resource.Info) error {
+func isDeploymentReady(clt declarative.Client, resources []*resource.Info) bool {
 	deploy := &appsv1.Deployment{}
 	found := false
 	for _, res := range resources {
@@ -107,14 +109,14 @@ func checkDeploymentState(clt declarative.Client, resources []*resource.Info) er
 	}
 	// not every module operator use Deployment by default, e.g: StatefulSet also a valid approach
 	if !found {
-		return nil
+		return true
 	}
 	availableCond := deploymentutil.GetDeploymentCondition(deploy.Status, appsv1.DeploymentAvailable)
 	if availableCond != nil && availableCond.Status == corev1.ConditionTrue {
-		return nil
+		return true
 	}
 	if deploy.Spec.Replicas != nil && *deploy.Spec.Replicas == deploy.Status.ReadyReplicas {
-		return nil
+		return true
 	}
-	return fmt.Errorf("%w: (ns=%s, name=%s)", declarative.ErrDeploymentNotReady, deploy.Namespace, deploy.Name)
+	return false
 }

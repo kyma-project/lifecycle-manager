@@ -8,10 +8,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var (
-	ErrDeploymentNotReady   = errors.New("deployment is not ready")
-	ErrNotValidClientObject = errors.New("object in resource info is not a valid client object")
-)
+var ErrNotValidClientObject = errors.New("object in resource info is not a valid client object")
 
 type StateInfo struct {
 	State
@@ -28,7 +25,12 @@ func NewExistsReadyCheck() ReadyCheck {
 
 type ExistsReadyCheck struct{}
 
-func (c *ExistsReadyCheck) Run(ctx context.Context, clnt Client, _ Object, resources []*resource.Info) (StateInfo, error) {
+func (c *ExistsReadyCheck) Run(
+	ctx context.Context,
+	clnt Client,
+	_ Object,
+	resources []*resource.Info,
+) (StateInfo, error) {
 	for i := range resources {
 		obj, ok := resources[i].Object.(client.Object)
 		if !ok {
