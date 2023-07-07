@@ -22,6 +22,7 @@ var (
 	ErrNotContainsExpectedAnnotation = errors.New("kyma CR not contains expected CRD annotation")
 	ErrContainsUnexpectedAnnotation  = errors.New("kyma CR contains unexpected CRD annotation")
 	ErrAnnotationNotUpdated          = errors.New("kyma CR annotation not updated")
+	ErrRemoteTemplateLabelNotFound   = errors.New("manifest does not contain remote template label")
 )
 
 var _ = Describe("Kyma with remote module templates", Ordered, func() {
@@ -79,6 +80,21 @@ var _ = Describe("Kyma with remote module templates", Ordered, func() {
 	It("Should reconcile Manifest in KCP using remote moduleInSkr template", func() {
 		Eventually(ManifestExists, Timeout, Interval).
 			WithArguments(ctx, kyma, moduleInSkr, controlPlaneClient).
+			Should(Succeed())
+	})
+
+	It("Manifest should contain remoteModuleTemplate label", func() {
+		Eventually(func() error {
+			manifest, err := GetManifest(ctx, controlPlaneClient, kyma, moduleInSkr)
+			if err != nil {
+				return err
+			}
+
+			if manifest.Labels[v1beta2.IsRemoteModuleTemplate] != v1beta2.EnableLabelValue {
+				return ErrRemoteTemplateLabelNotFound
+			}
+			return nil
+		}, Timeout, Interval).
 			Should(Succeed())
 	})
 

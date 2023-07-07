@@ -1,0 +1,11 @@
+module-name: lifecycle-manager
+protecode:
+  - europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:latest
+whitesource:
+  language: golang-mod
+  exclude:
+    - "**/test/**"
+    - "**/*_test.go"
+    - "**/testutils/**"
+    - "tests/**"
+  subprojects: false
