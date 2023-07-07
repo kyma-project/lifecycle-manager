@@ -303,28 +303,27 @@ func (r *Reconciler) checkTargetReadiness(
 
 	resourceReadyCheck := r.CustomReadyCheck
 
-	state, err := resourceReadyCheck.Run(ctx, clnt, obj, target)
+	stateInfo, err := resourceReadyCheck.Run(ctx, clnt, obj, target)
 
-	if errors.Is(err, ErrResourcesNotReady) || errors.Is(err, ErrCustomResourceStateNotFound) ||
-		errors.Is(err, ErrDeploymentNotReady) {
-		waitingMsg := fmt.Sprintf("waiting for resources to become ready: %s", err.Error())
+	if stateInfo.State == StateProcessing || stateInfo.State == StateWarning {
+		waitingMsg := fmt.Sprintf("waiting for resources to become ready: %s", stateInfo.Info)
 		r.Event(obj, "Normal", "ResourceReadyCheck", waitingMsg)
-		obj.SetStatus(status.WithState(StateProcessing).WithOperation(waitingMsg))
-		return err
+		obj.SetStatus(status.WithState(stateInfo.State).WithOperation(waitingMsg))
+		return ErrInstallationConditionRequiresUpdate
 	}
 
 	if err != nil {
-		r.Event(obj, "Warning", "ReadyCheck", err.Error())
+		r.Event(obj, "Warning", "ResourceReadyCheck", err.Error())
 		obj.SetStatus(status.WithState(StateError).WithErr(err))
 		return err
 	}
 
 	installationCondition := newInstallationCondition(obj)
-	if !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) || status.State != state {
+	if !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) || status.State != stateInfo.State {
 		r.Event(obj, "Normal", installationCondition.Reason, installationCondition.Message)
 		installationCondition.Status = metav1.ConditionTrue
 		meta.SetStatusCondition(&status.Conditions, installationCondition)
-		obj.SetStatus(status.WithState(state).WithOperation(installationCondition.Message))
+		obj.SetStatus(status.WithState(StateReady).WithOperation(installationCondition.Message))
 		return ErrInstallationConditionRequiresUpdate
 	}
 

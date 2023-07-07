@@ -56,9 +56,9 @@ var _ = Describe("Custom Manifest consistency check, given Manifest CR with OCI 
 
 		By("Executing the custom readiness check")
 		customReadyCheck := internalV1beta1.NewManifestCustomResourceReadyCheck()
-		state, err := customReadyCheck.Run(ctx, testClient, manifest, resources)
+		stateInfo, err := customReadyCheck.Run(ctx, testClient, manifest, resources)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(state).To(Equal(declarative.StateReady))
+		Expect(stateInfo.State).To(Equal(declarative.StateReady))
 
 		By("cleaning up the manifest")
 		Eventually(deleteManifestAndVerify(manifest), standardTimeout, standardInterval).Should(Succeed())

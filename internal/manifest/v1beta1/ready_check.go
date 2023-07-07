@@ -28,48 +28,59 @@ func NewManifestCustomResourceReadyCheck() *ManifestCustomResourceReadyCheck {
 
 type ManifestCustomResourceReadyCheck struct{}
 
-var ErrNoDeterminedState = errors.New("could not determine state")
+var (
+	ErrNoDeterminedState   = errors.New("could not determine state")
+	ErrCRInUnexpectedState = errors.New("module CR in unexpected state during readiness check")
+)
 
-func (c *ManifestCustomResourceReadyCheck) Run(
-	ctx context.Context, clnt declarative.Client, obj declarative.Object, resources []*resource.Info,
-) (declarative.State, error) {
+func (c *ManifestCustomResourceReadyCheck) Run(ctx context.Context,
+	clnt declarative.Client,
+	obj declarative.Object,
+	resources []*resource.Info,
+) (declarative.StateInfo, error) {
 	if err := checkDeploymentState(clnt, resources); err != nil {
-		return declarative.StateError, err
+		return declarative.StateInfo{State: declarative.StateProcessing, Info: err.Error()}, nil
 	}
 	manifest := obj.(*v1beta2.Manifest)
 	if manifest.Spec.Resource == nil {
-		return declarative.StateReady, nil
+		return declarative.StateInfo{State: declarative.StateReady}, nil
 	}
 	res := manifest.Spec.Resource.DeepCopy()
 	if err := clnt.Get(ctx, client.ObjectKeyFromObject(res), res); err != nil {
-		return declarative.StateError, err
+		return declarative.StateInfo{State: declarative.StateError}, err
 	}
 	customStateCheck, err := parseCustomStateCheck(manifest)
 	if err != nil {
-		return declarative.StateError, err
+		return declarative.StateInfo{State: declarative.StateError}, err
 	}
 	stateFromCR, stateExists, err := unstructured.NestedString(res.Object,
 		strings.Split(customStateCheck.JSONPath, ".")...)
+	// CR state might not been initialized, put manifest state into processing
+	if !stateExists {
+		return declarative.StateInfo{State: declarative.StateProcessing, Info: "module CR state not found"}, nil
+	}
+
 	if err != nil {
-		return declarative.StateError, fmt.Errorf(
-			"could not get state from custom resource %s at path %s to determine readiness: %w",
+		return declarative.StateInfo{State: declarative.StateError}, fmt.Errorf(
+			"could not get state from module CR %s at path %s to determine readiness: %w",
 			res.GetName(), customStateCheck.JSONPath, ErrNoDeterminedState,
 		)
 	}
-	if !stateExists {
-		return declarative.StateError, declarative.ErrCustomResourceStateNotFound
-	}
+
 	typedState := declarative.State(stateFromCR)
 	if customStateCheck.Value == stateFromCR {
 		typedState = declarative.StateReady
 	}
-	if !stableState(typedState) {
-		return declarative.StateError, fmt.Errorf(
-			"custom resource state is %s: %w", stateFromCR, declarative.ErrResourcesNotReady,
-		)
+
+	if !typedState.IsSupportedState() {
+		return declarative.StateInfo{State: declarative.StateWarning,
+			Info: "module CR state is not supported, this module might not be default kyma module"}, nil
 	}
 
-	return typedState, nil
+	if typedState == declarative.StateDeleting || typedState == declarative.StateError {
+		return declarative.StateInfo{State: typedState}, ErrCRInUnexpectedState
+	}
+	return declarative.StateInfo{State: typedState}, nil
 }
 
 func parseCustomStateCheck(manifest *v1beta2.Manifest) (v1beta2.CustomStateCheck, error) {
@@ -84,10 +95,6 @@ func parseCustomStateCheck(manifest *v1beta2.Manifest) (v1beta2.CustomStateCheck
 	return customStateCheck, nil
 }
 
-func stableState(state declarative.State) bool {
-	return state == declarative.StateReady || state == declarative.StateWarning
-}
-
 func checkDeploymentState(clt declarative.Client, resources []*resource.Info) error {
 	deploy := &appsv1.Deployment{}
 	found := false
@@ -98,6 +105,7 @@ func checkDeploymentState(clt declarative.Client, resources []*resource.Info) er
 			break
 		}
 	}
+	// not every module operator use Deployment by default, e.g: StatefulSet also a valid approach
 	if !found {
 		return nil
 	}
