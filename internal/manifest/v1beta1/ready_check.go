@@ -88,8 +88,6 @@ func stableState(state declarative.State) bool {
 	return state == declarative.StateReady || state == declarative.StateWarning
 }
 
-var ErrDeploymentResNotFound = errors.New("deployment resource is not found")
-
 func checkDeploymentState(clt declarative.Client, resources []*resource.Info) error {
 	deploy := &appsv1.Deployment{}
 	found := false
@@ -101,7 +99,7 @@ func checkDeploymentState(clt declarative.Client, resources []*resource.Info) er
 		}
 	}
 	if !found {
-		return ErrDeploymentResNotFound
+		return nil
 	}
 	availableCond := deploymentutil.GetDeploymentCondition(deploy.Status, appsv1.DeploymentAvailable)
 	if availableCond != nil && availableCond.Status == corev1.ConditionTrue {
