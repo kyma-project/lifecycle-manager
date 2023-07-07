@@ -65,12 +65,7 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object,
 		targetClient = remoteClient
 	}
 
-	keyChain, err := m.lookupKeyChain(ctx, manifest.Spec.Config, targetClient)
-	if err != nil {
-		return nil, err
-	}
-
-	rawManifestInfo, err := m.getRawManifestForInstall(ctx, manifest.Spec.Install, specType, keyChain)
+	rawManifestInfo, err := m.getRawManifestForInstall(ctx, manifest.Spec.Install, specType, targetClient)
 	if err != nil {
 		return nil, err
 	}
@@ -101,13 +96,18 @@ func (m *ManifestSpecResolver) getRawManifestForInstall(
 	ctx context.Context,
 	install v1beta2.InstallInfo,
 	specType v1beta2.RefTypeMetadata,
-	keyChain authn.Keychain,
+	targetClient client.Client,
 ) (*RawManifestInfo, error) {
 	var err error
 	switch specType {
 	case v1beta2.OciRefType:
 		var imageSpec v1beta2.ImageSpec
 		if err = m.Codec.Decode(install.Source.Raw, &imageSpec, specType); err != nil {
+			return nil, err
+		}
+
+		keyChain, err := m.lookupKeyChain(ctx, imageSpec, targetClient)
+		if err != nil {
 			return nil, err
 		}
 
