@@ -137,12 +137,12 @@ var _ = Describe(
 				if status.State != declarative.StateError {
 					return ErrNotInErrorState
 				}
-				if !strings.Contains(status.LastOperation.Operation, ocmextensions.ErrNoAuthSecretFound.Error()) {
-					return ErrAuthSecretNotFound
+				if strings.Contains(status.LastOperation.Operation, ocmextensions.ErrNoAuthSecretFound.Error()) {
+					return ocmextensions.ErrNoAuthSecretFound
 				}
 				return nil
-			}, 3*standardTimeout, 3*standardInterval).
-				Should(Succeed())
+			}, standardTimeout, standardInterval).
+				Should(MatchError(ocmextensions.ErrNoAuthSecretFound))
 		})
 	},
 )
