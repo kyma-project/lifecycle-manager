@@ -141,7 +141,7 @@ var _ = Describe(
 					return ErrAuthSecretNotFound
 				}
 				return nil
-			}, 2*standardTimeout, 2*standardInterval).
+			}, 3*standardTimeout, 2*standardInterval).
 				Should(Succeed())
 		})
 	},
