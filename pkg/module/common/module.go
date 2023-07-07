@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"hash/fnv"
+	"strconv"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -46,7 +47,7 @@ func (m *Module) ApplyLabelsAndAnnotations(
 		lbls[v1beta2.ControllerName] = m.Template.GetLabels()[v1beta2.ControllerName]
 	}
 	lbls[v1beta2.ChannelLabel] = m.Template.Spec.Channel
-
+	lbls[v1beta2.IsRemoteModuleTemplate] = strconv.FormatBool(m.IsRemoteModuleTemplate(kyma))
 	lbls[v1beta2.ManagedBy] = v1beta2.OperatorName
 
 	m.SetLabels(lbls)
@@ -57,6 +58,16 @@ func (m *Module) ApplyLabelsAndAnnotations(
 	}
 	anns[v1beta2.FQDN] = m.FQDN
 	m.SetAnnotations(anns)
+}
+
+func (m *Module) IsRemoteModuleTemplate(kyma *v1beta2.Kyma) bool {
+	for _, module := range kyma.Spec.Modules {
+		if module.Name == m.ModuleName {
+			return module.RemoteModuleTemplateRef != ""
+		}
+	}
+
+	return false
 }
 
 func (m *Module) ContainsExpectedOwnerReference(ownerName string) bool {

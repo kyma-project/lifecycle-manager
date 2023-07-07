@@ -45,7 +45,8 @@ var (
 	ErrInvalidObjectPassedToSpecResolution = errors.New("invalid object passed to spec resolution")
 )
 
-func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object) (*declarative.Spec, error) {
+func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object,
+	remoteClient client.Client) (*declarative.Spec, error) {
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
 		return nil, fmt.Errorf(
@@ -59,7 +60,12 @@ func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object)
 		return nil, err
 	}
 
-	rawManifestInfo, err := m.getRawManifestForInstall(ctx, manifest.Spec.Install, specType)
+	targetClient := m.KCP.Client
+	if manifest.Labels[v1beta2.IsRemoteModuleTemplate] == v1beta2.EnableLabelValue {
+		targetClient = remoteClient
+	}
+
+	rawManifestInfo, err := m.getRawManifestForInstall(ctx, manifest.Spec.Install, specType, targetClient)
 	if err != nil {
 		return nil, err
 	}
@@ -90,6 +96,7 @@ func (m *ManifestSpecResolver) getRawManifestForInstall(
 	ctx context.Context,
 	install v1beta2.InstallInfo,
 	specType v1beta2.RefTypeMetadata,
+	targetClient client.Client,
 ) (*RawManifestInfo, error) {
 	var err error
 	switch specType {
@@ -99,7 +106,7 @@ func (m *ManifestSpecResolver) getRawManifestForInstall(
 			return nil, err
 		}
 
-		keyChain, err := m.lookupKeyChain(ctx, imageSpec)
+		keyChain, err := m.lookupKeyChain(ctx, imageSpec, targetClient)
 		if err != nil {
 			return nil, err
 		}
@@ -123,12 +130,12 @@ func (m *ManifestSpecResolver) getRawManifestForInstall(
 }
 
 func (m *ManifestSpecResolver) lookupKeyChain(
-	ctx context.Context, imageSpec v1beta2.ImageSpec,
+	ctx context.Context, imageSpec v1beta2.ImageSpec, targetClient client.Client,
 ) (authn.Keychain, error) {
 	var keyChain authn.Keychain
 	var err error
 	if imageSpec.CredSecretSelector != nil {
-		if keyChain, err = ocmextensions.GetAuthnKeychain(ctx, imageSpec.CredSecretSelector, m.KCP.Client); err != nil {
+		if keyChain, err = ocmextensions.GetAuthnKeychain(ctx, imageSpec.CredSecretSelector, targetClient); err != nil {
 			return nil, err
 		}
 	} else {

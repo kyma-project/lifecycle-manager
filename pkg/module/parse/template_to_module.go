@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -117,6 +118,7 @@ func overwriteNameAndNamespace(template *channel.ModuleTemplateTO, name, namespa
 	}
 }
 
+// nolint:funlen
 func (p *Parser) newManifestFromTemplate(
 	ctx context.Context,
 	module v1beta2.Module,
@@ -132,6 +134,11 @@ func (p *Parser) newManifestFromTemplate(
 		fallthrough
 	default:
 		manifest.Spec.Resource = template.Spec.Data.DeepCopy()
+	}
+
+	clusterClient := p.Client
+	if module.RemoteModuleTemplateRef != "" {
+		clusterClient = remote.SyncContextFromContext(ctx).RuntimeClient
 	}
 
 	var layers img.Layers
@@ -150,14 +157,14 @@ func (p *Parser) newManifestFromTemplate(
 			return nil, err
 		}
 		componentDescriptor, err = p.ComponentDescriptorCache.GetRemoteDescriptor(ctx,
-			descriptorCacheKey, descriptor, p.Client)
+			descriptorCacheKey, descriptor, clusterClient)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	verification, err := signature.NewVerification(ctx,
-		p.Client,
+		clusterClient,
 		p.EnableVerification,
 		p.PublicKeyFilePath,
 		module.Name)
