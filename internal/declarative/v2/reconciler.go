@@ -305,10 +305,10 @@ func (r *Reconciler) checkTargetReadiness(
 
 	stateInfo, err := resourceReadyCheck.Run(ctx, clnt, obj, target)
 
-	if stateInfo.State == StateProcessing || stateInfo.State == StateWarning {
+	if stateInfo.State == StateProcessing {
 		waitingMsg := fmt.Sprintf("waiting for resources to become ready: %s", stateInfo.Info)
 		r.Event(obj, "Normal", "ResourceReadyCheck", waitingMsg)
-		obj.SetStatus(status.WithState(stateInfo.State).WithOperation(waitingMsg))
+		obj.SetStatus(status.WithState(StateProcessing).WithOperation(waitingMsg))
 		return ErrInstallationConditionRequiresUpdate
 	}
 
@@ -318,16 +318,29 @@ func (r *Reconciler) checkTargetReadiness(
 		return err
 	}
 
+	if stateInfo.State != StateReady && stateInfo.State != StateWarning {
+		// should not happen, if happens, skip status update
+		return nil
+	}
+
 	installationCondition := newInstallationCondition(obj)
 	if !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) || status.State != stateInfo.State {
 		r.Event(obj, "Normal", installationCondition.Reason, installationCondition.Message)
 		installationCondition.Status = metav1.ConditionTrue
 		meta.SetStatusCondition(&status.Conditions, installationCondition)
-		obj.SetStatus(status.WithState(StateReady).WithOperation(installationCondition.Message))
+		obj.SetStatus(status.WithState(stateInfo.State).
+			WithOperation(generateOperationMessage(installationCondition, stateInfo)))
 		return ErrInstallationConditionRequiresUpdate
 	}
 
 	return nil
+}
+
+func generateOperationMessage(installationCondition metav1.Condition, stateInfo StateInfo) string {
+	if stateInfo.Info != "" {
+		return stateInfo.Info
+	}
+	return installationCondition.Message
 }
 
 func (r *Reconciler) deleteResources(
