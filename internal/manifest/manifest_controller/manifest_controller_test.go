@@ -1,4 +1,4 @@
-package v1beta1_test
+package manifest_controller_test
 
 import (
 	"errors"

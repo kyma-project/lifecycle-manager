@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta1_test
+package manifest_controller_test
 
 import (
 	"context"
@@ -26,6 +26,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/registry"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap/zapcore"
@@ -44,7 +45,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
@@ -129,7 +129,7 @@ var _ = BeforeSuite(
 		reconciler = declarative.NewFromManager(
 			k8sManager, &v1beta2.Manifest{},
 			declarative.WithSpecResolver(
-				internalv1beta1.NewManifestSpecResolver(kcp, codec),
+				manifest.NewManifestSpecResolver(kcp, codec),
 			),
 			declarative.WithPermanentConsistencyCheck(true),
 			declarative.WithRemoteTargetCluster(
@@ -137,11 +137,11 @@ var _ = BeforeSuite(
 					return &declarative.ClusterInfo{Config: authUser.Config()}, nil
 				},
 			),
-			internalv1beta1.WithClientCacheKey(),
-			declarative.WithPostRun{internalv1beta1.PostRunCreateCR},
-			declarative.WithPreDelete{internalv1beta1.PreDeleteDeleteCR},
+			manifest.WithClientCacheKey(),
+			declarative.WithPostRun{manifest.PostRunCreateCR},
+			declarative.WithPreDelete{manifest.PreDeleteDeleteCR},
 			declarative.WithCustomReadyCheck(declarative.NewExistsReadyCheck()),
-			declarative.WithModuleCRDName(internalv1beta1.GetModuleCRDName),
+			declarative.WithModuleCRDName(manifest.GetModuleCRDName),
 		)
 
 		err = ctrl.NewControllerManagedBy(k8sManager).

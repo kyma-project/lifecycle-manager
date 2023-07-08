@@ -1,4 +1,4 @@
-package controllers_test
+package kyma_controller_test
 
 import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
