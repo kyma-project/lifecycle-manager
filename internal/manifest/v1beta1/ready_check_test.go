@@ -35,7 +35,7 @@ var _ = Describe("Custom Manifest consistency check, given Manifest CR with OCI 
 	It("Install OCI specs including an nginx deployment", func() {
 		manifest := NewTestManifest("custom-check-oci")
 		manifestName := manifest.GetName()
-		validImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String())
+		validImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String(), false)
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(installManifest(manifest, imageSpecByte, false)).To(Succeed())

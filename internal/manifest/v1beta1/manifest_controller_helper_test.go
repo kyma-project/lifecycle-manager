@@ -79,11 +79,14 @@ func PushToRemoteOCIRegistry(layerName string) {
 	Expect(gotHash).To(Equal(digest))
 }
 
-func createOCIImageSpec(name, repo string) v1beta2.ImageSpec {
+func createOCIImageSpec(name, repo string, enableCredSecretSelector bool) v1beta2.ImageSpec {
 	imageSpec := v1beta2.ImageSpec{
 		Name: name,
 		Repo: repo,
 		Type: "oci-ref",
+	}
+	if enableCredSecretSelector {
+		imageSpec.CredSecretSelector = CredSecretLabel()
 	}
 	layer := CreateImageSpecLayer()
 	digest, err := layer.Digest()
@@ -106,16 +109,18 @@ func NewTestManifest(prefix string) *v1beta2.Manifest {
 
 func withInvalidInstallImageSpec(enableResource bool) func(manifest *v1beta2.Manifest) error {
 	return func(manifest *v1beta2.Manifest) error {
-		invalidImageSpec := createOCIImageSpec("invalid-image-spec", "domain.invalid")
+		invalidImageSpec := createOCIImageSpec("invalid-image-spec", "domain.invalid", false)
 		imageSpecByte, err := json.Marshal(invalidImageSpec)
 		Expect(err).ToNot(HaveOccurred())
 		return installManifest(manifest, imageSpecByte, enableResource)
 	}
 }
 
-func withValidInstallImageSpec(name string, enableResource bool) func(manifest *v1beta2.Manifest) error {
+func withValidInstallImageSpec(name string,
+	enableResource, enableCredSecretSelector bool,
+) func(manifest *v1beta2.Manifest) error {
 	return func(manifest *v1beta2.Manifest) error {
-		validImageSpec := createOCIImageSpec(name, server.Listener.Addr().String())
+		validImageSpec := createOCIImageSpec(name, server.Listener.Addr().String(), enableCredSecretSelector)
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
 		return installManifest(manifest, imageSpecByte, enableResource)
@@ -183,5 +188,11 @@ func deleteManifestAndVerify(manifest *v1beta2.Manifest) func() error {
 		newManifest := v1beta2.Manifest{}
 		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(manifest), &newManifest)
 		return client.IgnoreNotFound(err)
+	}
+}
+
+func CredSecretLabel() *metav1.LabelSelector {
+	return &metav1.LabelSelector{
+		MatchLabels: map[string]string{"operator.kyma-project.io/oci-registry-cred": "test-operator"},
 	}
 }
