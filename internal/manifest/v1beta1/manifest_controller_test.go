@@ -9,19 +9,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/uuid"
-	"k8s.io/apimachinery/pkg/util/yaml"
-
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
-var (
-	ErrManifestStateMisMatch = errors.New("ManifestState mismatch")
-	ErrAuthSecretNotFound    = errors.New("auth secret error not found in manifest")
-	ErrNotInErrorState       = errors.New("manifest not found in error state")
-)
+var ErrManifestStateMisMatch = errors.New("ManifestState mismatch")
 
 var _ = Describe(
 	"Given manifest with OCI specs", func() {
@@ -53,13 +45,13 @@ var _ = Describe(
 			Entry(
 				"When Manifest CR contains a valid install OCI image specification, "+
 					"expect state in ready",
-				withValidInstallImageSpec(installName, false),
+				withValidInstallImageSpec(installName, false, false),
 				expectManifestStateIn(declarative.StateReady),
 			),
 			Entry(
 				"When Manifest CR contains a valid install OCI image specification and enabled deploy resource, "+
 					"expect state in ready",
-				withValidInstallImageSpec(installName, true),
+				withValidInstallImageSpec(installName, true, false),
 				expectManifestStateIn(declarative.StateReady),
 			),
 			Entry(
@@ -90,12 +82,12 @@ var _ = Describe(
 		It(
 			"should result in Manifest becoming Ready", func() {
 				manifestWithInstall := NewTestManifest("multi-oci1")
-				Eventually(withValidInstallImageSpec(installName, false), standardTimeout, standardInterval).
+				Eventually(withValidInstallImageSpec(installName, false, false), standardTimeout, standardInterval).
 					WithArguments(manifestWithInstall).Should(Succeed())
 				manifest2WithInstall := NewTestManifest("multi-oci2")
 				// copy owner label over to the new manifest resource
 				manifest2WithInstall.Labels[v1beta2.KymaName] = manifestWithInstall.Labels[v1beta2.KymaName]
-				Eventually(withValidInstallImageSpec(installName, false), standardTimeout, standardInterval).
+				Eventually(withValidInstallImageSpec(installName, false, false), standardTimeout, standardInterval).
 					WithArguments(manifest2WithInstall).Should(Succeed())
 				Eventually(
 					deleteManifestAndVerify(manifestWithInstall), standardTimeout, standardInterval,
@@ -110,39 +102,39 @@ var _ = Describe(
 
 var _ = Describe(
 	"Given manifest with private registry", func() {
-		manifest := &v1beta2.Manifest{}
-		manifestPath := filepath.Join("../../../pkg/test_samples/oci", "private-registry-manifest.yaml")
-		manifestFile, err := os.ReadFile(manifestPath)
-		Expect(err).ToNot(HaveOccurred())
-		err = yaml.Unmarshal(manifestFile, manifest)
-		manifest.SetNamespace(metav1.NamespaceDefault)
-		manifest.SetName("private-registry-manifest")
-		manifest.SetLabels(map[string]string{
-			v1beta2.KymaName: string(uuid.NewUUID()),
-		})
-		manifest.SetResourceVersion("")
-		Expect(err).ToNot(HaveOccurred())
-
-		It("Should create Manifest", func() {
-			Expect(k8sClient.Create(ctx, manifest)).To(Succeed())
-		})
+		mainOciTempDir := "private-oci"
+		installName := filepath.Join(mainOciTempDir, "crs")
+		It(
+			"setup remote oci Registry",
+			func() {
+				PushToRemoteOCIRegistry(installName)
+			},
+		)
+		BeforeEach(
+			func() {
+				Expect(os.RemoveAll(filepath.Join(os.TempDir(), mainOciTempDir))).To(Succeed())
+			},
+		)
 
 		It("Manifest should be in Error state with no auth secret found error message", func() {
-			Eventually(func() error {
-				status, err := getManifestStatus(manifest.GetName())
+			manifestWithInstall := NewTestManifest("private-oci-registry")
+			Eventually(withValidInstallImageSpec(installName, false, true), standardTimeout, standardInterval).
+				WithArguments(manifestWithInstall).Should(Succeed())
+			Eventually(func() string {
+				status, err := getManifestStatus(manifestWithInstall.GetName())
 				if err != nil {
-					return err
+					return err.Error()
 				}
 
 				if status.State != declarative.StateError {
-					return ErrNotInErrorState
+					return "manifest not in error state"
 				}
-				if !strings.Contains(status.LastOperation.Operation, ocmextensions.ErrNoAuthSecretFound.Error()) {
-					return ErrAuthSecretNotFound
+				if strings.Contains(status.LastOperation.Operation, ocmextensions.ErrNoAuthSecretFound.Error()) {
+					return ocmextensions.ErrNoAuthSecretFound.Error()
 				}
-				return nil
-			}, 3*standardTimeout, 3*standardInterval).
-				Should(Succeed())
+				return status.LastOperation.Operation
+			}, standardTimeout, standardInterval).
+				Should(Equal(ocmextensions.ErrNoAuthSecretFound.Error()))
 		})
 	},
 )

@@ -35,7 +35,7 @@ var _ = Describe("Custom Manifest consistency check, given Manifest CR with OCI 
 	It("Install OCI specs including an nginx deployment", func() {
 		manifest := NewTestManifest("custom-check-oci")
 		manifestName := manifest.GetName()
-		validImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String())
+		validImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String(), false)
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(installManifest(manifest, imageSpecByte, false)).To(Succeed())
@@ -56,9 +56,9 @@ var _ = Describe("Custom Manifest consistency check, given Manifest CR with OCI 
 
 		By("Executing the custom readiness check")
 		customReadyCheck := internalV1beta1.NewManifestCustomResourceReadyCheck()
-		state, err := customReadyCheck.Run(ctx, testClient, manifest, resources)
+		stateInfo, err := customReadyCheck.Run(ctx, testClient, manifest, resources)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(state).To(Equal(declarative.StateReady))
+		Expect(stateInfo.State).To(Equal(declarative.StateReady))
 
 		By("cleaning up the manifest")
 		Eventually(deleteManifestAndVerify(manifest), standardTimeout, standardInterval).Should(Succeed())

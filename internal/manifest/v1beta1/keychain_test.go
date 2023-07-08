@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 )
@@ -21,11 +20,7 @@ var _ = Describe(
 				By("install secret")
 				Eventually(installCredSecret(), standardTimeout, standardInterval).Should(Succeed())
 				const repo = "test.registry.io"
-				imageSpecWithCredSelect := createOCIImageSpecWithCredSelect(
-					"imageName",
-					repo, "digest",
-					credSecretLabel(),
-				)
+				imageSpecWithCredSelect := CreateOCIImageSpecWithCredSelect("imageName", repo, "digest")
 				keychain, err := ocmextensions.GetAuthnKeychain(ctx, imageSpecWithCredSelect.CredSecretSelector, k8sClient)
 				Expect(err).ToNot(HaveOccurred())
 				dig := &TestRegistry{target: repo, registry: repo}
@@ -40,16 +35,13 @@ var _ = Describe(
 	},
 )
 
-func createOCIImageSpecWithCredSelect(
-	name, repo, digest string,
-	credSecretSelector metav1.LabelSelector,
-) v1beta2.ImageSpec {
+func CreateOCIImageSpecWithCredSelect(name, repo, digest string) v1beta2.ImageSpec {
 	imageSpec := v1beta2.ImageSpec{
 		Name:               name,
 		Repo:               repo,
 		Type:               "oci-ref",
 		Ref:                digest,
-		CredSecretSelector: &credSecretSelector,
+		CredSecretSelector: CredSecretLabel(),
 	}
 	return imageSpec
 }
@@ -80,11 +72,5 @@ func installCredSecret() func() error {
 		}
 		Expect(err).ToNot(HaveOccurred())
 		return k8sClient.Get(ctx, client.ObjectKeyFromObject(secret), &corev1.Secret{})
-	}
-}
-
-func credSecretLabel() metav1.LabelSelector {
-	return metav1.LabelSelector{
-		MatchLabels: map[string]string{"operator.kyma-project.io/oci-registry-cred": "test-operator"},
 	}
 }

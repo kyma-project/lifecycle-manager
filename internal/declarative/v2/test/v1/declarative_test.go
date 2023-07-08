@@ -307,8 +307,8 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 	})
 })
 
-func isResourceFoundInSynced(res *unstructured.Unstructured, status Resource) bool {
-	return status == Resource{
+func isResourceFoundInSynced(res *unstructured.Unstructured, resource Resource) bool {
+	return resource == Resource{
 		Name:      res.GetName(),
 		Namespace: res.GetNamespace(),
 		GroupVersionKind: metav1.GroupVersionKind{
