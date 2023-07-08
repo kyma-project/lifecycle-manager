@@ -17,11 +17,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var (
-	ErrManifestStateMisMatch = errors.New("ManifestState mismatch")
-	ErrAuthSecretNotFound    = errors.New("auth secret error not found in manifest")
-	ErrNotInErrorState       = errors.New("manifest not found in error state")
-)
+var ErrManifestStateMisMatch = errors.New("ManifestState mismatch")
 
 var _ = Describe(
 	"Given manifest with OCI specs", func() {
@@ -128,21 +124,21 @@ var _ = Describe(
 		})
 
 		It("Manifest should be in Error state with no auth secret found error message", func() {
-			Eventually(func() error {
+			Eventually(func() string {
 				status, err := getManifestStatus(manifest.GetName())
 				if err != nil {
-					return err
+					return err.Error()
 				}
 
 				if status.State != declarative.StateError {
-					return ErrNotInErrorState
+					return "manifest not in error state"
 				}
 				if strings.Contains(status.LastOperation.Operation, ocmextensions.ErrNoAuthSecretFound.Error()) {
-					return ocmextensions.ErrNoAuthSecretFound
+					return ocmextensions.ErrNoAuthSecretFound.Error()
 				}
-				return nil
+				return "Unexpected status"
 			}, standardTimeout, standardInterval).
-				Should(MatchError(ocmextensions.ErrNoAuthSecretFound))
+				Should(Equal(ocmextensions.ErrNoAuthSecretFound.Error()))
 		})
 	},
 )
