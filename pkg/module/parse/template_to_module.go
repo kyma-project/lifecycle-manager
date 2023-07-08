@@ -213,7 +213,7 @@ func insertLayerIntoManifest(
 			Repo:               ociImage.Repo,
 			Name:               ociImage.Name,
 			Ref:                ociImage.Ref,
-			Type:               img.OCIRepresentationType,
+			Type:               v1beta2.OciRefType,
 			CredSecretSelector: ociImage.CredSecretSelector,
 		}
 	default:

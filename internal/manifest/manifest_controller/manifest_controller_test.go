@@ -16,7 +16,7 @@ import (
 var ErrManifestStateMisMatch = errors.New("ManifestState mismatch")
 
 var _ = Describe(
-	"Given manifest with OCI specs", func() {
+	"Rendering manifest install layer", func() {
 		mainOciTempDir := "main-dir"
 		installName := filepath.Join(mainOciTempDir, "installs")
 		It(
