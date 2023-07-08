@@ -118,7 +118,7 @@ func overwriteNameAndNamespace(template *channel.ModuleTemplateTO, name, namespa
 	}
 }
 
-// nolint:funlen
+//nolint:funlen
 func (p *Parser) newManifestFromTemplate(
 	ctx context.Context,
 	module v1beta2.Module,

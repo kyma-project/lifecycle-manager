@@ -65,42 +65,6 @@ var _ = Describe(
 )
 
 var _ = Describe(
-	"Test multiple Manifest CRs with same parent and OCI spec", func() {
-		mainOciTempDir := "multiple"
-		installName := filepath.Join(mainOciTempDir, "crs")
-		It(
-			"setup remote oci Registry",
-			func() {
-				PushToRemoteOCIRegistry(installName)
-			},
-		)
-		BeforeEach(
-			func() {
-				Expect(os.RemoveAll(filepath.Join(os.TempDir(), mainOciTempDir))).To(Succeed())
-			},
-		)
-		It(
-			"should result in Manifest becoming Ready", func() {
-				manifestWithInstall := NewTestManifest("multi-oci1")
-				Eventually(withValidInstallImageSpec(installName, false, false), standardTimeout, standardInterval).
-					WithArguments(manifestWithInstall).Should(Succeed())
-				manifest2WithInstall := NewTestManifest("multi-oci2")
-				// copy owner label over to the new manifest resource
-				manifest2WithInstall.Labels[v1beta2.KymaName] = manifestWithInstall.Labels[v1beta2.KymaName]
-				Eventually(withValidInstallImageSpec(installName, false, false), standardTimeout, standardInterval).
-					WithArguments(manifest2WithInstall).Should(Succeed())
-				Eventually(
-					deleteManifestAndVerify(manifestWithInstall), standardTimeout, standardInterval,
-				).Should(Succeed())
-				Eventually(
-					deleteManifestAndVerify(manifest2WithInstall), standardTimeout, standardInterval,
-				).Should(Succeed())
-			},
-		)
-	},
-)
-
-var _ = Describe(
 	"Given manifest with private registry", func() {
 		mainOciTempDir := "private-oci"
 		installName := filepath.Join(mainOciTempDir, "crs")

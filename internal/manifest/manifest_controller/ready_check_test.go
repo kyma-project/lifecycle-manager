@@ -19,7 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("Custom Manifest consistency check, given Manifest CR with OCI specs", Ordered, func() {
+var _ = Describe("Manifest consistency check, given Manifest CR with OCI specs", Ordered, func() {
 	customDir := "custom-dir"
 	installName := filepath.Join(customDir, "installs")
 	It(
@@ -49,12 +49,12 @@ var _ = Describe("Custom Manifest consistency check, given Manifest CR with OCI 
 		deploy := &appsv1.Deployment{}
 		Expect(verifyDeploymentInstallation(deploy)).To(Succeed())
 
-		By("Preparing resources for the custom readiness check")
+		By("Preparing resources for the CR readiness check")
 		resources, err := prepareResourceInfosForCustomCheck(testClient, deploy)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resources).ToNot(BeEmpty())
 
-		By("Executing the custom readiness check")
+		By("Executing the CR readiness check")
 		customReadyCheck := manifest.NewManifestCustomResourceReadyCheck()
 		stateInfo, err := customReadyCheck.Run(ctx, testClient, testManifest, resources)
 		Expect(err).NotTo(HaveOccurred())

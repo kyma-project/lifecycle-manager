@@ -18,9 +18,11 @@ var _ = Describe(
 		It(
 			"should fetch authnKeyChain from secret correctly", func() {
 				By("install secret")
-				Eventually(installCredSecret(), standardTimeout, standardInterval).Should(Succeed())
+				const CredSecretLabelValue = "test-operator"
+				Eventually(installCredSecret(CredSecretLabelValue), standardTimeout, standardInterval).Should(Succeed())
 				const repo = "test.registry.io"
-				imageSpecWithCredSelect := CreateOCIImageSpecWithCredSelect("imageName", repo, "digest")
+				imageSpecWithCredSelect := CreateOCIImageSpecWithCredSelect("imageName", repo,
+					"digest", CredSecretLabelValue)
 				keychain, err := ocmextensions.GetAuthnKeychain(ctx, imageSpecWithCredSelect.CredSecretSelector, k8sClient)
 				Expect(err).ToNot(HaveOccurred())
 				dig := &TestRegistry{target: repo, registry: repo}
@@ -35,13 +37,13 @@ var _ = Describe(
 	},
 )
 
-func CreateOCIImageSpecWithCredSelect(name, repo, digest string) v1beta2.ImageSpec {
+func CreateOCIImageSpecWithCredSelect(name, repo, digest, secretLabelValue string) v1beta2.ImageSpec {
 	imageSpec := v1beta2.ImageSpec{
 		Name:               name,
 		Repo:               repo,
 		Type:               "oci-ref",
 		Ref:                digest,
-		CredSecretSelector: CredSecretLabel(),
+		CredSecretSelector: CredSecretLabelSelector(secretLabelValue),
 	}
 	return imageSpec
 }
@@ -59,13 +61,14 @@ func (d TestRegistry) RegistryStr() string {
 	return d.registry
 }
 
-func installCredSecret() func() error {
+func installCredSecret(secretLabelValue string) func() error {
 	return func() error {
 		secret := &corev1.Secret{}
 		secretFile, err := os.ReadFile("../../../pkg/test_samples/auth_secret.yaml")
 		Expect(err).ToNot(HaveOccurred())
 		err = yaml.Unmarshal(secretFile, secret)
 		Expect(err).ToNot(HaveOccurred())
+		secret.Labels[CredSecretLabelKeyForTest] = secretLabelValue
 		err = k8sClient.Create(ctx, secret)
 		if errors.IsAlreadyExists(err) {
 			return nil

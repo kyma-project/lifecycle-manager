@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/google/go-containerregistry/pkg/v1/partial"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
@@ -28,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
-const manifestInstallName = "manifest-test"
+const CredSecretLabelKeyForTest = "operator.kyma-project.io/oci-registry-cred" //nolint:gosec
 
 type mockLayer struct {
 	filePath string
@@ -86,7 +85,7 @@ func createOCIImageSpec(name, repo string, enableCredSecretSelector bool) v1beta
 		Type: "oci-ref",
 	}
 	if enableCredSecretSelector {
-		imageSpec.CredSecretSelector = CredSecretLabel()
+		imageSpec.CredSecretSelector = CredSecretLabelSelector("test-secret-label")
 	}
 	layer := CreateImageSpecLayer()
 	digest, err := layer.Digest()
@@ -133,7 +132,7 @@ func installManifest(manifest *v1beta2.Manifest, installSpecByte []byte, enableR
 			Source: runtime.RawExtension{
 				Raw: installSpecByte,
 			},
-			Name: manifestInstallName,
+			Name: v1beta2.RawManifestLayerName,
 		}
 	}
 	if enableResource {
@@ -167,7 +166,7 @@ func expectManifestStateIn(state v2.State) func(manifestName string) error {
 }
 
 func getManifestStatus(manifestName string) (v2.Status, error) {
-	manifest := &v1beta1.Manifest{}
+	manifest := &v1beta2.Manifest{}
 	err := k8sClient.Get(
 		ctx, client.ObjectKey{
 			Namespace: metav1.NamespaceDefault,
@@ -191,8 +190,8 @@ func deleteManifestAndVerify(manifest *v1beta2.Manifest) func() error {
 	}
 }
 
-func CredSecretLabel() *metav1.LabelSelector {
+func CredSecretLabelSelector(labelValue string) *metav1.LabelSelector {
 	return &metav1.LabelSelector{
-		MatchLabels: map[string]string{"operator.kyma-project.io/oci-registry-cred": "test-operator"},
+		MatchLabels: map[string]string{CredSecretLabelKeyForTest: labelValue},
 	}
 }
