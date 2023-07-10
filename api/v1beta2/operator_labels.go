@@ -10,12 +10,12 @@ const (
 	ControllerName = OperatorPrefix + Separator + "controller-name"
 	ChannelLabel   = OperatorPrefix + Separator + "channel"
 	// ManagedBy defines the controller managing the resource.
-	ManagedBy      = OperatorPrefix + Separator + "managed-by"
-	Finalizer      = OperatorPrefix + Separator + string(KymaKind)
-	PurgeFinalizer = OperatorPrefix + Separator + "purge-finalizer"
-	KymaName       = OperatorPrefix + Separator + "kyma-name"
-	Signature      = OperatorPrefix + Separator + "signature"
-	ModuleName     = OperatorPrefix + Separator + "module-name"
+	ManagedBy              = OperatorPrefix + Separator + "managed-by"
+	Finalizer              = OperatorPrefix + Separator + string(KymaKind)
+	PurgeFinalizer         = OperatorPrefix + Separator + "purge-finalizer"
+	KymaName               = OperatorPrefix + Separator + "kyma-name"
+	Signature              = OperatorPrefix + Separator + "signature"
+	ModuleName             = OperatorPrefix + Separator + "module-name"
 	IsRemoteModuleTemplate = OperatorPrefix + Separator + "remote-template"
 
 	//nolint:gosec
