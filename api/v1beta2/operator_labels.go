@@ -16,6 +16,7 @@ const (
 	KymaName       = OperatorPrefix + Separator + "kyma-name"
 	Signature      = OperatorPrefix + Separator + "signature"
 	ModuleName     = OperatorPrefix + Separator + "module-name"
+	IsRemoteModuleTemplate = OperatorPrefix + Separator + "remote-template"
 
 	//nolint:gosec
 	OCIRegistryCredLabel = "oci-registry-cred"

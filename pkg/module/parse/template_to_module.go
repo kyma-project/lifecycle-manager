@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -129,6 +131,11 @@ func (p *Parser) newManifestFromTemplate(
 		manifest.Spec.Resource = template.Spec.Data.DeepCopy()
 	}
 
+	clusterClient := p.Client
+	if module.RemoteModuleTemplateRef != "" {
+		clusterClient = remote.SyncContextFromContext(ctx).RuntimeClient
+	}
+
 	var layers img.Layers
 	var err error
 	descriptor, err := template.Spec.GetDescriptor()
@@ -136,7 +143,7 @@ func (p *Parser) newManifestFromTemplate(
 		return nil, err
 	}
 	verification, err := signature.NewVerification(ctx,
-		p.Client,
+		clusterClient,
 		p.EnableVerification,
 		p.PublicKeyFilePath,
 		module.Name)

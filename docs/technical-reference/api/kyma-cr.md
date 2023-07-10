@@ -103,6 +103,10 @@ In addition to this very flexible way of referencing modules, there is also anot
 While `CreateAndDelete` will cause the ModuleTemplate's **.spec.data** to be created and deleted to initialize a module with preconfigured defaults, `Ignore` can be used to only initialize the operator without initializing any default data.
 This allows users to be fully flexible in regard to when and how to initialize their module.
 
+### **.spec.modules[].remoteModuleTemplateRef**
+The `remoteModuleTemplateRef` flag allows the users to have their ModuleTemplate CR fetched from the SKR cluster instead of Kyma Control Plane (KCP). It should be the reference (FQDN,
+Namespace/Name, or module name label) to the ModuleTemplate CR. If not specified, the ModuleTemplate CR is fetched from the KCP cluster.
+
 ### **.status.state**
 
 The **state** attribute is a simple representation of the state of the entire Kyma CR installation. It is defined as an aggregated status that is either `Ready`, `Processing`, `Error`, or `Deleting`, based on the status of _all_ Manifest CRs on top of the validity/integrity of the synchronization to a remote cluster if enabled.
