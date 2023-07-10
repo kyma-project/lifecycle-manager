@@ -19,7 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("Manifest consistency check, given Manifest CR with OCI specs", Ordered, func() {
+var _ = Describe("Manifest readiness check", Ordered, func() {
 	customDir := "custom-dir"
 	installName := filepath.Join(customDir, "installs")
 	It(
