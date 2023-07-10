@@ -74,6 +74,12 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --watcher-requeue-success-interval=1m
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --enable-purge-finalizer
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --skip-finalizer-purging-for=*.crd.projectcalico.org,*.cert.gardener.cloud,*.dns.gardener.cloud,*.autoscaling.k8s.io,*.snapshot.storage.k8s.io
     target:
       kind: Deployment
 
