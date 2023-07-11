@@ -5,7 +5,6 @@ metadata:
   namespace: default
   labels:
     "operator.kyma-project.io/module-name": "template-operator"
-    "operator.kyma-project.io/use-local-template": "true"
 spec:
   channel: regular
   data:

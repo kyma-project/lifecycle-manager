@@ -7,6 +7,7 @@ import (
 	"os"
 	"reflect"
 
+	"github.com/google/go-containerregistry/pkg/v1/google"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
@@ -141,5 +142,5 @@ func (m *ManifestSpecResolver) lookupKeyChain(
 	} else {
 		keyChain = authn.DefaultKeychain
 	}
-	return keyChain, nil
+	return authn.NewMultiKeychain(google.Keychain, keyChain), nil
 }
