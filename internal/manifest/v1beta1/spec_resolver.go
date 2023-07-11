@@ -47,7 +47,8 @@ var (
 )
 
 func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object,
-	remoteClient client.Client) (*declarative.Spec, error) {
+	remoteClient client.Client,
+) (*declarative.Spec, error) {
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
 		return nil, fmt.Errorf(

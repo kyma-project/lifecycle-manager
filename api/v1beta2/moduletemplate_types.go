@@ -19,6 +19,7 @@ package v1beta2
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -112,18 +113,41 @@ type CustomStateCheck struct {
 	Value string `json:"value"`
 }
 
-func (spec *ModuleTemplateSpec) GetDescriptor(opts ...compdesc.DecodeOption) (*Descriptor, error) {
-	if spec.Descriptor.Object != nil {
-		return spec.Descriptor.Object.(*Descriptor), nil
+func (m *ModuleTemplate) GetDescriptor() (*Descriptor, error) {
+	if m.Spec.Descriptor.Object != nil {
+		return m.Spec.Descriptor.Object.(*Descriptor), nil
 	}
-	desc, err := compdesc.Decode(
-		spec.Descriptor.Raw, append([]compdesc.DecodeOption{compdesc.DisableValidation(true)}, opts...)...,
-	)
-	if err != nil {
-		return nil, err
+	descriptor := m.GetDescFromCache()
+	if descriptor == nil {
+		desc, err := compdesc.Decode(
+			m.Spec.Descriptor.Raw, append([]compdesc.DecodeOption{compdesc.DisableValidation(true)})...,
+		)
+		if err != nil {
+			return nil, err
+		}
+		m.Spec.Descriptor.Object = &Descriptor{ComponentDescriptor: desc}
+		descriptor = m.Spec.Descriptor.Object.(*Descriptor)
+		m.SetDescToCache(descriptor)
 	}
-	spec.Descriptor.Object = &Descriptor{ComponentDescriptor: desc}
-	return spec.Descriptor.Object.(*Descriptor), err
+
+	return descriptor, nil
+}
+
+//nolint:gochecknoglobals
+var descriptorCache = sync.Map{}
+
+func (m *ModuleTemplate) GetDescFromCache() *Descriptor {
+	key := m.GetComponentDescriptorCacheKey()
+	value, ok := descriptorCache.Load(key)
+	if !ok {
+		return nil
+	}
+	return &Descriptor{ComponentDescriptor: value.(*Descriptor).Copy()}
+}
+
+func (m *ModuleTemplate) SetDescToCache(descriptor *Descriptor) {
+	key := m.GetComponentDescriptorCacheKey()
+	descriptorCache.Store(key, descriptor)
 }
 
 //+kubebuilder:object:root=true
@@ -140,13 +164,8 @@ func init() {
 	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{}, &Descriptor{})
 }
 
-func (m *ModuleTemplate) GetComponentDescriptorCacheKey() (string, error) {
-	descriptor, err := m.Spec.GetDescriptor()
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%s:%s:%s:%s", m.Spec.Channel, m.ResourceVersion, descriptor.GetName(),
-		descriptor.GetVersion()), nil
+func (m *ModuleTemplate) GetComponentDescriptorCacheKey() string {
+	return fmt.Sprintf("%s:%s:%d", m.Name, m.Spec.Channel, m.Generation)
 }
 
 func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {

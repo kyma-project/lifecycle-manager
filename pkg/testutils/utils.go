@@ -222,7 +222,7 @@ func GetManifest(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	descriptor, err := template.Spec.GetDescriptor()
+	descriptor, err := template.GetDescriptor()
 	if err != nil {
 		return nil, err
 	}

@@ -95,7 +95,6 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, eventChannel *source.Channel) {
 	controllerBuilder.Watches(eventChannel, &handler.Funcs{
 		GenericFunc: func(event event.GenericEvent, queue workqueue.RateLimitingInterface) {
-
 			logger := ctrl.Log.WithName("listener")
 			unstructWatcherEvt, conversionOk := event.Object.(*unstructured.Unstructured)
 			if !conversionOk {

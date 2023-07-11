@@ -63,7 +63,7 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 			})
 			continue
 		}
-		descriptor, err := template.Spec.GetDescriptor()
+		descriptor, err := template.GetDescriptor()
 		if err != nil {
 			template.Err = err
 			modules = append(modules, &common.Module{
@@ -137,7 +137,7 @@ func (p *Parser) newManifestFromTemplate(
 
 	var layers img.Layers
 	var err error
-	descriptor, err := template.Spec.GetDescriptor()
+	descriptor, err := template.GetDescriptor()
 	if err != nil {
 		return nil, err
 	}
