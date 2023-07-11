@@ -110,7 +110,6 @@ var _ = Describe(
 
 var _ = Describe(
 	"Given manifest with private registry", func() {
-		Skip("refactor this test to not use external oci registry")
 		manifest := &v1beta2.Manifest{}
 		manifestPath := filepath.Join("../../../pkg/test_samples/oci", "private-registry-manifest.yaml")
 		manifestFile, err := os.ReadFile(manifestPath)
@@ -125,10 +124,13 @@ var _ = Describe(
 		Expect(err).ToNot(HaveOccurred())
 
 		It("Should create Manifest", func() {
+			Skip("refactor this test to not use external oci registry")
 			Expect(k8sClient.Create(ctx, manifest)).To(Succeed())
 		})
 
 		It("Manifest should be in Error state with no auth secret found error message", func() {
+			Skip("refactor this test to not use external oci registry")
+
 			Eventually(func() error {
 				status, err := getManifestStatus(manifest.GetName())
 				if err != nil {
