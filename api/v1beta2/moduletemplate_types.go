@@ -120,7 +120,7 @@ func (m *ModuleTemplate) GetDescriptor() (*Descriptor, error) {
 	descriptor := m.GetDescFromCache()
 	if descriptor == nil {
 		desc, err := compdesc.Decode(
-			m.Spec.Descriptor.Raw, append([]compdesc.DecodeOption{compdesc.DisableValidation(true)})...,
+			m.Spec.Descriptor.Raw, []compdesc.DecodeOption{compdesc.DisableValidation(true)}...,
 		)
 		if err != nil {
 			return nil, err

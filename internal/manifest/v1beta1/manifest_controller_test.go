@@ -110,6 +110,7 @@ var _ = Describe(
 
 var _ = Describe(
 	"Given manifest with private registry", func() {
+		Skip("refactor this test to not use external oci registry")
 		manifest := &v1beta2.Manifest{}
 		manifestPath := filepath.Join("../../../pkg/test_samples/oci", "private-registry-manifest.yaml")
 		manifestFile, err := os.ReadFile(manifestPath)
