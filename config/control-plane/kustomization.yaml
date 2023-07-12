@@ -65,19 +65,6 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --is-kyma-managed
-      - op: add
-        path: /spec/template/spec/containers/0/args/-
-        value: --kyma-requeue-success-interval=1m
-      - op: add
-        path: /spec/template/spec/containers/0/args/-
-        value: --manifest-requeue-success-interval=1m
-      - op: add
-        path: /spec/template/spec/containers/0/args/-
-        value: --watcher-requeue-success-interval=1m
-      - op: add
-        path: /spec/template/spec/nodeSelector
-        value:
-          iam.gke.io/gke-metadata-server-enabled: "true"
     target:
       kind: Deployment
 
