@@ -2,7 +2,7 @@
 
 Modules are the next generation of components in Kyma that are available for local and cluster installation.
 
-Modules are no longer represented by a single helm-chart, but instead are bundled and released within channels through a [ModuleTemplate custom resource (CR)](../api/v1beta2/moduletemplate_types.go), a unique link of a module, and its desired state of charts and configuration, and a channel.
+Modules are no longer represented by a single helm-chart, but instead are bundled and released within channels through a [ModuleTemplate custom resource (CR)](../api/v1beta2/moduletemplate_types.go), a unique link of a module, and its desired state of resources and configuration, and a channel.
 
 Lifecycle Manager manages clusters using the [Kyma CR](../api/v1beta2/kyma_types.go). The CR defines the desired state of modules in a cluster. With the CR you can enable and disable modules with domain-specific functionality with additional configuration.
 
@@ -10,7 +10,7 @@ The modules themselves are built and distributed as OCI artifacts. The internal 
 
 ![Kyma Module Structure](/docs/assets/kyma-module-template-structure.svg)
 
-If you use Kyma [CLI](https://github.com/kyma-project/cli), you can create a Kyma module by running `kyma alpha create module`. This command creates a component descriptor in the configured descriptor path (`./mod` as default) and packages all the contents on the provided path as an OCI artifact. Refer to the `kyma alpha create module --help` section to learn more about the module structure and how it is created. You can also use the module's inbuilt auto-detection of [Kubebuilder](https://kubebuilder.io) projects to easily bundle your module with little effort.
+If you use Kyma [CLI](https://github.com/kyma-project/cli), you can create a Kyma module by running `kyma alpha create module`. This command packages all the contents on the provided path as an OCI artifact and pushes the artifact to the provided OCI registry. Use the `kyma alpha create module --help` command to learn more about the module structure and how it is created. You can also use the CLI's auto-detection of [Kubebuilder](https://kubebuilder.io) projects to easily bundle your module with little effort.
 
 The modules are installed and controlled by Lifecycle Manager. We use [Open Component Model](https://ocm.software) to describe all of our modules descriptively.
 Based on the [ModuleTemplate CR](../api/v1beta2/moduletemplate_types.go), the module is resolved from its layers and version and is used as a template for the [Manifest CR](api/v1beta1/manifest_types.go).
