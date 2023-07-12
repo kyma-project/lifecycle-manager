@@ -1,8 +1,6 @@
 package v2
 
 import (
-	"fmt"
-	"path/filepath"
 	"time"
 
 	"github.com/jellydator/ttlcache/v3"
@@ -26,8 +24,7 @@ func NewInMemoryCachedManifestParser(ttl time.Duration) *InMemoryManifestCache {
 }
 
 func (c *InMemoryManifestCache) EvictCache(spec *Spec) {
-	key := generateCacheKey(spec)
-	c.Cache.Delete(key)
+	c.Cache.Delete(spec.Path)
 }
 
 type InMemoryManifestCache struct {
@@ -37,10 +34,8 @@ type InMemoryManifestCache struct {
 
 func (c *InMemoryManifestCache) Parse(spec *Spec,
 ) (internal.ManifestResources, error) {
-	key := generateCacheKey(spec)
-
 	var err error
-	item := c.Cache.Get(key)
+	item := c.Cache.Get(spec.Path)
 	resources := internal.ManifestResources{}
 	if item != nil {
 		resources = item.Value()
@@ -49,7 +44,7 @@ func (c *InMemoryManifestCache) Parse(spec *Spec,
 		if err != nil {
 			return internal.ManifestResources{}, err
 		}
-		c.Cache.Set(key, resources, c.TTL)
+		c.Cache.Set(spec.Path, resources, c.TTL)
 	}
 	copied := &internal.ManifestResources{
 		Items: make([]*unstructured.Unstructured, 0, len(resources.Items)),
@@ -58,9 +53,4 @@ func (c *InMemoryManifestCache) Parse(spec *Spec,
 		copied.Items = append(copied.Items, res.DeepCopy())
 	}
 	return *copied, nil
-}
-
-func generateCacheKey(spec *Spec) string {
-	file := filepath.Join(ManifestFilePrefix, spec.Path, spec.ManifestName)
-	return fmt.Sprintf("%s-%s", file, spec.Mode)
 }

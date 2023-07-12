@@ -100,7 +100,7 @@ patches:
         value: --rate-limiter-frequency=1000
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --max-concurrent-manifest-reconciles=25
+        value: --max-concurrent-manifest-reconciles=100
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --max-concurrent-kyma-reconciles=50
@@ -112,7 +112,7 @@ patches:
         value: --failure-max-delay=30s
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --kyma-requeue-success-interval=1m
+        value: --kyma-requeue-success-interval=10m
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --manifest-requeue-success-interval=1m
