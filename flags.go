@@ -82,6 +82,8 @@ func defineFlagVar() *FlagVar {
 		"The resources.limits.cpu for skr webhook.")
 	flag.BoolVar(&flagVar.enableWatcherLocalTesting, "enable-watcher-local-testing", false,
 		"Enabling KCP Watcher two-cluster setup to be tested locally using k3d")
+	flag.BoolVar(&flagVar.enableManifest, "enable-manifest", true,
+		"Enabling Manifest controller")
 	flag.StringVar(&flagVar.istioNamespace, "istio-namespace", "istio-system",
 		"CLuster Resource Namespace of Istio")
 	flag.IntVar(&flagVar.listenerHTTPPortLocalMapping, "listener-http-local-mapping", defaultListenerPort,
@@ -167,4 +169,5 @@ type FlagVar struct {
 	remoteSyncNamespace                    string
 	enableVerification                     bool
 	isKymaManaged                          bool
+	enableManifest                         bool
 }

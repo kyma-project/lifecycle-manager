@@ -155,7 +155,10 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 	remoteClientCache := remote.NewClientCache()
 
 	setupKymaReconciler(mgr, remoteClientCache, flagVar, options)
-	setupManifestReconciler(mgr, flagVar, options)
+
+	if flagVar.enableManifest {
+		setupManifestReconciler(mgr, flagVar, options)
+	}
 
 	if flagVar.enableKcpWatcher {
 		setupKcpWatcherReconciler(mgr, options, flagVar)
