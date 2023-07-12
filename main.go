@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
+	goruntime "runtime"
 	"time"
 
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -101,6 +102,8 @@ func main() {
 	flag.Parse()
 	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.logLevel), zapcore.Lock(os.Stdout)))
 	if flagVar.pprof {
+		goruntime.SetBlockProfileRate(1)
+		goruntime.SetMutexProfileFraction(1)
 		go pprofStartServer(flagVar.pprofAddr, flagVar.pprofServerTimeout)
 	}
 
