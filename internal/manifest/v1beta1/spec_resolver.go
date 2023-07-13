@@ -7,6 +7,7 @@ import (
 	"os"
 	"reflect"
 
+	"github.com/google/go-containerregistry/pkg/v1/google"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
@@ -46,7 +47,8 @@ var (
 )
 
 func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object,
-	remoteClient client.Client) (*declarative.Spec, error) {
+	remoteClient client.Client,
+) (*declarative.Spec, error) {
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
 		return nil, fmt.Errorf(
@@ -141,5 +143,5 @@ func (m *ManifestSpecResolver) lookupKeyChain(
 	} else {
 		keyChain = authn.DefaultKeychain
 	}
-	return keyChain, nil
+	return authn.NewMultiKeychain(google.Keychain, keyChain), nil
 }

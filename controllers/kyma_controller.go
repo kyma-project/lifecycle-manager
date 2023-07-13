@@ -39,7 +39,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/parse"
 	modulesync "github.com/kyma-project/lifecycle-manager/pkg/module/sync"
-	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
@@ -72,13 +71,12 @@ type KymaReconciler struct {
 	record.EventRecorder
 	RequeueIntervals
 	signature.VerificationSettings
-	SKRWebhookManager        watcher.SKRWebhookManager
-	KcpRestConfig            *rest.Config
-	RemoteClientCache        *remote.ClientCache
-	ComponentDescriptorCache *ocmextensions.ComponentDescriptorCache
-	InKCPMode                bool
-	RemoteSyncNamespace      string
-	IsManagedKyma            bool
+	SKRWebhookManager   watcher.SKRWebhookManager
+	KcpRestConfig       *rest.Config
+	RemoteClientCache   *remote.ClientCache
+	InKCPMode           bool
+	RemoteSyncNamespace string
+	IsManagedKyma       bool
 }
 
 //nolint:lll
@@ -480,7 +478,7 @@ func (r *KymaReconciler) GenerateModulesFromTemplate(ctx context.Context, kyma *
 			r.enqueueWarningEvent(kyma, moduleReconciliationError, template.Err)
 		}
 	}
-	parser := parse.NewParser(r.Client, r.ComponentDescriptorCache, r.InKCPMode,
+	parser := parse.NewParser(r.Client, r.InKCPMode,
 		r.RemoteSyncNamespace, r.EnableVerification, r.PublicKeyFilePath)
 
 	return parser.GenerateModulesFromTemplates(ctx, kyma, templates), nil

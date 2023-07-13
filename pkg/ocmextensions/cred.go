@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	authnK8s "github.com/google/go-containerregistry/pkg/authn/kubernetes"
-	"github.com/open-component-model/ocm/pkg/contexts/credentials"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -25,33 +25,6 @@ func GetAuthnKeychain(ctx context.Context,
 		return nil, err
 	}
 	return authnK8s.NewFromPullSecrets(ctx, secretList.Items)
-}
-
-func GetCredentials(ctx context.Context,
-	registryCredValue []byte,
-	ociRegistry *OCIRegistry,
-	clnt client.Client,
-) (credentials.Credentials, error) {
-	credSecretSelector, err := GenerateLabelSelector(registryCredValue)
-	if err != nil {
-		return nil, err
-	}
-	keychain, err := GetAuthnKeychain(ctx, credSecretSelector, clnt)
-	if err != nil {
-		return nil, err
-	}
-	authenticator, err := keychain.Resolve(ociRegistry)
-	if err != nil {
-		return nil, err
-	}
-	authConfig, err := authenticator.Authorization()
-	if err != nil {
-		return nil, err
-	}
-	return credentials.DirectCredentials{
-		"username": authConfig.Username,
-		"password": authConfig.Password,
-	}, nil
 }
 
 func getCredSecrets(
@@ -86,4 +59,9 @@ func GenerateLabelSelector(registryCredValue []byte) (*metav1.LabelSelector, err
 	return &metav1.LabelSelector{
 		MatchLabels: credSecretLabel,
 	}, nil
+}
+
+func NoSchemeURL(url string) string {
+	regex := regexp.MustCompile(`^https?://`)
+	return regex.ReplaceAllString(url, "")
 }
