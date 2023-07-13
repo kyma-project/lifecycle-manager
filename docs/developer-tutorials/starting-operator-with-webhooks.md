@@ -1,4 +1,4 @@
-# Enabling webhooks in Lifecycle Manager
+# Enable webhooks in Lifecycle Manager
 
 ## Context
 
