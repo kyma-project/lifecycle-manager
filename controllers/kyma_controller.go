@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"time"
 
-	"golang.org/x/sync/errgroup"
+	"github.com/kyma-project/lifecycle-manager/pkg/types"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
@@ -306,46 +306,38 @@ func (r *KymaReconciler) handleInitialState(ctx context.Context, kyma *v1beta2.K
 func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Kyma) error {
 	logger := ctrlLog.FromContext(ctx)
 
-	var errGroup errgroup.Group
-	errGroup.Go(func() error {
-		err := r.reconcileManifests(ctx, kyma)
-		if err != nil {
-			return fmt.Errorf("could not reconciling manifest: %w", err)
-		}
-		if kyma.AllModulesReady() {
-			kyma.UpdateCondition(v1beta2.ConditionTypeModules, metav1.ConditionTrue)
-		} else {
-			kyma.UpdateCondition(v1beta2.ConditionTypeModules, metav1.ConditionFalse)
-		}
-		return nil
-	})
+	var errs []error
+	if err := r.reconcileManifests(ctx, kyma); err != nil {
+		errs = append(errs, err)
+	}
+
+	if kyma.AllModulesReady() {
+		kyma.UpdateCondition(v1beta2.ConditionTypeModules, metav1.ConditionTrue)
+	} else {
+		kyma.UpdateCondition(v1beta2.ConditionTypeModules, metav1.ConditionFalse)
+	}
+
 	if r.SyncKymaEnabled(kyma) {
-		errGroup.Go(func() error {
-			if err := r.syncModuleCatalog(ctx, kyma); err != nil {
-				kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, metav1.ConditionFalse)
-				return fmt.Errorf("could not synchronize remote module catalog: %w", err)
-			}
-			kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, metav1.ConditionTrue)
-			return nil
-		})
+		if err := r.syncModuleCatalog(ctx, kyma); err != nil {
+			kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, metav1.ConditionFalse)
+			errs = append(errs, err)
+		}
+		kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, metav1.ConditionTrue)
 	}
 
 	if r.WatcherEnabled(kyma) {
-		errGroup.Go(func() error {
-			if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
-				if errors.Is(err, &watcher.CertificateNotReadyError{}) {
-					kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, metav1.ConditionFalse)
-					return nil
-				}
-				return err
+		if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
+			if errors.Is(err, &watcher.CertificateNotReadyError{}) {
+				kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, metav1.ConditionFalse)
+			} else {
+				errs = append(errs, err)
 			}
-			kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, metav1.ConditionTrue)
-			return nil
-		})
+		}
+		kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, metav1.ConditionTrue)
 	}
 
-	if err := errGroup.Wait(); err != nil {
-		return r.updateStatusWithError(ctx, kyma, err)
+	if len(errs) != 0 {
+		return r.updateStatusWithError(ctx, kyma, types.NewMultiError(errs))
 	}
 
 	state := kyma.DetermineState()
