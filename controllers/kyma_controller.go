@@ -308,7 +308,7 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 
 	var errs []error
 	if err := r.reconcileManifests(ctx, kyma); err != nil {
-		errs = append(errs, err)
+		errs = append(errs, fmt.Errorf("could not reconciling manifest: %w", err))
 	}
 
 	if kyma.AllModulesReady() {
@@ -320,7 +320,7 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 	if r.SyncKymaEnabled(kyma) {
 		if err := r.syncModuleCatalog(ctx, kyma); err != nil {
 			kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, metav1.ConditionFalse)
-			errs = append(errs, err)
+			errs = append(errs, fmt.Errorf("could not synchronize remote module catalog: %w", err))
 		}
 		kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, metav1.ConditionTrue)
 	}
@@ -330,7 +330,7 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 			if errors.Is(err, &watcher.CertificateNotReadyError{}) {
 				kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, metav1.ConditionFalse)
 			} else {
-				errs = append(errs, err)
+				errs = append(errs, fmt.Errorf("could not install watcher: %w", err))
 			}
 		}
 		kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, metav1.ConditionTrue)

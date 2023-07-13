@@ -64,10 +64,10 @@ func (r *RunnerImpl) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 			return nil
 		})
 	}
-	ssaFinish := time.Since(ssaStart)
 	if err := errGroup.Wait(); err != nil {
-		return fmt.Errorf("ServerSideApply failed (after %s): %w", ssaFinish, err)
+		return fmt.Errorf("ServerSideApply failed: %w", err)
 	}
+	ssaFinish := time.Since(ssaStart)
 
 	baseLogger.V(log.DebugLevel).Info("ServerSideApply finished", "time", ssaFinish)
 	return nil
