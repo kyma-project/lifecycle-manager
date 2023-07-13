@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/metrics"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
@@ -21,7 +22,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
 )
 
 func New(clnt client.Client) *RunnerImpl {
@@ -45,37 +45,30 @@ func (r *RunnerImpl) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	ssaStart := time.Now()
 	baseLogger := ctrlLog.FromContext(ctx)
 
-	results := make(chan error, len(modules))
+	var errGroup errgroup.Group
 	for _, module := range modules {
-		go func(module *common.Module) {
+		module := module
+		errGroup.Go(func() error {
 			// Due to module template visibility change, some module previously deployed should be removed.
 			if errors.Is(module.Template.Err, channel.ErrTemplateNotAllowed) {
-				results <- r.deleteManifest(ctx, module)
-				return
+				return r.deleteManifest(ctx, module)
 			}
 			// Module template in other error status should be ignored.
 			if module.Template.Err != nil {
-				results <- nil
-				return
+				return nil //nolint:nilerr
 			}
 			if err := r.updateManifests(ctx, kyma, module); err != nil {
-				results <- fmt.Errorf("could not update module %s: %w", module.GetName(), err)
-				return
+				return fmt.Errorf("could not update module %s: %w", module.GetName(), err)
 			}
 			module.Logger(baseLogger).V(log.DebugLevel).Info("successfully patched module")
-			results <- nil
-		}(module)
-	}
-	var errs []error
-	for i := 0; i < len(modules); i++ {
-		if err := <-results; err != nil {
-			errs = append(errs, err)
-		}
+			return nil
+		})
 	}
 	ssaFinish := time.Since(ssaStart)
-	if len(errs) != 0 {
-		return fmt.Errorf("ServerSideApply failed (after %s): %w", ssaFinish, types.NewMultiError(errs))
+	if err := errGroup.Wait(); err != nil {
+		return fmt.Errorf("ServerSideApply failed (after %s): %w", ssaFinish, err)
 	}
+
 	baseLogger.V(log.DebugLevel).Info("ServerSideApply finished", "time", ssaFinish)
 	return nil
 }

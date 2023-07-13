@@ -58,6 +58,9 @@ func NewTestKyma(name string) *v1beta2.Kyma {
 				watcher.DomainAnnotation:       "example.domain.com",
 				v1beta2.SyncStrategyAnnotation: v1beta2.SyncStrategyLocalClient,
 			},
+			Labels: map[string]string{
+				v1beta2.InstanceIDLabel: "test-instance",
+			},
 		},
 		Spec: v1beta2.KymaSpec{
 			Modules: []v1beta2.Module{},
