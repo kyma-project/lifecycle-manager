@@ -8,48 +8,17 @@ For further information, read the [kubebuilder tutorial](https://book.kubebuilde
 
 ## Procedure
 
-1. In `config/crd/kustomization.yaml`:
+1. Go to [`config/crd/kustomization.yaml`](https://github.com/kyma-project/lifecycle-manager/blob/main/config/crd/kustomization.yaml). Follow the instructions from the file to uncomment sections referring to [WEBHOOK] and [CERT_MANAGER].
 
-   ```yaml
-   patchesStrategicMerge:
-     # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix.
-     # patches here are for enabling the conversion webhook for each CRD
-     - patches/webhook_in_kymas.yaml
-     - patches/webhook_in_moduletemplates.yaml
-     #+kubebuilder:scaffold:crdkustomizewebhookpatch
+2. Go to [`config/default/kustomization.yaml`](https://github.com/kyma-project/lifecycle-manager/blob/main/config/default/kustomization.yaml). Follow the instruction in the file and uncomment all sections referring to [WEBHOOK], [CERT-MANAGER], and [PROMETHEUS].
 
-     # [CERTMANAGER] To enable cert-manager, uncomment all the sections with [CERTMANAGER] prefix.
-     # patches here are for enabling the CA injection for each CRD
-     - patches/cainjection_in_kymas.yaml
-     - patches/cainjection_in_moduletemplates.yaml
-   #+kubebuilder:scaffold:crdkustomizecainjectionpatch
+3. Enable the webhooks by setting the `--enable-webhooks` flag. Run:
+
+   ```bash
+   go run ./main.go ./flags.go --enable-webhooks
    ```
 
-2. In `config/default/kustomization.yaml`:
-
-   ```yaml
-   bases:
-   ---
-   - ../crd
-   - ../rbac
-   - ../manager
-   # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
-   # crd/kustomization.yaml
-   #- ../webhook
-   # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'. 'WEBHOOK' components are required.
-   #- ../certmanager
-   # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
-   - ../prometheus
-   ```
-
-3. Enable the webhooks by configuring the `enable-webhooks` flag:
-
-   ```go
-   flag.BoolVar(&flagVar.enableWebhooks, "enable-webhooks", false,
-       "Enabling Validation/Conversion Webhooks.")
-   ```
-
-   You can do this by updating `config/manager/controller_manager_config.yaml`:
+   You can also enable webhooks by updating `config/manager/controller_manager_config.yaml`:
 
    ```yaml
    apiVersion: controller-runtime.sigs.k8s.io/v1alpha1
