@@ -132,7 +132,7 @@ var _ = BeforeSuite(func() {
 		restCfg, ctrl.Options{
 			MetricsBindAddress: metricsBindAddress,
 			Scheme:             scheme.Scheme,
-			NewCache:           controllers.NewCacheFunc(),
+			Cache:              controllers.NewCacheOptions(),
 		})
 	Expect(err).ToNot(HaveOccurred())
 

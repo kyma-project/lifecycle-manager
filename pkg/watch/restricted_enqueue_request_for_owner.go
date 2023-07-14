@@ -1,6 +1,7 @@
 package watch
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -15,7 +16,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 )
 
 const (
@@ -53,7 +53,7 @@ type RestrictedEnqueueRequestForOwner struct {
 }
 
 // Create implements EventHandler.
-func (e *RestrictedEnqueueRequestForOwner) Create(evt event.CreateEvent, q workqueue.RateLimitingInterface) {
+func (e *RestrictedEnqueueRequestForOwner) Create(ctx context.Context, evt event.CreateEvent, q workqueue.RateLimitingInterface) {
 	reqs := map[reconcile.Request]any{}
 	e.getOwnerReconcileRequest(nil, evt.Object, reqs)
 	for req := range reqs {
@@ -62,7 +62,7 @@ func (e *RestrictedEnqueueRequestForOwner) Create(evt event.CreateEvent, q workq
 }
 
 // Update implements EventHandler.
-func (e *RestrictedEnqueueRequestForOwner) Update(evt event.UpdateEvent, q workqueue.RateLimitingInterface) {
+func (e *RestrictedEnqueueRequestForOwner) Update(ctx context.Context, evt event.UpdateEvent, q workqueue.RateLimitingInterface) {
 	reqs := map[reconcile.Request]any{}
 	e.getOwnerReconcileRequest(evt.ObjectOld, evt.ObjectNew, reqs)
 	for req := range reqs {
@@ -71,7 +71,7 @@ func (e *RestrictedEnqueueRequestForOwner) Update(evt event.UpdateEvent, q workq
 }
 
 // Delete implements EventHandler.
-func (e *RestrictedEnqueueRequestForOwner) Delete(evt event.DeleteEvent, q workqueue.RateLimitingInterface) {
+func (e *RestrictedEnqueueRequestForOwner) Delete(ctx context.Context, evt event.DeleteEvent, q workqueue.RateLimitingInterface) {
 	reqs := map[reconcile.Request]any{}
 	e.getOwnerReconcileRequest(nil, evt.Object, reqs)
 	for req := range reqs {
@@ -80,7 +80,7 @@ func (e *RestrictedEnqueueRequestForOwner) Delete(evt event.DeleteEvent, q workq
 }
 
 // Generic implements EventHandler.
-func (e *RestrictedEnqueueRequestForOwner) Generic(evt event.GenericEvent, q workqueue.RateLimitingInterface) {
+func (e *RestrictedEnqueueRequestForOwner) Generic(ctx context.Context, evt event.GenericEvent, q workqueue.RateLimitingInterface) {
 	reqs := map[reconcile.Request]any{}
 	e.getOwnerReconcileRequest(nil, evt.Object, reqs)
 	for req := range reqs {
@@ -198,14 +198,10 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnersReferences(object metav1.Obj
 	return nil
 }
 
-var _ inject.Scheme = &RestrictedEnqueueRequestForOwner{}
-
 // InjectScheme is called by the Controller to provide a singleton scheme to the EnqueueRequestForOwner.
 func (e *RestrictedEnqueueRequestForOwner) InjectScheme(s *runtime.Scheme) error {
 	return e.parseOwnerTypeGroupKind(s)
 }
-
-var _ inject.Mapper = &RestrictedEnqueueRequestForOwner{}
 
 // InjectMapper  is called by the Controller to provide the rest mapper used by the manager.
 func (e *RestrictedEnqueueRequestForOwner) InjectMapper(m meta.RESTMapper) error {
