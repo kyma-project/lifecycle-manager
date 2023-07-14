@@ -44,8 +44,8 @@ var _ = Describe("Kyma with remote module templates", Ordered, func() {
 	var runtimeClient client.Client
 	var runtimeEnv *envtest.Environment
 	BeforeAll(func() {
-		Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
 		runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
+		Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
 	})
 
 	templateInKcp, err := ModuleTemplateFactory(moduleInKcp, unstructured.Unstructured{}, false, false, false)
