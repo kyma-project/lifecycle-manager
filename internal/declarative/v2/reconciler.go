@@ -148,7 +148,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if !obj.GetDeletionTimestamp().IsZero() {
 		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
 	}
-	if err := r.syncResources(ctx, clnt, obj, target); err != nil {
+	if err := r.syncResources(ctx, clnt, obj, target, spec); err != nil {
 		return r.ssaStatus(ctx, obj)
 	}
 
@@ -266,7 +266,11 @@ func (r *Reconciler) renderResources(
 }
 
 func (r *Reconciler) syncResources(
-	ctx context.Context, clnt Client, obj Object, target []*resource.Info,
+	ctx context.Context,
+	clnt Client,
+	obj Object,
+	target []*resource.Info,
+	spec *Spec,
 ) error {
 	status := obj.GetStatus()
 
@@ -276,11 +280,9 @@ func (r *Reconciler) syncResources(
 		return err
 	}
 
-	oldSynced := status.Synced
-	newSynced := NewInfoToResourceConverter().InfosToResources(target)
-	status.Synced = newSynced
+	status.Synced = NewInfoToResourceConverter().InfosToResources(target)
 
-	if len(oldSynced) != len(newSynced) {
+	if !ociRefNotChanged(obj, spec.OCIRef) {
 		obj.SetStatus(status.WithState(StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
 		return ErrWarningResourceSyncStateDiff
 	}

@@ -13,7 +13,7 @@ spec:
     metadata:
       name: sample-yaml
     spec:
-      resourceFilePath: "./base/config.yaml"
+      resourceFilePath: "./module-data/yaml"
   descriptor:
     component:
       componentReferences: []
@@ -25,16 +25,16 @@ spec:
           type: ociRegistry
       resources:
         - access:
-            digest: sha256:c85c6c7148b0dfd5a1e951622ac0a5a4104aa6cd94479f3660fa15753c38e38e
+            digest: sha256:903eda97406482c42b7aa34ae7da1dac68fdacaccd2a70158ef13a09c2230915
             type: localOciBlob
           name: raw-manifest
           relation: local
           type: yaml
-          version: v1.0.0-smoke-test
+          version: v1.1.0-smoke-test
       sources:
         - access:
             commit: d9ddb3ddd0e4579bba24b7f56027a939fb559e1f
-            repoUrl: https://github.com/khlifi411/cli
+            repoUrl: https://github.com/jakobmoellersap/cli
             type: gitHub
           labels:
             - name: git.kyma-project.io/ref
@@ -42,7 +42,7 @@ spec:
               version: v1
           name: module-sources
           type: git
-          version: v1.0.0-smoke-test
-      version: v1.0.0-smoke-test
+          version: v1.1.0-smoke-test
+      version: v1.1.0-smoke-test
     meta:
       schemaVersion: v2

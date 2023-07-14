@@ -13,7 +13,7 @@ spec:
     metadata:
       name: sample-yaml
     spec:
-      resourceFilePath: "./changed/config.yaml"
+      resourceFilePath: "./module-data/config.yaml"
   descriptor:
     component:
       componentReferences: []
