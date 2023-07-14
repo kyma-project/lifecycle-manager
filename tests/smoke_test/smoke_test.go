@@ -1,5 +1,3 @@
-//go:build smoke
-
 package smoke_test
 
 import (
@@ -11,12 +9,16 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+
 	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/e2e-framework/klient"
 	"sigs.k8s.io/e2e-framework/klient/conf"
+	"sigs.k8s.io/e2e-framework/klient/k8s"
 	"sigs.k8s.io/e2e-framework/klient/k8s/resources"
 	"sigs.k8s.io/e2e-framework/klient/wait"
 	"sigs.k8s.io/e2e-framework/klient/wait/conditions"
@@ -52,8 +54,28 @@ func TestMain(m *testing.M) {
 
 //nolint:paralleltest
 func TestDefaultControllerManagerSpinsUp(t *testing.T) {
+	kymaName := "default-kyma"
 	deploymentName := "lifecycle-manager-controller-manager"
+	moduleDeploymentName := "template-operator-v1-controller-manager"
+	manifestName := common.CreateModuleName("kyma-project.io/template-operator", kymaName, "template-operator")
 	depFeature := features.New("default").
+		WithLabel("app.kubernetes.io/component", "lifecycle-manager.kyma-project.io").
+		WithLabel("test-type.kyma-project.io", "smoke").
+		Assess("exists", deploymentExists(KCP, deploymentName)).
+		Assess("exists", deploymentExists(KCP, moduleDeploymentName)).
+		Assess("available", deploymentAvailable(KCP, deploymentName)).
+		Assess("available", deploymentAvailable(KCP, moduleDeploymentName)).
+		Assess("kyma readiness", kymaReady(KymaCRNamespace, "default-kyma")).
+		Assess("manifest synced resources", manifestSyncedResources(KymaCRNamespace, manifestName)).
+		Feature()
+
+	TestEnv.Test(t, depFeature)
+}
+
+//nolint:paralleltest
+func TestDefaultControllerManagerModuleUpgrade(t *testing.T) {
+	deploymentName := "lifecycle-manager-controller-manager"
+	depFeature := features.New("module upgrade").
 		WithLabel("app.kubernetes.io/component", "lifecycle-manager.kyma-project.io").
 		WithLabel("test-type.kyma-project.io", "smoke").
 		Assess("exists", deploymentExists(KCP, deploymentName)).
@@ -100,6 +122,37 @@ func kymaReady(namespace string, name string) features.Func {
 		}
 		logKymaStatus(ctx, t, resourcesFromConfig, kyma)
 
+		return ctx
+	}
+}
+
+func manifestSyncedResources(namespace string, name string) features.Func {
+	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		t.Helper()
+		resourcesFromConfig, err := resources.New(cfg.Client().RESTConfig())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := v1beta2.AddToScheme(resourcesFromConfig.GetScheme()); err != nil {
+			t.Fatal(err)
+		}
+
+		var manifest v1beta2.Manifest
+		if err := wait.For(func() (bool, error) {
+			if err := resourcesFromConfig.Get(ctx, name, namespace, &manifest); err != nil {
+				t.Fatal(err)
+			}
+			for _, synced := range manifest.Status.Synced {
+				var obj k8s.Object
+				if err := resourcesFromConfig.Get(ctx, synced.Name, synced.Namespace, obj); err != nil {
+					t.Fatal(err)
+				}
+			}
+			return manifest.Status.State == v2.StateReady, nil
+		}); err != nil {
+			t.Fatal(err)
+		}
+		logObjStatus(ctx, t, resourcesFromConfig, &manifest)
 		return ctx
 	}
 }
@@ -178,6 +231,18 @@ func logKymaStatus(ctx context.Context, t *testing.T, r *resources.Resources, ky
 		t.Error(err)
 	}
 	if marshal, err := yaml.Marshal(&kyma.Status); err == nil {
+		t.Logf("%s", marshal)
+	}
+}
+
+func logObjStatus(ctx context.Context, t *testing.T, r *resources.Resources, obj k8s.Object) {
+	t.Helper()
+	errCheckCtx, cancelErrCheck := context.WithTimeout(ctx, 5*time.Second)
+	defer cancelErrCheck()
+	if err := r.Get(errCheckCtx, obj.GetName(), obj.GetNamespace(), obj); err != nil {
+		t.Error(err)
+	}
+	if marshal, err := yaml.Marshal(obj); err == nil {
 		t.Logf("%s", marshal)
 	}
 }
