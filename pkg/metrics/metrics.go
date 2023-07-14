@@ -32,6 +32,7 @@ var (
 	}, []string{moduleNameLabel, kymaNameLabel, stateLabel, shootIDLabel, instanceIDLabel})
 )
 
+//nolint:gomnd
 func Initialize() {
 	requestLatency := prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
