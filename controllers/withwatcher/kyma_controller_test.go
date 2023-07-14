@@ -9,12 +9,12 @@ import (
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -157,7 +157,7 @@ func isWatcherCrLabelUpdated(watcherObjKey client.ObjectKey, labelKey, expectedL
 
 func isKymaCrDeletionFinished(kymaObjKey client.ObjectKey) bool {
 	err := controlPlaneClient.Get(suiteCtx, kymaObjKey, &v1beta2.Kyma{})
-	return apierrors.IsNotFound(err)
+	return util.IsNotFound(err)
 }
 
 func getSkrChartDeployment(ctx context.Context, skrClient client.Client, kymaObjKey client.ObjectKey) func() error {
@@ -262,5 +262,5 @@ func verifyWebhookConfig(
 
 func isWatcherCrDeletionFinished(watcherCR client.Object) bool {
 	err := controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(watcherCR), watcherCR)
-	return apierrors.IsNotFound(err)
+	return util.IsNotFound(err)
 }

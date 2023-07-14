@@ -8,9 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"strings"
 	"time"
+
+	"k8s.io/apimachinery/pkg/api/meta"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
@@ -19,7 +20,6 @@ import (
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -210,7 +210,7 @@ func createKymaSecret(ctx context.Context, kymaName, kymaNamespace, channel stri
 func deleteKymaSecret(ctx context.Context, kymaName, kymaNamespace, channel string, k8sClient client.Client) error {
 	secret := &corev1.Secret{}
 	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, secret)
-	if k8serrors.IsNotFound(err) {
+	if util.IsNotFound(err) {
 		return nil
 	}
 	Expect(err).ToNot(HaveOccurred())
@@ -220,7 +220,7 @@ func deleteKymaSecret(ctx context.Context, kymaName, kymaNamespace, channel stri
 func deleteKymaCR(ctx context.Context, kymaName, kymaNamespace, channel string, k8sClient client.Client) error {
 	kyma := &v1beta2.Kyma{}
 	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma)
-	if k8serrors.IsNotFound(err) {
+	if util.IsNotFound(err) {
 		return nil
 	}
 	Expect(err).ToNot(HaveOccurred())
@@ -258,7 +258,7 @@ func checkRemoteKymaCRDeleted(ctx context.Context,
 ) error {
 	kyma := &v1beta2.Kyma{}
 	err := k8sClient.Get(ctx, client.ObjectKey{Name: remoteKymaName, Namespace: kymaNamespace}, kyma)
-	if k8serrors.IsNotFound(err) {
+	if util.IsNotFound(err) {
 		return nil
 	}
 	return err

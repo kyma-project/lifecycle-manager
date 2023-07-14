@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -222,7 +222,7 @@ func (c *RemoteCatalog) Delete(
 	for i := range moduleTemplatesRuntime.Items {
 		if isManagedByKcp(moduleTemplatesRuntime.Items[i]) {
 			if err := syncContext.RuntimeClient.Delete(ctx, &moduleTemplatesRuntime.Items[i]); err != nil &&
-				!k8serrors.IsNotFound(err) {
+				!util.IsNotFound(err) {
 				return err
 			}
 		}
@@ -251,7 +251,7 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
 	}, crdFromRuntime)
 
-	if k8serrors.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta2.GroupVersion.Version) {
+	if util.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta2.GroupVersion.Version) {
 		return PatchCRD(ctx, syncContext.RuntimeClient, crd)
 	}
 

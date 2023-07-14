@@ -15,6 +15,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	. "github.com/onsi/gomega" //nolint:stylecheck,revive
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/ocm.software/v3alpha1"
@@ -57,6 +58,9 @@ func NewTestKyma(name string) *v1beta2.Kyma {
 			Annotations: map[string]string{
 				watcher.DomainAnnotation:       "example.domain.com",
 				v1beta2.SyncStrategyAnnotation: v1beta2.SyncStrategyLocalClient,
+			},
+			Labels: map[string]string{
+				v1beta2.InstanceIDLabel: "test-instance",
 			},
 		},
 		Spec: v1beta2.KymaSpec{
@@ -153,7 +157,7 @@ func DeleteModuleTemplates(
 
 func DeleteCR(ctx context.Context, clnt client.Client, obj client.Object) error {
 	err := clnt.Delete(ctx, obj)
-	if !k8serrors.IsNotFound(err) {
+	if !util.IsNotFound(err) {
 		return err
 	}
 	return nil
@@ -432,7 +436,7 @@ func ManifestExists(ctx context.Context,
 	kyma *v1beta2.Kyma, module v1beta2.Module, controlPlaneClient client.Client,
 ) error {
 	_, err := GetManifest(ctx, controlPlaneClient, kyma, module)
-	if k8serrors.IsNotFound(err) {
+	if util.IsNotFound(err) {
 		return ErrNotFound
 	}
 	return nil
@@ -440,7 +444,7 @@ func ManifestExists(ctx context.Context,
 
 func ModuleTemplateExists(ctx context.Context, client client.Client, name, namespace string) error {
 	_, err := GetModuleTemplate(ctx, client, name, namespace)
-	if k8serrors.IsNotFound(err) {
+	if util.IsNotFound(err) {
 		return ErrNotFound
 	}
 	return nil

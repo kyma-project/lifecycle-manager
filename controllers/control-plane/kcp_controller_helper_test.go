@@ -7,10 +7,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/cache"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -46,7 +46,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 
 func kymaExists(clnt client.Client, name, namespace string) error {
 	_, err := GetKyma(ctx, clnt, name, namespace)
-	if k8serrors.IsNotFound(err) {
+	if util.IsNotFound(err) {
 		return ErrNotFound
 	}
 	return nil

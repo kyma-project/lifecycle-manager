@@ -6,10 +6,10 @@ import (
 	"os"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -126,7 +126,7 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 			resource.SetNamespace(m.config.RemoteSyncNamespace)
 			return clt.Delete(ctx, resource)
 		})
-	if err != nil && !apierrors.IsNotFound(err) {
+	if err != nil && !util.IsNotFound(err) {
 		return fmt.Errorf("failed to delete webhook resources: %w", err)
 	}
 	logger.Info("successfully removed webhook resources",
@@ -182,7 +182,7 @@ func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.C
 	}
 
 	if err := kcpClient.Get(ctx, certObjKey, tlsSecret); err != nil {
-		if apierrors.IsNotFound(err) {
+		if util.IsNotFound(err) {
 			return nil, &CertificateNotReadyError{}
 		}
 		return nil, fmt.Errorf("error fetching TLS secret: %w", err)

@@ -12,6 +12,7 @@ import (
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/discovery"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -161,10 +162,21 @@ func ContainsLatestVersion(crdFromRuntime *v1extensions.CustomResourceDefinition
 }
 
 func CRDNotFoundErr(err error) bool {
-	var apiStatusErr k8serrors.APIStatus
-	ok := errors.As(err, &apiStatusErr)
+	groupErr := &discovery.ErrGroupDiscoveryFailed{}
+	if !errors.As(err, &groupErr) {
+		return false
+	}
+	for _, err := range groupErr.Groups {
+		if cannotFoundResource(err) {
+			return true
+		}
+	}
+	return false
+}
 
-	if ok && apiStatusErr.Status().Details != nil {
+func cannotFoundResource(err error) bool {
+	var apiStatusErr k8serrors.APIStatus
+	if ok := errors.As(err, &apiStatusErr); ok && apiStatusErr.Status().Details != nil {
 		for _, cause := range apiStatusErr.Status().Details.Causes {
 			if cause.Type == metav1.CauseTypeUnexpectedServerResponse &&
 				strings.Contains(cause.Message, "not found") {
@@ -172,6 +184,5 @@ func CRDNotFoundErr(err error) bool {
 			}
 		}
 	}
-
 	return false
 }
