@@ -11,7 +11,6 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/kubectl/pkg/util/openapi"
 	"k8s.io/kubectl/pkg/validation"
-	apiValidation "k8s.io/kubectl/pkg/validation"
 )
 
 // OpenAPISchema returns metadata and structural information about
@@ -121,7 +120,7 @@ func (s *SingletonClients) Validator(
 	}
 
 	conjSchema := validation.ConjunctiveSchema{
-		apiValidation.NewSchemaValidation(resources),
+		validation.NewSchemaValidation(resources),
 		validation.NoDoubleKeySchema{},
 	}
 	return validation.NewParamVerifyingSchema(conjSchema, nil, validationDirective), nil

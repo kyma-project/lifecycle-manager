@@ -137,6 +137,7 @@ func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *runti
 		config, ctrl.Options{
 			Scheme:                 scheme,
 			MetricsBindAddress:     flagVar.metricsAddr,
+			Port:                   port,
 			HealthProbeBindAddress: flagVar.probeAddr,
 			LeaderElection:         flagVar.enableLeaderElection,
 			LeaderElectionID:       "893110f7.kyma-project.io",
