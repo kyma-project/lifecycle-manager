@@ -13,6 +13,7 @@ linters:
     - interfacer # deprecated (since v1.38.0)
     - ireturn # TODO enable and fix
     - maligned # deprecated (since v1.38.0)
+    - mnd # TODO temporary disabled
     - nlreturn # too strict and mostly code is not more readable
     - nosnakecase  # deprecated (since v1.48.1) and replaced by 'revive'
     - scopelint # deprecated (since v1.39.0) and replaced by 'exportloopref'

@@ -33,7 +33,6 @@ var (
 )
 
 func Initialize() {
-
 	requestLatency := prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Subsystem: "rest_client",
