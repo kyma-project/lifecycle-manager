@@ -148,7 +148,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if !obj.GetDeletionTimestamp().IsZero() {
 		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
 	}
-	if err := r.syncResources(ctx, clnt, obj, target, spec); err != nil {
+	if err := r.syncResources(ctx, clnt, obj, target); err != nil {
 		return r.ssaStatus(ctx, obj)
 	}
 
@@ -265,13 +265,7 @@ func (r *Reconciler) renderResources(
 	return target, current, nil
 }
 
-func (r *Reconciler) syncResources(
-	ctx context.Context,
-	clnt Client,
-	obj Object,
-	target []*resource.Info,
-	spec *Spec,
-) error {
+func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object, target []*resource.Info) error {
 	status := obj.GetStatus()
 
 	if err := ConcurrentSSA(clnt, r.FieldOwner).Run(ctx, target); err != nil {
@@ -280,9 +274,11 @@ func (r *Reconciler) syncResources(
 		return err
 	}
 
-	status.Synced = NewInfoToResourceConverter().InfosToResources(target)
+	oldSynced := status.Synced
+	newSynced := NewInfoToResourceConverter().InfosToResources(target)
+	status.Synced = newSynced
 
-	if !ociRefNotChanged(obj, spec.OCIRef) {
+	if hasDiff(oldSynced, newSynced) {
 		obj.SetStatus(status.WithState(StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
 		return ErrWarningResourceSyncStateDiff
 	}
@@ -296,6 +292,27 @@ func (r *Reconciler) syncResources(
 	}
 
 	return r.checkTargetReadiness(ctx, clnt, obj, target)
+}
+
+func hasDiff(oldResources []Resource, newResources []Resource) bool {
+	if len(oldResources) != len(newResources) {
+		return true
+	}
+	countMap := map[string]bool{}
+	for _, item := range oldResources {
+		countMap[item.ID()] = true
+	}
+	for _, item := range newResources {
+		if countMap[item.ID()] {
+			countMap[item.ID()] = false
+		}
+	}
+	for _, exists := range countMap {
+		if exists {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *Reconciler) checkTargetReadiness(
