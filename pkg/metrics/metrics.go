@@ -34,6 +34,8 @@ var (
 
 //nolint:gomnd
 func Initialize() {
+	// TODO this is a temporary fix
+	// we need to conclude the controller-runtime upgrade to 0.15+ and remove this
 	requestLatency := prometheus.NewHistogramVec(
 		prometheus.HistogramOpts{
 			Subsystem: "rest_client",
@@ -68,6 +70,8 @@ func Initialize() {
 		[]string{"verb", "host"},
 	)
 
+	// TODO unregistering these metrics is a temporary fix
+	// we need to conclude the controller-runtime upgrade to 0.15+ and remove
 	ctrlMetrics.Registry.Unregister(requestLatency)
 	ctrlMetrics.Registry.Unregister(requestDuration)
 	ctrlMetrics.Registry.Unregister(requestSize)
