@@ -23,7 +23,7 @@ jobs:
         run: |
           echo "Image build did not succeed, skipping E2E Test!"
           exit 1
-          
+
   e2e-integration:
     strategy:
       matrix:
@@ -36,6 +36,7 @@ jobs:
       ISTIO_VERSION: 1.18.0
       CM_VERSION: v1.12.0
       KLM_VERSION_TAG: latest
+      KLM_IMAGE_REPO: prod
     steps:
       - name: Install prerequisites
         run: |
@@ -108,18 +109,19 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: '1.20'
-      - name: Override Kustomize Controller Image TAG environment variable in Pull Request to PR Image
+      - name: Override Kustomize Controller Image TAG and Image repository environment variables in Pull Request to PR Image
         if: ${{ github.event_name == 'pull_request' }}
         run: |
           echo "KLM_VERSION_TAG=PR-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
+          echo "KLM_IMAGE_REPO=dev" >> $GITHUB_ENV
       - name: Deploy LM local testing kustomize
         run: |
-          if make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:$KLM_VERSION_TAG; then
+          if make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/$KLM_IMAGE_REPO/lifecycle-manager:$KLM_VERSION_TAG; then
             echo "KLM deployed successfully"
           else
             echo "Deploy encountered some error, will retry after 30 seconds"
             sleep 30
-            if make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:$KLM_VERSION_TAG; then
+            if make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/$KLM_IMAGE_REPO/lifecycle-manager:$KLM_VERSION_TAG; then
                 echo "KLM deployed successfully"
             else
               echo "KLM deployment failed"
