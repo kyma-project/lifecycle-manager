@@ -129,7 +129,7 @@ lt-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified
 local-deploy-with-watcher: generate install ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) version
-	$(KUSTOMIZE) build config/watcher_local_test | kubectl apply -f -
+	$(KUSTOMIZE) build config/watcher_local_test | less
 
 .PHONY: undeploy
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
