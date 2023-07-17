@@ -115,7 +115,12 @@ jobs:
           else
             echo "Deploy encountered some error, will retry after 30 seconds"
             sleep 30
-            make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:latest
+            if make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:latest; then
+                echo "KLM deployed successfully"
+            else
+              echo "KLM deployment failed"
+              exit 1
+            fi
           fi
       - name: Export DinD ENV var
         run: echo "DIND=false" >> $GITHUB_ENV
