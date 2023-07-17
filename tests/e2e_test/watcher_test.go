@@ -30,7 +30,7 @@ import (
 
 const (
 	timeout      = 10 * time.Second
-	readyTimeout = 30 * time.Second
+	readyTimeout = 1 * time.Minute
 	interval     = 1 * time.Second
 
 	watcherPodContainer = "server"
@@ -80,7 +80,6 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 				WithContext(ctx).
 				WithArguments(kymaName, kymaNamespace, channel, controlPlaneClient).
 				Should(Succeed())
-
 			Eventually(createKymaSecret, timeout, interval).
 				WithContext(ctx).
 				WithArguments(kymaName, kymaNamespace, channel, controlPlaneClient).
@@ -98,14 +97,17 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 		})
 
 		It("Should redeploy watcher if it is deleted on remote cluster", func() {
+			By("verifying Runtime-Watcher is ready")
 			Eventually(checkWatcherDeploymentReady, readyTimeout, interval).
 				WithContext(ctx).
 				WithArguments(watcher.SkrResourceName, remoteNamespace, runtimeClient).
 				Should(Succeed())
+			By("deleting Runtime-Watcher deployment")
 			Eventually(deleteWatcherDeployment, timeout, interval).
 				WithContext(ctx).
 				WithArguments(watcher.SkrResourceName, remoteNamespace, runtimeClient).
 				Should(Succeed())
+			By("verifying Runtime-Watcher deployment will be reapplied and becomes ready")
 			Eventually(checkWatcherDeploymentReady, readyTimeout, interval).
 				WithContext(ctx).
 				WithArguments(watcher.SkrResourceName, remoteNamespace, runtimeClient).
@@ -113,14 +115,17 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 		})
 
 		It("Should redeploy certificates if deleted on remote cluster", func() {
+			By("verifying certificate secret exists on remote cluster")
 			Eventually(checkCertificateSecretExists, readyTimeout, interval).
 				WithContext(ctx).
 				WithArguments(watcher.SkrTLSName, remoteNamespace, runtimeClient).
 				Should(Succeed())
+			By("Deleting certificate secret on remote cluster")
 			Eventually(deleteCertificateSecret, timeout, interval).
 				WithContext(ctx).
 				WithArguments(watcher.SkrTLSName, remoteNamespace, runtimeClient).
 				Should(Succeed())
+			By("verifying certificate secret will be recreated on remote cluster")
 			Eventually(checkCertificateSecretExists, readyTimeout, interval).
 				WithContext(ctx).
 				WithArguments(watcher.SkrTLSName, remoteNamespace, runtimeClient).
@@ -128,11 +133,12 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 		})
 
 		It("Should trigger new reconciliation", func() {
+			By("changing the spec of the remote KymaCR")
 			Eventually(changeRemoteKymaChannel, timeout, interval).
 				WithContext(ctx).
 				WithArguments(remoteNamespace, "fast", runtimeClient).
 				Should(Succeed())
-
+			By("verifying new reconciliation got triggered for corresponding KymaCR on KCP")
 			Eventually(checkKLMLogs, timeout, interval).
 				WithContext(ctx).
 				WithArguments(incomingRequestMsg, controlPlaneRESTConfig, runtimeRESTConfig, controlPlaneClient, runtimeClient).
