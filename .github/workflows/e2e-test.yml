@@ -37,6 +37,7 @@ jobs:
       CM_VERSION: v1.12.0
       KLM_VERSION_TAG: latest
       KLM_IMAGE_REPO: prod
+      DIND: false
     steps:
       - name: Install prerequisites
         run: |
@@ -128,8 +129,6 @@ jobs:
               exit 1
             fi
           fi
-      - name: Export DinD ENV var
-        run: echo "DIND=false" >> $GITHUB_ENV
       - name: Run Watcher E2E Tests
         run: |
           make -C tests/e2e_test test
