@@ -31,11 +31,11 @@ help: ## Display this help.
 
 ##@ E2E Tests
 
-.PHONY: test-all
-test-all: test-watcher-e2e ## Runs the all E2E Tests
+.PHONY: test
+test: test-watcher-e2e ## Runs the all E2E Tests
 
 
 
 .PHONY: test-watcher-e2e
 test-watcher-e2e: ## Runs the Watcher E2E Test
-	go test ./... -coverprofile cover.out --tags=e2e -v
+	go test --tags=e2e -v
