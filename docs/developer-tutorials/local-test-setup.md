@@ -2,16 +2,16 @@
 
 ## Context
 
-The following steps provide you with a quick tour of how to configure a fully working e2e test setup including the following components:
+This tutorial shows how to configure a fully working e2e test setup including the following components:
 
 - Lifecycle Manager
-- runtime Watcher on a remote cluster
+- Runtime Watcher on a remote cluster
 - `template-operator` on a remote cluster as an example
 
 This setup is deployed with the following security features enabled:
 
 - Strict mTLS connection between Kyma Control Plane (KCP) and SKR clusters
-- SAN Pinning (SAN of client TLS certificate needs to match DNS annotation of corresponding Kyma CR)
+- SAN Pinning (SAN of client TLS certificate needs to match the DNS annotation of a corresponding Kyma CR)
 
 > **NOTE:** If you want to use remote clusters instead of a local k3d setup or external registries, please refer to the following guides for the cluster and registry setup:
 >
@@ -63,7 +63,7 @@ This setup is deployed with the following security features enabled:
     make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:latest
     ```
 
-   > **TIP:** If you get similar errors like the following, wait a couple of seconds and rerun the command.
+   > **TIP:** If you get an error similar to the following, wait a couple of seconds and rerun the command.
    >
    > ```shell
    > Error from server (InternalError): error when creating "STDIN": Internal error occurred: failed calling webhook "webhook.cert-manager.io": failed to call webhook: Post "https://cert-manager-webhook.cert-manager.svc:443/mutate?timeout=10s": no endpoints available for service "cert-manager-webhook"
@@ -177,8 +177,8 @@ k3d cluster create skr-local
     ```
 
    <details>
-      <summary>Running Lifecycle Manager on a local machine and not in-cluster</summary>
-      If you are running Lifecycle Manager on your local machine and not as a deployment in a cluster, use the following to create a Kyma CR and Secret:
+      <summary>Running Lifecycle Manager on a local machine and not on a cluster</summary>
+      If you are running Lifecycle Manager on your local machine and not as a deployment on a cluster, use the following to create a Kyma CR and Secret:
 
       ```shell  
       cat << EOF | kubectl apply -f -
@@ -214,7 +214,7 @@ k3d cluster create skr-local
 
 ### Watcher and module installation verification
 
-By checking the Kyma CR events, verify if the `SKRWebhookIsReady` condition is set to `True`.
+Check the Kyma CR events to verify if the `SKRWebhookIsReady` condition is set to `True`.
 Also make sure if the state of the `template-operator` is `Ready` and check the overall `state`.
 
 ```yaml
