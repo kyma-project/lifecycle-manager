@@ -25,6 +25,9 @@ const (
 	defaultListenerPort                   = 9080
 	defaultLogLevel                       = log.WarnLevel
 	defaultPurgeFinalizerTimeout          = 5 * time.Minute
+	maxConcurrentKymaReconciles           = 25
+	maxConcurrentManifestReconciles       = 25
+	maxConcurrentWatcherReconciles        = 1
 )
 
 //nolint:funlen
@@ -40,11 +43,14 @@ func defineFlagVar() *FlagVar {
 		"The address the skr listener endpoint binds to.")
 	flag.StringVar(&flagVar.pprofAddr, "pprof-bind-address", ":8084",
 		"The address the pprof endpoint binds to.")
-	flag.IntVar(&flagVar.maxConcurrentKymaReconciles, "max-concurrent-kyma-reconciles", 25,
+	flag.IntVar(&flagVar.maxConcurrentKymaReconciles, "max-concurrent-kyma-reconciles",
+		maxConcurrentKymaReconciles,
 		"The maximum number of concurrent Kyma Reconciles which can be run.")
-	flag.IntVar(&flagVar.maxConcurrentManifestReconciles, "max-concurrent-manifest-reconciles", 25,
+	flag.IntVar(&flagVar.maxConcurrentManifestReconciles, "max-concurrent-manifest-reconciles",
+		maxConcurrentManifestReconciles,
 		"The maximum number of concurrent Manifest Reconciles which can be run.")
-	flag.IntVar(&flagVar.maxConcurrentWatcherReconciles, "max-concurrent-watcher-reconciles", 1,
+	flag.IntVar(&flagVar.maxConcurrentWatcherReconciles, "max-concurrent-watcher-reconciles",
+		maxConcurrentWatcherReconciles,
 		"The maximum number of concurrent Watcher Reconciles which can be run.")
 	flag.BoolVar(&flagVar.enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
