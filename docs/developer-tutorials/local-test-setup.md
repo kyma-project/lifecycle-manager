@@ -63,7 +63,7 @@ This setup is deployed with the following security features enabled:
     make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager:latest
     ```
 
-   > **TIP:** If you get an error simillar to the following, wait a couple of seconds and rerun the command.
+   > **TIP:** If you get an error similar to the following, wait a couple of seconds and rerun the command.
    >
    > ```shell
    > Error from server (InternalError): error when creating "STDIN": Internal error occurred: failed calling webhook "webhook.cert-manager.io": failed to call webhook: Post "https://cert-manager-webhook.cert-manager.svc:443/mutate?timeout=10s": no endpoints available for service "cert-manager-webhook"

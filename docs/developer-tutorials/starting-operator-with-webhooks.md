@@ -12,7 +12,7 @@ For further information, read the [kubebuilder tutorial](https://book.kubebuilde
 
 2. Go to [`config/default/kustomization.yaml`](https://github.com/kyma-project/lifecycle-manager/blob/main/config/default/kustomization.yaml). Follow the instruction in the file and uncomment all sections referring to [WEBHOOK], [CERT-MANAGER], and [PROMETHEUS].
 
-3. Enable the webhooks by setting the `--enable-webhooks` flag. Run:
+3. Enable the webhooks by setting the `enable-webhooks` flag. Run:
 
    ```bash
    go run ./main.go ./flags.go --enable-webhooks
