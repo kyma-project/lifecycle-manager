@@ -249,6 +249,18 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			Should(Succeed())
 	})
 
+	It("Remote SKR Kyma get regenerated after it gets deleted", func() {
+		By("Delete SKR Kyma")
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(runtimeClient, remoteKyma).Should(Succeed())
+
+		By("Expect SKR Kyma get recreated")
+		Eventually(kymaExists, Timeout, Interval).
+			WithArguments(runtimeClient, remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace).
+			Should(Succeed())
+	})
+
 	It("Remote SKR Kyma get deleted when KCP Kyma get deleted", func() {
 		By("Delete KCP Kyma")
 		Eventually(DeleteCR, Timeout, Interval).
