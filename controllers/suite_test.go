@@ -24,7 +24,6 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/open-component-model/ocm/pkg/contexts/oci"
@@ -129,7 +128,6 @@ var _ = BeforeSuite(func() {
 	}
 
 	remoteClientCache := remote.NewClientCache()
-	componentDescriptorCache := ocmextensions.NewComponentDescriptorCache()
 
 	err = (&controllers.KymaReconciler{
 		Client:           k8sManager.GetClient(),
@@ -138,11 +136,10 @@ var _ = BeforeSuite(func() {
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
 		},
-		RemoteClientCache:        remoteClientCache,
-		ComponentDescriptorCache: componentDescriptorCache,
-		KcpRestConfig:            k8sManager.GetConfig(),
-		InKCPMode:                false,
-		RemoteSyncNamespace:      controllers.DefaultRemoteSyncNamespace,
+		RemoteClientCache:   remoteClientCache,
+		KcpRestConfig:       k8sManager.GetConfig(),
+		InKCPMode:           false,
+		RemoteSyncNamespace: controllers.DefaultRemoteSyncNamespace,
 	}).SetupWithManager(k8sManager, controller.Options{},
 		controllers.SetupUpSetting{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())

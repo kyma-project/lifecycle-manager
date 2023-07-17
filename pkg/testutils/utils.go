@@ -192,14 +192,12 @@ func GetKyma(ctx context.Context, testClient client.Client, name, namespace stri
 	return kymaInCluster, nil
 }
 
-func IsKymaInState(ctx context.Context, kcpClient client.Client, kymaName string, state v1beta2.State) func() bool {
-	return func() bool {
-		kymaFromCluster, err := GetKyma(ctx, kcpClient, kymaName, "")
-		if err != nil || kymaFromCluster.Status.State != state {
-			return false
-		}
-		return true
+func IsKymaInState(ctx context.Context, kcpClient client.Client, kymaName string, state v1beta2.State) bool {
+	kymaFromCluster, err := GetKyma(ctx, kcpClient, kymaName, "")
+	if err != nil || kymaFromCluster.Status.State != state {
+		return false
 	}
+	return true
 }
 
 func GetManifestSpecRemote(
@@ -224,7 +222,7 @@ func GetManifest(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	descriptor, err := template.Spec.GetDescriptor()
+	descriptor, err := template.GetDescriptor()
 	if err != nil {
 		return nil, err
 	}

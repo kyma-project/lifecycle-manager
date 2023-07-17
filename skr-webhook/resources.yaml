@@ -124,7 +124,7 @@ spec:
             - containerPort: 8443
               name: watcher-port
         - name: request-sidecar
-          image: alpine
+          image: europe-docker.pkg.dev/kyma-project/prod/external/alpine:3.17.4
           command:
             - /bin/sh
             - "-c"
