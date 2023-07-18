@@ -34,11 +34,11 @@ spec:
       sources:
       - access:
           commit: d9ddb3ddd0e4579bba24b7f56027a939fb559e1f
-          repoUrl: https://github.com/nesmabadr/cli
+          repoUrl: https://github.com/kyma-project/cli
           type: gitHub
         labels:
         - name: git.kyma-project.io/ref
-          value: refs/heads/feature/create-module-from-file
+          value: refs/heads/main
           version: v1
         name: module-sources
         type: git
