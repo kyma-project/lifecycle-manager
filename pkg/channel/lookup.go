@@ -126,7 +126,7 @@ func CheckValidTemplateUpdate(
 	if moduleTemplate.Spec.Channel != moduleStatus.Channel {
 		checkLog.Info("outdated ModuleTemplate: channel skew")
 
-		descriptor, err := moduleTemplate.Spec.GetDescriptor()
+		descriptor, err := moduleTemplate.GetDescriptor()
 		if err != nil {
 			msg := "could not handle channel skew as descriptor from template cannot be fetched"
 			checkLog.Error(err, msg)
@@ -289,7 +289,7 @@ func (c *TemplateLookup) getTemplate(ctx context.Context, desiredChannel string)
 			filteredTemplates = append(filteredTemplates, template)
 			continue
 		}
-		descriptor, err := template.Spec.GetDescriptor()
+		descriptor, err := template.GetDescriptor()
 		if err != nil {
 			return nil, fmt.Errorf("invalid ModuleTemplate descriptor: %w", err)
 		}

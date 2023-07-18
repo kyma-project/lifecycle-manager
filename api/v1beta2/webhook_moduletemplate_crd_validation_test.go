@@ -79,7 +79,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
 
-		descriptor, err := template.Spec.GetDescriptor()
+		descriptor, err := template.GetDescriptor()
 		Expect(err).ToNot(HaveOccurred())
 		version, err := semver.NewVersion(descriptor.Version)
 		Expect(err).ToNot(HaveOccurred())

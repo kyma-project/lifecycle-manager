@@ -45,10 +45,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
-
 	"github.com/kyma-project/lifecycle-manager/api"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
@@ -158,7 +156,6 @@ var _ = BeforeSuite(func() {
 	}
 
 	remoteClientCache = remote.NewClientCache()
-	componentDescriptorCache := ocmextensions.NewComponentDescriptorCache()
 	skrChartCfg := &watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         skrWatcherPath,
 		SkrWebhookMemoryLimits: "200Mi",
@@ -177,11 +174,10 @@ var _ = BeforeSuite(func() {
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
 		},
-		RemoteClientCache:        remoteClientCache,
-		ComponentDescriptorCache: componentDescriptorCache,
-		KcpRestConfig:            k8sManager.GetConfig(),
-		RemoteSyncNamespace:      controllers.DefaultRemoteSyncNamespace,
-		InKCPMode:                true,
+		RemoteClientCache:   remoteClientCache,
+		KcpRestConfig:       k8sManager.GetConfig(),
+		RemoteSyncNamespace: controllers.DefaultRemoteSyncNamespace,
+		InKCPMode:           true,
 	}).SetupWithManager(k8sManager, controller.Options{}, controllers.SetupUpSetting{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 

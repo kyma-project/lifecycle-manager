@@ -4,6 +4,8 @@ resources:
   - metrics_role.yaml
   - metrics_role_binding.yaml
   - ../manager
+  - ../certmanager
+
 generatorOptions:
   disableNameSuffixHash: true
 
@@ -36,39 +38,87 @@ patchesJson6902:
 
 patchesStrategicMerge:
   - patches/adjust_resources_in_deployment.yaml
+  # Mount the controller config file for loading manager configurations
+  # through a ComponentConfig type
+  #  - manager_config_patch.yaml
+  # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
+  # crd/kustomization.yaml
+  - manager_webhook_patch.yaml
+  # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'.
+  # Uncomment 'CERTMANAGER' sections in crd/kustomization.yaml to enable the CA injection in the admission webhooks.
+  # 'CERTMANAGER' needs to be enabled to use ca injection
+  - webhookcainjection_patch.yaml
+# the following config is for teaching kustomize how to do var substitution
+vars:
+  # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER' prefix.
+  - name: CERTIFICATE_NAMESPACE # namespace of the certificate CR
+    objref:
+      kind: Certificate
+      group: cert-manager.io
+      version: v1
+      name: serving-cert # this name should match the one in certificate.yaml
+    fieldref:
+      fieldpath: metadata.namespace
+  - name: CERTIFICATE_NAME
+    objref:
+      kind: Certificate
+      group: cert-manager.io
+      version: v1
+      name: serving-cert # this name should match the one in certificate.yaml
+  - name: SERVICE_NAMESPACE # namespace of the service
+    objref:
+      kind: Service
+      version: v1
+      name: webhook-service
+    fieldref:
+      fieldpath: metadata.namespace
+  - name: SERVICE_NAME
+    objref:
+      kind: Service
+      version: v1
+      name: webhook-service
 
 patches:
   - patch: |-
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --max-concurrent-reconciles=10
+        value: --pprof=true
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --in-kcp-mode
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --log-level=9
+      - op: replace
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: Always
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --rate-limiter-burst=2000
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --rate-limiter-frequency=2000           
+        value: --rate-limiter-frequency=1000
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --skr-webhook-memory-limits=2000Mi      
+        value: --max-concurrent-manifest-reconciles=25
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --skr-webhook-cpu-limits=1000m
+        value: --max-concurrent-kyma-reconciles=50
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --pprof=true      
+        value: --cache-sync-timeout=60m
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --cache-sync-timeout=60m      
+        value: --failure-max-delay=30s
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --failure-max-delay=30s    
+        value: --kyma-requeue-success-interval=1m
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --failure-base-delay=5ms      
+        value: --manifest-requeue-success-interval=1m
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --kyma-requeue-success-interval=5m
+        value: --watcher-requeue-success-interval=1m
     target:
       kind: Deployment
 
@@ -81,9 +131,7 @@ components:
 #  - ../istio
   # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
   # crd/kustomization.yaml
-  #- ../webhook
-  # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'. 'WEBHOOK' components are required.
-  #- ../certmanager
+  - ../webhook
   # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
   - ../prometheus
   # [GRAFANA] To generate configmap for provision grafana dashboard

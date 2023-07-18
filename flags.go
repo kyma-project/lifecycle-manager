@@ -40,9 +40,9 @@ func defineFlagVar() *FlagVar {
 		"The address the skr listener endpoint binds to.")
 	flag.StringVar(&flagVar.pprofAddr, "pprof-bind-address", ":8084",
 		"The address the pprof endpoint binds to.")
-	flag.IntVar(&flagVar.maxConcurrentKymaReconciles, "max-concurrent-kyma-reconciles", 1,
+	flag.IntVar(&flagVar.maxConcurrentKymaReconciles, "max-concurrent-kyma-reconciles", 25,
 		"The maximum number of concurrent Kyma Reconciles which can be run.")
-	flag.IntVar(&flagVar.maxConcurrentManifestReconciles, "max-concurrent-manifest-reconciles", 1,
+	flag.IntVar(&flagVar.maxConcurrentManifestReconciles, "max-concurrent-manifest-reconciles", 25,
 		"The maximum number of concurrent Manifest Reconciles which can be run.")
 	flag.IntVar(&flagVar.maxConcurrentWatcherReconciles, "max-concurrent-watcher-reconciles", 1,
 		"The maximum number of concurrent Watcher Reconciles which can be run.")

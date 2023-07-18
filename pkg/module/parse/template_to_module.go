@@ -7,14 +7,12 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"github.com/kyma-project/lifecycle-manager/pkg/img"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
-	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 )
 
@@ -28,26 +26,23 @@ type Parser struct {
 	client.Client
 	InKCPMode           bool
 	remoteSyncNamespace string
-	*ocmextensions.ComponentDescriptorCache
-	EnableVerification bool
-	PublicKeyFilePath  string
+	EnableVerification  bool
+	PublicKeyFilePath   string
 }
 
 func NewParser(
 	clnt client.Client,
-	descriptorCache *ocmextensions.ComponentDescriptorCache,
 	inKCPMode bool,
 	remoteSyncNamespace string,
 	enableVerification bool,
 	publicKeyFilePath string,
 ) *Parser {
 	return &Parser{
-		Client:                   clnt,
-		ComponentDescriptorCache: descriptorCache,
-		InKCPMode:                inKCPMode,
-		remoteSyncNamespace:      remoteSyncNamespace,
-		EnableVerification:       enableVerification,
-		PublicKeyFilePath:        publicKeyFilePath,
+		Client:              clnt,
+		InKCPMode:           inKCPMode,
+		remoteSyncNamespace: remoteSyncNamespace,
+		EnableVerification:  enableVerification,
+		PublicKeyFilePath:   publicKeyFilePath,
 	}
 }
 
@@ -68,7 +63,7 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 			})
 			continue
 		}
-		descriptor, err := template.Spec.GetDescriptor()
+		descriptor, err := template.GetDescriptor()
 		if err != nil {
 			template.Err = err
 			modules = append(modules, &common.Module{
@@ -118,7 +113,6 @@ func overwriteNameAndNamespace(template *channel.ModuleTemplateTO, name, namespa
 	}
 }
 
-//nolint:funlen
 func (p *Parser) newManifestFromTemplate(
 	ctx context.Context,
 	module v1beta2.Module,
@@ -143,26 +137,10 @@ func (p *Parser) newManifestFromTemplate(
 
 	var layers img.Layers
 	var err error
-	descriptor, err := template.Spec.GetDescriptor()
+	descriptor, err := template.GetDescriptor()
 	if err != nil {
 		return nil, err
 	}
-	var componentDescriptor *compdesc.ComponentDescriptor
-	useLocalTemplate, found := template.GetLabels()[v1beta2.UseLocalTemplate]
-	if found && useLocalTemplate == "true" {
-		componentDescriptor = descriptor.ComponentDescriptor
-	} else {
-		descriptorCacheKey, err := template.GetComponentDescriptorCacheKey()
-		if err != nil {
-			return nil, err
-		}
-		componentDescriptor, err = p.ComponentDescriptorCache.GetRemoteDescriptor(ctx,
-			descriptorCacheKey, descriptor, clusterClient)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	verification, err := signature.NewVerification(ctx,
 		clusterClient,
 		p.EnableVerification,
@@ -172,11 +150,11 @@ func (p *Parser) newManifestFromTemplate(
 		return nil, err
 	}
 
-	if err := signature.Verify(componentDescriptor, verification); err != nil {
+	if err := signature.Verify(descriptor.ComponentDescriptor, verification); err != nil {
 		return nil, fmt.Errorf("could not verify signature: %w", err)
 	}
 
-	if layers, err = img.Parse(componentDescriptor); err != nil {
+	if layers, err = img.Parse(descriptor.ComponentDescriptor); err != nil {
 		return nil, fmt.Errorf("could not parse descriptor: %w", err)
 	}
 

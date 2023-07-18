@@ -98,6 +98,8 @@ jobs:
           chmod +x kubectl
           mv kubectl /usr/local/bin
           
+          kubectl label node k3d-kyma-server-0 iam.gke.io/gke-metadata-server-enabled=true
+
           curl -L https://istio.io/downloadIstio | TARGET_ARCH=x86_64 sh -
           chmod +x istio-$ISTIO_VERSION/bin/istioctl
           mv istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin
@@ -105,8 +107,8 @@ jobs:
           
           kubectl create namespace kyma-system
           kubectl create namespace kcp-system
-          
-          kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/main/charts/kube-prometheus-stack/crds/crd-servicemonitors.yaml
+
+          kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-47.0.0/charts/kube-prometheus-stack/crds/crd-servicemonitors.yaml
       - run: kyma --ci alpha deploy -k config/${{ matrix.target }}
       - name: Deploy template operator module template and enable module
         if: ${{ matrix.target  == 'default' }}
