@@ -4,7 +4,7 @@
 
 This tutorial shows how to set up a cluster in different environments.
 
-For the in-cluster mode, with Kyma Control Plane (KCP) and Kyma runtime (SKR), create **two separate clusters** following the instructions below.
+For the control-plane mode, with Kyma Control Plane (KCP) and Kyma runtime (SKR), create **two separate clusters** following the instructions below.
 
 ## Procedure
 
@@ -31,14 +31,14 @@ For the in-cluster mode, with Kyma Control Plane (KCP) and Kyma runtime (SKR), c
 
 3. Set the `IMG` environment variable for the `docker-build` and `docker-push` commands, to make sure images are accessible by local k3d clusters.
 
-   - For **single cluster mode**:
+   - For the **single-cluster mode**:
 
       ```sh
       # pointing to KCP registry in dual cluster mode  
       export IMG=op-kcp-registry.localhost:8888/unsigned/operator-images
       ```
 
-   - For **in-cluster mode**:
+   - For the **control-plane mode**:
 
       ```sh
       # pointing to SKR registry in dual cluster mode
