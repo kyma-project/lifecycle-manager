@@ -255,8 +255,8 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			WithContext(ctx).
 			WithArguments(runtimeClient, remoteKyma).Should(Succeed())
 
-		By("Expect SKR Kyma get recreated")
-		Eventually(kymaExists, Timeout, Interval).
+		By("Expect SKR Kyma get recreated with no deletionTimestamp")
+		Eventually(kymaExistsWithNoDeletionTimeStamp, Timeout, Interval).
 			WithArguments(runtimeClient, remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace).
 			Should(Succeed())
 	})
