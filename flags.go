@@ -27,6 +27,7 @@ const (
 	defaultPurgeFinalizerTimeout           = 5 * time.Minute
 	defaultMaxConcurrentManifestReconciles = 25
 	defaultMaxConcurrentKymaReconciles     = 25
+	defaultMaxConcurrentWatcherReconciles  = 1
 )
 
 //nolint:funlen
@@ -47,7 +48,8 @@ func defineFlagVar() *FlagVar {
 	flag.IntVar(&flagVar.maxConcurrentManifestReconciles, "max-concurrent-manifest-reconciles",
 		defaultMaxConcurrentManifestReconciles,
 		"The maximum number of concurrent Manifest Reconciles which can be run.")
-	flag.IntVar(&flagVar.maxConcurrentWatcherReconciles, "max-concurrent-watcher-reconciles", 1,
+	flag.IntVar(&flagVar.maxConcurrentWatcherReconciles, "max-concurrent-watcher-reconciles",
+		defaultMaxConcurrentWatcherReconciles,
 		"The maximum number of concurrent Watcher Reconciles which can be run.")
 	flag.BoolVar(&flagVar.enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
