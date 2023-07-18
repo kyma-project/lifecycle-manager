@@ -27,6 +27,7 @@ const (
 	defaultPurgeFinalizerTimeout           = 5 * time.Minute
 	defaultMaxConcurrentManifestReconciles = 25
 	defaultMaxConcurrentKymaReconciles     = 25
+	defaultMaxConcurrentWatcherReconciles  = 1
 )
 
 //nolint:funlen
@@ -43,12 +44,12 @@ func defineFlagVar() *FlagVar {
 	flag.StringVar(&flagVar.pprofAddr, "pprof-bind-address", ":8084",
 		"The address the pprof endpoint binds to.")
 	flag.IntVar(&flagVar.maxConcurrentKymaReconciles, "max-concurrent-kyma-reconciles",
-		defaultMaxConcurrentKymaReconciles,
-		"The maximum number of concurrent Kyma Reconciles which can be run.")
+		defaultMaxConcurrentKymaReconciles, "The maximum number of concurrent Kyma Reconciles which can be run.")
 	flag.IntVar(&flagVar.maxConcurrentManifestReconciles, "max-concurrent-manifest-reconciles",
 		defaultMaxConcurrentManifestReconciles,
 		"The maximum number of concurrent Manifest Reconciles which can be run.")
-	flag.IntVar(&flagVar.maxConcurrentWatcherReconciles, "max-concurrent-watcher-reconciles", 1,
+	flag.IntVar(&flagVar.maxConcurrentWatcherReconciles, "max-concurrent-watcher-reconciles",
+		defaultMaxConcurrentWatcherReconciles,
 		"The maximum number of concurrent Watcher Reconciles which can be run.")
 	flag.BoolVar(&flagVar.enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
