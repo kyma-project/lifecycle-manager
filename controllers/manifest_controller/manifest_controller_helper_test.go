@@ -50,7 +50,7 @@ func (m mockLayer) DiffID() (v1.Hash, error) {
 }
 
 func CreateImageSpecLayer() v1.Layer {
-	layer, err := partial.UncompressedToLayer(mockLayer{filePath: "../../../pkg/test_samples/oci/rendered.yaml"})
+	layer, err := partial.UncompressedToLayer(mockLayer{filePath: "../../pkg/test_samples/oci/rendered.yaml"})
 	Expect(err).ToNot(HaveOccurred())
 	return layer
 }
