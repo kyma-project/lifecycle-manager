@@ -74,6 +74,7 @@ func TestPruneResource(t *testing.T) {
 }
 
 func Test_hasDiff(t *testing.T) {
+	t.Parallel()
 	testGVK := metav1.GroupVersionKind{Group: "test", Version: "v1", Kind: "test"}
 	testResourceA := Resource{Name: "r1", Namespace: "default", GroupVersionKind: testGVK}
 	testResourceB := Resource{Name: "r2", Namespace: "", GroupVersionKind: testGVK}
@@ -117,8 +118,12 @@ func Test_hasDiff(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, hasDiff(tt.oldResources, tt.newResources), "hasDiff(%v, %v)", tt.oldResources, tt.newResources)
+		testCase := tt
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equalf(t, testCase.want,
+				hasDiff(testCase.oldResources, testCase.newResources), "hasDiff(%v, %v)",
+				testCase.oldResources, testCase.newResources)
 		})
 	}
 }
