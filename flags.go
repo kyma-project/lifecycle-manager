@@ -44,8 +44,8 @@ func defineFlagVar() *FlagVar {
 		"The address the pprof endpoint binds to.")
 	flag.IntVar(&flagVar.maxConcurrentKymaReconciles, "max-concurrent-kyma-reconciles", maxConcurrentKymaReconciles,
 		"The maximum number of concurrent Kyma Reconciles which can be run.")
-	flag.IntVar(&flagVar.maxConcurrentManifestReconciles, "max-concurrent-manifest-reconciles", maxConcurrentManifestReconciles,
-		"The maximum number of concurrent Manifest Reconciles which can be run.")
+	flag.IntVar(&flagVar.maxConcurrentManifestReconciles, "max-concurrent-manifest-reconciles",
+		maxConcurrentManifestReconciles, "The maximum number of concurrent Manifest Reconciles which can be run.")
 	flag.IntVar(&flagVar.maxConcurrentWatcherReconciles, "max-concurrent-watcher-reconciles", 1,
 		"The maximum number of concurrent Watcher Reconciles which can be run.")
 	flag.BoolVar(&flagVar.enableLeaderElection, "leader-elect", false,
