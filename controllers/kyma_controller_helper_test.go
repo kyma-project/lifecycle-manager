@@ -58,14 +58,20 @@ func GetKymaState(kymaName string) (string, error) {
 	return string(createdKyma.Status.State), nil
 }
 
-func GetKymaConditions(kymaName string) func() []metav1.Condition {
-	return func() []metav1.Condition {
-		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
-		if err != nil {
-			return []metav1.Condition{}
-		}
-		return createdKyma.Status.Conditions
+func GetKymaModulesStatus(kymaName string) ([]v1beta2.ModuleStatus, error) {
+	createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
+	if err != nil {
+		return nil, err
 	}
+	return createdKyma.Status.Modules, nil
+}
+
+func GetKymaConditions(kymaName string) []metav1.Condition {
+	createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
+	if err != nil {
+		return []metav1.Condition{}
+	}
+	return createdKyma.Status.Conditions
 }
 
 func UpdateKymaLabel(

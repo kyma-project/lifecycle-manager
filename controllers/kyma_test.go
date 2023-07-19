@@ -15,6 +15,7 @@ import (
 var (
 	ErrSpecDataMismatch          = errors.New("spec.data not match")
 	ErrStatusModuleStateMismatch = errors.New("status.modules.state not match")
+	ErrWrongConditions           = errors.New("conditions not correct")
 )
 
 var _ = Describe("Kyma with no Module", Ordered, func() {
@@ -26,6 +27,41 @@ var _ = Describe("Kyma with no Module", Ordered, func() {
 		Eventually(IsKymaInState, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, kyma.GetName(), v1beta2.StateReady).
 			Should(BeTrue())
+	})
+
+	It("Should contain empty status.modules", func() {
+		By("containing empty status.modules")
+		Eventually(GetKymaModulesStatus, Timeout, Interval).
+			WithArguments(kyma.GetName()).
+			Should(Equal(nil))
+	})
+
+	It("Should contain expected Modules conditions", func() {
+		By("containing Modules condition")
+		Eventually(func() error {
+			conditions := GetKymaConditions(kyma.GetName())
+			if len(conditions) != 1 {
+				return ErrWrongConditions
+			}
+			currentCondition := conditions[0]
+			expectedCondition := metav1.Condition{
+				Type:    string(v1beta2.ConditionTypeModules),
+				Status:  "True",
+				Message: "all modules are in ready state",
+				Reason:  "Ready",
+			}
+
+			if currentCondition.Type != expectedCondition.Type ||
+				currentCondition.Status != expectedCondition.Status ||
+				currentCondition.Message != expectedCondition.Message ||
+				currentCondition.Reason != expectedCondition.Reason {
+				return ErrWrongConditions
+			}
+
+			return nil
+		}, Timeout, Interval).
+			Should(Succeed())
+
 	})
 })
 
@@ -48,7 +84,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 			Should(Equal(string(v1beta2.StateProcessing)))
 
 		By("having created new conditions in its status")
-		Eventually(GetKymaConditions(kyma.GetName()), Timeout, Interval).ShouldNot(BeEmpty())
+		Eventually(GetKymaConditions, Timeout, Interval).WithArguments(kyma.GetName()).ShouldNot(BeEmpty())
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
