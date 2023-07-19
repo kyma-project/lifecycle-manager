@@ -49,6 +49,7 @@ func defineFlagVar() *FlagVar {
 		defaultMaxConcurrentManifestReconciles,
 		"The maximum number of concurrent Manifest Reconciles which can be run.")
 	flag.IntVar(&flagVar.maxConcurrentWatcherReconciles, "max-concurrent-watcher-reconciles",
+		defaultMaxConcurrentWatcherReconciles,
 		"The maximum number of concurrent Watcher Reconciles which can be run.")
 	flag.BoolVar(&flagVar.enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
