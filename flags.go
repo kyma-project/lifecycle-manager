@@ -9,22 +9,25 @@ import (
 )
 
 const (
-	defaultKymaRequeueSuccessInterval     = 30 * time.Second
-	defaultKymaRequeueErrInterval         = 2 * time.Second
-	defaultKymaRequeueBusyInterval        = 5 * time.Second
-	defaultManifestRequeueSuccessInterval = 30 * time.Second
-	defaultWatcherRequeueSuccessInterval  = 30 * time.Second
-	defaultClientQPS                      = 300
-	defaultClientBurst                    = 600
-	defaultPprofServerTimeout             = 90 * time.Second
-	rateLimiterBurstDefault               = 200
-	rateLimiterFrequencyDefault           = 30
-	failureBaseDelayDefault               = 100 * time.Millisecond
-	failureMaxDelayDefault                = 5 * time.Second
-	defaultCacheSyncTimeout               = 2 * time.Minute
-	defaultListenerPort                   = 9080
-	defaultLogLevel                       = log.WarnLevel
-	defaultPurgeFinalizerTimeout          = 5 * time.Minute
+	defaultKymaRequeueSuccessInterval      = 30 * time.Second
+	defaultKymaRequeueErrInterval          = 2 * time.Second
+	defaultKymaRequeueBusyInterval         = 5 * time.Second
+	defaultManifestRequeueSuccessInterval  = 30 * time.Second
+	defaultWatcherRequeueSuccessInterval   = 30 * time.Second
+	defaultClientQPS                       = 300
+	defaultClientBurst                     = 600
+	defaultPprofServerTimeout              = 90 * time.Second
+	rateLimiterBurstDefault                = 200
+	rateLimiterFrequencyDefault            = 30
+	failureBaseDelayDefault                = 100 * time.Millisecond
+	failureMaxDelayDefault                 = 5 * time.Second
+	defaultCacheSyncTimeout                = 2 * time.Minute
+	defaultListenerPort                    = 9080
+	defaultLogLevel                        = log.WarnLevel
+	defaultPurgeFinalizerTimeout           = 5 * time.Minute
+	defaultMaxConcurrentManifestReconciles = 25
+	defaultMaxConcurrentKymaReconciles     = 25
+	defaultMaxConcurrentWatcherReconciles  = 1
 )
 
 //nolint:funlen
@@ -40,11 +43,13 @@ func defineFlagVar() *FlagVar {
 		"The address the skr listener endpoint binds to.")
 	flag.StringVar(&flagVar.pprofAddr, "pprof-bind-address", ":8084",
 		"The address the pprof endpoint binds to.")
-	flag.IntVar(&flagVar.maxConcurrentKymaReconciles, "max-concurrent-kyma-reconciles", 1,
-		"The maximum number of concurrent Kyma Reconciles which can be run.")
-	flag.IntVar(&flagVar.maxConcurrentManifestReconciles, "max-concurrent-manifest-reconciles", 1,
+	flag.IntVar(&flagVar.maxConcurrentKymaReconciles, "max-concurrent-kyma-reconciles",
+		defaultMaxConcurrentKymaReconciles, "The maximum number of concurrent Kyma Reconciles which can be run.")
+	flag.IntVar(&flagVar.maxConcurrentManifestReconciles, "max-concurrent-manifest-reconciles",
+		defaultMaxConcurrentManifestReconciles,
 		"The maximum number of concurrent Manifest Reconciles which can be run.")
-	flag.IntVar(&flagVar.maxConcurrentWatcherReconciles, "max-concurrent-watcher-reconciles", 1,
+	flag.IntVar(&flagVar.maxConcurrentWatcherReconciles, "max-concurrent-watcher-reconciles",
+		defaultMaxConcurrentWatcherReconciles,
 		"The maximum number of concurrent Watcher Reconciles which can be run.")
 	flag.BoolVar(&flagVar.enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
