@@ -335,7 +335,7 @@ func StartDeclarativeReconcilerForRun(
 	)
 	mgr, err = ctrl.NewManager(
 		cfg, ctrl.Options{
-			// these bind addreses cause conflicts when run concurrently so we disable them
+			// these bind addresses cause conflicts when run concurrently so we disable them
 			HealthProbeBindAddress: "0",
 			MetricsBindAddress:     "0",
 			Scheme:                 scheme.Scheme,
@@ -349,11 +349,11 @@ func StartDeclarativeReconcilerForRun(
 			options,
 			WithNamespace(namespace, true),
 			WithFinalizer(finalizer),
-			// we overwride the manifest cache directory with the test run directory so its automatically cleaned up
+			// we overwrite the manifest cache directory with the test run directory so its automatically cleaned up
 			// we ensure uniqueness implicitly, as runID is used to randomize the ManifestName in SpecResolver
 			WithManifestCache(filepath.Join(testDir, "declarative-test-cache")),
 			// we have to use a custom ready check that only checks for existence of an object since the default
-			// readiness check will not work without dedicated control loops in envtest. E.g. by default
+			// readiness check will not work without dedicated control loops in env test. E.g. by default
 			// deployments are not started or set to ready. However we can check if the resource was created by
 			// the reconciler.
 			WithClientCacheKey(),
@@ -380,7 +380,10 @@ func StartDeclarativeReconcilerForRun(
 	go func() {
 		Expect(mgr.Start(ctx)).To(Succeed(), "failed to run manager")
 	}()
-	return reconciler.(*Reconciler)
+
+	recon, ok := reconciler.(*Reconciler)
+	Expect(ok).To(BeTrue())
+	return recon
 }
 
 func StatusOnCluster(ctx context.Context, key client.ObjectKey,

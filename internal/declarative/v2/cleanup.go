@@ -59,5 +59,9 @@ func (c *ConcurrentCleanup) Run(ctx context.Context, infos []*resource.Info) err
 }
 
 func (c *ConcurrentCleanup) cleanupResource(ctx context.Context, info *resource.Info, results chan error) {
-	results <- c.clnt.Delete(ctx, info.Object.(client.Object), c.policy)
+	obj, ok := info.Object.(client.Object)
+	if !ok {
+		return
+	}
+	results <- c.clnt.Delete(ctx, obj, c.policy)
 }

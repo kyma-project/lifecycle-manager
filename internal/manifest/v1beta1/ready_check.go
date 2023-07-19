@@ -35,7 +35,10 @@ func (c *ManifestCustomResourceReadyCheck) Run(
 	if err := checkDeploymentState(clnt, resources); err != nil {
 		return declarative.StateError, err
 	}
-	manifest := obj.(*v1beta2.Manifest)
+	manifest, ok := obj.(*v1beta2.Manifest)
+	if !ok {
+		return declarative.StateError, v1beta2.ErrTypeAssertManifest
+	}
 	if manifest.Spec.Resource == nil {
 		return declarative.StateReady, nil
 	}

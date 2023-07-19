@@ -12,10 +12,14 @@ var crdCache = sync.Map{}
 func GetCachedCRD(key string) (v1.CustomResourceDefinition, bool) {
 	value, ok := crdCache.Load(key)
 	if !ok {
-		return v1.CustomResourceDefinition{}, ok
+		return v1.CustomResourceDefinition{}, false
+	}
+	crd, ok := value.(v1.CustomResourceDefinition)
+	if !ok {
+		return v1.CustomResourceDefinition{}, false
 	}
 
-	return value.(v1.CustomResourceDefinition), ok
+	return crd, true
 }
 
 func SetCRDInCache(key string, value v1.CustomResourceDefinition) {

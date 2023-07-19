@@ -21,7 +21,7 @@ var _ = Describe("Manifest.Spec.Remote in default mode", Ordered, func() {
 	It("expect Manifest.Spec.Remote=false", func() {
 		Eventually(GetManifestSpecRemote, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, kyma, module).
-			Should(Equal(false))
+			Should(BeFalse())
 	})
 })
 

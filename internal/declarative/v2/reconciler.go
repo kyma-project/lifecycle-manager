@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/common"
+
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -79,7 +81,10 @@ func newResourcesCondition(obj Object) metav1.Condition {
 
 //nolint:funlen,cyclop
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	obj := r.prototype.DeepCopyObject().(Object)
+	obj, ok := r.prototype.DeepCopyObject().(Object)
+	if !ok {
+		return ctrl.Result{}, common.ErrTypeAssert
+	}
 	if err := r.Get(ctx, req.NamespacedName, obj); err != nil {
 		log.FromContext(ctx).Info(req.NamespacedName.String() + " got deleted!")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -464,7 +469,10 @@ func updateSyncedOCIRefAnnotation(obj Object, ref string) {
 
 func pruneResource(diff []*resource.Info, resourceType string, resourceName string) []*resource.Info {
 	for i, info := range diff {
-		obj := info.Object.(client.Object)
+		obj, ok := info.Object.(client.Object)
+		if !ok {
+			continue
+		}
 		if obj.GetObjectKind().GroupVersionKind().Kind == resourceType && obj.GetName() == resourceName {
 			return append(diff[:i], diff[i+1:]...)
 		}

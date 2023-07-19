@@ -111,7 +111,11 @@ func expectModuleTemplateSpecGetReset(
 	if !found {
 		return ErrExpectedLabelNotReset
 	}
-	if value.(string) != expectedValue {
+	sValue, ok := value.(string)
+	if !ok {
+		return ErrExpectedLabelNotReset
+	}
+	if sValue != expectedValue {
 		return ErrExpectedLabelNotReset
 	}
 	return nil

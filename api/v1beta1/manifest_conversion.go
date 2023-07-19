@@ -7,7 +7,10 @@ import (
 
 // ConvertTo converts this to the Hub version.
 func (src *Manifest) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*v1beta2.Manifest)
+	dst, ok := dstRaw.(*v1beta2.Manifest)
+	if !ok {
+		return v1beta2.ErrTypeAssertManifest
+	}
 
 	dst.ObjectMeta = src.ObjectMeta
 	dst.Spec = src.Spec
@@ -20,7 +23,10 @@ func (src *Manifest) ConvertTo(dstRaw conversion.Hub) error {
 //
 //nolint:revive,stylecheck
 func (dst *Manifest) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*v1beta2.Manifest)
+	src, ok := srcRaw.(*v1beta2.Manifest)
+	if !ok {
+		return v1beta2.ErrTypeAssertManifest
+	}
 
 	dst.ObjectMeta = src.ObjectMeta
 	dst.Spec = src.Spec
