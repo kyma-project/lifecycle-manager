@@ -29,11 +29,12 @@ var _ = Describe("Kyma with no Module", Ordered, func() {
 			Should(BeTrue())
 	})
 
+	var emptyKymaModuleStatus []v1beta2.ModuleStatus
 	It("Should contain empty status.modules", func() {
 		By("containing empty status.modules")
 		Eventually(GetKymaModulesStatus, Timeout, Interval).
 			WithArguments(kyma.GetName()).
-			Should(Equal(nil))
+			Should(Equal(emptyKymaModuleStatus))
 	})
 
 	It("Should contain expected Modules conditions", func() {
