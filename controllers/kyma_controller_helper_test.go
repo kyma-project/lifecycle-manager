@@ -58,12 +58,12 @@ func GetKymaState(kymaName string) (string, error) {
 	return string(createdKyma.Status.State), nil
 }
 
-func GetKymaModulesStatus(kymaName string) ([]v1beta2.ModuleStatus, error) {
+func GetKymaModulesStatus(kymaName string) []v1beta2.ModuleStatus {
 	createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 	if err != nil {
-		return nil, err
+		return []v1beta2.ModuleStatus{}
 	}
-	return createdKyma.Status.Modules, nil
+	return createdKyma.Status.Modules
 }
 
 func GetKymaConditions(kymaName string) []metav1.Condition {
