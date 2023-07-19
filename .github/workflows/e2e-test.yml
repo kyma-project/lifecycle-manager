@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       K3D_VERSION: v5.4.7
-      ISTIO_VERSION: 1.18.0
+      ISTIO_VERSION: 1.17.1
       CM_VERSION: v1.12.0
       KLM_VERSION_TAG: latest
       KLM_IMAGE_REPO: prod
@@ -57,7 +57,7 @@ jobs:
       - run: ln -s /usr/local/bin/kyma-${{ matrix.cli-stability }} /usr/local/bin/kyma
       - name: Install Istio CLI
         run: |
-          curl --insecure -L https://istio.io/downloadIstio | TARGET_ARCH=x86_64 sh -
+          curl -L https://istio.io/downloadIstio | TARGET_ARCH=x86_64 sh -
           chmod +x istio-$ISTIO_VERSION/bin/istioctl
           mv istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin
       - name: Install Cert Manager Command Line Tool
