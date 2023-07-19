@@ -21,7 +21,10 @@ type RemoteClusterLookup struct {
 func (r *RemoteClusterLookup) ConfigResolver(
 	ctx context.Context, obj declarative.Object,
 ) (*declarative.ClusterInfo, error) {
-	manifest := obj.(*v1beta2.Manifest)
+	manifest, ok := obj.(*v1beta2.Manifest)
+	if !ok {
+		return nil, v1beta2.ErrTypeAssertManifest
+	}
 	// in single cluster mode return the default cluster info
 	// since the resources need to be installed in the same cluster
 	if !manifest.Spec.Remote {

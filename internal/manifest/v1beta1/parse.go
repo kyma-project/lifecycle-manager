@@ -97,7 +97,7 @@ func getLockerForPath(path string) sync.Locker {
 	if !ok {
 		val, _ = fileMutexMap.LoadOrStore(path, &sync.Mutex{})
 	}
-
-	res := val.(*sync.Mutex)
-	return res
+	// no alternative here
+	//nolint:forcetypeassert
+	return val.(*sync.Mutex)
 }

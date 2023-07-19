@@ -319,7 +319,7 @@ func isResourceFoundInSynced(res *unstructured.Unstructured, status Resource) bo
 	}
 }
 
-// StartDeclarativeReconcilerForRun starts the declarative reconciler based on a runID.
+//nolint:funlen
 func StartDeclarativeReconcilerForRun(
 	ctx context.Context,
 	runID string,
@@ -342,7 +342,6 @@ func StartDeclarativeReconcilerForRun(
 		},
 	)
 	Expect(err).ToNot(HaveOccurred())
-
 	reconciler = NewFromManager(
 		mgr, &testv1.TestAPI{},
 		append(
@@ -354,8 +353,7 @@ func StartDeclarativeReconcilerForRun(
 			WithManifestCache(filepath.Join(testDir, "declarative-test-cache")),
 			// we have to use a custom ready check that only checks for existence of an object since the default
 			// readiness check will not work without dedicated control loops in env test. E.g. by default
-			// deployments are not started or set to ready. However we can check if the resource was created by
-			// the reconciler.
+			// deployments are not started/set to ready. We can check if the resource was created by reconciler.
 			WithClientCacheKey(),
 			WithCustomReadyCheck(NewExistsReadyCheck()),
 			WithCustomResourceLabels(labels.Set{testRunLabel: runID}),

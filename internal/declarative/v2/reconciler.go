@@ -468,6 +468,7 @@ func updateSyncedOCIRefAnnotation(obj Object, ref string) {
 }
 
 func pruneResource(diff []*resource.Info, resourceType string, resourceName string) []*resource.Info {
+	//nolint:varnamelen
 	for i, info := range diff {
 		obj, ok := info.Object.(client.Object)
 		if !ok {

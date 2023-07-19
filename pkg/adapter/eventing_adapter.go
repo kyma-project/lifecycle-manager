@@ -8,14 +8,18 @@ import (
 
 type key string
 
-const ContextKey key = "EventRecorder"
+const contextKey key = "EventRecorder"
 
-type EventingAdapter func(eventtype, reason, message string)
+type EventingAdapter func(eventType, reason, message string)
 
 func RecorderFromContext(ctx context.Context) record.EventRecorder {
-	return ctx.Value(ContextKey).(record.EventRecorder)
+	rec, ok := ctx.Value(contextKey).(record.EventRecorder)
+	if !ok {
+		return nil
+	}
+	return rec
 }
 
 func ContextWithRecorder(ctx context.Context, recorder record.EventRecorder) context.Context {
-	return context.WithValue(ctx, ContextKey, recorder)
+	return context.WithValue(ctx, contextKey, recorder)
 }
