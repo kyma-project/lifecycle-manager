@@ -113,6 +113,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 	})
 
 	It("Should contain expected status.modules", func() {
+		By("containing expected status.modules")
 		Eventually(func() error {
 			expectedModule := v1beta2.ModuleStatus{
 				Name:    moduleName,
@@ -195,6 +196,21 @@ var _ = Describe("Kyma enable multiple modules", Ordered, func() {
 		By("skr-module exists")
 		Eventually(ManifestExists, Timeout, Interval).WithArguments(
 			ctx, kyma, skrModule, controlPlaneClient).Should(Succeed())
+	})
+
+	It("Disabled module should be removed from status.modules", func() {
+		Eventually(func() error {
+			moduleStatus := GetKymaModulesStatus(kyma.GetName())
+			if len(moduleStatus) != 1 {
+				return ErrWrongModulesStatus
+			}
+
+			if moduleStatus[0].Name == kcpModule.Name {
+				return ErrWrongModulesStatus
+			}
+
+			return nil
+		}, Timeout, Interval).Should(Succeed())
 	})
 })
 
