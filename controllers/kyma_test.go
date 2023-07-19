@@ -16,6 +16,7 @@ var (
 	ErrSpecDataMismatch          = errors.New("spec.data not match")
 	ErrStatusModuleStateMismatch = errors.New("status.modules.state not match")
 	ErrWrongConditions           = errors.New("conditions not correct")
+	ErrWrongModulesStatus        = errors.New("modules status not correct")
 )
 
 var _ = Describe("Kyma with no Module", Ordered, func() {
@@ -69,10 +70,11 @@ var _ = Describe("Kyma with no Module", Ordered, func() {
 var _ = Describe("Kyma enable one Module", Ordered, func() {
 	kyma := NewTestKyma("empty-module-kyma")
 
+	moduleName := "example-module-name"
 	kyma.Spec.Modules = append(
 		kyma.Spec.Modules, v1beta2.Module{
 			ControllerName: "manifest",
-			Name:           "example-module-name",
+			Name:           moduleName,
 			Channel:        v1beta2.DefaultChannel,
 		})
 
@@ -107,6 +109,30 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 		By("Module Catalog created")
 		Eventually(AllModuleTemplatesExists, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, kyma, kyma.GetNamespace()).
+			Should(Succeed())
+	})
+
+	It("Should contain expected status.modules", func() {
+		Eventually(func() error {
+			expectedModule := v1beta2.ModuleStatus{
+				Name:    moduleName,
+				State:   v1beta2.StateReady,
+				Channel: v1beta2.DefaultChannel,
+			}
+
+			modulesStatus := GetKymaModulesStatus(kyma.GetName())
+			if len(modulesStatus) != 1 {
+				return ErrWrongModulesStatus
+			}
+
+			if modulesStatus[0].Name != expectedModule.Name ||
+				modulesStatus[0].State != expectedModule.State ||
+				modulesStatus[0].Channel != expectedModule.Channel {
+				return ErrWrongModulesStatus
+			}
+
+			return nil
+		}, Timeout, Interval).
 			Should(Succeed())
 	})
 })
