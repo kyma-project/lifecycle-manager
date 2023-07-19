@@ -46,19 +46,10 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 }
 
 func kymaExists(clnt client.Client, name, namespace string) error {
-	_, err := GetKyma(ctx, clnt, name, namespace)
+	kyma, err := GetKyma(ctx, clnt, name, namespace)
 	if util.IsNotFound(err) {
 		return ErrNotFound
 	}
-	return nil
-}
-
-func kymaExistsWithNoDeletionTimeStamp(clnt client.Client, name, namespace string) error {
-	kyma, err := GetKyma(ctx, clnt, name, namespace)
-	if k8serrors.IsNotFound(err) {
-		return ErrNotFound
-	}
-
 	if kyma.DeletionTimestamp != nil {
 		return ErrDeletionTimestampFound
 	}
