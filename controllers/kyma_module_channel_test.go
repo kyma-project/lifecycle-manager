@@ -44,6 +44,31 @@ var _ = Describe("valid kyma.spec.channel should be deployed successful", func()
 	)
 })
 
+var _ = Describe("module channel different from the global channel", func() {
+	kyma := NewTestKyma("kyma")
+	moduleName := "test-different-channel"
+
+	kyma.Spec.Modules = append(
+		kyma.Spec.Modules, v1beta2.Module{
+			ControllerName: "manifest",
+			Name:           moduleName,
+			Channel:        FastChannel,
+		})
+	It("should create kyma with standard modules in a valid channel", func() {
+		kyma.Spec.Channel = ValidChannel
+		Expect(controlPlaneClient.Create(ctx, kyma)).ToNot(HaveOccurred())
+	})
+
+	It("Should deploy ModuleTemplate in fast channel", func() {
+		Eventually(deployModuleInChannel(FastChannel, moduleName)).Should(Succeed())
+	})
+
+	It("Manifest should be deployed in fast channel", func() {
+		Eventually(expectModuleManifestToHaveChannel, Timeout, Interval).WithArguments(
+			kyma.GetName(), moduleName, FastChannel).Should(Succeed())
+	})
+})
+
 var _ = Describe("Given invalid channel", func() {
 	DescribeTable(
 		"Test kyma CR, module template creation", func(givenCondition func() error) {
@@ -103,6 +128,18 @@ func givenModuleTemplateWithChannel(channel string, isValid bool) func() error {
 		}
 		return ignoreInvalidError(err)
 	}
+}
+
+func deployModuleInChannel(channel string, moduleName string) error {
+	modules := []v1beta2.Module{
+		{
+			ControllerName: "manifest",
+			Name:           moduleName,
+			Channel:        channel,
+		},
+	}
+	err := CreateModuleTemplateSetsForKyma(modules, LowerVersion, channel)
+	return err
 }
 
 func givenKymaWithInvalidChannel(channel string) func() error {
@@ -268,6 +305,39 @@ func expectEveryManifestToHaveChannel(kymaName, channel string) error {
 			}
 			return nil
 		}
+	}
+	return fmt.Errorf(
+		"%w: no %s found",
+		ErrTemplateInfoChannelMismatch, channel,
+	)
+}
+
+func expectModuleManifestToHaveChannel(kymaName, moduleName, channel string) error {
+	kyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
+	if err != nil {
+		return err
+	}
+
+	var moduleUnderTest v1beta2.Module
+	for _, module := range kyma.Spec.Modules {
+		if module.Name == moduleName {
+			moduleUnderTest = module
+		}
+	}
+
+	component, err := GetManifest(ctx, controlPlaneClient, kyma, moduleUnderTest)
+	if err != nil {
+		return err
+	}
+	manifestChannel, found := component.Labels[v1beta2.ChannelLabel]
+	if found {
+		if manifestChannel != channel {
+			return fmt.Errorf(
+				"%w: %s should be %s",
+				ErrTemplateInfoChannelMismatch, manifestChannel, channel,
+			)
+		}
+		return nil
 	}
 	return fmt.Errorf(
 		"%w: no %s found",
