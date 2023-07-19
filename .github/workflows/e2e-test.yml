@@ -129,8 +129,7 @@ jobs:
               exit 1
             fi
           fi
-      - name: Debugging with ssh
-        uses: lhotari/action-upterm@v1
+          sleep 20
       - name: Run Watcher E2E Tests
         run: |
           make -C tests/e2e_test test
