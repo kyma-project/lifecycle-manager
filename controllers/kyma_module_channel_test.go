@@ -64,8 +64,12 @@ var _ = Describe("module channel different from the global channel", func() {
 	})
 
 	It("Manifest should be deployed in fast channel", func() {
+		module := v1beta2.Module{
+			Name:    moduleName,
+			Channel: FastChannel,
+		}
 		Eventually(expectModuleManifestToHaveChannel, Timeout, Interval).WithArguments(
-			kyma.GetName(), moduleName, FastChannel).Should(Succeed())
+			kyma.GetName(), module, FastChannel).Should(Succeed())
 	})
 })
 
@@ -312,20 +316,20 @@ func expectEveryManifestToHaveChannel(kymaName, channel string) error {
 	)
 }
 
-func expectModuleManifestToHaveChannel(kymaName, moduleName, channel string) error {
+func expectModuleManifestToHaveChannel(kymaName string, module v1beta2.Module, channel string) error {
 	kyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 	if err != nil {
 		return err
 	}
 
-	var moduleUnderTest v1beta2.Module
-	for _, module := range kyma.Spec.Modules {
-		if module.Name == moduleName {
-			moduleUnderTest = module
-		}
-	}
+	//var moduleUnderTest v1beta2.Module
+	//for _, module := range kyma.Spec.Modules {
+	//	if module.Name == moduleName {
+	//		moduleUnderTest = module
+	//	}
+	//}
 
-	component, err := GetManifest(ctx, controlPlaneClient, kyma, moduleUnderTest)
+	component, err := GetManifest(ctx, controlPlaneClient, kyma, module)
 	if err != nil {
 		return err
 	}
