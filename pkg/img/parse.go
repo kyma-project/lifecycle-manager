@@ -142,7 +142,7 @@ func getOCIRef(
 		layerRef.Repo = fmt.Sprintf("%s/%s", repo.Name(), repoSubpath)
 		layerRef.Name = descriptor.GetName()
 	case genericocireg.OCIRegistryDigestMapping:
-		layerRef.Repo = repo.UniformRepositorySpec().RepositoryRef()
+		layerRef.Repo = fmt.Sprintf("%s/", repo.Name())
 		layerRef.Name = sha256sum(descriptor.GetName())
 	default:
 		return nil, fmt.Errorf(

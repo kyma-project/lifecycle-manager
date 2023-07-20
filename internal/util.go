@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/types"
 	v1 "k8s.io/api/core/v1"
@@ -34,15 +35,25 @@ func ParseManifestToObjects(path string) (ManifestResources, error) {
 	if err != nil {
 		return ManifestResources{}, fmt.Errorf("parse manifest to resource infos: %w", err)
 	}
-
+	countMap := map[string]bool{}
 	for _, item := range items {
 		unstructuredItem, ok := item.Object.(*unstructured.Unstructured)
 		if !ok {
 			continue
 		}
+		id := getID(unstructuredItem)
+		if countMap[id] {
+			continue
+		}
+		countMap[id] = true
 		objects.Items = append(objects.Items, unstructuredItem)
 	}
 	return *objects, nil
+}
+
+func getID(item *unstructured.Unstructured) string {
+	return strings.Join([]string{item.GetNamespace(), item.GetName(),
+		item.GroupVersionKind().Group, item.GroupVersionKind().Version, item.GroupVersionKind().Kind}, "/")
 }
 
 func GetResourceLabel(resource client.Object, labelName string) (string, error) {
