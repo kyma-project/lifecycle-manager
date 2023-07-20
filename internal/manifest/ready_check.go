@@ -19,20 +19,20 @@ import (
 
 const customResourceStatePath = "status.state"
 
-// NewManifestCustomResourceReadyCheck creates a readiness check that verifies that the Resource in the Manifest
+// NewCustomResourceReadyCheck creates a readiness check that verifies that the Resource in the Manifest
 // returns the ready state, if not it returns not ready.
-func NewManifestCustomResourceReadyCheck() *ManifestCustomResourceReadyCheck {
-	return &ManifestCustomResourceReadyCheck{}
+func NewCustomResourceReadyCheck() *CustomResourceReadyCheck {
+	return &CustomResourceReadyCheck{}
 }
 
-type ManifestCustomResourceReadyCheck struct{}
+type CustomResourceReadyCheck struct{}
 
 var (
 	ErrNoDeterminedState   = errors.New("could not determine state")
 	ErrCRInUnexpectedState = errors.New("module CR in unexpected state during readiness check")
 )
 
-func (c *ManifestCustomResourceReadyCheck) Run(ctx context.Context,
+func (c *CustomResourceReadyCheck) Run(ctx context.Context,
 	clnt declarative.Client,
 	obj declarative.Object,
 	resources []*resource.Info,

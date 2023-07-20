@@ -84,9 +84,9 @@ func ManifestReconciler(
 	return declarative.NewFromManager(
 		mgr, &v1beta2.Manifest{},
 		declarative.WithSpecResolver(
-			manifest.NewManifestSpecResolver(kcp, codec),
+			manifest.NewSpecResolver(kcp, codec),
 		),
-		declarative.WithCustomReadyCheck(manifest.NewManifestCustomResourceReadyCheck()),
+		declarative.WithCustomReadyCheck(manifest.NewCustomResourceReadyCheck()),
 		declarative.WithRemoteTargetCluster(lookup.ConfigResolver),
 		manifest.WithClientCacheKey(),
 		declarative.WithPostRun{manifest.PostRunCreateCR},

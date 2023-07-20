@@ -129,7 +129,7 @@ var _ = BeforeSuite(
 		reconciler = declarative.NewFromManager(
 			k8sManager, &v1beta2.Manifest{},
 			declarative.WithSpecResolver(
-				manifest.NewManifestSpecResolver(kcp, codec),
+				manifest.NewSpecResolver(kcp, codec),
 			),
 			declarative.WithPermanentConsistencyCheck(true),
 			declarative.WithRemoteTargetCluster(

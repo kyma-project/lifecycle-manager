@@ -52,8 +52,10 @@ func ParseManifestToObjects(path string) (ManifestResources, error) {
 }
 
 func getID(item *unstructured.Unstructured) string {
-	return strings.Join([]string{item.GetNamespace(), item.GetName(),
-		item.GroupVersionKind().Group, item.GroupVersionKind().Version, item.GroupVersionKind().Kind}, "/")
+	return strings.Join([]string{
+		item.GetNamespace(), item.GetName(),
+		item.GroupVersionKind().Group, item.GroupVersionKind().Version, item.GroupVersionKind().Kind,
+	}, "/")
 }
 
 func GetResourceLabel(resource client.Object, labelName string) (string, error) {
