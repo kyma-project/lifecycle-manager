@@ -17,8 +17,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kyma-project/lifecycle-manager/controllers"
-
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -38,6 +36,9 @@ const (
 
 	KLMPodPrefix    = "klm-controller-manager"
 	KLMPodContainer = "manager"
+
+	defaultRuntimeNamespace = "kyma-system"
+	defaultRemoteKymaName   = "default"
 
 	controlPlaneNamespace = "kcp-system"
 	dInDHostname          = "host.docker.internal"
@@ -237,7 +238,7 @@ func checkRemoteKymaCR(ctx context.Context,
 	kymaNamespace string, wantedModules []v1beta2.Module, k8sClient client.Client,
 ) error {
 	kyma := &v1beta2.Kyma{}
-	err := k8sClient.Get(ctx, client.ObjectKey{Name: v1beta2.DefaultRemoteKymaName, Namespace: kymaNamespace}, kyma)
+	err := k8sClient.Get(ctx, client.ObjectKey{Name: defaultRemoteKymaName, Namespace: kymaNamespace}, kyma)
 	if err != nil {
 		return err
 	}
@@ -263,7 +264,7 @@ func checkRemoteKymaCRDeleted(ctx context.Context,
 	kymaNamespace string, k8sClient client.Client,
 ) error {
 	kyma := &v1beta2.Kyma{}
-	err := k8sClient.Get(ctx, client.ObjectKey{Name: v1beta2.DefaultRemoteKymaName, Namespace: kymaNamespace}, kyma)
+	err := k8sClient.Get(ctx, client.ObjectKey{Name: defaultRemoteKymaName, Namespace: kymaNamespace}, kyma)
 	if k8serrors.IsNotFound(err) {
 		return nil
 	}
@@ -272,7 +273,7 @@ func checkRemoteKymaCRDeleted(ctx context.Context,
 
 func changeRemoteKymaChannel(ctx context.Context, kymaNamespace, channel string, k8sClient client.Client) error {
 	kyma := &v1beta2.Kyma{}
-	if err := k8sClient.Get(ctx, client.ObjectKey{Name: v1beta2.DefaultRemoteKymaName, Namespace: kymaNamespace}, kyma); err != nil {
+	if err := k8sClient.Get(ctx, client.ObjectKey{Name: defaultRemoteKymaName, Namespace: kymaNamespace}, kyma); err != nil {
 		return err
 	}
 
@@ -292,7 +293,7 @@ func checkKLMLogs(ctx context.Context, logMsg string, controlPlaneConfig, runtim
 		return nil
 	}
 
-	watcherLogs, err := getPodLogs(ctx, runtimeConfig, runtimeClient, controllers.DefaultRemoteSyncNamespace, watcher.SkrResourceName, watcherPodContainer)
+	watcherLogs, err := getPodLogs(ctx, runtimeConfig, runtimeClient, defaultRuntimeNamespace, watcher.SkrResourceName, watcherPodContainer)
 	if err != nil {
 		return err
 	}
