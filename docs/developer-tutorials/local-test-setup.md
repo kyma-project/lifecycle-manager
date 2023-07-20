@@ -157,7 +157,7 @@ k3d cluster create skr-local
         "operator.kyma-project.io/kyma-name": "kyma-sample"
         "operator.kyma-project.io/managed-by": "lifecycle-manager"
    data:
-      config: $(k3d kubeconfig get skr-local | sed 's/0\.0\.0\.0/host.k3d.internal/' | base64 | tr -d '\n')
+      config: $(k3d kubeconfig get skr | sed 's/0\.0\.0\.0/host.k3d.internal/' | base64 | tr -d '\n')
    ---
    apiVersion: operator.kyma-project.io/v1beta2
    kind: Kyma
@@ -168,8 +168,6 @@ k3d cluster create skr-local
       namespace: kcp-system
    spec:
       channel: regular
-      modules:
-        - name: template-operator
    EOF
     ```
 
