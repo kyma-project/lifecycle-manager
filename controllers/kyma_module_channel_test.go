@@ -322,13 +322,6 @@ func expectModuleManifestToHaveChannel(kymaName string, module v1beta2.Module, c
 		return err
 	}
 
-	//var moduleUnderTest v1beta2.Module
-	//for _, module := range kyma.Spec.Modules {
-	//	if module.Name == moduleName {
-	//		moduleUnderTest = module
-	//	}
-	//}
-
 	component, err := GetManifest(ctx, controlPlaneClient, kyma, module)
 	if err != nil {
 		return err
