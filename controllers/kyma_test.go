@@ -49,8 +49,8 @@ var _ = Describe("Kyma with no Module", Ordered, func() {
 			expectedCondition := metav1.Condition{
 				Type:    string(v1beta2.ConditionTypeModules),
 				Status:  "True",
-				Message: "all modules are in ready state",
-				Reason:  "Ready",
+				Message: v1beta2.ConditionMessageModuleInReadyState,
+				Reason:  string(v1beta2.ReadyConditionReason),
 			}
 
 			if currentCondition.Type != expectedCondition.Type ||
