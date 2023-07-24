@@ -180,9 +180,8 @@ func insertLayerIntoManifest(
 	manifest *v1beta2.Manifest, layer img.Layer,
 ) error {
 	switch layer.LayerName {
+	case img.ConfigLayer: // Skipping Config Layer. Deprecated since removal of Helm and Kustomize from ModuleTemplates
 	case img.CRDsLayer:
-		fallthrough
-	case img.ConfigLayer:
 		ociImage, ok := layer.LayerRepresentation.(*img.OCI)
 		if !ok {
 			return fmt.Errorf("%w: not an OCIImage", ErrDefaultConfigParsing)
