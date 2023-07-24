@@ -46,6 +46,10 @@ const (
 var ErrNotFound = errors.New("resource not exists")
 
 func NewTestKyma(name string) *v1beta2.Kyma {
+	return NewKCPKymaWithNamespace(name, v1.NamespaceDefault, v1beta2.DefaultChannel)
+}
+
+func NewKCPKymaWithNamespace(name, namespace, channel string) *v1beta2.Kyma {
 	return &v1beta2.Kyma{
 		TypeMeta: v1.TypeMeta{
 			APIVersion: v1beta2.GroupVersion.String(),
@@ -53,18 +57,19 @@ func NewTestKyma(name string) *v1beta2.Kyma {
 		},
 		ObjectMeta: v1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%s", name, randString(randomStringLength)),
-			Namespace: v1.NamespaceDefault,
+			Namespace: namespace,
 			Annotations: map[string]string{
 				watcher.DomainAnnotation:       "example.domain.com",
 				v1beta2.SyncStrategyAnnotation: v1beta2.SyncStrategyLocalClient,
 			},
 			Labels: map[string]string{
+				v1beta2.WatchedByLabel:  v1beta2.OperatorName,
 				v1beta2.InstanceIDLabel: "test-instance",
 			},
 		},
 		Spec: v1beta2.KymaSpec{
 			Modules: []v1beta2.Module{},
-			Channel: v1beta2.DefaultChannel,
+			Channel: channel,
 		},
 	}
 }

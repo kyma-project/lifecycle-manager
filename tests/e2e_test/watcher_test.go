@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"k8s.io/apimachinery/pkg/api/meta"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -57,6 +58,7 @@ var (
 var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation using the Watcher",
 	Ordered, func() {
 		channel := "regular"
+		switchedChannel := "fast"
 		kymaName := "kyma-sample"
 		kymaNamespace := "kcp-system"
 		remoteNamespace := "kyma-system"
@@ -75,7 +77,7 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 				Should(Succeed())
 			Eventually(createKymaSecret, timeout, interval).
 				WithContext(ctx).
-				WithArguments(kymaName, kymaNamespace, channel, controlPlaneClient).
+				WithArguments(kymaName, kymaNamespace, controlPlaneClient).
 				Should(Succeed())
 			By("verifying kyma is ready")
 			Eventually(checkKymaReady, readyTimeout, interval).
@@ -129,7 +131,7 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 			By("changing the spec of the remote KymaCR")
 			Eventually(changeRemoteKymaChannel, timeout, interval).
 				WithContext(ctx).
-				WithArguments(remoteNamespace, "fast", runtimeClient).
+				WithArguments(remoteNamespace, switchedChannel, runtimeClient).
 				Should(Succeed())
 			By("verifying new reconciliation got triggered for corresponding KymaCR on KCP")
 			Eventually(checkKLMLogs, timeout, interval).
@@ -141,12 +143,12 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 		It("Should delete Kyma CR on remote cluster", func() {
 			Eventually(deleteKymaCR, timeout, interval).
 				WithContext(ctx).
-				WithArguments(kymaName, kymaNamespace, channel, controlPlaneClient).
+				WithArguments(kymaName, kymaNamespace, controlPlaneClient).
 				Should(Succeed())
 
 			Eventually(deleteKymaSecret, timeout, interval).
 				WithContext(ctx).
-				WithArguments(kymaName, kymaNamespace, channel, controlPlaneClient).
+				WithArguments(kymaName, kymaNamespace, controlPlaneClient).
 				Should(Succeed())
 
 			Eventually(checkRemoteKymaCRDeleted, timeout, interval).
@@ -173,28 +175,11 @@ func checkKymaReady(ctx context.Context,
 }
 
 func createKymaCR(ctx context.Context, kymaName, kymaNamespace, channel string, k8sClient client.Client) error {
-	kyma := &v1beta2.Kyma{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      kymaName,
-			Namespace: kymaNamespace,
-			Labels: map[string]string{
-				"operator.kyma-project.io/watched-by": "lifecycle-manager",
-				"operator.kyma-project.io/sync":       "true",
-			},
-			Annotations: map[string]string{
-				"operator.kyma-project.io/sync": "true",
-				"skr-domain":                    exampleSKRDomain,
-			},
-		},
-		Spec: v1beta2.KymaSpec{
-			Channel: channel,
-			Modules: nil,
-		},
-	}
+	kyma := testutils.NewKCPKymaWithNamespace(kymaName, kymaNamespace, channel)
 	return k8sClient.Create(ctx, kyma)
 }
 
-func createKymaSecret(ctx context.Context, kymaName, kymaNamespace, channel string, k8sClient client.Client) error {
+func createKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
 	patchedRuntimeConfig := strings.ReplaceAll(string(*runtimeConfig), localHostname, k3dHostname)
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -210,7 +195,7 @@ func createKymaSecret(ctx context.Context, kymaName, kymaNamespace, channel stri
 	return k8sClient.Create(ctx, secret)
 }
 
-func deleteKymaSecret(ctx context.Context, kymaName, kymaNamespace, channel string, k8sClient client.Client) error {
+func deleteKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
 	secret := &corev1.Secret{}
 	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, secret)
 	if k8serrors.IsNotFound(err) {
@@ -220,7 +205,7 @@ func deleteKymaSecret(ctx context.Context, kymaName, kymaNamespace, channel stri
 	return k8sClient.Delete(ctx, secret)
 }
 
-func deleteKymaCR(ctx context.Context, kymaName, kymaNamespace, channel string, k8sClient client.Client) error {
+func deleteKymaCR(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
 	kyma := &v1beta2.Kyma{}
 	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma)
 	if k8serrors.IsNotFound(err) {
