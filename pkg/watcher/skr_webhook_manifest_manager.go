@@ -42,7 +42,8 @@ type SkrWebhookManagerConfig struct {
 	ListenerGatewayPortName string
 	// WatcherLocalTestingEnabled indicates if the chart manager is running in local testing mode
 	WatcherLocalTestingEnabled bool
-	// LocalGatewayHTTPPortMapping indicates the port used to expose the KCP cluster locally in k3d for the watcher callbacks
+	// LocalGatewayHTTPPortMapping indicates the port used to expose the KCP cluster locally in k3d
+	// for the watcher callbacks
 	LocalGatewayHTTPPortMapping int
 }
 
