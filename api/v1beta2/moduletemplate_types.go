@@ -89,7 +89,7 @@ type ModuleTemplateSpec struct {
 	Data unstructured.Unstructured `json:"data,omitempty"`
 
 	// The Descriptor is the Open Component Model Descriptor of a Module, containing all relevant information
-	// to correctly initialize a module (e.g. Charts, Manifests, References to Binaries and/or configuration)
+	// to correctly initialize a module (e.g. Manifests, References to Binaries and/or configuration)
 	// Name more information on Component Descriptors, see
 	// https://github.com/open-component-model/ocm
 	//
@@ -97,6 +97,9 @@ type ModuleTemplateSpec struct {
 	// to bootstrap and manage the module. This part is also propagated for every change of the template.
 	// This means for upgrades of the Descriptor, downstream controllers will also update the dependant modules
 	// (e.g. by updating the controller binary linked in a chart referenced in the descriptor)
+	//
+	// NOTE: Only Raw Rendering is Supported for the layers. So previously used "config" layers for the helm
+	// charts and kustomize renderers are deprecated and ignored.
 	//
 	//+kubebuilder:pruning:PreserveUnknownFields
 	Descriptor runtime.RawExtension `json:"descriptor"`
