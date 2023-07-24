@@ -28,22 +28,22 @@ import (
 
 const (
 	timeout      = 10 * time.Second
-	readyTimeout = 30 * time.Second
+	readyTimeout = 1 * time.Minute
 	interval     = 1 * time.Second
 
-	watcherPodPrefix    = "skr-webhook"
 	watcherPodContainer = "server"
 	exampleSKRDomain    = "example.domain.com"
 
 	KLMPodPrefix    = "klm-controller-manager"
 	KLMPodContainer = "manager"
 
+	defaultRuntimeNamespace = "kyma-system"
+	defaultRemoteKymaName   = "default"
+
 	controlPlaneNamespace = "kcp-system"
-	runtimeNamespace      = "kyma-system"
-	remoteKymaName        = "default"
-	k3dHostname           = "host.k3d.internal"
 	dInDHostname          = "host.docker.internal"
 	localHostname         = "0.0.0.0"
+	k3dHostname           = "host.k3d.internal"
 )
 
 var (
@@ -68,7 +68,7 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 		kymaName := "kyma-sample"
 		kymaNamespace := "kcp-system"
 		remoteNamespace := "kyma-system"
-		incomingRequestMsg := fmt.Sprintf("event coming from SKR, adding %s/%s to queue", kymaNamespace, kymaName)
+		incomingRequestMsg := fmt.Sprintf("event received from SKR, adding %s/%s to queue", kymaNamespace, kymaName)
 
 		BeforeAll(func() {
 			//make sure we can list Kymas to ensure CRDs have been installed
@@ -81,32 +81,34 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 				WithContext(ctx).
 				WithArguments(kymaName, kymaNamespace, channel, controlPlaneClient).
 				Should(Succeed())
-
 			Eventually(createKymaSecret, timeout, interval).
 				WithContext(ctx).
 				WithArguments(kymaName, kymaNamespace, channel, controlPlaneClient).
 				Should(Succeed())
 			By("verifying kyma is ready")
-			Eventually(checkKymaReady, timeout, interval).
+			Eventually(checkKymaReady, readyTimeout, interval).
 				WithContext(ctx).
 				WithArguments(kymaName, kymaNamespace, controlPlaneClient).
 				Should(Succeed())
-
-			Eventually(checkRemoteKymaCR, timeout, interval).
+			By("verifying remote kyma is ready")
+			Eventually(checkRemoteKymaCR, readyTimeout, interval).
 				WithContext(ctx).
 				WithArguments(remoteNamespace, []v1beta2.Module{}, runtimeClient).
 				Should(Succeed())
 		})
 
 		It("Should redeploy watcher if it is deleted on remote cluster", func() {
+			By("verifying Runtime-Watcher is ready")
 			Eventually(checkWatcherDeploymentReady, readyTimeout, interval).
 				WithContext(ctx).
 				WithArguments(watcher.SkrResourceName, remoteNamespace, runtimeClient).
 				Should(Succeed())
+			By("deleting Runtime-Watcher deployment")
 			Eventually(deleteWatcherDeployment, timeout, interval).
 				WithContext(ctx).
 				WithArguments(watcher.SkrResourceName, remoteNamespace, runtimeClient).
 				Should(Succeed())
+			By("verifying Runtime-Watcher deployment will be reapplied and becomes ready")
 			Eventually(checkWatcherDeploymentReady, readyTimeout, interval).
 				WithContext(ctx).
 				WithArguments(watcher.SkrResourceName, remoteNamespace, runtimeClient).
@@ -114,14 +116,17 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 		})
 
 		It("Should redeploy certificates if deleted on remote cluster", func() {
+			By("verifying certificate secret exists on remote cluster")
 			Eventually(checkCertificateSecretExists, readyTimeout, interval).
 				WithContext(ctx).
 				WithArguments(watcher.SkrTLSName, remoteNamespace, runtimeClient).
 				Should(Succeed())
+			By("Deleting certificate secret on remote cluster")
 			Eventually(deleteCertificateSecret, timeout, interval).
 				WithContext(ctx).
 				WithArguments(watcher.SkrTLSName, remoteNamespace, runtimeClient).
 				Should(Succeed())
+			By("verifying certificate secret will be recreated on remote cluster")
 			Eventually(checkCertificateSecretExists, readyTimeout, interval).
 				WithContext(ctx).
 				WithArguments(watcher.SkrTLSName, remoteNamespace, runtimeClient).
@@ -129,11 +134,12 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 		})
 
 		It("Should trigger new reconciliation", func() {
+			By("changing the spec of the remote KymaCR")
 			Eventually(changeRemoteKymaChannel, timeout, interval).
 				WithContext(ctx).
 				WithArguments(remoteNamespace, "fast", runtimeClient).
 				Should(Succeed())
-
+			By("verifying new reconciliation got triggered for corresponding KymaCR on KCP")
 			Eventually(checkKLMLogs, timeout, interval).
 				WithContext(ctx).
 				WithArguments(incomingRequestMsg, controlPlaneRESTConfig, runtimeRESTConfig, controlPlaneClient, runtimeClient).
@@ -175,7 +181,8 @@ func createKymaCR(ctx context.Context, kymaName, kymaNamespace, channel string, 
 			Name:      kymaName,
 			Namespace: kymaNamespace,
 			Labels: map[string]string{
-				"operator.kyma-project.io/sync": "true",
+				"operator.kyma-project.io/watched-by": "lifecycle-manager",
+				"operator.kyma-project.io/sync":       "true",
 			},
 			Annotations: map[string]string{
 				"operator.kyma-project.io/sync": "true",
@@ -231,7 +238,7 @@ func checkRemoteKymaCR(ctx context.Context,
 	kymaNamespace string, wantedModules []v1beta2.Module, k8sClient client.Client,
 ) error {
 	kyma := &v1beta2.Kyma{}
-	err := k8sClient.Get(ctx, client.ObjectKey{Name: remoteKymaName, Namespace: kymaNamespace}, kyma)
+	err := k8sClient.Get(ctx, client.ObjectKey{Name: defaultRemoteKymaName, Namespace: kymaNamespace}, kyma)
 	if err != nil {
 		return err
 	}
@@ -257,7 +264,7 @@ func checkRemoteKymaCRDeleted(ctx context.Context,
 	kymaNamespace string, k8sClient client.Client,
 ) error {
 	kyma := &v1beta2.Kyma{}
-	err := k8sClient.Get(ctx, client.ObjectKey{Name: remoteKymaName, Namespace: kymaNamespace}, kyma)
+	err := k8sClient.Get(ctx, client.ObjectKey{Name: defaultRemoteKymaName, Namespace: kymaNamespace}, kyma)
 	if k8serrors.IsNotFound(err) {
 		return nil
 	}
@@ -266,7 +273,7 @@ func checkRemoteKymaCRDeleted(ctx context.Context,
 
 func changeRemoteKymaChannel(ctx context.Context, kymaNamespace, channel string, k8sClient client.Client) error {
 	kyma := &v1beta2.Kyma{}
-	if err := k8sClient.Get(ctx, client.ObjectKey{Name: remoteKymaName, Namespace: kymaNamespace}, kyma); err != nil {
+	if err := k8sClient.Get(ctx, client.ObjectKey{Name: defaultRemoteKymaName, Namespace: kymaNamespace}, kyma); err != nil {
 		return err
 	}
 
@@ -286,7 +293,7 @@ func checkKLMLogs(ctx context.Context, logMsg string, controlPlaneConfig, runtim
 		return nil
 	}
 
-	watcherLogs, err := getPodLogs(ctx, runtimeConfig, runtimeClient, runtimeNamespace, watcherPodPrefix, watcherPodContainer)
+	watcherLogs, err := getPodLogs(ctx, runtimeConfig, runtimeClient, defaultRuntimeNamespace, watcher.SkrResourceName, watcherPodContainer)
 	if err != nil {
 		return err
 	}
