@@ -29,7 +29,7 @@ import (
 
 const (
 	timeout      = 10 * time.Second
-	readyTimeout = 1 * time.Minute
+	readyTimeout = 2 * time.Minute
 	interval     = 1 * time.Second
 
 	watcherPodContainer = "server"
