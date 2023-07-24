@@ -8,9 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"strings"
 	"time"
+
+	"k8s.io/apimachinery/pkg/api/meta"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
@@ -41,7 +42,6 @@ const (
 	defaultRemoteKymaName   = "default"
 
 	controlPlaneNamespace = "kcp-system"
-	dInDHostname          = "host.docker.internal"
 	localHostname         = "0.0.0.0"
 	k3dHostname           = "host.k3d.internal"
 )
@@ -53,14 +53,6 @@ var (
 	errLogNotFound               = errors.New("logMsg was not found in log")
 	errKymaNotReady              = errors.New("kyma CR not ready")
 )
-
-func resolveHostToBeReplaced() string {
-	if isDinD {
-		return dInDHostname
-	} else {
-		return localHostname
-	}
-}
 
 var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation using the Watcher",
 	Ordered, func() {
@@ -198,8 +190,7 @@ func createKymaCR(ctx context.Context, kymaName, kymaNamespace, channel string, 
 }
 
 func createKymaSecret(ctx context.Context, kymaName, kymaNamespace, channel string, k8sClient client.Client) error {
-	hostnameToBeReplaced := resolveHostToBeReplaced()
-	patchedRuntimeConfig := strings.ReplaceAll(string(*runtimeConfig), hostnameToBeReplaced, k3dHostname)
+	patchedRuntimeConfig := strings.ReplaceAll(string(*runtimeConfig), localHostname, k3dHostname)
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kymaName,
