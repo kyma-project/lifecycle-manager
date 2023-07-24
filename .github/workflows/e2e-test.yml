@@ -122,7 +122,7 @@ jobs:
             if make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/$KLM_IMAGE_REPO/lifecycle-manager:$KLM_VERSION_TAG; then
               echo "KLM deployed successfully"
               exit 0
-            elif [ $retry < $maxRetry ]; then
+            elif [ $retry -lt $maxRetry ]; then
               echo "Deploy encountered some error, will retry after 20 seconds"
               sleep 20
             else
