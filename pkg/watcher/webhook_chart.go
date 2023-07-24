@@ -54,7 +54,8 @@ func runResourceOperationWithGroupedErrors(ctx context.Context, clt client.Clien
 
 func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrWebhookManagerConfig) (string, error) {
 	if managerConfig.WatcherLocalTestingEnabled {
-		return net.JoinHostPort(defaultK3dLocalhostMapping, strconv.Itoa(managerConfig.GatewayHTTPPortMapping)), nil
+		return net.JoinHostPort(defaultK3dLocalhostMapping, strconv.Itoa(managerConfig.LocalGatewayHTTPPortMapping)),
+			nil
 	}
 	// Get public KCP IP from the ISTIO load balancer external IP
 	kcpClient, err := client.New(kcpConfig, client.Options{})
@@ -75,7 +76,7 @@ func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrWebhookManagerConf
 	externalIP := loadBalancerService.Status.LoadBalancer.Ingress[0].IP
 	var port int32
 	for _, loadBalancerPort := range loadBalancerService.Spec.Ports {
-		if loadBalancerPort.Name == "http2" {
+		if loadBalancerPort.Name == managerConfig.ListenerGatewayPortName {
 			port = loadBalancerPort.Port
 			break
 		}
