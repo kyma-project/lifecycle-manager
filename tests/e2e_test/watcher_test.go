@@ -51,7 +51,7 @@ var (
 	errWatcherDeploymentNotReady = errors.New("watcher Deployment is not ready")
 	errModuleNotExisting         = errors.New("module does not exists in KymaCR")
 	errLogNotFound               = errors.New("logMsg was not found in log")
-	errKymaNotReady              = errors.New("kyma CR not ready")
+	errKymaNotInExpectedState    = errors.New("kyma CR not in expected state")
 )
 
 var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation using the Watcher",
@@ -80,12 +80,12 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 			By("verifying kyma is ready")
 			Eventually(checkKymaReady, readyTimeout, interval).
 				WithContext(ctx).
-				WithArguments(kymaName, kymaNamespace, controlPlaneClient).
+				WithArguments(kymaName, kymaNamespace, controlPlaneClient, v1beta2.StateReady).
 				Should(Succeed())
 			By("verifying remote kyma is ready")
 			Eventually(checkRemoteKymaCR, readyTimeout, interval).
 				WithContext(ctx).
-				WithArguments(remoteNamespace, []v1beta2.Module{}, runtimeClient).
+				WithArguments(remoteNamespace, []v1beta2.Module{}, runtimeClient, v1beta2.StateReady).
 				Should(Succeed())
 		})
 
@@ -156,13 +156,18 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 		})
 	})
 
-func checkKymaReady(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
+func checkKymaReady(ctx context.Context,
+	kymaName, kymaNamespace string,
+	k8sClient client.Client,
+	expectedState v1beta2.State,
+) error {
 	kyma := &v1beta2.Kyma{}
 	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
 		return err
 	}
-	if kyma.Status.State != v1beta2.StateReady {
-		return errKymaNotReady
+	if kyma.Status.State != expectedState {
+		return fmt.Errorf("%w: expect %s, but in %s",
+			errKymaNotInExpectedState, expectedState, kyma.Status.State)
 	}
 	return nil
 }
@@ -226,7 +231,7 @@ func deleteKymaCR(ctx context.Context, kymaName, kymaNamespace, channel string, 
 }
 
 func checkRemoteKymaCR(ctx context.Context,
-	kymaNamespace string, wantedModules []v1beta2.Module, k8sClient client.Client,
+	kymaNamespace string, wantedModules []v1beta2.Module, k8sClient client.Client, expectedState v1beta2.State,
 ) error {
 	kyma := &v1beta2.Kyma{}
 	err := k8sClient.Get(ctx, client.ObjectKey{Name: defaultRemoteKymaName, Namespace: kymaNamespace}, kyma)
@@ -247,7 +252,10 @@ func checkRemoteKymaCR(ctx context.Context,
 			return fmt.Errorf("%w: %s/%s", errModuleNotExisting, wantedModule.Name, wantedModule.Channel)
 		}
 	}
-
+	if kyma.Status.State != expectedState {
+		return fmt.Errorf("%w: expect %s, but in %s",
+			errKymaNotInExpectedState, expectedState, kyma.Status.State)
+	}
 	return nil
 }
 

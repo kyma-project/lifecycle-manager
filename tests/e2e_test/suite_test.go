@@ -38,6 +38,8 @@ import (
 const (
 	kcpConfigEnvVar = "KCP_KUBECONFIG"
 	skrConfigEnvVar = "SKR_KUBECONFIG"
+	ClientQPS       = 1000
+	ClientBurst     = 2000
 )
 
 var errEmptyEnvVar = errors.New("environment variable is empty;")
@@ -87,8 +89,12 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 	existingCluster := true
 	controlPlaneRESTConfig, err = clientcmd.RESTConfigFromKubeConfig(*controlPlaneConfig)
+	controlPlaneRESTConfig.QPS = ClientQPS
+	controlPlaneRESTConfig.Burst = ClientBurst
 	Expect(err).ToNot(HaveOccurred())
 	runtimeRESTConfig, err = clientcmd.RESTConfigFromKubeConfig(*runtimeConfig)
+	runtimeRESTConfig.QPS = ClientQPS
+	runtimeRESTConfig.Burst = ClientBurst
 	Expect(err).ToNot(HaveOccurred())
 
 	Expect(err).NotTo(HaveOccurred())
