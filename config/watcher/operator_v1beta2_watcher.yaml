@@ -45,7 +45,7 @@ spec:
 #    selector:
 #      matchLabels:
 #        "operator.kyma-project.io/watcher-gateway": "default"
----
+# ---
 apiVersion: v1
 kind: Service
 metadata:
