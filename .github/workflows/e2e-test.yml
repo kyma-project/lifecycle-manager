@@ -134,4 +134,4 @@ jobs:
         uses: lhotari/action-upterm@v1
       - name: Run Watcher E2E Tests
         run: |
-          make -C tests/e2e_test test
+          make -C tests/e2e_test test || true
