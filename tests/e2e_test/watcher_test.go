@@ -11,13 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"k8s.io/apimachinery/pkg/api/meta"
-
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/api/meta"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -62,6 +61,7 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 		channel := "regular"
 		switchedChannel := "fast"
 		kyma := testutils.NewKymaForE2E("kyma-sample", "kcp-system", channel)
+		GinkgoWriter.Printf("kyma before create %v\n", kyma)
 		remoteNamespace := "kyma-system"
 		incomingRequestMsg := fmt.Sprintf("event received from SKR, adding %s/%s to queue",
 			kyma.GetNamespace(), kyma.GetName())
@@ -73,13 +73,13 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 		})
 
 		It("Should create empty Kyma CR on remote cluster", func() {
-			Eventually(controlPlaneClient.Create, timeout, interval).
-				WithContext(ctx).
-				WithArguments(kyma).
-				Should(Succeed())
 			Eventually(createKymaSecret, timeout, interval).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
+				Should(Succeed())
+			Eventually(controlPlaneClient.Create, timeout, interval).
+				WithContext(ctx).
+				WithArguments(kyma).
 				Should(Succeed())
 			By("verifying kyma is ready")
 			Eventually(checkKymaReady, readyTimeout, interval).
@@ -169,6 +169,7 @@ func checkKymaReady(ctx context.Context,
 	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
 		return err
 	}
+	GinkgoWriter.Printf("kyma %v\n", kyma)
 	if kyma.Status.State != expectedState {
 		return fmt.Errorf("%w: expect %s, but in %s",
 			errKymaNotInExpectedState, expectedState, kyma.Status.State)
