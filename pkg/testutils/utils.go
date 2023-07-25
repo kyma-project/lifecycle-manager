@@ -69,7 +69,6 @@ func newKCPKymaWithNamespace(name, namespace, channel, syncStrategy string) *v1b
 				v1beta2.SyncStrategyAnnotation: syncStrategy,
 			},
 			Labels: map[string]string{
-				v1beta2.WatchedByLabel:  v1beta2.OperatorName,
 				v1beta2.InstanceIDLabel: "test-instance",
 			},
 		},
