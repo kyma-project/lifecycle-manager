@@ -42,7 +42,7 @@ const (
 	ClientBurst     = 2000
 )
 
-var errEmptyEnvVar = errors.New("environment variable is empty;")
+var errEmptyEnvVar = errors.New("environment variable is empty")
 
 var (
 	controlPlaneEnv        *envtest.Environment //nolint:gochecknoglobals
