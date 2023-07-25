@@ -50,7 +50,9 @@ func NewTestKyma(name string) *v1beta2.Kyma {
 }
 
 func NewKymaForE2E(name, namespace, channel string) *v1beta2.Kyma {
-	return newKCPKymaWithNamespace(name, namespace, channel, v1beta2.SyncStrategyLocalSecret)
+	kyma := newKCPKymaWithNamespace(name, namespace, channel, v1beta2.SyncStrategyLocalSecret)
+	kyma.Labels[v1beta2.SyncLabel] = v1beta2.EnableLabelValue
+	return kyma
 }
 
 func newKCPKymaWithNamespace(name, namespace, channel, syncStrategy string) *v1beta2.Kyma {
