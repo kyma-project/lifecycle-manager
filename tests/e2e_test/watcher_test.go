@@ -288,7 +288,8 @@ func checkKLMLogs(ctx context.Context, logMsg string, controlPlaneConfig, runtim
 	if err != nil {
 		return err
 	}
-	return fmt.Errorf("%w\n Expected: %s\n Given KLM logs: %s Watcher-Server-Logs: %s", errLogNotFound, logMsg, logs, watcherLogs)
+	GinkgoWriter.Printf("watcher Logs:  %s\n", watcherLogs)
+	return errLogNotFound
 }
 
 func getPodLogs(ctx context.Context, config *rest.Config, k8sClient client.Client, namespace, podPrefix, container string) (string, error) {

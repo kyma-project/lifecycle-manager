@@ -41,7 +41,7 @@ patches:
       value: --kyma-requeue-success-interval=2m
     - op: add
       path: /spec/template/spec/containers/0/args/-
-      value: --manifest-requeue-success-interval=2m
+      value: --manifest-requeue-success-interval=30s
     - op: add
       path: /spec/template/spec/containers/0/args/-
       value: --log-level=9

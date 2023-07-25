@@ -10,10 +10,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/kyma-project/lifecycle-manager/api"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"go.uber.org/zap/zapcore"
-
-	"github.com/kyma-project/lifecycle-manager/api"
 	"k8s.io/client-go/rest"
 
 	//nolint:gci
@@ -127,10 +127,24 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
+	By("Print out all remaining resources for debugging")
+	kcpKymaList := v1beta2.KymaList{}
+	err := controlPlaneClient.List(ctx, &kcpKymaList)
+	if err == nil {
+		for _, kyma := range kcpKymaList.Items {
+			GinkgoWriter.Printf("kyma: %v\n", kyma)
+		}
+	}
+	manifestList := v1beta2.ManifestList{}
+	err := controlPlaneClient.List(ctx, &manifestList)
+	if err == nil {
+		for _, manifest := range manifestList.Items {
+			GinkgoWriter.Printf("manifest: %v\n", manifest)
+		}
+	}
 	By("tearing down the test environment")
 	cancel()
-
-	err := controlPlaneEnv.Stop()
+	err = controlPlaneEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
 
