@@ -6,14 +6,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"go.uber.org/zap/zapcore"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/kyma-project/lifecycle-manager/api"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"go.uber.org/zap/zapcore"
 	"k8s.io/client-go/rest"
 
 	//nolint:gci
