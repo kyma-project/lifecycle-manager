@@ -39,9 +39,11 @@ const (
 	kcpConfigEnvVar = "KCP_KUBECONFIG"
 	skrConfigEnvVar = "SKR_KUBECONFIG"
 	dockerInDocker  = "DIND"
+	ClientQPS       = 1000
+	ClientBurst     = 2000
 )
 
-var errEmptyEnvVar = errors.New("environment variable is empty;")
+var errEmptyEnvVar = errors.New("environment variable is empty")
 
 var (
 	controlPlaneEnv        *envtest.Environment //nolint:gochecknoglobals
@@ -93,8 +95,12 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 	existingCluster := true
 	controlPlaneRESTConfig, err = clientcmd.RESTConfigFromKubeConfig(*controlPlaneConfig)
+	controlPlaneRESTConfig.QPS = ClientQPS
+	controlPlaneRESTConfig.Burst = ClientBurst
 	Expect(err).ToNot(HaveOccurred())
 	runtimeRESTConfig, err = clientcmd.RESTConfigFromKubeConfig(*runtimeConfig)
+	runtimeRESTConfig.QPS = ClientQPS
+	runtimeRESTConfig.Burst = ClientBurst
 	Expect(err).ToNot(HaveOccurred())
 
 	Expect(err).NotTo(HaveOccurred())
@@ -127,10 +133,24 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = AfterSuite(func() {
+	By("Print out all remaining resources for debugging")
+	kcpKymaList := v1beta2.KymaList{}
+	err := controlPlaneClient.List(ctx, &kcpKymaList)
+	if err == nil {
+		for _, kyma := range kcpKymaList.Items {
+			GinkgoWriter.Printf("kyma: %v\n", kyma)
+		}
+	}
+	manifestList := v1beta2.ManifestList{}
+	err = controlPlaneClient.List(ctx, &manifestList)
+	if err == nil {
+		for _, manifest := range manifestList.Items {
+			GinkgoWriter.Printf("manifest: %v\n", manifest)
+		}
+	}
 	By("tearing down the test environment")
 	cancel()
-
-	err := controlPlaneEnv.Stop()
+	err = controlPlaneEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
 

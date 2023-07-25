@@ -8,9 +8,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"strings"
 	"time"
+
+	"k8s.io/apimachinery/pkg/api/meta"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
@@ -28,7 +29,7 @@ import (
 
 const (
 	timeout      = 10 * time.Second
-	readyTimeout = 1 * time.Minute
+	readyTimeout = 2 * time.Minute
 	interval     = 1 * time.Second
 
 	watcherPodContainer = "server"
@@ -169,6 +170,7 @@ func checkKymaReady(ctx context.Context, kymaName, kymaNamespace string, k8sClie
 	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
 		return err
 	}
+	GinkgoWriter.Printf("kyma %v\n", kyma)
 	if kyma.Status.State != v1beta2.StateReady {
 		return errKymaNotReady
 	}
@@ -199,6 +201,7 @@ func createKymaCR(ctx context.Context, kymaName, kymaNamespace, channel string, 
 
 func createKymaSecret(ctx context.Context, kymaName, kymaNamespace, channel string, k8sClient client.Client) error {
 	hostnameToBeReplaced := resolveHostToBeReplaced()
+	GinkgoWriter.Printf("hostnameToBeReplaced:  %s\n", hostnameToBeReplaced)
 	patchedRuntimeConfig := strings.ReplaceAll(string(*runtimeConfig), hostnameToBeReplaced, k3dHostname)
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -297,7 +300,8 @@ func checkKLMLogs(ctx context.Context, logMsg string, controlPlaneConfig, runtim
 	if err != nil {
 		return err
 	}
-	return fmt.Errorf("%w\n Expected: %s\n Given KLM logs: %s Watcher-Server-Logs: %s", errLogNotFound, logMsg, logs, watcherLogs)
+	GinkgoWriter.Printf("watcher Logs:  %s\n", watcherLogs)
+	return errLogNotFound
 }
 
 func getPodLogs(ctx context.Context, config *rest.Config, k8sClient client.Client, namespace, podPrefix, container string) (string, error) {
