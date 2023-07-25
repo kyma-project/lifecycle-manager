@@ -38,7 +38,10 @@ patches:
       value: --enable-domain-name-pinning=true
     - op: add
       path: /spec/template/spec/containers/0/args/-
-      value: --kyma-requeue-success-interval=30s
+      value: --kyma-requeue-success-interval=2m
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
+      value: --manifest-requeue-success-interval=2m
     - op: add
       path: /spec/template/spec/containers/0/args/-
       value: --log-level=9
