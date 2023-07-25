@@ -136,7 +136,7 @@ var _ = AfterSuite(func() {
 		}
 	}
 	manifestList := v1beta2.ManifestList{}
-	err := controlPlaneClient.List(ctx, &manifestList)
+	err = controlPlaneClient.List(ctx, &manifestList)
 	if err == nil {
 		for _, manifest := range manifestList.Items {
 			GinkgoWriter.Printf("manifest: %v\n", manifest)
