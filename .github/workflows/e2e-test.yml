@@ -117,18 +117,20 @@ jobs:
           echo "KLM_IMAGE_REPO=dev" >> $GITHUB_ENV
       - name: Deploy LM local testing kustomize
         run: |
-          if make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/$KLM_IMAGE_REPO/lifecycle-manager:$KLM_VERSION_TAG; then
-            echo "KLM deployed successfully"
-          else
-            echo "Deploy encountered some error, will retry after 1 minute"
-            sleep 60
+          maxRetry=5
+          for i in $(seq 1 $maxRetry)
+          do
             if make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/$KLM_IMAGE_REPO/lifecycle-manager:$KLM_VERSION_TAG; then
-                echo "KLM deployed successfully"
+              echo "KLM deployed successfully"
+              exit 0
+            elif [[ $retry -lt $maxRetry ]]; then
+              echo "Deploy encountered some error, will retry after 20 seconds"
+              sleep 20
             else
               echo "KLM deployment failed"
               exit 1
             fi
-          fi
+          done
       - name: Run Watcher E2E Tests
         run: |
           make -C tests/e2e_test test
