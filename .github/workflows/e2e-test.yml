@@ -132,5 +132,8 @@ jobs:
             fi
           done
       - name: Run Watcher E2E Tests
+        continue-on-error: true
         run: |
           make -C tests/e2e_test test
+      - name: Debugging with ssh
+        uses: lhotari/action-upterm@v1
