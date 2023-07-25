@@ -25,8 +25,8 @@ const (
 	defaultListenerPort                    = 9080
 	defaultLogLevel                        = log.WarnLevel
 	defaultPurgeFinalizerTimeout           = 5 * time.Minute
-	defaultMaxConcurrentManifestReconciles = 25
-	defaultMaxConcurrentKymaReconciles     = 25
+	defaultMaxConcurrentManifestReconciles = 1
+	defaultMaxConcurrentKymaReconciles     = 1
 	defaultMaxConcurrentWatcherReconciles  = 1
 )
 
