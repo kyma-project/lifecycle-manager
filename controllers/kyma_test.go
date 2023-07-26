@@ -63,7 +63,6 @@ var _ = Describe("Kyma with no Module", Ordered, func() {
 			return nil
 		}, Timeout, Interval).
 			Should(Succeed())
-
 	})
 })
 
