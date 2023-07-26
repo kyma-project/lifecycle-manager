@@ -226,7 +226,9 @@ func findRawManifestResource(reslist []compdesc.Resource) *compdesc.Resource {
 	return nil
 }
 
-func validateManifestSpecInstallSource(manifestImageSpec *v1beta2.ImageSpec, moduleTemplateDescriptor *v1beta2.Descriptor) error {
+func validateManifestSpecInstallSource(manifestImageSpec *v1beta2.ImageSpec,
+	moduleTemplateDescriptor *v1beta2.Descriptor) error {
+
 	if err := validateManifestSpecInstallSourceName(manifestImageSpec, moduleTemplateDescriptor); err != nil {
 		return err
 	}
@@ -243,7 +245,9 @@ func validateManifestSpecInstallSource(manifestImageSpec *v1beta2.ImageSpec, mod
 }
 
 //nolint:goerr113
-func validateManifestSpecInstallSourceName(manifestImageSpec *v1beta2.ImageSpec, moduleTemplateDescriptor *v1beta2.Descriptor) error {
+func validateManifestSpecInstallSourceName(manifestImageSpec *v1beta2.ImageSpec,
+	moduleTemplateDescriptor *v1beta2.Descriptor) error {
+
 	actualSourceName := manifestImageSpec.Name
 	expectedSourceName := moduleTemplateDescriptor.Name
 
@@ -254,7 +258,9 @@ func validateManifestSpecInstallSourceName(manifestImageSpec *v1beta2.ImageSpec,
 }
 
 //nolint:goerr113
-func validateManifestSpecInstallSourceRef(manifestImageSpec *v1beta2.ImageSpec, moduleTemplateDescriptor *v1beta2.Descriptor) error {
+func validateManifestSpecInstallSourceRef(manifestImageSpec *v1beta2.ImageSpec,
+	moduleTemplateDescriptor *v1beta2.Descriptor) error {
+
 	actualSourceRef := manifestImageSpec.Ref
 
 	moduleTemplateResource := findRawManifestResource(moduleTemplateDescriptor.Resources)
@@ -277,7 +283,9 @@ func validateManifestSpecInstallSourceRef(manifestImageSpec *v1beta2.ImageSpec, 
 }
 
 //nolint:goerr113
-func validateManifestSpecInstallSourceRepo(manifestImageSpec *v1beta2.ImageSpec, moduleTemplateDescriptor *v1beta2.Descriptor) error {
+func validateManifestSpecInstallSourceRepo(manifestImageSpec *v1beta2.ImageSpec,
+	moduleTemplateDescriptor *v1beta2.Descriptor) error {
+
 	actualSourceRepo := manifestImageSpec.Repo
 
 	unstructuredRepo := moduleTemplateDescriptor.GetEffectiveRepositoryContext()
