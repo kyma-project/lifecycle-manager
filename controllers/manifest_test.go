@@ -109,7 +109,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 			hasDummyRepositoryURL := func(manifest *v1beta2.Manifest) error {
 				manifestImageSpec := extractInstallImageSpec(manifest.Spec.Install)
 				if !strings.HasPrefix(manifestImageSpec.Repo, updateRepositoryURL) {
-					return fmt.Errorf("Invalid manifest spec.install.repo: %s, expected prefix: %s",
+					return fmt.Errorf("Invalid manifest spec.install.repo: %s, expected prefix: %s", //nolint:goerr113
 						manifestImageSpec.Repo, updateRepositoryURL)
 				}
 				return nil
@@ -331,18 +331,19 @@ func validateManifestSpecInstall(manifestInstall v1beta2.InstallInfo, moduleTemp
 func validateManifestSpecResource(manifestResource, moduleTemplateData *unstructured.Unstructured) error {
 	actualManifestResource := manifestResource
 	expectedManifestResource := moduleTemplateData.DeepCopy()
-	expectedManifestResource.SetNamespace(controllers.DefaultRemoteSyncNamespace) //the namespace is set in the "actual" object
+	expectedManifestResource.
+		SetNamespace(controllers.DefaultRemoteSyncNamespace) //the namespace is set in the "actual" object
 
 	if !reflect.DeepEqual(actualManifestResource, expectedManifestResource) {
 		actualJson, err := json.MarshalIndent(actualManifestResource, "", "  ")
 		if err != nil {
 			return err
 		}
-		expectedJson, err := json.MarshalIndent(expectedManifestResource, "", "  ")
+		expectedJSON, err := json.MarshalIndent(expectedManifestResource, "", "  ")
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("Invalid ManifestResource.\nActual:\n%s\nExpected:\n%s", actualJson, expectedJson)
+		return fmt.Errorf("Invalid ManifestResource.\nActual:\n%s\nExpected:\n%s", actualJson, expectedJSON) //nolint:goerr113
 	}
 	return nil
 }
