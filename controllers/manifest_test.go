@@ -140,7 +140,12 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 
 		By("checking Spec.Install")
 		hasValidSpecInstall := func(manifest *v1beta2.Manifest) error {
-			return validateManifestSpecInstall(manifest.Spec.Install, moduleTemplate)
+			moduleTemplateDescriptor, err := moduleTemplate.GetDescriptor()
+			if err != nil {
+				return err
+			}
+
+			return validateManifestSpecInstallSource(extractInstallImageSpec(manifest.Spec.Install), moduleTemplateDescriptor)
 		}
 		Eventually(expectManifest(hasValidSpecInstall), Timeout, Interval).Should(Succeed())
 
@@ -194,7 +199,12 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 
 		By("checking Spec.Install")
 		hasValidSpecInstall := func(manifest *v1beta2.Manifest) error {
-			return validateManifestSpecInstall(manifest.Spec.Install, moduleTemplate)
+			moduleTemplateDescriptor, err := moduleTemplate.GetDescriptor()
+			if err != nil {
+				return err
+			}
+
+			return validateManifestSpecInstallSource(extractInstallImageSpec(manifest.Spec.Install), moduleTemplateDescriptor)
 		}
 		Eventually(expectManifest(hasValidSpecInstall), Timeout, Interval).Should(Succeed())
 
@@ -216,96 +226,94 @@ func findRawManifestResource(reslist []compdesc.Resource) *compdesc.Resource {
 	return nil
 }
 
-//nolint:goerr113,funlen
-func validateManifestSpecInstall(manifestInstall v1beta2.InstallInfo, moduleTemplate *v1beta2.ModuleTemplate) error {
-	var (
-		manifestImageSpec        *v1beta2.ImageSpec
-		moduleTemplateDescriptor *v1beta2.Descriptor
-		err                      error
-	)
-
-	manifestImageSpec = extractInstallImageSpec(manifestInstall)
-	moduleTemplateDescriptor, err = moduleTemplate.GetDescriptor()
-	if err != nil {
+func validateManifestSpecInstallSource(manifestImageSpec *v1beta2.ImageSpec, moduleTemplateDescriptor *v1beta2.Descriptor) error {
+	if err := validateManifestSpecInstallSourceName(manifestImageSpec, moduleTemplateDescriptor); err != nil {
 		return err
 	}
 
-	//compares the actual manifest spec.install.source.name with the corresponding values from the ModuleTemplate
-	compareManifestSourceName := func() error {
-		actualSourceName := manifestImageSpec.Name
-		expectedSourceName := moduleTemplateDescriptor.Name
-
-		if actualSourceName != expectedSourceName {
-			return fmt.Errorf("Invalid SourceName: %s, expected: %s", actualSourceName, expectedSourceName)
-		}
-		return nil
+	if err := validateManifestSpecInstallSourceRef(manifestImageSpec, moduleTemplateDescriptor); err != nil {
+		return err
 	}
 
-	//compares the actual manifest spec.install.source.ref with the corresponding values from the ModuleTemplate
-	compareManifestSourceRef := func() error {
-		actualSourceRef := manifestImageSpec.Ref
-
-		moduleTemplateResource := findRawManifestResource(moduleTemplateDescriptor.Resources)
-		aspec, err := ocm.DefaultContext().AccessSpecForSpec(moduleTemplateResource.Access)
-		if err != nil {
-			return err
-		}
-		concreteAccessSpec, ok := aspec.(*localociblob.AccessSpec)
-		if !ok {
-			return fmt.Errorf("Unexpected Resource Access Type: %T", aspec)
-		}
-
-		expectedSourceRef := string(concreteAccessSpec.Digest)
-
-		if actualSourceRef != expectedSourceRef {
-			return fmt.Errorf("Invalid SourceRef: %s, expected: %s", actualSourceRef, expectedSourceRef)
-		}
-
-		return nil
+	if err := validateManifestSpecInstallSourceRepo(manifestImageSpec, moduleTemplateDescriptor); err != nil {
+		return err
 	}
 
-	//compares the actual manifest spec.install.source.repo with the corresponding values from the ModuleTemplate
-	compareManifestSourceRepo := func() error {
-		actualSourceRepo := manifestImageSpec.Repo
+	return validateManifestSpecInstallSourceType(manifestImageSpec)
+}
 
-		unstructuredRepo := moduleTemplateDescriptor.GetEffectiveRepositoryContext()
-		typedRepo, err := unstructuredRepo.Evaluate(cpi.DefaultContext().RepositoryTypes())
-		if err != nil {
-			return fmt.Errorf("error while decoding the repository context into an OCI registry: %w", err)
-		}
-		concreteRepo, typeOk := typedRepo.(*genericocireg.RepositorySpec)
-		if !typeOk {
-			return fmt.Errorf("Unexpected Repository Type: %T", typedRepo)
-		}
+//nolint:goerr113
+func validateManifestSpecInstallSourceName(manifestImageSpec *v1beta2.ImageSpec, moduleTemplateDescriptor *v1beta2.Descriptor) error {
+	actualSourceName := manifestImageSpec.Name
+	expectedSourceName := moduleTemplateDescriptor.Name
 
-		ociRepoSpec, typeOk := concreteRepo.RepositorySpec.(*ocireg.RepositorySpec)
-		if !typeOk {
-			return fmt.Errorf("Unexpected Repository Spec Type: %T", concreteRepo.RepositorySpec)
-		}
+	if actualSourceName != expectedSourceName {
+		return fmt.Errorf("Invalid SourceName: %s, expected: %s", actualSourceName, expectedSourceName)
+	}
+	return nil
+}
 
-		repositoryBaseURL := ociRepoSpec.BaseURL
-		expectedSourceRepo := repositoryBaseURL + "/" + componentmapping.ComponentDescriptorNamespace
+//nolint:goerr113
+func validateManifestSpecInstallSourceRef(manifestImageSpec *v1beta2.ImageSpec, moduleTemplateDescriptor *v1beta2.Descriptor) error {
+	actualSourceRef := manifestImageSpec.Ref
 
-		if actualSourceRepo != expectedSourceRepo {
-			return fmt.Errorf("Invalid SourceRepo: %s, expected: %s", actualSourceRepo, expectedSourceRepo)
-		}
-
-		return nil
+	moduleTemplateResource := findRawManifestResource(moduleTemplateDescriptor.Resources)
+	aspec, err := ocm.DefaultContext().AccessSpecForSpec(moduleTemplateResource.Access)
+	if err != nil {
+		return err
+	}
+	concreteAccessSpec, ok := aspec.(*localociblob.AccessSpec)
+	if !ok {
+		return fmt.Errorf("Unexpected Resource Access Type: %T", aspec)
 	}
 
-	//validates the actual manifest spec.install.source.type
-	compareManifestSourceType := func() error {
-		actualSourceType := string(manifestImageSpec.Type)
-		expectedSourceType := "oci-ref" //no corresponding value in the ModuleTemplate?
+	expectedSourceRef := string(concreteAccessSpec.Digest)
 
-		if actualSourceType != expectedSourceType {
-			return fmt.Errorf("Invalid SourceType: %s, expected: %s", actualSourceType, expectedSourceType)
-		}
-		return nil
+	if actualSourceRef != expectedSourceRef {
+		return fmt.Errorf("Invalid SourceRef: %s, expected: %s", actualSourceRef, expectedSourceRef)
 	}
 
-	return firstErrorOf(compareManifestSourceName, compareManifestSourceRef,
-		compareManifestSourceRepo, compareManifestSourceType)
+	return nil
+}
+
+//nolint:goerr113
+func validateManifestSpecInstallSourceRepo(manifestImageSpec *v1beta2.ImageSpec, moduleTemplateDescriptor *v1beta2.Descriptor) error {
+	actualSourceRepo := manifestImageSpec.Repo
+
+	unstructuredRepo := moduleTemplateDescriptor.GetEffectiveRepositoryContext()
+	typedRepo, err := unstructuredRepo.Evaluate(cpi.DefaultContext().RepositoryTypes())
+	if err != nil {
+		return fmt.Errorf("error while decoding the repository context into an OCI registry: %w", err)
+	}
+	concreteRepo, typeOk := typedRepo.(*genericocireg.RepositorySpec)
+	if !typeOk {
+		return fmt.Errorf("Unexpected Repository Type: %T", typedRepo)
+	}
+
+	ociRepoSpec, typeOk := concreteRepo.RepositorySpec.(*ocireg.RepositorySpec)
+	if !typeOk {
+		return fmt.Errorf("Unexpected Repository Spec Type: %T", concreteRepo.RepositorySpec)
+	}
+
+	repositoryBaseURL := ociRepoSpec.BaseURL
+	expectedSourceRepo := repositoryBaseURL + "/" + componentmapping.ComponentDescriptorNamespace
+
+	if actualSourceRepo != expectedSourceRepo {
+		return fmt.Errorf("Invalid SourceRepo: %s, expected: %s", actualSourceRepo, expectedSourceRepo)
+	}
+
+	return nil
+}
+
+//nolint:goerr113
+func validateManifestSpecInstallSourceType(manifestImageSpec *v1beta2.ImageSpec) error {
+	actualSourceType := string(manifestImageSpec.Type)
+	expectedSourceType := "oci-ref" //no corresponding value in the ModuleTemplate?
+
+	if actualSourceType != expectedSourceType {
+		return fmt.Errorf("Invalid SourceType: %s, expected: %s", actualSourceType, expectedSourceType)
+	}
+	return nil
 }
 
 func validateManifestSpecResource(manifestResource, moduleTemplateData *unstructured.Unstructured) error {
@@ -361,15 +369,4 @@ func expectManifestFor(kyma *v1beta2.Kyma) func(func(*v1beta2.Manifest) error) f
 			return validationFn(manifest)
 		}
 	}
-}
-
-func firstErrorOf(funcs ...func() error) error {
-	for _, fnc := range funcs {
-		if err := fnc(); err != nil {
-			return err
-		}
-
-	}
-
-	return nil
 }
