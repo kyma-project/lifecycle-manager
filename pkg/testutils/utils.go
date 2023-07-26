@@ -46,6 +46,16 @@ const (
 var ErrNotFound = errors.New("resource not exists")
 
 func NewTestKyma(name string) *v1beta2.Kyma {
+	return newKCPKymaWithNamespace(name, v1.NamespaceDefault, v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalClient)
+}
+
+func NewKymaForE2E(name, namespace, channel string) *v1beta2.Kyma {
+	kyma := newKCPKymaWithNamespace(name, namespace, channel, v1beta2.SyncStrategyLocalSecret)
+	kyma.Labels[v1beta2.SyncLabel] = v1beta2.EnableLabelValue
+	return kyma
+}
+
+func newKCPKymaWithNamespace(name, namespace, channel, syncStrategy string) *v1beta2.Kyma {
 	return &v1beta2.Kyma{
 		TypeMeta: v1.TypeMeta{
 			APIVersion: v1beta2.GroupVersion.String(),
@@ -53,15 +63,18 @@ func NewTestKyma(name string) *v1beta2.Kyma {
 		},
 		ObjectMeta: v1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%s", name, randString(randomStringLength)),
-			Namespace: v1.NamespaceDefault,
+			Namespace: namespace,
 			Annotations: map[string]string{
 				watcher.DomainAnnotation:       "example.domain.com",
-				v1beta2.SyncStrategyAnnotation: v1beta2.SyncStrategyLocalClient,
+				v1beta2.SyncStrategyAnnotation: syncStrategy,
+			},
+			Labels: map[string]string{
+				v1beta2.InstanceIDLabel: "test-instance",
 			},
 		},
 		Spec: v1beta2.KymaSpec{
 			Modules: []v1beta2.Module{},
-			Channel: v1beta2.DefaultChannel,
+			Channel: channel,
 		},
 	}
 }
