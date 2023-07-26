@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/controllers"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -304,7 +305,7 @@ func validateManifestSpecInstall(manifestInstall v1beta2.InstallInfo, moduleTemp
 	}
 
 	return firstErrorOf(compareManifestSourceName, compareManifestSourceRef,
-	compareManifestSourceRepo, compareManifestSourceType)
+		compareManifestSourceRepo, compareManifestSourceType)
 }
 
 func validateManifestSpecResource(manifestResource, moduleTemplateData *unstructured.Unstructured) error {
