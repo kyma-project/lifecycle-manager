@@ -157,11 +157,12 @@ var _ = BeforeSuite(func() {
 
 	remoteClientCache = remote.NewClientCache()
 	skrChartCfg := &watcher.SkrWebhookManagerConfig{
-		SKRWatcherPath:         skrWatcherPath,
-		SkrWebhookMemoryLimits: "200Mi",
-		SkrWebhookCPULimits:    "1",
-		IstioNamespace:         metav1.NamespaceDefault,
-		RemoteSyncNamespace:    controllers.DefaultRemoteSyncNamespace,
+		SKRWatcherPath:          skrWatcherPath,
+		SkrWebhookMemoryLimits:  "200Mi",
+		SkrWebhookCPULimits:     "1",
+		IstioNamespace:          metav1.NamespaceDefault,
+		IstioIngressServiceName: watcher.IngressServiceName,
+		RemoteSyncNamespace:     controllers.DefaultRemoteSyncNamespace,
 	}
 
 	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(restCfg, skrChartCfg)

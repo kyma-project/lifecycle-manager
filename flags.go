@@ -29,6 +29,8 @@ const (
 	defaultMaxConcurrentManifestReconciles = 25
 	defaultMaxConcurrentKymaReconciles     = 25
 	defaultMaxConcurrentWatcherReconciles  = 1
+	defaultIstioIngressServiceName         = "istio-ingressgateway"
+	defaultIstioNamespace                  = "istio-system"
 )
 
 //nolint:funlen
@@ -88,8 +90,10 @@ func defineFlagVar() *FlagVar {
 		"The resources.limits.cpu for skr webhook.")
 	flag.BoolVar(&flagVar.enableWatcherLocalTesting, "enable-watcher-local-testing", false,
 		"Enabling KCP Watcher two-cluster setup to be tested locally using k3d")
-	flag.StringVar(&flagVar.istioNamespace, "istio-namespace", "istio-system",
-		"CLuster Resource Namespace of Istio")
+	flag.StringVar(&flagVar.istioNamespace, "istio-namespace", defaultIstioNamespace,
+		"Cluster Resource Namespace of Istio")
+	flag.StringVar(&flagVar.istioIngressServiceName, "istio-ingress-service", defaultIstioIngressServiceName,
+		"CLuster Resource Name of Istio ingress Service (Loadbalancer)")
 	flag.StringVar(&flagVar.listenerGatewayPortName, "listener-gateway-port-name", defaultListenerGatewayPortName,
 		"Port name that is specified in the cluster's gateway used for incoming watcher requests")
 	flag.IntVar(&flagVar.listenerHTTPSPortLocalMapping, "listener-http-local-mapping", defaultListenerPort,
@@ -154,6 +158,7 @@ type FlagVar struct {
 	skrWebhookCPULimits                    string
 	enableWatcherLocalTesting              bool
 	istioNamespace                         string
+	istioIngressServiceName                string
 	listenerGatewayPortName                string
 	// listenerHTTPSPortLocalMapping is used to enable the user
 	// to specify the port used to expose the KCP cluster for the watcher

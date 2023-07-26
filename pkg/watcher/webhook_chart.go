@@ -19,18 +19,16 @@ import (
 
 // TODO PKI move consts into other file if they are not needed here.
 const (
-	webhookTLSCfgNameTpl         = "%s-webhook-tls"
-	SkrTLSName                   = "skr-webhook-tls"
-	SkrResourceName              = "skr-webhook"
-	IstioSystemNs                = "istio-system"
-	IngressServiceName           = "istio-ingressgateway"
-	defaultK3dLocalhostMapping   = "host.k3d.internal"
-	defaultBufferSize            = 2048
-	skrChartFieldOwner           = client.FieldOwner(v1beta2.OperatorName)
-	version                      = "v1"
-	webhookTimeOutInSeconds      = 15
-	allResourcesWebhookRule      = "*"
-	statusSubResourceWebhookRule = "*/status"
+	webhookTLSCfgNameTpl       = "%s-webhook-tls"
+	SkrTLSName                 = "skr-webhook-tls"
+	SkrResourceName            = "skr-webhook"
+	IstioSystemNs              = "istio-system"
+	IngressServiceName         = "istio-ingressgateway"
+	defaultK3dLocalhostMapping = "host.k3d.internal"
+	defaultBufferSize          = 2048
+	skrChartFieldOwner         = client.FieldOwner(v1beta2.OperatorName)
+	version                    = "v1"
+	webhookTimeOutInSeconds    = 15
 )
 
 var ErrLoadBalancerIPIsNotAssigned = errors.New("load balancer service external ip is not assigned")
@@ -65,7 +63,7 @@ func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrWebhookManagerConf
 	ctx := context.TODO()
 	loadBalancerService := &corev1.Service{}
 	if err := kcpClient.Get(ctx, client.ObjectKey{
-		Name:      IngressServiceName,
+		Name:      managerConfig.IstioIngressServiceName,
 		Namespace: IstioSystemNs,
 	}, loadBalancerService); err != nil {
 		return "", err

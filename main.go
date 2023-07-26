@@ -259,6 +259,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 			WatcherLocalTestingEnabled:  flagVar.enableWatcherLocalTesting,
 			LocalGatewayHTTPPortMapping: flagVar.listenerHTTPSPortLocalMapping,
 			IstioNamespace:              flagVar.istioNamespace,
+			IstioIngressServiceName:     flagVar.istioIngressServiceName,
 			RemoteSyncNamespace:         flagVar.remoteSyncNamespace,
 		})
 		if err != nil {

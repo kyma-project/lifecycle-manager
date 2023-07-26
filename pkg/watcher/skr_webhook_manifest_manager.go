@@ -36,6 +36,8 @@ type SkrWebhookManagerConfig struct {
 	SkrWebhookCPULimits    string
 	// IstioNamespace represents the cluster resource namespace of istio
 	IstioNamespace string
+	// IstioIngressServiceName represents the cluster resource name of the istio ingress service name
+	IstioIngressServiceName string
 	// RemoteSyncNamespace indicates the sync namespace for Kyma and module catalog
 	RemoteSyncNamespace string
 	// ListenerGatewayPortName indicates the name of the port the watcher's requests should be sent to
