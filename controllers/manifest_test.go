@@ -109,7 +109,8 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 			hasDummyRepositoryURL := func(manifest *v1beta2.Manifest) error {
 				manifestImageSpec := extractInstallImageSpec(manifest.Spec.Install)
 				if !strings.HasPrefix(manifestImageSpec.Repo, updateRepositoryURL) {
-					return fmt.Errorf("Invalid manifest spec.install.repo: %s, expected prefix: %s", manifestImageSpec.Repo, updateRepositoryURL)
+					return fmt.Errorf("Invalid manifest spec.install.repo: %s, expected prefix: %s",
+						manifestImageSpec.Repo, updateRepositoryURL)
 				}
 				return nil
 			}
@@ -133,7 +134,7 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 
 	It("validate Manifest", func() {
 		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module.Name, "default")
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 
 		expectManifest := expectManifestFor(kyma)
 
@@ -189,7 +190,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 
 	It("validate Manifest", func() {
 		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module.Name, "default")
-		Expect(err).To(BeNil())
+		Expect(err).NotTo(HaveOccurred())
 
 		expectManifest := expectManifestFor(kyma)
 
