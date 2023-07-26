@@ -77,6 +77,8 @@ var (
 const (
 	skrWatcherPath         = "../../skr-webhook"
 	istioResourcesFilePath = "../../config/samples/tests/istio-test-resources.yaml"
+	istioSystemNs          = "istio-system"
+	ingressServiceName     = "istio-ingressgateway"
 )
 
 func TestAPIs(t *testing.T) {
@@ -160,8 +162,8 @@ var _ = BeforeSuite(func() {
 		SKRWatcherPath:          skrWatcherPath,
 		SkrWebhookMemoryLimits:  "200Mi",
 		SkrWebhookCPULimits:     "1",
-		IstioNamespace:          metav1.NamespaceDefault,
-		IstioIngressServiceName: watcher.IngressServiceName,
+		IstioNamespace:          istioSystemNs,
+		IstioIngressServiceName: ingressServiceName,
 		RemoteSyncNamespace:     controllers.DefaultRemoteSyncNamespace,
 	}
 
@@ -223,7 +225,7 @@ var _ = AfterSuite(func() {
 func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 	istioNs := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: watcher.IstioSystemNs,
+			Name: istioSystemNs,
 		},
 	}
 	if err := k8sClient.Create(ctx, istioNs); err != nil {
@@ -231,10 +233,10 @@ func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 	}
 	loadBalancerService := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      watcher.IngressServiceName,
-			Namespace: watcher.IstioSystemNs,
+			Name:      ingressServiceName,
+			Namespace: istioSystemNs,
 			Labels: map[string]string{
-				"app": watcher.IngressServiceName,
+				"app": ingressServiceName,
 			},
 		},
 		Spec: corev1.ServiceSpec{
@@ -267,7 +269,7 @@ func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
 	}
 
 	return k8sClient.Get(ctx, client.ObjectKey{
-		Name:      watcher.IngressServiceName,
-		Namespace: watcher.IstioSystemNs,
+		Name:      ingressServiceName,
+		Namespace: istioSystemNs,
 	}, loadBalancerService)
 }

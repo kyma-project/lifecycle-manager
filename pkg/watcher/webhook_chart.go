@@ -22,8 +22,6 @@ const (
 	webhookTLSCfgNameTpl       = "%s-webhook-tls"
 	SkrTLSName                 = "skr-webhook-tls"
 	SkrResourceName            = "skr-webhook"
-	IstioSystemNs              = "istio-system"
-	IngressServiceName         = "istio-ingressgateway"
 	defaultK3dLocalhostMapping = "host.k3d.internal"
 	defaultBufferSize          = 2048
 	skrChartFieldOwner         = client.FieldOwner(v1beta2.OperatorName)
@@ -64,7 +62,7 @@ func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrWebhookManagerConf
 	loadBalancerService := &corev1.Service{}
 	if err := kcpClient.Get(ctx, client.ObjectKey{
 		Name:      managerConfig.IstioIngressServiceName,
-		Namespace: IstioSystemNs,
+		Namespace: managerConfig.IstioNamespace,
 	}, loadBalancerService); err != nil {
 		return "", err
 	}
