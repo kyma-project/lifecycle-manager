@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/controllers"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -149,12 +148,10 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 			return validateManifestSpecResource(manifest.Spec.Resource, &moduleTemplate.Spec.Data)
 		}
 		Eventually(expectManifest(hasValidSpecResource), Timeout, Interval).Should(Succeed())
-
 	})
 })
 
 var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
-
 	const updateRepositoryURL = "registry.docker.io/kyma-project/component-descriptors"
 
 	kyma := NewTestKyma("kyma")
@@ -205,7 +202,6 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 			return validateManifestSpecResource(manifest.Spec.Resource, &moduleTemplate.Spec.Data)
 		}
 		Eventually(expectManifest(hasValidSpecResource), Timeout, Interval).Should(Succeed())
-
 	})
 })
 
@@ -221,7 +217,6 @@ func findRawManifestResource(reslist []compdesc.Resource) *compdesc.Resource {
 
 //nolint:goerr113
 func validateManifestSpecInstall(manifestInstall v1beta2.InstallInfo, moduleTemplate *v1beta2.ModuleTemplate) error {
-
 	var (
 		manifestImageSpec        *v1beta2.ImageSpec
 		moduleTemplateDescriptor *v1beta2.Descriptor
@@ -257,7 +252,6 @@ func validateManifestSpecInstall(manifestInstall v1beta2.InstallInfo, moduleTemp
 		concreteAccessSpec, ok := aspec.(*localociblob.AccessSpec)
 		if !ok {
 			return fmt.Errorf("Unexpected Resource Access Type: %T", aspec)
-
 		}
 
 		expectedSourceRef := string(concreteAccessSpec.Digest)
@@ -309,23 +303,8 @@ func validateManifestSpecInstall(manifestInstall v1beta2.InstallInfo, moduleTemp
 		return nil
 	}
 
-	if err = compareManifestSourceName(); err != nil {
-		return err
-	}
-	if err = compareManifestSourceRef(); err != nil {
-		return err
-	}
-
-	if err = compareManifestSourceRepo(); err != nil {
-		return err
-	}
-
-	if err = compareManifestSourceType(); err != nil {
-		return err
-	}
-
-	return nil
-
+	return firstErrorOf(compareManifestSourceName, compareManifestSourceRef,
+	compareManifestSourceRepo, compareManifestSourceType)
 }
 
 func validateManifestSpecResource(manifestResource, moduleTemplateData *unstructured.Unstructured) error {
@@ -348,11 +327,10 @@ func validateManifestSpecResource(manifestResource, moduleTemplateData *unstruct
 	return nil
 }
 
-// updateKCPModuleTemplate is a generic ModuleTemplate update function
+// updateKCPModuleTemplate is a generic ModuleTemplate update function.
 func updateKCPModuleTemplate(
 	moduleName, moduleNamespace string,
 ) func(func(*v1beta2.ModuleTemplate) error) func() error {
-
 	return func(updateFunc func(*v1beta2.ModuleTemplate) error) func() error {
 		return func() error {
 			moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, moduleName, moduleNamespace)
@@ -367,11 +345,10 @@ func updateKCPModuleTemplate(
 
 			return controlPlaneClient.Update(ctx, moduleTemplate)
 		}
-
 	}
 }
 
-// expectManifest is a generic Manifest assertion function
+// expectManifest is a generic Manifest assertion function.
 func expectManifestFor(kyma *v1beta2.Kyma) func(func(*v1beta2.Manifest) error) func() error {
 	return func(validationFn func(*v1beta2.Manifest) error) func() error {
 		return func() error {
@@ -383,4 +360,15 @@ func expectManifestFor(kyma *v1beta2.Kyma) func(func(*v1beta2.Manifest) error) f
 			return validationFn(manifest)
 		}
 	}
+}
+
+func firstErrorOf(funcs ...func() error) error {
+	for _, fnc := range funcs {
+		if err := fnc(); err != nil {
+			return err
+		}
+
+	}
+
+	return nil
 }
