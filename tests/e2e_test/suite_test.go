@@ -26,7 +26,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	//+kubebuilder:scaffold:imports
 )
@@ -37,7 +36,6 @@ import (
 const (
 	kcpConfigEnvVar = "KCP_KUBECONFIG"
 	skrConfigEnvVar = "SKR_KUBECONFIG"
-	dockerInDocker  = "DIND"
 	ClientQPS       = 1000
 	ClientBurst     = 2000
 )
@@ -45,10 +43,9 @@ const (
 var errEmptyEnvVar = errors.New("environment variable is empty")
 
 var (
-	controlPlaneEnv        *envtest.Environment //nolint:gochecknoglobals
-	controlPlaneClient     client.Client        //nolint:gochecknoglobals
-	controlPlaneRESTConfig *rest.Config         //nolint:gochecknoglobals
-	controlPlaneConfig     *[]byte              //nolint:gochecknoglobals
+	controlPlaneClient     client.Client //nolint:gochecknoglobals
+	controlPlaneRESTConfig *rest.Config  //nolint:gochecknoglobals
+	controlPlaneConfig     *[]byte       //nolint:gochecknoglobals
 
 	runtimeClient     client.Client //nolint:gochecknoglobals
 	runtimeRESTConfig *rest.Config  //nolint:gochecknoglobals
@@ -82,7 +79,6 @@ var _ = BeforeSuite(func() {
 	// k8s configs
 	controlPlaneConfig, runtimeConfig, err = getKubeConfigs()
 	Expect(err).ToNot(HaveOccurred())
-	existingCluster := true
 	controlPlaneRESTConfig, err = clientcmd.RESTConfigFromKubeConfig(*controlPlaneConfig)
 	controlPlaneRESTConfig.QPS = ClientQPS
 	controlPlaneRESTConfig.Burst = ClientBurst
@@ -94,18 +90,10 @@ var _ = BeforeSuite(func() {
 
 	Expect(err).NotTo(HaveOccurred())
 
-	controlPlaneEnv = &envtest.Environment{
-		UseExistingCluster: &existingCluster,
-		Config:             controlPlaneRESTConfig,
-	}
 	controlPlaneClient, err = client.New(controlPlaneRESTConfig, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	runtimeClient, err = client.New(runtimeRESTConfig, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
-
-	_, err = controlPlaneEnv.Start()
-	Expect(err).NotTo(HaveOccurred())
-	Expect(controlPlaneEnv.Config).NotTo(BeNil())
 
 	Expect(api.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
@@ -134,10 +122,6 @@ var _ = AfterSuite(func() {
 			GinkgoWriter.Printf("manifest: %v\n", manifest)
 		}
 	}
-	By("tearing down the test environment")
-	cancel()
-	err = controlPlaneEnv.Stop()
-	Expect(err).NotTo(HaveOccurred())
 })
 
 func getKubeConfigs() (*[]byte, *[]byte, error) {
