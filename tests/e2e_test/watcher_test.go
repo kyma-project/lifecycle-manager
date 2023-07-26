@@ -199,7 +199,16 @@ func createKymaCR(ctx context.Context, kymaName, kymaNamespace, channel string, 
 			Modules: nil,
 		},
 	}
-	return k8sClient.Create(ctx, kyma)
+	GinkgoWriter.Printf("kyma before create: %v\n", kyma)
+	if err := k8sClient.Create(ctx, kyma); err != nil {
+		return err
+	}
+	kymaInCluster := &v1beta2.Kyma{}
+	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kymaInCluster); err != nil {
+		return err
+	}
+	GinkgoWriter.Printf("kyma after create: %v\n", kymaInCluster)
+	return nil
 }
 
 func createKymaSecret(ctx context.Context, kymaName, kymaNamespace, channel string, k8sClient client.Client) error {
