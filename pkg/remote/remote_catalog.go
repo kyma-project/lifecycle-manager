@@ -213,8 +213,9 @@ func (c *RemoteCatalog) Delete(
 	syncContext := SyncContextFromContext(ctx)
 	moduleTemplatesRuntime := &v1beta2.ModuleTemplateList{Items: []v1beta2.ModuleTemplate{}}
 	if err := syncContext.RuntimeClient.List(ctx, moduleTemplatesRuntime); err != nil {
-		// if there is no CRD there can never be any module templates to delete
-		if meta.IsNoMatchError(err) {
+		// if there is no CRD or no module template exists,
+		// there can never be any module templates to delete
+		if util.IsNotFound(err) {
 			return nil
 		}
 		return err

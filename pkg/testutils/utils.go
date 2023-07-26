@@ -44,7 +44,10 @@ const (
 	Interval               = time.Millisecond * 250
 )
 
-var ErrNotFound = errors.New("resource not exists")
+var (
+	ErrNotFound   = errors.New("resource not exists")
+	ErrNotDeleted = errors.New("resource not deleted")
+)
 
 func NewTestKyma(name string) *v1beta2.Kyma {
 	return newKCPKymaWithNamespace(name, v1.NamespaceDefault, v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalClient)
@@ -77,6 +80,13 @@ func newKCPKymaWithNamespace(name, namespace, channel, syncStrategy string) *v1b
 			Modules: []v1beta2.Module{},
 			Channel: channel,
 		},
+	}
+}
+
+func NewTestModule(name, channel string) v1beta2.Module {
+	return v1beta2.Module{
+		Name:    fmt.Sprintf("%s-%s", name, randString(randomStringLength)),
+		Channel: channel,
 	}
 }
 
@@ -167,10 +177,15 @@ func DeleteModuleTemplates(
 
 func DeleteCR(ctx context.Context, clnt client.Client, obj client.Object) error {
 	err := clnt.Delete(ctx, obj)
-	if !util.IsNotFound(err) {
+	err = clnt.Get(ctx, client.ObjectKey{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj)
+	if util.IsNotFound(err) {
+		return nil
+	}
+	if err != nil {
 		return err
 	}
-	return nil
+	return fmt.Errorf("%s/%s: %w", obj.GetNamespace(), obj.GetName(), ErrNotDeleted)
+
 }
 
 func CreateCR(ctx context.Context, clnt client.Client, obj client.Object) error {
@@ -447,7 +462,7 @@ func ManifestExists(ctx context.Context,
 ) error {
 	_, err := GetManifest(ctx, controlPlaneClient, kyma, module)
 	if util.IsNotFound(err) {
-		return ErrNotFound
+		return fmt.Errorf("%w: %w", ErrNotFound, err)
 	}
 	return nil
 }
