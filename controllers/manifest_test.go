@@ -1,9 +1,11 @@
 package controllers_test
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/controllers"
@@ -130,7 +132,7 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 	RegisterDefaultLifecycleForKyma(kyma)
 
-	It("expect Manifest.Spec.Remote=false", func() {
+	It("validate Manifest", func() {
 		Eventually(GetManifestSpecRemote, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, kyma, module).
 			Should(Equal(false))
@@ -141,7 +143,61 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module.Name, "default")
 		Expect(err).To(BeNil())
 
+		By("checking Spec.Install")
 		validateManifestSpecInstall(manifest.Spec.Install, moduleTemplate)
+
+		By("checking Spec.Resource")
+		validateManifestSpecResource(manifest.Spec.Resource, &moduleTemplate.Spec.Data)
+	})
+})
+
+var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
+
+	const updateRepositoryURL = "registry.docker.io/kyma-project/component-descriptors"
+
+	kyma := NewTestKyma("kyma")
+
+	module := v1beta2.Module{
+		ControllerName: "manifest",
+		Name:           NewUniqModuleName(),
+		Channel:        v1beta2.DefaultChannel,
+	}
+	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
+	RegisterDefaultLifecycleForKyma(kyma)
+
+	It("update Manifest", func() {
+		Eventually(GetManifestSpecRemote, Timeout, Interval).
+			WithArguments(ctx, controlPlaneClient, kyma, module).
+			Should(Equal(false))
+
+		manifest, err := GetManifest(ctx, controlPlaneClient, kyma, module)
+		Expect(err).ToNot(HaveOccurred())
+
+		dumpToScreen(manifest.Spec.Install, "====")
+		manifestImageSpec := extractInstallImageSpec(manifest.Spec.Install)
+		manifestImageSpec.Repo = updateRepositoryURL
+
+		updatedBytes, err := json.Marshal(manifestImageSpec)
+		Expect(err).ToNot(HaveOccurred())
+		manifest.Spec.Install.Source.Raw = updatedBytes
+
+		dumpToScreen(manifest.Spec.Install, ">>>>")
+		err = controlPlaneClient.Update(ctx, manifest)
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("validate Manifest", func() {
+		time.Sleep(10)
+		manifest, err := GetManifest(ctx, controlPlaneClient, kyma, module)
+		Expect(err).To(BeNil())
+
+		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module.Name, "default")
+		Expect(err).To(BeNil())
+
+		By("checking Spec.Install")
+		validateManifestSpecInstall(manifest.Spec.Install, moduleTemplate)
+
+		By("checking Spec.Resource")
 		validateManifestSpecResource(manifest.Spec.Resource, &moduleTemplate.Spec.Data)
 	})
 })
@@ -279,4 +335,12 @@ func expectManifestFor(kyma *v1beta2.Kyma) func(func(*v1beta2.Manifest) error) f
 			return validationFn(manifest)
 		}
 	}
+}
+
+func dumpToScreen(val any, prefix string) {
+	vSer, err := json.MarshalIndent(val, prefix, "  ")
+	if err != nil {
+		panic(fmt.Errorf("Error when dumping value: %#v: %w", val, err))
+	}
+	fmt.Println(string(vSer))
 }
