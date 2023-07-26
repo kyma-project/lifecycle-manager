@@ -179,7 +179,7 @@ func checkKymaReady(ctx context.Context, kymaName, kymaNamespace string, k8sClie
 
 func createKymaCR(ctx context.Context, kymaName, kymaNamespace, channel string, k8sClient client.Client) error {
 	kyma := &v1beta2.Kyma{
-		TypeMeta: v1.TypeMeta{
+		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1beta2.GroupVersion.String(),
 			Kind:       string(v1beta2.KymaKind),
 		},
