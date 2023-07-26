@@ -21,7 +21,6 @@ import (
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
 
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -73,11 +72,6 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 
-	externalCRDs := AppendExternalCRDs(
-		filepath.Join("../..", "config", "samples", "tests", "crds"),
-		"cert-manager-v1.10.1.crds.yaml",
-		"istio-v1.17.1.crds.yaml")
-
 	// kcpModule CRD
 	controlPlaneCrd := &v1.CustomResourceDefinition{}
 	modulePath := filepath.Join("../..", "config", "samples", "component-integration-installed",
@@ -107,11 +101,8 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	controlPlaneEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("../..", "config", "crd", "bases")},
-		CRDs:                  append([]*v1.CustomResourceDefinition{controlPlaneCrd}, externalCRDs...),
-		ErrorIfCRDPathMissing: true,
-		UseExistingCluster:    &existingCluster,
-		Config:                controlPlaneRESTConfig,
+		UseExistingCluster: &existingCluster,
+		Config:             controlPlaneRESTConfig,
 	}
 	controlPlaneClient, err = client.New(controlPlaneRESTConfig, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
