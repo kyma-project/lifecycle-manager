@@ -37,7 +37,6 @@ jobs:
       CM_VERSION: v1.12.0
       KLM_VERSION_TAG: latest
       KLM_IMAGE_REPO: prod
-      DIND: false
     steps:
       - name: Install prerequisites
         run: |
