@@ -179,6 +179,10 @@ func checkKymaReady(ctx context.Context, kymaName, kymaNamespace string, k8sClie
 
 func createKymaCR(ctx context.Context, kymaName, kymaNamespace, channel string, k8sClient client.Client) error {
 	kyma := &v1beta2.Kyma{
+		TypeMeta: v1.TypeMeta{
+			APIVersion: v1beta2.GroupVersion.String(),
+			Kind:       string(v1beta2.KymaKind),
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      kymaName,
 			Namespace: kymaNamespace,
@@ -187,8 +191,7 @@ func createKymaCR(ctx context.Context, kymaName, kymaNamespace, channel string, 
 				"operator.kyma-project.io/sync":       "true",
 			},
 			Annotations: map[string]string{
-				"operator.kyma-project.io/sync": "true",
-				"skr-domain":                    exampleSKRDomain,
+				"skr-domain": exampleSKRDomain,
 			},
 		},
 		Spec: v1beta2.KymaSpec{
