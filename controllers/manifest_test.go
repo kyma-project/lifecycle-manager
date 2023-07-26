@@ -2,7 +2,6 @@ package controllers_test
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -110,7 +109,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 			hasDummyRepositoryURL := func(manifest *v1beta2.Manifest) error {
 				manifestImageSpec := extractInstallImageSpec(manifest.Spec.Install)
 				if !strings.HasPrefix(manifestImageSpec.Repo, updateRepositoryURL) {
-					return errors.New(fmt.Sprintf("Invalid manifest spec.install.repo: %s, expected prefix: %s", manifestImageSpec.Repo, updateRepositoryURL))
+					return fmt.Errorf("Invalid manifest spec.install.repo: %s, expected prefix: %s", manifestImageSpec.Repo, updateRepositoryURL)
 				}
 				return nil
 			}
@@ -168,7 +167,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 	RegisterDefaultLifecycleForKyma(kyma)
 
 	It("update Manifest", func() {
-		//Await for the manifest to be created
+		// await for the manifest to be created
 		Eventually(GetManifestSpecRemote, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, kyma, module).
 			Should(Equal(false))
@@ -176,16 +175,14 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 		manifest, err := GetManifest(ctx, controlPlaneClient, kyma, module)
 		Expect(err).ToNot(HaveOccurred())
 
-		//dumpToScreen(manifest.Spec.Install, "====")
 		manifestImageSpec := extractInstallImageSpec(manifest.Spec.Install)
 		manifestImageSpec.Repo = updateRepositoryURL
 
-		//Is there a simpler way to update manifest.Spec.Install?
+		// is there a simpler way to update manifest.Spec.Install?
 		updatedBytes, err := json.Marshal(manifestImageSpec)
 		Expect(err).ToNot(HaveOccurred())
 		manifest.Spec.Install.Source.Raw = updatedBytes
 
-		//dumpToScreen(manifest.Spec.Install, ">>>>")
 		err = controlPlaneClient.Update(ctx, manifest)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -241,7 +238,7 @@ func validateManifestSpecInstall(manifestInstall v1beta2.InstallInfo, moduleTemp
 		expectedSourceName := moduleTemplateDescriptor.Name
 
 		if actualSourceName != expectedSourceName {
-			return errors.New(fmt.Sprintf("Invalid SourceName: %s, expected: %s", actualSourceName, expectedSourceName))
+			return fmt.Errorf("Invalid SourceName: %s, expected: %s", actualSourceName, expectedSourceName)
 		}
 		return nil
 	}
@@ -257,14 +254,14 @@ func validateManifestSpecInstall(manifestInstall v1beta2.InstallInfo, moduleTemp
 		}
 		concreteAccessSpec, ok := aspec.(*localociblob.AccessSpec)
 		if !ok {
-			return errors.New(fmt.Sprintf("Unexpected Resource Access Type: %T", aspec))
+			return fmt.Errorf("Unexpected Resource Access Type: %T", aspec)
 
 		}
 
 		expectedSourceRef := string(concreteAccessSpec.Digest)
 
 		if actualSourceRef != expectedSourceRef {
-			return errors.New(fmt.Sprintf("Invalid SourceRef: %s, expected: %s", actualSourceRef, expectedSourceRef))
+			return fmt.Errorf("Invalid SourceRef: %s, expected: %s", actualSourceRef, expectedSourceRef)
 		}
 
 		return nil
@@ -281,19 +278,19 @@ func validateManifestSpecInstall(manifestInstall v1beta2.InstallInfo, moduleTemp
 		}
 		concreteRepo, ok := typedRepo.(*genericocireg.RepositorySpec)
 		if !ok {
-			return errors.New(fmt.Sprintf("Unexpected Repository Type: %T", typedRepo))
+			return fmt.Errorf("Unexpected Repository Type: %T", typedRepo)
 		}
 
 		ociRepoSpec, ok := concreteRepo.RepositorySpec.(*ocireg.RepositorySpec)
 		if !ok {
-			return errors.New(fmt.Sprintf("Unexpected Repository Spec Type: %T", concreteRepo.RepositorySpec))
+			return fmt.Errorf("Unexpected Repository Spec Type: %T", concreteRepo.RepositorySpec)
 		}
 
 		repositoryBaseURL := ociRepoSpec.BaseURL
 		expectedSourceRepo := repositoryBaseURL + "/" + componentmapping.ComponentDescriptorNamespace
 
 		if actualSourceRepo != expectedSourceRepo {
-			return errors.New(fmt.Sprintf("Invalid SourceRepo: %s, expected: %s", actualSourceRepo, expectedSourceRepo))
+			return fmt.Errorf("Invalid SourceRepo: %s, expected: %s", actualSourceRepo, expectedSourceRepo)
 		}
 
 		return nil
@@ -305,7 +302,7 @@ func validateManifestSpecInstall(manifestInstall v1beta2.InstallInfo, moduleTemp
 		expectedSourceType := "oci-ref" //no corresponding value in the ModuleTemplate?
 
 		if actualSourceType != expectedSourceType {
-			return errors.New(fmt.Sprintf("Invalid SourceType: %s, expected: %s", actualSourceType, expectedSourceType))
+			return fmt.Errorf("Invalid SourceType: %s, expected: %s", actualSourceType, expectedSourceType)
 		}
 		return nil
 	}
@@ -343,7 +340,7 @@ func validateManifestSpecResource(manifestResource, moduleTemplateData *unstruct
 		if err != nil {
 			return err
 		}
-		return errors.New(fmt.Sprintf("Invalid ManifestResource.\nActual:\n%s\nExpected:\n%s", actualJson, expectedJson))
+		return fmt.Errorf("Invalid ManifestResource.\nActual:\n%s\nExpected:\n%s", actualJson, expectedJson)
 	}
 	return nil
 }
@@ -383,12 +380,4 @@ func expectManifestFor(kyma *v1beta2.Kyma) func(func(*v1beta2.Manifest) error) f
 			return validationFn(manifest)
 		}
 	}
-}
-
-func dumpToScreen(val any, prefix string) {
-	vSer, err := json.MarshalIndent(val, prefix, "  ")
-	if err != nil {
-		panic(fmt.Errorf("Error when dumping value: %#v: %w", val, err))
-	}
-	fmt.Println(string(vSer))
 }
