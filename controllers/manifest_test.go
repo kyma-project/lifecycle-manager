@@ -219,7 +219,7 @@ func findRawManifestResource(reslist []compdesc.Resource) *compdesc.Resource {
 	return nil
 }
 
-//nolint:err113
+//nolint:goerr113
 func validateManifestSpecInstall(manifestInstall v1beta2.InstallInfo, moduleTemplate *v1beta2.ModuleTemplate) error {
 
 	var (
