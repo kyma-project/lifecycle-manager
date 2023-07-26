@@ -315,7 +315,7 @@ func validateManifestSpecResource(manifestResource, moduleTemplateData *unstruct
 		SetNamespace(controllers.DefaultRemoteSyncNamespace) //the namespace is set in the "actual" object
 
 	if !reflect.DeepEqual(actualManifestResource, expectedManifestResource) {
-		actualJson, err := json.MarshalIndent(actualManifestResource, "", "  ")
+		actualJSON, err := json.MarshalIndent(actualManifestResource, "", "  ")
 		if err != nil {
 			return err
 		}
@@ -323,7 +323,7 @@ func validateManifestSpecResource(manifestResource, moduleTemplateData *unstruct
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("Invalid ManifestResource.\nActual:\n%s\nExpected:\n%s", actualJson, expectedJSON) //nolint:goerr113
+		return fmt.Errorf("Invalid ManifestResource.\nActual:\n%s\nExpected:\n%s", actualJSON, expectedJSON) //nolint:goerr113
 	}
 	return nil
 }
