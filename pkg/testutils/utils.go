@@ -122,6 +122,7 @@ func randomName() string {
 	return randString(randomStringLength)
 }
 
+//nolint:unparam
 func randString(length int) string {
 	b := make([]byte, length)
 	for i := range b {
@@ -178,16 +179,16 @@ func DeleteModuleTemplates(
 }
 
 func DeleteCR(ctx context.Context, clnt client.Client, obj client.Object) error {
-	err := clnt.Delete(ctx, obj)
-	err = clnt.Get(ctx, client.ObjectKey{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj)
-	if util.IsNotFound(err) {
+	if err := clnt.Delete(ctx, obj); util.IsNotFound(err) {
 		return nil
 	}
-	if err != nil {
+	if err := clnt.Get(ctx, client.ObjectKey{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj); err != nil {
+		if util.IsNotFound(err) {
+			return nil
+		}
 		return err
 	}
 	return fmt.Errorf("%s/%s: %w", obj.GetNamespace(), obj.GetName(), ErrNotDeleted)
-
 }
 
 func CreateCR(ctx context.Context, clnt client.Client, obj client.Object) error {
