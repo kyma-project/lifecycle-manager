@@ -19,7 +19,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/api/meta"
 
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"

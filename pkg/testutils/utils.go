@@ -72,9 +72,6 @@ func newKCPKymaWithNamespace(name, namespace, channel, syncStrategy string) *v1b
 			Labels: map[string]string{
 				v1beta2.InstanceIDLabel: "test-instance",
 			},
-			Labels: map[string]string{
-				v1beta2.InstanceIDLabel: "test-instance",
-			},
 		},
 		Spec: v1beta2.KymaSpec{
 			Modules: []v1beta2.Module{},
