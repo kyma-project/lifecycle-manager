@@ -217,6 +217,7 @@ func findRawManifestResource(reslist []compdesc.Resource) *compdesc.Resource {
 }
 
 //nolint:goerr113
+//nolint:funlen
 func validateManifestSpecInstall(manifestInstall v1beta2.InstallInfo, moduleTemplate *v1beta2.ModuleTemplate) error {
 	var (
 		manifestImageSpec        *v1beta2.ImageSpec
