@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
-	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/controllers"
@@ -133,21 +133,23 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 	RegisterDefaultLifecycleForKyma(kyma)
 
 	It("validate Manifest", func() {
-		Eventually(GetManifestSpecRemote, Timeout, Interval).
-			WithArguments(ctx, controlPlaneClient, kyma, module).
-			Should(Equal(false))
-
-		manifest, err := GetManifest(ctx, controlPlaneClient, kyma, module)
-		Expect(err).To(BeNil())
-
 		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module.Name, "default")
 		Expect(err).To(BeNil())
 
+		expectManifest := expectManifestFor(kyma)
+
 		By("checking Spec.Install")
-		validateManifestSpecInstall(manifest.Spec.Install, moduleTemplate)
+		hasValidSpecInstall := func(manifest *v1beta2.Manifest) error {
+			return validateManifestSpecInstall(manifest.Spec.Install, moduleTemplate)
+		}
+		Eventually(expectManifest(hasValidSpecInstall), Timeout, Interval).Should(Succeed())
 
 		By("checking Spec.Resource")
-		validateManifestSpecResource(manifest.Spec.Resource, &moduleTemplate.Spec.Data)
+		hasValidSpecResource := func(manifest *v1beta2.Manifest) error {
+			return validateManifestSpecResource(manifest.Spec.Resource, &moduleTemplate.Spec.Data)
+		}
+		Eventually(expectManifest(hasValidSpecResource), Timeout, Interval).Should(Succeed())
+
 	})
 })
 
@@ -166,6 +168,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 	RegisterDefaultLifecycleForKyma(kyma)
 
 	It("update Manifest", func() {
+		//Await for the manifest to be created
 		Eventually(GetManifestSpecRemote, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, kyma, module).
 			Should(Equal(false))
@@ -173,32 +176,38 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 		manifest, err := GetManifest(ctx, controlPlaneClient, kyma, module)
 		Expect(err).ToNot(HaveOccurred())
 
-		dumpToScreen(manifest.Spec.Install, "====")
+		//dumpToScreen(manifest.Spec.Install, "====")
 		manifestImageSpec := extractInstallImageSpec(manifest.Spec.Install)
 		manifestImageSpec.Repo = updateRepositoryURL
 
+		//Is there a simpler way to update manifest.Spec.Install?
 		updatedBytes, err := json.Marshal(manifestImageSpec)
 		Expect(err).ToNot(HaveOccurred())
 		manifest.Spec.Install.Source.Raw = updatedBytes
 
-		dumpToScreen(manifest.Spec.Install, ">>>>")
+		//dumpToScreen(manifest.Spec.Install, ">>>>")
 		err = controlPlaneClient.Update(ctx, manifest)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("validate Manifest", func() {
-		time.Sleep(10)
-		manifest, err := GetManifest(ctx, controlPlaneClient, kyma, module)
-		Expect(err).To(BeNil())
-
 		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module.Name, "default")
 		Expect(err).To(BeNil())
 
+		expectManifest := expectManifestFor(kyma)
+
 		By("checking Spec.Install")
-		validateManifestSpecInstall(manifest.Spec.Install, moduleTemplate)
+		hasValidSpecInstall := func(manifest *v1beta2.Manifest) error {
+			return validateManifestSpecInstall(manifest.Spec.Install, moduleTemplate)
+		}
+		Eventually(expectManifest(hasValidSpecInstall), Timeout, Interval).Should(Succeed())
 
 		By("checking Spec.Resource")
-		validateManifestSpecResource(manifest.Spec.Resource, &moduleTemplate.Spec.Data)
+		hasValidSpecResource := func(manifest *v1beta2.Manifest) error {
+			return validateManifestSpecResource(manifest.Spec.Resource, &moduleTemplate.Spec.Data)
+		}
+		Eventually(expectManifest(hasValidSpecResource), Timeout, Interval).Should(Succeed())
+
 	})
 })
 
@@ -212,7 +221,7 @@ func findRawManifestResource(reslist []compdesc.Resource) *compdesc.Resource {
 	return nil
 }
 
-func validateManifestSpecInstall(manifestInstall v1beta2.InstallInfo, moduleTemplate *v1beta2.ModuleTemplate) {
+func validateManifestSpecInstall(manifestInstall v1beta2.InstallInfo, moduleTemplate *v1beta2.ModuleTemplate) error {
 
 	var (
 		manifestImageSpec        *v1beta2.ImageSpec
@@ -222,82 +231,121 @@ func validateManifestSpecInstall(manifestInstall v1beta2.InstallInfo, moduleTemp
 
 	manifestImageSpec = extractInstallImageSpec(manifestInstall)
 	moduleTemplateDescriptor, err = moduleTemplate.GetDescriptor()
-	Expect(err).To(BeNil())
+	if err != nil {
+		return err
+	}
 
 	//compares the actual manifest spec.install.source.name with the corresponding values from the ModuleTemplate
-	compareManifestSourceName := func() {
+	compareManifestSourceName := func() error {
 		actualSourceName := manifestImageSpec.Name
 		expectedSourceName := moduleTemplateDescriptor.Name
 
-		Expect(actualSourceName).To(Equal(expectedSourceName))
+		if actualSourceName != expectedSourceName {
+			return errors.New(fmt.Sprintf("Invalid SourceName: %s, expected: %s", actualSourceName, expectedSourceName))
+		}
+		return nil
 	}
 
 	//compares the actual manifest spec.install.source.ref with the corresponding values from the ModuleTemplate
-	compareManifestSourceRef := func() {
+	compareManifestSourceRef := func() error {
 		actualSourceRef := manifestImageSpec.Ref
 
 		moduleTemplateResource := findRawManifestResource(moduleTemplateDescriptor.Resources)
 		aspec, err := ocm.DefaultContext().AccessSpecForSpec(moduleTemplateResource.Access)
+		if err != nil {
+			return err
+		}
 		concreteAccessSpec, ok := aspec.(*localociblob.AccessSpec)
 		if !ok {
-			err = errors.New(fmt.Sprintf("Unexpected Resource Access Type: %T", aspec))
-			Expect(err).ToNot(HaveOccurred())
+			return errors.New(fmt.Sprintf("Unexpected Resource Access Type: %T", aspec))
+
 		}
 
 		expectedSourceRef := string(concreteAccessSpec.Digest)
 
-		Expect(actualSourceRef).To(Equal(expectedSourceRef))
+		if actualSourceRef != expectedSourceRef {
+			return errors.New(fmt.Sprintf("Invalid SourceRef: %s, expected: %s", actualSourceRef, expectedSourceRef))
+		}
+
+		return nil
 	}
 
 	//compares the actual manifest spec.install.source.repo with the corresponding values from the ModuleTemplate
-	compareManifestSourceRepo := func() {
+	compareManifestSourceRepo := func() error {
 		actualSourceRepo := manifestImageSpec.Repo
 
 		unstructuredRepo := moduleTemplateDescriptor.GetEffectiveRepositoryContext()
 		typedRepo, err := unstructuredRepo.Evaluate(cpi.DefaultContext().RepositoryTypes())
 		if err != nil {
-			err = fmt.Errorf("error while decoding the repository context into an OCI registry: %w", err)
-			return
+			return fmt.Errorf("error while decoding the repository context into an OCI registry: %w", err)
 		}
 		concreteRepo, ok := typedRepo.(*genericocireg.RepositorySpec)
 		if !ok {
-			err = errors.New(fmt.Sprintf("Unexpected Repository Type: %T", typedRepo))
-			Expect(err).ToNot(HaveOccurred())
+			return errors.New(fmt.Sprintf("Unexpected Repository Type: %T", typedRepo))
 		}
 
 		ociRepoSpec, ok := concreteRepo.RepositorySpec.(*ocireg.RepositorySpec)
 		if !ok {
-			err = errors.New(fmt.Sprintf("Unexpected Repository Spec Type: %T", concreteRepo.RepositorySpec))
-			Expect(err).ToNot(HaveOccurred())
+			return errors.New(fmt.Sprintf("Unexpected Repository Spec Type: %T", concreteRepo.RepositorySpec))
 		}
 
 		repositoryBaseURL := ociRepoSpec.BaseURL
 		expectedSourceRepo := repositoryBaseURL + "/" + componentmapping.ComponentDescriptorNamespace
 
-		Expect(actualSourceRepo).To(Equal(expectedSourceRepo))
+		if actualSourceRepo != expectedSourceRepo {
+			return errors.New(fmt.Sprintf("Invalid SourceRepo: %s, expected: %s", actualSourceRepo, expectedSourceRepo))
+		}
+
+		return nil
 	}
 
 	//validates the actual manifest spec.install.source.type
-	compareManifestSourceType := func() {
+	compareManifestSourceType := func() error {
 		actualSourceType := string(manifestImageSpec.Type)
 		expectedSourceType := "oci-ref" //no corresponding value in the ModuleTemplate?
 
-		Expect(actualSourceType).To(Equal(expectedSourceType))
+		if actualSourceType != expectedSourceType {
+			return errors.New(fmt.Sprintf("Invalid SourceType: %s, expected: %s", actualSourceType, expectedSourceType))
+		}
+		return nil
 	}
 
-	compareManifestSourceName()
-	compareManifestSourceRef()
-	compareManifestSourceRepo()
-	compareManifestSourceType()
+	if err = compareManifestSourceName(); err != nil {
+		return err
+	}
+	if err = compareManifestSourceRef(); err != nil {
+		return err
+	}
+
+	if err = compareManifestSourceRepo(); err != nil {
+		return err
+	}
+
+	if err = compareManifestSourceType(); err != nil {
+		return err
+	}
+
+	return nil
+
 }
 
-func validateManifestSpecResource(manifestResource, moduleTemplateData *unstructured.Unstructured) {
-
+func validateManifestSpecResource(manifestResource, moduleTemplateData *unstructured.Unstructured) error {
 	actualManifestResource := manifestResource
 	expectedManifestResource := moduleTemplateData.DeepCopy()
-	expectedManifestResource.SetNamespace(controllers.DefaultRemoteSyncNamespace)
+	expectedManifestResource.SetNamespace(controllers.DefaultRemoteSyncNamespace) //the namespace is set in the "actual" object
 
-	Expect(actualManifestResource).To(Equal(expectedManifestResource))
+	if !reflect.DeepEqual(actualManifestResource, expectedManifestResource) {
+		actualJson, err := json.MarshalIndent(actualManifestResource, "", "  ")
+		if err != nil {
+			return err
+		}
+		expectedJson, err := json.MarshalIndent(expectedManifestResource, "", "  ")
+		if err != nil {
+			return err
+		}
+		return errors.New(fmt.Sprintf("Invalid ManifestResource.\nActual:\n%s\nExpected:\n%s", actualJson, expectedJson))
+	}
+	return nil
 }
 
 // updateKCPModuleTemplate is a generic ModuleTemplate update function
@@ -325,9 +373,9 @@ func updateKCPModuleTemplate(
 
 // expectManifest is a generic Manifest assertion function
 func expectManifestFor(kyma *v1beta2.Kyma) func(func(*v1beta2.Manifest) error) func() error {
-
 	return func(validationFn func(*v1beta2.Manifest) error) func() error {
 		return func() error {
+			//ensure manifest is refreshed each time the function is invoked for "Eventually" assertion to work correctly.
 			manifest, err := GetManifest(ctx, controlPlaneClient, kyma, kyma.Spec.Modules[0])
 			if err != nil {
 				return err
