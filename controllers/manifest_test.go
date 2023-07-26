@@ -278,13 +278,13 @@ func validateManifestSpecInstall(manifestInstall v1beta2.InstallInfo, moduleTemp
 		if err != nil {
 			return fmt.Errorf("error while decoding the repository context into an OCI registry: %w", err)
 		}
-		concreteRepo, ok := typedRepo.(*genericocireg.RepositorySpec)
-		if !ok {
+		concreteRepo, typeOk := typedRepo.(*genericocireg.RepositorySpec)
+		if !typeOk {
 			return fmt.Errorf("Unexpected Repository Type: %T", typedRepo)
 		}
 
-		ociRepoSpec, ok := concreteRepo.RepositorySpec.(*ocireg.RepositorySpec)
-		if !ok {
+		ociRepoSpec, typeOk := concreteRepo.RepositorySpec.(*ocireg.RepositorySpec)
+		if !typeOk {
 			return fmt.Errorf("Unexpected Repository Spec Type: %T", concreteRepo.RepositorySpec)
 		}
 
