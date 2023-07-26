@@ -15,7 +15,6 @@ import (
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -42,7 +41,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	kyma := NewTestKyma("kyma-remote-sync")
 
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
-	issuer := NewTestIssuer(metav1.NamespaceDefault)
+	issuer := NewTestIssuer(istioSystemNs)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	tlsSecret := createTLSSecret(kymaObjKey)
 

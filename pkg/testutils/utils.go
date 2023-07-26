@@ -97,9 +97,11 @@ func NewTestIssuer(namespace string) *certmanagerv1.Issuer {
 			Namespace: namespace,
 			Labels:    watcher.LabelSet,
 		},
-		Spec: certmanagerv1.IssuerSpec{IssuerConfig: certmanagerv1.IssuerConfig{
-			SelfSigned: &certmanagerv1.SelfSignedIssuer{},
-		}},
+		Spec: certmanagerv1.IssuerSpec{
+			IssuerConfig: certmanagerv1.IssuerConfig{
+				SelfSigned: &certmanagerv1.SelfSignedIssuer{},
+			},
+		},
 	}
 }
 
