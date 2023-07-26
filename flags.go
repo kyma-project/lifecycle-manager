@@ -92,7 +92,7 @@ func defineFlagVar() *FlagVar {
 		"CLuster Resource Namespace of Istio")
 	flag.StringVar(&flagVar.listenerGatewayPortName, "listener-gateway-port-name", defaultListenerGatewayPortName,
 		"Port name that is specified in the cluster's gateway used for incoming watcher requests")
-	flag.IntVar(&flagVar.listenerHTTPPortLocalMapping, "listener-http-local-mapping", defaultListenerPort,
+	flag.IntVar(&flagVar.listenerHTTPSPortLocalMapping, "listener-http-local-mapping", defaultListenerPort,
 		"Port that is mapped to HTTP port of the local k3d cluster using --port 9080:80@loadbalancer when "+
 			"creating the KCP cluster")
 	flag.StringVar(&flagVar.skrWatcherImage, "skr-watcher-image", "", `Image of the SKR watcher 
@@ -155,11 +155,11 @@ type FlagVar struct {
 	enableWatcherLocalTesting              bool
 	istioNamespace                         string
 	listenerGatewayPortName                string
-	// listenerHTTPPortLocalMapping is used to enable the user
+	// listenerHTTPSPortLocalMapping is used to enable the user
 	// to specify the port used to expose the KCP cluster for the watcher
 	// when testing locally using dual-k3d cluster-setup
 	// (only k3d clusters are supported for watcher local testing)
-	listenerHTTPPortLocalMapping           int
+	listenerHTTPSPortLocalMapping          int
 	skrWatcherImage                        string
 	pprof                                  bool
 	pprofAddr                              string
