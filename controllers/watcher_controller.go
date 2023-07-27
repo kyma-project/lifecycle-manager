@@ -21,7 +21,7 @@ import (
 	"errors"
 	"fmt"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
@@ -155,7 +155,7 @@ func (r *WatcherReconciler) handleProcessingState(ctx context.Context, watcherCR
 	if client.IgnoreNotFound(err) != nil {
 		return err
 	}
-	if apierrors.IsNotFound(err) {
+	if util.IsNotFound(err) {
 		err = r.IstioClient.CreateVirtualService(ctx, virtualSvc)
 		if err != nil {
 			vsCreateErr := fmt.Errorf("failed to create virtual service: %w", err)
