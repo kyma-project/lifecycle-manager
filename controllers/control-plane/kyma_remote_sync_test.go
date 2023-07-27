@@ -26,7 +26,7 @@ var (
 )
 
 var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
-	kyma := NewTestKyma("kyma-test-remote-skr")
+	kyma := NewTestKyma("kyma")
 
 	remoteKyma := &v1beta2.Kyma{}
 
@@ -36,12 +36,13 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	var runtimeEnv *envtest.Environment
 	moduleInSKR := NewTestModule("in-skr", v1beta2.DefaultChannel)
 	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
-	customeModuleInSKR := NewTestModule("custome-in-skr", v1beta2.DefaultChannel)
+	customModuleInSKR := NewTestModule("custom-in-skr", v1beta2.DefaultChannel)
+	customModuleInSKR.RemoteModuleTemplateRef = customModuleInSKR.Name
 	SKRTemplate, err := ModuleTemplateFactory(moduleInSKR, unstructured.Unstructured{}, false, false, false)
 	Expect(err).ShouldNot(HaveOccurred())
 	KCPTemplate, err := ModuleTemplateFactory(moduleInKCP, unstructured.Unstructured{}, false, false, false)
 	Expect(err).ShouldNot(HaveOccurred())
-	SKRCustomTemplate, err := ModuleTemplateFactory(customeModuleInSKR, unstructured.Unstructured{}, false, false, false)
+	SKRCustomTemplate, err := ModuleTemplateFactory(customModuleInSKR, unstructured.Unstructured{}, false, false, false)
 	Expect(err).ShouldNot(HaveOccurred())
 
 	BeforeAll(func() {
@@ -180,7 +181,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("add module to remote Kyma")
 		Eventually(addModuleToKyma, Timeout, Interval).
-			WithArguments(runtimeClient, remoteKyma.GetName(), remoteKyma.GetNamespace(), customeModuleInSKR).
+			WithArguments(runtimeClient, remoteKyma.GetName(), remoteKyma.GetNamespace(), customModuleInSKR).
 			Should(Succeed())
 	})
 
@@ -195,13 +196,13 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 	It("Should reconcile Manifest in KCP using remote SKRCustomTemplate", func() {
 		Eventually(ManifestExists, Timeout, Interval).
-			WithArguments(ctx, kyma, customeModuleInSKR, controlPlaneClient).
+			WithArguments(ctx, kyma, customModuleInSKR, controlPlaneClient).
 			Should(Succeed())
 	})
 
 	It("Manifest should contain remoteModuleTemplate label", func() {
 		Eventually(func() error {
-			manifest, err := GetManifest(ctx, controlPlaneClient, kyma, customeModuleInSKR)
+			manifest, err := GetManifest(ctx, controlPlaneClient, kyma, customModuleInSKR)
 			if err != nil {
 				return err
 			}

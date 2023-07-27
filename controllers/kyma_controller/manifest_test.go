@@ -316,7 +316,7 @@ func validateManifestSpecInstallSourceRepo(manifestImageSpec *v1beta2.ImageSpec,
 //nolint:goerr113
 func validateManifestSpecInstallSourceType(manifestImageSpec *v1beta2.ImageSpec) error {
 	actualSourceType := string(manifestImageSpec.Type)
-	expectedSourceType := "oci-ref" //no corresponding value in the ModuleTemplate?
+	expectedSourceType := "oci-ref" // no corresponding value in the ModuleTemplate?
 
 	if actualSourceType != expectedSourceType {
 		return fmt.Errorf("Invalid SourceType: %s, expected: %s", actualSourceType, expectedSourceType)
@@ -328,7 +328,7 @@ func validateManifestSpecResource(manifestResource, moduleTemplateData *unstruct
 	actualManifestResource := manifestResource
 	expectedManifestResource := moduleTemplateData.DeepCopy()
 	expectedManifestResource.
-		SetNamespace(controllers.DefaultRemoteSyncNamespace) //the namespace is set in the "actual" object
+		SetNamespace(controllers.DefaultRemoteSyncNamespace) // the namespace is set in the "actual" object
 
 	if !reflect.DeepEqual(actualManifestResource, expectedManifestResource) {
 		actualJSON, err := json.MarshalIndent(actualManifestResource, "", "  ")
@@ -369,7 +369,7 @@ func updateKCPModuleTemplate(
 func expectManifestFor(kyma *v1beta2.Kyma) func(func(*v1beta2.Manifest) error) func() error {
 	return func(validationFn func(*v1beta2.Manifest) error) func() error {
 		return func() error {
-			//ensure manifest is refreshed each time the function is invoked for "Eventually" assertion to work correctly.
+			// ensure manifest is refreshed each time the function is invoked for "Eventually" assertion to work correctly.
 			manifest, err := GetManifest(ctx, controlPlaneClient, kyma, kyma.Spec.Modules[0])
 			if err != nil {
 				return err
