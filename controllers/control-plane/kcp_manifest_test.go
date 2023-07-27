@@ -9,12 +9,9 @@ import (
 
 var _ = Describe("Manifest.Spec.Remote in KCP mode", Ordered, func() {
 	kyma := NewTestKyma("kyma")
+	kyma.Labels[v1beta2.SyncLabel] = v1beta2.DisableLabelValue
 
-	module := v1beta2.Module{
-		ControllerName: "manifest",
-		Name:           NewUniqModuleName(),
-		Channel:        v1beta2.DefaultChannel,
-	}
+	module := NewTestModule("module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 	registerControlPlaneLifecycleForKyma(kyma)
 

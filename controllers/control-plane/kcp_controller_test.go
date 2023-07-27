@@ -9,6 +9,7 @@ import (
 
 var _ = Describe("Kyma with managed fields in kcp mode", Ordered, func() {
 	kyma := NewTestKyma("managed-kyma")
+	kyma.Labels[v1beta2.SyncLabel] = v1beta2.DisableLabelValue
 
 	registerControlPlaneLifecycleForKyma(kyma)
 
