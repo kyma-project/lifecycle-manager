@@ -34,22 +34,9 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	remoteKyma.Namespace = controllers.DefaultRemoteSyncNamespace
 	var runtimeClient client.Client
 	var runtimeEnv *envtest.Environment
-	moduleInSKR := v1beta2.Module{
-		Name:    "module-enabled-in-skr",
-		Channel: v1beta2.DefaultChannel,
-	}
-
-	moduleInKCP := v1beta2.Module{
-		Name:    "module-enabled-in-kcp",
-		Channel: v1beta2.DefaultChannel,
-	}
-
-	customeModuleInSKR := v1beta2.Module{
-		Name:                    "test-module-in-skr",
-		Channel:                 v1beta2.DefaultChannel,
-		RemoteModuleTemplateRef: "test-module-in-skr",
-	}
-
+	moduleInSKR := NewTestModule("in-skr", v1beta2.DefaultChannel)
+	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
+	customeModuleInSKR := NewTestModule("custome-in-skr", v1beta2.DefaultChannel)
 	SKRTemplate, err := ModuleTemplateFactory(moduleInSKR, unstructured.Unstructured{}, false, false, false)
 	Expect(err).ShouldNot(HaveOccurred())
 	KCPTemplate, err := ModuleTemplateFactory(moduleInKCP, unstructured.Unstructured{}, false, false, false)
@@ -88,7 +75,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			Should(Succeed())
 		By("ModuleTemplate exists in SKR cluster")
 		Eventually(ModuleTemplateExists, Timeout, Interval).WithArguments(ctx, runtimeClient, KCPTemplate.Name,
-			KCPTemplate.Namespace).Should(Succeed())
+			controllers.DefaultRemoteSyncNamespace).Should(Succeed())
 
 		By("No module synced to remote Kyma")
 		Eventually(notContainsModuleInSpec, Timeout, Interval).
@@ -256,11 +243,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-crd-update")
-	moduleInKcp := v1beta2.Module{
-		ControllerName: "manifest",
-		Name:           "test-module-in-kcp",
-		Channel:        v1beta2.DefaultChannel,
-	}
+	moduleInKcp := NewTestModule("in-kcp", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = []v1beta2.Module{moduleInKcp}
 
 	remoteKyma := &v1beta2.Kyma{}

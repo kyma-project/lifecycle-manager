@@ -28,6 +28,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 func (m *ModuleTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -42,35 +43,35 @@ func (m *ModuleTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 var _ webhook.Validator = &ModuleTemplate{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (m *ModuleTemplate) ValidateCreate() error {
+func (m *ModuleTemplate) ValidateCreate() (admission.Warnings, error) {
 	logf.Log.WithName("moduletemplate-resource").
 		Info("validate create", "name", m.Name)
 	newDescriptor, err := m.GetDescriptor()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return Validate(nil, newDescriptor, m.Name)
+	return nil, Validate(nil, newDescriptor, m.Name)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (m *ModuleTemplate) ValidateUpdate(old runtime.Object) error {
+func (m *ModuleTemplate) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
 	logf.Log.WithName("moduletemplate-resource").
 		Info("validate update", "name", m.Name)
 	newDescriptor, err := m.GetDescriptor()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	oldTemplate := old.(*ModuleTemplate)
 	oldDescriptor, err := oldTemplate.GetDescriptor()
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return Validate(oldDescriptor, newDescriptor, m.Name)
+	return nil, Validate(oldDescriptor, newDescriptor, m.Name)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (m *ModuleTemplate) ValidateDelete() error {
-	return nil
+func (m *ModuleTemplate) ValidateDelete() (admission.Warnings, error) {
+	return nil, nil
 }
 
 func Validate(oldDescriptor, newDescriptor *Descriptor, newTemplateName string) error {

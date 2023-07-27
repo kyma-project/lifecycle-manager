@@ -40,7 +40,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/internal"
@@ -108,7 +107,7 @@ var _ = BeforeSuite(
 			cfg, ctrl.Options{
 				MetricsBindAddress: metricsBindAddress,
 				Scheme:             scheme.Scheme,
-				NewCache:           internal.GetCacheFunc(labels.Set{v1beta2.ManagedBy: v1beta2.OperatorName}),
+				Cache:              internal.GetCacheOptions(labels.Set{v1beta2.ManagedBy: v1beta2.OperatorName}),
 			},
 		)
 		Expect(err).ToNot(HaveOccurred())
@@ -146,7 +145,7 @@ var _ = BeforeSuite(
 
 		err = ctrl.NewControllerManagedBy(k8sManager).
 			For(&v1beta2.Manifest{}).
-			Watches(&source.Kind{Type: &v1.Secret{}}, handler.Funcs{}).
+			Watches(&v1.Secret{}, handler.Funcs{}).
 			WithOptions(
 				controller.Options{
 					RateLimiter: internal.ManifestRateLimiter(

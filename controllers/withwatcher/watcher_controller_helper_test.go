@@ -111,7 +111,7 @@ func createTLSSecret(kymaObjKey client.ObjectKey) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      watcher.ResolveTLSCertName(kymaObjKey.Name),
-			Namespace: kymaObjKey.Namespace,
+			Namespace: istioSystemNs,
 			Labels: map[string]string{
 				v1beta2.ManagedBy: v1beta2.OperatorName,
 			},

@@ -92,7 +92,7 @@ var _ = BeforeSuite(func() {
 		cfg, ctrl.Options{
 			MetricsBindAddress: useRandomPort,
 			Scheme:             scheme.Scheme,
-			NewCache:           controllers.NewCacheFunc(),
+			Cache:              controllers.NewCacheOptions(),
 		})
 	Expect(err).ToNot(HaveOccurred())
 

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -16,7 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
@@ -56,10 +56,10 @@ func SetupWithManager(
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
-		Watches(&source.Kind{Type: &v1.Secret{}}, handler.Funcs{}).
-		Watches(
+		Watches(&v1.Secret{}, handler.Funcs{}).
+		WatchesRawSource(
 			eventChannel, &handler.Funcs{
-				GenericFunc: func(event event.GenericEvent, queue workqueue.RateLimitingInterface) {
+				GenericFunc: func(ctx context.Context, event event.GenericEvent, queue workqueue.RateLimitingInterface) {
 					ctrl.Log.WithName("listener").Info(
 						fmt.Sprintf(
 							"event coming from SKR, adding %s to queue",

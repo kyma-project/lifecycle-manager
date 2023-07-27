@@ -260,6 +260,11 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 			UpdateAllManifestState(kyma.Name, v1beta2.StateProcessing),
 			expectKymaStatusModules(kyma.Name, v1beta2.StateReady)),
 	)
+
+	It("Stop Kyma skip Reconciliation so that it can be deleted", func() {
+		Eventually(UpdateKymaLabel(ctx, controlPlaneClient, kyma, v1beta2.SkipReconcileLabel, "false"),
+			Timeout, Interval).Should(Succeed())
+	})
 })
 
 var _ = Describe("Kyma with managed fields not in kcp mode", Ordered, func() {

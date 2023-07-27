@@ -49,14 +49,14 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 ) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).WithOptions(options).
 		Watches(
-			&source.Kind{Type: &v1beta2.ModuleTemplate{}},
-			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch(context.TODO())),
+			&v1beta2.ModuleTemplate{},
+			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch()),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
 		).
 		// here we define a watch on secrets for the lifecycle-manager so that the cache is picking up changes
-		Watches(&source.Kind{Type: &corev1.Secret{}}, handler.Funcs{})
+		Watches(&corev1.Secret{}, handler.Funcs{})
 
-	controllerBuilder = controllerBuilder.Watches(&source.Kind{Type: &v1beta2.Manifest{}},
+	controllerBuilder = controllerBuilder.Watches(&v1beta2.Manifest{},
 		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1beta2.Kyma{}, IsController: true})
 
 	var runnableListener *listener.SKREventListener
@@ -93,8 +93,8 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 }
 
 func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, eventChannel *source.Channel) {
-	controllerBuilder.Watches(eventChannel, &handler.Funcs{
-		GenericFunc: func(event event.GenericEvent, queue workqueue.RateLimitingInterface) {
+	controllerBuilder.WatchesRawSource(eventChannel, &handler.Funcs{
+		GenericFunc: func(ctx context.Context, event event.GenericEvent, queue workqueue.RateLimitingInterface) {
 			logger := ctrl.Log.WithName("listener")
 			unstructWatcherEvt, conversionOk := event.Object.(*unstructured.Unstructured)
 			if !conversionOk {

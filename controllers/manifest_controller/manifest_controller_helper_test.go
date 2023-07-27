@@ -10,8 +10,8 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/partial"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
-	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 
@@ -181,7 +181,7 @@ func getManifestStatus(manifestName string) (v2.Status, error) {
 
 func deleteManifestAndVerify(manifest *v1beta2.Manifest) func() error {
 	return func() error {
-		if err := k8sClient.Delete(ctx, manifest); err != nil && !errors.IsNotFound(err) {
+		if err := k8sClient.Delete(ctx, manifest); err != nil && !util.IsNotFound(err) {
 			return err
 		}
 		newManifest := v1beta2.Manifest{}

@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -80,7 +80,7 @@ func PreDeleteDeleteCR(
 		return ErrWaitingForAsyncCustomResourceDeletion
 	}
 
-	if !k8serrors.IsNotFound(err) && !meta.IsNoMatchError(err) {
+	if !util.IsNotFound(err) {
 		return err
 	}
 
@@ -97,13 +97,13 @@ func PreDeleteDeleteCR(
 		return ErrWaitingForAsyncCustomResourceDefinitionDeletion
 	}
 
-	if !k8serrors.IsNotFound(err) && !meta.IsNoMatchError(err) {
+	if !util.IsNotFound(err) {
 		return err
 	}
 
 	onCluster := manifest.DeepCopy()
 	err = kcp.Get(ctx, client.ObjectKeyFromObject(obj), onCluster)
-	if k8serrors.IsNotFound(err) {
+	if util.IsNotFound(err) {
 		return nil
 	}
 	if err != nil {

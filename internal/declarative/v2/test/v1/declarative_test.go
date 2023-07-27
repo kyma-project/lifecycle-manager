@@ -11,12 +11,12 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/internal"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/time/rate"
 	v1 "k8s.io/api/core/v1"
 	apiExtensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -431,7 +431,7 @@ func validateOldResourcesNotLongerDeployed(ctx context.Context,
 		currentRes.SetName(res.GetName())
 		currentRes.SetNamespace(customResourceNamespace.Name)
 		err := testClient.Get(ctx, client.ObjectKeyFromObject(currentRes), currentRes)
-		if !k8serrors.IsNotFound(err) {
+		if !util.IsNotFound(err) {
 			return ErrOldResourcesStillDeployed
 		}
 	}
