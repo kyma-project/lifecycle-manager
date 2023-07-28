@@ -316,7 +316,7 @@ func validateManifestSpecInstallSourceRepo(manifestImageSpec *v1beta2.ImageSpec,
 //nolint:goerr113
 func validateManifestSpecInstallSourceType(manifestImageSpec *v1beta2.ImageSpec) error {
 	actualSourceType := string(manifestImageSpec.Type)
-	expectedSourceType := "oci-ref" // no corresponding value in the ModuleTemplate?
+	expectedSourceType := "string(v1beta2.OciRefType)" // no corresponding value in the ModuleTemplate?
 
 	if actualSourceType != expectedSourceType {
 		return fmt.Errorf("Invalid SourceType: %s, expected: %s", actualSourceType, expectedSourceType)
