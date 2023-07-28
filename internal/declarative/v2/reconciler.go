@@ -431,9 +431,16 @@ func (r *Reconciler) pruneDiff(
 	diff []*resource.Info,
 	spec *Spec,
 ) error {
-	diff = pruneResource(diff, "Namespace", namespaceNotBeRemoved)
+	var err error
+	diff, err = pruneResource(diff, "Namespace", namespaceNotBeRemoved)
+	if err != nil {
+		return err
+	}
 	resourceName := r.ModuleCRDName(obj)
-	diff = pruneResource(diff, "CustomResourceDefinition", resourceName)
+	diff, err = pruneResource(diff, "CustomResourceDefinition", resourceName)
+	if err != nil {
+		return err
+	}
 
 	if manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff, obj, spec) {
 		// This case should not happen normally, but if happens, it means the resources read from cache is incomplete,
@@ -486,19 +493,19 @@ func updateSyncedOCIRefAnnotation(obj Object, ref string) {
 	obj.SetAnnotations(annotations)
 }
 
-func pruneResource(diff []*resource.Info, resourceType string, resourceName string) []*resource.Info {
+func pruneResource(diff []*resource.Info, resourceType string, resourceName string) ([]*resource.Info, error) {
 	//nolint:varnamelen
 	for i, info := range diff {
 		obj, ok := info.Object.(client.Object)
 		if !ok {
-			continue
+			return diff, common.ErrTypeAssert
 		}
 		if obj.GetObjectKind().GroupVersionKind().Kind == resourceType && obj.GetName() == resourceName {
-			return append(diff[:i], diff[i+1:]...)
+			return append(diff[:i], diff[i+1:]...), nil
 		}
 	}
 
-	return diff
+	return diff, nil
 }
 
 func (r *Reconciler) getTargetClient(ctx context.Context, obj Object) (Client, error) {
