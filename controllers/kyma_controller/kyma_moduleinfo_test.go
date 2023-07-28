@@ -63,11 +63,7 @@ var _ = Describe("Kyma module control", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 
 	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1beta2.Module{
-			ControllerName: "manifest",
-			Name:           NewUniqModuleName(),
-			Channel:        v1beta2.DefaultChannel,
-		})
+		kyma.Spec.Modules, NewTestModule("module", v1beta2.DefaultChannel))
 
 	RegisterDefaultLifecycleForKyma(kyma)
 
