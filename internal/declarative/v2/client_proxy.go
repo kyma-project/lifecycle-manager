@@ -5,6 +5,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -34,6 +35,14 @@ func NewClientProxy(config *rest.Config, mapper meta.RESTMapper) (client.Client,
 		mapper:     mapper,
 		baseClient: baseClient,
 	}, nil
+}
+
+func (p *ProxyClient) GroupVersionKindFor(obj runtime.Object) (schema.GroupVersionKind, error) {
+	return p.baseClient.GroupVersionKindFor(obj)
+}
+
+func (p *ProxyClient) IsObjectNamespaced(obj runtime.Object) (bool, error) {
+	return p.baseClient.IsObjectNamespaced(obj)
 }
 
 // Scheme returns the scheme this client is using.

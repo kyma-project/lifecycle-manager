@@ -1,12 +1,18 @@
 package controllers
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/pkg/security"
+	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
+	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -15,13 +21,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/source"
-
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
-	"github.com/kyma-project/lifecycle-manager/pkg/security"
-	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
-	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
 )
 
 func SetupWithManager(
@@ -56,10 +55,10 @@ func SetupWithManager(
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
-		Watches(&source.Kind{Type: &v1.Secret{}}, handler.Funcs{}).
-		Watches(
+		Watches(&v1.Secret{}, handler.Funcs{}).
+		WatchesRawSource(
 			eventChannel, &handler.Funcs{
-				GenericFunc: func(event event.GenericEvent, queue workqueue.RateLimitingInterface) {
+				GenericFunc: func(ctx context.Context, event event.GenericEvent, queue workqueue.RateLimitingInterface) {
 					ctrl.Log.WithName("listener").Info(
 						fmt.Sprintf(
 							"event coming from SKR, adding %s to queue",

@@ -23,8 +23,8 @@ func NewTemplateChangeHandler(handlerClient ChangeHandlerClient) *TemplateChange
 	return &TemplateChangeHandler{Reader: handlerClient, EventRecorder: handlerClient, NamespaceScoped: false}
 }
 
-func (h *TemplateChangeHandler) Watch(ctx context.Context) handler.MapFunc {
-	return func(o client.Object) []reconcile.Request {
+func (h *TemplateChangeHandler) Watch() handler.MapFunc {
+	return func(ctx context.Context, o client.Object) []reconcile.Request {
 		requests := make([]reconcile.Request, 0)
 		template := &v1beta2.ModuleTemplate{}
 

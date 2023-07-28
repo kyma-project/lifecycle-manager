@@ -70,16 +70,14 @@ func GetResourceLabel(resource client.Object, labelName string) (string, error) 
 	return labelValue, nil
 }
 
-func GetCacheFunc(labelSelector labels.Set) cache.NewCacheFunc {
-	return cache.BuilderWithOptions(
-		cache.Options{
-			SelectorsByObject: cache.SelectorsByObject{
-				&v1.Secret{}: {
-					Label: labels.SelectorFromSet(
-						labelSelector,
-					),
-				},
+func GetCacheOptions(labelSelector labels.Set) cache.Options {
+	return cache.Options{
+		ByObject: map[client.Object]cache.ByObject{
+			&v1.Secret{}: {
+				Label: labels.SelectorFromSet(
+					labelSelector,
+				),
 			},
 		},
-	)
+	}
 }
