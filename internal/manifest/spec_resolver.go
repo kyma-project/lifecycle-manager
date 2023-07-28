@@ -1,4 +1,4 @@
-package v1beta1
+package manifest
 
 import (
 	"context"
@@ -23,7 +23,7 @@ type RawManifestInfo struct {
 	Name   string
 }
 
-type ManifestSpecResolver struct {
+type SpecResolver struct {
 	KCP *declarative.ClusterInfo
 
 	*v1beta2.Codec
@@ -32,8 +32,8 @@ type ManifestSpecResolver struct {
 	cachedCharts map[string]string
 }
 
-func NewManifestSpecResolver(kcp *declarative.ClusterInfo, codec *v1beta2.Codec) *ManifestSpecResolver {
-	return &ManifestSpecResolver{
+func NewSpecResolver(kcp *declarative.ClusterInfo, codec *v1beta2.Codec) *SpecResolver {
+	return &SpecResolver{
 		KCP:          kcp,
 		Codec:        codec,
 		ChartCache:   os.TempDir(),
@@ -46,7 +46,7 @@ var (
 	ErrInvalidObjectPassedToSpecResolution = errors.New("invalid object passed to spec resolution")
 )
 
-func (m *ManifestSpecResolver) Spec(ctx context.Context, obj declarative.Object,
+func (m *SpecResolver) Spec(ctx context.Context, obj declarative.Object,
 	remoteClient client.Client,
 ) (*declarative.Spec, error) {
 	manifest, ok := obj.(*v1beta2.Manifest)
@@ -94,7 +94,7 @@ var (
 	ErrEmptyInstallType       = errors.New("empty install type")
 )
 
-func (m *ManifestSpecResolver) getRawManifestForInstall(
+func (m *SpecResolver) getRawManifestForInstall(
 	ctx context.Context,
 	install v1beta2.InstallInfo,
 	specType v1beta2.RefTypeMetadata,
@@ -131,7 +131,7 @@ func (m *ManifestSpecResolver) getRawManifestForInstall(
 	}
 }
 
-func (m *ManifestSpecResolver) lookupKeyChain(
+func (m *SpecResolver) lookupKeyChain(
 	ctx context.Context, imageSpec v1beta2.ImageSpec, targetClient client.Client,
 ) (authn.Keychain, error) {
 	var keyChain authn.Keychain
