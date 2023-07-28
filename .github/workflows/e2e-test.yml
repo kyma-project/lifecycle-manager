@@ -40,6 +40,7 @@ jobs:
     steps:
       - name: Install prerequisites
         run: |
+          sudo add-apt-repository ppa:longsleep/golang-backports -y
           sudo apt update -y
           sudo apt install git curl wget make bash golang-go -y
       - name: Install Istio CLI
