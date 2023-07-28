@@ -50,16 +50,17 @@ func (c *CustomResourceReadyCheck) Run(ctx context.Context,
 	}
 	stateFromCR, stateExists, err := unstructured.NestedString(res.Object,
 		strings.Split(customResourceStatePath, ".")...)
-	// CR state might not been initialized, put manifest state into processing
-	if !stateExists {
-		return declarative.StateInfo{State: declarative.StateProcessing, Info: "module CR state not found"}, nil
-	}
 
 	if err != nil {
 		return declarative.StateInfo{State: declarative.StateError}, fmt.Errorf(
 			"could not get state from module CR %s at path %s to determine readiness: %w",
 			res.GetName(), customResourceStatePath, ErrNoDeterminedState,
 		)
+	}
+
+	// CR state might not been initialized, put manifest state into processing
+	if !stateExists {
+		return declarative.StateInfo{State: declarative.StateProcessing, Info: "module CR state not found"}, nil
 	}
 
 	typedState := declarative.State(stateFromCR)

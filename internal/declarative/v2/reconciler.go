@@ -323,18 +323,17 @@ func (r *Reconciler) checkTargetReadiness(
 	resourceReadyCheck := r.CustomReadyCheck
 
 	crStateInfo, err := resourceReadyCheck.Run(ctx, clnt, manifest, target)
+	if err != nil {
+		r.Event(manifest, "Warning", "ResourceReadyCheck", err.Error())
+		manifest.SetStatus(status.WithState(StateError).WithErr(err))
+		return err
+	}
 
 	if crStateInfo.State == StateProcessing {
 		waitingMsg := fmt.Sprintf("waiting for resources to become ready: %s", crStateInfo.Info)
 		r.Event(manifest, "Normal", "ResourceReadyCheck", waitingMsg)
 		manifest.SetStatus(status.WithState(StateProcessing).WithOperation(waitingMsg))
 		return ErrInstallationConditionRequiresUpdate
-	}
-
-	if err != nil {
-		r.Event(manifest, "Warning", "ResourceReadyCheck", err.Error())
-		manifest.SetStatus(status.WithState(StateError).WithErr(err))
-		return err
 	}
 
 	if crStateInfo.State != StateReady && crStateInfo.State != StateWarning {
