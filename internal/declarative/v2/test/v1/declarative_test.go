@@ -11,12 +11,12 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/internal"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/time/rate"
 	v1 "k8s.io/api/core/v1"
 	apiExtensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -150,7 +150,6 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 	var env *envtest.Environment
 	var cfg *rest.Config
 	var testClient client.Client
-	const ocirefSynced = "sha256:synced"
 	runID := fmt.Sprintf("run-%s", rand.String(4))
 	obj := &testv1.TestAPI{Spec: testv1.TestAPISpec{ManifestName: "updating-manifest"}}
 	obj.SetLabels(labels.Set{testRunLabel: runID})
@@ -167,7 +166,7 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 		},
 	)}
 	source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"),
-		ocirefSynced, RenderModeRaw))
+		"sha256:original", RenderModeRaw))
 	BeforeAll(func() {
 		env, cfg = StartEnv()
 		testClient = GetTestClient(cfg)
@@ -191,7 +190,7 @@ var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, fun
 
 	It("Should start reconciliation for the updated manifest and remove old deployed resources", func() {
 		source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "updated-raw-manifest.yaml"),
-			"", RenderModeRaw))
+			"sha256:updated", RenderModeRaw))
 		reconciler.SpecResolver = source
 		oldDeployedResources, err := internal.ParseManifestToObjects(path.Join(testSamplesDir, "raw-manifest.yaml"))
 		Expect(err).NotTo(HaveOccurred())
@@ -433,7 +432,7 @@ func validateOldResourcesNotLongerDeployed(ctx context.Context,
 		currentRes.SetName(res.GetName())
 		currentRes.SetNamespace(customResourceNamespace.Name)
 		err := testClient.Get(ctx, client.ObjectKeyFromObject(currentRes), currentRes)
-		if !k8serrors.IsNotFound(err) {
+		if !util.IsNotFound(err) {
 			return ErrOldResourcesStillDeployed
 		}
 	}

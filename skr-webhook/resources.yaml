@@ -67,6 +67,7 @@ spec:
       labels:
         app: skr-webhook
         operator.kyma-project.io/pod-restart-trigger: ""
+        sidecar.istio.io/inject: "false"
     spec:
       serviceAccountName: skr-webhook-sa
       containers:

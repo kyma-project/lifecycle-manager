@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -22,6 +21,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/types"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 func New(clnt client.Client) *RunnerImpl {
@@ -112,7 +112,7 @@ func (r *RunnerImpl) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 
 func (r *RunnerImpl) deleteManifest(ctx context.Context, module *common.Module) error {
 	err := r.Delete(ctx, module.Object)
-	if apiErrors.IsNotFound(err) {
+	if util.IsNotFound(err) {
 		return nil
 	}
 	return err
@@ -248,7 +248,7 @@ func DeleteNoLongerExistingModuleStatus(
 		module.SetName(moduleStatus.Manifest.GetName())
 		module.SetNamespace(moduleStatus.Manifest.GetNamespace())
 		err := moduleFunc(ctx, module)
-		if apiErrors.IsNotFound(err) {
+		if util.IsNotFound(err) {
 			if err := metrics.RemoveModuleStateMetrics(kyma, moduleStatus.Name); err != nil {
 				logger.Info(fmt.Sprintf("error occurred while removing module state metrics: %s", err))
 			}

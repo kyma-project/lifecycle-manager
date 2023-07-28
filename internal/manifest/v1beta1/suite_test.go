@@ -25,7 +25,12 @@ import (
 	"time"
 
 	"github.com/google/go-containerregistry/pkg/registry"
+	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap/zapcore"
@@ -39,13 +44,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/source"
-
-	"github.com/kyma-project/lifecycle-manager/api"
-	"github.com/kyma-project/lifecycle-manager/internal"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
-	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -108,7 +106,7 @@ var _ = BeforeSuite(
 			cfg, ctrl.Options{
 				MetricsBindAddress: metricsBindAddress,
 				Scheme:             scheme.Scheme,
-				NewCache:           internal.GetCacheFunc(labels.Set{v1beta2.ManagedBy: v1beta2.OperatorName}),
+				Cache:              internal.GetCacheOptions(labels.Set{v1beta2.ManagedBy: v1beta2.OperatorName}),
 			},
 		)
 		Expect(err).ToNot(HaveOccurred())
@@ -146,7 +144,7 @@ var _ = BeforeSuite(
 
 		err = ctrl.NewControllerManagedBy(k8sManager).
 			For(&v1beta2.Manifest{}).
-			Watches(&source.Kind{Type: &v1.Secret{}}, handler.Funcs{}).
+			Watches(&v1.Secret{}, handler.Funcs{}).
 			WithOptions(
 				controller.Options{
 					RateLimiter: internal.ManifestRateLimiter(

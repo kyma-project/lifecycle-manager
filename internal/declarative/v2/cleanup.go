@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -39,7 +39,7 @@ func (c *ConcurrentCleanup) Run(ctx context.Context, infos []*resource.Info) err
 	present := len(infos)
 	for i := 0; i < len(infos); i++ {
 		err := <-results
-		if apierrors.IsNotFound(err) {
+		if util.IsNotFound(err) {
 			present--
 			continue
 		}

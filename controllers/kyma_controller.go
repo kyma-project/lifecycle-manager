@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"golang.org/x/sync/errgroup"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -102,7 +102,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
-		if apierrors.IsNotFound(err) {
+		if util.IsNotFound(err) {
 			// TODO: revisit after runtime-controller gets upgraded
 			// Related issue: https://github.com/kyma-project/lifecycle-manager/issues/579
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted", req.NamespacedName))
@@ -128,7 +128,7 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 		remoteClient := remote.NewClientWithConfig(r.Client, r.KcpRestConfig)
 		if ctx, err = remote.InitializeSyncContext(ctx, kyma,
 			r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache); err != nil {
-			if !kyma.DeletionTimestamp.IsZero() && apierrors.IsNotFound(err) {
+			if !kyma.DeletionTimestamp.IsZero() && util.IsNotFound(err) {
 				if err = r.removeFinalizerAndUpdateKyma(ctx, kyma); err != nil {
 					return r.requeueWithError(ctx, kyma, err)
 				}

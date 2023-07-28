@@ -9,8 +9,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	crdV1beta2 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -58,14 +58,20 @@ func GetKymaState(kymaName string) (string, error) {
 	return string(createdKyma.Status.State), nil
 }
 
-func GetKymaConditions(kymaName string) func() []metav1.Condition {
-	return func() []metav1.Condition {
-		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
-		if err != nil {
-			return []metav1.Condition{}
-		}
-		return createdKyma.Status.Conditions
+func GetKymaModulesStatus(kymaName string) []v1beta2.ModuleStatus {
+	createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
+	if err != nil {
+		return []v1beta2.ModuleStatus{}
 	}
+	return createdKyma.Status.Modules
+}
+
+func GetKymaConditions(kymaName string) []metav1.Condition {
+	createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
+	if err != nil {
+		return []metav1.Condition{}
+	}
+	return createdKyma.Status.Conditions
 }
 
 func UpdateKymaLabel(
@@ -102,7 +108,7 @@ func KCPModuleExistWithOverwrites(kyma *v1beta2.Kyma, module v1beta2.Module) str
 func deleteModule(kyma *v1beta2.Kyma, module v1beta2.Module) func() error {
 	return func() error {
 		component, err := GetManifest(ctx, controlPlaneClient, kyma, module)
-		if k8serrors.IsNotFound(err) {
+		if util.IsNotFound(err) {
 			return nil
 		}
 		return client.IgnoreNotFound(controlPlaneClient.Delete(ctx, component))

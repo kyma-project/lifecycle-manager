@@ -43,6 +43,12 @@ func TestParseManifestToObjects(t *testing.T) {
 			0,
 			assert.Error,
 		},
+		{
+			"test manifest yaml contains duplicate resources, expected no error and duplicate get removed",
+			"manifest-contains-duplicate-resources.yaml",
+			1,
+			assert.NoError,
+		},
 	}
 	for _, testCase := range tests {
 		testCase := testCase

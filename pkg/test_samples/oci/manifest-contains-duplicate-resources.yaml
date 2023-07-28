@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/component: btp-manager.kyma-project.io
+  name: btp-manager-controller-manager
+  namespace: kyma-system
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/component: btp-manager.kyma-project.io
+  name: btp-manager-controller-manager
+  namespace: kyma-system

@@ -15,6 +15,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	. "github.com/onsi/gomega" //nolint:stylecheck,revive
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/ocm.software/v3alpha1"
@@ -43,9 +44,22 @@ const (
 	Interval               = time.Millisecond * 250
 )
 
-var ErrNotFound = errors.New("resource not exists")
+var (
+	ErrNotFound   = errors.New("resource not exists")
+	ErrNotDeleted = errors.New("resource not deleted")
+)
 
 func NewTestKyma(name string) *v1beta2.Kyma {
+	return newKCPKymaWithNamespace(name, v1.NamespaceDefault, v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalClient)
+}
+
+func NewKymaForE2E(name, namespace, channel string) *v1beta2.Kyma {
+	kyma := newKCPKymaWithNamespace(name, namespace, channel, v1beta2.SyncStrategyLocalSecret)
+	kyma.Labels[v1beta2.SyncLabel] = v1beta2.EnableLabelValue
+	return kyma
+}
+
+func newKCPKymaWithNamespace(name, namespace, channel, syncStrategy string) *v1beta2.Kyma {
 	return &v1beta2.Kyma{
 		TypeMeta: v1.TypeMeta{
 			APIVersion: v1beta2.GroupVersion.String(),
@@ -53,16 +67,26 @@ func NewTestKyma(name string) *v1beta2.Kyma {
 		},
 		ObjectMeta: v1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%s", name, randString(randomStringLength)),
-			Namespace: v1.NamespaceDefault,
+			Namespace: namespace,
 			Annotations: map[string]string{
 				watcher.DomainAnnotation:       "example.domain.com",
-				v1beta2.SyncStrategyAnnotation: v1beta2.SyncStrategyLocalClient,
+				v1beta2.SyncStrategyAnnotation: syncStrategy,
+			},
+			Labels: map[string]string{
+				v1beta2.InstanceIDLabel: "test-instance",
 			},
 		},
 		Spec: v1beta2.KymaSpec{
 			Modules: []v1beta2.Module{},
-			Channel: v1beta2.DefaultChannel,
+			Channel: channel,
 		},
+	}
+}
+
+func NewTestModule(name, channel string) v1beta2.Module {
+	return v1beta2.Module{
+		Name:    fmt.Sprintf("%s-%s", name, randString(randomStringLength)),
+		Channel: channel,
 	}
 }
 
@@ -73,9 +97,11 @@ func NewTestIssuer(namespace string) *certmanagerv1.Issuer {
 			Namespace: namespace,
 			Labels:    watcher.LabelSet,
 		},
-		Spec: certmanagerv1.IssuerSpec{IssuerConfig: certmanagerv1.IssuerConfig{
-			SelfSigned: &certmanagerv1.SelfSignedIssuer{},
-		}},
+		Spec: certmanagerv1.IssuerSpec{
+			IssuerConfig: certmanagerv1.IssuerConfig{
+				SelfSigned: &certmanagerv1.SelfSignedIssuer{},
+			},
+		},
 	}
 }
 
@@ -96,6 +122,7 @@ func randomName() string {
 	return randString(randomStringLength)
 }
 
+//nolint:unparam
 func randString(length int) string {
 	b := make([]byte, length)
 	for i := range b {
@@ -152,11 +179,16 @@ func DeleteModuleTemplates(
 }
 
 func DeleteCR(ctx context.Context, clnt client.Client, obj client.Object) error {
-	err := clnt.Delete(ctx, obj)
-	if !k8serrors.IsNotFound(err) {
+	if err := clnt.Delete(ctx, obj); util.IsNotFound(err) {
+		return nil
+	}
+	if err := clnt.Get(ctx, client.ObjectKey{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj); err != nil {
+		if util.IsNotFound(err) {
+			return nil
+		}
 		return err
 	}
-	return nil
+	return fmt.Errorf("%s/%s: %w", obj.GetNamespace(), obj.GetName(), ErrNotDeleted)
 }
 
 func CreateCR(ctx context.Context, clnt client.Client, obj client.Object) error {
@@ -432,15 +464,15 @@ func ManifestExists(ctx context.Context,
 	kyma *v1beta2.Kyma, module v1beta2.Module, controlPlaneClient client.Client,
 ) error {
 	_, err := GetManifest(ctx, controlPlaneClient, kyma, module)
-	if k8serrors.IsNotFound(err) {
-		return ErrNotFound
+	if util.IsNotFound(err) {
+		return fmt.Errorf("%w: %w", ErrNotFound, err)
 	}
 	return nil
 }
 
 func ModuleTemplateExists(ctx context.Context, client client.Client, name, namespace string) error {
 	_, err := GetModuleTemplate(ctx, client, name, namespace)
-	if k8serrors.IsNotFound(err) {
+	if util.IsNotFound(err) {
 		return ErrNotFound
 	}
 	return nil

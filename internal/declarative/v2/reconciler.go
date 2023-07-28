@@ -270,9 +270,7 @@ func (r *Reconciler) renderResources(
 	return target, current, nil
 }
 
-func (r *Reconciler) syncResources(
-	ctx context.Context, clnt Client, obj Object, target []*resource.Info,
-) error {
+func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object, target []*resource.Info) error {
 	status := obj.GetStatus()
 
 	if err := ConcurrentSSA(clnt, r.FieldOwner).Run(ctx, target); err != nil {
@@ -285,7 +283,7 @@ func (r *Reconciler) syncResources(
 	newSynced := NewInfoToResourceConverter().InfosToResources(target)
 	status.Synced = newSynced
 
-	if len(oldSynced) != len(newSynced) {
+	if hasDiff(oldSynced, newSynced) {
 		obj.SetStatus(status.WithState(StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
 		return ErrWarningResourceSyncStateDiff
 	}
@@ -299,6 +297,27 @@ func (r *Reconciler) syncResources(
 	}
 
 	return r.checkTargetReadiness(ctx, clnt, obj, target)
+}
+
+func hasDiff(oldResources []Resource, newResources []Resource) bool {
+	if len(oldResources) != len(newResources) {
+		return true
+	}
+	countMap := map[string]bool{}
+	for _, item := range oldResources {
+		countMap[item.ID()] = true
+	}
+	for _, item := range newResources {
+		if countMap[item.ID()] {
+			countMap[item.ID()] = false
+		}
+	}
+	for _, exists := range countMap {
+		if exists {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *Reconciler) checkTargetReadiness(
