@@ -8,14 +8,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var (
-	ErrResourcesNotReady           = errors.New("resources are not ready")
-	ErrCustomResourceStateNotFound = errors.New("custom resource state not found")
-	ErrDeploymentNotReady          = errors.New("deployment is not ready")
-)
+var ErrNotValidClientObject = errors.New("object in resource info is not a valid client object")
+
+type StateInfo struct {
+	State
+	Info string
+}
 
 type ReadyCheck interface {
-	Run(ctx context.Context, clnt Client, obj Object, resources []*resource.Info) (State, error)
+	Run(ctx context.Context, clnt Client, obj Object, resources []*resource.Info) (StateInfo, error)
 }
 
 func NewExistsReadyCheck() ReadyCheck {
@@ -24,16 +25,20 @@ func NewExistsReadyCheck() ReadyCheck {
 
 type ExistsReadyCheck struct{}
 
-func (c *ExistsReadyCheck) Run(ctx context.Context, clnt Client, _ Object, resources []*resource.Info) (State, error) {
+func (c *ExistsReadyCheck) Run(
+	ctx context.Context,
+	clnt Client,
+	_ Object,
+	resources []*resource.Info,
+) (StateInfo, error) {
 	for i := range resources {
 		obj, ok := resources[i].Object.(client.Object)
 		if !ok {
-			//nolint:goerr113
-			return StateError, errors.New("object in resource info is not a valid client object")
+			return StateInfo{State: StateError}, ErrNotValidClientObject
 		}
 		if err := clnt.Get(ctx, client.ObjectKeyFromObject(obj), obj); client.IgnoreNotFound(err) != nil {
-			return StateError, err
+			return StateInfo{State: StateError}, err
 		}
 	}
-	return StateReady, nil
+	return StateInfo{State: StateReady}, nil
 }

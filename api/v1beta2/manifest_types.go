@@ -23,7 +23,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
-const ManifestKind = "Manifest"
+const (
+	ManifestKind         = "Manifest"
+	RawManifestLayerName = "raw-manifest"
+)
 
 // InstallInfo defines installation information.
 type InstallInfo struct {

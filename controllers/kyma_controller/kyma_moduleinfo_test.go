@@ -1,4 +1,4 @@
-package controllers_test
+package kyma_controller_test
 
 import (
 	"errors"

@@ -1,4 +1,4 @@
-package v1beta1_test
+package manifest_controller_test
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	internalV1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,7 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var _ = Describe("Custom Manifest consistency check, given Manifest CR with OCI specs", Ordered, func() {
+var _ = Describe("Manifest readiness check", Ordered, func() {
 	customDir := "custom-dir"
 	installName := filepath.Join(customDir, "installs")
 	It(
@@ -33,12 +33,12 @@ var _ = Describe("Custom Manifest consistency check, given Manifest CR with OCI 
 		},
 	)
 	It("Install OCI specs including an nginx deployment", func() {
-		manifest := NewTestManifest("custom-check-oci")
-		manifestName := manifest.GetName()
-		validImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String())
+		testManifest := NewTestManifest("custom-check-oci")
+		manifestName := testManifest.GetName()
+		validImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String(), false)
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(installManifest(manifest, imageSpecByte, false)).To(Succeed())
+		Expect(installManifest(testManifest, imageSpecByte, false)).To(Succeed())
 
 		Eventually(expectManifestStateIn(declarative.StateReady), standardTimeout, standardInterval).
 			WithArguments(manifestName).Should(Succeed())
@@ -49,19 +49,19 @@ var _ = Describe("Custom Manifest consistency check, given Manifest CR with OCI 
 		deploy := &appsv1.Deployment{}
 		Expect(verifyDeploymentInstallation(deploy)).To(Succeed())
 
-		By("Preparing resources for the custom readiness check")
+		By("Preparing resources for the CR readiness check")
 		resources, err := prepareResourceInfosForCustomCheck(testClient, deploy)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(resources).ToNot(BeEmpty())
 
-		By("Executing the custom readiness check")
-		customReadyCheck := internalV1beta1.NewManifestCustomResourceReadyCheck()
-		state, err := customReadyCheck.Run(ctx, testClient, manifest, resources)
+		By("Executing the CR readiness check")
+		customReadyCheck := manifest.NewCustomResourceReadyCheck()
+		stateInfo, err := customReadyCheck.Run(ctx, testClient, testManifest, resources)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(state).To(Equal(declarative.StateReady))
+		Expect(stateInfo.State).To(Equal(declarative.StateReady))
 
 		By("cleaning up the manifest")
-		Eventually(deleteManifestAndVerify(manifest), standardTimeout, standardInterval).Should(Succeed())
+		Eventually(deleteManifestAndVerify(testManifest), standardTimeout, standardInterval).Should(Succeed())
 	})
 })
 
