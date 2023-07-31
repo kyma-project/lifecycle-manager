@@ -50,7 +50,6 @@ func (c *CustomResourceReadyCheck) Run(ctx context.Context,
 	}
 	stateFromCR, stateExists, err := unstructured.NestedString(res.Object,
 		strings.Split(customResourceStatePath, ".")...)
-
 	if err != nil {
 		return declarative.StateInfo{State: declarative.StateError}, fmt.Errorf(
 			"could not get state from module CR %s at path %s to determine readiness: %w",
