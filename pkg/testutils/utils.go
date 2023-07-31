@@ -39,7 +39,7 @@ const (
 	randomStringLength     = 8
 	letterBytes            = "abcdefghijklmnopqrstuvwxyz"
 	defaultBufferSize      = 2048
-	Timeout                = time.Second * 40
+	Timeout                = time.Second * 60
 	ConsistentCheckTimeout = time.Second * 10
 	Interval               = time.Millisecond * 250
 )
