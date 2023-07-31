@@ -60,7 +60,7 @@ var _ = Describe("module channel different from the global channel", func() {
 	})
 
 	It("Should deploy ModuleTemplate in fast channel", func() {
-		Eventually(deployModuleInChannel(FastChannel, moduleName)).Should(Succeed())
+		Eventually(deployModuleInChannel).WithArguments(FastChannel, moduleName).Should(Succeed())
 	})
 
 	It("Manifest should be deployed in fast channel", func() {

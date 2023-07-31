@@ -36,7 +36,7 @@ var _ = Describe("Manifest.Spec.Remote in default mode", Ordered, func() {
 	It("expect Manifest.Spec.Remote=false", func() {
 		Eventually(GetManifestSpecRemote, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, kyma, module).
-			Should(Equal(false))
+			Should(BeTrue())
 	})
 })
 
@@ -174,7 +174,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 		// await for the manifest to be created
 		Eventually(GetManifestSpecRemote, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, kyma, module).
-			Should(Equal(false))
+			Should(BeTrue())
 
 		manifest, err := GetManifest(ctx, controlPlaneClient, kyma, module)
 		Expect(err).ToNot(HaveOccurred())
