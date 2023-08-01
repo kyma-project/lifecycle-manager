@@ -22,6 +22,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -76,6 +77,14 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	if time.Now().After(deletionDeadline) {
 		remoteClient, err := r.ResolveRemoteClient(ctx, client.ObjectKeyFromObject(kyma))
+		if !kyma.DeletionTimestamp.IsZero() && util.IsNotFound(err) {
+			if err := r.DropPurgeFinalizer(ctx, kyma); err != nil {
+				logger.Error(err, "Couldn't remove Purge Finalizer from the Kyma object")
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{}, nil
+		}
+
 		if err != nil {
 			return ctrl.Result{}, err
 		}
