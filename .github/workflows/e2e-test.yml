@@ -133,3 +133,7 @@ jobs:
       - name: Run Watcher E2E Tests
         run: |
           make -C tests/e2e_test test
+      - name: Remove SKR Cluster and run Kyma CR Deletion Test
+        run: |
+          k3d cluster rm skr
+          make -C tests/e2e_test test-kyma-deletion-e2e
