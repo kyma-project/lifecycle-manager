@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 
@@ -16,25 +15,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
-)
-
-const (
-	timeout      = 10 * time.Second
-	readyTimeout = 2 * time.Minute
-	interval     = 1 * time.Second
-
-	watcherPodContainer = "server"
-	exampleSKRDomain    = "example.domain.com"
-
-	KLMPodPrefix    = "klm-controller-manager"
-	KLMPodContainer = "manager"
-
-	defaultRuntimeNamespace = "kyma-system"
-	defaultRemoteKymaName   = "default"
-
-	controlPlaneNamespace = "kcp-system"
-	localHostname         = "0.0.0.0"
-	k3dHostname           = "host.k3d.internal"
 )
 
 var (
