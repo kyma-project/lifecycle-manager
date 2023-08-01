@@ -79,7 +79,7 @@ func newResourcesCondition(obj Object) metav1.Condition {
 	}
 }
 
-//nolint:funlen
+//nolint:funlen,cyclop
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	obj, ok := r.prototype.DeepCopyObject().(Object)
 	if !ok {

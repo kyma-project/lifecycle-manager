@@ -98,8 +98,8 @@ func expectModuleTemplateSpecGetReset(
 	if !found {
 		return ErrExpectedLabelNotReset
 	}
-	initKeyM, ok := initKey.(map[string]any)
-	if !ok {
+	initKeyM, mapOk := initKey.(map[string]any)
+	if !mapOk {
 		return ErrExpectedLabelNotReset
 	}
 	value, found := initKeyM["initKey"]
