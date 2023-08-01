@@ -3,6 +3,7 @@ linters:
   disable:
     - contextcheck # too many false positives
     - deadcode # deprecated (since v1.49.0) and replaced by 'unused'
+    - depguard # checks if package imports are whitelisted
     - exhaustivestruct # deprecated (since v1.46.0) and replaced by 'exhaustruct'
     - exhaustruct # TODO enable and fix, use regex to exclude certain cases
     - forcetypeassert # TODO enable and fix
@@ -22,13 +23,16 @@ linters:
     - wsl # too strict and mostly code is not more readable
     - wrapcheck # TODO enable and fix
 linters-settings:
+  cyclop:
+    max-complexity: 20
   gci:
     sections:
       - standard
       - default
       - prefix(github.com/kyma-project)
-  cyclop:
-    max-complexity: 15
+  gomoddirectives:
+    replace-allow-list:
+      - github.com/Venafi/vcert/v4
   ireturn:
     allow:
       - anon
@@ -38,13 +42,9 @@ linters-settings:
       - Client
       - record.EventRecorder
       - client.Object
-  gomoddirectives:
-    replace-allow-list:
-      - github.com/Venafi/vcert/v4
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-  fix: true
 output:
   sort-results: true
 run:

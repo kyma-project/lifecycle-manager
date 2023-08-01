@@ -68,7 +68,7 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 			kyma.GetNamespace(), kyma.GetName())
 
 		BeforeAll(func() {
-			//make sure we can list Kymas to ensure CRDs have been installed
+			// make sure we can list Kymas to ensure CRDs have been installed
 			err := controlPlaneClient.List(ctx, &v1beta2.KymaList{})
 			Expect(meta.IsNoMatchError(err)).To(BeFalse())
 		})
