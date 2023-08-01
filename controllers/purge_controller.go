@@ -75,9 +75,9 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	// condition to check if deletionTimestamp is set, retry until it gets fully deleted
 	deletionDeadline := kyma.DeletionTimestamp.Add(r.PurgeFinalizerTimeout)
 
-	if time.Now().After(deletionDeadline) {
+	if time.Now().After(deletionDeadline) { //nolint:nestif
 		remoteClient, err := r.ResolveRemoteClient(ctx, client.ObjectKeyFromObject(kyma))
-		if !kyma.DeletionTimestamp.IsZero() && util.IsNotFound(err) {
+		if util.IsNotFound(err) {
 			if err := r.DropPurgeFinalizer(ctx, kyma); err != nil {
 				logger.Error(err, "Couldn't remove Purge Finalizer from the Kyma object")
 				return ctrl.Result{}, err
