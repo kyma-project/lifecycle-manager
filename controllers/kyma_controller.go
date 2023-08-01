@@ -128,12 +128,17 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 		remoteClient := remote.NewClientWithConfig(r.Client, r.KcpRestConfig)
 		if ctx, err = remote.InitializeSyncContext(ctx, kyma,
 			r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache); err != nil {
+			if !kyma.DeletionTimestamp.IsZero() && util.IsConnectionRefused(err) {
+				r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
+				return r.requeueWithError(ctx, kyma, err)
+			}
 			if !kyma.DeletionTimestamp.IsZero() && util.IsNotFound(err) {
 				if err = r.removeFinalizerAndUpdateKyma(ctx, kyma); err != nil {
 					return r.requeueWithError(ctx, kyma, err)
 				}
 				return ctrl.Result{}, nil
 			}
+
 			r.enqueueWarningEvent(kyma, syncContextError, err)
 			return r.requeueWithError(ctx, kyma, err)
 		}

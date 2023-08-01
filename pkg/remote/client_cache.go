@@ -6,8 +6,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type ClientCacheID client.ObjectKey
-
 func NewClientCache() *ClientCache {
 	return &ClientCache{internal: &sync.Map{}}
 }
@@ -25,7 +23,7 @@ type ClientCache struct {
 	internal *sync.Map
 }
 
-func (cache *ClientCache) Get(key ClientCacheID) Client {
+func (cache *ClientCache) Get(key client.ObjectKey) Client {
 	value, ok := cache.internal.Load(key)
 	if !ok {
 		return nil
@@ -34,7 +32,7 @@ func (cache *ClientCache) Get(key ClientCacheID) Client {
 	return value.(Client)
 }
 
-func (cache *ClientCache) Set(key ClientCacheID, value Client) {
+func (cache *ClientCache) Set(key client.ObjectKey, value Client) {
 	cache.internal.Store(key, value)
 }
 
