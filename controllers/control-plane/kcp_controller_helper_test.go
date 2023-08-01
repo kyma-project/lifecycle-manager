@@ -50,7 +50,7 @@ func kymaExists(clnt client.Client, name, namespace string) error {
 	if util.IsNotFound(err) {
 		return ErrNotFound
 	}
-	if kyma.DeletionTimestamp != nil {
+	if kyma != nil && kyma.DeletionTimestamp != nil {
 		return ErrDeletionTimestampFound
 	}
 	return nil

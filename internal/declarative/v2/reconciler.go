@@ -79,7 +79,7 @@ func newResourcesCondition(obj Object) metav1.Condition {
 	}
 }
 
-//nolint:funlen,cyclop
+//nolint:funlen
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	obj, ok := r.prototype.DeepCopyObject().(Object)
 	if !ok {
@@ -321,38 +321,49 @@ func hasDiff(oldResources []Resource, newResources []Resource) bool {
 }
 
 func (r *Reconciler) checkTargetReadiness(
-	ctx context.Context, clnt Client, obj Object, target []*resource.Info,
+	ctx context.Context, clnt Client, manifest Object, target []*resource.Info,
 ) error {
-	status := obj.GetStatus()
+	status := manifest.GetStatus()
 
 	resourceReadyCheck := r.CustomReadyCheck
 
-	state, err := resourceReadyCheck.Run(ctx, clnt, obj, target)
-
-	if errors.Is(err, ErrResourcesNotReady) || errors.Is(err, ErrCustomResourceStateNotFound) ||
-		errors.Is(err, ErrDeploymentNotReady) {
-		waitingMsg := fmt.Sprintf("waiting for resources to become ready: %s", err.Error())
-		r.Event(obj, "Normal", "ResourceReadyCheck", waitingMsg)
-		obj.SetStatus(status.WithState(StateProcessing).WithOperation(waitingMsg))
-		return err
-	}
-
+	crStateInfo, err := resourceReadyCheck.Run(ctx, clnt, manifest, target)
 	if err != nil {
-		r.Event(obj, "Warning", "ReadyCheck", err.Error())
-		obj.SetStatus(status.WithState(StateError).WithErr(err))
+		r.Event(manifest, "Warning", "ResourceReadyCheck", err.Error())
+		manifest.SetStatus(status.WithState(StateError).WithErr(err))
 		return err
 	}
 
-	installationCondition := newInstallationCondition(obj)
-	if !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) || status.State != state {
-		r.Event(obj, "Normal", installationCondition.Reason, installationCondition.Message)
+	if crStateInfo.State == StateProcessing {
+		waitingMsg := fmt.Sprintf("waiting for resources to become ready: %s", crStateInfo.Info)
+		r.Event(manifest, "Normal", "ResourceReadyCheck", waitingMsg)
+		manifest.SetStatus(status.WithState(StateProcessing).WithOperation(waitingMsg))
+		return ErrInstallationConditionRequiresUpdate
+	}
+
+	if crStateInfo.State != StateReady && crStateInfo.State != StateWarning {
+		// should not happen, if happens, skip status update
+		return nil
+	}
+
+	installationCondition := newInstallationCondition(manifest)
+	if !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) || status.State != crStateInfo.State {
+		r.Event(manifest, "Normal", installationCondition.Reason, installationCondition.Message)
 		installationCondition.Status = metav1.ConditionTrue
 		meta.SetStatusCondition(&status.Conditions, installationCondition)
-		obj.SetStatus(status.WithState(state).WithOperation(installationCondition.Message))
+		manifest.SetStatus(status.WithState(crStateInfo.State).
+			WithOperation(generateOperationMessage(installationCondition, crStateInfo)))
 		return ErrInstallationConditionRequiresUpdate
 	}
 
 	return nil
+}
+
+func generateOperationMessage(installationCondition metav1.Condition, stateInfo StateInfo) string {
+	if stateInfo.Info != "" {
+		return stateInfo.Info
+	}
+	return installationCondition.Message
 }
 
 func (r *Reconciler) deleteResources(

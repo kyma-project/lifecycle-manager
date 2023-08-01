@@ -3,7 +3,7 @@ linters:
   disable:
     - contextcheck # too many false positives
     - deadcode # deprecated (since v1.49.0) and replaced by 'unused'
-    - depguard # checks if package imports are in a list of acceptable packages, we don't maintain such a list
+    - depguard # checks if package imports are whitelisted
     - exhaustivestruct # deprecated (since v1.46.0) and replaced by 'exhaustruct'
     - exhaustruct # TODO enable and fix, use regex to exclude certain cases
     - gci # keep disabled for now since it will autofix all imports and result in a git dirty state
@@ -44,7 +44,6 @@ linters-settings:
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-  fix: true
 output:
   sort-results: true
 run:

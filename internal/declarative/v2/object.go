@@ -62,6 +62,15 @@ const (
 	StateWarning State = "Warning"
 )
 
+// IsSupportedState These states will be used by module CR.
+func (state State) IsSupportedState() bool {
+	return state == StateReady ||
+		state == StateProcessing ||
+		state == StateError ||
+		state == StateDeleting ||
+		state == StateWarning
+}
+
 func (s Status) WithState(state State) Status {
 	s.State = state
 	return s

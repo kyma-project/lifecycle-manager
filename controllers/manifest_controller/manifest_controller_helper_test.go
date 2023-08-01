@@ -1,4 +1,4 @@
-package v1beta1_test
+package manifest_controller_test
 
 import (
 	"encoding/json"
@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/google/go-containerregistry/pkg/v1/partial"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -28,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
-const manifestInstallName = "manifest-test"
+const CredSecretLabelKeyForTest = "operator.kyma-project.io/oci-registry-cred" //nolint:gosec
 
 type mockLayer struct {
 	filePath string
@@ -51,7 +50,7 @@ func (m mockLayer) DiffID() (v1.Hash, error) {
 }
 
 func CreateImageSpecLayer() v1.Layer {
-	layer, err := partial.UncompressedToLayer(mockLayer{filePath: "../../../pkg/test_samples/oci/rendered.yaml"})
+	layer, err := partial.UncompressedToLayer(mockLayer{filePath: "../../pkg/test_samples/oci/rendered.yaml"})
 	Expect(err).ToNot(HaveOccurred())
 	return layer
 }
@@ -79,11 +78,14 @@ func PushToRemoteOCIRegistry(layerName string) {
 	Expect(gotHash).To(Equal(digest))
 }
 
-func createOCIImageSpec(name, repo string) v1beta2.ImageSpec {
+func createOCIImageSpec(name, repo string, enableCredSecretSelector bool) v1beta2.ImageSpec {
 	imageSpec := v1beta2.ImageSpec{
 		Name: name,
 		Repo: repo,
 		Type: "oci-ref",
+	}
+	if enableCredSecretSelector {
+		imageSpec.CredSecretSelector = CredSecretLabelSelector("test-secret-label")
 	}
 	layer := CreateImageSpecLayer()
 	digest, err := layer.Digest()
@@ -106,16 +108,18 @@ func NewTestManifest(prefix string) *v1beta2.Manifest {
 
 func withInvalidInstallImageSpec(enableResource bool) func(manifest *v1beta2.Manifest) error {
 	return func(manifest *v1beta2.Manifest) error {
-		invalidImageSpec := createOCIImageSpec("invalid-image-spec", "domain.invalid")
+		invalidImageSpec := createOCIImageSpec("invalid-image-spec", "domain.invalid", false)
 		imageSpecByte, err := json.Marshal(invalidImageSpec)
 		Expect(err).ToNot(HaveOccurred())
 		return installManifest(manifest, imageSpecByte, enableResource)
 	}
 }
 
-func withValidInstallImageSpec(name string, enableResource bool) func(manifest *v1beta2.Manifest) error {
+func withValidInstallImageSpec(name string,
+	enableResource, enableCredSecretSelector bool,
+) func(manifest *v1beta2.Manifest) error {
 	return func(manifest *v1beta2.Manifest) error {
-		validImageSpec := createOCIImageSpec(name, server.Listener.Addr().String())
+		validImageSpec := createOCIImageSpec(name, server.Listener.Addr().String(), enableCredSecretSelector)
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
 		return installManifest(manifest, imageSpecByte, enableResource)
@@ -128,7 +132,7 @@ func installManifest(manifest *v1beta2.Manifest, installSpecByte []byte, enableR
 			Source: runtime.RawExtension{
 				Raw: installSpecByte,
 			},
-			Name: manifestInstallName,
+			Name: v1beta2.RawManifestLayerName,
 		}
 	}
 	if enableResource {
@@ -162,7 +166,7 @@ func expectManifestStateIn(state v2.State) func(manifestName string) error {
 }
 
 func getManifestStatus(manifestName string) (v2.Status, error) {
-	manifest := &v1beta1.Manifest{}
+	manifest := &v1beta2.Manifest{}
 	err := k8sClient.Get(
 		ctx, client.ObjectKey{
 			Namespace: metav1.NamespaceDefault,
@@ -183,5 +187,11 @@ func deleteManifestAndVerify(manifest *v1beta2.Manifest) func() error {
 		newManifest := v1beta2.Manifest{}
 		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(manifest), &newManifest)
 		return client.IgnoreNotFound(err)
+	}
+}
+
+func CredSecretLabelSelector(labelValue string) *metav1.LabelSelector {
+	return &metav1.LabelSelector{
+		MatchLabels: map[string]string{CredSecretLabelKeyForTest: labelValue},
 	}
 }

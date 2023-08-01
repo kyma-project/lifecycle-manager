@@ -10,10 +10,6 @@ import (
 type LayerName string
 
 const (
-	OCIRepresentationType = "oci-ref"
-)
-
-const (
 	ConfigLayer LayerName = "config"
 	CRDsLayer   LayerName = "crds"
 )

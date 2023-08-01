@@ -16,7 +16,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           # Context for which we should look for the matching status
           statusName: ${{ (github.event_name == 'pull_request') && 'pull-lifecycle-mgr-build' || 'main-lifecycle-mgr-build' }}
-          timeoutSeconds: 300 # 5 mins due to flakiness of build speed in prow
+          timeoutSeconds: 600
           intervalSeconds: 10
       - name: Exit If Failing Build Requirement
         if: steps.wait-for-build.outputs.state != 'success'
@@ -40,8 +40,8 @@ jobs:
     steps:
       - name: Install prerequisites
         run: |
+          sudo add-apt-repository ppa:longsleep/golang-backports -y
           sudo apt update -y
-          sudo apt upgrade -y
           sudo apt install git curl wget make bash golang-go -y
       - name: Install Istio CLI
         run: |

@@ -123,7 +123,7 @@ func getOCIRef(
 	labels ocmv1.Labels,
 ) (*OCI, error) {
 	layerRef := OCI{
-		Type: OCIRepresentationType,
+		Type: string(v1beta2.OciRefType),
 	}
 
 	// if ref is not provided, we simply use the version of the descriptor, this will usually default
