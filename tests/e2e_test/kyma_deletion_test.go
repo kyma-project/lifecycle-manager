@@ -1,4 +1,4 @@
-//go:build e2e
+//go:build deletion_e2e
 
 package e2e_test
 
