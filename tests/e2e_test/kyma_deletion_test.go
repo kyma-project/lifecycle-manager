@@ -22,12 +22,14 @@ const (
 	timeout       = 10 * time.Second
 	statusTimeout = 2 * time.Minute
 	interval      = 1 * time.Second
+	readyTimeout  = 2 * time.Minute
 )
 
 var _ = Describe("KCP Kyma CR should be deleted successfully when SKR cluster gets deleted",
 	Ordered, func() {
 		channel := "regular"
 		kyma := testutils.NewKymaForE2E("kyma-sample", "kcp-system", channel)
+		remoteNamespace := "kyma-system"
 		GinkgoWriter.Printf("kyma before create %v\n", kyma)
 
 		BeforeAll(func() {
