@@ -1,4 +1,4 @@
-//go:build watcher_e2e
+//go:build watcher_e2e || deletion_e2e
 
 package e2e_test
 
