@@ -148,7 +148,7 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 				Should(Succeed())
 
-			Eventually(CheckRemoteKymaCRDeleted, timeout, interval).
+			Eventually(checkRemoteKymaCRDeleted, timeout, interval).
 				WithContext(ctx).
 				WithArguments(remoteNamespace, runtimeClient).
 				Should(Succeed())
