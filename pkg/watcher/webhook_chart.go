@@ -5,9 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net"
 	"strconv"
+
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"golang.org/x/sync/errgroup"

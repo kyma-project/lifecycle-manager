@@ -19,11 +19,12 @@ package withwatcher_test
 import (
 	//+kubebuilder:scaffold:imports
 	"context"
-	corev1 "k8s.io/api/core/v1"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	corev1 "k8s.io/api/core/v1"
 
 	istioapi "istio.io/api/networking/v1beta1"
 	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
