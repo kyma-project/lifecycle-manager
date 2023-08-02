@@ -1,43 +1,59 @@
-# lifecycle-manager
+# Lifecycle Manager
 
-Kyma is the opinionated set of Kubernetes based modular building blocks that includes the necessary capabilities to develop and run enterprise-grade cloud-native applications. Kyma's `lifecycle-manager` is a tool that manages the lifecycle of these components in your cluster.
+Kyma is an opinionated set of Kubernetes-based modular building blocks that includes the necessary capabilities to develop and run enterprise-grade cloud-native applications. Kyma's Lifecycle Manager is a tool that manages the lifecycle of these modules in your cluster.
 
-# Architecture
+## Modularization
 
-The architecture of `lifecycle-manager` and component operators is based on Kubernetes controllers/operators. `lifecycle-manager` is a meta operator that coordinates and tracks the lifecycle of kyma components by delegating it to component operators.
+Lifecycle Manager was introduced along with the concept of Kyma modularization. With Kyma's modular approach, you can install just the modules you need, giving you more flexibility and reducing the footprint of your Kyma cluster. Lifecycle Manager manages clusters using the [Kyma](api/v1beta1/kyma_types.go) custom resource (CR). The CR defines the desired state of modules in a cluster. With the CR you can enable and disable modules. Lifecycle Manager installs or uninstalls modules and updates their statuses. For more details, read about the [modularization concept in Kyma](https://github.com/kyma-project/community/tree/main/concepts/modularization).
 
-Before you go further please make sure you understand concepts of Kubernetes API and resources. Recommended reading:
-- [Kubebuilder book](https://book.kubebuilder.io/)
-- [Operator SDK](https://sdk.operatorframework.io/docs/building-operators/golang/)
+## Basic Concepts
 
-The architecture is based on best practices for building Kubernetes operators ([1](https://cloud.google.com/blog/products/containers-kubernetes/best-practices-for-building-kubernetes-operators-and-stateful-apps), [2](https://sdk.operatorframework.io/docs/best-practices/)). 
+See the list of basic concepts relating to Lifecycle Manager to understand its workflow better.
 
-Some architecture decisions were derived from business requirements and experiments (proof of concepts):
-[Architecture Decisions](docs/architecture-decisions.md)
+- Kyma custom resource (CR) - represents Kyma installation in a cluster. It contains the list of modules and their state.
+- ModuleTemplate CR - contains modules' metadata with links to their images and manifests. ModuleTemplate CR represents a module in a particular version. Based on this resource Lifecycle Manager enables or disables modules in your cluster.
+- Manifest CR - represents resources that make up a module and are to be installed by Lifecycle Manager. The Manifest CR is a rendered module enabled on a particular cluster.
+- Module CR, such as Keda CR - allows you to configure the behavior of a module. This is a per-module CR.
 
-![](docs/assets/kyma-operator-architecture.svg)
+For the worklow details, read the [Architecture](./docs/technical-reference/architecture.md) document.
 
-`lifecycle-manager` manages Clusters through the `Kyma` custom resource (CR). `Kyma` contains a desired state of all components in a cluster for a given Kyma Release. 
+## Quick Start
 
-`lifecycle-manager` creates component custom resources and updates `Kyma`'s status subresource based on the observed status changes in the component custom resource (similar to a deployment tracking pods). 
+Follow this quick start guide to set up the environment and use Lifecycle Manager to enable modules.
 
-Component operators watch only their own custom resources and reconcile components in the target clusters to the desired state. These states are then aggregated in `Kyma` to reflect the cluster state.
+### Prerequisites
 
-## Example
+To use Lifecycle Manager in a local setup, install the following:
 
-A sample `Kyma` CR could look like this:
-```
-apiVersion: operator.kyma-project.io/v1alpha1
-kind: Kyma
-metadata:
-  name: kyma-sample
-spec:
-#  Note: kyma version and kubeconfig reference is not implemented yet
-#  version: 2.2
-#  kubeconfigName: cluster1-kubeconfig
-  components:
-  - name: istio
-  - name: serverless
-```
+- [k3d](https://k3d.io/)
+- [istioctl](https://istio.io/latest/docs/setup/install/istioctl/)
+- [Kyma CLI](https://kyma-project.io/docs/kyma/latest/04-operation-guides/operations/01-install-kyma-CLI)
 
-The creation of the custom resource triggers a reconciliation of kyma-operator, that creates 2 custom resources: `ServerlessComponent` and `IstioConfiguration` based on a template. These custom resources will trigger serverless-operator and istio-operator. When each component operator completes the installation it updates it's own resource status (`ServerlessComponent/status` and `IstioConfiguration/status`). Status changes trigger kyma-operator to update `Kyma` resource status and aggregate and combine the readiness condition of the cluster.
+### Steps
+
+1. To set up the environment, provision a local k3d cluster and install Kyma. Run:
+
+  ```bash
+  kyma provision k3d
+  kyma alpha deploy
+  ```
+
+2. Apply a ModuleTemplate CR. Run the following kubectl command:
+
+  ```bash
+  kubectl apply -f {MODULE_TEMPLATE.yaml}
+  ```
+
+**TIP:** You can use any deployment-ready ModuleTemplates, such as [cluster-ip](https://github.com/pbochynski/) or [keda](https://github.com/kyma-project/keda-manager).
+
+3. Enable a module. Run:
+
+  ```bash
+  kyma alpha enable module {MODULE_NAME}
+  ```
+
+**TIP:** Check the [modular Kyma interactive tutorial](https://killercoda.com/kyma-project/scenario/modular-kyma) to play with enabling and disabling Kyma modules in both terminal and Busola.
+
+## Read More
+
+Go to the [`Table of Contents`](/docs/README.md) in the `/docs` directory to find the complete list of documents on Lifecycle Manager. Read those to learn more about Lifecycle Manager and its functionalities.

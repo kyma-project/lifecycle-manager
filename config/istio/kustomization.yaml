@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+configurations:
+- commonlabels_override.yaml
+
+resources:
+- ap.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+
+patches:
+  - target:
+      version: v1
+      kind: Namespace
+    path: patches/istio_namespace_labels.yaml
+  - target:
+      kind: Deployment
+    path: patches/exclude_webhook_port.yaml

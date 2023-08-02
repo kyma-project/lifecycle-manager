@@ -1,0 +1,12 @@
+apiVersion: operator.kyma-project.io/v1beta2
+kind: Kyma
+metadata:
+  labels:
+    "operator.kyma-project.io/managed-by": "lifecycle-manager"
+    "operator.kyma-project.io/beta": "true"
+  name: default-kyma
+  namespace: kcp-system
+spec:
+  channel: regular
+  modules:
+    - name: template-operator

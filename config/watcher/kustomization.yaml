@@ -1,0 +1,53 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+resources:
+- operator_v1beta2_watcher.yaml
+- gateway.yaml
+- certificate_setup.yaml
+generatorOptions:
+  disableNameSuffixHash: true
+
+patches:
+  - patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --enable-kcp-watcher
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --skr-watcher-path=/skr-webhook
+    target:
+      kind: Deployment
+
+
+# JSON patches needed to ensure certificate setup namespaces are not
+# being overwritten by kustomize global namespace patch. The certificate
+# setup needs to be in the `istio-system` namespace
+patchesJson6902:
+  - patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: "istio-system"
+    target:
+      group: cert-manager.io
+      version: v1
+      kind: Certificate
+      name: watcher-serving-cert
+  - patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: "istio-system"
+    target:
+      group: cert-manager.io
+      version: v1
+      kind: ClusterIssuer
+      name: watcher-selfsigned-cluster-issuer
+  - patch: |-
+      - op: replace
+        path: /metadata/namespace
+        value: "istio-system"
+    target:
+      group: cert-manager.io
+      version: v1
+      kind: Issuer
+      name: watcher-selfsigned-issuer

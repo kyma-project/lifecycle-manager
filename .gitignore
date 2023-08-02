@@ -21,7 +21,8 @@
 atlassian-ide-plugin.xml
 
 ## VSCode
-.vscode
+**/*.vscode
+**/*.devcontainer*
 
 ### OSX template
 *.DS_Store
@@ -51,7 +52,7 @@ Temporary Items
 .apdisk
 
 # Binaries
-operator/bin/*
+bin/*
 
 # Vendor
 vendor/
@@ -78,9 +79,20 @@ out.txt
 .workspace
 
 # ignore vscode delve debug binary
-*/__debug_bin
+**/__debug_bin
 
 .run/
-/operator/config/crd/bases/operator.kyma-project.io*
+/config/crd/bases/operator.kyma-project.io*
 .test.env
 **/**.code-workspace
+
+**/dry-run
+bin
+**/go.work
+**/go.work.sum
+
+# ignore .pem key files
+**/*.pem
+
+# rendered manifest
+**/manifest.yaml

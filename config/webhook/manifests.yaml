@@ -1,0 +1,27 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: validating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-operator-kyma-project-io-v1beta2-moduletemplate
+  failurePolicy: Fail
+  name: v1beta2.vmoduletemplate.kb.io
+  rules:
+  - apiGroups:
+    - operator.kyma-project.io
+    apiVersions:
+    - v1beta2
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - moduletemplates
+  sideEffects: None

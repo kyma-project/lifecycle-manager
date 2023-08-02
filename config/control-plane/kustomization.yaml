@@ -1,0 +1,137 @@
+# WARNING: This is a Kustomization that CANNOT run standalone
+# It is meant to be used in conjunction with a control-plane deployment only and has prerequisites that
+# need to be explicitly created externally in a centrally managed place (e.g. the kcp-system).
+# In fact, in order to avoid conflicts, it even explicitly patches out certain configuration elements.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Adds namespace to all resources.
+namespace: kcp-system
+
+namePrefix: klm- #kyma-lifecycle-manager
+# Labels to add to all resources and selectors.
+commonLabels:
+  app.kubernetes.io/instance: kcp-lifecycle-manager
+  app.kubernetes.io/name: lifecycle-manager
+  app.kubernetes.io/created-by: argo-cd
+  app.kubernetes.io/part-of: kcp
+  app.kubernetes.io/managed-by: kustomize
+
+images:
+- name: europe-docker.pkg.dev/kyma-project/prod/lifecycle-manager
+
+resources:
+  - ../manager
+  # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'. 'WEBHOOK' components are required.
+  - ../certmanager
+
+components:
+  - ../crd
+  - ../rbac
+  # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
+  - ../istio
+  # [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
+  #- ../watcher
+  # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix
+  - ../webhook
+  # [PROMETHEUS] To enable prometheus monitor, uncomment all sections with 'PROMETHEUS'.
+  - ../prometheus
+  # [GRAFANA] To enable grafana, uncomment all sections with 'GRAFANA'.
+  - ../grafana
+
+patches:
+  - patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --in-kcp-mode
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --rate-limiter-burst=2000
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --rate-limiter-frequency=1000      
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --k8s-client-qps=1000      
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --k8s-client-burst=2000
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --cache-sync-timeout=60m
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --failure-max-delay=30s
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --is-kyma-managed
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --enable-purge-finalizer
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --skip-finalizer-purging-for=*.crd.projectcalico.org,*.cert.gardener.cloud,*.dns.gardener.cloud,*.autoscaling.k8s.io,*.snapshot.storage.k8s.io
+    target:
+      kind: Deployment
+
+patchesJson6902:
+  # We patch the Metrics JSONs here as we expect KCP to be watching for grafana dashboards in kyma-system,
+  # not kcp-system as we configure it above for the rest of the kustomization
+  - path: patches/dashboard_cm_patch.yaml
+    target:
+      version: v1
+      kind: ConfigMap
+      name: klm-overview
+  - path: patches/dashboard_cm_patch.yaml
+    target:
+      version: v1
+      kind: ConfigMap
+      name: klm-status
+
+patchesStrategicMerge:
+  # We expect a kcp-system namespace to be already present in KCP
+  - patches/namespace_delete.yaml
+  # For prometheus scraping in KCP, serviceMonitor better enable mTls for communication
+  - patches/service_monitor.yaml
+
+  # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK]
+  - patches/unique_manager_webhook_patch.yaml
+  - patches/adjust_resources_in_deployment.yaml
+
+# [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'.
+# Uncomment 'CERTMANAGER' sections in crd/kustomization.yaml to enable the CA injection in the admission webhooks.
+# 'CERTMANAGER' needs to be enabled to use ca injection
+  - patches/webhook_configuration_cainjection.yaml
+  # We override the certificate name to ensure that Cert-Manager uses a unique cert in conjunction with other
+  # kubebuilder operators.
+  - patches/unique_certificate_name.yaml
+
+# the following config is for teaching kustomize how to do var substitution
+vars:
+# [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER' prefix.
+- name: CERTIFICATE_NAMESPACE # namespace of the certificate CR
+  objref:
+    kind: Certificate
+    group: cert-manager.io
+    version: v1
+    name: serving-cert # this name should match the one in certificate.yaml
+  fieldref:
+    fieldpath: metadata.namespace
+- name: CERTIFICATE_NAME
+  objref:
+    kind: Certificate
+    group: cert-manager.io
+    version: v1
+    name: serving-cert # this name should match the one in certificate.yaml
+- name: SERVICE_NAMESPACE # namespace of the service
+  objref:
+    kind: Service
+    version: v1
+    name: webhook-service
+  fieldref:
+    fieldpath: metadata.namespace
+- name: SERVICE_NAME
+  objref:
+    kind: Service
+    version: v1
+    name: webhook-service
