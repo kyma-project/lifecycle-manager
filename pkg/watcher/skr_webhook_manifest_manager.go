@@ -36,12 +36,12 @@ type SkrWebhookManagerConfig struct {
 	SkrWebhookCPULimits    string
 	// IstioNamespace represents the cluster resource namespace of istio
 	IstioNamespace string
-	// IstioIngressServiceName represents the cluster resource name of the istio ingress service name
-	IstioIngressServiceName string
+	// IstioGatewayName represents the cluster resource name of the klm istio gateway
+	IstioGatewayName string
+	// IstioGatewayNamespace represents the cluster resource namespace of the klm istio gateway
+	IstioGatewayNamespace string
 	// RemoteSyncNamespace indicates the sync namespace for Kyma and module catalog
 	RemoteSyncNamespace string
-	// ListenerGatewayPortName indicates the name of the port the watcher's requests should be sent to
-	ListenerGatewayPortName string
 	// WatcherLocalTestingEnabled indicates if the chart manager is running in local testing mode
 	WatcherLocalTestingEnabled bool
 	// LocalGatewayHTTPPortMapping indicates the port used to expose the KCP cluster locally in k3d

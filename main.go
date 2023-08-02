@@ -235,11 +235,11 @@ func setupKymaReconciler(mgr ctrl.Manager,
 			SkrWatcherImage:             flagVar.skrWatcherImage,
 			SkrWebhookCPULimits:         flagVar.skrWebhookCPULimits,
 			SkrWebhookMemoryLimits:      flagVar.skrWebhookMemoryLimits,
-			ListenerGatewayPortName:     flagVar.listenerGatewayPortName,
 			WatcherLocalTestingEnabled:  flagVar.enableWatcherLocalTesting,
 			LocalGatewayHTTPPortMapping: flagVar.listenerHTTPSPortLocalMapping,
 			IstioNamespace:              flagVar.istioNamespace,
-			IstioIngressServiceName:     flagVar.istioIngressServiceName,
+			IstioGatewayName:            flagVar.istioGatewayName,
+			IstioGatewayNamespace:       flagVar.istioGatewayNamespace,
 			RemoteSyncNamespace:         flagVar.remoteSyncNamespace,
 		})
 		if err != nil {

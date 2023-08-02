@@ -19,21 +19,24 @@ package withwatcher_test
 import (
 	//+kubebuilder:scaffold:imports
 	"context"
+	corev1 "k8s.io/api/core/v1"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	istioapi "istio.io/api/networking/v1beta1"
+	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
+	versionedclient "istio.io/client-go/pkg/clientset/versioned"
+	istioscheme "istio.io/client-go/pkg/clientset/versioned/scheme"
+
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	istioscheme "istio.io/client-go/pkg/clientset/versioned/scheme"
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -78,7 +81,8 @@ const (
 	skrWatcherPath         = "../../skr-webhook"
 	istioResourcesFilePath = "../../config/samples/tests/istio-test-resources.yaml"
 	istioSystemNs          = "istio-system"
-	ingressServiceName     = "istio-ingressgateway"
+	kcpSystemNs            = "kcp-system"
+	gatewayName            = "lifecycle-manager-watcher-gateway"
 )
 
 func TestAPIs(t *testing.T) {
@@ -150,7 +154,10 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
-	Expect(createLoadBalancer(suiteCtx, k8sClient)).To(Succeed())
+	Expect(createNamespace(suiteCtx, istioSystemNs, controlPlaneClient)).To(Succeed())
+	Expect(createNamespace(suiteCtx, kcpSystemNs, controlPlaneClient)).To(Succeed())
+
+	Expect(createGateway(suiteCtx, restCfg)).To(Succeed())
 	istioResources, err = deserializeIstioResources()
 	Expect(err).NotTo(HaveOccurred())
 	for _, istioResource := range istioResources {
@@ -159,12 +166,13 @@ var _ = BeforeSuite(func() {
 
 	remoteClientCache = remote.NewClientCache()
 	skrChartCfg := &watcher.SkrWebhookManagerConfig{
-		SKRWatcherPath:          skrWatcherPath,
-		SkrWebhookMemoryLimits:  "200Mi",
-		SkrWebhookCPULimits:     "1",
-		IstioNamespace:          istioSystemNs,
-		IstioIngressServiceName: ingressServiceName,
-		RemoteSyncNamespace:     controllers.DefaultRemoteSyncNamespace,
+		SKRWatcherPath:         skrWatcherPath,
+		SkrWebhookMemoryLimits: "200Mi",
+		SkrWebhookCPULimits:    "1",
+		IstioNamespace:         istioSystemNs,
+		IstioGatewayName:       gatewayName,
+		IstioGatewayNamespace:  kcpSystemNs,
+		RemoteSyncNamespace:    controllers.DefaultRemoteSyncNamespace,
 	}
 
 	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(restCfg, skrChartCfg)
@@ -222,54 +230,43 @@ var _ = AfterSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 })
 
-func createLoadBalancer(ctx context.Context, k8sClient client.Client) error {
-	istioNs := &corev1.Namespace{
+func createNamespace(ctx context.Context, namespace string, k8sClient client.Client) error {
+	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: istioSystemNs,
+			Name: namespace,
 		},
 	}
-	if err := k8sClient.Create(ctx, istioNs); err != nil {
-		return err
-	}
-	loadBalancerService := &corev1.Service{
+	return k8sClient.Create(ctx, ns)
+}
+
+func createGateway(ctx context.Context, restConfig *rest.Config) error {
+	gateway := &istiov1beta1.Gateway{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ingressServiceName,
-			Namespace: istioSystemNs,
+			Name:      gatewayName,
+			Namespace: kcpSystemNs,
 			Labels: map[string]string{
-				"app": ingressServiceName,
+				"app": gatewayName,
 			},
 		},
-		Spec: corev1.ServiceSpec{
-			Type: corev1.ServiceTypeLoadBalancer,
-			Ports: []corev1.ServicePort{
+		Spec: istioapi.Gateway{
+			Servers: []*istioapi.Server{
 				{
-					Name:       "http2",
-					Protocol:   corev1.ProtocolTCP,
-					Port:       80,
-					TargetPort: intstr.FromInt(8080),
+					Port: &istioapi.Port{
+						Number: 443,
+						Name:   "https",
+					},
+					Hosts: []string{"example.host"},
 				},
 			},
+			Selector: nil,
 		},
 	}
 
-	if err := k8sClient.Create(ctx, loadBalancerService); err != nil {
+	ic, err := versionedclient.NewForConfig(restConfig)
+	if err != nil {
 		return err
 	}
-	loadBalancerService.Status = corev1.ServiceStatus{
-		LoadBalancer: corev1.LoadBalancerStatus{
-			Ingress: []corev1.LoadBalancerIngress{
-				{
-					IP: "10.10.10.167",
-				},
-			},
-		},
-	}
-	if err := k8sClient.Status().Update(ctx, loadBalancerService); err != nil {
-		return err
-	}
+	_, err = ic.NetworkingV1beta1().Gateways(kcpSystemNs).Create(ctx, gateway, metav1.CreateOptions{})
 
-	return k8sClient.Get(ctx, client.ObjectKey{
-		Name:      ingressServiceName,
-		Namespace: istioSystemNs,
-	}, loadBalancerService)
+	return err
 }
