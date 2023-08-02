@@ -82,7 +82,7 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 				Should(Succeed())
 			By("verifying remote kyma is ready")
-			Eventually(checkRemoteKymaCR, readyTimeout, interval).
+			Eventually(CheckRemoteKymaCR, readyTimeout, interval).
 				WithContext(ctx).
 				WithArguments(remoteNamespace, []v1beta2.Module{}, runtimeClient, v1beta2.StateReady).
 				Should(Succeed())
@@ -148,7 +148,7 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 				Should(Succeed())
 
-			Eventually(checkRemoteKymaCRDeleted, timeout, interval).
+			Eventually(CheckRemoteKymaCRDeleted, timeout, interval).
 				WithContext(ctx).
 				WithArguments(remoteNamespace, runtimeClient).
 				Should(Succeed())

@@ -51,7 +51,7 @@ var _ = Describe("KCP Kyma CR should be deleted successfully when SKR cluster ge
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 				Should(Succeed())
 			By("verifying remote kyma is ready")
-			Eventually(checkRemoteKymaCR, readyTimeout, interval).
+			Eventually(CheckRemoteKymaCR, readyTimeout, interval).
 				WithContext(ctx).
 				WithArguments(remoteNamespace, []v1beta2.Module{}, runtimeClient, v1beta2.StateReady).
 				Should(Succeed())
