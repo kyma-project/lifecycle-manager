@@ -3,9 +3,7 @@
 package e2e_test
 
 import (
-	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -14,17 +12,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var (
-	errPodNotFound               = errors.New("could not find pod")
-	errWatcherDeploymentNotReady = errors.New("watcher Deployment is not ready")
-	errModuleNotExisting         = errors.New("module does not exists in KymaCR")
-	errLogNotFound               = errors.New("logMsg was not found in log")
-	errKymaNotInExpectedState    = errors.New("kyma CR not in expected state")
-	errKymaNotDeleted            = errors.New("kyma CR not deleted")
+	errKymaNotDeleted = errors.New("kyma CR not deleted")
 )
 
 const (
@@ -46,31 +37,23 @@ var _ = Describe("KCP Kyma CR should be deleted successfully when SKR cluster ge
 		})
 
 		It("Should create empty Kyma CR on remote cluster", func() {
+			Eventually(CreateKymaSecret, timeout, interval).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
+				Should(Succeed())
 			Eventually(controlPlaneClient.Create, timeout, interval).
 				WithContext(ctx).
 				WithArguments(kyma).
 				Should(Succeed())
-			By("verifying kyma is in Error state")
-			Eventually(checkKymaIsInState, statusTimeout, interval).
+			By("verifying kyma is ready")
+			Eventually(CheckKymaIsInState, readyTimeout, interval).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateError).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+				Should(Succeed())
+			By("verifying remote kyma is ready")
+			Eventually(checkRemoteKymaCR, readyTimeout, interval).
+				WithContext(ctx).
+				WithArguments(remoteNamespace, []v1beta2.Module{}, runtimeClient, v1beta2.StateReady).
 				Should(Succeed())
 		})
 	})
-
-func checkKymaIsInState(ctx context.Context,
-	kymaName, kymaNamespace string,
-	k8sClient client.Client,
-	expectedState v1beta2.State,
-) error {
-	kyma := &v1beta2.Kyma{}
-	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
-		return err
-	}
-	GinkgoWriter.Printf("kyma %v\n", kyma)
-	if kyma.Status.State != expectedState {
-		return fmt.Errorf("%w: expect %s, but in %s",
-			errKymaNotInExpectedState, expectedState, kyma.Status.State)
-	}
-	return nil
-}
