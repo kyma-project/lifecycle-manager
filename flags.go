@@ -92,9 +92,9 @@ func defineFlagVar() *FlagVar {
 		"Enabling KCP Watcher two-cluster setup to be tested locally using k3d")
 	flag.StringVar(&flagVar.istioNamespace, "istio-namespace", defaultIstioNamespace,
 		"Cluster Resource Namespace of Istio")
-	flag.StringVar(&flagVar.istioGatewayName, "istio-gateway", defaultIstioGatewayName,
+	flag.StringVar(&flagVar.istioGatewayName, "istio-gateway-name", defaultIstioGatewayName,
 		"Cluster Resource Name of Istio Gateway")
-	flag.StringVar(&flagVar.istioGatewayNamespace, "istio-gateway", defaultIstioGatewayNamespace,
+	flag.StringVar(&flagVar.istioGatewayNamespace, "istio-gateway-namespace", defaultIstioGatewayNamespace,
 		"Cluster Resource Namespace of Istio Gateway")
 	flag.IntVar(&flagVar.listenerHTTPSPortLocalMapping, "listener-http-local-mapping", defaultListenerPort,
 		"Port that is mapped to HTTP port of the local k3d cluster using --port 9080:80@loadbalancer when "+
