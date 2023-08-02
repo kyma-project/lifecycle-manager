@@ -180,19 +180,8 @@ func insertLayerIntoManifest(
 	manifest *v1beta2.Manifest, layer img.Layer,
 ) error {
 	switch layer.LayerName {
-	case img.ConfigLayer: // Skipping Config Layer. Deprecated since removal of Helm and Kustomize from ModuleTemplates
+	case img.ConfigLayer:
 	case img.CRDsLayer:
-		ociImage, ok := layer.LayerRepresentation.(*img.OCI)
-		if !ok {
-			return fmt.Errorf("%w: not an OCIImage", ErrDefaultConfigParsing)
-		}
-		manifest.Spec.Config = v1beta2.ImageSpec{
-			Repo:               ociImage.Repo,
-			Name:               ociImage.Name,
-			Ref:                ociImage.Ref,
-			Type:               v1beta2.OciRefType,
-			CredSecretSelector: ociImage.CredSecretSelector,
-		}
 	default:
 		installRaw, err := layer.ToInstallRaw()
 		if err != nil {
