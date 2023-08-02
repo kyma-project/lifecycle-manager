@@ -41,17 +41,13 @@ const (
 	KLMPodContainer = "manager"
 
 	defaultRuntimeNamespace = "kyma-system"
-	defaultRemoteKymaName   = "default"
-
-	controlPlaneNamespace = "kcp-system"
+	controlPlaneNamespace   = "kcp-system"
 )
 
 var (
 	errPodNotFound               = errors.New("could not find pod")
 	errWatcherDeploymentNotReady = errors.New("watcher Deployment is not ready")
-	errModuleNotExisting         = errors.New("module does not exists in KymaCR")
 	errLogNotFound               = errors.New("logMsg was not found in log")
-	errKymaNotInExpectedState    = errors.New("kyma CR not in expected state")
 	errKymaNotDeleted            = errors.New("kyma CR not deleted")
 )
 
@@ -72,7 +68,7 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 		})
 
 		It("Should create empty Kyma CR on remote cluster", func() {
-			Eventually(createKymaSecret, timeout, interval).
+			Eventually(CreateKymaSecret, timeout, interval).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 				Should(Succeed())
