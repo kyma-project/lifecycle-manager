@@ -30,15 +30,17 @@ var (
 func PostRunCreateCR(
 	ctx context.Context, skr declarative.Client, kcp client.Client, obj declarative.Object,
 ) error {
-	manifest := obj.(*v1beta2.Manifest)
+	manifest, ok := obj.(*v1beta2.Manifest)
+	if !ok {
+		return nil
+	}
 	if manifest.Spec.Resource == nil {
 		return nil
 	}
-	resource := manifest.Spec.Resource.DeepCopy()
 
-	if err := skr.Create(
-		ctx, resource, client.FieldOwner(declarative.CustomResourceManager),
-	); err != nil && !k8serrors.IsAlreadyExists(err) {
+	resource := manifest.Spec.Resource.DeepCopy()
+	err := skr.Create(ctx, resource, client.FieldOwner(declarative.CustomResourceManager))
+	if err != nil && !k8serrors.IsAlreadyExists(err) {
 		return err
 	}
 
@@ -67,15 +69,17 @@ func PostRunCreateCR(
 func PreDeleteDeleteCR(
 	ctx context.Context, skr declarative.Client, kcp client.Client, obj declarative.Object,
 ) error {
-	manifest := obj.(*v1beta2.Manifest)
+	manifest, ok := obj.(*v1beta2.Manifest)
+	if !ok {
+		return nil
+	}
 	if manifest.Spec.Resource == nil {
 		return nil
 	}
-	resource := manifest.Spec.Resource.DeepCopy()
 
+	resource := manifest.Spec.Resource.DeepCopy()
 	propagation := v1.DeletePropagationBackground
 	err := skr.Delete(ctx, resource, &client.DeleteOptions{PropagationPolicy: &propagation})
-
 	if err == nil {
 		return ErrWaitingForAsyncCustomResourceDeletion
 	}
@@ -120,14 +124,17 @@ func PreDeleteDeleteCR(
 }
 
 func GetModuleCRDName(obj declarative.Object) string {
-	manifest := obj.(*v1beta2.Manifest)
-	if manifest.Spec.Resource != nil {
-		group := manifest.Spec.Resource.GroupVersionKind().Group
-		name := manifest.Spec.Resource.GroupVersionKind().Kind
-		return fmt.Sprintf("%s.%s", getPlural(name), group)
+	manifest, ok := obj.(*v1beta2.Manifest)
+	if !ok {
+		return ""
+	}
+	if manifest.Spec.Resource == nil {
+		return ""
 	}
 
-	return ""
+	group := manifest.Spec.Resource.GroupVersionKind().Group
+	name := manifest.Spec.Resource.GroupVersionKind().Kind
+	return fmt.Sprintf("%s.%s", getPlural(name), group)
 }
 
 func getPlural(moduleName string) string {

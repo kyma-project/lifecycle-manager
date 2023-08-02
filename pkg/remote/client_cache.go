@@ -30,8 +30,12 @@ func (cache *ClientCache) Get(key ClientCacheID) Client {
 	if !ok {
 		return nil
 	}
+	clnt, ok := value.(Client)
+	if !ok {
+		return nil
+	}
 
-	return value.(Client)
+	return clnt
 }
 
 func (cache *ClientCache) Set(key ClientCacheID, value Client) {

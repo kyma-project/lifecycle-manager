@@ -40,7 +40,10 @@ func (c *CustomResourceReadyCheck) Run(ctx context.Context,
 	if !isDeploymentReady(clnt, resources) {
 		return declarative.StateInfo{State: declarative.StateProcessing, Info: "module operator deployment is not ready"}, nil
 	}
-	manifest := obj.(*v1beta2.Manifest)
+	manifest, ok := obj.(*v1beta2.Manifest)
+	if !ok {
+		return declarative.StateInfo{State: declarative.StateError}, v1beta2.ErrTypeAssertManifest
+	}
 	if manifest.Spec.Resource == nil {
 		return declarative.StateInfo{State: declarative.StateReady}, nil
 	}

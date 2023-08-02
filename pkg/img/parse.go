@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/common"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm"
@@ -41,7 +43,10 @@ func parseDescriptor(ctx *runtime.UnstructuredTypedObject, descriptor *compdesc.
 	if err != nil {
 		return nil, fmt.Errorf("error while decoding the repository context into an OCI registry: %w", err)
 	}
-	typedRepo := repo.(*genericocireg.RepositorySpec)
+	typedRepo, ok := repo.(*genericocireg.RepositorySpec)
+	if !ok {
+		return nil, common.ErrTypeAssert
+	}
 	layersByName, err := parseLayersByName(typedRepo, descriptor)
 	if err != nil {
 		return nil, err
@@ -63,7 +68,10 @@ func parseLayersByName(repo *genericocireg.RepositorySpec, descriptor *compdesc.
 		case localblob.TypeV1:
 			fallthrough
 		case localblob.Type:
-			accessSpec := spec.(*localblob.AccessSpec)
+			accessSpec, ok := spec.(*localblob.AccessSpec)
+			if !ok {
+				return nil, common.ErrTypeAssert
+			}
 			layerRef, err := getOCIRef(repo, descriptor, accessSpec.LocalReference, resource.Labels)
 			if err != nil {
 				return nil, fmt.Errorf("building the digest url: %w", err)
@@ -72,7 +80,10 @@ func parseLayersByName(repo *genericocireg.RepositorySpec, descriptor *compdesc.
 		case localociblob.TypeV1:
 			fallthrough
 		case localociblob.Type:
-			accessSpec := spec.(*localociblob.AccessSpec)
+			accessSpec, ok := spec.(*localociblob.AccessSpec)
+			if !ok {
+				return nil, common.ErrTypeAssert
+			}
 			layerRef, err := getOCIRef(repo, descriptor, accessSpec.Digest.String(), resource.Labels)
 			if err != nil {
 				return nil, fmt.Errorf("building the digest url: %w", err)

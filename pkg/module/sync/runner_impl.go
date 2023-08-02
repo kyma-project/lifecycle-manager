@@ -6,11 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/metrics"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -19,9 +14,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/channel"
+	commonErrors "github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"github.com/kyma-project/lifecycle-manager/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/types"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 func New(clnt client.Client) *RunnerImpl {
@@ -94,7 +94,10 @@ func (r *RunnerImpl) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	if err != nil {
 		return err
 	}
-	manifestObj := obj.(client.Object)
+	manifestObj, ok := obj.(client.Object)
+	if !ok {
+		return commonErrors.ErrTypeAssert
+	}
 	if err := r.Patch(ctx, manifestObj,
 		client.Apply,
 		client.FieldOwner(kyma.Labels[v1beta2.ManagedBy]),

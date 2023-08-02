@@ -115,22 +115,31 @@ type CustomStateCheck struct {
 
 func (m *ModuleTemplate) GetDescriptor() (*Descriptor, error) {
 	if m.Spec.Descriptor.Object != nil {
-		return m.Spec.Descriptor.Object.(*Descriptor), nil
-	}
-	descriptor := m.GetDescFromCache()
-	if descriptor == nil {
-		desc, err := compdesc.Decode(
-			m.Spec.Descriptor.Raw, []compdesc.DecodeOption{compdesc.DisableValidation(true)}...,
-		)
-		if err != nil {
-			return nil, err
+		desc, ok := m.Spec.Descriptor.Object.(*Descriptor)
+		if !ok {
+			return nil, ErrTypeAssertDescriptor
 		}
-		m.Spec.Descriptor.Object = &Descriptor{ComponentDescriptor: desc}
-		descriptor = m.Spec.Descriptor.Object.(*Descriptor)
-		m.SetDescToCache(descriptor)
+		return desc, nil
 	}
 
-	return descriptor, nil
+	descriptor := m.GetDescFromCache()
+	if descriptor != nil {
+		return descriptor, nil
+	}
+
+	desc, err := compdesc.Decode(
+		m.Spec.Descriptor.Raw, []compdesc.DecodeOption{compdesc.DisableValidation(true)}...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	m.Spec.Descriptor.Object = &Descriptor{ComponentDescriptor: desc}
+	mDesc, ok := m.Spec.Descriptor.Object.(*Descriptor)
+	if !ok {
+		return nil, ErrTypeAssertDescriptor
+	}
+	m.SetDescToCache(mDesc)
+	return mDesc, nil
 }
 
 //nolint:gochecknoglobals
@@ -142,7 +151,12 @@ func (m *ModuleTemplate) GetDescFromCache() *Descriptor {
 	if !ok {
 		return nil
 	}
-	return &Descriptor{ComponentDescriptor: value.(*Descriptor).Copy()}
+	desc, ok := value.(*Descriptor)
+	if !ok {
+		return nil
+	}
+
+	return &Descriptor{ComponentDescriptor: desc.Copy()}
 }
 
 func (m *ModuleTemplate) SetDescToCache(descriptor *Descriptor) {

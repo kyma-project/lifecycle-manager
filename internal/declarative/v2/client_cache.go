@@ -25,7 +25,11 @@ func (r *MemoryClientCache) GetClientFromCache(key any) Client {
 	if !ok {
 		return nil
 	}
-	return value.(Client)
+	clnt, ok := value.(Client)
+	if !ok {
+		return nil
+	}
+	return clnt
 }
 
 func (r *MemoryClientCache) SetClientInCache(key any, client Client) {

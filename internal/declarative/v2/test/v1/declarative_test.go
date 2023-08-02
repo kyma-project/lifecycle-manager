@@ -234,7 +234,7 @@ func isResourceFoundInSynced(res *unstructured.Unstructured, resource Resource) 
 	}
 }
 
-// StartDeclarativeReconcilerForRun starts the declarative reconciler based on a runID.
+//nolint:funlen
 func StartDeclarativeReconcilerForRun(
 	ctx context.Context,
 	runID string,
@@ -250,27 +250,25 @@ func StartDeclarativeReconcilerForRun(
 	)
 	mgr, err = ctrl.NewManager(
 		cfg, ctrl.Options{
-			// these bind addreses cause conflicts when run concurrently so we disable them
+			// these bind addresses cause conflicts when run concurrently so we disable them
 			HealthProbeBindAddress: "0",
 			MetricsBindAddress:     "0",
 			Scheme:                 scheme.Scheme,
 		},
 	)
 	Expect(err).ToNot(HaveOccurred())
-
 	reconciler = NewFromManager(
 		mgr, &testv1.TestAPI{},
 		append(
 			options,
 			WithNamespace(namespace, true),
 			WithFinalizer(finalizer),
-			// we overwride the manifest cache directory with the test run directory so its automatically cleaned up
+			// we overwrite the manifest cache directory with the test run directory so its automatically cleaned up
 			// we ensure uniqueness implicitly, as runID is used to randomize the ManifestName in SpecResolver
 			WithManifestCache(filepath.Join(testDir, "declarative-test-cache")),
 			// we have to use a custom ready check that only checks for existence of an object since the default
-			// readiness check will not work without dedicated control loops in envtest. E.g. by default
-			// deployments are not started or set to ready. However we can check if the resource was created by
-			// the reconciler.
+			// readiness check will not work without dedicated control loops in env test. E.g. by default
+			// deployments are not started/set to ready. We can check if the resource was created by reconciler.
 			WithClientCacheKey(),
 			WithCustomReadyCheck(NewExistsReadyCheck()),
 			WithCustomResourceLabels(labels.Set{testRunLabel: runID}),
@@ -295,7 +293,10 @@ func StartDeclarativeReconcilerForRun(
 	go func() {
 		Expect(mgr.Start(ctx)).To(Succeed(), "failed to run manager")
 	}()
-	return reconciler.(*Reconciler)
+
+	recon, ok := reconciler.(*Reconciler)
+	Expect(ok).To(BeTrue())
+	return recon
 }
 
 func StatusOnCluster(ctx context.Context, key client.ObjectKey,

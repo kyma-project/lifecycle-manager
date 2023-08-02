@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/common"
+
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -77,9 +79,12 @@ func newResourcesCondition(obj Object) metav1.Condition {
 	}
 }
 
-//nolint:funlen
+//nolint:funlen,cyclop
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	obj := r.prototype.DeepCopyObject().(Object)
+	obj, ok := r.prototype.DeepCopyObject().(Object)
+	if !ok {
+		return ctrl.Result{}, common.ErrTypeAssert
+	}
 	if err := r.Get(ctx, req.NamespacedName, obj); err != nil {
 		log.FromContext(ctx).Info(req.NamespacedName.String() + " got deleted!")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -437,9 +442,16 @@ func (r *Reconciler) pruneDiff(
 	diff []*resource.Info,
 	spec *Spec,
 ) error {
-	diff = pruneResource(diff, "Namespace", namespaceNotBeRemoved)
+	var err error
+	diff, err = pruneResource(diff, "Namespace", namespaceNotBeRemoved)
+	if err != nil {
+		return err
+	}
 	resourceName := r.ModuleCRDName(obj)
-	diff = pruneResource(diff, "CustomResourceDefinition", resourceName)
+	diff, err = pruneResource(diff, "CustomResourceDefinition", resourceName)
+	if err != nil {
+		return err
+	}
 
 	if manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff, obj, spec) {
 		// This case should not happen normally, but if happens, it means the resources read from cache is incomplete,
@@ -492,15 +504,19 @@ func updateSyncedOCIRefAnnotation(obj Object, ref string) {
 	obj.SetAnnotations(annotations)
 }
 
-func pruneResource(diff []*resource.Info, resourceType string, resourceName string) []*resource.Info {
+func pruneResource(diff []*resource.Info, resourceType string, resourceName string) ([]*resource.Info, error) {
+	//nolint:varnamelen
 	for i, info := range diff {
-		obj := info.Object.(client.Object)
+		obj, ok := info.Object.(client.Object)
+		if !ok {
+			return diff, common.ErrTypeAssert
+		}
 		if obj.GetObjectKind().GroupVersionKind().Kind == resourceType && obj.GetName() == resourceName {
-			return append(diff[:i], diff[i+1:]...)
+			return append(diff[:i], diff[i+1:]...), nil
 		}
 	}
 
-	return diff
+	return diff, nil
 }
 
 func (r *Reconciler) getTargetClient(ctx context.Context, obj Object) (Client, error) {
