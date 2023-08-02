@@ -36,7 +36,7 @@ test: test-watcher-e2e test-kyma-deletion-e2e
 
 .PHONY: test-kyma-deletion-e2e
 test-kyma-deletion-e2e:
-	go test --tags=deletion_e2e,e2e -ginkgo.vv
+	go test --tags=e2e -ginkgo.vv
 
 .PHONY: test-watcher-e2e
 test-watcher-e2e: ## Runs the Watcher E2E Test
