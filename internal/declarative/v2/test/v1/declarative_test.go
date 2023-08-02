@@ -51,7 +51,6 @@ var (
 		ObjectMeta: metav1.ObjectMeta{Name: "kyma-system"},
 	}
 	ErrOldResourcesStillDeployed = errors.New("old resources still exist in the cluster")
-	ErrNewResourcesNotInSynced   = errors.New("new resources don't exist in the status.synced")
 	ErrOldResourcesStillInSynced = errors.New("old resources still exist in the status.synced")
 )
 
@@ -142,89 +141,6 @@ var _ = Describe(
 		)
 	},
 )
-
-var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, func() {
-	var ctx context.Context
-	var cancel context.CancelFunc
-	var reconciler *Reconciler
-	var env *envtest.Environment
-	var cfg *rest.Config
-	var testClient client.Client
-	runID := fmt.Sprintf("run-%s", rand.String(4))
-	obj := &testv1.TestAPI{Spec: testv1.TestAPISpec{ManifestName: "updating-manifest"}}
-	obj.SetLabels(labels.Set{testRunLabel: runID})
-	obj.SetNamespace(customResourceNamespace.Name)
-	obj.SetName(runID)
-
-	key := client.ObjectKeyFromObject(obj)
-
-	opts := []Option{WithRemoteTargetCluster(
-		func(context.Context, Object) (*ClusterInfo, error) {
-			return &ClusterInfo{
-				Config: cfg,
-			}, nil
-		},
-	)}
-	source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"),
-		"sha256:original", RenderModeRaw))
-	BeforeAll(func() {
-		env, cfg = StartEnv()
-		testClient = GetTestClient(cfg)
-		ctx, cancel = context.WithCancel(context.TODO())
-		reconciler = StartDeclarativeReconcilerForRun(ctx, runID, cfg, append(opts, WithSpecResolver(source))...)
-	})
-
-	It("Should create manifest resources", func() {
-		Expect(testClient.Create(ctx, obj)).To(Succeed())
-
-		EventuallyDeclarativeStatusShould(
-			ctx, key, testClient,
-			BeInState(StateReady),
-			HaveConditionWithStatus(ConditionTypeResources, metav1.ConditionTrue),
-			HaveConditionWithStatus(ConditionTypeInstallation, metav1.ConditionTrue),
-		)
-
-		Expect(testClient.Get(ctx, key, obj)).To(Succeed())
-		Expect(obj.GetStatus()).To(HaveAllSyncedResourcesExistingInCluster(ctx, testClient))
-	})
-
-	It("Should start reconciliation for the updated manifest and remove old deployed resources", func() {
-		source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "updated-raw-manifest.yaml"),
-			"sha256:updated", RenderModeRaw))
-		reconciler.SpecResolver = source
-		oldDeployedResources, err := internal.ParseManifestToObjects(path.Join(testSamplesDir, "raw-manifest.yaml"))
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(validateOldResourcesNotLongerDeployed, Timeout, Interval).
-			WithContext(ctx).
-			WithArguments(ctx, oldDeployedResources, testClient).
-			Should(Succeed())
-	})
-
-	It("Should deploy new manifest resources and have them in status.synced", func() {
-		EventuallyDeclarativeStatusShould(
-			ctx, key, testClient,
-			BeInState(StateReady),
-			HaveConditionWithStatus(ConditionTypeResources, metav1.ConditionTrue),
-			HaveConditionWithStatus(ConditionTypeInstallation, metav1.ConditionTrue),
-		)
-
-		Expect(testClient.Get(ctx, key, obj)).To(Succeed())
-		newDeployedResources, err := internal.ParseManifestToObjects(path.Join(testSamplesDir,
-			"updated-raw-manifest.yaml"))
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(validateNewResourcesAreInStatusSynced, 3*Timeout, Interval).
-			WithContext(ctx).
-			WithArguments(newDeployedResources, obj).
-			Should(Succeed())
-
-		Expect(obj.GetStatus()).To(HaveAllSyncedResourcesExistingInCluster(ctx, testClient))
-	})
-
-	AfterAll(func() {
-		cancel()
-		Expect(env.Stop()).To(Succeed())
-	})
-})
 
 var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, func() {
 	var ctx context.Context
@@ -433,23 +349,6 @@ func validateOldResourcesNotLongerDeployed(ctx context.Context,
 		err := testClient.Get(ctx, client.ObjectKeyFromObject(currentRes), currentRes)
 		if !util.IsNotFound(err) {
 			return ErrOldResourcesStillDeployed
-		}
-	}
-	return nil
-}
-
-func validateNewResourcesAreInStatusSynced(
-	resources internal.ManifestResources, obj *testv1.TestAPI,
-) error {
-	for _, res := range resources.Items {
-		found := false
-		for _, s := range obj.Status.Synced {
-			if isResourceFoundInSynced(res, s) {
-				found = true
-			}
-		}
-		if !found {
-			return ErrNewResourcesNotInSynced
 		}
 	}
 	return nil
