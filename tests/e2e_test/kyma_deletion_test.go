@@ -6,6 +6,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/vladimirvivien/gexe/exec"
 	"k8s.io/apimachinery/pkg/api/meta"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -57,5 +58,10 @@ var _ = Describe("KCP Kyma CR should be deleted successfully when SKR cluster ge
 				WithContext(ctx).
 				WithArguments(remoteNamespace, []v1beta2.Module{}, runtimeClient, v1beta2.StateReady).
 				Should(Succeed())
+		})
+
+		It("Should remove SKR Cluster", func() {
+			By("removing SKR Cluster")
+			exec.Run("k3d cluster rm skr")
 		})
 	})
