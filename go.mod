@@ -21,7 +21,7 @@ require (
 	github.com/onsi/gomega v1.27.10
 	github.com/open-component-model/ocm v0.2.0
 	github.com/prometheus/client_golang v1.16.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	github.com/xeipuuv/gojsonschema v1.2.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/sync v0.2.0
