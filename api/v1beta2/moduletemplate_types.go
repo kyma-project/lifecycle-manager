@@ -123,23 +123,23 @@ func (m *ModuleTemplate) GetDescriptor() (*Descriptor, error) {
 	}
 
 	descriptor := m.GetDescFromCache()
-	if descriptor == nil {
-		desc, err := compdesc.Decode(
-			m.Spec.Descriptor.Raw, []compdesc.DecodeOption{compdesc.DisableValidation(true)}...,
-		)
-		if err != nil {
-			return nil, err
-		}
-		m.Spec.Descriptor.Object = &Descriptor{ComponentDescriptor: desc}
-		mDesc, ok := m.Spec.Descriptor.Object.(*Descriptor)
-		if !ok {
-			return nil, ErrTypeAssertDescriptor
-		}
-
-		m.SetDescToCache(mDesc)
+	if descriptor != nil {
+		return descriptor, nil
 	}
 
-	return descriptor, nil
+	desc, err := compdesc.Decode(
+		m.Spec.Descriptor.Raw, []compdesc.DecodeOption{compdesc.DisableValidation(true)}...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	m.Spec.Descriptor.Object = &Descriptor{ComponentDescriptor: desc}
+	mDesc, ok := m.Spec.Descriptor.Object.(*Descriptor)
+	if !ok {
+		return nil, ErrTypeAssertDescriptor
+	}
+	m.SetDescToCache(mDesc)
+	return mDesc, nil
 }
 
 //nolint:gochecknoglobals
