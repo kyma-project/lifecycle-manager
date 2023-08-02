@@ -26,13 +26,17 @@ var (
 	errKymaNotDeleted            = errors.New("kyma CR not deleted")
 )
 
+const (
+	timeout       = 10 * time.Second
+	statusTimeout = 2 * time.Minute
+	interval      = 1 * time.Second
+)
+
 var _ = Describe("KCP Kyma CR should be deleted successfully when SKR cluster gets deleted",
 	Ordered, func() {
 		channel := "regular"
-		switchedChannel := "fast"
 		kyma := testutils.NewKymaForE2E("kyma-sample", "kcp-system", channel)
 		GinkgoWriter.Printf("kyma before create %v\n", kyma)
-		remoteNamespace := "kyma-system"
 
 		BeforeAll(func() {
 			//make sure we can list Kymas to ensure CRDs have been installed
@@ -46,7 +50,7 @@ var _ = Describe("KCP Kyma CR should be deleted successfully when SKR cluster ge
 				WithArguments(kyma).
 				Should(Succeed())
 			By("verifying kyma is in Error state")
-			Eventually(checkKymaIsInState, readyTimeout, interval).
+			Eventually(checkKymaIsInState, statusTimeout, interval).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateError).
 				Should(Succeed())
