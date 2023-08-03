@@ -45,9 +45,6 @@ patches:
     - op: replace
       path: /spec/template/spec/containers/0/imagePullPolicy
       value: Always
-    - op: add
-      path: /spec/template/spec/containers/0/args/-
-      value: --enable-purge-finalizer=false
   target:
     kind: Deployment
 - patch: |-
