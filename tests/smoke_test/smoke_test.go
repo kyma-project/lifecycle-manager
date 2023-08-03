@@ -107,8 +107,8 @@ func TestDefaultControllerManagerModuleDelete(t *testing.T) {
 	depFeature := features.New("module delete").
 		WithLabel("app.kubernetes.io/component", "lifecycle-manager.kyma-project.io").
 		WithLabel("test-type.kyma-project.io", "smoke").
-		Assess("delete Kyma", kymaReady(KymaCRNamespace, kymaName)).
-		Assess("deployment deleted", deploymentDeleted(KymaCRNamespace, moduleDeploymentName)).
+		Assess("delete Kyma", deleteKyma(KymaCRNamespace, kymaName)).
+		Assess("deployment deleted", deploymentDeleted(moduleDeploymentNamespace, moduleDeploymentName)).
 		Feature()
 
 	TestEnv.Test(t, depFeature)
@@ -144,11 +144,11 @@ func deleteKyma(namespace string, name string) features.Func {
 		t.Helper()
 		restConfig := getRestConfig(t, cfg)
 		kyma := getKyma(ctx, t, restConfig, name, namespace)
-		if err := wait.For(func() error {
+		if err := wait.For(func() (bool, error) {
 			if err := restConfig.Delete(ctx, &kyma); err != nil {
 				t.Fatal(err)
 			}
-			return nil
+			return true, nil
 		}); err != nil {
 			t.Fatal(err)
 		}
@@ -269,18 +269,19 @@ func deploymentDeleted(namespace, name string) features.Func {
 		t.Helper()
 		restConfig := getRestConfig(t, cfg)
 		var deployment appsv1.Deployment
-		if err := wait.For(func() error {
+		if err := wait.For(func() (bool, error) {
 			err := restConfig.Get(ctx, name, namespace, &deployment)
 			if err != nil {
 				if util.IsNotFound(err) {
-					return nil
+					return true, nil
 				}
 				t.Fatal(err)
 			}
-			return fmt.Errorf("deployment (%s/%s): %w", namespace, name, ErrNotDeleted)
+			return false, fmt.Errorf("deployment (%s/%s): %w", namespace, name, ErrNotDeleted)
 		}); err != nil {
 			t.Fatal(err)
 		}
+		return ctx
 	}
 }
 
