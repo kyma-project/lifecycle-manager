@@ -65,6 +65,6 @@ var _ = Describe("KCP Kyma CR should be deleted successfully when SKR cluster ge
 			cmd := exec.Command("k3d cluster rm skr")
 			stdout, err := cmd.Output()
 			Expect(err).NotTo(HaveOccurred())
-			GinkgoWriter.Printf(stdout)
+			GinkgoWriter.Printf(string(stdout))
 		})
 	})
