@@ -76,7 +76,21 @@ var _ = Describe("KCP Kyma CR should be deleted successfully when SKR cluster ge
 				Should(Succeed())
 		})
 
-		It("Kyma CR should be deleted", func() {
+		It("Should delete KCP Kyma", func() {
+			By("Deleting KCP Kyma")
+			Eventually(controlPlaneClient.Delete, readyTimeout, interval).
+				WithContext(ctx).
+				WithArguments(kyma).
+				Should(Succeed())
+
+			By("Kyma should be in Error state")
+			Eventually(CheckKymaIsInState, readyTimeout, interval).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateError).
+				Should(Succeed())
+		})
+
+		It("Kyma CR should be removed", func() {
 			Eventually(checkKCPKymaCRDeleted, timeout, interval).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
