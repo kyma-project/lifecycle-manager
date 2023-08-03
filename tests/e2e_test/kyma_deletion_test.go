@@ -4,15 +4,13 @@ package e2e_test
 
 import (
 	"errors"
+	"os/exec"
 	"time"
 
-	"github.com/vladimirvivien/gexe/exec"
 	"k8s.io/apimachinery/pkg/api/meta"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 )
 
 var (
@@ -62,6 +60,8 @@ var _ = Describe("KCP Kyma CR should be deleted successfully when SKR cluster ge
 
 		It("Should remove SKR Cluster", func() {
 			By("removing SKR Cluster")
-			exec.Run("k3d cluster rm skr")
+			exec.Command("k3d cluster rm skr")
+			stdout, err := cmd.Output()
+			Expect(err).NotTo(HaveOccurred())
 		})
 	})
