@@ -108,5 +108,5 @@ func checkKCPKymaCRDeleted(ctx context.Context,
 	if util.IsNotFound(err) {
 		return nil
 	}
-	return err
+	return errKymaNotDeleted
 }
