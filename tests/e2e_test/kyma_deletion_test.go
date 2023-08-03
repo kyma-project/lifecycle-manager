@@ -66,5 +66,29 @@ var _ = Describe("KCP Kyma CR should be deleted successfully when SKR cluster ge
 			out, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))
+
+			By("deleting secret")
+			Eventually(DeleteKymaSecret, timeout, interval).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
+				Should(Succeed())
+		})
+
+		It("Kyma CR should be deleted", func() {
+			Eventually(checkKCPKymaCRDeleted, timeout, interval).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
+				Should(Succeed())
 		})
 	})
+
+func checkKCPKymaCRDeleted(ctx context.Context,
+	kymaName string, kymaNamespace string, k8sClient client.Client,
+) error {
+	kyma := &v1beta2.Kyma{}
+	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma)
+	if util.IsNotFound(err) {
+		return nil
+	}
+	return err
+}

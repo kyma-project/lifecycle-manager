@@ -143,7 +143,7 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 				WithArguments(kyma, controlPlaneClient).
 				Should(Succeed())
 
-			Eventually(deleteKymaSecret, timeout, interval).
+			Eventually(DeleteKymaSecret, timeout, interval).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 				Should(Succeed())
@@ -154,16 +154,6 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 				Should(Succeed())
 		})
 	})
-
-func deleteKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
-	secret := &corev1.Secret{}
-	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, secret)
-	if util.IsNotFound(err) {
-		return nil
-	}
-	Expect(err).ToNot(HaveOccurred())
-	return k8sClient.Delete(ctx, secret)
-}
 
 func deleteKymaCR(ctx context.Context, kyma *v1beta2.Kyma, k8sClient client.Client) error {
 	var err error

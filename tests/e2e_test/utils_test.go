@@ -87,3 +87,13 @@ func CheckRemoteKymaCR(ctx context.Context,
 	}
 	return nil
 }
+
+func DeleteKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
+	secret := &corev1.Secret{}
+	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, secret)
+	if util.IsNotFound(err) {
+		return nil
+	}
+	Expect(err).ToNot(HaveOccurred())
+	return k8sClient.Delete(ctx, secret)
+}
