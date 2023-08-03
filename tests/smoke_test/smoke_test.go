@@ -67,7 +67,7 @@ func TestMain(m *testing.M) {
 //nolint:paralleltest
 func TestDefaultControllerManagerSpinsUp(t *testing.T) {
 	deploymentName := "lifecycle-manager-controller-manager"
-	moduleDeploymentName := "template-operator-apiextensionsv1-controller-manager"
+	moduleDeploymentName := "template-operator-v1-controller-manager"
 	manifestName := common.CreateModuleName("kyma-project.io/template-operator", kymaName, moduleName)
 
 	depFeature := features.New("default").
