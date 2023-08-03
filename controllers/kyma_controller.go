@@ -128,7 +128,7 @@ func (r *KymaReconciler) handleRemoteClusterConnectionErrorOnDeletion(
 	if !kyma.DeletionTimestamp.IsZero() {
 		if util.IsConnectionRefused(err) {
 			r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
-			return ctrl.Result{}, nil
+			return r.requeueWithError(ctx, kyma, err)
 		}
 		if util.IsNotFound(err) {
 			if err = r.removeFinalizerAndUpdateKyma(ctx, kyma); err != nil {
