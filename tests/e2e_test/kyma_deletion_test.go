@@ -103,8 +103,6 @@ func checkKCPKymaCRDeleted(ctx context.Context,
 ) error {
 	kyma := &v1beta2.Kyma{}
 	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma)
-	GinkgoWriter.Printf("GETTING KYMA:", err)
-	GinkgoWriter.Printf(" KYMA OBJECT:", kyma)
 	if util.IsNotFound(err) {
 		return nil
 	}
