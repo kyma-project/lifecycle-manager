@@ -14,12 +14,13 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
-
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
+	templateV1alpha1 "github.com/kyma-project/template-operator/api/v1alpha1"
 	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/e2e-framework/klient"
 	"sigs.k8s.io/e2e-framework/klient/conf"
@@ -66,7 +67,7 @@ func TestMain(m *testing.M) {
 //nolint:paralleltest
 func TestDefaultControllerManagerSpinsUp(t *testing.T) {
 	deploymentName := "lifecycle-manager-controller-manager"
-	moduleDeploymentName := "template-operator-v1-controller-manager"
+	moduleDeploymentName := "template-operator-apiextensionsv1-controller-manager"
 	manifestName := common.CreateModuleName("kyma-project.io/template-operator", kymaName, moduleName)
 
 	depFeature := features.New("default").
@@ -101,14 +102,19 @@ func TestDefaultControllerManagerModuleUpgrade(t *testing.T) {
 }
 
 //nolint:paralleltest
-func TestDefaultControllerManagerModuleDelete(t *testing.T) {
+func TestDefaultControllerManagerKymaDelete(t *testing.T) {
 	moduleDeploymentName := "template-operator-v2-controller-manager"
-
-	depFeature := features.New("module delete").
+	moduleCRName := "sample-yaml"
+	moduleCRDName := fmt.Sprintf("%s.%s", string(templateV1alpha1.SampleKind)+"s", templateV1alpha1.GroupVersion.Group)
+	depFeature := features.New("kyma delete").
 		WithLabel("app.kubernetes.io/component", "lifecycle-manager.kyma-project.io").
 		WithLabel("test-type.kyma-project.io", "smoke").
+		Assess("module CR exists", moduleCRExists(KymaCRNamespace, moduleCRName)).
+		Assess("module CRD exists", moduleCRDExists(moduleCRDName)).
 		Assess("delete Kyma", deleteKyma(KymaCRNamespace, kymaName)).
 		Assess("deployment deleted", deploymentDeleted(moduleDeploymentNamespace, moduleDeploymentName)).
+		Assess("module CR deleted", moduleCRDeleted(KymaCRNamespace, moduleCRName)).
+		Assess("module CRD deleted", moduleCRDDeleted(moduleCRDName)).
 		Feature()
 
 	TestEnv.Test(t, depFeature)
@@ -221,6 +227,12 @@ func getRestConfig(t *testing.T, cfg *envconf.Config) *resources.Resources {
 	if err := v1beta2.AddToScheme(resourcesFromConfig.GetScheme()); err != nil {
 		t.Fatal(err)
 	}
+	if err := templateV1alpha1.AddToScheme(resourcesFromConfig.GetScheme()); err != nil {
+		t.Fatal(err)
+	}
+	if err := apiextensionsv1.AddToScheme(resourcesFromConfig.GetScheme()); err != nil {
+		t.Fatal(err)
+	}
 	return resourcesFromConfig
 }
 
@@ -264,6 +276,74 @@ func resourceExists(namespace, manifestName, moduleCRName string) features.Func 
 	}
 }
 
+func moduleCRDeleted(namespace, name string) features.Func {
+	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		t.Helper()
+		restConfig := getRestConfig(t, cfg)
+		if err := wait.For(func() (bool, error) {
+			err := restConfig.Get(ctx, name, namespace, &templateV1alpha1.Sample{})
+			if util.IsNotFound(err) {
+				return true, nil
+			}
+			return false, fmt.Errorf("mdoule CR (%s/%s): %w", namespace, name, ErrNotDeleted)
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return ctx
+	}
+}
+
+func moduleCRExists(namespace, name string) features.Func {
+	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		t.Helper()
+		restConfig := getRestConfig(t, cfg)
+		if err := wait.For(func() (bool, error) {
+			err := restConfig.Get(ctx, name, namespace, &templateV1alpha1.Sample{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			return true, nil
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return ctx
+	}
+}
+
+func moduleCRDDeleted(name string) features.Func {
+	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		t.Helper()
+		restConfig := getRestConfig(t, cfg)
+		if err := wait.For(func() (bool, error) {
+			err := restConfig.Get(ctx, name, "", &apiextensionsv1.CustomResourceDefinition{})
+			if util.IsNotFound(err) {
+				return true, nil
+			}
+			return false, fmt.Errorf("module CRD (%s): %w", name, ErrNotDeleted)
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return ctx
+	}
+}
+
+func moduleCRDExists(name string) features.Func {
+	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		t.Helper()
+		restConfig := getRestConfig(t, cfg)
+		if err := wait.For(func() (bool, error) {
+			err := restConfig.Get(ctx, name, "", &apiextensionsv1.CustomResourceDefinition{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			return true, nil
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return ctx
+	}
+}
+
 func deploymentDeleted(namespace, name string) features.Func {
 	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 		t.Helper()
@@ -271,11 +351,8 @@ func deploymentDeleted(namespace, name string) features.Func {
 		var deployment appsv1.Deployment
 		if err := wait.For(func() (bool, error) {
 			err := restConfig.Get(ctx, name, namespace, &deployment)
-			if err != nil {
-				if util.IsNotFound(err) {
-					return true, nil
-				}
-				t.Fatal(err)
+			if util.IsNotFound(err) {
+				return true, nil
 			}
 			return false, fmt.Errorf("deployment (%s/%s): %w", namespace, name, ErrNotDeleted)
 		}); err != nil {

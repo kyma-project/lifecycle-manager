@@ -152,4 +152,4 @@ jobs:
         run: go test --tags=smoke tests/smoke_test/smoke_test.go -v -feature="module upgrade"
       - name: Run Smoke Tests for module delete
         if: ${{ matrix.target  == 'default' }}
-        run: go test --tags=smoke tests/smoke_test/smoke_test.go -v -feature="module delete"
+        run: go test --tags=smoke tests/smoke_test/smoke_test.go -v -feature="kyma delete"

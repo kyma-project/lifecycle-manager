@@ -111,6 +111,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.15.15 // indirect
 	github.com/klauspost/pgzip v1.2.5 // indirect
+	github.com/kyma-project/template-operator v0.0.0-20230609115206-8c523b505c32 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mandelsoft/filepath v0.0.0-20220503095057-4432a2285b68 // indirect
 	github.com/mandelsoft/logging v0.0.0-20221114215048-ab754b164dd6 // indirect
