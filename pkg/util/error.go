@@ -51,6 +51,7 @@ func IsConnectionRefused(err error) bool {
 	for _, msg := range []string{
 		"connection refused",
 		"no such host",
+		"connection reset by peer",
 	} {
 		if strings.Contains(err.Error(), msg) {
 			return true
