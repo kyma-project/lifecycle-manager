@@ -23,7 +23,7 @@ require (
 	golang.org/x/sync v0.3.0
 	golang.org/x/time v0.3.0
 	gopkg.in/yaml.v3 v3.0.1
-	istio.io/api v0.0.0-20230713061407-06047cce866f
+	istio.io/api v1.19.0-alpha.1
 	istio.io/client-go v1.18.1
 	k8s.io/api v0.27.4
 	k8s.io/apiextensions-apiserver v0.27.4
