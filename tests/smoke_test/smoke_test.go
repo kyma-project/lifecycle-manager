@@ -37,14 +37,14 @@ import (
 )
 
 const (
-	KCP                     = "kcp-system"
-	KymaCRNamespace         = "kyma-system"
-	kymaName                = "default-kyma"
-	moduleName              = "template-operator"
-	moduleCRName            = "sample-yaml"
-	moduleOperatorNamespace = "template-operator-system"
-	moduleCRKind            = "Sample"
-	moduleCRVersion         = "v1alpha1"
+	KCPNS            = "kcp-system"
+	KymaCRNS         = "kyma-system"
+	kymaName         = "default-kyma"
+	moduleName       = "template-operator"
+	moduleCRName     = "sample-yaml"
+	moduleOperatorNS = "template-operator-system"
+	moduleCRKind     = "Sample"
+	moduleCRVersion  = "v1alpha1"
 )
 
 var (
@@ -79,11 +79,11 @@ func TestDefaultControllerManagerSpinsUp(t *testing.T) {
 	depFeature := features.New("default").
 		WithLabel("app.kubernetes.io/component", "lifecycle-manager.kyma-project.io").
 		WithLabel("test-type.kyma-project.io", "smoke").
-		Assess("lifecycle manager deployment available", deploymentAvailable(KCP, deploymentName)).
-		Assess("module operator available", deploymentAvailable(moduleOperatorNamespace, moduleOperatorName)).
-		Assess("kyma readiness", kymaReady(KymaCRNamespace, kymaName)).
-		Assess("manifest synced resources exists", manifestSyncedResources(KymaCRNamespace, manifestName)).
-		Assess("module CR exists", resourceExists(KymaCRNamespace, manifestName, moduleCRName)).
+		Assess("lifecycle manager deployment available", deploymentAvailable(KCPNS, deploymentName)).
+		Assess("module operator available", deploymentAvailable(moduleOperatorNS, moduleOperatorName)).
+		Assess("kyma readiness", kymaReady(KymaCRNS, kymaName)).
+		Assess("manifest synced resources exists", manifestSyncedResources(KymaCRNS, manifestName)).
+		Assess("module CR exists", resourceExists(KymaCRNS, manifestName, moduleCRName)).
 		Feature()
 
 	TestEnv.Test(t, depFeature)
@@ -98,10 +98,10 @@ func TestDefaultControllerManagerModuleUpgrade(t *testing.T) {
 	depFeature := features.New("module upgrade").
 		WithLabel("app.kubernetes.io/component", "lifecycle-manager.kyma-project.io").
 		WithLabel("test-type.kyma-project.io", "smoke").
-		Assess("switch module to fast channel", switchModuleChannel(KymaCRNamespace, kymaName, newChannel)).
-		Assess("module operator available", deploymentAvailable(moduleOperatorNamespace, moduleDeploymentName)).
-		Assess("manifest synced resources exists", manifestSyncedResources(KymaCRNamespace, manifestName)).
-		Assess("kyma readiness", kymaReady(KymaCRNamespace, kymaName)).
+		Assess("switch module to fast channel", switchModuleChannel(KymaCRNS, kymaName, newChannel)).
+		Assess("module operator available", deploymentAvailable(moduleOperatorNS, moduleDeploymentName)).
+		Assess("manifest synced resources exists", manifestSyncedResources(KymaCRNS, manifestName)).
+		Assess("kyma readiness", kymaReady(KymaCRNS, kymaName)).
 		Feature()
 
 	TestEnv.Test(t, depFeature)
@@ -115,11 +115,11 @@ func TestDefaultControllerManagerKymaDelete(t *testing.T) {
 		WithLabel("app.kubernetes.io/component", "lifecycle-manager.kyma-project.io").
 		WithLabel("test-type.kyma-project.io", "smoke").
 		Assess("module CRD exists", moduleCRDExists(moduleCRDName)).
-		Assess("delete Kyma", deleteKyma(KymaCRNamespace, kymaName)).
-		Assess("module operator deleted", deploymentDeleted(moduleOperatorNamespace, moduleDeploymentName)).
-		Assess("module CR deleted", moduleCRDeleted(KymaCRNamespace, moduleCRName)).
+		Assess("delete Kyma", deleteKyma(KymaCRNS, kymaName)).
+		Assess("module operator deleted", deploymentDeleted(moduleOperatorNS, moduleDeploymentName)).
+		Assess("module CR deleted", moduleCRDeleted(KymaCRNS, moduleCRName)).
 		Assess("module CRD deleted", moduleCRDDeleted(moduleCRDName)).
-		Assess("kyma deleted", kymaDeleted(KymaCRNamespace, kymaName)).
+		Assess("kyma deleted", kymaDeleted(KymaCRNS, kymaName)).
 		Feature()
 
 	TestEnv.Test(t, depFeature)
@@ -131,8 +131,8 @@ func TestControlPlaneControllerManagerSpinsUp(t *testing.T) {
 	depFeature := features.New("control-plane").
 		WithLabel("app.kubernetes.io/component", "lifecycle-manager.kyma-project.io").
 		WithLabel("test-type.kyma-project.io", "smoke").
-		Assess("available", deploymentAvailable(KCP, deploymentName)).
-		Assess("kyma readiness", kymaReady(KymaCRNamespace, kymaName)).
+		Assess("available", deploymentAvailable(KCPNS, deploymentName)).
+		Assess("kyma readiness", kymaReady(KymaCRNS, kymaName)).
 		Feature()
 
 	TestEnv.Test(t, depFeature)
