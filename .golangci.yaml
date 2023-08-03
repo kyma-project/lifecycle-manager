@@ -6,7 +6,6 @@ linters:
     - depguard # checks if package imports are whitelisted
     - exhaustivestruct # deprecated (since v1.46.0) and replaced by 'exhaustruct'
     - exhaustruct # TODO enable and fix, use regex to exclude certain cases
-    - forcetypeassert # TODO enable and fix
     - gci # keep disabled for now since it will autofix all imports and result in a git dirty state
     - godox # TODO enable and fix
     - golint # deprecated (since v1.41.0) and replaced by 'revive'

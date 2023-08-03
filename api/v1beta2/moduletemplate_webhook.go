@@ -61,7 +61,10 @@ func (m *ModuleTemplate) ValidateUpdate(old runtime.Object) (admission.Warnings,
 	if err != nil {
 		return nil, err
 	}
-	oldTemplate := old.(*ModuleTemplate)
+	oldTemplate, ok := old.(*ModuleTemplate)
+	if !ok {
+		return nil, ErrTypeAssertModuleTemplate
+	}
 	oldDescriptor, err := oldTemplate.GetDescriptor()
 	if err != nil {
 		return nil, err

@@ -118,7 +118,7 @@ jobs:
       - name: Deploy LM local testing kustomize
         run: |
           maxRetry=5
-          for i in $(seq 1 $maxRetry)
+          for retry in $(seq 1 $maxRetry)
           do
             if make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/$KLM_IMAGE_REPO/lifecycle-manager:$KLM_VERSION_TAG; then
               echo "KLM deployed successfully"
