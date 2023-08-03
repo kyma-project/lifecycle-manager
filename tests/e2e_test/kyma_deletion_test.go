@@ -62,10 +62,9 @@ var _ = Describe("KCP Kyma CR should be deleted successfully when SKR cluster ge
 
 		It("Should remove SKR Cluster", func() {
 			By("removing SKR Cluster")
-			cmd := exec.Command("k3d", "cluster rm skr")
-			stderr, _ := cmd.StderrPipe()
-			if err := cmd.Start(); err != nil {
-				GinkgoWriter.Printf(string(stdout))
-			}
+			cmd := exec.Command("k3d", "cluster", "rm", "skr")
+			out, err := cmd.CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+			GinkgoWriter.Printf(string(out))
 		})
 	})
