@@ -38,6 +38,7 @@ const (
 	KymaCRNamespace           = "kyma-system"
 	kymaName                  = "default-kyma"
 	moduleName                = "template-operator"
+	moduleCRName              = "sample-yaml"
 	moduleDeploymentNamespace = "template-operator-system"
 )
 
@@ -77,7 +78,7 @@ func TestDefaultControllerManagerSpinsUp(t *testing.T) {
 		Assess("module deployment available", deploymentAvailable(moduleDeploymentNamespace, moduleDeploymentName)).
 		Assess("kyma readiness", kymaReady(KymaCRNamespace, kymaName)).
 		Assess("manifest synced resources exists", manifestSyncedResources(KymaCRNamespace, manifestName)).
-		Assess("module CR exists", resourceExists(KymaCRNamespace, manifestName, "sample-yaml")).
+		Assess("module CR exists", resourceExists(KymaCRNamespace, manifestName, moduleCRName)).
 		Feature()
 
 	TestEnv.Test(t, depFeature)
@@ -104,7 +105,6 @@ func TestDefaultControllerManagerModuleUpgrade(t *testing.T) {
 //nolint:paralleltest
 func TestDefaultControllerManagerKymaDelete(t *testing.T) {
 	moduleDeploymentName := "template-operator-v2-controller-manager"
-	moduleCRName := "sample-yaml"
 	moduleCRDName := fmt.Sprintf("%s.%s", string(templateV1alpha1.SampleKind)+"s", templateV1alpha1.GroupVersion.Group)
 	depFeature := features.New("kyma delete").
 		WithLabel("app.kubernetes.io/component", "lifecycle-manager.kyma-project.io").
