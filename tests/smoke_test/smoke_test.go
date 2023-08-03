@@ -37,14 +37,14 @@ import (
 )
 
 const (
-	KCP                       = "kcp-system"
-	KymaCRNamespace           = "kyma-system"
-	kymaName                  = "default-kyma"
-	moduleName                = "template-operator"
-	moduleCRName              = "sample-yaml"
-	moduleDeploymentNamespace = "template-operator-system"
-	moduleCRKind              = "Sample"
-	moduleCRVersion           = "v1alpha1"
+	KCP                     = "kcp-system"
+	KymaCRNamespace         = "kyma-system"
+	kymaName                = "default-kyma"
+	moduleName              = "template-operator"
+	moduleCRName            = "sample-yaml"
+	moduleOperatorNamespace = "template-operator-system"
+	moduleCRKind            = "Sample"
+	moduleCRVersion         = "v1alpha1"
 )
 
 var (
@@ -73,14 +73,14 @@ func TestMain(m *testing.M) {
 //nolint:paralleltest
 func TestDefaultControllerManagerSpinsUp(t *testing.T) {
 	deploymentName := "lifecycle-manager-controller-manager"
-	moduleDeploymentName := "template-operator-v1-controller-manager"
+	moduleOperatorName := "template-operator-v1-controller-manager"
 	manifestName := common.CreateModuleName("kyma-project.io/template-operator", kymaName, moduleName)
 
 	depFeature := features.New("default").
 		WithLabel("app.kubernetes.io/component", "lifecycle-manager.kyma-project.io").
 		WithLabel("test-type.kyma-project.io", "smoke").
 		Assess("lifecycle manager deployment available", deploymentAvailable(KCP, deploymentName)).
-		Assess("module deployment available", deploymentAvailable(moduleDeploymentNamespace, moduleDeploymentName)).
+		Assess("module operator available", deploymentAvailable(moduleOperatorNamespace, moduleOperatorName)).
 		Assess("kyma readiness", kymaReady(KymaCRNamespace, kymaName)).
 		Assess("manifest synced resources exists", manifestSyncedResources(KymaCRNamespace, manifestName)).
 		Assess("module CR exists", resourceExists(KymaCRNamespace, manifestName, moduleCRName)).
@@ -99,7 +99,7 @@ func TestDefaultControllerManagerModuleUpgrade(t *testing.T) {
 		WithLabel("app.kubernetes.io/component", "lifecycle-manager.kyma-project.io").
 		WithLabel("test-type.kyma-project.io", "smoke").
 		Assess("switch module to fast channel", switchModuleChannel(KymaCRNamespace, kymaName, newChannel)).
-		Assess("module deployment available", deploymentAvailable(moduleDeploymentNamespace, moduleDeploymentName)).
+		Assess("module operator available", deploymentAvailable(moduleOperatorNamespace, moduleDeploymentName)).
 		Assess("manifest synced resources exists", manifestSyncedResources(KymaCRNamespace, manifestName)).
 		Assess("kyma readiness", kymaReady(KymaCRNamespace, kymaName)).
 		Feature()
@@ -116,9 +116,10 @@ func TestDefaultControllerManagerKymaDelete(t *testing.T) {
 		WithLabel("test-type.kyma-project.io", "smoke").
 		Assess("module CRD exists", moduleCRDExists(moduleCRDName)).
 		Assess("delete Kyma", deleteKyma(KymaCRNamespace, kymaName)).
-		Assess("deployment deleted", deploymentDeleted(moduleDeploymentNamespace, moduleDeploymentName)).
+		Assess("module operator deleted", deploymentDeleted(moduleOperatorNamespace, moduleDeploymentName)).
 		Assess("module CR deleted", moduleCRDeleted(KymaCRNamespace, moduleCRName)).
 		Assess("module CRD deleted", moduleCRDDeleted(moduleCRDName)).
+		Assess("kyma deleted", kymaDeleted(KymaCRNamespace, kymaName)).
 		Feature()
 
 	TestEnv.Test(t, depFeature)
@@ -295,6 +296,23 @@ func moduleCRDeleted(namespace, name string) features.Func {
 				return true, nil
 			}
 			return false, fmt.Errorf("mdoule CR (%s/%s): %w", namespace, name, ErrNotDeleted)
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return ctx
+	}
+}
+
+func kymaDeleted(namespace, name string) features.Func {
+	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		t.Helper()
+		restConfig := getRestConfig(t, cfg)
+		if err := wait.For(func() (bool, error) {
+			err := restConfig.Get(ctx, name, namespace, &v1beta2.Kyma)
+			if util.IsNotFound(err) {
+				return true, nil
+			}
+			return false, fmt.Errorf("kyma CR (%s/%s): %w", namespace, name, ErrNotDeleted)
 		}); err != nil {
 			t.Fatal(err)
 		}
