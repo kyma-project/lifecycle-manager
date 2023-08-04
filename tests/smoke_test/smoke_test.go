@@ -308,7 +308,7 @@ func kymaDeleted(namespace, name string) features.Func {
 		t.Helper()
 		restConfig := getRestConfig(t, cfg)
 		if err := wait.For(func() (bool, error) {
-			err := restConfig.Get(ctx, name, namespace, &v1beta2.Kyma)
+			err := restConfig.Get(ctx, name, namespace, &v1beta2.Kyma{})
 			if util.IsNotFound(err) {
 				return true, nil
 			}
