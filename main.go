@@ -20,11 +20,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	"net/http"
 	"net/http/pprof"
 	"os"
 	"time"
+
+	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/kyma-project/lifecycle-manager/internal"

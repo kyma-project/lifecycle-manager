@@ -58,6 +58,9 @@ func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrWebhookManagerConf
 	// Get public KCP DNS name and port from the Gateway
 	gateway := &istiov1beta1.Gateway{}
 	controlPlaneClient, err := client.New(kcpConfig, client.Options{})
+	if err != nil {
+		return "", err
+	}
 	err = controlPlaneClient.Get(ctx, client.ObjectKey{
 		Namespace: managerConfig.IstioGatewayNamespace,
 		Name:      managerConfig.IstioGatewayName,
