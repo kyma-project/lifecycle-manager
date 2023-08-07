@@ -4,19 +4,27 @@ package smoke_test
 
 import (
 	"context"
+	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"os"
+	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/e2e-framework/klient"
 	"sigs.k8s.io/e2e-framework/klient/conf"
 	"sigs.k8s.io/e2e-framework/klient/k8s"
@@ -29,14 +37,20 @@ import (
 )
 
 const (
-	KCP                       = "kcp-system"
-	KymaCRNamespace           = "kyma-system"
-	kymaName                  = "default-kyma"
-	moduleName                = "template-operator"
-	moduleDeploymentNamespace = "template-operator-system"
+	KCPNS            = "kcp-system"
+	KymaCRNS         = "kyma-system"
+	kymaName         = "default-kyma"
+	moduleName       = "template-operator"
+	moduleCRName     = "sample-yaml"
+	moduleOperatorNS = "template-operator-system"
+	moduleCRKind     = "Sample"
+	moduleCRVersion  = "v1alpha1"
 )
 
-var TestEnv env.Environment //nolint:gochecknoglobals
+var (
+	ErrNotDeleted = errors.New("resource not deleted")
+	TestEnv       env.Environment //nolint:gochecknoglobals
+)
 
 func TestMain(m *testing.M) {
 	log.Println("setting up test environment from flags")
@@ -59,17 +73,17 @@ func TestMain(m *testing.M) {
 //nolint:paralleltest
 func TestDefaultControllerManagerSpinsUp(t *testing.T) {
 	deploymentName := "lifecycle-manager-controller-manager"
-	moduleDeploymentName := "template-operator-v1-controller-manager"
+	moduleOperatorName := "template-operator-v1-controller-manager"
 	manifestName := common.CreateModuleName("kyma-project.io/template-operator", kymaName, moduleName)
 
 	depFeature := features.New("default").
 		WithLabel("app.kubernetes.io/component", "lifecycle-manager.kyma-project.io").
 		WithLabel("test-type.kyma-project.io", "smoke").
-		Assess("lifecycle manager deployment available", deploymentAvailable(KCP, deploymentName)).
-		Assess("module deployment available", deploymentAvailable(moduleDeploymentNamespace, moduleDeploymentName)).
-		Assess("kyma readiness", kymaReady(KymaCRNamespace, kymaName)).
-		Assess("manifest synced resources exists", manifestSyncedResources(KymaCRNamespace, manifestName)).
-		Assess("module CR exists", resourceExists(KymaCRNamespace, manifestName, "sample-yaml")).
+		Assess("lifecycle manager deployment available", deploymentAvailable(KCPNS, deploymentName)).
+		Assess("module operator available", deploymentAvailable(moduleOperatorNS, moduleOperatorName)).
+		Assess("kyma readiness", kymaReady(KymaCRNS, kymaName)).
+		Assess("manifest synced resources exists", manifestSyncedResources(KymaCRNS, manifestName)).
+		Assess("module CR exists", resourceExists(KymaCRNS, manifestName, moduleCRName)).
 		Feature()
 
 	TestEnv.Test(t, depFeature)
@@ -84,10 +98,28 @@ func TestDefaultControllerManagerModuleUpgrade(t *testing.T) {
 	depFeature := features.New("module upgrade").
 		WithLabel("app.kubernetes.io/component", "lifecycle-manager.kyma-project.io").
 		WithLabel("test-type.kyma-project.io", "smoke").
-		Assess("switch module to fast channel", switchModuleChannel(KymaCRNamespace, kymaName, newChannel)).
-		Assess("module deployment available", deploymentAvailable(moduleDeploymentNamespace, moduleDeploymentName)).
-		Assess("manifest synced resources exists", manifestSyncedResources(KymaCRNamespace, manifestName)).
-		Assess("kyma readiness", kymaReady(KymaCRNamespace, kymaName)).
+		Assess("switch module to fast channel", switchModuleChannel(KymaCRNS, kymaName, newChannel)).
+		Assess("module operator available", deploymentAvailable(moduleOperatorNS, moduleDeploymentName)).
+		Assess("manifest synced resources exists", manifestSyncedResources(KymaCRNS, manifestName)).
+		Assess("kyma readiness", kymaReady(KymaCRNS, kymaName)).
+		Feature()
+
+	TestEnv.Test(t, depFeature)
+}
+
+//nolint:paralleltest
+func TestDefaultControllerManagerKymaDelete(t *testing.T) {
+	moduleDeploymentName := "template-operator-v2-controller-manager"
+	moduleCRDName := fmt.Sprintf("%s.%s", strings.ToLower(moduleCRKind)+"s", v1beta2.GroupVersion.Group)
+	depFeature := features.New("kyma delete").
+		WithLabel("app.kubernetes.io/component", "lifecycle-manager.kyma-project.io").
+		WithLabel("test-type.kyma-project.io", "smoke").
+		Assess("module CRD exists", moduleCRDExists(moduleCRDName)).
+		Assess("delete Kyma", deleteKyma(KymaCRNS, kymaName)).
+		Assess("module operator deleted", deploymentDeleted(moduleOperatorNS, moduleDeploymentName)).
+		Assess("module CR deleted", moduleCRDeleted(KymaCRNS, moduleCRName)).
+		Assess("module CRD deleted", moduleCRDDeleted(moduleCRDName)).
+		Assess("kyma deleted", kymaDeleted(KymaCRNS, kymaName)).
 		Feature()
 
 	TestEnv.Test(t, depFeature)
@@ -99,8 +131,8 @@ func TestControlPlaneControllerManagerSpinsUp(t *testing.T) {
 	depFeature := features.New("control-plane").
 		WithLabel("app.kubernetes.io/component", "lifecycle-manager.kyma-project.io").
 		WithLabel("test-type.kyma-project.io", "smoke").
-		Assess("available", deploymentAvailable(KCP, deploymentName)).
-		Assess("kyma readiness", kymaReady(KymaCRNamespace, "default-kyma")).
+		Assess("available", deploymentAvailable(KCPNS, deploymentName)).
+		Assess("kyma readiness", kymaReady(KymaCRNS, kymaName)).
 		Feature()
 
 	TestEnv.Test(t, depFeature)
@@ -113,6 +145,24 @@ func kymaReady(namespace string, name string) features.Func {
 
 		kyma := getKyma(ctx, t, restConfig, name, namespace)
 		logObj(ctx, t, restConfig, &kyma)
+
+		return ctx
+	}
+}
+
+func deleteKyma(namespace string, name string) features.Func {
+	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		t.Helper()
+		restConfig := getRestConfig(t, cfg)
+		kyma := getKyma(ctx, t, restConfig, name, namespace)
+		if err := wait.For(func() (bool, error) {
+			if err := restConfig.Delete(ctx, &kyma); err != nil {
+				t.Fatal(err)
+			}
+			return true, nil
+		}); err != nil {
+			t.Fatal(err)
+		}
 
 		return ctx
 	}
@@ -182,6 +232,9 @@ func getRestConfig(t *testing.T, cfg *envconf.Config) *resources.Resources {
 	if err := v1beta2.AddToScheme(resourcesFromConfig.GetScheme()); err != nil {
 		t.Fatal(err)
 	}
+	if err := apiextensionsv1.AddToScheme(resourcesFromConfig.GetScheme()); err != nil {
+		t.Fatal(err)
+	}
 	return resourcesFromConfig
 }
 
@@ -225,6 +278,100 @@ func resourceExists(namespace, manifestName, moduleCRName string) features.Func 
 	}
 }
 
+func moduleCRDeleted(namespace, name string) features.Func {
+	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		t.Helper()
+		restConfig := getRestConfig(t, cfg)
+		if err := wait.For(func() (bool, error) {
+			obj := unstructured.Unstructured{}
+			obj.SetGroupVersionKind(schema.GroupVersionKind{
+				Group:   v1beta2.GroupVersion.Group,
+				Version: moduleCRVersion,
+				Kind:    moduleCRKind,
+			})
+			obj.SetName(name)
+			obj.SetNamespace(namespace)
+			err := restConfig.Get(ctx, name, namespace, &obj)
+			if util.IsNotFound(err) {
+				return true, nil
+			}
+			return false, fmt.Errorf("mdoule CR (%s/%s): %w", namespace, name, ErrNotDeleted)
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return ctx
+	}
+}
+
+func kymaDeleted(namespace, name string) features.Func {
+	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		t.Helper()
+		restConfig := getRestConfig(t, cfg)
+		if err := wait.For(func() (bool, error) {
+			err := restConfig.Get(ctx, name, namespace, &v1beta2.Kyma{})
+			if util.IsNotFound(err) {
+				return true, nil
+			}
+			return false, fmt.Errorf("kyma CR (%s/%s): %w", namespace, name, ErrNotDeleted)
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return ctx
+	}
+}
+
+func moduleCRDDeleted(name string) features.Func {
+	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		t.Helper()
+		restConfig := getRestConfig(t, cfg)
+		if err := wait.For(func() (bool, error) {
+			err := restConfig.Get(ctx, name, "", &apiextensionsv1.CustomResourceDefinition{})
+			if util.IsNotFound(err) {
+				return true, nil
+			}
+			return false, fmt.Errorf("module CRD (%s): %w", name, ErrNotDeleted)
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return ctx
+	}
+}
+
+func moduleCRDExists(name string) features.Func {
+	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		t.Helper()
+		restConfig := getRestConfig(t, cfg)
+		if err := wait.For(func() (bool, error) {
+			err := restConfig.Get(ctx, name, "", &apiextensionsv1.CustomResourceDefinition{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			return true, nil
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return ctx
+	}
+}
+
+func deploymentDeleted(namespace, name string) features.Func {
+	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		t.Helper()
+		restConfig := getRestConfig(t, cfg)
+		var deployment appsv1.Deployment
+		if err := wait.For(func() (bool, error) {
+			err := restConfig.Get(ctx, name, namespace, &deployment)
+			if util.IsNotFound(err) {
+				return true, nil
+			}
+			return false, fmt.Errorf("deployment (%s/%s): %w", namespace, name, ErrNotDeleted)
+		}); err != nil {
+			t.Fatal(err)
+		}
+		return ctx
+	}
+}
+
 func deploymentAvailable(namespace, name string) features.Func {
 	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 		t.Helper()
@@ -232,7 +379,7 @@ func deploymentAvailable(namespace, name string) features.Func {
 		if err != nil {
 			t.Fatal(err)
 		}
-		dep := ControllerManagerDeployment(namespace, name)
+		dep := Deployment(namespace, name)
 		// wait for the deployment to finish becoming available
 		err = wait.For(
 			conditions.New(client.Resources()).DeploymentConditionMatch(
@@ -294,11 +441,10 @@ func logDeployStatus(ctx context.Context, t *testing.T, client klient.Client, de
 	}
 }
 
-func ControllerManagerDeployment(namespace string, name string) appsv1.Deployment {
+func Deployment(namespace string, name string) appsv1.Deployment {
 	return appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name, Namespace: namespace,
-			Labels: map[string]string{"app.kubernetes.io/component": "lifecycle-manager.kyma-project.io"},
 		},
 	}
 }
