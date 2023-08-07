@@ -140,7 +140,7 @@ spec:
                 pattern: ^[a-z]+$
                 type: string
               customStateCheck:
-                description: CustomStateCheck for advanced Module State determination
+                description: Deprecated, please use StateCheck
                 properties:
                   jsonPath:
                     description: JSONPath specifies the JSON path to the state variable
@@ -180,6 +180,33 @@ spec:
                   referenced in the descriptor)"
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
+              stateCheck:
+                description: StateCheck for support 3rd party Module CR state mapping
+                items:
+                  properties:
+                    jsonPath:
+                      description: JSONPath specifies the JSON path to the state variable
+                        in the Module CR
+                      type: string
+                    mappedState:
+                      enum:
+                      - Processing
+                      - Deleting
+                      - Ready
+                      - Error
+                      - ""
+                      - Warning
+                      type: string
+                    value:
+                      description: Value is the value at the JSONPath for which the
+                        Module CR state is set to "Ready" in Kyma CR
+                      type: string
+                  required:
+                  - jsonPath
+                  - mappedState
+                  - value
+                  type: object
+                type: array
             required:
             - channel
             - descriptor

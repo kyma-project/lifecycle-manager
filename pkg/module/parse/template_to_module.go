@@ -2,6 +2,7 @@ package parse
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -162,7 +163,26 @@ func (p *Parser) newManifestFromTemplate(
 		return nil, fmt.Errorf("could not translate layers and merge them: %w", err)
 	}
 
+	if err := appendOptionalCustomStateCheck(manifest, template.Spec.StateCheck); err != nil {
+		return nil, fmt.Errorf("could not translate custom state check: %w", err)
+	}
+
 	return manifest, nil
+}
+
+func appendOptionalCustomStateCheck(manifest *v1beta2.Manifest, stateCheck []*v1beta2.StateCheck) error {
+	if manifest.Spec.Resource == nil || stateCheck == nil {
+		return nil
+	}
+	if manifest.Annotations == nil {
+		manifest.Annotations = make(map[string]string)
+	}
+	stateCheckByte, err := json.Marshal(stateCheck)
+	if err != nil {
+		return err
+	}
+	manifest.Annotations[v1beta2.CustomStateCheckAnnotation] = string(stateCheckByte)
+	return nil
 }
 
 func translateLayersAndMergeIntoManifest(

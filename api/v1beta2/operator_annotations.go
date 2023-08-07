@@ -9,4 +9,6 @@ const (
 	OwnedByAnnotation      = OperatorPrefix + Separator + "owned-by"
 	OwnedByFormat          = "%s/%s"
 	SyncStrategyAnnotation = "sync-strategy"
+
+	CustomStateCheckAnnotation = OperatorPrefix + Separator + "custom-state-check"
 )
