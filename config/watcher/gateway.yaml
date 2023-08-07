@@ -15,7 +15,7 @@ spec:
     istio: ingressgateway # use istio default controller
   servers:
     - hosts:
-        - 'listener.kyma.cloud.sap'
+        - 'listener.cp.kyma.cloud.sap'
       port:
         name: https
         number: 443

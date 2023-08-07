@@ -25,6 +25,8 @@ import (
 	"os"
 	"time"
 
+	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
+
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/open-component-model/ocm/pkg/contexts/oci"
@@ -91,6 +93,8 @@ func init() {
 
 	utilruntime.Must(v1extensions.AddToScheme(scheme))
 	utilruntime.Must(certManagerV1.AddToScheme(scheme))
+
+	utilruntime.Must(istiov1beta1.AddToScheme(scheme))
 
 	utilruntime.Must(operatorv1beta2.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
@@ -235,11 +239,11 @@ func setupKymaReconciler(mgr ctrl.Manager,
 			SkrWatcherImage:             flagVar.skrWatcherImage,
 			SkrWebhookCPULimits:         flagVar.skrWebhookCPULimits,
 			SkrWebhookMemoryLimits:      flagVar.skrWebhookMemoryLimits,
-			ListenerGatewayPortName:     flagVar.listenerGatewayPortName,
 			WatcherLocalTestingEnabled:  flagVar.enableWatcherLocalTesting,
 			LocalGatewayHTTPPortMapping: flagVar.listenerHTTPSPortLocalMapping,
 			IstioNamespace:              flagVar.istioNamespace,
-			IstioIngressServiceName:     flagVar.istioIngressServiceName,
+			IstioGatewayName:            flagVar.istioGatewayName,
+			IstioGatewayNamespace:       flagVar.istioGatewayNamespace,
 			RemoteSyncNamespace:         flagVar.remoteSyncNamespace,
 		})
 		if err != nil {
