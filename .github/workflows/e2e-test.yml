@@ -126,4 +126,7 @@ jobs:
           done
       - name: Run Watcher E2E Tests
         run: |
-          make -C tests/e2e_test test
+          make -C tests/e2e_test test-watcher-e2e
+      - name: Run Kyma CR Deletion Test
+        run: |
+          make -C tests/e2e_test test-kyma-deletion-e2e
