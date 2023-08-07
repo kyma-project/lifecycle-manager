@@ -8,16 +8,13 @@ import (
 	"net"
 	"strconv"
 
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"golang.org/x/sync/errgroup"
+	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	versionedclient "istio.io/client-go/pkg/clientset/versioned"
 )
 
 // TODO PKI move consts into other file if they are not needed here.
@@ -59,13 +56,12 @@ func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrWebhookManagerConf
 	ctx := context.TODO()
 
 	// Get public KCP DNS name and port from the Gateway
-	kcpIstioClient, err := versionedclient.NewForConfig(kcpConfig)
-	if err != nil {
-		return "", err
-	}
-
-	gateway, err := kcpIstioClient.NetworkingV1beta1().Gateways(managerConfig.IstioGatewayNamespace).
-		Get(ctx, managerConfig.IstioGatewayName, v1.GetOptions{})
+	gateway := &istiov1beta1.Gateway{}
+	controlPlaneClient, err := client.New(kcpConfig, client.Options{})
+	err = controlPlaneClient.Get(ctx, client.ObjectKey{
+		Namespace: managerConfig.IstioGatewayNamespace,
+		Name:      managerConfig.IstioGatewayName,
+	}, gateway)
 	if err != nil {
 		return "", err
 	}

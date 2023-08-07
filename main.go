@@ -20,6 +20,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -91,6 +92,8 @@ func init() {
 
 	utilruntime.Must(v1extensions.AddToScheme(scheme))
 	utilruntime.Must(certManagerV1.AddToScheme(scheme))
+
+	utilruntime.Must(istiov1beta1.AddToScheme(scheme))
 
 	utilruntime.Must(operatorv1beta2.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
