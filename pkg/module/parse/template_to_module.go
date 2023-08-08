@@ -132,7 +132,11 @@ func (p *Parser) newManifestFromTemplate(
 
 	clusterClient := p.Client
 	if module.RemoteModuleTemplateRef != "" {
-		clusterClient = remote.SyncContextFromContext(ctx).RuntimeClient
+		syncContext, err := remote.SyncContextFromContext(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get syncContext: %w", err)
+		}
+		clusterClient = syncContext.RuntimeClient
 	}
 
 	var layers img.Layers

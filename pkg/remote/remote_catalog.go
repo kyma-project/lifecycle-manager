@@ -62,8 +62,10 @@ func (c *RemoteCatalog) CreateOrUpdate(
 	ctx context.Context,
 	kcpModules []v1beta2.ModuleTemplate,
 ) error {
-	syncContext := SyncContextFromContext(ctx)
-
+	syncContext, err := SyncContextFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get syncContext: %w", err)
+	}
 	if err := c.createOrUpdateCatalog(ctx, kcpModules, syncContext); err != nil {
 		return err
 	}
@@ -210,7 +212,11 @@ func (c *RemoteCatalog) prepareForSSA(moduleTemplate *v1beta2.ModuleTemplate) {
 func (c *RemoteCatalog) Delete(
 	ctx context.Context,
 ) error {
-	syncContext := SyncContextFromContext(ctx)
+	syncContext, err := SyncContextFromContext(ctx)
+	if err != nil {
+		return err
+	}
+
 	moduleTemplatesRuntime := &v1beta2.ModuleTemplateList{Items: []v1beta2.ModuleTemplate{}}
 	if err := syncContext.RuntimeClient.List(ctx, moduleTemplatesRuntime); err != nil {
 		// if there is no CRD or no module template exists,
@@ -235,9 +241,13 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 	crd := &v1extensions.CustomResourceDefinition{}
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
 
-	syncContext := SyncContextFromContext(ctx)
-
 	var err error
+
+	syncContext, err := SyncContextFromContext(ctx)
+	if err != nil {
+		return err
+	}
+
 	err = syncContext.ControlPlaneClient.Get(ctx, client.ObjectKey{
 		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
 		// name changes, this also has to be adjusted here. We can think of making this configurable later
