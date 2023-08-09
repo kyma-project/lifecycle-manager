@@ -1,4 +1,4 @@
-package controllers_test
+package kyma_controller_test
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	crdV1beta2 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -108,7 +108,7 @@ func KCPModuleExistWithOverwrites(kyma *v1beta2.Kyma, module v1beta2.Module) str
 func deleteModule(kyma *v1beta2.Kyma, module v1beta2.Module) func() error {
 	return func() error {
 		component, err := GetManifest(ctx, controlPlaneClient, kyma, module)
-		if k8serrors.IsNotFound(err) {
+		if util.IsNotFound(err) {
 			return nil
 		}
 		return client.IgnoreNotFound(controlPlaneClient.Delete(ctx, component))

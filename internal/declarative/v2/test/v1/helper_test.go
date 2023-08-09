@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -99,13 +99,13 @@ func EventuallyDeclarativeShouldBeUninstalled(ctx context.Context, obj *testv1.T
 		WithArguments(client.ObjectKeyFromObject(obj), &testv1.TestAPI{}).
 		WithPolling(standardInterval).
 		WithTimeout(standardTimeout).
-		Should(Satisfy(apierrors.IsNotFound))
+		Should(Satisfy(util.IsNotFound))
 
 	synced := obj.GetStatus().Synced
 	for i := range synced {
 		unstruct := synced[i].ToUnstructured()
 		ExpectWithOffset(1, testClient.Get(ctx, client.ObjectKeyFromObject(unstruct), unstruct)).
-			To(Satisfy(apierrors.IsNotFound))
+			To(Satisfy(util.IsNotFound))
 	}
 }
 

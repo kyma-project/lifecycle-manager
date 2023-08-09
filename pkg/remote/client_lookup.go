@@ -21,7 +21,7 @@ func NewClientLookup(kcp Client, cache *ClientCache, strategy v1beta2.SyncStrate
 }
 
 func (l *ClientLookup) Lookup(ctx context.Context, key client.ObjectKey) (Client, error) {
-	remoteClient := l.cache.Get(ClientCacheID(key))
+	remoteClient := l.cache.Get(key)
 	if remoteClient != nil {
 		return remoteClient, nil
 	}
@@ -38,7 +38,7 @@ func (l *ClientLookup) Lookup(ctx context.Context, key client.ObjectKey) (Client
 
 	skr := NewClientWithConfig(clnt, cfg)
 
-	l.cache.Set(ClientCacheID(key), skr)
+	l.cache.Set(key, skr)
 
 	return skr, nil
 }

@@ -32,51 +32,7 @@ var (
 	}, []string{moduleNameLabel, kymaNameLabel, stateLabel, shootIDLabel, instanceIDLabel})
 )
 
-//nolint:gomnd
 func Initialize() {
-	// TODO this is a temporary fix
-	// we need to conclude the controller-runtime upgrade to 0.15+ and remove this
-	requestLatency := prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Subsystem: "rest_client",
-			Name:      "request_latency_seconds",
-			Help:      "Request latency in seconds. Broken down by verb and URL.",
-			Buckets:   prometheus.ExponentialBuckets(0.001, 2, 10),
-		},
-		[]string{"verb", "url"},
-	)
-	requestDuration := prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Name:    "rest_client_request_duration_seconds",
-			Help:    "Request latency in seconds. Broken down by verb, and host.",
-			Buckets: []float64{0.005, 0.025, 0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 15.0, 30.0, 60.0},
-		},
-		[]string{"verb", "host"},
-	)
-	requestSize := prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Name:    "rest_client_request_size_bytes",
-			Help:    "Request size in bytes. Broken down by verb and host.",
-			Buckets: []float64{64, 256, 512, 1024, 4096, 16384, 65536, 262144, 1048576, 4194304, 16777216},
-		},
-		[]string{"verb", "host"},
-	)
-	responseSize := prometheus.NewHistogramVec(
-		prometheus.HistogramOpts{
-			Name:    "rest_client_response_size_bytes",
-			Help:    "Response size in bytes. Broken down by verb and host.",
-			Buckets: []float64{64, 256, 512, 1024, 4096, 16384, 65536, 262144, 1048576, 4194304, 16777216},
-		},
-		[]string{"verb", "host"},
-	)
-
-	// TODO unregistering these metrics is a temporary fix
-	// we need to conclude the controller-runtime upgrade to 0.15+ and remove
-	ctrlMetrics.Registry.Unregister(requestLatency)
-	ctrlMetrics.Registry.Unregister(requestDuration)
-	ctrlMetrics.Registry.Unregister(requestSize)
-	ctrlMetrics.Registry.Unregister(responseSize)
-
 	ctrlMetrics.Registry.MustRegister(kymaStateGauge)
 	ctrlMetrics.Registry.MustRegister(moduleStateGauge)
 }

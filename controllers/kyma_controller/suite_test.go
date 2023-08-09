@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers_test
+package kyma_controller_test
 
 import (
 	"context"
@@ -58,10 +58,8 @@ const UseRandomPort = "0"
 
 var (
 	controlPlaneClient client.Client        //nolint:gochecknoglobals
-	runtimeClient      client.Client        //nolint:gochecknoglobals
 	k8sManager         manager.Manager      //nolint:gochecknoglobals
 	controlPlaneEnv    *envtest.Environment //nolint:gochecknoglobals
-	runtimeEnv         *envtest.Environment //nolint:gochecknoglobals
 	ctx                context.Context      //nolint:gochecknoglobals
 	cancel             context.CancelFunc   //nolint:gochecknoglobals
 	cfg                *rest.Config         //nolint:gochecknoglobals
@@ -80,13 +78,13 @@ var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 
 	externalCRDs := AppendExternalCRDs(
-		filepath.Join("..", "config", "samples", "tests", "crds"),
+		filepath.Join("..", "..", "config", "samples", "tests", "crds"),
 		"cert-manager-v1.10.1.crds.yaml",
 		"istio-v1.17.1.crds.yaml")
 
 	// kcpModule CRD
 	controlplaneCrd := &v1.CustomResourceDefinition{}
-	modulePath := filepath.Join("..", "config", "samples", "component-integration-installed",
+	modulePath := filepath.Join("..", "..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
 	Expect(err).ToNot(HaveOccurred())
@@ -94,7 +92,7 @@ var _ = BeforeSuite(func() {
 	Expect(yaml2.Unmarshal(moduleFile, &controlplaneCrd)).To(Succeed())
 
 	controlPlaneEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases")},
+		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
 		CRDs:                  append([]*v1.CustomResourceDefinition{controlplaneCrd}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}
@@ -117,7 +115,7 @@ var _ = BeforeSuite(func() {
 		cfg, ctrl.Options{
 			MetricsBindAddress: UseRandomPort,
 			Scheme:             scheme.Scheme,
-			NewCache:           controllers.NewCacheFunc(),
+			Cache:              controllers.NewCacheOptions(),
 		})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -146,8 +144,6 @@ var _ = BeforeSuite(func() {
 
 	controlPlaneClient = k8sManager.GetClient()
 
-	runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
-
 	go func() {
 		defer GinkgoRecover()
 		err = k8sManager.Start(ctx)
@@ -160,7 +156,5 @@ var _ = AfterSuite(func() {
 	cancel()
 
 	err := controlPlaneEnv.Stop()
-	Expect(err).NotTo(HaveOccurred())
-	err = runtimeEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/common"
+
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -79,7 +81,10 @@ func newResourcesCondition(obj Object) metav1.Condition {
 
 //nolint:funlen,cyclop
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	obj := r.prototype.DeepCopyObject().(Object)
+	obj, ok := r.prototype.DeepCopyObject().(Object)
+	if !ok {
+		return ctrl.Result{}, common.ErrTypeAssert
+	}
 	if err := r.Get(ctx, req.NamespacedName, obj); err != nil {
 		log.FromContext(ctx).Info(req.NamespacedName.String() + " got deleted!")
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -316,38 +321,49 @@ func hasDiff(oldResources []Resource, newResources []Resource) bool {
 }
 
 func (r *Reconciler) checkTargetReadiness(
-	ctx context.Context, clnt Client, obj Object, target []*resource.Info,
+	ctx context.Context, clnt Client, manifest Object, target []*resource.Info,
 ) error {
-	status := obj.GetStatus()
+	status := manifest.GetStatus()
 
 	resourceReadyCheck := r.CustomReadyCheck
 
-	state, err := resourceReadyCheck.Run(ctx, clnt, obj, target)
-
-	if errors.Is(err, ErrResourcesNotReady) || errors.Is(err, ErrCustomResourceStateNotFound) ||
-		errors.Is(err, ErrDeploymentNotReady) {
-		waitingMsg := fmt.Sprintf("waiting for resources to become ready: %s", err.Error())
-		r.Event(obj, "Normal", "ResourceReadyCheck", waitingMsg)
-		obj.SetStatus(status.WithState(StateProcessing).WithOperation(waitingMsg))
-		return err
-	}
-
+	crStateInfo, err := resourceReadyCheck.Run(ctx, clnt, manifest, target)
 	if err != nil {
-		r.Event(obj, "Warning", "ReadyCheck", err.Error())
-		obj.SetStatus(status.WithState(StateError).WithErr(err))
+		r.Event(manifest, "Warning", "ResourceReadyCheck", err.Error())
+		manifest.SetStatus(status.WithState(StateError).WithErr(err))
 		return err
 	}
 
-	installationCondition := newInstallationCondition(obj)
-	if !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) || status.State != state {
-		r.Event(obj, "Normal", installationCondition.Reason, installationCondition.Message)
+	if crStateInfo.State == StateProcessing {
+		waitingMsg := fmt.Sprintf("waiting for resources to become ready: %s", crStateInfo.Info)
+		r.Event(manifest, "Normal", "ResourceReadyCheck", waitingMsg)
+		manifest.SetStatus(status.WithState(StateProcessing).WithOperation(waitingMsg))
+		return ErrInstallationConditionRequiresUpdate
+	}
+
+	if crStateInfo.State != StateReady && crStateInfo.State != StateWarning {
+		// should not happen, if happens, skip status update
+		return nil
+	}
+
+	installationCondition := newInstallationCondition(manifest)
+	if !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) || status.State != crStateInfo.State {
+		r.Event(manifest, "Normal", installationCondition.Reason, installationCondition.Message)
 		installationCondition.Status = metav1.ConditionTrue
 		meta.SetStatusCondition(&status.Conditions, installationCondition)
-		obj.SetStatus(status.WithState(state).WithOperation(installationCondition.Message))
+		manifest.SetStatus(status.WithState(crStateInfo.State).
+			WithOperation(generateOperationMessage(installationCondition, crStateInfo)))
 		return ErrInstallationConditionRequiresUpdate
 	}
 
 	return nil
+}
+
+func generateOperationMessage(installationCondition metav1.Condition, stateInfo StateInfo) string {
+	if stateInfo.Info != "" {
+		return stateInfo.Info
+	}
+	return installationCondition.Message
 }
 
 func (r *Reconciler) deleteResources(
@@ -426,9 +442,16 @@ func (r *Reconciler) pruneDiff(
 	diff []*resource.Info,
 	spec *Spec,
 ) error {
-	diff = pruneResource(diff, "Namespace", namespaceNotBeRemoved)
+	var err error
+	diff, err = pruneResource(diff, "Namespace", namespaceNotBeRemoved)
+	if err != nil {
+		return err
+	}
 	resourceName := r.ModuleCRDName(obj)
-	diff = pruneResource(diff, "CustomResourceDefinition", resourceName)
+	diff, err = pruneResource(diff, "CustomResourceDefinition", resourceName)
+	if err != nil {
+		return err
+	}
 
 	if manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff, obj, spec) {
 		// This case should not happen normally, but if happens, it means the resources read from cache is incomplete,
@@ -481,15 +504,19 @@ func updateSyncedOCIRefAnnotation(obj Object, ref string) {
 	obj.SetAnnotations(annotations)
 }
 
-func pruneResource(diff []*resource.Info, resourceType string, resourceName string) []*resource.Info {
+func pruneResource(diff []*resource.Info, resourceType string, resourceName string) ([]*resource.Info, error) {
+	//nolint:varnamelen
 	for i, info := range diff {
-		obj := info.Object.(client.Object)
+		obj, ok := info.Object.(client.Object)
+		if !ok {
+			return diff, common.ErrTypeAssert
+		}
 		if obj.GetObjectKind().GroupVersionKind().Kind == resourceType && obj.GetName() == resourceName {
-			return append(diff[:i], diff[i+1:]...)
+			return append(diff[:i], diff[i+1:]...), nil
 		}
 	}
 
-	return diff
+	return diff, nil
 }
 
 func (r *Reconciler) getTargetClient(ctx context.Context, obj Object) (Client, error) {

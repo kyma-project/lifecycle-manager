@@ -1,4 +1,4 @@
-package controllers_test
+package kyma_controller_test
 
 import (
 	"fmt"
@@ -40,6 +40,39 @@ var _ = Describe("ModuleTemplate installation", func() {
 			expectManifestInstalled(false)),
 		Entry("With default kyma and default ModuleTemplate, expect manifest installed",
 			givenKymaAndModuleTemplateCondition(false, false, false, false),
+			expectManifestInstalled(true)),
+		Entry("With beta kyma and default ModuleTemplate, expect manifest installed",
+			givenKymaAndModuleTemplateCondition(false, true, false, false),
+			expectManifestInstalled(true)),
+		Entry("With internal kyma and default ModuleTemplate, expect manifest installed",
+			givenKymaAndModuleTemplateCondition(true, false, false, false),
+			expectManifestInstalled(true)),
+		Entry("With internal beta kyma and default ModuleTemplate, expect manifest installed",
+			givenKymaAndModuleTemplateCondition(true, true, false, false),
+			expectManifestInstalled(true)),
+		Entry("With beta kyma and beta ModuleTemplate, expect manifest installed",
+			givenKymaAndModuleTemplateCondition(false, true, false, true),
+			expectManifestInstalled(true)),
+		Entry("With internal kyma and beta ModuleTemplate, expect no manifest installed",
+			givenKymaAndModuleTemplateCondition(true, false, false, true),
+			expectManifestInstalled(false)),
+		Entry("With default kyma and beta internal ModuleTemplate, expect no manifest installed",
+			givenKymaAndModuleTemplateCondition(false, false, true, true),
+			expectManifestInstalled(false)),
+		Entry("With internal beta kyma and beta ModuleTemplate, expect manifest installed",
+			givenKymaAndModuleTemplateCondition(true, true, false, true),
+			expectManifestInstalled(true)),
+		Entry("With internal beta kyma and internal ModuleTemplate, expect manifest installed",
+			givenKymaAndModuleTemplateCondition(true, true, true, false),
+			expectManifestInstalled(true)),
+		Entry("With internal kyma and internal beta ModuleTemplate, expect no manifest installed",
+			givenKymaAndModuleTemplateCondition(true, false, true, true),
+			expectManifestInstalled(false)),
+		Entry("With beta kyma and internal beta ModuleTemplate, expect no manifest installed",
+			givenKymaAndModuleTemplateCondition(false, true, true, true),
+			expectManifestInstalled(false)),
+		Entry("With internal beta kyma and internal beta ModuleTemplate, expect manifest installed",
+			givenKymaAndModuleTemplateCondition(true, true, true, true),
 			expectManifestInstalled(true)),
 	)
 })

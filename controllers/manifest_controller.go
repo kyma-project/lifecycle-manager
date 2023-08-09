@@ -1,12 +1,14 @@
 package controllers
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -15,10 +17,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	internalv1beta1 "github.com/kyma-project/lifecycle-manager/internal/manifest/v1beta1"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
 	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
@@ -56,10 +56,10 @@ func SetupWithManager(
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
-		Watches(&source.Kind{Type: &v1.Secret{}}, handler.Funcs{}).
-		Watches(
+		Watches(&v1.Secret{}, handler.Funcs{}).
+		WatchesRawSource(
 			eventChannel, &handler.Funcs{
-				GenericFunc: func(event event.GenericEvent, queue workqueue.RateLimitingInterface) {
+				GenericFunc: func(ctx context.Context, event event.GenericEvent, queue workqueue.RateLimitingInterface) {
 					ctrl.Log.WithName("listener").Info(
 						fmt.Sprintf(
 							"event coming from SKR, adding %s to queue",
@@ -80,18 +80,18 @@ func ManifestReconciler(
 		Client: mgr.GetClient(),
 		Config: mgr.GetConfig(),
 	}
-	lookup := &internalv1beta1.RemoteClusterLookup{KCP: kcp}
+	lookup := &manifest.RemoteClusterLookup{KCP: kcp}
 	return declarative.NewFromManager(
 		mgr, &v1beta2.Manifest{},
 		declarative.WithSpecResolver(
-			internalv1beta1.NewManifestSpecResolver(kcp, codec),
+			manifest.NewSpecResolver(kcp, codec),
 		),
-		declarative.WithCustomReadyCheck(internalv1beta1.NewManifestCustomResourceReadyCheck()),
+		declarative.WithCustomReadyCheck(manifest.NewCustomResourceReadyCheck()),
 		declarative.WithRemoteTargetCluster(lookup.ConfigResolver),
-		internalv1beta1.WithClientCacheKey(),
-		declarative.WithPostRun{internalv1beta1.PostRunCreateCR},
-		declarative.WithPreDelete{internalv1beta1.PreDeleteDeleteCR},
+		manifest.WithClientCacheKey(),
+		declarative.WithPostRun{manifest.PostRunCreateCR},
+		declarative.WithPreDelete{manifest.PreDeleteDeleteCR},
 		declarative.WithPeriodicConsistencyCheck(checkInterval),
-		declarative.WithModuleCRDName(internalv1beta1.GetModuleCRDName),
+		declarative.WithModuleCRDName(manifest.GetModuleCRDName),
 	)
 }

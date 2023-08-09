@@ -1,4 +1,4 @@
-package v1beta1
+package manifest
 
 import (
 	"context"
@@ -64,8 +64,11 @@ func (cc *ClusterClient) GetRESTConfig(
 func WithClientCacheKey() declarative.WithClientCacheKeyOption {
 	cacheKey := func(ctx context.Context, resource declarative.Object) (any, bool) {
 		logger := log.FromContext(ctx)
+		manifest, ok := resource.(*v1beta2.Manifest)
+		if !ok {
+			return nil, false
+		}
 
-		manifest := resource.(*v1beta2.Manifest)
 		labelValue, err := internal.GetResourceLabel(resource, v1beta2.KymaName)
 		objectKey := client.ObjectKeyFromObject(resource)
 		var labelErr *types.LabelNotFoundError

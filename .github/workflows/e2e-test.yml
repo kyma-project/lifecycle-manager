@@ -16,7 +16,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           # Context for which we should look for the matching status
           statusName: ${{ (github.event_name == 'pull_request') && 'pull-lifecycle-mgr-build' || 'main-lifecycle-mgr-build' }}
-          timeoutSeconds: 300 # 5 mins due to flakiness of build speed in prow
+          timeoutSeconds: 600
           intervalSeconds: 10
       - name: Exit If Failing Build Requirement
         if: steps.wait-for-build.outputs.state != 'success'
@@ -37,12 +37,11 @@ jobs:
       CM_VERSION: v1.12.0
       KLM_VERSION_TAG: latest
       KLM_IMAGE_REPO: prod
-      DIND: false
     steps:
       - name: Install prerequisites
         run: |
+          sudo add-apt-repository ppa:longsleep/golang-backports -y
           sudo apt update -y
-          sudo apt upgrade -y
           sudo apt install git curl wget make bash golang-go -y
       - name: Install Istio CLI
         run: |
@@ -93,15 +92,9 @@ jobs:
         run: kubectl config use-context k3d-kcp
       - name: Deploy Istio on KCP Cluster
         run: |
-          curl -L https://istio.io/downloadIstio | TARGET_ARCH=x86_64 sh -
-          chmod +x istio-$ISTIO_VERSION/bin/istioctl
-          mv istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin
           istioctl install --set profile=demo -y
       - name: Deploy Cert Manager on KCP Cluster
         run: |
-          OS=$(go env GOOS); ARCH=$(go env GOARCH); curl -fsSL -o cmctl.tar.gz https://github.com/cert-manager/cert-manager/releases/latest/download/cmctl-$OS-$ARCH.tar.gz
-          tar xzf cmctl.tar.gz
-          sudo mv cmctl /usr/local/bin
           kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/$CM_VERSION/cert-manager.yaml
           cmctl check api --wait=2m
       - name: Checkout repo
@@ -117,18 +110,23 @@ jobs:
           echo "KLM_IMAGE_REPO=dev" >> $GITHUB_ENV
       - name: Deploy LM local testing kustomize
         run: |
-          if make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/$KLM_IMAGE_REPO/lifecycle-manager:$KLM_VERSION_TAG; then
-            echo "KLM deployed successfully"
-          else
-            echo "Deploy encountered some error, will retry after 1 minute"
-            sleep 60
+          maxRetry=5
+          for retry in $(seq 1 $maxRetry)
+          do
             if make local-deploy-with-watcher IMG=europe-docker.pkg.dev/kyma-project/$KLM_IMAGE_REPO/lifecycle-manager:$KLM_VERSION_TAG; then
-                echo "KLM deployed successfully"
+              echo "KLM deployed successfully"
+              exit 0
+            elif [[ $retry -lt $maxRetry ]]; then
+              echo "Deploy encountered some error, will retry after 20 seconds"
+              sleep 20
             else
               echo "KLM deployment failed"
               exit 1
             fi
-          fi
+          done
       - name: Run Watcher E2E Tests
         run: |
-          make -C tests/e2e_test test
+          make -C tests/e2e_test test-watcher-e2e
+      - name: Run Kyma CR Deletion Test
+        run: |
+          make -C tests/e2e_test test-kyma-deletion-e2e

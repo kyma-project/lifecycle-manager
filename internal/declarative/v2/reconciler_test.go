@@ -32,8 +32,9 @@ func TestPruneResource(t *testing.T) {
 			deployment,
 		}
 
-		result := pruneResource(infos, "Namespace", namespaceNotBeRemoved)
+		result, err := pruneResource(infos, "Namespace", namespaceNotBeRemoved)
 
+		require.NoError(t, err)
 		require.Len(t, result, 3)
 		require.NotContains(t, result, kymaNs)
 	})
@@ -49,8 +50,9 @@ func TestPruneResource(t *testing.T) {
 			crd,
 		}
 
-		result := pruneResource(infos, "CustomResourceDefinition", "btpoperator")
+		result, err := pruneResource(infos, "CustomResourceDefinition", "btpoperator")
 
+		require.NoError(t, err)
 		require.Len(t, result, 4)
 		require.NotContains(t, result, crd)
 	})
@@ -64,8 +66,9 @@ func TestPruneResource(t *testing.T) {
 			deployment,
 		}
 
-		result := pruneResource(infos, "Namespace", namespaceNotBeRemoved)
+		result, err := pruneResource(infos, "Namespace", namespaceNotBeRemoved)
 
+		require.NoError(t, err)
 		require.Len(t, result, 3)
 		require.Contains(t, result, kubeNs)
 		require.Contains(t, result, service)

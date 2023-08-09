@@ -18,11 +18,9 @@ import (
 )
 
 const (
-	firstElementIdx     = 0
-	vsDeletionThreshold = 1
-	notFoundRouteIndex  = -1
-	contractVersion     = "v1"
-	prefixFormat        = "/%s/%s/event"
+	firstElementIdx = 0
+	contractVersion = "v1"
+	prefixFormat    = "/%s/%s/event"
 )
 
 var (
@@ -206,8 +204,16 @@ func (c *Client) RemoveVirtualServiceForCR(ctx context.Context, watcherObjKey cl
 }
 
 func IsRouteConfigEqual(route1 *istioapi.HTTPRoute, route2 *istioapi.HTTPRoute) bool {
-	if route1.Match[firstElementIdx].Uri.MatchType.(*istioapi.StringMatch_Prefix).Prefix != //nolint:nosnakecase
-		route2.Match[firstElementIdx].Uri.MatchType.(*istioapi.StringMatch_Prefix).Prefix { //nolint:nosnakecase
+	stringMatch1, ok := route1.Match[firstElementIdx].Uri.MatchType.(*istioapi.StringMatch_Prefix)
+	if !ok {
+		return false
+	}
+	stringMatch2, ok := route2.Match[firstElementIdx].Uri.MatchType.(*istioapi.StringMatch_Prefix)
+	if !ok {
+		return false
+	}
+
+	if stringMatch1.Prefix != stringMatch2.Prefix {
 		return false
 	}
 

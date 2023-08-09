@@ -30,7 +30,7 @@ type Status struct {
 	// If all Conditions are met, the State is expected to be in StateReady.
 	// +listType=map
 	// +listMapKey=type
-	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+	Conditions []metav1.Condition `json:"conditions,omitempty" patchMergeKey:"type" patchStrategy:"merge"`
 
 	// Synced determine a list of Resources that are currently actively synced.
 	// All resources that are synced are considered for orphan removal on configuration changes,
@@ -61,6 +61,15 @@ const (
 	// usually it means that user interaction is required.
 	StateWarning State = "Warning"
 )
+
+// IsSupportedState These states will be used by module CR.
+func (state State) IsSupportedState() bool {
+	return state == StateReady ||
+		state == StateProcessing ||
+		state == StateError ||
+		state == StateDeleting ||
+		state == StateWarning
+}
 
 func (s Status) WithState(state State) Status {
 	s.State = state

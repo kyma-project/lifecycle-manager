@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"golang.org/x/sync/errgroup"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -102,7 +102,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
-		if apierrors.IsNotFound(err) {
+		if util.IsNotFound(err) {
 			// TODO: revisit after runtime-controller gets upgraded
 			// Related issue: https://github.com/kyma-project/lifecycle-manager/issues/579
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted", req.NamespacedName))
@@ -121,21 +121,34 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return r.reconcile(ctx, kyma)
 }
 
-//nolint:funlen,cyclop,gocognit
+func (r *KymaReconciler) handleRemoteClusterConnectionErrorOnDeletion(
+	ctx context.Context, kyma *v1beta2.Kyma, err error) (
+	ctrl.Result, error,
+) {
+	if !kyma.DeletionTimestamp.IsZero() {
+		if util.IsConnectionRefused(err) {
+			r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
+			return r.requeueWithError(ctx, kyma, err)
+		}
+		if util.IsNotFound(err) {
+			if err = r.removeFinalizerAndUpdateKyma(ctx, kyma); err != nil {
+				return r.requeueWithError(ctx, kyma, err)
+			}
+			return ctrl.Result{}, nil
+		}
+	}
+
+	r.enqueueWarningEvent(kyma, syncContextError, err)
+	return r.requeueWithError(ctx, kyma, err)
+}
+
 func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
-	if r.SyncKymaEnabled(kyma) { //nolint:nestif
+	if r.SyncKymaEnabled(kyma) {
 		var err error
 		remoteClient := remote.NewClientWithConfig(r.Client, r.KcpRestConfig)
 		if ctx, err = remote.InitializeSyncContext(ctx, kyma,
 			r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache); err != nil {
-			if !kyma.DeletionTimestamp.IsZero() && apierrors.IsNotFound(err) {
-				if err = r.removeFinalizerAndUpdateKyma(ctx, kyma); err != nil {
-					return r.requeueWithError(ctx, kyma, err)
-				}
-				return ctrl.Result{}, nil
-			}
-			r.enqueueWarningEvent(kyma, syncContextError, err)
-			return r.requeueWithError(ctx, kyma, err)
+			return r.handleRemoteClusterConnectionErrorOnDeletion(ctx, kyma, err)
 		}
 	}
 

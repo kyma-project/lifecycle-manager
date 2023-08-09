@@ -6,7 +6,11 @@ import (
 )
 
 func (src *Kyma) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*v1beta2.Kyma)
+	dst, ok := dstRaw.(*v1beta2.Kyma)
+	if !ok {
+		return v1beta2.ErrTypeAssertKyma
+	}
+
 	dst.ObjectMeta = src.ObjectMeta
 	if dst.ObjectMeta.Labels == nil {
 		dst.ObjectMeta.Labels = make(map[string]string)
@@ -19,12 +23,17 @@ func (src *Kyma) ConvertTo(dstRaw conversion.Hub) error {
 	dst.Spec.Channel = src.Spec.Channel
 	dst.Spec.Modules = src.Spec.Modules
 	dst.Status = src.Status
+
 	return nil
 }
 
 //nolint:revive,stylecheck
 func (dst *Kyma) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*v1beta2.Kyma)
+	src, ok := srcRaw.(*v1beta2.Kyma)
+	if !ok {
+		return v1beta2.ErrTypeAssertKyma
+	}
+
 	dst.ObjectMeta = src.ObjectMeta
 	dst.Spec.Channel = src.Spec.Channel
 	dst.Spec.Modules = src.Spec.Modules
@@ -34,5 +43,6 @@ func (dst *Kyma) ConvertFrom(srcRaw conversion.Hub) error {
 		dst.Spec.Sync.Enabled = false
 	}
 	dst.Status = src.Status
+
 	return nil
 }

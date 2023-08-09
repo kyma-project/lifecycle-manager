@@ -1,4 +1,4 @@
-package v1beta1
+package manifest
 
 import (
 	"context"
@@ -20,8 +20,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/crane"
 )
 
-const manifestFileName = "raw-manifest.yaml"
-
 //nolint:gochecknoglobals
 var fileMutexMap = sync.Map{}
 
@@ -34,7 +32,7 @@ func GetPathFromRawManifest(ctx context.Context,
 	// check existing file
 	// if file exists return existing file path
 	installPath := getFsChartPath(imageSpec)
-	manifestPath := path.Join(installPath, manifestFileName)
+	manifestPath := path.Join(installPath, v1beta2.RawManifestLayerName+".yaml")
 
 	fileMutex := getLockerForPath(installPath)
 	fileMutex.Lock()
@@ -97,7 +95,7 @@ func getLockerForPath(path string) sync.Locker {
 	if !ok {
 		val, _ = fileMutexMap.LoadOrStore(path, &sync.Mutex{})
 	}
-
-	res := val.(*sync.Mutex)
-	return res
+	// no alternative here
+	//nolint:forcetypeassert
+	return val.(*sync.Mutex)
 }

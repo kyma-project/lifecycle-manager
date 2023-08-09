@@ -16,7 +16,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           # Context for which we should look for the matching status
           statusName: ${{ (github.event_name == 'pull_request') && 'pull-lifecycle-mgr-build' || 'main-lifecycle-mgr-build' }}
-          timeoutSeconds: 300 # 5 mins due to flakiness of build speed in prow
+          timeoutSeconds: 600
           intervalSeconds: 10
       - name: Exit If Failing Build Requirement
         if: steps.wait-for-build.outputs.state != 'success'
@@ -150,3 +150,6 @@ jobs:
       - name: Run Smoke Tests for module upgrade
         if: ${{ matrix.target  == 'default' }}
         run: go test --tags=smoke tests/smoke_test/smoke_test.go -v -feature="module upgrade"
+      - name: Run Smoke Tests for kyma delete
+        if: ${{ matrix.target  == 'default' }}
+        run: go test --tags=smoke tests/smoke_test/smoke_test.go -v -feature="kyma delete"

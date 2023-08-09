@@ -7,10 +7,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/cache"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -46,20 +46,11 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 }
 
 func kymaExists(clnt client.Client, name, namespace string) error {
-	_, err := GetKyma(ctx, clnt, name, namespace)
-	if k8serrors.IsNotFound(err) {
-		return ErrNotFound
-	}
-	return nil
-}
-
-func kymaExistsWithNoDeletionTimeStamp(clnt client.Client, name, namespace string) error {
 	kyma, err := GetKyma(ctx, clnt, name, namespace)
-	if k8serrors.IsNotFound(err) {
+	if util.IsNotFound(err) {
 		return ErrNotFound
 	}
-
-	if kyma.DeletionTimestamp != nil {
+	if kyma != nil && kyma.DeletionTimestamp != nil {
 		return ErrDeletionTimestampFound
 	}
 	return nil
@@ -107,11 +98,19 @@ func expectModuleTemplateSpecGetReset(
 	if !found {
 		return ErrExpectedLabelNotReset
 	}
-	value, found := initKey.(map[string]any)["initKey"]
+	initKeyM, mapOk := initKey.(map[string]any)
+	if !mapOk {
+		return ErrExpectedLabelNotReset
+	}
+	value, found := initKeyM["initKey"]
 	if !found {
 		return ErrExpectedLabelNotReset
 	}
-	if value.(string) != expectedValue {
+	sValue, ok := value.(string)
+	if !ok {
+		return ErrExpectedLabelNotReset
+	}
+	if sValue != expectedValue {
 		return ErrExpectedLabelNotReset
 	}
 	return nil

@@ -49,7 +49,13 @@ patches:
         value: --rate-limiter-burst=2000
       - op: add
         path: /spec/template/spec/containers/0/args/-
-        value: --rate-limiter-frequency=1000
+        value: --rate-limiter-frequency=1000      
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --k8s-client-qps=1000      
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --k8s-client-burst=2000
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --cache-sync-timeout=60m
@@ -59,12 +65,6 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --is-kyma-managed
-      - op: add
-        path: /spec/template/spec/containers/0/args/-
-        value: --enable-purge-finalizer
-      - op: add
-        path: /spec/template/spec/containers/0/args/-
-        value: --skip-finalizer-purging-for=*.crd.projectcalico.org,*.cert.gardener.cloud,*.dns.gardener.cloud,*.autoscaling.k8s.io,*.snapshot.storage.k8s.io
     target:
       kind: Deployment
 
