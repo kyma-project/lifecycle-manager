@@ -233,6 +233,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		watcherChartDirInfo, err := os.Stat(flagVar.skrWatcherPath)
 		if err != nil || !watcherChartDirInfo.IsDir() {
 			setupLog.Error(err, "failed to read local skr chart")
+			os.Exit(1)
 		}
 		skrWebhookManager, err = watcher.NewSKRWebhookManifestManager(mgr.GetClient(), &watcher.SkrWebhookManagerConfig{
 			SKRWatcherPath:              flagVar.skrWatcherPath,
@@ -248,6 +249,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		})
 		if err != nil {
 			setupLog.Error(err, "failed to create webhook chart manager")
+			os.Exit(1)
 		}
 	}
 
