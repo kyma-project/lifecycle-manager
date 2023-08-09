@@ -7,6 +7,8 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
@@ -48,9 +50,10 @@ type SkrWebhookManagerConfig struct {
 	LocalGatewayHTTPPortMapping int
 }
 
-func NewSKRWebhookManifestManager(kcpClient client.Client,
+func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
+	schema *runtime.Scheme,
 	managerConfig *SkrWebhookManagerConfig,
-) (*SKRWebhookManifestManager, error) {
+) (SKRWebhookManager, error) {
 	logger := logf.FromContext(context.TODO())
 	manifestFilePath := fmt.Sprintf(rawManifestFilePathTpl, managerConfig.SKRWatcherPath)
 	rawManifestFile, err := os.Open(manifestFilePath)
@@ -61,6 +64,10 @@ func NewSKRWebhookManifestManager(kcpClient client.Client,
 	baseResources, err := getRawManifestUnstructuredResources(rawManifestFile)
 	if err != nil {
 		return nil, err
+	}
+	kcpClient, err := client.New(kcpConfig, client.Options{Scheme: schema})
+	if err != nil {
+		return nil, fmt.Errorf("can't create kcpClient: %w", err)
 	}
 	resolvedKcpAddr, err := resolveKcpAddr(kcpClient, managerConfig)
 	if err != nil {

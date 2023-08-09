@@ -277,7 +277,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 }
 
 func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (watcher.SKRWebhookManager, error) {
-	return watcher.NewSKRWebhookManifestManager(mgr.GetClient(), &watcher.SkrWebhookManagerConfig{
+	return watcher.NewSKRWebhookManifestManager(mgr.GetConfig(), mgr.GetScheme(), &watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:              flagVar.skrWatcherPath,
 		SkrWatcherImage:             flagVar.skrWatcherImage,
 		SkrWebhookCPULimits:         flagVar.skrWebhookCPULimits,
