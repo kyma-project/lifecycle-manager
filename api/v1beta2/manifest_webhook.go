@@ -27,7 +27,7 @@ func (manifest *Manifest) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		For(manifest).
 		Complete()
 	if err != nil {
-		return fmt.Errorf("failed to setuo webhook")
+		return fmt.Errorf("failed to setup webhook manager for manifest: %w", err)
 	}
 	return nil
 }
