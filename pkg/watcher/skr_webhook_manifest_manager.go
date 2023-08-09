@@ -48,7 +48,9 @@ type SkrWebhookManagerConfig struct {
 	LocalGatewayHTTPPortMapping int
 }
 
-func NewSKRWebhookManifestManager(kcpClient client.Client, managerConfig *SkrWebhookManagerConfig) (*SKRWebhookManifestManager, error) {
+func NewSKRWebhookManifestManager(kcpClient client.Client,
+	managerConfig *SkrWebhookManagerConfig,
+) (*SKRWebhookManifestManager, error) {
 	logger := logf.FromContext(context.TODO())
 	manifestFilePath := fmt.Sprintf(rawManifestFilePathTpl, managerConfig.SKRWatcherPath)
 	rawManifestFile, err := os.Open(manifestFilePath)
