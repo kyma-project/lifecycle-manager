@@ -31,9 +31,13 @@ import (
 )
 
 func (m *ModuleTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
+	err := ctrl.NewWebhookManagedBy(mgr).
 		For(m).
 		Complete()
+	if err != nil {
+		return fmt.Errorf("failed to setup webhook with manager for ModuleTemplate: %w", err)
+	}
+	return nil
 }
 
 //nolint:lll

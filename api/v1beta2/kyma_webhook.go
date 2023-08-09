@@ -17,11 +17,17 @@ limitations under the License.
 package v1beta2
 
 import (
+	"fmt"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 func (kyma *Kyma) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
+	err := ctrl.NewWebhookManagedBy(mgr).
 		For(kyma).
 		Complete()
+	if err != nil {
+		return fmt.Errorf("failed to setup webhook with manager: %w", err)
+	}
+	return nil
 }

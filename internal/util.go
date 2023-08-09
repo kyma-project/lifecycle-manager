@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/types"
 )
 
 const (
@@ -52,8 +53,10 @@ func ParseManifestToObjects(path string) (ManifestResources, error) {
 }
 
 func getID(item *unstructured.Unstructured) string {
-	return strings.Join([]string{item.GetNamespace(), item.GetName(),
-		item.GroupVersionKind().Group, item.GroupVersionKind().Version, item.GroupVersionKind().Kind}, "/")
+	return strings.Join([]string{
+		item.GetNamespace(), item.GetName(),
+		item.GroupVersionKind().Group, item.GroupVersionKind().Version, item.GroupVersionKind().Kind,
+	}, "/")
 }
 
 func GetResourceLabel(resource client.Object, labelName string) (string, error) {
