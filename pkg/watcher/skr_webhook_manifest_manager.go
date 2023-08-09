@@ -67,7 +67,7 @@ func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
 	}
 	kcpClient, err := client.New(kcpConfig, client.Options{Scheme: schema})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("can't create kcpClient: %w", err)
 	}
 	resolvedKcpAddr, err := resolveKcpAddr(kcpClient, managerConfig)
 	if err != nil {
