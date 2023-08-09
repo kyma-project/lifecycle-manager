@@ -56,7 +56,7 @@ func SetupWithManager(
 		return fmt.Errorf("unable to initialize codec: %w", err)
 	}
 
-	return ctrl.NewControllerManagedBy(mgr).
+	controllerManagedByManager := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
 		Watches(&v1.Secret{}, handler.Funcs{}).
 		WatchesRawSource(
@@ -71,7 +71,12 @@ func SetupWithManager(
 					queue.Add(ctrl.Request{NamespacedName: client.ObjectKeyFromObject(event.Object)})
 				},
 			},
-		).WithOptions(options).Complete(ManifestReconciler(mgr, codec, checkInterval))
+		).WithOptions(options)
+
+	if controllerManagedByManager.Complete(ManifestReconciler(mgr, codec, checkInterval)) != nil {
+		return fmt.Errorf("failed to initialize manifest controller by manager: %w", err)
+	}
+	return nil // never end up here :)
 }
 
 func ManifestReconciler(
