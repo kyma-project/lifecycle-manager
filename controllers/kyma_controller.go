@@ -109,7 +109,9 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			// Related issue: https://github.com/kyma-project/lifecycle-manager/issues/579
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted", req.NamespacedName))
 		}
-
+		if err := client.IgnoreNotFound(err); err != nil {
+			return ctrl.Result{}, fmt.Errorf("KymaReconciler: %w", err)
+		}
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 

@@ -40,6 +40,10 @@ linters-settings:
       - Client
       - record.EventRecorder
       - client.Object
+  wrapcheck:
+    ignorePackageGlobs:
+      - github.com/kyma-project/lifecycle-manager/pkg/*
+      - github.com/kyma-project/lifecycle-manager/internal/*
 issues:
   exclude-rules:
     - path: "_test\\.go"

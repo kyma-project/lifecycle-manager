@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -18,10 +16,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	"github.com/kyma-project/lifecycle-manager/pkg/security"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest"
+
 	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
 	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
+
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/pkg/security"
 )
 
 func SetupWithManager(
@@ -46,7 +48,7 @@ func SetupWithManager(
 
 	// start listener as a manager runnable
 	if err := mgr.Add(runnableListener); err != nil {
-		return err
+		return fmt.Errorf("failed to add to listener to manager: %w", err)
 	}
 
 	codec, err := v1beta2.NewCodec()
