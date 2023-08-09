@@ -233,21 +233,12 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		watcherChartDirInfo, err := os.Stat(flagVar.skrWatcherPath)
 		if err != nil || !watcherChartDirInfo.IsDir() {
 			setupLog.Error(err, "failed to read local skr chart")
+			os.Exit(1)
 		}
-		skrWebhookManager, err = watcher.NewSKRWebhookManifestManager(kcpRestConfig, &watcher.SkrWebhookManagerConfig{
-			SKRWatcherPath:              flagVar.skrWatcherPath,
-			SkrWatcherImage:             flagVar.skrWatcherImage,
-			SkrWebhookCPULimits:         flagVar.skrWebhookCPULimits,
-			SkrWebhookMemoryLimits:      flagVar.skrWebhookMemoryLimits,
-			WatcherLocalTestingEnabled:  flagVar.enableWatcherLocalTesting,
-			LocalGatewayHTTPPortMapping: flagVar.listenerHTTPSPortLocalMapping,
-			IstioNamespace:              flagVar.istioNamespace,
-			IstioGatewayName:            flagVar.istioGatewayName,
-			IstioGatewayNamespace:       flagVar.istioGatewayNamespace,
-			RemoteSyncNamespace:         flagVar.remoteSyncNamespace,
-		})
-		if err != nil {
+
+		if skrWebhookManager, err = createSkrWebhookManager(mgr, flagVar); err != nil {
 			setupLog.Error(err, "failed to create webhook chart manager")
+			os.Exit(1)
 		}
 	}
 
@@ -283,6 +274,21 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options, kcpRestConfig)
 	}
 	metrics.Initialize()
+}
+
+func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (watcher.SKRWebhookManager, error) {
+	return watcher.NewSKRWebhookManifestManager(mgr.GetClient(), &watcher.SkrWebhookManagerConfig{
+		SKRWatcherPath:              flagVar.skrWatcherPath,
+		SkrWatcherImage:             flagVar.skrWatcherImage,
+		SkrWebhookCPULimits:         flagVar.skrWebhookCPULimits,
+		SkrWebhookMemoryLimits:      flagVar.skrWebhookMemoryLimits,
+		WatcherLocalTestingEnabled:  flagVar.enableWatcherLocalTesting,
+		LocalGatewayHTTPPortMapping: flagVar.listenerHTTPSPortLocalMapping,
+		IstioNamespace:              flagVar.istioNamespace,
+		IstioGatewayName:            flagVar.istioGatewayName,
+		IstioGatewayNamespace:       flagVar.istioGatewayNamespace,
+		RemoteSyncNamespace:         flagVar.remoteSyncNamespace,
+	})
 }
 
 func setupPurgeReconciler(

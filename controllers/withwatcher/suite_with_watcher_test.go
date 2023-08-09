@@ -176,7 +176,7 @@ var _ = BeforeSuite(func() {
 		RemoteSyncNamespace:    controllers.DefaultRemoteSyncNamespace,
 	}
 
-	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(restCfg, skrChartCfg)
+	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(k8sClient, skrChartCfg)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controllers.KymaReconciler{
 		Client:            k8sManager.GetClient(),
