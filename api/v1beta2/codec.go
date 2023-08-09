@@ -51,12 +51,12 @@ const (
 func GetSpecType(data []byte) (RefTypeMetadata, error) {
 	raw := make(map[string]json.RawMessage)
 	if err := yaml.Unmarshal(data, &raw); err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get spec type for v1beta2 version: %w", err)
 	}
 
 	var refType RefTypeMetadata
 	if err := yaml.Unmarshal(raw["type"], &refType); err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get spec type: %w", err)
 	}
 
 	return refType, nil
@@ -71,12 +71,12 @@ func NewCodec() (*Codec, error) {
 	imageSpecJSONBytes := jsonschema.Reflect(ImageSpec{})
 	bytes, err := imageSpecJSONBytes.MarshalJSON()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to marshal json: %w", err)
 	}
 
 	imageSpecSchema, err := gojsonschema.NewSchema(gojsonschema.NewBytesLoader(bytes))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("NewCodec: %w", err)
 	}
 
 	return &Codec{
@@ -86,10 +86,14 @@ func NewCodec() (*Codec, error) {
 
 func (c *Codec) Decode(data []byte, obj interface{}, refType RefTypeMetadata) error {
 	if err := c.Validate(data, refType); err != nil {
-		return err
+		return fmt.Errorf("failed to validate data when decoding: %w", err)
 	}
 
-	return yaml.Unmarshal(data, &obj)
+	err := yaml.Unmarshal(data, &obj)
+	if err != nil {
+		return fmt.Errorf("failed to unmarshal data: %w", err)
+	}
+	return nil
 }
 
 var ErrInstallationTypeNotSupported = errors.New("installation type is not supported")
@@ -103,7 +107,7 @@ func (c *Codec) Validate(data []byte, refType RefTypeMetadata) error {
 	case OciRefType:
 		result, err = c.imageSpecSchema.Validate(dataBytes)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to validate: %w", err)
 		}
 	case NilRefType:
 		return fmt.Errorf("%s is invalid: %w", refType, ErrInstallationTypeNotSupported)

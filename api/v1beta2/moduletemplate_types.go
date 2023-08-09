@@ -123,7 +123,7 @@ func (m *ModuleTemplate) GetDescriptor() (*Descriptor, error) {
 			m.Spec.Descriptor.Raw, []compdesc.DecodeOption{compdesc.DisableValidation(true)}...,
 		)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to decode to descriptor: %w", err)
 		}
 		m.Spec.Descriptor.Object = &Descriptor{ComponentDescriptor: desc}
 		descriptor = m.Spec.Descriptor.Object.(*Descriptor)
