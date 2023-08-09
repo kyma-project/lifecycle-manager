@@ -11,7 +11,6 @@ import (
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -49,8 +48,7 @@ type SkrWebhookManagerConfig struct {
 	LocalGatewayHTTPPortMapping int
 }
 
-func NewSKRWebhookManifestManager(kcpRestConfig *rest.Config, managerConfig *SkrWebhookManagerConfig,
-) (*SKRWebhookManifestManager, error) {
+func NewSKRWebhookManifestManager(kcpClient client.Client, managerConfig *SkrWebhookManagerConfig) (*SKRWebhookManifestManager, error) {
 	logger := logf.FromContext(context.TODO())
 	manifestFilePath := fmt.Sprintf(rawManifestFilePathTpl, managerConfig.SKRWatcherPath)
 	rawManifestFile, err := os.Open(manifestFilePath)
@@ -62,7 +60,7 @@ func NewSKRWebhookManifestManager(kcpRestConfig *rest.Config, managerConfig *Skr
 	if err != nil {
 		return nil, err
 	}
-	resolvedKcpAddr, err := resolveKcpAddr(kcpRestConfig, managerConfig)
+	resolvedKcpAddr, err := resolveKcpAddr(kcpClient, managerConfig)
 	if err != nil {
 		return nil, err
 	}
