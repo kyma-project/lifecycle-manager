@@ -114,7 +114,7 @@ func (v *RequestVerifier) getCertificateFromHeader(r *http.Request) (*x509.Certi
 func (v *RequestVerifier) getDomain(request *http.Request, watcherEvtObject *types.WatchEvent) (string, error) {
 	var kymaCR v1beta2.Kyma
 	if err := v.Client.Get(request.Context(), watcherEvtObject.Owner, &kymaCR); err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get Kyma CR: %w", err)
 	}
 	domain, ok := kymaCR.Annotations[shootDomainKey]
 	if !ok {
