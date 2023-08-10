@@ -245,7 +245,7 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 
 	syncContext, err := SyncContextFromContext(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get syncContext: %w", err)
 	}
 
 	err = syncContext.ControlPlaneClient.Get(ctx, client.ObjectKey{
@@ -255,7 +255,7 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 	}, crd)
 
 	if err != nil {
-		return fmt.Errorf("failed to get syncContext: %w", err)
+		return err
 	}
 
 	err = syncContext.RuntimeClient.Get(ctx, client.ObjectKey{
