@@ -55,7 +55,7 @@ func NewSKRWebhookManifestManager(kcpRestConfig *rest.Config, managerConfig *Skr
 	manifestFilePath := fmt.Sprintf(rawManifestFilePathTpl, managerConfig.SKRWatcherPath)
 	rawManifestFile, err := os.Open(manifestFilePath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open manifest file path: %w", err)
 	}
 	defer closeFileAndLogErr(rawManifestFile, logger, manifestFilePath)
 	baseResources, err := getRawManifestUnstructuredResources(rawManifestFile)
@@ -97,7 +97,11 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 	err = runResourceOperationWithGroupedErrors(ctx, syncContext.RuntimeClient, resources,
 		func(ctx context.Context, clt client.Client, resource client.Object) error {
 			resource.SetNamespace(m.config.RemoteSyncNamespace)
-			return clt.Patch(ctx, resource, client.Apply, client.ForceOwnership, skrChartFieldOwner)
+			err := clt.Patch(ctx, resource, client.Apply, client.ForceOwnership, skrChartFieldOwner)
+			if err != nil {
+				return fmt.Errorf("failed to patch resource %s: %w", resource.GetName(), err)
+			}
+			return nil
 		})
 	if err != nil {
 		return fmt.Errorf("failed to apply webhook resources: %w", err)
@@ -118,10 +122,9 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 		logger.Error(err, "Error while creating new CertificateManager")
 		return err
 	}
-	if err := certificate.Remove(ctx); err != nil {
+	if err = certificate.Remove(ctx); err != nil {
 		return err
 	}
-
 	skrClientObjects := m.getBaseClientObjects()
 	genClientObjects := getGeneratedClientObjects(&unstructuredResourcesConfig{}, []v1beta2.Watcher{},
 		m.config.RemoteSyncNamespace)
@@ -129,7 +132,11 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 	err = runResourceOperationWithGroupedErrors(ctx, syncContext.RuntimeClient, skrClientObjects,
 		func(ctx context.Context, clt client.Client, resource client.Object) error {
 			resource.SetNamespace(m.config.RemoteSyncNamespace)
-			return clt.Delete(ctx, resource)
+			err = clt.Delete(ctx, resource)
+			if err != nil {
+				return fmt.Errorf("failed to delete resource %s: %w", resource.GetName(), err)
+			}
+			return nil
 		})
 	if err != nil && !util.IsNotFound(err) {
 		return fmt.Errorf("failed to delete webhook resources: %w", err)

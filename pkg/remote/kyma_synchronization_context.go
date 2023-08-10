@@ -114,7 +114,7 @@ func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Con
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(namespace); err != nil {
-		return err
+		return fmt.Errorf("failed to encode namespace: %w", err)
 	}
 
 	patch := client.RawPatch(types.ApplyPatchType, buf.Bytes())
@@ -143,7 +143,7 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 	)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get kyma CRDs on kcp: %w", err)
 	}
 
 	err = c.RuntimeClient.Get(
@@ -157,7 +157,7 @@ func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plur
 	}
 
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get kyma CRDs on remote: %w", err)
 	}
 
 	return nil
@@ -187,17 +187,14 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 
 		// if KCP Kyma contains some modules during initialization, not sync them into remote.
 		remoteKyma.Spec.Modules = []v1beta2.Module{}
-
 		err = c.RuntimeClient.Create(ctx, remoteKyma)
 		if err != nil {
 			recorder.Event(kyma, "Normal", "RemoteInstallation", "Kyma was installed to SKR")
-
-			return nil, err
+			return nil, fmt.Errorf("failed to create remote kyma: %w", err)
 		}
 	} else if err != nil {
 		recorder.Event(kyma, "Warning", err.Error(), "Client could not fetch remote Kyma")
-
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch remote kyma: %w", err)
 	}
 
 	return remoteKyma, nil
@@ -216,13 +213,13 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(
 	if err := c.RuntimeClient.Update(ctx, remoteKyma); err != nil {
 		recorder.Event(controlPlaneKyma, "Warning", err.Error(), "could not synchronise runtime kyma "+
 			"spec, watcher labels and annotations")
-		return err
+		return fmt.Errorf("failed to synchronise runtime kyma: %w", err)
 	}
 
 	remoteKyma.Status = controlPlaneKyma.Status
 	if err := c.RuntimeClient.Status().Update(ctx, remoteKyma); err != nil {
 		recorder.Event(controlPlaneKyma, "Warning", err.Error(), "could not update runtime kyma status")
-		return err
+		return fmt.Errorf("failed to update runtime kyma status: %w", err)
 	}
 	return nil
 }

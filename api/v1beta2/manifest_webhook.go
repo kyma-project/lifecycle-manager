@@ -17,11 +17,17 @@ limitations under the License.
 package v1beta2
 
 import (
+	"fmt"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 func (manifest *Manifest) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
+	err := ctrl.NewWebhookManagedBy(mgr).
 		For(manifest).
 		Complete()
+	if err != nil {
+		return fmt.Errorf("failed to setup webhook manager for manifest: %w", err)
+	}
+	return nil
 }

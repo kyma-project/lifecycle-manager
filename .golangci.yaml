@@ -20,7 +20,6 @@ linters:
     - sqlclosecheck # not needed for this project
     - varcheck # deprecated (since v1.49.0) and replaced by 'unused'
     - wsl # too strict and mostly code is not more readable
-    - wrapcheck # TODO enable and fix
 linters-settings:
   cyclop:
     max-complexity: 20
@@ -41,7 +40,15 @@ linters-settings:
       - Client
       - record.EventRecorder
       - client.Object
+  wrapcheck:
+    ignorePackageGlobs:
+      - github.com/kyma-project/lifecycle-manager/pkg/*
+      - github.com/kyma-project/lifecycle-manager/internal/*
 issues:
+  exclude-rules:
+    - path: "_test\\.go"
+      linters:
+        - wrapcheck
   max-issues-per-linter: 0
   max-same-issues: 0
 output:

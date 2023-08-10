@@ -45,6 +45,7 @@ func runResourceOperationWithGroupedErrors(ctx context.Context, clt client.Clien
 			return operation(grpCtx, clt, resources[resIdx])
 		})
 	}
+	//nolint:wrapcheck
 	return errGrp.Wait()
 }
 
@@ -59,14 +60,14 @@ func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrWebhookManagerConf
 	gateway := &istiov1beta1.Gateway{}
 	controlPlaneClient, err := client.New(kcpConfig, client.Options{})
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to create control plane client during skr webhook setup: %w", err)
 	}
 	err = controlPlaneClient.Get(ctx, client.ObjectKey{
 		Namespace: managerConfig.IstioGatewayNamespace,
 		Name:      managerConfig.IstioGatewayName,
 	}, gateway)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get istio gateway %s: %w", managerConfig.IstioGatewayName, err)
 	}
 
 	if len(gateway.Spec.Servers) != 1 || len(gateway.Spec.Servers[0].Hosts) != 1 {
@@ -89,7 +90,7 @@ func getRawManifestUnstructuredResources(rawManifestReader io.Reader) ([]*unstru
 		resource := &unstructured.Unstructured{}
 		err := decoder.Decode(resource)
 		if err != nil && !errors.Is(err, io.EOF) {
-			return nil, err
+			return nil, fmt.Errorf("failed to decode raw manifest to unstructured: %w", err)
 		}
 		if errors.Is(err, io.EOF) {
 			break

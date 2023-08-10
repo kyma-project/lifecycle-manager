@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/resource"
 	deploymentutil "k8s.io/kubectl/pkg/util/deployment"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
@@ -28,8 +29,9 @@ func NewCustomResourceReadyCheck() *CustomResourceReadyCheck {
 type CustomResourceReadyCheck struct{}
 
 var (
-	ErrNoDeterminedState   = errors.New("could not determine state")
-	ErrCRInUnexpectedState = errors.New("module CR in unexpected state during readiness check")
+	ErrNoDeterminedState     = errors.New("could not determine state")
+	ErrCRInUnexpectedState   = errors.New("module CR in unexpected state during readiness check")
+	ErrModuleDeploymentState = errors.New("module operator deployment is not ready")
 )
 
 func (c *CustomResourceReadyCheck) Run(ctx context.Context,
@@ -38,7 +40,11 @@ func (c *CustomResourceReadyCheck) Run(ctx context.Context,
 	resources []*resource.Info,
 ) (declarative.StateInfo, error) {
 	if !isDeploymentReady(clnt, resources) {
-		return declarative.StateInfo{State: declarative.StateProcessing, Info: "module operator deployment is not ready"}, nil
+		return declarative.StateInfo{
+				State: declarative.StateProcessing,
+				Info:  ErrModuleDeploymentState.Error(),
+			},
+			ErrModuleDeploymentState
 	}
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
@@ -49,15 +55,16 @@ func (c *CustomResourceReadyCheck) Run(ctx context.Context,
 	}
 	res := manifest.Spec.Resource.DeepCopy()
 	if err := clnt.Get(ctx, client.ObjectKeyFromObject(res), res); err != nil {
-		return declarative.StateInfo{State: declarative.StateError}, err
+		return declarative.StateInfo{State: declarative.StateError},
+			fmt.Errorf("failed to fetch resource: %w", err)
 	}
 	stateFromCR, stateExists, err := unstructured.NestedString(res.Object,
 		strings.Split(customResourceStatePath, ".")...)
 	if err != nil {
-		return declarative.StateInfo{State: declarative.StateError}, fmt.Errorf(
-			"could not get state from module CR %s at path %s to determine readiness: %w",
-			res.GetName(), customResourceStatePath, ErrNoDeterminedState,
-		)
+		return declarative.StateInfo{State: declarative.StateError},
+			fmt.Errorf("could not get state from module CR %s at path %s to determine readiness: %w",
+				res.GetName(), customResourceStatePath, ErrNoDeterminedState,
+			)
 	}
 
 	// CR state might not been initialized, put manifest state into processing
