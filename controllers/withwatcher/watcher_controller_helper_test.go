@@ -28,7 +28,7 @@ const (
 
 //nolint:gochecknoglobals
 var (
-	centralComponents                     = []string{componentToBeUpdated, "module-manager", componentToBeRemoved}
+	centralComponents                     = []string{componentToBeUpdated, componentToBeRemoved}
 	errRouteNotFound                      = errors.New("http route is not found")
 	errHTTPRoutesEmpty                    = errors.New("empty http routes")
 	errRouteConfigMismatch                = errors.New("http route config mismatch")

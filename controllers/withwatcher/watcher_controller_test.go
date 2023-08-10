@@ -125,6 +125,20 @@ func allCRsDeleted(_ *istio.Client) error {
 	return nil
 }
 
+func allVirtualServicesDeleted(customIstioClient *istio.Client) error {
+	for _, component := range centralComponents {
+		watcherCR, err := getWatcher(component)
+		if err != nil {
+			return err
+		}
+		err = customIstioClient.RemoveVirtualServiceForCR(suiteCtx, client.ObjectKeyFromObject(watcherCR))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func watcherCRIsReady(watcherName string) error {
 	watcher, err := getWatcher(watcherName)
 	if err != nil {
@@ -211,6 +225,15 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 			Timeout,
 			Interval,
 			gatewayUpdated,
+			expectVirtualServiceConfiguredCorrectly,
+			expectWatchersAreReady,
+			nil,
+		),
+		Entry("when all VirtualServices are deleted, "+
+			"expect VirtualServices recreated",
+			Timeout,
+			Interval,
+			allVirtualServicesDeleted,
 			expectVirtualServiceConfiguredCorrectly,
 			expectWatchersAreReady,
 			nil,
