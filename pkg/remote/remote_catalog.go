@@ -214,7 +214,7 @@ func (c *RemoteCatalog) Delete(
 ) error {
 	syncContext, err := SyncContextFromContext(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get syncContext: %w", err)
 	}
 
 	moduleTemplatesRuntime := &v1beta2.ModuleTemplateList{Items: []v1beta2.ModuleTemplate{}}
