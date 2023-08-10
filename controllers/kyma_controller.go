@@ -121,21 +121,34 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return r.reconcile(ctx, kyma)
 }
 
-//nolint:funlen,gocognit
+func (r *KymaReconciler) handleRemoteClusterConnectionErrorOnDeletion(
+	ctx context.Context, kyma *v1beta2.Kyma, err error) (
+	ctrl.Result, error,
+) {
+	if !kyma.DeletionTimestamp.IsZero() {
+		if util.IsConnectionRefused(err) {
+			r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
+			return r.requeueWithError(ctx, kyma, err)
+		}
+		if util.IsNotFound(err) {
+			if err = r.removeFinalizerAndUpdateKyma(ctx, kyma); err != nil {
+				return r.requeueWithError(ctx, kyma, err)
+			}
+			return ctrl.Result{}, nil
+		}
+	}
+
+	r.enqueueWarningEvent(kyma, syncContextError, err)
+	return r.requeueWithError(ctx, kyma, err)
+}
+
 func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
-	if r.SyncKymaEnabled(kyma) { //nolint:nestif
+	if r.SyncKymaEnabled(kyma) {
 		var err error
 		remoteClient := remote.NewClientWithConfig(r.Client, r.KcpRestConfig)
 		if ctx, err = remote.InitializeSyncContext(ctx, kyma,
 			r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache); err != nil {
-			if !kyma.DeletionTimestamp.IsZero() && util.IsNotFound(err) {
-				if err = r.removeFinalizerAndUpdateKyma(ctx, kyma); err != nil {
-					return r.requeueWithError(ctx, kyma, err)
-				}
-				return ctrl.Result{}, nil
-			}
-			r.enqueueWarningEvent(kyma, syncContextError, err)
-			return r.requeueWithError(ctx, kyma, err)
+			return r.handleRemoteClusterConnectionErrorOnDeletion(ctx, kyma, err)
 		}
 	}
 
@@ -191,7 +204,10 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 }
 
 func (r *KymaReconciler) syncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
-	syncContext := remote.SyncContextFromContext(ctx)
+	syncContext, err := remote.SyncContextFromContext(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to get syncContext: %w", err)
+	}
 	updateRequired, err := remote.SyncCrdsAndUpdateKymaAnnotations(
 		ctx, kyma, syncContext.RuntimeClient, syncContext.ControlPlaneClient)
 	if err != nil {
@@ -226,8 +242,10 @@ func (r *KymaReconciler) enqueueNormalEvent(kyma *v1beta2.Kyma, reason EventReas
 }
 
 func (r *KymaReconciler) fetchRemoteKyma(ctx context.Context, controlPlaneKyma *v1beta2.Kyma) (*v1beta2.Kyma, error) {
-	syncContext := remote.SyncContextFromContext(ctx)
-
+	syncContext, err := remote.SyncContextFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get syncContext: %w", err)
+	}
 	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx, controlPlaneKyma, r.RemoteSyncNamespace)
 	if err != nil {
 		if errors.Is(err, remote.ErrNotFoundAndKCPKymaUnderDeleting) {
@@ -249,7 +267,10 @@ func (r *KymaReconciler) syncStatusToRemote(ctx context.Context, controlPlaneKym
 		return err
 	}
 
-	syncContext := remote.SyncContextFromContext(ctx)
+	syncContext, err := remote.SyncContextFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get syncContext: %w", err)
+	}
 	if err := syncContext.SynchronizeRemoteKyma(ctx, controlPlaneKyma, remoteKyma); err != nil {
 		return fmt.Errorf("sync run failure: %w", err)
 	}

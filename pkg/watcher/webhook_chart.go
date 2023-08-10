@@ -13,7 +13,6 @@ import (
 	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -48,7 +47,7 @@ func runResourceOperationWithGroupedErrors(ctx context.Context, clt client.Clien
 	return errGrp.Wait()
 }
 
-func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrWebhookManagerConfig) (string, error) {
+func resolveKcpAddr(kcpClient client.Client, managerConfig *SkrWebhookManagerConfig) (string, error) {
 	if managerConfig.WatcherLocalTestingEnabled {
 		return net.JoinHostPort(defaultK3dLocalhostMapping, strconv.Itoa(managerConfig.LocalGatewayHTTPPortMapping)),
 			nil
@@ -57,15 +56,11 @@ func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrWebhookManagerConf
 
 	// Get public KCP DNS name and port from the Gateway
 	gateway := &istiov1beta1.Gateway{}
-	controlPlaneClient, err := client.New(kcpConfig, client.Options{})
-	if err != nil {
-		return "", err
-	}
-	err = controlPlaneClient.Get(ctx, client.ObjectKey{
+
+	if err := kcpClient.Get(ctx, client.ObjectKey{
 		Namespace: managerConfig.IstioGatewayNamespace,
 		Name:      managerConfig.IstioGatewayName,
-	}, gateway)
-	if err != nil {
+	}, gateway); err != nil {
 		return "", err
 	}
 
