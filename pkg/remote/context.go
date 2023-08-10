@@ -23,11 +23,11 @@ func InitializeSyncContext(ctx context.Context, kyma *v1beta2.Kyma,
 	return context.WithValue(ctx, syncContextKey{}, syncContext), err
 }
 
-func SyncContextFromContext(ctx context.Context) *KymaSynchronizationContext {
+func SyncContextFromContext(ctx context.Context) (*KymaSynchronizationContext, error) {
 	rawCtx := ctx.Value(syncContextKey{})
 	syncContext, ok := rawCtx.(*KymaSynchronizationContext)
 	if !ok {
-		panic(ErrIsNoSyncContext)
+		return nil, ErrIsNoSyncContext
 	}
-	return syncContext
+	return syncContext, nil
 }
