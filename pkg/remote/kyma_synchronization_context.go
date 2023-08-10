@@ -96,7 +96,7 @@ func DeleteRemotelySyncedKyma(
 ) error {
 	syncContext, err := SyncContextFromContext(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get syncContext: %w", err)
 	}
 	remoteKyma, err := syncContext.GetRemotelySyncedKyma(ctx, remoteSyncNamespace)
 	if err != nil {

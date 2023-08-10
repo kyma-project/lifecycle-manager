@@ -244,7 +244,7 @@ func (r *KymaReconciler) enqueueNormalEvent(kyma *v1beta2.Kyma, reason EventReas
 func (r *KymaReconciler) fetchRemoteKyma(ctx context.Context, controlPlaneKyma *v1beta2.Kyma) (*v1beta2.Kyma, error) {
 	syncContext, err := remote.SyncContextFromContext(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get syncContext: %w", err)
 	}
 	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx, controlPlaneKyma, r.RemoteSyncNamespace)
 	if err != nil {
@@ -269,7 +269,7 @@ func (r *KymaReconciler) syncStatusToRemote(ctx context.Context, controlPlaneKym
 
 	syncContext, err := remote.SyncContextFromContext(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get syncContext: %w", err)
 	}
 	if err := syncContext.SynchronizeRemoteKyma(ctx, controlPlaneKyma, remoteKyma); err != nil {
 		return fmt.Errorf("sync run failure: %w", err)

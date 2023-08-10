@@ -115,7 +115,7 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	syncContext, err := remote.SyncContextFromContext(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get syncContext: %w", err)
 	}
 	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma,
 		m.config.IstioNamespace, m.config.RemoteSyncNamespace, false)
