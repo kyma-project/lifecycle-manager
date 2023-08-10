@@ -526,7 +526,12 @@ func (r *KymaReconciler) deleteManifest(ctx context.Context, trackedManifest *v1
 	manifest.SetGroupVersionKind(trackedManifest.GroupVersionKind())
 	manifest.SetNamespace(trackedManifest.GetNamespace())
 	manifest.SetName(trackedManifest.GetName())
-	return r.Delete(ctx, &manifest, &client.DeleteOptions{})
+
+	err := r.Delete(ctx, &manifest, &client.DeleteOptions{})
+	if err != nil {
+		return fmt.Errorf("failed delete manifest crd: %w", err)
+	}
+	return nil
 }
 
 func (r *KymaReconciler) UpdateMetrics(ctx context.Context, kyma *v1beta2.Kyma) {
