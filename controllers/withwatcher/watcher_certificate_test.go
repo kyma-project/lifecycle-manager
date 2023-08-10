@@ -3,6 +3,7 @@ package withwatcher_test
 import (
 	"bytes"
 	"errors"
+
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
@@ -14,9 +15,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var (
-	ErrPrivateKeyNotMatching = errors.New("private Key for the TLS secret doesn't match")
-)
+var ErrPrivateKeyNotMatching = errors.New("private Key for the TLS secret doesn't match")
 
 func getCertificate(clnt client.Client, kymaName string) (*certmanagerv1.Certificate, error) {
 	certificateCR := &certmanagerv1.Certificate{}
@@ -60,7 +59,7 @@ func deleteSecret(clnt client.Client, secretObjKey client.ObjectKey) error {
 	return err
 }
 
-func matchTlsSecretPrivateKey(clnt client.Client, secretObjKey client.ObjectKey, privateKey []byte) error {
+func matchTLSSecretPrivateKey(clnt client.Client, secretObjKey client.ObjectKey, privateKey []byte) error {
 	secretCR, err := getSecret(clnt, secretObjKey)
 	if err != nil {
 		return err
@@ -78,7 +77,7 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 	issuer := NewTestIssuer(istioSystemNs)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	tlsSecret := createTLSSecret(kymaObjKey)
-	skrTlsSecretObjKey := client.ObjectKey{Name: watcher.SkrTLSName, Namespace: controllers.DefaultRemoteSyncNamespace}
+	skrTLSSecretObjKey := client.ObjectKey{Name: watcher.SkrTLSName, Namespace: controllers.DefaultRemoteSyncNamespace}
 
 	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer)
 
@@ -98,15 +97,15 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 
 	It("kyma reconciliation creates Certificate Secret on SKR", func() {
 		Eventually(secretExists, Timeout, Interval).
-			WithArguments(runtimeClient, skrTlsSecretObjKey).
+			WithArguments(runtimeClient, skrTLSSecretObjKey).
 			Should(Succeed())
 
 		By("deleting the Certificate Secret on SKR")
-		Expect(deleteSecret(runtimeClient, skrTlsSecretObjKey)).To(Succeed())
+		Expect(deleteSecret(runtimeClient, skrTLSSecretObjKey)).To(Succeed())
 
 		By("recreated Certificate Secret on SKR")
 		Eventually(secretExists, Timeout, Interval).
-			WithArguments(runtimeClient, skrTlsSecretObjKey).
+			WithArguments(runtimeClient, skrTLSSecretObjKey).
 			Should(Succeed())
 	})
 
@@ -118,8 +117,8 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 		Expect(controlPlaneClient.Update(suiteCtx, tlsSecret)).To(Succeed())
 
 		By("updates the TLS secret on SKR")
-		Eventually(matchTlsSecretPrivateKey, Timeout, Interval).
-			WithArguments(runtimeClient, skrTlsSecretObjKey, []byte(newKey)).
+		Eventually(matchTLSSecretPrivateKey, Timeout, Interval).
+			WithArguments(runtimeClient, skrTLSSecretObjKey, []byte(newKey)).
 			Should(Succeed())
 	})
 })
