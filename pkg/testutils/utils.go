@@ -139,10 +139,11 @@ func DeployModuleTemplates(
 	onPrivateRepo,
 	isInternal,
 	isBeta bool,
+	isClusterScoped bool,
 ) {
 	for _, module := range kyma.Spec.Modules {
 		Eventually(DeployModuleTemplate, Timeout, Interval).WithContext(ctx).
-			WithArguments(kcpClient, module, onPrivateRepo, isInternal, isBeta).
+			WithArguments(kcpClient, module, onPrivateRepo, isInternal, isBeta, isClusterScoped).
 			Should(Succeed())
 	}
 }
@@ -154,8 +155,10 @@ func DeployModuleTemplate(
 	onPrivateRepo,
 	isInternal,
 	isBeta bool,
+	isClusterScoped bool,
 ) error {
-	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo, isInternal, isBeta)
+	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo, isInternal, isBeta,
+		isClusterScoped)
 	if err != nil {
 		return err
 	}
@@ -170,7 +173,7 @@ func DeleteModuleTemplates(
 	onPrivateRepo bool,
 ) {
 	for _, module := range kyma.Spec.Modules {
-		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo, false, false)
+		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo, false, false, false)
 		Expect(err).ShouldNot(HaveOccurred())
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
@@ -250,7 +253,7 @@ func GetManifest(ctx context.Context,
 	kyma *v1beta2.Kyma,
 	module v1beta2.Module,
 ) (*v1beta2.Manifest, error) {
-	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false)
+	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -277,6 +280,7 @@ func ModuleTemplateFactory(
 	onPrivateRepo bool,
 	isInternal bool,
 	isBeta bool,
+	isClusterScoped bool,
 ) (*v1beta2.ModuleTemplate, error) {
 	template, err := ModuleTemplateFactoryForSchema(module, data, compdesc2.SchemaVersion, onPrivateRepo)
 	if err != nil {
@@ -287,6 +291,12 @@ func ModuleTemplateFactory(
 	}
 	if isBeta {
 		template.Labels[v1beta2.BetaLabel] = v1beta2.EnableLabelValue
+	}
+	if isClusterScoped {
+		if template.Annotations == nil {
+			template.Annotations = make(map[string]string)
+		}
+		template.Annotations[v1beta2.IsClusterScopedAnnotation] = v1beta2.EnableLabelValue
 	}
 	return template, nil
 }
