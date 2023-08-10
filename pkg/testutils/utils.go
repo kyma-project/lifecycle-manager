@@ -26,6 +26,8 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -81,6 +83,31 @@ func newKCPKymaWithNamespace(name, namespace, channel, syncStrategy string) *v1b
 			Channel: channel,
 		},
 	}
+}
+
+func NewTestManifest(prefix string) *v1beta2.Manifest {
+	return &v1beta2.Manifest{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%d", prefix, rand.Intn(999999)),
+			Namespace: v1.NamespaceDefault,
+			Labels: map[string]string{
+				v1beta2.KymaName: string(uuid.NewUUID()),
+			},
+			Annotations: map[string]string{},
+		},
+	}
+}
+
+func NewTestModuleCR(name, namespace, version, kind string) unstructured.Unstructured {
+	moduleCR := unstructured.Unstructured{}
+	moduleCR.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   v1beta2.GroupVersion.Group,
+		Version: version,
+		Kind:    kind,
+	})
+	moduleCR.SetName(name)
+	moduleCR.SetNamespace(namespace)
+	return moduleCR
 }
 
 func NewTestModule(name, channel string) v1beta2.Module {

@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -28,8 +29,9 @@ func NewCustomResourceReadyCheck() *CustomResourceReadyCheck {
 type CustomResourceReadyCheck struct{}
 
 var (
-	ErrNoDeterminedState   = errors.New("could not determine state")
-	ErrCRInUnexpectedState = errors.New("module CR in unexpected state during readiness check")
+	ErrCRInUnexpectedState  = errors.New("module CR in unexpected state during readiness check")
+	ErrNotSupportedState    = errors.New("module CR state not support")
+	ErrRequiredStateMissing = errors.New("required Ready and Error state mapping are missing")
 )
 
 func (c *CustomResourceReadyCheck) Run(ctx context.Context,
@@ -47,16 +49,26 @@ func (c *CustomResourceReadyCheck) Run(ctx context.Context,
 	if manifest.Spec.Resource == nil {
 		return declarative.StateInfo{State: declarative.StateReady}, nil
 	}
-	res := manifest.Spec.Resource.DeepCopy()
-	if err := clnt.Get(ctx, client.ObjectKeyFromObject(res), res); err != nil {
+	moduleCR := manifest.Spec.Resource.DeepCopy()
+	if err := clnt.Get(ctx, client.ObjectKeyFromObject(moduleCR), moduleCR); err != nil {
 		return declarative.StateInfo{State: declarative.StateError}, err
 	}
-	stateFromCR, stateExists, err := unstructured.NestedString(res.Object,
-		strings.Split(customResourceStatePath, ".")...)
+	return HandleState(manifest, moduleCR)
+}
+
+func HandleState(manifest *v1beta2.Manifest, moduleCR *unstructured.Unstructured) (declarative.StateInfo, error) {
+	typedState, stateExists, err := mappingState(manifest, moduleCR)
 	if err != nil {
+		// Only happens for kyma module CR
+		if errors.Is(err, ErrNotSupportedState) {
+			return declarative.StateInfo{
+				State: declarative.StateWarning,
+				Info:  ErrNotSupportedState.Error(),
+			}, nil
+		}
 		return declarative.StateInfo{State: declarative.StateError}, fmt.Errorf(
-			"could not get state from module CR %s at path %s to determine readiness: %w",
-			res.GetName(), customResourceStatePath, ErrNoDeterminedState,
+			"could not get state from module CR %s to determine readiness: %w",
+			moduleCR.GetName(), err,
 		)
 	}
 
@@ -65,19 +77,95 @@ func (c *CustomResourceReadyCheck) Run(ctx context.Context,
 		return declarative.StateInfo{State: declarative.StateProcessing, Info: "module CR state not found"}, nil
 	}
 
-	typedState := declarative.State(stateFromCR)
-
-	if !typedState.IsSupportedState() {
-		return declarative.StateInfo{
-			State: declarative.StateWarning,
-			Info:  "module CR state is not supported, this module might not be default kyma module",
-		}, nil
-	}
-
 	if typedState == declarative.StateDeleting || typedState == declarative.StateError {
 		return declarative.StateInfo{State: typedState}, ErrCRInUnexpectedState
 	}
 	return declarative.StateInfo{State: typedState}, nil
+}
+
+func mappingState(manifest *v1beta2.Manifest, moduleCR *unstructured.Unstructured) (declarative.State, bool, error) {
+	stateChecks, customStateFound, err := parseStateChecks(manifest)
+	if err != nil {
+		return "", false, err
+	}
+	// make sure ready and error state exists, for other missing customized state, can be ignored.
+	if requiredStateMissing(stateChecks) {
+		return "", false, ErrRequiredStateMissing
+	}
+	stateResult := map[v1beta2.State]bool{}
+	for _, stateCheck := range stateChecks {
+		stateFromCR, stateExists, err := unstructured.NestedString(moduleCR.Object,
+			strings.Split(stateCheck.JSONPath, ".")...)
+		if err != nil {
+			return "", false, err
+		}
+		if !stateExists {
+			continue
+		}
+		if !customStateFound && !declarative.State(stateFromCR).IsSupportedState() {
+			return "", false, ErrNotSupportedState
+		}
+		_, found := stateResult[stateCheck.MappedState]
+		if found {
+			stateResult[stateCheck.MappedState] = stateResult[stateCheck.MappedState] && stateFromCR == stateCheck.Value
+		} else {
+			stateResult[stateCheck.MappedState] = stateFromCR == stateCheck.Value
+		}
+	}
+	return calculateFinalState(stateResult), true, nil
+}
+
+func calculateFinalState(stateResult map[v1beta2.State]bool) declarative.State {
+	if stateResult[v1beta2.StateError] {
+		return declarative.StateError
+	}
+	if stateResult[v1beta2.StateReady] {
+		return declarative.StateReady
+	}
+	if stateResult[v1beta2.StateWarning] {
+		return declarative.StateWarning
+	}
+	if stateResult[v1beta2.StateDeleting] {
+		return declarative.StateDeleting
+	}
+
+	// by default, if ready/error state condition not match, assume module CR under processing
+	return declarative.StateProcessing
+}
+
+func requiredStateMissing(stateChecks []*v1beta2.StateCheck) bool {
+	readyMissing := true
+	errorMissing := true
+	for _, stateCheck := range stateChecks {
+		if stateCheck.MappedState == v1beta2.StateReady {
+			readyMissing = false
+		}
+		if stateCheck.MappedState == v1beta2.StateError {
+			errorMissing = false
+		}
+	}
+	return readyMissing || errorMissing
+}
+
+func parseStateChecks(manifest *v1beta2.Manifest) ([]*v1beta2.StateCheck, bool, error) {
+	customStateCheckAnnotation, found := manifest.Annotations[v1beta2.CustomStateCheckAnnotation]
+	if !found {
+		return []*v1beta2.StateCheck{
+			{
+				JSONPath:    customResourceStatePath,
+				Value:       string(v1beta2.StateReady),
+				MappedState: v1beta2.StateReady},
+			{
+				JSONPath:    customResourceStatePath,
+				Value:       string(v1beta2.StateError),
+				MappedState: v1beta2.StateError},
+		}, false, nil
+	}
+	var stateCheck []*v1beta2.StateCheck
+	if err := json.Unmarshal([]byte(customStateCheckAnnotation), &stateCheck); err != nil {
+		return stateCheck, true, err
+	}
+	return stateCheck, true, nil
 }
 
 func isDeploymentReady(clt declarative.Client, resources []*resource.Info) bool {
