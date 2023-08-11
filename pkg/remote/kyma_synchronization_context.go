@@ -76,7 +76,10 @@ func (c *KymaSynchronizationContext) GetRemotelySyncedKyma(
 func RemoveFinalizerFromRemoteKyma(
 	ctx context.Context, remoteSyncNamespace string,
 ) error {
-	syncContext := SyncContextFromContext(ctx)
+	syncContext, err := SyncContextFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get syncContext: %w", err)
+	}
 
 	remoteKyma, err := syncContext.GetRemotelySyncedKyma(ctx, remoteSyncNamespace)
 	if err != nil {
@@ -95,7 +98,10 @@ func RemoveFinalizerFromRemoteKyma(
 func DeleteRemotelySyncedKyma(
 	ctx context.Context, remoteSyncNamespace string,
 ) error {
-	syncContext := SyncContextFromContext(ctx)
+	syncContext, err := SyncContextFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get syncContext: %w", err)
+	}
 	remoteKyma, err := syncContext.GetRemotelySyncedKyma(ctx, remoteSyncNamespace)
 	if err != nil {
 		return err

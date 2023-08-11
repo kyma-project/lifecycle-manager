@@ -46,7 +46,12 @@ func GetTemplates(
 		case module.RemoteModuleTemplateRef == "":
 			template = NewTemplateLookup(kymaClient, module, kyma.Spec.Channel).WithContext(ctx)
 		case syncEnabled:
-			runtimeClient := remote.SyncContextFromContext(ctx).RuntimeClient
+			syncContext, err := remote.SyncContextFromContext(ctx)
+			if err != nil {
+				template.Err = fmt.Errorf("failed to get syncContext: %w", err)
+				continue
+			}
+			runtimeClient := syncContext.RuntimeClient
 			originalModuleName := module.Name
 			module.Name = module.RemoteModuleTemplateRef // To search template with the Remote Ref
 			template = NewTemplateLookup(runtimeClient, module, kyma.Spec.Channel).WithContext(ctx)

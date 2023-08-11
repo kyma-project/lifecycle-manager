@@ -7,11 +7,12 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -49,8 +50,10 @@ type SkrWebhookManagerConfig struct {
 	LocalGatewayHTTPPortMapping int
 }
 
-func NewSKRWebhookManifestManager(kcpRestConfig *rest.Config, managerConfig *SkrWebhookManagerConfig,
-) (*SKRWebhookManifestManager, error) {
+func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
+	schema *runtime.Scheme,
+	managerConfig *SkrWebhookManagerConfig,
+) (SKRWebhookManager, error) {
 	logger := logf.FromContext(context.TODO())
 	manifestFilePath := fmt.Sprintf(rawManifestFilePathTpl, managerConfig.SKRWatcherPath)
 	rawManifestFile, err := os.Open(manifestFilePath)
@@ -62,7 +65,11 @@ func NewSKRWebhookManifestManager(kcpRestConfig *rest.Config, managerConfig *Skr
 	if err != nil {
 		return nil, err
 	}
-	resolvedKcpAddr, err := resolveKcpAddr(kcpRestConfig, managerConfig)
+	kcpClient, err := client.New(kcpConfig, client.Options{Scheme: schema})
+	if err != nil {
+		return nil, fmt.Errorf("can't create kcpClient: %w", err)
+	}
+	resolvedKcpAddr, err := resolveKcpAddr(kcpClient, managerConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +83,10 @@ func NewSKRWebhookManifestManager(kcpRestConfig *rest.Config, managerConfig *Skr
 func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.Kyma) error {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
-	syncContext := remote.SyncContextFromContext(ctx)
+	syncContext, err := remote.SyncContextFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get syncContext: %w", err)
+	}
 
 	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
 	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma,
@@ -114,8 +124,10 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Kyma) error {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
-	syncContext := remote.SyncContextFromContext(ctx)
-
+	syncContext, err := remote.SyncContextFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get syncContext: %w", err)
+	}
 	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma,
 		m.config.IstioNamespace, m.config.RemoteSyncNamespace, false)
 	if err != nil {
