@@ -42,7 +42,8 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	Expect(err).ShouldNot(HaveOccurred())
 	KCPTemplate, err := ModuleTemplateFactory(moduleInKCP, unstructured.Unstructured{}, false, false, false, false)
 	Expect(err).ShouldNot(HaveOccurred())
-	SKRCustomTemplate, err := ModuleTemplateFactory(customModuleInSKR, unstructured.Unstructured{}, false, false, false, false)
+	SKRCustomTemplate, err := ModuleTemplateFactory(customModuleInSKR, unstructured.Unstructured{}, false, false, false,
+		false)
 	Expect(err).ShouldNot(HaveOccurred())
 
 	BeforeAll(func() {

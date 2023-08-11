@@ -285,39 +285,40 @@ var _ = Describe("Kyma with managed fields not in kcp mode", Ordered, func() {
 	})
 })
 
-var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty for cluster scoped modules", Ordered, func() {
-	kyma := NewTestKyma("kyma")
-	moduleName := NewUniqModuleName()
-	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1beta2.Module{
-			ControllerName: "manifest",
-			Name:           moduleName,
-			Channel:        v1beta2.DefaultChannel,
+var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty for cluster scoped modules", Ordered,
+	func() {
+		kyma := NewTestKyma("kyma")
+		moduleName := NewUniqModuleName()
+		kyma.Spec.Modules = append(
+			kyma.Spec.Modules, v1beta2.Module{
+				ControllerName: "manifest",
+				Name:           moduleName,
+				Channel:        v1beta2.DefaultChannel,
+			})
+		RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
+
+		It("Should deploy ModuleTemplate", func() {
+			DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false, true)
 		})
-	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
-	It("Should deploy ModuleTemplate", func() {
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false, true)
+		It("expect Kyma.Spec.Status.Modules.Resource.Namespace to be empty", func() {
+			Eventually(func() error {
+				expectedNamespace := ""
+
+				modulesStatus := GetKymaModulesStatus(kyma.GetName())
+				if len(modulesStatus) != 1 {
+					return ErrWrongResourceNamespace
+				}
+
+				if modulesStatus[0].Resource.Namespace != expectedNamespace {
+					return ErrWrongResourceNamespace
+				}
+
+				return nil
+			}, Timeout, Interval).
+				Should(Succeed())
+		})
 	})
-
-	It("expect Kyma.Spec.Status.Modules.Resource.Namespace to be empty", func() {
-		Eventually(func() error {
-			expectedNamespace := ""
-
-			modulesStatus := GetKymaModulesStatus(kyma.GetName())
-			if len(modulesStatus) != 1 {
-				return ErrWrongResourceNamespace
-			}
-
-			if modulesStatus[0].Resource.Namespace != expectedNamespace {
-				return ErrWrongResourceNamespace
-			}
-
-			return nil
-		}, Timeout, Interval).
-			Should(Succeed())
-	})
-})
 
 func expectKymaStatusModules(kymaName string, state v1beta2.State) func() error {
 	return func() error {
