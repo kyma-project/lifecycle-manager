@@ -23,7 +23,7 @@ func TestHandleState(t *testing.T) {
 	definedValueForReady := "customStateForReady"
 	tests := []struct {
 		name                string
-		customState         []*v1beta2.StateCheck
+		customState         []*v1beta2.CustomStateCheck
 		customStateExpected bool
 		checkInModuleCR     []moduleCheck
 		want                v2.StateInfo
@@ -70,7 +70,7 @@ func TestHandleState(t *testing.T) {
 		},
 		{
 			"custom module with not all required StateCheck, expected mapped to StateError with error",
-			[]*v1beta2.StateCheck{
+			[]*v1beta2.CustomStateCheck{
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       "customState",
@@ -89,7 +89,7 @@ func TestHandleState(t *testing.T) {
 		},
 		{
 			"custom module found mapped value with StateReady, expected mapped to StateReady",
-			[]*v1beta2.StateCheck{
+			[]*v1beta2.CustomStateCheck{
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForReady,
@@ -113,7 +113,7 @@ func TestHandleState(t *testing.T) {
 		},
 		{
 			"custom module found mapped value with StateError, expected mapped to StateError with error",
-			[]*v1beta2.StateCheck{
+			[]*v1beta2.CustomStateCheck{
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForReady,
@@ -137,7 +137,7 @@ func TestHandleState(t *testing.T) {
 		},
 		{
 			"custom module with additional StateCheck, expected mapped to correct state",
-			[]*v1beta2.StateCheck{
+			[]*v1beta2.CustomStateCheck{
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForReady,
@@ -170,7 +170,7 @@ func TestHandleState(t *testing.T) {
 		},
 		{
 			"custom module with multiple StateReady condition, expected mapped to StateReady when all condition matched",
-			[]*v1beta2.StateCheck{
+			[]*v1beta2.CustomStateCheck{
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForReady,
@@ -203,7 +203,7 @@ func TestHandleState(t *testing.T) {
 		},
 		{
 			"custom module with multiple StateReady condition, expected mapped to StateProcessing when not all condition matched",
-			[]*v1beta2.StateCheck{
+			[]*v1beta2.CustomStateCheck{
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForReady,
@@ -236,7 +236,7 @@ func TestHandleState(t *testing.T) {
 		},
 		{
 			"custom module with additional StateCheck but no mapped value found, expected mapped to StateProcessing",
-			[]*v1beta2.StateCheck{
+			[]*v1beta2.CustomStateCheck{
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForReady,
@@ -269,7 +269,7 @@ func TestHandleState(t *testing.T) {
 		},
 		{
 			"custom module not in mapped value, expected mapped to StateProcessing",
-			[]*v1beta2.StateCheck{
+			[]*v1beta2.CustomStateCheck{
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForReady,

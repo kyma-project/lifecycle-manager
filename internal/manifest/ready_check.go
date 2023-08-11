@@ -133,7 +133,7 @@ func calculateFinalState(stateResult map[v1beta2.State]bool) declarative.State {
 	return declarative.StateProcessing
 }
 
-func requiredStateMissing(stateChecks []*v1beta2.StateCheck) bool {
+func requiredStateMissing(stateChecks []*v1beta2.CustomStateCheck) bool {
 	readyMissing := true
 	errorMissing := true
 	for _, stateCheck := range stateChecks {
@@ -147,10 +147,10 @@ func requiredStateMissing(stateChecks []*v1beta2.StateCheck) bool {
 	return readyMissing || errorMissing
 }
 
-func parseStateChecks(manifest *v1beta2.Manifest) ([]*v1beta2.StateCheck, bool, error) {
+func parseStateChecks(manifest *v1beta2.Manifest) ([]*v1beta2.CustomStateCheck, bool, error) {
 	customStateCheckAnnotation, found := manifest.Annotations[v1beta2.CustomStateCheckAnnotation]
 	if !found {
-		return []*v1beta2.StateCheck{
+		return []*v1beta2.CustomStateCheck{
 			{
 				JSONPath:    customResourceStatePath,
 				Value:       string(v1beta2.StateReady),
@@ -161,7 +161,7 @@ func parseStateChecks(manifest *v1beta2.Manifest) ([]*v1beta2.StateCheck, bool, 
 				MappedState: v1beta2.StateError},
 		}, false, nil
 	}
-	var stateCheck []*v1beta2.StateCheck
+	var stateCheck []*v1beta2.CustomStateCheck
 	if err := json.Unmarshal([]byte(customStateCheckAnnotation), &stateCheck); err != nil {
 		return stateCheck, true, err
 	}

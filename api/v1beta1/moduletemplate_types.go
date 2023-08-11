@@ -76,11 +76,7 @@ type ModuleTemplateSpec struct {
 	// hint by downstream controllers to determine which client implementation to use for working with the Module
 	Target Target `json:"target"`
 
-	// Deprecated, please use StateCheck
-	CustomStateCheck []*v1beta2.StateCheck `json:"customStateCheck,omitempty"`
-
-	// StateCheck for support 3rd party Module CR state mapping
-	StateCheck []*v1beta2.StateCheck `json:"stateCheck,omitempty"`
+	CustomStateCheck []*v1beta2.CustomStateCheck `json:"customStateCheck,omitempty"`
 }
 
 //+kubebuilder:object:root=true

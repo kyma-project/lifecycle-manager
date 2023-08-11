@@ -50,7 +50,6 @@ spec:
                 pattern: ^[a-z]+$
                 type: string
               customStateCheck:
-                description: Deprecated, please use StateCheck
                 items:
                   properties:
                     jsonPath:
@@ -58,8 +57,7 @@ spec:
                         in the Module CR
                       type: string
                     mappedState:
-                      description: MappedState is the state value accepted by lifecycle
-                        manager
+                      description: MappedState is the Kyma CR State
                       enum:
                       - Processing
                       - Deleting
@@ -104,35 +102,6 @@ spec:
                   referenced in the descriptor)"
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
-              stateCheck:
-                description: StateCheck for support 3rd party Module CR state mapping
-                items:
-                  properties:
-                    jsonPath:
-                      description: JSONPath specifies the JSON path to the state variable
-                        in the Module CR
-                      type: string
-                    mappedState:
-                      description: MappedState is the state value accepted by lifecycle
-                        manager
-                      enum:
-                      - Processing
-                      - Deleting
-                      - Ready
-                      - Error
-                      - ""
-                      - Warning
-                      type: string
-                    value:
-                      description: Value is the value at the JSONPath for which the
-                        Module CR state should map with MappedState
-                      type: string
-                  required:
-                  - jsonPath
-                  - mappedState
-                  - value
-                  type: object
-                type: array
               target:
                 description: Target describes where the Module should later on be
                   installed if parsed correctly. It is used as installation hint by
@@ -183,7 +152,6 @@ spec:
                 pattern: ^[a-z]+$
                 type: string
               customStateCheck:
-                description: Deprecated, please use StateCheck
                 items:
                   properties:
                     jsonPath:
@@ -191,8 +159,7 @@ spec:
                         in the Module CR
                       type: string
                     mappedState:
-                      description: MappedState is the state value accepted by lifecycle
-                        manager
+                      description: MappedState is the Kyma CR State
                       enum:
                       - Processing
                       - Deleting
@@ -237,35 +204,6 @@ spec:
                   referenced in the descriptor)"
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
-              stateCheck:
-                description: StateCheck for support 3rd party Module CR state mapping
-                items:
-                  properties:
-                    jsonPath:
-                      description: JSONPath specifies the JSON path to the state variable
-                        in the Module CR
-                      type: string
-                    mappedState:
-                      description: MappedState is the state value accepted by lifecycle
-                        manager
-                      enum:
-                      - Processing
-                      - Deleting
-                      - Ready
-                      - Error
-                      - ""
-                      - Warning
-                      type: string
-                    value:
-                      description: Value is the value at the JSONPath for which the
-                        Module CR state should map with MappedState
-                      type: string
-                  required:
-                  - jsonPath
-                  - mappedState
-                  - value
-                  type: object
-                type: array
             required:
             - channel
             - descriptor

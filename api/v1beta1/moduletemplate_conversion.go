@@ -16,7 +16,6 @@ func (src *ModuleTemplate) ConvertTo(dstRaw conversion.Hub) error {
 	dst.Spec.Data = src.Spec.Data
 	dst.Spec.Descriptor = src.Spec.Descriptor
 	dst.Spec.CustomStateCheck = src.Spec.CustomStateCheck
-	dst.Spec.StateCheck = src.Spec.StateCheck
 	return nil
 }
 
@@ -32,7 +31,6 @@ func (dst *ModuleTemplate) ConvertFrom(srcRaw conversion.Hub) error {
 	dst.Spec.Data = src.Spec.Data
 	dst.Spec.Descriptor = src.Spec.Descriptor
 	dst.Spec.CustomStateCheck = src.Spec.CustomStateCheck
-	dst.Spec.StateCheck = src.Spec.StateCheck
 	dst.Spec.Target = TargetRemote
 
 	return nil

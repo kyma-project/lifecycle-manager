@@ -167,14 +167,14 @@ func (p *Parser) newManifestFromTemplate(
 		return nil, fmt.Errorf("could not translate layers and merge them: %w", err)
 	}
 
-	if err := appendOptionalCustomStateCheck(manifest, template.Spec.StateCheck); err != nil {
+	if err := appendOptionalCustomStateCheck(manifest, template.Spec.CustomStateCheck); err != nil {
 		return nil, fmt.Errorf("could not translate custom state check: %w", err)
 	}
 
 	return manifest, nil
 }
 
-func appendOptionalCustomStateCheck(manifest *v1beta2.Manifest, stateCheck []*v1beta2.StateCheck) error {
+func appendOptionalCustomStateCheck(manifest *v1beta2.Manifest, stateCheck []*v1beta2.CustomStateCheck) error {
 	if manifest.Spec.Resource == nil || stateCheck == nil {
 		return nil
 	}
