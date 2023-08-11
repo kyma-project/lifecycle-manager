@@ -51,7 +51,7 @@ func (c *CustomResourceReadyCheck) Run(ctx context.Context,
 	}
 	moduleCR := manifest.Spec.Resource.DeepCopy()
 	if err := clnt.Get(ctx, client.ObjectKeyFromObject(moduleCR), moduleCR); err != nil {
-		return declarative.StateInfo{State: declarative.StateError}, err
+		return declarative.StateInfo{State: declarative.StateError}, fmt.Errorf("failed to fetch resource: %w", err)
 	}
 	return HandleState(manifest, moduleCR)
 }
@@ -97,7 +97,8 @@ func mappingState(manifest *v1beta2.Manifest, moduleCR *unstructured.Unstructure
 		stateFromCR, stateExists, err := unstructured.NestedString(moduleCR.Object,
 			strings.Split(stateCheck.JSONPath, ".")...)
 		if err != nil {
-			return "", false, err
+			return "", false, fmt.Errorf("could not get state from module CR %s at path %s "+
+				"to determine readiness: %w", moduleCR.GetName(), stateCheck.JSONPath, err)
 		}
 		if !stateExists {
 			continue
@@ -165,7 +166,7 @@ func parseStateChecks(manifest *v1beta2.Manifest) ([]*v1beta2.CustomStateCheck, 
 	}
 	var stateCheck []*v1beta2.CustomStateCheck
 	if err := json.Unmarshal([]byte(customStateCheckAnnotation), &stateCheck); err != nil {
-		return stateCheck, true, err
+		return stateCheck, true, fmt.Errorf("failed to unmarshal stateCheck: %w", err)
 	}
 	return stateCheck, true, nil
 }

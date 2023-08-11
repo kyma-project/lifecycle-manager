@@ -183,7 +183,7 @@ func appendOptionalCustomStateCheck(manifest *v1beta2.Manifest, stateCheck []*v1
 	}
 	stateCheckByte, err := json.Marshal(stateCheck)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to marshal stateCheck: %w", err)
 	}
 	manifest.Annotations[v1beta2.CustomStateCheckAnnotation] = string(stateCheckByte)
 	return nil
