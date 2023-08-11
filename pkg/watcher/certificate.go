@@ -172,7 +172,7 @@ func (c *CertificateManager) createCertificate(ctx context.Context, subjectAltNa
 
 	err = c.kcpClient.Patch(ctx, &cert, client.Apply, client.ForceOwnership, skrChartFieldOwner)
 	if err != nil {
-		return fmt.Errorf("failed to patch certificiate: %w", err)
+		return fmt.Errorf("failed to patch certificate: %w", err)
 	}
 	return nil
 }
