@@ -120,11 +120,13 @@ func generateValidatingWebhookConfigFromWatchers(webhookObjKey,
 	}
 }
 
+var errConvertUnstruct = errors.New("failed to convert deployment to unstructured")
+
 func configureClusterRoleBinding(cfg *unstructuredResourcesConfig, resource *unstructured.Unstructured,
 ) (*rbacV1.ClusterRoleBinding, error) {
 	crb := &rbacV1.ClusterRoleBinding{}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(resource.Object, crb); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", errConvertUnstruct, err)
 	}
 	if len(crb.Subjects) == 0 {
 		return nil, ErrExpectedSubjectsNotToBeEmpty
@@ -139,7 +141,7 @@ func configureConfigMap(cfg *unstructuredResourcesConfig, resource *unstructured
 ) (*corev1.ConfigMap, error) {
 	configMap := &corev1.ConfigMap{}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(resource.Object, configMap); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", errConvertUnstruct, err)
 	}
 	configMap.Data = map[string]string{
 		"contractVersion":  cfg.contractVersion,
@@ -154,7 +156,7 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 ) (*appsv1.Deployment, error) {
 	deployment := &appsv1.Deployment{}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, deployment); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", errConvertUnstruct, err)
 	}
 
 	if deployment.Spec.Template.Labels == nil || len(deployment.Spec.Template.Labels) == 0 {

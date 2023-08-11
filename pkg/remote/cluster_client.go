@@ -26,7 +26,7 @@ func (cc *ClusterClient) GetRestConfigFromSecret(ctx context.Context, name, name
 	if err := cc.DefaultClient.List(ctx, kubeConfigSecretList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{v1beta2.KymaName: name}), Namespace: namespace,
 	}); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list kubeconfig secrets: %w", err)
 	} else if len(kubeConfigSecretList.Items) < 1 {
 		gr := v1.SchemeGroupVersion.WithResource(fmt.Sprintf("secret with label %s", v1beta2.KymaName)).GroupResource()
 
@@ -37,8 +37,8 @@ func (cc *ClusterClient) GetRestConfigFromSecret(ctx context.Context, name, name
 
 	restConfig, err := clientcmd.RESTConfigFromKubeConfig(kubeConfigSecret.Data[KubeConfigKey])
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create rest config from kubeconfig: %w", err)
 	}
 
-	return restConfig, err
+	return restConfig, nil
 }

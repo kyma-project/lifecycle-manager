@@ -6,14 +6,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
@@ -41,7 +42,7 @@ func PostRunCreateCR(
 	resource := manifest.Spec.Resource.DeepCopy()
 	err := skr.Create(ctx, resource, client.FieldOwner(declarative.CustomResourceManager))
 	if err != nil && !k8serrors.IsAlreadyExists(err) {
-		return err
+		return fmt.Errorf("failed to create resource: %w", err)
 	}
 
 	oMeta := &v1.PartialObjectMetadata{}
@@ -53,7 +54,7 @@ func PostRunCreateCR(
 		if err := kcp.Patch(
 			ctx, oMeta, client.Apply, client.ForceOwnership, client.FieldOwner(declarative.CustomResourceManager),
 		); err != nil {
-			return err
+			return fmt.Errorf("failed to patch resource: %w", err)
 		}
 	}
 	return nil
@@ -85,7 +86,7 @@ func PreDeleteDeleteCR(
 	}
 
 	if !util.IsNotFound(err) {
-		return err
+		return fmt.Errorf("PreDeleteDeleteCR: %w", err)
 	}
 
 	var crd unstructured.Unstructured
@@ -102,22 +103,22 @@ func PreDeleteDeleteCR(
 	}
 
 	if !util.IsNotFound(err) {
-		return err
+		return fmt.Errorf("PreDeleteDeleteCR: %w", err)
 	}
 
 	onCluster := manifest.DeepCopy()
 	err = kcp.Get(ctx, client.ObjectKeyFromObject(obj), onCluster)
 	if util.IsNotFound(err) {
-		return nil
+		return fmt.Errorf("PreDeleteDeleteCR: %w", err)
 	}
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to fetch resource: %w", err)
 	}
 	if removed := controllerutil.RemoveFinalizer(onCluster, declarative.CustomResourceManager); removed {
 		if err := kcp.Update(
 			ctx, onCluster, client.FieldOwner(declarative.CustomResourceManager),
 		); err != nil {
-			return err
+			return fmt.Errorf("failed to update resource: %w", err)
 		}
 	}
 	return nil

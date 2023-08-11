@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
@@ -15,6 +14,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
@@ -37,7 +38,8 @@ func (cc *ClusterClient) GetRESTConfig(
 		ctx, kubeConfigSecretList, &client.ListOptions{LabelSelector: labelSelector, Namespace: namespace},
 	)
 	if err != nil {
-		return nil, err
+		return nil,
+			fmt.Errorf("failed to list resources by {LabelSelector: %v, Namespace: %v}: %w", labelSelector, namespace, err)
 	}
 	kubeConfigSecret := &v1.Secret{}
 	if len(kubeConfigSecretList.Items) < 1 {
@@ -56,9 +58,9 @@ func (cc *ClusterClient) GetRESTConfig(
 
 	restConfig, err := clientcmd.RESTConfigFromKubeConfig(kubeConfigSecret.Data["config"])
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get rest configuration from kubeconfig: %w", err)
 	}
-	return restConfig, err
+	return restConfig, nil
 }
 
 func WithClientCacheKey() declarative.WithClientCacheKeyOption {

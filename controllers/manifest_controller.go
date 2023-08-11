@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -18,10 +16,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	"github.com/kyma-project/lifecycle-manager/pkg/security"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest"
+
 	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
 	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
+
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/pkg/security"
 )
 
 func SetupWithManager(
@@ -46,7 +48,7 @@ func SetupWithManager(
 
 	// start listener as a manager runnable
 	if err := mgr.Add(runnableListener); err != nil {
-		return err
+		return fmt.Errorf("failed to add to listener to manager: %w", err)
 	}
 
 	codec, err := v1beta2.NewCodec()
@@ -54,7 +56,7 @@ func SetupWithManager(
 		return fmt.Errorf("unable to initialize codec: %w", err)
 	}
 
-	return ctrl.NewControllerManagedBy(mgr).
+	controllerManagedByManager := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
 		Watches(&v1.Secret{}, handler.Funcs{}).
 		WatchesRawSource(
@@ -69,7 +71,12 @@ func SetupWithManager(
 					queue.Add(ctrl.Request{NamespacedName: client.ObjectKeyFromObject(event.Object)})
 				},
 			},
-		).WithOptions(options).Complete(ManifestReconciler(mgr, codec, checkInterval))
+		).WithOptions(options)
+
+	if controllerManagedByManager.Complete(ManifestReconciler(mgr, codec, checkInterval)) != nil {
+		return fmt.Errorf("failed to initialize manifest controller by manager: %w", err)
+	}
+	return nil // never end up here :)
 }
 
 func ManifestReconciler(

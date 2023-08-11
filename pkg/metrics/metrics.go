@@ -43,11 +43,11 @@ var errMetric = errors.New("failed to update metrics")
 func UpdateAll(kyma *v1beta2.Kyma) error {
 	shootID, err := extractShootID(kyma)
 	if err != nil {
-		return errors.Join(errMetric, err)
+		return fmt.Errorf("%w: %w", errMetric, err)
 	}
 	instanceID, err := extractInstanceID(kyma)
 	if err != nil {
-		return errors.Join(errMetric, err)
+		return fmt.Errorf("%w: %w", errMetric, err)
 	}
 
 	setKymaStateGauge(kyma.Status.State, kyma.Name, shootID, instanceID)

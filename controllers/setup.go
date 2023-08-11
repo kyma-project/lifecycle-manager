@@ -8,7 +8,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -20,11 +19,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+
+	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
+	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 	"github.com/kyma-project/lifecycle-manager/pkg/watch"
-	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
-	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
 )
 
 type SetupUpSetting struct {
@@ -82,7 +84,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 	r.watchEventChannel(controllerBuilder, eventChannel)
 	// start listener as a manager runnable
 	if err := mgr.Add(runnableListener); err != nil {
-		return err
+		return fmt.Errorf("KymaReconciler %w", err)
 	}
 
 	if err := controllerBuilder.Complete(r); err != nil {
@@ -141,11 +143,16 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 		return fmt.Errorf("unable to set istio client for watcher controller: %w", err)
 	}
 
-	return ctrl.NewControllerManagedBy(mgr).
+	ctrlManager := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Watcher{}).
 		Named(WatcherControllerName).
-		WithOptions(options).
-		Complete(r)
+		WithOptions(options)
+
+	err = ctrlManager.Complete(r)
+	if err != nil {
+		return fmt.Errorf("failed to setup manager for watcher controller: %w", err)
+	}
+	return nil
 }
 
 // SetupWithManager sets up the Purge controller with the Manager.

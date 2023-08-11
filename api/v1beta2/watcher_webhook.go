@@ -17,11 +17,17 @@ limitations under the License.
 package v1beta2
 
 import (
+	"fmt"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 func (watcher *Watcher) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
+	err := ctrl.NewWebhookManagedBy(mgr).
 		For(watcher).
 		Complete()
+	if err != nil {
+		return fmt.Errorf("failed to setup Webhook Manager for watcher: %w", err)
+	}
+	return nil
 }

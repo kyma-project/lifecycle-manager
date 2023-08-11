@@ -44,6 +44,7 @@ func runResourceOperationWithGroupedErrors(ctx context.Context, clt client.Clien
 			return operation(grpCtx, clt, resources[resIdx])
 		})
 	}
+	//nolint:wrapcheck
 	return errGrp.Wait()
 }
 
@@ -61,7 +62,7 @@ func resolveKcpAddr(kcpClient client.Client, managerConfig *SkrWebhookManagerCon
 		Namespace: managerConfig.IstioGatewayNamespace,
 		Name:      managerConfig.IstioGatewayName,
 	}, gateway); err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get istio gateway %s: %w", managerConfig.IstioGatewayName, err)
 	}
 
 	if len(gateway.Spec.Servers) != 1 || len(gateway.Spec.Servers[0].Hosts) != 1 {
@@ -84,7 +85,7 @@ func getRawManifestUnstructuredResources(rawManifestReader io.Reader) ([]*unstru
 		resource := &unstructured.Unstructured{}
 		err := decoder.Decode(resource)
 		if err != nil && !errors.Is(err, io.EOF) {
-			return nil, err
+			return nil, fmt.Errorf("failed to decode raw manifest to unstructured: %w", err)
 		}
 		if errors.Is(err, io.EOF) {
 			break
