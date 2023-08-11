@@ -29,9 +29,8 @@ func NewCustomResourceReadyCheck() *CustomResourceReadyCheck {
 type CustomResourceReadyCheck struct{}
 
 var (
-	ErrNoDeterminedState     = errors.New("could not determine state")
-	ErrCRInUnexpectedState   = errors.New("module CR in unexpected state during readiness check")
-	ErrModuleDeploymentState = errors.New("module operator deployment is not ready")
+	ErrNoDeterminedState   = errors.New("could not determine state")
+	ErrCRInUnexpectedState = errors.New("module CR in unexpected state during readiness check")
 )
 
 func (c *CustomResourceReadyCheck) Run(ctx context.Context,
@@ -41,10 +40,9 @@ func (c *CustomResourceReadyCheck) Run(ctx context.Context,
 ) (declarative.StateInfo, error) {
 	if !isDeploymentReady(clnt, resources) {
 		return declarative.StateInfo{
-				State: declarative.StateProcessing,
-				Info:  ErrModuleDeploymentState.Error(),
-			},
-			ErrModuleDeploymentState
+			State: declarative.StateProcessing,
+			Info:  "module operator deployment is not ready",
+		}, nil
 	}
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
