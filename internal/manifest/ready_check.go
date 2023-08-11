@@ -154,11 +154,13 @@ func parseStateChecks(manifest *v1beta2.Manifest) ([]*v1beta2.CustomStateCheck, 
 			{
 				JSONPath:    customResourceStatePath,
 				Value:       string(v1beta2.StateReady),
-				MappedState: v1beta2.StateReady},
+				MappedState: v1beta2.StateReady,
+			},
 			{
 				JSONPath:    customResourceStatePath,
 				Value:       string(v1beta2.StateError),
-				MappedState: v1beta2.StateError},
+				MappedState: v1beta2.StateError,
+			},
 		}, false, nil
 	}
 	var stateCheck []*v1beta2.CustomStateCheck

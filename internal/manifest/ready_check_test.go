@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
+//nolint:funlen,maintidx
 func TestHandleState(t *testing.T) {
 	t.Parallel()
 	type moduleCheck struct {
@@ -202,7 +203,7 @@ func TestHandleState(t *testing.T) {
 			false,
 		},
 		{
-			"custom module with multiple StateReady condition, expected mapped to StateProcessing when not all condition matched",
+			"custom module with multiple StateReady condition, expected mapped to StateProcessing when not all condition matched", //nolint:lll
 			[]*v1beta2.CustomStateCheck{
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
@@ -292,12 +293,14 @@ func TestHandleState(t *testing.T) {
 			false,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		testCase := testCase
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 			manifestCR := testutils.NewTestManifest("test")
-			if tt.customStateExpected {
-				if tt.customState != nil {
-					marshal, err := json.Marshal(tt.customState)
+			if testCase.customStateExpected {
+				if testCase.customState != nil {
+					marshal, err := json.Marshal(testCase.customState)
 					if err != nil {
 						t.Errorf("HandleState() error = %v", err)
 						return
@@ -306,7 +309,7 @@ func TestHandleState(t *testing.T) {
 				}
 			}
 			moduleCR := testutils.NewTestModuleCR("test", v1.NamespaceDefault, "v1", "TestCR")
-			for _, check := range tt.checkInModuleCR {
+			for _, check := range testCase.checkInModuleCR {
 				err := unstructured.SetNestedField(moduleCR.Object, check.value, check.fields...)
 				if err != nil {
 					t.Errorf("HandleState() error = %v", err)
@@ -314,11 +317,11 @@ func TestHandleState(t *testing.T) {
 				}
 			}
 			got, err := manifest.HandleState(manifestCR, &moduleCR)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("HandleState() got = %v, want %v", got, tt.want)
+			if !reflect.DeepEqual(got, testCase.want) {
+				t.Errorf("HandleState() got = %v, want %v", got, testCase.want)
 			}
-			if (err != nil) != tt.wantErr {
-				t.Errorf("HandleState() error = %v, wantErr %v", err, tt.wantErr)
+			if (err != nil) != testCase.wantErr {
+				t.Errorf("HandleState() error = %v, wantErr %v", err, testCase.wantErr)
 			}
 		})
 	}

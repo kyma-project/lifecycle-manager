@@ -88,7 +88,7 @@ func newKCPKymaWithNamespace(name, namespace, channel, syncStrategy string) *v1b
 func NewTestManifest(prefix string) *v1beta2.Manifest {
 	return &v1beta2.Manifest{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%d", prefix, rand.Intn(999999)),
+			Name:      fmt.Sprintf("%s-%s", prefix, randString(randomStringLength)),
 			Namespace: v1.NamespaceDefault,
 			Labels: map[string]string{
 				v1beta2.KymaName: string(uuid.NewUUID()),
