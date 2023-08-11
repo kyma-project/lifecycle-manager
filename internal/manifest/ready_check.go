@@ -20,10 +20,10 @@ import (
 )
 
 const (
-	ToWarningDuration       = 5 * time.Minute
-	customResourceStatePath = "status.state"
-	CustomModuleWarning     = "module CR state not found or given customStateCheck.jsonPath is not exists"
-	KymaModuleWarning       = "module CR state not found"
+	ToWarningDuration                = 5 * time.Minute
+	customResourceStatePath          = "status.state"
+	ModuleCRWithCustomCheckWarning   = "module CR state not found or given customStateCheck.jsonPath is not exists"
+	ModuleCRWithNoCustomCheckWarning = "module CR state not found"
 )
 
 // NewCustomResourceReadyCheck creates a readiness check that verifies that the Resource in the Manifest
@@ -88,9 +88,9 @@ func HandleState(manifest *v1beta2.Manifest, moduleCR *unstructured.Unstructured
 		)
 	}
 	if !stateExists {
-		info := KymaModuleWarning
+		info := ModuleCRWithNoCustomCheckWarning
 		if customStateFound {
-			info = CustomModuleWarning
+			info = ModuleCRWithCustomCheckWarning
 		}
 		state := declarative.StateProcessing
 		// If wait for certain period of time, state still not found, put manifest state into Warning

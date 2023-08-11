@@ -67,7 +67,7 @@ func TestHandleState(t *testing.T) {
 					"customState",
 				},
 			},
-			v2.StateInfo{State: v2.StateProcessing},
+			v2.StateInfo{State: v2.StateProcessing, Info: manifest.ModuleCRWithNoCustomCheckWarning},
 			false,
 		},
 		{
@@ -309,6 +309,7 @@ func TestHandleState(t *testing.T) {
 					manifestCR.Annotations[v1beta2.CustomStateCheckAnnotation] = string(marshal)
 				}
 			}
+			manifestCR.CreationTimestamp = v1.Now()
 			moduleCR := testutils.NewTestModuleCR("test", v1.NamespaceDefault, "v1", "TestCR")
 			for _, check := range testCase.checkInModuleCR {
 				err := unstructured.SetNestedField(moduleCR.Object, check.value, check.fields...)
@@ -375,7 +376,7 @@ func TestHandleStateWithDuration(t *testing.T) {
 			false,
 			v1.NewTime(v1.Now().Add(-10 * time.Minute)),
 			nil,
-			v2.StateInfo{State: v2.StateWarning, Info: manifest.KymaModuleWarning},
+			v2.StateInfo{State: v2.StateWarning, Info: manifest.ModuleCRWithNoCustomCheckWarning},
 			false,
 		},
 		{
@@ -400,7 +401,7 @@ func TestHandleStateWithDuration(t *testing.T) {
 					definedValueForReady,
 				},
 			},
-			v2.StateInfo{State: v2.StateWarning, Info: manifest.CustomModuleWarning},
+			v2.StateInfo{State: v2.StateWarning, Info: manifest.ModuleCRWithCustomCheckWarning},
 			false,
 		},
 	}
