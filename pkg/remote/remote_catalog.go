@@ -77,7 +77,7 @@ func (c *RemoteCatalog) CreateOrUpdate(
 		if meta.IsNoMatchError(err) {
 			return nil
 		}
-		return err
+		return fmt.Errorf("failed to list module templates from runtime: %w", err)
 	}
 
 	return c.deleteDiffCatalog(ctx, kcpModules, runtimeModules.Items, syncContext)
@@ -224,13 +224,13 @@ func (c *RemoteCatalog) Delete(
 		if util.IsNotFound(err) {
 			return nil
 		}
-		return err
+		return fmt.Errorf("failed to list module templates on runtime: %w", err)
 	}
 	for i := range moduleTemplatesRuntime.Items {
 		if isManagedByKcp(moduleTemplatesRuntime.Items[i]) {
 			if err := syncContext.RuntimeClient.Delete(ctx, &moduleTemplatesRuntime.Items[i]); err != nil &&
 				!util.IsNotFound(err) {
-				return err
+				return fmt.Errorf("failed to delete module template from runtime: %w", err)
 			}
 		}
 	}
@@ -255,7 +255,7 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 	}, crd)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get module template CRD from kcp: %w", err)
 	}
 
 	err = syncContext.RuntimeClient.Get(ctx, client.ObjectKey{
@@ -271,7 +271,7 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 	}
 
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get module template CRD from runtime: %w", err)
 	}
 
 	return nil

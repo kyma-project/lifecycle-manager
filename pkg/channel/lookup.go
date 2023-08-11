@@ -280,7 +280,7 @@ func (c *TemplateLookup) getTemplate(ctx context.Context, desiredChannel string)
 	templateList := &v1beta2.ModuleTemplateList{}
 	err := c.reader.List(ctx, templateList)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list module templates on lookup: %w", err)
 	}
 
 	moduleIdentifier := c.module.Name

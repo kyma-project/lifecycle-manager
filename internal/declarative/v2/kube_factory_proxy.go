@@ -1,6 +1,8 @@
 package v2
 
 import (
+	"fmt"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,7 +18,11 @@ import (
 // OpenAPISchema returns metadata and structural information about
 // Kubernetes object definitions.
 func (s *SingletonClients) OpenAPISchema() (openapi.Resources, error) {
-	return s.openAPIParser.Parse()
+	parsedMetadata, err := s.openAPIParser.Parse()
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse schema metadata: %w", err)
+	}
+	return parsedMetadata, nil
 }
 
 // OpenAPIGetter returns a getter for the openapi schema document.
@@ -47,10 +53,10 @@ func (s *SingletonClients) UnstructuredClientForMapping(mapping *meta.RESTMappin
 	var err error
 	client, err = rest.RESTClientForConfigAndClient(cfg, s.httpClient)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create httpClient config: %w", err)
 	}
 	s.unstructuredRESTClientCache[key] = client
-	return client, err
+	return client, nil
 }
 
 // ClientForMapping returns a RESTClient for working with the specified RESTMapping or an error. This is intended
@@ -79,11 +85,11 @@ func (s *SingletonClients) ClientForMapping(mapping *meta.RESTMapping) (resource
 	var err error
 	client, err = rest.RESTClientForConfigAndClient(cfg, s.httpClient)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create httpClient config: %w", err)
 	}
 
 	s.structuredRESTClientCache[key] = client
-	return client, err
+	return client, nil
 }
 
 // KubernetesClientSet gives you back an external clientset.
@@ -103,7 +109,11 @@ func (s *SingletonClients) NewBuilder() *resource.Builder {
 
 // RESTClient returns a RESTClient for accessing Kubernetes resources or an error.
 func (s *SingletonClients) RESTClient() (*rest.RESTClient, error) {
-	return rest.RESTClientForConfigAndClient(s.config, s.httpClient)
+	restClient, err := rest.RESTClientForConfigAndClient(s.config, s.httpClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize RestCliient for k8s api access: %w", err)
+	}
+	return restClient, nil
 }
 
 // Validator returns a schema that can validate objects stored on disk.

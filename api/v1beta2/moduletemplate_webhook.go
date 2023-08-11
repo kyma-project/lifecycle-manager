@@ -32,9 +32,13 @@ import (
 )
 
 func (m *ModuleTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
+	err := ctrl.NewWebhookManagedBy(mgr).
 		For(m).
 		Complete()
+	if err != nil {
+		return fmt.Errorf("failed to setup webhook with manager for ModuleTemplate: %w", err)
+	}
+	return nil
 }
 
 //nolint:lll
@@ -79,7 +83,7 @@ func (m *ModuleTemplate) ValidateDelete() (admission.Warnings, error) {
 
 func Validate(oldDescriptor, newDescriptor *Descriptor, newTemplateName string) error {
 	if err := compdesc.Validate(newDescriptor.ComponentDescriptor); err != nil {
-		return err
+		return fmt.Errorf("failed to validate componentDescriptor; %w", err)
 	}
 
 	newVersion, err := semver.NewVersion(newDescriptor.Version)
@@ -91,7 +95,7 @@ func Validate(oldDescriptor, newDescriptor *Descriptor, newTemplateName string) 
 		// the old descriptor has to be valid since it otherwise would not have been submitted
 		oldVersion, err := semver.NewVersion(oldDescriptor.Version)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to retrieve template version: %w", err)
 		}
 		if !IsValidVersionChange(newVersion, oldVersion) {
 			return validationErr(newTemplateName, newVersion.String(),

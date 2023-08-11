@@ -27,7 +27,11 @@ type OCI struct {
 }
 
 func (o *OCI) ToInstallRaw() ([]byte, error) {
-	return json.Marshal(o)
+	bytes, err := json.Marshal(o)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal to raw bytes: %w", err)
+	}
+	return bytes, nil
 }
 
 func (o *OCI) String() string {

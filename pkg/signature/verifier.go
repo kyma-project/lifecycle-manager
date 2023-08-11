@@ -94,7 +94,11 @@ func CreateMultiRSAVerifier(keys signing.KeyRegistry) (*MultiVerifier, error) {
 }
 
 func (v MultiVerifier) Verify(descriptor *compdesc.ComponentDescriptor, signature ocmv1.Signature) error {
-	return compdesc.Verify(descriptor, v.registry, signature.Name)
+	err := compdesc.Verify(descriptor, v.registry, signature.Name)
+	if err != nil {
+		return fmt.Errorf("failed to verify descriptor signature: %w", err)
+	}
+	return nil
 }
 
 // CreateRSAVerifierFromSecrets creates an instance of RsaVerifier from a rsa public key file located as secret
@@ -114,8 +118,8 @@ func CreateRSAVerifierFromSecrets(
 		return nil, fmt.Errorf("error converting signature labelSelector: %w", err)
 	}
 	// TODO: consider later if need to introduce cache due to performance issue
-	if err := k8sClient.List(ctx, secretList, &client.ListOptions{LabelSelector: selector}); err != nil {
-		return nil, err
+	if err = k8sClient.List(ctx, secretList, &client.ListOptions{LabelSelector: selector}); err != nil {
+		return nil, fmt.Errorf("failed to list secrets: %w", err)
 	} else if len(secretList.Items) < 1 {
 		gr := v1.SchemeGroupVersion.WithResource(fmt.Sprintf("secrets with label %s", v1beta2.KymaName)).GroupResource()
 		return nil, k8serrors.NewNotFound(gr, selector.String())
@@ -125,7 +129,7 @@ func CreateRSAVerifierFromSecrets(
 		publicKey := item.Data["key"]
 		key, err := signing.ParsePublicKey(publicKey)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to parse public key: %w", err)
 		}
 		registry.RegisterPublicKey(ValidSignatureName, key)
 		registry.RegisterPublicKey(item.Labels[v1beta2.Signature], key)
@@ -136,12 +140,12 @@ func CreateRSAVerifierFromSecrets(
 func CreateRSAVerifierFromPublicKeyFile(file string) (*MultiVerifier, error) {
 	data, err := os.ReadFile(file)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to read public key file: %w", err)
 	}
 	registry := signing.NewKeyRegistry()
 	key, err := signing.ParsePublicKey(data)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse public key: %w", err)
 	}
 	registry.RegisterPublicKey(ValidSignatureName, key)
 	return CreateMultiRSAVerifier(registry)

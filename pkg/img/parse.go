@@ -62,7 +62,7 @@ func parseLayersByName(repo *genericocireg.RepositorySpec, descriptor *compdesc.
 		var layerRepresentation LayerRepresentation
 		spec, err := ocm.DefaultContext().AccessSpecForSpec(access)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to create spec for acccess: %w", err)
 		}
 		switch access.GetType() {
 		case localblob.TypeV1:

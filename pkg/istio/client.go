@@ -50,7 +50,7 @@ func NewVersionedIstioClient(cfg *rest.Config, config *Config, recorder record.E
 ) (*Client, error) {
 	cs, err := istioclient.NewForConfig(cfg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create istio client from config: %w", err)
 	}
 	return &Client{
 		Interface:     cs,
@@ -114,7 +114,7 @@ func (c *Client) CreateVirtualService(ctx context.Context, virtualSvc *istioclie
 	_, err := c.NetworkingV1beta1().
 		VirtualServices(metav1.NamespaceDefault).
 		Create(ctx, virtualSvc, metav1.CreateOptions{})
-	return err
+	return fmt.Errorf("failed to create istio virtual service: %w", err)
 }
 
 func addGateways(gateways []*istioclientapi.Gateway, virtualSvc *istioclientapi.VirtualService) {
@@ -193,14 +193,21 @@ func (c *Client) UpdateVirtualService(ctx context.Context, virtualService,
 	_, err := c.NetworkingV1beta1().
 		VirtualServices(virtualServiceRemote.Namespace).
 		Update(ctx, virtualServiceRemote, metav1.UpdateOptions{})
-	return err
+	if err != nil {
+		return fmt.Errorf("failed to update istio virtual service: %w", err)
+	}
+	return nil
 }
 
 func (c *Client) RemoveVirtualServiceForCR(ctx context.Context, watcherObjKey client.ObjectKey,
 ) error {
-	return c.NetworkingV1beta1().
+	err := c.NetworkingV1beta1().
 		VirtualServices(metav1.NamespaceDefault).
 		Delete(ctx, watcherObjKey.Name, metav1.DeleteOptions{})
+	if err != nil {
+		return fmt.Errorf("failed to delete virtual service for cr: %w", err)
+	}
+	return nil
 }
 
 func IsRouteConfigEqual(route1 *istioapi.HTTPRoute, route2 *istioapi.HTTPRoute) bool {

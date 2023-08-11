@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"k8s.io/client-go/rest"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
@@ -33,7 +34,7 @@ func (r *RemoteClusterLookup) ConfigResolver(
 
 	kymaOwnerLabel, err := internal.GetResourceLabel(manifest, v1beta2.KymaName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get kyma owner label: %w", err)
 	}
 
 	// RESTConfig can either be retrieved by a secret with name contained in labels.KymaName Manifest CR label,

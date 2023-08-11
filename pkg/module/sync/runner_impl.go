@@ -81,7 +81,11 @@ func (r *RunnerImpl) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 }
 
 func (r *RunnerImpl) getModule(ctx context.Context, module client.Object) error {
-	return r.Get(ctx, client.ObjectKey{Namespace: module.GetNamespace(), Name: module.GetName()}, module)
+	err := r.Get(ctx, client.ObjectKey{Namespace: module.GetNamespace(), Name: module.GetName()}, module)
+	if err != nil {
+		return fmt.Errorf("failed to get module by name-namespace: %w", err)
+	}
+	return nil
 }
 
 func (r *RunnerImpl) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
@@ -92,7 +96,7 @@ func (r *RunnerImpl) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	}
 	obj, err := r.converter.ConvertToVersion(module.Object, r.versioner)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to convert object to version: %w", err)
 	}
 	manifestObj, ok := obj.(client.Object)
 	if !ok {
@@ -115,7 +119,7 @@ func (r *RunnerImpl) deleteManifest(ctx context.Context, module *common.Module) 
 	if util.IsNotFound(err) {
 		return nil
 	}
-	return err
+	return fmt.Errorf("failed to delete manifest: %w", err)
 }
 
 func (r *RunnerImpl) setupModule(module *common.Module, kyma *v1beta2.Kyma) error {
