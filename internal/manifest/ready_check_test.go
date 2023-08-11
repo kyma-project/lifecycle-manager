@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
@@ -308,6 +309,117 @@ func TestHandleState(t *testing.T) {
 					manifestCR.Annotations[v1beta2.CustomStateCheckAnnotation] = string(marshal)
 				}
 			}
+			moduleCR := testutils.NewTestModuleCR("test", v1.NamespaceDefault, "v1", "TestCR")
+			for _, check := range testCase.checkInModuleCR {
+				err := unstructured.SetNestedField(moduleCR.Object, check.value, check.fields...)
+				if err != nil {
+					t.Errorf("HandleState() error = %v", err)
+					return
+				}
+			}
+			got, err := manifest.HandleState(manifestCR, &moduleCR)
+			if !reflect.DeepEqual(got, testCase.want) {
+				t.Errorf("HandleState() got = %v, want %v", got, testCase.want)
+			}
+			if (err != nil) != testCase.wantErr {
+				t.Errorf("HandleState() error = %v, wantErr %v", err, testCase.wantErr)
+			}
+		})
+	}
+}
+
+//nolint:funlen
+func TestHandleStateWithDuration(t *testing.T) {
+	t.Parallel()
+	type moduleCheck struct {
+		fields []string
+		value  string
+	}
+	definedValueForError := "customStateForError"
+	definedValueForReady := "customStateForReady"
+	tests := []struct {
+		name                string
+		customState         []*v1beta2.CustomStateCheck
+		customStateExpected bool
+		manifestCreatedAt   v1.Time
+		checkInModuleCR     []moduleCheck
+		want                v2.StateInfo
+		wantErr             bool
+	}{
+		{
+			"kyma module just created with no state, expected to StateProcessing",
+			nil,
+			false,
+			v1.Now(),
+			nil,
+			v2.StateInfo{State: v2.StateProcessing},
+			false,
+		},
+		{
+			"kyma module with state updated, expected to StateReady",
+			nil,
+			false,
+			v1.Now(),
+			[]moduleCheck{
+				{
+					[]string{"status", "state"},
+					string(v2.StateReady),
+				},
+			},
+			v2.StateInfo{State: v2.StateReady},
+			false,
+		},
+		{
+			"kyma module with no state after certain time, expected to StateWarning",
+			nil,
+			false,
+			v1.NewTime(v1.Now().Add(-10 * time.Minute)),
+			nil,
+			v2.StateInfo{State: v2.StateWarning, Info: manifest.KymaModuleWarning},
+			false,
+		},
+		{
+			"custom module with wrong JSON path after certain time, expected to StateWarning",
+			[]*v1beta2.CustomStateCheck{
+				{
+					JSONPath:    "fieldLevel1.fieldLevel2",
+					Value:       definedValueForReady,
+					MappedState: v1beta2.StateReady,
+				},
+				{
+					JSONPath:    "fieldLevel1.fieldLevel2",
+					Value:       definedValueForError,
+					MappedState: v1beta2.StateError,
+				},
+			},
+			true,
+			v1.NewTime(v1.Now().Add(-10 * time.Minute)),
+			[]moduleCheck{
+				{
+					[]string{"fieldLevel1", "fieldLevel3"},
+					definedValueForReady,
+				},
+			},
+			v2.StateInfo{State: v2.StateWarning, Info: manifest.CustomModuleWarning},
+			false,
+		},
+	}
+	for _, testCase := range tests {
+		testCase := testCase
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			manifestCR := testutils.NewTestManifest("test")
+			if testCase.customStateExpected {
+				if testCase.customState != nil {
+					marshal, err := json.Marshal(testCase.customState)
+					if err != nil {
+						t.Errorf("HandleState() error = %v", err)
+						return
+					}
+					manifestCR.Annotations[v1beta2.CustomStateCheckAnnotation] = string(marshal)
+				}
+			}
+			manifestCR.CreationTimestamp = testCase.manifestCreatedAt
 			moduleCR := testutils.NewTestModuleCR("test", v1.NamespaceDefault, "v1", "TestCR")
 			for _, check := range testCase.checkInModuleCR {
 				err := unstructured.SetNestedField(moduleCR.Object, check.value, check.fields...)

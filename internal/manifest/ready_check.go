@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	appsv1 "k8s.io/api/apps/v1"
@@ -18,7 +19,12 @@ import (
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
-const customResourceStatePath = "status.state"
+const (
+	ToWarningDuration       = 5 * time.Minute
+	customResourceStatePath = "status.state"
+	CustomModuleWarning     = "module CR state not found or given customStateCheck.jsonPath is not exists"
+	KymaModuleWarning       = "module CR state not found"
+)
 
 // NewCustomResourceReadyCheck creates a readiness check that verifies that the Resource in the Manifest
 // returns the ready state, if not it returns not ready.
@@ -60,7 +66,14 @@ func (c *CustomResourceReadyCheck) Run(ctx context.Context,
 }
 
 func HandleState(manifest *v1beta2.Manifest, moduleCR *unstructured.Unstructured) (declarative.StateInfo, error) {
-	typedState, stateExists, err := mappingState(manifest, moduleCR)
+	stateChecks, customStateFound, err := parseStateChecks(manifest)
+	if err != nil {
+		return declarative.StateInfo{State: declarative.StateError}, fmt.Errorf(
+			"could not get state from module CR %s to determine readiness: %w",
+			moduleCR.GetName(), err,
+		)
+	}
+	typedState, stateExists, err := mappingState(stateChecks, moduleCR, customStateFound)
 	if err != nil {
 		// Only happens for kyma module CR
 		if errors.Is(err, ErrNotSupportedState) {
@@ -74,10 +87,18 @@ func HandleState(manifest *v1beta2.Manifest, moduleCR *unstructured.Unstructured
 			moduleCR.GetName(), err,
 		)
 	}
-
-	// CR state might not been initialized, put manifest state into processing
 	if !stateExists {
-		return declarative.StateInfo{State: declarative.StateProcessing, Info: "module CR state not found"}, nil
+		info := KymaModuleWarning
+		if customStateFound {
+			info = CustomModuleWarning
+		}
+		state := declarative.StateProcessing
+		// If wait for certain period of time, state still not found, put manifest state into Warning
+		if manifest.CreationTimestamp.Add(ToWarningDuration).Before(time.Now()) {
+			state = declarative.StateWarning
+		}
+
+		return declarative.StateInfo{State: state, Info: info}, nil
 	}
 
 	if typedState == declarative.StateDeleting || typedState == declarative.StateError {
@@ -86,16 +107,16 @@ func HandleState(manifest *v1beta2.Manifest, moduleCR *unstructured.Unstructured
 	return declarative.StateInfo{State: typedState}, nil
 }
 
-func mappingState(manifest *v1beta2.Manifest, moduleCR *unstructured.Unstructured) (declarative.State, bool, error) {
-	stateChecks, customStateFound, err := parseStateChecks(manifest)
-	if err != nil {
-		return "", false, err
-	}
+func mappingState(stateChecks []*v1beta2.CustomStateCheck,
+	moduleCR *unstructured.Unstructured,
+	customStateFound bool,
+) (declarative.State, bool, error) {
 	// make sure ready and error state exists, for other missing customized state, can be ignored.
 	if requiredStateMissing(stateChecks) {
 		return "", false, ErrRequiredStateMissing
 	}
 	stateResult := map[v1beta2.State]bool{}
+	foundStateInCR := false
 	for _, stateCheck := range stateChecks {
 		stateFromCR, stateExists, err := unstructured.NestedString(moduleCR.Object,
 			strings.Split(stateCheck.JSONPath, ".")...)
@@ -109,6 +130,7 @@ func mappingState(manifest *v1beta2.Manifest, moduleCR *unstructured.Unstructure
 		if !customStateFound && !declarative.State(stateFromCR).IsSupportedState() {
 			return "", false, ErrNotSupportedState
 		}
+		foundStateInCR = true
 		_, found := stateResult[stateCheck.MappedState]
 		if found {
 			stateResult[stateCheck.MappedState] = stateResult[stateCheck.MappedState] && stateFromCR == stateCheck.Value
@@ -116,7 +138,7 @@ func mappingState(manifest *v1beta2.Manifest, moduleCR *unstructured.Unstructure
 			stateResult[stateCheck.MappedState] = stateFromCR == stateCheck.Value
 		}
 	}
-	return calculateFinalState(stateResult), true, nil
+	return calculateFinalState(stateResult), foundStateInCR, nil
 }
 
 func calculateFinalState(stateResult map[v1beta2.State]bool) declarative.State {
