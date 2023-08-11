@@ -139,7 +139,7 @@ func (p *Parser) newManifestFromTemplate(
 	var err error
 	descriptor, err := template.GetDescriptor()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get descriptor from template: %w", err)
 	}
 	verification, err := signature.NewVerification(ctx,
 		clusterClient,
