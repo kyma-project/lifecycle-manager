@@ -77,7 +77,7 @@ type ModuleTemplateSpec struct {
 	Target Target `json:"target"`
 
 	// Deprecated, please use StateCheck
-	CustomStateCheck *v1beta2.CustomStateCheck `json:"customStateCheck,omitempty"`
+	CustomStateCheck []*v1beta2.StateCheck `json:"customStateCheck,omitempty"`
 
 	// StateCheck for support 3rd party Module CR state mapping
 	StateCheck []*v1beta2.StateCheck `json:"stateCheck,omitempty"`

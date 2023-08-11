@@ -102,7 +102,7 @@ type ModuleTemplateSpec struct {
 	Descriptor runtime.RawExtension `json:"descriptor"`
 
 	// Deprecated, please use StateCheck
-	CustomStateCheck *CustomStateCheck `json:"customStateCheck,omitempty"`
+	CustomStateCheck []*StateCheck `json:"customStateCheck,omitempty"`
 
 	// StateCheck for support 3rd party Module CR state mapping
 	StateCheck []*StateCheck `json:"stateCheck,omitempty"`
@@ -112,9 +112,10 @@ type StateCheck struct {
 	// JSONPath specifies the JSON path to the state variable in the Module CR
 	JSONPath string `json:"jsonPath"`
 
-	// Value is the value at the JSONPath for which the Module CR state is set to "Ready" in Kyma CR
+	// Value is the value at the JSONPath for which the Module CR state should map with MappedState
 	Value string `json:"value"`
 
+	// MappedState is the state value accepted by lifecycle manager
 	MappedState State `json:"mappedState"`
 }
 

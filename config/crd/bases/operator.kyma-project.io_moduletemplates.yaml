@@ -51,19 +51,33 @@ spec:
                 type: string
               customStateCheck:
                 description: Deprecated, please use StateCheck
-                properties:
-                  jsonPath:
-                    description: JSONPath specifies the JSON path to the state variable
-                      in the Module CR
-                    type: string
-                  value:
-                    description: Value is the value at the JSONPath for which the
-                      Module CR state is set to "Ready" in Kyma CR
-                    type: string
-                required:
-                - jsonPath
-                - value
-                type: object
+                items:
+                  properties:
+                    jsonPath:
+                      description: JSONPath specifies the JSON path to the state variable
+                        in the Module CR
+                      type: string
+                    mappedState:
+                      description: MappedState is the state value accepted by lifecycle
+                        manager
+                      enum:
+                      - Processing
+                      - Deleting
+                      - Ready
+                      - Error
+                      - ""
+                      - Warning
+                      type: string
+                    value:
+                      description: Value is the value at the JSONPath for which the
+                        Module CR state should map with MappedState
+                      type: string
+                  required:
+                  - jsonPath
+                  - mappedState
+                  - value
+                  type: object
+                type: array
               data:
                 description: Data is the default set of attributes that are used to
                   generate the Module. It contains a default set of values for a given
@@ -99,6 +113,8 @@ spec:
                         in the Module CR
                       type: string
                     mappedState:
+                      description: MappedState is the state value accepted by lifecycle
+                        manager
                       enum:
                       - Processing
                       - Deleting
@@ -109,7 +125,7 @@ spec:
                       type: string
                     value:
                       description: Value is the value at the JSONPath for which the
-                        Module CR state is set to "Ready" in Kyma CR
+                        Module CR state should map with MappedState
                       type: string
                   required:
                   - jsonPath
@@ -168,19 +184,33 @@ spec:
                 type: string
               customStateCheck:
                 description: Deprecated, please use StateCheck
-                properties:
-                  jsonPath:
-                    description: JSONPath specifies the JSON path to the state variable
-                      in the Module CR
-                    type: string
-                  value:
-                    description: Value is the value at the JSONPath for which the
-                      Module CR state is set to "Ready" in Kyma CR
-                    type: string
-                required:
-                - jsonPath
-                - value
-                type: object
+                items:
+                  properties:
+                    jsonPath:
+                      description: JSONPath specifies the JSON path to the state variable
+                        in the Module CR
+                      type: string
+                    mappedState:
+                      description: MappedState is the state value accepted by lifecycle
+                        manager
+                      enum:
+                      - Processing
+                      - Deleting
+                      - Ready
+                      - Error
+                      - ""
+                      - Warning
+                      type: string
+                    value:
+                      description: Value is the value at the JSONPath for which the
+                        Module CR state should map with MappedState
+                      type: string
+                  required:
+                  - jsonPath
+                  - mappedState
+                  - value
+                  type: object
+                type: array
               data:
                 description: Data is the default set of attributes that are used to
                   generate the Module. It contains a default set of values for a given
@@ -216,6 +246,8 @@ spec:
                         in the Module CR
                       type: string
                     mappedState:
+                      description: MappedState is the state value accepted by lifecycle
+                        manager
                       enum:
                       - Processing
                       - Deleting
@@ -226,7 +258,7 @@ spec:
                       type: string
                     value:
                       description: Value is the value at the JSONPath for which the
-                        Module CR state is set to "Ready" in Kyma CR
+                        Module CR state should map with MappedState
                       type: string
                   required:
                   - jsonPath
