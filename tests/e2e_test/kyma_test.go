@@ -3,17 +3,14 @@
 package e2e_test
 
 import (
-	"context"
 	"os/exec"
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/meta"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -86,7 +83,7 @@ var _ = Describe("SKR Kyma secret should be re-fetched when the SKR cluster is u
 
 			By("Updating kubeconfig")
 			cmd = exec.Command("echo", "SKR_KUBECONFIG=$(k3d kubeconfig write skr)", ">>", "$GITHUB_ENV")
-			out, err := cmd.CombinedOutput()
+			out, err = cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))
 
@@ -105,14 +102,3 @@ var _ = Describe("SKR Kyma secret should be re-fetched when the SKR cluster is u
 				Should(Succeed())
 		})
 	})
-
-func checkKCPKymaCRDeleted(ctx context.Context,
-	kymaName string, kymaNamespace string, k8sClient client.Client,
-) error {
-	kyma := &v1beta2.Kyma{}
-	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma)
-	if util.IsNotFound(err) {
-		return nil
-	}
-	return errKymaNotDeleted
-}
