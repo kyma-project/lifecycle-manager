@@ -87,7 +87,7 @@ var _ = Describe("SKR Kyma secret should be re-fetched when the SKR cluster is u
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))
 
-			cmd = exec.Command("echo", "SKR_KUBECONFIG=$(k3d kubeconfig write skr)", ">>", "$GITHUB_ENV")
+			cmd = exec.Command("echo", "\"SKR_KUBECONFIG=$(k3d kubeconfig write skr)\"", ">>", "$GITHUB_ENV")
 			out, err = cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))
