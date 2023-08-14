@@ -353,7 +353,7 @@ func TestHandleStateWithDuration(t *testing.T) {
 			false,
 			v1.Now(),
 			nil,
-			v2.StateInfo{State: v2.StateProcessing},
+			v2.StateInfo{State: v2.StateProcessing, Info: manifest.ModuleCRWithNoCustomCheckWarning},
 			false,
 		},
 		{
