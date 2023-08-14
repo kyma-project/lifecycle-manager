@@ -264,7 +264,7 @@ func CleanupModuleTemplateSetsForKyma(kyma *v1beta2.Kyma) func() {
 	return func() {
 		By("Cleaning up decremented ModuleTemplate set in regular")
 		for _, module := range kyma.Spec.Modules {
-			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false)
+			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false, false)
 			template.Name = fmt.Sprintf("%s-%s", template.Name, v1beta2.DefaultChannel)
 			Expect(err).ShouldNot(HaveOccurred())
 			Eventually(DeleteCR, Timeout, Interval).
@@ -273,7 +273,7 @@ func CleanupModuleTemplateSetsForKyma(kyma *v1beta2.Kyma) func() {
 		}
 		By("Cleaning up standard ModuleTemplate set in fast")
 		for _, module := range kyma.Spec.Modules {
-			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false)
+			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false, false)
 			template.Name = fmt.Sprintf("%s-%s", template.Name, FastChannel)
 			Expect(err).ShouldNot(HaveOccurred())
 			Eventually(DeleteCR, Timeout, Interval).

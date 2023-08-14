@@ -38,11 +38,12 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
 	customModuleInSKR := NewTestModule("custom-in-skr", v1beta2.DefaultChannel)
 	customModuleInSKR.RemoteModuleTemplateRef = customModuleInSKR.Name
-	SKRTemplate, err := ModuleTemplateFactory(moduleInSKR, unstructured.Unstructured{}, false, false, false)
+	SKRTemplate, err := ModuleTemplateFactory(moduleInSKR, unstructured.Unstructured{}, false, false, false, false)
 	Expect(err).ShouldNot(HaveOccurred())
-	KCPTemplate, err := ModuleTemplateFactory(moduleInKCP, unstructured.Unstructured{}, false, false, false)
+	KCPTemplate, err := ModuleTemplateFactory(moduleInKCP, unstructured.Unstructured{}, false, false, false, false)
 	Expect(err).ShouldNot(HaveOccurred())
-	SKRCustomTemplate, err := ModuleTemplateFactory(customModuleInSKR, unstructured.Unstructured{}, false, false, false)
+	SKRCustomTemplate, err := ModuleTemplateFactory(customModuleInSKR, unstructured.Unstructured{}, false, false, false,
+		false)
 	Expect(err).ShouldNot(HaveOccurred())
 
 	BeforeAll(func() {
@@ -265,7 +266,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	}
 
 	It("module template created", func() {
-		template, err := ModuleTemplateFactory(moduleInKcp, unstructured.Unstructured{}, false, false, false)
+		template, err := ModuleTemplateFactory(moduleInKcp, unstructured.Unstructured{}, false, false, false, false)
 		Expect(err).ShouldNot(HaveOccurred())
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
