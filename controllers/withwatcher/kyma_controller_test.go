@@ -130,6 +130,8 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1b
 		By("Ensuring watcher CR is properly deleted")
 		Eventually(isWatcherCrDeletionFinished, Timeout, Interval).WithArguments(watcher).
 			Should(BeTrue())
+		By("Deleting Cert-Manager Issuer")
+		Expect(controlPlaneClient.Delete(suiteCtx, issuer)).To(Succeed())
 	})
 
 	BeforeEach(func() {

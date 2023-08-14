@@ -121,4 +121,8 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 			WithArguments(runtimeClient, skrTLSSecretObjKey, []byte(newKey)).
 			Should(Succeed())
 	})
+
+	AfterAll(func() {
+		Expect(controlPlaneClient.Delete(suiteCtx, kyma)).To(Succeed())
+	})
 })
