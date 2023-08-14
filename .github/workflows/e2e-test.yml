@@ -127,7 +127,7 @@ jobs:
       - name: Run Watcher E2E Tests
         run: |
           make -C tests/e2e_test test-watcher-e2e
-      - name: Run Kyma E2E Tess
+      - name: Run Kyma E2E Tests
         run: |
           make -C tests/e2e_test test-kyma-e2e
       - name: Run Kyma CR Deletion Test
