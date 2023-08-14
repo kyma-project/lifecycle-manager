@@ -25,7 +25,7 @@ var (
 
 func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false)
+		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false, false)
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(controlPlaneClient, kyma).Should(Succeed())

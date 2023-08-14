@@ -93,7 +93,7 @@ func givenKymaAndModuleTemplateCondition(
 		if isKymaBeta {
 			kyma.Labels[v1beta2.BetaLabel] = v1beta2.EnableLabelValue
 		}
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, isModuleTemplateInternal, isModuleTemplateBeta)
+		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, isModuleTemplateInternal, isModuleTemplateBeta, false)
 		Eventually(controlPlaneClient.Create, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kyma).Should(Succeed())

@@ -114,7 +114,7 @@ var _ = Describe("ModuleTemplate.Spec.descriptor not contains RegistryCred label
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
 	It("expect Manifest.Spec.installs not contains credSecretSelector", func() {
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false)
+		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false, false)
 		Eventually(expectManifestSpecNotContainsCredSecretSelector(kyma.Name), Timeout*2, Interval).Should(Succeed())
 	})
 })
@@ -132,7 +132,7 @@ var _ = Describe("ModuleTemplate.Spec.descriptor contains RegistryCred label", O
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
 	It("expect Manifest.Spec.installs contains credSecretSelector", func() {
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma, true, false, false)
+		DeployModuleTemplates(ctx, controlPlaneClient, kyma, true, false, false, false)
 		Eventually(expectManifestSpecContainsCredSecretSelector(kyma.Name), Timeout*2, Interval).Should(Succeed())
 	})
 })
