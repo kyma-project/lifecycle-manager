@@ -104,15 +104,11 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
-		if util.IsNotFound(err) {
-			// TODO: revisit after runtime-controller gets upgraded
-			// Related issue: https://github.com/kyma-project/lifecycle-manager/issues/579
+		if !util.IsNotFound(err) {
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted", req.NamespacedName))
+			return ctrl.Result{}, fmt.Errorf("KymaController: %w", err)
 		}
-		if err := client.IgnoreNotFound(err); err != nil {
-			return ctrl.Result{}, fmt.Errorf("KymaReconciler: %w", err)
-		}
-		return ctrl.Result{}, fmt.Errorf("KymaReconciler: %w", err)
+		return ctrl.Result{}, nil
 	}
 
 	status.InitConditions(kyma, r.SyncKymaEnabled(kyma), r.WatcherEnabled(kyma))
