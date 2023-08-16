@@ -105,7 +105,6 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
 		if !util.IsNotFound(err) {
-			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted", req.NamespacedName))
 			return ctrl.Result{}, fmt.Errorf("KymaController: %w", err)
 		}
 		return ctrl.Result{}, nil
