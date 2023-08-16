@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -45,9 +46,18 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	tlsSecret := createTLSSecret(kymaObjKey)
 
+	delete(kyma.ObjectMeta.Annotations, v1beta2.SyncStrategyAnnotation)
 	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer)
 
+	It("kyma reconciliation does not install webhook when sync label missing", func() {
+		Consistently(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
+			kymaObjKey), 5*time.Second, Interval).ShouldNot(Succeed())
+	})
+
 	It("kyma reconciliation installs watcher with correct webhook config", func() {
+		kyma.ObjectMeta.Annotations[v1beta2.SyncStrategyAnnotation] = v1beta2.SyncStrategyLocalClient
+		Expect(controlPlaneClient.Update(suiteCtx, kyma)).To(Succeed())
+
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
 			kymaObjKey), Timeout, Interval).Should(Succeed())
 	})
@@ -120,6 +130,8 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1b
 		By("Ensuring watcher CR is properly deleted")
 		Eventually(isWatcherCrDeletionFinished, Timeout, Interval).WithArguments(watcher).
 			Should(BeTrue())
+		By("Deleting Cert-Manager Issuer")
+		Expect(controlPlaneClient.Delete(suiteCtx, issuer)).To(Succeed())
 	})
 
 	BeforeEach(func() {

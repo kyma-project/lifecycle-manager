@@ -208,7 +208,10 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 }
 
 func (r *KymaReconciler) syncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
-	syncContext := remote.SyncContextFromContext(ctx)
+	syncContext, err := remote.SyncContextFromContext(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to get syncContext: %w", err)
+	}
 	updateRequired, err := remote.SyncCrdsAndUpdateKymaAnnotations(
 		ctx, kyma, syncContext.RuntimeClient, syncContext.ControlPlaneClient)
 	if err != nil {
@@ -243,8 +246,10 @@ func (r *KymaReconciler) enqueueNormalEvent(kyma *v1beta2.Kyma, reason EventReas
 }
 
 func (r *KymaReconciler) fetchRemoteKyma(ctx context.Context, controlPlaneKyma *v1beta2.Kyma) (*v1beta2.Kyma, error) {
-	syncContext := remote.SyncContextFromContext(ctx)
-
+	syncContext, err := remote.SyncContextFromContext(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get syncContext: %w", err)
+	}
 	remoteKyma, err := syncContext.CreateOrFetchRemoteKyma(ctx, controlPlaneKyma, r.RemoteSyncNamespace)
 	if err != nil {
 		if errors.Is(err, remote.ErrNotFoundAndKCPKymaUnderDeleting) {
@@ -266,7 +271,10 @@ func (r *KymaReconciler) syncStatusToRemote(ctx context.Context, controlPlaneKym
 		return err
 	}
 
-	syncContext := remote.SyncContextFromContext(ctx)
+	syncContext, err := remote.SyncContextFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get syncContext: %w", err)
+	}
 	if err := syncContext.SynchronizeRemoteKyma(ctx, controlPlaneKyma, remoteKyma); err != nil {
 		return fmt.Errorf("sync run failure: %w", err)
 	}

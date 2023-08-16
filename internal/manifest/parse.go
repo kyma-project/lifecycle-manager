@@ -86,7 +86,11 @@ func GetPathFromRawManifest(ctx context.Context,
 
 func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (v1.Layer, error) {
 	noSchemeImageRef := ocmextensions.NoSchemeURL(imageRef)
-	isInsecureLayer, _ := regexp.MatchString("^http://", imageRef)
+	isInsecureLayer, err := regexp.MatchString("^http://", imageRef)
+	if err != nil {
+		return nil, fmt.Errorf("invalid imageRef: %w", err)
+	}
+
 	if isInsecureLayer {
 		imgLayer, err := crane.PullLayer(noSchemeImageRef, crane.Insecure, crane.WithAuthFromKeychain(keyChain))
 		if err != nil {

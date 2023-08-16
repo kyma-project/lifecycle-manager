@@ -67,7 +67,7 @@ func (c *KymaSynchronizationContext) GetRemotelySyncedKyma(
 	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
 	remoteKyma.Namespace = remoteSyncNamespace
 	if err := c.RuntimeClient.Get(ctx, client.ObjectKeyFromObject(remoteKyma), remoteKyma); err != nil {
-		return remoteKyma, err
+		return remoteKyma, fmt.Errorf("failed to get remote kyma: %w", err)
 	}
 
 	return remoteKyma, nil
@@ -76,7 +76,10 @@ func (c *KymaSynchronizationContext) GetRemotelySyncedKyma(
 func RemoveFinalizerFromRemoteKyma(
 	ctx context.Context, remoteSyncNamespace string,
 ) error {
-	syncContext := SyncContextFromContext(ctx)
+	syncContext, err := SyncContextFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get syncContext: %w", err)
+	}
 
 	remoteKyma, err := syncContext.GetRemotelySyncedKyma(ctx, remoteSyncNamespace)
 	if err != nil {
@@ -85,19 +88,29 @@ func RemoveFinalizerFromRemoteKyma(
 
 	controllerutil.RemoveFinalizer(remoteKyma, v1beta2.Finalizer)
 
-	return syncContext.RuntimeClient.Update(ctx, remoteKyma)
+	err = syncContext.RuntimeClient.Update(ctx, remoteKyma)
+	if err != nil {
+		return fmt.Errorf("failed to update remote kyma when removing finalizers: %w", err)
+	}
+	return nil
 }
 
 func DeleteRemotelySyncedKyma(
 	ctx context.Context, remoteSyncNamespace string,
 ) error {
-	syncContext := SyncContextFromContext(ctx)
+	syncContext, err := SyncContextFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get syncContext: %w", err)
+	}
 	remoteKyma, err := syncContext.GetRemotelySyncedKyma(ctx, remoteSyncNamespace)
 	if err != nil {
 		return err
 	}
-
-	return syncContext.RuntimeClient.Delete(ctx, remoteKyma)
+	err = syncContext.RuntimeClient.Delete(ctx, remoteKyma)
+	if err != nil {
+		return fmt.Errorf("failed to delete remote kyma: %w", err)
+	}
+	return nil
 }
 
 // ensureRemoteNamespaceExists tries to ensure existence of a namespace for synchronization based on

@@ -132,14 +132,18 @@ func (p *Parser) newManifestFromTemplate(
 
 	clusterClient := p.Client
 	if module.RemoteModuleTemplateRef != "" {
-		clusterClient = remote.SyncContextFromContext(ctx).RuntimeClient
+		syncContext, err := remote.SyncContextFromContext(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get syncContext: %w", err)
+		}
+		clusterClient = syncContext.RuntimeClient
 	}
 
 	var layers img.Layers
 	var err error
 	descriptor, err := template.GetDescriptor()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get descriptor from template: %w", err)
 	}
 	verification, err := signature.NewVerification(ctx,
 		clusterClient,
@@ -180,20 +184,8 @@ func insertLayerIntoManifest(
 	manifest *v1beta2.Manifest, layer img.Layer,
 ) error {
 	switch layer.LayerName {
-	case img.CRDsLayer:
-		fallthrough
 	case img.ConfigLayer:
-		ociImage, ok := layer.LayerRepresentation.(*img.OCI)
-		if !ok {
-			return fmt.Errorf("%w: not an OCIImage", ErrDefaultConfigParsing)
-		}
-		manifest.Spec.Config = v1beta2.ImageSpec{
-			Repo:               ociImage.Repo,
-			Name:               ociImage.Name,
-			Ref:                ociImage.Ref,
-			Type:               v1beta2.OciRefType,
-			CredSecretSelector: ociImage.CredSecretSelector,
-		}
+	case img.CRDsLayer:
 	default:
 		installRaw, err := layer.ToInstallRaw()
 		if err != nil {
