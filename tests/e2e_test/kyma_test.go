@@ -3,6 +3,7 @@
 package e2e_test
 
 import (
+	"fmt"
 	"os/exec"
 	"time"
 
