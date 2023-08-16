@@ -64,7 +64,11 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	// check if kyma resource exists
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
-		return ctrl.Result{}, client.IgnoreNotFound(err) //nolint:wrapcheck
+		if !util.IsNotFound(err) {
+			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted", req.NamespacedName))
+			return ctrl.Result{}, fmt.Errorf("purgeController: %w", err)
+		}
+		return ctrl.Result{}, nil
 	}
 
 	if kyma.DeletionTimestamp.IsZero() {

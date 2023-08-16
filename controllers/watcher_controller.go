@@ -79,7 +79,10 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	watcherObj := &v1beta2.Watcher{}
 	if err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, watcherObj); err != nil {
 		logger.V(log.DebugLevel).Info("Failed to get reconciliation object")
-		return ctrl.Result{}, client.IgnoreNotFound(err) //nolint:wrapcheck
+		if !util.IsNotFound(err) {
+			return ctrl.Result{}, fmt.Errorf("watcherController: %w", err)
+		}
+		return ctrl.Result{}, nil
 	}
 
 	if !watcherObj.DeletionTimestamp.IsZero() && watcherObj.Status.State != v1beta2.WatcherStateDeleting {
