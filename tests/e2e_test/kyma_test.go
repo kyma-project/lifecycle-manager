@@ -94,7 +94,7 @@ var _ = Describe("SKR Kyma secret should be re-fetched when the SKR cluster is u
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))
 
-			cmd = exec.Command("/bin/bash", "-c", fmt.Sprintf("%s%s%s", "echo SKR_KUBECONFIG=", string(out)), " > $GITHUB_ENV")
+			cmd = exec.Command("echo", fmt.Sprintf("%s%s", "SKR_KUBECONFIG=", string(out)), " > $GITHUB_ENV")
 			out, err = cmd.Output()
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))
