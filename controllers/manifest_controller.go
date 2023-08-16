@@ -76,7 +76,7 @@ func SetupWithManager(
 	if controllerManagedByManager.Complete(ManifestReconciler(mgr, codec, checkInterval)) != nil {
 		return fmt.Errorf("failed to initialize manifest controller by manager: %w", err)
 	}
-	return nil // never end up here :)
+	return nil
 }
 
 func ManifestReconciler(
