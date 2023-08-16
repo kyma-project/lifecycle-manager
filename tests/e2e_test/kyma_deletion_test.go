@@ -17,9 +17,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var (
-	errKymaNotDeleted = errors.New("kyma CR not deleted")
-)
+var errKymaNotDeleted = errors.New("kyma CR not deleted")
 
 const (
 	timeout       = 10 * time.Second
@@ -36,7 +34,7 @@ var _ = Describe("KCP Kyma CR should be deleted successfully when SKR cluster ge
 		GinkgoWriter.Printf("kyma before create %v\n", kyma)
 
 		BeforeAll(func() {
-			//make sure we can list Kymas to ensure CRDs have been installed
+			// make sure we can list Kymas to ensure CRDs have been installed
 			err := controlPlaneClient.List(ctx, &v1beta2.KymaList{})
 			Expect(meta.IsNoMatchError(err)).To(BeFalse())
 		})
