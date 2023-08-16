@@ -99,6 +99,9 @@ var _ = Describe("SKR Kyma secret should be re-fetched when the SKR cluster is u
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))
 
+			controlPlaneConfig, runtimeConfig, err = getKubeConfigs()
+			Expect(err).ToNot(HaveOccurred())
+
 			By("Creating Kyma secret")
 			Eventually(CreateKymaSecret, timeout, interval).
 				WithContext(ctx).
