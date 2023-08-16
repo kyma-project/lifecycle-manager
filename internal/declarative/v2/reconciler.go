@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -87,7 +88,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 	if err := r.Get(ctx, req.NamespacedName, obj); err != nil {
 		log.FromContext(ctx).Info(req.NamespacedName.String() + " got deleted!")
-		return ctrl.Result{}, client.IgnoreNotFound(err) //nolint:wrapcheck
+		if !util.IsNotFound(err) {
+			return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
+		}
+		return ctrl.Result{}, nil
 	}
 
 	if r.ShouldSkip(ctx, obj) {
