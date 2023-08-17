@@ -135,10 +135,7 @@ func (r *KymaReconciler) handleRemoteClusterConnectionError(
 
 	if !kyma.DeletionTimestamp.IsZero() {
 		if util.IsNotFound(err) {
-			if err = r.removeFinalizerAndUpdateKyma(ctx, kyma); err != nil {
-				return err
-			}
-			return nil
+			return r.removeFinalizerAndUpdateKyma(ctx, kyma)
 		}
 	}
 
@@ -152,8 +149,7 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 		remoteClient := remote.NewClientWithConfig(r.Client, r.KcpRestConfig)
 		if ctx, err = remote.InitializeSyncContext(ctx, kyma,
 			r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache); err != nil {
-			err = r.handleRemoteClusterConnectionError(ctx, kyma, err)
-			if err != nil {
+			if err = r.handleRemoteClusterConnectionError(ctx, kyma, err); err != nil {
 				return r.requeueWithError(ctx, kyma, err)
 			}
 			return ctrl.Result{}, nil
@@ -164,7 +160,6 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 		if err := r.deleteRemoteKyma(ctx, kyma); err != nil {
 			return r.requeueWithError(ctx, kyma, err)
 		}
-
 		if err := r.updateStatus(ctx, kyma, v1beta2.StateDeleting, "waiting for modules to be deleted"); err != nil {
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma status after triggering deletion: %w", err))
 		}
