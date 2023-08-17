@@ -126,25 +126,23 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 }
 
 func (r *KymaReconciler) handleRemoteClusterConnectionError(
-	ctx context.Context, kyma *v1beta2.Kyma, err error) (
-	ctrl.Result, error,
-) {
+	ctx context.Context, kyma *v1beta2.Kyma, err error) error {
 	if util.IsConnectionRefused(err) {
 		r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
-		return r.requeueWithError(ctx, kyma, err)
+		return err
 	}
 
 	if !kyma.DeletionTimestamp.IsZero() {
 		if util.IsNotFound(err) {
 			if err = r.removeFinalizerAndUpdateKyma(ctx, kyma); err != nil {
-				return r.requeueWithError(ctx, kyma, err)
+				return err
 			}
-			return ctrl.Result{}, nil
+			return nil
 		}
 	}
 
 	r.enqueueWarningEvent(kyma, syncContextError, err)
-	return r.requeueWithError(ctx, kyma, err)
+	return err
 }
 
 func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
@@ -153,7 +151,10 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 		remoteClient := remote.NewClientWithConfig(r.Client, r.KcpRestConfig)
 		if ctx, err = remote.InitializeSyncContext(ctx, kyma,
 			r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache); err != nil {
-			return r.handleRemoteClusterConnectionError(ctx, kyma, err)
+			if err = r.handleRemoteClusterConnectionError(ctx, kyma, err); err != nil {
+				return r.requeueWithError(ctx, kyma, err)
+			}
+			return ctrl.Result{}, nil
 		}
 	}
 
