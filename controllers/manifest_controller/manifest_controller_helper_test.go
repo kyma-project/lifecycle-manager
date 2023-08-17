@@ -23,8 +23,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/rand"
-	"k8s.io/apimachinery/pkg/util/uuid"
 )
 
 const CredSecretLabelKeyForTest = "operator.kyma-project.io/oci-registry-cred" //nolint:gosec
@@ -92,18 +90,6 @@ func createOCIImageSpec(name, repo string, enableCredSecretSelector bool) v1beta
 	Expect(err).ToNot(HaveOccurred())
 	imageSpec.Ref = digest.String()
 	return imageSpec
-}
-
-func NewTestManifest(prefix string) *v1beta2.Manifest {
-	return &v1beta2.Manifest{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%d", prefix, rand.Intn(999999)),
-			Namespace: metav1.NamespaceDefault,
-			Labels: map[string]string{
-				v1beta2.KymaName: string(uuid.NewUUID()),
-			},
-		},
-	}
 }
 
 func withInvalidInstallImageSpec(enableResource bool) func(manifest *v1beta2.Manifest) error {

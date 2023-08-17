@@ -9,6 +9,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -35,7 +36,7 @@ var _ = Describe(
 				givenCondition func(manifest *v1beta2.Manifest) error,
 				expectManifestState func(manifestName string) error,
 			) {
-				manifest := NewTestManifest("oci")
+				manifest := testutils.NewTestManifest("oci")
 				Eventually(givenCondition, standardTimeout, standardInterval).
 					WithArguments(manifest).Should(Succeed())
 				Eventually(expectManifestState, standardTimeout, standardInterval).
@@ -81,7 +82,7 @@ var _ = Describe(
 		)
 
 		It("Manifest should be in Error state with no auth secret found error message", func() {
-			manifestWithInstall := NewTestManifest("private-oci-registry")
+			manifestWithInstall := testutils.NewTestManifest("private-oci-registry")
 			Eventually(withValidInstallImageSpec(installName, false, true), standardTimeout, standardInterval).
 				WithArguments(manifestWithInstall).Should(Succeed())
 			Eventually(func() string {
