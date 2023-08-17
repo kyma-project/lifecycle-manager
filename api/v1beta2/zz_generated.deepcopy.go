@@ -437,8 +437,14 @@ func (in *ModuleTemplateSpec) DeepCopyInto(out *ModuleTemplateSpec) {
 	in.Descriptor.DeepCopyInto(&out.Descriptor)
 	if in.CustomStateCheck != nil {
 		in, out := &in.CustomStateCheck, &out.CustomStateCheck
-		*out = new(CustomStateCheck)
-		**out = **in
+		*out = make([]*CustomStateCheck, len(*in))
+		for i := range *in {
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(CustomStateCheck)
+				**out = **in
+			}
+		}
 	}
 }
 

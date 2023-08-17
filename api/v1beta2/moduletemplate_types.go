@@ -104,16 +104,18 @@ type ModuleTemplateSpec struct {
 	//+kubebuilder:pruning:PreserveUnknownFields
 	Descriptor runtime.RawExtension `json:"descriptor"`
 
-	// CustomStateCheck for advanced Module State determination
-	CustomStateCheck *CustomStateCheck `json:"customStateCheck,omitempty"`
+	CustomStateCheck []*CustomStateCheck `json:"customStateCheck,omitempty"`
 }
 
 type CustomStateCheck struct {
 	// JSONPath specifies the JSON path to the state variable in the Module CR
 	JSONPath string `json:"jsonPath"`
 
-	// Value is the value at the JSONPath for which the Module CR state is set to "Ready" in Kyma CR
+	// Value is the value at the JSONPath for which the Module CR state should map with MappedState
 	Value string `json:"value"`
+
+	// MappedState is the Kyma CR State
+	MappedState State `json:"mappedState"`
 }
 
 func (m *ModuleTemplate) GetDescriptor() (*Descriptor, error) {
