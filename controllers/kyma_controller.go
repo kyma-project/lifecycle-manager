@@ -152,7 +152,6 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 			ctx, kyma, err) != nil {
 			return r.requeueWithError(ctx, kyma, err)
 		}
-		return ctrl.Result{}, nil
 	}
 
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != v1beta2.StateDeleting {
