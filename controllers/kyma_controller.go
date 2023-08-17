@@ -128,6 +128,10 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 func (r *KymaReconciler) handleRemoteClusterConnectionError(
 	ctx context.Context, kyma *v1beta2.Kyma, err error,
 ) error {
+	if err == nil {
+		return nil
+	}
+
 	if util.IsConnectionRefused(err) {
 		r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
 		return err
