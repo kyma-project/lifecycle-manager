@@ -3,7 +3,6 @@
 package e2e_test
 
 import (
-	"fmt"
 	"os/exec"
 	"time"
 
@@ -84,11 +83,6 @@ var _ = Describe("SKR Kyma secret should be re-fetched when the SKR cluster is u
 
 			cmd = exec.Command("k3d", "kubeconfig", "write", "skr")
 			out, err = cmd.CombinedOutput()
-			Expect(err).NotTo(HaveOccurred())
-			GinkgoWriter.Printf(string(out))
-
-			cmd = exec.Command("echo", fmt.Sprintf("%s%s", "SKR_KUBECONFIG=", string(out)), " >> $GITHUB_ENV")
-			out, err = cmd.Output()
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))
 
