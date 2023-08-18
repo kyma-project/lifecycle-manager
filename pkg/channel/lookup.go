@@ -290,6 +290,11 @@ func (c *TemplateLookup) getTemplate(ctx context.Context, desiredChannel string)
 			filteredTemplates = append(filteredTemplates, template)
 			continue
 		}
+		if fmt.Sprintf("%s/%s", template.Namespace, template.Name) == moduleIdentifier &&
+			template.Spec.Channel == desiredChannel {
+			filteredTemplates = append(filteredTemplates, template)
+			continue
+		}
 		if template.ObjectMeta.Name == moduleIdentifier && template.Spec.Channel == desiredChannel {
 			filteredTemplates = append(filteredTemplates, template)
 			continue
