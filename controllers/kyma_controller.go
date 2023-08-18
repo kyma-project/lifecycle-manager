@@ -128,10 +128,9 @@ func (r *KymaReconciler) handleRemoteClusterConnectionError(
 		r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
 		return err
 	}
-
 	if !kyma.DeletionTimestamp.IsZero() {
 		if util.IsNotFound(err) {
-			return r.removeFinalizerAndUpdateKyma(ctx, kyma)
+			return r.removeAllFinalizersAndUpdateKyma(ctx, kyma)
 		}
 	}
 
@@ -144,9 +143,11 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 		var err error
 		remoteClient := remote.NewClientWithConfig(r.Client, r.KcpRestConfig)
 		if ctx, err = remote.InitializeSyncContext(ctx, kyma,
-			r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache); err != nil &&
-			r.handleRemoteClusterConnectionError(ctx, kyma, err) != nil {
-			return r.requeueWithError(ctx, kyma, err)
+			r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache); err != nil {
+			if err = r.handleRemoteClusterConnectionError(ctx, kyma, err); err != nil {
+				return r.requeueWithError(ctx, kyma, err)
+			}
+			return ctrl.Result{}, nil
 		}
 	}
 
@@ -418,9 +419,19 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 	return false, nil
 }
 
+func (r *KymaReconciler) removeAllFinalizersAndUpdateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
+	for _, finalizer := range kyma.Finalizers {
+		controllerutil.RemoveFinalizer(kyma, finalizer)
+	}
+	return r.updateKyma(ctx, kyma)
+}
+
 func (r *KymaReconciler) removeFinalizerAndUpdateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
 	controllerutil.RemoveFinalizer(kyma, v1beta2.Finalizer)
+	return r.updateKyma(ctx, kyma)
+}
 
+func (r *KymaReconciler) updateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
 	if err := r.Update(ctx, kyma); err != nil {
 		err = fmt.Errorf("error while updating kyma during deletion: %w", err)
 		r.enqueueWarningEvent(kyma, deletionError, err)
