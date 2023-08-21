@@ -2,6 +2,7 @@ package parse
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -166,7 +167,26 @@ func (p *Parser) newManifestFromTemplate(
 		return nil, fmt.Errorf("could not translate layers and merge them: %w", err)
 	}
 
+	if err := appendOptionalCustomStateCheck(manifest, template.Spec.CustomStateCheck); err != nil {
+		return nil, fmt.Errorf("could not translate custom state check: %w", err)
+	}
+
 	return manifest, nil
+}
+
+func appendOptionalCustomStateCheck(manifest *v1beta2.Manifest, stateCheck []*v1beta2.CustomStateCheck) error {
+	if manifest.Spec.Resource == nil || stateCheck == nil {
+		return nil
+	}
+	if manifest.Annotations == nil {
+		manifest.Annotations = make(map[string]string)
+	}
+	stateCheckByte, err := json.Marshal(stateCheck)
+	if err != nil {
+		return fmt.Errorf("failed to marshal stateCheck: %w", err)
+	}
+	manifest.Annotations[v1beta2.CustomStateCheckAnnotation] = string(stateCheckByte)
+	return nil
 }
 
 func translateLayersAndMergeIntoManifest(
@@ -184,8 +204,20 @@ func insertLayerIntoManifest(
 	manifest *v1beta2.Manifest, layer img.Layer,
 ) error {
 	switch layer.LayerName {
-	case img.ConfigLayer:
 	case img.CRDsLayer:
+		fallthrough
+	case img.ConfigLayer:
+		ociImage, ok := layer.LayerRepresentation.(*img.OCI)
+		if !ok {
+			return fmt.Errorf("%w: not an OCIImage", ErrDefaultConfigParsing)
+		}
+		manifest.Spec.Config = v1beta2.ImageSpec{
+			Repo:               ociImage.Repo,
+			Name:               ociImage.Name,
+			Ref:                ociImage.Ref,
+			Type:               v1beta2.OciRefType,
+			CredSecretSelector: ociImage.CredSecretSelector,
+		}
 	default:
 		installRaw, err := layer.ToInstallRaw()
 		if err != nil {

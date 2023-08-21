@@ -50,20 +50,32 @@ spec:
                 pattern: ^[a-z]+$
                 type: string
               customStateCheck:
-                description: CustomStateCheck for advanced Module State determination
-                properties:
-                  jsonPath:
-                    description: JSONPath specifies the JSON path to the state variable
-                      in the Module CR
-                    type: string
-                  value:
-                    description: Value is the value at the JSONPath for which the
-                      Module CR state is set to "Ready" in Kyma CR
-                    type: string
-                required:
-                - jsonPath
-                - value
-                type: object
+                items:
+                  properties:
+                    jsonPath:
+                      description: JSONPath specifies the JSON path to the state variable
+                        in the Module CR
+                      type: string
+                    mappedState:
+                      description: MappedState is the Kyma CR State
+                      enum:
+                      - Processing
+                      - Deleting
+                      - Ready
+                      - Error
+                      - ""
+                      - Warning
+                      type: string
+                    value:
+                      description: Value is the value at the JSONPath for which the
+                        Module CR state should map with MappedState
+                      type: string
+                  required:
+                  - jsonPath
+                  - mappedState
+                  - value
+                  type: object
+                type: array
               data:
                 description: Data is the default set of attributes that are used to
                   generate the Module. It contains a default set of values for a given
@@ -140,20 +152,32 @@ spec:
                 pattern: ^[a-z]+$
                 type: string
               customStateCheck:
-                description: CustomStateCheck for advanced Module State determination
-                properties:
-                  jsonPath:
-                    description: JSONPath specifies the JSON path to the state variable
-                      in the Module CR
-                    type: string
-                  value:
-                    description: Value is the value at the JSONPath for which the
-                      Module CR state is set to "Ready" in Kyma CR
-                    type: string
-                required:
-                - jsonPath
-                - value
-                type: object
+                items:
+                  properties:
+                    jsonPath:
+                      description: JSONPath specifies the JSON path to the state variable
+                        in the Module CR
+                      type: string
+                    mappedState:
+                      description: MappedState is the Kyma CR State
+                      enum:
+                      - Processing
+                      - Deleting
+                      - Ready
+                      - Error
+                      - ""
+                      - Warning
+                      type: string
+                    value:
+                      description: Value is the value at the JSONPath for which the
+                        Module CR state should map with MappedState
+                      type: string
+                  required:
+                  - jsonPath
+                  - mappedState
+                  - value
+                  type: object
+                type: array
               data:
                 description: Data is the default set of attributes that are used to
                   generate the Module. It contains a default set of values for a given

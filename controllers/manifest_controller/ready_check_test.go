@@ -7,6 +7,7 @@ import (
 
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,7 +34,7 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 		},
 	)
 	It("Install OCI specs including an nginx deployment", func() {
-		testManifest := NewTestManifest("custom-check-oci")
+		testManifest := testutils.NewTestManifest("custom-check-oci")
 		manifestName := testManifest.GetName()
 		validImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String(), false)
 		imageSpecByte, err := json.Marshal(validImageSpec)
