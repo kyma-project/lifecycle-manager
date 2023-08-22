@@ -79,7 +79,7 @@ spec:
     mappedState: 'Ready'
 ```
 
-In this scenario, the Ready state will only be reached if both module.state.field1 and module.state.field2 have the respective specified values.
+In this scenario, the `Ready` state will only be reached if both `module.state.field1` and `module.state.field2` have the respective specified values.
 
 ### **.spec.descriptor**
 
