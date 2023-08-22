@@ -67,7 +67,7 @@ In this example, when the module's CR is in the green health state, the correspo
 
 The valid mappedState values are defined in the [Kyma CR API](https://github.com/kyma-project/lifecycle-manager/blob/main/api/v1beta2/kyma_types.go#L225-L245).
 
-Furthermore, this field supports complex mappings. For instance, if multiple states are needed to determine the Ready state, users can define the following customStateCheck:
+Furthermore, this field supports complex mappings. For instance, if multiple states are needed to determine the `Ready` state, users can define the following customStateCheck:
 ```yaml
 spec:
   customStateCheck:
