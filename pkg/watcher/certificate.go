@@ -6,13 +6,14 @@ import (
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	apimachinerymetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 const (
@@ -172,7 +173,7 @@ func (c *CertificateManager) createCertificate(ctx context.Context, subjectAltNa
 
 	err = c.kcpClient.Patch(ctx, &cert, client.Apply, client.ForceOwnership, skrChartFieldOwner)
 	if err != nil {
-		return fmt.Errorf("failed to patch certificiate: %w", err)
+		return fmt.Errorf("failed to patch certificate: %w", err)
 	}
 	return nil
 }
