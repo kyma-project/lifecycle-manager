@@ -51,7 +51,7 @@ The `.spec.customStateCheck` field in Kyma Lifecycle Manager is primarily design
 
 Imagine a scenario where a module's health is indicated by `status.health` in its CR. In such cases, users can employ the customStateCheck configuration to map the health states to Lifecycle Manager states.
 
-Here's an example YAML configuration:
+Here's an example of YAML configuration:
 ```yaml
 spec:
   customStateCheck:
