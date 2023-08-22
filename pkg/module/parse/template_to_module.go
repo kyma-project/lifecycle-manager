@@ -227,6 +227,7 @@ func insertLayerIntoManifest(
 			Source: runtime.RawExtension{Raw: installRaw},
 			Name:   string(layer.LayerName),
 		}
+		manifest.Spec.Config = v1beta2.ImageSpec{}
 	}
 
 	return nil
