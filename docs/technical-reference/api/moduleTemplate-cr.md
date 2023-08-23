@@ -45,6 +45,42 @@ spec:
 
 If not specified, the **namespace** of the resource mentioned in **.spec.data** will be controlled by the `sync-namespace` flag; otherwise, it will be respected. All other attributes (including **.metadata.name**, **apiVersion**, and **kind**) are taken over as stated. Note that since it behaves similarly to a `template`, any subresources, such as **status**, are ignored, even if specified in the field.
 
+### **.spec.customStateCheck**
+
+The `.spec.customStateCheck` field in Kyma Lifecycle Manager is primarily designed for third-party modules. For non-Kyma modules, the `status.state` might not be present, which the Lifecycle Manager relies on to determine the module state. This field enables users to define custom fields in the module Custom Resource (CR) that can be mapped to valid states supported by Lifecycle Manager.
+
+Imagine a scenario where a module's health is indicated by `status.health` in its CR. In such cases, users can employ the customStateCheck configuration to map the health states to Lifecycle Manager states.
+
+Here's an example of YAML configuration:
+```yaml
+spec:
+  customStateCheck:
+  - jsonPath: 'status.health'
+    value: 'green'
+    mappedState: 'Ready'
+  - jsonPath: 'status.health'
+    value: 'red'
+    mappedState: 'Error'
+```
+
+In this example, when the module's CR is in the green health state, the corresponding Kyma CR will transition to the `Ready` state. Similarly, when the module's CR is in the red health state, the related Kyma CR will transition to the `Error` state.
+
+The valid mappedState values are defined in the [Kyma CR API](https://github.com/kyma-project/lifecycle-manager/blob/main/api/v1beta2/kyma_types.go#L225-L245).
+
+Furthermore, this field supports complex mappings. For instance, if multiple states are needed to determine the `Ready` state, users can define the following customStateCheck:
+```yaml
+spec:
+  customStateCheck:
+  - jsonPath: 'module.state.field1'
+    value: 'value1'
+    mappedState: 'Ready'
+  - jsonPath: 'module.state.field2'
+    value: 'value2'
+    mappedState: 'Ready'
+```
+
+In this scenario, the `Ready` state will only be reached if both `module.state.field1` and `module.state.field2` have the respective specified values.
+
 ### **.spec.descriptor**
 
 The core of any ModuleTemplate CR, the descriptor can be one of the schemas mentioned in the latest version of the [OCM Software Specification](https://ocm.software/spec/). While it is a `runtime.RawExtension` in the Go types, it will be resolved via ValidatingWebhook into an internal descriptor with the help of the official [OCM library](https://github.com/open-component-model/ocm).
