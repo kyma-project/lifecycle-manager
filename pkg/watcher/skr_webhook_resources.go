@@ -21,18 +21,12 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
-const (
-	podRestartLabelKey     = "operator.kyma-project.io/pod-restart-trigger"
-	rawManifestFilePathTpl = "%s/resources.yaml"
-	// always true since unsecured watcher setup will no longer be supported.
-	tlsEnabled = "true"
-)
+const podRestartLabelKey = "operator.kyma-project.io/pod-restart-trigger"
 
 var (
-	ErrExpectedNonNilConfig             = errors.New("expected non nil config")
-	ErrExpectedSubjectsNotToBeEmpty     = errors.New("expected subjects to be non empty")
-	ErrExpectedNonEmptyPodContainers    = errors.New("expected non empty pod containers")
-	ErrPodTemplateMustContainAtLeastOne = errors.New("pod template labels must contain " +
+	errExpectedSubjectsNotToBeEmpty     = errors.New("expected subjects to be non empty")
+	errExpectedNonEmptyPodContainers    = errors.New("expected non empty pod containers")
+	errPodTemplateMustContainAtLeastOne = errors.New("pod template labels must contain " +
 		"at least the deployment selector label")
 )
 
@@ -129,7 +123,7 @@ func configureClusterRoleBinding(cfg *unstructuredResourcesConfig, resource *uns
 		return nil, fmt.Errorf("%w: %w", errConvertUnstruct, err)
 	}
 	if len(crb.Subjects) == 0 {
-		return nil, ErrExpectedSubjectsNotToBeEmpty
+		return nil, errExpectedSubjectsNotToBeEmpty
 	}
 	serviceAccountSubj := crb.Subjects[0]
 	serviceAccountSubj.Namespace = cfg.remoteNs
@@ -144,10 +138,8 @@ func configureConfigMap(cfg *unstructuredResourcesConfig, resource *unstructured
 		return nil, fmt.Errorf("%w: %w", errConvertUnstruct, err)
 	}
 	configMap.Data = map[string]string{
-		"contractVersion":  cfg.contractVersion,
-		"kcpAddr":          cfg.kcpAddress,
-		"tlsWebhookServer": tlsEnabled,
-		"tlsCallback":      tlsEnabled,
+		"contractVersion": cfg.contractVersion,
+		"kcpAddr":         cfg.kcpAddress,
 	}
 	return configMap, nil
 }
@@ -160,13 +152,13 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 	}
 
 	if deployment.Spec.Template.Labels == nil || len(deployment.Spec.Template.Labels) == 0 {
-		return nil, ErrPodTemplateMustContainAtLeastOne
+		return nil, errPodTemplateMustContainAtLeastOne
 	}
 	deployment.Spec.Template.Labels[podRestartLabelKey] = cfg.secretResVer
 
 	// configure resource limits for the webhook server container
 	if len(deployment.Spec.Template.Spec.Containers) == 0 {
-		return nil, ErrExpectedNonEmptyPodContainers
+		return nil, errExpectedNonEmptyPodContainers
 	}
 	serverContainer := deployment.Spec.Template.Spec.Containers[0]
 	if cfg.skrWatcherImage != "" {

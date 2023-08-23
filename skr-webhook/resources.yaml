@@ -32,8 +32,6 @@ metadata:
 data:
   contractVersion: v1
   kcpAddr: "kcp-base-url-invalid"
-  # -- TLS callback to KCP
-  tlsCallback: "true"
 ---
 apiVersion: v1
 kind: Service
@@ -77,11 +75,6 @@ spec:
                   fieldPath: metadata.name
             - name: WEBHOOK_PORT
               value: "8443"
-            - name: TLS_CALLBACK
-              valueFrom:
-                configMapKeyRef:
-                  name: skr-webhook-config
-                  key: tlsCallback
             - name: TLS_KEY
               value: "/app/etc/ssl/tls.key"
             - name: TLS_CERT
