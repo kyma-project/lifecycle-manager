@@ -72,15 +72,45 @@ var _ = Describe("KCP Kyma CR should be deleted successfully when SKR cluster ge
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 				Should(Succeed())
-		})
 
-		It("Should delete KCP Kyma", func() {
 			By("Kyma should be in Error state")
 			Eventually(CheckKymaIsInState, readyTimeout, interval).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateError).
 				Should(Succeed())
+		})
 
+		It("Should recreate SKR cluster and its secret", func() {
+			By("Creating SKR cluster")
+			cmd := exec.Command("k3d", "cluster", "create", "skr")
+			out, err := cmd.CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+			GinkgoWriter.Printf(string(out))
+
+			cmd = exec.Command("k3d", "kubeconfig", "write", "skr")
+			out, err = cmd.CombinedOutput()
+			Expect(err).NotTo(HaveOccurred())
+			GinkgoWriter.Printf(string(out))
+
+			controlPlaneConfig, runtimeConfig, err = getKubeConfigs()
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Creating Kyma secret")
+			Eventually(CreateKymaSecret, timeout, interval).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
+				Should(Succeed())
+		})
+
+		It("Kyma should be in Ready state after secret is re-fetched", func() {
+			By("Kyma should be in Ready state")
+			Eventually(CheckKymaIsInState, readyTimeout, interval).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+				Should(Succeed())
+		})
+
+		It("Should delete KCP Kyma", func() {
 			By("Deleting KCP Kyma")
 			Eventually(controlPlaneClient.Delete, readyTimeout, interval).
 				WithContext(ctx).
