@@ -1,6 +1,6 @@
 module github.com/kyma-project/lifecycle-manager
 
-go 1.20
+go 1.21
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
@@ -144,7 +144,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/theupdateframework/notary v0.7.0 // indirect
 	github.com/tonglil/buflogr v1.0.1 // indirect
-	github.com/ulikunitz/xz v0.5.10 // indirect
+	github.com/ulikunitz/xz v0.5.11 // indirect
 	github.com/vbatts/tar-split v0.11.2 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
