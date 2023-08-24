@@ -13,18 +13,16 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/e2e-framework/klient"
 	"sigs.k8s.io/e2e-framework/klient/conf"
 	"sigs.k8s.io/e2e-framework/klient/k8s"
@@ -283,14 +281,7 @@ func moduleCRDeleted(namespace, name string) features.Func {
 		t.Helper()
 		restConfig := getRestConfig(t, cfg)
 		if err := wait.For(func() (bool, error) {
-			obj := unstructured.Unstructured{}
-			obj.SetGroupVersionKind(schema.GroupVersionKind{
-				Group:   v1beta2.GroupVersion.Group,
-				Version: moduleCRVersion,
-				Kind:    moduleCRKind,
-			})
-			obj.SetName(name)
-			obj.SetNamespace(namespace)
+			obj := testutils.NewTestModuleCR(name, namespace, moduleCRVersion, moduleCRKind)
 			err := restConfig.Get(ctx, name, namespace, &obj)
 			if util.IsNotFound(err) {
 				return true, nil

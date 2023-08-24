@@ -48,7 +48,7 @@ type ManifestSpec struct {
 	Remote bool `json:"remote"`
 
 	// Config specifies OCI image configuration for Manifest
-	Config ImageSpec `json:"config,omitempty"`
+	Config *ImageSpec `json:"config,omitempty"`
 
 	// Install specifies a list of installations for Manifest
 	Install InstallInfo `json:"install"`
