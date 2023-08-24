@@ -93,7 +93,7 @@ spec:
                   key: contractVersion
             - name: WEBHOOK_SIDE_CAR
               value: "true"
-          image: "europe-docker.pkg.dev/kyma-project/dev/runtime-watcher:PR-122"
+          image: "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher-skr:v20230824-f4459bad"
           imagePullPolicy: Always
           volumeMounts:
             - name: ssl
