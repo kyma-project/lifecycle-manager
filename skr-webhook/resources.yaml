@@ -81,6 +81,8 @@ spec:
               value: "/app/etc/ssl/tls.crt"
             - name: CA_CERT
               value: "/app/etc/ssl/ca.crt"
+            - name: TLS_CALLBACK
+              value: "true"
             - name: KCP_ADDR
               valueFrom:
                 configMapKeyRef:
