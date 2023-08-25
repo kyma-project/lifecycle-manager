@@ -152,10 +152,10 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 	if cfg.skrWatcherImage != "" {
 		serverContainer.Image = cfg.skrWatcherImage
 	}
-	envVars := serverContainer.Env
-	for _, envVar := range envVars {
-		if envVar.Name == kcpAddressEnvName {
-			envVar.Value = cfg.kcpAddress
+
+	for i := 0; i < len(serverContainer.Env); i++ {
+		if serverContainer.Env[i].Name == kcpAddressEnvName {
+			serverContainer.Env[i].Value = cfg.kcpAddress
 		}
 	}
 
