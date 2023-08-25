@@ -28,9 +28,6 @@ linters-settings:
       - standard
       - default
       - prefix(github.com/kyma-project)
-  gomoddirectives:
-    replace-allow-list:
-      - github.com/Venafi/vcert/v4
   ireturn:
     allow:
       - anon
