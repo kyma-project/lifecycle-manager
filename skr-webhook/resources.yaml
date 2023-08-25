@@ -32,10 +32,6 @@ metadata:
 data:
   contractVersion: v1
   kcpAddr: "kcp-base-url-invalid"
-  # -- TLS webhook server
-  tlsWebhookServer: "true"
-  # -- TLS callback to KCP
-  tlsCallback: "true"
 ---
 apiVersion: v1
 kind: Service
@@ -79,22 +75,14 @@ spec:
                   fieldPath: metadata.name
             - name: WEBHOOK_PORT
               value: "8443"
-            - name: TLS_SERVER
-              valueFrom:
-                configMapKeyRef:
-                  name: skr-webhook-config
-                  key: tlsWebhookServer
-            - name: TLS_CALLBACK
-              valueFrom:
-                configMapKeyRef:
-                  name: skr-webhook-config
-                  key: tlsCallback
             - name: TLS_KEY
               value: "/app/etc/ssl/tls.key"
             - name: TLS_CERT
               value: "/app/etc/ssl/tls.crt"
             - name: CA_CERT
               value: "/app/etc/ssl/ca.crt"
+            - name: TLS_CALLBACK
+              value: "true"
             - name: KCP_ADDR
               valueFrom:
                 configMapKeyRef:
@@ -107,7 +95,7 @@ spec:
                   key: contractVersion
             - name: WEBHOOK_SIDE_CAR
               value: "true"
-          image: "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher-skr:latest"
+          image: "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher-skr:v20230824-f4459bad"
           imagePullPolicy: Always
           volumeMounts:
             - name: ssl
