@@ -327,12 +327,7 @@ func setupManifestReconciler(
 	options.RateLimiter = internal.ManifestRateLimiter(flagVar.failureBaseDelay,
 		flagVar.failureMaxDelay, flagVar.rateLimiterFrequency, flagVar.rateLimiterBurst)
 
-	if err := controllers.SetupWithManager(
-		mgr, options, flagVar.manifestRequeueSuccessInterval, controllers.SetupUpSetting{
-			ListenerAddr:                 flagVar.manifestListenerAddr,
-			EnableDomainNameVerification: flagVar.enableDomainNameVerification,
-		},
-	); err != nil {
+	if err := controllers.SetupWithManager(mgr, options, flagVar.manifestRequeueSuccessInterval); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Manifest")
 		os.Exit(1)
 	}

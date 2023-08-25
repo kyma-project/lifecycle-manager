@@ -21,8 +21,8 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
-	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
-	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
+	listenerEvent "github.com/kyma-project/runtime-watcher/listener/pkg/event"
+	listenerTypes "github.com/kyma-project/runtime-watcher/listener/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
@@ -61,25 +61,23 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 	controllerBuilder = controllerBuilder.Watches(&v1beta2.Manifest{},
 		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1beta2.Kyma{}, IsController: true})
 
-	var runnableListener *listener.SKREventListener
+	var runnableListener *listenerEvent.SKREventListener
 	var eventChannel *source.Channel
-	var verifyFunc listener.Verify
+	var verifyFunc listenerEvent.Verify
 
 	if settings.EnableDomainNameVerification {
 		// Verifier used to verify incoming listener requests
 		verifyFunc = security.NewRequestVerifier(mgr.GetClient()).Verify
 	} else {
-		verifyFunc = func(r *http.Request, watcherEvtObject *types.WatchEvent) error {
+		verifyFunc = func(r *http.Request, watcherEvtObject *listenerTypes.WatchEvent) error {
 			return nil
 		}
 	}
 	// register listener component incl. domain name verification
-	runnableListener, eventChannel = listener.RegisterListenerComponent(
-		settings.ListenerAddr,
+	runnableListener = listenerEvent.NewSKREventListener(settings.ListenerAddr,
 		v1beta2.OperatorName,
-		verifyFunc,
-	)
-
+		verifyFunc)
+	eventChannel = &source.Channel{Source: convertToGenericEvent(runnableListener.ReceivedEvents)}
 	// watch event channel
 	r.watchEventChannel(controllerBuilder, eventChannel)
 	// start listener as a manager runnable
@@ -92,6 +90,21 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 	}
 
 	return nil
+}
+
+func convertToGenericEvent(watchEvents <-chan listenerTypes.WatchEvent) <-chan event.GenericEvent {
+	genericEvent := make(chan event.GenericEvent)
+	go func() {
+		defer close(genericEvent)
+		for watchEvent := range watchEvents {
+			// Perform your conversion here
+			targetData := event.GenericEvent{
+				Object: listenerEvent.GenericEvent(&watchEvent),
+			}
+			genericEvent <- targetData
+		}
+	}()
+	return genericEvent
 }
 
 func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, eventChannel *source.Channel) {
