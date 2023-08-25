@@ -26,14 +26,6 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 ---
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: skr-webhook-config
-data:
-  contractVersion: v1
-  kcpAddr: "kcp-base-url-invalid"
----
-apiVersion: v1
 kind: Service
 metadata:
   name: skr-webhook
@@ -83,16 +75,10 @@ spec:
               value: "/app/etc/ssl/ca.crt"
             - name: TLS_CALLBACK
               value: "true"
-            - name: KCP_ADDR
-              valueFrom:
-                configMapKeyRef:
-                  name: skr-webhook-config
-                  key: kcpAddr
             - name: KCP_CONTRACT
-              valueFrom:
-                configMapKeyRef:
-                  name: skr-webhook-config
-                  key: contractVersion
+              value: "v1"
+            - name: KCP_ADDR
+              value: "kcp-base-url-invalid"
             - name: WEBHOOK_SIDE_CAR
               value: "true"
           image: "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher-skr:v20230824-f4459bad"

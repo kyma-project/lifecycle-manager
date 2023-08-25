@@ -21,7 +21,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
-const podRestartLabelKey = "operator.kyma-project.io/pod-restart-trigger"
+const (
+	podRestartLabelKey = "operator.kyma-project.io/pod-restart-trigger"
+	kcpAddressEnvName  = "KCP_ADDR"
+)
 
 var (
 	errExpectedSubjectsNotToBeEmpty     = errors.New("expected subjects to be non empty")
@@ -131,39 +134,32 @@ func configureClusterRoleBinding(cfg *unstructuredResourcesConfig, resource *uns
 	return crb, nil
 }
 
-func configureConfigMap(cfg *unstructuredResourcesConfig, resource *unstructured.Unstructured,
-) (*corev1.ConfigMap, error) {
-	configMap := &corev1.ConfigMap{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(resource.Object, configMap); err != nil {
-		return nil, fmt.Errorf("%w: %w", errConvertUnstruct, err)
-	}
-	configMap.Data = map[string]string{
-		"contractVersion": cfg.contractVersion,
-		"kcpAddr":         cfg.kcpAddress,
-	}
-	return configMap, nil
-}
-
 func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Unstructured,
 ) (*appsv1.Deployment, error) {
 	deployment := &appsv1.Deployment{}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, deployment); err != nil {
 		return nil, fmt.Errorf("%w: %w", errConvertUnstruct, err)
 	}
-
 	if deployment.Spec.Template.Labels == nil || len(deployment.Spec.Template.Labels) == 0 {
 		return nil, errPodTemplateMustContainAtLeastOne
 	}
-	deployment.Spec.Template.Labels[podRestartLabelKey] = cfg.secretResVer
-
-	// configure resource limits for the webhook server container
 	if len(deployment.Spec.Template.Spec.Containers) == 0 {
 		return nil, errExpectedNonEmptyPodContainers
 	}
+	deployment.Spec.Template.Labels[podRestartLabelKey] = cfg.secretResVer
+
 	serverContainer := deployment.Spec.Template.Spec.Containers[0]
 	if cfg.skrWatcherImage != "" {
 		serverContainer.Image = cfg.skrWatcherImage
 	}
+	envVars := serverContainer.Env
+	for _, envVar := range envVars {
+		if envVar.Name == kcpAddressEnvName {
+			envVar.Value = cfg.kcpAddress
+		}
+	}
+
+	// configure resource limits for the webhook server container
 	cpuResQty, err := resource.ParseQuantity(cfg.cpuResLimit)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing CPU resource limit: %w", err)
@@ -226,9 +222,6 @@ type unstructuredResourcesConfig struct {
 
 func configureUnstructuredObject(cfg *unstructuredResourcesConfig, object *unstructured.Unstructured,
 ) (client.Object, error) {
-	if object.GetAPIVersion() == corev1.SchemeGroupVersion.String() && object.GetKind() == "ConfigMap" {
-		return configureConfigMap(cfg, object)
-	}
 	if object.GetAPIVersion() == appsv1.SchemeGroupVersion.String() && object.GetKind() == "Deployment" {
 		return configureDeployment(cfg, object)
 	}
