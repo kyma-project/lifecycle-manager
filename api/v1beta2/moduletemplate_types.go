@@ -184,7 +184,7 @@ func init() {
 }
 
 func (m *ModuleTemplate) GetComponentDescriptorCacheKey() string {
-	return fmt.Sprintf("%s:%s:%d", m.Name, m.Spec.Channel, m.Generation)
+	return fmt.Sprintf("%s:%s:%d:%s", m.Name, m.Spec.Channel, m.Generation, m.ResourceVersion)
 }
 
 func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
