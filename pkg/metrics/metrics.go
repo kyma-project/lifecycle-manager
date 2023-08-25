@@ -36,7 +36,7 @@ var (
 func Initialize() {
 	ctrlMetrics.Registry.MustRegister(kymaStateGauge)
 	ctrlMetrics.Registry.MustRegister(moduleStateGauge)
-	listenerMetrics.InitMetrics(ctrlMetrics.Registry)
+	listenerMetrics.Init(ctrlMetrics.Registry)
 }
 
 var errMetric = errors.New("failed to update metrics")
