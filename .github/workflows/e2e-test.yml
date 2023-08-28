@@ -108,8 +108,11 @@ jobs:
         run: |
           echo "KLM_VERSION_TAG=PR-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
           echo "KLM_IMAGE_REPO=dev" >> $GITHUB_ENV
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
       - name: Deploy LM local testing kustomize
         run: |
+          ls
           maxRetry=5
           for retry in $(seq 1 $maxRetry)
           do
@@ -130,3 +133,6 @@ jobs:
       - name: Run Kyma CR Deletion Test
         run: |
           make -C tests/e2e_test test-kyma-deletion-e2e
+      - name: Run Status Propagation Tests
+        run: |
+          make -C tests/e2e_test test-status-propagation-e2e
