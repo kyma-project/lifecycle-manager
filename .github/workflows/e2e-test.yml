@@ -133,12 +133,18 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
-          repository: github.com/kyma-project/template-operator
+          repository: kyma-project/template-operator
           path: ../template-operator/
       - name: Create Template Operator Module
         run: |
-          pwd
-          ls
+          echo "- op: replace \
+            path: /spec/template/spec/containers/0/args/1 \
+            value: --final-state=Warning" >> config/default/warning_patch.yaml
+          
+          pushd config/default
+          kustomize edit add patch --path warning_patch.yaml --kind Deployment
+          popd
+          kyma alpha create module --kubebuilder-project  --channel=regular --name kyma.project.io/module/template-operator --version 0.0.1 --path . --registry k3d-registry.localhost:5111 --insecure --module-archive-version-overwrite
       - name: Run Status Propagation Tests
         run: |
           make -C tests/e2e_test test-status-propagation-e2e
