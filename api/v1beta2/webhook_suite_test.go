@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+//nolint:gochecknoglobals
 package v1beta2_test
 
 import (
@@ -53,12 +53,12 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	k8sClient            client.Client        //nolint:gochecknoglobals
-	testEnv              *envtest.Environment //nolint:gochecknoglobals
-	webhookServerContext context.Context      //nolint:gochecknoglobals
-	webhookServerCancel  context.CancelFunc   //nolint:gochecknoglobals
-	cfg                  *rest.Config         //nolint:gochecknoglobals
-	scheme               *runtime.Scheme      //nolint:gochecknoglobals
+	k8sClient            client.Client
+	testEnv              *envtest.Environment
+	webhookServerContext context.Context
+	webhookServerCancel  context.CancelFunc
+	cfg                  *rest.Config
+	scheme               *runtime.Scheme
 )
 
 const (
