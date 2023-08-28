@@ -99,6 +99,8 @@ jobs:
           cmctl check api --wait=2m
       - name: Checkout repo
         uses: actions/checkout@v3
+        with:
+          path: ./lifecycle-manager/
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
@@ -108,10 +110,9 @@ jobs:
         run: |
           echo "KLM_VERSION_TAG=PR-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
           echo "KLM_IMAGE_REPO=dev" >> $GITHUB_ENV
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
       - name: Deploy LM local testing kustomize
         run: |
+          pwd
           ls
           maxRetry=5
           for retry in $(seq 1 $maxRetry)
@@ -133,6 +134,11 @@ jobs:
       - name: Run Kyma CR Deletion Test
         run: |
           make -C tests/e2e_test test-kyma-deletion-e2e
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          repository: github.com/kyma-project/template-operator
+          path: ./template-operator/
       - name: Run Status Propagation Tests
         run: |
           make -C tests/e2e_test test-status-propagation-e2e
