@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -49,6 +50,8 @@ type SkrWebhookManagerConfig struct {
 	// for the watcher callbacks
 	LocalGatewayHTTPPortMapping int
 }
+
+const rawManifestFilePathTpl = "%s/resources.yaml"
 
 func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
 	schema *runtime.Scheme,
@@ -180,10 +183,12 @@ func (m *SKRWebhookManifestManager) getSKRClientObjectsForInstall(ctx context.Co
 	return append(skrClientObjects, genClientObjects...), nil
 }
 
+var errExpectedNonNilConfig = errors.New("expected non nil config")
+
 func (m *SKRWebhookManifestManager) getRawManifestClientObjects(cfg *unstructuredResourcesConfig,
 ) ([]client.Object, error) {
 	if cfg == nil {
-		return nil, ErrExpectedNonNilConfig
+		return nil, errExpectedNonNilConfig
 	}
 	resources := make([]client.Object, 0)
 	for _, baseRes := range m.baseResources {
