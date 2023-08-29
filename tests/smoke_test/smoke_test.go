@@ -1,5 +1,6 @@
 //go:build smoke
 
+//nolint:gochecknoglobals,paralleltest
 package smoke_test
 
 import (
@@ -47,7 +48,7 @@ const (
 
 var (
 	ErrNotDeleted = errors.New("resource not deleted")
-	TestEnv       env.Environment //nolint:gochecknoglobals
+	TestEnv       env.Environment
 )
 
 func TestMain(m *testing.M) {
@@ -68,7 +69,6 @@ func TestMain(m *testing.M) {
 	os.Exit(TestEnv.Run(m))
 }
 
-//nolint:paralleltest
 func TestDefaultControllerManagerSpinsUp(t *testing.T) {
 	deploymentName := "lifecycle-manager-controller-manager"
 	moduleOperatorName := "template-operator-v1-controller-manager"
@@ -87,7 +87,6 @@ func TestDefaultControllerManagerSpinsUp(t *testing.T) {
 	TestEnv.Test(t, depFeature)
 }
 
-//nolint:paralleltest
 func TestDefaultControllerManagerModuleUpgrade(t *testing.T) {
 	moduleDeploymentName := "template-operator-v2-controller-manager"
 	newChannel := "fast"
@@ -105,7 +104,7 @@ func TestDefaultControllerManagerModuleUpgrade(t *testing.T) {
 	TestEnv.Test(t, depFeature)
 }
 
-//nolint:paralleltest
+// nolint:
 func TestDefaultControllerManagerKymaDelete(t *testing.T) {
 	moduleDeploymentName := "template-operator-v2-controller-manager"
 	moduleCRDName := fmt.Sprintf("%s.%s", strings.ToLower(moduleCRKind)+"s", v1beta2.GroupVersion.Group)
@@ -123,7 +122,6 @@ func TestDefaultControllerManagerKymaDelete(t *testing.T) {
 	TestEnv.Test(t, depFeature)
 }
 
-//nolint:paralleltest
 func TestControlPlaneControllerManagerSpinsUp(t *testing.T) {
 	deploymentName := "klm-controller-manager"
 	depFeature := features.New("control-plane").
