@@ -110,6 +110,7 @@ jobs:
         run: |
           echo "KLM_VERSION_TAG=PR-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
           echo "KLM_IMAGE_REPO=dev" >> $GITHUB_ENV
+      - run: pushd ./lifecycle-manager
       - name: Deploy LM local testing kustomize
         run: |
           maxRetry=5
@@ -132,6 +133,7 @@ jobs:
       - name: Run Kyma CR Deletion Test
         run: |
           make -C tests/e2e_test test-kyma-deletion-e2e
+      - run: popd
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
