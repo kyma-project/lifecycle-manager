@@ -110,7 +110,12 @@ jobs:
         run: |
           echo "KLM_VERSION_TAG=PR-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
           echo "KLM_IMAGE_REPO=dev" >> $GITHUB_ENV
-      - run: pushd ./lifecycle-manager
+      - run: |
+          pwd
+          ls
+          pushd ./lifecycle-manager
+          pwd 
+          ls
       - name: Deploy LM local testing kustomize
         run: |
           maxRetry=5
