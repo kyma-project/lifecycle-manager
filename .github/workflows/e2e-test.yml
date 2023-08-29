@@ -113,11 +113,13 @@ jobs:
       - run: |
           pwd
           ls
-          pushd ./lifecycle-manager
+          pushd $GITHUB_WORKSPACE/lifecycle-manager
           pwd 
           ls
       - name: Deploy LM local testing kustomize
         run: |
+          pwd 
+          ls
           maxRetry=5
           for retry in $(seq 1 $maxRetry)
           do
