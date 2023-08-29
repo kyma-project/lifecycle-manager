@@ -153,7 +153,7 @@ func deleteKyma(namespace string, name string) features.Func {
 		t.Helper()
 		restConfig := getRestConfig(t, cfg)
 		kyma := getKyma(ctx, t, restConfig, name, namespace)
-		if err := wait.For(func() (bool, error) {
+		if err := wait.For(func(ctx context.Context) (bool, error) {
 			if err := restConfig.Delete(ctx, &kyma); err != nil {
 				t.Fatal(err)
 			}
@@ -192,7 +192,7 @@ func getKyma(ctx context.Context,
 ) v1beta2.Kyma {
 	t.Helper()
 	var kyma v1beta2.Kyma
-	if err := wait.For(func() (bool, error) {
+	if err := wait.For(func(ctx context.Context) (bool, error) {
 		if err := resourcesFromConfig.Get(ctx, name, namespace, &kyma); err != nil {
 			t.Fatal(err)
 		}
@@ -243,7 +243,7 @@ func getManifest(ctx context.Context,
 ) v1beta2.Manifest {
 	t.Helper()
 	var manifest v1beta2.Manifest
-	if err := wait.For(func() (bool, error) {
+	if err := wait.For(func(ctx context.Context) (bool, error) {
 		if err := resourcesFromConfig.Get(ctx, name, namespace, &manifest); err != nil {
 			t.Fatal(err)
 		}
@@ -263,7 +263,7 @@ func resourceExists(namespace, manifestName, moduleCRName string) features.Func 
 		if moduleCRName != resource.GetName() {
 			t.Fatalf("module CR name not match: expect %s, but got %s", moduleCRName, resource.GetName())
 		}
-		if err := wait.For(func() (bool, error) {
+		if err := wait.For(func(ctx context.Context) (bool, error) {
 			if err := restConfig.Get(ctx, resource.GetName(), resource.GetNamespace(), resource); err != nil {
 				t.Fatal(err)
 			}
@@ -280,7 +280,7 @@ func moduleCRDeleted(namespace, name string) features.Func {
 	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 		t.Helper()
 		restConfig := getRestConfig(t, cfg)
-		if err := wait.For(func() (bool, error) {
+		if err := wait.For(func(ctx context.Context) (bool, error) {
 			obj := testutils.NewTestModuleCR(name, namespace, moduleCRVersion, moduleCRKind)
 			err := restConfig.Get(ctx, name, namespace, &obj)
 			if util.IsNotFound(err) {
@@ -298,7 +298,7 @@ func kymaDeleted(namespace, name string) features.Func {
 	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 		t.Helper()
 		restConfig := getRestConfig(t, cfg)
-		if err := wait.For(func() (bool, error) {
+		if err := wait.For(func(ctx context.Context) (bool, error) {
 			err := restConfig.Get(ctx, name, namespace, &v1beta2.Kyma{})
 			if util.IsNotFound(err) {
 				return true, nil
@@ -315,7 +315,7 @@ func moduleCRDDeleted(name string) features.Func {
 	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 		t.Helper()
 		restConfig := getRestConfig(t, cfg)
-		if err := wait.For(func() (bool, error) {
+		if err := wait.For(func(ctx context.Context) (bool, error) {
 			err := restConfig.Get(ctx, name, "", &apiextensionsv1.CustomResourceDefinition{})
 			if util.IsNotFound(err) {
 				return true, nil
@@ -332,7 +332,7 @@ func moduleCRDExists(name string) features.Func {
 	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 		t.Helper()
 		restConfig := getRestConfig(t, cfg)
-		if err := wait.For(func() (bool, error) {
+		if err := wait.For(func(ctx context.Context) (bool, error) {
 			err := restConfig.Get(ctx, name, "", &apiextensionsv1.CustomResourceDefinition{})
 			if err != nil {
 				t.Fatal(err)
@@ -350,7 +350,7 @@ func deploymentDeleted(namespace, name string) features.Func {
 		t.Helper()
 		restConfig := getRestConfig(t, cfg)
 		var deployment appsv1.Deployment
-		if err := wait.For(func() (bool, error) {
+		if err := wait.For(func(ctx context.Context) (bool, error) {
 			err := restConfig.Get(ctx, name, namespace, &deployment)
 			if util.IsNotFound(err) {
 				return true, nil
