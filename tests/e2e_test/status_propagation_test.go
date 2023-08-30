@@ -4,7 +4,6 @@ package e2e_test
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -37,15 +36,12 @@ var (
 	errKymaNotDeleted            = errors.New("kyma CR not deleted")
 )
 
-var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation using the Watcher",
+var _ = Describe("Enable Template Operator, Kyma CR should have status `Warning`",
 	Ordered, func() {
 		channel := "regular"
-		switchedChannel := "fast"
 		kyma := testutils.NewKymaForE2E("kyma-sample", "kcp-system", channel)
 		GinkgoWriter.Printf("kyma before create %v\n", kyma)
 		remoteNamespace := "kyma-system"
-		incomingRequestMsg := fmt.Sprintf("event received from SKR, adding %s/%s to queue",
-			kyma.GetNamespace(), kyma.GetName())
 
 		BeforeAll(func() {
 			// make sure we can list Kymas to ensure CRDs have been installed
@@ -74,4 +70,30 @@ var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation 
 				Should(Succeed())
 		})
 
+		It("Should enable Template Operator and Kyma should result in Warning status", func() {
+			By("Enabling Template Operator")
+			Eventually(enableModule, timeout, interval).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), "template-operator", "regular", controlPlaneClient).
+				Should(Succeed())
+			By("Checking state of kyma")
+			Eventually(CheckKymaIsInState, readyTimeout, interval).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateWarning).
+				Should(Succeed())
+		})
+
 	})
+
+func enableModule(ctx context.Context, kymaName, kymaNamespace, moduleName, moduleChannel string, k8sClient client.Client) error {
+	kyma := &v1beta2.Kyma{}
+	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
+		return err
+	}
+	GinkgoWriter.Printf("kyma %v\n", kyma)
+	kyma.Spec.Modules = append(kyma.Spec.Modules, v1beta2.Module{
+		Name:    moduleName,
+		Channel: moduleChannel,
+	})
+	return k8sClient.Update(ctx, kyma)
+}
