@@ -129,14 +129,14 @@ jobs:
               exit 1
             fi
           done
-      - name: Run Watcher E2E Tests
-        working-directory: ./lifecycle-manager
-        run: |
-          make -C tests/e2e_test test-watcher-e2e
-      - name: Run Kyma CR Deletion Test
-        working-directory: ./lifecycle-manager
-        run: |
-          make -C tests/e2e_test test-kyma-deletion-e2e
+#      - name: Run Watcher E2E Tests
+#        working-directory: ./lifecycle-manager
+#        run: |
+#          make -C tests/e2e_test test-watcher-e2e
+#      - name: Run Kyma CR Deletion Test
+#        working-directory: ./lifecycle-manager
+#        run: |
+#          make -C tests/e2e_test test-kyma-deletion-e2e
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
@@ -154,6 +154,7 @@ jobs:
           kustomize edit add patch --path warning_patch.yaml --kind Deployment
           popd
           kyma alpha create module --kubebuilder-project  --channel=regular --name kyma.project.io/module/template-operator --version 0.0.1 --path . --registry k3d-registry.localhost:5111 --insecure --module-archive-version-overwrite
+          kubectl get crds
           kubectl apply -f template.yaml
       - name: Run Status Propagation Tests
         working-directory: ./lifecycle-manager

@@ -83,6 +83,21 @@ var _ = Describe("Enable Template Operator, Kyma CR should have status `Warning`
 				Should(Succeed())
 		})
 
+		It("Should delete KCP Kyma", func() {
+			By("Deleting KCP Kyma")
+			Eventually(controlPlaneClient.Delete, readyTimeout, interval).
+				WithContext(ctx).
+				WithArguments(kyma).
+				Should(Succeed())
+		})
+
+		It("Kyma CR should be removed", func() {
+			Eventually(checkKCPKymaCRDeleted, timeout, interval).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
+				Should(Succeed())
+		})
+
 	})
 
 func enableModule(ctx context.Context, kymaName, kymaNamespace, moduleName, moduleChannel string, k8sClient client.Client) error {
