@@ -3,7 +3,7 @@
 package e2e_test
 
 import (
-	"errors"
+	"context"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -12,6 +12,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -27,13 +28,6 @@ const (
 
 	defaultRuntimeNamespace = "kyma-system"
 	controlPlaneNamespace   = "kcp-system"
-)
-
-var (
-	errPodNotFound               = errors.New("could not find pod")
-	errWatcherDeploymentNotReady = errors.New("watcher Deployment is not ready")
-	errLogNotFound               = errors.New("logMsg was not found in log")
-	errKymaNotDeleted            = errors.New("kyma CR not deleted")
 )
 
 var _ = Describe("Enable Template Operator, Kyma CR should have status `Warning`",
@@ -92,7 +86,7 @@ var _ = Describe("Enable Template Operator, Kyma CR should have status `Warning`
 		})
 
 		It("Kyma CR should be removed", func() {
-			Eventually(checkKCPKymaCRDeleted, timeout, interval).
+			Eventually(CheckKCPKymaCRDeleted, timeout, interval).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 				Should(Succeed())

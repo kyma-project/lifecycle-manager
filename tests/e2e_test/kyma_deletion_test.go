@@ -3,21 +3,15 @@
 package e2e_test
 
 import (
-	"context"
-	"errors"
 	"os/exec"
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/meta"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
-
-var errKymaNotDeleted = errors.New("kyma CR not deleted")
 
 const (
 	timeout       = 10 * time.Second
@@ -119,20 +113,9 @@ var _ = Describe("KCP Kyma CR should be deleted successfully when SKR cluster ge
 		})
 
 		It("Kyma CR should be removed", func() {
-			Eventually(checkKCPKymaCRDeleted, timeout, interval).
+			Eventually(CheckKCPKymaCRDeleted, timeout, interval).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 				Should(Succeed())
 		})
 	})
-
-func checkKCPKymaCRDeleted(ctx context.Context,
-	kymaName string, kymaNamespace string, k8sClient client.Client,
-) error {
-	kyma := &v1beta2.Kyma{}
-	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma)
-	if util.IsNotFound(err) {
-		return nil
-	}
-	return errKymaNotDeleted
-}
