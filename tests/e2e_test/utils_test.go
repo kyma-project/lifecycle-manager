@@ -41,8 +41,9 @@ func CheckKymaIsInState(ctx context.Context,
 	}
 	GinkgoWriter.Printf("kyma %v\n", kyma)
 	if kyma.Status.State != expectedState {
-		return fmt.Errorf("%w: expect %s, but in %s",
-			errKymaNotInExpectedState, expectedState, kyma.Status.State)
+
+		return fmt.Errorf("%w: expect %s, but in %s. Kyma CR: %#v",
+			errKymaNotInExpectedState, expectedState, kyma.Status.State, kyma)
 	}
 	return nil
 }
