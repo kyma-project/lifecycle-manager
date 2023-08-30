@@ -111,8 +111,8 @@ jobs:
           echo "KLM_VERSION_TAG=PR-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
           echo "KLM_IMAGE_REPO=dev" >> $GITHUB_ENV
       - name: Deploy LM local testing kustomize
+        working-directory: ./lifecycle-manager
         run: |
-          pushd ./lifecycle-manager
           pwd 
           ls
           maxRetry=5
@@ -130,24 +130,26 @@ jobs:
             fi
           done
       - name: Run Watcher E2E Tests
+        working-directory: ./lifecycle-manager
         run: |
           make -C tests/e2e_test test-watcher-e2e
       - name: Run Kyma CR Deletion Test
+        working-directory: ./lifecycle-manager
         run: |
           make -C tests/e2e_test test-kyma-deletion-e2e
-          popd
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
           repository: kyma-project/template-operator
           path: ./template-operator/
       - name: Create Template Operator Module
+        working-directory: ./template-operator
         run: |
+          pushd config/default
           echo "- op: replace \
             path: /spec/template/spec/containers/0/args/1 \
-            value: --final-state=Warning" >> config/default/warning_patch.yaml
-          
-          pushd config/default
+            value: --final-state=Warning" >> warning_patch.yaml
+          cat warning_patch.yaml
           kustomize edit add patch --path warning_patch.yaml --kind Deployment
           popd
           kyma alpha create module --kubebuilder-project  --channel=regular --name kyma.project.io/module/template-operator --version 0.0.1 --path . --registry k3d-registry.localhost:5111 --insecure --module-archive-version-overwrite
