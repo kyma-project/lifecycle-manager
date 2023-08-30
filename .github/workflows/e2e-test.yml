@@ -146,9 +146,10 @@ jobs:
         working-directory: ./template-operator
         run: |
           pushd config/default
-          echo "- op: replace \
-            path: /spec/template/spec/containers/0/args/1 \
+          echo "- op: replace
+            path: /spec/template/spec/containers/0/args/1
             value: --final-state=Warning" >> warning_patch.yaml
+           
           cat warning_patch.yaml
           kustomize edit add patch --path warning_patch.yaml --kind Deployment
           popd
