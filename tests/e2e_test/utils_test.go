@@ -42,10 +42,26 @@ func CheckKymaIsInState(ctx context.Context,
 	GinkgoWriter.Printf("kyma %v\n", kyma)
 	if kyma.Status.State != expectedState {
 
-		return fmt.Errorf("%w: expect %s, but in %s. Kyma CR: %#v",
-			errKymaNotInExpectedState, expectedState, kyma.Status.State, kyma)
+		logmsg, err := getManifestCRs(ctx, k8sClient)
+		if err != nil {
+			return fmt.Errorf("error getting manifest crs %s", err.Error())
+		}
+		return fmt.Errorf("%w: expect %s, but in %s. Kyma CR: %#v, Manifest CRs: %s",
+			errKymaNotInExpectedState, expectedState, kyma.Status.State, kyma, logmsg)
 	}
 	return nil
+}
+
+func getManifestCRs(ctx context.Context, k8sClient client.Client) (string, error) {
+	manifests := &v1beta2.ManifestList{}
+	if err := k8sClient.List(ctx, manifests); err != nil {
+		return "", err
+	}
+	logmsg := ""
+	for _, m := range manifests.Items {
+		logmsg += fmt.Sprintf("Manifest CR: %#v", m)
+	}
+	return logmsg, nil
 }
 
 func CreateKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
