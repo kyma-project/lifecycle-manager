@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+//nolint:gochecknoglobals
 package withwatcher_test
 
 import (
@@ -65,17 +65,17 @@ import (
 const listenerAddr = ":8082"
 
 var (
-	controlPlaneClient client.Client                //nolint:gochecknoglobals
-	runtimeClient      client.Client                //nolint:gochecknoglobals
-	k8sManager         manager.Manager              //nolint:gochecknoglobals
-	controlPlaneEnv    *envtest.Environment         //nolint:gochecknoglobals
-	runtimeEnv         *envtest.Environment         //nolint:gochecknoglobals
-	suiteCtx           context.Context              //nolint:gochecknoglobals
-	cancel             context.CancelFunc           //nolint:gochecknoglobals
-	restCfg            *rest.Config                 //nolint:gochecknoglobals
-	istioResources     []*unstructured.Unstructured //nolint:gochecknoglobals
-	remoteClientCache  *remote.ClientCache          //nolint:gochecknoglobals
-	logger             logr.Logger                  //nolint:gochecknoglobals
+	controlPlaneClient client.Client
+	runtimeClient      client.Client
+	k8sManager         manager.Manager
+	controlPlaneEnv    *envtest.Environment
+	runtimeEnv         *envtest.Environment
+	suiteCtx           context.Context
+	cancel             context.CancelFunc
+	restCfg            *rest.Config
+	istioResources     []*unstructured.Unstructured
+	remoteClientCache  *remote.ClientCache
+	logger             logr.Logger
 )
 
 const (
@@ -104,18 +104,17 @@ var _ = BeforeSuite(func() {
 		"cert-manager-v1.10.1.crds.yaml",
 		"istio-v1.17.1.crds.yaml")
 
-	// kcpModule CRD
-	controlplaneCrd := &v1.CustomResourceDefinition{}
+	kcpModuleCRD := &v1.CustomResourceDefinition{}
 	modulePath := filepath.Join("..", "..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(moduleFile).ToNot(BeEmpty())
-	Expect(yaml.Unmarshal(moduleFile, &controlplaneCrd)).To(Succeed())
+	Expect(yaml.Unmarshal(moduleFile, &kcpModuleCRD)).To(Succeed())
 
 	controlPlaneEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
-		CRDs:                  append([]*v1.CustomResourceDefinition{controlplaneCrd}, externalCRDs...),
+		CRDs:                  append([]*v1.CustomResourceDefinition{kcpModuleCRD}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}
 

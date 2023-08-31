@@ -13,6 +13,7 @@ import (
 )
 
 const (
+	//nolint:gosec
 	metricKymaState   = "lifecycle_mgr_kyma_state"
 	metricModuleState = "lifecycle_mgr_module_state"
 	kymaNameLabel     = "kyma_name"
