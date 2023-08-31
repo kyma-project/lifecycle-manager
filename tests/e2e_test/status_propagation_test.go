@@ -15,7 +15,7 @@ import (
 
 const (
 	timeout       = 10 * time.Second
-	statusTimeout = 1 * time.Minute
+	statusTimeout = 2 * time.Minute
 	interval      = 1 * time.Second
 )
 
@@ -63,6 +63,19 @@ var _ = Describe("Enable Template Operator, Kyma CR should have status `Warning`
 			Eventually(CheckKymaIsInState, statusTimeout, interval).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateWarning).
+				Should(Succeed())
+		})
+
+		It("Should disable Template Operator and Kyma should result in Ready status", func() {
+			By("Disabling Template Operator")
+			Eventually(DisableModule, timeout, interval).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), "template-operator", controlPlaneClient).
+				Should(Succeed())
+			By("Checking state of kyma")
+			Eventually(CheckKymaIsInState, statusTimeout, interval).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 				Should(Succeed())
 		})
 

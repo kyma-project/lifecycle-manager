@@ -142,3 +142,23 @@ func EnableModule(ctx context.Context, kymaName, kymaNamespace, moduleName, modu
 	})
 	return k8sClient.Update(ctx, kyma)
 }
+
+func DisableModule(ctx context.Context, kymaName, kymaNamespace, moduleName string, k8sClient client.Client) error {
+	kyma := &v1beta2.Kyma{}
+	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
+		return err
+	}
+	GinkgoWriter.Printf("kyma %v\n", kyma)
+
+	for i, module := range kyma.Spec.Modules {
+		if module.Name == moduleName {
+			kyma.Spec.Modules = removeModuleWithIndex(kyma.Spec.Modules, i)
+			break
+		}
+	}
+	return k8sClient.Update(ctx, kyma)
+}
+
+func removeModuleWithIndex(s []v1beta2.Module, index int) []v1beta2.Module {
+	return append(s[:index], s[index+1:]...)
+}

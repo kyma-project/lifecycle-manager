@@ -97,7 +97,7 @@ jobs:
         run: |
           kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/$CM_VERSION/cert-manager.yaml
           cmctl check api --wait=2m
-      - name: Checkout repo
+      - name: Checkout lifecycle-manager
         uses: actions/checkout@v3
         with:
           path: ./lifecycle-manager/
@@ -135,7 +135,7 @@ jobs:
         working-directory: ./lifecycle-manager
         run: |
           make -C tests/e2e_test test-kyma-deletion-e2e
-      - name: Checkout repo
+      - name: Checkout template-operator
         uses: actions/checkout@v3
         with:
           repository: kyma-project/template-operator

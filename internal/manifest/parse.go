@@ -94,13 +94,13 @@ func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (v
 	if isInsecureLayer {
 		imgLayer, err := crane.PullLayer(noSchemeImageRef, crane.Insecure, crane.WithAuthFromKeychain(keyChain))
 		if err != nil {
-			return nil, fmt.Errorf("INSECURE: %s due to: %w; noSchemeImageRef: %s; InsecureLayer; %t", ErrImageLayerPull.Error(), err, noSchemeImageRef, isInsecureLayer)
+			return nil, fmt.Errorf("%s due to: %w", ErrImageLayerPull.Error(), err)
 		}
 		return imgLayer, nil
 	}
 	imgLayer, err := crane.PullLayer(noSchemeImageRef, crane.WithAuthFromKeychain(keyChain), crane.WithContext(ctx))
 	if err != nil {
-		return nil, fmt.Errorf("SECURE: %s due to: %w; noSchemeImageRef: %s; InsecureLayer; %t", ErrImageLayerPull.Error(), err, noSchemeImageRef, isInsecureLayer)
+		return nil, fmt.Errorf("%s due to: %w", ErrImageLayerPull.Error(), err)
 	}
 	return imgLayer, nil
 }
