@@ -27,8 +27,8 @@ jobs:
   e2e-integration:
     strategy:
       matrix:
-        cli-stability: [ "unstable" ]
         e2e-test: ["test-watcher-e2e", "test-kyma-deletion-e2e", "test-status-propagation-e2e"]
+        cli-stability: [ "unstable" ]
     name: "Run E2E tests"
     needs: [wait-for-img]
     runs-on: ubuntu-latest
