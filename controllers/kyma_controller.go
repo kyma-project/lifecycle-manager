@@ -125,7 +125,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if r.SyncKymaEnabled(kyma) {
 		remoteClient := remote.NewClientWithConfig(r.Client, r.KcpRestConfig)
-		if ctx, err := remote.InitializeSyncContext(ctx, kyma,
+		if err := remote.InitializeSyncContext(&ctx, kyma,
 			r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache); err != nil {
 			if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, remote.ErrAccessSecretNotFound) {
 				return ctrl.Result{}, r.removeAllFinalizersAndUpdateKyma(ctx, kyma)
