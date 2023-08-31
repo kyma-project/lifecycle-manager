@@ -153,6 +153,7 @@ jobs:
           popd
           
           kyma alpha create module --kubebuilder-project  --channel=regular --name kyma.project.io/module/template-operator --version 1.1.1 --path . --registry k3d-kcp-registry:5111 --insecure --module-archive-version-overwrite /
+          sed 's/k3d-kcp-registry:5111/k3d-kcp-registry:5000'
           kubectl get crds
           kubectl apply -f template.yaml
       - name: Run Status Propagation Tests
