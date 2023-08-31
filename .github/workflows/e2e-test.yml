@@ -28,6 +28,7 @@ jobs:
     strategy:
       matrix:
         cli-stability: [ "unstable" ]
+        e2e-test: ["test-watcher-e2e", "test-kyma-deletion-e2e", "test-status-propagation-e2e"]
     name: "Run E2E tests"
     needs: [wait-for-img]
     runs-on: ubuntu-latest
@@ -127,21 +128,15 @@ jobs:
               exit 1
             fi
           done
-      - name: Run Watcher E2E Tests
-        working-directory: ./lifecycle-manager
-        run: |
-          make -C tests/e2e_test test-watcher-e2e
-      - name: Run Kyma CR Deletion Test
-        working-directory: ./lifecycle-manager
-        run: |
-          make -C tests/e2e_test test-kyma-deletion-e2e
       - name: Checkout template-operator
         uses: actions/checkout@v3
+        if: ${{ matrix.e2e-test }} == 'test-status-propagation-e2e'
         with:
           repository: kyma-project/template-operator
           path: ./template-operator/
       - name: Create Template Operator Module
         working-directory: ./template-operator
+        if: ${{ matrix.e2e-test }} == 'test-status-propagation-e2e'
         run: |
           pushd config/default
           echo "- op: replace
@@ -155,7 +150,7 @@ jobs:
           kubectl config use-context k3d-kcp
           kubectl get crds
           kubectl apply -f template.yaml
-      - name: Run Status Propagation Tests
+      - name: Run ${{ matrix.e2e-test }}
         working-directory: ./lifecycle-manager
         run: |
-          make -C tests/e2e_test test-status-propagation-e2e
+          make -C tests/e2e_test ${{ matrix.e2e-test }}
