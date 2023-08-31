@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+//nolint:gochecknoglobals
 package manifest_controller_test
 
 import (
@@ -51,14 +51,14 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	k8sClient  client.Client           //nolint:gochecknoglobals
-	testEnv    *envtest.Environment    //nolint:gochecknoglobals
-	k8sManager ctrl.Manager            //nolint:gochecknoglobals
-	ctx        context.Context         //nolint:gochecknoglobals
-	cancel     context.CancelFunc      //nolint:gochecknoglobals
-	server     *httptest.Server        //nolint:gochecknoglobals
-	reconciler *declarative.Reconciler //nolint:gochecknoglobals
-	cfg        *rest.Config            //nolint:gochecknoglobals
+	k8sClient  client.Client
+	testEnv    *envtest.Environment
+	k8sManager ctrl.Manager
+	ctx        context.Context
+	cancel     context.CancelFunc
+	server     *httptest.Server
+	reconciler *declarative.Reconciler
+	cfg        *rest.Config
 )
 
 const (
