@@ -3,7 +3,6 @@
 package e2e_test
 
 import (
-	"context"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -12,22 +11,12 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	timeout      = 10 * time.Second
-	readyTimeout = 2 * time.Minute
-	interval     = 1 * time.Second
-
-	watcherPodContainer = "server"
-	exampleSKRDomain    = "example.domain.com"
-
-	KLMPodPrefix    = "klm-controller-manager"
-	KLMPodContainer = "manager"
-
-	defaultRuntimeNamespace = "kyma-system"
-	controlPlaneNamespace   = "kcp-system"
+	timeout       = 10 * time.Second
+	statusTimeout = 1 * time.Minute
+	interval      = 1 * time.Second
 )
 
 var _ = Describe("Enable Template Operator, Kyma CR should have status `Warning`",
@@ -53,12 +42,12 @@ var _ = Describe("Enable Template Operator, Kyma CR should have status `Warning`
 				WithArguments(kyma).
 				Should(Succeed())
 			By("verifying kyma is ready")
-			Eventually(CheckKymaIsInState, readyTimeout, interval).
+			Eventually(CheckKymaIsInState, statusTimeout, interval).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 				Should(Succeed())
 			By("verifying remote kyma is ready")
-			Eventually(CheckRemoteKymaCR, readyTimeout, interval).
+			Eventually(CheckRemoteKymaCR, statusTimeout, interval).
 				WithContext(ctx).
 				WithArguments(remoteNamespace, []v1beta2.Module{}, runtimeClient, v1beta2.StateReady).
 				Should(Succeed())
@@ -66,12 +55,12 @@ var _ = Describe("Enable Template Operator, Kyma CR should have status `Warning`
 
 		It("Should enable Template Operator and Kyma should result in Warning status", func() {
 			By("Enabling Template Operator")
-			Eventually(enableModule, timeout, interval).
+			Eventually(EnableModule, timeout, interval).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), "template-operator", "regular", controlPlaneClient).
 				Should(Succeed())
 			By("Checking state of kyma")
-			Eventually(CheckKymaIsInState, readyTimeout, interval).
+			Eventually(CheckKymaIsInState, statusTimeout, interval).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateWarning).
 				Should(Succeed())
@@ -79,7 +68,7 @@ var _ = Describe("Enable Template Operator, Kyma CR should have status `Warning`
 
 		It("Should delete KCP Kyma", func() {
 			By("Deleting KCP Kyma")
-			Eventually(controlPlaneClient.Delete, readyTimeout, interval).
+			Eventually(controlPlaneClient.Delete, statusTimeout, interval).
 				WithContext(ctx).
 				WithArguments(kyma).
 				Should(Succeed())
@@ -93,16 +82,3 @@ var _ = Describe("Enable Template Operator, Kyma CR should have status `Warning`
 		})
 
 	})
-
-func enableModule(ctx context.Context, kymaName, kymaNamespace, moduleName, moduleChannel string, k8sClient client.Client) error {
-	kyma := &v1beta2.Kyma{}
-	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
-		return err
-	}
-	GinkgoWriter.Printf("kyma %v\n", kyma)
-	kyma.Spec.Modules = append(kyma.Spec.Modules, v1beta2.Module{
-		Name:    moduleName,
-		Channel: moduleChannel,
-	})
-	return k8sClient.Update(ctx, kyma)
-}

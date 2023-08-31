@@ -129,3 +129,16 @@ func CheckKCPKymaCRDeleted(ctx context.Context,
 	}
 	return errKymaNotDeleted
 }
+
+func EnableModule(ctx context.Context, kymaName, kymaNamespace, moduleName, moduleChannel string, k8sClient client.Client) error {
+	kyma := &v1beta2.Kyma{}
+	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
+		return err
+	}
+	GinkgoWriter.Printf("kyma %v\n", kyma)
+	kyma.Spec.Modules = append(kyma.Spec.Modules, v1beta2.Module{
+		Name:    moduleName,
+		Channel: moduleChannel,
+	})
+	return k8sClient.Update(ctx, kyma)
+}

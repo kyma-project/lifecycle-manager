@@ -35,7 +35,7 @@ help: ## Display this help.
 test: test-watcher-e2e test-kyma-deletion-e2e test-status-propagation-e2e
 
 .PHONY: test-kyma-deletion-e2e
-test-kyma-deletion-e2e:
+test-kyma-deletion-e2e: ## Runs the Kyma Deletion E2E Test
 	go test --tags=deletion_e2e -ginkgo.vv
 
 .PHONY: test-watcher-e2e
@@ -43,5 +43,5 @@ test-watcher-e2e: ## Runs the Watcher E2E Test
 	go test --tags=watcher_e2e -ginkgo.vv
 
 .PHONY: test-status-propagation-e2e
-test-status-propagation-e2e:
+test-status-propagation-e2e: ## Runs the Status Propagation E2E Test
 	go test --tags=status_propagation_e2e -ginkgo.vv
