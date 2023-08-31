@@ -34,7 +34,7 @@ jobs:
     env:
       K3D_VERSION: v5.4.7
       ISTIO_VERSION: 1.17.1
-      CM_VERSION: v1.12.0
+      CM_VERSION: v1.12.3
       KLM_VERSION_TAG: latest
       KLM_IMAGE_REPO: prod
     steps:
@@ -82,7 +82,7 @@ jobs:
         run: |
           FILE=/etc/hosts
           if [ -f "$FILE" ]; then
-              sudo echo "127.0.0.1 k3d-kcp-registry" | sudo tee -a $FILE
+              sudo echo "127.0.0.1 k3d-kcp-registry.localhost" | sudo tee -a $FILE
           else
               echo "$FILE does not exist."
               exit 1
@@ -113,8 +113,6 @@ jobs:
       - name: Deploy LM local testing kustomize
         working-directory: ./lifecycle-manager
         run: |
-          pwd 
-          ls
           maxRetry=5
           for retry in $(seq 1 $maxRetry)
           do
