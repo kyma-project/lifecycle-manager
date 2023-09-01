@@ -19,7 +19,7 @@ import (
 	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
 )
 
-func TestRequestVerifier_verifySAN(t *testing.T) { //nolint:funlen
+func TestRequestVerifier_verifySAN(t *testing.T) {
 	t.Parallel()
 	type args struct {
 		certificate *x509.Certificate

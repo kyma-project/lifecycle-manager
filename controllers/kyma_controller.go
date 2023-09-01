@@ -121,33 +121,20 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	return r.reconcile(ctx, kyma)
 }
 
-func (r *KymaReconciler) handleRemoteClusterConnectionError(
-	ctx context.Context, kyma *v1beta2.Kyma, err error,
-) error {
-	if util.IsConnectionRefused(err) {
-		r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
-		return err
-	}
-	if !kyma.DeletionTimestamp.IsZero() {
-		if util.IsNotFound(err) {
-			return r.removeAllFinalizersAndUpdateKyma(ctx, kyma)
-		}
-	}
-
-	r.enqueueWarningEvent(kyma, syncContextError, err)
-	return err
-}
-
+//nolint:gocognit
 func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if r.SyncKymaEnabled(kyma) {
-		var err error
 		remoteClient := remote.NewClientWithConfig(r.Client, r.KcpRestConfig)
-		if ctx, err = remote.InitializeSyncContext(ctx, kyma,
+		if err := remote.InitializeSyncContext(&ctx, kyma,
 			r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache); err != nil {
-			if err = r.handleRemoteClusterConnectionError(ctx, kyma, err); err != nil {
-				return r.requeueWithError(ctx, kyma, err)
+			if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, remote.ErrAccessSecretNotFound) {
+				return ctrl.Result{}, r.removeAllFinalizersAndUpdateKyma(ctx, kyma)
 			}
-			return ctrl.Result{}, nil
+			if util.IsConnectionRefused(err) {
+				r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
+			}
+			r.enqueueWarningEvent(kyma, syncContextError, err)
+			return r.requeueWithError(ctx, kyma, err)
 		}
 	}
 
@@ -158,7 +145,6 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 		if err := r.updateStatus(ctx, kyma, v1beta2.StateDeleting, "waiting for modules to be deleted"); err != nil {
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma status after triggering deletion: %w", err))
 		}
-
 		return ctrl.Result{}, nil
 	}
 
@@ -169,7 +155,7 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 		return ctrl.Result{}, nil
 	}
 
-	if r.SyncKymaEnabled(kyma) { //nolint:nestif
+	if r.SyncKymaEnabled(kyma) {
 		updateKymaRequired, err := r.syncCrdsAndUpdateKymaAnnotations(ctx, kyma)
 		if err != nil {
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not sync CRDs: %w", err))

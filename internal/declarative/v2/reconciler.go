@@ -371,20 +371,10 @@ func generateOperationMessage(installationCondition metav1.Condition, stateInfo 
 	return installationCondition.Message
 }
 
-func (r *Reconciler) deleteResources(
+func (r *Reconciler) deleteDiffResources(
 	ctx context.Context, clnt Client, obj Object, diff []*resource.Info,
 ) error {
 	status := obj.GetStatus()
-
-	if !obj.GetDeletionTimestamp().IsZero() {
-		for _, preDelete := range r.PreDeletes {
-			if err := preDelete(ctx, clnt, r.Client, obj); err != nil {
-				r.Event(obj, "Warning", "PreDelete", err.Error())
-				// we do not set a status here since it will be deleting if timestamp is set.
-				return err
-			}
-		}
-	}
 
 	if err := NewConcurrentCleanup(clnt).Run(ctx, diff); errors.Is(err, ErrDeletionNotFinished) {
 		r.Event(obj, "Normal", "Deletion", err.Error())
@@ -395,6 +385,19 @@ func (r *Reconciler) deleteResources(
 		return err
 	}
 
+	return nil
+}
+
+func (r *Reconciler) doPreDelete(ctx context.Context, clnt Client, obj Object) error {
+	if !obj.GetDeletionTimestamp().IsZero() {
+		for _, preDelete := range r.PreDeletes {
+			if err := preDelete(ctx, clnt, r.Client, obj); err != nil {
+				r.Event(obj, "Warning", "PreDelete", err.Error())
+				// we do not set a status here since it will be deleting if timestamp is set.
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -467,7 +470,12 @@ func (r *Reconciler) pruneDiff(
 		r.ManifestParser.EvictCache(spec)
 		return ErrResourceSyncDiffInSameOCILayer
 	}
-	if err := r.deleteResources(ctx, clnt, obj, diff); err != nil {
+
+	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
+		return err
+	}
+
+	if err := r.deleteDiffResources(ctx, clnt, obj, diff); err != nil {
 		return err
 	}
 
