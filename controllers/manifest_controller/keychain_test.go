@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	hlp "github.com/kyma-project/lifecycle-manager/controllers/manifest_controller/helper"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -23,7 +24,7 @@ var _ = Describe(
 				const repo = "test.registry.io"
 				imageSpecWithCredSelect := CreateOCIImageSpecWithCredSelect("imageName", repo,
 					"digest", CredSecretLabelValue)
-				keychain, err := ocmextensions.GetAuthnKeychain(ctx, imageSpecWithCredSelect.CredSecretSelector, k8sClient)
+				keychain, err := ocmextensions.GetAuthnKeychain(hlp.Ctx, imageSpecWithCredSelect.CredSecretSelector, hlp.K8sClient)
 				Expect(err).ToNot(HaveOccurred())
 				dig := &TestRegistry{target: repo, registry: repo}
 				authenticator, err := keychain.Resolve(dig)
@@ -43,7 +44,7 @@ func CreateOCIImageSpecWithCredSelect(name, repo, digest, secretLabelValue strin
 		Repo:               repo,
 		Type:               "oci-ref",
 		Ref:                digest,
-		CredSecretSelector: CredSecretLabelSelector(secretLabelValue),
+		CredSecretSelector: hlp.CredSecretLabelSelector(secretLabelValue),
 	}
 	return imageSpec
 }
@@ -68,12 +69,12 @@ func installCredSecret(secretLabelValue string) func() error {
 		Expect(err).ToNot(HaveOccurred())
 		err = yaml.Unmarshal(secretFile, secret)
 		Expect(err).ToNot(HaveOccurred())
-		secret.Labels[CredSecretLabelKeyForTest] = secretLabelValue
-		err = k8sClient.Create(ctx, secret)
+		secret.Labels[hlp.CredSecretLabelKeyForTest] = secretLabelValue
+		err = hlp.K8sClient.Create(hlp.Ctx, secret)
 		if errors.IsAlreadyExists(err) {
 			return nil
 		}
 		Expect(err).ToNot(HaveOccurred())
-		return k8sClient.Get(ctx, client.ObjectKeyFromObject(secret), &corev1.Secret{})
+		return hlp.K8sClient.Get(hlp.Ctx, client.ObjectKeyFromObject(secret), &corev1.Secret{})
 	}
 }

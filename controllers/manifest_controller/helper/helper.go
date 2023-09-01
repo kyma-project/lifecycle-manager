@@ -1,9 +1,12 @@
-package manifest_controller_test
+package helper
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net/http/httptest"
 	"net/url"
 	"os"
 
@@ -25,7 +28,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const CredSecretLabelKeyForTest = "operator.kyma-project.io/oci-registry-cred" //nolint:gosec
+var (
+	Cancel                   context.CancelFunc
+	Ctx                      context.Context
+	K8sClient                client.Client
+	Server                   *httptest.Server
+	ErrManifestStateMisMatch = errors.New("ManifestState mismatch")
+	ManifestFilePath         = "../../pkg/test_samples/oci/rendered.yaml"
+)
+
+const (
+	CredSecretLabelKeyForTest = "operator.kyma-project.io/oci-registry-cred" //nolint:gosec
+)
 
 type mockLayer struct {
 	filePath string
@@ -48,7 +62,7 @@ func (m mockLayer) DiffID() (v1.Hash, error) {
 }
 
 func CreateImageSpecLayer() v1.Layer {
-	layer, err := partial.UncompressedToLayer(mockLayer{filePath: "../../pkg/test_samples/oci/rendered.yaml"})
+	layer, err := partial.UncompressedToLayer(mockLayer{filePath: ManifestFilePath})
 	Expect(err).ToNot(HaveOccurred())
 	return layer
 }
@@ -59,7 +73,7 @@ func PushToRemoteOCIRegistry(layerName string) {
 	Expect(err).ToNot(HaveOccurred())
 
 	// Set up a fake registry and write what we pulled to it.
-	u, err := url.Parse(server.URL)
+	u, err := url.Parse(Server.URL)
 	Expect(err).NotTo(HaveOccurred())
 
 	dst := fmt.Sprintf("%s/%s@%s", u.Host, layerName, digest)
@@ -76,7 +90,7 @@ func PushToRemoteOCIRegistry(layerName string) {
 	Expect(gotHash).To(Equal(digest))
 }
 
-func createOCIImageSpec(name, repo string, enableCredSecretSelector bool) v1beta2.ImageSpec {
+func CreateOCIImageSpec(name, repo string, enableCredSecretSelector bool) v1beta2.ImageSpec {
 	imageSpec := v1beta2.ImageSpec{
 		Name: name,
 		Repo: repo,
@@ -92,27 +106,27 @@ func createOCIImageSpec(name, repo string, enableCredSecretSelector bool) v1beta
 	return imageSpec
 }
 
-func withInvalidInstallImageSpec(enableResource bool) func(manifest *v1beta2.Manifest) error {
+func WithInvalidInstallImageSpec(enableResource bool) func(manifest *v1beta2.Manifest) error {
 	return func(manifest *v1beta2.Manifest) error {
-		invalidImageSpec := createOCIImageSpec("invalid-image-spec", "domain.invalid", false)
+		invalidImageSpec := CreateOCIImageSpec("invalid-image-spec", "domain.invalid", false)
 		imageSpecByte, err := json.Marshal(invalidImageSpec)
 		Expect(err).ToNot(HaveOccurred())
-		return installManifest(manifest, imageSpecByte, enableResource)
+		return InstallManifest(manifest, imageSpecByte, enableResource)
 	}
 }
 
-func withValidInstallImageSpec(name string,
+func WithValidInstallImageSpec(name string,
 	enableResource, enableCredSecretSelector bool,
 ) func(manifest *v1beta2.Manifest) error {
 	return func(manifest *v1beta2.Manifest) error {
-		validImageSpec := createOCIImageSpec(name, server.Listener.Addr().String(), enableCredSecretSelector)
+		validImageSpec := CreateOCIImageSpec(name, Server.Listener.Addr().String(), enableCredSecretSelector)
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
-		return installManifest(manifest, imageSpecByte, enableResource)
+		return InstallManifest(manifest, imageSpecByte, enableResource)
 	}
 }
 
-func installManifest(manifest *v1beta2.Manifest, installSpecByte []byte, enableResource bool) error {
+func InstallManifest(manifest *v1beta2.Manifest, installSpecByte []byte, enableResource bool) error {
 	if installSpecByte != nil {
 		manifest.Spec.Install = v1beta2.InstallInfo{
 			Source: runtime.RawExtension{
@@ -128,19 +142,19 @@ func installManifest(manifest *v1beta2.Manifest, installSpecByte []byte, enableR
 				"apiVersion": "operator.kyma-project.io/v1alpha1",
 				"kind":       "Sample",
 				"metadata": map[string]interface{}{
-					"name":      "sample-crd-from-manifest",
+					"name":      "sample-cr-" + manifest.GetName(),
 					"namespace": metav1.NamespaceDefault,
 				},
 				"namespace": "default",
 			},
 		}
 	}
-	return k8sClient.Create(ctx, manifest)
+	return K8sClient.Create(Ctx, manifest)
 }
 
-func expectManifestStateIn(state v2.State) func(manifestName string) error {
+func ExpectManifestStateIn(state v2.State) func(manifestName string) error {
 	return func(manifestName string) error {
-		status, err := getManifestStatus(manifestName)
+		status, err := GetManifestStatus(manifestName)
 		if err != nil {
 			return err
 		}
@@ -151,27 +165,56 @@ func expectManifestStateIn(state v2.State) func(manifestName string) error {
 	}
 }
 
-func getManifestStatus(manifestName string) (v2.Status, error) {
-	manifest := &v1beta2.Manifest{}
-	err := k8sClient.Get(
-		ctx, client.ObjectKey{
-			Namespace: metav1.NamespaceDefault,
-			Name:      manifestName,
-		}, manifest,
-	)
+func ExpectOCISyncRefAnnotationExists(mustExist bool) func(manifestName string) error {
+	return func(manifestName string) error {
+		manifest, err := GetManifest(manifestName)
+		if err != nil {
+			return err
+		}
+
+		annValue := manifest.Annotations["sync-oci-ref"]
+		mustNotExist := !mustExist
+
+		if mustExist && annValue == "" {
+			return fmt.Errorf("Expected \"sync-oci-ref\" annotation does not exist for manifest %s: %w", manifestName, ErrManifestStateMisMatch)
+		}
+		if mustNotExist && annValue != "" {
+			return fmt.Errorf("Expected \"sync-oci-ref\" annotation to be empty - but it's not - for manifest %s: %w", manifestName, ErrManifestStateMisMatch)
+		}
+
+		return nil
+	}
+}
+
+func GetManifestStatus(manifestName string) (v2.Status, error) {
+	manifest, err := GetManifest(manifestName)
 	if err != nil {
 		return v2.Status{}, err
 	}
 	return v2.Status(manifest.Status), nil
 }
 
-func deleteManifestAndVerify(manifest *v1beta2.Manifest) func() error {
+func GetManifest(manifestName string) (*v1beta2.Manifest, error) {
+	manifest := &v1beta2.Manifest{}
+	err := K8sClient.Get(
+		Ctx, client.ObjectKey{
+			Namespace: metav1.NamespaceDefault,
+			Name:      manifestName,
+		}, manifest,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return manifest, nil
+}
+
+func DeleteManifestAndVerify(manifest *v1beta2.Manifest) func() error {
 	return func() error {
-		if err := k8sClient.Delete(ctx, manifest); err != nil && !util.IsNotFound(err) {
+		if err := K8sClient.Delete(Ctx, manifest); err != nil && !util.IsNotFound(err) {
 			return err
 		}
 		newManifest := v1beta2.Manifest{}
-		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(manifest), &newManifest)
+		err := K8sClient.Get(Ctx, client.ObjectKeyFromObject(manifest), &newManifest)
 		return client.IgnoreNotFound(err)
 	}
 }

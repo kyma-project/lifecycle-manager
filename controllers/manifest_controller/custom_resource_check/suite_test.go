@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 //nolint:gochecknoglobals
-package manifest_controller_test
+package custom_resource_check
 
 import (
 	"context"
@@ -71,7 +71,7 @@ func TestAPIs(t *testing.T) {
 
 var _ = BeforeSuite(
 	func() {
-		hlp.ManifestFilePath = "../../pkg/test_samples/oci/rendered.yaml"
+		hlp.ManifestFilePath = "../../../pkg/test_samples/oci/rendered.yaml"
 		hlp.Ctx, hlp.Cancel = context.WithCancel(context.TODO())
 		logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
 
@@ -81,7 +81,7 @@ var _ = BeforeSuite(
 
 		By("bootstrapping test environment")
 		testEnv = &envtest.Environment{
-			CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
+			CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
 			ErrorIfCRDPathMissing: false,
 		}
 
@@ -100,13 +100,18 @@ var _ = BeforeSuite(
 			metricsBindAddress = ":0"
 		}
 
+		syncPeriod := 2 * time.Second
+
 		k8sManager, err = ctrl.NewManager(
 			cfg, ctrl.Options{
 				MetricsBindAddress: metricsBindAddress,
 				Scheme:             scheme.Scheme,
 				Cache:              internal.GetCacheOptions(labels.Set{v1beta2.ManagedBy: v1beta2.OperatorName}),
+				SyncPeriod:         &syncPeriod,
 			},
 		)
+
+		k8sManager.GetControllerOptions()
 		Expect(err).ToNot(HaveOccurred())
 		codec, err := v1beta2.NewCodec()
 		Expect(err).ToNot(HaveOccurred())
@@ -136,7 +141,7 @@ var _ = BeforeSuite(
 			manifest.WithClientCacheKey(),
 			declarative.WithPostRun{manifest.PostRunCreateCR},
 			declarative.WithPreDelete{manifest.PreDeleteDeleteCR},
-			declarative.WithCustomReadyCheck(declarative.NewExistsReadyCheck()),
+			declarative.WithCustomReadyCheck(manifest.NewCustomResourceReadyCheck()),
 			declarative.WithModuleCRDName(manifest.GetModuleCRDName),
 		)
 
