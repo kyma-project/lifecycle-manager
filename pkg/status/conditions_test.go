@@ -1,4 +1,3 @@
-//nolint:funlen
 package status_test
 
 import (
