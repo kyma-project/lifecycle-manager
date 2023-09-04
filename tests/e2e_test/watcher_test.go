@@ -48,7 +48,6 @@ var (
 	errPodNotFound               = errors.New("could not find pod")
 	errWatcherDeploymentNotReady = errors.New("watcher Deployment is not ready")
 	errLogNotFound               = errors.New("logMsg was not found in log")
-	errKymaNotDeleted            = errors.New("kyma CR not deleted")
 )
 
 var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation using the Watcher",
