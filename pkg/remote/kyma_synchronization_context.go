@@ -241,9 +241,7 @@ func ReplaceModules(
 	remoteKyma *v1beta2.Kyma,
 ) {
 	controlPlaneKyma.Spec.Modules = []v1beta2.Module{}
-	for _, m := range remoteKyma.Spec.Modules {
-		controlPlaneKyma.Spec.Modules = append(controlPlaneKyma.Spec.Modules, m)
-	}
+	controlPlaneKyma.Spec.Modules = append(controlPlaneKyma.Spec.Modules, remoteKyma.Spec.Modules...)
 	controlPlaneKyma.Spec.Channel = remoteKyma.Spec.Channel
 }
 
