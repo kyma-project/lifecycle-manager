@@ -167,8 +167,9 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 			return ctrl.Result{}, nil
 		}
 		// update the control-plane kyma with the changes to the spec of the remote Kyma
-		if err := r.mergeSpecFromRemote(ctx, kyma); err != nil {
-			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not merge remote kyma spec into original one: %w", err))
+		if err := r.replaceSpecFromRemote(ctx, kyma); err != nil {
+			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not replace control plane kyma spec"+
+				" with remote kyma spec: %w", err))
 		}
 	}
 
@@ -261,9 +262,9 @@ func (r *KymaReconciler) syncStatusToRemote(ctx context.Context, controlPlaneKym
 	return nil
 }
 
-// mergeSpecFromRemote modifies the given Kyma Instance Spec with the merged
+// replaceSpecFromRemote modifies the given Kyma Instance Spec with the merged
 // representation of the Control Plane and the Runtime.
-func (r *KymaReconciler) mergeSpecFromRemote(
+func (r *KymaReconciler) replaceSpecFromRemote(
 	ctx context.Context, controlPlaneKyma *v1beta2.Kyma,
 ) error {
 	remoteKyma, err := r.fetchRemoteKyma(ctx, controlPlaneKyma)
@@ -274,7 +275,7 @@ func (r *KymaReconciler) mergeSpecFromRemote(
 		}
 		return err
 	}
-	remote.MergeModules(controlPlaneKyma, remoteKyma)
+	remote.ReplaceModules(controlPlaneKyma, remoteKyma)
 	return nil
 }
 

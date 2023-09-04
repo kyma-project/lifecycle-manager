@@ -95,9 +95,9 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace()).
 			Should(Succeed())
 
-		By("Enabling module in KCP")
+		By("Enabling module in SKR")
 		Eventually(addModuleToKyma, Timeout, Interval).
-			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), moduleInKCP).
+			WithArguments(runtimeClient, remoteKyma.Name, remoteKyma.Namespace, moduleInKCP).
 			Should(Succeed())
 
 		By("KCP Manifest CR becomes ready")
