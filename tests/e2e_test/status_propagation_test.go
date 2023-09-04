@@ -17,8 +17,6 @@ const (
 	timeout       = 10 * time.Second
 	statusTimeout = 2 * time.Minute
 	interval      = 1 * time.Second
-
-	defaultRemoteKymaName = "default"
 )
 
 var _ = Describe("Enable Template Operator, Kyma CR should have status `Warning`",
