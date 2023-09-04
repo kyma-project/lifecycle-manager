@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -90,7 +90,7 @@ func expectHTTPRouteRemoved(customIstioClient *istio.Client) error {
 
 func expectWatcherCRRemoved(watcherName string) error {
 	_, err := getWatcher(watcherName)
-	if !apierrors.IsNotFound(err) {
+	if !util.IsNotFound(err) {
 		return errWatcherExistsAfterDeletion
 	}
 	return nil
@@ -98,7 +98,7 @@ func expectWatcherCRRemoved(watcherName string) error {
 
 func expectVirtualServiceRemoved(customIstioClient *istio.Client) error {
 	listVirtualServices, err := customIstioClient.ListVirtualServices(suiteCtx)
-	if !apierrors.IsNotFound(err) {
+	if !util.IsNotFound(err) {
 		return err
 	}
 	if len(listVirtualServices.Items) != 0 {
@@ -109,7 +109,7 @@ func expectVirtualServiceRemoved(customIstioClient *istio.Client) error {
 
 func deleteWatcher(name string) error {
 	watcher, err := getWatcher(name)
-	if apierrors.IsNotFound(err) {
+	if util.IsNotFound(err) {
 		return nil
 	}
 	return controlPlaneClient.Delete(suiteCtx, watcher)
@@ -118,6 +118,20 @@ func deleteWatcher(name string) error {
 func allCRsDeleted(_ *istio.Client) error {
 	for _, component := range centralComponents {
 		err := deleteWatcher(component)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func allVirtualServicesDeleted(customIstioClient *istio.Client) error {
+	for _, component := range centralComponents {
+		watcherCR, err := getWatcher(component)
+		if err != nil {
+			return err
+		}
+		err = customIstioClient.RemoveVirtualServiceForCR(suiteCtx, client.ObjectKeyFromObject(watcherCR))
 		if err != nil {
 			return err
 		}
@@ -211,6 +225,15 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 			Timeout,
 			Interval,
 			gatewayUpdated,
+			expectVirtualServiceConfiguredCorrectly,
+			expectWatchersAreReady,
+			nil,
+		),
+		Entry("when all VirtualServices are deleted, "+
+			"expect VirtualServices recreated",
+			Timeout,
+			Interval,
+			allVirtualServicesDeleted,
 			expectVirtualServiceConfiguredCorrectly,
 			expectWatchersAreReady,
 			nil,

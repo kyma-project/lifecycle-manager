@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -62,8 +62,10 @@ func (c *RemoteCatalog) CreateOrUpdate(
 	ctx context.Context,
 	kcpModules []v1beta2.ModuleTemplate,
 ) error {
-	syncContext := SyncContextFromContext(ctx)
-
+	syncContext, err := SyncContextFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get syncContext: %w", err)
+	}
 	if err := c.createOrUpdateCatalog(ctx, kcpModules, syncContext); err != nil {
 		return err
 	}
@@ -75,7 +77,7 @@ func (c *RemoteCatalog) CreateOrUpdate(
 		if meta.IsNoMatchError(err) {
 			return nil
 		}
-		return err
+		return fmt.Errorf("failed to list module templates from runtime: %w", err)
 	}
 
 	return c.deleteDiffCatalog(ctx, kcpModules, runtimeModules.Items, syncContext)
@@ -210,20 +212,25 @@ func (c *RemoteCatalog) prepareForSSA(moduleTemplate *v1beta2.ModuleTemplate) {
 func (c *RemoteCatalog) Delete(
 	ctx context.Context,
 ) error {
-	syncContext := SyncContextFromContext(ctx)
+	syncContext, err := SyncContextFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get syncContext: %w", err)
+	}
+
 	moduleTemplatesRuntime := &v1beta2.ModuleTemplateList{Items: []v1beta2.ModuleTemplate{}}
 	if err := syncContext.RuntimeClient.List(ctx, moduleTemplatesRuntime); err != nil {
-		// if there is no CRD there can never be any module templates to delete
-		if meta.IsNoMatchError(err) {
+		// if there is no CRD or no module template exists,
+		// there can never be any module templates to delete
+		if util.IsNotFound(err) {
 			return nil
 		}
-		return err
+		return fmt.Errorf("failed to list module templates on runtime: %w", err)
 	}
 	for i := range moduleTemplatesRuntime.Items {
 		if isManagedByKcp(moduleTemplatesRuntime.Items[i]) {
 			if err := syncContext.RuntimeClient.Delete(ctx, &moduleTemplatesRuntime.Items[i]); err != nil &&
-				!k8serrors.IsNotFound(err) {
-				return err
+				!util.IsNotFound(err) {
+				return fmt.Errorf("failed to delete module template from runtime: %w", err)
 			}
 		}
 	}
@@ -234,9 +241,13 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 	crd := &v1extensions.CustomResourceDefinition{}
 	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
 
-	syncContext := SyncContextFromContext(ctx)
-
 	var err error
+
+	syncContext, err := SyncContextFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get syncContext: %w", err)
+	}
+
 	err = syncContext.ControlPlaneClient.Get(ctx, client.ObjectKey{
 		// this object name is derived from the plural and is the default kustomize value for crd namings, if the CRD
 		// name changes, this also has to be adjusted here. We can think of making this configurable later
@@ -244,14 +255,14 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 	}, crd)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get module template CRD from kcp: %w", err)
 	}
 
 	err = syncContext.RuntimeClient.Get(ctx, client.ObjectKey{
 		Name: fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group),
 	}, crdFromRuntime)
 
-	if k8serrors.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta2.GroupVersion.Version) {
+	if util.IsNotFound(err) || !ContainsLatestVersion(crdFromRuntime, v1beta2.GroupVersion.Version) {
 		return PatchCRD(ctx, syncContext.RuntimeClient, crd)
 	}
 
@@ -260,7 +271,7 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 	}
 
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get module template CRD from runtime: %w", err)
 	}
 
 	return nil

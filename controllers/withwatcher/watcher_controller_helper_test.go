@@ -28,7 +28,7 @@ const (
 
 //nolint:gochecknoglobals
 var (
-	centralComponents                     = []string{componentToBeUpdated, "module-manager", componentToBeRemoved}
+	centralComponents                     = []string{componentToBeUpdated, componentToBeRemoved}
 	errRouteNotFound                      = errors.New("http route is not found")
 	errHTTPRoutesEmpty                    = errors.New("empty http routes")
 	errRouteConfigMismatch                = errors.New("http route config mismatch")
@@ -111,7 +111,7 @@ func createTLSSecret(kymaObjKey client.ObjectKey) *corev1.Secret {
 	return &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      watcher.ResolveTLSCertName(kymaObjKey.Name),
-			Namespace: kymaObjKey.Namespace,
+			Namespace: istioSystemNs,
 			Labels: map[string]string{
 				v1beta2.ManagedBy: v1beta2.OperatorName,
 			},

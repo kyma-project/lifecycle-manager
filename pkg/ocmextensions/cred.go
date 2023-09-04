@@ -24,7 +24,11 @@ func GetAuthnKeychain(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	return authnK8s.NewFromPullSecrets(ctx, secretList.Items)
+	keychain, err := authnK8s.NewFromPullSecrets(ctx, secretList.Items)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create auth keychain: %w", err)
+	}
+	return keychain, nil
 }
 
 func getCredSecrets(
@@ -43,7 +47,7 @@ func getCredSecrets(
 		},
 	)
 	if err != nil {
-		return secretList, err
+		return secretList, fmt.Errorf("failed to list cred secrets: %w", err)
 	}
 	if len(secretList.Items) == 0 {
 		return secretList, ErrNoAuthSecretFound
@@ -54,7 +58,7 @@ func getCredSecrets(
 func GenerateLabelSelector(registryCredValue []byte) (*metav1.LabelSelector, error) {
 	credSecretLabel := make(map[string]string)
 	if err := json.Unmarshal(registryCredValue, &credSecretLabel); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to cred secret labels: %w", err)
 	}
 	return &metav1.LabelSelector{
 		MatchLabels: credSecretLabel,

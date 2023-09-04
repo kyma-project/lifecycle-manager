@@ -7,8 +7,8 @@ import (
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	corev1 "k8s.io/api/core/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	apimachinerymetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -91,20 +91,25 @@ func (c *CertificateManager) Remove(ctx context.Context) error {
 	if err := c.kcpClient.Get(ctx, client.ObjectKey{
 		Name:      c.certificateName,
 		Namespace: c.istioNamespace,
-	}, certificate); err != nil && !k8serrors.IsNotFound(err) {
-		return err
+	}, certificate); err != nil && !util.IsNotFound(err) {
+		return fmt.Errorf("failed to get certificate: %w", err)
 	}
 	if err := c.kcpClient.Delete(ctx, certificate); err != nil {
-		return err
+		return fmt.Errorf("failed to delete certificate: %w", err)
 	}
 	certSecret := &corev1.Secret{}
 	if err := c.kcpClient.Get(ctx, client.ObjectKey{
 		Name:      c.secretName,
 		Namespace: c.istioNamespace,
-	}, certSecret); err != nil && !k8serrors.IsNotFound(err) {
-		return err
+	}, certSecret); err != nil && !util.IsNotFound(err) {
+		return fmt.Errorf("failed to get certificate secret: %w", err)
 	}
-	return c.kcpClient.Delete(ctx, certSecret)
+
+	err := c.kcpClient.Delete(ctx, certSecret)
+	if err != nil {
+		return fmt.Errorf("failed to delete certificate secret: %w", err)
+	}
+	return nil
 }
 
 func (c *CertificateManager) GetSecret(ctx context.Context) (*CertificateSecret, error) {
@@ -112,7 +117,7 @@ func (c *CertificateManager) GetSecret(ctx context.Context) (*CertificateSecret,
 	err := c.kcpClient.Get(ctx, client.ObjectKey{Name: c.secretName, Namespace: c.istioNamespace},
 		secret)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get secret for certificate %s-%s: %w", c.secretName, c.istioNamespace, err)
 	}
 	certSecret := CertificateSecret{
 		CACrt:           string(secret.Data[caCertKey]),
@@ -165,7 +170,11 @@ func (c *CertificateManager) createCertificate(ctx context.Context, subjectAltNa
 		},
 	}
 
-	return c.kcpClient.Patch(ctx, &cert, client.Apply, client.ForceOwnership, skrChartFieldOwner)
+	err = c.kcpClient.Patch(ctx, &cert, client.Apply, client.ForceOwnership, skrChartFieldOwner)
+	if err != nil {
+		return fmt.Errorf("failed to patch certificate: %w", err)
+	}
+	return nil
 }
 
 func (c *CertificateManager) getSubjectAltNames() (*SubjectAltName, error) {

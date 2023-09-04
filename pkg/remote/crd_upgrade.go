@@ -12,6 +12,7 @@ import (
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/discovery"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -22,10 +23,14 @@ func PatchCRD(ctx context.Context, clnt client.Client, crd *v1extensions.CustomR
 	crdToApply.Spec = crd.Spec
 	crdToApply.Spec.Conversion.Strategy = v1extensions.NoneConverter
 	crdToApply.Spec.Conversion.Webhook = nil
-	return clnt.Patch(ctx, crdToApply,
+	err := clnt.Patch(ctx, crdToApply,
 		client.Apply,
 		client.ForceOwnership,
 		client.FieldOwner(v1beta2.OperatorName))
+	if err != nil {
+		return fmt.Errorf("failed to patch CRD: %w", err)
+	}
+	return nil
 }
 
 type CrdType string
@@ -81,13 +86,19 @@ func SyncCrdsAndUpdateKymaAnnotations(ctx context.Context, kyma *v1beta2.Kyma,
 	kymaCrdUpdated, err := fetchCrdsAndUpdateKymaAnnotations(ctx, controlPlaneClient,
 		runtimeClient, kyma, v1beta2.KymaKind.Plural())
 	if err != nil {
-		return false, client.IgnoreNotFound(err)
+		err = client.IgnoreNotFound(err)
+		if err != nil {
+			return false, fmt.Errorf("failed to fetch module template CRDs and update Kyma annotations: %w", err)
+		}
 	}
 
 	moduleTemplateCrdUpdated, err := fetchCrdsAndUpdateKymaAnnotations(ctx, controlPlaneClient,
 		runtimeClient, kyma, v1beta2.ModuleTemplateKind.Plural())
 	if err != nil {
-		return false, client.IgnoreNotFound(err)
+		err = client.IgnoreNotFound(err)
+		if err != nil {
+			return false, fmt.Errorf("failed to fetch kyma CRDs and update Kyma annotations: %w", err)
+		}
 	}
 
 	return kymaCrdUpdated || moduleTemplateCrdUpdated, nil
@@ -111,7 +122,7 @@ func fetchCrdsAndUpdateKymaAnnotations(ctx context.Context, controlPlaneClient C
 			}, skrCrd,
 		)
 		if err != nil {
-			return false, err
+			return false, fmt.Errorf("failed to get SKR CRD: %w", err)
 		}
 		updateKymaAnnotations(kyma, kcpCrd, KCP)
 		updateKymaAnnotations(kyma, skrCrd, SKR)
@@ -134,7 +145,7 @@ func fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Cli
 			ctx, client.ObjectKey{Name: kcpCrdName}, &crd,
 		)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("failed to fetch CRDs from kcp: %w", err)
 		}
 		cache.SetCRDInCache(kcpCrdName, crd)
 	}
@@ -145,7 +156,7 @@ func fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Cli
 		}, crdFromRuntime,
 	)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("failed to fetch CRDs from runtime: %w", err)
 	}
 
 	return &crd, crdFromRuntime, nil
@@ -161,10 +172,21 @@ func ContainsLatestVersion(crdFromRuntime *v1extensions.CustomResourceDefinition
 }
 
 func CRDNotFoundErr(err error) bool {
-	var apiStatusErr k8serrors.APIStatus
-	ok := errors.As(err, &apiStatusErr)
+	groupErr := &discovery.ErrGroupDiscoveryFailed{}
+	if !errors.As(err, &groupErr) {
+		return false
+	}
+	for _, err := range groupErr.Groups {
+		if cannotFoundResource(err) {
+			return true
+		}
+	}
+	return false
+}
 
-	if ok && apiStatusErr.Status().Details != nil {
+func cannotFoundResource(err error) bool {
+	var apiStatusErr k8serrors.APIStatus
+	if ok := errors.As(err, &apiStatusErr); ok && apiStatusErr.Status().Details != nil {
 		for _, cause := range apiStatusErr.Status().Details.Causes {
 			if cause.Type == metav1.CauseTypeUnexpectedServerResponse &&
 				strings.Contains(cause.Message, "not found") {
@@ -172,6 +194,5 @@ func CRDNotFoundErr(err error) bool {
 			}
 		}
 	}
-
 	return false
 }

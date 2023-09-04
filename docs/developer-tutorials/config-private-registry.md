@@ -66,4 +66,6 @@ Verify in each **descriptor.component.resources** layer, if it contains the `oci
             operator.kyma-project.io/oci-registry-cred: test-operator
    ```
 
+### Result
+
 With this ModuleTemplate CR, Lifecycle Manager should access a private OCI registry without any authentication problems.

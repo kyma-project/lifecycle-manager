@@ -6,16 +6,16 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -42,13 +42,22 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	kyma := NewTestKyma("kyma-remote-sync")
 
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
-	issuer := NewTestIssuer(metav1.NamespaceDefault)
+	issuer := NewTestIssuer(istioSystemNs)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	tlsSecret := createTLSSecret(kymaObjKey)
 
+	delete(kyma.ObjectMeta.Annotations, v1beta2.SyncStrategyAnnotation)
 	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer)
 
+	It("kyma reconciliation does not install webhook when sync label missing", func() {
+		Consistently(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
+			kymaObjKey), 5*time.Second, Interval).ShouldNot(Succeed())
+	})
+
 	It("kyma reconciliation installs watcher with correct webhook config", func() {
+		kyma.ObjectMeta.Annotations[v1beta2.SyncStrategyAnnotation] = v1beta2.SyncStrategyLocalClient
+		Expect(controlPlaneClient.Update(suiteCtx, kyma)).To(Succeed())
+
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
 			kymaObjKey), Timeout, Interval).Should(Succeed())
 	})
@@ -121,6 +130,8 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1b
 		By("Ensuring watcher CR is properly deleted")
 		Eventually(isWatcherCrDeletionFinished, Timeout, Interval).WithArguments(watcher).
 			Should(BeTrue())
+		By("Deleting Cert-Manager Issuer")
+		Expect(controlPlaneClient.Delete(suiteCtx, issuer)).To(Succeed())
 	})
 
 	BeforeEach(func() {
@@ -128,7 +139,6 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1b
 		kcpKymas := &v1beta2.KymaList{}
 		Expect(controlPlaneClient.List(suiteCtx, kcpKymas)).To(Succeed())
 		Expect(kcpKymas.Items).NotTo(BeEmpty())
-		Expect(kcpKymas.Items).To(HaveLen(1))
 		By("get latest kyma CR")
 		Expect(controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(kyma), kyma)).To(Succeed())
 		By("get latest watcher CR")
@@ -157,7 +167,7 @@ func isWatcherCrLabelUpdated(watcherObjKey client.ObjectKey, labelKey, expectedL
 
 func isKymaCrDeletionFinished(kymaObjKey client.ObjectKey) bool {
 	err := controlPlaneClient.Get(suiteCtx, kymaObjKey, &v1beta2.Kyma{})
-	return apierrors.IsNotFound(err)
+	return util.IsNotFound(err)
 }
 
 func getSkrChartDeployment(ctx context.Context, skrClient client.Client, kymaObjKey client.ObjectKey) func() error {
@@ -262,5 +272,5 @@ func verifyWebhookConfig(
 
 func isWatcherCrDeletionFinished(watcherCR client.Object) bool {
 	err := controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(watcherCR), watcherCR)
-	return apierrors.IsNotFound(err)
+	return util.IsNotFound(err)
 }

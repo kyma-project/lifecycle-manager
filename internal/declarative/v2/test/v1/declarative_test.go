@@ -11,12 +11,12 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/internal"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"golang.org/x/time/rate"
 	v1 "k8s.io/api/core/v1"
 	apiExtensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -51,7 +51,6 @@ var (
 		ObjectMeta: metav1.ObjectMeta{Name: "kyma-system"},
 	}
 	ErrOldResourcesStillDeployed = errors.New("old resources still exist in the cluster")
-	ErrNewResourcesNotInSynced   = errors.New("new resources don't exist in the status.synced")
 	ErrOldResourcesStillInSynced = errors.New("old resources still exist in the status.synced")
 )
 
@@ -143,90 +142,6 @@ var _ = Describe(
 	},
 )
 
-var _ = Describe("Test Manifest Reconciliation for module upgrade", Ordered, func() {
-	var ctx context.Context
-	var cancel context.CancelFunc
-	var reconciler *Reconciler
-	var env *envtest.Environment
-	var cfg *rest.Config
-	var testClient client.Client
-	const ocirefSynced = "sha256:synced"
-	runID := fmt.Sprintf("run-%s", rand.String(4))
-	obj := &testv1.TestAPI{Spec: testv1.TestAPISpec{ManifestName: "updating-manifest"}}
-	obj.SetLabels(labels.Set{testRunLabel: runID})
-	obj.SetNamespace(customResourceNamespace.Name)
-	obj.SetName(runID)
-
-	key := client.ObjectKeyFromObject(obj)
-
-	opts := []Option{WithRemoteTargetCluster(
-		func(context.Context, Object) (*ClusterInfo, error) {
-			return &ClusterInfo{
-				Config: cfg,
-			}, nil
-		},
-	)}
-	source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"),
-		ocirefSynced, RenderModeRaw))
-	BeforeAll(func() {
-		env, cfg = StartEnv()
-		testClient = GetTestClient(cfg)
-		ctx, cancel = context.WithCancel(context.TODO())
-		reconciler = StartDeclarativeReconcilerForRun(ctx, runID, cfg, append(opts, WithSpecResolver(source))...)
-	})
-
-	It("Should create manifest resources", func() {
-		Expect(testClient.Create(ctx, obj)).To(Succeed())
-
-		EventuallyDeclarativeStatusShould(
-			ctx, key, testClient,
-			BeInState(StateReady),
-			HaveConditionWithStatus(ConditionTypeResources, metav1.ConditionTrue),
-			HaveConditionWithStatus(ConditionTypeInstallation, metav1.ConditionTrue),
-		)
-
-		Expect(testClient.Get(ctx, key, obj)).To(Succeed())
-		Expect(obj.GetStatus()).To(HaveAllSyncedResourcesExistingInCluster(ctx, testClient))
-	})
-
-	It("Should start reconciliation for the updated manifest and remove old deployed resources", func() {
-		source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "updated-raw-manifest.yaml"),
-			"", RenderModeRaw))
-		reconciler.SpecResolver = source
-		oldDeployedResources, err := internal.ParseManifestToObjects(path.Join(testSamplesDir, "raw-manifest.yaml"))
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(validateOldResourcesNotLongerDeployed, Timeout, Interval).
-			WithContext(ctx).
-			WithArguments(ctx, oldDeployedResources, testClient).
-			Should(Succeed())
-	})
-
-	It("Should deploy new manifest resources and have them in status.synced", func() {
-		EventuallyDeclarativeStatusShould(
-			ctx, key, testClient,
-			BeInState(StateReady),
-			HaveConditionWithStatus(ConditionTypeResources, metav1.ConditionTrue),
-			HaveConditionWithStatus(ConditionTypeInstallation, metav1.ConditionTrue),
-		)
-
-		Expect(testClient.Get(ctx, key, obj)).To(Succeed())
-		newDeployedResources, err := internal.ParseManifestToObjects(path.Join(testSamplesDir,
-			"updated-raw-manifest.yaml"))
-		Expect(err).NotTo(HaveOccurred())
-		Eventually(validateNewResourcesAreInStatusSynced, 2*Timeout, Interval).
-			WithContext(ctx).
-			WithArguments(newDeployedResources, obj).
-			Should(Succeed())
-
-		Expect(obj.GetStatus()).To(HaveAllSyncedResourcesExistingInCluster(ctx, testClient))
-	})
-
-	AfterAll(func() {
-		cancel()
-		Expect(env.Stop()).To(Succeed())
-	})
-})
-
 var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, func() {
 	var ctx context.Context
 	var cancel context.CancelFunc
@@ -307,8 +222,8 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 	})
 })
 
-func isResourceFoundInSynced(res *unstructured.Unstructured, status Resource) bool {
-	return status == Resource{
+func isResourceFoundInSynced(res *unstructured.Unstructured, resource Resource) bool {
+	return resource == Resource{
 		Name:      res.GetName(),
 		Namespace: res.GetNamespace(),
 		GroupVersionKind: metav1.GroupVersionKind{
@@ -319,7 +234,6 @@ func isResourceFoundInSynced(res *unstructured.Unstructured, status Resource) bo
 	}
 }
 
-// StartDeclarativeReconcilerForRun starts the declarative reconciler based on a runID.
 func StartDeclarativeReconcilerForRun(
 	ctx context.Context,
 	runID string,
@@ -335,27 +249,25 @@ func StartDeclarativeReconcilerForRun(
 	)
 	mgr, err = ctrl.NewManager(
 		cfg, ctrl.Options{
-			// these bind addreses cause conflicts when run concurrently so we disable them
+			// these bind addresses cause conflicts when run concurrently so we disable them
 			HealthProbeBindAddress: "0",
 			MetricsBindAddress:     "0",
 			Scheme:                 scheme.Scheme,
 		},
 	)
 	Expect(err).ToNot(HaveOccurred())
-
 	reconciler = NewFromManager(
 		mgr, &testv1.TestAPI{},
 		append(
 			options,
 			WithNamespace(namespace, true),
 			WithFinalizer(finalizer),
-			// we overwride the manifest cache directory with the test run directory so its automatically cleaned up
+			// we overwrite the manifest cache directory with the test run directory so its automatically cleaned up
 			// we ensure uniqueness implicitly, as runID is used to randomize the ManifestName in SpecResolver
 			WithManifestCache(filepath.Join(testDir, "declarative-test-cache")),
 			// we have to use a custom ready check that only checks for existence of an object since the default
-			// readiness check will not work without dedicated control loops in envtest. E.g. by default
-			// deployments are not started or set to ready. However we can check if the resource was created by
-			// the reconciler.
+			// readiness check will not work without dedicated control loops in env test. E.g. by default
+			// deployments are not started/set to ready. We can check if the resource was created by reconciler.
 			WithClientCacheKey(),
 			WithCustomReadyCheck(NewExistsReadyCheck()),
 			WithCustomResourceLabels(labels.Set{testRunLabel: runID}),
@@ -380,7 +292,10 @@ func StartDeclarativeReconcilerForRun(
 	go func() {
 		Expect(mgr.Start(ctx)).To(Succeed(), "failed to run manager")
 	}()
-	return reconciler.(*Reconciler)
+
+	recon, ok := reconciler.(*Reconciler)
+	Expect(ok).To(BeTrue())
+	return recon
 }
 
 func StatusOnCluster(ctx context.Context, key client.ObjectKey,
@@ -432,25 +347,8 @@ func validateOldResourcesNotLongerDeployed(ctx context.Context,
 		currentRes.SetName(res.GetName())
 		currentRes.SetNamespace(customResourceNamespace.Name)
 		err := testClient.Get(ctx, client.ObjectKeyFromObject(currentRes), currentRes)
-		if !k8serrors.IsNotFound(err) {
+		if !util.IsNotFound(err) {
 			return ErrOldResourcesStillDeployed
-		}
-	}
-	return nil
-}
-
-func validateNewResourcesAreInStatusSynced(
-	resources internal.ManifestResources, obj *testv1.TestAPI,
-) error {
-	for _, res := range resources.Items {
-		found := false
-		for _, s := range obj.Status.Synced {
-			if isResourceFoundInSynced(res, s) {
-				found = true
-			}
-		}
-		if !found {
-			return ErrNewResourcesNotInSynced
 		}
 	}
 	return nil

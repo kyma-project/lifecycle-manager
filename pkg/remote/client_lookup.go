@@ -2,6 +2,7 @@ package remote
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"k8s.io/client-go/rest"
@@ -21,7 +22,7 @@ func NewClientLookup(kcp Client, cache *ClientCache, strategy v1beta2.SyncStrate
 }
 
 func (l *ClientLookup) Lookup(ctx context.Context, key client.ObjectKey) (Client, error) {
-	remoteClient := l.cache.Get(ClientCacheID(key))
+	remoteClient := l.cache.Get(key)
 	if remoteClient != nil {
 		return remoteClient, nil
 	}
@@ -33,12 +34,12 @@ func (l *ClientLookup) Lookup(ctx context.Context, key client.ObjectKey) (Client
 
 	clnt, err := client.New(cfg, client.Options{Scheme: l.kcp.Scheme()})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create lookup client: %w", err)
 	}
 
 	skr := NewClientWithConfig(clnt, cfg)
 
-	l.cache.Set(ClientCacheID(key), skr)
+	l.cache.Set(key, skr)
 
 	return skr, nil
 }

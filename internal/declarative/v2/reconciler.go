@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
+
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -79,10 +82,16 @@ func newResourcesCondition(obj Object) metav1.Condition {
 
 //nolint:funlen,cyclop
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	obj := r.prototype.DeepCopyObject().(Object)
+	obj, ok := r.prototype.DeepCopyObject().(Object)
+	if !ok {
+		return ctrl.Result{}, common.ErrTypeAssert
+	}
 	if err := r.Get(ctx, req.NamespacedName, obj); err != nil {
 		log.FromContext(ctx).Info(req.NamespacedName.String() + " got deleted!")
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		if !util.IsNotFound(err) {
+			return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
+		}
+		return ctrl.Result{}, nil
 	}
 
 	if r.ShouldSkip(ctx, obj) {
@@ -110,7 +119,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if notContainsSyncedOCIRefAnnotation(obj) {
 		updateSyncedOCIRefAnnotation(obj, spec.OCIRef)
-		return ctrl.Result{Requeue: true}, r.Update(ctx, obj)
+		return ctrl.Result{Requeue: true}, r.Update(ctx, obj) //nolint:wrapcheck
 	}
 
 	clnt, err := r.getTargetClient(ctx, obj)
@@ -156,7 +165,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// we need to make sure all updates successfully before we can update synced oci ref
 	if requireUpdateSyncedOCIRefAnnotation(obj, spec.OCIRef) {
 		updateSyncedOCIRefAnnotation(obj, spec.OCIRef)
-		return ctrl.Result{Requeue: true}, r.Update(ctx, obj)
+		return ctrl.Result{Requeue: true}, r.Update(ctx, obj) //nolint:wrapcheck
 	}
 	return r.CtrlOnSuccess, nil
 }
@@ -171,7 +180,8 @@ func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizer
 		}
 	}
 	if finalizerRemoved {
-		return ctrl.Result{}, r.Update(ctx, obj) // no SSA since delete does not work for finalizers.
+		// no SSA since delete does not work for finalizers
+		return ctrl.Result{}, r.Update(ctx, obj) //nolint:wrapcheck
 	}
 	msg := fmt.Sprintf("waiting as other finalizers are present: %s", obj.GetFinalizers())
 	r.Event(obj, "Normal", "FinalizerRemoval", msg)
@@ -265,9 +275,7 @@ func (r *Reconciler) renderResources(
 	return target, current, nil
 }
 
-func (r *Reconciler) syncResources(
-	ctx context.Context, clnt Client, obj Object, target []*resource.Info,
-) error {
+func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object, target []*resource.Info) error {
 	status := obj.GetStatus()
 
 	if err := ConcurrentSSA(clnt, r.FieldOwner).Run(ctx, target); err != nil {
@@ -280,7 +288,7 @@ func (r *Reconciler) syncResources(
 	newSynced := NewInfoToResourceConverter().InfosToResources(target)
 	status.Synced = newSynced
 
-	if len(oldSynced) != len(newSynced) {
+	if hasDiff(oldSynced, newSynced) {
 		obj.SetStatus(status.WithState(StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
 		return ErrWarningResourceSyncStateDiff
 	}
@@ -296,55 +304,77 @@ func (r *Reconciler) syncResources(
 	return r.checkTargetReadiness(ctx, clnt, obj, target)
 }
 
+func hasDiff(oldResources []Resource, newResources []Resource) bool {
+	if len(oldResources) != len(newResources) {
+		return true
+	}
+	countMap := map[string]bool{}
+	for _, item := range oldResources {
+		countMap[item.ID()] = true
+	}
+	for _, item := range newResources {
+		if countMap[item.ID()] {
+			countMap[item.ID()] = false
+		}
+	}
+	for _, exists := range countMap {
+		if exists {
+			return true
+		}
+	}
+	return false
+}
+
 func (r *Reconciler) checkTargetReadiness(
-	ctx context.Context, clnt Client, obj Object, target []*resource.Info,
+	ctx context.Context, clnt Client, manifest Object, target []*resource.Info,
 ) error {
-	status := obj.GetStatus()
+	status := manifest.GetStatus()
 
 	resourceReadyCheck := r.CustomReadyCheck
 
-	state, err := resourceReadyCheck.Run(ctx, clnt, obj, target)
-
-	if errors.Is(err, ErrResourcesNotReady) || errors.Is(err, ErrCustomResourceStateNotFound) ||
-		errors.Is(err, ErrDeploymentNotReady) {
-		waitingMsg := fmt.Sprintf("waiting for resources to become ready: %s", err.Error())
-		r.Event(obj, "Normal", "ResourceReadyCheck", waitingMsg)
-		obj.SetStatus(status.WithState(StateProcessing).WithOperation(waitingMsg))
-		return err
-	}
-
+	crStateInfo, err := resourceReadyCheck.Run(ctx, clnt, manifest, target)
 	if err != nil {
-		r.Event(obj, "Warning", "ReadyCheck", err.Error())
-		obj.SetStatus(status.WithState(StateError).WithErr(err))
+		r.Event(manifest, "Warning", "ResourceReadyCheck", err.Error())
+		manifest.SetStatus(status.WithState(StateError).WithErr(err))
 		return err
 	}
 
-	installationCondition := newInstallationCondition(obj)
-	if !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) || status.State != state {
-		r.Event(obj, "Normal", installationCondition.Reason, installationCondition.Message)
+	if crStateInfo.State == StateProcessing {
+		waitingMsg := fmt.Sprintf("waiting for resources to become ready: %s", crStateInfo.Info)
+		r.Event(manifest, "Normal", "ResourceReadyCheck", waitingMsg)
+		manifest.SetStatus(status.WithState(StateProcessing).WithOperation(waitingMsg))
+		return ErrInstallationConditionRequiresUpdate
+	}
+
+	if crStateInfo.State != StateReady && crStateInfo.State != StateWarning {
+		// should not happen, if happens, skip status update
+		return nil
+	}
+
+	installationCondition := newInstallationCondition(manifest)
+	if !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) || status.State != crStateInfo.State {
+		r.Event(manifest, "Normal", installationCondition.Reason, installationCondition.Message)
 		installationCondition.Status = metav1.ConditionTrue
 		meta.SetStatusCondition(&status.Conditions, installationCondition)
-		obj.SetStatus(status.WithState(state).WithOperation(installationCondition.Message))
+		manifest.SetStatus(status.WithState(crStateInfo.State).
+			WithOperation(generateOperationMessage(installationCondition, crStateInfo)))
 		return ErrInstallationConditionRequiresUpdate
 	}
 
 	return nil
 }
 
-func (r *Reconciler) deleteResources(
+func generateOperationMessage(installationCondition metav1.Condition, stateInfo StateInfo) string {
+	if stateInfo.Info != "" {
+		return stateInfo.Info
+	}
+	return installationCondition.Message
+}
+
+func (r *Reconciler) deleteDiffResources(
 	ctx context.Context, clnt Client, obj Object, diff []*resource.Info,
 ) error {
 	status := obj.GetStatus()
-
-	if !obj.GetDeletionTimestamp().IsZero() {
-		for _, preDelete := range r.PreDeletes {
-			if err := preDelete(ctx, clnt, r.Client, obj); err != nil {
-				r.Event(obj, "Warning", "PreDelete", err.Error())
-				// we do not set a status here since it will be deleting if timestamp is set.
-				return err
-			}
-		}
-	}
 
 	if err := NewConcurrentCleanup(clnt).Run(ctx, diff); errors.Is(err, ErrDeletionNotFinished) {
 		r.Event(obj, "Normal", "Deletion", err.Error())
@@ -355,6 +385,19 @@ func (r *Reconciler) deleteResources(
 		return err
 	}
 
+	return nil
+}
+
+func (r *Reconciler) doPreDelete(ctx context.Context, clnt Client, obj Object) error {
+	if !obj.GetDeletionTimestamp().IsZero() {
+		for _, preDelete := range r.PreDeletes {
+			if err := preDelete(ctx, clnt, r.Client, obj); err != nil {
+				r.Event(obj, "Warning", "PreDelete", err.Error())
+				// we do not set a status here since it will be deleting if timestamp is set.
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -407,9 +450,16 @@ func (r *Reconciler) pruneDiff(
 	diff []*resource.Info,
 	spec *Spec,
 ) error {
-	diff = pruneResource(diff, "Namespace", namespaceNotBeRemoved)
+	var err error
+	diff, err = pruneResource(diff, "Namespace", namespaceNotBeRemoved)
+	if err != nil {
+		return err
+	}
 	resourceName := r.ModuleCRDName(obj)
-	diff = pruneResource(diff, "CustomResourceDefinition", resourceName)
+	diff, err = pruneResource(diff, "CustomResourceDefinition", resourceName)
+	if err != nil {
+		return err
+	}
 
 	if manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff, obj, spec) {
 		// This case should not happen normally, but if happens, it means the resources read from cache is incomplete,
@@ -420,7 +470,12 @@ func (r *Reconciler) pruneDiff(
 		r.ManifestParser.EvictCache(spec)
 		return ErrResourceSyncDiffInSameOCILayer
 	}
-	if err := r.deleteResources(ctx, clnt, obj, diff); err != nil {
+
+	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
+		return err
+	}
+
+	if err := r.deleteDiffResources(ctx, clnt, obj, diff); err != nil {
 		return err
 	}
 
@@ -462,15 +517,19 @@ func updateSyncedOCIRefAnnotation(obj Object, ref string) {
 	obj.SetAnnotations(annotations)
 }
 
-func pruneResource(diff []*resource.Info, resourceType string, resourceName string) []*resource.Info {
+func pruneResource(diff []*resource.Info, resourceType string, resourceName string) ([]*resource.Info, error) {
+	//nolint:varnamelen
 	for i, info := range diff {
-		obj := info.Object.(client.Object)
+		obj, ok := info.Object.(client.Object)
+		if !ok {
+			return diff, common.ErrTypeAssert
+		}
 		if obj.GetObjectKind().GroupVersionKind().Kind == resourceType && obj.GetName() == resourceName {
-			return append(diff[:i], diff[i+1:]...)
+			return append(diff[:i], diff[i+1:]...), nil
 		}
 	}
 
-	return diff
+	return diff, nil
 }
 
 func (r *Reconciler) getTargetClient(ctx context.Context, obj Object) (Client, error) {
@@ -501,7 +560,7 @@ func (r *Reconciler) getTargetClient(ctx context.Context, obj Object) (Client, e
 			}, client.Apply, client.ForceOwnership, r.FieldOwner,
 		)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to patch namespace: %w", err)
 		}
 	}
 
@@ -535,7 +594,7 @@ func (r *Reconciler) ssaStatus(ctx context.Context, obj client.Object) (ctrl.Res
 	obj.SetManagedFields(nil)
 	obj.SetResourceVersion("")
 	// TODO: replace the SubResourcePatchOptions with  client.ForceOwnership, r.FieldOwner in later compatible version
-	return ctrl.Result{Requeue: true}, r.Status().Patch(
+	return ctrl.Result{Requeue: true}, r.Status().Patch( //nolint:wrapcheck
 		ctx, obj, client.Apply, subResourceOpts(client.ForceOwnership, r.FieldOwner),
 	)
 }
@@ -548,5 +607,9 @@ func (r *Reconciler) ssa(ctx context.Context, obj client.Object) (ctrl.Result, e
 	obj.SetUID("")
 	obj.SetManagedFields(nil)
 	obj.SetResourceVersion("")
-	return ctrl.Result{Requeue: true}, r.Patch(ctx, obj, client.Apply, client.ForceOwnership, r.FieldOwner)
+	return ctrl.Result{Requeue: true},
+		r.Patch(ctx, obj, //nolint:wrapcheck
+			client.Apply,
+			client.ForceOwnership,
+			r.FieldOwner)
 }

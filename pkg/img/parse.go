@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/common"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm"
@@ -41,7 +43,10 @@ func parseDescriptor(ctx *runtime.UnstructuredTypedObject, descriptor *compdesc.
 	if err != nil {
 		return nil, fmt.Errorf("error while decoding the repository context into an OCI registry: %w", err)
 	}
-	typedRepo := repo.(*genericocireg.RepositorySpec)
+	typedRepo, ok := repo.(*genericocireg.RepositorySpec)
+	if !ok {
+		return nil, common.ErrTypeAssert
+	}
 	layersByName, err := parseLayersByName(typedRepo, descriptor)
 	if err != nil {
 		return nil, err
@@ -57,13 +62,16 @@ func parseLayersByName(repo *genericocireg.RepositorySpec, descriptor *compdesc.
 		var layerRepresentation LayerRepresentation
 		spec, err := ocm.DefaultContext().AccessSpecForSpec(access)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to create spec for acccess: %w", err)
 		}
 		switch access.GetType() {
 		case localblob.TypeV1:
 			fallthrough
 		case localblob.Type:
-			accessSpec := spec.(*localblob.AccessSpec)
+			accessSpec, ok := spec.(*localblob.AccessSpec)
+			if !ok {
+				return nil, common.ErrTypeAssert
+			}
 			layerRef, err := getOCIRef(repo, descriptor, accessSpec.LocalReference, resource.Labels)
 			if err != nil {
 				return nil, fmt.Errorf("building the digest url: %w", err)
@@ -72,7 +80,10 @@ func parseLayersByName(repo *genericocireg.RepositorySpec, descriptor *compdesc.
 		case localociblob.TypeV1:
 			fallthrough
 		case localociblob.Type:
-			accessSpec := spec.(*localociblob.AccessSpec)
+			accessSpec, ok := spec.(*localociblob.AccessSpec)
+			if !ok {
+				return nil, common.ErrTypeAssert
+			}
 			layerRef, err := getOCIRef(repo, descriptor, accessSpec.Digest.String(), resource.Labels)
 			if err != nil {
 				return nil, fmt.Errorf("building the digest url: %w", err)
@@ -112,7 +123,7 @@ func getOCIRef(
 	labels ocmv1.Labels,
 ) (*OCI, error) {
 	layerRef := OCI{
-		Type: OCIRepresentationType,
+		Type: string(v1beta2.OciRefType),
 	}
 
 	// if ref is not provided, we simply use the version of the descriptor, this will usually default
@@ -142,7 +153,7 @@ func getOCIRef(
 		layerRef.Repo = fmt.Sprintf("%s/%s", repo.Name(), repoSubpath)
 		layerRef.Name = descriptor.GetName()
 	case genericocireg.OCIRegistryDigestMapping:
-		layerRef.Repo = repo.UniformRepositorySpec().RepositoryRef()
+		layerRef.Repo = fmt.Sprintf("%s/", repo.Name())
 		layerRef.Name = sha256sum(descriptor.GetName())
 	default:
 		return nil, fmt.Errorf(

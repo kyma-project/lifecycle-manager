@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
@@ -29,6 +28,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
@@ -78,7 +79,10 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	watcherObj := &v1beta2.Watcher{}
 	if err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, watcherObj); err != nil {
 		logger.V(log.DebugLevel).Info("Failed to get reconciliation object")
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		if !util.IsNotFound(err) {
+			return ctrl.Result{}, fmt.Errorf("watcherController: %w", err)
+		}
+		return ctrl.Result{}, nil
 	}
 
 	if !watcherObj.DeletionTimestamp.IsZero() && watcherObj.Status.State != v1beta2.WatcherStateDeleting {
@@ -106,7 +110,7 @@ func (r *WatcherReconciler) updateFinalizer(ctx context.Context, watcherCR *v1be
 	if err != nil {
 		r.EventRecorder.Event(watcherCR, "Warning", "WatcherFinalizerErr",
 			err.Error())
-		return err
+		return fmt.Errorf("failed to update finalizer: %w", err)
 	}
 	return nil
 }
@@ -155,7 +159,7 @@ func (r *WatcherReconciler) handleProcessingState(ctx context.Context, watcherCR
 	if client.IgnoreNotFound(err) != nil {
 		return err
 	}
-	if apierrors.IsNotFound(err) {
+	if util.IsNotFound(err) {
 		err = r.IstioClient.CreateVirtualService(ctx, virtualSvc)
 		if err != nil {
 			vsCreateErr := fmt.Errorf("failed to create virtual service: %w", err)

@@ -9,22 +9,28 @@ import (
 )
 
 const (
-	defaultKymaRequeueSuccessInterval     = 30 * time.Second
-	defaultKymaRequeueErrInterval         = 2 * time.Second
-	defaultKymaRequeueBusyInterval        = 5 * time.Second
-	defaultManifestRequeueSuccessInterval = 30 * time.Second
-	defaultWatcherRequeueSuccessInterval  = 30 * time.Second
-	defaultClientQPS                      = 300
-	defaultClientBurst                    = 600
-	defaultPprofServerTimeout             = 90 * time.Second
-	rateLimiterBurstDefault               = 200
-	rateLimiterFrequencyDefault           = 30
-	failureBaseDelayDefault               = 100 * time.Millisecond
-	failureMaxDelayDefault                = 5 * time.Second
-	defaultCacheSyncTimeout               = 2 * time.Minute
-	defaultListenerPort                   = 9080
-	defaultLogLevel                       = log.WarnLevel
-	defaultPurgeFinalizerTimeout          = 5 * time.Minute
+	defaultKymaRequeueSuccessInterval      = 30 * time.Second
+	defaultKymaRequeueErrInterval          = 2 * time.Second
+	defaultKymaRequeueBusyInterval         = 5 * time.Second
+	defaultManifestRequeueSuccessInterval  = 30 * time.Second
+	defaultWatcherRequeueSuccessInterval   = 30 * time.Second
+	defaultClientQPS                       = 300
+	defaultClientBurst                     = 600
+	defaultPprofServerTimeout              = 90 * time.Second
+	rateLimiterBurstDefault                = 200
+	rateLimiterFrequencyDefault            = 30
+	failureBaseDelayDefault                = 100 * time.Millisecond
+	failureMaxDelayDefault                 = 5 * time.Second
+	defaultCacheSyncTimeout                = 2 * time.Minute
+	defaultListenerPort                    = 9443
+	defaultLogLevel                        = log.WarnLevel
+	defaultPurgeFinalizerTimeout           = 5 * time.Minute
+	defaultMaxConcurrentManifestReconciles = 1
+	defaultMaxConcurrentKymaReconciles     = 1
+	defaultMaxConcurrentWatcherReconciles  = 1
+	defaultIstioGatewayName                = "lifecycle-manager-watcher-gateway"
+	defaultIstioGatewayNamespace           = "kcp-system"
+	defaultIstioNamespace                  = "istio-system"
 )
 
 //nolint:funlen
@@ -40,11 +46,13 @@ func defineFlagVar() *FlagVar {
 		"The address the skr listener endpoint binds to.")
 	flag.StringVar(&flagVar.pprofAddr, "pprof-bind-address", ":8084",
 		"The address the pprof endpoint binds to.")
-	flag.IntVar(&flagVar.maxConcurrentKymaReconciles, "max-concurrent-kyma-reconciles", 1,
-		"The maximum number of concurrent Kyma Reconciles which can be run.")
-	flag.IntVar(&flagVar.maxConcurrentManifestReconciles, "max-concurrent-manifest-reconciles", 1,
+	flag.IntVar(&flagVar.maxConcurrentKymaReconciles, "max-concurrent-kyma-reconciles",
+		defaultMaxConcurrentKymaReconciles, "The maximum number of concurrent Kyma Reconciles which can be run.")
+	flag.IntVar(&flagVar.maxConcurrentManifestReconciles, "max-concurrent-manifest-reconciles",
+		defaultMaxConcurrentManifestReconciles,
 		"The maximum number of concurrent Manifest Reconciles which can be run.")
-	flag.IntVar(&flagVar.maxConcurrentWatcherReconciles, "max-concurrent-watcher-reconciles", 1,
+	flag.IntVar(&flagVar.maxConcurrentWatcherReconciles, "max-concurrent-watcher-reconciles",
+		defaultMaxConcurrentWatcherReconciles,
 		"The maximum number of concurrent Watcher Reconciles which can be run.")
 	flag.BoolVar(&flagVar.enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
@@ -82,9 +90,13 @@ func defineFlagVar() *FlagVar {
 		"The resources.limits.cpu for skr webhook.")
 	flag.BoolVar(&flagVar.enableWatcherLocalTesting, "enable-watcher-local-testing", false,
 		"Enabling KCP Watcher two-cluster setup to be tested locally using k3d")
-	flag.StringVar(&flagVar.istioNamespace, "istio-namespace", "istio-system",
-		"CLuster Resource Namespace of Istio")
-	flag.IntVar(&flagVar.listenerHTTPPortLocalMapping, "listener-http-local-mapping", defaultListenerPort,
+	flag.StringVar(&flagVar.istioNamespace, "istio-namespace", defaultIstioNamespace,
+		"Cluster Resource Namespace of Istio")
+	flag.StringVar(&flagVar.istioGatewayName, "istio-gateway-name", defaultIstioGatewayName,
+		"Cluster Resource Name of Istio Gateway")
+	flag.StringVar(&flagVar.istioGatewayNamespace, "istio-gateway-namespace", defaultIstioGatewayNamespace,
+		"Cluster Resource Namespace of Istio Gateway")
+	flag.IntVar(&flagVar.listenerHTTPSPortLocalMapping, "listener-http-local-mapping", defaultListenerPort,
 		"Port that is mapped to HTTP port of the local k3d cluster using --port 9080:80@loadbalancer when "+
 			"creating the KCP cluster")
 	flag.StringVar(&flagVar.skrWatcherImage, "skr-watcher-image", "", `Image of the SKR watcher 
@@ -146,11 +158,13 @@ type FlagVar struct {
 	skrWebhookCPULimits                    string
 	enableWatcherLocalTesting              bool
 	istioNamespace                         string
-	// listenerHTTPPortLocalMapping is used to enable the user
+	istioGatewayName                       string
+	istioGatewayNamespace                  string
+	// listenerHTTPSPortLocalMapping is used to enable the user
 	// to specify the port used to expose the KCP cluster for the watcher
 	// when testing locally using dual-k3d cluster-setup
 	// (only k3d clusters are supported for watcher local testing)
-	listenerHTTPPortLocalMapping           int
+	listenerHTTPSPortLocalMapping          int
 	skrWatcherImage                        string
 	pprof                                  bool
 	pprofAddr                              string

@@ -7,18 +7,28 @@ import (
 )
 
 func (src *Watcher) ConvertTo(dstRaw conversion.Hub) error {
-	dst := dstRaw.(*v1beta2.Watcher)
+	dst, ok := dstRaw.(*v1beta2.Watcher)
+	if !ok {
+		return v1beta2.ErrTypeAssertWatcher
+	}
+
 	dst.ObjectMeta = src.ObjectMeta
 	dst.Spec = src.Spec
 	dst.Status = src.Status
+
 	return nil
 }
 
 //nolint:revive,stylecheck
 func (dst *Watcher) ConvertFrom(srcRaw conversion.Hub) error {
-	src := srcRaw.(*v1beta2.Watcher)
+	src, ok := srcRaw.(*v1beta2.Watcher)
+	if !ok {
+		return v1beta2.ErrTypeAssertWatcher
+	}
+
 	dst.ObjectMeta = src.ObjectMeta
 	dst.Spec = src.Spec
 	dst.Status = src.Status
+
 	return nil
 }

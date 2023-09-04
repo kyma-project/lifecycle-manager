@@ -32,13 +32,19 @@ patches:
       value: --enable-watcher-local-testing
     - op: add
       path: /spec/template/spec/containers/0/args/-
-      value: --in-kcp-mode=true
-    - op: add
-      path: /spec/template/spec/containers/0/args/-
-      value: --listener-http-local-mapping=9443
-    - op: add
-      path: /spec/template/spec/containers/0/args/-
       value: --enable-domain-name-pinning=true
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
+      value: --kyma-requeue-success-interval=2m
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
+      value: --manifest-requeue-success-interval=30s
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
+      value: --log-level=9
+    - op: replace
+      path: /spec/template/spec/containers/0/imagePullPolicy
+      value: Always
   target:
     kind: Deployment
 - patch: |-

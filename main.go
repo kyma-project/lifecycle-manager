@@ -25,6 +25,8 @@ import (
 	"os"
 	"time"
 
+	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
+
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/open-component-model/ocm/pkg/contexts/oci"
@@ -92,6 +94,8 @@ func init() {
 	utilruntime.Must(v1extensions.AddToScheme(scheme))
 	utilruntime.Must(certManagerV1.AddToScheme(scheme))
 
+	utilruntime.Must(istiov1beta1.AddToScheme(scheme))
+
 	utilruntime.Must(operatorv1beta2.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
@@ -104,7 +108,7 @@ func main() {
 		go pprofStartServer(flagVar.pprofAddr, flagVar.pprofServerTimeout)
 	}
 
-	setupManager(flagVar, controllers.NewCacheFunc(), scheme)
+	setupManager(flagVar, controllers.NewCacheOptions(), scheme)
 }
 
 func pprofStartServer(addr string, timeout time.Duration) {
@@ -128,7 +132,7 @@ func pprofStartServer(addr string, timeout time.Duration) {
 	}
 }
 
-func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *runtime.Scheme) {
+func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *runtime.Scheme) {
 	config := ctrl.GetConfigOrDie()
 	config.QPS = float32(flagVar.clientQPS)
 	config.Burst = flagVar.clientBurst
@@ -141,8 +145,7 @@ func setupManager(flagVar *FlagVar, newCacheFunc cache.NewCacheFunc, scheme *run
 			HealthProbeBindAddress: flagVar.probeAddr,
 			LeaderElection:         flagVar.enableLeaderElection,
 			LeaderElectionID:       "893110f7.kyma-project.io",
-			NewCache:               newCacheFunc,
-			NewClient:              NewClient,
+			Cache:                  newCacheOptions,
 		},
 	)
 	if err != nil {
@@ -219,25 +222,6 @@ func controllerOptionsFromFlagVar(flagVar *FlagVar) controller.Options {
 	}
 }
 
-func NewClient(
-	cache cache.Cache,
-	config *rest.Config,
-	options client.Options,
-	uncachedObjects ...client.Object,
-) (client.Client, error) {
-	clnt, err := client.New(config, options)
-	if err != nil {
-		return nil, err
-	}
-	return client.NewDelegatingClient(
-		client.NewDelegatingClientInput{
-			CacheReader:     cache,
-			Client:          clnt,
-			UncachedObjects: uncachedObjects,
-		},
-	)
-}
-
 func setupKymaReconciler(mgr ctrl.Manager,
 	remoteClientCache *remote.ClientCache,
 	flagVar *FlagVar, options controller.Options,
@@ -249,19 +233,12 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		watcherChartDirInfo, err := os.Stat(flagVar.skrWatcherPath)
 		if err != nil || !watcherChartDirInfo.IsDir() {
 			setupLog.Error(err, "failed to read local skr chart")
+			os.Exit(1)
 		}
-		skrWebhookManager, err = watcher.NewSKRWebhookManifestManager(kcpRestConfig, &watcher.SkrWebhookManagerConfig{
-			SKRWatcherPath:             flagVar.skrWatcherPath,
-			SkrWatcherImage:            flagVar.skrWatcherImage,
-			SkrWebhookCPULimits:        flagVar.skrWebhookCPULimits,
-			SkrWebhookMemoryLimits:     flagVar.skrWebhookMemoryLimits,
-			WatcherLocalTestingEnabled: flagVar.enableWatcherLocalTesting,
-			GatewayHTTPPortMapping:     flagVar.listenerHTTPPortLocalMapping,
-			IstioNamespace:             flagVar.istioNamespace,
-			RemoteSyncNamespace:        flagVar.remoteSyncNamespace,
-		})
-		if err != nil {
+
+		if skrWebhookManager, err = createSkrWebhookManager(mgr, flagVar); err != nil {
 			setupLog.Error(err, "failed to create webhook chart manager")
+			os.Exit(1)
 		}
 	}
 
@@ -297,6 +274,21 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options, kcpRestConfig)
 	}
 	metrics.Initialize()
+}
+
+func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (watcher.SKRWebhookManager, error) {
+	return watcher.NewSKRWebhookManifestManager(mgr.GetConfig(), mgr.GetScheme(), &watcher.SkrWebhookManagerConfig{
+		SKRWatcherPath:              flagVar.skrWatcherPath,
+		SkrWatcherImage:             flagVar.skrWatcherImage,
+		SkrWebhookCPULimits:         flagVar.skrWebhookCPULimits,
+		SkrWebhookMemoryLimits:      flagVar.skrWebhookMemoryLimits,
+		WatcherLocalTestingEnabled:  flagVar.enableWatcherLocalTesting,
+		LocalGatewayHTTPPortMapping: flagVar.listenerHTTPSPortLocalMapping,
+		IstioNamespace:              flagVar.istioNamespace,
+		IstioGatewayName:            flagVar.istioGatewayName,
+		IstioGatewayNamespace:       flagVar.istioGatewayNamespace,
+		RemoteSyncNamespace:         flagVar.remoteSyncNamespace,
+	})
 }
 
 func setupPurgeReconciler(

@@ -76,8 +76,7 @@ type ModuleTemplateSpec struct {
 	// hint by downstream controllers to determine which client implementation to use for working with the Module
 	Target Target `json:"target"`
 
-	// CustomStateCheck for advanced Module State determination
-	CustomStateCheck *v1beta2.CustomStateCheck `json:"customStateCheck,omitempty"`
+	CustomStateCheck []*v1beta2.CustomStateCheck `json:"customStateCheck,omitempty"`
 }
 
 //+kubebuilder:object:root=true

@@ -4,6 +4,7 @@ package v2
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -31,8 +32,9 @@ func TestPruneResource(t *testing.T) {
 			deployment,
 		}
 
-		result := pruneResource(infos, "Namespace", namespaceNotBeRemoved)
+		result, err := pruneResource(infos, "Namespace", namespaceNotBeRemoved)
 
+		require.NoError(t, err)
 		require.Len(t, result, 3)
 		require.NotContains(t, result, kymaNs)
 	})
@@ -48,8 +50,9 @@ func TestPruneResource(t *testing.T) {
 			crd,
 		}
 
-		result := pruneResource(infos, "CustomResourceDefinition", "btpoperator")
+		result, err := pruneResource(infos, "CustomResourceDefinition", "btpoperator")
 
+		require.NoError(t, err)
 		require.Len(t, result, 4)
 		require.NotContains(t, result, crd)
 	})
@@ -63,11 +66,67 @@ func TestPruneResource(t *testing.T) {
 			deployment,
 		}
 
-		result := pruneResource(infos, "Namespace", namespaceNotBeRemoved)
+		result, err := pruneResource(infos, "Namespace", namespaceNotBeRemoved)
 
+		require.NoError(t, err)
 		require.Len(t, result, 3)
 		require.Contains(t, result, kubeNs)
 		require.Contains(t, result, service)
 		require.Contains(t, result, deployment)
 	})
+}
+
+func Test_hasDiff(t *testing.T) {
+	t.Parallel()
+	testGVK := metav1.GroupVersionKind{Group: "test", Version: "v1", Kind: "test"}
+	testResourceA := Resource{Name: "r1", Namespace: "default", GroupVersionKind: testGVK}
+	testResourceB := Resource{Name: "r2", Namespace: "", GroupVersionKind: testGVK}
+	testResourceC := Resource{Name: "r3", Namespace: "kcp-system", GroupVersionKind: testGVK}
+	testResourceD := Resource{Name: "r4", Namespace: "kcp-system", GroupVersionKind: testGVK}
+	tests := []struct {
+		name         string
+		oldResources []Resource
+		newResources []Resource
+		want         bool
+	}{
+		{
+			"test same resource",
+			[]Resource{testResourceA, testResourceB},
+			[]Resource{testResourceA, testResourceB},
+			false,
+		},
+		{
+			"test new contains more resources",
+			[]Resource{testResourceA, testResourceB},
+			[]Resource{testResourceA, testResourceB, testResourceC},
+			true,
+		},
+		{
+			"test old contains more",
+			[]Resource{testResourceA, testResourceB, testResourceC},
+			[]Resource{testResourceA, testResourceB},
+			true,
+		},
+		{
+			"test same amount of resources but contains different name",
+			[]Resource{testResourceA, testResourceC},
+			[]Resource{testResourceA, testResourceD},
+			true,
+		},
+		{
+			"test same amount of resources but contains duplicate resources",
+			[]Resource{testResourceA, testResourceB},
+			[]Resource{testResourceA, testResourceA},
+			true,
+		},
+	}
+	for _, tt := range tests {
+		testCase := tt
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equalf(t, testCase.want,
+				hasDiff(testCase.oldResources, testCase.newResources), "hasDiff(%v, %v)",
+				testCase.oldResources, testCase.newResources)
+		})
+	}
 }

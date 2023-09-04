@@ -26,18 +26,6 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 ---
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: skr-webhook-config
-data:
-  contractVersion: v1
-  kcpAddr: "kcp-base-url-invalid"
-  # -- TLS webhook server
-  tlsWebhookServer: "true"
-  # -- TLS callback to KCP
-  tlsCallback: "true"
----
-apiVersion: v1
 kind: Service
 metadata:
   name: skr-webhook
@@ -67,6 +55,7 @@ spec:
       labels:
         app: skr-webhook
         operator.kyma-project.io/pod-restart-trigger: ""
+        sidecar.istio.io/inject: "false"
     spec:
       serviceAccountName: skr-webhook-sa
       containers:
@@ -78,35 +67,21 @@ spec:
                   fieldPath: metadata.name
             - name: WEBHOOK_PORT
               value: "8443"
-            - name: TLS_SERVER
-              valueFrom:
-                configMapKeyRef:
-                  name: skr-webhook-config
-                  key: tlsWebhookServer
-            - name: TLS_CALLBACK
-              valueFrom:
-                configMapKeyRef:
-                  name: skr-webhook-config
-                  key: tlsCallback
             - name: TLS_KEY
               value: "/app/etc/ssl/tls.key"
             - name: TLS_CERT
               value: "/app/etc/ssl/tls.crt"
             - name: CA_CERT
               value: "/app/etc/ssl/ca.crt"
-            - name: KCP_ADDR
-              valueFrom:
-                configMapKeyRef:
-                  name: skr-webhook-config
-                  key: kcpAddr
+            - name: TLS_CALLBACK
+              value: "true"
             - name: KCP_CONTRACT
-              valueFrom:
-                configMapKeyRef:
-                  name: skr-webhook-config
-                  key: contractVersion
+              value: "v1"
+            - name: KCP_ADDR
+              value: "kcp-base-url-invalid"
             - name: WEBHOOK_SIDE_CAR
               value: "true"
-          image: "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher-skr:latest"
+          image: "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher-skr:v20230824-f4459bad"
           imagePullPolicy: Always
           volumeMounts:
             - name: ssl
@@ -124,7 +99,7 @@ spec:
             - containerPort: 8443
               name: watcher-port
         - name: request-sidecar
-          image: alpine
+          image: europe-docker.pkg.dev/kyma-project/prod/external/alpine:3.17.4
           command:
             - /bin/sh
             - "-c"

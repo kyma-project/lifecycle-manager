@@ -6,11 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/metrics"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/channel"
-	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -19,9 +14,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/channel"
+	commonErrors "github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"github.com/kyma-project/lifecycle-manager/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/types"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 func New(clnt client.Client) *RunnerImpl {
@@ -81,7 +81,11 @@ func (r *RunnerImpl) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 }
 
 func (r *RunnerImpl) getModule(ctx context.Context, module client.Object) error {
-	return r.Get(ctx, client.ObjectKey{Namespace: module.GetNamespace(), Name: module.GetName()}, module)
+	err := r.Get(ctx, client.ObjectKey{Namespace: module.GetNamespace(), Name: module.GetName()}, module)
+	if err != nil {
+		return fmt.Errorf("failed to get module by name-namespace: %w", err)
+	}
+	return nil
 }
 
 func (r *RunnerImpl) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
@@ -92,9 +96,12 @@ func (r *RunnerImpl) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	}
 	obj, err := r.converter.ConvertToVersion(module.Object, r.versioner)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to convert object to version: %w", err)
 	}
-	manifestObj := obj.(client.Object)
+	manifestObj, ok := obj.(client.Object)
+	if !ok {
+		return commonErrors.ErrTypeAssert
+	}
 	if err := r.Patch(ctx, manifestObj,
 		client.Apply,
 		client.FieldOwner(kyma.Labels[v1beta2.ManagedBy]),
@@ -109,10 +116,10 @@ func (r *RunnerImpl) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 
 func (r *RunnerImpl) deleteManifest(ctx context.Context, module *common.Module) error {
 	err := r.Delete(ctx, module.Object)
-	if apiErrors.IsNotFound(err) {
+	if util.IsNotFound(err) {
 		return nil
 	}
-	return err
+	return fmt.Errorf("failed to delete manifest: %w", err)
 }
 
 func (r *RunnerImpl) setupModule(module *common.Module, kyma *v1beta2.Kyma) error {
@@ -191,6 +198,10 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 			PartialMeta: v1beta2.PartialMetaFromObject(manifestObject.Spec.Resource),
 			TypeMeta:    metav1.TypeMeta{Kind: moduleCRKind, APIVersion: moduleCRAPIVersion},
 		}
+
+		if module.Template.Annotations[v1beta2.IsClusterScopedAnnotation] == v1beta2.EnableLabelValue {
+			moduleResource.PartialMeta.Namespace = ""
+		}
 	}
 
 	return v1beta2.ModuleStatus{
@@ -245,7 +256,7 @@ func DeleteNoLongerExistingModuleStatus(
 		module.SetName(moduleStatus.Manifest.GetName())
 		module.SetNamespace(moduleStatus.Manifest.GetNamespace())
 		err := moduleFunc(ctx, module)
-		if apiErrors.IsNotFound(err) {
+		if util.IsNotFound(err) {
 			if err := metrics.RemoveModuleStateMetrics(kyma, moduleStatus.Name); err != nil {
 				logger.Info(fmt.Sprintf("error occurred while removing module state metrics: %s", err))
 			}

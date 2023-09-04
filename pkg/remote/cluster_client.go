@@ -2,12 +2,12 @@ package remote
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -21,24 +21,24 @@ type ClusterClient struct {
 	DefaultClient client.Client
 }
 
+var ErrAccessSecretNotFound = errors.New("access secret not found")
+
 func (cc *ClusterClient) GetRestConfigFromSecret(ctx context.Context, name, namespace string) (*rest.Config, error) {
 	kubeConfigSecretList := &v1.SecretList{}
 	if err := cc.DefaultClient.List(ctx, kubeConfigSecretList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{v1beta2.KymaName: name}), Namespace: namespace,
 	}); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list kubeconfig secrets: %w", err)
 	} else if len(kubeConfigSecretList.Items) < 1 {
-		gr := v1.SchemeGroupVersion.WithResource(fmt.Sprintf("secret with label %s", v1beta2.KymaName)).GroupResource()
-
-		return nil, errors.NewNotFound(gr, name)
+		return nil, fmt.Errorf("secret with label %s: %w", v1beta2.KymaName, ErrAccessSecretNotFound)
 	}
 
 	kubeConfigSecret := kubeConfigSecretList.Items[0]
 
 	restConfig, err := clientcmd.RESTConfigFromKubeConfig(kubeConfigSecret.Data[KubeConfigKey])
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create rest config from kubeconfig: %w", err)
 	}
 
-	return restConfig, err
+	return restConfig, nil
 }

@@ -22,17 +22,14 @@ import (
 )
 
 const (
-	podRestartLabelKey     = "operator.kyma-project.io/pod-restart-trigger"
-	rawManifestFilePathTpl = "%s/resources.yaml"
-	// always true since unsecured watcher setup will no longer be supported.
-	tlsEnabled = "true"
+	podRestartLabelKey = "operator.kyma-project.io/pod-restart-trigger"
+	kcpAddressEnvName  = "KCP_ADDR"
 )
 
 var (
-	ErrExpectedNonNilConfig             = errors.New("expected non nil config")
-	ErrExpectedSubjectsNotToBeEmpty     = errors.New("expected subjects to be non empty")
-	ErrExpectedNonEmptyPodContainers    = errors.New("expected non empty pod containers")
-	ErrPodTemplateMustContainAtLeastOne = errors.New("pod template labels must contain " +
+	errExpectedSubjectsNotToBeEmpty     = errors.New("expected subjects to be non empty")
+	errExpectedNonEmptyPodContainers    = errors.New("expected non empty pod containers")
+	errPodTemplateMustContainAtLeastOne = errors.New("pod template labels must contain " +
 		"at least the deployment selector label")
 )
 
@@ -120,14 +117,16 @@ func generateValidatingWebhookConfigFromWatchers(webhookObjKey,
 	}
 }
 
+var errConvertUnstruct = errors.New("failed to convert deployment to unstructured")
+
 func configureClusterRoleBinding(cfg *unstructuredResourcesConfig, resource *unstructured.Unstructured,
 ) (*rbacV1.ClusterRoleBinding, error) {
 	crb := &rbacV1.ClusterRoleBinding{}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(resource.Object, crb); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", errConvertUnstruct, err)
 	}
 	if len(crb.Subjects) == 0 {
-		return nil, ErrExpectedSubjectsNotToBeEmpty
+		return nil, errExpectedSubjectsNotToBeEmpty
 	}
 	serviceAccountSubj := crb.Subjects[0]
 	serviceAccountSubj.Namespace = cfg.remoteNs
@@ -135,41 +134,32 @@ func configureClusterRoleBinding(cfg *unstructuredResourcesConfig, resource *uns
 	return crb, nil
 }
 
-func configureConfigMap(cfg *unstructuredResourcesConfig, resource *unstructured.Unstructured,
-) (*corev1.ConfigMap, error) {
-	configMap := &corev1.ConfigMap{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(resource.Object, configMap); err != nil {
-		return nil, err
-	}
-	configMap.Data = map[string]string{
-		"contractVersion":  cfg.contractVersion,
-		"kcpAddr":          cfg.kcpAddress,
-		"tlsWebhookServer": tlsEnabled,
-		"tlsCallback":      tlsEnabled,
-	}
-	return configMap, nil
-}
-
 func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Unstructured,
 ) (*appsv1.Deployment, error) {
 	deployment := &appsv1.Deployment{}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, deployment); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", errConvertUnstruct, err)
 	}
-
 	if deployment.Spec.Template.Labels == nil || len(deployment.Spec.Template.Labels) == 0 {
-		return nil, ErrPodTemplateMustContainAtLeastOne
+		return nil, errPodTemplateMustContainAtLeastOne
+	}
+	if len(deployment.Spec.Template.Spec.Containers) == 0 {
+		return nil, errExpectedNonEmptyPodContainers
 	}
 	deployment.Spec.Template.Labels[podRestartLabelKey] = cfg.secretResVer
 
-	// configure resource limits for the webhook server container
-	if len(deployment.Spec.Template.Spec.Containers) == 0 {
-		return nil, ErrExpectedNonEmptyPodContainers
-	}
 	serverContainer := deployment.Spec.Template.Spec.Containers[0]
 	if cfg.skrWatcherImage != "" {
 		serverContainer.Image = cfg.skrWatcherImage
 	}
+
+	for i := 0; i < len(serverContainer.Env); i++ {
+		if serverContainer.Env[i].Name == kcpAddressEnvName {
+			serverContainer.Env[i].Value = cfg.kcpAddress
+		}
+	}
+
+	// configure resource limits for the webhook server container
 	cpuResQty, err := resource.ParseQuantity(cfg.cpuResLimit)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing CPU resource limit: %w", err)
@@ -232,9 +222,6 @@ type unstructuredResourcesConfig struct {
 
 func configureUnstructuredObject(cfg *unstructuredResourcesConfig, object *unstructured.Unstructured,
 ) (client.Object, error) {
-	if object.GetAPIVersion() == corev1.SchemeGroupVersion.String() && object.GetKind() == "ConfigMap" {
-		return configureConfigMap(cfg, object)
-	}
 	if object.GetAPIVersion() == appsv1.SchemeGroupVersion.String() && object.GetKind() == "Deployment" {
 		return configureDeployment(cfg, object)
 	}

@@ -4,8 +4,9 @@ import (
 	"time"
 
 	"github.com/jellydator/ttlcache/v3"
-	"github.com/kyma-project/lifecycle-manager/internal"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/kyma-project/lifecycle-manager/internal"
 )
 
 const (
@@ -42,7 +43,7 @@ func (c *InMemoryManifestCache) Parse(spec *Spec,
 	} else {
 		resources, err = internal.ParseManifestToObjects(spec.Path)
 		if err != nil {
-			return internal.ManifestResources{}, err
+			return internal.ManifestResources{}, fmt.Errorf("failed to parse manifest objects: %w", err)
 		}
 		c.Cache.Set(spec.Path, resources, c.TTL)
 	}

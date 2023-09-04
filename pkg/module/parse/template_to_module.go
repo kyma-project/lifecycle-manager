@@ -2,6 +2,7 @@ package parse
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -132,14 +133,18 @@ func (p *Parser) newManifestFromTemplate(
 
 	clusterClient := p.Client
 	if module.RemoteModuleTemplateRef != "" {
-		clusterClient = remote.SyncContextFromContext(ctx).RuntimeClient
+		syncContext, err := remote.SyncContextFromContext(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get syncContext: %w", err)
+		}
+		clusterClient = syncContext.RuntimeClient
 	}
 
 	var layers img.Layers
 	var err error
 	descriptor, err := template.GetDescriptor()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get descriptor from template: %w", err)
 	}
 	verification, err := signature.NewVerification(ctx,
 		clusterClient,
@@ -162,7 +167,26 @@ func (p *Parser) newManifestFromTemplate(
 		return nil, fmt.Errorf("could not translate layers and merge them: %w", err)
 	}
 
+	if err := appendOptionalCustomStateCheck(manifest, template.Spec.CustomStateCheck); err != nil {
+		return nil, fmt.Errorf("could not translate custom state check: %w", err)
+	}
+
 	return manifest, nil
+}
+
+func appendOptionalCustomStateCheck(manifest *v1beta2.Manifest, stateCheck []*v1beta2.CustomStateCheck) error {
+	if manifest.Spec.Resource == nil || stateCheck == nil {
+		return nil
+	}
+	if manifest.Annotations == nil {
+		manifest.Annotations = make(map[string]string)
+	}
+	stateCheckByte, err := json.Marshal(stateCheck)
+	if err != nil {
+		return fmt.Errorf("failed to marshal stateCheck: %w", err)
+	}
+	manifest.Annotations[v1beta2.CustomStateCheckAnnotation] = string(stateCheckByte)
+	return nil
 }
 
 func translateLayersAndMergeIntoManifest(
@@ -187,11 +211,11 @@ func insertLayerIntoManifest(
 		if !ok {
 			return fmt.Errorf("%w: not an OCIImage", ErrDefaultConfigParsing)
 		}
-		manifest.Spec.Config = v1beta2.ImageSpec{
+		manifest.Spec.Config = &v1beta2.ImageSpec{
 			Repo:               ociImage.Repo,
 			Name:               ociImage.Name,
 			Ref:                ociImage.Ref,
-			Type:               img.OCIRepresentationType,
+			Type:               v1beta2.OciRefType,
 			CredSecretSelector: ociImage.CredSecretSelector,
 		}
 	default:

@@ -89,7 +89,7 @@ type ModuleTemplateSpec struct {
 	Data unstructured.Unstructured `json:"data,omitempty"`
 
 	// The Descriptor is the Open Component Model Descriptor of a Module, containing all relevant information
-	// to correctly initialize a module (e.g. Charts, Manifests, References to Binaries and/or configuration)
+	// to correctly initialize a module (e.g. Manifests, References to Binaries and/or configuration)
 	// Name more information on Component Descriptors, see
 	// https://github.com/open-component-model/ocm
 	//
@@ -98,39 +98,53 @@ type ModuleTemplateSpec struct {
 	// This means for upgrades of the Descriptor, downstream controllers will also update the dependant modules
 	// (e.g. by updating the controller binary linked in a chart referenced in the descriptor)
 	//
+	// NOTE: Only Raw Rendering is Supported for the layers. So previously used "config" layers for the helm
+	// charts and kustomize renderers are deprecated and ignored.
+	//
 	//+kubebuilder:pruning:PreserveUnknownFields
 	Descriptor runtime.RawExtension `json:"descriptor"`
 
-	// CustomStateCheck for advanced Module State determination
-	CustomStateCheck *CustomStateCheck `json:"customStateCheck,omitempty"`
+	CustomStateCheck []*CustomStateCheck `json:"customStateCheck,omitempty"`
 }
 
 type CustomStateCheck struct {
 	// JSONPath specifies the JSON path to the state variable in the Module CR
 	JSONPath string `json:"jsonPath"`
 
-	// Value is the value at the JSONPath for which the Module CR state is set to "Ready" in Kyma CR
+	// Value is the value at the JSONPath for which the Module CR state should map with MappedState
 	Value string `json:"value"`
+
+	// MappedState is the Kyma CR State
+	MappedState State `json:"mappedState"`
 }
 
 func (m *ModuleTemplate) GetDescriptor() (*Descriptor, error) {
 	if m.Spec.Descriptor.Object != nil {
-		return m.Spec.Descriptor.Object.(*Descriptor), nil
-	}
-	descriptor := m.GetDescFromCache()
-	if descriptor == nil {
-		desc, err := compdesc.Decode(
-			m.Spec.Descriptor.Raw, []compdesc.DecodeOption{compdesc.DisableValidation(true)}...,
-		)
-		if err != nil {
-			return nil, err
+		desc, ok := m.Spec.Descriptor.Object.(*Descriptor)
+		if !ok {
+			return nil, ErrTypeAssertDescriptor
 		}
-		m.Spec.Descriptor.Object = &Descriptor{ComponentDescriptor: desc}
-		descriptor = m.Spec.Descriptor.Object.(*Descriptor)
-		m.SetDescToCache(descriptor)
+		return desc, nil
 	}
 
-	return descriptor, nil
+	descriptor := m.GetDescFromCache()
+	if descriptor != nil {
+		return descriptor, nil
+	}
+
+	desc, err := compdesc.Decode(
+		m.Spec.Descriptor.Raw, []compdesc.DecodeOption{compdesc.DisableValidation(true)}...,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode to descriptor target: %w", err)
+	}
+	m.Spec.Descriptor.Object = &Descriptor{ComponentDescriptor: desc}
+	mDesc, ok := m.Spec.Descriptor.Object.(*Descriptor)
+	if !ok {
+		return nil, ErrTypeAssertDescriptor
+	}
+	m.SetDescToCache(mDesc)
+	return mDesc, nil
 }
 
 //nolint:gochecknoglobals
@@ -142,7 +156,12 @@ func (m *ModuleTemplate) GetDescFromCache() *Descriptor {
 	if !ok {
 		return nil
 	}
-	return &Descriptor{ComponentDescriptor: value.(*Descriptor).Copy()}
+	desc, ok := value.(*Descriptor)
+	if !ok {
+		return nil
+	}
+
+	return &Descriptor{ComponentDescriptor: desc.Copy()}
 }
 
 func (m *ModuleTemplate) SetDescToCache(descriptor *Descriptor) {
