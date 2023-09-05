@@ -49,7 +49,7 @@ type mockLayer struct {
 func (m mockLayer) Uncompressed() (io.ReadCloser, error) {
 	f, err := os.Open(m.filePath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error opening file %s: %w", m.filePath, err)
 	}
 	return io.NopCloser(f), nil
 }
@@ -150,7 +150,11 @@ func InstallManifest(manifest *v1beta2.Manifest, installSpecByte []byte, enableR
 			},
 		}
 	}
-	return K8sClient.Create(Ctx, manifest)
+	err := K8sClient.Create(Ctx, manifest)
+	if err != nil {
+		return fmt.Errorf("error creating Manifest: %w", err)
+	}
+	return nil
 }
 
 func ExpectManifestStateIn(state v2.State) func(manifestName string) error {
@@ -177,10 +181,12 @@ func ExpectOCISyncRefAnnotationExists(mustExist bool) func(manifestName string) 
 		mustNotExist := !mustExist
 
 		if mustExist && annValue == "" {
-			return fmt.Errorf("Expected \"sync-oci-ref\" annotation does not exist for manifest %s: %w", manifestName, ErrManifestStateMisMatch)
+			return fmt.Errorf("expected \"sync-oci-ref\" annotation does not exist for manifest %s: %w",
+				manifestName, ErrManifestStateMisMatch)
 		}
 		if mustNotExist && annValue != "" {
-			return fmt.Errorf("Expected \"sync-oci-ref\" annotation to be empty - but it's not - for manifest %s: %w", manifestName, ErrManifestStateMisMatch)
+			return fmt.Errorf("expected \"sync-oci-ref\" annotation to be empty - but it's not - for manifest %s: %w",
+				manifestName, ErrManifestStateMisMatch)
 		}
 
 		return nil
@@ -204,7 +210,7 @@ func GetManifest(manifestName string) (*v1beta2.Manifest, error) {
 		}, manifest,
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting Manifest %s: %w", manifestName, err)
 	}
 	return manifest, nil
 }
@@ -212,10 +218,11 @@ func GetManifest(manifestName string) (*v1beta2.Manifest, error) {
 func DeleteManifestAndVerify(manifest *v1beta2.Manifest) func() error {
 	return func() error {
 		if err := K8sClient.Delete(Ctx, manifest); err != nil && !util.IsNotFound(err) {
-			return err
+			return fmt.Errorf("error deleting Manifest %s: %w", manifest.Name, err)
 		}
 		newManifest := v1beta2.Manifest{}
 		err := K8sClient.Get(Ctx, client.ObjectKeyFromObject(manifest), &newManifest)
+		//nolint:wrapcheck
 		return client.IgnoreNotFound(err)
 	}
 }
