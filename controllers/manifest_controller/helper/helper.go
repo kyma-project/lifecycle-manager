@@ -1,3 +1,4 @@
+//nolint:gochecknoglobals
 package helper
 
 import (
@@ -24,7 +25,7 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/types"
-	. "github.com/onsi/gomega"
+	gmg "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -63,31 +64,31 @@ func (m mockLayer) DiffID() (v1.Hash, error) {
 
 func CreateImageSpecLayer() v1.Layer {
 	layer, err := partial.UncompressedToLayer(mockLayer{filePath: ManifestFilePath})
-	Expect(err).ToNot(HaveOccurred())
+	gmg.Expect(err).ToNot(gmg.HaveOccurred())
 	return layer
 }
 
 func PushToRemoteOCIRegistry(layerName string) {
 	layer := CreateImageSpecLayer()
 	digest, err := layer.Digest()
-	Expect(err).ToNot(HaveOccurred())
+	gmg.Expect(err).ToNot(gmg.HaveOccurred())
 
 	// Set up a fake registry and write what we pulled to it.
 	u, err := url.Parse(Server.URL)
-	Expect(err).NotTo(HaveOccurred())
+	gmg.Expect(err).NotTo(gmg.HaveOccurred())
 
 	dst := fmt.Sprintf("%s/%s@%s", u.Host, layerName, digest)
 	ref, err := name.NewDigest(dst)
-	Expect(err).ToNot(HaveOccurred())
+	gmg.Expect(err).ToNot(gmg.HaveOccurred())
 
 	err = remote.WriteLayer(ref.Context(), layer)
-	Expect(err).ToNot(HaveOccurred())
+	gmg.Expect(err).ToNot(gmg.HaveOccurred())
 
 	got, err := remote.Layer(ref)
-	Expect(err).ToNot(HaveOccurred())
+	gmg.Expect(err).ToNot(gmg.HaveOccurred())
 	gotHash, err := got.Digest()
-	Expect(err).ToNot(HaveOccurred())
-	Expect(gotHash).To(Equal(digest))
+	gmg.Expect(err).ToNot(gmg.HaveOccurred())
+	gmg.Expect(gotHash).To(gmg.Equal(digest))
 }
 
 func CreateOCIImageSpec(name, repo string, enableCredSecretSelector bool) v1beta2.ImageSpec {
@@ -101,7 +102,7 @@ func CreateOCIImageSpec(name, repo string, enableCredSecretSelector bool) v1beta
 	}
 	layer := CreateImageSpecLayer()
 	digest, err := layer.Digest()
-	Expect(err).ToNot(HaveOccurred())
+	gmg.Expect(err).ToNot(gmg.HaveOccurred())
 	imageSpec.Ref = digest.String()
 	return imageSpec
 }
@@ -110,7 +111,7 @@ func WithInvalidInstallImageSpec(enableResource bool) func(manifest *v1beta2.Man
 	return func(manifest *v1beta2.Manifest) error {
 		invalidImageSpec := CreateOCIImageSpec("invalid-image-spec", "domain.invalid", false)
 		imageSpecByte, err := json.Marshal(invalidImageSpec)
-		Expect(err).ToNot(HaveOccurred())
+		gmg.Expect(err).ToNot(gmg.HaveOccurred())
 		return InstallManifest(manifest, imageSpecByte, enableResource)
 	}
 }
@@ -121,7 +122,7 @@ func WithValidInstallImageSpec(name string,
 	return func(manifest *v1beta2.Manifest) error {
 		validImageSpec := CreateOCIImageSpec(name, Server.Listener.Addr().String(), enableCredSecretSelector)
 		imageSpecByte, err := json.Marshal(validImageSpec)
-		Expect(err).ToNot(HaveOccurred())
+		gmg.Expect(err).ToNot(gmg.HaveOccurred())
 		return InstallManifest(manifest, imageSpecByte, enableResource)
 	}
 }
