@@ -1,4 +1,4 @@
-package custom_resource_check
+package custom_resource_check_test
 
 import (
 	"encoding/json"
@@ -36,7 +36,6 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		},
 	)
 	It("Install OCI specs including an nginx deployment", func() {
-
 		By("Install test Manifest CR")
 		testManifest := testutils.NewTestManifest("warning-check")
 		manifestName := testManifest.GetName()
@@ -61,7 +60,8 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(status.Synced).To(HaveLen(2))
 		expectedDeployment := asResource(deploymentName, "default", "apps", "v1", "Deployment")
-		expectedCRD := asResource("samples.operator.kyma-project.io", "", "apiextensions.k8s.io", "v1", "CustomResourceDefinition")
+		expectedCRD := asResource("samples.operator.kyma-project.io", "",
+			"apiextensions.k8s.io", "v1", "CustomResourceDefinition")
 		Expect(status.Synced).To(ContainElement(expectedDeployment))
 		Expect(status.Synced).To(ContainElement(expectedCRD))
 
@@ -80,7 +80,8 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 			WithArguments(manifestName).Should(Succeed())
 
 		By("cleaning up the manifest")
-		Eventually(verifyObjectExists(expectedDeployment.ToUnstructured()), standardTimeout, standardInterval).Should(BeTrue())
+		Eventually(verifyObjectExists(expectedDeployment.ToUnstructured()), standardTimeout, standardInterval).
+			Should(BeTrue())
 		Eventually(verifyObjectExists(expectedCRD.ToUnstructured()), standardTimeout, standardInterval).Should(BeTrue())
 		Eventually(verifyObjectExists(sampleCR), standardTimeout, standardInterval).Should(BeTrue())
 
@@ -89,21 +90,22 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		By("verify target resources got deleted")
 		Eventually(verifyObjectExists(sampleCR), standardTimeout, standardInterval).Should(BeFalse())
 		Eventually(verifyObjectExists(expectedCRD.ToUnstructured()), standardTimeout, standardInterval).Should(BeFalse())
-		Eventually(verifyObjectExists(expectedDeployment.ToUnstructured()), standardTimeout, standardInterval).Should(BeFalse())
+		Eventually(verifyObjectExists(expectedDeployment.ToUnstructured()), standardTimeout, standardInterval).
+			Should(BeFalse())
 	})
 })
 
 func asResource(name, namespace, group, version, kind string) declarative.Resource {
-	return declarative.Resource{Name: name, Namespace: namespace,
+	return declarative.Resource{
+		Name: name, Namespace: namespace,
 		GroupVersionKind: metav1.GroupVersionKind{
-			Group: group, Version: version, Kind: kind},
+			Group: group, Version: version, Kind: kind,
+		},
 	}
 }
 
 func verifyObjectExists(obj *unstructured.Unstructured) func() (bool, error) {
-
 	return func() (bool, error) {
-
 		err := hlp.K8sClient.Get(
 			hlp.Ctx, client.ObjectKeyFromObject(obj),
 			obj,
@@ -121,25 +123,29 @@ func verifyObjectExists(obj *unstructured.Unstructured) func() (bool, error) {
 
 func emptySampleCR(manifestName string) *unstructured.Unstructured {
 	res := &unstructured.Unstructured{}
-	res.SetGroupVersionKind(schema.GroupVersionKind{Group: "operator.kyma-project.io", Version: "v1alpha1", Kind: "Sample"})
+	res.SetGroupVersionKind(
+		schema.GroupVersionKind{Group: "operator.kyma-project.io", Version: "v1alpha1", Kind: "Sample"})
 	res.SetName("sample-cr-" + manifestName)
 	res.SetNamespace(metav1.NamespaceDefault)
 	return res
 }
 
-func setCRStatus(cr *unstructured.Unstructured, statusValue declarative.State) func() error {
+func setCRStatus(moduleCR *unstructured.Unstructured, statusValue declarative.State) func() error {
 	return func() error {
 		err := hlp.K8sClient.Get(
-			hlp.Ctx, client.ObjectKeyFromObject(cr),
-			cr,
+			hlp.Ctx, client.ObjectKeyFromObject(moduleCR),
+			moduleCR,
 		)
 		if err != nil {
 			return err
 		}
-		unstructured.SetNestedMap(cr.Object, map[string]any{}, "status")
-		unstructured.SetNestedField(cr.Object, string(statusValue), "status", "state")
-		err = hlp.K8sClient.Status().Update(hlp.Ctx, cr)
-		return err
+		if err = unstructured.SetNestedMap(moduleCR.Object, map[string]any{}, "status"); err != nil {
+			return err
+		}
+		if err = unstructured.SetNestedField(moduleCR.Object, string(statusValue), "status", "state"); err != nil {
+			return err
+		}
+		return hlp.K8sClient.Status().Update(hlp.Ctx, moduleCR)
 	}
 }
 

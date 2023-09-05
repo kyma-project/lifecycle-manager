@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 //nolint:gochecknoglobals
-package custom_resource_check
+package custom_resource_check_test
 
 import (
 	"context"
