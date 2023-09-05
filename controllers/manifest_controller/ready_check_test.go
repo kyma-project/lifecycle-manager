@@ -15,7 +15,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/resource"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -49,7 +48,7 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 
 		testClient, err := declarativeTestClient()
 		Expect(err).ToNot(HaveOccurred())
-		By("Verifying that deployment and Sample CR are deployed and ready")
+		By("Verifying that deployment is deployed and ready")
 		deploy := &appsv1.Deployment{}
 		Expect(verifyDeploymentInstallation(deploy)).To(Succeed())
 
@@ -59,7 +58,8 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 		Expect(status.Synced).To(HaveLen(2))
 
 		expectedDeployment := asResource("nginx-deployment", "default", "apps", "v1", "Deployment")
-		expectedCRD := asResource("samples.operator.kyma-project.io", "", "apiextensions.k8s.io", "v1", "CustomResourceDefinition")
+		expectedCRD := asResource("samples.operator.kyma-project.io", "",
+			"apiextensions.k8s.io", "v1", "CustomResourceDefinition")
 		Expect(status.Synced).To(ContainElement(expectedDeployment))
 		Expect(status.Synced).To(ContainElement(expectedCRD))
 
@@ -75,71 +75,18 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 		Expect(stateInfo.State).To(Equal(declarative.StateReady))
 
 		By("cleaning up the manifest")
-		Eventually(verifyObjectExists(expectedDeployment.ToUnstructured()), standardTimeout, standardInterval).Should(BeTrue())
+		Eventually(verifyObjectExists(expectedDeployment.ToUnstructured()), standardTimeout, standardInterval).
+			Should(BeTrue())
 		Eventually(verifyObjectExists(expectedCRD.ToUnstructured()), standardTimeout, standardInterval).Should(BeTrue())
-
-		//Eventually(verifyObjectExists(sampleCR), standardTimeout, standardInterval).Should(BeTrue())
 
 		Eventually(hlp.DeleteManifestAndVerify(testManifest), standardTimeout, standardInterval).Should(Succeed())
 
-		Eventually(verifyObjectExists(expectedDeployment.ToUnstructured()), standardTimeout, standardInterval).Should(BeFalse())
-		Eventually(verifyObjectExists(expectedCRD.ToUnstructured()), standardTimeout, standardInterval).Should(BeFalse())
-
+		Eventually(verifyObjectExists(expectedDeployment.ToUnstructured()), standardTimeout, standardInterval).
+			Should(BeFalse())
+		Eventually(verifyObjectExists(expectedCRD.ToUnstructured()), standardTimeout, standardInterval).
+			Should(BeFalse())
 	})
 })
-
-/*
-var _ = Describe("Manifest state change to warning", Ordered, func() {
-	customDir := "custom-dir"
-	installName := filepath.Join(customDir, "installs")
-	It(
-		"setup OCI", func() {
-			PushToRemoteOCIRegistry(installName)
-		},
-	)
-	BeforeEach(
-		func() {
-			Expect(os.RemoveAll(filepath.Join(os.TempDir(), customDir))).To(Succeed())
-		},
-	)
-	It("Install a manifest with an nginx deployment and a sample CR", func() {
-		testManifest := testutils.NewTestManifest("state-change")
-		manifestName := testManifest.GetName()
-		validImageSpec := createOCIImageSpec(installName, server.Listener.Addr().String(), false)
-		imageSpecByte, err := json.Marshal(validImageSpec)
-		Expect(err).ToNot(HaveOccurred())
-
-		expectedCR := emptySampleCR(manifestName)
-		expectedCRD := asResource("samples.operator.kyma-project.io", "", "apiextensions.k8s.io", "v1", "CustomResourceDefinition")
-		expectedDeployment := asResource("nginx-deployment", "default", "apps", "v1", "Deployment")
-
-		//crKey := expectedCR.GetNamespace() + "/" + expectedCR.GetName()
-		deploymentKey := "default/nginx-deployment"
-		drc.Set(deploymentKey, declarative.StateWarning)
-
-		Expect(installManifest(testManifest, imageSpecByte, true)).To(Succeed())
-
-		Eventually(expectManifestStateIn(declarative.StateReady), standardTimeout, standardInterval).
-			WithArguments(manifestName).Should(Succeed())
-
-		Expect(err).ToNot(HaveOccurred())
-		By("Verifying that deployment and Sample CR are deployed and ready")
-		deploy := &appsv1.Deployment{}
-		Expect(verifyDeploymentInstallation(deploy)).To(Succeed())
-
-		By("cleaning up the manifest")
-		Eventually(verifyObjectExists(expectedCR), standardTimeout, standardInterval).Should(BeTrue())
-		Eventually(verifyObjectExists(expectedCRD.ToUnstructured()), standardTimeout, standardInterval).Should(BeTrue())
-		Eventually(verifyObjectExists(expectedDeployment.ToUnstructured()), standardTimeout, standardInterval).Should(BeTrue())
-
-		Eventually(deleteManifestAndVerify(testManifest), standardTimeout, standardInterval).Should(Succeed())
-
-		Eventually(verifyObjectExists(expectedCR), standardTimeout, standardInterval).Should(BeFalse())
-		Eventually(verifyObjectExists(expectedCRD.ToUnstructured()), standardTimeout, standardInterval).Should(BeFalse())
-		Eventually(verifyObjectExists(expectedDeployment.ToUnstructured()), standardTimeout, standardInterval).Should(BeFalse())
-	})
-})
-*/
 
 func verifyDeploymentInstallation(deploy *appsv1.Deployment) error {
 	err := hlp.K8sClient.Get(
@@ -191,16 +138,16 @@ func declarativeTestClient() (declarative.Client, error) {
 }
 
 func asResource(name, namespace, group, version, kind string) declarative.Resource {
-	return declarative.Resource{Name: name, Namespace: namespace,
+	return declarative.Resource{
+		Name: name, Namespace: namespace,
 		GroupVersionKind: metav1.GroupVersionKind{
-			Group: group, Version: version, Kind: kind},
+			Group: group, Version: version, Kind: kind,
+		},
 	}
 }
 
 func verifyObjectExists(obj *unstructured.Unstructured) func() (bool, error) {
-
 	return func() (bool, error) {
-
 		err := hlp.K8sClient.Get(
 			hlp.Ctx, client.ObjectKeyFromObject(obj),
 			obj,
@@ -214,12 +161,4 @@ func verifyObjectExists(obj *unstructured.Unstructured) func() (bool, error) {
 
 		return false, err
 	}
-}
-
-func emptySampleCR(manifestName string) *unstructured.Unstructured {
-	res := &unstructured.Unstructured{}
-	res.SetGroupVersionKind(schema.GroupVersionKind{Group: "operator.kyma-project.io", Version: "v1alpha1", Kind: "Sample"})
-	res.SetName("sample-cr-" + manifestName)
-	res.SetNamespace(metav1.NamespaceDefault)
-	return res
 }
