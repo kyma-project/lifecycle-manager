@@ -1,4 +1,4 @@
-name: PR Title Check
+name: Lint PR Title
 run-name: ${{github.event.pull_request.title}}
 
 on:
