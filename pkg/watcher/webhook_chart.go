@@ -18,14 +18,13 @@ import (
 
 // TODO PKI move consts into other file if they are not needed here.
 const (
-	webhookTLSCfgNameTpl       = "%s-webhook-tls"
-	SkrTLSName                 = "skr-webhook-tls"
-	SkrResourceName            = "skr-webhook"
-	defaultK3dLocalhostMapping = "host.k3d.internal"
-	defaultBufferSize          = 2048
-	skrChartFieldOwner         = client.FieldOwner(v1beta2.OperatorName)
-	version                    = "v1"
-	webhookTimeOutInSeconds    = 15
+	webhookTLSCfgNameTpl    = "%s-webhook-tls"
+	SkrTLSName              = "skr-webhook-tls"
+	SkrResourceName         = "skr-webhook"
+	defaultBufferSize       = 2048
+	skrChartFieldOwner      = client.FieldOwner(v1beta2.OperatorName)
+	version                 = "v1"
+	webhookTimeOutInSeconds = 15
 )
 
 var ErrGatewayHostWronglyConfigured = errors.New("gateway should have configured exactly one server and one host")
@@ -49,10 +48,6 @@ func runResourceOperationWithGroupedErrors(ctx context.Context, clt client.Clien
 }
 
 func resolveKcpAddr(kcpClient client.Client, managerConfig *SkrWebhookManagerConfig) (string, error) {
-	if managerConfig.WatcherLocalTestingEnabled {
-		return net.JoinHostPort(defaultK3dLocalhostMapping, strconv.Itoa(managerConfig.LocalGatewayHTTPPortMapping)),
-			nil
-	}
 	ctx := context.TODO()
 
 	// Get public KCP DNS name and port from the Gateway

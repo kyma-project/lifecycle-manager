@@ -22,7 +22,6 @@ const (
 	failureBaseDelayDefault                = 100 * time.Millisecond
 	failureMaxDelayDefault                 = 5 * time.Second
 	defaultCacheSyncTimeout                = 2 * time.Minute
-	defaultListenerPort                    = 9443
 	defaultLogLevel                        = log.WarnLevel
 	defaultPurgeFinalizerTimeout           = 5 * time.Minute
 	defaultMaxConcurrentManifestReconciles = 1
@@ -88,17 +87,15 @@ func defineFlagVar() *FlagVar {
 		"The resources.limits.memory for skr webhook.")
 	flag.StringVar(&flagVar.skrWebhookCPULimits, "skr-webhook-cpu-limits", "0.1",
 		"The resources.limits.cpu for skr webhook.")
-	flag.BoolVar(&flagVar.enableWatcherLocalTesting, "enable-watcher-local-testing", false,
-		"Enabling KCP Watcher two-cluster setup to be tested locally using k3d")
+	flag.StringVar(&flagVar.additionalDNSNames, "additional-dns-names", "",
+		"Additional DNS Names which are added to Kyma Certificates as SANs. Input should be given as "+
+			"comma-seperated list, for example \"localhost,127.0.0.1,host.k3d.internal\".")
 	flag.StringVar(&flagVar.istioNamespace, "istio-namespace", defaultIstioNamespace,
 		"Cluster Resource Namespace of Istio")
 	flag.StringVar(&flagVar.istioGatewayName, "istio-gateway-name", defaultIstioGatewayName,
 		"Cluster Resource Name of Istio Gateway")
 	flag.StringVar(&flagVar.istioGatewayNamespace, "istio-gateway-namespace", defaultIstioGatewayNamespace,
 		"Cluster Resource Namespace of Istio Gateway")
-	flag.IntVar(&flagVar.listenerHTTPSPortLocalMapping, "listener-http-local-mapping", defaultListenerPort,
-		"Port that is mapped to HTTP port of the local k3d cluster using --port 9080:80@loadbalancer when "+
-			"creating the KCP cluster")
 	flag.StringVar(&flagVar.skrWatcherImage, "skr-watcher-image", "", `Image of the SKR watcher 
 		defaults to "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher-skr:latest" when left empty. 
 		Used mainly for the watcher e2e testing`)
@@ -156,15 +153,10 @@ type FlagVar struct {
 	skrWatcherPath                         string
 	skrWebhookMemoryLimits                 string
 	skrWebhookCPULimits                    string
-	enableWatcherLocalTesting              bool
 	istioNamespace                         string
 	istioGatewayName                       string
 	istioGatewayNamespace                  string
-	// listenerHTTPSPortLocalMapping is used to enable the user
-	// to specify the port used to expose the KCP cluster for the watcher
-	// when testing locally using dual-k3d cluster-setup
-	// (only k3d clusters are supported for watcher local testing)
-	listenerHTTPSPortLocalMapping          int
+	additionalDNSNames                     string
 	skrWatcherImage                        string
 	pprof                                  bool
 	pprofAddr                              string

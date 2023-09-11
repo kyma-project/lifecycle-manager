@@ -29,19 +29,16 @@ patches:
 - patch: |-
     - op: add
       path: /spec/template/spec/containers/0/args/-
-      value: --enable-watcher-local-testing
-    - op: add
-      path: /spec/template/spec/containers/0/args/-
       value: --enable-domain-name-pinning=true
     - op: add
       path: /spec/template/spec/containers/0/args/-
-      value: --kyma-requeue-success-interval=2m
-    - op: add
-      path: /spec/template/spec/containers/0/args/-
-      value: --manifest-requeue-success-interval=30s
+      value: --kyma-requeue-success-interval=5m
     - op: add
       path: /spec/template/spec/containers/0/args/-
       value: --log-level=9
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
+      value: --additional-dns-names="localhost,127.0.0.1,host.k3d.internal"
     - op: replace
       path: /spec/template/spec/containers/0/imagePullPolicy
       value: Always
@@ -80,7 +77,10 @@ patches:
       value: kcp-system
     - op: replace
       path: /spec/servers/0/hosts/0
-      value: "*"
+      value: "host.k3d.internal"
+    - op: replace
+      path: /spec/servers/0/port/number
+      value: "9443"
   target:
     group: networking.istio.io
     version: v1beta1
