@@ -77,7 +77,7 @@ install:
       type: oci-ref
 ```
 
-The [internal spec resolver](../../../internal/manifest/v1beta1/spec_resolver.go) will use this layer to resolve the correct specification style and renderer type from the layer data.
+The [internal spec resolver](/internal/manifest/spec_resolver.go) will use this layer to resolve the correct specification style and renderer type from the layer data.
 
 ### `.spec.resource`
 

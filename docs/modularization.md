@@ -13,10 +13,10 @@ The modules themselves are built and distributed as OCI artifacts. The internal 
 If you use Kyma [CLI](https://github.com/kyma-project/cli), you can create a Kyma module by running `kyma alpha create module`. This command packages all the contents on the provided path as an OCI artifact and pushes the artifact to the provided OCI registry. Use the `kyma alpha create module --help` command to learn more about the module structure and how it is created. You can also use the CLI's auto-detection of [Kubebuilder](https://kubebuilder.io) projects to easily bundle your module with little effort.
 
 The modules are installed and controlled by Lifecycle Manager. We use [Open Component Model](https://ocm.software) to describe all of our modules descriptively.
-Based on the [ModuleTemplate CR](../api/v1beta2/moduletemplate_types.go), the module is resolved from its layers and version and is used as a template for the [Manifest CR](api/v1beta1/manifest_types.go).
+Based on the [ModuleTemplate CR](/api/v1beta2/moduletemplate_types.go), the module is resolved from its layers and version and is used as a template for the [Manifest CR](/api/v1beta1/manifest_types.go).
 Whenever a module is accepted by Lifecycle Manager the ModuleTemplate CR gets translated into a Manifest CR, which describes the actual desired state of the module operator.
 
-The Lifecycle Manager then updates the [Kyma CR](../api/v1alpha2/kyma_types.go) of the cluster based on the observed status changes in the module CR (similar to a native Kubernetes deployment tracking availability).
+The Lifecycle Manager then updates the [Kyma CR](/api/v1beta2/kyma_types.go) of the cluster based on the observed status changes in the module CR (similar to a native Kubernetes deployment tracking availability).
 
 Module operators only have to watch their custom resources and reconcile modules in the target clusters to the desired state.
 

@@ -32,7 +32,7 @@ The v1beta2 API introduces three groups of modules:
 
 By default, without any labels configured on Kyma and ModuleTemplate CRs, a ModuleTemplate CR is synchronized with remote clusters.
 
-**NOTE:** The ModuleTemplate CRs synchronization is enabled only when Lifecycle Manager runs in the [control-plane mode](../../technical-reference/running-modes). Lifecycle Manager running in the single-cluster mode, doesn't require any CR synchronization.
+**NOTE:** The ModuleTemplate CRs synchronization is enabled only when Lifecycle Manager runs in the [control-plane mode](../running-modes.md). Lifecycle Manager running in the single-cluster mode, doesn't require any CR synchronization.
 
 **NOTE:** Disabling synchronization for already synchronized ModuleTemplates CRs doesn't remove them from remote clusters. The CRs remain as they are, but any subsequent changes to these ModuleTemplate CRs in the Control Plane are not synchronized.
 
@@ -44,7 +44,7 @@ See the list of CRs involved in Lifecycle Manager's workflow and their stability
 
 | Version | Name                                                | Stability                                                                                                                                                                                                    |
 |:--------|-----------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| v1beta2 | [Kyma](../../api/v1beta2/kyma_types.go)                         | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
-| v1beta2 | [ModuleTemplate](../../api/v1beta2/moduletemplate_types.go)     | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
-| v1beta2 | [Manifest](../../api/v1beta2/manifest_types.go)                 | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
-| v1beta2 | [Watcher](../../api/v1beta2/watcher_types.go)                   | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
+| v1beta2 | [Kyma](/api/v1beta2/kyma_types.go)                         | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
+| v1beta2 | [ModuleTemplate](/api/v1beta2/moduletemplate_types.go)     | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
+| v1beta2 | [Manifest](/api/v1beta2/manifest_types.go)                 | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |
+| v1beta2 | [Watcher](/api/v1beta2/watcher_types.go)                   | Beta-Grade - no breaking changes without API incrementation. Use for automation and watch upstream as close as possible for deprecations or new versions. Alpha API is deprecated and converted via webhook. |

@@ -26,6 +26,6 @@ The table of contents lists all the documents in repository with their short des
   - [Internal Manifest Reconciliation Library Extensions](../internal/manifest/README.md)
   - [Smoke tests](../tests/smoke_test/README.md)
 - User tutorials
-  - [Managing module enablement with the CustomResourcePolicy](./user-tutorials/manage-module-with-custom-resource-policy.md)
-  - [Quick Start](./user-tutorials/quick-start.md)
+  - [Managing module enablement with the CustomResourcePolicy](./user-tutorials/02-10-manage-module-with-custom-resource-policy.md)
+  - [Quick Start](./user-tutorials/01-10-control-plane-quick-start.md)
 - [Modularization](modularization.md) - describes the modularization concept and its building blocks in the context of Lifecycle Manager

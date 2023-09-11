@@ -6,8 +6,8 @@ See the [Run the e2e tests locally](#run-the-e2e-tests-locally) section for deta
 
 ## Contents
 
-- [Test suite](./e2e_suite_test.go) that sets up required clients and configurations.
-- [Watcher end-to-end tests](./e2e_watcher_test.go) that includes tests and the end-to-end workflow of the watcher.
+- [Test suite](./suite_test.go) that sets up required clients and configurations.
+- [Watcher end-to-end tests](./watcher_test.go) that includes tests and the end-to-end workflow of the watcher.
 - [Makefile](./Makefile) that includes targets to execute the watcher e2e test suite.
 
 ## Run the e2e tests locally
