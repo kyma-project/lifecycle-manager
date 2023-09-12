@@ -252,7 +252,7 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 	})
 	registerControlPlaneLifecycleForKyma(kyma)
 
-	It("Kyma CR should be synchronized in both clusters", func() {
+	It("Kyma CR default module list should be copied to remote Kyma", func() {
 		By("Remote Kyma created")
 		Eventually(kymaExists, Timeout, Interval).
 			WithArguments(runtimeClient, remoteKyma.Name, remoteKyma.Namespace).
@@ -271,7 +271,9 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 		Eventually(UpdateManifestState, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, kyma, moduleInKCP, v1beta2.StateReady).
 			Should(Succeed())
+	})
 
+	It("Delete default module from remote Kyma", func() {
 		By("Delete default module from remote Kyma")
 		Eventually(removeModuleFromKyma, Timeout, Interval).
 			WithArguments(runtimeClient, remoteKyma.Name, remoteKyma.Namespace, moduleInKCP.Name).
@@ -281,6 +283,22 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 		Eventually(ManifestExists, Timeout, Interval).
 			WithArguments(ctx, kyma, moduleInKCP, controlPlaneClient).
 			ShouldNot(Succeed())
+	})
+
+	It("Default module list should be recreated if remote Kyma gets deleted", func() {
+		By("Delete remote Kyma")
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(runtimeClient, remoteKyma).Should(Succeed())
+		By("Remote Kyma contains default module")
+		Eventually(containsModuleInSpec, Timeout, Interval).
+			WithArguments(runtimeClient, remoteKyma.Name, remoteKyma.Namespace, moduleInKCP.Name).
+			Should(Succeed())
+
+		By("KCP Manifest is being created")
+		Eventually(ManifestExists, Timeout, Interval).
+			WithArguments(ctx, kyma, moduleInKCP, controlPlaneClient).
+			Should(Succeed())
 	})
 	AfterAll(func() {
 		Expect(runtimeEnv.Stop()).Should(Succeed())

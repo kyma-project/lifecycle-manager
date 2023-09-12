@@ -262,7 +262,7 @@ func (r *KymaReconciler) syncStatusToRemote(ctx context.Context, controlPlaneKym
 	return nil
 }
 
-// replaceSpecFromRemote replaces the spec from control-lane Kyma with the remote Kyma spec as single source of truth
+// replaceSpecFromRemote replaces the spec from control-lane Kyma with the remote Kyma spec as single source of truth.
 func (r *KymaReconciler) replaceSpecFromRemote(
 	ctx context.Context, controlPlaneKyma *v1beta2.Kyma,
 ) error {
