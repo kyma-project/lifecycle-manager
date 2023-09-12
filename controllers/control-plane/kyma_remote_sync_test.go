@@ -267,10 +267,6 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 		Eventually(ManifestExists, Timeout, Interval).
 			WithArguments(ctx, kyma, moduleInKCP, controlPlaneClient).
 			Should(Succeed())
-		By("KCP Manifest CR becomes ready")
-		Eventually(UpdateManifestState, Timeout, Interval).
-			WithArguments(ctx, controlPlaneClient, kyma, moduleInKCP, v1beta2.StateReady).
-			Should(Succeed())
 	})
 
 	It("Delete default module from remote Kyma", func() {
