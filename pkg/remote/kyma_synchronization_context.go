@@ -198,8 +198,6 @@ func (c *KymaSynchronizationContext) CreateOrFetchRemoteKyma(
 		}
 		kyma.Spec.DeepCopyInto(&remoteKyma.Spec)
 
-		// if KCP Kyma contains some modules during initialization, not sync them into remote.
-		remoteKyma.Spec.Modules = []v1beta2.Module{}
 		err = c.RuntimeClient.Create(ctx, remoteKyma)
 		if err != nil {
 			recorder.Event(kyma, "Normal", "RemoteInstallation", "Kyma was installed to SKR")
@@ -237,27 +235,13 @@ func (c *KymaSynchronizationContext) SynchronizeRemoteKyma(
 	return nil
 }
 
-// MergeModules merges modules specification from a control plane Kyma and a Remote Kymas.
-func MergeModules(
+// ReplaceModules replaces modules specification from control plane Kyma with Remote Kyma specifications.
+func ReplaceModules(
 	controlPlaneKyma *v1beta2.Kyma,
 	remoteKyma *v1beta2.Kyma,
 ) {
-	totalModuleAmount := len(controlPlaneKyma.Spec.Modules)
-	totalModuleAmount += len(remoteKyma.Spec.Modules)
-	modules := make(map[string]v1beta2.Module, totalModuleAmount)
-
-	for _, m := range remoteKyma.Spec.Modules {
-		modules[m.Name] = m
-	}
-
-	for _, m := range controlPlaneKyma.Spec.Modules {
-		modules[m.Name] = m
-	}
-
 	controlPlaneKyma.Spec.Modules = []v1beta2.Module{}
-	for _, m := range modules {
-		controlPlaneKyma.Spec.Modules = append(controlPlaneKyma.Spec.Modules, m)
-	}
+	controlPlaneKyma.Spec.Modules = append(controlPlaneKyma.Spec.Modules, remoteKyma.Spec.Modules...)
 	controlPlaneKyma.Spec.Channel = remoteKyma.Spec.Channel
 }
 
