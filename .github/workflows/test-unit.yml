@@ -1,4 +1,4 @@
-name: TestSuite EnvTest and UnitTest
+name: TestSuite integration and unit tests
 
 on:
   pull_request:
