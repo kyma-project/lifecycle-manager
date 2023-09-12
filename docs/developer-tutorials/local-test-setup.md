@@ -15,8 +15,8 @@ This setup is deployed with the following security features enabled:
 
 > **NOTE:** If you want to use remote clusters instead of a local k3d setup or external registries, please refer to the following guides for the cluster and registry setup:
 >
-> - [Provision cluster and OCI registry](./provision-cluster-and-registry.md)
-> - [Create a test environment on Google Container Registry (GCR)](./prepare-gcr-registry.md)
+> - [Provision cluster and OCI registry](provision-cluster-and-registry.md)
+> - [Create a test environment on Google Container Registry (GCR)](prepare-gcr-registry.md)
 
 ## Procedure
 

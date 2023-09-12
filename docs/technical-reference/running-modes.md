@@ -2,7 +2,7 @@
 
 Lifecycle Manager can run in two modes:
 
-- single-cluster - deployment mode in which Lifecycle Manager is running on the same clutser on which you deploy Kyma. This mode doesn't require Kyma or ModuleTemplate CRs [synchronization](../technical-reference/api/README.md#synchronization-of-module-catalog-with-remote-clusters).
+- single-cluster - deployment mode in which Lifecycle Manager is running on the same clutser on which you deploy Kyma. This mode doesn't require Kyma or ModuleTemplate CRs [synchronization](api/README.md#synchronization-of-module-catalog-with-remote-clusters).
 - control-plane - deployment mode in which Lifecycle Manager is running on the central Kubernetes cluster that manages multiple remote clusters that are targets for Kyma installations. In this mode, Kyma and ModuleTemplate CRs are synchronized between the central cluster and remote ones. Access to remote clusters is enabled using centrally-managed K8s Secrets with the required connection configuration.
 
 To configure the mode for Lifecycle Manager, use the `in-kcp-mode` command-line flag. By default, the flag is set to `false`. If set to `true`, Lifecycle Manager runs in the control-plane mode.

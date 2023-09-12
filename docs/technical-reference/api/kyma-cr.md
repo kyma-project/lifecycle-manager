@@ -1,6 +1,6 @@
 # Kyma Custom Resource
 
-The [Kyma custom resource (CR)](../../../api/v1beta2/kyma_types.go) contains 3 fields that are together used to declare the desired state of a cluster:
+The [Kyma custom resource (CR)](/api/v1beta2/kyma_types.go) contains 3 fields that are together used to declare the desired state of a cluster:
 
 1. **.spec.channel** and **.spec.modules[].channel**: The Release Channel that should be used by default for all modules that are to be installed in the cluster.
 2. **.spec.modules**: The modules that should be installed into the cluster. Each module contains a name serving as a link to the ModuleTemplate CR.
@@ -111,7 +111,7 @@ Namespace/Name, or module name label) to the ModuleTemplate CR. If not specified
 
 The **state** attribute is a simple representation of the state of the entire Kyma CR installation. It is defined as an aggregated status that is either `Ready`, `Processing`, `Error`, or `Deleting`, based on the status of _all_ Manifest CRs on top of the validity/integrity of the synchronization to a remote cluster if enabled.
 
-The **state** will always be reported based on the last reconciliation loop of the [Kyma controller](../../../controllers/kyma_controller.go). It will be set to `Ready` only if all installations were successfully executed and are consistent at the time of the reconciliation.
+The **state** will always be reported based on the last reconciliation loop of the [Kyma controller](/controllers/kyma_controller.go). It will be set to `Ready` only if all installations were successfully executed and are consistent at the time of the reconciliation.
 
 ### **.status.conditions**
 
@@ -168,7 +168,7 @@ In addition, we also regularly issue `Events` for important things happening at 
 
 ### `operator.kyma-project.io` labels
 
-Various overarching features can be enabled/disabled or provided as hints to the reconciler by providing a specific label key and value to the Kyma CR and its related resources. For better understanding, use the matching [API label reference](../../../api/v1beta2/operator_labels.go).
+Various overarching features can be enabled/disabled or provided as hints to the reconciler by providing a specific label key and value to the Kyma CR and its related resources. For better understanding, use the matching [API label reference](/api/v1beta2/operator_labels.go).
 
 The most important labels include, but are not limited to:
 

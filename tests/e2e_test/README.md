@@ -12,7 +12,7 @@ See the [Run the e2e tests locally](#run-the-e2e-tests-locally) section for deta
 
 ## Run the e2e tests locally
 
-1. Set up your local environment using steps 1 to 3 from [this guide](../../docs/developer-tutorials/local-test-setup.md). Create a cluster, and install Istio CRDs and `cert-manager`. Skip all the remaining steps from the guide. 
+1. Set up your local environment using steps 1 to 3 from [this guide](/docs/developer-tutorials/local-test-setup.md). Create a cluster, and install Istio CRDs and `cert-manager`. Skip all the remaining steps from the guide. 
 2. Export the following  K8s configurations as environment variables:
     ```shell
     export KCP_KUBECONFIG=$(k3d kubeconfig write kcp-local)
