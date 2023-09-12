@@ -18,6 +18,7 @@ import (
 
 var (
 	ErrContainsUnexpectedModules     = errors.New("kyma CR contains unexpected modules")
+	ErrNotContainsExpectedModules    = errors.New("kyma CR not contains expected modules")
 	ErrNotContainsExpectedCondition  = errors.New("kyma CR not contains expected condition")
 	ErrNotContainsExpectedAnnotation = errors.New("kyma CR not contains expected CRD annotation")
 	ErrContainsUnexpectedAnnotation  = errors.New("kyma CR contains unexpected CRD annotation")
@@ -94,15 +95,6 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		Eventually(containsModuleTemplateCondition, Timeout, Interval).
 			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace()).
 			Should(Succeed())
-
-		By("Enabling module in SKR")
-		Eventually(addModuleToKyma, Timeout, Interval).
-			WithArguments(runtimeClient, remoteKyma.Name, remoteKyma.Namespace, moduleInKCP).
-			Should(Succeed())
-
-		By("KCP Manifest CR becomes ready")
-		Eventually(UpdateManifestState, Timeout, Interval).
-			WithArguments(ctx, controlPlaneClient, kyma, moduleInKCP, v1beta2.StateReady).Should(Succeed())
 
 		By("Remote Kyma contains correct conditions for Modules and ModuleTemplates")
 		Eventually(kymaHasCondition, Timeout, Interval).
@@ -238,6 +230,58 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			Should(Succeed())
 	})
 
+	AfterAll(func() {
+		Expect(runtimeEnv.Stop()).Should(Succeed())
+	})
+})
+
+var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, func() {
+	kyma := NewTestKyma("kyma")
+	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
+	kyma.Spec.Modules = []v1beta2.Module{{Name: moduleInKCP.Name, Channel: moduleInKCP.Channel}}
+
+	var runtimeClient client.Client
+	var runtimeEnv *envtest.Environment
+
+	remoteKyma := &v1beta2.Kyma{}
+	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
+	remoteKyma.Namespace = controllers.DefaultRemoteSyncNamespace
+
+	BeforeAll(func() {
+		runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
+	})
+	registerControlPlaneLifecycleForKyma(kyma)
+
+	It("Kyma CR should be synchronized in both clusters", func() {
+		By("Remote Kyma created")
+		Eventually(kymaExists, Timeout, Interval).
+			WithArguments(runtimeClient, remoteKyma.Name, remoteKyma.Namespace).
+			Should(Succeed())
+
+		By("Remote Kyma contains default module")
+		Eventually(containsModuleInSpec, Timeout, Interval).
+			WithArguments(runtimeClient, remoteKyma.Name, remoteKyma.Namespace, moduleInKCP.Name).
+			Should(Succeed())
+
+		By("KCP Manifest is being created")
+		Eventually(ManifestExists, Timeout, Interval).
+			WithArguments(ctx, kyma, moduleInKCP, controlPlaneClient).
+			Should(Succeed())
+		By("KCP Manifest CR becomes ready")
+		Eventually(UpdateManifestState, Timeout, Interval).
+			WithArguments(ctx, controlPlaneClient, kyma, moduleInKCP, v1beta2.StateReady).
+			Should(Succeed())
+
+		By("Delete default module from remote Kyma")
+		Eventually(removeModuleFromKyma, Timeout, Interval).
+			WithArguments(runtimeClient, remoteKyma.Name, remoteKyma.Namespace, moduleInKCP.Name).
+			Should(Succeed())
+
+		By("KCP Manifest is being deleted")
+		Eventually(ManifestExists, Timeout, Interval).
+			WithArguments(ctx, kyma, moduleInKCP, controlPlaneClient).
+			ShouldNot(Succeed())
+	})
 	AfterAll(func() {
 		Expect(runtimeEnv.Stop()).Should(Succeed())
 	})

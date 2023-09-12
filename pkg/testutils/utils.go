@@ -48,8 +48,9 @@ const (
 )
 
 var (
-	ErrNotFound   = errors.New("resource not exists")
-	ErrNotDeleted = errors.New("resource not deleted")
+	ErrNotFound           = errors.New("resource not exists")
+	ErrNotDeleted         = errors.New("resource not deleted")
+	ErrManifestNotinState = errors.New("manifest is not in correct state")
 )
 
 func NewTestKyma(name string) *v1beta2.Kyma {
