@@ -85,4 +85,4 @@ After the successful deployment of the access Secrete, you can start to use Kyma
 ## Next Steps
 
 - To learn how to publish ModuleTemplate CRs in a private OCI registry, refer to the [Provide credentials for private OCI registry authentication](../developer-tutorials/config-private-registry.md) tutorial
-- To learn how to manage module enablement with the provided strategies, refer to the [Manage module enablement with CustomResourcePolicy](02-10-manage-module-with-custom-resource-policy.md/) tutorial
+- To learn how to manage module enablement with the provided strategies, refer to the [Manage module enablement with CustomResourcePolicy](02-10-manage-module-with-custom-resource-policy.md) tutorial

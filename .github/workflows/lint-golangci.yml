@@ -1,4 +1,5 @@
-name: pull-lifecycle-mgr-lint
+name: Lint golangci
+
 on:
   pull_request:
     branches: [ "main" ]

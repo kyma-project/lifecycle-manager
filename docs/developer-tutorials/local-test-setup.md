@@ -15,8 +15,8 @@ This setup is deployed with the following security features enabled:
 
 > **NOTE:** If you want to use remote clusters instead of a local k3d setup or external registries, please refer to the following guides for the cluster and registry setup:
 >
-> - [Provision cluster and OCI registry](./provision-cluster-and-registry.md)
-> - [Create a test environment on Google Container Registry (GCR)](./prepare-gcr-registry.md)
+> - [Provision cluster and OCI registry](provision-cluster-and-registry.md)
+> - [Create a test environment on Google Container Registry (GCR)](prepare-gcr-registry.md)
 
 ## Procedure
 
@@ -54,7 +54,7 @@ This setup is deployed with the following security features enabled:
    2. `cert-manager` by Jetstack:
 
        ```shell
-       kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.11.0/cert-manager.yaml
+       kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.3/cert-manager.yaml
        ```
 
 4. Deploy Lifecycle Manager on the cluster:
@@ -89,7 +89,7 @@ This setup is deployed with the following security features enabled:
 
    ```shell
    kyma alpha create module -p ../template-operator --version 1.2.3 \
-   --registry k3d-registry.localhost:5111 --insecure
+   --registry k3d-registry.localhost:5111 --insecure --kubebuilder-project
    ```
 
 6. Verify images pushed to the local registry:
@@ -157,7 +157,7 @@ k3d cluster create skr-local
         "operator.kyma-project.io/kyma-name": "kyma-sample"
         "operator.kyma-project.io/managed-by": "lifecycle-manager"
    data:
-      config: $(k3d kubeconfig get skr | sed 's/0\.0\.0\.0/host.k3d.internal/' | base64 | tr -d '\n')
+      config: $(k3d kubeconfig get skr-local | sed 's/0\.0\.0\.0/host.k3d.internal/' | base64 | tr -d '\n')
    ---
    apiVersion: operator.kyma-project.io/v1beta2
    kind: Kyma

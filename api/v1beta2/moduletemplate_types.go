@@ -109,13 +109,13 @@ type ModuleTemplateSpec struct {
 
 type CustomStateCheck struct {
 	// JSONPath specifies the JSON path to the state variable in the Module CR
-	JSONPath string `json:"jsonPath"`
+	JSONPath string `json:"jsonPath" yaml:"jsonPath"`
 
 	// Value is the value at the JSONPath for which the Module CR state should map with MappedState
-	Value string `json:"value"`
+	Value string `json:"value" yaml:"value"`
 
 	// MappedState is the Kyma CR State
-	MappedState State `json:"mappedState"`
+	MappedState State `json:"mappedState" yaml:"mappedState"`
 }
 
 func (m *ModuleTemplate) GetDescriptor() (*Descriptor, error) {

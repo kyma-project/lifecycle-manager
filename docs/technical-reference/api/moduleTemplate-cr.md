@@ -1,6 +1,6 @@
 # ModuleTemplate Custom Resource
 
-The core of our modular discovery, the [ModuleTemplate custom resource (CR)](../../../api/v1beta2/moduletemplate_types.go) contains 3 main parts that are used to initialize and resolve modules.
+The core of our modular discovery, the [ModuleTemplate custom resource (CR)](/api/v1beta2/moduletemplate_types.go) contains 3 main parts that are used to initialize and resolve modules.
 
 ### **.spec.channel**
 
