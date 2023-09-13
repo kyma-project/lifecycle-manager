@@ -3,8 +3,19 @@ name: TestSuite Smoke
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'go.mod'
+      - 'go.sum'
+      - 'Makefile'
+      - '**.go'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'go.mod'
+      - 'go.sum'
+      - 'Makefile'
+      - '**.sh'
+      - '**.go'
 jobs:
   wait-for-img:
     name: "Wait for Image Build"

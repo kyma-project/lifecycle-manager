@@ -3,6 +3,10 @@ name: Lint golangci
 on:
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'go.mod'
+      - 'go.sum'
+      - '**.go'
   workflow_dispatch:
 jobs:
   golangci:
