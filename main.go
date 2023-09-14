@@ -29,11 +29,9 @@ import (
 
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/open-component-model/ocm/pkg/contexts/oci"
-	"github.com/open-component-model/ocm/pkg/contexts/oci/repositories/ocireg"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/cpi"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
+
+	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
+
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -79,15 +77,6 @@ var (
 
 //nolint:gochecknoinits
 func init() {
-	ocm.DefaultContext().RepositoryTypes().Register(
-		genericocireg.Type, genericocireg.NewRepositoryType(oci.DefaultContext()),
-	)
-	ocm.DefaultContext().RepositoryTypes().Register(
-		genericocireg.TypeV1, genericocireg.NewRepositoryType(oci.DefaultContext()),
-	)
-	cpi.DefaultContext().RepositoryTypes().Register(
-		ocireg.LegacyType, genericocireg.NewRepositoryType(oci.DefaultContext()),
-	)
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(api.AddToScheme(scheme))
 
