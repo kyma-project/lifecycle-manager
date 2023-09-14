@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	hlp "github.com/kyma-project/lifecycle-manager/controllers/manifest_controller/helper"
+	hlp "github.com/kyma-project/lifecycle-manager/controllers/manifest_controller/manifesttest"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

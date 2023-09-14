@@ -41,7 +41,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api"
-	hlp "github.com/kyma-project/lifecycle-manager/controllers/manifest_controller/helper"
+	hlp "github.com/kyma-project/lifecycle-manager/controllers/manifest_controller/manifesttest"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
