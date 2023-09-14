@@ -79,8 +79,6 @@ spec:
               value: "v1"
             - name: KCP_ADDR
               value: "kcp-base-url-invalid"
-            - name: WEBHOOK_SIDE_CAR
-              value: "true"
           image: "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher-skr:v20230824-f4459bad"
           imagePullPolicy: Always
           volumeMounts:
@@ -98,23 +96,6 @@ spec:
           ports:
             - containerPort: 8443
               name: watcher-port
-        - name: request-sidecar
-          image: europe-docker.pkg.dev/kyma-project/prod/external/alpine:3.17.4
-          command:
-            - /bin/sh
-            - "-c"
-            - "sleep 60m"
-          imagePullPolicy: Always
-          volumeMounts:
-            - name: request
-              mountPath: /tmp
-          resources:
-            requests:
-              memory: 20Mi
-              cpu: "0.01"
-            limits:
-              memory: 200Mi
-              cpu: "0.1"
       volumes:
         - name: ssl
           secret:
