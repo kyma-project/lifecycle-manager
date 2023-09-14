@@ -14,7 +14,6 @@ on:
       - 'go.mod'
       - 'go.sum'
       - 'Makefile'
-      - '**.sh'
       - '**.go'
 jobs:
   wait-for-img:
