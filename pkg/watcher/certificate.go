@@ -57,7 +57,8 @@ type CertificateSecret struct {
 
 // NewCertificateManager returns a new CertificateManager, which can be used for creating a cert-manager Certificates.
 func NewCertificateManager(kcpClient client.Client, kyma *v1beta2.Kyma,
-	istioNamespace, remoteSyncNamespace string, additionalDNSNames []string) (*CertificateManager, error) {
+	istioNamespace, remoteSyncNamespace string, additionalDNSNames []string,
+) (*CertificateManager, error) {
 	return &CertificateManager{
 		kcpClient:           kcpClient,
 		kyma:                kyma,
@@ -189,7 +190,7 @@ func (c *CertificateManager) getSubjectAltNames() (*SubjectAltName, error) {
 			dnsNames = append(dnsNames, fmt.Sprintf("%s.%s.%s", SkrResourceName, c.remoteSyncNamespace, suffix))
 		}
 
-		dnsNames = append(dnsNames, c.additionalDNSNames...) // needed for watcher local testing "localhost", "127.0.0.1", "host.k3d.internal"
+		dnsNames = append(dnsNames, c.additionalDNSNames...)
 
 		return &SubjectAltName{
 			DNSNames: dnsNames,

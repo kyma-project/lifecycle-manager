@@ -89,7 +89,7 @@ func defineFlagVar() *FlagVar {
 		"The resources.limits.cpu for skr webhook.")
 	flag.StringVar(&flagVar.additionalDNSNames, "additional-dns-names", "",
 		"Additional DNS Names which are added to Kyma Certificates as SANs. Input should be given as "+
-			"comma-seperated list, for example \"localhost,127.0.0.1,host.k3d.internal\".")
+			"comma-separated list, for example \"localhost,127.0.0.1,host.k3d.internal\".")
 	flag.StringVar(&flagVar.istioNamespace, "istio-namespace", defaultIstioNamespace,
 		"Cluster Resource Namespace of Istio")
 	flag.StringVar(&flagVar.istioGatewayName, "istio-gateway-name", defaultIstioGatewayName,

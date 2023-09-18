@@ -45,7 +45,7 @@ type SkrWebhookManagerConfig struct {
 	// RemoteSyncNamespace indicates the sync namespace for Kyma and module catalog
 	RemoteSyncNamespace string
 	// AdditionalDNSNames indicates the DNS Names which should be added additional to the Subject
-	//Alternative Names of each Kyma Certificate
+	// Alternative Names of each Kyma Certificate
 	AdditionalDNSNames []string
 }
 
