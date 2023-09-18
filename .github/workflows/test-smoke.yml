@@ -8,6 +8,7 @@ on:
       - 'go.sum'
       - 'Makefile'
       - '**.go'
+      - '**.ya?ml'
   pull_request:
     branches: [ "main" ]
     paths:
@@ -15,6 +16,7 @@ on:
       - 'go.sum'
       - 'Makefile'
       - '**.go'
+      - '**.ya?ml'
 jobs:
   wait-for-img:
     name: "Wait for Image Build"

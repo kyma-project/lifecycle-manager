@@ -8,6 +8,7 @@ on:
       - 'go.sum'
       - 'Makefile'
       - '**.go'
+      - '**.ya?ml'
 jobs:
   envtest-and-unittest:
     name: "Run 'make test'"
