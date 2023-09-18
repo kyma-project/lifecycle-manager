@@ -46,12 +46,12 @@ spec:
           version: v2.4.1-smoke-test
       sources:
         - access:
-            commit: a536c7388e0ad8b09d0f0e5f9d0011cab27f6319
+            commit: 3864e6bc8df64df906ae41d4b04b1192b18e9d4a
             repoUrl: https://github.com/kyma-project/cli
             type: gitHub
           labels:
             - name: git.kyma-project.io/ref
-              value: refs/heads/main_origin
+              value: refs/heads/main
               version: v1
             - name: scan.security.kyma-project.io/language
               value: golang-mod
