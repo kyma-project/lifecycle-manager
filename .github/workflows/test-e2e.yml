@@ -1,10 +1,23 @@
-name: E2E Tests
+name: TestSuite E2E
 
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'go.mod'
+      - 'go.sum'
+      - 'Makefile'
+      - '**.go'
+      - '**.ya?ml'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'go.mod'
+      - 'go.sum'
+      - 'Makefile'
+      - '**.sh'
+      - '**.go'
+      - '**.ya?ml'
 jobs:
   wait-for-img:
     name: "Wait for Image Build"
@@ -27,6 +40,7 @@ jobs:
   e2e-integration:
     strategy:
       matrix:
+        e2e-test: ["test-watcher-e2e", "test-kyma-deletion-e2e", "test-status-propagation-e2e"]
         cli-stability: [ "unstable" ]
     name: "Run E2E tests"
     needs: [wait-for-img]
@@ -34,7 +48,7 @@ jobs:
     env:
       K3D_VERSION: v5.4.7
       ISTIO_VERSION: 1.17.1
-      CM_VERSION: v1.12.0
+      CM_VERSION: v1.12.3
       KLM_VERSION_TAG: latest
       KLM_IMAGE_REPO: prod
     steps:
@@ -97,18 +111,21 @@ jobs:
         run: |
           kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/$CM_VERSION/cert-manager.yaml
           cmctl check api --wait=2m
-      - name: Checkout repo
+      - name: Checkout lifecycle-manager
         uses: actions/checkout@v3
+        with:
+          path: ./lifecycle-manager/
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.20'
+          go-version: '1.21'
       - name: Override Kustomize Controller Image TAG and Image repository environment variables in Pull Request to PR Image
         if: ${{ github.event_name == 'pull_request' }}
         run: |
           echo "KLM_VERSION_TAG=PR-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
           echo "KLM_IMAGE_REPO=dev" >> $GITHUB_ENV
       - name: Deploy LM local testing kustomize
+        working-directory: ./lifecycle-manager
         run: |
           maxRetry=5
           for retry in $(seq 1 $maxRetry)
@@ -124,9 +141,29 @@ jobs:
               exit 1
             fi
           done
-      - name: Run Watcher E2E Tests
+      - name: Checkout template-operator
+        uses: actions/checkout@v3
+        if: ${{ matrix.e2e-test == 'test-status-propagation-e2e' }}
+        with:
+          repository: kyma-project/template-operator
+          path: ./template-operator/
+      - name: Create Template Operator Module
+        working-directory: ./template-operator
+        if: ${{ matrix.e2e-test == 'test-status-propagation-e2e' }}
         run: |
-          make -C tests/e2e_test test-watcher-e2e
-      - name: Run Kyma CR Deletion Test
+          pushd config/default
+          echo "- op: replace
+            path: /spec/template/spec/containers/0/args/1
+            value: --final-state=Warning" >> warning_patch.yaml
+          cat warning_patch.yaml
+          kustomize edit add patch --path warning_patch.yaml --kind Deployment
+          popd
+          kyma alpha create module --kubebuilder-project  --channel=regular --name kyma.project.io/module/template-operator --version 1.1.1 --path . --registry k3d-kcp-registry:5111 --insecure --module-archive-version-overwrite /
+          sed -i 's/k3d-kcp-registry:5111/k3d-kcp-registry:5000/g' ./template.yaml
+          kubectl config use-context k3d-kcp
+          kubectl get crds
+          kubectl apply -f template.yaml
+      - name: Run ${{ matrix.e2e-test }}
+        working-directory: ./lifecycle-manager
         run: |
-          make -C tests/e2e_test test-kyma-deletion-e2e
+          make -C tests/e2e_test ${{ matrix.e2e-test }}
