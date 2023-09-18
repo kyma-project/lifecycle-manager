@@ -80,7 +80,7 @@ patches:
       value: "host.k3d.internal"
     - op: replace
       path: /spec/servers/0/port/number
-      value: "9443"
+      value: 9443
   target:
     group: networking.istio.io
     version: v1beta1
