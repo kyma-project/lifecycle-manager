@@ -278,15 +278,16 @@ func setupKymaReconciler(mgr ctrl.Manager,
 
 func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (watcher.SKRWebhookManager, error) {
 	return watcher.NewSKRWebhookManifestManager(mgr.GetConfig(), mgr.GetScheme(), &watcher.SkrWebhookManagerConfig{
-		SKRWatcherPath:         flagVar.skrWatcherPath,
-		SkrWatcherImage:        flagVar.skrWatcherImage,
-		SkrWebhookCPULimits:    flagVar.skrWebhookCPULimits,
-		SkrWebhookMemoryLimits: flagVar.skrWebhookMemoryLimits,
-		IstioNamespace:         flagVar.istioNamespace,
-		IstioGatewayName:       flagVar.istioGatewayName,
-		IstioGatewayNamespace:  flagVar.istioGatewayNamespace,
-		RemoteSyncNamespace:    flagVar.remoteSyncNamespace,
-		AdditionalDNSNames:     strings.Split(flagVar.additionalDNSNames, ","),
+		SKRWatcherPath:            flagVar.skrWatcherPath,
+		SkrWatcherImage:           flagVar.skrWatcherImage,
+		SkrWebhookCPULimits:       flagVar.skrWebhookCPULimits,
+		SkrWebhookMemoryLimits:    flagVar.skrWebhookMemoryLimits,
+		LocalGatewayPortOverwrite: flagVar.listenerPortOverwrite,
+		IstioNamespace:            flagVar.istioNamespace,
+		IstioGatewayName:          flagVar.istioGatewayName,
+		IstioGatewayNamespace:     flagVar.istioGatewayNamespace,
+		RemoteSyncNamespace:       flagVar.remoteSyncNamespace,
+		AdditionalDNSNames:        strings.Split(flagVar.additionalDNSNames, ","),
 	})
 }
 

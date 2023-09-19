@@ -89,13 +89,16 @@ func defineFlagVar() *FlagVar {
 		"The resources.limits.cpu for skr webhook.")
 	flag.StringVar(&flagVar.additionalDNSNames, "additional-dns-names", "",
 		"Additional DNS Names which are added to Kyma Certificates as SANs. Input should be given as "+
-			"comma-separated list, for example \"localhost,127.0.0.1,host.k3d.internal\".")
+			"comma-separated list, for example \"--additional-dns-names=localhost,127.0.0.1,host.k3d.internal\".")
 	flag.StringVar(&flagVar.istioNamespace, "istio-namespace", defaultIstioNamespace,
 		"Cluster Resource Namespace of Istio")
 	flag.StringVar(&flagVar.istioGatewayName, "istio-gateway-name", defaultIstioGatewayName,
 		"Cluster Resource Name of Istio Gateway")
 	flag.StringVar(&flagVar.istioGatewayNamespace, "istio-gateway-namespace", defaultIstioGatewayNamespace,
 		"Cluster Resource Namespace of Istio Gateway")
+	flag.StringVar(&flagVar.listenerPortOverwrite, "listener-port-overwrite", "",
+		"Port that is mapped to HTTP port of the local k3d cluster using --port 9443:443@loadbalancer when "+
+			"creating the KCP cluster")
 	flag.StringVar(&flagVar.skrWatcherImage, "skr-watcher-image", "", `Image of the SKR watcher 
 		defaults to "europe-docker.pkg.dev/kyma-project/prod/runtime-watcher-skr:latest" when left empty. 
 		Used mainly for the watcher e2e testing`)
@@ -157,6 +160,10 @@ type FlagVar struct {
 	istioGatewayName                       string
 	istioGatewayNamespace                  string
 	additionalDNSNames                     string
+	// listenerPortOverwrite is used to enable the user to overwrite the port
+	// used to expose the KCP cluster for the watcher. By default, it will be
+	// fetched from the specified gateway.
+	listenerPortOverwrite                  string
 	skrWatcherImage                        string
 	pprof                                  bool
 	pprofAddr                              string

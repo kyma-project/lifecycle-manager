@@ -66,6 +66,10 @@ func resolveKcpAddr(kcpClient client.Client, managerConfig *SkrWebhookManagerCon
 	host := gateway.Spec.Servers[0].Hosts[0]
 	port := gateway.Spec.Servers[0].Port.Number
 
+	if managerConfig.LocalGatewayPortOverwrite != "" {
+		return net.JoinHostPort(host, managerConfig.LocalGatewayPortOverwrite), nil
+	}
+
 	return net.JoinHostPort(host, strconv.Itoa(int(port))), nil
 }
 

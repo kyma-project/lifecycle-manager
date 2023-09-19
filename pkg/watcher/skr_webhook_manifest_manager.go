@@ -44,6 +44,9 @@ type SkrWebhookManagerConfig struct {
 	IstioGatewayNamespace string
 	// RemoteSyncNamespace indicates the sync namespace for Kyma and module catalog
 	RemoteSyncNamespace string
+	// LocalGatewayPortOverwrite indicates the port used to expose the KCP cluster locally in k3d
+	// for the watcher callbacks
+	LocalGatewayPortOverwrite string
 	// AdditionalDNSNames indicates the DNS Names which should be added additional to the Subject
 	// Alternative Names of each Kyma Certificate
 	AdditionalDNSNames []string
