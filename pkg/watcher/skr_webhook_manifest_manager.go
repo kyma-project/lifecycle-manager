@@ -44,11 +44,12 @@ type SkrWebhookManagerConfig struct {
 	IstioGatewayNamespace string
 	// RemoteSyncNamespace indicates the sync namespace for Kyma and module catalog
 	RemoteSyncNamespace string
-	// WatcherLocalTestingEnabled indicates if the chart manager is running in local testing mode
-	WatcherLocalTestingEnabled bool
-	// LocalGatewayHTTPPortMapping indicates the port used to expose the KCP cluster locally in k3d
+	// LocalGatewayPortOverwrite indicates the port used to expose the KCP cluster locally in k3d
 	// for the watcher callbacks
-	LocalGatewayHTTPPortMapping int
+	LocalGatewayPortOverwrite string
+	// AdditionalDNSNames indicates the DNS Names which should be added additional to the Subject
+	// Alternative Names of each Kyma Certificate
+	AdditionalDNSNames []string
 }
 
 const rawManifestFilePathTpl = "%s/resources.yaml"
@@ -93,7 +94,7 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 
 	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
 	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma,
-		m.config.IstioNamespace, m.config.RemoteSyncNamespace, m.config.WatcherLocalTestingEnabled)
+		m.config.IstioNamespace, m.config.RemoteSyncNamespace, m.config.AdditionalDNSNames)
 	if err != nil {
 		return fmt.Errorf("error while creating new CertificateManager struct: %w", err)
 	}
@@ -132,7 +133,7 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 		return fmt.Errorf("failed to get syncContext: %w", err)
 	}
 	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma,
-		m.config.IstioNamespace, m.config.RemoteSyncNamespace, false)
+		m.config.IstioNamespace, m.config.RemoteSyncNamespace, []string{})
 	if err != nil {
 		logger.Error(err, "Error while creating new CertificateManager")
 		return err

@@ -3,8 +3,21 @@ name: TestSuite E2E
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'go.mod'
+      - 'go.sum'
+      - 'Makefile'
+      - '**.go'
+      - '**.ya?ml'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'go.mod'
+      - 'go.sum'
+      - 'Makefile'
+      - '**.sh'
+      - '**.go'
+      - '**.ya?ml'
 jobs:
   wait-for-img:
     name: "Wait for Image Build"
@@ -105,7 +118,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.20'
+          go-version: '1.21'
       - name: Override Kustomize Controller Image TAG and Image repository environment variables in Pull Request to PR Image
         if: ${{ github.event_name == 'pull_request' }}
         run: |

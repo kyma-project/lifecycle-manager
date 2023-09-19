@@ -52,7 +52,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/controllers"
-	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -192,7 +191,6 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager, controller.Options{}, controllers.SetupUpSetting{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
-	istioCfg := istio.NewConfig(false)
 	err = (&controllers.WatcherReconciler{
 		Client:           k8sManager.GetClient(),
 		RestConfig:       k8sManager.GetConfig(),
@@ -202,7 +200,7 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(
 		k8sManager, controller.Options{
 			MaxConcurrentReconciles: 1,
-		}, istioCfg,
+		},
 	)
 	Expect(err).ToNot(HaveOccurred())
 

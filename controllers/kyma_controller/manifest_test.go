@@ -11,11 +11,11 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods/localblob"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/open-component-model/ocm/pkg/contexts/oci/repositories/ocireg"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods/localociblob"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/cpi"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
@@ -268,12 +268,12 @@ func validateManifestSpecInstallSourceRef(manifestImageSpec *v1beta2.ImageSpec,
 	if err != nil {
 		return err
 	}
-	concreteAccessSpec, ok := aspec.(*localociblob.AccessSpec)
+	concreteAccessSpec, ok := aspec.(*localblob.AccessSpec)
 	if !ok {
 		return fmt.Errorf("Unexpected Resource Access Type: %T", aspec)
 	}
 
-	expectedSourceRef := string(concreteAccessSpec.Digest)
+	expectedSourceRef := concreteAccessSpec.LocalReference
 
 	if actualSourceRef != expectedSourceRef {
 		return fmt.Errorf("Invalid SourceRef: %s, expected: %s", actualSourceRef, expectedSourceRef)
@@ -289,7 +289,7 @@ func validateManifestSpecInstallSourceRepo(manifestImageSpec *v1beta2.ImageSpec,
 	actualSourceRepo := manifestImageSpec.Repo
 
 	unstructuredRepo := moduleTemplateDescriptor.GetEffectiveRepositoryContext()
-	typedRepo, err := unstructuredRepo.Evaluate(cpi.DefaultContext().RepositoryTypes())
+	typedRepo, err := cpi.DefaultContext().RepositoryTypes().Convert(unstructuredRepo)
 	if err != nil {
 		return fmt.Errorf("error while decoding the repository context into an OCI registry: %w", err)
 	}

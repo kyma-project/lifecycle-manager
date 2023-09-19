@@ -23,17 +23,16 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
+	"strings"
 	"time"
 
 	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/open-component-model/ocm/pkg/contexts/oci"
-	"github.com/open-component-model/ocm/pkg/contexts/oci/repositories/ocireg"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/cpi"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
+
+	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
+
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -60,7 +59,6 @@ import (
 	//+kubebuilder:scaffold:imports
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/controllers"
-	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
@@ -79,15 +77,6 @@ var (
 
 //nolint:gochecknoinits
 func init() {
-	ocm.DefaultContext().RepositoryTypes().Register(
-		genericocireg.Type, genericocireg.NewRepositoryType(oci.DefaultContext()),
-	)
-	ocm.DefaultContext().RepositoryTypes().Register(
-		genericocireg.TypeV1, genericocireg.NewRepositoryType(oci.DefaultContext()),
-	)
-	cpi.DefaultContext().RepositoryTypes().Register(
-		ocireg.LegacyType, genericocireg.NewRepositoryType(oci.DefaultContext()),
-	)
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(api.AddToScheme(scheme))
 
@@ -278,16 +267,16 @@ func setupKymaReconciler(mgr ctrl.Manager,
 
 func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (watcher.SKRWebhookManager, error) {
 	return watcher.NewSKRWebhookManifestManager(mgr.GetConfig(), mgr.GetScheme(), &watcher.SkrWebhookManagerConfig{
-		SKRWatcherPath:              flagVar.skrWatcherPath,
-		SkrWatcherImage:             flagVar.skrWatcherImage,
-		SkrWebhookCPULimits:         flagVar.skrWebhookCPULimits,
-		SkrWebhookMemoryLimits:      flagVar.skrWebhookMemoryLimits,
-		WatcherLocalTestingEnabled:  flagVar.enableWatcherLocalTesting,
-		LocalGatewayHTTPPortMapping: flagVar.listenerHTTPSPortLocalMapping,
-		IstioNamespace:              flagVar.istioNamespace,
-		IstioGatewayName:            flagVar.istioGatewayName,
-		IstioGatewayNamespace:       flagVar.istioGatewayNamespace,
-		RemoteSyncNamespace:         flagVar.remoteSyncNamespace,
+		SKRWatcherPath:            flagVar.skrWatcherPath,
+		SkrWatcherImage:           flagVar.skrWatcherImage,
+		SkrWebhookCPULimits:       flagVar.skrWebhookCPULimits,
+		SkrWebhookMemoryLimits:    flagVar.skrWebhookMemoryLimits,
+		LocalGatewayPortOverwrite: flagVar.listenerPortOverwrite,
+		IstioNamespace:            flagVar.istioNamespace,
+		IstioGatewayName:          flagVar.istioGatewayName,
+		IstioGatewayNamespace:     flagVar.istioGatewayNamespace,
+		RemoteSyncNamespace:       flagVar.remoteSyncNamespace,
+		AdditionalDNSNames:        strings.Split(flagVar.additionalDNSNames, ","),
 	})
 }
 
@@ -341,8 +330,6 @@ func setupManifestReconciler(
 func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, flagVar *FlagVar) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentWatcherReconciles
 
-	istioConfig := istio.NewConfig(flagVar.enableWatcherLocalTesting)
-
 	if err := (&controllers.WatcherReconciler{
 		Client:        mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor(controllers.WatcherControllerName),
@@ -351,7 +338,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, fla
 		RequeueIntervals: controllers.RequeueIntervals{
 			Success: flagVar.watcherRequeueSuccessInterval,
 		},
-	}).SetupWithManager(mgr, options, istioConfig); err != nil {
+	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controllers.WatcherControllerName)
 		os.Exit(1)
 	}

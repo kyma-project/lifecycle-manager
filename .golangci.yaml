@@ -21,6 +21,10 @@ linters:
     - varcheck # deprecated (since v1.49.0) and replaced by 'unused'
     - wsl # too strict and mostly code is not more readable
 linters-settings:
+  gomoddirectives:
+    replace-allow-list:
+      - github.com/docker/cli
+      - github.com/docker/docker
   funlen:
     lines: 80
   cyclop:

@@ -39,7 +39,7 @@ func Parse(
 }
 
 func parseDescriptor(ctx *runtime.UnstructuredTypedObject, descriptor *compdesc.ComponentDescriptor) (Layers, error) {
-	repo, err := ctx.Evaluate(cpi.DefaultContext().RepositoryTypes())
+	repo, err := cpi.DefaultContext().RepositoryTypes().Convert(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error while decoding the repository context into an OCI registry: %w", err)
 	}
@@ -67,6 +67,10 @@ func parseLayersByName(repo *genericocireg.RepositorySpec, descriptor *compdesc.
 		switch access.GetType() {
 		case localblob.TypeV1:
 			fallthrough
+		case localociblob.TypeV1:
+			fallthrough
+		case localociblob.Type:
+			fallthrough
 		case localblob.Type:
 			accessSpec, ok := spec.(*localblob.AccessSpec)
 			if !ok {
@@ -77,19 +81,6 @@ func parseLayersByName(repo *genericocireg.RepositorySpec, descriptor *compdesc.
 				return nil, fmt.Errorf("building the digest url: %w", err)
 			}
 			layerRepresentation = layerRef
-		case localociblob.TypeV1:
-			fallthrough
-		case localociblob.Type:
-			accessSpec, ok := spec.(*localociblob.AccessSpec)
-			if !ok {
-				return nil, common.ErrTypeAssert
-			}
-			layerRef, err := getOCIRef(repo, descriptor, accessSpec.Digest.String(), resource.Labels)
-			if err != nil {
-				return nil, fmt.Errorf("building the digest url: %w", err)
-			}
-			layerRepresentation = layerRef
-
 		// this resource type is not relevant for module rendering but for security scanning only
 		case ociartifact.Type:
 			fallthrough
