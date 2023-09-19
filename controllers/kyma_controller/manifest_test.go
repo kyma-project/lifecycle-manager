@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods/localblob"
+	"github.com/open-component-model/ocm/pkg/runtime"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/open-component-model/ocm/pkg/contexts/oci/repositories/ocireg"
@@ -20,6 +21,19 @@ import (
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/cpi"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg/componentmapping"
+)
+
+const (
+	// see: PROJECT_ROOT/config/samples/component-integration-installed/operator_v1beta2_moduletemplate_kcp-module.yaml
+	testModuleTemplateRawManifestLayerDigest = "sha256:" +
+		"1735cfa45bf07b63427c8e11717278f8847e352a66af7633611db902386d18ed"
+
+	// corresponds to the template-operator version: https://github.com/kyma-project/template-operator/commit/fc1cf2b4
+	updatedModuleTemplateRawManifestLayerDigest = "sha256:" +
+		"5aea8016459572585a57780c0aa348b5306bfa2cb4df7aa6d8b74e215b15e5dd"
+
+	// registry: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/template-operator:v3.1.0
+	updatedModuleTemplateVersion = "v3.1.0"
 )
 
 var _ = Describe("Manifest.Spec.Remote in default mode", Ordered, func() {
@@ -42,14 +56,17 @@ var _ = Describe("Manifest.Spec.Remote in default mode", Ordered, func() {
 
 var _ = Describe("Update Manifest CR", Ordered, func() {
 	const updateRepositoryURL = "registry.docker.io/kyma-project"
+
 	kyma := NewTestKyma("kyma-test-update")
 
+	module := v1beta2.Module{
+		ControllerName: "manifest",
+		Name:           NewUniqModuleName(),
+		Channel:        v1beta2.DefaultChannel,
+	}
+
 	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1beta2.Module{
-			ControllerName: "manifest",
-			Name:           "skr-module-update",
-			Channel:        v1beta2.DefaultChannel,
-		})
+		kyma.Spec.Modules, module)
 
 	RegisterDefaultLifecycleForKyma(kyma)
 
@@ -99,9 +116,12 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 
 				return nil
 			}
-			updateKCPModuleTemplateWith := updateKCPModuleTemplate("skr-module-update", "default")
 
-			Eventually(updateKCPModuleTemplateWith(newComponentDescriptorRepositoryURL), Timeout, Interval).Should(Succeed())
+			updateKCPModuleTemplateWith := updateKCPModuleTemplate(module.Name, "default")
+			update := func() error {
+				return updateKCPModuleTemplateWith(newComponentDescriptorRepositoryURL)
+			}
+			Eventually(update, Timeout, Interval).Should(Succeed())
 		}
 
 		By("Manifest is updated with new value in spec.install.source")
@@ -216,9 +236,73 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 	})
 })
 
+var _ = Describe("Update Module Template Version", Ordered, func() {
+	kyma := NewTestKyma("kyma")
+
+	module := v1beta2.Module{
+		ControllerName: "manifest",
+		Name:           NewUniqModuleName(),
+		Channel:        v1beta2.DefaultChannel,
+	}
+
+	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
+
+	RegisterDefaultLifecycleForKyma(kyma)
+
+	It("Manifest CR should be updated after module template version has changed", func() {
+		By("CR created")
+		for _, activeModule := range kyma.Spec.Modules {
+			Eventually(ManifestExists, Timeout, Interval).WithArguments(
+				ctx, kyma, activeModule, controlPlaneClient).Should(Succeed())
+		}
+
+		By("reacting to a change of its Modules when they are set to ready")
+		for _, activeModule := range kyma.Spec.Modules {
+			Eventually(UpdateManifestState, Timeout, Interval).
+				WithArguments(ctx, controlPlaneClient, kyma, activeModule, v1beta2.StateReady).Should(Succeed())
+		}
+
+		By("Kyma CR should be in Ready state")
+		Eventually(GetKymaState, Timeout, Interval).
+			WithArguments(kyma.GetName()).
+			Should(BeEquivalentTo(string(v1beta2.StateReady)))
+
+		By("Manifest spec.install.source.ref corresponds to Module Template resources[].access.digest")
+		{
+			manifest := expectManifestFor(kyma)
+			hasInitialSourceRef := validateManifestSpecInstallSourceRefValue(testModuleTemplateRawManifestLayerDigest)
+
+			Expect(manifest(hasInitialSourceRef)()).Should(Succeed())
+		}
+
+		By("Update Module Template version and raw-manifest layer digest")
+		{
+			newVersionAndLayerDigest := updateModuleTemplateVersion
+			updatedVersionAndLayerDigest := validateModuleTemplateVersionUpdated
+			updateModuleTemplateWith := funWrap(updateKCPModuleTemplate(module.Name, "default"))
+			validateModuleTemplateWith := funWrap(validateKCPModuleTemplate(module.Name, "default"))
+
+			ensureModuleTemplateUpdated := composeFunctions(
+				updateModuleTemplateWith(newVersionAndLayerDigest),
+				validateModuleTemplateWith(updatedVersionAndLayerDigest),
+			)
+
+			Eventually(ensureModuleTemplateUpdated, Timeout, Interval*2).Should(Succeed())
+		}
+
+		By("Manifest is updated with new value in spec.install.source.ref")
+		{
+			expectManifest := expectManifestFor(kyma)
+			hasUpdatedSourceRef := validateManifestSpecInstallSourceRefValue(updatedModuleTemplateRawManifestLayerDigest)
+
+			Eventually(expectManifest(hasUpdatedSourceRef), Timeout, Interval*2).Should(Succeed())
+		}
+	})
+})
+
 func findRawManifestResource(reslist []compdesc.Resource) *compdesc.Resource {
 	for _, r := range reslist {
-		if r.Name == "raw-manifest" {
+		if r.Name == v1beta2.RawManifestLayerName {
 			return &r
 		}
 	}
@@ -276,10 +360,25 @@ func validateManifestSpecInstallSourceRef(manifestImageSpec *v1beta2.ImageSpec,
 	expectedSourceRef := concreteAccessSpec.LocalReference
 
 	if actualSourceRef != expectedSourceRef {
-		return fmt.Errorf("Invalid SourceRef: %s, expected: %s", actualSourceRef, expectedSourceRef)
+		return fmt.Errorf("Invalid manifest spec.install.source.ref: %s, expected: %s", //nolint:goerr113
+			actualSourceRef, expectedSourceRef)
 	}
 
 	return nil
+}
+
+func validateManifestSpecInstallSourceRefValue(expectedSourceRef string) func(manifest *v1beta2.Manifest) error {
+	return func(manifest *v1beta2.Manifest) error {
+		manifestImageSpec := extractInstallImageSpec(manifest.Spec.Install)
+		actualSourceRef := manifestImageSpec.Ref
+
+		if actualSourceRef != expectedSourceRef {
+			return fmt.Errorf("Invalid manifest spec.install.source.ref: %s, expected: %s", //nolint:goerr113
+				actualSourceRef, expectedSourceRef)
+		}
+
+		return nil
+	}
 }
 
 //nolint:goerr113
@@ -344,24 +443,37 @@ func validateManifestSpecResource(manifestResource, moduleTemplateData *unstruct
 	return nil
 }
 
-// updateKCPModuleTemplate is a generic ModuleTemplate update function.
-func updateKCPModuleTemplate(
-	moduleName, moduleNamespace string,
-) func(func(*v1beta2.ModuleTemplate) error) func() error {
-	return func(updateFunc func(*v1beta2.ModuleTemplate) error) func() error {
-		return func() error {
-			moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, moduleName, moduleNamespace)
-			if err != nil {
-				return err
-			}
-
-			err = updateFunc(moduleTemplate)
-			if err != nil {
-				return err
-			}
-
-			return controlPlaneClient.Update(ctx, moduleTemplate)
+// getKCPModuleTemplate is a generic ModuleTemplate validation function.
+func validateKCPModuleTemplate(moduleName, moduleNamespace string) func(moduleTemplateFn) error {
+	return func(validateFunc moduleTemplateFn) error {
+		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, moduleName, moduleNamespace)
+		if err != nil {
+			return err
 		}
+
+		err = validateFunc(moduleTemplate)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+}
+
+// updateKCPModuleTemplate is a generic ModuleTemplate update function.
+func updateKCPModuleTemplate(moduleName, moduleNamespace string) func(moduleTemplateFn) error {
+	return func(updateFunc moduleTemplateFn) error {
+		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, moduleName, moduleNamespace)
+		if err != nil {
+			return err
+		}
+
+		err = updateFunc(moduleTemplate)
+		if err != nil {
+			return err
+		}
+
+		return controlPlaneClient.Update(ctx, moduleTemplate)
 	}
 }
 
@@ -376,5 +488,113 @@ func expectManifestFor(kyma *v1beta2.Kyma) func(func(*v1beta2.Manifest) error) f
 			}
 			return validationFn(manifest)
 		}
+	}
+}
+
+func updateComponentVersion(descriptor *v1beta2.Descriptor) {
+	descriptor.ComponentSpec.Version = updatedModuleTemplateVersion
+}
+
+func updateComponentResources(descriptor *v1beta2.Descriptor) {
+	resources := descriptor.ComponentSpec.Resources
+	for i := range resources {
+		res := &resources[i]
+		res.Version = updatedModuleTemplateVersion
+
+		if res.Name == v1beta2.RawManifestLayerName {
+			object, ok := res.Access.(*runtime.UnstructuredVersionedTypedObject)
+			Expect(ok).To(BeTrue())
+			object.Object["digest"] = updatedModuleTemplateRawManifestLayerDigest
+		}
+	}
+}
+
+func updateComponentSources(descriptor *v1beta2.Descriptor) {
+	sources := descriptor.ComponentSpec.Sources
+	for i := range sources {
+		src := &sources[i]
+		src.Version = updatedModuleTemplateVersion
+	}
+}
+
+func updateModuleTemplateVersion(moduleTemplate *v1beta2.ModuleTemplate) error {
+	descriptor, err := moduleTemplate.GetDescriptor()
+	// return error here (insted of using Expect) to allow for re-trying with "Eventually"
+	if err != nil {
+		return err
+	}
+
+	updateComponentVersion(descriptor)
+	updateComponentResources(descriptor)
+	updateComponentSources(descriptor)
+
+	newDescriptorRaw, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONLCodec)
+	Expect(err).ToNot(HaveOccurred())
+	moduleTemplate.Spec.Descriptor.Raw = newDescriptorRaw
+
+	return nil
+}
+
+//nolint:goerr113
+func validateModuleTemplateVersionUpdated(moduleTemplate *v1beta2.ModuleTemplate) error {
+	descriptor, err := moduleTemplate.GetDescriptor()
+	if err != nil {
+		return err
+	}
+
+	expectedVersion := updatedModuleTemplateVersion
+
+	if descriptor.Version != expectedVersion {
+		return fmt.Errorf("Invalid descriptor version: %s, expected: %s", descriptor.Version, expectedVersion)
+	}
+
+	for _, res := range descriptor.ComponentSpec.Resources {
+		if res.Version != expectedVersion {
+			return fmt.Errorf("Invalid resource version: %s, expected: %s", res.Version, expectedVersion)
+		}
+
+		if res.Name == v1beta2.RawManifestLayerName {
+			object, ok := res.Access.(*runtime.UnstructuredVersionedTypedObject)
+			Expect(ok).To(BeTrue())
+			if object.Object["digest"] != updatedModuleTemplateRawManifestLayerDigest {
+				return fmt.Errorf("Invalid digest: %s, expected: %s",
+					object.Object["digest"], updatedModuleTemplateRawManifestLayerDigest)
+			}
+		}
+	}
+
+	for _, source := range descriptor.ComponentSpec.Sources {
+		if source.Version != updatedModuleTemplateVersion {
+			return fmt.Errorf("Invalid source version: %s, expected: %s", source.Version, updatedModuleTemplateVersion)
+		}
+	}
+
+	return nil
+}
+
+type moduleTemplateFn = func(*v1beta2.ModuleTemplate) error
+
+// funWrap wraps a function return value into a parameterless function: "error" becomes "func() error".
+func funWrap(inputFn func(moduleTemplateFn) error) func(moduleTemplateFn) func() error {
+	res := func(actual moduleTemplateFn) func() error {
+		return func() error {
+			err := inputFn(actual)
+			return err
+		}
+	}
+	return res
+}
+
+// composeFunctions composes a series of simple parameterless functions into a single one.
+func composeFunctions(fns ...func() error) func() error {
+	return func() error {
+		var err error
+		for i := range fns {
+			err = fns[i]()
+			if err != nil {
+				return err
+			}
+		}
+		return nil
 	}
 }
