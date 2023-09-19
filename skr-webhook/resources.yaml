@@ -84,8 +84,6 @@ spec:
           volumeMounts:
             - name: ssl
               mountPath: /app/etc/ssl
-            - name: request
-              mountPath: /tmp
           resources:
             requests:
               memory: 20Mi
@@ -107,5 +105,3 @@ spec:
                 path: tls.crt
               - key: ca.crt
                 path: ca.crt
-        - name: request
-          emptyDir: {}
