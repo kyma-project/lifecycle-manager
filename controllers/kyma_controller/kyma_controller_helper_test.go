@@ -21,7 +21,8 @@ import (
 
 func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false)
+		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false,
+			false)
 	})
 
 	AfterAll(func() {
@@ -146,7 +147,7 @@ func TemplateInfosMatchChannel(kymaName, channel string) error {
 
 func CreateModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, channel string) error {
 	for _, module := range modules {
-		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false)
+		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false, false)
 		if err != nil {
 			return err
 		}

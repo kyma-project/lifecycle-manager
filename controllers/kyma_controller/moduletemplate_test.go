@@ -51,9 +51,6 @@ func expectManifestSpecNotContainsCredSecretSelector(kymaName string) func() err
 			if err != nil {
 				return err
 			}
-			if moduleInCluster.Spec.Config.CredSecretSelector != nil {
-				return ErrContainsUnexpectedCredSecretSelector
-			}
 			installImageSpec := extractInstallImageSpec(moduleInCluster.Spec.Install)
 
 			if installImageSpec.CredSecretSelector != nil {
@@ -74,12 +71,6 @@ func expectManifestSpecContainsCredSecretSelector(kymaName string) func() error 
 			moduleInCluster, err := GetManifest(ctx, controlPlaneClient, createdKyma, module)
 			if err != nil {
 				return err
-			}
-			var emptyImageSpec v1beta2.ImageSpec
-			if moduleInCluster.Spec.Config != emptyImageSpec {
-				if err := expectCredSecretSelectorCorrect(&moduleInCluster.Spec.Config); err != nil {
-					return fmt.Errorf("config %v is invalid: %w", &moduleInCluster.Spec.Config, err)
-				}
 			}
 
 			installImageSpec := extractInstallImageSpec(moduleInCluster.Spec.Install)
@@ -123,7 +114,7 @@ var _ = Describe("ModuleTemplate.Spec.descriptor not contains RegistryCred label
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
 	It("expect Manifest.Spec.installs not contains credSecretSelector", func() {
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false)
+		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false, false)
 		Eventually(expectManifestSpecNotContainsCredSecretSelector(kyma.Name), Timeout*2, Interval).Should(Succeed())
 	})
 })
@@ -141,7 +132,7 @@ var _ = Describe("ModuleTemplate.Spec.descriptor contains RegistryCred label", O
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
 	It("expect Manifest.Spec.installs contains credSecretSelector", func() {
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma, true, false, false)
+		DeployModuleTemplates(ctx, controlPlaneClient, kyma, true, false, false, false)
 		Eventually(expectManifestSpecContainsCredSecretSelector(kyma.Name), Timeout*2, Interval).Should(Succeed())
 	})
 })

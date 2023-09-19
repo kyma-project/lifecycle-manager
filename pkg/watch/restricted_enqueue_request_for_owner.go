@@ -111,11 +111,11 @@ func (e *RestrictedEnqueueRequestForOwner) parseOwnerTypeGroupKind(scheme *runti
 	kinds, _, err := scheme.ObjectKinds(e.OwnerType)
 	if err != nil {
 		e.Log.Error(err, "Could not get ObjectKinds for OwnerType", "owner type", fmt.Sprintf("%T", e.OwnerType))
-		return err
+		return fmt.Errorf("failed to get ObjectKinds: %w", err)
 	}
 	// Expect only 1 kind.  If there is more than one kind this is probably an edge case such as ListOptions.
 	if len(kinds) != 1 {
-		err := fmt.Errorf("%w: expected exactly 1 kind for OwnerType %T, but found %s kinds",
+		err = fmt.Errorf("%w: expected exactly 1 kind for OwnerType %T, but found %s kinds",
 			ErrNoUniqueKind, e.OwnerType, kinds)
 		e.Log.Error(nil, "expected exactly 1 kind for OwnerType", "owner type",
 			fmt.Sprintf("%T", e.OwnerType), "kinds", kinds)

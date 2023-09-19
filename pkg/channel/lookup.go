@@ -46,7 +46,12 @@ func GetTemplates(
 		case module.RemoteModuleTemplateRef == "":
 			template = NewTemplateLookup(kymaClient, module, kyma.Spec.Channel).WithContext(ctx)
 		case syncEnabled:
-			runtimeClient := remote.SyncContextFromContext(ctx).RuntimeClient
+			syncContext, err := remote.SyncContextFromContext(ctx)
+			if err != nil {
+				template.Err = fmt.Errorf("failed to get syncContext: %w", err)
+				continue
+			}
+			runtimeClient := syncContext.RuntimeClient
 			originalModuleName := module.Name
 			module.Name = module.RemoteModuleTemplateRef // To search template with the Remote Ref
 			template = NewTemplateLookup(runtimeClient, module, kyma.Spec.Channel).WithContext(ctx)
@@ -106,8 +111,6 @@ func moduleMatch(moduleStatus *v1beta2.ModuleStatus, moduleName string) bool {
 // It does this by looking into selected key properties:
 // 1. If the generation of ModuleTemplate changes, it means the spec is outdated
 // 2. If the channel of ModuleTemplate changes, it means the kyma has an old reference to a previous channel.
-//
-//nolint:funlen
 func CheckValidTemplateUpdate(
 	logger logr.Logger, moduleTemplate *ModuleTemplateTO, moduleStatus *v1beta2.ModuleStatus,
 ) {
@@ -275,13 +278,18 @@ func (c *TemplateLookup) getTemplate(ctx context.Context, desiredChannel string)
 	templateList := &v1beta2.ModuleTemplateList{}
 	err := c.reader.List(ctx, templateList)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to list module templates on lookup: %w", err)
 	}
 
 	moduleIdentifier := c.module.Name
 	var filteredTemplates []v1beta2.ModuleTemplate
 	for _, template := range templateList.Items {
 		if template.Labels[v1beta2.ModuleName] == moduleIdentifier && template.Spec.Channel == desiredChannel {
+			filteredTemplates = append(filteredTemplates, template)
+			continue
+		}
+		if fmt.Sprintf("%s/%s", template.Namespace, template.Name) == moduleIdentifier &&
+			template.Spec.Channel == desiredChannel {
 			filteredTemplates = append(filteredTemplates, template)
 			continue
 		}

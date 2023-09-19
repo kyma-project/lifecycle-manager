@@ -1,3 +1,5 @@
+<!-- markdown-link-check-disable-next-line -->
+[![REUSE status](https://api.reuse.software/badge/github.com/kyma-project/lifecycle-manager)](https://api.reuse.software/info/github.com/kyma-project/lifecycle-manager)
 # Lifecycle Manager
 
 Kyma is an opinionated set of Kubernetes-based modular building blocks that includes the necessary capabilities to develop and run enterprise-grade cloud-native applications. Kyma's Lifecycle Manager is a tool that manages the lifecycle of these modules in your cluster.
@@ -15,7 +17,7 @@ See the list of basic concepts relating to Lifecycle Manager to understand its w
 - Manifest CR - represents resources that make up a module and are to be installed by Lifecycle Manager. The Manifest CR is a rendered module enabled on a particular cluster.
 - Module CR, such as Keda CR - allows you to configure the behavior of a module. This is a per-module CR.
 
-For the worklow details, read the [Architecture](./docs/technical-reference/architecture.md) document.
+For the worklow details, read the [Architecture](docs/technical-reference/architecture.md) document.
 
 ## Quick Start
 

@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+//nolint:gochecknoglobals
 package v1beta2_test
 
 import (
@@ -27,11 +27,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/open-component-model/ocm/pkg/contexts/oci"
-	"github.com/open-component-model/ocm/pkg/contexts/oci/repositories/ocireg"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/cpi"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
+
+	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
+
 	"go.uber.org/zap/zapcore"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
@@ -53,12 +51,12 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	k8sClient            client.Client        //nolint:gochecknoglobals
-	testEnv              *envtest.Environment //nolint:gochecknoglobals
-	webhookServerContext context.Context      //nolint:gochecknoglobals
-	webhookServerCancel  context.CancelFunc   //nolint:gochecknoglobals
-	cfg                  *rest.Config         //nolint:gochecknoglobals
-	scheme               *runtime.Scheme      //nolint:gochecknoglobals
+	k8sClient            client.Client
+	testEnv              *envtest.Environment
+	webhookServerContext context.Context
+	webhookServerCancel  context.CancelFunc
+	cfg                  *rest.Config
+	scheme               *runtime.Scheme
 )
 
 const (
@@ -91,11 +89,6 @@ var _ = BeforeSuite(func() {
 	Expect(cfg).NotTo(BeNil())
 
 	scheme = runtime.NewScheme()
-	ocm.DefaultContext().RepositoryTypes().Register(genericocireg.Type, &genericocireg.RepositoryType{})
-	ocm.DefaultContext().RepositoryTypes().Register(genericocireg.TypeV1, &genericocireg.RepositoryType{})
-	cpi.DefaultContext().RepositoryTypes().Register(
-		ocireg.LegacyType, genericocireg.NewRepositoryType(oci.DefaultContext()),
-	)
 	Expect(api.AddToScheme(scheme)).NotTo(HaveOccurred())
 	Expect(apiextensionsv1.AddToScheme(scheme)).NotTo(HaveOccurred())
 	Expect(admissionv1beta1.AddToScheme(scheme)).NotTo(HaveOccurred())

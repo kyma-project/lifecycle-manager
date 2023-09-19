@@ -234,7 +234,6 @@ func isResourceFoundInSynced(res *unstructured.Unstructured, resource Resource) 
 	}
 }
 
-//nolint:funlen
 func StartDeclarativeReconcilerForRun(
 	ctx context.Context,
 	runID string,

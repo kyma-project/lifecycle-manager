@@ -1,6 +1,8 @@
 package v2
 
 import (
+	"fmt"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -17,10 +19,11 @@ func getResourceMapping(obj runtime.Object, mapper meta.RESTMapper, retryOnNoMat
 		meta.MaybeResetRESTMapper(mapper)
 		// return second call after reset
 		mapping, err = mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
-		if err != nil {
-			return nil, err
-		}
 	}
 
-	return mapping, err
+	if err != nil {
+		return nil, fmt.Errorf("failed rest mapping [%v, %v]: %w", gvk.GroupKind(), gvk.Version, err)
+	}
+
+	return mapping, nil
 }

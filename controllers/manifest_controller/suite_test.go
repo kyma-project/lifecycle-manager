@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+//nolint:gochecknoglobals
 package manifest_controller_test
 
 import (
@@ -35,13 +35,13 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api"
+	hlp "github.com/kyma-project/lifecycle-manager/controllers/manifest_controller/manifesttest"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -51,19 +51,15 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	k8sClient  client.Client           //nolint:gochecknoglobals
-	testEnv    *envtest.Environment    //nolint:gochecknoglobals
-	k8sManager ctrl.Manager            //nolint:gochecknoglobals
-	ctx        context.Context         //nolint:gochecknoglobals
-	cancel     context.CancelFunc      //nolint:gochecknoglobals
-	server     *httptest.Server        //nolint:gochecknoglobals
-	reconciler *declarative.Reconciler //nolint:gochecknoglobals
-	cfg        *rest.Config            //nolint:gochecknoglobals
+	testEnv    *envtest.Environment
+	k8sManager ctrl.Manager
+	reconciler *declarative.Reconciler
+	cfg        *rest.Config
 )
 
 const (
 	standardTimeout  = 30 * time.Second
-	standardInterval = 100 * time.Millisecond
+	standardInterval = 400 * time.Millisecond
 )
 
 func TestAPIs(t *testing.T) {
@@ -75,12 +71,13 @@ func TestAPIs(t *testing.T) {
 
 var _ = BeforeSuite(
 	func() {
-		ctx, cancel = context.WithCancel(context.TODO())
+		hlp.ManifestFilePath = "../../pkg/test_samples/oci/rendered.yaml"
+		hlp.Ctx, hlp.Cancel = context.WithCancel(context.TODO())
 		logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
 
 		// create registry and server
 		newReg := registry.New()
-		server = httptest.NewServer(newReg)
+		hlp.Server = httptest.NewServer(newReg)
 
 		By("bootstrapping test environment")
 		testEnv = &envtest.Environment{
@@ -122,9 +119,9 @@ var _ = BeforeSuite(
 		)
 		Expect(err).NotTo(HaveOccurred())
 
-		k8sClient = k8sManager.GetClient()
+		hlp.K8sClient = k8sManager.GetClient()
 
-		kcp := &declarative.ClusterInfo{Config: cfg, Client: k8sClient}
+		kcp := &declarative.ClusterInfo{Config: cfg, Client: hlp.K8sClient}
 		reconciler = declarative.NewFromManager(
 			k8sManager, &v1beta2.Manifest{},
 			declarative.WithSpecResolver(
@@ -149,7 +146,7 @@ var _ = BeforeSuite(
 			WithOptions(
 				controller.Options{
 					RateLimiter: internal.ManifestRateLimiter(
-						1*time.Second, 1000*time.Second,
+						1*time.Second, 5*time.Second,
 						30, 200,
 					),
 					MaxConcurrentReconciles: 1,
@@ -159,7 +156,7 @@ var _ = BeforeSuite(
 
 		go func() {
 			defer GinkgoRecover()
-			err = k8sManager.Start(ctx)
+			err = k8sManager.Start(hlp.Ctx)
 			Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 		}()
 	},
@@ -167,9 +164,9 @@ var _ = BeforeSuite(
 
 var _ = AfterSuite(
 	func() {
-		cancel()
+		hlp.Cancel()
 		By("tearing down the test environment")
-		server.Close()
+		hlp.Server.Close()
 		Eventually(func() error { return testEnv.Stop() }, standardTimeout, standardInterval).Should(Succeed())
 	},
 )

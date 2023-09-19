@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 
@@ -21,7 +22,10 @@ import (
 )
 
 //nolint:gochecknoglobals
-var fileMutexMap = sync.Map{}
+var (
+	ErrImageLayerPull = errors.New("failed to pull layer")
+	fileMutexMap      = sync.Map{}
+)
 
 func GetPathFromRawManifest(ctx context.Context,
 	imageSpec v1beta2.ImageSpec,
@@ -73,16 +77,32 @@ func GetPathFromRawManifest(ctx context.Context,
 	if _, err := io.Copy(outFile, blobReadCloser); err != nil {
 		return "", fmt.Errorf("file copy storage failed for layer %s: %w", imageRef, err)
 	}
-	return manifestPath, io.Closer(outFile).Close()
+	err = io.Closer(outFile).Close()
+	if err != nil {
+		return manifestPath, fmt.Errorf("failed to close io: %w", err)
+	}
+	return manifestPath, nil
 }
 
 func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (v1.Layer, error) {
 	noSchemeImageRef := ocmextensions.NoSchemeURL(imageRef)
-	isInsecureLayer, _ := regexp.MatchString("^http://", imageRef)
-	if isInsecureLayer {
-		return crane.PullLayer(noSchemeImageRef, crane.Insecure, crane.WithAuthFromKeychain(keyChain))
+	isInsecureLayer, err := regexp.MatchString("^http://", imageRef)
+	if err != nil {
+		return nil, fmt.Errorf("invalid imageRef: %w", err)
 	}
-	return crane.PullLayer(noSchemeImageRef, crane.WithAuthFromKeychain(keyChain), crane.WithContext(ctx))
+
+	if isInsecureLayer {
+		imgLayer, err := crane.PullLayer(noSchemeImageRef, crane.Insecure, crane.WithAuthFromKeychain(keyChain))
+		if err != nil {
+			return nil, fmt.Errorf("%s due to: %w", ErrImageLayerPull.Error(), err)
+		}
+		return imgLayer, nil
+	}
+	imgLayer, err := crane.PullLayer(noSchemeImageRef, crane.WithAuthFromKeychain(keyChain), crane.WithContext(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("%s due to: %w", ErrImageLayerPull.Error(), err)
+	}
+	return imgLayer, nil
 }
 
 func getFsChartPath(imageSpec v1beta2.ImageSpec) string {

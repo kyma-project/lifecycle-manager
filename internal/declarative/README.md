@@ -67,16 +67,13 @@ All renderer implementations must implement the [renderer interface](v2/renderer
 
 This is our current selection of rendering engines:
 
-- [HELM](v2/renderer_helm.go): an optimized and specced-down version of the Helm Templating Engine to use with Charts
-- [kustomize](v2/renderer_kustomize.go): an embedded [krusty](https://pkg.go.dev/sigs.k8s.io/kustomize/api/krusty) kustomize implementation
-- [raw](v2/renderer_raw.go): Easy to use raw renderer that just passes through manifests as `.yaml` to the converter
-- [cached](v2/renderer_with_cache.go): Uses an existing renderer and passes rendered resources by levaring a file cache in order to save on reoccuring reconciliation times. Especially useful for long render times from libraries like `HELM` or `kustomize`
+- [raw](v2/renderer_raw.go): Easy to use raw renderer that just passes through manifests as `.yaml` to the converter.
 
 Every renderer reconciles in a particular order through the [renderer interface](v2/renderer.go):
 
 1. Construction of the Renderer based on the [object specification](v2/spec.go)
 2. Initializing of the Renderer through `Initializer(Object)`, setting up necessary status conditions or environment settings
-3. Prerequisite Initialization, e.g. dependencies of the output ([HELM](v2/renderer_helm.go) uses this for CRD layer initialization)
+3. Prerequisite Initialization, e.g. dependencies of the output
 4. Rendering of the Resources into a valid `.yaml` compliant byte array
 5. Removal of the PreRequisites if explicitly desired (by default they are not removed unlike the standard resources, imagine a CRD uninstallation)
 

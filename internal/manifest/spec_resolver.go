@@ -8,6 +8,7 @@ import (
 	"reflect"
 
 	"github.com/google/go-containerregistry/pkg/v1/google"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
@@ -59,7 +60,7 @@ func (m *SpecResolver) Spec(ctx context.Context, obj declarative.Object,
 
 	specType, err := v1beta2.GetSpecType(manifest.Spec.Install.Source.Raw)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to get specType: %w", err)
 	}
 
 	targetClient := m.KCP.Client
@@ -105,18 +106,18 @@ func (m *SpecResolver) getRawManifestForInstall(
 	case v1beta2.OciRefType:
 		var imageSpec v1beta2.ImageSpec
 		if err = m.Codec.Decode(install.Source.Raw, &imageSpec, specType); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to decode to target manifest object: %w", err)
 		}
 
 		keyChain, err := m.lookupKeyChain(ctx, imageSpec, targetClient)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to fetch keyChain: %w", err)
 		}
 
 		// extract raw manifest from layer digest
 		rawManifestPath, err := GetPathFromRawManifest(ctx, imageSpec, keyChain)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to extract raw manifest from layer digest: %w", err)
 		}
 
 		return &RawManifestInfo{

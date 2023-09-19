@@ -10,10 +10,9 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"golang.org/x/sync/errgroup"
-	corev1 "k8s.io/api/core/v1"
+	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -29,7 +28,7 @@ const (
 	webhookTimeOutInSeconds    = 15
 )
 
-var ErrLoadBalancerIPIsNotAssigned = errors.New("load balancer service external ip is not assigned")
+var ErrGatewayHostWronglyConfigured = errors.New("gateway should have configured exactly one server and one host")
 
 type resourceOperation func(ctx context.Context, clt client.Client, resource client.Object) error
 
@@ -45,39 +44,34 @@ func runResourceOperationWithGroupedErrors(ctx context.Context, clt client.Clien
 			return operation(grpCtx, clt, resources[resIdx])
 		})
 	}
+	//nolint:wrapcheck
 	return errGrp.Wait()
 }
 
-func resolveKcpAddr(kcpConfig *rest.Config, managerConfig *SkrWebhookManagerConfig) (string, error) {
+func resolveKcpAddr(kcpClient client.Client, managerConfig *SkrWebhookManagerConfig) (string, error) {
 	if managerConfig.WatcherLocalTestingEnabled {
 		return net.JoinHostPort(defaultK3dLocalhostMapping, strconv.Itoa(managerConfig.LocalGatewayHTTPPortMapping)),
 			nil
 	}
-	// Get public KCP IP from the ISTIO load balancer external IP
-	kcpClient, err := client.New(kcpConfig, client.Options{})
-	if err != nil {
-		return "", err
-	}
 	ctx := context.TODO()
-	loadBalancerService := &corev1.Service{}
+
+	// Get public KCP DNS name and port from the Gateway
+	gateway := &istiov1beta1.Gateway{}
+
 	if err := kcpClient.Get(ctx, client.ObjectKey{
-		Name:      managerConfig.IstioIngressServiceName,
-		Namespace: managerConfig.IstioNamespace,
-	}, loadBalancerService); err != nil {
-		return "", err
+		Namespace: managerConfig.IstioGatewayNamespace,
+		Name:      managerConfig.IstioGatewayName,
+	}, gateway); err != nil {
+		return "", fmt.Errorf("failed to get istio gateway %s: %w", managerConfig.IstioGatewayName, err)
 	}
-	if len(loadBalancerService.Status.LoadBalancer.Ingress) == 0 {
-		return "", ErrLoadBalancerIPIsNotAssigned
+
+	if len(gateway.Spec.Servers) != 1 || len(gateway.Spec.Servers[0].Hosts) != 1 {
+		return "", ErrGatewayHostWronglyConfigured
 	}
-	externalIP := loadBalancerService.Status.LoadBalancer.Ingress[0].IP
-	var port int32
-	for _, loadBalancerPort := range loadBalancerService.Spec.Ports {
-		if loadBalancerPort.Name == managerConfig.ListenerGatewayPortName {
-			port = loadBalancerPort.Port
-			break
-		}
-	}
-	return net.JoinHostPort(externalIP, strconv.Itoa(int(port))), nil
+	host := gateway.Spec.Servers[0].Hosts[0]
+	port := gateway.Spec.Servers[0].Port.Number
+
+	return net.JoinHostPort(host, strconv.Itoa(int(port))), nil
 }
 
 func ResolveTLSCertName(kymaName string) string {
@@ -91,7 +85,7 @@ func getRawManifestUnstructuredResources(rawManifestReader io.Reader) ([]*unstru
 		resource := &unstructured.Unstructured{}
 		err := decoder.Decode(resource)
 		if err != nil && !errors.Is(err, io.EOF) {
-			return nil, err
+			return nil, fmt.Errorf("failed to decode raw manifest to unstructured: %w", err)
 		}
 		if errors.Is(err, io.EOF) {
 			break

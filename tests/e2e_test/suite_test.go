@@ -1,5 +1,6 @@
-//go:build e2e
+//go:build watcher_e2e || deletion_e2e || status_propagation_e2e
 
+//nolint:gochecknoglobals
 package e2e_test
 
 import (
@@ -34,25 +35,23 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 const (
-	kcpConfigEnvVar = "KCP_KUBECONFIG"
-	skrConfigEnvVar = "SKR_KUBECONFIG"
-	ClientQPS       = 1000
-	ClientBurst     = 2000
+	kcpConfigEnvVar, skrConfigEnvVar = "KCP_KUBECONFIG", "SKR_KUBECONFIG"
+	clientQPS, clientBurst           = 1000, 2000
 )
 
 var errEmptyEnvVar = errors.New("environment variable is empty")
 
 var (
-	controlPlaneClient     client.Client //nolint:gochecknoglobals
-	controlPlaneRESTConfig *rest.Config  //nolint:gochecknoglobals
-	controlPlaneConfig     *[]byte       //nolint:gochecknoglobals
+	controlPlaneClient     client.Client
+	controlPlaneRESTConfig *rest.Config
+	controlPlaneConfig     *[]byte
 
-	runtimeClient     client.Client //nolint:gochecknoglobals
-	runtimeRESTConfig *rest.Config  //nolint:gochecknoglobals
-	runtimeConfig     *[]byte       //nolint:gochecknoglobals
+	runtimeClient     client.Client
+	runtimeRESTConfig *rest.Config
+	runtimeConfig     *[]byte
 
-	ctx    context.Context    //nolint:gochecknoglobals
-	cancel context.CancelFunc //nolint:gochecknoglobals
+	ctx    context.Context
+	cancel context.CancelFunc
 )
 
 func TestAPIs(t *testing.T) {
@@ -67,25 +66,23 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 
-	// kcpModule CRD
-	controlPlaneCrd := &v1.CustomResourceDefinition{}
+	kcpModuleCRD := &v1.CustomResourceDefinition{}
 	modulePath := filepath.Join("../..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(moduleFile).ToNot(BeEmpty())
-	Expect(yaml2.Unmarshal(moduleFile, &controlPlaneCrd)).To(Succeed())
+	Expect(yaml2.Unmarshal(moduleFile, &kcpModuleCRD)).To(Succeed())
 
-	// k8s configs
 	controlPlaneConfig, runtimeConfig, err = getKubeConfigs()
 	Expect(err).ToNot(HaveOccurred())
 	controlPlaneRESTConfig, err = clientcmd.RESTConfigFromKubeConfig(*controlPlaneConfig)
-	controlPlaneRESTConfig.QPS = ClientQPS
-	controlPlaneRESTConfig.Burst = ClientBurst
+	controlPlaneRESTConfig.QPS = clientQPS
+	controlPlaneRESTConfig.Burst = clientBurst
 	Expect(err).ToNot(HaveOccurred())
 	runtimeRESTConfig, err = clientcmd.RESTConfigFromKubeConfig(*runtimeConfig)
-	runtimeRESTConfig.QPS = ClientQPS
-	runtimeRESTConfig.Burst = ClientBurst
+	runtimeRESTConfig.QPS = clientQPS
+	runtimeRESTConfig.Burst = clientBurst
 	Expect(err).ToNot(HaveOccurred())
 
 	Expect(err).NotTo(HaveOccurred())
@@ -122,6 +119,7 @@ var _ = AfterSuite(func() {
 			GinkgoWriter.Printf("manifest: %v\n", manifest)
 		}
 	}
+	cancel()
 })
 
 func getKubeConfigs() (*[]byte, *[]byte, error) {

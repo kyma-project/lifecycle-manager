@@ -16,7 +16,6 @@ func (src *ModuleTemplate) ConvertTo(dstRaw conversion.Hub) error {
 	dst.Spec.Data = src.Spec.Data
 	dst.Spec.Descriptor = src.Spec.Descriptor
 	dst.Spec.CustomStateCheck = src.Spec.CustomStateCheck
-
 	return nil
 }
 

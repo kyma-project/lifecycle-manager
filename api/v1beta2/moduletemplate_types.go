@@ -89,7 +89,7 @@ type ModuleTemplateSpec struct {
 	Data unstructured.Unstructured `json:"data,omitempty"`
 
 	// The Descriptor is the Open Component Model Descriptor of a Module, containing all relevant information
-	// to correctly initialize a module (e.g. Charts, Manifests, References to Binaries and/or configuration)
+	// to correctly initialize a module (e.g. Manifests, References to Binaries and/or configuration)
 	// Name more information on Component Descriptors, see
 	// https://github.com/open-component-model/ocm
 	//
@@ -98,19 +98,24 @@ type ModuleTemplateSpec struct {
 	// This means for upgrades of the Descriptor, downstream controllers will also update the dependant modules
 	// (e.g. by updating the controller binary linked in a chart referenced in the descriptor)
 	//
+	// NOTE: Only Raw Rendering is Supported for the layers. So previously used "config" layers for the helm
+	// charts and kustomize renderers are deprecated and ignored.
+	//
 	//+kubebuilder:pruning:PreserveUnknownFields
 	Descriptor runtime.RawExtension `json:"descriptor"`
 
-	// CustomStateCheck for advanced Module State determination
-	CustomStateCheck *CustomStateCheck `json:"customStateCheck,omitempty"`
+	CustomStateCheck []*CustomStateCheck `json:"customStateCheck,omitempty"`
 }
 
 type CustomStateCheck struct {
 	// JSONPath specifies the JSON path to the state variable in the Module CR
-	JSONPath string `json:"jsonPath"`
+	JSONPath string `json:"jsonPath" yaml:"jsonPath"`
 
-	// Value is the value at the JSONPath for which the Module CR state is set to "Ready" in Kyma CR
-	Value string `json:"value"`
+	// Value is the value at the JSONPath for which the Module CR state should map with MappedState
+	Value string `json:"value" yaml:"value"`
+
+	// MappedState is the Kyma CR State
+	MappedState State `json:"mappedState" yaml:"mappedState"`
 }
 
 func (m *ModuleTemplate) GetDescriptor() (*Descriptor, error) {
@@ -131,7 +136,7 @@ func (m *ModuleTemplate) GetDescriptor() (*Descriptor, error) {
 		m.Spec.Descriptor.Raw, []compdesc.DecodeOption{compdesc.DisableValidation(true)}...,
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to decode to descriptor target: %w", err)
 	}
 	m.Spec.Descriptor.Object = &Descriptor{ComponentDescriptor: desc}
 	mDesc, ok := m.Spec.Descriptor.Object.(*Descriptor)

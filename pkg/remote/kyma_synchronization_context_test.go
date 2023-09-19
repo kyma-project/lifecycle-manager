@@ -24,7 +24,7 @@ func TestReplaceWithVirtualKyma(t *testing.T) {
 		expectedKyma testKyma
 	}{
 		{
-			"module in kcpKyma and remoteKyma get merged",
+			"module in kcp Kyma gets replaced with remote Kyma",
 			testKyma{
 				channel: "regular",
 				modules: []string{"module1"},
@@ -35,7 +35,7 @@ func TestReplaceWithVirtualKyma(t *testing.T) {
 			},
 			testKyma{
 				channel: "regular",
-				modules: []string{"module1", "module2"},
+				modules: []string{"module1"},
 			},
 		},
 		{
@@ -46,11 +46,11 @@ func TestReplaceWithVirtualKyma(t *testing.T) {
 			},
 			testKyma{
 				channel: "fast",
-				modules: []string{"module2"},
+				modules: []string{"module1"},
 			},
 			testKyma{
 				channel: "regular",
-				modules: []string{"module1", "module2"},
+				modules: []string{"module1"},
 			},
 		},
 	}
@@ -60,7 +60,7 @@ func TestReplaceWithVirtualKyma(t *testing.T) {
 			t.Parallel()
 			kcpKyma := createKyma(testCase.kcpKyma.channel, testCase.kcpKyma.modules)
 			remoteKyma := createKyma(testCase.remoteKyma.channel, testCase.remoteKyma.modules)
-			remote.MergeModules(kcpKyma, remoteKyma)
+			remote.ReplaceModules(kcpKyma, remoteKyma)
 			assert.Equal(t, testCase.expectedKyma.channel, kcpKyma.Spec.Channel)
 			var virtualModules []string
 			for _, module := range kcpKyma.Spec.Modules {

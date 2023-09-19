@@ -25,13 +25,13 @@ import (
 	"os"
 	"time"
 
+	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
+
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/open-component-model/ocm/pkg/contexts/oci"
-	"github.com/open-component-model/ocm/pkg/contexts/oci/repositories/ocireg"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/cpi"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
+
+	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
+
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -77,20 +77,13 @@ var (
 
 //nolint:gochecknoinits
 func init() {
-	ocm.DefaultContext().RepositoryTypes().Register(
-		genericocireg.Type, genericocireg.NewRepositoryType(oci.DefaultContext()),
-	)
-	ocm.DefaultContext().RepositoryTypes().Register(
-		genericocireg.TypeV1, genericocireg.NewRepositoryType(oci.DefaultContext()),
-	)
-	cpi.DefaultContext().RepositoryTypes().Register(
-		ocireg.LegacyType, genericocireg.NewRepositoryType(oci.DefaultContext()),
-	)
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(api.AddToScheme(scheme))
 
 	utilruntime.Must(v1extensions.AddToScheme(scheme))
 	utilruntime.Must(certManagerV1.AddToScheme(scheme))
+
+	utilruntime.Must(istiov1beta1.AddToScheme(scheme))
 
 	utilruntime.Must(operatorv1beta2.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
@@ -229,21 +222,12 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		watcherChartDirInfo, err := os.Stat(flagVar.skrWatcherPath)
 		if err != nil || !watcherChartDirInfo.IsDir() {
 			setupLog.Error(err, "failed to read local skr chart")
+			os.Exit(1)
 		}
-		skrWebhookManager, err = watcher.NewSKRWebhookManifestManager(kcpRestConfig, &watcher.SkrWebhookManagerConfig{
-			SKRWatcherPath:              flagVar.skrWatcherPath,
-			SkrWatcherImage:             flagVar.skrWatcherImage,
-			SkrWebhookCPULimits:         flagVar.skrWebhookCPULimits,
-			SkrWebhookMemoryLimits:      flagVar.skrWebhookMemoryLimits,
-			ListenerGatewayPortName:     flagVar.listenerGatewayPortName,
-			WatcherLocalTestingEnabled:  flagVar.enableWatcherLocalTesting,
-			LocalGatewayHTTPPortMapping: flagVar.listenerHTTPSPortLocalMapping,
-			IstioNamespace:              flagVar.istioNamespace,
-			IstioIngressServiceName:     flagVar.istioIngressServiceName,
-			RemoteSyncNamespace:         flagVar.remoteSyncNamespace,
-		})
-		if err != nil {
+
+		if skrWebhookManager, err = createSkrWebhookManager(mgr, flagVar); err != nil {
 			setupLog.Error(err, "failed to create webhook chart manager")
+			os.Exit(1)
 		}
 	}
 
@@ -279,6 +263,21 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options, kcpRestConfig)
 	}
 	metrics.Initialize()
+}
+
+func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (watcher.SKRWebhookManager, error) {
+	return watcher.NewSKRWebhookManifestManager(mgr.GetConfig(), mgr.GetScheme(), &watcher.SkrWebhookManagerConfig{
+		SKRWatcherPath:              flagVar.skrWatcherPath,
+		SkrWatcherImage:             flagVar.skrWatcherImage,
+		SkrWebhookCPULimits:         flagVar.skrWebhookCPULimits,
+		SkrWebhookMemoryLimits:      flagVar.skrWebhookMemoryLimits,
+		WatcherLocalTestingEnabled:  flagVar.enableWatcherLocalTesting,
+		LocalGatewayHTTPPortMapping: flagVar.listenerHTTPSPortLocalMapping,
+		IstioNamespace:              flagVar.istioNamespace,
+		IstioGatewayName:            flagVar.istioGatewayName,
+		IstioGatewayNamespace:       flagVar.istioGatewayNamespace,
+		RemoteSyncNamespace:         flagVar.remoteSyncNamespace,
+	})
 }
 
 func setupPurgeReconciler(

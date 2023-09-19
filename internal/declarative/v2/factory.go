@@ -70,14 +70,14 @@ func NewSingletonClients(info *ClusterInfo) (*SingletonClients, error) {
 
 	httpClient, err := rest.HTTPClientFor(info.Config)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to initiliaze httpClient: %w", err)
 	}
 
 	discoveryConfig := *info.Config
 	discoveryConfig.Burst = 200
 	discoveryClient, err := discovery.NewDiscoveryClientForConfigAndClient(&discoveryConfig, httpClient)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to initiliaze DiscoveryClient: %w", err)
 	}
 	cachedDiscoveryClient := memory.NewMemCacheClient(discoveryClient)
 	discoveryRESTMapper := restmapper.NewDeferredDiscoveryRESTMapper(cachedDiscoveryClient)
@@ -99,11 +99,11 @@ func NewSingletonClients(info *ClusterInfo) (*SingletonClients, error) {
 
 	kubernetesClient, err := kubernetes.NewForConfigAndClient(info.Config, httpClient)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to initialiaze k8s-client: %w", err)
 	}
 	dynamicClient, err := dynamic.NewForConfigAndClient(info.Config, httpClient)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to initialiaze dynamic-client: %w", err)
 	}
 
 	openAPIGetter := openapi.NewOpenAPIGetter(cachedDiscoveryClient)
@@ -174,5 +174,9 @@ func setKubernetesDefaults(config *rest.Config) error {
 		// on the client.
 		config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
 	}
-	return rest.SetKubernetesDefaults(config)
+	err := rest.SetKubernetesDefaults(config)
+	if err != nil {
+		return fmt.Errorf("failed to create kubernetes default config: %w", err)
+	}
+	return nil
 }

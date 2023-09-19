@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -87,7 +88,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 	if err := r.Get(ctx, req.NamespacedName, obj); err != nil {
 		log.FromContext(ctx).Info(req.NamespacedName.String() + " got deleted!")
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		if !util.IsNotFound(err) {
+			return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
+		}
+		return ctrl.Result{}, nil
 	}
 
 	if r.ShouldSkip(ctx, obj) {
@@ -115,7 +119,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if notContainsSyncedOCIRefAnnotation(obj) {
 		updateSyncedOCIRefAnnotation(obj, spec.OCIRef)
-		return ctrl.Result{Requeue: true}, r.Update(ctx, obj)
+		return ctrl.Result{Requeue: true}, r.Update(ctx, obj) //nolint:wrapcheck
 	}
 
 	clnt, err := r.getTargetClient(ctx, obj)
@@ -161,7 +165,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// we need to make sure all updates successfully before we can update synced oci ref
 	if requireUpdateSyncedOCIRefAnnotation(obj, spec.OCIRef) {
 		updateSyncedOCIRefAnnotation(obj, spec.OCIRef)
-		return ctrl.Result{Requeue: true}, r.Update(ctx, obj)
+		return ctrl.Result{Requeue: true}, r.Update(ctx, obj) //nolint:wrapcheck
 	}
 	return r.CtrlOnSuccess, nil
 }
@@ -176,7 +180,8 @@ func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizer
 		}
 	}
 	if finalizerRemoved {
-		return ctrl.Result{}, r.Update(ctx, obj) // no SSA since delete does not work for finalizers.
+		// no SSA since delete does not work for finalizers
+		return ctrl.Result{}, r.Update(ctx, obj) //nolint:wrapcheck
 	}
 	msg := fmt.Sprintf("waiting as other finalizers are present: %s", obj.GetFinalizers())
 	r.Event(obj, "Normal", "FinalizerRemoval", msg)
@@ -366,20 +371,10 @@ func generateOperationMessage(installationCondition metav1.Condition, stateInfo 
 	return installationCondition.Message
 }
 
-func (r *Reconciler) deleteResources(
+func (r *Reconciler) deleteDiffResources(
 	ctx context.Context, clnt Client, obj Object, diff []*resource.Info,
 ) error {
 	status := obj.GetStatus()
-
-	if !obj.GetDeletionTimestamp().IsZero() {
-		for _, preDelete := range r.PreDeletes {
-			if err := preDelete(ctx, clnt, r.Client, obj); err != nil {
-				r.Event(obj, "Warning", "PreDelete", err.Error())
-				// we do not set a status here since it will be deleting if timestamp is set.
-				return err
-			}
-		}
-	}
 
 	if err := NewConcurrentCleanup(clnt).Run(ctx, diff); errors.Is(err, ErrDeletionNotFinished) {
 		r.Event(obj, "Normal", "Deletion", err.Error())
@@ -390,6 +385,19 @@ func (r *Reconciler) deleteResources(
 		return err
 	}
 
+	return nil
+}
+
+func (r *Reconciler) doPreDelete(ctx context.Context, clnt Client, obj Object) error {
+	if !obj.GetDeletionTimestamp().IsZero() {
+		for _, preDelete := range r.PreDeletes {
+			if err := preDelete(ctx, clnt, r.Client, obj); err != nil {
+				r.Event(obj, "Warning", "PreDelete", err.Error())
+				// we do not set a status here since it will be deleting if timestamp is set.
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -462,7 +470,12 @@ func (r *Reconciler) pruneDiff(
 		r.ManifestParser.EvictCache(spec)
 		return ErrResourceSyncDiffInSameOCILayer
 	}
-	if err := r.deleteResources(ctx, clnt, obj, diff); err != nil {
+
+	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
+		return err
+	}
+
+	if err := r.deleteDiffResources(ctx, clnt, obj, diff); err != nil {
 		return err
 	}
 
@@ -547,7 +560,7 @@ func (r *Reconciler) getTargetClient(ctx context.Context, obj Object) (Client, e
 			}, client.Apply, client.ForceOwnership, r.FieldOwner,
 		)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to patch namespace: %w", err)
 		}
 	}
 
@@ -581,7 +594,7 @@ func (r *Reconciler) ssaStatus(ctx context.Context, obj client.Object) (ctrl.Res
 	obj.SetManagedFields(nil)
 	obj.SetResourceVersion("")
 	// TODO: replace the SubResourcePatchOptions with  client.ForceOwnership, r.FieldOwner in later compatible version
-	return ctrl.Result{Requeue: true}, r.Status().Patch(
+	return ctrl.Result{Requeue: true}, r.Status().Patch( //nolint:wrapcheck
 		ctx, obj, client.Apply, subResourceOpts(client.ForceOwnership, r.FieldOwner),
 	)
 }
@@ -594,5 +607,9 @@ func (r *Reconciler) ssa(ctx context.Context, obj client.Object) (ctrl.Result, e
 	obj.SetUID("")
 	obj.SetManagedFields(nil)
 	obj.SetResourceVersion("")
-	return ctrl.Result{Requeue: true}, r.Patch(ctx, obj, client.Apply, client.ForceOwnership, r.FieldOwner)
+	return ctrl.Result{Requeue: true},
+		r.Patch(ctx, obj, //nolint:wrapcheck
+			client.Apply,
+			client.ForceOwnership,
+			r.FieldOwner)
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	listenerMetrics "github.com/kyma-project/runtime-watcher/listener/pkg/metrics"
 	"github.com/prometheus/client_golang/prometheus"
 	ctrlMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
@@ -12,6 +13,7 @@ import (
 )
 
 const (
+	//nolint:gosec
 	metricKymaState   = "lifecycle_mgr_kyma_state"
 	metricModuleState = "lifecycle_mgr_module_state"
 	kymaNameLabel     = "kyma_name"
@@ -35,6 +37,7 @@ var (
 func Initialize() {
 	ctrlMetrics.Registry.MustRegister(kymaStateGauge)
 	ctrlMetrics.Registry.MustRegister(moduleStateGauge)
+	listenerMetrics.Init(ctrlMetrics.Registry)
 }
 
 var errMetric = errors.New("failed to update metrics")
@@ -43,11 +46,11 @@ var errMetric = errors.New("failed to update metrics")
 func UpdateAll(kyma *v1beta2.Kyma) error {
 	shootID, err := extractShootID(kyma)
 	if err != nil {
-		return errors.Join(errMetric, err)
+		return fmt.Errorf("%w: %w", errMetric, err)
 	}
 	instanceID, err := extractInstanceID(kyma)
 	if err != nil {
-		return errors.Join(errMetric, err)
+		return fmt.Errorf("%w: %w", errMetric, err)
 	}
 
 	setKymaStateGauge(kyma.Status.State, kyma.Name, shootID, instanceID)

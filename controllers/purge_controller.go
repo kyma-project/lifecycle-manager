@@ -25,11 +25,14 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
+
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/tools/record"
@@ -61,7 +64,11 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	// check if kyma resource exists
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		if !util.IsNotFound(err) {
+			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted", req.NamespacedName))
+			return ctrl.Result{}, fmt.Errorf("purgeController: %w", err)
+		}
+		return ctrl.Result{}, nil
 	}
 
 	if kyma.DeletionTimestamp.IsZero() {
@@ -74,8 +81,16 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	// condition to check if deletionTimestamp is set, retry until it gets fully deleted
 	deletionDeadline := kyma.DeletionTimestamp.Add(r.PurgeFinalizerTimeout)
 
-	if time.Now().After(deletionDeadline) {
+	if time.Now().After(deletionDeadline) { //nolint:nestif
 		remoteClient, err := r.ResolveRemoteClient(ctx, client.ObjectKeyFromObject(kyma))
+		if util.IsNotFound(err) {
+			if err := r.DropPurgeFinalizer(ctx, kyma); err != nil {
+				logger.Error(err, "Couldn't remove Purge Finalizer from the Kyma object")
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{}, nil
+		}
+
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -106,7 +121,7 @@ func (r *PurgeReconciler) EnsurePurgeFinalizer(ctx context.Context, kyma *v1beta
 	controllerutil.AddFinalizer(kyma, v1beta2.PurgeFinalizer)
 	if err := r.Update(ctx, kyma); err != nil {
 		r.Event(kyma, "Warning", "SettingPurgeFinalizerError", fmt.Errorf("could not set purge finalizer: %w", err).Error())
-		return err
+		return fmt.Errorf("could not set purge finalizer: %w", err)
 	}
 	return nil
 }
@@ -117,7 +132,7 @@ func (r *PurgeReconciler) DropPurgeFinalizer(ctx context.Context, kyma *v1beta2.
 		if err := r.Update(ctx, kyma); err != nil {
 			r.Event(kyma, "Warning", "SettingPurgeFinalizerError",
 				fmt.Errorf("could not remove purge finalizer: %w", err).Error())
-			return err
+			return fmt.Errorf("could not remove purge finalizer: %w", err)
 		}
 	}
 
@@ -128,7 +143,7 @@ func performCleanup(ctx context.Context, remoteClient client.Client, skipCRDs CR
 	crdList := apiextensions.CustomResourceDefinitionList{}
 
 	if err := remoteClient.List(ctx, &crdList); err != nil {
-		return err
+		return fmt.Errorf("failed to fetch CRDs from the cluster: %w", err)
 	}
 
 	for _, crdResource := range crdList.Items {
@@ -142,12 +157,12 @@ func performCleanup(ctx context.Context, remoteClient client.Client, skipCRDs CR
 
 		staleResources, err := getStaleResourcesFrom(ctx, remoteClient, crdResource)
 		if err != nil {
-			return err
+			return fmt.Errorf("could not fetch stale resources from the cluster: %w", err)
 		}
 
 		err = purgeStaleResources(ctx, remoteClient, staleResources)
 		if err != nil {
-			return err
+			return fmt.Errorf("unable to purge stale resources: %w", err)
 		}
 	}
 	return nil
@@ -175,7 +190,7 @@ func getStaleResourcesFrom(ctx context.Context, remoteClient client.Client,
 	staleResources.SetGroupVersionKind(gvk)
 
 	if err := remoteClient.List(ctx, &staleResources); err != nil {
-		return unstructured.UnstructuredList{}, err
+		return unstructured.UnstructuredList{}, fmt.Errorf("failed to fetch stale resources: %w", err)
 	}
 
 	return staleResources, nil
@@ -188,7 +203,7 @@ func purgeStaleResources(ctx context.Context, remoteClient client.Client,
 		resource := staleResources.Items[index]
 		resource.SetFinalizers(nil)
 		if err := remoteClient.Update(ctx, &resource); err != nil {
-			return err
+			return fmt.Errorf("failed to update resource: %w", err)
 		}
 	}
 	return nil

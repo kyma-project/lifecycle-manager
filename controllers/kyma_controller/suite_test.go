@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-
+//nolint:gochecknoglobals
 package kyma_controller_test
 
 import (
@@ -26,11 +26,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/open-component-model/ocm/pkg/contexts/oci"
-	"github.com/open-component-model/ocm/pkg/contexts/oci/repositories/ocireg"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/cpi"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
+	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
 	"go.uber.org/zap/zapcore"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
@@ -54,15 +50,15 @@ import (
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
-const UseRandomPort = "0"
+const randomPort = "0"
 
 var (
-	controlPlaneClient client.Client        //nolint:gochecknoglobals
-	k8sManager         manager.Manager      //nolint:gochecknoglobals
-	controlPlaneEnv    *envtest.Environment //nolint:gochecknoglobals
-	ctx                context.Context      //nolint:gochecknoglobals
-	cancel             context.CancelFunc   //nolint:gochecknoglobals
-	cfg                *rest.Config         //nolint:gochecknoglobals
+	controlPlaneClient client.Client
+	k8sManager         manager.Manager
+	controlPlaneEnv    *envtest.Environment
+	ctx                context.Context
+	cancel             context.CancelFunc
+	cfg                *rest.Config
 )
 
 func TestAPIs(t *testing.T) {
@@ -82,18 +78,17 @@ var _ = BeforeSuite(func() {
 		"cert-manager-v1.10.1.crds.yaml",
 		"istio-v1.17.1.crds.yaml")
 
-	// kcpModule CRD
-	controlplaneCrd := &v1.CustomResourceDefinition{}
+	kcpModuleCRD := &v1.CustomResourceDefinition{}
 	modulePath := filepath.Join("..", "..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(moduleFile).ToNot(BeEmpty())
-	Expect(yaml2.Unmarshal(moduleFile, &controlplaneCrd)).To(Succeed())
+	Expect(yaml2.Unmarshal(moduleFile, &kcpModuleCRD)).To(Succeed())
 
 	controlPlaneEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
-		CRDs:                  append([]*v1.CustomResourceDefinition{controlplaneCrd}, externalCRDs...),
+		CRDs:                  append([]*v1.CustomResourceDefinition{kcpModuleCRD}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}
 
@@ -101,11 +96,6 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	ocm.DefaultContext().RepositoryTypes().Register(genericocireg.Type, &genericocireg.RepositoryType{})
-	ocm.DefaultContext().RepositoryTypes().Register(genericocireg.TypeV1, &genericocireg.RepositoryType{})
-	cpi.DefaultContext().RepositoryTypes().Register(
-		ocireg.LegacyType, genericocireg.NewRepositoryType(oci.DefaultContext()),
-	)
 	Expect(api.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 
@@ -113,7 +103,7 @@ var _ = BeforeSuite(func() {
 
 	k8sManager, err = ctrl.NewManager(
 		cfg, ctrl.Options{
-			MetricsBindAddress: UseRandomPort,
+			MetricsBindAddress: randomPort,
 			Scheme:             scheme.Scheme,
 			Cache:              controllers.NewCacheOptions(),
 		})
@@ -139,7 +129,7 @@ var _ = BeforeSuite(func() {
 		InKCPMode:           false,
 		RemoteSyncNamespace: controllers.DefaultRemoteSyncNamespace,
 	}).SetupWithManager(k8sManager, controller.Options{},
-		controllers.SetupUpSetting{ListenerAddr: UseRandomPort})
+		controllers.SetupUpSetting{ListenerAddr: randomPort})
 	Expect(err).ToNot(HaveOccurred())
 
 	controlPlaneClient = k8sManager.GetClient()

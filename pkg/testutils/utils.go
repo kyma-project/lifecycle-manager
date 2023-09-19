@@ -1,3 +1,4 @@
+//nolint:wrapcheck
 package testutils
 
 import (
@@ -26,6 +27,8 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/uuid"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -45,8 +48,9 @@ const (
 )
 
 var (
-	ErrNotFound   = errors.New("resource not exists")
-	ErrNotDeleted = errors.New("resource not deleted")
+	ErrNotFound           = errors.New("resource not exists")
+	ErrNotDeleted         = errors.New("resource not deleted")
+	ErrManifestNotinState = errors.New("manifest is not in correct state")
 )
 
 func NewTestKyma(name string) *v1beta2.Kyma {
@@ -81,6 +85,31 @@ func newKCPKymaWithNamespace(name, namespace, channel, syncStrategy string) *v1b
 			Channel: channel,
 		},
 	}
+}
+
+func NewTestManifest(prefix string) *v1beta2.Manifest {
+	return &v1beta2.Manifest{
+		ObjectMeta: v1.ObjectMeta{
+			Name:      fmt.Sprintf("%s-%s", prefix, randString(randomStringLength)),
+			Namespace: v1.NamespaceDefault,
+			Labels: map[string]string{
+				v1beta2.KymaName: string(uuid.NewUUID()),
+			},
+			Annotations: map[string]string{},
+		},
+	}
+}
+
+func NewTestModuleCR(name, namespace, version, kind string) unstructured.Unstructured {
+	moduleCR := unstructured.Unstructured{}
+	moduleCR.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   v1beta2.GroupVersion.Group,
+		Version: version,
+		Kind:    kind,
+	})
+	moduleCR.SetName(name)
+	moduleCR.SetNamespace(namespace)
+	return moduleCR
 }
 
 func NewTestModule(name, channel string) v1beta2.Module {
@@ -139,10 +168,11 @@ func DeployModuleTemplates(
 	onPrivateRepo,
 	isInternal,
 	isBeta bool,
+	isClusterScoped bool,
 ) {
 	for _, module := range kyma.Spec.Modules {
 		Eventually(DeployModuleTemplate, Timeout, Interval).WithContext(ctx).
-			WithArguments(kcpClient, module, onPrivateRepo, isInternal, isBeta).
+			WithArguments(kcpClient, module, onPrivateRepo, isInternal, isBeta, isClusterScoped).
 			Should(Succeed())
 	}
 }
@@ -154,8 +184,10 @@ func DeployModuleTemplate(
 	onPrivateRepo,
 	isInternal,
 	isBeta bool,
+	isClusterScoped bool,
 ) error {
-	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo, isInternal, isBeta)
+	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo, isInternal, isBeta,
+		isClusterScoped)
 	if err != nil {
 		return err
 	}
@@ -170,7 +202,7 @@ func DeleteModuleTemplates(
 	onPrivateRepo bool,
 ) {
 	for _, module := range kyma.Spec.Modules {
-		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo, false, false)
+		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo, false, false, false)
 		Expect(err).ShouldNot(HaveOccurred())
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
@@ -250,7 +282,7 @@ func GetManifest(ctx context.Context,
 	kyma *v1beta2.Kyma,
 	module v1beta2.Module,
 ) (*v1beta2.Manifest, error) {
-	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false)
+	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -277,6 +309,7 @@ func ModuleTemplateFactory(
 	onPrivateRepo bool,
 	isInternal bool,
 	isBeta bool,
+	isClusterScoped bool,
 ) (*v1beta2.ModuleTemplate, error) {
 	template, err := ModuleTemplateFactoryForSchema(module, data, compdesc2.SchemaVersion, onPrivateRepo)
 	if err != nil {
@@ -287,6 +320,12 @@ func ModuleTemplateFactory(
 	}
 	if isBeta {
 		template.Labels[v1beta2.BetaLabel] = v1beta2.EnableLabelValue
+	}
+	if isClusterScoped {
+		if template.Annotations == nil {
+			template.Annotations = make(map[string]string)
+		}
+		template.Annotations[v1beta2.IsClusterScopedAnnotation] = v1beta2.EnableLabelValue
 	}
 	return template, nil
 }

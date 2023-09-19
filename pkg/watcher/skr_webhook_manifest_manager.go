@@ -2,16 +2,18 @@ package watcher
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 
 	"github.com/go-logr/logr"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -36,12 +38,12 @@ type SkrWebhookManagerConfig struct {
 	SkrWebhookCPULimits    string
 	// IstioNamespace represents the cluster resource namespace of istio
 	IstioNamespace string
-	// IstioIngressServiceName represents the cluster resource name of the istio ingress service name
-	IstioIngressServiceName string
+	// IstioGatewayName represents the cluster resource name of the klm istio gateway
+	IstioGatewayName string
+	// IstioGatewayNamespace represents the cluster resource namespace of the klm istio gateway
+	IstioGatewayNamespace string
 	// RemoteSyncNamespace indicates the sync namespace for Kyma and module catalog
 	RemoteSyncNamespace string
-	// ListenerGatewayPortName indicates the name of the port the watcher's requests should be sent to
-	ListenerGatewayPortName string
 	// WatcherLocalTestingEnabled indicates if the chart manager is running in local testing mode
 	WatcherLocalTestingEnabled bool
 	// LocalGatewayHTTPPortMapping indicates the port used to expose the KCP cluster locally in k3d
@@ -49,20 +51,28 @@ type SkrWebhookManagerConfig struct {
 	LocalGatewayHTTPPortMapping int
 }
 
-func NewSKRWebhookManifestManager(kcpRestConfig *rest.Config, managerConfig *SkrWebhookManagerConfig,
-) (*SKRWebhookManifestManager, error) {
+const rawManifestFilePathTpl = "%s/resources.yaml"
+
+func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
+	schema *runtime.Scheme,
+	managerConfig *SkrWebhookManagerConfig,
+) (SKRWebhookManager, error) {
 	logger := logf.FromContext(context.TODO())
 	manifestFilePath := fmt.Sprintf(rawManifestFilePathTpl, managerConfig.SKRWatcherPath)
 	rawManifestFile, err := os.Open(manifestFilePath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open manifest file path: %w", err)
 	}
 	defer closeFileAndLogErr(rawManifestFile, logger, manifestFilePath)
 	baseResources, err := getRawManifestUnstructuredResources(rawManifestFile)
 	if err != nil {
 		return nil, err
 	}
-	resolvedKcpAddr, err := resolveKcpAddr(kcpRestConfig, managerConfig)
+	kcpClient, err := client.New(kcpConfig, client.Options{Scheme: schema})
+	if err != nil {
+		return nil, fmt.Errorf("can't create kcpClient: %w", err)
+	}
+	resolvedKcpAddr, err := resolveKcpAddr(kcpClient, managerConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +86,10 @@ func NewSKRWebhookManifestManager(kcpRestConfig *rest.Config, managerConfig *Skr
 func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.Kyma) error {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
-	syncContext := remote.SyncContextFromContext(ctx)
+	syncContext, err := remote.SyncContextFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get syncContext: %w", err)
+	}
 
 	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
 	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma,
@@ -97,7 +110,11 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 	err = runResourceOperationWithGroupedErrors(ctx, syncContext.RuntimeClient, resources,
 		func(ctx context.Context, clt client.Client, resource client.Object) error {
 			resource.SetNamespace(m.config.RemoteSyncNamespace)
-			return clt.Patch(ctx, resource, client.Apply, client.ForceOwnership, skrChartFieldOwner)
+			err := clt.Patch(ctx, resource, client.Apply, client.ForceOwnership, skrChartFieldOwner)
+			if err != nil {
+				return fmt.Errorf("failed to patch resource %s: %w", resource.GetName(), err)
+			}
+			return nil
 		})
 	if err != nil {
 		return fmt.Errorf("failed to apply webhook resources: %w", err)
@@ -110,18 +127,19 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Kyma) error {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
-	syncContext := remote.SyncContextFromContext(ctx)
-
+	syncContext, err := remote.SyncContextFromContext(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get syncContext: %w", err)
+	}
 	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma,
 		m.config.IstioNamespace, m.config.RemoteSyncNamespace, false)
 	if err != nil {
 		logger.Error(err, "Error while creating new CertificateManager")
 		return err
 	}
-	if err := certificate.Remove(ctx); err != nil {
+	if err = certificate.Remove(ctx); err != nil {
 		return err
 	}
-
 	skrClientObjects := m.getBaseClientObjects()
 	genClientObjects := getGeneratedClientObjects(&unstructuredResourcesConfig{}, []v1beta2.Watcher{},
 		m.config.RemoteSyncNamespace)
@@ -129,7 +147,11 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 	err = runResourceOperationWithGroupedErrors(ctx, syncContext.RuntimeClient, skrClientObjects,
 		func(ctx context.Context, clt client.Client, resource client.Object) error {
 			resource.SetNamespace(m.config.RemoteSyncNamespace)
-			return clt.Delete(ctx, resource)
+			err = clt.Delete(ctx, resource)
+			if err != nil {
+				return fmt.Errorf("failed to delete resource %s: %w", resource.GetName(), err)
+			}
+			return nil
 		})
 	if err != nil && !util.IsNotFound(err) {
 		return fmt.Errorf("failed to delete webhook resources: %w", err)
@@ -161,10 +183,12 @@ func (m *SKRWebhookManifestManager) getSKRClientObjectsForInstall(ctx context.Co
 	return append(skrClientObjects, genClientObjects...), nil
 }
 
+var errExpectedNonNilConfig = errors.New("expected non nil config")
+
 func (m *SKRWebhookManifestManager) getRawManifestClientObjects(cfg *unstructuredResourcesConfig,
 ) ([]client.Object, error) {
 	if cfg == nil {
-		return nil, ErrExpectedNonNilConfig
+		return nil, errExpectedNonNilConfig
 	}
 	resources := make([]client.Object, 0)
 	for _, baseRes := range m.baseResources {

@@ -25,7 +25,7 @@ var (
 
 func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false)
+		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false, false)
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(controlPlaneClient, kyma).Should(Succeed())
@@ -176,6 +176,20 @@ func notContainsModuleInSpec(clnt client.Client, kymaName, kymaNamespace, module
 	return nil
 }
 
+func containsModuleInSpec(clnt client.Client, kymaName, kymaNamespace, moduleName string) error {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+	for _, module := range kyma.Spec.Modules {
+		if module.Name == moduleName {
+			return nil
+		}
+	}
+
+	return ErrNotContainsExpectedModules
+}
+
 func addModuleToKyma(clnt client.Client, kymaName, kymaNamespace string, module v1beta2.Module) error {
 	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
 	if err != nil {
@@ -184,6 +198,21 @@ func addModuleToKyma(clnt client.Client, kymaName, kymaNamespace string, module 
 
 	kyma.Spec.Modules = append(
 		kyma.Spec.Modules, module)
+	return clnt.Update(ctx, kyma)
+}
+
+func removeModuleFromKyma(clnt client.Client, kymaName, kymaNamespace, moduleName string) error {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+
+	for i, module := range kyma.Spec.Modules {
+		if module.Name == moduleName {
+			kyma.Spec.Modules = append(kyma.Spec.Modules[:i], kyma.Spec.Modules[i+1:]...)
+			break
+		}
+	}
 	return clnt.Update(ctx, kyma)
 }
 
