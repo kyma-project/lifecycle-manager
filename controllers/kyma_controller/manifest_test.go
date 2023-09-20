@@ -282,12 +282,15 @@ var _ = Describe("Update Module Template Version", Ordered, func() {
 			updateModuleTemplateWith := funWrap(updateKCPModuleTemplate(module.Name, "default"))
 			validateModuleTemplateWith := funWrap(validateKCPModuleTemplate(module.Name, "default"))
 
-			ensureModuleTemplateUpdated := series(
-				updateModuleTemplateWith(newVersionAndLayerDigest),
-				validateModuleTemplateWith(updatedVersionAndLayerDigest),
+			updateModuleTemplateVersionAndLayerDigest := updateModuleTemplateWith(newVersionAndLayerDigest)
+			validateVersionAndLayerDigestAreUpdated := validateModuleTemplateWith(updatedVersionAndLayerDigest)
+
+			ensureModuleTemplateUpdate := series(
+				updateModuleTemplateVersionAndLayerDigest,
+				validateVersionAndLayerDigestAreUpdated,
 			)
 
-			Eventually(ensureModuleTemplateUpdated, Timeout, Interval*2).Should(Succeed())
+			Eventually(ensureModuleTemplateUpdate, Timeout, Interval*2).Should(Succeed())
 		}
 
 		By("Manifest is updated with new value in spec.install.source.ref")
