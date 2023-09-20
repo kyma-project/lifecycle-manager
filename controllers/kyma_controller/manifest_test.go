@@ -282,7 +282,7 @@ var _ = Describe("Update Module Template Version", Ordered, func() {
 			updateModuleTemplateWith := funWrap(updateKCPModuleTemplate(module.Name, "default"))
 			validateModuleTemplateWith := funWrap(validateKCPModuleTemplate(module.Name, "default"))
 
-			ensureModuleTemplateUpdated := composeFunctions(
+			ensureModuleTemplateUpdated := series(
 				updateModuleTemplateWith(newVersionAndLayerDigest),
 				validateModuleTemplateWith(updatedVersionAndLayerDigest),
 			)
@@ -585,8 +585,8 @@ func funWrap(inputFn func(moduleTemplateFn) error) func(moduleTemplateFn) func()
 	return res
 }
 
-// composeFunctions composes a series of simple parameterless functions into a single one.
-func composeFunctions(fns ...func() error) func() error {
+// series wraps a list of simple parameterless functions into a single one.
+func series(fns ...func() error) func() error {
 	return func() error {
 		var err error
 		for i := range fns {
