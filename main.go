@@ -60,6 +60,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
@@ -297,7 +298,7 @@ func setupPurgeReconciler(
 		EventRecorder:         mgr.GetEventRecorderFor(operatorv1beta2.OperatorName),
 		ResolveRemoteClient:   resolveRemoteClientFunc,
 		PurgeFinalizerTimeout: flagVar.purgeFinalizerTimeout,
-		SkipCRDs:              controllers.CRDMatcherFor(flagVar.skipPurgingFor),
+		SkipCRDs:              matcher.CreateCRDMatcherFrom(flagVar.skipPurgingFor),
 		IsManagedKyma:         flagVar.isKymaManaged,
 	}).SetupWithManager(
 		mgr, options,

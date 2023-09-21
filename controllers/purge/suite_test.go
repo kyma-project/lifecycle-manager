@@ -18,6 +18,7 @@ package purge_test
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"path/filepath"
 	"testing"
 	"time"
@@ -105,7 +106,7 @@ var _ = BeforeSuite(func() {
 		EventRecorder:         k8sManager.GetEventRecorderFor(operatorv1beta2.OperatorName),
 		ResolveRemoteClient:   useLocalClient,
 		PurgeFinalizerTimeout: time.Second,
-		SkipCRDs:              controllers.CRDMatcherFor(skipFinalizerRemovalForCRDs),
+		SkipCRDs:              matcher.CreateCRDMatcherFrom(skipFinalizerRemovalForCRDs),
 	}
 
 	err = purgeReconciler.SetupWithManager(k8sManager, controller.Options{})

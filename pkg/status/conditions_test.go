@@ -1,14 +1,13 @@
 package status_test
 
 import (
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"testing"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 type testCase struct {
@@ -62,7 +61,7 @@ func TestInitConditions(t *testing.T) {
 		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
 
-			kymaBuilder := testutils.NewKymaBuilder().
+			kymaBuilder := builder.NewKymaBuilder().
 				WithCondition(metav1.Condition{
 					Type:   string(v1beta2.DeprecatedConditionTypeReady),
 					Status: metav1.ConditionFalse,

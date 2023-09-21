@@ -1,7 +1,8 @@
-package testutils
+package builder
 
 import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -18,7 +19,7 @@ func NewKymaBuilder() KymaBuilder {
 				Kind:       string(v1beta2.KymaKind),
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      randomName(),
+				Name:      testutils.RandomName(),
 				Namespace: metav1.NamespaceDefault,
 			},
 			Spec:   v1beta2.KymaSpec{},
