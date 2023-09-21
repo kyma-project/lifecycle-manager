@@ -13,7 +13,6 @@ RUN go mod download
 COPY cmd cmd/
 COPY api api/
 COPY internal internal/
-COPY controllers controllers/
 COPY pkg pkg/
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager cmd/main.go cmd/flags.go
