@@ -3,9 +3,9 @@ package withwatcher_test
 import (
 	"bytes"
 	"errors"
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -77,7 +77,7 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 	issuer := NewTestIssuer(istioSystemNs)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	tlsSecret := createTLSSecret(kymaObjKey)
-	skrTLSSecretObjKey := client.ObjectKey{Name: watcher.SkrTLSName, Namespace: controllers.DefaultRemoteSyncNamespace}
+	skrTLSSecretObjKey := client.ObjectKey{Name: watcher.SkrTLSName, Namespace: controller.DefaultRemoteSyncNamespace}
 
 	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer)
 

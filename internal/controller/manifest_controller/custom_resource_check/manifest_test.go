@@ -2,10 +2,10 @@ package custom_resource_check_test
 
 import (
 	"encoding/json"
+	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
 	"os"
 	"path/filepath"
 
-	hlp "github.com/kyma-project/lifecycle-manager/controllers/manifest_controller/manifesttest"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"

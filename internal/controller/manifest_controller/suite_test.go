@@ -18,6 +18,7 @@ package manifest_controller_test
 
 import (
 	"context"
+	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -35,13 +36,12 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
+	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api"
-	hlp "github.com/kyma-project/lifecycle-manager/controllers/manifest_controller/manifesttest"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -81,7 +81,7 @@ var _ = BeforeSuite(
 
 		By("bootstrapping test environment")
 		testEnv = &envtest.Environment{
-			CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
+			CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
 			ErrorIfCRDPathMissing: false,
 		}
 
@@ -144,7 +144,7 @@ var _ = BeforeSuite(
 			For(&v1beta2.Manifest{}).
 			Watches(&v1.Secret{}, handler.Funcs{}).
 			WithOptions(
-				controller.Options{
+				controllerRuntime.Options{
 					RateLimiter: internal.ManifestRateLimiter(
 						1*time.Second, 5*time.Second,
 						30, 200,

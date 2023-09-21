@@ -18,6 +18,7 @@ package control_plane_test
 
 import (
 	"context"
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"os"
 	"path/filepath"
 	"testing"
@@ -37,10 +38,9 @@ import (
 	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
 
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
+	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
-	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -111,18 +111,18 @@ var _ = BeforeSuite(func() {
 		cfg, ctrl.Options{
 			MetricsBindAddress: UseRandomPort,
 			Scheme:             scheme.Scheme,
-			Cache:              controllers.NewCacheOptions(),
+			Cache:              controller.NewCacheOptions(),
 		})
 	Expect(err).ToNot(HaveOccurred())
 
-	intervals := controllers.RequeueIntervals{
+	intervals := controller.RequeueIntervals{
 		Success: 3 * time.Second,
 		Busy:    100 * time.Millisecond,
 		Error:   100 * time.Millisecond,
 	}
 
 	remoteClientCache := remote.NewClientCache()
-	err = (&controllers.KymaReconciler{
+	err = (&controller.KymaReconciler{
 		Client:           k8sManager.GetClient(),
 		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1beta2.OperatorName),
 		RequeueIntervals: intervals,
@@ -132,10 +132,10 @@ var _ = BeforeSuite(func() {
 		RemoteClientCache:   remoteClientCache,
 		KcpRestConfig:       k8sManager.GetConfig(),
 		InKCPMode:           true,
-		RemoteSyncNamespace: controllers.DefaultRemoteSyncNamespace,
+		RemoteSyncNamespace: controller.DefaultRemoteSyncNamespace,
 		IsManagedKyma:       true,
-	}).SetupWithManager(k8sManager, controller.Options{},
-		controllers.SetupUpSetting{ListenerAddr: UseRandomPort})
+	}).SetupWithManager(k8sManager, controllerRuntime.Options{},
+		controller.SetupUpSetting{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())
 
 	controlPlaneClient = k8sManager.GetClient()
