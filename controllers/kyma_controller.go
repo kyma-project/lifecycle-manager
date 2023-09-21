@@ -119,6 +119,13 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	ctx, err := r.getSyncedContext(ctx, kyma)
+
+	if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, remote.ErrAccessSecretNotFound) {
+		logger.Info("access secret not found for kyma, assuming already deleted cluster")
+		r.removeAllFinalizers(kyma)
+		return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
+	}
+
 	if err != nil {
 		return r.requeueWithError(ctx, kyma, err)
 	}
@@ -148,16 +155,12 @@ func (r *KymaReconciler) getSyncedContext(ctx context.Context, kyma *v1beta2.Kym
 	ctxWithSync, err := remote.InitializeSyncContext(ctx, kyma,
 		r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache)
 	if err != nil {
-		if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, remote.ErrAccessSecretNotFound) {
-			logger.Info("access secret not found for kyma, assuming already deleted cluster")
-			return nil, r.removeAllFinalizersAndUpdateKyma(ctx, kyma)
-		}
 		if util.IsConnectionRefused(err) {
 			logger.Info("connection refused, assuming connection is invalid and resetting cache-entry for kyma")
 			r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
 		}
 		r.enqueueWarningEvent(kyma, syncContextError, err)
-		return nil, err
+		return ctx, err
 	}
 
 	return ctxWithSync, nil
@@ -420,27 +423,18 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		logger.Info("removed remote finalizer")
 	}
 
-	if err := r.removeFinalizerAndUpdateKyma(ctx, kyma); err != nil {
-		return false, err
-	}
-
 	if err := metrics.RemoveKymaStateMetrics(kyma); err != nil {
 		logger.V(log.DebugLevel).Info(fmt.Sprintf("error occurred while removing kyma state metrics: %s", err))
 	}
 
-	return false, nil
+	controllerutil.RemoveFinalizer(kyma, v1beta2.Finalizer)
+	return false, r.updateKyma(ctx, kyma)
 }
 
-func (r *KymaReconciler) removeAllFinalizersAndUpdateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
+func (r *KymaReconciler) removeAllFinalizers(kyma *v1beta2.Kyma) {
 	for _, finalizer := range kyma.Finalizers {
 		controllerutil.RemoveFinalizer(kyma, finalizer)
 	}
-	return r.updateKyma(ctx, kyma)
-}
-
-func (r *KymaReconciler) removeFinalizerAndUpdateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
-	controllerutil.RemoveFinalizer(kyma, v1beta2.Finalizer)
-	return r.updateKyma(ctx, kyma)
 }
 
 func (r *KymaReconciler) updateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
