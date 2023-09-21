@@ -3,8 +3,9 @@ package withwatcher_test
 import (
 	"errors"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	. "github.com/onsi/ginkgo/v2"

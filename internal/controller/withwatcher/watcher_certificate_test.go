@@ -3,6 +3,7 @@ package withwatcher_test
 import (
 	"bytes"
 	"errors"
+
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"

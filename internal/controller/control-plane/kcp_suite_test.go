@@ -18,11 +18,12 @@ package control_plane_test
 
 import (
 	"context"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
 
 	operatorv1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"

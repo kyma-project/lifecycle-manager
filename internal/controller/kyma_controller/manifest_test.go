@@ -3,9 +3,10 @@ package kyma_controller_test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"reflect"
 	"strings"
+
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"

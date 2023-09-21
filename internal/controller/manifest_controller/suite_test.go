@@ -18,12 +18,13 @@ package manifest_controller_test
 
 import (
 	"context"
-	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
 
 	"github.com/google/go-containerregistry/pkg/registry"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"

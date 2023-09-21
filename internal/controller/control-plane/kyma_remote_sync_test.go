@@ -3,6 +3,7 @@ package control_plane_test
 import (
 	"errors"
 	"fmt"
+
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"

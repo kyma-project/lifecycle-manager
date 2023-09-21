@@ -18,11 +18,12 @@ package kyma_controller_test
 
 import (
 	"context"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/onsi/ginkgo/v2"

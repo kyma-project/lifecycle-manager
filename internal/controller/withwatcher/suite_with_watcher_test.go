@@ -19,11 +19,12 @@ package withwatcher_test
 import (
 	//+kubebuilder:scaffold:imports
 	"context"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
 
 	corev1 "k8s.io/api/core/v1"
 
