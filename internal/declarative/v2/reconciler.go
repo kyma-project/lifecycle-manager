@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -83,7 +82,6 @@ func newResourcesCondition(obj Object) metav1.Condition {
 
 //nolint:funlen,cyclop
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log.FromContext(ctx).Info(fmt.Sprintf("Starting manifest reconciliation at: %s", time.Now()))
 	obj, ok := r.prototype.DeepCopyObject().(Object)
 	if !ok {
 		return ctrl.Result{}, common.ErrTypeAssert

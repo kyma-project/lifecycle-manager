@@ -100,7 +100,6 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	logger := ctrlLog.FromContext(ctx)
 	logger.V(log.InfoLevel).Info("reconciling")
 	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
-	ctrlLog.FromContext(ctx).V(log.InfoLevel).Info(fmt.Sprintf("Starting reconciliation at: %s", time.Now()))
 
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {

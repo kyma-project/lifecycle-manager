@@ -57,7 +57,6 @@ type PurgeReconciler struct {
 
 func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := ctrlLog.FromContext(ctx)
-	logger.V(log.InfoLevel).Info(fmt.Sprintf("Purge Reconciliation started at %s", time.Now()))
 
 	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
 
@@ -75,7 +74,6 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		if err := r.EnsurePurgeFinalizer(ctx, kyma); err != nil {
 			return ctrl.Result{}, err
 		}
-		logger.V(log.InfoLevel).Info(fmt.Sprintf("WILL REQUEUE PURGE RECONCILER at %s", time.Now()))
 		return ctrl.Result{}, nil
 	}
 
@@ -108,7 +106,6 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 		return ctrl.Result{}, nil
 	}
-	logger.V(log.InfoLevel).Info(fmt.Sprintf("Time until deletion deadline %s", time.Until(deletionDeadline.Add(time.Second))))
 
 	return ctrl.Result{
 		RequeueAfter: time.Until(deletionDeadline.Add(time.Second)),
