@@ -20,8 +20,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
 
 	"golang.org/x/sync/errgroup"
 	"k8s.io/client-go/rest"

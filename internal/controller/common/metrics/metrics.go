@@ -2,8 +2,9 @@ package metrics
 
 import (
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"strings"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 var (

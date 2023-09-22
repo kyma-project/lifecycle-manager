@@ -93,5 +93,4 @@ var _ = Describe("Enable Template Operator, Kyma CR should have status `Warning`
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 				Should(Succeed())
 		})
-
 	})

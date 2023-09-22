@@ -47,7 +47,7 @@ func UpdateAll(kyma *v1beta2.Kyma) error {
 	if err != nil {
 		return fmt.Errorf("%w: %w", errMetric, err)
 	}
-	//TODO set metrics
+	// TODO set metrics
 
 	return nil
 }

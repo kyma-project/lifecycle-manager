@@ -1,8 +1,9 @@
 package status_test
 
 import (
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"testing"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"

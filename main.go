@@ -20,11 +20,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
 	"net/http"
 	"net/http/pprof"
 	"os"
 	"time"
+
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
 
 	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 

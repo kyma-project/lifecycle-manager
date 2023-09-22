@@ -2,11 +2,12 @@ package builder
 
 import (
 	"fmt"
+	"strings"
+	"unicode"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"strings"
-	"unicode"
 )
 
 const group = "operator.kyma-project.io"

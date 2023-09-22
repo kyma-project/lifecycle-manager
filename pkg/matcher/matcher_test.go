@@ -1,8 +1,9 @@
 package matcher
 
 import (
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"testing"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
 	"github.com/stretchr/testify/require"
 )
