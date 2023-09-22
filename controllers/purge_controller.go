@@ -107,7 +107,7 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 		return ctrl.Result{}, nil
 	}
-
+	logger.Info(fmt.Sprintf("Time until deletion deadline %s", time.Until(deletionDeadline.Add(time.Second))))
 	return ctrl.Result{
 		RequeueAfter: time.Until(deletionDeadline.Add(time.Second)),
 	}, nil
