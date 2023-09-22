@@ -127,26 +127,26 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	}
 
 	if err != nil {
+		if util.IsConnectionRefused(err) {
+			r.deleteRemoteClientCache(ctx, kyma)
+			r.enqueueWarningEvent(kyma, syncContextError, err)
+		}
 		return r.requeueWithError(ctx, kyma, err)
 	}
 
 	return r.reconcile(ctx, kyma)
 }
 
+func (r *KymaReconciler) deleteRemoteClientCache(ctx context.Context, kyma *v1beta2.Kyma) {
+	logger := ctrlLog.FromContext(ctx)
+	logger.Info("connection refused, assuming connection is invalid and resetting cache-entry for kyma")
+	r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
+}
+
 // getSyncedContext returns either the original context (in case Syncing is disabled) or initiates a sync-context
 // with a remote client and returns that context instead.
-// In case of failure, two special cases are handled:
-//  1. The Kyma is already under deletion and the Sync Context cannot be established because the underlying secret
-//     for accessing the synced cluster is gone.
-//     In this case a special behavior is invoked and all finalizers are dropped as it is assumed that the Kyma can
-//     never recover and should assume the cluster is gone.
-//  2. The Kyma is still active (no deletionTimestamp set), but the connection got refused.
-//     In this instance it is assumed that the cluster still exists, but got a refreshed access
-//     (e.g. certificate exchange or another common reset cause that is resolvable with retries).
-//     This means it removes the kyma entry from the remote client cache.
-//     In any case of an error, a warning event is issued on the existing Kyma.
+// In case of failure, original context should be returned.
 func (r *KymaReconciler) getSyncedContext(ctx context.Context, kyma *v1beta2.Kyma) (context.Context, error) {
-	logger := ctrlLog.FromContext(ctx).V(log.DebugLevel)
 	if !r.SyncKymaEnabled(kyma) {
 		return ctx, nil
 	}
@@ -155,11 +155,6 @@ func (r *KymaReconciler) getSyncedContext(ctx context.Context, kyma *v1beta2.Kym
 	ctxWithSync, err := remote.InitializeSyncContext(ctx, kyma,
 		r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache)
 	if err != nil {
-		if util.IsConnectionRefused(err) {
-			logger.Info("connection refused, assuming connection is invalid and resetting cache-entry for kyma")
-			r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
-		}
-		r.enqueueWarningEvent(kyma, syncContextError, err)
 		return ctx, err
 	}
 
