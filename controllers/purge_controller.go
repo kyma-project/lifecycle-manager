@@ -75,6 +75,7 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		if err := r.EnsurePurgeFinalizer(ctx, kyma); err != nil {
 			return ctrl.Result{}, err
 		}
+		logger.V(log.InfoLevel).Info(fmt.Sprintf("WILL REQUEUE PURGE RECONCILER at %s", time.Now()))
 		return ctrl.Result{}, nil
 	}
 
