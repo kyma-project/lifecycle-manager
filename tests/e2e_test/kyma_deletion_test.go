@@ -3,11 +3,7 @@
 package e2e_test
 
 import (
-	"io"
-	"net/http"
 	"os/exec"
-	"regexp"
-	"strconv"
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -159,10 +155,11 @@ var _ = Describe("When KCP Kyma CR deleted, Kyma Status Metric should also be de
 		})
 
 		It("Kyma reconciliation should remove metric when Kyma CR deleted ", func() {
-			By("getting the current metric count")
-			metricCountBeforeDeletion, err := getKymaStateMetricCount()
+			By("getting the current kyma Ready state metric count")
+			kymaStateReadyCount, err := GetKymaStateMetricCount(kyma.GetName(), "Ready")
 			Expect(err).Should(Not(HaveOccurred()))
-			GinkgoWriter.Printf("Kyma State Metric count before CR deletion: %d", metricCountBeforeDeletion)
+			GinkgoWriter.Printf("Kyma State Ready Metric count before CR deletion: %d", kymaStateReadyCount)
+			Expect(kymaStateReadyCount).Should(Equal(1))
 
 			By("deleting KCP Kyma")
 			Eventually(controlPlaneClient.Delete, readyTimeout, interval).
@@ -177,39 +174,11 @@ var _ = Describe("When KCP Kyma CR deleted, Kyma Status Metric should also be de
 				Should(Succeed())
 
 			By("should decrease the metric count")
-			metricCountAfterDeletion, err := getKymaStateMetricCount()
-			Expect(err).Should(Not(HaveOccurred()))
-			GinkgoWriter.Printf("Kyma State Metric count after CR deletion: %d", metricCountAfterDeletion)
-			Expect(metricCountAfterDeletion).To(Equal(metricCountBeforeDeletion - 1))
+			for _, state := range []string{"Deleting", "Warning", "Ready", "Processing", "Error"} {
+				count, err := GetKymaStateMetricCount(kyma.GetName(), state)
+				Expect(err).Should(Not(HaveOccurred()))
+				GinkgoWriter.Printf("Kyma %s State Metric count after CR deletion: %d", state, count)
+				Expect(count).Should(Equal(0))
+			}
 		})
 	})
-
-func getKymaStateMetricCount() (int, error) {
-	response, err := http.Get("http://localhost:9081/metrics")
-	if err != nil {
-		return 0, err
-	}
-	defer response.Body.Close()
-	bodyBytes, err := io.ReadAll(response.Body)
-	if err != nil {
-		return 0, err
-	}
-	bodyString := string(bodyBytes)
-
-	sum := 0
-	states := []string{"Deleting", "Error", "Processing", "Ready", "Warning"}
-	for _, state := range states {
-		re := regexp.MustCompile(
-			`lifecycle_mgr_kyma_state{instance_id="[^"]+",kyma_name="[^"]+",shoot="[^"]+",state="` +
-				state + `"} (\d+)`)
-		match := re.FindStringSubmatch(bodyString)
-		if len(match) > 1 {
-			count, err := strconv.Atoi(match[1])
-			if err != nil {
-				return 0, err
-			}
-			sum += count
-		}
-	}
-	return sum, nil
-}

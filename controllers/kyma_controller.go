@@ -394,12 +394,13 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		logger.Info("removed remote finalizer")
 	}
 
-	if err := r.removeFinalizerAndUpdateKyma(ctx, kyma); err != nil {
+	if err := metrics.RemoveKymaStateMetrics(kyma); err != nil {
+		logger.V(log.DebugLevel).Info(fmt.Sprintf("error occurred while removing kyma state metrics: %s", err))
 		return false, err
 	}
 
-	if err := metrics.RemoveKymaStateMetrics(kyma); err != nil {
-		logger.V(log.DebugLevel).Info(fmt.Sprintf("error occurred while removing kyma state metrics: %s", err))
+	if err := r.removeFinalizerAndUpdateKyma(ctx, kyma); err != nil {
+		return false, err
 	}
 
 	return false, nil
