@@ -1,16 +1,17 @@
-package matcher
+package matcher_test
 
 import (
 	"testing"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
-
 	"github.com/stretchr/testify/require"
 )
 
 func TestCreateCRDMatcherFrom(t *testing.T) {
+	t.Parallel()
 	names := "kymas.operator.kyma-project.io,manifest.operator.kyma-project.io"
-	matcherFunc := CreateCRDMatcherFrom(names)
+	matcherFunc := matcher.CreateCRDMatcherFrom(names)
 
 	crdBuilder := builder.NewCRDBuilder()
 	kymaCrd := crdBuilder.WithName("kyma").Build()

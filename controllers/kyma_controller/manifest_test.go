@@ -61,7 +61,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 
 	module := v1beta2.Module{
 		ControllerName: "manifest",
-		Name:           NewUniqModuleName(),
+		Name:           RandomName(),
 		Channel:        v1beta2.DefaultChannel,
 	}
 
@@ -241,7 +241,7 @@ var _ = Describe("Update Module Template Version", Ordered, func() {
 
 	module := v1beta2.Module{
 		ControllerName: "manifest",
-		Name:           NewUniqModuleName(),
+		Name:           RandomName(),
 		Channel:        v1beta2.DefaultChannel,
 	}
 

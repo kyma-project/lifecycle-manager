@@ -14,7 +14,7 @@ import (
 
 const (
 	metricPurgeTime                     = "lifecycle_mgr_purgectrl_time"
-	metricPurgeRequests                 = "lifecycle_mgr_purgectrl_requests"
+	metricPurgeRequests                 = "lifecycle_mgr_purgectrl_requests_total"
 	kymaNameLabel                       = "kyma_name"
 	shootIDLabel                        = "shoot"
 	instanceIDLabel                     = "instance_id"

@@ -16,7 +16,7 @@ type CRDBuilder struct {
 	crd *apiextensions.CustomResourceDefinition
 }
 
-// NewCRDBuilder returns a CRDBuilder for CustomResourceDefinitions of Group operator.kyma-project.io initialized with a random name
+// NewCRDBuilder returns a CRDBuilder for CustomResourceDefinitions of Group operator.kyma-project.io initialized with a random name.
 func NewCRDBuilder() CRDBuilder {
 	crdName := testutils.RandomName()
 
@@ -38,7 +38,7 @@ func NewCRDBuilder() CRDBuilder {
 	}
 }
 
-// WithName sets metav1.ObjectMeta.Name and all apiextensions.CustomResourceDefinitionNames
+// WithName sets metav1.ObjectMeta.Name and all apiextensions.CustomResourceDefinitionNames.
 func (cb CRDBuilder) WithName(name string) CRDBuilder {
 	cb.crd.Name = fmt.Sprintf("%ss.%s", strings.ToLower(name), group)
 	cb.crd.Spec.Names = createCRDNamesFrom(name)
