@@ -3,8 +3,21 @@ name: TestSuite E2E
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'go.mod'
+      - 'go.sum'
+      - 'Makefile'
+      - '**.go'
+      - '**.ya?ml'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'go.mod'
+      - 'go.sum'
+      - 'Makefile'
+      - '**.sh'
+      - '**.go'
+      - '**.ya?ml'
 jobs:
   wait-for-img:
     name: "Wait for Image Build"
@@ -72,7 +85,7 @@ jobs:
           k3d cluster create skr -p 10080:80@loadbalancer -p 10443:443@loadbalancer --k3s-arg '--disable=traefik@server:0'
       - name: Provision KCP cluster
         run: |
-          kyma provision k3d --name=kcp -p 9443:443@loadbalancer -p 9081:8080@loadbalancer --ci --registry-port 5111
+          kyma provision k3d --name=kcp -p 9443:443@loadbalancer -p 9080:80@loadbalancer -p 9081:8080@loadbalancer --ci --registry-port 5111
       - name: Update Kubeconfigs
         run: k3d kubeconfig merge -a -d
       - name: Export required Kubeconfig Env vars
@@ -105,7 +118,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.20'
+          go-version: '1.21'
       - name: Override Kustomize Controller Image TAG and Image repository environment variables in Pull Request to PR Image
         if: ${{ github.event_name == 'pull_request' }}
         run: |

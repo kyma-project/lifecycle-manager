@@ -57,7 +57,7 @@ var _ = Describe("Enable Template Operator, Kyma CR should have status `Warning`
 			By("Enabling Template Operator")
 			Eventually(EnableModule, timeout, interval).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), "template-operator", "regular", controlPlaneClient).
+				WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", "regular", runtimeClient).
 				Should(Succeed())
 			By("Checking state of kyma")
 			Eventually(CheckKymaIsInState, statusTimeout, interval).
@@ -70,7 +70,7 @@ var _ = Describe("Enable Template Operator, Kyma CR should have status `Warning`
 			By("Disabling Template Operator")
 			Eventually(DisableModule, timeout, interval).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), "template-operator", controlPlaneClient).
+				WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", runtimeClient).
 				Should(Succeed())
 			By("Checking state of kyma")
 			Eventually(CheckKymaIsInState, statusTimeout, interval).

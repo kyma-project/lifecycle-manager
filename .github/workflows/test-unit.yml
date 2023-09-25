@@ -1,0 +1,25 @@
+name: TestSuite integration and unit tests
+
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'go.mod'
+      - 'go.sum'
+      - 'Makefile'
+      - '**.go'
+      - '**.ya?ml'
+jobs:
+  envtest-and-unittest:
+    name: "Run 'make test'"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout lifecycle-manager
+        uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+      - name: Run 'make test'
+        run: |
+          make test

@@ -118,26 +118,50 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, nil
 	}
 
+	ctx, err := r.getSyncedContext(ctx, kyma)
+
+	if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, remote.ErrAccessSecretNotFound) {
+		logger.Info("access secret not found for kyma, assuming already deleted cluster")
+		r.removeAllFinalizers(kyma)
+		return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
+	}
+
+	if err != nil {
+		if util.IsConnectionRefused(err) {
+			r.deleteRemoteClientCache(ctx, kyma)
+			r.enqueueWarningEvent(kyma, syncContextError, err)
+		}
+		return r.requeueWithError(ctx, kyma, err)
+	}
+
 	return r.reconcile(ctx, kyma)
 }
 
-//nolint:gocognit
-func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
-	if r.SyncKymaEnabled(kyma) {
-		remoteClient := remote.NewClientWithConfig(r.Client, r.KcpRestConfig)
-		if err := remote.InitializeSyncContext(&ctx, kyma,
-			r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache); err != nil {
-			if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, remote.ErrAccessSecretNotFound) {
-				return ctrl.Result{}, r.removeAllFinalizersAndUpdateKyma(ctx, kyma)
-			}
-			if util.IsConnectionRefused(err) {
-				r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
-			}
-			r.enqueueWarningEvent(kyma, syncContextError, err)
-			return r.requeueWithError(ctx, kyma, err)
-		}
+func (r *KymaReconciler) deleteRemoteClientCache(ctx context.Context, kyma *v1beta2.Kyma) {
+	logger := ctrlLog.FromContext(ctx)
+	logger.Info("connection refused, assuming connection is invalid and resetting cache-entry for kyma")
+	r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
+}
+
+// getSyncedContext returns either the original context (in case Syncing is disabled) or initiates a sync-context
+// with a remote client and returns that context instead.
+// In case of failure, original context should be returned.
+func (r *KymaReconciler) getSyncedContext(ctx context.Context, kyma *v1beta2.Kyma) (context.Context, error) {
+	if !r.SyncKymaEnabled(kyma) {
+		return ctx, nil
 	}
 
+	remoteClient := remote.NewClientWithConfig(r.Client, r.KcpRestConfig)
+	ctxWithSync, err := remote.InitializeSyncContext(ctx, kyma,
+		r.RemoteSyncNamespace, remoteClient, r.RemoteClientCache)
+	if err != nil {
+		return ctx, err
+	}
+
+	return ctxWithSync, nil
+}
+
+func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != v1beta2.StateDeleting {
 		if err := r.deleteRemoteKyma(ctx, kyma); err != nil {
 			return r.requeueWithError(ctx, kyma, err)
@@ -167,8 +191,9 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 			return ctrl.Result{}, nil
 		}
 		// update the control-plane kyma with the changes to the spec of the remote Kyma
-		if err := r.mergeSpecFromRemote(ctx, kyma); err != nil {
-			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not merge remote kyma spec into original one: %w", err))
+		if err := r.replaceSpecFromRemote(ctx, kyma); err != nil {
+			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not replace control plane kyma spec"+
+				" with remote kyma spec: %w", err))
 		}
 	}
 
@@ -261,9 +286,8 @@ func (r *KymaReconciler) syncStatusToRemote(ctx context.Context, controlPlaneKym
 	return nil
 }
 
-// mergeSpecFromRemote modifies the given Kyma Instance Spec with the merged
-// representation of the Control Plane and the Runtime.
-func (r *KymaReconciler) mergeSpecFromRemote(
+// replaceSpecFromRemote replaces the spec from control-lane Kyma with the remote Kyma spec as single source of truth.
+func (r *KymaReconciler) replaceSpecFromRemote(
 	ctx context.Context, controlPlaneKyma *v1beta2.Kyma,
 ) error {
 	remoteKyma, err := r.fetchRemoteKyma(ctx, controlPlaneKyma)
@@ -274,7 +298,7 @@ func (r *KymaReconciler) mergeSpecFromRemote(
 		}
 		return err
 	}
-	remote.MergeModules(controlPlaneKyma, remoteKyma)
+	remote.ReplaceModules(controlPlaneKyma, remoteKyma)
 	return nil
 }
 
@@ -396,26 +420,16 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 
 	if err := metrics.RemoveKymaStateMetrics(kyma); err != nil {
 		logger.V(log.DebugLevel).Info(fmt.Sprintf("error occurred while removing kyma state metrics: %s", err))
-		return false, err
 	}
 
-	if err := r.removeFinalizerAndUpdateKyma(ctx, kyma); err != nil {
-		return false, err
-	}
-
-	return false, nil
+	controllerutil.RemoveFinalizer(kyma, v1beta2.Finalizer)
+	return false, r.updateKyma(ctx, kyma)
 }
 
-func (r *KymaReconciler) removeAllFinalizersAndUpdateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
+func (r *KymaReconciler) removeAllFinalizers(kyma *v1beta2.Kyma) {
 	for _, finalizer := range kyma.Finalizers {
 		controllerutil.RemoveFinalizer(kyma, finalizer)
 	}
-	return r.updateKyma(ctx, kyma)
-}
-
-func (r *KymaReconciler) removeFinalizerAndUpdateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
-	controllerutil.RemoveFinalizer(kyma, v1beta2.Finalizer)
-	return r.updateKyma(ctx, kyma)
 }
 
 func (r *KymaReconciler) updateKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
@@ -551,7 +565,6 @@ func (r *KymaReconciler) SyncKymaEnabled(kyma *v1beta2.Kyma) bool {
 	if !r.InKCPMode {
 		return false
 	}
-
 	return kyma.HasSyncLabelEnabled()
 }
 
