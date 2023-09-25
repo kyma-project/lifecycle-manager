@@ -49,7 +49,10 @@ var (
 func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 	options controller.Options, settings SetupUpSetting,
 ) error {
-	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).WithOptions(options).
+	pred := predicate.GenerationChangedPredicate{}
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
+		WithOptions(options).
+		WithEventFilter(pred).
 		Watches(
 			&v1beta2.ModuleTemplate{},
 			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch()),
