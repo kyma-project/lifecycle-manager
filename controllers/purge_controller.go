@@ -50,6 +50,7 @@ type PurgeReconciler struct {
 	IsManagedKyma         bool
 }
 
+//nolint:funlen
 func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := ctrlLog.FromContext(ctx)
 	logger.V(log.InfoLevel).Info("Purge Reconciliation started")

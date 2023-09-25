@@ -15,6 +15,7 @@ import (
 const (
 	metricPurgeTime                     = "lifecycle_mgr_purgectrl_time"
 	metricPurgeRequests                 = "lifecycle_mgr_purgectrl_requests_total"
+	metricPurgeError                    = "lifecycle_mgr_purgectrl_error"
 	kymaNameLabel                       = "kyma_name"
 	shootIDLabel                        = "shoot"
 	instanceIDLabel                     = "instance_id"
@@ -35,7 +36,7 @@ var (
 		Help: "Indicates total purge count ",
 	})
 	purgeErrorGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{ //nolint:gochecknoglobals
-		Name: metricPurgeRequests,
+		Name: metricPurgeError,
 		Help: "Indicates purge errors",
 	}, []string{kymaNameLabel, shootIDLabel, instanceIDLabel})
 )

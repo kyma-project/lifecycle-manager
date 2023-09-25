@@ -16,7 +16,8 @@ type CRDBuilder struct {
 	crd *apiextensions.CustomResourceDefinition
 }
 
-// NewCRDBuilder returns a CRDBuilder for CustomResourceDefinitions of Group operator.kyma-project.io initialized with a random name.
+// NewCRDBuilder returns a CRDBuilder for CustomResourceDefinitions of Group
+// operator.kyma-project.io initialized with a random name.
 func NewCRDBuilder() CRDBuilder {
 	crdName := testutils.RandomName()
 

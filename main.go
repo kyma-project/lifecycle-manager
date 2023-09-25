@@ -35,12 +35,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/utils/strings/slices"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/utils/strings/slices"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -49,12 +50,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	operatorv1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal"
-	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
-	//+kubebuilder:scaffold:imports
 	"github.com/kyma-project/lifecycle-manager/api"
+	operatorv1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/controllers"
+	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
 	purgemetrics "github.com/kyma-project/lifecycle-manager/internal/controller/purge/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -62,6 +61,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
+	//+kubebuilder:scaffold:imports
 )
 
 const (
