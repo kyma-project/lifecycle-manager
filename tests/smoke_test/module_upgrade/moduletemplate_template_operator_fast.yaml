@@ -5,6 +5,8 @@ metadata:
   namespace: kcp-system
   labels:
     "operator.kyma-project.io/module-name": "template-operator"
+  annotations:
+    "operator.kyma-project.io/is-cluster-scoped": "false"
 spec:
   channel: fast
   data:
@@ -22,22 +24,29 @@ spec:
           value: enabled
           version: v1
       name: kyma-project.io/template-operator
-      provider: internal
+      provider: '{"name":"kyma-project.io","labels":[{"name":"kyma-project.io/built-by","value":"cli","version":"v1"}]}'
       repositoryContexts:
         - baseUrl: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/template-operator
           componentNameMapping: urlPath
-          type: ociRegistry
+          type: OCIRegistry
       resources:
         - access:
-            digest: sha256:14ec96a1b7f7fcfbafefefb4b278456bafd49d8a74e19db15a1f2f8fc6b5e0fd
-            type: localOciBlob
+            globalAccess:
+              digest: sha256:14ec96a1b7f7fcfbafefefb4b278456bafd49d8a74e19db15a1f2f8fc6b5e0fd
+              mediaType: application/octet-stream
+              ref: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/template-operator/component-descriptors/kyma-project.io/template-operator
+              size: 20766
+              type: ociBlob
+            localReference: sha256:14ec96a1b7f7fcfbafefefb4b278456bafd49d8a74e19db15a1f2f8fc6b5e0fd
+            mediaType: application/octet-stream
+            type: localBlob
           name: raw-manifest
           relation: local
           type: yaml
-          version: v2.4.0-smoke-test
+          version: v2.4.1-smoke-test
       sources:
         - access:
-            commit: 9b14f1f29dd7627b2dcc9b5efcab6e7e3a2b0545
+            commit: 3864e6bc8df64df906ae41d4b04b1192b18e9d4a
             repoUrl: https://github.com/kyma-project/cli
             type: gitHub
           labels:
@@ -54,8 +63,8 @@ spec:
               value: '**/test/**,**/*_test.go'
               version: v1
           name: module-sources
-          type: git
-          version: v2.4.0-smoke-test
-      version: v2.4.0-smoke-test
+          type: Github
+          version: v2.4.1-smoke-test
+      version: v2.4.1-smoke-test
     meta:
       schemaVersion: v2

@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
+	"strings"
 	"time"
 
 	"go.uber.org/zap/zapcore"
@@ -56,7 +57,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
 	purgemetrics "github.com/kyma-project/lifecycle-manager/internal/controller/purge/metrics"
-	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
@@ -265,16 +265,16 @@ func setupKymaReconciler(mgr ctrl.Manager,
 
 func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (watcher.SKRWebhookManager, error) {
 	return watcher.NewSKRWebhookManifestManager(mgr.GetConfig(), mgr.GetScheme(), &watcher.SkrWebhookManagerConfig{
-		SKRWatcherPath:              flagVar.skrWatcherPath,
-		SkrWatcherImage:             flagVar.skrWatcherImage,
-		SkrWebhookCPULimits:         flagVar.skrWebhookCPULimits,
-		SkrWebhookMemoryLimits:      flagVar.skrWebhookMemoryLimits,
-		WatcherLocalTestingEnabled:  flagVar.enableWatcherLocalTesting,
-		LocalGatewayHTTPPortMapping: flagVar.listenerHTTPSPortLocalMapping,
-		IstioNamespace:              flagVar.istioNamespace,
-		IstioGatewayName:            flagVar.istioGatewayName,
-		IstioGatewayNamespace:       flagVar.istioGatewayNamespace,
-		RemoteSyncNamespace:         flagVar.remoteSyncNamespace,
+		SKRWatcherPath:            flagVar.skrWatcherPath,
+		SkrWatcherImage:           flagVar.skrWatcherImage,
+		SkrWebhookCPULimits:       flagVar.skrWebhookCPULimits,
+		SkrWebhookMemoryLimits:    flagVar.skrWebhookMemoryLimits,
+		LocalGatewayPortOverwrite: flagVar.listenerPortOverwrite,
+		IstioNamespace:            flagVar.istioNamespace,
+		IstioGatewayName:          flagVar.istioGatewayName,
+		IstioGatewayNamespace:     flagVar.istioGatewayNamespace,
+		RemoteSyncNamespace:       flagVar.remoteSyncNamespace,
+		AdditionalDNSNames:        strings.Split(flagVar.additionalDNSNames, ","),
 	})
 }
 
@@ -329,8 +329,6 @@ func setupManifestReconciler(
 func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, flagVar *FlagVar) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentWatcherReconciles
 
-	istioConfig := istio.NewConfig(flagVar.enableWatcherLocalTesting)
-
 	if err := (&controllers.WatcherReconciler{
 		Client:        mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor(controllers.WatcherControllerName),
@@ -339,7 +337,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, fla
 		RequeueIntervals: controllers.RequeueIntervals{
 			Success: flagVar.watcherRequeueSuccessInterval,
 		},
-	}).SetupWithManager(mgr, options, istioConfig); err != nil {
+	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controllers.WatcherControllerName)
 		os.Exit(1)
 	}
