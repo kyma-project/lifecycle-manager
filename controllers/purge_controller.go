@@ -19,9 +19,8 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/purge/metrics"
 	"time"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/status"
 
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -75,44 +74,45 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	// condition to check if deletionTimestamp is set, retry until it gets fully deleted
 	deletionDeadline := kyma.DeletionTimestamp.Add(r.PurgeFinalizerTimeout)
 
-	if time.Now().After(deletionDeadline) { //nolint:nestif
-		remoteClient, err := r.ResolveRemoteClient(ctx, client.ObjectKeyFromObject(kyma))
-		if util.IsNotFound(err) {
-			if err := r.dropPurgeFinalizer(ctx, kyma); err != nil {
-				logger.Error(err, "Couldn't remove Purge Finalizer from the Kyma object")
-				return ctrl.Result{}, err
-			}
-			return ctrl.Result{}, nil
-		}
+	if time.Now().Before(deletionDeadline) {
+		return ctrl.Result{
+			RequeueAfter: time.Until(deletionDeadline.Add(time.Second)),
+		}, nil
+	}
 
-		if err != nil {
-			return ctrl.Result{}, err
-		}
-
-		if err := r.performCleanup(ctx, remoteClient); err != nil {
-			logger.Error(err, "Finalizer Purging failed")
-			return ctrl.Result{}, err
-		}
-
+	start := time.Now()
+	remoteClient, err := r.ResolveRemoteClient(ctx, client.ObjectKeyFromObject(kyma))
+	if util.IsNotFound(err) {
 		if err := r.dropPurgeFinalizer(ctx, kyma); err != nil {
 			logger.Error(err, "Couldn't remove Purge Finalizer from the Kyma object")
+			metrics.UpdatePurgeError(kyma, metrics.ErrPurgeFinalizerRemoval)
 			return ctrl.Result{}, err
 		}
-
 		return ctrl.Result{}, nil
 	}
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 
-	return ctrl.Result{
-		RequeueAfter: time.Until(deletionDeadline.Add(time.Second)),
-	}, nil
+	metrics.UpdatePurgeCount()
+	if err := r.performCleanup(ctx, remoteClient); err != nil {
+		logger.Error(err, "Finalizer Purging failed")
+		metrics.UpdatePurgeError(kyma, metrics.ErrCleanup)
+		return ctrl.Result{}, err
+	}
+
+	if err := r.dropPurgeFinalizer(ctx, kyma); err != nil {
+		logger.Error(err, "Couldn't remove Purge Finalizer from the Kyma object")
+		metrics.UpdatePurgeError(kyma, metrics.ErrPurgeFinalizerRemoval)
+		return ctrl.Result{}, err
+	}
+	duration := time.Since(start)
+	metrics.UpdatePurgeTime(duration)
+
+	return ctrl.Result{}, nil
 }
 
-func (r *PurgeReconciler) UpdateStatus(
-	ctx context.Context, kyma *v1beta2.Kyma, state v1beta2.State, message string,
-) error {
-	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, message); err != nil {
-		return fmt.Errorf("error while updating status to %s because of %s: %w", state, message, err)
-	}
+func (r *PurgeReconciler) UpdateStatus(_ context.Context, _ *v1beta2.Kyma, _ v1beta2.State, _ string) error {
 	return nil
 }
 

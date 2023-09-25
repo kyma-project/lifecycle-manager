@@ -25,17 +25,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
-
-	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
-
-	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/kyma-project/lifecycle-manager/internal"
-
-	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
-
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
+	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -43,7 +35,6 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/utils/strings/slices"
-
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -56,10 +47,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	operatorv1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal"
+	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
 	//+kubebuilder:scaffold:imports
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/controllers"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
+	purgemetrics "github.com/kyma-project/lifecycle-manager/internal/controller/purge/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
@@ -307,6 +303,7 @@ func setupPurgeReconciler(
 		setupLog.Error(err, "unable to create controller", "controller", "PurgeReconciler")
 		os.Exit(1)
 	}
+	purgemetrics.Initialize()
 }
 
 func setupManifestReconciler(
