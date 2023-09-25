@@ -100,7 +100,6 @@ func (c *Client) CreateVirtualService(ctx context.Context, virtualSvc *istioclie
 	_, err := c.NetworkingV1beta1().
 		VirtualServices(metav1.NamespaceDefault).
 		Create(ctx, virtualSvc, metav1.CreateOptions{})
-
 	if err != nil {
 		return fmt.Errorf("failed to create istio virtual service: %w", err)
 	}
