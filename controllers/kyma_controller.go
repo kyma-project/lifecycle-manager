@@ -169,14 +169,14 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 		if err := r.updateStatus(ctx, kyma, v1beta2.StateDeleting, "waiting for modules to be deleted"); err != nil {
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma status after triggering deletion: %w", err))
 		}
-		return ctrl.Result{}, nil
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	if needsUpdate := kyma.EnsureLabelsAndFinalizers(); needsUpdate {
 		if err := r.Update(ctx, kyma); err != nil {
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("failed to update kyma after finalizer check: %w", err))
 		}
-		return ctrl.Result{}, nil
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	if r.SyncKymaEnabled(kyma) {
@@ -305,7 +305,7 @@ func (r *KymaReconciler) replaceSpecFromRemote(
 func (r *KymaReconciler) processKymaState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	switch kyma.Status.State {
 	case "":
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, r.handleInitialState(ctx, kyma)
+		return ctrl.Result{Requeue: true}, r.handleInitialState(ctx, kyma)
 	case v1beta2.StateProcessing:
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, r.handleProcessingState(ctx, kyma)
 	case v1beta2.StateDeleting:
