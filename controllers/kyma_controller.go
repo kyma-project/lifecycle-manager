@@ -305,7 +305,7 @@ func (r *KymaReconciler) replaceSpecFromRemote(
 func (r *KymaReconciler) processKymaState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	switch kyma.Status.State {
 	case "":
-		return ctrl.Result{}, r.handleInitialState(ctx, kyma)
+		return ctrl.Result{Requeue: true}, r.handleInitialState(ctx, kyma)
 	case v1beta2.StateProcessing:
 		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, r.handleProcessingState(ctx, kyma)
 	case v1beta2.StateDeleting:
