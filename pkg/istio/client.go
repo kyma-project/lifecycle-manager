@@ -100,7 +100,10 @@ func (c *Client) CreateVirtualService(ctx context.Context, virtualSvc *istioclie
 	_, err := c.NetworkingV1beta1().
 		VirtualServices(metav1.NamespaceDefault).
 		Create(ctx, virtualSvc, metav1.CreateOptions{})
-	return fmt.Errorf("failed to create istio virtual service: %w", err)
+	if err != nil {
+		return fmt.Errorf("failed to create istio virtual service: %w", err)
+	}
+	return nil
 }
 
 func addGateways(gateways []*istioclientapi.Gateway, virtualSvc *istioclientapi.VirtualService) {
