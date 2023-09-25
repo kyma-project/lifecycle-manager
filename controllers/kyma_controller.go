@@ -188,8 +188,7 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 			if err := r.Update(ctx, kyma); err != nil {
 				return r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma annotations: %w", err))
 			}
-			// Don't need to requeue because the generation id gets updated
-			return ctrl.Result{}, nil
+			return ctrl.Result{Requeue: true}, nil
 		}
 		// update the control-plane kyma with the changes to the spec of the remote Kyma
 		if err := r.replaceSpecFromRemote(ctx, kyma); err != nil {
