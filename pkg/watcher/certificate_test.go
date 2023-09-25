@@ -71,7 +71,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				Expect(controlPlaneClient.Create(ctx, test.issuer)).Should(Succeed())
 			}
 			cert, err := watcher.NewCertificateManager(controlPlaneClient,
-				test.kyma, test.namespace.Name, test.namespace.Name, true)
+				test.kyma, test.namespace.Name, test.namespace.Name, []string{})
 			if test.wantNewCertErr {
 				Expect(err).Should(HaveOccurred())
 				return

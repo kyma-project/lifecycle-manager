@@ -28,24 +28,13 @@ var (
 	ErrCantFindGatewayServersHost = errors.New("can't find Istio Gateway servers hosts")
 )
 
-type Config struct {
-	WatcherLocalTesting bool
-}
-
-func NewConfig(watcherLocalTesting bool) *Config {
-	return &Config{
-		WatcherLocalTesting: watcherLocalTesting,
-	}
-}
-
 type Client struct {
 	istioclient.Interface
-	cfg           *Config
 	eventRecorder record.EventRecorder
 	logger        logr.Logger
 }
 
-func NewVersionedIstioClient(cfg *rest.Config, config *Config, recorder record.EventRecorder,
+func NewVersionedIstioClient(cfg *rest.Config, recorder record.EventRecorder,
 	logger logr.Logger,
 ) (*Client, error) {
 	cs, err := istioclient.NewForConfig(cfg)
@@ -55,7 +44,6 @@ func NewVersionedIstioClient(cfg *rest.Config, config *Config, recorder record.E
 	return &Client{
 		Interface:     cs,
 		eventRecorder: recorder,
-		cfg:           config,
 		logger:        logger,
 	}, nil
 }
@@ -97,9 +85,7 @@ func (c *Client) NewVirtualService(ctx context.Context, watcher *v1beta2.Watcher
 
 	addGateways(gateways, virtualSvc)
 
-	if c.cfg.WatcherLocalTesting {
-		virtualSvc.Spec.Hosts = []string{"*"}
-	} else if err := addHosts(gateways, virtualSvc); err != nil {
+	if err := addHosts(gateways, virtualSvc); err != nil {
 		return nil, err
 	}
 

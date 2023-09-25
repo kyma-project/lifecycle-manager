@@ -16,7 +16,7 @@ require (
 	github.com/google/go-containerregistry v0.16.1
 	github.com/google/go-containerregistry/pkg/authn/kubernetes v0.0.0-20230104193340-e797859b62b6
 	github.com/invopop/jsonschema v0.7.0
-	github.com/jellydator/ttlcache/v3 v3.0.1
+	github.com/jellydator/ttlcache/v3 v3.1.0
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20230825121434-16145a7dc6bf
 	github.com/onsi/ginkgo/v2 v2.12.0
 	github.com/onsi/gomega v1.27.10
@@ -24,11 +24,11 @@ require (
 	github.com/prometheus/client_golang v1.16.0
 	github.com/stretchr/testify v1.8.4
 	github.com/xeipuuv/gojsonschema v1.2.0
-	go.uber.org/zap v1.25.0
+	go.uber.org/zap v1.26.0
 	golang.org/x/sync v0.3.0
 	golang.org/x/time v0.3.0
 	gopkg.in/yaml.v3 v3.0.1
-	istio.io/api v0.0.0-20230713061407-06047cce866f
+	istio.io/api v1.19.0
 	istio.io/client-go v1.18.1
 	k8s.io/api v0.28.1
 	k8s.io/apiextensions-apiserver v0.28.1

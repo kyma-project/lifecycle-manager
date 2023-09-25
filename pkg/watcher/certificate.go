@@ -39,13 +39,13 @@ type SubjectAltName struct {
 }
 
 type CertificateManager struct {
-	kcpClient                  client.Client
-	kyma                       *v1beta2.Kyma
-	certificateName            string
-	secretName                 string
-	istioNamespace             string
-	remoteSyncNamespace        string
-	watcherLocalTestingEnabled bool
+	kcpClient           client.Client
+	kyma                *v1beta2.Kyma
+	certificateName     string
+	secretName          string
+	istioNamespace      string
+	remoteSyncNamespace string
+	additionalDNSNames  []string
 }
 
 type CertificateSecret struct {
@@ -57,16 +57,16 @@ type CertificateSecret struct {
 
 // NewCertificateManager returns a new CertificateManager, which can be used for creating a cert-manager Certificates.
 func NewCertificateManager(kcpClient client.Client, kyma *v1beta2.Kyma,
-	istioNamespace, remoteSyncNamespace string, localTesting bool,
+	istioNamespace, remoteSyncNamespace string, additionalDNSNames []string,
 ) (*CertificateManager, error) {
 	return &CertificateManager{
-		kcpClient:                  kcpClient,
-		kyma:                       kyma,
-		certificateName:            ResolveTLSCertName(kyma.Name),
-		secretName:                 ResolveTLSCertName(kyma.Name),
-		istioNamespace:             istioNamespace,
-		remoteSyncNamespace:        remoteSyncNamespace,
-		watcherLocalTestingEnabled: localTesting,
+		kcpClient:           kcpClient,
+		kyma:                kyma,
+		certificateName:     ResolveTLSCertName(kyma.Name),
+		secretName:          ResolveTLSCertName(kyma.Name),
+		istioNamespace:      istioNamespace,
+		remoteSyncNamespace: remoteSyncNamespace,
+		additionalDNSNames:  additionalDNSNames,
 	}, nil
 }
 
@@ -190,9 +190,7 @@ func (c *CertificateManager) getSubjectAltNames() (*SubjectAltName, error) {
 			dnsNames = append(dnsNames, fmt.Sprintf("%s.%s.%s", SkrResourceName, c.remoteSyncNamespace, suffix))
 		}
 
-		if c.watcherLocalTestingEnabled {
-			dnsNames = append(dnsNames, []string{"localhost", "127.0.0.1", "host.k3d.internal"}...)
-		}
+		dnsNames = append(dnsNames, c.additionalDNSNames...)
 
 		return &SubjectAltName{
 			DNSNames: dnsNames,

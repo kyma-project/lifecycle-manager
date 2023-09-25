@@ -68,11 +68,14 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted", req.NamespacedName))
 			return ctrl.Result{}, fmt.Errorf("purgeController: %w", err)
 		}
+		logger.V(log.DebugLevel).Info(fmt.Sprintf("Getting Kyma %s failed with err %s", req.NamespacedName, err))
 		return ctrl.Result{}, nil
 	}
 
 	if kyma.DeletionTimestamp.IsZero() {
 		if err := r.EnsurePurgeFinalizer(ctx, kyma); err != nil {
+			logger.V(log.DebugLevel).Info(fmt.Sprintf("Updating purge finalizers for Kyma  %s failed with err %s",
+				req.NamespacedName, err))
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{}, nil
@@ -108,8 +111,12 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, nil
 	}
 
+	requeuedAfter := time.Until(deletionDeadline.Add(time.Second))
+	logger.V(log.DebugLevel).Info(fmt.Sprintf("Purge reconciliation for Kyma  %s will be requeued after %s",
+		req.NamespacedName, requeuedAfter))
+
 	return ctrl.Result{
-		RequeueAfter: time.Until(deletionDeadline.Add(time.Second)),
+		RequeueAfter: requeuedAfter,
 	}, nil
 }
 
