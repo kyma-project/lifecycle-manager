@@ -2,6 +2,7 @@ package kyma_controller_test
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -308,9 +309,11 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 
 				modulesStatus := GetKymaModulesStatus(kyma.GetName())
 				if len(modulesStatus) != 1 {
-					return ErrWrongResourceNamespace
+					return fmt.Errorf("Status not initialized %w ", ErrWrongResourceNamespace)
 				}
-
+				if modulesStatus[0].Resource != nil {
+					return fmt.Errorf("Status.Modules.Resource not initialized %w ", ErrWrongResourceNamespace)
+				}
 				if modulesStatus[0].Resource.Namespace != expectedNamespace {
 					return ErrWrongResourceNamespace
 				}
