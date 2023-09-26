@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal/controller/purge/metrics"
+	"github.com/kyma-project/lifecycle-manager/pkg/status"
 
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -33,6 +33,7 @@ import (
 	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/purge/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
@@ -59,7 +60,7 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
-		if !util.IsNotFound(err) {
+		if util.IsNotFound(err) {
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted", req.NamespacedName))
 			return ctrl.Result{}, fmt.Errorf("purgeController: %w", err)
 		}
@@ -76,13 +77,12 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, nil
 	}
 
-	// condition to check if deletionTimestamp is set, retry until it gets fully deleted
 	deletionDeadline := kyma.DeletionTimestamp.Add(r.PurgeFinalizerTimeout)
-
 	if time.Now().Before(deletionDeadline) {
-		return ctrl.Result{
-			RequeueAfter: time.Until(deletionDeadline.Add(time.Second)),
-		}, nil
+		requeueAfter := time.Until(deletionDeadline.Add(time.Second))
+		logger.V(log.DebugLevel).Info(fmt.Sprintf("Purge reconciliation for Kyma  %s will be requeued after %s",
+			req.NamespacedName, requeueAfter))
+		return ctrl.Result{RequeueAfter: requeueAfter}, nil
 	}
 
 	start := time.Now()
@@ -120,14 +120,14 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	duration := time.Since(start)
 	metrics.UpdatePurgeTime(duration)
 
-	requeuedAfter := time.Until(deletionDeadline.Add(time.Second))
-	logger.V(log.DebugLevel).Info(fmt.Sprintf("Purge reconciliation for Kyma  %s will be requeued after %s",
-		req.NamespacedName, requeuedAfter))
-
-	return ctrl.Result{RequeueAfter: requeuedAfter}, nil
+	return ctrl.Result{}, nil
 }
 
-func (r *PurgeReconciler) UpdateStatus(_ context.Context, _ *v1beta2.Kyma, _ v1beta2.State, _ string) error {
+func (r *PurgeReconciler) UpdateStatus(ctx context.Context, kyma *v1beta2.Kyma, state v1beta2.State, message string,
+) error {
+	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, message); err != nil {
+		return fmt.Errorf("error while updating status to %s because of %s: %w", state, message, err)
+	}
 	return nil
 }
 
