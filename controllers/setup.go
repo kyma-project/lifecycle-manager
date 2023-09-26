@@ -148,7 +148,8 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 	ctrlManager := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Watcher{}).
 		Named(WatcherControllerName).
-		WithOptions(options)
+		WithOptions(options).
+		WithEventFilter(predicate.GenerationChangedPredicate{})
 
 	err = ctrlManager.Complete(r)
 	if err != nil {
