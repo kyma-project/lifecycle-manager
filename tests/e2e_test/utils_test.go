@@ -6,6 +6,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -161,4 +165,31 @@ func DisableModule(ctx context.Context, kymaName, kymaNamespace, moduleName stri
 
 func removeModuleWithIndex(s []v1beta2.Module, index int) []v1beta2.Module {
 	return append(s[:index], s[index+1:]...)
+}
+
+func GetKymaStateMetricCount(kymaName, state string) (int, error) {
+	response, err := http.Get("http://localhost:9081/metrics")
+	if err != nil {
+		return 0, err
+	}
+	defer response.Body.Close()
+	bodyBytes, err := io.ReadAll(response.Body)
+	if err != nil {
+		return 0, err
+	}
+	bodyString := string(bodyBytes)
+
+	re := regexp.MustCompile(
+		`lifecycle_mgr_kyma_state{instance_id="[^"]+",kyma_name="` + kymaName + `",shoot="[^"]+",state="` + state +
+			`"} (\d+)`)
+	match := re.FindStringSubmatch(bodyString)
+	if len(match) > 1 {
+		count, err := strconv.Atoi(match[1])
+		if err != nil {
+			return 0, err
+		}
+		return count, nil
+	}
+
+	return 0, nil
 }
