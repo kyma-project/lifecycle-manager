@@ -49,14 +49,14 @@ var (
 func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 	options controller.Options, settings SetupUpSetting,
 ) error {
-	pred := predicate.GenerationChangedPredicate{}
+	generationChangedPredicate := predicate.GenerationChangedPredicate{}
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
 		WithOptions(options).
-		WithEventFilter(pred).
+		WithEventFilter(generationChangedPredicate).
 		Watches(
 			&v1beta2.ModuleTemplate{},
 			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch()),
-			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+			builder.WithPredicates(generationChangedPredicate),
 		).
 		// here we define a watch on secrets for the lifecycle-manager so that the cache is picking up changes
 		Watches(&corev1.Secret{}, handler.Funcs{})
@@ -161,12 +161,10 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 func (r *PurgeReconciler) SetupWithManager(mgr ctrl.Manager,
 	options controller.Options,
 ) error {
-	pred := predicate.GenerationChangedPredicate{}
-
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Kyma{}).
 		WithOptions(options).
-		WithEventFilter(pred)
+		WithEventFilter(predicate.GenerationChangedPredicate{})
 
 	if err := controllerBuilder.Complete(r); err != nil {
 		return fmt.Errorf("error occurred while building controller: %w", err)

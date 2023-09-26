@@ -86,7 +86,7 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 	}
 
 	if !watcherObj.DeletionTimestamp.IsZero() && watcherObj.Status.State != v1beta2.WatcherStateDeleting {
-		return ctrl.Result{}, r.updateWatcherState(ctx, watcherObj, v1beta2.WatcherStateDeleting)
+		return ctrl.Result{Requeue: true}, r.updateWatcherState(ctx, watcherObj, v1beta2.WatcherStateDeleting)
 	}
 
 	// check finalizer on native object
@@ -97,7 +97,7 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 				errAddingFinalizer.Error())
 			return ctrl.Result{}, errAddingFinalizer
 		}
-		return ctrl.Result{}, r.updateFinalizer(ctx, watcherObj)
+		return ctrl.Result{Requeue: true}, r.updateFinalizer(ctx, watcherObj)
 	}
 
 	watcherObj.InitializeConditions()

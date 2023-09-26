@@ -108,6 +108,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted", req.NamespacedName))
 			return ctrl.Result{}, fmt.Errorf("KymaController: %w", err)
 		}
+		// if not found, stop put this kyma in queue
 		return ctrl.Result{}, nil
 	}
 
@@ -370,7 +371,7 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 	}
 
 	if err := errGroup.Wait(); err != nil {
-		return ctrl.Result{}, r.updateStatusWithError(ctx, kyma, err)
+		return ctrl.Result{Requeue: true}, r.updateStatusWithError(ctx, kyma, err)
 	}
 
 	state := kyma.DetermineState()

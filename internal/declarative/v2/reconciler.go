@@ -95,7 +95,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if r.ShouldSkip(ctx, obj) {
-		return ctrl.Result{}, nil
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	if err := r.initialize(obj); err != nil {
@@ -181,7 +181,7 @@ func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizer
 	}
 	if finalizerRemoved {
 		// no SSA since delete does not work for finalizers
-		return ctrl.Result{}, r.Update(ctx, obj) //nolint:wrapcheck
+		return ctrl.Result{Requeue: true}, r.Update(ctx, obj) //nolint:wrapcheck
 	}
 	msg := fmt.Sprintf("waiting as other finalizers are present: %s", obj.GetFinalizers())
 	r.Event(obj, "Normal", "FinalizerRemoval", msg)

@@ -116,7 +116,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	intervals := controllers.RequeueIntervals{
-		Success: 3 * time.Second,
+		Success: 1 * time.Second,
 		Busy:    100 * time.Millisecond,
 		Error:   100 * time.Millisecond,
 	}

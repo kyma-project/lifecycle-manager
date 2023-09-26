@@ -146,8 +146,8 @@ var _ = BeforeSuite(func() {
 
 	intervals := controllers.RequeueIntervals{
 		Success: 1 * time.Second,
-		Error:   1 * time.Second,
-		Busy:    1 * time.Second,
+		Busy:    100 * time.Millisecond,
+		Error:   100 * time.Millisecond,
 	}
 
 	// This k8sClient is used to install external resources
