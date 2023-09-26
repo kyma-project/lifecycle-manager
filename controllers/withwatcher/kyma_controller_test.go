@@ -48,9 +48,6 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer)
 
 	It("kyma reconciliation installs watcher with correct webhook config", func() {
-		kyma.ObjectMeta.Annotations[v1beta2.SyncStrategyAnnotation] = v1beta2.SyncStrategyLocalClient
-		Expect(controlPlaneClient.Update(suiteCtx, kyma)).To(Succeed())
-
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
 			kymaObjKey), Timeout, Interval).Should(Succeed())
 	})
