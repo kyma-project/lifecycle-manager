@@ -24,6 +24,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"go.uber.org/zap/zapcore"
 	corev1 "k8s.io/api/core/v1"
 
 	istioapi "istio.io/api/networking/v1beta1"
@@ -46,7 +48,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kyma-project/lifecycle-manager/api"
@@ -93,8 +94,7 @@ func TestAPIs(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	suiteCtx, cancel = context.WithCancel(context.TODO())
-	logger = zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true))
-	logf.SetLogger(logger)
+	logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
 
 	By("bootstrapping test environment")
 
@@ -145,7 +145,9 @@ var _ = BeforeSuite(func() {
 	runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
 
 	intervals := controllers.RequeueIntervals{
-		Success: 3 * time.Second,
+		Success: 1 * time.Second,
+		Error:   1 * time.Second,
+		Busy:    1 * time.Second,
 	}
 
 	// This k8sClient is used to install external resources
