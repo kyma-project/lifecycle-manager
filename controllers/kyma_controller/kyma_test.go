@@ -311,7 +311,7 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 				if len(modulesStatus) != 1 {
 					return fmt.Errorf("Status not initialized %w ", ErrWrongResourceNamespace)
 				}
-				if modulesStatus[0].Resource != nil {
+				if modulesStatus[0].Resource == nil {
 					return fmt.Errorf("Status.Modules.Resource not initialized %w ", ErrWrongResourceNamespace)
 				}
 				if modulesStatus[0].Resource.Namespace != expectedNamespace {
