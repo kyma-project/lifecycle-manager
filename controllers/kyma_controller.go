@@ -305,34 +305,30 @@ func (r *KymaReconciler) replaceSpecFromRemote(
 func (r *KymaReconciler) processKymaState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	switch kyma.Status.State {
 	case "":
-		return ctrl.Result{Requeue: true}, r.handleInitialState(ctx, kyma)
+		return r.handleInitialState(ctx, kyma)
 	case v1beta2.StateProcessing:
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, r.handleProcessingState(ctx, kyma)
+		return r.handleProcessingState(ctx, kyma)
 	case v1beta2.StateDeleting:
-		if dependentsDeleting, err := r.handleDeletingState(ctx, kyma); err != nil {
-			return ctrl.Result{}, err
-		} else if dependentsDeleting {
-			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
-		}
+		return r.handleDeletingState(ctx, kyma)
 	case v1beta2.StateError:
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Error}, r.handleProcessingState(ctx, kyma)
+		return r.handleProcessingState(ctx, kyma)
 	case v1beta2.StateReady, v1beta2.StateWarning:
-		return ctrl.Result{RequeueAfter: r.RequeueIntervals.Success}, r.handleProcessingState(ctx, kyma)
+		return r.handleProcessingState(ctx, kyma)
 	}
 
 	return ctrl.Result{}, nil
 }
 
-func (r *KymaReconciler) handleInitialState(ctx context.Context, kyma *v1beta2.Kyma) error {
+func (r *KymaReconciler) handleInitialState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	const msg = "started processing"
 	if err := r.updateStatus(ctx, kyma, v1beta2.StateProcessing, msg); err != nil {
-		return err
+		return ctrl.Result{}, err
 	}
 	r.enqueueNormalEvent(kyma, updateStatus, msg)
-	return nil
+	return ctrl.Result{Requeue: true}, nil
 }
 
-func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Kyma) error {
+func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	logger := ctrlLog.FromContext(ctx)
 
 	var errGroup errgroup.Group
@@ -374,30 +370,48 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 	}
 
 	if err := errGroup.Wait(); err != nil {
-		return r.updateStatusWithError(ctx, kyma, err)
+		return ctrl.Result{}, r.updateStatusWithError(ctx, kyma, err)
 	}
 
 	state := kyma.DetermineState()
-
+	requeueInterval := r.determineRequeueInterval(state)
 	if state == v1beta2.StateReady {
 		const msg = "kyma is ready"
 		if kyma.Status.State != v1beta2.StateReady {
 			logger.Info(msg)
 		}
-		return r.updateStatus(ctx, kyma, state, msg)
+		return ctrl.Result{RequeueAfter: requeueInterval}, r.updateStatus(ctx, kyma, state, msg)
 	}
 
-	return r.updateStatus(ctx, kyma, state, "waiting for all modules to become ready")
+	return ctrl.Result{RequeueAfter: requeueInterval},
+		r.updateStatus(ctx, kyma, state, "waiting for all modules to become ready")
 }
 
-func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma) (bool, error) {
+func (r *KymaReconciler) determineRequeueInterval(state v1beta2.State) time.Duration {
+	switch state {
+	case v1beta2.StateError:
+		return r.RequeueIntervals.Error
+	case v1beta2.StateDeleting:
+		fallthrough
+	case v1beta2.StateProcessing:
+		return r.RequeueIntervals.Busy
+	case v1beta2.StateReady:
+		fallthrough
+	case v1beta2.StateWarning:
+		fallthrough
+	default:
+		return r.RequeueIntervals.Success
+	}
+}
+
+func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	logger := ctrlLog.FromContext(ctx).V(log.InfoLevel)
 
 	if r.WatcherEnabled(kyma) {
 		if err := r.SKRWebhookManager.Remove(ctx, kyma); err != nil {
 			// error is expected, try again
 			r.enqueueNormalEvent(kyma, webhookChartRemoval, err.Error())
-			return true, nil
+			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
 		}
 	}
 
@@ -405,14 +419,14 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		if err := remote.NewRemoteCatalogFromKyma(r.RemoteSyncNamespace).Delete(ctx); err != nil {
 			err = fmt.Errorf("could not delete remote module catalog: %w", err)
 			r.enqueueWarningEvent(kyma, deletionError, err)
-			return false, err
+			return ctrl.Result{}, err
 		}
 
 		r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
 		if err := remote.RemoveFinalizerFromRemoteKyma(ctx, r.RemoteSyncNamespace); client.IgnoreNotFound(err) != nil {
 			err = fmt.Errorf("error while trying to remove finalizer from remote: %w", err)
 			r.enqueueWarningEvent(kyma, deletionError, err)
-			return false, err
+			return ctrl.Result{}, err
 		}
 
 		logger.Info("removed remote finalizer")
@@ -423,7 +437,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 	}
 
 	controllerutil.RemoveFinalizer(kyma, v1beta2.Finalizer)
-	return false, r.updateKyma(ctx, kyma)
+	return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
 }
 
 func (r *KymaReconciler) removeAllFinalizers(kyma *v1beta2.Kyma) {
