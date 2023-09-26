@@ -20,7 +20,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"golang.org/x/sync/errgroup"
 	"k8s.io/client-go/rest"
@@ -61,12 +60,6 @@ const (
 	webhookChartRemoval        EventReasonInfo  = "WebhookChartRemoval"
 	DefaultRemoteSyncNamespace string           = "kyma-system"
 )
-
-type RequeueIntervals struct {
-	Success time.Duration
-	Busy    time.Duration
-	Error   time.Duration
-}
 
 type KymaReconciler struct {
 	client.Client
@@ -375,7 +368,7 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 	}
 
 	state := kyma.DetermineState()
-	requeueInterval := r.determineRequeueInterval(state)
+	requeueInterval := determineRequeueInterval(state, r.RequeueIntervals)
 	if state == v1beta2.StateReady {
 		const msg = "kyma is ready"
 		if kyma.Status.State != v1beta2.StateReady {
@@ -386,23 +379,6 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 
 	return ctrl.Result{RequeueAfter: requeueInterval},
 		r.updateStatus(ctx, kyma, state, "waiting for all modules to become ready")
-}
-
-func (r *KymaReconciler) determineRequeueInterval(state v1beta2.State) time.Duration {
-	switch state {
-	case v1beta2.StateError:
-		return r.RequeueIntervals.Error
-	case v1beta2.StateDeleting:
-		fallthrough
-	case v1beta2.StateProcessing:
-		return r.RequeueIntervals.Busy
-	case v1beta2.StateReady:
-		fallthrough
-	case v1beta2.StateWarning:
-		fallthrough
-	default:
-		return r.RequeueIntervals.Success
-	}
 }
 
 func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
