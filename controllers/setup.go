@@ -50,13 +50,16 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 	options controller.Options, settings SetupUpSetting,
 ) error {
 	generationChangedPredicate := predicate.GenerationChangedPredicate{}
+	labelChangedPredicate := predicate.LabelChangedPredicate{}
+	annotationChangedPredicate := predicate.AnnotationChangedPredicate{}
+	predicates := predicate.Or(generationChangedPredicate, labelChangedPredicate, annotationChangedPredicate)
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
 		WithOptions(options).
-		WithEventFilter(generationChangedPredicate).
+		WithEventFilter(predicates).
 		Watches(
 			&v1beta2.ModuleTemplate{},
 			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch()),
-			builder.WithPredicates(generationChangedPredicate),
+			builder.WithPredicates(predicates),
 		).
 		// here we define a watch on secrets for the lifecycle-manager so that the cache is picking up changes
 		Watches(&corev1.Secret{}, handler.Funcs{})
@@ -145,11 +148,16 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 		return fmt.Errorf("unable to set istio client for watcher controller: %w", err)
 	}
 
+	generationChangedPredicate := predicate.GenerationChangedPredicate{}
+	labelChangedPredicate := predicate.LabelChangedPredicate{}
+	annotationChangedPredicate := predicate.AnnotationChangedPredicate{}
+	predicates := predicate.Or(generationChangedPredicate, labelChangedPredicate, annotationChangedPredicate)
+
 	ctrlManager := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Watcher{}).
 		Named(WatcherControllerName).
 		WithOptions(options).
-		WithEventFilter(predicate.GenerationChangedPredicate{})
+		WithEventFilter(predicates)
 
 	err = ctrlManager.Complete(r)
 	if err != nil {
@@ -162,10 +170,15 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 func (r *PurgeReconciler) SetupWithManager(mgr ctrl.Manager,
 	options controller.Options,
 ) error {
+	generationChangedPredicate := predicate.GenerationChangedPredicate{}
+	labelChangedPredicate := predicate.LabelChangedPredicate{}
+	annotationChangedPredicate := predicate.AnnotationChangedPredicate{}
+	predicates := predicate.Or(generationChangedPredicate, labelChangedPredicate, annotationChangedPredicate)
+
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Kyma{}).
 		WithOptions(options).
-		WithEventFilter(predicate.GenerationChangedPredicate{})
+		WithEventFilter(predicates)
 
 	if err := controllerBuilder.Complete(r); err != nil {
 		return fmt.Errorf("error occurred while building controller: %w", err)
