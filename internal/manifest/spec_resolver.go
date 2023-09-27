@@ -8,6 +8,7 @@ import (
 	"reflect"
 
 	"github.com/google/go-containerregistry/pkg/v1/google"
+	"sigs.k8s.io/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
@@ -25,18 +26,14 @@ type RawManifestInfo struct {
 }
 
 type SpecResolver struct {
-	KCP *declarative.ClusterInfo
-
-	*v1beta2.Codec
-
+	KCP          *declarative.ClusterInfo
 	ChartCache   string
 	cachedCharts map[string]string
 }
 
-func NewSpecResolver(kcp *declarative.ClusterInfo, codec *v1beta2.Codec) *SpecResolver {
+func NewSpecResolver(kcp *declarative.ClusterInfo) *SpecResolver {
 	return &SpecResolver{
 		KCP:          kcp,
-		Codec:        codec,
 		ChartCache:   os.TempDir(),
 		cachedCharts: make(map[string]string),
 	}
@@ -101,12 +98,12 @@ func (m *SpecResolver) getRawManifestForInstall(
 	specType v1beta2.RefTypeMetadata,
 	targetClient client.Client,
 ) (*RawManifestInfo, error) {
-	var err error
 	switch specType {
 	case v1beta2.OciRefType:
 		var imageSpec v1beta2.ImageSpec
-		if err = m.Codec.Decode(install.Source.Raw, &imageSpec, specType); err != nil {
-			return nil, fmt.Errorf("failed to decode to target manifest object: %w", err)
+
+		if err := yaml.Unmarshal(install.Source.Raw, &imageSpec); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal data: %w", err)
 		}
 
 		keyChain, err := m.lookupKeyChain(ctx, imageSpec, targetClient)

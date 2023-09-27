@@ -15,7 +15,6 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/google/go-containerregistry v0.16.1
 	github.com/google/go-containerregistry/pkg/authn/kubernetes v0.0.0-20230104193340-e797859b62b6
-	github.com/invopop/jsonschema v0.7.0
 	github.com/jellydator/ttlcache/v3 v3.1.0
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20230825121434-16145a7dc6bf
 	github.com/onsi/ginkgo/v2 v2.12.0
@@ -23,7 +22,6 @@ require (
 	github.com/open-component-model/ocm v0.3.0
 	github.com/prometheus/client_golang v1.17.0
 	github.com/stretchr/testify v1.8.4
-	github.com/xeipuuv/gojsonschema v1.2.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/sync v0.3.0
 	golang.org/x/time v0.3.0
@@ -188,7 +186,6 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.4 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/iancoleman/orderedmap v0.2.0 // indirect
 	github.com/imdario/mergo v0.3.15 // indirect
 	github.com/in-toto/in-toto-golang v0.9.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -282,6 +279,7 @@ require (
 	github.com/xanzy/go-gitlab v0.90.0 // indirect
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
+	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	github.com/xlab/treeprint v1.2.0 // indirect
 	github.com/zeebo/errs v1.3.0 // indirect
 	go.mongodb.org/mongo-driver v1.11.3 // indirect

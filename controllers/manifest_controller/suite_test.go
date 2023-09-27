@@ -108,8 +108,6 @@ var _ = BeforeSuite(
 			},
 		)
 		Expect(err).ToNot(HaveOccurred())
-		codec, err := v1beta2.NewCodec()
-		Expect(err).ToNot(HaveOccurred())
 
 		authUser, err := testEnv.AddUser(
 			envtest.User{
@@ -125,7 +123,7 @@ var _ = BeforeSuite(
 		reconciler = declarative.NewFromManager(
 			k8sManager, &v1beta2.Manifest{},
 			declarative.WithSpecResolver(
-				manifest.NewSpecResolver(kcp, codec),
+				manifest.NewSpecResolver(kcp),
 			),
 			declarative.WithPermanentConsistencyCheck(true),
 			declarative.WithRemoteTargetCluster(

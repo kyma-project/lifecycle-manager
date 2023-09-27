@@ -2,15 +2,10 @@ package v1beta2
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 
-	"github.com/invopop/jsonschema"
-	"github.com/xeipuuv/gojsonschema"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
 )
 
 // ImageSpec defines OCI Image specifications.
@@ -60,65 +55,4 @@ func GetSpecType(data []byte) (RefTypeMetadata, error) {
 	}
 
 	return refType, nil
-}
-
-// +kubebuilder:object:generate=false
-type Codec struct {
-	imageSpecSchema *gojsonschema.Schema
-}
-
-func NewCodec() (*Codec, error) {
-	imageSpecJSONBytes := jsonschema.Reflect(ImageSpec{})
-	bytes, err := imageSpecJSONBytes.MarshalJSON()
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal json: %w", err)
-	}
-
-	imageSpecSchema, err := gojsonschema.NewSchema(gojsonschema.NewBytesLoader(bytes))
-	if err != nil {
-		return nil, fmt.Errorf("NewCodec: %w", err)
-	}
-
-	return &Codec{
-		imageSpecSchema: imageSpecSchema,
-	}, nil
-}
-
-func (c *Codec) Decode(data []byte, obj interface{}, refType RefTypeMetadata) error {
-	if err := c.Validate(data, refType); err != nil {
-		return fmt.Errorf("failed to validate data when decoding: %w", err)
-	}
-
-	err := yaml.Unmarshal(data, &obj)
-	if err != nil {
-		return fmt.Errorf("failed to unmarshal data: %w", err)
-	}
-	return nil
-}
-
-var ErrInstallationTypeNotSupported = errors.New("installation type is not supported")
-
-func (c *Codec) Validate(data []byte, refType RefTypeMetadata) error {
-	dataBytes := gojsonschema.NewBytesLoader(data)
-	var result *gojsonschema.Result
-	var err error
-
-	switch refType {
-	case OciRefType:
-		result, err = c.imageSpecSchema.Validate(dataBytes)
-		if err != nil {
-			return fmt.Errorf("failed to validate: %w", err)
-		}
-	case NilRefType:
-		return fmt.Errorf("%s is invalid: %w", refType, ErrInstallationTypeNotSupported)
-	}
-
-	if !result.Valid() {
-		errs := make([]error, 0, len(result.Errors()))
-		for _, err := range result.Errors() {
-			errs = append(errs, errors.New(err.String())) //nolint:goerr113
-		}
-		return types.NewMultiError(errs)
-	}
-	return nil
 }

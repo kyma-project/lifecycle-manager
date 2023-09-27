@@ -51,11 +51,6 @@ func SetupWithManager(
 		return fmt.Errorf("failed to add to listener to manager: %w", err)
 	}
 
-	codec, err := v1beta2.NewCodec()
-	if err != nil {
-		return fmt.Errorf("unable to initialize codec: %w", err)
-	}
-
 	controllerManagedByManager := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
 		Watches(&v1.Secret{}, handler.Funcs{}).
@@ -73,14 +68,14 @@ func SetupWithManager(
 			},
 		).WithOptions(options)
 
-	if controllerManagedByManager.Complete(ManifestReconciler(mgr, codec, checkInterval)) != nil {
+	if err := controllerManagedByManager.Complete(ManifestReconciler(mgr, checkInterval)); err != nil {
 		return fmt.Errorf("failed to initialize manifest controller by manager: %w", err)
 	}
 	return nil
 }
 
 func ManifestReconciler(
-	mgr manager.Manager, codec *v1beta2.Codec,
+	mgr manager.Manager,
 	checkInterval time.Duration,
 ) *declarative.Reconciler {
 	kcp := &declarative.ClusterInfo{
@@ -91,7 +86,7 @@ func ManifestReconciler(
 	return declarative.NewFromManager(
 		mgr, &v1beta2.Manifest{},
 		declarative.WithSpecResolver(
-			manifest.NewSpecResolver(kcp, codec),
+			manifest.NewSpecResolver(kcp),
 		),
 		declarative.WithCustomReadyCheck(manifest.NewCustomResourceReadyCheck()),
 		declarative.WithRemoteTargetCluster(lookup.ConfigResolver),
