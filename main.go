@@ -35,9 +35,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/strings/slices"
@@ -57,6 +54,7 @@ import (
 	purgemetrics "github.com/kyma-project/lifecycle-manager/internal/controller/purge/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
@@ -239,7 +237,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		KcpRestConfig:     kcpRestConfig,
 		RemoteClientCache: remoteClientCache,
 		SKRWebhookManager: skrWebhookManager,
-		RequeueIntervals: controllers.RequeueIntervals{
+		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.kymaRequeueSuccessInterval,
 			Busy:    flagVar.kymaRequeueBusyInterval,
 			Error:   flagVar.kymaRequeueErrInterval,
@@ -334,8 +332,10 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, fla
 		EventRecorder: mgr.GetEventRecorderFor(controllers.WatcherControllerName),
 		Scheme:        mgr.GetScheme(),
 		RestConfig:    mgr.GetConfig(),
-		RequeueIntervals: controllers.RequeueIntervals{
+		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.watcherRequeueSuccessInterval,
+			Busy:    defaultKymaRequeueBusyInterval,
+			Error:   defaultKymaRequeueErrInterval,
 		},
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controllers.WatcherControllerName)

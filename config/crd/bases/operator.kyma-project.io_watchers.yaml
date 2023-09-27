@@ -230,13 +230,14 @@ spec:
                 type: integer
               state:
                 description: State signifies current state of a Watcher. Value can
-                  be one of ("Ready", "Processing", "Error", "Deleting")
+                  be one of ("Ready", "Processing", "Error", "Deleting", "Warning")
                 enum:
                 - Processing
                 - Deleting
                 - Ready
                 - Error
                 - ""
+                - Warning
                 type: string
             required:
             - state
@@ -458,13 +459,14 @@ spec:
                 type: integer
               state:
                 description: State signifies current state of a Watcher. Value can
-                  be one of ("Ready", "Processing", "Error", "Deleting")
+                  be one of ("Ready", "Processing", "Error", "Deleting", "Warning")
                 enum:
                 - Processing
                 - Deleting
                 - Ready
                 - Error
                 - ""
+                - Warning
                 type: string
             required:
             - state

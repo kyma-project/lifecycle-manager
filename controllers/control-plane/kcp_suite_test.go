@@ -24,6 +24,7 @@ import (
 	"time"
 
 	operatorv1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
 
 	"k8s.io/client-go/rest"
@@ -115,8 +116,8 @@ var _ = BeforeSuite(func() {
 		})
 	Expect(err).ToNot(HaveOccurred())
 
-	intervals := controllers.RequeueIntervals{
-		Success: 3 * time.Second,
+	intervals := queue.RequeueIntervals{
+		Success: 1 * time.Second,
 		Busy:    100 * time.Millisecond,
 		Error:   100 * time.Millisecond,
 	}

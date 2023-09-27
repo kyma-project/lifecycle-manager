@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"go.uber.org/zap/zapcore"
 	corev1 "k8s.io/api/core/v1"
 
@@ -144,10 +145,10 @@ var _ = BeforeSuite(func() {
 	controlPlaneClient = k8sManager.GetClient()
 	runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
 
-	intervals := controllers.RequeueIntervals{
+	intervals := queue.RequeueIntervals{
 		Success: 1 * time.Second,
-		Error:   1 * time.Second,
-		Busy:    1 * time.Second,
+		Busy:    100 * time.Millisecond,
+		Error:   100 * time.Millisecond,
 	}
 
 	// This k8sClient is used to install external resources
