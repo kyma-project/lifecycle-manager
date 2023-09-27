@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
@@ -57,7 +58,7 @@ type WatcherReconciler struct {
 	IstioClient *istio.Client
 	RestConfig  *rest.Config
 	Scheme      *runtime.Scheme
-	RequeueIntervals
+	queue.RequeueIntervals
 }
 
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=watchers,verbs=get;list;watch;create;update;patch;delete
@@ -187,7 +188,7 @@ func (r *WatcherReconciler) updateWatcherState(ctx context.Context, watcherCR *v
 	if err != nil {
 		r.EventRecorder.Event(watcherCR, "Warning", "WatcherStatusUpdate", err.Error())
 	}
-	requeueInterval := determineRequeueInterval(state, r.RequeueIntervals)
+	requeueInterval := queue.DetermineRequeueInterval(state, r.RequeueIntervals)
 	return ctrl.Result{RequeueAfter: requeueInterval}, r.updateWatcherStatusUsingSSA(ctx, watcherCR)
 }
 

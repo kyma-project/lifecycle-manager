@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
@@ -64,7 +65,7 @@ const (
 type KymaReconciler struct {
 	client.Client
 	record.EventRecorder
-	RequeueIntervals
+	queue.RequeueIntervals
 	signature.VerificationSettings
 	SKRWebhookManager   watcher.SKRWebhookManager
 	KcpRestConfig       *rest.Config
@@ -368,7 +369,7 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 	}
 
 	state := kyma.DetermineState()
-	requeueInterval := determineRequeueInterval(state, r.RequeueIntervals)
+	requeueInterval := queue.DetermineRequeueInterval(state, r.RequeueIntervals)
 	if state == v1beta2.StateReady {
 		const msg = "kyma is ready"
 		if kyma.Status.State != v1beta2.StateReady {
