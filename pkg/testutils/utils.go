@@ -48,8 +48,9 @@ const (
 )
 
 var (
-	ErrNotFound   = errors.New("resource not exists")
-	ErrNotDeleted = errors.New("resource not deleted")
+	ErrNotFound               = errors.New("resource not exists")
+	ErrNotDeleted             = errors.New("resource not deleted")
+	ErrDeletionTimestampFound = errors.New("deletion timestamp not nil")
 )
 
 func NewTestKyma(name string) *v1beta2.Kyma {
@@ -229,6 +230,17 @@ func SyncKyma(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error
 	// It might happen in some test case, kyma get deleted, if you need to make sure Kyma should exist,
 	// write expected condition to check it specifically.
 	return client.IgnoreNotFound(err)
+}
+
+func KymaExists(ctx context.Context, clnt client.Client, name, namespace string) error {
+	kyma, err := GetKyma(ctx, clnt, name, namespace)
+	if util.IsNotFound(err) {
+		return ErrNotFound
+	}
+	if kyma != nil && kyma.DeletionTimestamp != nil {
+		return ErrDeletionTimestampFound
+	}
+	return nil
 }
 
 func GetKyma(ctx context.Context, testClient client.Client, name, namespace string) (*v1beta2.Kyma, error) {

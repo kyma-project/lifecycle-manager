@@ -39,7 +39,6 @@ import (
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/strings/slices"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -147,6 +146,10 @@ func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *runti
 
 	setupKymaReconciler(mgr, remoteClientCache, flagVar, options)
 	setupManifestReconciler(mgr, flagVar, options)
+
+	if flagVar.enablePurgeFinalizer {
+		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options)
+	}
 
 	if flagVar.enableKcpWatcher {
 		setupKcpWatcherReconciler(mgr, options, flagVar)
@@ -258,9 +261,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
-	if flagVar.enablePurgeFinalizer {
-		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options, kcpRestConfig)
-	}
+
 	metrics.Initialize()
 }
 
@@ -279,15 +280,13 @@ func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (watcher.SKRWeb
 	})
 }
 
-func setupPurgeReconciler(
-	mgr ctrl.Manager,
+func setupPurgeReconciler(mgr ctrl.Manager,
 	remoteClientCache *remote.ClientCache,
 	flagVar *FlagVar,
 	options controller.Options,
-	restConfig *rest.Config,
 ) {
 	resolveRemoteClientFunc := func(ctx context.Context, key client.ObjectKey) (client.Client, error) {
-		kcpClient := remote.NewClientWithConfig(mgr.GetClient(), restConfig)
+		kcpClient := remote.NewClientWithConfig(mgr.GetClient(), mgr.GetConfig())
 		return remote.NewClientLookup(kcpClient, remoteClientCache, operatorv1beta2.SyncStrategyLocalSecret).Lookup(ctx, key)
 	}
 

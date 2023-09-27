@@ -74,7 +74,7 @@ type WatcherReconciler struct {
 // move the current state of the cluster closer to the desired state.
 func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := ctrlLog.FromContext(ctx).WithName(req.NamespacedName.String())
-	logger.Info("Reconciliation loop starting")
+	logger.V(log.DebugLevel).Info("Reconciliation loop starting")
 
 	watcherObj := &v1beta2.Watcher{}
 	if err := r.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, watcherObj); err != nil {
