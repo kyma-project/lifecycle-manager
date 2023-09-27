@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 
@@ -30,10 +29,6 @@ import (
 )
 
 const (
-	timeout      = 10 * time.Second
-	readyTimeout = 2 * time.Minute
-	interval     = 1 * time.Second
-
 	watcherPodContainer = "server"
 	exampleSKRDomain    = "example.domain.com"
 

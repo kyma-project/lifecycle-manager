@@ -1,5 +1,3 @@
-//go:build watcher_e2e || deletion_e2e || status_propagation_e2e
-
 //nolint:gochecknoglobals
 package e2e_test
 

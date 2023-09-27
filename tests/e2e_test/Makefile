@@ -40,7 +40,7 @@ test-kyma-deletion-e2e: ## Runs the Kyma Deletion E2E Test
 
 .PHONY: kyma-metrics
 kyma-metrics: ## Runs the Kyma Metrics E2E Test
-	go test --tags=kyma_metrics -ginkgo.vv
+	go test -ginkgo.vv -ginkgo.focus "Kyma Metrics"
 
 .PHONY: test-watcher-e2e
 test-watcher-e2e: ## Runs the Watcher E2E Test

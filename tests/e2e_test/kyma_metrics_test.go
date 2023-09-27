@@ -1,5 +1,3 @@
-//go:build kyma_metrics
-
 package e2e_test
 
 import (
@@ -12,14 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 )
 
-const (
-	timeout       = 10 * time.Second
-	statusTimeout = 2 * time.Minute
-	interval      = 1 * time.Second
-	readyTimeout  = 2 * time.Minute
-)
-
-var _ = Describe("When KCP Kyma CR deleted, Kyma Status Metric should also be deleted",
+var _ = Describe("Kyma Metrics",
 	Ordered, func() {
 		channel := "regular"
 		kyma := testutils.NewKymaForE2E("kyma-sample", "kcp-system", channel)

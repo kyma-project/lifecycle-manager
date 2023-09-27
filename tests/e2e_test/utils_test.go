@@ -1,5 +1,3 @@
-//go:build watcher_e2e || deletion_e2e || status_propagation_e2e
-
 package e2e_test
 
 import (
@@ -11,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -32,6 +31,11 @@ const (
 	localHostname         = "0.0.0.0"
 	k3dHostname           = "host.k3d.internal"
 	defaultRemoteKymaName = "default"
+
+	timeout       = 10 * time.Second
+	statusTimeout = 2 * time.Minute
+	interval      = 1 * time.Second
+	readyTimeout  = 2 * time.Minute
 )
 
 func CheckKymaIsInState(ctx context.Context,

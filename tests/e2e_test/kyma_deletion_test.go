@@ -4,20 +4,12 @@ package e2e_test
 
 import (
 	"os/exec"
-	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/meta"
-)
-
-const (
-	timeout       = 10 * time.Second
-	statusTimeout = 2 * time.Minute
-	interval      = 1 * time.Second
-	readyTimeout  = 2 * time.Minute
 )
 
 var _ = Describe("KCP Kyma CR should be deleted successfully when SKR cluster gets deleted",

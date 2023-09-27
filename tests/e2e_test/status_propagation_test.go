@@ -3,20 +3,12 @@
 package e2e_test
 
 import (
-	"time"
-
 	"k8s.io/apimachinery/pkg/api/meta"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-)
-
-const (
-	timeout       = 10 * time.Second
-	statusTimeout = 2 * time.Minute
-	interval      = 1 * time.Second
 )
 
 var _ = Describe("Enable Template Operator, Kyma CR should have status `Warning`",
