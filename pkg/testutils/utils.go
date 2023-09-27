@@ -514,11 +514,17 @@ func GetModuleTemplate(ctx context.Context,
 func ManifestExists(ctx context.Context,
 	kyma *v1beta2.Kyma, module v1beta2.Module, controlPlaneClient client.Client,
 ) error {
-	_, err := GetManifest(ctx, controlPlaneClient, kyma, module)
+	manifest, err := GetManifest(ctx, controlPlaneClient, kyma, module)
 	if util.IsNotFound(err) {
 		return fmt.Errorf("%w: %w", ErrNotFound, err)
 	}
-	return nil
+	if manifest != nil && manifest.DeletionTimestamp != nil {
+		return ErrDeletionTimestampFound
+	}
+	if manifest != nil {
+		return nil
+	}
+	return err
 }
 
 func ModuleTemplateExists(ctx context.Context, client client.Client, name, namespace string) error {

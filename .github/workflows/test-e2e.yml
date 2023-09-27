@@ -45,6 +45,7 @@ jobs:
     name: "Run E2E tests"
     needs: [wait-for-img]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       K3D_VERSION: v5.4.7
       ISTIO_VERSION: 1.17.1

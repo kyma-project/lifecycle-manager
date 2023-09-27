@@ -283,7 +283,7 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 		By("KCP Manifest is being deleted")
 		Eventually(ManifestExists, Timeout, Interval).
 			WithArguments(ctx, kyma, moduleInKCP, controlPlaneClient).
-			ShouldNot(Succeed())
+			Should(MatchError(ErrNotFound))
 	})
 
 	It("Default module list should be recreated if remote Kyma gets deleted", func() {

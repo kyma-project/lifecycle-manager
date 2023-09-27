@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -240,7 +241,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		KcpRestConfig:     kcpRestConfig,
 		RemoteClientCache: remoteClientCache,
 		SKRWebhookManager: skrWebhookManager,
-		RequeueIntervals: controllers.RequeueIntervals{
+		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.kymaRequeueSuccessInterval,
 			Busy:    flagVar.kymaRequeueBusyInterval,
 			Error:   flagVar.kymaRequeueErrInterval,
@@ -334,8 +335,10 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, fla
 		EventRecorder: mgr.GetEventRecorderFor(controllers.WatcherControllerName),
 		Scheme:        mgr.GetScheme(),
 		RestConfig:    mgr.GetConfig(),
-		RequeueIntervals: controllers.RequeueIntervals{
+		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.watcherRequeueSuccessInterval,
+			Busy:    defaultKymaRequeueBusyInterval,
+			Error:   defaultKymaRequeueErrInterval,
 		},
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controllers.WatcherControllerName)
