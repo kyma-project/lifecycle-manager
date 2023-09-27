@@ -36,16 +36,16 @@ test: test-watcher-e2e test-kyma-deletion-e2e test-status-propagation-e2e
 
 .PHONY: test-kyma-deletion-e2e
 test-kyma-deletion-e2e: ## Runs the Kyma Deletion E2E Test
-	go test -ginkgo.vv -ginkgo.focus "KCP Kyma CR Deletion"
+	go test -ginkgo.v -ginkgo.focus "KCP Kyma CR Deletion"
 
 .PHONY: kyma-metrics
 kyma-metrics: ## Runs the Kyma Metrics E2E Test
-	go test -ginkgo.vv -ginkgo.focus "Kyma Metrics"
+	go test -ginkgo.v -ginkgo.focus "Kyma Metrics"
 
 .PHONY: test-watcher-e2e
 test-watcher-e2e: ## Runs the Watcher E2E Test
-	go test -ginkgo.vv -ginkgo.focus "Enqueue Event from Watcher"
+	go test -ginkgo.v -ginkgo.focus "Enqueue Event from Watcher"
 
 .PHONY: test-status-propagation-e2e
 test-status-propagation-e2e: ## Runs the Status Propagation E2E Test
-	go test -ginkgo.vv -ginkgo.focus "Warning Status Propagation"
+	go test -ginkgo.v -ginkgo.focus "Warning Status Propagation"
