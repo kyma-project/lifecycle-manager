@@ -40,7 +40,7 @@ jobs:
   e2e-integration:
     strategy:
       matrix:
-        e2e-test: ["test-watcher-e2e", "test-kyma-deletion-e2e", "test-status-propagation-e2e"]
+        e2e-test: ["test-watcher-e2e", "test-kyma-deletion-e2e", "test-status-propagation-e2e", "kyma-metrics"]
         cli-stability: [ "unstable" ]
     name: "Run E2E tests"
     needs: [wait-for-img]
