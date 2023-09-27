@@ -1,5 +1,3 @@
-//go:build deletion_e2e
-
 package e2e_test
 
 import (
@@ -12,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 )
 
-var _ = Describe("KCP Kyma CR should be deleted successfully when SKR cluster gets deleted",
+var _ = Describe("KCP Kyma CR Deletion",
 	Ordered, func() {
 		channel := "regular"
 		kyma := testutils.NewKymaForE2E("kyma-sample", "kcp-system", channel)

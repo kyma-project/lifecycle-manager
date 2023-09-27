@@ -1,5 +1,3 @@
-//go:build watcher_e2e
-
 package e2e_test
 
 import (
@@ -45,7 +43,7 @@ var (
 	errLogNotFound               = errors.New("logMsg was not found in log")
 )
 
-var _ = Describe("Kyma CR change on runtime cluster triggers new reconciliation using the Watcher",
+var _ = Describe("Enqueue Event from Watcher",
 	Ordered, func() {
 		channel := "regular"
 		switchedChannel := "fast"

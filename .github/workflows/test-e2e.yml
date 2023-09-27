@@ -166,7 +166,7 @@ jobs:
           kubectl apply -f template.yaml
       - name: Expose Metrics Endpoint
         working-directory: ./lifecycle-manager
-        if: ${{ matrix.e2e-test == 'test-kyma-deletion-e2e' }}
+        if: ${{ matrix.e2e-test == 'kyma-metrics' }}
         run: |
           kubectl patch svc klm-metrics-service -p '{"spec": {"type": "LoadBalancer"}}' -n kcp-system
       - name: Run ${{ matrix.e2e-test }}

@@ -1,5 +1,3 @@
-//go:build status_propagation_e2e
-
 package e2e_test
 
 import (
@@ -11,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Enable Template Operator, Kyma CR should have status `Warning`",
+var _ = Describe("Warning Status Propagation",
 	Ordered, func() {
 		channel := "regular"
 		kyma := testutils.NewKymaForE2E("kyma-sample", "kcp-system", channel)
