@@ -68,7 +68,7 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted", req.NamespacedName))
 			return ctrl.Result{}, fmt.Errorf("purgeController: %w", err)
 		}
-		return ctrl.Result{}, nil
+		return ctrl.Result{Requeue: false}, nil
 	}
 
 	if kyma.DeletionTimestamp.IsZero() {
@@ -77,7 +77,7 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 				req.NamespacedName, err))
 			return ctrl.Result{}, err
 		}
-		return ctrl.Result{}, nil
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	// condition to check if deletionTimestamp is set, retry until it gets fully deleted

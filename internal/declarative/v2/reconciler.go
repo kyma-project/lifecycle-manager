@@ -91,7 +91,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		if !util.IsNotFound(err) {
 			return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
 		}
-		return ctrl.Result{}, nil
+		return ctrl.Result{Requeue: false}, nil
 	}
 
 	if r.ShouldSkip(ctx, obj) {
