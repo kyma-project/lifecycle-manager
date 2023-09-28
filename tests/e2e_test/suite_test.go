@@ -92,7 +92,10 @@ var _ = BeforeSuite(func() {
 
 	Expect(api.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
-
+	SetDefaultEventuallyPollingInterval(interval)
+	SetDefaultEventuallyTimeout(timeout)
+	SetDefaultConsistentlyDuration(timeout)
+	SetDefaultConsistentlyPollingInterval(interval)
 	//+kubebuilder:scaffold:scheme
 
 	go func() {

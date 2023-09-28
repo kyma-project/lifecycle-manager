@@ -31,11 +31,9 @@ const (
 	localHostname         = "0.0.0.0"
 	k3dHostname           = "host.k3d.internal"
 	defaultRemoteKymaName = "default"
-
-	timeout       = 10 * time.Second
-	statusTimeout = 2 * time.Minute
-	interval      = 1 * time.Second
-	readyTimeout  = 2 * time.Minute
+	timeout               = 10 * time.Second
+	interval              = 1 * time.Second
+	remoteNamespace       = "kyma-system"
 )
 
 func CheckKymaIsInState(ctx context.Context,
@@ -49,10 +47,9 @@ func CheckKymaIsInState(ctx context.Context,
 	}
 	GinkgoWriter.Printf("kyma %v\n", kyma)
 	if kyma.Status.State != expectedState {
-
 		logmsg, err := getManifestCRs(ctx, k8sClient)
 		if err != nil {
-			return fmt.Errorf("error getting manifest crs %s", err.Error())
+			return fmt.Errorf("error getting manifest crs %w", err)
 		}
 		return fmt.Errorf("%w: expect %s, but in %s. Kyma CR: %#v, Manifest CRs: %s",
 			errKymaNotInExpectedState, expectedState, kyma.Status.State, kyma, logmsg)
@@ -138,7 +135,10 @@ func CheckKCPKymaCRDeleted(ctx context.Context,
 	return errKymaNotDeleted
 }
 
-func EnableModule(ctx context.Context, kymaName, kymaNamespace, moduleName, moduleChannel string, k8sClient client.Client) error {
+func EnableModule(ctx context.Context,
+	kymaName, kymaNamespace, moduleName, moduleChannel string,
+	k8sClient client.Client,
+) error {
 	kyma := &v1beta2.Kyma{}
 	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
 		return err
@@ -171,8 +171,13 @@ func removeModuleWithIndex(s []v1beta2.Module, index int) []v1beta2.Module {
 	return append(s[:index], s[index+1:]...)
 }
 
-func GetKymaStateMetricCount(kymaName, state string) (int, error) {
-	response, err := http.Get("http://localhost:9081/metrics")
+func GetKymaStateMetricCount(ctx context.Context, kymaName, state string) (int, error) {
+	clnt := &http.Client{}
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost:9081/metrics", nil)
+	if err != nil {
+		return 0, err
+	}
+	response, err := clnt.Do(request)
 	if err != nil {
 		return 0, err
 	}
