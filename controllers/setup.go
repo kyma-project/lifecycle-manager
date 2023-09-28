@@ -146,13 +146,11 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 		return fmt.Errorf("unable to set istio client for watcher controller: %w", err)
 	}
 
-	predicates := predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})
-
 	ctrlManager := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Watcher{}).
 		Named(WatcherControllerName).
 		WithOptions(options).
-		WithEventFilter(predicates)
+		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{}))
 
 	err = ctrlManager.Complete(r)
 	if err != nil {
@@ -165,12 +163,10 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 func (r *PurgeReconciler) SetupWithManager(mgr ctrl.Manager,
 	options controller.Options,
 ) error {
-	predicates := predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})
-
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Kyma{}).
 		WithOptions(options).
-		WithEventFilter(predicates)
+		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{}))
 
 	if err := controllerBuilder.Complete(r); err != nil {
 		return fmt.Errorf("error occurred while building controller: %w", err)
