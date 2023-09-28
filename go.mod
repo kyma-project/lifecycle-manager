@@ -18,7 +18,7 @@ require (
 	github.com/invopop/jsonschema v0.7.0
 	github.com/jellydator/ttlcache/v3 v3.1.0
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20230825121434-16145a7dc6bf
-	github.com/onsi/ginkgo/v2 v2.12.0
+	github.com/onsi/ginkgo/v2 v2.12.1
 	github.com/onsi/gomega v1.28.0
 	github.com/open-component-model/ocm v0.3.0
 	github.com/prometheus/client_golang v1.17.0
@@ -300,7 +300,7 @@ require (
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/net v0.14.0 // indirect
 	golang.org/x/oauth2 v0.11.0 // indirect
-	golang.org/x/sys v0.11.0 // indirect
+	golang.org/x/sys v0.12.0 // indirect
 	golang.org/x/term v0.11.0 // indirect
 	golang.org/x/text v0.12.0 // indirect
 	golang.org/x/tools v0.12.0 // indirect
