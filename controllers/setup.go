@@ -51,8 +51,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 ) error {
 	generationChangedPredicate := predicate.GenerationChangedPredicate{}
 	labelChangedPredicate := predicate.LabelChangedPredicate{}
-	annotationChangedPredicate := predicate.AnnotationChangedPredicate{}
-	predicates := predicate.Or(generationChangedPredicate, labelChangedPredicate, annotationChangedPredicate)
+	predicates := predicate.Or(generationChangedPredicate, labelChangedPredicate)
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
 		WithOptions(options).
 		WithEventFilter(predicates).
@@ -150,8 +149,7 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 
 	generationChangedPredicate := predicate.GenerationChangedPredicate{}
 	labelChangedPredicate := predicate.LabelChangedPredicate{}
-	annotationChangedPredicate := predicate.AnnotationChangedPredicate{}
-	predicates := predicate.Or(generationChangedPredicate, labelChangedPredicate, annotationChangedPredicate)
+	predicates := predicate.Or(generationChangedPredicate, labelChangedPredicate)
 
 	ctrlManager := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Watcher{}).
@@ -172,8 +170,7 @@ func (r *PurgeReconciler) SetupWithManager(mgr ctrl.Manager,
 ) error {
 	generationChangedPredicate := predicate.GenerationChangedPredicate{}
 	labelChangedPredicate := predicate.LabelChangedPredicate{}
-	annotationChangedPredicate := predicate.AnnotationChangedPredicate{}
-	predicates := predicate.Or(generationChangedPredicate, labelChangedPredicate, annotationChangedPredicate)
+	predicates := predicate.Or(generationChangedPredicate, labelChangedPredicate)
 
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Kyma{}).
