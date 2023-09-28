@@ -49,9 +49,8 @@ var (
 func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 	options controller.Options, settings SetupUpSetting,
 ) error {
-	generationChangedPredicate := predicate.GenerationChangedPredicate{}
-	labelChangedPredicate := predicate.LabelChangedPredicate{}
-	predicates := predicate.Or(generationChangedPredicate, labelChangedPredicate)
+	predicates := predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})
+
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
 		WithOptions(options).
 		WithEventFilter(predicates).
@@ -147,9 +146,7 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 		return fmt.Errorf("unable to set istio client for watcher controller: %w", err)
 	}
 
-	generationChangedPredicate := predicate.GenerationChangedPredicate{}
-	labelChangedPredicate := predicate.LabelChangedPredicate{}
-	predicates := predicate.Or(generationChangedPredicate, labelChangedPredicate)
+	predicates := predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})
 
 	ctrlManager := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Watcher{}).
@@ -168,9 +165,7 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 func (r *PurgeReconciler) SetupWithManager(mgr ctrl.Manager,
 	options controller.Options,
 ) error {
-	generationChangedPredicate := predicate.GenerationChangedPredicate{}
-	labelChangedPredicate := predicate.LabelChangedPredicate{}
-	predicates := predicate.Or(generationChangedPredicate, labelChangedPredicate)
+	predicates := predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})
 
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Kyma{}).
