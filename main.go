@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
@@ -46,7 +47,6 @@ import (
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
@@ -149,6 +149,10 @@ func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *runti
 	setupKymaReconciler(mgr, remoteClientCache, flagVar, options)
 	setupManifestReconciler(mgr, flagVar, options)
 
+	if flagVar.enablePurgeFinalizer {
+		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options)
+	}
+
 	if flagVar.enableKcpWatcher {
 		setupKcpWatcherReconciler(mgr, options, flagVar)
 	}
@@ -237,7 +241,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		KcpRestConfig:     kcpRestConfig,
 		RemoteClientCache: remoteClientCache,
 		SKRWebhookManager: skrWebhookManager,
-		RequeueIntervals: controllers.RequeueIntervals{
+		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.kymaRequeueSuccessInterval,
 			Busy:    flagVar.kymaRequeueBusyInterval,
 			Error:   flagVar.kymaRequeueErrInterval,
@@ -259,9 +263,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
-	if flagVar.enablePurgeFinalizer {
-		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options, kcpRestConfig)
-	}
+
 	metrics.Initialize()
 }
 
@@ -280,15 +282,13 @@ func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (watcher.SKRWeb
 	})
 }
 
-func setupPurgeReconciler(
-	mgr ctrl.Manager,
+func setupPurgeReconciler(mgr ctrl.Manager,
 	remoteClientCache *remote.ClientCache,
 	flagVar *FlagVar,
 	options controller.Options,
-	restConfig *rest.Config,
 ) {
 	resolveRemoteClientFunc := func(ctx context.Context, key client.ObjectKey) (client.Client, error) {
-		kcpClient := remote.NewClientWithConfig(mgr.GetClient(), restConfig)
+		kcpClient := remote.NewClientWithConfig(mgr.GetClient(), mgr.GetConfig())
 		return remote.NewClientLookup(kcpClient, remoteClientCache, operatorv1beta2.SyncStrategyLocalSecret).Lookup(ctx, key)
 	}
 
@@ -335,8 +335,10 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, fla
 		EventRecorder: mgr.GetEventRecorderFor(controllers.WatcherControllerName),
 		Scheme:        mgr.GetScheme(),
 		RestConfig:    mgr.GetConfig(),
-		RequeueIntervals: controllers.RequeueIntervals{
+		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.watcherRequeueSuccessInterval,
+			Busy:    defaultKymaRequeueBusyInterval,
+			Error:   defaultKymaRequeueErrInterval,
 		},
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controllers.WatcherControllerName)
