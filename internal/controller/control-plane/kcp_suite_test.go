@@ -81,12 +81,12 @@ var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 
 	externalCRDs := AppendExternalCRDs(
-		filepath.Join("../..", "config", "samples", "tests", "crds"),
+		filepath.Join("..", "..", "..", "config", "samples", "tests", "crds"),
 		"cert-manager-v1.10.1.crds.yaml",
 		"istio-v1.17.1.crds.yaml")
 
 	kcpModuleCRD := &v1.CustomResourceDefinition{}
-	modulePath := filepath.Join("../..", "config", "samples", "component-integration-installed",
+	modulePath := filepath.Join("..", "..", "..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
 	Expect(err).ToNot(HaveOccurred())
@@ -94,7 +94,7 @@ var _ = BeforeSuite(func() {
 	Expect(yaml2.Unmarshal(moduleFile, &kcpModuleCRD)).To(Succeed())
 
 	controlPlaneEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("../..", "config", "crd", "bases")},
+		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
 		CRDs:                  append([]*v1.CustomResourceDefinition{kcpModuleCRD}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}

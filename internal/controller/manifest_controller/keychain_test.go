@@ -66,7 +66,7 @@ func (d TestRegistry) RegistryStr() string {
 func installCredSecret(secretLabelValue string) func() error {
 	return func() error {
 		secret := &corev1.Secret{}
-		secretFile, err := os.ReadFile("../../pkg/test_samples/auth_secret.yaml")
+		secretFile, err := os.ReadFile("../../../pkg/test_samples/auth_secret.yaml")
 		Expect(err).ToNot(HaveOccurred())
 		err = yaml.Unmarshal(secretFile, secret)
 		Expect(err).ToNot(HaveOccurred())

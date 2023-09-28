@@ -79,8 +79,8 @@ var (
 )
 
 const (
-	skrWatcherPath         = "../../skr-webhook"
-	istioResourcesFilePath = "../../config/samples/tests/istio-test-resources.yaml"
+	skrWatcherPath         = "../../../skr-webhook"
+	istioResourcesFilePath = "../../../config/samples/tests/istio-test-resources.yaml"
 	istioSystemNs          = "istio-system"
 	kcpSystemNs            = "kcp-system"
 	gatewayName            = "lifecycle-manager-watcher-gateway"

@@ -72,7 +72,7 @@ func TestAPIs(t *testing.T) {
 
 var _ = BeforeSuite(
 	func() {
-		hlp.ManifestFilePath = "../../../pkg/test_samples/oci/rendered.yaml"
+		hlp.ManifestFilePath = "../../../../pkg/test_samples/oci/rendered.yaml"
 		hlp.Ctx, hlp.Cancel = context.WithCancel(context.TODO())
 		logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
 
