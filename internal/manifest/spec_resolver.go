@@ -22,7 +22,6 @@ import (
 type RawManifestInfo struct {
 	Path   string
 	OCIRef string
-	Name   string
 }
 
 type SpecResolver struct {
@@ -55,28 +54,27 @@ func (m *SpecResolver) Spec(ctx context.Context, obj declarative.Object,
 		)
 	}
 
-	specType, err := v1beta2.GetSpecType(manifest.Spec.Install.Source.Raw)
-	if err != nil {
-		return nil, fmt.Errorf("unable to get specType: %w", err)
-	}
-
 	targetClient := m.KCP.Client
 	if manifest.Labels[v1beta2.IsRemoteModuleTemplate] == v1beta2.EnableLabelValue {
 		targetClient = remoteClient
 	}
-
-	rawManifestInfo, err := m.getRawManifestForInstall(ctx, manifest.Spec.Install, specType, targetClient)
-	if err != nil {
-		return nil, err
+	var imageSpec v1beta2.ImageSpec
+	if err := yaml.Unmarshal(manifest.Spec.Install.Source.Raw, &imageSpec); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal data: %w", err)
 	}
 
 	var mode declarative.RenderMode
-	switch specType {
+	switch imageSpec.Type {
 	case v1beta2.OciRefType:
 		mode = declarative.RenderModeRaw
-	case v1beta2.NilRefType:
+	default:
 		return nil, fmt.Errorf("could not determine render mode for %s: %w",
 			client.ObjectKeyFromObject(manifest), ErrRenderModeInvalid)
+	}
+
+	rawManifestInfo, err := m.getRawManifestForInstall(ctx, imageSpec, targetClient)
+	if err != nil {
+		return nil, err
 	}
 
 	return &declarative.Spec{
@@ -87,46 +85,24 @@ func (m *SpecResolver) Spec(ctx context.Context, obj declarative.Object,
 	}, nil
 }
 
-var (
-	ErrUnsupportedInstallType = errors.New("install type is not supported")
-	ErrEmptyInstallType       = errors.New("empty install type")
-)
-
-func (m *SpecResolver) getRawManifestForInstall(
-	ctx context.Context,
-	install v1beta2.InstallInfo,
-	specType v1beta2.RefTypeMetadata,
+func (m *SpecResolver) getRawManifestForInstall(ctx context.Context,
+	imageSpec v1beta2.ImageSpec,
 	targetClient client.Client,
 ) (*RawManifestInfo, error) {
-	switch specType {
-	case v1beta2.OciRefType:
-		var imageSpec v1beta2.ImageSpec
-
-		if err := yaml.Unmarshal(install.Source.Raw, &imageSpec); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal data: %w", err)
-		}
-
-		keyChain, err := m.lookupKeyChain(ctx, imageSpec, targetClient)
-		if err != nil {
-			return nil, fmt.Errorf("failed to fetch keyChain: %w", err)
-		}
-
-		// extract raw manifest from layer digest
-		rawManifestPath, err := GetPathFromRawManifest(ctx, imageSpec, keyChain)
-		if err != nil {
-			return nil, fmt.Errorf("failed to extract raw manifest from layer digest: %w", err)
-		}
-
-		return &RawManifestInfo{
-			Name:   install.Name,
-			Path:   rawManifestPath,
-			OCIRef: imageSpec.Ref,
-		}, nil
-	case v1beta2.NilRefType:
-		return nil, ErrEmptyInstallType
-	default:
-		return nil, fmt.Errorf("%s is invalid: %w", specType, ErrUnsupportedInstallType)
+	keyChain, err := m.lookupKeyChain(ctx, imageSpec, targetClient)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch keyChain: %w", err)
 	}
+
+	// extract raw manifest from layer digest
+	rawManifestPath, err := GetPathFromRawManifest(ctx, imageSpec, keyChain)
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract raw manifest from layer digest: %w", err)
+	}
+	return &RawManifestInfo{
+		Path:   rawManifestPath,
+		OCIRef: imageSpec.Ref,
+	}, nil
 }
 
 func (m *SpecResolver) lookupKeyChain(
