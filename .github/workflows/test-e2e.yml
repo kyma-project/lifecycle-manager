@@ -40,7 +40,7 @@ jobs:
   e2e-integration:
     strategy:
       matrix:
-        e2e-test: ["test-watcher-e2e", "test-kyma-deletion-e2e", "test-status-propagation-e2e"]
+        e2e-test: ["watcher-enqueue", "kyma-deletion", "module-status-propagation", "kyma-metrics"]
         cli-stability: [ "unstable" ]
     name: "Run E2E tests"
     needs: [wait-for-img]
@@ -144,13 +144,13 @@ jobs:
           done
       - name: Checkout template-operator
         uses: actions/checkout@v3
-        if: ${{ matrix.e2e-test == 'test-status-propagation-e2e' }}
+        if: ${{ matrix.e2e-test == 'module-status-propagation' }}
         with:
           repository: kyma-project/template-operator
           path: ./template-operator/
       - name: Create Template Operator Module
         working-directory: ./template-operator
-        if: ${{ matrix.e2e-test == 'test-status-propagation-e2e' }}
+        if: ${{ matrix.e2e-test == 'module-status-propagation' }}
         run: |
           pushd config/default
           echo "- op: replace
@@ -166,7 +166,7 @@ jobs:
           kubectl apply -f template.yaml
       - name: Expose Metrics Endpoint
         working-directory: ./lifecycle-manager
-        if: ${{ matrix.e2e-test == 'test-kyma-deletion-e2e' }}
+        if: ${{ matrix.e2e-test == 'kyma-metrics' }}
         run: |
           kubectl patch svc klm-metrics-service -p '{"spec": {"type": "LoadBalancer"}}' -n kcp-system
       - name: Run ${{ matrix.e2e-test }}
