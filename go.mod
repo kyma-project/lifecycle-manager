@@ -13,8 +13,8 @@ require (
 	github.com/invopop/jsonschema v0.7.0
 	github.com/jellydator/ttlcache/v3 v3.1.0
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20230825121434-16145a7dc6bf
-	github.com/onsi/ginkgo/v2 v2.12.0
-	github.com/onsi/gomega v1.27.10
+	github.com/onsi/ginkgo/v2 v2.12.1
+	github.com/onsi/gomega v1.28.0
 	github.com/open-component-model/ocm v0.4.0
 	github.com/prometheus/client_golang v1.17.0
 	github.com/stretchr/testify v1.8.4
@@ -25,16 +25,19 @@ require (
 	gopkg.in/yaml.v3 v3.0.1
 	istio.io/api v1.19.0
 	istio.io/client-go v1.19.0
-	k8s.io/api v0.28.2
-	k8s.io/apiextensions-apiserver v0.28.1
-	k8s.io/apimachinery v0.28.2
-	k8s.io/cli-runtime v0.28.2
-	k8s.io/client-go v0.28.2
-	k8s.io/kubectl v0.28.2
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	sigs.k8s.io/controller-runtime v0.15.1
 	sigs.k8s.io/e2e-framework v0.3.0
 	sigs.k8s.io/yaml v1.3.0
+)
+
+require (
+	k8s.io/api v0.28.2
+	k8s.io/apiextensions-apiserver v0.28.2
+	k8s.io/apimachinery v0.28.2
+	k8s.io/cli-runtime v0.28.2
+	k8s.io/client-go v0.28.2
+	k8s.io/kubectl v0.28.2
 )
 
 require (
