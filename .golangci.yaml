@@ -23,8 +23,6 @@ linters:
 linters-settings:
   gomoddirectives:
     replace-allow-list:
-      - github.com/docker/cli
-      - github.com/docker/docker
   funlen:
     lines: 80
   cyclop:
