@@ -51,13 +51,10 @@ $(GINKGO): $(LOCALBIN)
 	@test -s $(GINKGO) && $(GINKGO) version | grep -q $(GINKGO_VERSION) || \
 	GOBIN=$(LOCALBIN) go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 
-
-.PHONY: e2e-coverage
 e2e-coverage: ginkgo ## Generate the effective Acceptance Criteria for all the test suites.
 	@for file in $(shell ls *_test.go | grep -v suite_test.go) ; do \
         $(GINKGO) outline --format indent $$file  | awk -F "," '{print $$1" "$$2}' | tail -n +2 ; \
     done
-
 
 ##@ E2E Tests
 
