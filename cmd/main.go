@@ -286,7 +286,7 @@ func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (watcher.SKRWeb
 func setupPurgeReconciler(mgr ctrl.Manager,
 	remoteClientCache *remote.ClientCache,
 	flagVar *FlagVar,
-	options controller.Options,
+	options controllerRuntime.Options,
 ) {
 	resolveRemoteClientFunc := func(ctx context.Context, key client.ObjectKey) (client.Client, error) {
 		kcpClient := remote.NewClientWithConfig(mgr.GetClient(), mgr.GetConfig())

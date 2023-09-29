@@ -9,7 +9,6 @@ import (
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	. "github.com/onsi/ginkgo/v2"
@@ -76,7 +75,7 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 	It("remote kyma created on SKR", func() {
 		Eventually(KymaExists, Timeout, Interval).
 			WithContext(suiteCtx).
-			WithArguments(runtimeClient, v1beta2.DefaultRemoteKymaName, controllers.DefaultRemoteSyncNamespace).
+			WithArguments(runtimeClient, v1beta2.DefaultRemoteKymaName, controller.DefaultRemoteSyncNamespace).
 			Should(Succeed())
 	})
 
