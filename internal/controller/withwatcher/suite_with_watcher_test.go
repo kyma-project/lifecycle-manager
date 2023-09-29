@@ -24,10 +24,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"go.uber.org/zap/zapcore"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
 
 	corev1 "k8s.io/api/core/v1"
 

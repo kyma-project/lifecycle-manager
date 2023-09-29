@@ -26,8 +26,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 
 	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 
