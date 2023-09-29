@@ -1,5 +1,3 @@
-//go:build watcher_e2e || deletion_e2e || status_propagation_e2e
-
 //nolint:gochecknoglobals
 package e2e_test
 
@@ -94,7 +92,10 @@ var _ = BeforeSuite(func() {
 
 	Expect(api.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
-
+	SetDefaultEventuallyPollingInterval(interval)
+	SetDefaultEventuallyTimeout(timeout)
+	SetDefaultConsistentlyDuration(timeout)
+	SetDefaultConsistentlyPollingInterval(interval)
 	//+kubebuilder:scaffold:scheme
 
 	go func() {

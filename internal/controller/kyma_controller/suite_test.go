@@ -26,6 +26,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
@@ -110,8 +111,8 @@ var _ = BeforeSuite(func() {
 		})
 	Expect(err).ToNot(HaveOccurred())
 
-	intervals := controller.RequeueIntervals{
-		Success: 3 * time.Second,
+	intervals := queue.RequeueIntervals{
+		Success: 1 * time.Second,
 		Busy:    100 * time.Millisecond,
 		Error:   100 * time.Millisecond,
 	}

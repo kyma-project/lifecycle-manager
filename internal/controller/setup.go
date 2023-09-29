@@ -49,11 +49,15 @@ var (
 func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 	options controllerRuntime.Options, settings SetupUpSetting,
 ) error {
-	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).WithOptions(options).
+	predicates := predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})
+
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).
+		WithOptions(options).
+		WithEventFilter(predicates).
 		Watches(
 			&v1beta2.ModuleTemplate{},
 			handler.EnqueueRequestsFromMapFunc(watch.NewTemplateChangeHandler(r).Watch()),
-			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+			builder.WithPredicates(predicates),
 		).
 		// here we define a watch on secrets for the lifecycle-manager so that the cache is picking up changes
 		Watches(&corev1.Secret{}, handler.Funcs{})
@@ -145,7 +149,8 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 	ctrlManager := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Watcher{}).
 		Named(WatcherControllerName).
-		WithOptions(options)
+		WithOptions(options).
+		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{}))
 
 	err = ctrlManager.Complete(r)
 	if err != nil {
@@ -158,7 +163,10 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 func (r *PurgeReconciler) SetupWithManager(mgr ctrl.Manager,
 	options controllerRuntime.Options,
 ) error {
-	controllerBuilder := ctrl.NewControllerManagedBy(mgr).For(&v1beta2.Kyma{}).WithOptions(options)
+	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
+		For(&v1beta2.Kyma{}).
+		WithOptions(options).
+		WithEventFilter(predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{}))
 
 	if err := controllerBuilder.Complete(r); err != nil {
 		return fmt.Errorf("error occurred while building controller: %w", err)

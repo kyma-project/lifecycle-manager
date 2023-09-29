@@ -40,11 +40,12 @@ jobs:
   e2e-integration:
     strategy:
       matrix:
-        e2e-test: ["test-watcher-e2e", "test-kyma-deletion-e2e", "test-status-propagation-e2e"]
+        e2e-test: ["watcher-enqueue", "kyma-deletion", "module-status-propagation", "kyma-metrics"]
         cli-stability: [ "unstable" ]
     name: "Run E2E tests"
     needs: [wait-for-img]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       K3D_VERSION: v5.4.7
       ISTIO_VERSION: 1.17.1
@@ -85,7 +86,7 @@ jobs:
           k3d cluster create skr -p 10080:80@loadbalancer -p 10443:443@loadbalancer --k3s-arg '--disable=traefik@server:0'
       - name: Provision KCP cluster
         run: |
-          kyma provision k3d --name=kcp -p 9080:80@loadbalancer -p 9443:443@loadbalancer --ci --registry-port 5111
+          kyma provision k3d --name=kcp -p 9443:443@loadbalancer -p 9080:80@loadbalancer -p 9081:8080@loadbalancer --ci --registry-port 5111
       - name: Update Kubeconfigs
         run: k3d kubeconfig merge -a -d
       - name: Export required Kubeconfig Env vars
@@ -143,13 +144,13 @@ jobs:
           done
       - name: Checkout template-operator
         uses: actions/checkout@v3
-        if: ${{ matrix.e2e-test == 'test-status-propagation-e2e' }}
+        if: ${{ matrix.e2e-test == 'module-status-propagation' }}
         with:
           repository: kyma-project/template-operator
           path: ./template-operator/
       - name: Create Template Operator Module
         working-directory: ./template-operator
-        if: ${{ matrix.e2e-test == 'test-status-propagation-e2e' }}
+        if: ${{ matrix.e2e-test == 'module-status-propagation' }}
         run: |
           pushd config/default
           echo "- op: replace
@@ -163,6 +164,11 @@ jobs:
           kubectl config use-context k3d-kcp
           kubectl get crds
           kubectl apply -f template.yaml
+      - name: Expose Metrics Endpoint
+        working-directory: ./lifecycle-manager
+        if: ${{ matrix.e2e-test == 'kyma-metrics' }}
+        run: |
+          kubectl patch svc klm-metrics-service -p '{"spec": {"type": "LoadBalancer"}}' -n kcp-system
       - name: Run ${{ matrix.e2e-test }}
         working-directory: ./lifecycle-manager
         run: |

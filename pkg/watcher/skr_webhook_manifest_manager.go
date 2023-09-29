@@ -120,7 +120,7 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 	if err != nil {
 		return fmt.Errorf("failed to apply webhook resources: %w", err)
 	}
-	logger.Info("successfully installed webhook resources",
+	logger.V(log.DebugLevel).Info("successfully installed webhook resources",
 		"kyma", kymaObjKey.String())
 	return nil
 }
@@ -157,7 +157,7 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 	if err != nil && !util.IsNotFound(err) {
 		return fmt.Errorf("failed to delete webhook resources: %w", err)
 	}
-	logger.Info("successfully removed webhook resources",
+	logger.V(log.DebugLevel).Info("successfully removed webhook resources",
 		"kyma", kymaObjKey.String())
 	return nil
 }
@@ -179,7 +179,7 @@ func (m *SKRWebhookManifestManager) getSKRClientObjectsForInstall(ctx context.Co
 	if err != nil {
 		return nil, err
 	}
-	logger.Info(fmt.Sprintf("using %d watchers to generate webhook configs", len(watchers)))
+	logger.V(log.DebugLevel).Info(fmt.Sprintf("using %d watchers to generate webhook configs", len(watchers)))
 	genClientObjects := getGeneratedClientObjects(resourcesConfig, watchers, remoteNs)
 	return append(skrClientObjects, genClientObjects...), nil
 }

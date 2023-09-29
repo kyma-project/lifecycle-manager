@@ -48,9 +48,10 @@ const (
 )
 
 var (
-	ErrNotFound           = errors.New("resource not exists")
-	ErrNotDeleted         = errors.New("resource not deleted")
-	ErrManifestNotinState = errors.New("manifest is not in correct state")
+	ErrNotFound               = errors.New("resource not exists")
+	ErrNotDeleted             = errors.New("resource not deleted")
+	ErrManifestNotinState     = errors.New("manifest is not in correct state")
+	ErrDeletionTimestampFound = errors.New("deletion timestamp not nil")
 )
 
 func NewTestKyma(name string) *v1beta2.Kyma {
@@ -239,6 +240,17 @@ func SyncKyma(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error
 	// It might happen in some test case, kyma get deleted, if you need to make sure Kyma should exist,
 	// write expected condition to check it specifically.
 	return client.IgnoreNotFound(err)
+}
+
+func KymaExists(ctx context.Context, clnt client.Client, name, namespace string) error {
+	kyma, err := GetKyma(ctx, clnt, name, namespace)
+	if util.IsNotFound(err) {
+		return ErrNotFound
+	}
+	if kyma != nil && kyma.DeletionTimestamp != nil {
+		return ErrDeletionTimestampFound
+	}
+	return nil
 }
 
 func GetKyma(ctx context.Context, testClient client.Client, name, namespace string) (*v1beta2.Kyma, error) {
@@ -502,11 +514,17 @@ func GetModuleTemplate(ctx context.Context,
 func ManifestExists(ctx context.Context,
 	kyma *v1beta2.Kyma, module v1beta2.Module, controlPlaneClient client.Client,
 ) error {
-	_, err := GetManifest(ctx, controlPlaneClient, kyma, module)
+	manifest, err := GetManifest(ctx, controlPlaneClient, kyma, module)
 	if util.IsNotFound(err) {
 		return fmt.Errorf("%w: %w", ErrNotFound, err)
 	}
-	return nil
+	if manifest != nil && manifest.DeletionTimestamp != nil {
+		return ErrDeletionTimestampFound
+	}
+	if manifest != nil {
+		return nil
+	}
+	return err
 }
 
 func ModuleTemplateExists(ctx context.Context, client client.Client, name, namespace string) error {

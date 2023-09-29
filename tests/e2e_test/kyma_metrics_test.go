@@ -1,15 +1,14 @@
 package e2e_test
 
 import (
-	"k8s.io/apimachinery/pkg/api/meta"
-
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/api/meta"
 )
 
-var _ = Describe("Warning Status Propagation", Ordered, func() {
+var _ = Describe("Kyma Metrics", Ordered, func() {
 	kyma := testutils.NewKymaForE2E("kyma-sample", "kcp-system", "regular")
 	GinkgoWriter.Printf("kyma before create %v\n", kyma)
 
@@ -19,7 +18,7 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 		Expect(meta.IsNoMatchError(err)).To(BeFalse())
 	})
 
-	It("Should create empty Kyma CR on remote cluster", func() {
+	It("Should create empty Kyma CR", func() {
 		Eventually(CreateKymaSecret).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
@@ -40,44 +39,31 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 			Should(Succeed())
 	})
 
-	It("Should enable Template Operator and Kyma should result in Warning status", func() {
-		By("Enabling Template Operator")
-		Eventually(EnableModule).
-			WithContext(ctx).
-			WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", "regular", runtimeClient).
-			Should(Succeed())
-		By("Checking state of kyma")
-		Eventually(CheckKymaIsInState).
-			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateWarning).
-			Should(Succeed())
-	})
+	It("Kyma reconciliation should remove metric when Kyma CR deleted ", func() {
+		By("getting the current kyma Ready state metric count")
+		kymaStateReadyCount, err := GetKymaStateMetricCount(ctx, kyma.GetName(), "Ready")
+		Expect(err).Should(Not(HaveOccurred()))
+		GinkgoWriter.Printf("Kyma State Ready Metric count before CR deletion: %d", kymaStateReadyCount)
+		Expect(kymaStateReadyCount).Should(Equal(1))
 
-	It("Should disable Template Operator and Kyma should result in Ready status", func() {
-		By("Disabling Template Operator")
-		Eventually(DisableModule).
-			WithContext(ctx).
-			WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", runtimeClient).
-			Should(Succeed())
-		By("Checking state of kyma")
-		Eventually(CheckKymaIsInState).
-			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
-			Should(Succeed())
-	})
-
-	It("Should delete KCP Kyma", func() {
-		By("Deleting KCP Kyma")
+		By("deleting KCP Kyma")
 		Eventually(controlPlaneClient.Delete).
 			WithContext(ctx).
 			WithArguments(kyma).
 			Should(Succeed())
-	})
 
-	It("Kyma CR should be removed", func() {
+		By("waiting for Kyma CR to be removed")
 		Eventually(CheckKCPKymaCRDeleted).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 			Should(Succeed())
+
+		By("should decrease the metric count")
+		for _, state := range []string{"Deleting", "Warning", "Ready", "Processing", "Error"} {
+			count, err := GetKymaStateMetricCount(ctx, kyma.GetName(), state)
+			Expect(err).Should(Not(HaveOccurred()))
+			GinkgoWriter.Printf("Kyma %s State Metric count after CR deletion: %d", state, count)
+			Expect(count).Should(Equal(0))
+		}
 	})
 })

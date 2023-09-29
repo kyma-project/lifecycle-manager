@@ -145,7 +145,7 @@ func watcherCRIsReady(watcherName string) error {
 	if err != nil {
 		return err
 	}
-	if watcher.Status.State != v1beta2.WatcherStateReady {
+	if watcher.Status.State != v1beta2.StateReady {
 		return errWatcherNotReady
 	}
 	return nil

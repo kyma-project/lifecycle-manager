@@ -1,7 +1,11 @@
 name: Lint Markdown Links
 run-name: ${{github.event.pull_request.title}}
 
-on: [ pull_request ]
+on:
+  pull_request:
+  schedule:
+    # Run every day at 5:00 AM
+    - cron: "0 5 * * *"
 
 jobs:
   markdown-link-check:

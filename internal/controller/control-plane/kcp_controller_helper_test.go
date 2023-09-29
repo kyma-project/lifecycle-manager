@@ -7,7 +7,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/cache"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -20,7 +19,6 @@ var (
 	ErrWatcherLabelMissing      = errors.New("watcher label missing")
 	ErrWatcherAnnotationMissing = errors.New("watcher annotation missing")
 	ErrGlobalChannelMisMatch    = errors.New("kyma global channel mismatch")
-	ErrDeletionTimestampFound   = errors.New("deletion timestamp not nil")
 )
 
 func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
@@ -43,17 +41,6 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 		Eventually(SyncKyma, Timeout, Interval).
 			WithContext(ctx).WithArguments(controlPlaneClient, kyma).Should(Succeed())
 	})
-}
-
-func kymaExists(clnt client.Client, name, namespace string) error {
-	kyma, err := GetKyma(ctx, clnt, name, namespace)
-	if util.IsNotFound(err) {
-		return ErrNotFound
-	}
-	if kyma != nil && kyma.DeletionTimestamp != nil {
-		return ErrDeletionTimestampFound
-	}
-	return nil
 }
 
 func kymaChannelMatch(clnt client.Client, name, namespace, channel string) error {
