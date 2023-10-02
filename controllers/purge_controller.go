@@ -141,7 +141,7 @@ func (r *PurgeReconciler) ensurePurgeFinalizer(ctx context.Context, kyma *v1beta
 	}
 	controllerutil.AddFinalizer(kyma, v1beta2.PurgeFinalizer)
 	if err := r.Update(ctx, kyma); err != nil {
-		err = fmt.Errorf("could not set purge finalizer: %w", err)
+		err = fmt.Errorf("failed to add purge finalizer: %w", err)
 		r.setFinalizerWarningEvent(kyma, err)
 		return err
 	}
@@ -152,7 +152,7 @@ func (r *PurgeReconciler) dropPurgeFinalizer(ctx context.Context, kyma *v1beta2.
 	if controllerutil.ContainsFinalizer(kyma, v1beta2.PurgeFinalizer) {
 		controllerutil.RemoveFinalizer(kyma, v1beta2.PurgeFinalizer)
 		if err := r.Update(ctx, kyma); err != nil {
-			err = fmt.Errorf("could not remove purge finalizer: %w", err)
+			err = fmt.Errorf("failed to remove purge finalizer: %w", err)
 			r.setFinalizerWarningEvent(kyma, err)
 			return err
 		}
@@ -173,7 +173,7 @@ func (r *PurgeReconciler) performCleanup(ctx context.Context, remoteClient clien
 
 		staleResources, err := getAllRemainingCRs(ctx, remoteClient, crd)
 		if err != nil {
-			return fmt.Errorf("could not fetch stale resources from remote cluster: %w", err)
+			return fmt.Errorf("failed to fetch stale resources from remote cluster: %w", err)
 		}
 
 		err = dropFinalizers(ctx, remoteClient, staleResources)
