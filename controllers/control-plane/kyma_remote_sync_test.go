@@ -48,7 +48,8 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	Expect(err).ShouldNot(HaveOccurred())
 
 	BeforeAll(func() {
-		runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
+		runtimeClient, runtimeEnv, err = NewSKRCluster(controlPlaneClient.Scheme())
+		Expect(err).NotTo(HaveOccurred())
 	})
 	registerControlPlaneLifecycleForKyma(kyma)
 
@@ -217,16 +218,16 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			WithArguments(controlPlaneClient, kyma).Should(Succeed())
 
 		By("Expect SKR Kyma get deleted")
-		Eventually(KymaExists, Timeout, Interval).
+		Eventually(KymaDeleted, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(runtimeClient, remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace).
-			Should(Equal(ErrNotFound))
+			WithArguments(remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace, runtimeClient).
+			Should(Succeed())
 
 		By("Make sure SKR Kyma not recreated")
-		Consistently(KymaExists, Timeout, Interval).
+		Consistently(KymaDeleted, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(runtimeClient, remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace).
-			Should(Equal(ErrNotFound))
+			WithArguments(remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace, runtimeClient).
+			Should(Succeed())
 
 		By("SKRCustomTemplate should still exists in SKR")
 		Consistently(ModuleTemplateExists, Timeout, Interval).
@@ -246,13 +247,14 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 
 	var runtimeClient client.Client
 	var runtimeEnv *envtest.Environment
-
+	var err error
 	remoteKyma := &v1beta2.Kyma{}
 	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
 	remoteKyma.Namespace = controllers.DefaultRemoteSyncNamespace
 
 	BeforeAll(func() {
-		runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
+		runtimeClient, runtimeEnv, err = NewSKRCluster(controlPlaneClient.Scheme())
+		Expect(err).NotTo(HaveOccurred())
 	})
 	registerControlPlaneLifecycleForKyma(kyma)
 
@@ -317,8 +319,10 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	remoteKyma.Namespace = controllers.DefaultRemoteSyncNamespace
 	var runtimeClient client.Client
 	var runtimeEnv *envtest.Environment
+	var err error
 	BeforeAll(func() {
-		runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
+		runtimeClient, runtimeEnv, err = NewSKRCluster(controlPlaneClient.Scheme())
+		Expect(err).NotTo(HaveOccurred())
 	})
 	registerControlPlaneLifecycleForKyma(kyma)
 	annotations := []string{

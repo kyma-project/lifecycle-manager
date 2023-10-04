@@ -290,13 +290,9 @@ var _ = Describe("Kyma with managed fields not in kcp mode", Ordered, func() {
 var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty for cluster scoped modules", Ordered,
 	func() {
 		kyma := NewTestKyma("kyma")
-		moduleName := RandomName()
+		module := NewTestModule("test-module", v1beta2.DefaultChannel)
 		kyma.Spec.Modules = append(
-			kyma.Spec.Modules, v1beta2.Module{
-				ControllerName: "manifest",
-				Name:           moduleName,
-				Channel:        v1beta2.DefaultChannel,
-			})
+			kyma.Spec.Modules, module)
 		RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
 		It("Should deploy ModuleTemplate", func() {

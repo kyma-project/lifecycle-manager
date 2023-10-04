@@ -1,6 +1,7 @@
 package control_plane_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -11,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -41,6 +43,37 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 		Eventually(SyncKyma, Timeout, Interval).
 			WithContext(ctx).WithArguments(controlPlaneClient, kyma).Should(Succeed())
 	})
+}
+
+func DeleteModuleTemplates(
+	ctx context.Context,
+	kcpClient client.Client,
+	kyma *v1beta2.Kyma,
+	onPrivateRepo bool,
+) {
+	for _, module := range kyma.Spec.Modules {
+		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo, false, false, false)
+		Expect(err).ShouldNot(HaveOccurred())
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, template).Should(Succeed())
+	}
+}
+
+func DeployModuleTemplates(
+	ctx context.Context,
+	kcpClient client.Client,
+	kyma *v1beta2.Kyma,
+	onPrivateRepo,
+	isInternal,
+	isBeta bool,
+	isClusterScoped bool,
+) {
+	for _, module := range kyma.Spec.Modules {
+		Eventually(DeployModuleTemplate, Timeout, Interval).WithContext(ctx).
+			WithArguments(kcpClient, module, onPrivateRepo, isInternal, isBeta, isClusterScoped).
+			Should(Succeed())
+	}
 }
 
 func kymaChannelMatch(clnt client.Client, name, namespace, channel string) error {

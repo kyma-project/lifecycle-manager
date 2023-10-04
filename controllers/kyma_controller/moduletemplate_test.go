@@ -105,11 +105,7 @@ var _ = Describe("ModuleTemplate.Spec.descriptor not contains RegistryCred label
 	kyma := NewTestKyma("kyma")
 
 	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1beta2.Module{
-			ControllerName: "manifest",
-			Name:           RandomName(),
-			Channel:        v1beta2.DefaultChannel,
-		})
+		kyma.Spec.Modules, NewTestModule("test-module", v1beta2.DefaultChannel))
 
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
@@ -123,11 +119,7 @@ var _ = Describe("ModuleTemplate.Spec.descriptor contains RegistryCred label", O
 	kyma := NewTestKyma("kyma")
 
 	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1beta2.Module{
-			ControllerName: "manifest",
-			Name:           RandomName(),
-			Channel:        v1beta2.DefaultChannel,
-		})
+		kyma.Spec.Modules, NewTestModule("test-module", v1beta2.DefaultChannel))
 
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 

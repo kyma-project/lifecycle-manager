@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,28 +28,16 @@ func NewKymaForE2E(name, namespace, channel string) *v1beta2.Kyma {
 	return kyma
 }
 
-func newKCPKymaWithNamespace(name, namespace, channel, syncStrategy string) *v1beta2.Kyma {
-	return &v1beta2.Kyma{
-		TypeMeta: v1.TypeMeta{
-			APIVersion: v1beta2.GroupVersion.String(),
-			Kind:       string(v1beta2.KymaKind),
-		},
-		ObjectMeta: v1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%s", name, RandomName()),
-			Namespace: namespace,
-			Annotations: map[string]string{
-				watcher.DomainAnnotation:       "example.domain.com",
-				v1beta2.SyncStrategyAnnotation: syncStrategy,
-			},
-			Labels: map[string]string{
-				v1beta2.InstanceIDLabel: "test-instance",
-			},
-		},
-		Spec: v1beta2.KymaSpec{
-			Modules: []v1beta2.Module{},
-			Channel: channel,
-		},
-	}
+func newKCPKymaWithNamespace(namePrefix, namespace, channel, syncStrategy string) *v1beta2.Kyma {
+	kyma := builder.NewKymaBuilder().
+		WithNamePrefix(namePrefix).
+		WithNamespace(namespace).
+		WithAnnotation(watcher.DomainAnnotation, "example.domain.com").
+		WithAnnotation(v1beta2.SyncStrategyAnnotation, syncStrategy).
+		WithLabel(v1beta2.InstanceIDLabel, "test-instance").
+		WithChannel(channel).
+		Build()
+	return &kyma
 }
 
 func SyncKyma(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error {
@@ -64,13 +53,7 @@ func SyncKyma(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error
 
 func KymaExists(ctx context.Context, clnt client.Client, name, namespace string) error {
 	kyma, err := GetKyma(ctx, clnt, name, namespace)
-	if util.IsNotFound(err) {
-		return ErrNotFound
-	}
-	if kyma != nil && kyma.DeletionTimestamp != nil {
-		return ErrDeletionTimestampFound
-	}
-	return nil
+	return CRExists(kyma, err)
 }
 
 func KymaDeleted(ctx context.Context,

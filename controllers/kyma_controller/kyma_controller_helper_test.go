@@ -51,6 +51,37 @@ func RegisterDefaultLifecycleForKymaWithoutTemplate(kyma *v1beta2.Kyma) {
 	})
 }
 
+func DeleteModuleTemplates(
+	ctx context.Context,
+	kcpClient client.Client,
+	kyma *v1beta2.Kyma,
+	onPrivateRepo bool,
+) {
+	for _, module := range kyma.Spec.Modules {
+		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo, false, false, false)
+		Expect(err).ShouldNot(HaveOccurred())
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, template).Should(Succeed())
+	}
+}
+
+func DeployModuleTemplates(
+	ctx context.Context,
+	kcpClient client.Client,
+	kyma *v1beta2.Kyma,
+	onPrivateRepo,
+	isInternal,
+	isBeta bool,
+	isClusterScoped bool,
+) {
+	for _, module := range kyma.Spec.Modules {
+		Eventually(DeployModuleTemplate, Timeout, Interval).WithContext(ctx).
+			WithArguments(kcpClient, module, onPrivateRepo, isInternal, isBeta, isClusterScoped).
+			Should(Succeed())
+	}
+}
+
 func GetKymaState(kymaName string) (string, error) {
 	createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 	if err != nil {
