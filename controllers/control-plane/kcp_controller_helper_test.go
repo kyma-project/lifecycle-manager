@@ -114,6 +114,9 @@ func expectModuleTemplateSpecGetReset(
 	if err != nil {
 		return err
 	}
+	if moduleTemplate.Spec.Data == nil {
+		return ErrExpectedLabelNotReset
+	}
 	initKey, found := moduleTemplate.Spec.Data.Object["spec"]
 	if !found {
 		return ErrExpectedLabelNotReset
@@ -144,6 +147,9 @@ func updateModuleTemplateSpec(clnt client.Client,
 	moduleTemplate, err := GetModuleTemplate(ctx, clnt, moduleName, moduleNamespace)
 	if err != nil {
 		return err
+	}
+	if moduleTemplate.Spec.Data == nil {
+		moduleTemplate.Spec.Data = &unstructured.Unstructured{}
 	}
 	moduleTemplate.Spec.Data.Object["spec"] = map[string]any{"initKey": newValue}
 	return clnt.Update(ctx, moduleTemplate)
