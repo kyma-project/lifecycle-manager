@@ -363,7 +363,7 @@ func ModuleTemplateFactoryForSchema(
 	moduleTemplate.Labels[v1beta2.ModuleName] = module.Name
 	moduleTemplate.Spec.Channel = module.Channel
 	if data.GetKind() != "" {
-		moduleTemplate.Spec.Data = data
+		moduleTemplate.Spec.Data = &data
 	}
 	return &moduleTemplate, nil
 }

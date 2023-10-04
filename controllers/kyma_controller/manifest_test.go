@@ -171,7 +171,7 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 
 		By("checking Spec.Resource")
 		hasValidSpecResource := func(manifest *v1beta2.Manifest) error {
-			return validateManifestSpecResource(manifest.Spec.Resource, &moduleTemplate.Spec.Data)
+			return validateManifestSpecResource(manifest.Spec.Resource, moduleTemplate.Spec.Data)
 		}
 		Eventually(expectManifest(hasValidSpecResource), Timeout, Interval).Should(Succeed())
 	})
@@ -230,7 +230,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 
 		By("checking Spec.Resource")
 		hasValidSpecResource := func(manifest *v1beta2.Manifest) error {
-			return validateManifestSpecResource(manifest.Spec.Resource, &moduleTemplate.Spec.Data)
+			return validateManifestSpecResource(manifest.Spec.Resource, moduleTemplate.Spec.Data)
 		}
 		Eventually(expectManifest(hasValidSpecResource), Timeout, Interval).Should(Succeed())
 	})
