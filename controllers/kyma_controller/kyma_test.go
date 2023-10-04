@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -71,14 +74,9 @@ var _ = Describe("Kyma with no Module", Ordered, func() {
 
 var _ = Describe("Kyma enable one Module", Ordered, func() {
 	kyma := NewTestKyma("empty-module-kyma")
-
-	moduleName := "example-module-name"
+	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1beta2.Module{
-			ControllerName: "manifest",
-			Name:           moduleName,
-			Channel:        v1beta2.DefaultChannel,
-		})
+		kyma.Spec.Modules, module)
 
 	RegisterDefaultLifecycleForKyma(kyma)
 
@@ -118,7 +116,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 		By("containing expected status.modules")
 		Eventually(func() error {
 			expectedModule := v1beta2.ModuleStatus{
-				Name:    moduleName,
+				Name:    module.Name,
 				State:   v1beta2.StateReady,
 				Channel: v1beta2.DefaultChannel,
 				Resource: &v1beta2.TrackingObject{
@@ -296,7 +294,17 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 		RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
 		It("Should deploy ModuleTemplate", func() {
-			DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false, true)
+			for _, module := range kyma.Spec.Modules {
+				template := builder.NewModuleTemplateBuilder().
+					WithModuleName(module.Name).
+					WithChannel(module.Channel).
+					WithOCM(compdesc2.SchemaVersion).
+					WithAnnotation(v1beta2.IsClusterScopedAnnotation, v1beta2.EnableLabelValue).Build()
+				Eventually(controlPlaneClient.Create, Timeout, Interval).WithContext(ctx).
+					WithArguments(template).
+					Should(Succeed())
+			}
+			DeployModuleTemplates(ctx, controlPlaneClient, kyma)
 		})
 
 		It("expect Kyma.Spec.Status.Modules.Resource.Namespace to be empty", func() {
@@ -349,6 +357,9 @@ func updateModuleTemplateSpec(clnt client.Client,
 	moduleTemplate, err := GetModuleTemplate(ctx, clnt, moduleName, moduleNamespace)
 	if err != nil {
 		return err
+	}
+	if moduleTemplate.Spec.Data == nil {
+		moduleTemplate.Spec.Data = &unstructured.Unstructured{}
 	}
 	moduleTemplate.Spec.Data.Object["spec"] = map[string]any{"initKey": newValue}
 	return clnt.Update(ctx, moduleTemplate)

@@ -2,13 +2,12 @@ package v1beta2_test
 
 import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/ocm.software/v3alpha1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var _ = Describe(
@@ -28,13 +27,11 @@ var _ = Describe(
 				Eventually(k8sClient.Create, Timeout, Interval).
 					WithContext(webhookServerContext).
 					WithArguments(crd).Should(Succeed())
-				template, err := testutils.ModuleTemplateFactoryForSchema(
-					v1beta2.Module{
-						ControllerName: "manifest",
-						Name:           "example-module-name",
-						Channel:        v1beta2.DefaultChannel,
-					}, data, v3alpha1.SchemaVersion, false)
-				Expect(err).ToNot(HaveOccurred())
+				template := builder.NewModuleTemplateBuilder().
+					WithModuleName("test-module").
+					WithChannel(v1beta2.DefaultChannel).
+					WithDefaultCR(&data).
+					WithOCM(v3alpha1.SchemaVersion).Build()
 				Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
 				Expect(k8sClient.Delete(webhookServerContext, template)).Should(Succeed())
 

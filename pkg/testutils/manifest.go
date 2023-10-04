@@ -8,8 +8,8 @@ import (
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -32,10 +32,10 @@ func GetManifest(ctx context.Context,
 	kyma *v1beta2.Kyma,
 	module v1beta2.Module,
 ) (*v1beta2.Manifest, error) {
-	template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false, false)
-	if err != nil {
-		return nil, err
-	}
+	template := builder.NewModuleTemplateBuilder().
+		WithModuleName(module.Name).
+		WithChannel(module.Channel).
+		WithOCM(compdesc2.SchemaVersion).Build()
 	descriptor, err := template.GetDescriptor()
 	if err != nil {
 		return nil, fmt.Errorf("component.descriptor %w", err)

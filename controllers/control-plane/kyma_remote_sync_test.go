@@ -7,11 +7,12 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/controllers"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 )
@@ -35,17 +36,23 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	remoteKyma.Namespace = controllers.DefaultRemoteSyncNamespace
 	var runtimeClient client.Client
 	var runtimeEnv *envtest.Environment
+	var err error
 	moduleInSKR := NewTestModule("in-skr", v1beta2.DefaultChannel)
 	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
 	customModuleInSKR := NewTestModule("custom-in-skr", v1beta2.DefaultChannel)
 	customModuleInSKR.RemoteModuleTemplateRef = customModuleInSKR.Name
-	SKRTemplate, err := ModuleTemplateFactory(moduleInSKR, unstructured.Unstructured{}, false, false, false, false)
-	Expect(err).ShouldNot(HaveOccurred())
-	KCPTemplate, err := ModuleTemplateFactory(moduleInKCP, unstructured.Unstructured{}, false, false, false, false)
-	Expect(err).ShouldNot(HaveOccurred())
-	SKRCustomTemplate, err := ModuleTemplateFactory(customModuleInSKR, unstructured.Unstructured{}, false, false, false,
-		false)
-	Expect(err).ShouldNot(HaveOccurred())
+	SKRTemplate := builder.NewModuleTemplateBuilder().
+		WithModuleName(moduleInSKR.Name).
+		WithChannel(moduleInSKR.Channel).
+		WithOCM(compdesc2.SchemaVersion).Build()
+	KCPTemplate := builder.NewModuleTemplateBuilder().
+		WithModuleName(moduleInKCP.Name).
+		WithChannel(moduleInKCP.Channel).
+		WithOCM(compdesc2.SchemaVersion).Build()
+	SKRCustomTemplate := builder.NewModuleTemplateBuilder().
+		WithModuleName(customModuleInSKR.Name).
+		WithChannel(customModuleInSKR.Channel).
+		WithOCM(compdesc2.SchemaVersion).Build()
 
 	BeforeAll(func() {
 		runtimeClient, runtimeEnv, err = NewSKRCluster(controlPlaneClient.Scheme())
@@ -333,8 +340,10 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	}
 
 	It("module template created", func() {
-		template, err := ModuleTemplateFactory(moduleInKcp, unstructured.Unstructured{}, false, false, false, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		template := builder.NewModuleTemplateBuilder().
+			WithModuleName(moduleInKcp.Name).
+			WithChannel(moduleInKcp.Channel).
+			WithOCM(compdesc2.SchemaVersion).Build()
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(controlPlaneClient, template).

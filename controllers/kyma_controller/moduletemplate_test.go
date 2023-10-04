@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -110,21 +111,26 @@ var _ = Describe("ModuleTemplate.Spec.descriptor not contains RegistryCred label
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
 	It("expect Manifest.Spec.installs not contains credSecretSelector", func() {
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false, false)
+		DeployModuleTemplates(ctx, controlPlaneClient, kyma)
 		Eventually(expectManifestSpecNotContainsCredSecretSelector(kyma.Name), Timeout*2, Interval).Should(Succeed())
 	})
 })
 
 var _ = Describe("ModuleTemplate.Spec.descriptor contains RegistryCred label", Ordered, func() {
 	kyma := NewTestKyma("kyma")
-
-	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, NewTestModule("test-module", v1beta2.DefaultChannel))
+	module := NewTestModule("test-module", v1beta2.DefaultChannel)
+	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
 	It("expect Manifest.Spec.installs contains credSecretSelector", func() {
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma, true, false, false, false)
+		template := builder.NewModuleTemplateBuilder().
+			WithModuleName(module.Name).
+			WithChannel(module.Channel).
+			WithOCMPrivateRepo().Build()
+		Eventually(controlPlaneClient.Create, Timeout, Interval).WithContext(ctx).
+			WithArguments(template).
+			Should(Succeed())
 		Eventually(expectManifestSpecContainsCredSecretSelector(kyma.Name), Timeout*2, Interval).Should(Succeed())
 	})
 })

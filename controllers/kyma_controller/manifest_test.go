@@ -2,6 +2,7 @@ package kyma_controller_test
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -35,6 +36,8 @@ const (
 	// registry: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/template-operator:v3.1.0
 	updatedModuleTemplateVersion = "v3.1.0"
 )
+
+var ErrEmptyModuleTemplateData = errors.New("module template spec.data is empty")
 
 var _ = Describe("Manifest.Spec.Remote in default mode", Ordered, func() {
 	kyma := NewTestKyma("kyma")
@@ -404,6 +407,9 @@ func validateManifestSpecInstallSourceType(manifestImageSpec *v1beta2.ImageSpec)
 }
 
 func validateManifestSpecResource(manifestResource, moduleTemplateData *unstructured.Unstructured) error {
+	if moduleTemplateData == nil {
+		return ErrEmptyModuleTemplateData
+	}
 	actualManifestResource := manifestResource
 	expectedManifestResource := moduleTemplateData.DeepCopy()
 	expectedManifestResource.

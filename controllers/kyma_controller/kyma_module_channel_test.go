@@ -5,13 +5,13 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 const (
@@ -264,18 +264,22 @@ func CleanupModuleTemplateSetsForKyma(kyma *v1beta2.Kyma) func() {
 	return func() {
 		By("Cleaning up decremented ModuleTemplate set in regular")
 		for _, module := range kyma.Spec.Modules {
-			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false, false)
-			template.Name = fmt.Sprintf("%s-%s", template.Name, v1beta2.DefaultChannel)
-			Expect(err).ShouldNot(HaveOccurred())
+			template := builder.NewModuleTemplateBuilder().
+				WithName(fmt.Sprintf("%s-%s", module.Name, v1beta2.DefaultChannel)).
+				WithModuleName(module.Name).
+				WithChannel(module.Channel).
+				WithOCM(compdesc2.SchemaVersion).Build()
 			Eventually(DeleteCR, Timeout, Interval).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, template).Should(Succeed())
 		}
 		By("Cleaning up standard ModuleTemplate set in fast")
 		for _, module := range kyma.Spec.Modules {
-			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false, false)
-			template.Name = fmt.Sprintf("%s-%s", template.Name, FastChannel)
-			Expect(err).ShouldNot(HaveOccurred())
+			template := builder.NewModuleTemplateBuilder().
+				WithName(fmt.Sprintf("%s-%s", module.Name, FastChannel)).
+				WithModuleName(module.Name).
+				WithChannel(module.Channel).
+				WithOCM(compdesc2.SchemaVersion).Build()
 			Eventually(DeleteCR, Timeout, Interval).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, template).Should(Succeed())

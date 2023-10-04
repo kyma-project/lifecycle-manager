@@ -29,7 +29,7 @@ func NewKymaForE2E(name, namespace, channel string) *v1beta2.Kyma {
 }
 
 func newKCPKymaWithNamespace(namePrefix, namespace, channel, syncStrategy string) *v1beta2.Kyma {
-	kyma := builder.NewKymaBuilder().
+	return builder.NewKymaBuilder().
 		WithNamePrefix(namePrefix).
 		WithNamespace(namespace).
 		WithAnnotation(watcher.DomainAnnotation, "example.domain.com").
@@ -37,7 +37,6 @@ func newKCPKymaWithNamespace(namePrefix, namespace, channel, syncStrategy string
 		WithLabel(v1beta2.InstanceIDLabel, "test-instance").
 		WithChannel(channel).
 		Build()
-	return &kyma
 }
 
 func SyncKyma(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error {

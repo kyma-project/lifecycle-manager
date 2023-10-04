@@ -8,8 +8,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/cache"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -25,7 +27,7 @@ var (
 
 func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false, false)
+		DeployModuleTemplates(ctx, controlPlaneClient, kyma)
 		Eventually(CreateCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(controlPlaneClient, kyma).Should(Succeed())
@@ -35,7 +37,7 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(controlPlaneClient, kyma).Should(Succeed())
-		DeleteModuleTemplates(ctx, controlPlaneClient, kyma, false)
+		DeleteModuleTemplates(ctx, controlPlaneClient, kyma)
 	})
 
 	BeforeEach(func() {
@@ -45,33 +47,26 @@ func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	})
 }
 
-func DeleteModuleTemplates(
-	ctx context.Context,
-	kcpClient client.Client,
-	kyma *v1beta2.Kyma,
-	onPrivateRepo bool,
-) {
+func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) {
 	for _, module := range kyma.Spec.Modules {
-		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, onPrivateRepo, false, false, false)
-		Expect(err).ShouldNot(HaveOccurred())
+		template := builder.NewModuleTemplateBuilder().
+			WithModuleName(module.Name).
+			WithChannel(module.Channel).
+			WithOCM(compdesc2.SchemaVersion).Build()
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, template).Should(Succeed())
 	}
 }
 
-func DeployModuleTemplates(
-	ctx context.Context,
-	kcpClient client.Client,
-	kyma *v1beta2.Kyma,
-	onPrivateRepo,
-	isInternal,
-	isBeta bool,
-	isClusterScoped bool,
-) {
+func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) {
 	for _, module := range kyma.Spec.Modules {
-		Eventually(DeployModuleTemplate, Timeout, Interval).WithContext(ctx).
-			WithArguments(kcpClient, module, onPrivateRepo, isInternal, isBeta, isClusterScoped).
+		template := builder.NewModuleTemplateBuilder().
+			WithModuleName(module.Name).
+			WithChannel(module.Channel).
+			WithOCM(compdesc2.SchemaVersion)
+		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
+			WithArguments(template).
 			Should(Succeed())
 	}
 }
@@ -114,6 +109,9 @@ func expectModuleTemplateSpecGetReset(
 	if err != nil {
 		return err
 	}
+	if moduleTemplate.Spec.Data == nil {
+		return ErrExpectedLabelNotReset
+	}
 	initKey, found := moduleTemplate.Spec.Data.Object["spec"]
 	if !found {
 		return ErrExpectedLabelNotReset
@@ -144,6 +142,9 @@ func updateModuleTemplateSpec(clnt client.Client,
 	moduleTemplate, err := GetModuleTemplate(ctx, clnt, moduleName, moduleNamespace)
 	if err != nil {
 		return err
+	}
+	if moduleTemplate.Spec.Data == nil {
+		moduleTemplate.Spec.Data = &unstructured.Unstructured{}
 	}
 	moduleTemplate.Spec.Data.Object["spec"] = map[string]any{"initKey": newValue}
 	return clnt.Update(ctx, moduleTemplate)

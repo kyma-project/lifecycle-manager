@@ -87,8 +87,8 @@ func (kb KymaBuilder) WithCondition(condition metav1.Condition) KymaBuilder {
 }
 
 // Build returns the built v1beta2.Kyma.
-func (kb KymaBuilder) Build() v1beta2.Kyma {
-	return *kb.kyma
+func (kb KymaBuilder) Build() *v1beta2.Kyma {
+	return kb.kyma
 }
 
 // RandomName creates a random string [a-z] of len 8.
