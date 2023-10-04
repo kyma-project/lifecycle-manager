@@ -4,14 +4,14 @@ import (
 	"os/exec"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/meta"
 )
 
 var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
-	kyma := testutils.NewKymaForE2E("kyma-sample", "kcp-system", "regular")
+	kyma := NewKymaForE2E("kyma-sample", "kcp-system", "regular")
 	GinkgoWriter.Printf("kyma before create %v\n", kyma)
 
 	BeforeAll(func() {
@@ -100,7 +100,7 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 	})
 
 	It("Kyma CR should be removed", func() {
-		Eventually(CheckKCPKymaCRDeleted).
+		Eventually(KymaDeleted).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 			Should(Succeed())

@@ -24,7 +24,6 @@ import (
 var (
 	errKymaNotInExpectedState = errors.New("kyma CR not in expected state")
 	errModuleNotExisting      = errors.New("module does not exists in KymaCR")
-	errKymaNotDeleted         = errors.New("kyma CR not deleted")
 )
 
 const (
@@ -122,17 +121,6 @@ func DeleteKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sCl
 	}
 	Expect(err).ToNot(HaveOccurred())
 	return k8sClient.Delete(ctx, secret)
-}
-
-func CheckKCPKymaCRDeleted(ctx context.Context,
-	kymaName string, kymaNamespace string, k8sClient client.Client,
-) error {
-	kyma := &v1beta2.Kyma{}
-	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma)
-	if util.IsNotFound(err) {
-		return nil
-	}
-	return errKymaNotDeleted
 }
 
 func EnableModule(ctx context.Context,

@@ -1,6 +1,7 @@
 package kyma_controller_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -15,11 +16,10 @@ import (
 )
 
 var (
-	ErrSpecDataMismatch          = errors.New("spec.data not match")
-	ErrStatusModuleStateMismatch = errors.New("status.modules.state not match")
-	ErrWrongConditions           = errors.New("conditions not correct")
-	ErrWrongModulesStatus        = errors.New("modules status not correct")
-	ErrWrongResourceNamespace    = errors.New("resource namespace not correct")
+	ErrSpecDataMismatch       = errors.New("spec.data not match")
+	ErrWrongConditions        = errors.New("conditions not correct")
+	ErrWrongModulesStatus     = errors.New("modules status not correct")
+	ErrWrongResourceNamespace = errors.New("resource namespace not correct")
 )
 
 var _ = Describe("Kyma with no Module", Ordered, func() {
@@ -224,13 +224,13 @@ var _ = Describe("Kyma enable multiple modules", Ordered, func() {
 
 var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-update")
-
+	module := v1beta2.Module{
+		ControllerName: "manifest",
+		Name:           "skr-module-update",
+		Channel:        v1beta2.DefaultChannel,
+	}
 	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1beta2.Module{
-			ControllerName: "manifest",
-			Name:           "skr-module-update",
-			Channel:        v1beta2.DefaultChannel,
-		})
+		kyma.Spec.Modules, module)
 
 	RegisterDefaultLifecycleForKyma(kyma)
 
@@ -267,7 +267,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 			expectManifestSpecDataEquals(kyma.Name, "initValue")),
 		Entry("When put manifest into progress, kyma spec.status.modules should not updated",
 			UpdateAllManifestState(kyma.Name, v1beta2.StateProcessing),
-			expectKymaStatusModules(kyma.Name, v1beta2.StateReady)),
+			expectKymaStatusModules(ctx, kyma, module.Name, v1beta2.StateReady)),
 	)
 
 	It("Stop Kyma skip Reconciliation so that it can be deleted", func() {
@@ -324,18 +324,11 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 		})
 	})
 
-func expectKymaStatusModules(kymaName string, state v1beta2.State) func() error {
+func expectKymaStatusModules(ctx context.Context,
+	kyma *v1beta2.Kyma, moduleName string, state v1beta2.State,
+) func() error {
 	return func() error {
-		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
-		if err != nil {
-			return err
-		}
-		for _, moduleStatus := range createdKyma.Status.Modules {
-			if moduleStatus.State != state {
-				return ErrStatusModuleStateMismatch
-			}
-		}
-		return nil
+		return CheckModuleState(ctx, controlPlaneClient, kyma.Name, kyma.Namespace, moduleName, state)
 	}
 }
 

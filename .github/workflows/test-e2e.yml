@@ -115,7 +115,7 @@ jobs:
       - name: Checkout lifecycle-manager
         uses: actions/checkout@v3
         with:
-          path: ./lifecycle-manager/
+          path: lifecycle-manager
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
@@ -147,7 +147,7 @@ jobs:
         if: ${{ matrix.e2e-test == 'module-status-propagation' || 'module-without-default-cr' }}
         with:
           repository: kyma-project/template-operator
-          path: ./template-operator/
+          path: template-operator
       - name: Create Template Operator Module
         working-directory: ./template-operator
         if: ${{ matrix.e2e-test == 'module-status-propagation' }}

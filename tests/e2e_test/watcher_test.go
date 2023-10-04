@@ -11,7 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	. "github.com/onsi/ginkgo/v2"
@@ -43,7 +43,7 @@ var (
 )
 
 var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
-	kyma := testutils.NewKymaForE2E("kyma-sample", "kcp-system", "regular")
+	kyma := NewKymaForE2E("kyma-sample", "kcp-system", "regular")
 	GinkgoWriter.Printf("kyma before create %v\n", kyma)
 	incomingRequestMsg := fmt.Sprintf("event received from SKR, adding %s/%s to queue",
 		kyma.GetNamespace(), kyma.GetName())
@@ -161,7 +161,7 @@ func deleteKymaCR(ctx context.Context, kyma *v1beta2.Kyma, k8sClient client.Clie
 			}
 		}
 	}
-	return errKymaNotDeleted
+	return ErrKymaNotDeleted
 }
 
 func checkRemoteKymaCRDeleted(ctx context.Context,
