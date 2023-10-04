@@ -34,7 +34,6 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 	kyma *v1beta2.Kyma, newState v1beta2.State, message string,
 ) error {
 	kyma.Status.State = newState
-
 	kyma.ManagedFields = nil
 
 	switch newState {
