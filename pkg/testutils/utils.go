@@ -298,7 +298,7 @@ func GetManifest(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	descriptor, err := template.GetDescriptor()
+	descriptor, err := template.GetDescriptor(false)
 	if err != nil {
 		return nil, err
 	}
@@ -533,6 +533,12 @@ func ModuleTemplateExists(ctx context.Context, client client.Client, name, names
 		return ErrNotFound
 	}
 	return nil
+}
+
+func DescriptorExistsInCache(moduleTemplate *v1beta2.ModuleTemplate) bool {
+	moduleTemplateFromCache := moduleTemplate.GetDescFromCache()
+
+	return moduleTemplateFromCache != nil
 }
 
 func AllModuleTemplatesExists(ctx context.Context,

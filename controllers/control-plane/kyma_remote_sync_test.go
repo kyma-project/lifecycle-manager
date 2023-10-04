@@ -132,6 +132,9 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		Eventually(UpdateManifestState, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, kyma, moduleInSKR, v1beta2.StateReady).Should(Succeed())
 
+		By("ModuleTemplate descriptor should be saved in cache")
+		Expect(DescriptorExistsInCache(SKRTemplate)).Should(BeTrue())
+
 		By("Remote Kyma contains correct conditions for Modules")
 		Eventually(kymaHasCondition, Timeout, Interval).
 			WithArguments(runtimeClient, v1beta2.ConditionTypeModules, string(v1beta2.ConditionReason), metav1.ConditionTrue,
@@ -187,6 +190,10 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		Consistently(ModuleTemplateExists, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, SKRCustomTemplate.Name, SKRCustomTemplate.Namespace).
 			Should(MatchError(ErrNotFound))
+	})
+
+	It("SKRCustomTemplate descriptor should not be saved in cace", func() {
+		Expect(DescriptorExistsInCache(SKRCustomTemplate)).Should(BeFalse())
 	})
 
 	It("Should reconcile Manifest in KCP using remote SKRCustomTemplate", func() {

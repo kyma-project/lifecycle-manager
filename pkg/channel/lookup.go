@@ -27,8 +27,9 @@ var (
 
 type ModuleTemplateTO struct {
 	*v1beta2.ModuleTemplate
-	Err            error
-	DesiredChannel string
+	Err                    error
+	DesiredChannel         string
+	IsRemoteModuleTemplate bool
 }
 
 type ModuleTemplatesByModuleName map[string]*ModuleTemplateTO
@@ -129,7 +130,8 @@ func CheckValidTemplateUpdate(
 	if moduleTemplate.Spec.Channel != moduleStatus.Channel {
 		checkLog.Info("outdated ModuleTemplate: channel skew")
 
-		descriptor, err := moduleTemplate.GetDescriptor()
+		useDescriptorCache := !moduleTemplate.IsRemoteModuleTemplate
+		descriptor, err := moduleTemplate.GetDescriptor(useDescriptorCache)
 		if err != nil {
 			msg := "could not handle channel skew as descriptor from template cannot be fetched"
 			checkLog.Error(err, msg)
@@ -209,13 +211,14 @@ type TemplateLookup struct {
 
 func (c *TemplateLookup) WithContext(ctx context.Context) ModuleTemplateTO {
 	desiredChannel := c.getDesiredChannel()
-
+	isRemoteModuleTemplate := c.module.RemoteModuleTemplateRef != ""
 	template, err := c.getTemplate(ctx, desiredChannel)
 	if err != nil {
 		return ModuleTemplateTO{
-			ModuleTemplate: nil,
-			DesiredChannel: desiredChannel,
-			Err:            err,
+			ModuleTemplate:         nil,
+			DesiredChannel:         desiredChannel,
+			Err:                    err,
+			IsRemoteModuleTemplate: isRemoteModuleTemplate,
 		}
 	}
 
@@ -230,6 +233,7 @@ func (c *TemplateLookup) WithContext(ctx context.Context) ModuleTemplateTO {
 				"no channel found on template for module: %s: %w",
 				c.module.Name, ErrNotDefaultChannelAllowed,
 			),
+			IsRemoteModuleTemplate: isRemoteModuleTemplate,
 		}
 	}
 
@@ -251,9 +255,10 @@ func (c *TemplateLookup) WithContext(ctx context.Context) ModuleTemplateTO {
 	}
 
 	return ModuleTemplateTO{
-		ModuleTemplate: template,
-		DesiredChannel: desiredChannel,
-		Err:            nil,
+		ModuleTemplate:         template,
+		DesiredChannel:         desiredChannel,
+		Err:                    nil,
+		IsRemoteModuleTemplate: isRemoteModuleTemplate,
 	}
 }
 
@@ -297,7 +302,8 @@ func (c *TemplateLookup) getTemplate(ctx context.Context, desiredChannel string)
 			filteredTemplates = append(filteredTemplates, template)
 			continue
 		}
-		descriptor, err := template.GetDescriptor()
+		useDescriptorCache := c.module.RemoteModuleTemplateRef == ""
+		descriptor, err := template.GetDescriptor(useDescriptorCache)
 		if err != nil {
 			return nil, fmt.Errorf("invalid ModuleTemplate descriptor: %w", err)
 		}
