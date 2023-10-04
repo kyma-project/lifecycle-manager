@@ -85,10 +85,6 @@ func PreDeleteDeleteCR(
 		return ErrWaitingForAsyncCustomResourceDeletion
 	}
 
-	if !util.IsNotFound(err) {
-		return fmt.Errorf("PreDeleteDeleteCR: %w", err)
-	}
-
 	var crd unstructured.Unstructured
 	crd.SetName(GetModuleCRDName(obj))
 	crd.SetGroupVersionKind(schema.GroupVersionKind{
