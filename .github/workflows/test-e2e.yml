@@ -168,15 +168,21 @@ jobs:
         working-directory: ./template-operator
         if: ${{ matrix.e2e-test == 'module-without-default-cr' }}
         run: |
+          make build-manifests
           echo "name: kyma-project.io/module/template-operator
-                channel: fast
-                version: v1.0.0
-                manifest: template-operator.yaml
-                security: sec-scanners-config.yaml
-                annotations:
-                  operator.kyma-project.io/doc-url: https://kyma-project.io" >> module-config-no-cr.yaml
+          channel: fast
+          version: v1.0.0
+          manifest: template-operator.yaml
+          security: sec-scanners-config.yaml
+          annotations:
+            operator.kyma-project.io/doc-url: https://kyma-project.io" >> module-config-no-cr.yaml
           cat module-config-no-cr.yaml
-          kyma alpha create module --module-config-file ./module-config-no-cr.yaml --path . --registry k3d-kcp-registry:5111 --insecure
+          kyma alpha create module \
+          --module-config-file ./module-config-no-cr.yaml \
+          --path . \
+          --registry k3d-kcp-registry:5111 \
+          --insecure \
+          --name kyma-project.io/module/template-operator
           sed -i 's/k3d-kcp-registry:5111/k3d-kcp-registry:5000/g' ./template.yaml
           kubectl config use-context k3d-kcp
           kubectl get crds

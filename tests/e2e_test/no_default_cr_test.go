@@ -1,8 +1,6 @@
 package e2e_test
 
 import (
-	"k8s.io/apimachinery/pkg/api/meta"
-
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
@@ -11,13 +9,6 @@ import (
 
 var _ = Describe("Module Without Default CR", Ordered, func() {
 	kyma := testutils.NewKymaForE2E("kyma-sample", "kcp-system", "regular")
-	GinkgoWriter.Printf("kyma before create %v\n", kyma)
-
-	BeforeAll(func() {
-		// make sure we can list Kymas to ensure CRDs have been installed
-		err := controlPlaneClient.List(ctx, &v1beta2.KymaList{})
-		Expect(meta.IsNoMatchError(err)).To(BeFalse())
-	})
 
 	It("Should create empty Kyma CR on remote cluster", func() {
 		Eventually(CreateKymaSecret).
