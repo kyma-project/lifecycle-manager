@@ -3,13 +3,13 @@ package metrics
 import (
 	"errors"
 	"fmt"
-	"strings"
 
-	listenerMetrics "github.com/kyma-project/runtime-watcher/listener/pkg/metrics"
-	"github.com/prometheus/client_golang/prometheus"
 	ctrlMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
+	listenerMetrics "github.com/kyma-project/runtime-watcher/listener/pkg/metrics"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
@@ -44,11 +44,11 @@ var errMetric = errors.New("failed to update metrics")
 
 // UpdateAll sets both metrics 'lifecycle_mgr_kyma_state' and 'lifecycle_mgr_module_state' to new states.
 func UpdateAll(kyma *v1beta2.Kyma) error {
-	shootID, err := extractShootID(kyma)
+	shootID, err := metrics.ExtractShootID(kyma)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errMetric, err)
 	}
-	instanceID, err := extractInstanceID(kyma)
+	instanceID, err := metrics.ExtractInstanceID(kyma)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errMetric, err)
 	}
@@ -62,11 +62,11 @@ func UpdateAll(kyma *v1beta2.Kyma) error {
 
 // RemoveKymaStateMetrics deletes all 'lifecycle_mgr_kyma_state' metrics for the matching Kyma.
 func RemoveKymaStateMetrics(kyma *v1beta2.Kyma) error {
-	shootID, err := extractShootID(kyma)
+	shootID, err := metrics.ExtractShootID(kyma)
 	if err != nil {
 		return err
 	}
-	instanceID, err := extractInstanceID(kyma)
+	instanceID, err := metrics.ExtractInstanceID(kyma)
 	if err != nil {
 		return err
 	}
@@ -81,11 +81,11 @@ func RemoveKymaStateMetrics(kyma *v1beta2.Kyma) error {
 
 // RemoveModuleStateMetrics deletes all 'lifecycle_mgr_module_state' metrics for the matching module.
 func RemoveModuleStateMetrics(kyma *v1beta2.Kyma, moduleName string) error {
-	shootID, err := extractShootID(kyma)
+	shootID, err := metrics.ExtractShootID(kyma)
 	if err != nil {
 		return err
 	}
-	instanceID, err := extractInstanceID(kyma)
+	instanceID, err := metrics.ExtractInstanceID(kyma)
 	if err != nil {
 		return err
 	}
@@ -124,46 +124,6 @@ func setModuleStateGauge(newState v1beta2.State, moduleName, kymaName, shootID, 
 			stateLabel:      string(state),
 		}).Set(newValue)
 	}
-}
-
-var (
-	errMissingShootAnnotation = fmt.Errorf("expected annotation '%s' not found", v1beta2.SKRDomainAnnotation)
-	errShootAnnotationNoValue = fmt.Errorf("annotation '%s' has empty value", v1beta2.SKRDomainAnnotation)
-)
-
-func extractShootID(kyma *v1beta2.Kyma) (string, error) {
-	shoot := ""
-	shootFQDN, keyExists := kyma.Annotations[v1beta2.SKRDomainAnnotation]
-	if keyExists {
-		parts := strings.Split(shootFQDN, ".")
-		minFqdnParts := 2
-		if len(parts) > minFqdnParts {
-			shoot = parts[0] // hostname
-		}
-	}
-	if !keyExists {
-		return "", errMissingShootAnnotation
-	}
-	if shoot == "" {
-		return shoot, errShootAnnotationNoValue
-	}
-	return shoot, nil
-}
-
-var (
-	errMissingInstanceLabel = fmt.Errorf("expected label '%s' not found", v1beta2.InstanceIDLabel)
-	errInstanceLabelNoValue = fmt.Errorf("label '%s' has empty value", v1beta2.InstanceIDLabel)
-)
-
-func extractInstanceID(kyma *v1beta2.Kyma) (string, error) {
-	instanceID, keyExists := kyma.Labels[v1beta2.InstanceIDLabel]
-	if !keyExists {
-		return "", errMissingInstanceLabel
-	}
-	if instanceID == "" {
-		return instanceID, errInstanceLabelNoValue
-	}
-	return instanceID, nil
 }
 
 func calcStateValue(state, newState v1beta2.State) float64 {

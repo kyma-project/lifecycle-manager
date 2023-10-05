@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
+
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -106,7 +108,7 @@ var _ = BeforeSuite(func() {
 		EventRecorder:         k8sManager.GetEventRecorderFor(operatorv1beta2.OperatorName),
 		ResolveRemoteClient:   useLocalClient,
 		PurgeFinalizerTimeout: time.Second,
-		SkipCRDs:              controller.CRDMatcherFor(skipFinalizerRemovalForCRDs),
+		SkipCRDs:              matcher.CreateCRDMatcherFrom(skipFinalizerRemovalForCRDs),
 	}
 
 	err = purgeReconciler.SetupWithManager(k8sManager, controllerRuntime.Options{})

@@ -42,7 +42,7 @@ var _ = Describe("Manifest.Spec.Remote in default mode", Ordered, func() {
 
 	module := v1beta2.Module{
 		ControllerName: "manifest",
-		Name:           NewUniqModuleName(),
+		Name:           RandomName(),
 		Channel:        v1beta2.DefaultChannel,
 	}
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
@@ -62,7 +62,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 
 	module := v1beta2.Module{
 		ControllerName: "manifest",
-		Name:           NewUniqModuleName(),
+		Name:           RandomName(),
 		Channel:        v1beta2.DefaultChannel,
 	}
 
@@ -147,7 +147,7 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 
 	module := v1beta2.Module{
 		ControllerName: "manifest",
-		Name:           NewUniqModuleName(),
+		Name:           RandomName(),
 		Channel:        v1beta2.DefaultChannel,
 	}
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
@@ -185,7 +185,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 
 	module := v1beta2.Module{
 		ControllerName: "manifest",
-		Name:           NewUniqModuleName(),
+		Name:           RandomName(),
 		Channel:        v1beta2.DefaultChannel,
 	}
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
@@ -242,7 +242,7 @@ var _ = Describe("Update Module Template Version", Ordered, func() {
 
 	module := v1beta2.Module{
 		ControllerName: "manifest",
-		Name:           NewUniqModuleName(),
+		Name:           RandomName(),
 		Channel:        v1beta2.DefaultChannel,
 	}
 

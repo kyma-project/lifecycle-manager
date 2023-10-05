@@ -107,7 +107,7 @@ var _ = Describe("ModuleTemplate.Spec.descriptor not contains RegistryCred label
 	kyma.Spec.Modules = append(
 		kyma.Spec.Modules, v1beta2.Module{
 			ControllerName: "manifest",
-			Name:           NewUniqModuleName(),
+			Name:           RandomName(),
 			Channel:        v1beta2.DefaultChannel,
 		})
 
@@ -125,7 +125,7 @@ var _ = Describe("ModuleTemplate.Spec.descriptor contains RegistryCred label", O
 	kyma.Spec.Modules = append(
 		kyma.Spec.Modules, v1beta2.Module{
 			ControllerName: "manifest",
-			Name:           NewUniqModuleName(),
+			Name:           RandomName(),
 			Channel:        v1beta2.DefaultChannel,
 		})
 

@@ -17,7 +17,7 @@ var _ = Describe("ModuleTemplate installation", func() {
 			kyma.Spec.Modules = append(
 				kyma.Spec.Modules, v1beta2.Module{
 					ControllerName: "manifest",
-					Name:           NewUniqModuleName(),
+					Name:           RandomName(),
 					Channel:        v1beta2.DefaultChannel,
 				})
 			Eventually(givenCondition, Timeout, Interval).WithArguments(kyma).Should(Succeed())
