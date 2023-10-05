@@ -14,7 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
 )
 
 var ErrClientObjectConversionFailed = errors.New("client object conversion failed")
@@ -60,7 +59,8 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 	ssaFinish := time.Since(ssaStart)
 
 	if errs != nil {
-		return fmt.Errorf("ServerSideApply failed (after %s): %w", ssaFinish, types.NewMultiError(errs))
+		errs = append(errs, fmt.Errorf("ServerSideApply failed (after %s)", ssaFinish))
+		return errors.Join(errs...)
 	}
 	logger.V(internal.DebugLogLevel).Info("ServerSideApply finished", "time", ssaFinish)
 	return nil

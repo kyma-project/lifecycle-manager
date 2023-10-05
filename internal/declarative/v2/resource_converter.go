@@ -1,12 +1,11 @@
 package v2
 
 import (
+	"errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/resource"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
 )
 
 type ResourceInfoConverter interface {
@@ -72,7 +71,7 @@ func (c *DefaultResourceToInfoConverter) ResourcesToInfos(resources []Resource) 
 	}
 
 	if len(errs) > 0 {
-		return current, types.NewMultiError(errs)
+		return current, errors.Join(errs...)
 	}
 	return current, nil
 }
@@ -108,7 +107,7 @@ func (c *DefaultResourceToInfoConverter) UnstructuredToInfos(
 		target = append(target, resourceInfo)
 	}
 	if len(errs) > 0 {
-		return nil, types.NewMultiError(errs)
+		return nil, errors.Join(errs...)
 	}
 	c.normaliseNamespaces(target)
 	return target, nil

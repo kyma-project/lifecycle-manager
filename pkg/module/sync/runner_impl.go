@@ -21,7 +21,6 @@ import (
 	commonErrors "github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -75,7 +74,8 @@ func (r *RunnerImpl) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	}
 	ssaFinish := time.Since(ssaStart)
 	if len(errs) != 0 {
-		return fmt.Errorf("ServerSideApply failed (after %s): %w", ssaFinish, types.NewMultiError(errs))
+		errs = append(errs, fmt.Errorf("ServerSideApply failed (after %s)", ssaFinish))
+		return errors.Join(errs...)
 	}
 	baseLogger.V(log.DebugLevel).Info("ServerSideApply finished", "time", ssaFinish)
 	return nil
