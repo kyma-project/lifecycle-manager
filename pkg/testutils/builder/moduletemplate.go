@@ -13,6 +13,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
@@ -21,6 +22,14 @@ type ModuleTemplateBuilder struct {
 }
 
 func NewModuleTemplateBuilder() ModuleTemplateBuilder {
+	data := unstructured.Unstructured{}
+	data.SetGroupVersionKind(
+		schema.GroupVersionKind{
+			Group:   v1beta2.OperatorPrefix,
+			Version: "v1alpha1",
+			Kind:    "Sample",
+		},
+	)
 	return ModuleTemplateBuilder{
 		moduleTemplate: &v1beta2.ModuleTemplate{
 			TypeMeta: metav1.TypeMeta{
@@ -30,6 +39,9 @@ func NewModuleTemplateBuilder() ModuleTemplateBuilder {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      RandomName(),
 				Namespace: metav1.NamespaceDefault,
+			},
+			Spec: v1beta2.ModuleTemplateSpec{
+				Data: &data,
 			},
 		},
 	}
@@ -68,6 +80,7 @@ func (m ModuleTemplateBuilder) WithLabel(key string, value string) ModuleTemplat
 	m.moduleTemplate.Labels[key] = value
 	return m
 }
+
 func (m ModuleTemplateBuilder) WithDefaultCR(data *unstructured.Unstructured) ModuleTemplateBuilder {
 	m.moduleTemplate.Spec.Data = data
 	return m

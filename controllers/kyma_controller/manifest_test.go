@@ -112,7 +112,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 				return nil
 			}
 
-			updateKCPModuleTemplateWith := updateKCPModuleTemplate(module.Name, "default")
+			updateKCPModuleTemplateWith := updateKCPModuleTemplate(module, kyma.Spec.Channel)
 			update := func() error {
 				return updateKCPModuleTemplateWith(newComponentDescriptorRepositoryURL)
 			}
@@ -143,7 +143,7 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 	RegisterDefaultLifecycleForKyma(kyma)
 
 	It("validate Manifest", func() {
-		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module.Name, "default")
+		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module, kyma.Spec.Channel)
 		Expect(err).NotTo(HaveOccurred())
 
 		expectManifest := expectManifestFor(kyma)
@@ -197,7 +197,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 	})
 
 	It("validate Manifest", func() {
-		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module.Name, "default")
+		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module, kyma.Spec.Channel)
 		Expect(err).NotTo(HaveOccurred())
 
 		expectManifest := expectManifestFor(kyma)
@@ -259,8 +259,8 @@ var _ = Describe("Update Module Template Version", Ordered, func() {
 		{
 			newVersionAndLayerDigest := updateModuleTemplateVersion
 			updatedVersionAndLayerDigest := validateModuleTemplateVersionUpdated
-			updateModuleTemplateWith := funWrap(updateKCPModuleTemplate(module.Name, "default"))
-			validateModuleTemplateWith := funWrap(validateKCPModuleTemplate(module.Name, "default"))
+			updateModuleTemplateWith := funWrap(updateKCPModuleTemplate(module, kyma.Spec.Channel))
+			validateModuleTemplateWith := funWrap(validateKCPModuleTemplate(module, kyma.Spec.Channel))
 
 			updateModuleTemplateVersionAndLayerDigest := updateModuleTemplateWith(newVersionAndLayerDigest)
 			validateVersionAndLayerDigestAreUpdated := validateModuleTemplateWith(updatedVersionAndLayerDigest)
@@ -430,9 +430,9 @@ func validateManifestSpecResource(manifestResource, moduleTemplateData *unstruct
 }
 
 // getKCPModuleTemplate is a generic ModuleTemplate validation function.
-func validateKCPModuleTemplate(moduleName, moduleNamespace string) func(moduleTemplateFn) error {
+func validateKCPModuleTemplate(module v1beta2.Module, kymaChannel string) func(moduleTemplateFn) error {
 	return func(validateFunc moduleTemplateFn) error {
-		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, moduleName, moduleNamespace)
+		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module, kymaChannel)
 		if err != nil {
 			return err
 		}
@@ -447,9 +447,9 @@ func validateKCPModuleTemplate(moduleName, moduleNamespace string) func(moduleTe
 }
 
 // updateKCPModuleTemplate is a generic ModuleTemplate update function.
-func updateKCPModuleTemplate(moduleName, moduleNamespace string) func(moduleTemplateFn) error {
+func updateKCPModuleTemplate(module v1beta2.Module, kymaChannel string) func(moduleTemplateFn) error {
 	return func(updateFunc moduleTemplateFn) error {
-		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, moduleName, moduleNamespace)
+		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module, kymaChannel)
 		if err != nil {
 			return err
 		}

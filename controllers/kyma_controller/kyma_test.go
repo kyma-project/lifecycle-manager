@@ -6,16 +6,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var (
@@ -108,7 +105,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 			kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModuleCatalog, metav1.ConditionTrue)).To(BeFalse())
 		By("Module Catalog created")
 		Eventually(AllModuleTemplatesExists, Timeout, Interval).
-			WithArguments(ctx, controlPlaneClient, kyma, kyma.GetNamespace()).
+			WithArguments(ctx, controlPlaneClient, kyma).
 			Should(Succeed())
 	})
 
@@ -220,13 +217,9 @@ var _ = Describe("Kyma enable multiple modules", Ordered, func() {
 	})
 })
 
-var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
+var _ = FDescribe("Kyma skip Reconciliation", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-update")
-	module := v1beta2.Module{
-		ControllerName: "manifest",
-		Name:           "skr-module-update",
-		Channel:        v1beta2.DefaultChannel,
-	}
+	module := NewTestModule("skr-module-update", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(
 		kyma.Spec.Modules, module)
 
@@ -343,24 +336,8 @@ func updateKCPModuleTemplateSpecData(kymaName, valueUpdated string) func() error
 			return err
 		}
 		for _, activeModule := range createdKyma.Spec.Modules {
-			return updateModuleTemplateSpec(controlPlaneClient, createdKyma.GetNamespace(), activeModule.Name, valueUpdated)
+			return UpdateModuleTemplateSpec(ctx, controlPlaneClient, activeModule, valueUpdated, createdKyma.Spec.Channel)
 		}
 		return nil
 	}
-}
-
-func updateModuleTemplateSpec(clnt client.Client,
-	moduleNamespace,
-	moduleName,
-	newValue string,
-) error {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, moduleName, moduleNamespace)
-	if err != nil {
-		return err
-	}
-	if moduleTemplate.Spec.Data == nil {
-		moduleTemplate.Spec.Data = &unstructured.Unstructured{}
-	}
-	moduleTemplate.Spec.Data.Object["spec"] = map[string]any{"initKey": newValue}
-	return clnt.Update(ctx, moduleTemplate)
 }

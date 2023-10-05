@@ -14,7 +14,6 @@ import (
 	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -64,7 +63,7 @@ func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 		template := builder.NewModuleTemplateBuilder().
 			WithModuleName(module.Name).
 			WithChannel(module.Channel).
-			WithOCM(compdesc2.SchemaVersion)
+			WithOCM(compdesc2.SchemaVersion).Build()
 		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
 			WithArguments(template).
 			Should(Succeed())
@@ -101,11 +100,11 @@ func watcherLabelsAnnotationsExist(clnt client.Client, remoteKyma *v1beta2.Kyma,
 
 func expectModuleTemplateSpecGetReset(
 	clnt client.Client,
-	moduleNamespace,
-	moduleName,
-	expectedValue string,
+	module v1beta2.Module,
+	expectedValue,
+	kymaChannel string,
 ) error {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, moduleName, moduleNamespace)
+	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kymaChannel)
 	if err != nil {
 		return err
 	}
@@ -132,22 +131,6 @@ func expectModuleTemplateSpecGetReset(
 		return ErrExpectedLabelNotReset
 	}
 	return nil
-}
-
-func updateModuleTemplateSpec(clnt client.Client,
-	moduleNamespace,
-	moduleName,
-	newValue string,
-) error {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, moduleName, moduleNamespace)
-	if err != nil {
-		return err
-	}
-	if moduleTemplate.Spec.Data == nil {
-		moduleTemplate.Spec.Data = &unstructured.Unstructured{}
-	}
-	moduleTemplate.Spec.Data.Object["spec"] = map[string]any{"initKey": newValue}
-	return clnt.Update(ctx, moduleTemplate)
 }
 
 func kymaHasCondition(
