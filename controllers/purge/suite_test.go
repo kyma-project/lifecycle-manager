@@ -40,6 +40,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -92,9 +93,11 @@ var _ = BeforeSuite(func() {
 
 	k8sManager, err := ctrl.NewManager(
 		cfg, ctrl.Options{
-			MetricsBindAddress: useRandomPort,
-			Scheme:             scheme.Scheme,
-			Cache:              controllers.NewCacheOptions(),
+			Metrics: metricsserver.Options{
+				BindAddress: useRandomPort,
+			},
+			Scheme: scheme.Scheme,
+			Cache:  controllers.NewCacheOptions(),
 		})
 	Expect(err).ToNot(HaveOccurred())
 

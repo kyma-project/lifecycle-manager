@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"strings"
 	"time"
 
@@ -124,8 +125,10 @@ func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *runti
 
 	mgr, err := ctrl.NewManager(
 		config, ctrl.Options{
-			Scheme:                 scheme,
-			MetricsBindAddress:     flagVar.metricsAddr,
+			Scheme: scheme,
+			Metrics: metricsserver.Options{
+				BindAddress: flagVar.metricsAddr,
+			},
 			Port:                   port,
 			HealthProbeBindAddress: flagVar.probeAddr,
 			LeaderElection:         flagVar.enableLeaderElection,
