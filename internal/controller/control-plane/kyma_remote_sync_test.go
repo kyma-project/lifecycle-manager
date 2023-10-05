@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -248,13 +249,13 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		By("Expect SKR Kyma get deleted")
 		Eventually(KymaDeleted, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace, runtimeClient).
+			WithArguments(remoteKyma.GetName(), controller.DefaultRemoteSyncNamespace, runtimeClient).
 			Should(Succeed())
 
 		By("Make sure SKR Kyma not recreated")
 		Consistently(KymaDeleted, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace, runtimeClient).
+			WithArguments(remoteKyma.GetName(), controller.DefaultRemoteSyncNamespace, runtimeClient).
 			Should(Succeed())
 
 		By("SKRCustomTemplate should still exists in SKR")

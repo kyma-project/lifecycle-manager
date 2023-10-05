@@ -82,7 +82,7 @@ var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 
 	externalCRDs, err := AppendExternalCRDs(
-		filepath.Join("..", "..", "..",  "config", "samples", "tests", "crds"),
+		filepath.Join("..", "..", "..", "config", "samples", "tests", "crds"),
 		"cert-manager-v1.10.1.crds.yaml",
 		"istio-v1.17.1.crds.yaml")
 	Expect(err).ToNot(HaveOccurred())
