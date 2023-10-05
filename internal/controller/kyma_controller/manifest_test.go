@@ -2,6 +2,7 @@ package kyma_controller_test
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -37,14 +38,12 @@ const (
 	updatedModuleTemplateVersion = "v3.1.0"
 )
 
+var ErrEmptyModuleTemplateData = errors.New("module template spec.data is empty")
+
 var _ = Describe("Manifest.Spec.Remote in default mode", Ordered, func() {
 	kyma := NewTestKyma("kyma")
 
-	module := v1beta2.Module{
-		ControllerName: "manifest",
-		Name:           RandomName(),
-		Channel:        v1beta2.DefaultChannel,
-	}
+	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 	RegisterDefaultLifecycleForKyma(kyma)
 
@@ -60,11 +59,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 
 	kyma := NewTestKyma("kyma-test-update")
 
-	module := v1beta2.Module{
-		ControllerName: "manifest",
-		Name:           RandomName(),
-		Channel:        v1beta2.DefaultChannel,
-	}
+	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 
 	kyma.Spec.Modules = append(
 		kyma.Spec.Modules, module)
@@ -118,7 +113,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 				return nil
 			}
 
-			updateKCPModuleTemplateWith := updateKCPModuleTemplate(module.Name, "default")
+			updateKCPModuleTemplateWith := updateKCPModuleTemplate(module, kyma.Spec.Channel)
 			update := func() error {
 				return updateKCPModuleTemplateWith(newComponentDescriptorRepositoryURL)
 			}
@@ -144,17 +139,12 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 
 var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 	kyma := NewTestKyma("kyma")
-
-	module := v1beta2.Module{
-		ControllerName: "manifest",
-		Name:           RandomName(),
-		Channel:        v1beta2.DefaultChannel,
-	}
+	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 	RegisterDefaultLifecycleForKyma(kyma)
 
 	It("validate Manifest", func() {
-		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module.Name, "default")
+		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module, kyma.Spec.Channel)
 		Expect(err).NotTo(HaveOccurred())
 
 		expectManifest := expectManifestFor(kyma)
@@ -182,12 +172,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 	const updateRepositoryURL = "registry.docker.io/kyma-project/component-descriptors"
 
 	kyma := NewTestKyma("kyma")
-
-	module := v1beta2.Module{
-		ControllerName: "manifest",
-		Name:           RandomName(),
-		Channel:        v1beta2.DefaultChannel,
-	}
+	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 	RegisterDefaultLifecycleForKyma(kyma)
 
@@ -213,7 +198,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 	})
 
 	It("validate Manifest", func() {
-		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module.Name, "default")
+		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module, kyma.Spec.Channel)
 		Expect(err).NotTo(HaveOccurred())
 
 		expectManifest := expectManifestFor(kyma)
@@ -239,12 +224,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 
 var _ = Describe("Update Module Template Version", Ordered, func() {
 	kyma := NewTestKyma("kyma")
-
-	module := v1beta2.Module{
-		ControllerName: "manifest",
-		Name:           RandomName(),
-		Channel:        v1beta2.DefaultChannel,
-	}
+	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 
 	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 
@@ -280,8 +260,8 @@ var _ = Describe("Update Module Template Version", Ordered, func() {
 		{
 			newVersionAndLayerDigest := updateModuleTemplateVersion
 			updatedVersionAndLayerDigest := validateModuleTemplateVersionUpdated
-			updateModuleTemplateWith := funWrap(updateKCPModuleTemplate(module.Name, "default"))
-			validateModuleTemplateWith := funWrap(validateKCPModuleTemplate(module.Name, "default"))
+			updateModuleTemplateWith := funWrap(updateKCPModuleTemplate(module, kyma.Spec.Channel))
+			validateModuleTemplateWith := funWrap(validateKCPModuleTemplate(module, kyma.Spec.Channel))
 
 			updateModuleTemplateVersionAndLayerDigest := updateModuleTemplateWith(newVersionAndLayerDigest)
 			validateVersionAndLayerDigestAreUpdated := validateModuleTemplateWith(updatedVersionAndLayerDigest)
@@ -428,11 +408,14 @@ func validateManifestSpecInstallSourceType(manifestImageSpec *v1beta2.ImageSpec)
 }
 
 func validateManifestSpecResource(manifestResource, moduleTemplateData *unstructured.Unstructured) error {
+	if moduleTemplateData == nil {
+		return ErrEmptyModuleTemplateData
+	}
 	actualManifestResource := manifestResource
 	expectedManifestResource := moduleTemplateData.DeepCopy()
 	expectedManifestResource.
 		SetNamespace(controller.DefaultRemoteSyncNamespace) // the namespace is set in the "actual" object
-
+	expectedManifestResource.SetName(actualManifestResource.GetName())
 	if !reflect.DeepEqual(actualManifestResource, expectedManifestResource) {
 		actualJSON, err := json.MarshalIndent(actualManifestResource, "", "  ")
 		if err != nil {
@@ -448,9 +431,9 @@ func validateManifestSpecResource(manifestResource, moduleTemplateData *unstruct
 }
 
 // getKCPModuleTemplate is a generic ModuleTemplate validation function.
-func validateKCPModuleTemplate(moduleName, moduleNamespace string) func(moduleTemplateFn) error {
+func validateKCPModuleTemplate(module v1beta2.Module, kymaChannel string) func(moduleTemplateFn) error {
 	return func(validateFunc moduleTemplateFn) error {
-		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, moduleName, moduleNamespace)
+		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module, kymaChannel)
 		if err != nil {
 			return err
 		}
@@ -465,9 +448,9 @@ func validateKCPModuleTemplate(moduleName, moduleNamespace string) func(moduleTe
 }
 
 // updateKCPModuleTemplate is a generic ModuleTemplate update function.
-func updateKCPModuleTemplate(moduleName, moduleNamespace string) func(moduleTemplateFn) error {
+func updateKCPModuleTemplate(module v1beta2.Module, kymaChannel string) func(moduleTemplateFn) error {
 	return func(updateFunc moduleTemplateFn) error {
-		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, moduleName, moduleNamespace)
+		moduleTemplate, err := GetModuleTemplate(ctx, controlPlaneClient, module, kymaChannel)
 		if err != nil {
 			return err
 		}

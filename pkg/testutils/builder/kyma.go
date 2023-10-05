@@ -1,9 +1,16 @@
 package builder
 
 import (
+	"fmt"
+	"math/rand"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	nameLength = 8
+	charSet    = "abcdefghijklmnopqrstuvwxyz"
 )
 
 type KymaBuilder struct {
@@ -19,7 +26,7 @@ func NewKymaBuilder() KymaBuilder {
 				Kind:       string(v1beta2.KymaKind),
 			},
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      testutils.RandomName(),
+				Name:      RandomName(),
 				Namespace: metav1.NamespaceDefault,
 			},
 			Spec:   v1beta2.KymaSpec{},
@@ -31,6 +38,18 @@ func NewKymaBuilder() KymaBuilder {
 // WithName sets v1beta2.Kyma.ObjectMeta.Name.
 func (kb KymaBuilder) WithName(name string) KymaBuilder {
 	kb.kyma.ObjectMeta.Name = name
+	return kb
+}
+
+// WithNamePrefix sets v1beta2.Kyma.ObjectMeta.Name.
+func (kb KymaBuilder) WithNamePrefix(prefix string) KymaBuilder {
+	kb.kyma.ObjectMeta.Name = fmt.Sprintf("%s-%s", prefix, RandomName())
+	return kb
+}
+
+// WithNamespace sets v1beta2.Kyma.ObjectMeta.Namespace.
+func (kb KymaBuilder) WithNamespace(namespace string) KymaBuilder {
+	kb.kyma.ObjectMeta.Namespace = namespace
 	return kb
 }
 
@@ -68,6 +87,16 @@ func (kb KymaBuilder) WithCondition(condition metav1.Condition) KymaBuilder {
 }
 
 // Build returns the built v1beta2.Kyma.
-func (kb KymaBuilder) Build() v1beta2.Kyma {
-	return *kb.kyma
+func (kb KymaBuilder) Build() *v1beta2.Kyma {
+	return kb.kyma
+}
+
+// RandomName creates a random string [a-z] of len 8.
+func RandomName() string {
+	b := make([]byte, nameLength)
+	for i := range b {
+		//nolint:gosec
+		b[i] = charSet[rand.Intn(len(charSet))]
+	}
+	return string(b)
 }

@@ -5,7 +5,6 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -19,7 +18,7 @@ type CRDBuilder struct {
 // NewCRDBuilder returns a CRDBuilder for CustomResourceDefinitions of Group
 // operator.kyma-project.io initialized with a random name.
 func NewCRDBuilder() CRDBuilder {
-	crdName := testutils.RandomName()
+	crdName := RandomName()
 
 	return CRDBuilder{
 		crd: &apiextensions.CustomResourceDefinition{

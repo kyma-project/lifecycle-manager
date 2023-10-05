@@ -8,16 +8,16 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
+	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/yaml"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var testFiles = filepath.Join("..", "..", "config", "samples", "tests") //nolint:gochecknoglobals
@@ -35,12 +35,11 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 			WithContext(webhookServerContext).
 			WithArguments(crd).Should(Succeed())
 
-		template, err := testutils.ModuleTemplateFactory(v1beta2.Module{
-			ControllerName: "manifest",
-			Name:           "example-module-name",
-			Channel:        v1beta2.DefaultChannel,
-		}, data, false, false, false, false)
-		Expect(err).ToNot(HaveOccurred())
+		template := builder.NewModuleTemplateBuilder().
+			WithModuleName("test-module").
+			WithDefaultCR(&data).
+			WithChannel(v1beta2.DefaultChannel).
+			WithOCM(compdesc2.SchemaVersion).Build()
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
 		Expect(k8sClient.Delete(webhookServerContext, template)).Should(Succeed())
 
@@ -53,12 +52,11 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 		Eventually(k8sClient.Create, Timeout, Interval).
 			WithContext(webhookServerContext).
 			WithArguments(crd).Should(Succeed())
-		template, err := testutils.ModuleTemplateFactory(v1beta2.Module{
-			ControllerName: "manifest",
-			Name:           "example-module-name",
-			Channel:        v1beta2.DefaultChannel,
-		}, data, false, false, false, false)
-		Expect(err).ToNot(HaveOccurred())
+		template := builder.NewModuleTemplateBuilder().
+			WithModuleName("test-module").
+			WithDefaultCR(&data).
+			WithChannel(v1beta2.DefaultChannel).
+			WithOCM(compdesc2.SchemaVersion).Build()
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
 		Expect(k8sClient.Delete(webhookServerContext, template)).Should(Succeed())
 
@@ -70,13 +68,11 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 		Eventually(k8sClient.Create, Timeout, Interval).
 			WithContext(webhookServerContext).
 			WithArguments(crd).Should(Succeed())
-		template, err := testutils.ModuleTemplateFactory(v1beta2.Module{
-			ControllerName: "manifest",
-			Name:           "example-module-name",
-			Channel:        v1beta2.DefaultChannel,
-		}, data, false, false, false, false)
-
-		Expect(err).ToNot(HaveOccurred())
+		template := builder.NewModuleTemplateBuilder().
+			WithModuleName("test-module").
+			WithDefaultCR(&data).
+			WithChannel(v1beta2.DefaultChannel).
+			WithOCM(compdesc2.SchemaVersion).Build()
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
 
 		descriptor, err := template.GetDescriptor()

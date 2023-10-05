@@ -9,10 +9,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	crdV1beta2 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
+	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -21,12 +22,11 @@ import (
 
 func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false,
-			false)
+		DeployModuleTemplates(ctx, controlPlaneClient, kyma)
 	})
 
 	AfterAll(func() {
-		DeleteModuleTemplates(ctx, controlPlaneClient, kyma, false)
+		DeleteModuleTemplates(ctx, controlPlaneClient, kyma)
 	})
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 }
@@ -49,6 +49,30 @@ func RegisterDefaultLifecycleForKymaWithoutTemplate(kyma *v1beta2.Kyma) {
 		Eventually(SyncKyma, Timeout, Interval).
 			WithContext(ctx).WithArguments(controlPlaneClient, kyma).Should(Succeed())
 	})
+}
+
+func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) {
+	for _, module := range kyma.Spec.Modules {
+		template := builder.NewModuleTemplateBuilder().
+			WithModuleName(module.Name).
+			WithChannel(module.Channel).
+			WithOCM(compdesc2.SchemaVersion).Build()
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kcpClient, template).Should(Succeed())
+	}
+}
+
+func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v1beta2.Kyma) {
+	for _, module := range kyma.Spec.Modules {
+		template := builder.NewModuleTemplateBuilder().
+			WithModuleName(module.Name).
+			WithChannel(module.Channel).
+			WithOCM(compdesc2.SchemaVersion).Build()
+		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
+			WithArguments(template).
+			Should(Succeed())
+	}
 }
 
 func GetKymaState(kymaName string) (string, error) {
@@ -147,10 +171,10 @@ func TemplateInfosMatchChannel(kymaName, channel string) error {
 
 func CreateModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, channel string) error {
 	for _, module := range modules {
-		template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false, false)
-		if err != nil {
-			return err
-		}
+		template := builder.NewModuleTemplateBuilder().
+			WithModuleName(module.Name).
+			WithChannel(module.Channel).
+			WithOCM(compdesc2.SchemaVersion).Build()
 
 		descriptor, err := template.GetDescriptor()
 		if err != nil {
