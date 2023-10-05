@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -257,7 +255,7 @@ func (r *Reconciler) renderResources(
 	var err error
 	var target, current ResourceList
 
-	if target, err = r.renderTargetResources(ctx, clnt, converter, obj, spec); err != nil { // TODO Hier drinnen muss die if condition angepasst werden, evtl kann ich hier obj und converter benutzen
+	if target, err = r.renderTargetResources(ctx, clnt, converter, obj, spec); err != nil {
 		return nil, nil, err
 	}
 
@@ -411,12 +409,16 @@ func (r *Reconciler) renderTargetResources(
 	obj Object, // TODO objekt is manifest
 	spec *Spec,
 ) ([]*resource.Info, error) {
-	resourceCRDeleted, err := resourceCRDeleted(ctx, clnt, obj)
-	if err != nil {
-		return nil, err
+	deletionCheck := true
+	if r.DeletionCheck != nil {
+		deleted, err := r.DeletionCheck.Run(ctx, clnt, obj)
+		if err != nil {
+			return nil, err
+		}
+		deletionCheck = deleted
 	}
 
-	if !obj.GetDeletionTimestamp().IsZero() && resourceCRDeleted {
+	if !obj.GetDeletionTimestamp().IsZero() && deletionCheck {
 		// if we are deleting the resources,
 		// we no longer want to have any target resources and want to clean up all existing resources.
 		// Thus, we empty the target here so the difference will be the entire current
@@ -621,30 +623,4 @@ func (r *Reconciler) ssa(ctx context.Context, obj client.Object) (ctrl.Result, e
 			client.Apply,
 			client.ForceOwnership,
 			r.FieldOwner)
-}
-
-func resourceCRDeleted(
-	ctx context.Context,
-	clnt client.Client,
-	obj Object,
-) (bool, error) {
-	manifest, ok := obj.(*v1beta2.Manifest)
-	if !ok {
-		return false, v1beta2.ErrTypeAssertManifest
-	}
-	if manifest.Spec.Resource == nil {
-		return true, nil
-	}
-
-	name := manifest.Spec.Resource.GetName()
-	namespace := manifest.Spec.Resource.GetNamespace()
-
-	if err := clnt.Get(ctx,
-		client.ObjectKey{Name: name, Namespace: namespace}, &unstructured.Unstructured{}); err != nil {
-		if util.IsNotFound(err) {
-			return true, nil
-		}
-		return false, err
-	}
-	return false, nil
 }

@@ -74,6 +74,8 @@ type Options struct {
 	PostRuns   []PostRun
 	PreDeletes []PreDelete
 
+	DeletionCheck DeletionCheck
+
 	DeletePrerequisites bool
 
 	ShouldSkip SkipReconcile
@@ -214,6 +216,22 @@ type WithPreDelete []PreDelete
 
 func (o WithPreDelete) Apply(options *Options) {
 	options.PreDeletes = append(options.PreDeletes, o...)
+}
+
+func WithCustomDeletionCheck(deletionCheckFn DeletionCheck) WithCustomDeletionCheckOption {
+	return WithCustomDeletionCheckOption{DeletionCheck: deletionCheckFn}
+}
+
+type DeletionCheck interface {
+	Run(ctx context.Context, clnt client.Client, obj Object) (bool, error)
+}
+
+type WithCustomDeletionCheckOption struct {
+	DeletionCheck
+}
+
+func (o WithCustomDeletionCheckOption) Apply(options *Options) {
+	options.DeletionCheck = o
 }
 
 type WithPeriodicConsistencyCheck time.Duration
