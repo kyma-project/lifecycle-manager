@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"k8s.io/apimachinery/pkg/types"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -192,4 +193,99 @@ func GetKymaStateMetricCount(kymaName, state string) (int, error) {
 	}
 
 	return 0, nil
+}
+
+func GetManifestObjectKey(ctx context.Context, k8sClient client.Client, kymaName, templateName string) (
+	types.NamespacedName, error) {
+	manifests := &v1beta2.ManifestList{}
+	if err := k8sClient.List(ctx, manifests); err != nil {
+		return types.NamespacedName{Namespace: "", Name: ""}, fmt.Errorf("manifest fetching failed: %w", err)
+	}
+	for _, m := range manifests.Items {
+		if ownerKyma, exists := m.Labels["operator.kyma-project.io/kyma-name"]; exists && ownerKyma == kymaName {
+			if strings.Contains(m.Name, templateName) {
+				return client.ObjectKeyFromObject(&m), nil
+			}
+		}
+	}
+	return types.NamespacedName{Namespace: "", Name: ""},
+		fmt.Errorf("manifest fetching failed: no manifest found")
+}
+
+func DeleteManifest(ctx context.Context, objKey types.NamespacedName, k8sClient client.Client) error {
+	manifest := &v1beta2.Manifest{}
+	err := k8sClient.Get(ctx, objKey, manifest)
+	if util.IsNotFound(err) {
+		return nil
+	}
+	Expect(err).ToNot(HaveOccurred())
+	return k8sClient.Delete(ctx, manifest)
+}
+
+func AddFinalizerToManifest(ctx context.Context,
+	objKey types.NamespacedName,
+	k8sClient client.Client,
+	finalizer string,
+) error {
+	manifest := &v1beta2.Manifest{}
+	if err := k8sClient.Get(ctx, objKey, manifest); err != nil {
+		return err
+	}
+	GinkgoWriter.Printf("manifest %v\n", manifest)
+	manifest.Finalizers = append(manifest.Finalizers, finalizer)
+	err := k8sClient.Patch(ctx, manifest, client.Apply, client.ForceOwnership, client.FieldOwner("lifecycle-manager"))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func removeFromSlice(slice []string, element string) []string {
+	for i := range slice {
+		if slice[i] == element {
+			return append(slice[:i], slice[i+1:]...)
+		}
+	}
+	return slice
+}
+
+func RemoveFinalizerToManifest(ctx context.Context,
+	objKey types.NamespacedName,
+	k8sClient client.Client,
+	finalizer string,
+) error {
+	manifest := &v1beta2.Manifest{}
+	if err := k8sClient.Get(ctx, objKey, manifest); err != nil {
+		return err
+	}
+	GinkgoWriter.Printf("manifest %v\n", manifest)
+	manifest.Finalizers = removeFromSlice(manifest.Finalizers, finalizer)
+	err := k8sClient.Patch(ctx, manifest, client.Apply, client.ForceOwnership, client.FieldOwner("lifecycle-manager"))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func CheckKymaModuleIsInState(ctx context.Context,
+	kymaName, kymaNamespace string,
+	k8sClient client.Client,
+	moduleName string,
+	expectedState v1beta2.State,
+) error {
+	kyma := &v1beta2.Kyma{}
+	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
+		return fmt.Errorf("error getting kyma: %w", err)
+	}
+	GinkgoWriter.Printf("kyma %v\n", kyma)
+	for _, module := range kyma.Status.Modules {
+		if module.Name == moduleName {
+			if module.State == expectedState {
+				return nil
+			} else {
+				return fmt.Errorf("unexpected state %s found for module %s", module.State, moduleName)
+			}
+		}
+	}
+	return fmt.Errorf("module not found")
 }
