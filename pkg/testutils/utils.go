@@ -39,8 +39,8 @@ import (
 )
 
 const (
-	randomStringLength     = 8
-	letterBytes            = "abcdefghijklmnopqrstuvwxyz"
+	nameLength             = 8
+	charSet                = "abcdefghijklmnopqrstuvwxyz"
 	defaultBufferSize      = 2048
 	Timeout                = time.Second * 40
 	ConsistentCheckTimeout = time.Second * 10
@@ -50,7 +50,6 @@ const (
 var (
 	ErrNotFound               = errors.New("resource not exists")
 	ErrNotDeleted             = errors.New("resource not deleted")
-	ErrManifestNotinState     = errors.New("manifest is not in correct state")
 	ErrDeletionTimestampFound = errors.New("deletion timestamp not nil")
 )
 
@@ -71,7 +70,7 @@ func newKCPKymaWithNamespace(name, namespace, channel, syncStrategy string) *v1b
 			Kind:       string(v1beta2.KymaKind),
 		},
 		ObjectMeta: v1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%s", name, randString(randomStringLength)),
+			Name:      fmt.Sprintf("%s-%s", name, RandomName()),
 			Namespace: namespace,
 			Annotations: map[string]string{
 				watcher.DomainAnnotation:       "example.domain.com",
@@ -91,7 +90,7 @@ func newKCPKymaWithNamespace(name, namespace, channel, syncStrategy string) *v1b
 func NewTestManifest(prefix string) *v1beta2.Manifest {
 	return &v1beta2.Manifest{
 		ObjectMeta: v1.ObjectMeta{
-			Name:      fmt.Sprintf("%s-%s", prefix, randString(randomStringLength)),
+			Name:      fmt.Sprintf("%s-%s", prefix, RandomName()),
 			Namespace: v1.NamespaceDefault,
 			Labels: map[string]string{
 				v1beta2.KymaName: string(uuid.NewUUID()),
@@ -115,7 +114,7 @@ func NewTestModuleCR(name, namespace, version, kind string) unstructured.Unstruc
 
 func NewTestModule(name, channel string) v1beta2.Module {
 	return v1beta2.Module{
-		Name:    fmt.Sprintf("%s-%s", name, randString(randomStringLength)),
+		Name:    fmt.Sprintf("%s-%s", name, RandomName()),
 		Channel: channel,
 	}
 }
@@ -143,21 +142,12 @@ func NewTestNamespace(namespace string) *corev1.Namespace {
 	}
 }
 
-func NewUniqModuleName() string {
-	return randString(randomStringLength)
-}
-
-// randomName creates a random string [a-z] with a length of 8.
-func randomName() string {
-	return randString(randomStringLength)
-}
-
-//nolint:unparam
-func randString(length int) string {
-	b := make([]byte, length)
+// RandomName creates a random string [a-z] of len 8.
+func RandomName() string {
+	b := make([]byte, nameLength)
 	for i := range b {
 		//nolint:gosec
-		b[i] = letterBytes[rand.Intn(len(letterBytes))]
+		b[i] = charSet[rand.Intn(len(charSet))]
 	}
 	return string(b)
 }
