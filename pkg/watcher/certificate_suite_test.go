@@ -41,11 +41,11 @@ var _ = BeforeSuite(func() {
 	logf.SetLogger(logger)
 
 	By("bootstrapping control plane test environment")
-	externalCRDs := AppendExternalCRDs(
+	externalCRDs, err := AppendExternalCRDs(
 		filepath.Join("..", "..", "config", "samples", "tests", "crds"),
 		"cert-manager-v1.10.1.crds.yaml",
 		"istio-v1.17.1.crds.yaml")
-
+	Expect(err).ToNot(HaveOccurred())
 	controlPlaneEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
 		CRDs:                  externalCRDs,

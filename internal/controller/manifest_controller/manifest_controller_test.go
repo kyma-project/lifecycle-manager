@@ -1,7 +1,6 @@
 package manifest_controller_test
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,8 +14,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
-
-var ErrManifestStateMisMatch = errors.New("ManifestState mismatch")
 
 var _ = Describe(
 	"Rendering manifest install layer", func() {
