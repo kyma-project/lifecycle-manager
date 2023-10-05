@@ -18,9 +18,7 @@ import (
 	apiExtensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -43,18 +41,6 @@ var (
 	ErrDeletionTimestampFound = errors.New("deletion timestamp not nil")
 	ErrEmptyRestConfig        = errors.New("rest.Config is nil")
 )
-
-func NewTestModuleCR(name, namespace, version, kind string) unstructured.Unstructured {
-	moduleCR := unstructured.Unstructured{}
-	moduleCR.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   v1beta2.GroupVersion.Group,
-		Version: version,
-		Kind:    kind,
-	})
-	moduleCR.SetName(name)
-	moduleCR.SetNamespace(namespace)
-	return moduleCR
-}
 
 func NewTestModule(name, channel string) v1beta2.Module {
 	return v1beta2.Module{

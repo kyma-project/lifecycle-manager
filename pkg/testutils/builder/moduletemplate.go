@@ -13,7 +13,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
@@ -22,14 +21,8 @@ type ModuleTemplateBuilder struct {
 }
 
 func NewModuleTemplateBuilder() ModuleTemplateBuilder {
-	data := unstructured.Unstructured{}
-	data.SetGroupVersionKind(
-		schema.GroupVersionKind{
-			Group:   v1beta2.OperatorPrefix,
-			Version: "v1alpha1",
-			Kind:    "Sample",
-		},
-	)
+	data := NewDefaultCRBuilder().
+		WithSpec(InitSpecKey, InitSpecValue).Build()
 	return ModuleTemplateBuilder{
 		moduleTemplate: &v1beta2.ModuleTemplate{
 			TypeMeta: metav1.TypeMeta{
@@ -41,7 +34,7 @@ func NewModuleTemplateBuilder() ModuleTemplateBuilder {
 				Namespace: metav1.NamespaceDefault,
 			},
 			Spec: v1beta2.ModuleTemplateSpec{
-				Data: &data,
+				Data: data,
 			},
 		},
 	}
@@ -124,7 +117,6 @@ func ComponentDescriptorFactoryFromSchema(schemaVersion compdesc.SchemaVersion) 
 }
 
 func readComponentDescriptorFromYaml(template string, moduleTemplate *v1beta2.ModuleTemplate) {
-
 	_, filename, _, ok := runtime.Caller(1)
 	if !ok {
 		panic("Can't capture current filename!")

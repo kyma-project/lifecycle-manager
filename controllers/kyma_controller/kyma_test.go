@@ -217,7 +217,7 @@ var _ = Describe("Kyma enable multiple modules", Ordered, func() {
 	})
 })
 
-var _ = FDescribe("Kyma skip Reconciliation", Ordered, func() {
+var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-update")
 	module := NewTestModule("skr-module-update", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(
@@ -255,7 +255,7 @@ var _ = FDescribe("Kyma skip Reconciliation", Ordered, func() {
 		},
 		Entry("When update Module Template spec.data.spec field, module should not updated",
 			updateKCPModuleTemplateSpecData(kyma.Name, "valueUpdated"),
-			expectManifestSpecDataEquals(kyma.Name, "initValue")),
+			expectManifestSpecDataEquals(kyma.Name, builder.InitSpecValue)),
 		Entry("When put manifest into progress, kyma spec.status.modules should not updated",
 			UpdateAllManifestState(kyma.Name, v1beta2.StateProcessing),
 			expectKymaStatusModules(ctx, kyma, module.Name, v1beta2.StateReady)),
@@ -297,7 +297,6 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 					WithArguments(template).
 					Should(Succeed())
 			}
-			DeployModuleTemplates(ctx, controlPlaneClient, kyma)
 		})
 
 		It("expect Kyma.Spec.Status.Modules.Resource.Namespace to be empty", func() {
@@ -336,7 +335,8 @@ func updateKCPModuleTemplateSpecData(kymaName, valueUpdated string) func() error
 			return err
 		}
 		for _, activeModule := range createdKyma.Spec.Modules {
-			return UpdateModuleTemplateSpec(ctx, controlPlaneClient, activeModule, valueUpdated, createdKyma.Spec.Channel)
+			return UpdateModuleTemplateSpec(ctx, controlPlaneClient,
+				activeModule, builder.InitSpecKey, valueUpdated, createdKyma.Spec.Channel)
 		}
 		return nil
 	}

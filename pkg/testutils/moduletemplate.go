@@ -44,6 +44,7 @@ func AllModuleTemplatesExists(ctx context.Context, clnt client.Client, kyma *v1b
 func UpdateModuleTemplateSpec(ctx context.Context,
 	clnt client.Client,
 	module v1beta2.Module,
+	key,
 	newValue,
 	kymaChannel string,
 ) error {
@@ -54,6 +55,6 @@ func UpdateModuleTemplateSpec(ctx context.Context,
 	if moduleTemplate.Spec.Data == nil {
 		moduleTemplate.Spec.Data = &unstructured.Unstructured{}
 	}
-	moduleTemplate.Spec.Data.Object["spec"] = map[string]any{"initKey": newValue}
+	moduleTemplate.Spec.Data.Object["spec"] = map[string]any{key: newValue}
 	return clnt.Update(ctx, moduleTemplate)
 }

@@ -41,13 +41,18 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	moduleInKCP := NewTestModule("in-kcp", v1beta2.DefaultChannel)
 	customModuleInSKR := NewTestModule("custom-in-skr", v1beta2.DefaultChannel)
 	customModuleInSKR.RemoteModuleTemplateRef = customModuleInSKR.Name
+
+	defaultCR := builder.NewDefaultCRBuilder().WithSpec(builder.InitSpecKey, builder.InitSpecValue).Build()
+
 	SKRTemplate := builder.NewModuleTemplateBuilder().
 		WithModuleName(moduleInSKR.Name).
 		WithChannel(moduleInSKR.Channel).
+		WithDefaultCR(defaultCR).
 		WithOCM(compdesc2.SchemaVersion).Build()
 	KCPTemplate := builder.NewModuleTemplateBuilder().
 		WithModuleName(moduleInKCP.Name).
 		WithChannel(moduleInKCP.Channel).
+		WithDefaultCR(defaultCR).
 		WithOCM(compdesc2.SchemaVersion).Build()
 	SKRCustomTemplate := builder.NewModuleTemplateBuilder().
 		WithModuleName(customModuleInSKR.Name).
@@ -57,8 +62,23 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	BeforeAll(func() {
 		runtimeClient, runtimeEnv, err = NewSKRCluster(controlPlaneClient.Scheme())
 		Expect(err).NotTo(HaveOccurred())
+		Eventually(CreateCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma).Should(Succeed())
 	})
-	registerControlPlaneLifecycleForKyma(kyma)
+
+	AfterAll(func() {
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma).Should(Succeed())
+		DeleteModuleTemplates(ctx, controlPlaneClient, kyma)
+	})
+
+	BeforeEach(func() {
+		By("get latest kyma CR")
+		Eventually(SyncKyma, Timeout, Interval).
+			WithContext(ctx).WithArguments(controlPlaneClient, kyma).Should(Succeed())
+	})
 
 	It("Kyma CR should be synchronized in both clusters", func() {
 		By("Remote Kyma created")
@@ -151,13 +171,13 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		By("Update SKR Module Template spec.data.spec field")
 		Eventually(UpdateModuleTemplateSpec, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(runtimeClient, moduleInSKR, "valueUpdated").
+			WithArguments(runtimeClient, moduleInSKR, builder.InitSpecKey, "valueUpdated", kyma.Spec.Channel).
 			Should(Succeed())
 
 		By("Expect SKR Module Template spec.data.spec field get reset")
 		Eventually(expectModuleTemplateSpecGetReset, 2*Timeout, Interval).
-			WithArguments(runtimeClient, controllers.DefaultRemoteSyncNamespace,
-				moduleInSKR, "initValue", kyma.Spec.Channel).
+			WithArguments(runtimeClient,
+				moduleInSKR, kyma.Spec.Channel).
 			Should(Succeed())
 	})
 

@@ -101,7 +101,6 @@ func watcherLabelsAnnotationsExist(clnt client.Client, remoteKyma *v1beta2.Kyma,
 func expectModuleTemplateSpecGetReset(
 	clnt client.Client,
 	module v1beta2.Module,
-	expectedValue,
 	kymaChannel string,
 ) error {
 	moduleTemplate, err := GetModuleTemplate(ctx, clnt, module, kymaChannel)
@@ -119,7 +118,7 @@ func expectModuleTemplateSpecGetReset(
 	if !mapOk {
 		return ErrExpectedLabelNotReset
 	}
-	value, found := initKeyM["initKey"]
+	value, found := initKeyM[builder.InitSpecKey]
 	if !found {
 		return ErrExpectedLabelNotReset
 	}
@@ -127,7 +126,7 @@ func expectModuleTemplateSpecGetReset(
 	if !ok {
 		return ErrExpectedLabelNotReset
 	}
-	if sValue != expectedValue {
+	if sValue != builder.InitSpecValue {
 		return ErrExpectedLabelNotReset
 	}
 	return nil

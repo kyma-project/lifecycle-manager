@@ -414,7 +414,7 @@ func validateManifestSpecResource(manifestResource, moduleTemplateData *unstruct
 	expectedManifestResource := moduleTemplateData.DeepCopy()
 	expectedManifestResource.
 		SetNamespace(controllers.DefaultRemoteSyncNamespace) // the namespace is set in the "actual" object
-
+	expectedManifestResource.SetName(actualManifestResource.GetName())
 	if !reflect.DeepEqual(actualManifestResource, expectedManifestResource) {
 		actualJSON, err := json.MarshalIndent(actualManifestResource, "", "  ")
 		if err != nil {
