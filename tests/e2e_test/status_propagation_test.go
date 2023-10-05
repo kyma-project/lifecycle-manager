@@ -80,6 +80,7 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 			Should(Succeed())
 	})
+})
 
 var _ = Describe("Resource State 'Warning' should be propagated to Kyma CR Module Status",
 	Ordered, func() {
