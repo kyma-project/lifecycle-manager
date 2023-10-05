@@ -23,6 +23,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	. "github.com/onsi/ginkgo/v2"
@@ -35,13 +37,12 @@ import (
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
+	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kyma-project/lifecycle-manager/api"
-	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
@@ -75,13 +76,13 @@ var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 
 	externalCRDs, err := AppendExternalCRDs(
-		filepath.Join("..", "..", "config", "samples", "tests", "crds"),
+		filepath.Join("..", "..", "..", "config", "samples", "tests", "crds"),
 		"cert-manager-v1.10.1.crds.yaml",
 		"istio-v1.17.1.crds.yaml")
 	Expect(err).ToNot(HaveOccurred())
 
 	kcpModuleCRD := &v1.CustomResourceDefinition{}
-	modulePath := filepath.Join("..", "..", "config", "samples", "component-integration-installed",
+	modulePath := filepath.Join("..", "..", "..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
 	Expect(err).ToNot(HaveOccurred())
@@ -89,7 +90,7 @@ var _ = BeforeSuite(func() {
 	Expect(yaml2.Unmarshal(moduleFile, &kcpModuleCRD)).To(Succeed())
 
 	controlPlaneEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
+		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
 		CRDs:                  append([]*v1.CustomResourceDefinition{kcpModuleCRD}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}
@@ -107,7 +108,7 @@ var _ = BeforeSuite(func() {
 		cfg, ctrl.Options{
 			MetricsBindAddress: randomPort,
 			Scheme:             scheme.Scheme,
-			Cache:              controllers.NewCacheOptions(),
+			Cache:              controller.NewCacheOptions(),
 		})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -119,7 +120,7 @@ var _ = BeforeSuite(func() {
 
 	remoteClientCache := remote.NewClientCache()
 
-	err = (&controllers.KymaReconciler{
+	err = (&controller.KymaReconciler{
 		Client:           k8sManager.GetClient(),
 		EventRecorder:    k8sManager.GetEventRecorderFor(v1beta2.OperatorName),
 		RequeueIntervals: intervals,
@@ -129,9 +130,9 @@ var _ = BeforeSuite(func() {
 		RemoteClientCache:   remoteClientCache,
 		KcpRestConfig:       k8sManager.GetConfig(),
 		InKCPMode:           false,
-		RemoteSyncNamespace: controllers.DefaultRemoteSyncNamespace,
-	}).SetupWithManager(k8sManager, controller.Options{},
-		controllers.SetupUpSetting{ListenerAddr: randomPort})
+		RemoteSyncNamespace: controller.DefaultRemoteSyncNamespace,
+	}).SetupWithManager(k8sManager, controllerRuntime.Options{},
+		controller.SetupUpSetting{ListenerAddr: randomPort})
 	Expect(err).ToNot(HaveOccurred())
 
 	controlPlaneClient = k8sManager.GetClient()

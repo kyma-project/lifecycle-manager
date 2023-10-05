@@ -6,7 +6,7 @@ IMG_NAME := $(IMG_REPO)/$(APP_NAME)
 IMG := $(IMG_NAME):$(DOCKER_TAG)
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.24.1
+ENVTEST_K8S_VERSION = 1.28.0
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -84,11 +84,11 @@ dry-run-control-plane: kustomize manifests
 
 .PHONY: build
 build: generate fmt vet ## Build manager binary.
-	go build -o bin/manager main.go flags.go
+	go build -o bin/manager cmd/main.go cmd/flags.go
 
 .PHONY: run
 run: manifests generate fmt vet ## Run a controller from your host.
-	go run ./main.go ./flags.go
+	go run ./cmd/main.go ./cmd/flags.go
 
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
@@ -140,6 +140,7 @@ $(LOCALBIN):
 	mkdir -p $(LOCALBIN)
 
 ## Tool Binaries
+
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
@@ -147,7 +148,7 @@ GOLANG_CI_LINT = $(LOCALBIN)/golangci-lint
 
 ## Tool Versions
 KUSTOMIZE_VERSION ?= v4.5.6
-CONTROLLER_TOOLS_VERSION ?= v0.11.2
+CONTROLLER_TOOLS_VERSION ?= v0.13.0
 GOLANG_CI_LINT_VERSION ?= v1.54.2
 
 .PHONY: kustomize

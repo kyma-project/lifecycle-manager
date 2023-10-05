@@ -1,4 +1,4 @@
-package controllers
+package controller
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
+	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -47,7 +47,7 @@ var (
 
 // SetupWithManager sets up the Kyma controller with the Manager.
 func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
-	options controller.Options, settings SetupUpSetting,
+	options controllerRuntime.Options, settings SetupUpSetting,
 ) error {
 	predicates := predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})
 
@@ -134,7 +134,7 @@ func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, e
 }
 
 // SetupWithManager sets up the Watcher controller with the Manager.
-func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options,
+func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controllerRuntime.Options,
 ) error {
 	if r.RestConfig == nil {
 		return errRestConfigIsNotSet
@@ -161,7 +161,7 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 
 // SetupWithManager sets up the Purge controller with the Manager.
 func (r *PurgeReconciler) SetupWithManager(mgr ctrl.Manager,
-	options controller.Options,
+	options controllerRuntime.Options,
 ) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Kyma{}).

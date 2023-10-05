@@ -5,8 +5,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	hlp "github.com/kyma-project/lifecycle-manager/controllers/manifest_controller/manifesttest"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"

@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/controllers"
-	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	. "github.com/onsi/ginkgo/v2"
@@ -34,7 +34,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	remoteKyma := &v1beta2.Kyma{}
 
 	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
-	remoteKyma.Namespace = controllers.DefaultRemoteSyncNamespace
+	remoteKyma.Namespace = controller.DefaultRemoteSyncNamespace
 	var runtimeClient client.Client
 	var runtimeEnv *envtest.Environment
 	var err error
@@ -120,7 +120,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 			WithArguments(ctx, runtimeClient, moduleInSKR, kyma.Spec.Channel).
 			Should(Succeed())
 		Eventually(containsModuleTemplateCondition, Timeout, Interval).
-			WithArguments(runtimeClient, remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace).
+			WithArguments(runtimeClient, remoteKyma.GetName(), controller.DefaultRemoteSyncNamespace).
 			Should(Succeed())
 		Eventually(containsModuleTemplateCondition, Timeout, Interval).
 			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace()).
@@ -191,7 +191,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		By("Expect SKR Kyma get recreated with no deletionTimestamp")
 		Eventually(KymaExists, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(runtimeClient, remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace).
+			WithArguments(runtimeClient, remoteKyma.GetName(), controller.DefaultRemoteSyncNamespace).
 			Should(Succeed())
 	})
 
@@ -278,7 +278,7 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 	var err error
 	remoteKyma := &v1beta2.Kyma{}
 	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
-	remoteKyma.Namespace = controllers.DefaultRemoteSyncNamespace
+	remoteKyma.Namespace = controller.DefaultRemoteSyncNamespace
 
 	BeforeAll(func() {
 		runtimeClient, runtimeEnv, err = NewSKRCluster(controlPlaneClient.Scheme())
@@ -344,7 +344,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	remoteKyma := &v1beta2.Kyma{}
 
 	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
-	remoteKyma.Namespace = controllers.DefaultRemoteSyncNamespace
+	remoteKyma.Namespace = controller.DefaultRemoteSyncNamespace
 	var runtimeClient client.Client
 	var runtimeEnv *envtest.Environment
 	var err error
@@ -390,7 +390,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 
 	It("CRDs generation annotation shouldn't exist in SKR kyma", func() {
 		Eventually(func() error {
-			skrKyma, err := GetKyma(ctx, runtimeClient, remoteKyma.GetName(), controllers.DefaultRemoteSyncNamespace)
+			skrKyma, err := GetKyma(ctx, runtimeClient, remoteKyma.GetName(), controller.DefaultRemoteSyncNamespace)
 			if err != nil {
 				return err
 			}

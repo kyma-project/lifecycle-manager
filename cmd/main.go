@@ -26,6 +26,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
+
+	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
+
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -41,14 +45,13 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
+	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/kyma-project/lifecycle-manager/api"
 	operatorv1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
 	purgemetrics "github.com/kyma-project/lifecycle-manager/internal/controller/purge/metrics"
@@ -58,7 +61,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -93,7 +95,7 @@ func main() {
 		go pprofStartServer(flagVar.pprofAddr, flagVar.pprofServerTimeout)
 	}
 
-	setupManager(flagVar, controllers.NewCacheOptions(), scheme)
+	setupManager(flagVar, controller.NewCacheOptions(), scheme)
 }
 
 func pprofStartServer(addr string, timeout time.Duration) {
@@ -198,8 +200,8 @@ func enableWebhooks(mgr manager.Manager) {
 	}
 }
 
-func controllerOptionsFromFlagVar(flagVar *FlagVar) controller.Options {
-	return controller.Options{
+func controllerOptionsFromFlagVar(flagVar *FlagVar) controllerRuntime.Options {
+	return controllerRuntime.Options{
 		RateLimiter: workqueue.NewMaxOfRateLimiter(
 			workqueue.NewItemExponentialFailureRateLimiter(flagVar.failureBaseDelay, flagVar.failureMaxDelay),
 			&workqueue.BucketRateLimiter{
@@ -213,7 +215,7 @@ func controllerOptionsFromFlagVar(flagVar *FlagVar) controller.Options {
 
 func setupKymaReconciler(mgr ctrl.Manager,
 	remoteClientCache *remote.ClientCache,
-	flagVar *FlagVar, options controller.Options,
+	flagVar *FlagVar, options controllerRuntime.Options,
 ) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentKymaReconciles
 	kcpRestConfig := mgr.GetConfig()
@@ -231,7 +233,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		}
 	}
 
-	if err := (&controllers.KymaReconciler{
+	if err := (&controller.KymaReconciler{
 		Client:            mgr.GetClient(),
 		EventRecorder:     mgr.GetEventRecorderFor(operatorv1beta2.OperatorName),
 		KcpRestConfig:     kcpRestConfig,
@@ -250,7 +252,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		RemoteSyncNamespace: flagVar.remoteSyncNamespace,
 		IsManagedKyma:       flagVar.isKymaManaged,
 	}).SetupWithManager(
-		mgr, options, controllers.SetupUpSetting{
+		mgr, options, controller.SetupUpSetting{
 			ListenerAddr:                 flagVar.kymaListenerAddr,
 			EnableDomainNameVerification: flagVar.enableDomainNameVerification,
 			IstioNamespace:               flagVar.istioNamespace,
@@ -281,14 +283,14 @@ func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (watcher.SKRWeb
 func setupPurgeReconciler(mgr ctrl.Manager,
 	remoteClientCache *remote.ClientCache,
 	flagVar *FlagVar,
-	options controller.Options,
+	options controllerRuntime.Options,
 ) {
 	resolveRemoteClientFunc := func(ctx context.Context, key client.ObjectKey) (client.Client, error) {
 		kcpClient := remote.NewClientWithConfig(mgr.GetClient(), mgr.GetConfig())
 		return remote.NewClientLookup(kcpClient, remoteClientCache, operatorv1beta2.SyncStrategyLocalSecret).Lookup(ctx, key)
 	}
 
-	if err := (&controllers.PurgeReconciler{
+	if err := (&controller.PurgeReconciler{
 		Client:                mgr.GetClient(),
 		EventRecorder:         mgr.GetEventRecorderFor(operatorv1beta2.OperatorName),
 		ResolveRemoteClient:   resolveRemoteClientFunc,
@@ -307,14 +309,14 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 func setupManifestReconciler(
 	mgr ctrl.Manager,
 	flagVar *FlagVar,
-	options controller.Options,
+	options controllerRuntime.Options,
 ) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentManifestReconciles
 	options.RateLimiter = internal.ManifestRateLimiter(flagVar.failureBaseDelay,
 		flagVar.failureMaxDelay, flagVar.rateLimiterFrequency, flagVar.rateLimiterBurst)
 
-	if err := controllers.SetupWithManager(
-		mgr, options, flagVar.manifestRequeueSuccessInterval, controllers.SetupUpSetting{
+	if err := controller.SetupWithManager(
+		mgr, options, flagVar.manifestRequeueSuccessInterval, controller.SetupUpSetting{
 			ListenerAddr:                 flagVar.manifestListenerAddr,
 			EnableDomainNameVerification: flagVar.enableDomainNameVerification,
 		},
@@ -324,12 +326,12 @@ func setupManifestReconciler(
 	}
 }
 
-func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, flagVar *FlagVar) {
+func setupKcpWatcherReconciler(mgr ctrl.Manager, options controllerRuntime.Options, flagVar *FlagVar) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentWatcherReconciles
 
-	if err := (&controllers.WatcherReconciler{
+	if err := (&controller.WatcherReconciler{
 		Client:        mgr.GetClient(),
-		EventRecorder: mgr.GetEventRecorderFor(controllers.WatcherControllerName),
+		EventRecorder: mgr.GetEventRecorderFor(controller.WatcherControllerName),
 		Scheme:        mgr.GetScheme(),
 		RestConfig:    mgr.GetConfig(),
 		RequeueIntervals: queue.RequeueIntervals{
@@ -338,7 +340,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options controller.Options, fla
 			Error:   defaultKymaRequeueErrInterval,
 		},
 	}).SetupWithManager(mgr, options); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", controllers.WatcherControllerName)
+		setupLog.Error(err, "unable to create controller", "controller", controller.WatcherControllerName)
 		os.Exit(1)
 	}
 }
