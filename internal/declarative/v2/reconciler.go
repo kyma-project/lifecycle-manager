@@ -406,7 +406,7 @@ func (r *Reconciler) renderTargetResources(
 	ctx context.Context,
 	clnt client.Client,
 	converter ResourceToInfoConverter,
-	obj Object, // TODO objekt is manifest
+	obj Object,
 	spec *Spec,
 ) ([]*resource.Info, error) {
 	deletionCheck := true
