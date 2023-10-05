@@ -37,7 +37,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	//+kubebuilder:scaffold:imports
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -91,7 +91,7 @@ var _ = BeforeSuite(func() {
 	scheme = runtime.NewScheme()
 	Expect(api.AddToScheme(scheme)).NotTo(HaveOccurred())
 	Expect(apiextensionsv1.AddToScheme(scheme)).NotTo(HaveOccurred())
-	Expect(admissionv1beta1.AddToScheme(scheme)).NotTo(HaveOccurred())
+	Expect(admissionv1.AddToScheme(scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 

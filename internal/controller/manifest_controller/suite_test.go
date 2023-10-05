@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 //nolint:gochecknoglobals
-package custom_resource_check_test
+package manifest_controller_test
 
 import (
 	"context"
@@ -23,6 +23,8 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
+
+	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
 
 	"github.com/google/go-containerregistry/pkg/registry"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -35,13 +37,12 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
+	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api"
-	hlp "github.com/kyma-project/lifecycle-manager/controllers/manifest_controller/manifesttest"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -100,18 +101,13 @@ var _ = BeforeSuite(
 			metricsBindAddress = ":0"
 		}
 
-		syncPeriod := 2 * time.Second
-
 		k8sManager, err = ctrl.NewManager(
 			cfg, ctrl.Options{
 				MetricsBindAddress: metricsBindAddress,
 				Scheme:             scheme.Scheme,
 				Cache:              internal.GetCacheOptions(labels.Set{v1beta2.ManagedBy: v1beta2.OperatorName}),
-				SyncPeriod:         &syncPeriod,
 			},
 		)
-
-		k8sManager.GetControllerOptions()
 		Expect(err).ToNot(HaveOccurred())
 		codec, err := v1beta2.NewCodec()
 		Expect(err).ToNot(HaveOccurred())
@@ -141,7 +137,7 @@ var _ = BeforeSuite(
 			manifest.WithClientCacheKey(),
 			declarative.WithPostRun{manifest.PostRunCreateCR},
 			declarative.WithPreDelete{manifest.PreDeleteDeleteCR},
-			declarative.WithCustomReadyCheck(manifest.NewCustomResourceReadyCheck()),
+			declarative.WithCustomReadyCheck(declarative.NewExistsReadyCheck()),
 			declarative.WithModuleCRDName(manifest.GetModuleCRDName),
 		)
 
@@ -149,7 +145,7 @@ var _ = BeforeSuite(
 			For(&v1beta2.Manifest{}).
 			Watches(&v1.Secret{}, handler.Funcs{}).
 			WithOptions(
-				controller.Options{
+				controllerRuntime.Options{
 					RateLimiter: internal.ManifestRateLimiter(
 						1*time.Second, 5*time.Second,
 						30, 200,
