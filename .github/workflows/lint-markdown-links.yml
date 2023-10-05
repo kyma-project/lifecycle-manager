@@ -16,7 +16,7 @@ jobs:
         with:
           use-quiet-mode: 'yes'
           use-verbose-mode: 'no'
-          config-file: '/.github/config/.mlc.config.json'
+          config-file: '.mlc.config.json'
           folder-path: '.'
           max-depth: -1
           check-modified-files-only: 'yes'
