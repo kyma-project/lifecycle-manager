@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -239,7 +238,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 		}
 
 		By("Kyma CR should be in Ready state")
-		Eventually(GetKymaState, 20*time.Second, Interval).
+		Eventually(GetKymaState, Timeout, Interval).
 			WithArguments(kyma.GetName()).
 			Should(BeEquivalentTo(v1beta2.StateReady))
 

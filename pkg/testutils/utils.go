@@ -148,7 +148,7 @@ func AppendExternalCRDs(path string, files ...string) ([]*apiExtensionsv1.Custom
 
 func CRExists(obj v1.Object, clientError error) error {
 	if util.IsNotFound(clientError) {
-		return fmt.Errorf("%w: %w", ErrNotFound, clientError)
+		return ErrNotFound
 	}
 	if clientError != nil {
 		return clientError

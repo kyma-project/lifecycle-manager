@@ -6,6 +6,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/controllers"
+	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	. "github.com/onsi/ginkgo/v2"
@@ -210,11 +211,11 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 	It("Should not sync the SKRCustomTemplate in KCP and keep it only in SKR", func() {
 		Eventually(ModuleTemplateExists, Timeout, Interval).
-			WithArguments(ctx, runtimeClient, moduleInSKR, kyma.Spec.Channel).
+			WithArguments(ctx, runtimeClient, customModuleInSKR, kyma.Spec.Channel).
 			Should(Succeed())
 		Consistently(ModuleTemplateExists, Timeout, Interval).
-			WithArguments(ctx, controlPlaneClient, moduleInSKR, kyma.Spec.Channel).
-			Should(MatchError(ErrNotFound))
+			WithArguments(ctx, controlPlaneClient, customModuleInSKR, kyma.Spec.Channel).
+			Should(MatchError(channel.ErrNoTemplatesInListResult))
 	})
 
 	It("Should reconcile Manifest in KCP using remote SKRCustomTemplate", func() {
@@ -258,7 +259,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("SKRCustomTemplate should still exists in SKR")
 		Consistently(ModuleTemplateExists, Timeout, Interval).
-			WithArguments(ctx, runtimeClient, moduleInSKR, kyma.Spec.Channel).
+			WithArguments(ctx, runtimeClient, customModuleInSKR, kyma.Spec.Channel).
 			Should(Succeed())
 	})
 
