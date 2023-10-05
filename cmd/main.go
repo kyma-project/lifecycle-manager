@@ -27,12 +27,6 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
-	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-
-	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
-
-	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/kyma-project/lifecycle-manager/internal"
 
 	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
 
@@ -58,7 +52,6 @@ import (
 	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/kyma-project/lifecycle-manager/api"
 	operatorv1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
 	purgemetrics "github.com/kyma-project/lifecycle-manager/internal/controller/purge/metrics"
@@ -68,7 +61,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
 	//+kubebuilder:scaffold:imports
 )
 
