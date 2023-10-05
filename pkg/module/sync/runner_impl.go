@@ -74,7 +74,7 @@ func (r *RunnerImpl) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	}
 	ssaFinish := time.Since(ssaStart)
 	if len(errs) != 0 {
-		errs = append(errs, fmt.Errorf("ServerSideApply failed (after %s)", ssaFinish))
+		errs = append(errs, fmt.Errorf("ServerSideApply failed (after %s)", ssaFinish)) //nolint:goerr113
 		return errors.Join(errs...)
 	}
 	baseLogger.V(log.DebugLevel).Info("ServerSideApply finished", "time", ssaFinish)

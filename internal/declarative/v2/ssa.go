@@ -59,7 +59,7 @@ func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.In
 	ssaFinish := time.Since(ssaStart)
 
 	if errs != nil {
-		errs = append(errs, fmt.Errorf("ServerSideApply failed (after %s)", ssaFinish))
+		errs = append(errs, fmt.Errorf("ServerSideApply failed (after %s)", ssaFinish)) //nolint:goerr113
 		return errors.Join(errs...)
 	}
 	logger.V(internal.DebugLogLevel).Info("ServerSideApply finished", "time", ssaFinish)
