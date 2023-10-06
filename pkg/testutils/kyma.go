@@ -13,9 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var (
-	ErrStatusModuleStateMismatch = errors.New("status.modules.state not match")
-)
+var ErrStatusModuleStateMismatch = errors.New("status.modules.state not match")
 
 func NewTestKyma(name string) *v1beta2.Kyma {
 	return newKCPKymaWithNamespace(name, v1.NamespaceDefault, v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalClient)
@@ -62,7 +60,10 @@ func KymaDeleted(ctx context.Context,
 	if util.IsNotFound(err) {
 		return nil
 	}
-	return err
+	if err != nil {
+		return fmt.Errorf("kyma not deleted: %w", err)
+	}
+	return nil
 }
 
 func GetKyma(ctx context.Context, testClient client.Client, name, namespace string) (*v1beta2.Kyma, error) {
