@@ -35,12 +35,14 @@ func (c *CRDeletionCheck) Run(
 	name := manifest.Spec.Resource.GetName()
 	namespace := manifest.Spec.Resource.GetNamespace()
 
+	resourceCR := &unstructured.Unstructured{}
 	if err := clnt.Get(ctx,
-		client.ObjectKey{Name: name, Namespace: namespace}, &unstructured.Unstructured{}); err != nil {
+		client.ObjectKey{Name: name, Namespace: namespace}, resourceCR); err != nil {
 		if util.IsNotFound(err) {
 			return true, nil
 		}
 		return false, errors.Wrap(err, "failed to fetch default resource CR")
 	}
-	return false, nil
+
+	return false, clnt.Delete(ctx, resourceCR)
 }
