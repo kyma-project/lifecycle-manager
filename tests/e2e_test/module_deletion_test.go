@@ -54,9 +54,9 @@ var _ = Describe("Non Blocking Module Deletion", Ordered, func() {
 
 	It("Should disable Template Operator and Kyma should result in Deletion status", func() {
 		By("Disabling Template Operator")
-		Eventually(EnableModule).
+		Eventually(DisableModule()).
 			WithContext(ctx).
-			WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", "regular", runtimeClient).
+			WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", runtimeClient).
 			Should(Succeed())
 		By("Checking state of kyma")
 		Eventually(CheckKymaIsInState).
