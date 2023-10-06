@@ -52,6 +52,13 @@ var _ = Describe("Non Blocking Module Deletion", Ordered, func() {
 			Should(Succeed())
 	})
 
+	// NEXT STEPS: template operator cr (k get samples sample-yaml -n kyma-system -oyaml) finalizer einfügen
+	// erst manuel checkn und dann test implementieren
+	// template operator deaktivieren
+	// schaun ob cr noch da ist und man diese verändern kann
+	// template operator wieder aktivieren
+	// schauen ob wieder alles in ready state
+
 	//It("Should disable Template Operator and Kyma should result in Deletion status", func() {
 	//	By("Disabling Template Operator")
 	//	Eventually(DisableModule).

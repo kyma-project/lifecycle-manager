@@ -409,7 +409,6 @@ func (r *Reconciler) renderTargetResources(
 	obj Object,
 	spec *Spec,
 ) ([]*resource.Info, error) {
-
 	if !obj.GetDeletionTimestamp().IsZero() && r.DeletionCheck != nil {
 		deleted, err := r.DeletionCheck.Run(ctx, clnt, obj)
 		if err != nil {
