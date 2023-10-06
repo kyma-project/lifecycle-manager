@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -247,12 +248,12 @@ func AddFinalizerToManifest(ctx context.Context,
 		return err
 	}
 	GinkgoWriter.Printf("manifest %v\n", manifest)
-	manifest.Finalizers = append(manifest.Finalizers, finalizer)
-	err := k8sClient.Patch(ctx, manifest, client.Apply, client.ForceOwnership, client.FieldOwner("lifecycle-manager"))
-	if err != nil {
-		return err
-	}
-	return nil
+	manifest.SetFinalizers(append(manifest.GetFinalizers(), finalizer))
+	manifest.Kind = "Manifest"
+	manifest.APIVersion = "operator.kyma-project.io/v1beta2"
+	manifest.SetManagedFields(nil)
+	return k8sClient.Patch(ctx, manifest, client.Apply, client.ForceOwnership,
+		client.FieldOwner(declarative.FieldOwnerDefault))
 }
 
 func removeFromSlice(slice []string, element string) []string {
@@ -274,12 +275,12 @@ func RemoveFinalizerToManifest(ctx context.Context,
 		return err
 	}
 	GinkgoWriter.Printf("manifest %v\n", manifest)
-	manifest.Finalizers = removeFromSlice(manifest.Finalizers, finalizer)
-	err := k8sClient.Patch(ctx, manifest, client.Apply, client.ForceOwnership, client.FieldOwner("lifecycle-manager"))
-	if err != nil {
-		return err
-	}
-	return nil
+	manifest.SetFinalizers(removeFromSlice(manifest.GetFinalizers(), finalizer))
+	manifest.Kind = "Manifest"
+	manifest.APIVersion = "operator.kyma-project.io/v1beta2"
+	manifest.SetManagedFields(nil)
+	return k8sClient.Patch(ctx, manifest, client.Apply, client.ForceOwnership,
+		client.FieldOwner(declarative.FieldOwnerDefault))
 }
 
 func CheckKymaModuleIsInState(ctx context.Context,

@@ -59,10 +59,8 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 			kyma.GetName(), "template-operator")
 		Expect(err).To(Not(HaveOccurred()))
 		By("Adding finalizer to avoid deletion")
-		Eventually(AddFinalizerToManifest).
-			WithContext(ctx).
-			WithArguments(manifestObjectKey, controlPlaneClient, "e2e-finalizer").
-			Should(Succeed())
+		err = AddFinalizerToManifest(ctx, manifestObjectKey, controlPlaneClient, "e2e-finalizer")
+		Expect(err).To(Not(HaveOccurred()))
 
 		By("Mark Manifest for deletion")
 		Eventually(DeleteManifest).
@@ -78,10 +76,8 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 			Should(Succeed())
 
 		By("Remove finalizer")
-		Eventually(RemoveFinalizerToManifest).
-			WithContext(ctx).
-			WithArguments(manifestObjectKey, controlPlaneClient, "e2e-finalizer").
-			Should(Succeed())
+		err = RemoveFinalizerToManifest(ctx, manifestObjectKey, controlPlaneClient, "e2e-finalizer")
+		Expect(err).To(Not(HaveOccurred()))
 	})
 
 	It("Should disable Template Operator and Kyma should result in Ready status", func() {
