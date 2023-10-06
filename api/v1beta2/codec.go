@@ -9,8 +9,6 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
 )
 
 // ImageSpec defines OCI Image specifications.
@@ -118,7 +116,7 @@ func (c *Codec) Validate(data []byte, refType RefTypeMetadata) error {
 		for _, err := range result.Errors() {
 			errs = append(errs, errors.New(err.String())) //nolint:goerr113
 		}
-		return types.NewMultiError(errs)
+		return errors.Join(errs...)
 	}
 	return nil
 }

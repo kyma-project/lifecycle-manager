@@ -1,4 +1,4 @@
-package controllers
+package controller
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
+	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -28,7 +28,7 @@ import (
 
 func SetupWithManager(
 	mgr manager.Manager,
-	options controller.Options,
+	options controllerRuntime.Options,
 	checkInterval time.Duration,
 	settings SetupUpSetting,
 ) error {

@@ -24,9 +24,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"go.uber.org/zap/zapcore"
+
 	corev1 "k8s.io/api/core/v1"
 
 	istioapi "istio.io/api/networking/v1beta1"
@@ -46,14 +48,13 @@ import (
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
+	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -80,8 +81,8 @@ var (
 )
 
 const (
-	skrWatcherPath         = "../../skr-webhook"
-	istioResourcesFilePath = "../../config/samples/tests/istio-test-resources.yaml"
+	skrWatcherPath         = "../../../skr-webhook"
+	istioResourcesFilePath = "../../../config/samples/tests/istio-test-resources.yaml"
 	istioSystemNs          = "istio-system"
 	kcpSystemNs            = "kcp-system"
 	gatewayName            = "lifecycle-manager-watcher-gateway"
@@ -100,12 +101,12 @@ var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 
 	externalCRDs := AppendExternalCRDs(
-		filepath.Join("..", "..", "config", "samples", "tests", "crds"),
+		filepath.Join("..", "..", "..", "config", "samples", "tests", "crds"),
 		"cert-manager-v1.10.1.crds.yaml",
 		"istio-v1.17.1.crds.yaml")
 
 	kcpModuleCRD := &v1.CustomResourceDefinition{}
-	modulePath := filepath.Join("..", "..", "config", "samples", "component-integration-installed",
+	modulePath := filepath.Join("..", "..", "..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
 	Expect(err).ToNot(HaveOccurred())
@@ -113,7 +114,7 @@ var _ = BeforeSuite(func() {
 	Expect(yaml.Unmarshal(moduleFile, &kcpModuleCRD)).To(Succeed())
 
 	controlPlaneEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
+		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
 		CRDs:                  append([]*v1.CustomResourceDefinition{kcpModuleCRD}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}
@@ -138,7 +139,7 @@ var _ = BeforeSuite(func() {
 		restCfg, ctrl.Options{
 			MetricsBindAddress: metricsBindAddress,
 			Scheme:             scheme.Scheme,
-			Cache:              controllers.NewCacheOptions(),
+			Cache:              controller.NewCacheOptions(),
 		})
 	Expect(err).ToNot(HaveOccurred())
 
@@ -174,12 +175,12 @@ var _ = BeforeSuite(func() {
 		IstioNamespace:         istioSystemNs,
 		IstioGatewayName:       gatewayName,
 		IstioGatewayNamespace:  kcpSystemNs,
-		RemoteSyncNamespace:    controllers.DefaultRemoteSyncNamespace,
+		RemoteSyncNamespace:    controller.DefaultRemoteSyncNamespace,
 	}
 
 	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(restCfg, scheme.Scheme, skrChartCfg)
 	Expect(err).ToNot(HaveOccurred())
-	err = (&controllers.KymaReconciler{
+	err = (&controller.KymaReconciler{
 		Client:            k8sManager.GetClient(),
 		EventRecorder:     k8sManager.GetEventRecorderFor(v1beta2.OperatorName),
 		RequeueIntervals:  intervals,
@@ -189,19 +190,19 @@ var _ = BeforeSuite(func() {
 		},
 		RemoteClientCache:   remoteClientCache,
 		KcpRestConfig:       k8sManager.GetConfig(),
-		RemoteSyncNamespace: controllers.DefaultRemoteSyncNamespace,
+		RemoteSyncNamespace: controller.DefaultRemoteSyncNamespace,
 		InKCPMode:           true,
-	}).SetupWithManager(k8sManager, controller.Options{}, controllers.SetupUpSetting{ListenerAddr: listenerAddr})
+	}).SetupWithManager(k8sManager, controllerRuntime.Options{}, controller.SetupUpSetting{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&controllers.WatcherReconciler{
+	err = (&controller.WatcherReconciler{
 		Client:           k8sManager.GetClient(),
 		RestConfig:       k8sManager.GetConfig(),
-		EventRecorder:    k8sManager.GetEventRecorderFor(controllers.WatcherControllerName),
+		EventRecorder:    k8sManager.GetEventRecorderFor(controller.WatcherControllerName),
 		Scheme:           scheme.Scheme,
 		RequeueIntervals: intervals,
 	}).SetupWithManager(
-		k8sManager, controller.Options{
+		k8sManager, controllerRuntime.Options{
 			MaxConcurrentReconciles: 1,
 		},
 	)
