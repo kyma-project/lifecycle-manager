@@ -44,17 +44,17 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	customModuleInSKR := NewTestModule("custom-in-skr", v1beta2.DefaultChannel)
 	customModuleInSKR.RemoteModuleTemplateRef = customModuleInSKR.Name
 
-	defaultCR := builder.NewModuleCRBuilder().WithSpec(builder.InitSpecKey, builder.InitSpecValue).Build()
+	defaultCR := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
 
 	SKRTemplate := builder.NewModuleTemplateBuilder().
 		WithModuleName(moduleInSKR.Name).
 		WithChannel(moduleInSKR.Channel).
-		WithDefaultCR(defaultCR).
+		WithModuleCR(defaultCR).
 		WithOCM(compdesc2.SchemaVersion).Build()
 	KCPTemplate := builder.NewModuleTemplateBuilder().
 		WithModuleName(moduleInKCP.Name).
 		WithChannel(moduleInKCP.Channel).
-		WithDefaultCR(defaultCR).
+		WithModuleCR(defaultCR).
 		WithOCM(compdesc2.SchemaVersion).Build()
 	SKRCustomTemplate := builder.NewModuleTemplateBuilder().
 		WithModuleName(customModuleInSKR.Name).
@@ -173,7 +173,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		By("Update SKR Module Template spec.data.spec field")
 		Eventually(UpdateModuleTemplateSpec, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(runtimeClient, moduleInSKR, builder.InitSpecKey, "valueUpdated", kyma.Spec.Channel).
+			WithArguments(runtimeClient, moduleInSKR, InitSpecKey, "valueUpdated", kyma.Spec.Channel).
 			Should(Succeed())
 
 		By("Expect SKR Module Template spec.data.spec field get reset")

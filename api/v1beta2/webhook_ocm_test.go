@@ -30,7 +30,7 @@ var _ = Describe(
 				template := builder.NewModuleTemplateBuilder().
 					WithModuleName("test-module").
 					WithChannel(v1beta2.DefaultChannel).
-					WithDefaultCR(&data).
+					WithModuleCR(&data).
 					WithOCM(v3alpha1.SchemaVersion).Build()
 				Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
 				Expect(k8sClient.Delete(webhookServerContext, template)).Should(Succeed())

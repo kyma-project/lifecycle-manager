@@ -37,7 +37,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 
 		template := builder.NewModuleTemplateBuilder().
 			WithModuleName("test-module").
-			WithDefaultCR(&data).
+			WithModuleCR(&data).
 			WithChannel(v1beta2.DefaultChannel).
 			WithOCM(compdesc2.SchemaVersion).Build()
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
@@ -54,7 +54,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 			WithArguments(crd).Should(Succeed())
 		template := builder.NewModuleTemplateBuilder().
 			WithModuleName("test-module").
-			WithDefaultCR(&data).
+			WithModuleCR(&data).
 			WithChannel(v1beta2.DefaultChannel).
 			WithOCM(compdesc2.SchemaVersion).Build()
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
@@ -70,7 +70,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 			WithArguments(crd).Should(Succeed())
 		template := builder.NewModuleTemplateBuilder().
 			WithModuleName("test-module").
-			WithDefaultCR(&data).
+			WithModuleCR(&data).
 			WithChannel(v1beta2.DefaultChannel).
 			WithOCM(compdesc2.SchemaVersion).Build()
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())

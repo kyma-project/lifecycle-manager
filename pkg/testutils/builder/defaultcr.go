@@ -12,11 +12,6 @@ type ModuleCRBuilder struct {
 	moduleCR *unstructured.Unstructured
 }
 
-const (
-	InitSpecKey   = "initKey"
-	InitSpecValue = "initValue"
-)
-
 func NewModuleCRBuilder() ModuleCRBuilder {
 	moduleCR := &unstructured.Unstructured{}
 	moduleCR.SetGroupVersionKind(

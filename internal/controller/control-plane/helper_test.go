@@ -24,6 +24,11 @@ var (
 	ErrGlobalChannelMisMatch    = errors.New("kyma global channel mismatch")
 )
 
+const (
+	InitSpecKey   = "initKey"
+	InitSpecValue = "initValue"
+)
+
 func registerControlPlaneLifecycleForKyma(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
 		DeployModuleTemplates(ctx, controlPlaneClient, kyma)
@@ -115,7 +120,7 @@ func expectModuleTemplateSpecGetReset(
 	if !mapOk {
 		return ErrExpectedLabelNotReset
 	}
-	value, found := initKeyM[builder.InitSpecKey]
+	value, found := initKeyM[InitSpecKey]
 	if !found {
 		return ErrExpectedLabelNotReset
 	}
@@ -123,7 +128,7 @@ func expectModuleTemplateSpecGetReset(
 	if !ok {
 		return ErrExpectedLabelNotReset
 	}
-	if sValue != builder.InitSpecValue {
+	if sValue != InitSpecValue {
 		return ErrExpectedLabelNotReset
 	}
 	return nil
