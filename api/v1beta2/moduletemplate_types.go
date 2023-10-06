@@ -184,12 +184,15 @@ func init() {
 }
 
 func (m *ModuleTemplate) GetComponentDescriptorCacheKey() string {
-	moduleVersion := m.Annotations[ModuleVersionAnnotation]
-	// TODO: Remove this condition when all ModuleTemplates have the module version annotation
-	if moduleVersion == "" {
-		return fmt.Sprintf("%s:%s:%d", m.Name, m.Spec.Channel, m.Generation)
+	if m.Annotations != nil {
+		moduleVersion := m.Annotations[ModuleVersionAnnotation]
+
+		if moduleVersion != "" {
+			return fmt.Sprintf("%s:%s:%s", m.Name, m.Spec.Channel, moduleVersion)
+		}
 	}
-	return fmt.Sprintf("%s:%s:%s", m.Name, m.Spec.Channel, moduleVersion)
+
+	return fmt.Sprintf("%s:%s:%d", m.Name, m.Spec.Channel, m.Generation)
 }
 
 func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
