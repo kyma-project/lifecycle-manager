@@ -43,8 +43,6 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	SKRTemplate, err := ModuleTemplateFactory(moduleInSKR, unstructured.Unstructured{}, false, false, false, false)
 	Expect(err).ShouldNot(HaveOccurred())
 	KCPTemplate, err := ModuleTemplateFactory(moduleInKCP, unstructured.Unstructured{}, false, false, false, false)
-	kcpModuleVersion := "1.0.0"
-	KCPTemplate.Annotations[v1beta2.ModuleVersionAnnotation] = kcpModuleVersion
 	Expect(err).ShouldNot(HaveOccurred())
 	SKRCustomTemplate, err := ModuleTemplateFactory(customModuleInSKR, unstructured.Unstructured{}, false, false, false,
 		false)
