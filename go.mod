@@ -32,6 +32,7 @@ require (
 )
 
 require (
+	github.com/kyma-project/template-operator v0.0.0-20230925081606-4ae25406be03
 	k8s.io/api v0.28.2
 	k8s.io/apiextensions-apiserver v0.28.2
 	k8s.io/apimachinery v0.28.2
