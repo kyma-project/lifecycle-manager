@@ -71,3 +71,6 @@ watcher-enqueue: ## Runs the Watcher E2E Test
 
 module-status-propagation: ## Runs the Status Propagation E2E Test
 	go test -ginkgo.v -ginkgo.focus "Warning Status Propagation"
+
+non-blocking-deletion: ## Runs the Status Propagation E2E Test
+	go test -ginkgo.v -ginkgo.focus "Non Blocking Module Deletion"
