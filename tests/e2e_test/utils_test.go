@@ -216,9 +216,10 @@ func GetManifestObjectKey(ctx context.Context, k8sClient client.Client, kymaName
 		return types.NamespacedName{Namespace: "", Name: ""}, fmt.Errorf("manifest fetching failed: %w", err)
 	}
 	for _, m := range manifests.Items {
-		if ownerKyma, exists := m.Labels["operator.kyma-project.io/kyma-name"]; exists && ownerKyma == kymaName {
-			if strings.Contains(m.Name, templateName) {
-				return client.ObjectKeyFromObject(&m), nil
+		module := m
+		if ownerKyma, exists := module.Labels["operator.kyma-project.io/kyma-name"]; exists && ownerKyma == kymaName {
+			if strings.Contains(module.Name, templateName) {
+				return client.ObjectKeyFromObject(&module), nil
 			}
 		}
 	}
@@ -296,10 +297,9 @@ func CheckKymaModuleIsInState(ctx context.Context,
 		if module.Name == moduleName {
 			if module.State == expectedState {
 				return nil
-			} else {
-				return fmt.Errorf("error checking kyma module state: %w: state - %s module - %s",
-					errUnexpectedState, module.State, moduleName)
 			}
+			return fmt.Errorf("error checking kyma module state: %w: state - %s module - %s",
+				errUnexpectedState, module.State, moduleName)
 		}
 	}
 	return fmt.Errorf("error checking kyma module state: %w", errModuleNotFound)
