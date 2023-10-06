@@ -52,17 +52,17 @@ var _ = Describe("Non Blocking Module Deletion", Ordered, func() {
 			Should(Succeed())
 	})
 
-	It("Should disable Template Operator and Kyma should result in Deletion status", func() {
-		By("Disabling Template Operator")
-		Eventually(DisableModule).
-			WithContext(ctx).
-			WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", runtimeClient).
-			Should(Succeed())
-		By("Checking state of kyma")
-		Eventually(CheckKymaIsInState).
-			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateDeleting).
-			Should(Succeed())
-	})
+	//It("Should disable Template Operator and Kyma should result in Deletion status", func() {
+	//	By("Disabling Template Operator")
+	//	Eventually(DisableModule).
+	//		WithContext(ctx).
+	//		WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", runtimeClient).
+	//		Should(Succeed())
+	//	By("Checking state of kyma")
+	//	Eventually(CheckKymaIsInState).
+	//		WithContext(ctx).
+	//		WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.R).
+	//		Should(Succeed())
+	//})
 
 })

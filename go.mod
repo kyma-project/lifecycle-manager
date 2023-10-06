@@ -1,6 +1,6 @@
 module github.com/kyma-project/lifecycle-manager
 
-go 1.21.0
+go 1.21
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1

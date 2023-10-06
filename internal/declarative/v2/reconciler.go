@@ -409,20 +409,20 @@ func (r *Reconciler) renderTargetResources(
 	obj Object,
 	spec *Spec,
 ) ([]*resource.Info, error) {
-	deletionCheck := true
-	if r.DeletionCheck != nil {
+
+	if !obj.GetDeletionTimestamp().IsZero() && r.DeletionCheck != nil {
 		deleted, err := r.DeletionCheck.Run(ctx, clnt, obj)
 		if err != nil {
 			return nil, err
 		}
-		deletionCheck = deleted
-	}
+		if deleted {
+			return ResourceList{}, nil
+		}
 
-	if !obj.GetDeletionTimestamp().IsZero() && deletionCheck {
-		// if we are deleting the resources,
+	} else if !obj.GetDeletionTimestamp().IsZero() {
+		// only runs if no DeletionCheck method has been provided
 		// we no longer want to have any target resources and want to clean up all existing resources.
 		// Thus, we empty the target here so the difference will be the entire current
-		// resource list in the cluster.
 		return ResourceList{}, nil
 	}
 

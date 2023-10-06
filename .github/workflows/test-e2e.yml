@@ -149,6 +149,15 @@ jobs:
         with:
           repository: kyma-project/template-operator
           path: ./template-operator/
+      - name: Create Template Operator Module
+        working-directory: ./template-operator
+        if: ${{ matrix.e2e-test == 'non-blocking-deletion' }}
+        run: |
+          m
+          sed -i 's/k3d-kcp-registry:5111/k3d-kcp-registry:5000/g' ./template.yaml
+          kubectl config use-context k3d-kcp
+          kubectl get crds
+          kubectl apply -f template.yaml
       - name: Create Template Operator Module with final state `Warning`
         working-directory: ./template-operator
         if: ${{ matrix.e2e-test == 'module-status-propagation' }}
