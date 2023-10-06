@@ -8,8 +8,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
 )
 
 var ErrDeletionNotFinished = errors.New("deletion is not yet finished")
@@ -49,7 +47,7 @@ func (c *ConcurrentCleanup) Run(ctx context.Context, infos []*resource.Info) err
 	}
 
 	if len(errs) > 0 {
-		return types.NewMultiError(errs)
+		return errors.Join(errs...)
 	}
 
 	if present > 0 {
