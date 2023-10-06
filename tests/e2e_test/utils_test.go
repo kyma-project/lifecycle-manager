@@ -5,12 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"k8s.io/apimachinery/pkg/types"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -26,6 +27,9 @@ var (
 	errKymaNotInExpectedState = errors.New("kyma CR not in expected state")
 	errModuleNotExisting      = errors.New("module does not exists in KymaCR")
 	errKymaNotDeleted         = errors.New("kyma CR not deleted")
+	errNoManifestFound        = errors.New("no manifest found")
+	errUnexpectedState        = errors.New("unexpected state found for module")
+	errModuleNotFound         = errors.New("module not found")
 )
 
 const (
@@ -205,7 +209,8 @@ func GetKymaStateMetricCount(ctx context.Context, kymaName, state string) (int, 
 }
 
 func GetManifestObjectKey(ctx context.Context, k8sClient client.Client, kymaName, templateName string) (
-	types.NamespacedName, error) {
+	types.NamespacedName, error,
+) {
 	manifests := &v1beta2.ManifestList{}
 	if err := k8sClient.List(ctx, manifests); err != nil {
 		return types.NamespacedName{Namespace: "", Name: ""}, fmt.Errorf("manifest fetching failed: %w", err)
@@ -218,7 +223,7 @@ func GetManifestObjectKey(ctx context.Context, k8sClient client.Client, kymaName
 		}
 	}
 	return types.NamespacedName{Namespace: "", Name: ""},
-		fmt.Errorf("manifest fetching failed: no manifest found")
+		fmt.Errorf("manifest fetching failed: %w", errNoManifestFound)
 }
 
 func DeleteManifest(ctx context.Context, objKey types.NamespacedName, k8sClient client.Client) error {
@@ -284,7 +289,7 @@ func CheckKymaModuleIsInState(ctx context.Context,
 ) error {
 	kyma := &v1beta2.Kyma{}
 	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
-		return fmt.Errorf("error getting kyma: %w", err)
+		return fmt.Errorf("error checking kyma module state: %w", err)
 	}
 	GinkgoWriter.Printf("kyma %v\n", kyma)
 	for _, module := range kyma.Status.Modules {
@@ -292,9 +297,10 @@ func CheckKymaModuleIsInState(ctx context.Context,
 			if module.State == expectedState {
 				return nil
 			} else {
-				return fmt.Errorf("unexpected state %s found for module %s", module.State, moduleName)
+				return fmt.Errorf("error checking kyma module state: %w: state - %s module - %s",
+					errUnexpectedState, module.State, moduleName)
 			}
 		}
 	}
-	return fmt.Errorf("module not found")
+	return fmt.Errorf("error checking kyma module state: %w", errModuleNotFound)
 }
