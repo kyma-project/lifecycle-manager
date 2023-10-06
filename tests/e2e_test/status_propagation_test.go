@@ -63,8 +63,10 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 		resourceObjectKey, err := GetResourceObjectKey(ctx, controlPlaneClient, manifestObjectKey)
 		Expect(err).To(Not(HaveOccurred()))
 		By("Adding finalizer to avoid deletion")
-		err = AddFinalizerToSampleResource(ctx, resourceObjectKey, controlPlaneClient, "e2e-finalizer")
-		Expect(err).To(Not(HaveOccurred()))
+		Eventually(AddFinalizerToSampleResource).
+			WithContext(ctx).
+			WithArguments(resourceObjectKey, controlPlaneClient, "e2e-finalizer").
+			Should(Succeed())
 
 		By("Disabling Template Operator")
 		Eventually(DisableModule).
