@@ -15,7 +15,6 @@ import (
 
 var (
 	ErrStatusModuleStateMismatch = errors.New("status.modules.state not match")
-	ErrKymaNotDeleted            = errors.New("kyma CR not deleted")
 )
 
 func NewTestKyma(name string) *v1beta2.Kyma {
@@ -63,7 +62,7 @@ func KymaDeleted(ctx context.Context,
 	if util.IsNotFound(err) {
 		return nil
 	}
-	return ErrKymaNotDeleted
+	return err
 }
 
 func GetKyma(ctx context.Context, testClient client.Client, name, namespace string) (*v1beta2.Kyma, error) {

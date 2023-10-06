@@ -279,7 +279,7 @@ func moduleCRDeleted(namespace, name string) features.Func {
 		t.Helper()
 		restConfig := getRestConfig(t, cfg)
 		if err := wait.For(func(ctx context.Context) (bool, error) {
-			obj := builder.NewDefaultCRBuilder().WithNamespace(namespace).Build()
+			obj := builder.NewModuleCRBuilder().WithNamespace(namespace).Build()
 			err := restConfig.Get(ctx, name, namespace, obj)
 			if util.IsNotFound(err) {
 				return true, nil

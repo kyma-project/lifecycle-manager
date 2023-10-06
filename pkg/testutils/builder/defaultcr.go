@@ -8,8 +8,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-type DefaultCRBuilder struct {
-	defaultCR *unstructured.Unstructured
+type ModuleCRBuilder struct {
+	moduleCR *unstructured.Unstructured
 }
 
 const (
@@ -17,21 +17,21 @@ const (
 	InitSpecValue = "initValue"
 )
 
-func NewDefaultCRBuilder() DefaultCRBuilder {
-	defaultCR := &unstructured.Unstructured{}
-	defaultCR.SetGroupVersionKind(
+func NewModuleCRBuilder() ModuleCRBuilder {
+	moduleCR := &unstructured.Unstructured{}
+	moduleCR.SetGroupVersionKind(
 		schema.GroupVersionKind{
 			Group:   v1beta2.GroupVersion.Group,
 			Version: "v1alpha1",
 			Kind:    "Sample",
 		},
 	)
-	builder := DefaultCRBuilder{defaultCR: defaultCR}
+	builder := ModuleCRBuilder{moduleCR: moduleCR}
 	return builder
 }
 
-func (cr DefaultCRBuilder) WithGroupVersionKind(group, version, kind string) DefaultCRBuilder {
-	cr.defaultCR.SetGroupVersionKind(
+func (cr ModuleCRBuilder) WithGroupVersionKind(group, version, kind string) ModuleCRBuilder {
+	cr.moduleCR.SetGroupVersionKind(
 		schema.GroupVersionKind{
 			Group:   group,
 			Version: version,
@@ -41,24 +41,24 @@ func (cr DefaultCRBuilder) WithGroupVersionKind(group, version, kind string) Def
 	return cr
 }
 
-func (cr DefaultCRBuilder) WithName(name string) DefaultCRBuilder {
-	cr.defaultCR.SetName(name)
+func (cr ModuleCRBuilder) WithName(name string) ModuleCRBuilder {
+	cr.moduleCR.SetName(name)
 	return cr
 }
 
-func (cr DefaultCRBuilder) WithNamespace(namespace string) DefaultCRBuilder {
-	cr.defaultCR.SetNamespace(namespace)
+func (cr ModuleCRBuilder) WithNamespace(namespace string) ModuleCRBuilder {
+	cr.moduleCR.SetNamespace(namespace)
 	return cr
 }
 
-func (cr DefaultCRBuilder) WithSpec(key, value string) DefaultCRBuilder {
-	err := unstructured.SetNestedField(cr.defaultCR.Object, value, "spec", key)
+func (cr ModuleCRBuilder) WithSpec(key, value string) ModuleCRBuilder {
+	err := unstructured.SetNestedField(cr.moduleCR.Object, value, "spec", key)
 	if err != nil {
 		panic(fmt.Errorf("default cr: %w", err))
 	}
 	return cr
 }
 
-func (cr DefaultCRBuilder) Build() *unstructured.Unstructured {
-	return cr.defaultCR
+func (cr ModuleCRBuilder) Build() *unstructured.Unstructured {
+	return cr.moduleCR
 }
