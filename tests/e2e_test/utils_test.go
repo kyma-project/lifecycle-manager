@@ -261,7 +261,7 @@ func GetResourceObjectKey(ctx context.Context, k8sClient client.Client, manifest
 	if err != nil || !found {
 		return types.NamespacedName{Namespace: "", Name: ""}, errResourceParseFromManifest
 	}
-	namespace, found, err := unstructured.NestedString(manifest.Spec.Resource.Object, "metadata", "namespaces")
+	namespace, found, err := unstructured.NestedString(manifest.Spec.Resource.Object, "metadata", "namespace")
 	if err != nil || !found {
 		return types.NamespacedName{Namespace: "", Name: ""}, errResourceParseFromManifest
 	}
