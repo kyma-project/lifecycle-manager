@@ -48,7 +48,7 @@ func TestModuleTemplate_GetComponentDescriptorCacheKey(t *testing.T) {
 					Channel: "regular",
 				},
 			},
-			want: fmt.Sprintf("%s:%s:%d", "test-module-without-version", "regular", 2),
+			want: "test-module-without-version:regular:2",
 		},
 		{
 			name: "ModuleTemplate without version annotation but with other annotations",
