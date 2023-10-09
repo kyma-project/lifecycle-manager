@@ -66,16 +66,12 @@ func UpdatePurgeError(kyma *v1beta2.Kyma, purgeError PurgeError) error {
 	if err != nil {
 		return fmt.Errorf("%w: %w", errMetric, err)
 	}
-	metric, err := purgeErrorGauge.GetMetricWith(prometheus.Labels{
+	purgeErrorGauge.With(prometheus.Labels{
 		kymaNameLabel:    kyma.Name,
 		shootIDLabel:     shootID,
 		instanceIDLabel:  instanceID,
 		errorReasonLabel: string(purgeError),
-	})
-	if err != nil {
-		return fmt.Errorf("%w: %w", errMetric, err)
-	}
-	metric.Set(1)
+	}).Set(1)
 
 	return nil
 }

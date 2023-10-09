@@ -66,6 +66,9 @@ kyma-deletion: ## Runs the Kyma Deletion E2E Test
 kyma-metrics: ## Runs the Kyma Metrics E2E Test
 	go test -ginkgo.v -ginkgo.focus "Kyma Metrics"
 
+purge-controller: ## Runs the Kyma Metrics E2E Test
+	go test -ginkgo.v -ginkgo.focus "Purge Controller"
+
 watcher-enqueue: ## Runs the Watcher E2E Test
 	go test -ginkgo.v -ginkgo.focus "Enqueue Event from Watcher"
 

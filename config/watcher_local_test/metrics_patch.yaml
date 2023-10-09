@@ -1,0 +1,1 @@
+- op: add 		path: /spec/template/spec/containers/0/args/- 		value: --enable-purge-finalizer=true 	  - op: add 		path: /spec/template/spec/containers/0/args/- 		value: --purge-finalizer-timeout=10s
