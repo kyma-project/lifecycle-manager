@@ -11,8 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
 )
 
 var ErrTemplateCRDNotReady = errors.New("module template crd for catalog sync is not ready")
@@ -83,6 +81,8 @@ func (c *RemoteCatalog) CreateOrUpdate(
 	return c.deleteDiffCatalog(ctx, kcpModules, runtimeModules.Items, syncContext)
 }
 
+var errTemplateCleanup = errors.New("failed to delete obsolete catalog templates")
+
 func (c *RemoteCatalog) deleteDiffCatalog(ctx context.Context,
 	kcpModules []v1beta2.ModuleTemplate,
 	runtimeModules []v1beta2.ModuleTemplate,
@@ -105,10 +105,13 @@ func (c *RemoteCatalog) deleteDiffCatalog(ctx context.Context,
 	}
 
 	if len(errs) != 0 {
-		return fmt.Errorf("could not delete obsolete catalog templates: %w", types.NewMultiError(errs))
+		errs = append(errs, errTemplateCleanup)
+		return errors.Join(errs...)
 	}
 	return nil
 }
+
+var errCatTemplatesApply = errors.New("could not apply catalog templates")
 
 func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 	kcpModules []v1beta2.ModuleTemplate,
@@ -138,7 +141,8 @@ func (c *RemoteCatalog) createOrUpdateCatalog(ctx context.Context,
 	}
 
 	if len(errs) != 0 {
-		return fmt.Errorf("could not apply catalog templates: %w", types.NewMultiError(errs))
+		errs = append(errs, errCatTemplatesApply)
+		return errors.Join(errs...)
 	}
 	return nil
 }

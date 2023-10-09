@@ -67,38 +67,47 @@ patches:
         value: --is-kyma-managed
     target:
       kind: Deployment
+    # We expect a kcp-system namespace to be already present in KCP
+  - path: patches/namespace_delete.yaml
+    # For prometheus scraping in KCP, serviceMonitor better enable mTls for communication
+  - path: patches/service_monitor.yaml
+    # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK]
+  - path: patches/unique_manager_webhook_patch.yaml
+  - path: patches/adjust_resources_in_deployment.yaml
+    # [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'.
+    # Uncomment 'CERTMANAGER' sections in crd/kustomization.yaml to enable the CA injection in the admission webhooks.
+    # 'CERTMANAGER' needs to be enabled to use ca injection
+  - path: patches/webhook_configuration_cainjection.yaml
+    # We override the certificate name to ensure that Cert-Manager uses a unique cert in conjunction with other
+    # kubebuilder operators.
+  - path: patches/unique_certificate_name.yaml
 
-patchesJson6902:
-  # We patch the Metrics JSONs here as we expect KCP to be watching for grafana dashboards in kyma-system,
-  # not kcp-system as we configure it above for the rest of the kustomization
-  - path: patches/dashboard_cm_patch.yaml
-    target:
-      version: v1
-      kind: ConfigMap
-      name: klm-overview
-  - path: patches/dashboard_cm_patch.yaml
-    target:
-      version: v1
-      kind: ConfigMap
-      name: klm-status
+# We patch the Metrics ConfigMaps here, as we expect KCP to be watching for grafana dashboards in the 'kyma-system' namespace
+# instead of 'kcp-system', as configured above with the global namespace transformer.
+# Note1: Now as the 'patchesJson6902' is deprecated, the direct use of the 'PatchTransformer' is the only way to change a resource namespace to something different from the value configured by the global namespace transformer.
+# Note2: the 'grafana_dashboard' label could be applied using a standard JSON patch, but a namespace must be patched here and it's better to have all related customizations in a single place. 
+transformers:
+- |-
+  apiVersion: builtin
+  kind: PatchTransformer
+  metadata:
+    name: fix-overview-cm
+  patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "kyma-system"}, {"op": "add", "path": "/metadata/labels/grafana_dashboard", "value": "1"}]'
+  target:
+    kind: ConfigMap
+    name: klm-overview
+    version: v1
+- |-
+  apiVersion: builtin
+  kind: PatchTransformer
+  metadata:
+    name: fix-status-cm
+  patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "kyma-system"}, {"op": "add", "path": "/metadata/labels/grafana_dashboard", "value": "1"}]'
+  target:
+    kind: ConfigMap
+    name: klm-status
+    version: v1
 
-patchesStrategicMerge:
-  # We expect a kcp-system namespace to be already present in KCP
-  - patches/namespace_delete.yaml
-  # For prometheus scraping in KCP, serviceMonitor better enable mTls for communication
-  - patches/service_monitor.yaml
-
-  # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK]
-  - patches/unique_manager_webhook_patch.yaml
-  - patches/adjust_resources_in_deployment.yaml
-
-# [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER'.
-# Uncomment 'CERTMANAGER' sections in crd/kustomization.yaml to enable the CA injection in the admission webhooks.
-# 'CERTMANAGER' needs to be enabled to use ca injection
-  - patches/webhook_configuration_cainjection.yaml
-  # We override the certificate name to ensure that Cert-Manager uses a unique cert in conjunction with other
-  # kubebuilder operators.
-  - patches/unique_certificate_name.yaml
 
 # the following config is for teaching kustomize how to do var substitution
 vars:

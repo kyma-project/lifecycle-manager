@@ -24,6 +24,8 @@ import (
 	"testing"
 	"time"
 
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -100,11 +102,11 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 
-	externalCRDs := AppendExternalCRDs(
+	externalCRDs, err := AppendExternalCRDs(
 		filepath.Join("..", "..", "..", "config", "samples", "tests", "crds"),
 		"cert-manager-v1.10.1.crds.yaml",
 		"istio-v1.17.1.crds.yaml")
-
+	Expect(err).ToNot(HaveOccurred())
 	kcpModuleCRD := &v1.CustomResourceDefinition{}
 	modulePath := filepath.Join("..", "..", "..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
@@ -137,14 +139,17 @@ var _ = BeforeSuite(func() {
 
 	k8sManager, err = ctrl.NewManager(
 		restCfg, ctrl.Options{
-			MetricsBindAddress: metricsBindAddress,
-			Scheme:             scheme.Scheme,
-			Cache:              controller.NewCacheOptions(),
+			Metrics: metricsserver.Options{
+				BindAddress: metricsBindAddress,
+			},
+			Scheme: scheme.Scheme,
+			Cache:  controller.NewCacheOptions(),
 		})
 	Expect(err).ToNot(HaveOccurred())
 
 	controlPlaneClient = k8sManager.GetClient()
-	runtimeClient, runtimeEnv = NewSKRCluster(controlPlaneClient.Scheme())
+	runtimeClient, runtimeEnv, err = NewSKRCluster(controlPlaneClient.Scheme())
+	Expect(err).ToNot(HaveOccurred())
 
 	intervals := queue.RequeueIntervals{
 		Success: 1 * time.Second,
