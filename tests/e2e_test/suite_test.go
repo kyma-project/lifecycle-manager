@@ -12,7 +12,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	templateOperator "github.com/kyma-project/template-operator/api/v1alpha1"
 	"go.uber.org/zap/zapcore"
 	"k8s.io/client-go/rest"
 
@@ -93,7 +92,6 @@ var _ = BeforeSuite(func() {
 
 	Expect(api.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
-	Expect(templateOperator.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	SetDefaultEventuallyPollingInterval(interval)
 	SetDefaultEventuallyTimeout(timeout)
 	SetDefaultConsistentlyDuration(timeout)

@@ -18,7 +18,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	templateOperator "github.com/kyma-project/template-operator/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -28,14 +27,15 @@ import (
 )
 
 var (
-	errKymaNotInExpectedState     = errors.New("kyma CR not in expected state")
-	errManifestNotInExpectedState = errors.New("manifest CR not in expected state")
-	errModuleNotExisting          = errors.New("module does not exists in KymaCR")
-	errKymaNotDeleted             = errors.New("kyma CR not deleted")
-	errNoManifestFound            = errors.New("no manifest found")
-	errUnexpectedState            = errors.New("unexpected state found for module")
-	errModuleNotFound             = errors.New("module not found")
-	errResourceParseFromManifest  = errors.New("resource object key could not be parsed from manifest")
+	errKymaNotInExpectedState      = errors.New("kyma CR not in expected state")
+	errManifestNotInExpectedState  = errors.New("manifest CR not in expected state")
+	errModuleNotExisting           = errors.New("module does not exists in KymaCR")
+	errKymaNotDeleted              = errors.New("kyma CR not deleted")
+	errUnexpectedState             = errors.New("unexpected state found for module")
+	errModuleNotFound              = errors.New("module not found")
+	errGettingManifestFromKymaCR   = errors.New("manifest object key could not be parsed from kyma module status")
+	errResourceParseFromManifest   = errors.New("resource object key could not be parsed from kyma module status")
+	errUnexpectedDeletionTimestamp = errors.New("manifest has unexpected deletion timestamp")
 )
 
 const (
@@ -83,6 +83,22 @@ func CheckManifestIsInState(ctx context.Context,
 			errManifestNotInExpectedState, expectedState, manifest.Status.State, manifest)
 	}
 	return nil
+}
+
+func CheckManifestDeletionTimestamp(ctx context.Context,
+	manifestObjKey types.NamespacedName,
+	k8sClient client.Client,
+	expectedTimestampZero bool,
+) error {
+	manifest := &v1beta2.Manifest{}
+	if err := k8sClient.Get(ctx, manifestObjKey, manifest); err != nil {
+		return err
+	}
+	GinkgoWriter.Printf("manifest %v\n", manifest)
+	if expectedTimestampZero == manifest.GetDeletionTimestamp().IsZero() {
+		return nil
+	}
+	return fmt.Errorf("unexpected result: %w", errUnexpectedDeletionTimestamp)
 }
 
 func getManifestCRs(ctx context.Context, k8sClient client.Client) (string, error) {
@@ -231,41 +247,34 @@ func GetKymaStateMetricCount(ctx context.Context, kymaName, state string) (int, 
 	return 0, nil
 }
 
-func GetManifestObjectKey(ctx context.Context, k8sClient client.Client, kymaName, templateName string) (
-	types.NamespacedName, error,
+func GetManifestObjectKey(ctx context.Context, k8sClient client.Client, kymaName, kymaNamespace, moduleName string) (
+	*types.NamespacedName, error,
 ) {
-	manifests := &v1beta2.ManifestList{}
-	if err := k8sClient.List(ctx, manifests); err != nil {
-		return types.NamespacedName{Namespace: "", Name: ""}, fmt.Errorf("manifest fetching failed: %w", err)
+	kyma := &v1beta2.Kyma{}
+	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
+		return nil, err
 	}
-	for _, m := range manifests.Items {
-		module := m
-		if ownerKyma, exists := module.Labels["operator.kyma-project.io/kyma-name"]; exists && ownerKyma == kymaName {
-			if strings.Contains(module.Name, templateName) {
-				return client.ObjectKeyFromObject(&module), nil
-			}
+	for _, m := range kyma.Status.Modules {
+		if m.Name == moduleName {
+			return &types.NamespacedName{Namespace: m.Manifest.Namespace, Name: m.Manifest.Name}, nil
 		}
 	}
-	return types.NamespacedName{Namespace: "", Name: ""},
-		fmt.Errorf("manifest fetching failed: %w", errNoManifestFound)
+	return nil, fmt.Errorf("manifest fetching failed: %w", errGettingManifestFromKymaCR)
 }
 
-func GetResourceObjectKey(ctx context.Context, k8sClient client.Client, manifestObjectKey types.NamespacedName) (
-	types.NamespacedName, error,
+func GetResourceObjectKey(ctx context.Context, k8sClient client.Client, kymaName, kymaNamespace, moduleName string) (
+	*types.NamespacedName, error,
 ) {
-	manifest := &v1beta2.Manifest{}
-	if err := k8sClient.Get(ctx, manifestObjectKey, manifest); err != nil {
-		return types.NamespacedName{Namespace: "", Name: ""}, err
+	kyma := &v1beta2.Kyma{}
+	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
+		return nil, err
 	}
-	name, found, err := unstructured.NestedString(manifest.Spec.Resource.Object, "metadata", "name")
-	if err != nil || !found {
-		return types.NamespacedName{Namespace: "", Name: ""}, errResourceParseFromManifest
+	for _, m := range kyma.Status.Modules {
+		if m.Name == moduleName {
+			return &types.NamespacedName{Namespace: m.Resource.Namespace, Name: m.Resource.Name}, nil
+		}
 	}
-	namespace, found, err := unstructured.NestedString(manifest.Spec.Resource.Object, "metadata", "namespace")
-	if err != nil || !found {
-		return types.NamespacedName{Namespace: "", Name: ""}, errResourceParseFromManifest
-	}
-	return types.NamespacedName{Namespace: namespace, Name: name}, err
+	return nil, fmt.Errorf("resource fetching failed: %w", errResourceParseFromManifest)
 }
 
 func AddFinalizerToSampleResource(ctx context.Context,
@@ -273,14 +282,14 @@ func AddFinalizerToSampleResource(ctx context.Context,
 	k8sClient client.Client,
 	finalizer string,
 ) error {
-	resource := &templateOperator.Sample{}
+	resource := &unstructured.Unstructured{}
+	resource.SetKind("Sample")
+	resource.SetAPIVersion("operator.kyma-project.io/v1alpha1")
 	if err := k8sClient.Get(ctx, objKey, resource); err != nil {
 		return err
 	}
 	GinkgoWriter.Printf("resource %v\n", resource)
 	resource.SetFinalizers(append(resource.GetFinalizers(), finalizer))
-	resource.Kind = "Sample"
-	resource.APIVersion = "operator.kyma-project.io/v1alpha1"
 	resource.SetManagedFields(nil)
 	return k8sClient.Patch(ctx, resource, client.Apply, client.ForceOwnership,
 		client.FieldOwner(declarative.FieldOwnerDefault))
@@ -300,14 +309,14 @@ func RemoveFinalizerToSampleResource(ctx context.Context,
 	k8sClient client.Client,
 	finalizer string,
 ) error {
-	resource := &templateOperator.Sample{}
+	resource := &unstructured.Unstructured{}
+	resource.SetKind("Sample")
+	resource.SetAPIVersion("operator.kyma-project.io/v1alpha1")
 	if err := k8sClient.Get(ctx, objKey, resource); err != nil {
 		return err
 	}
 	GinkgoWriter.Printf("resource %v\n", resource)
 	resource.SetFinalizers(removeFromSlice(resource.GetFinalizers(), finalizer))
-	resource.Kind = "Sample"
-	resource.APIVersion = "operator.kyma-project.io/v1alpha1"
 	resource.SetManagedFields(nil)
 	return k8sClient.Patch(ctx, resource, client.Apply, client.ForceOwnership,
 		client.FieldOwner(declarative.FieldOwnerDefault))
