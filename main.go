@@ -63,10 +63,6 @@ import (
 	//+kubebuilder:scaffold:imports
 )
 
-const (
-	port = 9443
-)
-
 var (
 	scheme   = runtime.NewScheme()        //nolint:gochecknoglobals
 	setupLog = ctrl.Log.WithName("setup") //nolint:gochecknoglobals
@@ -129,7 +125,6 @@ func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *runti
 			Metrics: metricsserver.Options{
 				BindAddress: flagVar.metricsAddr,
 			},
-			Port:                   port,
 			HealthProbeBindAddress: flagVar.probeAddr,
 			LeaderElection:         flagVar.enableLeaderElection,
 			LeaderElectionID:       "893110f7.kyma-project.io",

@@ -21,6 +21,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"testing"
 	"time"
 
@@ -136,9 +137,11 @@ var _ = BeforeSuite(func() {
 
 	k8sManager, err = ctrl.NewManager(
 		restCfg, ctrl.Options{
-			MetricsBindAddress: metricsBindAddress,
-			Scheme:             scheme.Scheme,
-			Cache:              controllers.NewCacheOptions(),
+			Metrics: metricsserver.Options{
+				BindAddress: metricsBindAddress,
+			},
+			Scheme: scheme.Scheme,
+			Cache:  controllers.NewCacheOptions(),
 		})
 	Expect(err).ToNot(HaveOccurred())
 

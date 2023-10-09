@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path"
 	"path/filepath"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"testing"
 	"time"
 
@@ -251,8 +252,10 @@ func StartDeclarativeReconcilerForRun(
 		cfg, ctrl.Options{
 			// these bind addresses cause conflicts when run concurrently so we disable them
 			HealthProbeBindAddress: "0",
-			MetricsBindAddress:     "0",
-			Scheme:                 scheme.Scheme,
+			Metrics: metricsserver.Options{
+				BindAddress: "0",
+			},
+			Scheme: scheme.Scheme,
 		},
 	)
 	Expect(err).ToNot(HaveOccurred())

@@ -21,6 +21,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"testing"
 	"time"
 
@@ -102,9 +103,11 @@ var _ = BeforeSuite(
 
 		k8sManager, err = ctrl.NewManager(
 			cfg, ctrl.Options{
-				MetricsBindAddress: metricsBindAddress,
-				Scheme:             scheme.Scheme,
-				Cache:              internal.GetCacheOptions(labels.Set{v1beta2.ManagedBy: v1beta2.OperatorName}),
+				Metrics: metricsserver.Options{
+					BindAddress: metricsBindAddress,
+				},
+				Scheme: scheme.Scheme,
+				Cache:  internal.GetCacheOptions(labels.Set{v1beta2.ManagedBy: v1beta2.OperatorName}),
 			},
 		)
 		Expect(err).ToNot(HaveOccurred())
