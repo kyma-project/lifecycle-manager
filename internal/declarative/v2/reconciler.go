@@ -409,12 +409,6 @@ func (r *Reconciler) renderTargetResources(
 	obj Object,
 	spec *Spec,
 ) ([]*resource.Info, error) {
-
-	// TODO Current problem: we only return empty target resource list if default CR has been deleted,
-	// but we are only setting the deletion state to the defaul CR if it is not in the target resources list.
-	// Thus, need to clarify if this is wanted behaviour; Do we now force the User to remove the CR always after he has disabled the module
-	// or should we introduce some new mechanism which only tries to remove the default cr first, and if it has been deleted then
-	// empty the target resource list to have the diff.
 	if !obj.GetDeletionTimestamp().IsZero() && r.DeletionCheck != nil {
 		deleted, err := r.DeletionCheck.Run(ctx, clnt, obj)
 		if err != nil {
@@ -423,7 +417,6 @@ func (r *Reconciler) renderTargetResources(
 		if deleted {
 			return ResourceList{}, nil
 		}
-
 	} else if !obj.GetDeletionTimestamp().IsZero() {
 		// only runs if no DeletionCheck method has been provided
 		// we no longer want to have any target resources and want to clean up all existing resources.

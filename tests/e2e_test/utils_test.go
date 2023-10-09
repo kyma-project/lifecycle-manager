@@ -11,8 +11,11 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
+	templateOperator "github.com/kyma-project/template-operator/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -67,6 +70,14 @@ func getManifestCRs(ctx context.Context, k8sClient client.Client) (string, error
 		logmsg += fmt.Sprintf("Manifest CR: %#v", m)
 	}
 	return logmsg, nil
+}
+
+func CheckIfExists(ctx context.Context, name, namespace, groupVersion, kind string, clnt client.Client) error {
+	resourceCR := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": groupVersion,
+		"kind":       kind,
+	}}
+	return clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, resourceCR)
 }
 
 func CreateKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
@@ -171,6 +182,20 @@ func removeModuleWithIndex(s []v1beta2.Module, index int) []v1beta2.Module {
 	return append(s[:index], s[index+1:]...)
 }
 
+func SetFinalizer(name, namespace, groupVersion, kind string, finalizers []string, clnt client.Client) error {
+	resourceCR := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": groupVersion,
+		"kind":       kind,
+	}}
+	if err := clnt.Get(ctx,
+		client.ObjectKey{Name: name, Namespace: namespace}, resourceCR); err != nil {
+		return err
+	}
+
+	resourceCR.SetFinalizers(finalizers)
+	return clnt.Update(ctx, resourceCR)
+}
+
 func GetKymaStateMetricCount(ctx context.Context, kymaName, state string) (int, error) {
 	clnt := &http.Client{}
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost:9081/metrics", nil)
@@ -201,4 +226,14 @@ func GetKymaStateMetricCount(ctx context.Context, kymaName, state string) (int, 
 	}
 
 	return 0, nil
+}
+
+func UpdateSampleCRSpec(ctx context.Context, name, namespace, resourceFilePath string, clnt client.Client) error {
+	sampleCR := &templateOperator.Sample{}
+	if err := clnt.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, sampleCR); err != nil {
+		return err
+	}
+
+	sampleCR.Spec.ResourceFilePath = resourceFilePath
+	return clnt.Update(ctx, sampleCR)
 }

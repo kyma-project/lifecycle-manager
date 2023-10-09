@@ -26,6 +26,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+
+	templateOperator "github.com/kyma-project/template-operator/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -92,6 +94,7 @@ var _ = BeforeSuite(func() {
 
 	Expect(api.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+	Expect(templateOperator.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	SetDefaultEventuallyPollingInterval(interval)
 	SetDefaultEventuallyTimeout(timeout)
 	SetDefaultConsistentlyDuration(timeout)

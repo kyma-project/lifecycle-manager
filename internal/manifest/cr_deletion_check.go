@@ -2,6 +2,7 @@ package manifest
 
 import (
 	"context"
+
 	"github.com/pkg/errors"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -46,5 +47,8 @@ func (c *CRDeletionCheck) Run(
 		}
 		return false, errors.Wrap(err, "failed to fetch default resource CR")
 	}
-	return false, clnt.Delete(ctx, resourceCR)
+	if err := clnt.Delete(ctx, resourceCR); err != nil {
+		return false, errors.Wrap(err, "failed to delete resource CR")
+	}
+	return false, nil
 }
