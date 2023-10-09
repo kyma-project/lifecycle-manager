@@ -16,11 +16,13 @@ import (
 var ErrStatusModuleStateMismatch = errors.New("status.modules.state not match")
 
 func NewTestKyma(name string) *v1beta2.Kyma {
-	return newKCPKymaWithNamespace(name, v1.NamespaceDefault, v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalClient)
+	return NewKymaWithSyncLabel(name, v1.NamespaceDefault, v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalClient)
 }
 
-func NewKymaForE2E(name, namespace, channel string) *v1beta2.Kyma {
-	kyma := newKCPKymaWithNamespace(name, namespace, channel, v1beta2.SyncStrategyLocalSecret)
+// NewKymaWithSyncLabel use this function to initialize kyma CR with SyncStrategyLocalSecret
+// are typically used in e2e test, which expect related access secret provided.
+func NewKymaWithSyncLabel(name, namespace, channel, syncStrategy string) *v1beta2.Kyma {
+	kyma := newKCPKymaWithNamespace(name, namespace, channel, syncStrategy)
 	kyma.Labels[v1beta2.SyncLabel] = v1beta2.EnableLabelValue
 	return kyma
 }
