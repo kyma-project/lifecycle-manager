@@ -10,6 +10,7 @@ import (
 	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -310,7 +311,8 @@ func TestHandleState(t *testing.T) {
 				}
 			}
 			manifestCR.CreationTimestamp = v1.Now()
-			moduleCR := testutils.NewTestModuleCR("test", v1.NamespaceDefault, "v1", "TestCR")
+			moduleCR := builder.NewModuleCRBuilder().WithName("test").WithNamespace(v1.NamespaceDefault).
+				WithGroupVersionKind(v1beta2.GroupVersion.Group, "v1", "TestCR").Build()
 			for _, check := range testCase.checkInModuleCR {
 				err := unstructured.SetNestedField(moduleCR.Object, check.value, check.fields...)
 				if err != nil {
@@ -318,7 +320,7 @@ func TestHandleState(t *testing.T) {
 					return
 				}
 			}
-			got, err := manifest.HandleState(manifestCR, &moduleCR)
+			got, err := manifest.HandleState(manifestCR, moduleCR)
 			if !reflect.DeepEqual(got, testCase.want) {
 				t.Errorf("HandleState() got = %v, want %v", got, testCase.want)
 			}
@@ -421,7 +423,8 @@ func TestHandleStateWithDuration(t *testing.T) {
 				}
 			}
 			manifestCR.CreationTimestamp = testCase.manifestCreatedAt
-			moduleCR := testutils.NewTestModuleCR("test", v1.NamespaceDefault, "v1", "TestCR")
+			moduleCR := builder.NewModuleCRBuilder().WithName("test").WithNamespace(v1.NamespaceDefault).
+				WithGroupVersionKind(v1beta2.GroupVersion.Group, "v1", "TestCR").Build()
 			for _, check := range testCase.checkInModuleCR {
 				err := unstructured.SetNestedField(moduleCR.Object, check.value, check.fields...)
 				if err != nil {
@@ -429,7 +432,7 @@ func TestHandleStateWithDuration(t *testing.T) {
 					return
 				}
 			}
-			got, err := manifest.HandleState(manifestCR, &moduleCR)
+			got, err := manifest.HandleState(manifestCR, moduleCR)
 			if !reflect.DeepEqual(got, testCase.want) {
 				t.Errorf("HandleState() got = %v, want %v", got, testCase.want)
 			}
