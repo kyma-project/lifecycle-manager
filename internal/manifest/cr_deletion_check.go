@@ -47,8 +47,5 @@ func (c *CRDeletionCheck) Run(
 		}
 		return false, errors.Wrap(err, "failed to fetch default resource CR")
 	}
-	if err := clnt.Delete(ctx, resourceCR); err != nil {
-		return false, errors.Wrap(err, "failed to delete resource CR")
-	}
 	return false, nil
 }
