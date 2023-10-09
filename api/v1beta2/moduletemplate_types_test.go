@@ -9,6 +9,8 @@ import (
 )
 
 func TestModuleTemplate_GetComponentDescriptorCacheKey(t *testing.T) {
+	t.Parallel()
+
 	type fields struct {
 		TypeMeta   v1.TypeMeta
 		ObjectMeta v1.ObjectMeta
@@ -65,15 +67,17 @@ func TestModuleTemplate_GetComponentDescriptorCacheKey(t *testing.T) {
 			want: fmt.Sprintf("%s:%s:%d", "test-module-without-version", "regular", 2),
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, testCase := range tests {
+		testCase := testCase
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
 			m := &v1beta2.ModuleTemplate{
-				TypeMeta:   tt.fields.TypeMeta,
-				ObjectMeta: tt.fields.ObjectMeta,
-				Spec:       tt.fields.Spec,
+				TypeMeta:   testCase.fields.TypeMeta,
+				ObjectMeta: testCase.fields.ObjectMeta,
+				Spec:       testCase.fields.Spec,
 			}
-			if got := m.GetComponentDescriptorCacheKey(); got != tt.want {
-				t.Errorf("GetComponentDescriptorCacheKey() = %v, want %v", got, tt.want)
+			if got := m.GetComponentDescriptorCacheKey(); got != testCase.want {
+				t.Errorf("GetComponentDescriptorCacheKey() = %v, want %v", got, testCase.want)
 			}
 		})
 	}
