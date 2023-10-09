@@ -2,7 +2,6 @@ package manifest
 
 import (
 	"context"
-
 	"github.com/pkg/errors"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -34,8 +33,12 @@ func (c *CRDeletionCheck) Run(
 
 	name := manifest.Spec.Resource.GetName()
 	namespace := manifest.Spec.Resource.GetNamespace()
+	gvk := manifest.Spec.Resource.GroupVersionKind()
 
-	resourceCR := &unstructured.Unstructured{}
+	resourceCR := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": gvk.GroupVersion().String(),
+		"kind":       gvk.Kind,
+	}}
 	if err := clnt.Get(ctx,
 		client.ObjectKey{Name: name, Namespace: namespace}, resourceCR); err != nil {
 		if util.IsNotFound(err) {
@@ -43,6 +46,5 @@ func (c *CRDeletionCheck) Run(
 		}
 		return false, errors.Wrap(err, "failed to fetch default resource CR")
 	}
-
 	return false, clnt.Delete(ctx, resourceCR)
 }
