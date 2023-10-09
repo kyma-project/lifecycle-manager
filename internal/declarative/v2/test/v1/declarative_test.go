@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"path"
 	"path/filepath"
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"testing"
 	"time"
+
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/internal"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -27,7 +28,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
+	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -286,7 +287,7 @@ func StartDeclarativeReconcilerForRun(
 	Expect(
 		ctrl.NewControllerManagedBy(mgr).WithEventFilter(testWatchPredicate).
 			WithOptions(
-				controller.Options{RateLimiter: workqueue.NewMaxOfRateLimiter(
+				controllerRuntime.Options{RateLimiter: workqueue.NewMaxOfRateLimiter(
 					&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(30), 200)},
 				)},
 			).

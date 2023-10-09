@@ -14,16 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 //nolint:gochecknoglobals
-package manifest_controller_test
+package custom_resource_check_test
 
 import (
 	"context"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"testing"
 	"time"
+
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
+	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
 
 	"github.com/google/go-containerregistry/pkg/registry"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -36,13 +39,12 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
+	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api"
-	hlp "github.com/kyma-project/lifecycle-manager/controllers/manifest_controller/manifesttest"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -72,7 +74,7 @@ func TestAPIs(t *testing.T) {
 
 var _ = BeforeSuite(
 	func() {
-		hlp.ManifestFilePath = "../../pkg/test_samples/oci/rendered.yaml"
+		hlp.ManifestFilePath = "../../../../pkg/test_samples/oci/rendered.yaml"
 		hlp.Ctx, hlp.Cancel = context.WithCancel(context.TODO())
 		logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
 
@@ -82,7 +84,7 @@ var _ = BeforeSuite(
 
 		By("bootstrapping test environment")
 		testEnv = &envtest.Environment{
-			CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
+			CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "..", "config", "crd", "bases")},
 			ErrorIfCRDPathMissing: false,
 		}
 
@@ -100,6 +102,9 @@ var _ = BeforeSuite(
 		if !found {
 			metricsBindAddress = ":0"
 		}
+		cacheOpts := internal.GetCacheOptions(labels.Set{v1beta2.ManagedBy: v1beta2.OperatorName})
+		syncPeriod := 2 * time.Second
+		cacheOpts.SyncPeriod = &syncPeriod
 
 		k8sManager, err = ctrl.NewManager(
 			cfg, ctrl.Options{
@@ -107,9 +112,11 @@ var _ = BeforeSuite(
 					BindAddress: metricsBindAddress,
 				},
 				Scheme: scheme.Scheme,
-				Cache:  internal.GetCacheOptions(labels.Set{v1beta2.ManagedBy: v1beta2.OperatorName}),
+				Cache:  cacheOpts,
 			},
 		)
+
+		k8sManager.GetControllerOptions()
 		Expect(err).ToNot(HaveOccurred())
 		codec, err := v1beta2.NewCodec()
 		Expect(err).ToNot(HaveOccurred())
@@ -139,7 +146,7 @@ var _ = BeforeSuite(
 			manifest.WithClientCacheKey(),
 			declarative.WithPostRun{manifest.PostRunCreateCR},
 			declarative.WithPreDelete{manifest.PreDeleteDeleteCR},
-			declarative.WithCustomReadyCheck(declarative.NewExistsReadyCheck()),
+			declarative.WithCustomReadyCheck(manifest.NewCustomResourceReadyCheck()),
 			declarative.WithModuleCRDName(manifest.GetModuleCRDName),
 		)
 
@@ -147,7 +154,7 @@ var _ = BeforeSuite(
 			For(&v1beta2.Manifest{}).
 			Watches(&v1.Secret{}, handler.Funcs{}).
 			WithOptions(
-				controller.Options{
+				controllerRuntime.Options{
 					RateLimiter: internal.ManifestRateLimiter(
 						1*time.Second, 5*time.Second,
 						30, 200,

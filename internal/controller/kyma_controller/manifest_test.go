@@ -6,8 +6,9 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/controllers"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -430,7 +431,7 @@ func validateManifestSpecResource(manifestResource, moduleTemplateData *unstruct
 	actualManifestResource := manifestResource
 	expectedManifestResource := moduleTemplateData.DeepCopy()
 	expectedManifestResource.
-		SetNamespace(controllers.DefaultRemoteSyncNamespace) // the namespace is set in the "actual" object
+		SetNamespace(controller.DefaultRemoteSyncNamespace) // the namespace is set in the "actual" object
 
 	if !reflect.DeepEqual(actualManifestResource, expectedManifestResource) {
 		actualJSON, err := json.MarshalIndent(actualManifestResource, "", "  ")

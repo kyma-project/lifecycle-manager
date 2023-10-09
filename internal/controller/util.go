@@ -1,4 +1,4 @@
-package controllers
+package controller
 
 import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"

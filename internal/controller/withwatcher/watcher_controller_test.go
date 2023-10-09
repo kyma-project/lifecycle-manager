@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -14,7 +16,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
-	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
@@ -181,7 +182,7 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 	var err error
 	BeforeAll(func() {
 		customIstioClient, err = istio.NewVersionedIstioClient(restCfg,
-			k8sManager.GetEventRecorderFor(controllers.WatcherControllerName), ctrl.Log.WithName("istioClient"))
+			k8sManager.GetEventRecorderFor(controller.WatcherControllerName), ctrl.Log.WithName("istioClient"))
 		Expect(err).ToNot(HaveOccurred())
 		// create Watcher CRs
 		for idx, component := range centralComponents {

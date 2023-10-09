@@ -24,20 +24,21 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	operatorv1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/controllers"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	apiExtensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
+	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
@@ -51,7 +52,7 @@ const useRandomPort = "0"
 
 //nolint:gochecknoglobals
 var (
-	purgeReconciler             *controllers.PurgeReconciler
+	purgeReconciler             *controller.PurgeReconciler
 	controlPlaneClient          client.Client
 	singleClusterEnv            *envtest.Environment
 	ctx                         context.Context
@@ -72,12 +73,12 @@ var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 
 	externalCRDs := AppendExternalCRDs(
-		filepath.Join("..", "..", "config", "samples", "tests", "crds"),
+		filepath.Join("..", "..", "..", "config", "samples", "tests", "crds"),
 		"cert-manager-v1.10.1.crds.yaml",
 		"istio-v1.17.1.crds.yaml")
 
 	singleClusterEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
+		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
 		CRDs:                  append([]*apiExtensionsv1.CustomResourceDefinition{}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}
@@ -97,15 +98,15 @@ var _ = BeforeSuite(func() {
 				BindAddress: useRandomPort,
 			},
 			Scheme: scheme.Scheme,
-			Cache:  controllers.NewCacheOptions(),
+			Cache:  controller.NewCacheOptions(),
 		})
 	Expect(err).ToNot(HaveOccurred())
 
-	var useLocalClient controllers.RemoteClientResolver = func(context.Context, client.ObjectKey) (client.Client, error) {
+	var useLocalClient controller.RemoteClientResolver = func(context.Context, client.ObjectKey) (client.Client, error) {
 		return k8sManager.GetClient(), nil
 	}
 
-	purgeReconciler = &controllers.PurgeReconciler{
+	purgeReconciler = &controller.PurgeReconciler{
 		Client:                k8sManager.GetClient(),
 		EventRecorder:         k8sManager.GetEventRecorderFor(operatorv1beta2.OperatorName),
 		ResolveRemoteClient:   useLocalClient,
@@ -113,7 +114,7 @@ var _ = BeforeSuite(func() {
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(skipFinalizerRemovalForCRDs),
 	}
 
-	err = purgeReconciler.SetupWithManager(k8sManager, controller.Options{})
+	err = purgeReconciler.SetupWithManager(k8sManager, controllerRuntime.Options{})
 	Expect(err).ToNot(HaveOccurred())
 
 	controlPlaneClient = k8sManager.GetClient()

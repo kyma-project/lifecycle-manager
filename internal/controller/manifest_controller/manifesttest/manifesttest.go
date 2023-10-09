@@ -35,7 +35,7 @@ var (
 	K8sClient                client.Client
 	Server                   *httptest.Server
 	ErrManifestStateMisMatch = errors.New("ManifestState mismatch")
-	ManifestFilePath         = "../../pkg/test_samples/oci/rendered.yaml"
+	ManifestFilePath         = "../../../pkg/test_samples/oci/rendered.yaml"
 )
 
 const (
