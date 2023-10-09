@@ -1,7 +1,6 @@
 package v1beta2_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
