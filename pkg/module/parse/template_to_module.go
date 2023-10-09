@@ -64,8 +64,7 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 			})
 			continue
 		}
-		useDescriptorCache := module.RemoteModuleTemplateRef == ""
-		descriptor, err := template.GetDescriptor(useDescriptorCache)
+		descriptor, err := template.GetDescriptor()
 		if err != nil {
 			template.Err = err
 			modules = append(modules, &common.Module{
@@ -73,6 +72,9 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 				Template:   template,
 			})
 			continue
+		}
+		if module.RemoteModuleTemplateRef == "" {
+			template.SetDescToCache(descriptor)
 		}
 		fqdn := descriptor.GetName()
 		version := descriptor.GetVersion()
@@ -143,10 +145,12 @@ func (p *Parser) newManifestFromTemplate(
 
 	var layers img.Layers
 	var err error
-	useDescriptorCache := module.RemoteModuleTemplateRef == ""
-	descriptor, err := template.GetDescriptor(useDescriptorCache)
+	descriptor, err := template.GetDescriptor()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get descriptor from template: %w", err)
+	}
+	if module.RemoteModuleTemplateRef == "" {
+		template.SetDescToCache(descriptor)
 	}
 	verification, err := signature.NewVerification(ctx,
 		clusterClient,

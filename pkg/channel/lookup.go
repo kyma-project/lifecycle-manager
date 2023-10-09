@@ -130,13 +130,15 @@ func CheckValidTemplateUpdate(
 	if moduleTemplate.Spec.Channel != moduleStatus.Channel {
 		checkLog.Info("outdated ModuleTemplate: channel skew")
 
-		useDescriptorCache := !moduleTemplate.IsRemoteModuleTemplate
-		descriptor, err := moduleTemplate.GetDescriptor(useDescriptorCache)
+		descriptor, err := moduleTemplate.GetDescriptor()
 		if err != nil {
 			msg := "could not handle channel skew as descriptor from template cannot be fetched"
 			checkLog.Error(err, msg)
 			moduleTemplate.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
 			return
+		}
+		if !moduleTemplate.IsRemoteModuleTemplate {
+			moduleTemplate.SetDescToCache(descriptor)
 		}
 
 		versionInTemplate, err := semver.NewVersion(descriptor.Version)
@@ -302,10 +304,12 @@ func (c *TemplateLookup) getTemplate(ctx context.Context, desiredChannel string)
 			filteredTemplates = append(filteredTemplates, template)
 			continue
 		}
-		useDescriptorCache := c.module.RemoteModuleTemplateRef == ""
-		descriptor, err := template.GetDescriptor(useDescriptorCache)
+		descriptor, err := template.GetDescriptor()
 		if err != nil {
 			return nil, fmt.Errorf("invalid ModuleTemplate descriptor: %w", err)
+		}
+		if c.module.RemoteModuleTemplateRef == "" {
+			template.SetDescToCache(descriptor)
 		}
 		if descriptor.Name == moduleIdentifier && template.Spec.Channel == desiredChannel {
 			filteredTemplates = append(filteredTemplates, template)

@@ -99,7 +99,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 		By("Update Module Template spec.descriptor.component values")
 		{
 			newComponentDescriptorRepositoryURL := func(moduleTemplate *v1beta2.ModuleTemplate) error {
-				descriptor, err := moduleTemplate.GetDescriptor(false)
+				descriptor, err := moduleTemplate.GetDescriptor()
 				if err != nil {
 					return err
 				}
@@ -161,7 +161,7 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 
 		By("checking Spec.Install")
 		hasValidSpecInstall := func(manifest *v1beta2.Manifest) error {
-			moduleTemplateDescriptor, err := moduleTemplate.GetDescriptor(false)
+			moduleTemplateDescriptor, err := moduleTemplate.GetDescriptor()
 			if err != nil {
 				return err
 			}
@@ -220,7 +220,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 
 		By("checking Spec.Install")
 		hasValidSpecInstall := func(manifest *v1beta2.Manifest) error {
-			moduleTemplateDescriptor, err := moduleTemplate.GetDescriptor(false)
+			moduleTemplateDescriptor, err := moduleTemplate.GetDescriptor()
 			if err != nil {
 				return err
 			}
@@ -522,7 +522,7 @@ func updateComponentSources(descriptor *v1beta2.Descriptor) {
 }
 
 func updateModuleTemplateVersion(moduleTemplate *v1beta2.ModuleTemplate) error {
-	descriptor, err := moduleTemplate.GetDescriptor(false)
+	descriptor, err := moduleTemplate.GetDescriptor()
 	// return error here (insted of using Expect) to allow for re-trying with "Eventually"
 	if err != nil {
 		return err
@@ -541,7 +541,7 @@ func updateModuleTemplateVersion(moduleTemplate *v1beta2.ModuleTemplate) error {
 
 //nolint:goerr113
 func validateModuleTemplateVersionUpdated(moduleTemplate *v1beta2.ModuleTemplate) error {
-	descriptor, err := moduleTemplate.GetDescriptor(false)
+	descriptor, err := moduleTemplate.GetDescriptor()
 	if err != nil {
 		return err
 	}

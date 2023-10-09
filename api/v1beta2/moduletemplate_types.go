@@ -118,7 +118,7 @@ type CustomStateCheck struct {
 	MappedState State `json:"mappedState" yaml:"mappedState"`
 }
 
-func (m *ModuleTemplate) GetDescriptor(useCache bool) (*Descriptor, error) {
+func (m *ModuleTemplate) GetDescriptor() (*Descriptor, error) {
 	if m.Spec.Descriptor.Object != nil {
 		desc, ok := m.Spec.Descriptor.Object.(*Descriptor)
 		if !ok {
@@ -127,11 +127,9 @@ func (m *ModuleTemplate) GetDescriptor(useCache bool) (*Descriptor, error) {
 		return desc, nil
 	}
 
-	if useCache {
-		descriptor := m.GetDescFromCache()
-		if descriptor != nil {
-			return descriptor, nil
-		}
+	descriptor := m.GetDescFromCache()
+	if descriptor != nil {
+		return descriptor, nil
 	}
 
 	desc, err := compdesc.Decode(
@@ -144,9 +142,6 @@ func (m *ModuleTemplate) GetDescriptor(useCache bool) (*Descriptor, error) {
 	mDesc, ok := m.Spec.Descriptor.Object.(*Descriptor)
 	if !ok {
 		return nil, ErrTypeAssertDescriptor
-	}
-	if useCache {
-		m.SetDescToCache(mDesc)
 	}
 
 	return mDesc, nil

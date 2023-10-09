@@ -50,7 +50,7 @@ var _ webhook.Validator = &ModuleTemplate{}
 func (m *ModuleTemplate) ValidateCreate() (admission.Warnings, error) {
 	logf.Log.WithName("moduletemplate-resource").
 		Info("validate create", "name", m.Name)
-	newDescriptor, err := m.GetDescriptor(false)
+	newDescriptor, err := m.GetDescriptor()
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (m *ModuleTemplate) ValidateCreate() (admission.Warnings, error) {
 func (m *ModuleTemplate) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
 	logf.Log.WithName("moduletemplate-resource").
 		Info("validate update", "name", m.Name)
-	newDescriptor, err := m.GetDescriptor(false)
+	newDescriptor, err := m.GetDescriptor()
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (m *ModuleTemplate) ValidateUpdate(old runtime.Object) (admission.Warnings,
 	if !ok {
 		return nil, ErrTypeAssertModuleTemplate
 	}
-	oldDescriptor, err := oldTemplate.GetDescriptor(false)
+	oldDescriptor, err := oldTemplate.GetDescriptor()
 	if err != nil {
 		return nil, err
 	}

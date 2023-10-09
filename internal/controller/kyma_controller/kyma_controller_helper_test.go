@@ -152,7 +152,7 @@ func CreateModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, 
 			return err
 		}
 
-		descriptor, err := template.GetDescriptor(false)
+		descriptor, err := template.GetDescriptor()
 		if err != nil {
 			return err
 		}
