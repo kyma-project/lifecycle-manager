@@ -24,6 +24,8 @@ import (
 	"testing"
 	"time"
 
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -137,9 +139,11 @@ var _ = BeforeSuite(func() {
 
 	k8sManager, err = ctrl.NewManager(
 		restCfg, ctrl.Options{
-			MetricsBindAddress: metricsBindAddress,
-			Scheme:             scheme.Scheme,
-			Cache:              controller.NewCacheOptions(),
+			Metrics: metricsserver.Options{
+				BindAddress: metricsBindAddress,
+			},
+			Scheme: scheme.Scheme,
+			Cache:  controller.NewCacheOptions(),
 		})
 	Expect(err).ToNot(HaveOccurred())
 

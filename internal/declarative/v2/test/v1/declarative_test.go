@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
 	"github.com/kyma-project/lifecycle-manager/internal"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -251,8 +253,10 @@ func StartDeclarativeReconcilerForRun(
 		cfg, ctrl.Options{
 			// these bind addresses cause conflicts when run concurrently so we disable them
 			HealthProbeBindAddress: "0",
-			MetricsBindAddress:     "0",
-			Scheme:                 scheme.Scheme,
+			Metrics: metricsserver.Options{
+				BindAddress: "0",
+			},
+			Scheme: scheme.Scheme,
 		},
 	)
 	Expect(err).ToNot(HaveOccurred())
