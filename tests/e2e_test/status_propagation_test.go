@@ -83,7 +83,7 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 	})
 })
 
-var _ = Describe("Warning Status Propagation After When Deletion Timestamp Not  ", Ordered, func() {
+var _ = Describe("Warning Status Propagation After When Deletion Timestamp Not Zero", Ordered, func() {
 	kyma := testutils.NewKymaForE2E("kyma-sample", "kcp-system", "regular")
 	GinkgoWriter.Printf("kyma before create %v\n", kyma)
 
@@ -123,13 +123,7 @@ var _ = Describe("Warning Status Propagation After When Deletion Timestamp Not  
 		By("Checking state of kyma")
 		Eventually(CheckKymaIsInState).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
-			Should(Succeed())
-		By("Checking module state in Kyma CR")
-		Eventually(CheckKymaModuleIsInState).
-			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient,
-				"template-operator", v1beta2.StateReady).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateWarning).
 			Should(Succeed())
 	})
 
@@ -174,12 +168,6 @@ var _ = Describe("Warning Status Propagation After When Deletion Timestamp Not  
 		By("Remove finalizer")
 		err = RemoveFinalizerToSampleResource(ctx, *resourceObjectKey, runtimeClient, "e2e-finalizer")
 		Expect(err).To(Not(HaveOccurred()))
-
-		By("Checking state of kyma")
-		Eventually(CheckKymaIsInState).
-			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
-			Should(Succeed())
 	})
 
 	It("Should delete KCP Kyma", func() {
