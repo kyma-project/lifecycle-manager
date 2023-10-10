@@ -23,13 +23,13 @@ var (
 	ErrInvalidRemoteModuleConfiguration = errors.New("invalid remote module template configuration")
 	ErrTemplateNotAllowed               = errors.New("module template not allowed")
 	ErrTemplateUpdateNotAllowed         = errors.New("module template update not allowed")
+	ErrModuleTemplateIsNil              = errors.New("module template is nil")
 )
 
 type ModuleTemplateTO struct {
 	*v1beta2.ModuleTemplate
-	Err                    error
-	DesiredChannel         string
-	IsRemoteModuleTemplate bool
+	Err            error
+	DesiredChannel string
 }
 
 type ModuleTemplatesByModuleName map[string]*ModuleTemplateTO
@@ -46,6 +46,14 @@ func GetTemplates(
 		switch {
 		case module.RemoteModuleTemplateRef == "":
 			template = NewTemplateLookup(kymaClient, module, kyma.Spec.Channel).WithContext(ctx)
+			if template.Err != nil {
+				break
+			}
+
+			if err := saveDescriptorToCache(template); err != nil {
+				template.Err = fmt.Errorf("failed to get descriptor: %w", err)
+			}
+
 		case syncEnabled:
 			syncContext, err := remote.SyncContextFromContext(ctx)
 			if err != nil {
@@ -137,9 +145,6 @@ func CheckValidTemplateUpdate(
 			moduleTemplate.Err = fmt.Errorf("%w: %s", ErrTemplateUpdateNotAllowed, msg)
 			return
 		}
-		if !moduleTemplate.IsRemoteModuleTemplate {
-			moduleTemplate.SetDescToCache(descriptor)
-		}
 
 		versionInTemplate, err := semver.NewVersion(descriptor.Version)
 		if err != nil {
@@ -213,14 +218,13 @@ type TemplateLookup struct {
 
 func (c *TemplateLookup) WithContext(ctx context.Context) ModuleTemplateTO {
 	desiredChannel := c.getDesiredChannel()
-	isRemoteModuleTemplate := c.module.RemoteModuleTemplateRef != ""
+
 	template, err := c.getTemplate(ctx, desiredChannel)
 	if err != nil {
 		return ModuleTemplateTO{
-			ModuleTemplate:         nil,
-			DesiredChannel:         desiredChannel,
-			Err:                    err,
-			IsRemoteModuleTemplate: isRemoteModuleTemplate,
+			ModuleTemplate: nil,
+			DesiredChannel: desiredChannel,
+			Err:            err,
 		}
 	}
 
@@ -235,7 +239,6 @@ func (c *TemplateLookup) WithContext(ctx context.Context) ModuleTemplateTO {
 				"no channel found on template for module: %s: %w",
 				c.module.Name, ErrNotDefaultChannelAllowed,
 			),
-			IsRemoteModuleTemplate: isRemoteModuleTemplate,
 		}
 	}
 
@@ -257,10 +260,9 @@ func (c *TemplateLookup) WithContext(ctx context.Context) ModuleTemplateTO {
 	}
 
 	return ModuleTemplateTO{
-		ModuleTemplate:         template,
-		DesiredChannel:         desiredChannel,
-		Err:                    nil,
-		IsRemoteModuleTemplate: isRemoteModuleTemplate,
+		ModuleTemplate: template,
+		DesiredChannel: desiredChannel,
+		Err:            nil,
 	}
 }
 
@@ -308,9 +310,6 @@ func (c *TemplateLookup) getTemplate(ctx context.Context, desiredChannel string)
 		if err != nil {
 			return nil, fmt.Errorf("invalid ModuleTemplate descriptor: %w", err)
 		}
-		if c.module.RemoteModuleTemplateRef == "" {
-			template.SetDescToCache(descriptor)
-		}
 		if descriptor.Name == moduleIdentifier && template.Spec.Channel == desiredChannel {
 			filteredTemplates = append(filteredTemplates, template)
 			continue
@@ -337,4 +336,23 @@ func NewMoreThanOneTemplateCandidateErr(component v1beta2.Module,
 
 	return fmt.Errorf("%w: more than one module template found for module: %s, candidates: %v",
 		ErrTemplateNotIdentified, component.Name, candidates)
+}
+
+func saveDescriptorToCache(template ModuleTemplateTO) error {
+	if template.ModuleTemplate == nil {
+		return ErrModuleTemplateIsNil
+	}
+	descriptor := template.GetDescFromCache()
+	if descriptor != nil {
+		return nil
+	}
+
+	var err error
+	descriptor, err = template.GetDescriptor()
+	if err != nil {
+		return fmt.Errorf("failed to get descriptor: %w", err)
+	}
+	template.SetDescToCache(descriptor)
+
+	return nil
 }

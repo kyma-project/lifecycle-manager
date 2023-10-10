@@ -73,9 +73,6 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 			})
 			continue
 		}
-		if module.RemoteModuleTemplateRef == "" {
-			template.SetDescToCache(descriptor)
-		}
 		fqdn := descriptor.GetName()
 		version := descriptor.GetVersion()
 		name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
@@ -148,9 +145,6 @@ func (p *Parser) newManifestFromTemplate(
 	descriptor, err := template.GetDescriptor()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get descriptor from template: %w", err)
-	}
-	if module.RemoteModuleTemplateRef == "" {
-		template.SetDescToCache(descriptor)
 	}
 	verification, err := signature.NewVerification(ctx,
 		clusterClient,
