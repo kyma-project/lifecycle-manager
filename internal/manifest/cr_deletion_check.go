@@ -11,14 +11,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// NewCRDeletionCheck creates a check that verifies that the Resource CR in the remote cluster is deleted.
-func NewCRDeletionCheck() *CRDeletionCheck {
-	return &CRDeletionCheck{}
+// NewModuleCRDeletionCheck creates a check that verifies that the Resource CR in the remote cluster is deleted.
+func NewModuleCRDeletionCheck() *ModuleCRDeletionCheck {
+	return &ModuleCRDeletionCheck{}
 }
 
-type CRDeletionCheck struct{}
+type ModuleCRDeletionCheck struct{}
 
-func (c *CRDeletionCheck) Run(
+func (c *ModuleCRDeletionCheck) Run(
 	ctx context.Context,
 	clnt client.Client,
 	obj declarative.Object,
