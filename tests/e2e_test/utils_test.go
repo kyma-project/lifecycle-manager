@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"io"
 	"net/http"
 	"regexp"
@@ -12,11 +11,12 @@ import (
 	"strings"
 	"time"
 
+	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	templateOperator "github.com/kyma-project/template-operator/api/v1alpha1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -71,14 +71,14 @@ func CheckManifestIsInState(ctx context.Context,
 	k8sClient client.Client,
 	expectedState v2.State,
 ) error {
-	manifest := &v1beta2.Manifest{}
+	manifest := v1beta2.Manifest{}
 	manifests := &v1beta2.ManifestList{}
 	if err := k8sClient.List(ctx, manifests); err != nil {
 		return err
 	}
 	for _, m := range manifests.Items {
 		if strings.Contains(m.Name, kymaName) && strings.Contains(m.Name, moduleName) {
-			manifest = &m
+			manifest = m
 			break
 		}
 	}
@@ -92,16 +92,16 @@ func CheckManifestIsInState(ctx context.Context,
 
 func ManifestNoDeletionTimeStampSet(ctx context.Context,
 	kymaName, moduleName string,
-	k8sClient client.Client) error {
-
-	manifest := &v1beta2.Manifest{}
+	k8sClient client.Client,
+) error {
+	manifest := v1beta2.Manifest{}
 	manifests := &v1beta2.ManifestList{}
 	if err := k8sClient.List(ctx, manifests); err != nil {
 		return err
 	}
 	for _, m := range manifests.Items {
 		if strings.Contains(m.Name, kymaName) && strings.Contains(m.Name, moduleName) {
-			manifest = &m
+			manifest = m
 			break
 		}
 	}
@@ -293,35 +293,64 @@ func GetKymaStateMetricCount(ctx context.Context, kymaName, state string) (int, 
 }
 
 func UpdateSampleCRSpec(ctx context.Context, name, namespace, resourceFilePath string, clnt client.Client) error {
-	sampleCR := &templateOperator.Sample{}
+	sampleCR := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": "operator.kyma-project.io/v1alpha1",
+		"kind":       "Sample",
+	}}
+
 	if err := clnt.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, sampleCR); err != nil {
 		return err
 	}
 
-	sampleCR.Spec.ResourceFilePath = resourceFilePath
+	if err := unstructured.SetNestedField(sampleCR.Object, resourceFilePath, "spec", "ResourceFilePath"); err != nil {
+		return err
+	}
+
 	return clnt.Update(ctx, sampleCR)
 }
 
-func CheckSampleCRIsInState(ctx context.Context, name, namespace string, clnt client.Client, expectedState templateOperator.State) error {
-	sampleCR := &templateOperator.Sample{}
+func CheckSampleCRIsInState(ctx context.Context, name, namespace string, clnt client.Client,
+	expectedState string,
+) error {
+	sampleCR := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": "operator.kyma-project.io/v1alpha1",
+		"kind":       "Sample",
+	}}
+
 	if err := clnt.Get(ctx,
 		client.ObjectKey{Name: name, Namespace: namespace}, sampleCR); err != nil {
 		return err
 	}
-	if sampleCR.Status.State != expectedState {
+
+	stateFromCR, stateExists, err := unstructured.NestedString(sampleCR.Object, "status", "status")
+	if err != nil || !stateExists {
+		return err
+	}
+
+	if stateFromCR != expectedState {
 		return fmt.Errorf("%w: expect %s, but in %s",
-			errSampleCrNotInExpectedState, expectedState, sampleCR.Status.State)
+			errSampleCrNotInExpectedState, expectedState, stateFromCR)
 	}
 	return nil
 }
 
 func SampleCRNoDeletionTimeStampSet(ctx context.Context, name, namespace string, clnt client.Client) error {
-	sampleCR := &templateOperator.Sample{}
+	sampleCR := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": "operator.kyma-project.io/v1alpha1",
+		"kind":       "Sample",
+	}}
 	if err := clnt.Get(ctx,
 		client.ObjectKey{Name: name, Namespace: namespace}, sampleCR); err != nil {
 		return err
 	}
-	if !sampleCR.ObjectMeta.DeletionTimestamp.IsZero() {
+
+	deletionTimestampFromCR, deletionTimestampExists, err := unstructured.NestedString(sampleCR.Object,
+		"metadata", "deletionTimestamp")
+	if err != nil || !deletionTimestampExists {
+		return err
+	}
+
+	if deletionTimestampFromCR != "" {
 		return errSampleCRDeletionTimestampSet
 	}
 	return nil
