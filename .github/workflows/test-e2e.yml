@@ -41,8 +41,7 @@ jobs:
     strategy:
       matrix:
         e2e-test: ["watcher-enqueue", "kyma-deletion", "module-status-propagation", "kyma-metrics", "module-without-default-cr"]
-        cli-stability: [ "unstable" ]
-    name: "Run E2E tests"
+    name: "E2E"
     needs: [wait-for-img]
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -70,10 +69,10 @@ jobs:
           mv kubectl /usr/local/bin
       - name: Install Kyma CLI
         run: |
-          wget -q https://storage.googleapis.com/kyma-cli-${{ matrix.cli-stability }}/kyma-linux
-          chmod +x kyma-linux && mv kyma-linux /usr/local/bin/kyma-${{ matrix.cli-stability }}
-          echo "PATH=/usr/local/bin/kyma-${{ matrix.cli-stability }}" >> $GITHUB_OUTPUT
-      - run: ln -s /usr/local/bin/kyma-${{ matrix.cli-stability }} /usr/local/bin/kyma
+          wget -q https://storage.googleapis.com/kyma-cli-unstable/kyma-linux
+          chmod +x kyma-linux && mv kyma-linux /usr/local/bin/kyma-unstable
+          echo "PATH=/usr/local/bin/kyma-unstable" >> $GITHUB_OUTPUT
+      - run: ln -s /usr/local/bin/kyma-unstable /usr/local/bin/kyma
       - name: Install Cert Manager Command Line Tool
         run: |
           OS=$(go env GOOS); ARCH=$(go env GOARCH); curl -fsSL -o cmctl.tar.gz https://github.com/cert-manager/cert-manager/releases/latest/download/cmctl-$OS-$ARCH.tar.gz

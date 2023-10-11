@@ -27,9 +27,6 @@ const (
 
 	KLMPodPrefix    = "klm-controller-manager"
 	KLMPodContainer = "manager"
-
-	defaultRuntimeNamespace = "kyma-system"
-	controlPlaneNamespace   = "kcp-system"
 )
 
 var (
@@ -128,7 +125,7 @@ func checkKLMLogs(ctx context.Context,
 	}
 
 	watcherLogs, err := getPodLogs(ctx, runtimeConfig,
-		runtimeClient, defaultRuntimeNamespace, watcher.SkrResourceName, watcherPodContainer)
+		runtimeClient, remoteNamespace, watcher.SkrResourceName, watcherPodContainer)
 	if err != nil {
 		return err
 	}

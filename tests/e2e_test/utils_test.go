@@ -34,6 +34,7 @@ const (
 	timeout               = 10 * time.Second
 	interval              = 1 * time.Second
 	remoteNamespace       = "kyma-system"
+	controlPlaneNamespace = "kcp-system"
 )
 
 func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {

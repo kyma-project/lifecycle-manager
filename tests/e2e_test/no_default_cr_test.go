@@ -3,7 +3,6 @@ package e2e_test
 import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -19,12 +18,12 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 		It("When enable Template Operator", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(defaultRemoteKymaName, remoteNamespace, moduleName, "regular", runtimeClient).
+				WithArguments(defaultRemoteKymaName, remoteNamespace, moduleName, kyma.Spec.Channel, runtimeClient).
 				Should(Succeed())
 		})
 
 		It("Then no module CR exist", func() {
-			moduleCR := builder.NewModuleCRBuilder().Build()
+			moduleCR := NewTestModuleCR(remoteNamespace)
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, moduleCR.GetName(), moduleCR.GetNamespace()).

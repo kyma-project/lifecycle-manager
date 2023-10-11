@@ -12,31 +12,52 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 		v1beta2.SyncStrategyLocalSecret)
 	GinkgoWriter.Printf("kyma before create %v\n", kyma)
 	moduleName := "template-operator"
+	moduleCR := NewTestModuleCR(remoteNamespace)
 
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
-	It("When enable Template Operator", func() {
-		Eventually(EnableModule).
-			WithContext(ctx).
-			WithArguments(defaultRemoteKymaName, remoteNamespace, moduleName, "regular", runtimeClient).
-			Should(Succeed())
-		By("Then module state of KCP Kyma in Warning")
-		Eventually(CheckModuleState).
-			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), moduleName, v1beta2.StateWarning).
-			Should(Succeed())
-		By("Then state of KCP kyma in Warning")
-		Eventually(CheckKymaIsInState).
-			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateWarning).
-			Should(Succeed())
+	Context("Given Template Operator Default CR", func() {
+		It("When enable Template Operator", func() {
+			Eventually(EnableModule).
+				WithContext(ctx).
+				WithArguments(defaultRemoteKymaName, remoteNamespace, moduleName, kyma.Spec.Channel, runtimeClient).
+				Should(Succeed())
+		})
+
+		It("Then module CR exist", func() {
+			Eventually(ModuleCRExists).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, moduleCR.GetName(), moduleCR.GetNamespace()).
+				Should(Succeed())
+		})
+
+		It("Then resource defined in manifest CR", func() {
+			Eventually(GetManifestResource).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), moduleName).
+				Should(Equal(moduleCR))
+		})
+
+		It("Then module state of KCP Kyma in Warning", func() {
+			Eventually(CheckModuleState).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), moduleName, v1beta2.StateWarning).
+				Should(Succeed())
+		})
+
+		It("Then state of KCP kyma in Warning", func() {
+			Eventually(CheckKymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateWarning).
+				Should(Succeed())
+		})
 	})
 
 	It("When disable Template Operator", func() {
 		Eventually(DisableModule).
 			WithContext(ctx).
-			WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", runtimeClient).
+			WithArguments(defaultRemoteKymaName, remoteNamespace, moduleName, runtimeClient).
 			Should(Succeed())
 		By("Then module state of KCP in Ready")
 		Eventually(CheckKymaIsInState).
