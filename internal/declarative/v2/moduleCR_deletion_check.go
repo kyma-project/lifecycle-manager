@@ -2,6 +2,7 @@ package v2
 
 import (
 	"context"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -16,6 +17,7 @@ func NewDefaultDeletionCheck() *DefaultDeletionCheck {
 
 type DefaultDeletionCheck struct{}
 
+//nolint:revive
 func (c *DefaultDeletionCheck) Run(ctx context.Context, clnt client.Client, obj Object) (bool, error) {
 	return true, nil
 }
