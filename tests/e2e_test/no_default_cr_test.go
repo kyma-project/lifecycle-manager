@@ -8,7 +8,7 @@ import (
 )
 
 var _ = Describe("Module Without Default CR", Ordered, func() {
-	kyma := NewKymaForE2E("kyma-sample", "kcp-system", "regular")
+	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular", v1beta2.SyncStrategyLocalSecret)
 	moduleName := "template-operator"
 
 	It("When create empty Kyma CR on remote cluster", func() {

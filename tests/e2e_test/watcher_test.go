@@ -23,7 +23,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
@@ -127,7 +126,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 	})
 
 	It("Should delete Kyma CR on remote cluster", func() {
-		Eventually(deleteKymaCR).
+		Eventually(DeleteKymaByForceRemovePurgeFinalizer).
 			WithContext(ctx).
 			WithArguments(kyma, controlPlaneClient).
 			Should(Succeed())
@@ -143,27 +142,6 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 			Should(Succeed())
 	})
 })
-
-func deleteKymaCR(ctx context.Context, kyma *v1beta2.Kyma, k8sClient client.Client) error {
-	if err := k8sClient.Delete(ctx, kyma); util.IsNotFound(err) {
-		return nil
-	}
-
-	if err := k8sClient.Get(ctx,
-		client.ObjectKey{Name: kyma.GetName(), Namespace: kyma.GetNamespace()}, kyma); util.IsNotFound(err) {
-		return nil
-	}
-
-	if !kyma.DeletionTimestamp.IsZero() {
-		if controllerutil.ContainsFinalizer(kyma, v1beta2.PurgeFinalizer) {
-			controllerutil.RemoveFinalizer(kyma, v1beta2.PurgeFinalizer)
-			if err := k8sClient.Update(ctx, kyma); err != nil {
-				return err
-			}
-		}
-	}
-	return ErrKymaNotDeleted
-}
 
 func checkRemoteKymaCRDeleted(ctx context.Context,
 	kymaNamespace string, k8sClient client.Client,

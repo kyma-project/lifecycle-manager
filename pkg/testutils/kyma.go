@@ -11,10 +11,13 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-var ErrStatusModuleStateMismatch = errors.New("status.modules.state not match")
-
+var (
+	ErrStatusModuleStateMismatch = errors.New("status.modules.state not match")
+	ErrKymaNotDeleted            = errors.New("kyma CR not deleted")
+)
 
 func NewTestKyma(name string) *v1beta2.Kyma {
 	return NewKymaWithSyncLabel(name, v1.NamespaceDefault, v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalClient)
@@ -67,6 +70,18 @@ func KymaDeleted(ctx context.Context,
 		return fmt.Errorf("kyma not deleted: %w", err)
 	}
 	return nil
+}
+
+func DeleteKymaByForceRemovePurgeFinalizer(ctx context.Context, kyma *v1beta2.Kyma, k8sClient client.Client) error {
+	if !kyma.DeletionTimestamp.IsZero() {
+		if controllerutil.ContainsFinalizer(kyma, v1beta2.PurgeFinalizer) {
+			controllerutil.RemoveFinalizer(kyma, v1beta2.PurgeFinalizer)
+			if err := k8sClient.Update(ctx, kyma); err != nil {
+				return fmt.Errorf("can't remove purge finalizer %w", err)
+			}
+		}
+	}
+	return DeleteCR(ctx, k8sClient, kyma)
 }
 
 func GetKyma(ctx context.Context, testClient client.Client, name, namespace string) (*v1beta2.Kyma, error) {

@@ -73,7 +73,7 @@ func (m ModuleTemplateBuilder) WithLabel(key string, value string) ModuleTemplat
 	return m
 }
 
-func (m ModuleTemplateBuilder) WithDefaultCR(data *unstructured.Unstructured) ModuleTemplateBuilder {
+func (m ModuleTemplateBuilder) WithModuleCR(data *unstructured.Unstructured) ModuleTemplateBuilder {
 	m.moduleTemplate.Spec.Data = data
 	return m
 }
