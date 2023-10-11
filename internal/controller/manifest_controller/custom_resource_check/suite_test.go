@@ -24,6 +24,8 @@ import (
 	"testing"
 	"time"
 
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
 	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
 
 	"github.com/google/go-containerregistry/pkg/registry"
@@ -100,15 +102,17 @@ var _ = BeforeSuite(
 		if !found {
 			metricsBindAddress = ":0"
 		}
-
+		cacheOpts := internal.GetCacheOptions(labels.Set{v1beta2.ManagedBy: v1beta2.OperatorName})
 		syncPeriod := 2 * time.Second
+		cacheOpts.SyncPeriod = &syncPeriod
 
 		k8sManager, err = ctrl.NewManager(
 			cfg, ctrl.Options{
-				MetricsBindAddress: metricsBindAddress,
-				Scheme:             scheme.Scheme,
-				Cache:              internal.GetCacheOptions(labels.Set{v1beta2.ManagedBy: v1beta2.OperatorName}),
-				SyncPeriod:         &syncPeriod,
+				Metrics: metricsserver.Options{
+					BindAddress: metricsBindAddress,
+				},
+				Scheme: scheme.Scheme,
+				Cache:  cacheOpts,
 			},
 		)
 

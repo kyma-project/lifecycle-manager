@@ -93,6 +93,22 @@ func CreateCR(ctx context.Context, clnt client.Client, obj client.Object) error 
 	return nil
 }
 
+func CRExists(obj v1.Object, clientError error) error {
+	if util.IsNotFound(clientError) {
+		return ErrNotFound
+	}
+	if clientError != nil {
+		return clientError
+	}
+	if obj != nil && obj.GetDeletionTimestamp() != nil {
+		return ErrDeletionTimestampFound
+	}
+	if obj == nil {
+		return ErrNotFound
+	}
+	return nil
+}
+
 func NewSKRCluster(scheme *k8sruntime.Scheme) (client.Client, *envtest.Environment, error) {
 	skrEnv := &envtest.Environment{
 		ErrorIfCRDPathMissing: true,
@@ -144,20 +160,4 @@ func AppendExternalCRDs(path string, files ...string) ([]*apiExtensionsv1.Custom
 		}
 	}
 	return crds, nil
-}
-
-func CRExists(obj v1.Object, clientError error) error {
-	if util.IsNotFound(clientError) {
-		return ErrNotFound
-	}
-	if clientError != nil {
-		return clientError
-	}
-	if obj != nil && obj.GetDeletionTimestamp() != nil {
-		return ErrDeletionTimestampFound
-	}
-	if obj == nil {
-		return ErrNotFound
-	}
-	return nil
 }

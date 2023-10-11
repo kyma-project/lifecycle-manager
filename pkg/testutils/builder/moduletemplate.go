@@ -21,8 +21,7 @@ type ModuleTemplateBuilder struct {
 }
 
 func NewModuleTemplateBuilder() ModuleTemplateBuilder {
-	data := NewDefaultCRBuilder().
-		WithSpec(InitSpecKey, InitSpecValue).Build()
+	data := NewModuleCRBuilder().Build()
 	return ModuleTemplateBuilder{
 		moduleTemplate: &v1beta2.ModuleTemplate{
 			TypeMeta: metav1.TypeMeta{

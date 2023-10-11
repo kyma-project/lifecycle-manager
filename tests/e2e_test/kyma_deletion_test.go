@@ -11,7 +11,8 @@ import (
 )
 
 var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
-	kyma := NewKymaForE2E("kyma-sample", "kcp-system", "regular")
+	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular",
+		v1beta2.SyncStrategyLocalSecret)
 	GinkgoWriter.Printf("kyma before create %v\n", kyma)
 
 	BeforeAll(func() {

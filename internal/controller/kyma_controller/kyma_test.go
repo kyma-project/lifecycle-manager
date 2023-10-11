@@ -222,7 +222,20 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	kyma.Spec.Modules = append(
 		kyma.Spec.Modules, module)
 
-	RegisterDefaultLifecycleForKyma(kyma)
+	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
+
+	It("Should deploy ModuleTemplate", func() {
+		data := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
+		template := builder.NewModuleTemplateBuilder().
+			WithModuleName(module.Name).
+			WithChannel(module.Channel).
+			WithModuleCR(data).
+			WithOCM(compdesc2.SchemaVersion).
+			WithAnnotation(v1beta2.IsClusterScopedAnnotation, v1beta2.EnableLabelValue).Build()
+		Eventually(controlPlaneClient.Create, Timeout, Interval).WithContext(ctx).
+			WithArguments(template).
+			Should(Succeed())
+	})
 
 	It("Mark Kyma as skip Reconciliation", func() {
 		By("CR created")
@@ -254,7 +267,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 		},
 		Entry("When update Module Template spec.data.spec field, module should not updated",
 			updateKCPModuleTemplateSpecData(kyma.Name, "valueUpdated"),
-			expectManifestSpecDataEquals(kyma.Name, builder.InitSpecValue)),
+			expectManifestSpecDataEquals(kyma.Name, InitSpecValue)),
 		Entry("When put manifest into progress, kyma spec.status.modules should not updated",
 			UpdateAllManifestState(kyma.Name, v1beta2.StateProcessing),
 			expectKymaStatusModules(ctx, kyma, module.Name, v1beta2.StateReady)),
@@ -335,7 +348,7 @@ func updateKCPModuleTemplateSpecData(kymaName, valueUpdated string) func() error
 		}
 		for _, activeModule := range createdKyma.Spec.Modules {
 			return UpdateModuleTemplateSpec(ctx, controlPlaneClient,
-				activeModule, builder.InitSpecKey, valueUpdated, createdKyma.Spec.Channel)
+				activeModule, InitSpecKey, valueUpdated, createdKyma.Spec.Channel)
 		}
 		return nil
 	}

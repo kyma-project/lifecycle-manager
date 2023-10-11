@@ -25,6 +25,8 @@ import (
 	"testing"
 	"time"
 
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -45,6 +47,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -110,14 +113,19 @@ func StopWebhook() {
 func SetupWebhook() {
 	// start webhook server using Manager
 	webhookInstallOptions := &testEnv.WebhookInstallOptions
+	webhookOpts := webhook.Options{
+		Host:    webhookInstallOptions.LocalServingHost,
+		Port:    webhookInstallOptions.LocalServingPort,
+		CertDir: webhookInstallOptions.LocalServingCertDir,
+	}
 	mgr, err := ctrl.NewManager(
 		cfg, ctrl.Options{
-			Scheme:             scheme,
-			Host:               webhookInstallOptions.LocalServingHost,
-			Port:               webhookInstallOptions.LocalServingPort,
-			CertDir:            webhookInstallOptions.LocalServingCertDir,
-			LeaderElection:     false,
-			MetricsBindAddress: "0",
+			Scheme:         scheme,
+			WebhookServer:  webhook.NewServer(webhookOpts),
+			LeaderElection: false,
+			Metrics: metricsserver.Options{
+				BindAddress: "0",
+			},
 		})
 	Expect(err).NotTo(HaveOccurred())
 

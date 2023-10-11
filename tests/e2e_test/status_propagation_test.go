@@ -8,7 +8,8 @@ import (
 )
 
 var _ = Describe("Warning Status Propagation", Ordered, func() {
-	kyma := NewKymaForE2E("kyma-sample", "kcp-system", "regular")
+	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular",
+		v1beta2.SyncStrategyLocalSecret)
 	GinkgoWriter.Printf("kyma before create %v\n", kyma)
 	moduleName := "template-operator"
 

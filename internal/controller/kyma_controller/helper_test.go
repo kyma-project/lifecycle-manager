@@ -20,6 +20,11 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+const (
+	InitSpecKey   = "initKey"
+	InitSpecValue = "initValue"
+)
+
 func RegisterDefaultLifecycleForKyma(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
 		DeployModuleTemplates(ctx, controlPlaneClient, kyma)

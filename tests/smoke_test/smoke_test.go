@@ -17,6 +17,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"gopkg.in/yaml.v3"
 	appsv1 "k8s.io/api/apps/v1"
@@ -278,8 +279,8 @@ func moduleCRDeleted(namespace, name string) features.Func {
 		t.Helper()
 		restConfig := getRestConfig(t, cfg)
 		if err := wait.For(func(ctx context.Context) (bool, error) {
-			obj := builder.NewDefaultCRBuilder().WithNamespace(namespace).Build()
-			err := restConfig.Get(ctx, name, namespace, &obj)
+			obj := builder.NewModuleCRBuilder().WithNamespace(namespace).Build()
+			err := restConfig.Get(ctx, name, namespace, obj)
 			if util.IsNotFound(err) {
 				return true, nil
 			}
