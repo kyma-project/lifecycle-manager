@@ -1,25 +1,24 @@
 package kyma_controller_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"time"
-
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
-	ErrSpecDataMismatch          = errors.New("spec.data not match")
-	ErrStatusModuleStateMismatch = errors.New("status.modules.state not match")
-	ErrWrongConditions           = errors.New("conditions not correct")
-	ErrWrongModulesStatus        = errors.New("modules status not correct")
-	ErrWrongResourceNamespace    = errors.New("resource namespace not correct")
+	ErrSpecDataMismatch       = errors.New("spec.data not match")
+	ErrWrongConditions        = errors.New("conditions not correct")
+	ErrWrongModulesStatus     = errors.New("modules status not correct")
+	ErrWrongResourceNamespace = errors.New("resource namespace not correct")
 )
 
 var _ = Describe("Kyma with no Module", Ordered, func() {
@@ -71,14 +70,9 @@ var _ = Describe("Kyma with no Module", Ordered, func() {
 
 var _ = Describe("Kyma enable one Module", Ordered, func() {
 	kyma := NewTestKyma("empty-module-kyma")
-
-	moduleName := "example-module-name"
+	module := NewTestModule("test-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1beta2.Module{
-			ControllerName: "manifest",
-			Name:           moduleName,
-			Channel:        v1beta2.DefaultChannel,
-		})
+		kyma.Spec.Modules, module)
 
 	RegisterDefaultLifecycleForKyma(kyma)
 
@@ -110,7 +104,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 			kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModuleCatalog, metav1.ConditionTrue)).To(BeFalse())
 		By("Module Catalog created")
 		Eventually(AllModuleTemplatesExists, Timeout, Interval).
-			WithArguments(ctx, controlPlaneClient, kyma, kyma.GetNamespace()).
+			WithArguments(ctx, controlPlaneClient, kyma).
 			Should(Succeed())
 	})
 
@@ -118,7 +112,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 		By("containing expected status.modules")
 		Eventually(func() error {
 			expectedModule := v1beta2.ModuleStatus{
-				Name:    moduleName,
+				Name:    module.Name,
 				State:   v1beta2.StateReady,
 				Channel: v1beta2.DefaultChannel,
 				Resource: &v1beta2.TrackingObject{
@@ -224,15 +218,24 @@ var _ = Describe("Kyma enable multiple modules", Ordered, func() {
 
 var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	kyma := NewTestKyma("kyma-test-update")
-
+	module := NewTestModule("skr-module-update", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, v1beta2.Module{
-			ControllerName: "manifest",
-			Name:           "skr-module-update",
-			Channel:        v1beta2.DefaultChannel,
-		})
+		kyma.Spec.Modules, module)
 
-	RegisterDefaultLifecycleForKyma(kyma)
+	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
+
+	It("Should deploy ModuleTemplate", func() {
+		data := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
+		template := builder.NewModuleTemplateBuilder().
+			WithModuleName(module.Name).
+			WithChannel(module.Channel).
+			WithModuleCR(data).
+			WithOCM(compdesc2.SchemaVersion).
+			WithAnnotation(v1beta2.IsClusterScopedAnnotation, v1beta2.EnableLabelValue).Build()
+		Eventually(controlPlaneClient.Create, Timeout, Interval).WithContext(ctx).
+			WithArguments(template).
+			Should(Succeed())
+	})
 
 	It("Mark Kyma as skip Reconciliation", func() {
 		By("CR created")
@@ -248,7 +251,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 		}
 
 		By("Kyma CR should be in Ready state")
-		Eventually(GetKymaState, 20*time.Second, Interval).
+		Eventually(GetKymaState, Timeout, Interval).
 			WithArguments(kyma.GetName()).
 			Should(BeEquivalentTo(v1beta2.StateReady))
 
@@ -264,10 +267,10 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 		},
 		Entry("When update Module Template spec.data.spec field, module should not updated",
 			updateKCPModuleTemplateSpecData(kyma.Name, "valueUpdated"),
-			expectManifestSpecDataEquals(kyma.Name, "initValue")),
+			expectManifestSpecDataEquals(kyma.Name, InitSpecValue)),
 		Entry("When put manifest into progress, kyma spec.status.modules should not updated",
 			UpdateAllManifestState(kyma.Name, v1beta2.StateProcessing),
-			expectKymaStatusModules(kyma.Name, v1beta2.StateReady)),
+			expectKymaStatusModules(ctx, kyma, module.Name, v1beta2.StateReady)),
 	)
 
 	It("Stop Kyma skip Reconciliation so that it can be deleted", func() {
@@ -290,17 +293,22 @@ var _ = Describe("Kyma with managed fields not in kcp mode", Ordered, func() {
 var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty for cluster scoped modules", Ordered,
 	func() {
 		kyma := NewTestKyma("kyma")
-		moduleName := RandomName()
+		module := NewTestModule("test-module", v1beta2.DefaultChannel)
 		kyma.Spec.Modules = append(
-			kyma.Spec.Modules, v1beta2.Module{
-				ControllerName: "manifest",
-				Name:           moduleName,
-				Channel:        v1beta2.DefaultChannel,
-			})
+			kyma.Spec.Modules, module)
 		RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
 		It("Should deploy ModuleTemplate", func() {
-			DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, false, false, true)
+			for _, module := range kyma.Spec.Modules {
+				template := builder.NewModuleTemplateBuilder().
+					WithModuleName(module.Name).
+					WithChannel(module.Channel).
+					WithOCM(compdesc2.SchemaVersion).
+					WithAnnotation(v1beta2.IsClusterScopedAnnotation, v1beta2.EnableLabelValue).Build()
+				Eventually(controlPlaneClient.Create, Timeout, Interval).WithContext(ctx).
+					WithArguments(template).
+					Should(Succeed())
+			}
 		})
 
 		It("expect Kyma.Spec.Status.Modules.Resource.Namespace to be empty", func() {
@@ -324,18 +332,11 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 		})
 	})
 
-func expectKymaStatusModules(kymaName string, state v1beta2.State) func() error {
+func expectKymaStatusModules(ctx context.Context,
+	kyma *v1beta2.Kyma, moduleName string, state v1beta2.State,
+) func() error {
 	return func() error {
-		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
-		if err != nil {
-			return err
-		}
-		for _, moduleStatus := range createdKyma.Status.Modules {
-			if moduleStatus.State != state {
-				return ErrStatusModuleStateMismatch
-			}
-		}
-		return nil
+		return CheckModuleState(ctx, controlPlaneClient, kyma.Name, kyma.Namespace, moduleName, state)
 	}
 }
 
@@ -346,21 +347,9 @@ func updateKCPModuleTemplateSpecData(kymaName, valueUpdated string) func() error
 			return err
 		}
 		for _, activeModule := range createdKyma.Spec.Modules {
-			return updateModuleTemplateSpec(controlPlaneClient, createdKyma.GetNamespace(), activeModule.Name, valueUpdated)
+			return UpdateModuleTemplateSpec(ctx, controlPlaneClient,
+				activeModule, InitSpecKey, valueUpdated, createdKyma.Spec.Channel)
 		}
 		return nil
 	}
-}
-
-func updateModuleTemplateSpec(clnt client.Client,
-	moduleNamespace,
-	moduleName,
-	newValue string,
-) error {
-	moduleTemplate, err := GetModuleTemplate(ctx, clnt, moduleName, moduleNamespace)
-	if err != nil {
-		return err
-	}
-	moduleTemplate.Spec.Data.Object["spec"] = map[string]any{"initKey": newValue}
-	return clnt.Update(ctx, moduleTemplate)
 }

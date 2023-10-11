@@ -143,7 +143,7 @@ func (m *ModuleTemplate) GetDescriptor() (*Descriptor, error) {
 	if !ok {
 		return nil, ErrTypeAssertDescriptor
 	}
-	m.SetDescToCache(mDesc)
+
 	return mDesc, nil
 }
 
@@ -184,6 +184,14 @@ func init() {
 }
 
 func (m *ModuleTemplate) GetComponentDescriptorCacheKey() string {
+	if m.Annotations != nil {
+		moduleVersion := m.Annotations[ModuleVersionAnnotation]
+
+		if moduleVersion != "" {
+			return fmt.Sprintf("%s:%s:%s", m.Name, m.Spec.Channel, moduleVersion)
+		}
+	}
+
 	return fmt.Sprintf("%s:%s:%d", m.Name, m.Spec.Channel, m.Generation)
 }
 

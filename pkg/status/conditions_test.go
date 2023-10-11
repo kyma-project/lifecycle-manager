@@ -83,10 +83,10 @@ func TestInitConditions(t *testing.T) {
 			}
 			kyma := kymaBuilder.Build()
 
-			status.InitConditions(&kyma, kyma.HasSyncLabelEnabled(), testcase.watcherEnabled)
+			status.InitConditions(kyma, kyma.HasSyncLabelEnabled(), testcase.watcherEnabled)
 
 			requiredConditions := v1beta2.GetRequiredConditionTypes(kyma.HasSyncLabelEnabled(), testcase.watcherEnabled)
-			if !onlyRequiredKymaConditionsPresent(&kyma, requiredConditions) {
+			if !onlyRequiredKymaConditionsPresent(kyma, requiredConditions) {
 				t.Error("Incorrect Condition Initialization")
 				return
 			}

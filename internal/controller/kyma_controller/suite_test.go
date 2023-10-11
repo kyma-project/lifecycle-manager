@@ -23,6 +23,8 @@ import (
 	"testing"
 	"time"
 
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -75,10 +77,11 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 
-	externalCRDs := AppendExternalCRDs(
+	externalCRDs, err := AppendExternalCRDs(
 		filepath.Join("..", "..", "..", "config", "samples", "tests", "crds"),
 		"cert-manager-v1.10.1.crds.yaml",
 		"istio-v1.17.1.crds.yaml")
+	Expect(err).ToNot(HaveOccurred())
 
 	kcpModuleCRD := &v1.CustomResourceDefinition{}
 	modulePath := filepath.Join("..", "..", "..", "config", "samples", "component-integration-installed",
@@ -105,9 +108,11 @@ var _ = BeforeSuite(func() {
 
 	k8sManager, err = ctrl.NewManager(
 		cfg, ctrl.Options{
-			MetricsBindAddress: randomPort,
-			Scheme:             scheme.Scheme,
-			Cache:              controller.NewCacheOptions(),
+			Metrics: metricsserver.Options{
+				BindAddress: randomPort,
+			},
+			Scheme: scheme.Scheme,
+			Cache:  controller.NewCacheOptions(),
 		})
 	Expect(err).ToNot(HaveOccurred())
 

@@ -18,12 +18,6 @@ patches:
         value: --skr-watcher-path=/skr-webhook
     target:
       kind: Deployment
-
-
-# JSON patches needed to ensure certificate setup namespaces are not
-# being overwritten by kustomize global namespace patch. The certificate
-# setup needs to be in the `istio-system` namespace
-patchesJson6902:
   - patch: |-
       - op: replace
         path: /metadata/namespace
