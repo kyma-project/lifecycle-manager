@@ -61,31 +61,82 @@ components:
   # [GRAFANA] To generate configmap for provision grafana dashboard
   #- ../grafana
 
-vars:
-# [CERTMANAGER] To enable cert-manager, uncomment all sections with 'CERTMANAGER' prefix.
-- name: CERTIFICATE_NAMESPACE # namespace of the certificate CR
-  objref:
+replacements:
+# substitutes CERTIFICATE_NAMESPACE, the namespace of the certificate CR
+- source:
     kind: Certificate
-    group: cert-manager.io
-    version: v1
     name: serving-cert # this name should match the one in certificate.yaml
-  fieldref:
-    fieldpath: metadata.namespace
-- name: CERTIFICATE_NAME
-  objref:
+    fieldPath: metadata.namespace
+  targets:
+  - select:
+      kind: ValidatingWebhookConfiguration
+      name: validating-webhook-configuration
+    fieldpaths:
+    - metadata.annotations.[cert-manager.io/inject-ca-from]
+    options:
+      delimiter: '/'
+      index: 0
+  - select:
+      kind: CustomResourceDefinition
+    fieldpaths:
+    - metadata.annotations.[cert-manager.io/inject-ca-from]
+    options:
+      delimiter: '/'
+      index: 0
+# substitutes CERTIFICATE_NAME, the name of the certificate CR
+- source:
     kind: Certificate
-    group: cert-manager.io
-    version: v1
     name: serving-cert # this name should match the one in certificate.yaml
-- name: SERVICE_NAMESPACE # namespace of the service
-  objref:
+    fieldPath: metadata.name
+  targets:
+  - select:
+      kind: ValidatingWebhookConfiguration
+      name: validating-webhook-configuration
+    fieldpaths:
+    - metadata.annotations.[cert-manager.io/inject-ca-from]
+    options:
+      delimiter: '/'
+      index: 1
+  - select:
+      kind: CustomResourceDefinition
+    fieldpaths:
+    - metadata.annotations.[cert-manager.io/inject-ca-from]
+    options:
+      delimiter: '/'
+      index: 1
+# substitutes SERVICE_NAMESPACE, the namespace of the service
+- source:
     kind: Service
     version: v1
     name: webhook-service
-  fieldref:
     fieldpath: metadata.namespace
-- name: SERVICE_NAME
-  objref:
+  targets:
+  - select:
+      group: cert-manager.io
+      version: v1
+      kind: Certificate
+      name: serving-cert
+    fieldpaths:
+    - spec.dnsNames.0
+    - spec.dnsNames.1
+    options:
+      delimiter: '.'
+      index: 1
+# substitutes SERVICE_NAME, the name of the service
+- source:
     kind: Service
     version: v1
     name: webhook-service
+    fieldpath: metadata.name
+  targets:
+  - select:
+      group: cert-manager.io
+      version: v1
+      kind: Certificate
+      name: serving-cert
+    fieldpaths:
+    - spec.dnsNames.0
+    - spec.dnsNames.1
+    options:
+      delimiter: '.'
+      index: 0
