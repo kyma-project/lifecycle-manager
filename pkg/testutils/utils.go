@@ -161,3 +161,9 @@ func AppendExternalCRDs(path string, files ...string) ([]*apiExtensionsv1.Custom
 	}
 	return crds, nil
 }
+
+func DescriptorExistsInCache(moduleTemplate *v1beta2.ModuleTemplate) bool {
+	moduleTemplateFromCache := moduleTemplate.GetDescFromCache()
+
+	return moduleTemplateFromCache != nil
+}
