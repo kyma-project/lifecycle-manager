@@ -143,7 +143,7 @@ func (m *ModuleTemplate) GetDescriptor() (*Descriptor, error) {
 	if !ok {
 		return nil, ErrTypeAssertDescriptor
 	}
-	m.SetDescToCache(mDesc)
+
 	return mDesc, nil
 }
 
