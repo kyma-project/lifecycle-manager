@@ -58,7 +58,7 @@ func GetTemplates(
 			syncContext, err := remote.SyncContextFromContext(ctx)
 			if err != nil {
 				template.Err = fmt.Errorf("failed to get syncContext: %w", err)
-				continue
+				break
 			}
 			runtimeClient := syncContext.RuntimeClient
 			originalModuleName := module.Name
