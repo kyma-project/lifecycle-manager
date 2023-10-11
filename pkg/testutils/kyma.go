@@ -14,10 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-var (
-	ErrStatusModuleStateMismatch = errors.New("status.modules.state not match")
-	ErrKymaNotDeleted            = errors.New("kyma CR not deleted")
-)
+var ErrStatusModuleStateMismatch = errors.New("status.modules.state not match")
 
 func NewTestKyma(name string) *v1beta2.Kyma {
 	return NewKymaWithSyncLabel(name, v1.NamespaceDefault, v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalClient)
@@ -26,18 +23,13 @@ func NewTestKyma(name string) *v1beta2.Kyma {
 // NewKymaWithSyncLabel use this function to initialize kyma CR with SyncStrategyLocalSecret
 // are typically used in e2e test, which expect related access secret provided.
 func NewKymaWithSyncLabel(name, namespace, channel, syncStrategy string) *v1beta2.Kyma {
-	kyma := newKCPKymaWithNamespace(name, namespace, channel, syncStrategy)
-	kyma.Labels[v1beta2.SyncLabel] = v1beta2.EnableLabelValue
-	return kyma
-}
-
-func newKCPKymaWithNamespace(namePrefix, namespace, channel, syncStrategy string) *v1beta2.Kyma {
 	return builder.NewKymaBuilder().
-		WithNamePrefix(namePrefix).
+		WithNamePrefix(name).
 		WithNamespace(namespace).
 		WithAnnotation(watcher.DomainAnnotation, "example.domain.com").
 		WithAnnotation(v1beta2.SyncStrategyAnnotation, syncStrategy).
 		WithLabel(v1beta2.InstanceIDLabel, "test-instance").
+		WithLabel(v1beta2.SyncLabel, v1beta2.EnableLabelValue).
 		WithChannel(channel).
 		Build()
 }
@@ -72,16 +64,20 @@ func KymaDeleted(ctx context.Context,
 	return nil
 }
 
-func DeleteKymaByForceRemovePurgeFinalizer(ctx context.Context, kyma *v1beta2.Kyma, k8sClient client.Client) error {
+func DeleteKymaByForceRemovePurgeFinalizer(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error {
+	if err := SyncKyma(ctx, clnt, kyma); err != nil {
+		return fmt.Errorf("sync kyma %w", err)
+	}
+
 	if !kyma.DeletionTimestamp.IsZero() {
 		if controllerutil.ContainsFinalizer(kyma, v1beta2.PurgeFinalizer) {
 			controllerutil.RemoveFinalizer(kyma, v1beta2.PurgeFinalizer)
-			if err := k8sClient.Update(ctx, kyma); err != nil {
+			if err := clnt.Update(ctx, kyma); err != nil {
 				return fmt.Errorf("can't remove purge finalizer %w", err)
 			}
 		}
 	}
-	return DeleteCR(ctx, k8sClient, kyma)
+	return DeleteCR(ctx, clnt, kyma)
 }
 
 func DeleteModule(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma, moduleName string) error {

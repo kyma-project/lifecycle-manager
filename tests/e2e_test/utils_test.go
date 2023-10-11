@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -34,6 +35,50 @@ const (
 	interval              = 1 * time.Second
 	remoteNamespace       = "kyma-system"
 )
+
+func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
+	BeforeAll(func() {
+		Eventually(CreateKymaSecret).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
+			Should(Succeed())
+		Eventually(controlPlaneClient.Create).
+			WithContext(ctx).
+			WithArguments(kyma).
+			Should(Succeed())
+		By("verifying kyma is ready")
+		Eventually(CheckKymaIsInState).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+			Should(Succeed())
+		By("verifying remote kyma is ready")
+		Eventually(CheckRemoteKymaCR).
+			WithContext(ctx).
+			WithArguments(remoteNamespace, []v1beta2.Module{}, runtimeClient, v1beta2.StateReady).
+			Should(Succeed())
+	})
+}
+
+func CleanupKymaAfterAll(kyma *v1beta2.Kyma) {
+	AfterAll(func() {
+		By("When delete KCP Kyma")
+		Eventually(DeleteKymaByForceRemovePurgeFinalizer).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma).
+			Should(Succeed())
+
+		By("Then SKR Kyma deleted")
+		Eventually(KymaDeleted).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), runtimeClient).
+			Should(Succeed())
+		By("Then KCP Kyma deleted")
+		Eventually(KymaDeleted).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
+			Should(Succeed())
+	})
+}
 
 func CheckKymaIsInState(ctx context.Context,
 	kymaName, kymaNamespace string,

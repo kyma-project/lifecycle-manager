@@ -12,26 +12,8 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular", v1beta2.SyncStrategyLocalSecret)
 	moduleName := "template-operator"
 
-	It("Given empty Kyma CR on remote cluster", func() {
-		Eventually(CreateKymaSecret).
-			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
-			Should(Succeed())
-		Eventually(controlPlaneClient.Create).
-			WithContext(ctx).
-			WithArguments(kyma).
-			Should(Succeed())
-		By("Then state of KCP Kyma in Ready")
-		Eventually(CheckKymaIsInState).
-			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
-			Should(Succeed())
-		By("Then state of SKR Kyma in Ready")
-		Eventually(CheckRemoteKymaCR).
-			WithContext(ctx).
-			WithArguments(remoteNamespace, []v1beta2.Module{}, runtimeClient, v1beta2.StateReady).
-			Should(Succeed())
-	})
+	InitEmptyKymaBeforeAll(kyma)
+	CleanupKymaAfterAll(kyma)
 
 	Context("Given Template Operator without Default CR", func() {
 		It("When enable Template Operator", func() {
@@ -73,22 +55,5 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 				Should(Succeed())
 		})
-	})
-
-	It("When delete KCP Kyma", func() {
-		Eventually(controlPlaneClient.Delete).
-			WithContext(ctx).
-			WithArguments(kyma).
-			Should(Succeed())
-		By("Then SKR Kyma deleted")
-		Eventually(KymaDeleted).
-			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), runtimeClient).
-			Should(Succeed())
-		By("Then KCP Kyma deleted")
-		Eventually(KymaDeleted).
-			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
-			Should(Succeed())
 	})
 })

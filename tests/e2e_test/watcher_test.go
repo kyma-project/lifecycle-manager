@@ -8,11 +8,8 @@ import (
 	"io"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/api/meta"
-
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -48,32 +45,8 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 	incomingRequestMsg := fmt.Sprintf("event received from SKR, adding %s/%s to queue",
 		kyma.GetNamespace(), kyma.GetName())
 
-	BeforeAll(func() {
-		// make sure we can list Kymas to ensure CRDs have been installed
-		err := controlPlaneClient.List(ctx, &v1beta2.KymaList{})
-		Expect(meta.IsNoMatchError(err)).To(BeFalse())
-	})
-
-	It("Should create empty Kyma CR on remote cluster", func() {
-		Eventually(CreateKymaSecret).
-			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
-			Should(Succeed())
-		Eventually(controlPlaneClient.Create).
-			WithContext(ctx).
-			WithArguments(kyma).
-			Should(Succeed())
-		By("verifying kyma is ready")
-		Eventually(CheckKymaIsInState).
-			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
-			Should(Succeed())
-		By("verifying remote kyma is ready")
-		Eventually(CheckRemoteKymaCR).
-			WithContext(ctx).
-			WithArguments(remoteNamespace, []v1beta2.Module{}, runtimeClient, v1beta2.StateReady).
-			Should(Succeed())
-	})
+	InitEmptyKymaBeforeAll(kyma)
+	CleanupKymaAfterAll(kyma)
 
 	It("Should redeploy watcher if it is deleted on remote cluster", func() {
 		By("verifying Runtime-Watcher is ready")
@@ -124,35 +97,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 			WithArguments(incomingRequestMsg, controlPlaneRESTConfig, runtimeRESTConfig, controlPlaneClient, runtimeClient).
 			Should(Succeed())
 	})
-
-	It("Should delete Kyma CR on remote cluster", func() {
-		Eventually(DeleteKymaByForceRemovePurgeFinalizer).
-			WithContext(ctx).
-			WithArguments(kyma, controlPlaneClient).
-			Should(Succeed())
-
-		Eventually(DeleteKymaSecret).
-			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
-			Should(Succeed())
-
-		Eventually(checkRemoteKymaCRDeleted).
-			WithContext(ctx).
-			WithArguments(remoteNamespace, runtimeClient).
-			Should(Succeed())
-	})
 })
-
-func checkRemoteKymaCRDeleted(ctx context.Context,
-	kymaNamespace string, k8sClient client.Client,
-) error {
-	kyma := &v1beta2.Kyma{}
-	err := k8sClient.Get(ctx, client.ObjectKey{Name: defaultRemoteKymaName, Namespace: kymaNamespace}, kyma)
-	if util.IsNotFound(err) {
-		return nil
-	}
-	return err
-}
 
 func changeRemoteKymaChannel(ctx context.Context, kymaNamespace, channel string, k8sClient client.Client) error {
 	kyma := &v1beta2.Kyma{}
