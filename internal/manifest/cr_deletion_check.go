@@ -2,8 +2,7 @@ package manifest
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
+	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
@@ -45,7 +44,7 @@ func (c *CRDeletionCheck) Run(
 		if util.IsNotFound(err) {
 			return true, nil
 		}
-		return false, errors.Wrap(err, "failed to fetch default resource CR")
+		return false, fmt.Errorf("%w: failed to fetch default resource CR", err)
 	}
 	return false, nil
 }

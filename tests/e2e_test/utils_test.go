@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"io"
 	"net/http"
 	"regexp"
@@ -25,9 +26,14 @@ import (
 )
 
 var (
-	errKymaNotInExpectedState = errors.New("kyma CR not in expected state")
-	errModuleNotExisting      = errors.New("module does not exists in KymaCR")
-	errKymaNotDeleted         = errors.New("kyma CR not deleted")
+	errKymaNotInExpectedState       = errors.New("kyma CR not in expected state")
+	errManifestNotInExpectedState   = errors.New("manifest CR not in expected state")
+	errSampleCrNotInExpectedState   = errors.New("sample CR not in expected state")
+	errModuleNotExisting            = errors.New("module does not exists in KymaCR")
+	errKymaNotDeleted               = errors.New("kyma CR not deleted")
+	errSampleCRDeletionTimestampSet = errors.New("sample CR has set DeletionTimeStamp")
+	errManifestDeletionTimestampSet = errors.New("manifest CR has set DeletionTimeStamp")
+	errResourceExists               = errors.New("resource still exists")
 )
 
 const (
@@ -60,6 +66,52 @@ func CheckKymaIsInState(ctx context.Context,
 	return nil
 }
 
+func CheckManifestIsInState(ctx context.Context,
+	kymaName, moduleName string,
+	k8sClient client.Client,
+	expectedState v2.State,
+) error {
+	manifest := &v1beta2.Manifest{}
+	manifests := &v1beta2.ManifestList{}
+	if err := k8sClient.List(ctx, manifests); err != nil {
+		return err
+	}
+	for _, m := range manifests.Items {
+		if strings.Contains(m.Name, kymaName) && strings.Contains(m.Name, moduleName) {
+			manifest = &m
+			break
+		}
+	}
+
+	if manifest.Status.State != expectedState {
+		return fmt.Errorf("%w: expect %s, but in %s",
+			errManifestNotInExpectedState, expectedState, manifest.Status.State)
+	}
+	return nil
+}
+
+func ManifestNoDeletionTimeStampSet(ctx context.Context,
+	kymaName, moduleName string,
+	k8sClient client.Client) error {
+
+	manifest := &v1beta2.Manifest{}
+	manifests := &v1beta2.ManifestList{}
+	if err := k8sClient.List(ctx, manifests); err != nil {
+		return err
+	}
+	for _, m := range manifests.Items {
+		if strings.Contains(m.Name, kymaName) && strings.Contains(m.Name, moduleName) {
+			manifest = &m
+			break
+		}
+	}
+
+	if !manifest.ObjectMeta.DeletionTimestamp.IsZero() {
+		return errManifestDeletionTimestampSet
+	}
+	return nil
+}
+
 func getManifestCRs(ctx context.Context, k8sClient client.Client) (string, error) {
 	manifests := &v1beta2.ManifestList{}
 	if err := k8sClient.List(ctx, manifests); err != nil {
@@ -78,6 +130,18 @@ func CheckIfExists(ctx context.Context, name, namespace, groupVersion, kind stri
 		"kind":       kind,
 	}}
 	return clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, resourceCR)
+}
+
+func CheckIfNotExists(ctx context.Context, name, namespace, groupVersion, kind string, clnt client.Client) error {
+	resourceCR := &unstructured.Unstructured{Object: map[string]interface{}{
+		"apiVersion": groupVersion,
+		"kind":       kind,
+	}}
+	err := clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, resourceCR)
+	if util.IsNotFound(err) {
+		return nil
+	}
+	return fmt.Errorf("%w: %s %s/%s should be deleted", errResourceExists, kind, namespace, name)
 }
 
 func CreateKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
@@ -236,4 +300,29 @@ func UpdateSampleCRSpec(ctx context.Context, name, namespace, resourceFilePath s
 
 	sampleCR.Spec.ResourceFilePath = resourceFilePath
 	return clnt.Update(ctx, sampleCR)
+}
+
+func CheckSampleCRIsInState(ctx context.Context, name, namespace string, clnt client.Client, expectedState templateOperator.State) error {
+	sampleCR := &templateOperator.Sample{}
+	if err := clnt.Get(ctx,
+		client.ObjectKey{Name: name, Namespace: namespace}, sampleCR); err != nil {
+		return err
+	}
+	if sampleCR.Status.State != expectedState {
+		return fmt.Errorf("%w: expect %s, but in %s",
+			errSampleCrNotInExpectedState, expectedState, sampleCR.Status.State)
+	}
+	return nil
+}
+
+func SampleCRNoDeletionTimeStampSet(ctx context.Context, name, namespace string, clnt client.Client) error {
+	sampleCR := &templateOperator.Sample{}
+	if err := clnt.Get(ctx,
+		client.ObjectKey{Name: name, Namespace: namespace}, sampleCR); err != nil {
+		return err
+	}
+	if !sampleCR.ObjectMeta.DeletionTimestamp.IsZero() {
+		return errSampleCRDeletionTimestampSet
+	}
+	return nil
 }
