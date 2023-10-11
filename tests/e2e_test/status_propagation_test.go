@@ -13,7 +13,7 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 	GinkgoWriter.Printf("kyma before create %v\n", kyma)
 	moduleName := "template-operator"
 
-	It("When create empty Kyma CR on remote cluster", func() {
+	It("Given empty Kyma CR on remote cluster", func() {
 		Eventually(CreateKymaSecret).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).

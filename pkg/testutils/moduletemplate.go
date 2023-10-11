@@ -6,7 +6,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -53,7 +52,7 @@ func UpdateModuleTemplateSpec(ctx context.Context,
 		return err
 	}
 	if moduleTemplate.Spec.Data == nil {
-		moduleTemplate.Spec.Data = &unstructured.Unstructured{}
+		return ErrManifestResourceIsNil
 	}
 	moduleTemplate.Spec.Data.Object["spec"] = map[string]any{key: newValue}
 	if err := clnt.Update(ctx, moduleTemplate); err != nil {

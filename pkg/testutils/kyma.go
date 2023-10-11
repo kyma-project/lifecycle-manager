@@ -84,12 +84,25 @@ func DeleteKymaByForceRemovePurgeFinalizer(ctx context.Context, kyma *v1beta2.Ky
 	return DeleteCR(ctx, k8sClient, kyma)
 }
 
-func GetKyma(ctx context.Context, testClient client.Client, name, namespace string) (*v1beta2.Kyma, error) {
+func DeleteModule(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma, moduleName string) error {
+	manifest, err := GetManifest(ctx, clnt,
+		kyma.GetName(), kyma.GetNamespace(), moduleName)
+	if util.IsNotFound(err) {
+		return nil
+	}
+	err = client.IgnoreNotFound(clnt.Delete(ctx, manifest))
+	if err != nil {
+		return fmt.Errorf("module not deleted: %w", err)
+	}
+	return nil
+}
+
+func GetKyma(ctx context.Context, clnt client.Client, name, namespace string) (*v1beta2.Kyma, error) {
 	kymaInCluster := &v1beta2.Kyma{}
 	if namespace == "" {
 		namespace = v1.NamespaceDefault
 	}
-	err := testClient.Get(ctx, client.ObjectKey{
+	err := clnt.Get(ctx, client.ObjectKey{
 		Namespace: namespace,
 		Name:      name,
 	}, kymaInCluster)

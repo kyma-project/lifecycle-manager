@@ -49,7 +49,7 @@ var _ = Describe("Manifest.Spec.Remote in default mode", Ordered, func() {
 
 	It("expect Manifest.Spec.Remote=false", func() {
 		Eventually(GetManifestSpecRemote, Timeout, Interval).
-			WithArguments(ctx, controlPlaneClient, kyma, module).
+			WithArguments(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
 			Should(BeFalse())
 	})
 })
@@ -69,14 +69,18 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 	It("Manifest CR should be updated after module template changed", func() {
 		By("CR created")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ManifestExists, Timeout, Interval).WithArguments(
-				ctx, kyma, activeModule, controlPlaneClient).Should(Succeed())
+			Eventually(ManifestExists, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
+				Should(Succeed())
 		}
 
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
-				WithArguments(ctx, controlPlaneClient, kyma, activeModule, v1beta2.StateReady).Should(Succeed())
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, v1beta2.StateReady).
+				Should(Succeed())
 		}
 
 		By("Kyma CR should be in Ready state")
@@ -179,10 +183,10 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 	It("update Manifest", func() {
 		// await for the manifest to be created
 		Eventually(GetManifestSpecRemote, Timeout, Interval).
-			WithArguments(ctx, controlPlaneClient, kyma, module).
+			WithArguments(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
 			Should(BeFalse())
 
-		manifest, err := GetManifest(ctx, controlPlaneClient, kyma, module)
+		manifest, err := GetManifest(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
 		Expect(err).ToNot(HaveOccurred())
 
 		manifestImageSpec := extractInstallImageSpec(manifest.Spec.Install)
@@ -233,14 +237,18 @@ var _ = Describe("Update Module Template Version", Ordered, func() {
 	It("Manifest CR should be updated after module template version has changed", func() {
 		By("CR created")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ManifestExists, Timeout, Interval).WithArguments(
-				ctx, kyma, activeModule, controlPlaneClient).Should(Succeed())
+			Eventually(ManifestExists, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
+				Should(Succeed())
 		}
 
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
-				WithArguments(ctx, controlPlaneClient, kyma, activeModule, v1beta2.StateReady).Should(Succeed())
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, v1beta2.StateReady).
+				Should(Succeed())
 		}
 
 		By("Kyma CR should be in Ready state")
@@ -469,7 +477,9 @@ func expectManifestFor(kyma *v1beta2.Kyma) func(func(*v1beta2.Manifest) error) f
 	return func(validationFn func(*v1beta2.Manifest) error) func() error {
 		return func() error {
 			// ensure manifest is refreshed each time the function is invoked for "Eventually" assertion to work correctly.
-			manifest, err := GetManifest(ctx, controlPlaneClient, kyma, kyma.Spec.Modules[0])
+			manifest, err := GetManifest(ctx, controlPlaneClient,
+				kyma.GetName(), kyma.GetNamespace(),
+				kyma.Spec.Modules[0].Name)
 			if err != nil {
 				return err
 			}
