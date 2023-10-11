@@ -26,11 +26,11 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 			moduleCR := NewTestModuleCR(remoteNamespace)
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, moduleCR.GetName(), moduleCR.GetNamespace()).
+				WithArguments(runtimeClient, moduleCR.GetName(), moduleCR.GetNamespace()).
 				Should(Equal(ErrNotFound))
 			Consistently(ModuleCRExists).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, moduleCR.GetName(), moduleCR.GetNamespace()).
+				WithArguments(runtimeClient, moduleCR.GetName(), moduleCR.GetNamespace()).
 				Should(Equal(ErrNotFound))
 		})
 

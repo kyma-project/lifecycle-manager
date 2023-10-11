@@ -28,7 +28,7 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 		It("Then module CR exist", func() {
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, moduleCR.GetName(), moduleCR.GetNamespace()).
+				WithArguments(runtimeClient, moduleCR.GetName(), moduleCR.GetNamespace()).
 				Should(Succeed())
 		})
 
