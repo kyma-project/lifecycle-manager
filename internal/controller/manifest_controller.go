@@ -100,6 +100,6 @@ func ManifestReconciler(
 		declarative.WithPreDelete{manifest.PreDeleteDeleteCR},
 		declarative.WithPeriodicConsistencyCheck(checkInterval),
 		declarative.WithModuleCRDName(manifest.GetModuleCRDName),
-		declarative.WithCustomDeletionCheck(manifest.NewCustomResourceDeletionCheck()),
+		declarative.WithModuleCRDeletionCheck(manifest.NewCRDeletionCheck()),
 	)
 }

@@ -11,8 +11,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// NewCustomResourceDeletionCheck creates a check that verifies that the Resource CR in the remote cluster is deleted.
-func NewCustomResourceDeletionCheck() *CRDeletionCheck {
+// NewCRDeletionCheck creates a check that verifies that the Resource CR in the remote cluster is deleted.
+func NewCRDeletionCheck() *CRDeletionCheck {
 	return &CRDeletionCheck{}
 }
 

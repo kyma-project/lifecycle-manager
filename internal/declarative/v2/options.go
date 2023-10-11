@@ -43,6 +43,7 @@ func DefaultOptions() *Options {
 		WithManifestCache(os.TempDir()),
 		WithSkipReconcileOn(SkipReconcileOnDefaultLabelPresentAndTrue),
 		WithManifestParser(NewInMemoryCachedManifestParser(DefaultInMemoryParseTTL)),
+		WithModuleCRDeletionCheck(NewDefaultDeletionCheck()),
 	)
 }
 
@@ -74,7 +75,7 @@ type Options struct {
 	PostRuns   []PostRun
 	PreDeletes []PreDelete
 
-	DeletionCheck DeletionCheck
+	DeletionCheck ModuleCRDeletionCheck
 
 	DeletePrerequisites bool
 
@@ -218,19 +219,15 @@ func (o WithPreDelete) Apply(options *Options) {
 	options.PreDeletes = append(options.PreDeletes, o...)
 }
 
-func WithCustomDeletionCheck(deletionCheckFn DeletionCheck) WithCustomDeletionCheckOption {
-	return WithCustomDeletionCheckOption{DeletionCheck: deletionCheckFn}
+func WithModuleCRDeletionCheck(deletionCheckFn ModuleCRDeletionCheck) WithModuleCRDeletionCheckOption {
+	return WithModuleCRDeletionCheckOption{ModuleCRDeletionCheck: deletionCheckFn}
 }
 
-type DeletionCheck interface {
-	Run(ctx context.Context, clnt client.Client, obj Object) (bool, error)
+type WithModuleCRDeletionCheckOption struct {
+	ModuleCRDeletionCheck
 }
 
-type WithCustomDeletionCheckOption struct {
-	DeletionCheck
-}
-
-func (o WithCustomDeletionCheckOption) Apply(options *Options) {
+func (o WithModuleCRDeletionCheckOption) Apply(options *Options) {
 	options.DeletionCheck = o
 }
 
