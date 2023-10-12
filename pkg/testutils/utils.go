@@ -174,7 +174,8 @@ func DescriptorExistsInCache(moduleTemplate *v1beta2.ModuleTemplate) bool {
 }
 
 func GetDeletionTimeStamp(ctx context.Context, group, version, kind, name, namespace string,
-	clnt client.Client) (string, error) {
+	clnt client.Client,
+) (string, error) {
 	sampleCR := &unstructured.Unstructured{}
 	sampleCR.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   group,
