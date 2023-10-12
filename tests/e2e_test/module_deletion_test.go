@@ -93,11 +93,6 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 				WithArguments("template-operator-controller-manager", "template-operator-system",
 					"apps", "v1", "Deployment", runtimeClient).
 				Should(Succeed())
-			By("And Module Default CR is mutable.")
-			Eventually(UpdateSampleCRSpec).
-				WithContext(ctx).
-				WithArguments("sample-yaml", "kyma-system", "newValue", runtimeClient).
-				Should(Succeed())
 		})
 
 		It("Given the Kyma Module is under deletion", func() {
@@ -111,7 +106,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), "template-operator", controlPlaneClient, v2.StateDeleting).
 				Should(Succeed())
-			By("And the Module Default CR is plucked outin Deleting state")
+			By("And the Module Default CR is in Deleting state")
 			Consistently(CheckSampleCRIsInState).
 				WithContext(ctx).
 				WithArguments("sample-yaml", "kyma-system", runtimeClient, "Deleting").

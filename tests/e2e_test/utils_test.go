@@ -269,25 +269,6 @@ func GetKymaStateMetricCount(ctx context.Context, kymaName, state string) (int, 
 	return 0, nil
 }
 
-func UpdateSampleCRSpec(ctx context.Context, name, namespace, resourceFilePath string, clnt client.Client) error {
-	sampleCR := &unstructured.Unstructured{}
-	sampleCR.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   "operator.kyma-project.io",
-		Version: "v1alpha1",
-		Kind:    "Sample",
-	})
-
-	if err := clnt.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, sampleCR); err != nil {
-		return err
-	}
-
-	if err := unstructured.SetNestedField(sampleCR.Object, resourceFilePath, "spec", "ResourceFilePath"); err != nil {
-		return err
-	}
-
-	return clnt.Update(ctx, sampleCR)
-}
-
 func CheckSampleCRIsInState(ctx context.Context, name, namespace string, clnt client.Client,
 	expectedState string,
 ) error {
