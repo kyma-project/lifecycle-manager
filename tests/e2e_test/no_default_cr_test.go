@@ -1,6 +1,8 @@
 package e2e_test
 
 import (
+	"context"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
@@ -8,7 +10,7 @@ import (
 )
 
 var _ = Describe("Module Without Default CR", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular", v1beta2.SyncStrategyLocalSecret)
+	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "fast", v1beta2.SyncStrategyLocalSecret)
 	moduleName := "template-operator"
 
 	InitEmptyKymaBeforeAll(kyma)
@@ -22,23 +24,23 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 				Should(Succeed())
 		})
 
+		It("Then no resources in manifest CR", func() {
+			Eventually(func(g Gomega, ctx context.Context) error {
+				_, err := GetManifestResource(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), moduleName)
+				return err
+			}).WithContext(ctx).Should(Equal(ErrManifestResourceIsNil))
+		})
+
 		It("Then no module CR exist", func() {
 			moduleCR := NewTestModuleCR(remoteNamespace)
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
-				WithArguments(runtimeClient, moduleCR.GetName(), moduleCR.GetNamespace()).
+				WithArguments(runtimeClient, moduleCR).
 				Should(Equal(ErrNotFound))
 			Consistently(ModuleCRExists).
 				WithContext(ctx).
-				WithArguments(runtimeClient, moduleCR.GetName(), moduleCR.GetNamespace()).
+				WithArguments(runtimeClient, moduleCR).
 				Should(Equal(ErrNotFound))
-		})
-
-		It("Then no resources in manifest CR", func() {
-			Eventually(GetManifestResource).
-				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), moduleName).
-				Should(Equal(ErrManifestResourceIsNil))
 		})
 
 		It("Then module state of KCP Kyma in Ready", func() {

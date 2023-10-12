@@ -7,9 +7,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
-	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -37,18 +35,23 @@ func GetManifest(ctx context.Context,
 	kymaNamespace,
 	moduleName string,
 ) (*v1beta2.Manifest, error) {
-	template := builder.NewModuleTemplateBuilder().
-		WithModuleName(moduleName).
-		WithOCM(compdesc2.SchemaVersion).Build()
-	descriptor, err := template.GetDescriptor()
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
 	if err != nil {
-		return nil, fmt.Errorf("component.descriptor %w", err)
+		return nil, err
 	}
+
+	var manifestKey v1beta2.TrackingObject
+	for _, module := range kyma.Status.Modules {
+		if module.Name == moduleName {
+			manifestKey = *module.Manifest
+		}
+	}
+
 	manifest := &v1beta2.Manifest{}
 	err = clnt.Get(
 		ctx, client.ObjectKey{
-			Namespace: kymaNamespace,
-			Name:      common.CreateModuleName(descriptor.GetName(), kymaName, moduleName),
+			Namespace: manifestKey.Namespace,
+			Name:      manifestKey.Name,
 		}, manifest,
 	)
 	if err != nil {

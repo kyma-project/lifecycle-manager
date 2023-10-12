@@ -10,13 +10,12 @@ import (
 
 const TestModuleCRName = "sample-yaml"
 
-func ModuleCRExists(ctx context.Context, clnt client.Client, name, namespace string) error {
-	moduleCR := unstructured.Unstructured{}
+func ModuleCRExists(ctx context.Context, clnt client.Client, moduleCR *unstructured.Unstructured) error {
 	err := clnt.Get(ctx, client.ObjectKey{
-		Namespace: namespace,
-		Name:      name,
-	}, &moduleCR)
-	return CRExists(&moduleCR, err)
+		Namespace: moduleCR.GetNamespace(),
+		Name:      moduleCR.GetName(),
+	}, moduleCR)
+	return CRExists(moduleCR, err)
 }
 
 // NewTestModuleCR init one module cr used by template-operator.

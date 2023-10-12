@@ -1,6 +1,8 @@
 package e2e_test
 
 import (
+	"context"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
@@ -10,7 +12,6 @@ import (
 var _ = Describe("Warning Status Propagation", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular",
 		v1beta2.SyncStrategyLocalSecret)
-	GinkgoWriter.Printf("kyma before create %v\n", kyma)
 	moduleName := "template-operator"
 	moduleCR := NewTestModuleCR(remoteNamespace)
 
@@ -28,15 +29,20 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 		It("Then module CR exist", func() {
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
-				WithArguments(runtimeClient, moduleCR.GetName(), moduleCR.GetNamespace()).
+				WithArguments(runtimeClient, moduleCR).
 				Should(Succeed())
 		})
 
 		It("Then resource defined in manifest CR", func() {
-			Eventually(GetManifestResource).
-				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), moduleName).
-				Should(Equal(moduleCR))
+			Eventually(func(g Gomega, ctx context.Context) {
+				resource, err := GetManifestResource(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), moduleName)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(resource.GetName()).To(Equal(moduleCR.GetName()))
+				Expect(resource.GetNamespace()).To(Equal(moduleCR.GetNamespace()))
+				Expect(resource.GroupVersionKind().Version).To(Equal(moduleCR.GroupVersionKind().Version))
+				Expect(resource.GroupVersionKind().Group).To(Equal(moduleCR.GroupVersionKind().Group))
+				Expect(resource.GroupVersionKind().Kind).To(Equal(moduleCR.GroupVersionKind().Kind))
+			}).WithContext(ctx).Should(Succeed())
 		})
 
 		It("Then module state of KCP Kyma in Warning", func() {

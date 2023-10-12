@@ -180,8 +180,7 @@ jobs:
           --module-config-file ./module-config-no-cr.yaml \
           --path . \
           --registry k3d-kcp-registry:5111 \
-          --insecure \
-          --name kyma-project.io/module/template-operator
+          --insecure
           sed -i 's/k3d-kcp-registry:5111/k3d-kcp-registry:5000/g' ./template.yaml
           kubectl config use-context k3d-kcp
           kubectl get crds
