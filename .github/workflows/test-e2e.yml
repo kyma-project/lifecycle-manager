@@ -40,7 +40,7 @@ jobs:
   e2e-integration:
     strategy:
       matrix:
-        e2e-test: ["watcher-enqueue", "kyma-deletion", "module-status-propagation", "kyma-metrics"]
+        e2e-test: ["watcher-enqueue", "kyma-deletion", "module-status-propagation", "kyma-metrics", "purge-controller"]
         cli-stability: [ "unstable" ]
     name: "Run E2E tests"
     needs: [wait-for-img]
@@ -125,9 +125,20 @@ jobs:
         run: |
           echo "KLM_VERSION_TAG=PR-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
           echo "KLM_IMAGE_REPO=dev" >> $GITHUB_ENV
-      - name: Deploy LM local testing kustomize
+      - name: Deploy LM local testing kustomize with purge finalizer
         working-directory: ./lifecycle-manager
         run: |
+          pushd config/watcher_local_test
+          echo \
+          "- op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --enable-purge-finalizer=true
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --purge-finalizer-timeout=5s" >> purge_finalizer.yaml
+          cat purge_finalizer.yaml
+          kustomize edit add patch --path warning_patch.yaml --kind Deployment
+          popd
           maxRetry=5
           for retry in $(seq 1 $maxRetry)
           do
@@ -144,11 +155,11 @@ jobs:
           done
       - name: Checkout template-operator
         uses: actions/checkout@v3
-        if: ${{ matrix.e2e-test == 'module-status-propagation' }}
+        if: ${{ matrix.e2e-test == 'module-status-propagation' || matrix.e2e-test == 'purge-controller' }}
         with:
           repository: kyma-project/template-operator
           path: ./template-operator/
-      - name: Create Template Operator Module
+      - name: Create Template Operator Module With Warning State
         working-directory: ./template-operator
         if: ${{ matrix.e2e-test == 'module-status-propagation' }}
         run: |
@@ -160,6 +171,20 @@ jobs:
           kustomize edit add patch --path warning_patch.yaml --kind Deployment
           popd
           kyma alpha create module --kubebuilder-project  --channel=regular --name kyma.project.io/module/template-operator --version 1.1.1 --path . --registry k3d-kcp-registry:5111 --insecure --module-archive-version-overwrite /
+          sed -i 's/k3d-kcp-registry:5111/k3d-kcp-registry:5000/g' ./template.yaml
+          kubectl config use-context k3d-kcp
+          kubectl get crds
+          kubectl apply -f template.yaml
+      - name: Create Template Operator Module With Ready State
+        working-directory: ./template-operator
+        if: ${{ matrix.e2e-test == 'purge-controller' }}
+        run: |
+          make build-manifests
+          kyma alpha create module \
+           --module-config-file ./module-config.yaml \
+           --path . \
+           --registry k3d-kcp-registry:5111 \
+           --insecure
           sed -i 's/k3d-kcp-registry:5111/k3d-kcp-registry:5000/g' ./template.yaml
           kubectl config use-context k3d-kcp
           kubectl get crds

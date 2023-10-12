@@ -71,3 +71,6 @@ watcher-enqueue: ## Runs the Watcher E2E Test
 
 module-status-propagation: ## Runs the Status Propagation E2E Test
 	go test -ginkgo.v -ginkgo.focus "Warning Status Propagation"
+
+purge-controller:
+	go test -ginkgo.v -ginkgo.focus "Purge Controller"
