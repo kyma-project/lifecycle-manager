@@ -14,7 +14,6 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 		v1beta2.SyncStrategyLocalSecret)
 
 	InitEmptyKymaBeforeAll(kyma)
-	CleanupKymaAfterAll(kyma)
 
 	It("Should remove SKR Cluster", func() {
 		By("removing SKR Cluster")
@@ -63,6 +62,21 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 		Eventually(CheckKymaIsInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+			Should(Succeed())
+	})
+
+	It("Should delete KCP Kyma", func() {
+		By("Deleting KCP Kyma")
+		Eventually(controlPlaneClient.Delete).
+			WithContext(ctx).
+			WithArguments(kyma).
+			Should(Succeed())
+	})
+
+	It("Kyma CR should be removed", func() {
+		Eventually(KymaDeleted).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 			Should(Succeed())
 	})
 })
