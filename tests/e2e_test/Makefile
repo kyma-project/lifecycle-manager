@@ -73,4 +73,4 @@ module-status-propagation: ## Runs the Status Propagation E2E Test
 	go test -ginkgo.v -ginkgo.focus "Warning Status Propagation"
 
 non-blocking-deletion: ## Runs the Status Propagation E2E Test
-	go test -ginkgo.focus "Non Blocking Module Deletion"
+	go test -ginkgo.focus "Non Blocking Kyma Module Deletion"
