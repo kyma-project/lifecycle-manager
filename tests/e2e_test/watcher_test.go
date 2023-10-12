@@ -65,7 +65,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 			WithArguments(kyma).
 			Should(Succeed())
 		By("verifying kyma is ready")
-		Eventually(CheckKymaIsInState).
+		Eventually(testutils.IsKymaInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 			Should(Succeed())

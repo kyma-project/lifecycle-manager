@@ -66,8 +66,9 @@ var _ = Describe("When kyma is not deleted within configured timeout", Ordered, 
 
 		By("Target finalizers should be dropped", func() {
 			Eventually(IsKymaInState, Timeout, Interval).
-				WithArguments(ctx, controlPlaneClient, kyma.GetName(), v1beta2.StateDeleting).
-				Should(BeTrue())
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), "", controlPlaneClient, v1beta2.StateDeleting).
+				Should(Succeed())
 			Eventually(getIssuerFinalizers, Timeout, Interval).
 				WithContext(ctx).
 				WithArguments(client.ObjectKeyFromObject(issuer1), controlPlaneClient).

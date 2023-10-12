@@ -31,7 +31,7 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 			WithArguments(kyma).
 			Should(Succeed())
 		By("verifying kyma is ready")
-		Eventually(CheckKymaIsInState).
+		Eventually(testutils.IsKymaInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 			Should(Succeed())
@@ -56,7 +56,7 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 			Should(Succeed())
 
 		By("Kyma should be in Error state")
-		Eventually(CheckKymaIsInState).
+		Eventually(testutils.IsKymaInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateError).
 			Should(Succeed())
@@ -86,7 +86,7 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 
 	It("Kyma should be in Ready state after secret is re-fetched", func() {
 		By("Kyma should be in Ready state")
-		Eventually(CheckKymaIsInState).
+		Eventually(testutils.IsKymaInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 			Should(Succeed())

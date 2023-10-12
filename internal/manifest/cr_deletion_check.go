@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -35,10 +37,13 @@ func (c *ModuleCRDeletionCheck) Run(
 	namespace := manifest.Spec.Resource.GetNamespace()
 	gvk := manifest.Spec.Resource.GroupVersionKind()
 
-	resourceCR := &unstructured.Unstructured{Object: map[string]interface{}{
-		"apiVersion": gvk.GroupVersion().String(),
-		"kind":       gvk.Kind,
-	}}
+	resourceCR := &unstructured.Unstructured{}
+	resourceCR.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   gvk.Group,
+		Version: gvk.Version,
+		Kind:    gvk.Kind,
+	})
+
 	if err := clnt.Get(ctx,
 		client.ObjectKey{Name: name, Namespace: namespace}, resourceCR); err != nil {
 		if util.IsNotFound(err) {

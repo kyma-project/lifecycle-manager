@@ -11,6 +11,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -26,14 +30,14 @@ import (
 )
 
 var (
-	errKymaNotInExpectedState       = errors.New("kyma CR not in expected state")
-	errManifestNotInExpectedState   = errors.New("manifest CR not in expected state")
-	errSampleCrNotInExpectedState   = errors.New("sample CR not in expected state")
-	errModuleNotExisting            = errors.New("module does not exists in KymaCR")
-	errKymaNotDeleted               = errors.New("kyma CR not deleted")
-	errSampleCRDeletionTimestampSet = errors.New("sample CR has set DeletionTimeStamp")
-	errManifestDeletionTimestampSet = errors.New("manifest CR has set DeletionTimeStamp")
-	errResourceExists               = errors.New("resource still exists")
+	errKymaNotInExpectedState          = errors.New("kyma CR not in expected state")
+	errManifestNotInExpectedState      = errors.New("manifest CR not in expected state")
+	errModuleNotExisting               = errors.New("module does not exists in KymaCR")
+	errKymaNotDeleted                  = errors.New("kyma CR not deleted")
+	errSampleCRDeletionTimestampSet    = errors.New("sample CR has set DeletionTimeStamp")
+	errSampleCRDeletionTimestampNotSet = errors.New("sample CR has not set DeletionTimeStamp")
+	errManifestDeletionTimestampSet    = errors.New("manifest CR has set DeletionTimeStamp")
+	errResourceExists                  = errors.New("resource still exists")
 )
 
 const (
@@ -44,27 +48,6 @@ const (
 	interval              = 1 * time.Second
 	remoteNamespace       = "kyma-system"
 )
-
-func CheckKymaIsInState(ctx context.Context,
-	kymaName, kymaNamespace string,
-	k8sClient client.Client,
-	expectedState v1beta2.State,
-) error {
-	kyma := &v1beta2.Kyma{}
-	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
-		return err
-	}
-	GinkgoWriter.Printf("kyma %v\n", kyma)
-	if kyma.Status.State != expectedState {
-		logmsg, err := getManifestCRs(ctx, k8sClient)
-		if err != nil {
-			return fmt.Errorf("error getting manifest crs %w", err)
-		}
-		return fmt.Errorf("%w: expect %s, but in %s. Kyma CR: %#v, Manifest CRs: %s",
-			errKymaNotInExpectedState, expectedState, kyma.Status.State, kyma, logmsg)
-	}
-	return nil
-}
 
 func CheckManifestIsInState(ctx context.Context,
 	kymaName, moduleName string,
@@ -112,31 +95,23 @@ func ManifestNoDeletionTimeStampSet(ctx context.Context,
 	return nil
 }
 
-func getManifestCRs(ctx context.Context, k8sClient client.Client) (string, error) {
-	manifests := &v1beta2.ManifestList{}
-	if err := k8sClient.List(ctx, manifests); err != nil {
-		return "", err
-	}
-	logmsg := ""
-	for _, m := range manifests.Items {
-		logmsg += fmt.Sprintf("Manifest CR: %#v", m)
-	}
-	return logmsg, nil
-}
-
-func CheckIfExists(ctx context.Context, name, namespace, groupVersion, kind string, clnt client.Client) error {
-	resourceCR := &unstructured.Unstructured{Object: map[string]interface{}{
-		"apiVersion": groupVersion,
-		"kind":       kind,
-	}}
+func CheckIfExists(ctx context.Context, name, namespace, group, version, kind string, clnt client.Client) error {
+	resourceCR := &unstructured.Unstructured{}
+	resourceCR.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   group,
+		Version: version,
+		Kind:    kind,
+	})
 	return clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, resourceCR)
 }
 
-func CheckIfNotExists(ctx context.Context, name, namespace, groupVersion, kind string, clnt client.Client) error {
-	resourceCR := &unstructured.Unstructured{Object: map[string]interface{}{
-		"apiVersion": groupVersion,
-		"kind":       kind,
-	}}
+func CheckIfNotExists(ctx context.Context, name, namespace, group, version, kind string, clnt client.Client) error {
+	resourceCR := &unstructured.Unstructured{}
+	resourceCR.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   group,
+		Version: version,
+		Kind:    kind,
+	})
 	err := clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, resourceCR)
 	if util.IsNotFound(err) {
 		return nil
@@ -246,11 +221,13 @@ func removeModuleWithIndex(s []v1beta2.Module, index int) []v1beta2.Module {
 	return append(s[:index], s[index+1:]...)
 }
 
-func SetFinalizer(name, namespace, groupVersion, kind string, finalizers []string, clnt client.Client) error {
-	resourceCR := &unstructured.Unstructured{Object: map[string]interface{}{
-		"apiVersion": groupVersion,
-		"kind":       kind,
-	}}
+func SetFinalizer(name, namespace, group, version, kind string, finalizers []string, clnt client.Client) error {
+	resourceCR := &unstructured.Unstructured{}
+	resourceCR.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   group,
+		Version: version,
+		Kind:    kind,
+	})
 	if err := clnt.Get(ctx,
 		client.ObjectKey{Name: name, Namespace: namespace}, resourceCR); err != nil {
 		return err
@@ -293,10 +270,12 @@ func GetKymaStateMetricCount(ctx context.Context, kymaName, state string) (int, 
 }
 
 func UpdateSampleCRSpec(ctx context.Context, name, namespace, resourceFilePath string, clnt client.Client) error {
-	sampleCR := &unstructured.Unstructured{Object: map[string]interface{}{
-		"apiVersion": "operator.kyma-project.io/v1alpha1",
-		"kind":       "Sample",
-	}}
+	sampleCR := &unstructured.Unstructured{}
+	sampleCR.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "operator.kyma-project.io",
+		Version: "v1alpha1",
+		Kind:    "Sample",
+	})
 
 	if err := clnt.Get(ctx, client.ObjectKey{Namespace: namespace, Name: name}, sampleCR); err != nil {
 		return err
@@ -312,46 +291,36 @@ func UpdateSampleCRSpec(ctx context.Context, name, namespace, resourceFilePath s
 func CheckSampleCRIsInState(ctx context.Context, name, namespace string, clnt client.Client,
 	expectedState string,
 ) error {
-	sampleCR := &unstructured.Unstructured{Object: map[string]interface{}{
-		"apiVersion": "operator.kyma-project.io/v1alpha1",
-		"kind":       "Sample",
-	}}
-
-	if err := clnt.Get(ctx,
-		client.ObjectKey{Name: name, Namespace: namespace}, sampleCR); err != nil {
-		return err
-	}
-
-	stateFromCR, stateExists, err := unstructured.NestedString(sampleCR.Object, "status", "status")
-	if err != nil || !stateExists {
-		return err
-	}
-
-	if stateFromCR != expectedState {
-		return fmt.Errorf("%w: expect %s, but in %s",
-			errSampleCrNotInExpectedState, expectedState, stateFromCR)
-	}
-	return nil
+	return testutils.CRIsInState(ctx,
+		"operator.kyma-project.io", "v1alpha1", "Sample",
+		name, namespace,
+		[]string{"status", "status"},
+		clnt,
+		expectedState)
 }
 
 func SampleCRNoDeletionTimeStampSet(ctx context.Context, name, namespace string, clnt client.Client) error {
-	sampleCR := &unstructured.Unstructured{Object: map[string]interface{}{
-		"apiVersion": "operator.kyma-project.io/v1alpha1",
-		"kind":       "Sample",
-	}}
-	if err := clnt.Get(ctx,
-		client.ObjectKey{Name: name, Namespace: namespace}, sampleCR); err != nil {
-		return err
-	}
-
-	deletionTimestampFromCR, deletionTimestampExists, err := unstructured.NestedString(sampleCR.Object,
-		"metadata", "deletionTimestamp")
-	if err != nil || !deletionTimestampExists {
+	deletionTimestampFromCR, err := testutils.GetDeletionTimeStamp(ctx, "operator.kyma-project.io", "v1alpha1",
+		"Sample", name, namespace, clnt)
+	if err != nil {
 		return err
 	}
 
 	if deletionTimestampFromCR != "" {
 		return errSampleCRDeletionTimestampSet
+	}
+	return nil
+}
+
+func SampleCRDeletionTimeStampSet(ctx context.Context, name, namespace string, clnt client.Client) error {
+	deletionTimestampFromCR, err := testutils.GetDeletionTimeStamp(ctx, "operator.kyma-project.io", "v1alpha1",
+		"Sample", name, namespace, clnt)
+	if err != nil {
+		return err
+	}
+
+	if deletionTimestampFromCR == "" {
+		return errSampleCRDeletionTimestampNotSet
 	}
 	return nil
 }

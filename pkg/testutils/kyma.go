@@ -83,12 +83,13 @@ func GetKyma(ctx context.Context, testClient client.Client, name, namespace stri
 	return kymaInCluster, nil
 }
 
-func IsKymaInState(ctx context.Context, kcpClient client.Client, kymaName string, state v1beta2.State) bool {
-	kymaFromCluster, err := GetKyma(ctx, kcpClient, kymaName, "")
-	if err != nil || kymaFromCluster.Status.State != state {
-		return false
-	}
-	return true
+func IsKymaInState(ctx context.Context, name, namespace string, clnt client.Client, state v1beta2.State) error {
+	return CRIsInState(ctx,
+		v1beta2.GroupVersion.Group, v1beta2.GroupVersion.Version, string(v1beta2.KymaKind),
+		name, namespace,
+		[]string{"status", "state"},
+		clnt,
+		string(state))
 }
 
 func ExpectKymaManagerField(

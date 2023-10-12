@@ -30,7 +30,7 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 			WithArguments(kyma).
 			Should(Succeed())
 		By("verifying kyma is ready")
-		Eventually(CheckKymaIsInState).
+		Eventually(testutils.IsKymaInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 			Should(Succeed())
@@ -48,7 +48,7 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 			WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", "regular", runtimeClient).
 			Should(Succeed())
 		By("Checking state of kyma")
-		Eventually(CheckKymaIsInState).
+		Eventually(testutils.IsKymaInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateWarning).
 			Should(Succeed())
@@ -61,7 +61,7 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 			WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", runtimeClient).
 			Should(Succeed())
 		By("Checking state of kyma")
-		Eventually(CheckKymaIsInState).
+		Eventually(testutils.IsKymaInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 			Should(Succeed())
