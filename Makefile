@@ -66,7 +66,6 @@ envtest-dir:
 .PHONY: test
 test: manifests test-crd generate fmt vet envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test `go list ./... | grep -v /tests/e2e_test` -coverprofile cover.out
-	go tool cover -html=cover.out
 
 .PHONY: dry-run
 dry-run: kustomize manifests

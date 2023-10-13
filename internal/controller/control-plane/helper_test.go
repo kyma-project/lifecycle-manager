@@ -113,7 +113,7 @@ func expectModuleTemplateSpecGetReset(
 		return err
 	}
 	if moduleTemplate.Spec.Data == nil {
-		return ErrExpectedLabelNotReset
+		return ErrManifestResourceIsNil
 	}
 	initKey, found := moduleTemplate.Spec.Data.Object["spec"]
 	if !found {

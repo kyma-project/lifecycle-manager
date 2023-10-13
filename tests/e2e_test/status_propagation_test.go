@@ -33,7 +33,7 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("Then resource defined in manifest CR", func() {
+		It("Then resource is defined in manifest CR", func() {
 			Eventually(func(g Gomega, ctx context.Context) {
 				resource, err := GetManifestResource(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), moduleName)
 				Expect(err).ToNot(HaveOccurred())

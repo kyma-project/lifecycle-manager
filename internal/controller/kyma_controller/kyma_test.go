@@ -165,7 +165,8 @@ var _ = Describe("Kyma enable multiple modules", Ordered, func() {
 		By("Delete CR")
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(DeleteModule, Timeout, Interval).
-				WithArguments(ctx, controlPlaneClient, kyma, activeModule.Name).Should(Succeed())
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma, activeModule.Name).Should(Succeed())
 		}
 
 		By("CR created again")
