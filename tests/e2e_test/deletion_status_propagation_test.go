@@ -10,10 +10,11 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+const moduleName = "template-operator"
+
 var _ = Describe("Warning Status Propagation When Deletion Timestamp Not Zero", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular",
 		v1beta2.SyncStrategyLocalSecret)
-	moduleName := "template-operator"
 
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
