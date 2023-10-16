@@ -32,7 +32,7 @@ var (
 	errNotVerified        = errors.New("SAN from certificate does not match domain specified in KymaCR")
 	errPemDecode          = errors.New("failed to decode PEM block")
 	errEmptyCert          = errors.New("empty certificate")
-	errHeaderValueTooLong = errors.New("Header value too long (over 32KiB)")
+	errHeaderValueTooLong = errors.New(XFCCHeader + " header value too long (over 32KiB)")
 	errHeaderMissing      = fmt.Errorf("request does not contain '%s' header", XFCCHeader)
 )
 
@@ -71,7 +71,6 @@ func (v *RequestVerifier) Verify(request *http.Request, watcherEvtObject *types.
 // getCertificateFromHeader extracts the XFCC header and pareses it into a valid x509 certificate.
 func (v *RequestVerifier) getCertificateFromHeader(r *http.Request) (*x509.Certificate, error) {
 	// Fetch XFCC-Header data
-	// xfccValues at this point is a []string - i.e: a pointer (no resource allocation, only a copy of the slice header is created)!
 	xfccValues, ok := r.Header[XFCCHeader]
 	if !ok {
 		return nil, errHeaderMissing
@@ -155,19 +154,20 @@ func (e AnnotationMissingError) Error() string {
 	return fmt.Sprintf("KymaCR '%s' does not have annotation `%s`", e.KymaCR, e.Annotation)
 }
 
-// getCertTokenFromXFCCHeader returns the first certificate embedded in the XFFC Header, if exists. Otherwise an empty string is returned.
+// getCertTokenFromXFCCHeader returns the first certificate embedded in the XFFC Header, if exists.
+// Otherwise an empty string is returned.
 func getCertTokenFromXFCCHeader(hVal string) string {
 	certStartIdx := strings.Index(hVal, certificateKey)
 	if certStartIdx >= 0 {
 		tokenWithCert := hVal[(certStartIdx + len(certificateKey)):]
-		//we should never have "," here but it's safer to add it anyway
+		// we shouldn't have "," here but it's safer to add it anyway
 		certEndIdx := strings.IndexAny(tokenWithCert, ";,")
 		if certEndIdx == -1 {
-			//no suffix, the entire token is the cert value
+			// no suffix, the entire token is the cert value
 			return tokenWithCert
 		}
 
-		//there's some data after the cert value, return just the cert part
+		// there's some data after the cert value, return just the cert part
 		return tokenWithCert[:certEndIdx]
 	}
 	return ""
