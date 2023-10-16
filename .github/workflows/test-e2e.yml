@@ -151,7 +151,7 @@ jobs:
         working-directory: ./template-operator
         if: ${{ matrix.e2e-test == 'non-blocking-deletion' }}
         run: |
-          kyma alpha create module --module-config-file ./module-config-no-cr.yaml --path . --registry k3d-kcp-registry:5111 --insecure --name kyma-project.io/module/template-operator
+          kyma alpha create module --module-config-file ./module-config.yaml --path . --registry k3d-kcp-registry:5111 --insecure
           sed -i 's/k3d-kcp-registry:5111/k3d-kcp-registry:5000/g' ./template.yaml
           kubectl config use-context k3d-kcp
           kubectl get crds
