@@ -23,6 +23,7 @@ const (
 	XFCCHeader     = "X-Forwarded-Client-Cert"
 	certificateKey = "Cert="
 	shootDomainKey = "skr-domain"
+	limit100KiB    = 100 * 1024
 )
 
 var (
@@ -69,13 +70,18 @@ func (v *RequestVerifier) Verify(request *http.Request, watcherEvtObject *types.
 // getCertificateFromHeader extracts the XFCC header and pareses it into a valid x509 certificate.
 func (v *RequestVerifier) getCertificateFromHeader(r *http.Request) (*x509.Certificate, error) {
 	// Fetch XFCC-Header data
-	xfccValue, ok := r.Header[XFCCHeader]
+	xfccValues, ok := r.Header[XFCCHeader]
 	if !ok {
 		return nil, errHeaderMissing
 	}
 
+	//limit the length of the data (Checkmarx)
+	xfccValue := xfccValues[0]
+	if len(xfccValue) > limit100KiB {
+		xfccValue = xfccValue[0:limit100KiB]
+	}
 	// Extract raw certificate from the first header value
-	cert := getCertTokenFromXFCCHeader(xfccValue[0])
+	cert := getCertTokenFromXFCCHeader(xfccValue)
 	if cert == "" {
 		return nil, errEmptyCert
 	}
