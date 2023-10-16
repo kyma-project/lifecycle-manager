@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	v1 "k8s.io/api/core/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
