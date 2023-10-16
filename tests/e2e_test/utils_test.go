@@ -11,8 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
-
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
@@ -34,13 +32,10 @@ var (
 	errKymaNotInExpectedState          = errors.New("kyma CR not in expected state")
 	errManifestNotInExpectedState      = errors.New("manifest CR not in expected state")
 	errModuleNotExisting               = errors.New("module does not exists in KymaCR")
-	errKymaNotDeleted                  = errors.New("kyma CR not deleted")
 	errSampleCRDeletionTimestampSet    = errors.New("sample CR has set DeletionTimeStamp")
 	errSampleCRDeletionTimestampNotSet = errors.New("sample CR has not set DeletionTimeStamp")
 	errManifestDeletionTimestampSet    = errors.New("manifest CR has set DeletionTimeStamp")
 	errResourceExists                  = errors.New("resource still exists")
-	errKymaNotInExpectedState = errors.New("kyma CR not in expected state")
-	errModuleNotExisting      = errors.New("module does not exists in KymaCR")
 )
 
 const (
@@ -64,7 +59,7 @@ func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
 			WithArguments(kyma).
 			Should(Succeed())
 		By("verifying kyma is ready")
-		Eventually(CheckKymaIsInState).
+		Eventually(IsKymaInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 			Should(Succeed())
@@ -97,21 +92,15 @@ func CleanupKymaAfterAll(kyma *v1beta2.Kyma) {
 	})
 }
 
-func CheckManifestIsInState(ctx context.Context,
-	kymaName, moduleName string,
-	k8sClient client.Client,
+func CheckManifestIsInState(
+	ctx context.Context,
+	kymaName, kymaNamespace, moduleName string,
+	clnt client.Client,
 	expectedState v2.State,
 ) error {
-	manifest := v1beta2.Manifest{}
-	manifests := &v1beta2.ManifestList{}
-	if err := k8sClient.List(ctx, manifests); err != nil {
+	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	if err != nil {
 		return err
-	}
-	for _, m := range manifests.Items {
-		if strings.Contains(m.Name, kymaName) && strings.Contains(m.Name, moduleName) {
-			manifest = m
-			break
-		}
 	}
 
 	if manifest.Status.State != expectedState {
@@ -122,19 +111,12 @@ func CheckManifestIsInState(ctx context.Context,
 }
 
 func ManifestNoDeletionTimeStampSet(ctx context.Context,
-	kymaName, moduleName string,
-	k8sClient client.Client,
+	kymaName, kymaNamespace, moduleName string,
+	clnt client.Client,
 ) error {
-	manifest := v1beta2.Manifest{}
-	manifests := &v1beta2.ManifestList{}
-	if err := k8sClient.List(ctx, manifests); err != nil {
+	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	if err != nil {
 		return err
-	}
-	for _, m := range manifests.Items {
-		if strings.Contains(m.Name, kymaName) && strings.Contains(m.Name, moduleName) {
-			manifest = m
-			break
-		}
 	}
 
 	if !manifest.ObjectMeta.DeletionTimestamp.IsZero() {
@@ -309,7 +291,7 @@ func GetKymaStateMetricCount(ctx context.Context, kymaName, state string) (int, 
 func CheckSampleCRIsInState(ctx context.Context, name, namespace string, clnt client.Client,
 	expectedState string,
 ) error {
-	return testutils.CRIsInState(ctx,
+	return CRIsInState(ctx,
 		"operator.kyma-project.io", "v1alpha1", "Sample",
 		name, namespace,
 		[]string{"status", "status"},
@@ -318,7 +300,7 @@ func CheckSampleCRIsInState(ctx context.Context, name, namespace string, clnt cl
 }
 
 func SampleCRNoDeletionTimeStampSet(ctx context.Context, name, namespace string, clnt client.Client) error {
-	deletionTimestampFromCR, err := testutils.GetDeletionTimeStamp(ctx, "operator.kyma-project.io", "v1alpha1",
+	deletionTimestampFromCR, err := GetDeletionTimeStamp(ctx, "operator.kyma-project.io", "v1alpha1",
 		"Sample", name, namespace, clnt)
 	if err != nil {
 		return err
@@ -331,7 +313,7 @@ func SampleCRNoDeletionTimeStampSet(ctx context.Context, name, namespace string,
 }
 
 func SampleCRDeletionTimeStampSet(ctx context.Context, name, namespace string, clnt client.Client) error {
-	deletionTimestampFromCR, err := testutils.GetDeletionTimeStamp(ctx, "operator.kyma-project.io", "v1alpha1",
+	deletionTimestampFromCR, err := GetDeletionTimeStamp(ctx, "operator.kyma-project.io", "v1alpha1",
 		"Sample", name, namespace, clnt)
 	if err != nil {
 		return err

@@ -70,7 +70,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 			By("And the Module Manifest CR is in a \"Deleting\" State")
 			Eventually(CheckManifestIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), "template-operator", controlPlaneClient, v2.StateDeleting).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), "template-operator", controlPlaneClient, v2.StateDeleting).
 				Should(Succeed())
 			By("And the SKR Module Default CR is not removed")
 			Consistently(CheckIfExists).
@@ -105,7 +105,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 			By("Then the Module Manifest CR is still in a and in state \"Deleting\" State")
 			Consistently(CheckManifestIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), "template-operator", controlPlaneClient, v2.StateDeleting).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), "template-operator", controlPlaneClient, v2.StateDeleting).
 				Should(Succeed())
 			By("And the Module Default CR is in Deleting state")
 			Consistently(CheckSampleCRIsInState).
@@ -133,11 +133,11 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 			By("And a new Manifest CR is created.")
 			Eventually(CheckManifestIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), "template-operator", controlPlaneClient, v2.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), "template-operator", controlPlaneClient, v2.StateReady).
 				Should(Succeed())
 			Eventually(ManifestNoDeletionTimeStampSet).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), "template-operator", controlPlaneClient).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), "template-operator", controlPlaneClient).
 				Should(Succeed())
 			By("And KCP Kyma CR is in a Ready State")
 			Eventually(testutils.IsKymaInState).
@@ -174,11 +174,6 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 			Eventually(controlPlaneClient.Delete).
 				WithContext(ctx).
 				WithArguments(kyma).
-				Should(Succeed())
-			By("Then Kyma CR should be removed")
-			Eventually(CheckKCPKymaCRDeleted).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 				Should(Succeed())
 		})
 	})

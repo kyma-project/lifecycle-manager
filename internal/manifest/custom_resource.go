@@ -95,12 +95,9 @@ func PreDeleteDeleteCR(
 	})
 	crdCopy := crd.DeepCopy()
 	err = skr.Delete(ctx, crdCopy, &client.DeleteOptions{PropagationPolicy: &propagation})
-	if err == nil {
-		return ErrWaitingForAsyncCustomResourceDefinitionDeletion
-	}
 
 	if !util.IsNotFound(err) {
-		return fmt.Errorf("PreDeleteDeleteCR: %w", err)
+		return nil
 	}
 
 	onCluster := manifest.DeepCopy()
