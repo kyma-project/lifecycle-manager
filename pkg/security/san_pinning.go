@@ -23,16 +23,17 @@ const (
 	XFCCHeader     = "X-Forwarded-Client-Cert"
 	certificateKey = "Cert="
 	shootDomainKey = "skr-domain"
-	limit100KiB    = 100 * 1024
+	limit32KiB     = 32 * 1024
 )
 
 var (
 
 	// Static errors.
-	errNotVerified   = errors.New("SAN from certificate does not match domain specified in KymaCR")
-	errPemDecode     = errors.New("failed to decode PEM block")
-	errEmptyCert     = errors.New("empty certificate")
-	errHeaderMissing = fmt.Errorf("request does not contain '%s' header", XFCCHeader)
+	errNotVerified        = errors.New("SAN from certificate does not match domain specified in KymaCR")
+	errPemDecode          = errors.New("failed to decode PEM block")
+	errEmptyCert          = errors.New("empty certificate")
+	errHeaderValueTooLong = errors.New("Header value too long (over 32KiB)")
+	errHeaderMissing      = fmt.Errorf("request does not contain '%s' header", XFCCHeader)
 )
 
 type RequestVerifier struct {
@@ -70,18 +71,19 @@ func (v *RequestVerifier) Verify(request *http.Request, watcherEvtObject *types.
 // getCertificateFromHeader extracts the XFCC header and pareses it into a valid x509 certificate.
 func (v *RequestVerifier) getCertificateFromHeader(r *http.Request) (*x509.Certificate, error) {
 	// Fetch XFCC-Header data
+	// xfccValues at this point is a []string - i.e: a pointer (no resource allocation, only a copy of the slice header is created)!
 	xfccValues, ok := r.Header[XFCCHeader]
 	if !ok {
 		return nil, errHeaderMissing
 	}
 
-	//limit the length of the data (Checkmarx)
-	xfccValue := xfccValues[0]
-	if len(xfccValue) > limit100KiB {
-		xfccValue = xfccValue[0:limit100KiB]
+	// Limit the length of the data (prevent resource exhaustion attack)
+	if len(xfccValues[0]) > limit32KiB {
+		return nil, errHeaderValueTooLong
 	}
+
 	// Extract raw certificate from the first header value
-	cert := getCertTokenFromXFCCHeader(xfccValue)
+	cert := getCertTokenFromXFCCHeader(xfccValues[0])
 	if cert == "" {
 		return nil, errEmptyCert
 	}
