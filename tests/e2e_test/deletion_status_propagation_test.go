@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Warning Status Propagation After When Deletion Timestamp Not Zero", Ordered, func() {
+var _ = Describe("Warning Status Propagation When Deletion Timestamp Not Zero", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular",
 		v1beta2.SyncStrategyLocalSecret)
 	moduleName := "template-operator"
@@ -74,7 +74,7 @@ var _ = Describe("Warning Status Propagation After When Deletion Timestamp Not Z
 		Eventually(CheckKymaModuleIsInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient,
-				"template-operator", v1beta2.StateWarning).
+				moduleName, v1beta2.StateWarning).
 			Should(Succeed())
 
 		By("Remove finalizer")

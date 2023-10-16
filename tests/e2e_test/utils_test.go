@@ -31,7 +31,6 @@ var (
 	errKymaNotInExpectedState      = errors.New("kyma CR not in expected state")
 	errManifestNotInExpectedState  = errors.New("manifest CR not in expected state")
 	errModuleNotExisting           = errors.New("module does not exists in KymaCR")
-	errKymaNotDeleted              = errors.New("kyma CR not deleted")
 	errUnexpectedState             = errors.New("unexpected state found for module")
 	errModuleNotFound              = errors.New("module not found")
 	errGettingManifestFromKymaCR   = errors.New("manifest object key could not be parsed from kyma module status")
