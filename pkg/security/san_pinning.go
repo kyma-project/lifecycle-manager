@@ -24,6 +24,7 @@ const (
 	certificateKey = "Cert="
 	shootDomainKey = "skr-domain"
 	limit32KiB     = 32 * 1024
+	limitSANValues = 100
 )
 
 var (
@@ -33,6 +34,7 @@ var (
 	errPemDecode          = errors.New("failed to decode PEM block")
 	errEmptyCert          = errors.New("empty certificate")
 	errHeaderValueTooLong = errors.New(XFCCHeader + " header value too long (over 32KiB)")
+	errTooManySANValues   = errors.New("certificate contains too many SAN values (more than 100)")
 	errHeaderMissing      = fmt.Errorf("request does not contain '%s' header", XFCCHeader)
 )
 
@@ -62,7 +64,12 @@ func (v *RequestVerifier) Verify(request *http.Request, watcherEvtObject *types.
 		return err
 	}
 
-	if v.VerifySAN(certificate, domain) {
+	ok, err := v.VerifySAN(certificate, domain)
+	if err != nil {
+		return err
+	}
+
+	if ok {
 		return nil
 	}
 	return errNotVerified
@@ -124,14 +131,25 @@ func (v *RequestVerifier) getDomain(request *http.Request, watcherEvtObject *typ
 }
 
 // VerifySAN checks if given domain exists in the SAN information of the given certificate.
-func (v *RequestVerifier) VerifySAN(certificate *x509.Certificate, kymaDomain string) bool {
-	if contains(certificate.URIs, kymaDomain) ||
-		contains(certificate.DNSNames, kymaDomain) ||
-		contains(certificate.IPAddresses, kymaDomain) {
-		v.Log.V(log.DebugLevel).Info("Received request verified")
-		return true
+func (v *RequestVerifier) VerifySAN(certificate *x509.Certificate, kymaDomain string) (bool, error) {
+	uris := certificate.URIs
+	dnsNames := certificate.DNSNames
+	IPAddresses := certificate.IPAddresses
+
+	if len(uris) > limitSANValues ||
+		len(dnsNames) > limitSANValues ||
+		len(IPAddresses) > limitSANValues {
+		return false, errTooManySANValues
 	}
-	return false
+
+	if contains(uris, kymaDomain) ||
+		contains(dnsNames, kymaDomain) ||
+		contains(IPAddresses, kymaDomain) {
+		v.Log.V(log.DebugLevel).Info("Received request verified")
+		return true, nil
+	}
+
+	return false, nil
 }
 
 // contains checks if given string is present in slice.
