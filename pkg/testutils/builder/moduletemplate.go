@@ -33,7 +33,7 @@ func NewModuleTemplateBuilder() ModuleTemplateBuilder {
 				Namespace: metav1.NamespaceDefault,
 			},
 			Spec: v1beta2.ModuleTemplateSpec{
-				Data: *data,
+				Data: data,
 			},
 		},
 	}
@@ -74,7 +74,7 @@ func (m ModuleTemplateBuilder) WithLabel(key string, value string) ModuleTemplat
 }
 
 func (m ModuleTemplateBuilder) WithModuleCR(data *unstructured.Unstructured) ModuleTemplateBuilder {
-	m.moduleTemplate.Spec.Data = *data
+	m.moduleTemplate.Spec.Data = data
 	return m
 }
 

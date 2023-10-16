@@ -51,6 +51,9 @@ func UpdateModuleTemplateSpec(ctx context.Context,
 	if err != nil {
 		return err
 	}
+	if moduleTemplate.Spec.Data == nil {
+		return ErrManifestResourceIsNil
+	}
 	moduleTemplate.Spec.Data.Object["spec"] = map[string]any{key: newValue}
 	if err := clnt.Update(ctx, moduleTemplate); err != nil {
 		return fmt.Errorf("update module tempate: %w", err)

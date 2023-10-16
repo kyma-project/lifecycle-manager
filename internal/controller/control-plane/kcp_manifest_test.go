@@ -17,7 +17,7 @@ var _ = Describe("Manifest.Spec.Remote in KCP mode", Ordered, func() {
 
 	It("expect Manifest.Spec.Remote=true", func() {
 		Eventually(GetManifestSpecRemote, Timeout, Interval).
-			WithArguments(ctx, controlPlaneClient, kyma, module).
+			WithArguments(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
 			Should(BeTrue())
 	})
 })
