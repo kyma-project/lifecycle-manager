@@ -156,10 +156,10 @@ func (e AnnotationMissingError) Error() string {
 }
 
 // getCertTokenFromXFCCHeader returns the first certificate embedded in the XFFC Header, if exists. Otherwise an empty string is returned.
-func getCertTokenFromXFCCHeader(header string) string {
-	certStartIdx := strings.Index(header, certificateKey)
+func getCertTokenFromXFCCHeader(hVal string) string {
+	certStartIdx := strings.Index(hVal, certificateKey)
 	if certStartIdx >= 0 {
-		tokenWithCert := header[(certStartIdx + len(certificateKey)):]
+		tokenWithCert := hVal[(certStartIdx + len(certificateKey)):]
 		//we should never have "," here but it's safer to add it anyway
 		certEndIdx := strings.IndexAny(tokenWithCert, ";,")
 		if certEndIdx == -1 {
