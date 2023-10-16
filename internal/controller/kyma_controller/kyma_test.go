@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -29,7 +30,7 @@ var _ = Describe("Kyma with no Module", Ordered, func() {
 		By("having transitioned the CR State to Ready as there are no modules")
 		Eventually(IsKymaInState, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), "", controlPlaneClient, v1beta2.StateReady).
+			WithArguments(kyma.GetName(), v1.NamespaceDefault, controlPlaneClient, v1beta2.StateReady).
 			Should(Succeed())
 	})
 

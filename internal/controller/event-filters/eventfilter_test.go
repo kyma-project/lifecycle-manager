@@ -15,7 +15,7 @@ var _ = Describe("Kyma is reconciled correctly based on the event filters", Orde
 			WithArguments(controlPlaneClient, kyma).Should(Succeed())
 
 		Eventually(IsKymaInState, Timeout, Interval).
-			WithArguments(ctx, controlPlaneClient, kyma.GetName(), v1beta2.StateReady).
+			WithArguments(ctx, kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 			Should(BeTrue())
 	})
 

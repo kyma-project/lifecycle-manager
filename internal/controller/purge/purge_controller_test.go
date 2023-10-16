@@ -2,6 +2,7 @@ package purge_test
 
 import (
 	"context"
+	v1 "k8s.io/api/core/v1"
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -67,7 +68,7 @@ var _ = Describe("When kyma is not deleted within configured timeout", Ordered, 
 		By("Target finalizers should be dropped", func() {
 			Eventually(IsKymaInState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), "", controlPlaneClient, v1beta2.StateDeleting).
+				WithArguments(kyma.GetName(), v1.NamespaceDefault, controlPlaneClient, v1beta2.StateDeleting).
 				Should(Succeed())
 			Eventually(getIssuerFinalizers, Timeout, Interval).
 				WithContext(ctx).
