@@ -144,13 +144,13 @@ jobs:
           done
       - name: Checkout template-operator
         uses: actions/checkout@v3
-        if: ${{ matrix.e2e-test == 'module-status-propagation' || 'module-without-default-cr' }}
+        if: ${{ matrix.e2e-test == 'module-status-propagation' || 'module-without-default-cr'  || 'module-deletion-status-propagation' }}
         with:
           repository: kyma-project/template-operator
           path: template-operator
       - name: Create Template Operator Module
         working-directory: ./template-operator
-        if: ${{ matrix.e2e-test == 'module-status-propagation' }}
+        if: ${{ matrix.e2e-test == 'module-status-propagation' || 'module-deletion-status-propagation' }}
         run: |
           pushd config/default
           echo "- op: replace
