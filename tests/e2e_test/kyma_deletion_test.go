@@ -4,43 +4,16 @@ import (
 	"os/exec"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/api/meta"
 )
 
 var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
-	kyma := testutils.NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular",
+	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular",
 		v1beta2.SyncStrategyLocalSecret)
-	GinkgoWriter.Printf("kyma before create %v\n", kyma)
 
-	BeforeAll(func() {
-		// make sure we can list Kymas to ensure CRDs have been installed
-		err := controlPlaneClient.List(ctx, &v1beta2.KymaList{})
-		Expect(meta.IsNoMatchError(err)).To(BeFalse())
-	})
-
-	It("Should create empty Kyma CR on remote cluster", func() {
-		Eventually(CreateKymaSecret).
-			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
-			Should(Succeed())
-		Eventually(controlPlaneClient.Create).
-			WithContext(ctx).
-			WithArguments(kyma).
-			Should(Succeed())
-		By("verifying kyma is ready")
-		Eventually(testutils.IsKymaInState).
-			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
-			Should(Succeed())
-		By("verifying remote kyma is ready")
-		Eventually(CheckRemoteKymaCR).
-			WithContext(ctx).
-			WithArguments(remoteNamespace, []v1beta2.Module{}, runtimeClient, v1beta2.StateReady).
-			Should(Succeed())
-	})
+	InitEmptyKymaBeforeAll(kyma)
 
 	It("Should remove SKR Cluster", func() {
 		By("removing SKR Cluster")
@@ -101,7 +74,7 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 	})
 
 	It("Kyma CR should be removed", func() {
-		Eventually(CheckKCPKymaCRDeleted).
+		Eventually(KymaDeleted).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 			Should(Succeed())

@@ -117,7 +117,7 @@ func givenKymaAndModuleTemplateCondition(
 func expectManifestInstalled(shouldInstalled bool) func(kyma *v1beta2.Kyma) error {
 	return func(kyma *v1beta2.Kyma) error {
 		for _, module := range kyma.Spec.Modules {
-			manifest, err := GetManifest(ctx, controlPlaneClient, kyma, module)
+			manifest, err := GetManifest(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
 			if shouldInstalled && manifest != nil {
 				return nil
 			}

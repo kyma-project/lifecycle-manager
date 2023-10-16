@@ -156,11 +156,14 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("Manifest CR created in KCP")
 		Eventually(ManifestExists, Timeout, Interval).
-			WithArguments(ctx, kyma, moduleInSKR, controlPlaneClient).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), moduleInSKR.Name).
 			Should(Succeed())
 		By("KCP Manifest CR becomes ready")
 		Eventually(UpdateManifestState, Timeout, Interval).
-			WithArguments(ctx, controlPlaneClient, kyma, moduleInSKR, v1beta2.StateReady).Should(Succeed())
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), moduleInSKR.Name, v1beta2.StateReady).
+			Should(Succeed())
 
 		By("ModuleTemplate descriptor should be saved in cache")
 		Expect(DescriptorExistsInCache(SKRTemplate)).Should(BeTrue())
@@ -228,13 +231,16 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 	It("Should reconcile Manifest in KCP using remote SKRCustomTemplate", func() {
 		Eventually(ManifestExists, Timeout, Interval).
-			WithArguments(ctx, kyma, customModuleInSKR, controlPlaneClient).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), customModuleInSKR.Name).
 			Should(Succeed())
 	})
 
 	It("Manifest should contain remoteModuleTemplate label", func() {
 		Eventually(func() error {
-			manifest, err := GetManifest(ctx, controlPlaneClient, kyma, customModuleInSKR)
+			manifest, err := GetManifest(ctx, controlPlaneClient,
+				kyma.GetName(), kyma.GetNamespace(),
+				customModuleInSKR.Name)
 			if err != nil {
 				return err
 			}
@@ -308,7 +314,8 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 
 		By("KCP Manifest is being created")
 		Eventually(ManifestExists, Timeout, Interval).
-			WithArguments(ctx, kyma, moduleInKCP, controlPlaneClient).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), moduleInKCP.Name).
 			Should(Succeed())
 	})
 
@@ -320,7 +327,8 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 
 		By("KCP Manifest is being deleted")
 		Eventually(ManifestExists, Timeout, Interval).
-			WithArguments(ctx, kyma, moduleInKCP, controlPlaneClient).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), moduleInKCP.Name).
 			Should(MatchError(ErrNotFound))
 	})
 
@@ -336,7 +344,8 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 
 		By("KCP Manifest is being created")
 		Eventually(ManifestExists, Timeout, Interval).
-			WithArguments(ctx, kyma, moduleInKCP, controlPlaneClient).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), moduleInKCP.Name).
 			Should(Succeed())
 	})
 	AfterAll(func() {

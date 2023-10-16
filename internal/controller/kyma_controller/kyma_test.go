@@ -88,7 +88,9 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
-				WithArguments(ctx, controlPlaneClient, kyma, activeModule, v1beta2.StateReady).Should(Succeed())
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, v1beta2.StateReady).
+				Should(Succeed())
 		}
 
 		By("having updated the Kyma CR state to ready")
@@ -148,42 +150,42 @@ var _ = Describe("Kyma enable multiple modules", Ordered, func() {
 		kcpModule v1beta2.Module
 	)
 	kyma = NewTestKyma("kyma-test-recreate")
-	skrModule = v1beta2.Module{
-		ControllerName: "manifest",
-		Name:           "skr-module",
-		Channel:        v1beta2.DefaultChannel,
-	}
-	kcpModule = v1beta2.Module{
-		ControllerName: "manifest",
-		Name:           "kcp-module",
-		Channel:        v1beta2.DefaultChannel,
-	}
+	skrModule = NewTestModule("skr-module", v1beta2.DefaultChannel)
+	kcpModule = NewTestModule("kcp-module", v1beta2.DefaultChannel)
 	kyma.Spec.Modules = append(kyma.Spec.Modules, skrModule, kcpModule)
 	RegisterDefaultLifecycleForKyma(kyma)
 
 	It("CR should be created normally and then recreated after delete", func() {
 		By("CR created")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ManifestExists, Timeout, Interval).WithArguments(
-				ctx, kyma, activeModule, controlPlaneClient).Should(Succeed())
+			Eventually(ManifestExists, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
+				Should(Succeed())
 		}
 		By("Delete CR")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(deleteModule(kyma, activeModule), Timeout, Interval).Should(Succeed())
+			Eventually(DeleteModule, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma, activeModule.Name).Should(Succeed())
 		}
 
 		By("CR created again")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ManifestExists, Timeout, Interval).WithArguments(
-				ctx, kyma, activeModule, controlPlaneClient).Should(Succeed())
+			Eventually(ManifestExists, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
+				Should(Succeed())
 		}
 	})
 
 	It("CR should be deleted after removed from kyma.spec.modules", func() {
 		By("CR created")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ManifestExists, Timeout, Interval).WithArguments(
-				ctx, kyma, activeModule, controlPlaneClient).Should(Succeed())
+			Eventually(ManifestExists, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
+				Should(Succeed())
 		}
 		By("Remove kcp-module from kyma.spec.modules")
 		kyma.Spec.Modules = []v1beta2.Module{
@@ -193,12 +195,16 @@ var _ = Describe("Kyma enable multiple modules", Ordered, func() {
 			WithContext(ctx).WithArguments(kyma).Should(Succeed())
 
 		By("kcp-module deleted")
-		Eventually(ManifestExists, Timeout, Interval).WithArguments(
-			ctx, kyma, kcpModule, controlPlaneClient).Should(MatchError(ErrNotFound))
+		Eventually(ManifestExists, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), kcpModule.Name).
+			Should(MatchError(ErrNotFound))
 
 		By("skr-module exists")
-		Eventually(ManifestExists, Timeout, Interval).WithArguments(
-			ctx, kyma, skrModule, controlPlaneClient).Should(Succeed())
+		Eventually(ManifestExists, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), skrModule.Name).
+			Should(Succeed())
 	})
 
 	It("Disabled module should be removed from status.modules", func() {
@@ -241,14 +247,18 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	It("Mark Kyma as skip Reconciliation", func() {
 		By("CR created")
 		for _, activeModule := range kyma.Spec.Modules {
-			Eventually(ManifestExists, Timeout, Interval).WithArguments(
-				ctx, kyma, activeModule, controlPlaneClient).Should(Succeed())
+			Eventually(ManifestExists, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name).
+				Should(Succeed())
 		}
 
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
-				WithArguments(ctx, controlPlaneClient, kyma, activeModule, v1beta2.StateReady).Should(Succeed())
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, v1beta2.StateReady).
+				Should(Succeed())
 		}
 
 		By("Kyma CR should be in Ready state")
