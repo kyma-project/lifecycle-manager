@@ -10,7 +10,6 @@ import (
 	crdV1beta2 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -122,9 +121,8 @@ func UpdateKymaLabel(
 }
 
 func KCPModuleExistWithOverwrites(kyma *v1beta2.Kyma, module v1beta2.Module) string {
-	kyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
-	Expect(err).ToNot(HaveOccurred())
-	moduleInCluster, err := GetManifest(ctx, controlPlaneClient, kyma, module)
+	moduleInCluster, err := GetManifest(ctx, controlPlaneClient,
+		kyma.GetName(), kyma.GetNamespace(), module.Name)
 	Expect(err).ToNot(HaveOccurred())
 	manifestSpec := moduleInCluster.Spec
 	body, err := json.Marshal(manifestSpec.Resource.Object["spec"])
@@ -133,16 +131,6 @@ func KCPModuleExistWithOverwrites(kyma *v1beta2.Kyma, module v1beta2.Module) str
 	err = json.Unmarshal(body, &kcpModuleSpec)
 	Expect(err).ToNot(HaveOccurred())
 	return kcpModuleSpec.InitKey
-}
-
-func deleteModule(kyma *v1beta2.Kyma, module v1beta2.Module) func() error {
-	return func() error {
-		component, err := GetManifest(ctx, controlPlaneClient, kyma, module)
-		if util.IsNotFound(err) {
-			return nil
-		}
-		return client.IgnoreNotFound(controlPlaneClient.Delete(ctx, component))
-	}
 }
 
 func UpdateKymaModuleChannels(kymaName, channel string) error {
@@ -202,12 +190,13 @@ func CreateModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, 
 
 func UpdateAllManifestState(kymaName string, state v1beta2.State) func() error {
 	return func() error {
-		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
+		kyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
 		if err != nil {
 			return err
 		}
-		for _, module := range createdKyma.Spec.Modules {
-			if err := UpdateManifestState(ctx, controlPlaneClient, createdKyma, module, state); err != nil {
+		for _, module := range kyma.Spec.Modules {
+			if err := UpdateManifestState(ctx, controlPlaneClient,
+				kyma.GetName(), kyma.GetNamespace(), module.Name, state); err != nil {
 				return err
 			}
 		}

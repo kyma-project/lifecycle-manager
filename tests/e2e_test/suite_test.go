@@ -83,8 +83,6 @@ var _ = BeforeSuite(func() {
 	runtimeRESTConfig.Burst = clientBurst
 	Expect(err).ToNot(HaveOccurred())
 
-	Expect(err).NotTo(HaveOccurred())
-
 	controlPlaneClient, err = client.New(controlPlaneRESTConfig, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	runtimeClient, err = client.New(runtimeRESTConfig, client.Options{Scheme: scheme.Scheme})

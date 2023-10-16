@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -24,7 +25,6 @@ import (
 var (
 	errKymaNotInExpectedState = errors.New("kyma CR not in expected state")
 	errModuleNotExisting      = errors.New("module does not exists in KymaCR")
-	errKymaNotDeleted         = errors.New("kyma CR not deleted")
 )
 
 const (
@@ -34,7 +34,52 @@ const (
 	timeout               = 10 * time.Second
 	interval              = 1 * time.Second
 	remoteNamespace       = "kyma-system"
+	controlPlaneNamespace = "kcp-system"
 )
+
+func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
+	BeforeAll(func() {
+		Eventually(CreateKymaSecret).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
+			Should(Succeed())
+		Eventually(controlPlaneClient.Create).
+			WithContext(ctx).
+			WithArguments(kyma).
+			Should(Succeed())
+		By("verifying kyma is ready")
+		Eventually(CheckKymaIsInState).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+			Should(Succeed())
+		By("verifying remote kyma is ready")
+		Eventually(CheckRemoteKymaCR).
+			WithContext(ctx).
+			WithArguments(remoteNamespace, []v1beta2.Module{}, runtimeClient, v1beta2.StateReady).
+			Should(Succeed())
+	})
+}
+
+func CleanupKymaAfterAll(kyma *v1beta2.Kyma) {
+	AfterAll(func() {
+		By("When delete KCP Kyma")
+		Eventually(DeleteKymaByForceRemovePurgeFinalizer).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma).
+			Should(Succeed())
+
+		By("Then SKR Kyma deleted")
+		Eventually(KymaDeleted).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), runtimeClient).
+			Should(Succeed())
+		By("Then KCP Kyma deleted")
+		Eventually(KymaDeleted).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
+			Should(Succeed())
+	})
+}
 
 func CheckKymaIsInState(ctx context.Context,
 	kymaName, kymaNamespace string,
@@ -122,17 +167,6 @@ func DeleteKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sCl
 	}
 	Expect(err).ToNot(HaveOccurred())
 	return k8sClient.Delete(ctx, secret)
-}
-
-func CheckKCPKymaCRDeleted(ctx context.Context,
-	kymaName string, kymaNamespace string, k8sClient client.Client,
-) error {
-	kyma := &v1beta2.Kyma{}
-	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma)
-	if util.IsNotFound(err) {
-		return nil
-	}
-	return errKymaNotDeleted
 }
 
 func EnableModule(ctx context.Context,
