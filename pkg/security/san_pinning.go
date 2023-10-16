@@ -20,11 +20,8 @@ import (
 )
 
 const (
-	XFCCHeader           = "X-Forwarded-Client-Cert"
-	headerValueSeparator = ";"
-	keyValueSeparator    = "="
-	certificateKey       = "Cert="
-
+	XFCCHeader     = "X-Forwarded-Client-Cert"
+	certificateKey = "Cert="
 	shootDomainKey = "skr-domain"
 )
 
@@ -76,16 +73,9 @@ func (v *RequestVerifier) getCertificateFromHeader(r *http.Request) (*x509.Certi
 	if !ok {
 		return nil, errHeaderMissing
 	}
-	xfccData := strings.Split(xfccValue[0], headerValueSeparator)
 
-	// Extract raw certificate
-	var cert string
-	for _, keyValuePair := range xfccData {
-		if strings.Contains(keyValuePair, certificateKey) {
-			cert = strings.Split(keyValuePair, keyValueSeparator)[1]
-			break
-		}
-	}
+	// Extract raw certificate from the first header value
+	cert := getCertTokenFromXFCCHeader(xfccValue[0])
 	if cert == "" {
 		return nil, errEmptyCert
 	}
@@ -155,4 +145,22 @@ type AnnotationMissingError struct {
 
 func (e AnnotationMissingError) Error() string {
 	return fmt.Sprintf("KymaCR '%s' does not have annotation `%s`", e.KymaCR, e.Annotation)
+}
+
+// getCertTokenFromXFCCHeader returns the first certificate embedded in the XFFC Header, if exists. Otherwise an empty string is returned.
+func getCertTokenFromXFCCHeader(header string) string {
+	certStartIdx := strings.Index(header, certificateKey)
+	if certStartIdx >= 0 {
+		tokenWithCert := header[(certStartIdx + len(certificateKey)):]
+		//we should never have "," here but it's safer to add it anyway
+		certEndIdx := strings.IndexAny(tokenWithCert, ";,")
+		if certEndIdx == -1 {
+			//no suffix, the entire token is the cert value
+			return tokenWithCert
+		}
+
+		//there's some data after the cert value, return just the cert part
+		return tokenWithCert[:certEndIdx]
+	}
+	return ""
 }
