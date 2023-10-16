@@ -29,7 +29,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           # Context for which we should look for the matching status
           statusName: ${{ (github.event_name == 'pull_request') && 'pull-lifecycle-mgr-build' || 'main-lifecycle-mgr-build' }}
-          timeoutSeconds: 600
+          timeoutSeconds: 900
           intervalSeconds: 10
       - name: Exit If Failing Build Requirement
         if: steps.wait-for-build.outputs.state != 'success'
@@ -70,10 +70,10 @@ jobs:
           mv kubectl /usr/local/bin
       - name: Install Kyma CLI
         run: |
-          wget -q https://storage.googleapis.com/kyma-cli-${{ matrix.cli-stability }}/kyma-linux
-          chmod +x kyma-linux && mv kyma-linux /usr/local/bin/kyma-${{ matrix.cli-stability }}
-          echo "PATH=/usr/local/bin/kyma-${{ matrix.cli-stability }}" >> $GITHUB_OUTPUT
-      - run: ln -s /usr/local/bin/kyma-${{ matrix.cli-stability }} /usr/local/bin/kyma
+          wget -q https://storage.googleapis.com/kyma-cli-unstable/kyma-linux
+          chmod +x kyma-linux && mv kyma-linux /usr/local/bin/kyma-unstable
+          echo "PATH=/usr/local/bin/kyma-unstable" >> $GITHUB_OUTPUT
+      - run: ln -s /usr/local/bin/kyma-unstable /usr/local/bin/kyma
       - name: Install Cert Manager Command Line Tool
         run: |
           OS=$(go env GOOS); ARCH=$(go env GOARCH); curl -fsSL -o cmctl.tar.gz https://github.com/cert-manager/cert-manager/releases/latest/download/cmctl-$OS-$ARCH.tar.gz
@@ -115,7 +115,7 @@ jobs:
       - name: Checkout lifecycle-manager
         uses: actions/checkout@v3
         with:
-          path: ./lifecycle-manager/
+          path: lifecycle-manager
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
@@ -144,10 +144,10 @@ jobs:
           done
       - name: Checkout template-operator
         uses: actions/checkout@v3
-        if: ${{ matrix.e2e-test == 'module-status-propagation' }}
+        if: ${{ matrix.e2e-test == 'module-status-propagation' || 'module-without-default-cr' }}
         with:
           repository: kyma-project/template-operator
-          path: ./template-operator/
+          path: template-operator
       - name: Create Template Operator Module
         working-directory: ./template-operator
         if: ${{ matrix.e2e-test == 'module-status-propagation' }}
@@ -160,6 +160,27 @@ jobs:
           kustomize edit add patch --path warning_patch.yaml --kind Deployment
           popd
           kyma alpha create module --kubebuilder-project  --channel=regular --name kyma.project.io/module/template-operator --version 1.1.1 --path . --registry k3d-kcp-registry:5111 --insecure --module-archive-version-overwrite /
+          sed -i 's/k3d-kcp-registry:5111/k3d-kcp-registry:5000/g' ./template.yaml
+          kubectl config use-context k3d-kcp
+          kubectl get crds
+          kubectl apply -f template.yaml
+      - name: Create Template Operator Module without default CR
+        working-directory: ./template-operator
+        if: ${{ matrix.e2e-test == 'module-without-default-cr' }}
+        run: |
+          make build-manifests
+          echo "name: kyma-project.io/module/template-operator
+          channel: regular
+          version: v1.0.0
+          manifest: template-operator.yaml
+          security: sec-scanners-config.yaml
+          annotations:
+            operator.kyma-project.io/doc-url: https://kyma-project.io" >> module-config-no-cr.yaml
+          kyma alpha create module \
+          --module-config-file ./module-config-no-cr.yaml \
+          --path . \
+          --registry k3d-kcp-registry:5111 \
+          --insecure
           sed -i 's/k3d-kcp-registry:5111/k3d-kcp-registry:5000/g' ./template.yaml
           kubectl config use-context k3d-kcp
           kubectl get crds

@@ -5,8 +5,10 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 )
 
 var _ = Describe("ModuleTemplate installation", func() {
@@ -15,11 +17,7 @@ var _ = Describe("ModuleTemplate installation", func() {
 			kyma := NewTestKyma("kyma")
 
 			kyma.Spec.Modules = append(
-				kyma.Spec.Modules, v1beta2.Module{
-					ControllerName: "manifest",
-					Name:           RandomName(),
-					Channel:        v1beta2.DefaultChannel,
-				})
+				kyma.Spec.Modules, NewTestModule("test-module", v1beta2.DefaultChannel))
 			Eventually(givenCondition, Timeout, Interval).WithArguments(kyma).Should(Succeed())
 			Eventually(expectedBehavior, Timeout, Interval).WithArguments(kyma).Should(Succeed())
 		},
@@ -93,7 +91,22 @@ func givenKymaAndModuleTemplateCondition(
 		if isKymaBeta {
 			kyma.Labels[v1beta2.BetaLabel] = v1beta2.EnableLabelValue
 		}
-		DeployModuleTemplates(ctx, controlPlaneClient, kyma, false, isModuleTemplateInternal, isModuleTemplateBeta, false)
+		for _, module := range kyma.Spec.Modules {
+			mtBuilder := builder.NewModuleTemplateBuilder().
+				WithModuleName(module.Name).
+				WithChannel(module.Channel).
+				WithOCM(compdesc2.SchemaVersion)
+			if isModuleTemplateInternal {
+				mtBuilder.WithLabel(v1beta2.InternalLabel, v1beta2.EnableLabelValue)
+			}
+			if isModuleTemplateBeta {
+				mtBuilder.WithLabel(v1beta2.BetaLabel, v1beta2.EnableLabelValue)
+			}
+			template := mtBuilder.Build()
+			Eventually(controlPlaneClient.Create, Timeout, Interval).WithContext(ctx).
+				WithArguments(template).
+				Should(Succeed())
+		}
 		Eventually(controlPlaneClient.Create, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kyma).Should(Succeed())
@@ -104,7 +117,7 @@ func givenKymaAndModuleTemplateCondition(
 func expectManifestInstalled(shouldInstalled bool) func(kyma *v1beta2.Kyma) error {
 	return func(kyma *v1beta2.Kyma) error {
 		for _, module := range kyma.Spec.Modules {
-			manifest, err := GetManifest(ctx, controlPlaneClient, kyma, module)
+			manifest, err := GetManifest(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
 			if shouldInstalled && manifest != nil {
 				return nil
 			}

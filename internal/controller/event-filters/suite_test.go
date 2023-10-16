@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 //nolint:gochecknoglobals
-package control_plane_test
+package event_filters_test
 
 import (
 	"context"
@@ -27,40 +27,38 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 
-	operatorv1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
-
+	"go.uber.org/zap/zapcore"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"go.uber.org/zap/zapcore"
-
-	//nolint:gci
-	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
-
-	ctrl "sigs.k8s.io/controller-runtime"
-	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	//+kubebuilder:scaffold:imports
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
-const UseRandomPort = "0"
+const (
+	timeout    = 60 * time.Second
+	interval   = 1 * time.Second
+	randomPort = "0"
+)
 
 var (
 	controlPlaneClient client.Client
@@ -80,9 +78,10 @@ func TestAPIs(t *testing.T) {
 var _ = BeforeSuite(func() {
 	ctx, cancel = context.WithCancel(context.TODO())
 	logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
+	SetDefaultEventuallyPollingInterval(interval)
+	SetDefaultEventuallyTimeout(timeout)
 
 	By("bootstrapping test environment")
-
 	externalCRDs, err := AppendExternalCRDs(
 		filepath.Join("..", "..", "..", "config", "samples", "tests", "crds"),
 		"cert-manager-v1.10.1.crds.yaml",
@@ -115,7 +114,7 @@ var _ = BeforeSuite(func() {
 	k8sManager, err = ctrl.NewManager(
 		cfg, ctrl.Options{
 			Metrics: metricsserver.Options{
-				BindAddress: UseRandomPort,
+				BindAddress: randomPort,
 			},
 			Scheme: scheme.Scheme,
 			Cache:  controller.NewCacheOptions(),
@@ -123,26 +122,26 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	intervals := queue.RequeueIntervals{
-		Success: 1 * time.Second,
+		Success: 5 * time.Minute,
 		Busy:    100 * time.Millisecond,
 		Error:   100 * time.Millisecond,
 	}
 
 	remoteClientCache := remote.NewClientCache()
+
 	err = (&controller.KymaReconciler{
 		Client:           k8sManager.GetClient(),
-		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1beta2.OperatorName),
+		EventRecorder:    k8sManager.GetEventRecorderFor(v1beta2.OperatorName),
 		RequeueIntervals: intervals,
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
 		},
 		RemoteClientCache:   remoteClientCache,
 		KcpRestConfig:       k8sManager.GetConfig(),
-		InKCPMode:           true,
+		InKCPMode:           false,
 		RemoteSyncNamespace: controller.DefaultRemoteSyncNamespace,
-		IsManagedKyma:       true,
 	}).SetupWithManager(k8sManager, controllerRuntime.Options{},
-		controller.SetupUpSetting{ListenerAddr: UseRandomPort})
+		controller.SetupUpSetting{ListenerAddr: randomPort})
 	Expect(err).ToNot(HaveOccurred())
 
 	controlPlaneClient = k8sManager.GetClient()

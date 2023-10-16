@@ -23,6 +23,7 @@ var (
 	ErrInvalidRemoteModuleConfiguration = errors.New("invalid remote module template configuration")
 	ErrTemplateNotAllowed               = errors.New("module template not allowed")
 	ErrTemplateUpdateNotAllowed         = errors.New("module template update not allowed")
+	ErrModuleTemplateIsNil              = errors.New("module template is nil")
 )
 
 type ModuleTemplateTO struct {
@@ -45,11 +46,19 @@ func GetTemplates(
 		switch {
 		case module.RemoteModuleTemplateRef == "":
 			template = NewTemplateLookup(kymaClient, module, kyma.Spec.Channel).WithContext(ctx)
+			if template.Err != nil {
+				break
+			}
+
+			if err := saveDescriptorToCache(template); err != nil {
+				template.Err = fmt.Errorf("failed to get descriptor: %w", err)
+			}
+
 		case syncEnabled:
 			syncContext, err := remote.SyncContextFromContext(ctx)
 			if err != nil {
 				template.Err = fmt.Errorf("failed to get syncContext: %w", err)
-				continue
+				break
 			}
 			runtimeClient := syncContext.RuntimeClient
 			originalModuleName := module.Name
@@ -327,4 +336,23 @@ func NewMoreThanOneTemplateCandidateErr(component v1beta2.Module,
 
 	return fmt.Errorf("%w: more than one module template found for module: %s, candidates: %v",
 		ErrTemplateNotIdentified, component.Name, candidates)
+}
+
+func saveDescriptorToCache(template ModuleTemplateTO) error {
+	if template.ModuleTemplate == nil {
+		return ErrModuleTemplateIsNil
+	}
+	descriptor := template.GetDescFromCache()
+	if descriptor != nil {
+		return nil
+	}
+
+	var err error
+	descriptor, err = template.GetDescriptor()
+	if err != nil {
+		return fmt.Errorf("failed to get descriptor: %w", err)
+	}
+	template.SetDescToCache(descriptor)
+
+	return nil
 }

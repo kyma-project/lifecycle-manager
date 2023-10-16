@@ -86,7 +86,7 @@ type ModuleTemplateSpec struct {
 	//
 	//+kubebuilder:pruning:PreserveUnknownFields
 	//+kubebuilder:validation:XEmbeddedResource
-	Data unstructured.Unstructured `json:"data,omitempty"`
+	Data *unstructured.Unstructured `json:"data,omitempty"`
 
 	// The Descriptor is the Open Component Model Descriptor of a Module, containing all relevant information
 	// to correctly initialize a module (e.g. Manifests, References to Binaries and/or configuration)
@@ -143,7 +143,7 @@ func (m *ModuleTemplate) GetDescriptor() (*Descriptor, error) {
 	if !ok {
 		return nil, ErrTypeAssertDescriptor
 	}
-	m.SetDescToCache(mDesc)
+
 	return mDesc, nil
 }
 
@@ -184,6 +184,14 @@ func init() {
 }
 
 func (m *ModuleTemplate) GetComponentDescriptorCacheKey() string {
+	if m.Annotations != nil {
+		moduleVersion := m.Annotations[ModuleVersionAnnotation]
+
+		if moduleVersion != "" {
+			return fmt.Sprintf("%s:%s:%s", m.Name, m.Spec.Channel, moduleVersion)
+		}
+	}
+
 	return fmt.Sprintf("%s:%s:%d", m.Name, m.Spec.Channel, m.Generation)
 }
 

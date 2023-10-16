@@ -38,7 +38,7 @@ var (
 	purgeErrorGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{ //nolint:gochecknoglobals
 		Name: metricPurgeError,
 		Help: "Indicates purge errors",
-	}, []string{kymaNameLabel, shootIDLabel, instanceIDLabel})
+	}, []string{kymaNameLabel, shootIDLabel, instanceIDLabel, errorReasonLabel})
 )
 
 func Initialize() {
@@ -66,12 +66,16 @@ func UpdatePurgeError(kyma *v1beta2.Kyma, purgeError PurgeError) error {
 	if err != nil {
 		return fmt.Errorf("%w: %w", errMetric, err)
 	}
-	purgeErrorGauge.With(prometheus.Labels{
+	metric, err := purgeErrorGauge.GetMetricWith(prometheus.Labels{
 		kymaNameLabel:    kyma.Name,
 		shootIDLabel:     shootID,
 		instanceIDLabel:  instanceID,
 		errorReasonLabel: string(purgeError),
-	}).Set(1)
+	})
+	if err != nil {
+		return fmt.Errorf("%w: %w", errMetric, err)
+	}
+	metric.Set(1)
 
 	return nil
 }

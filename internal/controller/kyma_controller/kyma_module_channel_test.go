@@ -5,13 +5,13 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 const (
@@ -64,12 +64,8 @@ var _ = Describe("module channel different from the global channel", func() {
 	})
 
 	It("Manifest should be deployed in fast channel", func() {
-		module := v1beta2.Module{
-			Name:    moduleName,
-			Channel: FastChannel,
-		}
 		Eventually(expectModuleManifestToHaveChannel, Timeout, Interval).WithArguments(
-			kyma.GetName(), module, FastChannel).Should(Succeed())
+			kyma.GetName(), kyma.GetNamespace(), moduleName, FastChannel).Should(Succeed())
 	})
 })
 
@@ -212,7 +208,8 @@ var _ = Describe("Channel switch", Ordered, func() {
 				Should(BeEquivalentTo(string(v1beta2.StateProcessing)))
 			for _, module := range kyma.Spec.Modules {
 				Eventually(UpdateManifestState, Timeout, Interval).
-					WithArguments(ctx, controlPlaneClient, kyma, module, v1beta2.StateReady).Should(Succeed())
+					WithArguments(ctx, controlPlaneClient,
+						kyma.GetName(), kyma.GetNamespace(), module.Name, v1beta2.StateReady).Should(Succeed())
 			}
 			Eventually(GetKymaState, Timeout, Interval).
 				WithArguments(kyma.GetName()).
@@ -246,7 +243,7 @@ var _ = Describe("Channel switch", Ordered, func() {
 		Consistently(expectEveryModuleStatusToHaveChannel(kyma.Name, FastChannel), ConsistentCheckTimeout, Interval).
 			Should(Succeed())
 		Consistently(expectEveryManifestToHaveChannel, ConsistentCheckTimeout, Interval).
-			WithArguments(kyma.Name, FastChannel).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), FastChannel).
 			Should(Succeed())
 	})
 
@@ -264,18 +261,22 @@ func CleanupModuleTemplateSetsForKyma(kyma *v1beta2.Kyma) func() {
 	return func() {
 		By("Cleaning up decremented ModuleTemplate set in regular")
 		for _, module := range kyma.Spec.Modules {
-			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false, false)
-			template.Name = fmt.Sprintf("%s-%s", template.Name, v1beta2.DefaultChannel)
-			Expect(err).ShouldNot(HaveOccurred())
+			template := builder.NewModuleTemplateBuilder().
+				WithName(fmt.Sprintf("%s-%s", module.Name, v1beta2.DefaultChannel)).
+				WithModuleName(module.Name).
+				WithChannel(module.Channel).
+				WithOCM(compdesc2.SchemaVersion).Build()
 			Eventually(DeleteCR, Timeout, Interval).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, template).Should(Succeed())
 		}
 		By("Cleaning up standard ModuleTemplate set in fast")
 		for _, module := range kyma.Spec.Modules {
-			template, err := ModuleTemplateFactory(module, unstructured.Unstructured{}, false, false, false, false)
-			template.Name = fmt.Sprintf("%s-%s", template.Name, FastChannel)
-			Expect(err).ShouldNot(HaveOccurred())
+			template := builder.NewModuleTemplateBuilder().
+				WithName(fmt.Sprintf("%s-%s", module.Name, FastChannel)).
+				WithModuleName(module.Name).
+				WithChannel(module.Channel).
+				WithOCM(compdesc2.SchemaVersion).Build()
 			Eventually(DeleteCR, Timeout, Interval).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, template).Should(Succeed())
@@ -289,13 +290,13 @@ func expectEveryModuleStatusToHaveChannel(kymaName, channel string) func() error
 	}
 }
 
-func expectEveryManifestToHaveChannel(kymaName, channel string) error {
-	kyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
+func expectEveryManifestToHaveChannel(kymaName, kymaNamespace, channel string) error {
+	kyma, err := GetKyma(ctx, controlPlaneClient, kymaName, kymaNamespace)
 	if err != nil {
 		return err
 	}
 	for _, module := range kyma.Spec.Modules {
-		component, err := GetManifest(ctx, controlPlaneClient, kyma, module)
+		component, err := GetManifest(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
 		if err != nil {
 			return err
 		}
@@ -316,13 +317,13 @@ func expectEveryManifestToHaveChannel(kymaName, channel string) error {
 	)
 }
 
-func expectModuleManifestToHaveChannel(kymaName string, module v1beta2.Module, channel string) error {
-	kyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
+func expectModuleManifestToHaveChannel(kymaName, kymaNamespace, moduleName, channel string) error {
+	kyma, err := GetKyma(ctx, controlPlaneClient, kymaName, kymaNamespace)
 	if err != nil {
 		return err
 	}
 
-	component, err := GetManifest(ctx, controlPlaneClient, kyma, module)
+	component, err := GetManifest(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), moduleName)
 	if err != nil {
 		return err
 	}

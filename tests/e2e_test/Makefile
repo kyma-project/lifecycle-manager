@@ -60,17 +60,20 @@ e2e-coverage: ginkgo ## Generate the effective Acceptance Criteria for all the t
 
 test: watcher-enqueue kyma-deletion module-status-propagation
 
-kyma-deletion: ## Runs the Kyma Deletion E2E Test
-	go test -ginkgo.v -ginkgo.focus "KCP Kyma CR Deletion"
+kyma-deletion:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deletion"
 
-kyma-metrics: ## Runs the Kyma Metrics E2E Test
+kyma-metrics:
 	go test -ginkgo.v -ginkgo.focus "Kyma Metrics"
 
-watcher-enqueue: ## Runs the Watcher E2E Test
+watcher-enqueue:
 	go test -ginkgo.v -ginkgo.focus "Enqueue Event from Watcher"
 
-module-status-propagation: ## Runs the Status Propagation E2E Test
+module-status-propagation:
 	go test -ginkgo.v -ginkgo.focus "Warning Status Propagation"
 
 module-deletion-status-propagation: ## Runs the Deletion Status Propagation E2E Test
 	go test -ginkgo.v -ginkgo.focus "Warning Status Propagation After When Deletion Timestamp Not Zero"
+  
+module-without-default-cr:
+	go test -ginkgo.v -ginkgo.focus "Module Without Default CR"

@@ -26,6 +26,8 @@ import (
 	"strings"
 	"time"
 
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 
 	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
@@ -62,10 +64,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	//+kubebuilder:scaffold:imports
-)
-
-const (
-	port = 9443
 )
 
 var (
@@ -126,9 +124,10 @@ func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *runti
 
 	mgr, err := ctrl.NewManager(
 		config, ctrl.Options{
-			Scheme:                 scheme,
-			MetricsBindAddress:     flagVar.metricsAddr,
-			Port:                   port,
+			Scheme: scheme,
+			Metrics: metricsserver.Options{
+				BindAddress: flagVar.metricsAddr,
+			},
 			HealthProbeBindAddress: flagVar.probeAddr,
 			LeaderElection:         flagVar.enableLeaderElection,
 			LeaderElectionID:       "893110f7.kyma-project.io",

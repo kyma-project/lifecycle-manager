@@ -41,6 +41,7 @@ import (
 	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -71,11 +72,11 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 
-	externalCRDs := AppendExternalCRDs(
+	externalCRDs, err := AppendExternalCRDs(
 		filepath.Join("..", "..", "..", "config", "samples", "tests", "crds"),
 		"cert-manager-v1.10.1.crds.yaml",
 		"istio-v1.17.1.crds.yaml")
-
+	Expect(err).ToNot(HaveOccurred())
 	singleClusterEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
 		CRDs:                  append([]*apiExtensionsv1.CustomResourceDefinition{}, externalCRDs...),
@@ -93,9 +94,11 @@ var _ = BeforeSuite(func() {
 
 	k8sManager, err := ctrl.NewManager(
 		cfg, ctrl.Options{
-			MetricsBindAddress: useRandomPort,
-			Scheme:             scheme.Scheme,
-			Cache:              controller.NewCacheOptions(),
+			Metrics: metricsserver.Options{
+				BindAddress: useRandomPort,
+			},
+			Scheme: scheme.Scheme,
+			Cache:  controller.NewCacheOptions(),
 		})
 	Expect(err).ToNot(HaveOccurred())
 
