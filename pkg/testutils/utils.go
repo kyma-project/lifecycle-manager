@@ -45,6 +45,7 @@ var (
 	ErrEmptyRestConfig            = errors.New("rest.Config is nil")
 	ErrDeletionTimestamp          = errors.New("DeletionTimeStamp does not exist or is not a string")
 	ErrSampleCrNotInExpectedState = errors.New("resource not in expected state")
+	ErrFetchingStatus             = errors.New("could not fetch status from resource")
 )
 
 func NewTestModule(name, channel string) v1beta2.Module {
@@ -199,21 +200,21 @@ func GetDeletionTimeStamp(ctx context.Context, group, version, kind, name, names
 func CRIsInState(ctx context.Context, group, version, kind, name, namespace string, statusPath []string,
 	clnt client.Client, expectedState string,
 ) error {
-	sampleCR := &unstructured.Unstructured{}
-	sampleCR.SetGroupVersionKind(schema.GroupVersionKind{
+	resourceCR := &unstructured.Unstructured{}
+	resourceCR.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   group,
 		Version: version,
 		Kind:    kind,
 	})
 
 	if err := clnt.Get(ctx,
-		client.ObjectKey{Name: name, Namespace: namespace}, sampleCR); err != nil {
+		client.ObjectKey{Name: name, Namespace: namespace}, resourceCR); err != nil {
 		return err
 	}
 
-	stateFromCR, stateExists, err := unstructured.NestedString(sampleCR.Object, statusPath...)
+	stateFromCR, stateExists, err := unstructured.NestedString(resourceCR.Object, statusPath...)
 	if err != nil || !stateExists {
-		return err
+		return ErrFetchingStatus
 	}
 
 	if stateFromCR != expectedState {
