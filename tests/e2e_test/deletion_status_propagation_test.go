@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"k8s.io/apimachinery/pkg/api/meta"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -9,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Warning Status Propagation", Ordered, func() {
+var _ = Describe("Warning Status Propagation After When Deletion Timestamp Not Zero", Ordered, func() {
 	kyma := testutils.NewKymaForE2E("kyma-sample", "kcp-system", "regular")
 	GinkgoWriter.Printf("kyma before create %v\n", kyma)
 
@@ -53,17 +54,47 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 			Should(Succeed())
 	})
 
-	It("Should disable Template Operator and Kyma should result in Ready status", func() {
+	It("Should propagate Warning state even after resource is marked for deletion", func() {
+		By("Getting manifest object key")
+		manifestObjectKey, err := GetManifestObjectKey(ctx, controlPlaneClient,
+			kyma.GetName(), kyma.GetNamespace(), "template-operator")
+		Expect(err).To(Not(HaveOccurred()))
+		By("Getting resource object key")
+		resourceObjectKey, err := GetResourceObjectKey(ctx, controlPlaneClient,
+			kyma.GetName(), kyma.GetNamespace(), "template-operator")
+		Expect(err).To(Not(HaveOccurred()))
+		By("Adding finalizer to avoid deletion")
+		Eventually(AddFinalizerToSampleResource).
+			WithContext(ctx).
+			WithArguments(*resourceObjectKey, runtimeClient, "e2e-finalizer").
+			Should(Succeed())
+
 		By("Disabling Template Operator")
 		Eventually(DisableModule).
 			WithContext(ctx).
 			WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", runtimeClient).
 			Should(Succeed())
-		By("Checking state of kyma")
-		Eventually(CheckKymaIsInState).
+
+		By("Checking manifest deletion timestamp")
+		Eventually(CheckManifestDeletionTimestamp).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+			WithArguments(*manifestObjectKey, controlPlaneClient, false).
 			Should(Succeed())
+		By("Checking manifest state")
+		Eventually(CheckManifestIsInState).
+			WithContext(ctx).
+			WithArguments(*manifestObjectKey, controlPlaneClient, declarative.StateWarning).
+			Should(Succeed())
+		By("Checking module state in Kyma CR")
+		Eventually(CheckKymaModuleIsInState).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient,
+				"template-operator", v1beta2.StateWarning).
+			Should(Succeed())
+
+		By("Remove finalizer")
+		err = RemoveFinalizerToSampleResource(ctx, *resourceObjectKey, runtimeClient, "e2e-finalizer")
+		Expect(err).To(Not(HaveOccurred()))
 	})
 
 	It("Should delete KCP Kyma", func() {
