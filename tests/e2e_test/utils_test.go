@@ -30,18 +30,16 @@ import (
 )
 
 var (
-	errKymaNotInExpectedState          = errors.New("kyma CR not in expected state")
-	errManifestNotInExpectedState      = errors.New("manifest CR not in expected state")
-	errModuleNotExisting               = errors.New("module does not exists in KymaCR")
-	errSampleCRDeletionTimestampSet    = errors.New("sample CR has set DeletionTimeStamp")
-	errSampleCRDeletionTimestampNotSet = errors.New("sample CR has not set DeletionTimeStamp")
-	errManifestDeletionTimestampSet    = errors.New("manifest CR has set DeletionTimeStamp")
-	errResourceExists                  = errors.New("resource still exists")
-	errUnexpectedState                 = errors.New("unexpected state found for module")
-	errModuleNotFound                  = errors.New("module not found")
-	errGettingManifestFromKymaCR       = errors.New("manifest object key could not be parsed from kyma module status")
-	errResourceParseFromManifest       = errors.New("resource object key could not be parsed from kyma module status")
-	errUnexpectedDeletionTimestamp     = errors.New("manifest has unexpected deletion timestamp")
+	errKymaNotInExpectedState       = errors.New("kyma CR not in expected state")
+	errManifestNotInExpectedState   = errors.New("manifest CR not in expected state")
+	errModuleNotExisting            = errors.New("module does not exists in KymaCR")
+	errManifestDeletionTimestampSet = errors.New("manifest CR has set DeletionTimeStamp")
+	errResourceExists               = errors.New("resource still exists")
+	errUnexpectedState              = errors.New("unexpected state found for module")
+	errModuleNotFound               = errors.New("module not found")
+	errGettingManifestFromKymaCR    = errors.New("manifest object key could not be parsed from kyma module status")
+	errResourceParseFromManifest    = errors.New("resource object key could not be parsed from kyma module status")
+	errUnexpectedDeletionTimestamp  = errors.New("manifest has unexpected deletion timestamp")
 )
 
 const (
@@ -417,30 +415,4 @@ func CheckSampleCRIsInState(ctx context.Context, name, namespace string, clnt cl
 		[]string{"status", "state"},
 		clnt,
 		expectedState)
-}
-
-func SampleCRNoDeletionTimeStampSet(ctx context.Context, name, namespace string, clnt client.Client) error {
-	_, exists, err := GetDeletionTimeStamp(ctx, "operator.kyma-project.io", "v1alpha1",
-		"Sample", name, namespace, clnt)
-	if err != nil {
-		return err
-	}
-
-	if exists {
-		return errSampleCRDeletionTimestampSet
-	}
-	return nil
-}
-
-func SampleCRDeletionTimeStampSet(ctx context.Context, name, namespace string, clnt client.Client) error {
-	_, exists, err := GetDeletionTimeStamp(ctx, "operator.kyma-project.io", "v1alpha1",
-		"Sample", name, namespace, clnt)
-	if err != nil {
-		return err
-	}
-
-	if !exists {
-		return errSampleCRDeletionTimestampNotSet
-	}
-	return nil
 }
