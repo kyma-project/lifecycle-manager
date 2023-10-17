@@ -75,5 +75,8 @@ module-status-propagation:
 module-without-default-cr:
 	go test -ginkgo.v -ginkgo.focus "Module Without Default CR"
 
+non-blocking-deletion: ## Runs the Status Propagation E2E Test
+	go test -ginkgo.focus "Non Blocking Kyma Module Deletion"
+
 purge-controller:
 	go test -ginkgo.v -ginkgo.focus "Purge Controller"
