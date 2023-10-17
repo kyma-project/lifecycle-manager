@@ -9,8 +9,7 @@ import (
 )
 
 var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
-	kyma := testutils.NewKymaWithSyncLabel("kyma-sample", "kcp-system", "fast",
-		v1beta2.SyncStrategyLocalSecret)
+	kyma := testutils.NewTestKyma("kyma-sample")
 	GinkgoWriter.Printf("kyma before create %v\n", kyma)
 
 	Context("Given an SKR cluster", func() {

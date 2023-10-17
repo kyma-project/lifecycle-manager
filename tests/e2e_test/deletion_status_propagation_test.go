@@ -33,7 +33,7 @@ var _ = Describe("Warning Status Propagation When Deletion Timestamp Not Zero", 
 				Should(Succeed())
 		})
 		It("Kyma should be in Warning state", func() {
-			Eventually(CheckKymaIsInState).
+			Eventually(IsKymaInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateWarning).
 				Should(Succeed())
@@ -69,7 +69,8 @@ var _ = Describe("Warning Status Propagation When Deletion Timestamp Not Zero", 
 		By("Checking manifest state")
 		Eventually(CheckManifestIsInState).
 			WithContext(ctx).
-			WithArguments(*manifestObjectKey, controlPlaneClient, declarative.StateWarning).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), "template-operator", controlPlaneClient,
+				declarative.StateWarning).
 			Should(Succeed())
 		By("Checking module state in Kyma CR")
 		Eventually(CheckKymaModuleIsInState).

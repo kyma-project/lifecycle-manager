@@ -17,10 +17,6 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
-	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -41,14 +37,11 @@ var (
 	errSampleCRDeletionTimestampNotSet = errors.New("sample CR has not set DeletionTimeStamp")
 	errManifestDeletionTimestampSet    = errors.New("manifest CR has set DeletionTimeStamp")
 	errResourceExists                  = errors.New("resource still exists")
-	errKymaNotInExpectedState      = errors.New("kyma CR not in expected state")
-	errManifestNotInExpectedState  = errors.New("manifest CR not in expected state")
-	errModuleNotExisting           = errors.New("module does not exists in KymaCR")
-	errUnexpectedState             = errors.New("unexpected state found for module")
-	errModuleNotFound              = errors.New("module not found")
-	errGettingManifestFromKymaCR   = errors.New("manifest object key could not be parsed from kyma module status")
-	errResourceParseFromManifest   = errors.New("resource object key could not be parsed from kyma module status")
-	errUnexpectedDeletionTimestamp = errors.New("manifest has unexpected deletion timestamp")
+	errUnexpectedState                 = errors.New("unexpected state found for module")
+	errModuleNotFound                  = errors.New("module not found")
+	errGettingManifestFromKymaCR       = errors.New("manifest object key could not be parsed from kyma module status")
+	errResourceParseFromManifest       = errors.New("resource object key could not be parsed from kyma module status")
+	errUnexpectedDeletionTimestamp     = errors.New("manifest has unexpected deletion timestamp")
 )
 
 const (
@@ -109,7 +102,7 @@ func CheckManifestIsInState(
 	ctx context.Context,
 	kymaName, kymaNamespace, moduleName string,
 	clnt client.Client,
-	expectedState v2.State,
+	expectedState declarative.State,
 ) error {
 	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
 	if err != nil {
@@ -134,23 +127,6 @@ func ManifestNoDeletionTimeStampSet(ctx context.Context,
 
 	if !manifest.ObjectMeta.DeletionTimestamp.IsZero() {
 		return errManifestDeletionTimestampSet
-	}
-	return nil
-}
-
-func CheckManifestIsInState(ctx context.Context,
-	manifestObjKey types.NamespacedName,
-	k8sClient client.Client,
-	expectedState declarative.State,
-) error {
-	manifest := &v1beta2.Manifest{}
-	if err := k8sClient.Get(ctx, manifestObjKey, manifest); err != nil {
-		return err
-	}
-	GinkgoWriter.Printf("manifest %v\n", manifest)
-	if manifest.Status.State != expectedState {
-		return fmt.Errorf("%w: expect %s, but in %s. Manifest CR: %#v",
-			errManifestNotInExpectedState, expectedState, manifest.Status.State, manifest)
 	}
 	return nil
 }
