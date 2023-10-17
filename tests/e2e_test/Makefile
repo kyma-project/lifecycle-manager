@@ -72,6 +72,9 @@ watcher-enqueue:
 module-status-propagation:
 	go test -ginkgo.v -ginkgo.focus "Warning Status Propagation"
 
+module-deletion-status-propagation:
+	go test -ginkgo.v -ginkgo.focus "Warning Status Propagation When Deletion Timestamp Not Zero"
+  
 module-without-default-cr:
 	go test -ginkgo.v -ginkgo.focus "Module Without Default CR"
 
