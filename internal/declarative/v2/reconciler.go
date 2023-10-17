@@ -142,7 +142,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj)
 	}
 
-	target, current, err := r.renderResources(ctx, obj, spec, converter)
+	target, current, err := r.renderResources(ctx, clnt, obj, spec, converter)
 	if err != nil {
 		return r.ssaStatus(ctx, obj)
 	}
@@ -244,6 +244,7 @@ func (r *Reconciler) Spec(ctx context.Context, obj Object) (*Spec, error) {
 
 func (r *Reconciler) renderResources(
 	ctx context.Context,
+	clnt client.Client,
 	obj Object,
 	spec *Spec,
 	converter ResourceToInfoConverter,
@@ -254,7 +255,7 @@ func (r *Reconciler) renderResources(
 	var err error
 	var target, current ResourceList
 
-	if target, err = r.renderTargetResources(ctx, converter, obj, spec); err != nil {
+	if target, err = r.renderTargetResources(ctx, clnt, converter, obj, spec); err != nil {
 		return nil, nil, err
 	}
 
@@ -403,16 +404,19 @@ func (r *Reconciler) doPreDelete(ctx context.Context, clnt Client, obj Object) e
 
 func (r *Reconciler) renderTargetResources(
 	ctx context.Context,
+	clnt client.Client,
 	converter ResourceToInfoConverter,
 	obj Object,
 	spec *Spec,
 ) ([]*resource.Info, error) {
 	if !obj.GetDeletionTimestamp().IsZero() {
-		// if we are deleting the resources,
-		// we no longer want to have any target resources and want to clean up all existing resources.
-		// Thus, we empty the target here so the difference will be the entire current
-		// resource list in the cluster.
-		return ResourceList{}, nil
+		deleted, err := r.DeletionCheck.Run(ctx, clnt, obj)
+		if err != nil {
+			return nil, err
+		}
+		if deleted {
+			return ResourceList{}, nil
+		}
 	}
 
 	status := obj.GetStatus()

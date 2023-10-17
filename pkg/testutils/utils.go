@@ -10,6 +10,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
@@ -36,10 +39,13 @@ const (
 )
 
 var (
-	ErrNotFound               = errors.New("resource not exists")
-	ErrNotDeleted             = errors.New("resource not deleted")
-	ErrDeletionTimestampFound = errors.New("deletion timestamp not nil")
-	ErrEmptyRestConfig        = errors.New("rest.Config is nil")
+	ErrNotFound                   = errors.New("resource not exists")
+	ErrNotDeleted                 = errors.New("resource not deleted")
+	ErrDeletionTimestampFound     = errors.New("deletion timestamp not nil")
+	ErrEmptyRestConfig            = errors.New("rest.Config is nil")
+	ErrDeletionTimestamp          = errors.New("DeletionTimeStamp does not exist or is not a string")
+	ErrSampleCrNotInExpectedState = errors.New("resource not in expected state")
+	ErrFetchingStatus             = errors.New("could not fetch status from resource")
 )
 
 func NewTestModule(name, channel string) v1beta2.Module {
@@ -166,4 +172,54 @@ func DescriptorExistsInCache(moduleTemplate *v1beta2.ModuleTemplate) bool {
 	moduleTemplateFromCache := moduleTemplate.GetDescFromCache()
 
 	return moduleTemplateFromCache != nil
+}
+
+func DeletionTimeStampExists(ctx context.Context, group, version, kind, name, namespace string,
+	clnt client.Client,
+) (bool, error) {
+	sampleCR := &unstructured.Unstructured{}
+	sampleCR.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   group,
+		Version: version,
+		Kind:    kind,
+	})
+	if err := clnt.Get(ctx,
+		client.ObjectKey{Name: name, Namespace: namespace}, sampleCR); err != nil {
+		return false, err
+	}
+
+	_, deletionTimestampExists, err := unstructured.NestedString(sampleCR.Object,
+		"metadata", "deletionTimestamp")
+	if err != nil || !deletionTimestampExists {
+		return deletionTimestampExists, err
+	}
+
+	return deletionTimestampExists, err
+}
+
+func CRIsInState(ctx context.Context, group, version, kind, name, namespace string, statusPath []string,
+	clnt client.Client, expectedState string,
+) error {
+	resourceCR := &unstructured.Unstructured{}
+	resourceCR.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   group,
+		Version: version,
+		Kind:    kind,
+	})
+
+	if err := clnt.Get(ctx,
+		client.ObjectKey{Name: name, Namespace: namespace}, resourceCR); err != nil {
+		return err
+	}
+
+	stateFromCR, stateExists, err := unstructured.NestedString(resourceCR.Object, statusPath...)
+	if err != nil || !stateExists {
+		return ErrFetchingStatus
+	}
+
+	if stateFromCR != expectedState {
+		return fmt.Errorf("%w: expect %s, but in %s",
+			ErrSampleCrNotInExpectedState, expectedState, stateFromCR)
+	}
+	return nil
 }
