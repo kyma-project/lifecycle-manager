@@ -277,21 +277,10 @@ func SetFinalizer(name, namespace, group, version, kind string, finalizers []str
 }
 
 func GetKymaStateMetricCount(ctx context.Context, kymaName, state string) (int, error) {
-	clnt := &http.Client{}
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost:9081/metrics", nil)
+	bodyString, err := getMetricsBody(ctx)
 	if err != nil {
 		return 0, err
 	}
-	response, err := clnt.Do(request)
-	if err != nil {
-		return 0, err
-	}
-	defer response.Body.Close()
-	bodyBytes, err := io.ReadAll(response.Body)
-	if err != nil {
-		return 0, err
-	}
-	bodyString := string(bodyBytes)
 
 	re := regexp.MustCompile(
 		`lifecycle_mgr_kyma_state{instance_id="[^"]+",kyma_name="` + kymaName + `",shoot="[^"]+",state="` + state +
@@ -415,4 +404,44 @@ func CheckSampleCRIsInState(ctx context.Context, name, namespace string, clnt cl
 		[]string{"status", "state"},
 		clnt,
 		expectedState)
+}
+
+func getMetricsBody(ctx context.Context) (string, error) {
+	clnt := &http.Client{}
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost:9081/metrics", nil)
+	if err != nil {
+		return "", err
+	}
+	response, err := clnt.Do(request)
+	if err != nil {
+		return "", err
+	}
+	defer response.Body.Close()
+	bodyBytes, err := io.ReadAll(response.Body)
+	if err != nil {
+		return "", err
+	}
+	bodyString := string(bodyBytes)
+
+	return bodyString, nil
+}
+
+func GetPurgeTimeMetric(ctx context.Context) (time.Duration, error) {
+	bodyString, err := getMetricsBody(ctx)
+	if err != nil {
+		return 0, err
+	}
+	re := regexp.MustCompile(`lifecycle_mgr_purgectrl_time (\d+)`)
+	match := re.FindStringSubmatch(bodyString)
+
+	if len(match) > 1 {
+		GinkgoWriter.Println("match:", match)
+		duration, err := time.ParseDuration(match[1])
+		if err != nil {
+			return 0, err
+		}
+		return duration, nil
+	}
+
+	return 0, nil
 }

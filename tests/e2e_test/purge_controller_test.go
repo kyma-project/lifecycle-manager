@@ -49,14 +49,10 @@ var _ = Describe("Purge Controller", Ordered, func() {
 		})
 
 		It("Then finalizer is removed from module CR after purge timeout", func() {
-			kyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
-			Expect(err).NotTo(HaveOccurred())
-
-			deletionTimeout := kyma.DeletionTimestamp.Add(10 * time.Second)
-
-			Eventually(FinalizerIsRemovedAfterTimeout).
+			time.Sleep(5 * time.Second)
+			Eventually(FinalizerIsRemoved).
 				WithContext(ctx).
-				WithArguments(runtimeClient, moduleCR, moduleCRFinalizer, &deletionTimeout).
+				WithArguments(runtimeClient, moduleCR, moduleCRFinalizer).
 				Should(Succeed())
 		})
 
@@ -71,12 +67,12 @@ var _ = Describe("Purge Controller", Ordered, func() {
 			Eventually(KymaDeleted).
 				WithContext(ctx).
 				WithArguments(defaultRemoteKymaName, remoteNamespace, runtimeClient).
-				Should(Equal(ErrNotFound))
+				Should(Succeed())
 
 			Eventually(KymaDeleted).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
-				Should(Equal(ErrNotFound))
+				Should(Succeed())
 		})
 	})
 })

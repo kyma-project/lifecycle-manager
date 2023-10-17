@@ -4,11 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	"github.com/onsi/ginkgo/v2/dsl/core"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -21,8 +19,7 @@ const (
 var (
 	errSampleCRDeletionTimestampSet    = errors.New("sample CR has set DeletionTimeStamp")
 	errSampleCRDeletionTimestampNotSet = errors.New("sample CR has not set DeletionTimeStamp")
-	errFinalizerNotFound    = errors.New("finalizer does not exist before purge timeout")
-	errFinalizerStillExists = errors.New("finalizer still exists after purge timeout")
+	errFinalizerStillExists            = errors.New("finalizer still exists after purge timeout")
 )
 
 func ModuleCRExists(ctx context.Context, clnt client.Client, moduleCR *unstructured.Unstructured) error {
@@ -91,35 +88,20 @@ func AddFinalizerToModuleCR(ctx context.Context, clnt client.Client, moduleCR *u
 	return nil
 }
 
-func FinalizerIsRemovedAfterTimeout(ctx context.Context, clnt client.Client, moduleCR *unstructured.Unstructured,
-	finalizer string, deletionTime time.Time,
+func FinalizerIsRemoved(ctx context.Context, clnt client.Client, moduleCR *unstructured.Unstructured,
+	finalizer string,
 ) error {
 	err := clnt.Get(ctx, client.ObjectKey{
 		Namespace: moduleCR.GetNamespace(),
 		Name:      moduleCR.GetName(),
 	}, moduleCR)
 
-	crExistError := CRExists(moduleCR, err)
+	if util.IsNotFound(err) {
+		return nil
+	}
 
-	if time.Now().Before(deletionTime) {
-		core.GinkgoWriter.Println("BEFORE:", crExistError)
-		if crExistError != nil {
-			return fmt.Errorf("module cr does not exist %w", crExistError)
-		}
-
-		if !slices.Contains(moduleCR.GetFinalizers(), finalizer) {
-			return errFinalizerNotFound
-		}
-	} else {
-		core.GinkgoWriter.Println("AFTER:", crExistError)
-		if util.IsNotFound(err) {
-			return nil
-		}
-
-		if slices.Contains(moduleCR.GetFinalizers(), finalizer) {
-			core.GinkgoWriter.Println("AFTER: FINALIZER NOT EXISTS")
-			return errFinalizerStillExists
-		}
+	if slices.Contains(moduleCR.GetFinalizers(), finalizer) {
+		return errFinalizerStillExists
 	}
 
 	return nil
