@@ -134,7 +134,7 @@ jobs:
             value: --enable-purge-finalizer=true
           - op: add
             path: /spec/template/spec/containers/0/args/-
-            value: --purge-finalizer-timeout=5s" >> purge_finalizer.yaml
+            value: --purge-finalizer-timeout=10s" >> purge_finalizer.yaml
           cat purge_finalizer.yaml
           kustomize edit add patch --path purge_finalizer.yaml --kind Deployment
           popd
