@@ -40,9 +40,8 @@ jobs:
   e2e-integration:
     strategy:
       matrix:
-        e2e-test: ["watcher-enqueue", "kyma-deletion", "module-status-propagation", "module-deletion-status-propagation", "kyma-metrics"]
-        cli-stability: [ "unstable" ]
-    name: "Run E2E tests"
+        e2e-test: [ "watcher-enqueue", "kyma-deletion", "module-status-propagation", "kyma-metrics", "module-without-default-cr" ]
+    name: "E2E"
     needs: [wait-for-img]
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -144,13 +143,12 @@ jobs:
           done
       - name: Checkout template-operator
         uses: actions/checkout@v3
-        if: ${{ matrix.e2e-test == 'module-status-propagation' || 'module-without-default-cr'  || 'module-deletion-status-propagation' }}
         with:
           repository: kyma-project/template-operator
           path: template-operator
       - name: Create Template Operator Module
         working-directory: ./template-operator
-        if: ${{ matrix.e2e-test == 'module-status-propagation' || 'module-deletion-status-propagation' }}
+        if: ${{ matrix.e2e-test == 'module-status-propagation'}}
         run: |
           pushd config/default
           echo "- op: replace
