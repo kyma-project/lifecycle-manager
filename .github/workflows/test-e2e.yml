@@ -148,7 +148,7 @@ jobs:
           path: template-operator
       - name: Create Template Operator Module
         working-directory: ./template-operator
-        if: ${{ matrix.e2e-test == 'module-status-propagation' || matrix.e2e-test == 'module-deletion-status-propagation' }}
+        if: ${{ matrix.e2e-test == 'module-status-propagation'}}
         run: |
           pushd config/default
           echo "- op: replace
