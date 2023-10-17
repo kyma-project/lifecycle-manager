@@ -414,32 +414,32 @@ func CheckSampleCRIsInState(ctx context.Context, name, namespace string, clnt cl
 	return CRIsInState(ctx,
 		"operator.kyma-project.io", "v1alpha1", "Sample",
 		name, namespace,
-		[]string{"status", "status"},
+		[]string{"status", "state"},
 		clnt,
 		expectedState)
 }
 
 func SampleCRNoDeletionTimeStampSet(ctx context.Context, name, namespace string, clnt client.Client) error {
-	deletionTimestampFromCR, err := GetDeletionTimeStamp(ctx, "operator.kyma-project.io", "v1alpha1",
+	_, exists, err := GetDeletionTimeStamp(ctx, "operator.kyma-project.io", "v1alpha1",
 		"Sample", name, namespace, clnt)
 	if err != nil {
 		return err
 	}
 
-	if deletionTimestampFromCR != "" {
+	if exists {
 		return errSampleCRDeletionTimestampSet
 	}
 	return nil
 }
 
 func SampleCRDeletionTimeStampSet(ctx context.Context, name, namespace string, clnt client.Client) error {
-	deletionTimestampFromCR, err := GetDeletionTimeStamp(ctx, "operator.kyma-project.io", "v1alpha1",
+	_, exists, err := GetDeletionTimeStamp(ctx, "operator.kyma-project.io", "v1alpha1",
 		"Sample", name, namespace, clnt)
 	if err != nil {
 		return err
 	}
 
-	if deletionTimestampFromCR == "" {
+	if !exists {
 		return errSampleCRDeletionTimestampNotSet
 	}
 	return nil

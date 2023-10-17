@@ -9,7 +9,8 @@ import (
 )
 
 var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
-	kyma := testutils.NewTestKyma("kyma-sample")
+	kyma := testutils.NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular",
+		v1beta2.SyncStrategyLocalSecret)
 	GinkgoWriter.Printf("kyma before create %v\n", kyma)
 
 	Context("Given an SKR cluster", func() {
@@ -36,7 +37,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 		It("When a Kyma Module is enabled", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", "fast", runtimeClient).
+				WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", "regular", runtimeClient).
 				Should(Succeed())
 			By("Then the Module Operator is deployed on the SKR cluster")
 			Eventually(CheckIfExists).
@@ -99,7 +100,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 			By("When the Module is re-enabled")
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", "fast", runtimeClient).
+				WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", "regular", runtimeClient).
 				Should(Succeed())
 			By("Then the Module Manifest CR is still in a \"Deleting\" State")
 			Consistently(CheckManifestIsInState).

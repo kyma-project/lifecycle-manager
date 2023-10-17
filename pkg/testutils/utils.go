@@ -176,7 +176,7 @@ func DescriptorExistsInCache(moduleTemplate *v1beta2.ModuleTemplate) bool {
 
 func GetDeletionTimeStamp(ctx context.Context, group, version, kind, name, namespace string,
 	clnt client.Client,
-) (string, error) {
+) (string, bool, error) {
 	sampleCR := &unstructured.Unstructured{}
 	sampleCR.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   group,
@@ -185,16 +185,16 @@ func GetDeletionTimeStamp(ctx context.Context, group, version, kind, name, names
 	})
 	if err := clnt.Get(ctx,
 		client.ObjectKey{Name: name, Namespace: namespace}, sampleCR); err != nil {
-		return "", err
+		return "", false, err
 	}
 
 	deletionTimestampFromCR, deletionTimestampExists, err := unstructured.NestedString(sampleCR.Object,
 		"metadata", "deletionTimestamp")
 	if err != nil || !deletionTimestampExists {
-		return "", ErrDeletionTimestamp
+		return "", deletionTimestampExists, err
 	}
 
-	return deletionTimestampFromCR, err
+	return deletionTimestampFromCR, deletionTimestampExists, err
 }
 
 func CRIsInState(ctx context.Context, group, version, kind, name, namespace string, statusPath []string,
