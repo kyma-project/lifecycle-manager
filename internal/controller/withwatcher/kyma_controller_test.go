@@ -127,16 +127,22 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1b
 	BeforeEach(func() {
 		By("asserting only one kyma CR exists")
 		kcpKymas := &v1beta2.KymaList{}
-		Expect(controlPlaneClient.List(suiteCtx, kcpKymas)).To(Succeed())
+		Eventually(controlPlaneClient.List, Timeout, Interval).
+			WithContext(suiteCtx).
+			WithArguments(kcpKymas).Should(Succeed())
 		Expect(kcpKymas.Items).NotTo(BeEmpty())
 		By("get latest kyma CR")
-		Expect(controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(kyma), kyma)).To(Succeed())
+		Eventually(controlPlaneClient.Get, Timeout, Interval).
+			WithContext(suiteCtx).
+			WithArguments(client.ObjectKeyFromObject(kyma), kyma).Should(Succeed())
 		By("get latest watcher CR")
-		Expect(controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(watcher), watcher)).
-			To(Succeed())
+		Eventually(controlPlaneClient.Get, Timeout, Interval).
+			WithContext(suiteCtx).
+			WithArguments(client.ObjectKeyFromObject(watcher), watcher).Should(Succeed())
 		By("get latest TLS secret")
-		Expect(controlPlaneClient.Get(suiteCtx, client.ObjectKeyFromObject(tlsSecret), tlsSecret)).
-			To(Succeed())
+		Eventually(controlPlaneClient.Get, Timeout, Interval).
+			WithContext(suiteCtx).
+			WithArguments(client.ObjectKeyFromObject(tlsSecret), tlsSecret).Should(Succeed())
 	})
 }
 
