@@ -65,7 +65,13 @@ envtest-dir:
 
 .PHONY: test
 test: manifests test-crd generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test `go list ./... | grep -v /tests/e2e_test` -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test `go list ./... | grep -v /tests/e2e_test | grep -v /internal/controller/control-plane` -coverprofile cover.out
+
+.PHONY: test-dual-cluster
+test-dual-cluster:
+#manifests test-crd generate fmt vet envtest ## Run dual cluster integration tests.
+	hack/run-integration-dedicate.sh "$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)"
+#	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test -ginkgo.v -ginkgo.focusFile internal/controller/control-plane/kyma_sync_annotation_test.go -coverprofile cover.out
 
 .PHONY: dry-run
 dry-run: kustomize manifests

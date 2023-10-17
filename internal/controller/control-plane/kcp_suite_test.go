@@ -64,8 +64,10 @@ const UseRandomPort = "0"
 
 var (
 	controlPlaneClient client.Client
+	runtimeClient      client.Client
 	k8sManager         manager.Manager
 	controlPlaneEnv    *envtest.Environment
+	runtimeEnv         *envtest.Environment
 	ctx                context.Context
 	cancel             context.CancelFunc
 	cfg                *rest.Config
@@ -147,6 +149,9 @@ var _ = BeforeSuite(func() {
 
 	controlPlaneClient = k8sManager.GetClient()
 
+	runtimeClient, runtimeEnv, err = NewSKRCluster(controlPlaneClient.Scheme())
+	Expect(err).Should(BeTrue())
+
 	go func() {
 		defer GinkgoRecover()
 		err = k8sManager.Start(ctx)
@@ -159,5 +164,7 @@ var _ = AfterSuite(func() {
 	cancel()
 
 	err := controlPlaneEnv.Stop()
+	Expect(err).NotTo(HaveOccurred())
+	err = runtimeEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
