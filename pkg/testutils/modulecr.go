@@ -34,7 +34,7 @@ func NewTestModuleCR(namespace string) *unstructured.Unstructured {
 }
 
 func SampleCRNoDeletionTimeStampSet(ctx context.Context, name, namespace string, clnt client.Client) error {
-	_, exists, err := GetDeletionTimeStamp(ctx, "operator.kyma-project.io", "v1alpha1",
+	exists, err := DeletionTimeStampExists(ctx, "operator.kyma-project.io", "v1alpha1",
 		"Sample", name, namespace, clnt)
 	if err != nil {
 		return err
@@ -47,7 +47,7 @@ func SampleCRNoDeletionTimeStampSet(ctx context.Context, name, namespace string,
 }
 
 func SampleCRDeletionTimeStampSet(ctx context.Context, name, namespace string, clnt client.Client) error {
-	_, exists, err := GetDeletionTimeStamp(ctx, "operator.kyma-project.io", "v1alpha1",
+	exists, err := DeletionTimeStampExists(ctx, "operator.kyma-project.io", "v1alpha1",
 		"Sample", name, namespace, clnt)
 	if err != nil {
 		return err
