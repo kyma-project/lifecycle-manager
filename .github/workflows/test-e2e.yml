@@ -40,7 +40,7 @@ jobs:
   e2e-integration:
     strategy:
       matrix:
-        e2e-test: [ "watcher-enqueue", "kyma-deletion", "module-status-propagation", "kyma-metrics", "module-without-default-cr" ]
+        e2e-test: ["watcher-enqueue", "kyma-deletion", "module-status-propagation", "kyma-metrics", "module-without-default-cr", "non-blocking-deletion"]
     name: "E2E"
     needs: [wait-for-img]
     runs-on: ubuntu-latest
@@ -143,10 +143,21 @@ jobs:
           done
       - name: Checkout template-operator
         uses: actions/checkout@v3
+        if: ${{ matrix.e2e-test == 'module-status-propagation' || matrix.e2e-test == 'module-without-default-cr' || matrix.e2e-test == 'non-blocking-deletion' }}
         with:
           repository: kyma-project/template-operator
           path: template-operator
       - name: Create Template Operator Module
+        working-directory: ./template-operator
+        if: ${{ matrix.e2e-test == 'non-blocking-deletion' }}
+        run: |
+          make build-manifests
+          kyma alpha create module --module-config-file ./module-config.yaml --path . --registry k3d-kcp-registry:5111 --insecure
+          sed -i 's/k3d-kcp-registry:5111/k3d-kcp-registry:5000/g' ./template.yaml
+          kubectl config use-context k3d-kcp
+          kubectl get crds
+          kubectl apply -f template.yaml
+      - name: Create Template Operator Module with final state `Warning`
         working-directory: ./template-operator
         if: ${{ matrix.e2e-test == 'module-status-propagation'}}
         run: |

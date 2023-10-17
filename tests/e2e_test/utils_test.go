@@ -15,6 +15,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/types"
 
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -28,14 +30,16 @@ import (
 )
 
 var (
-	errKymaNotInExpectedState      = errors.New("kyma CR not in expected state")
-	errManifestNotInExpectedState  = errors.New("manifest CR not in expected state")
-	errModuleNotExisting           = errors.New("module does not exists in KymaCR")
-	errUnexpectedState             = errors.New("unexpected state found for module")
-	errModuleNotFound              = errors.New("module not found")
-	errGettingManifestFromKymaCR   = errors.New("manifest object key could not be parsed from kyma module status")
-	errResourceParseFromManifest   = errors.New("resource object key could not be parsed from kyma module status")
-	errUnexpectedDeletionTimestamp = errors.New("manifest has unexpected deletion timestamp")
+	errKymaNotInExpectedState       = errors.New("kyma CR not in expected state")
+	errManifestNotInExpectedState   = errors.New("manifest CR not in expected state")
+	errModuleNotExisting            = errors.New("module does not exists in KymaCR")
+	errManifestDeletionTimestampSet = errors.New("manifest CR has set DeletionTimeStamp")
+	errResourceExists               = errors.New("resource still exists")
+	errUnexpectedState              = errors.New("unexpected state found for module")
+	errModuleNotFound               = errors.New("module not found")
+	errGettingManifestFromKymaCR    = errors.New("manifest object key could not be parsed from kyma module status")
+	errResourceParseFromManifest    = errors.New("resource object key could not be parsed from kyma module status")
+	errUnexpectedDeletionTimestamp  = errors.New("manifest has unexpected deletion timestamp")
 )
 
 const (
@@ -59,7 +63,7 @@ func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
 			WithArguments(kyma).
 			Should(Succeed())
 		By("verifying kyma is ready")
-		Eventually(CheckKymaIsInState).
+		Eventually(IsKymaInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 			Should(Succeed())
@@ -92,40 +96,35 @@ func CleanupKymaAfterAll(kyma *v1beta2.Kyma) {
 	})
 }
 
-func CheckKymaIsInState(ctx context.Context,
-	kymaName, kymaNamespace string,
-	k8sClient client.Client,
-	expectedState v1beta2.State,
+func CheckManifestIsInState(
+	ctx context.Context,
+	kymaName, kymaNamespace, moduleName string,
+	clnt client.Client,
+	expectedState declarative.State,
 ) error {
-	kyma := &v1beta2.Kyma{}
-	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
+	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	if err != nil {
 		return err
 	}
-	GinkgoWriter.Printf("kyma %v\n", kyma)
-	if kyma.Status.State != expectedState {
-		logmsg, err := getManifestCRs(ctx, k8sClient)
-		if err != nil {
-			return fmt.Errorf("error getting manifest crs %w", err)
-		}
-		return fmt.Errorf("%w: expect %s, but in %s. Kyma CR: %#v, Manifest CRs: %s",
-			errKymaNotInExpectedState, expectedState, kyma.Status.State, kyma, logmsg)
+
+	if manifest.Status.State != expectedState {
+		return fmt.Errorf("%w: expect %s, but in %s",
+			errManifestNotInExpectedState, expectedState, manifest.Status.State)
 	}
 	return nil
 }
 
-func CheckManifestIsInState(ctx context.Context,
-	manifestObjKey types.NamespacedName,
-	k8sClient client.Client,
-	expectedState declarative.State,
+func ManifestNoDeletionTimeStampSet(ctx context.Context,
+	kymaName, kymaNamespace, moduleName string,
+	clnt client.Client,
 ) error {
-	manifest := &v1beta2.Manifest{}
-	if err := k8sClient.Get(ctx, manifestObjKey, manifest); err != nil {
+	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	if err != nil {
 		return err
 	}
-	GinkgoWriter.Printf("manifest %v\n", manifest)
-	if manifest.Status.State != expectedState {
-		return fmt.Errorf("%w: expect %s, but in %s. Manifest CR: %#v",
-			errManifestNotInExpectedState, expectedState, manifest.Status.State, manifest)
+
+	if !manifest.ObjectMeta.DeletionTimestamp.IsZero() {
+		return errManifestDeletionTimestampSet
 	}
 	return nil
 }
@@ -146,16 +145,28 @@ func CheckManifestDeletionTimestamp(ctx context.Context,
 	return fmt.Errorf("unexpected result: %w", errUnexpectedDeletionTimestamp)
 }
 
-func getManifestCRs(ctx context.Context, k8sClient client.Client) (string, error) {
-	manifests := &v1beta2.ManifestList{}
-	if err := k8sClient.List(ctx, manifests); err != nil {
-		return "", err
+func CheckIfExists(ctx context.Context, name, namespace, group, version, kind string, clnt client.Client) error {
+	resourceCR := &unstructured.Unstructured{}
+	resourceCR.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   group,
+		Version: version,
+		Kind:    kind,
+	})
+	return clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, resourceCR)
+}
+
+func CheckIfNotExists(ctx context.Context, name, namespace, group, version, kind string, clnt client.Client) error {
+	resourceCR := &unstructured.Unstructured{}
+	resourceCR.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   group,
+		Version: version,
+		Kind:    kind,
+	})
+	err := clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, resourceCR)
+	if util.IsNotFound(err) {
+		return nil
 	}
-	logmsg := ""
-	for _, m := range manifests.Items {
-		logmsg += fmt.Sprintf("Manifest CR: %#v", m)
-	}
-	return logmsg, nil
+	return fmt.Errorf("%w: %s %s/%s should be deleted", errResourceExists, kind, namespace, name)
 }
 
 func CreateKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
@@ -247,6 +258,22 @@ func DisableModule(ctx context.Context, kymaName, kymaNamespace, moduleName stri
 
 func removeModuleWithIndex(s []v1beta2.Module, index int) []v1beta2.Module {
 	return append(s[:index], s[index+1:]...)
+}
+
+func SetFinalizer(name, namespace, group, version, kind string, finalizers []string, clnt client.Client) error {
+	resourceCR := &unstructured.Unstructured{}
+	resourceCR.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   group,
+		Version: version,
+		Kind:    kind,
+	})
+	if err := clnt.Get(ctx,
+		client.ObjectKey{Name: name, Namespace: namespace}, resourceCR); err != nil {
+		return err
+	}
+
+	resourceCR.SetFinalizers(finalizers)
+	return clnt.Update(ctx, resourceCR)
 }
 
 func GetKymaStateMetricCount(ctx context.Context, kymaName, state string) (int, error) {
@@ -377,4 +404,15 @@ func CheckKymaModuleIsInState(ctx context.Context,
 		}
 	}
 	return fmt.Errorf("error checking kyma module state: %w", errModuleNotFound)
+}
+
+func CheckSampleCRIsInState(ctx context.Context, name, namespace string, clnt client.Client,
+	expectedState string,
+) error {
+	return CRIsInState(ctx,
+		"operator.kyma-project.io", "v1alpha1", "Sample",
+		name, namespace,
+		[]string{"status", "state"},
+		clnt,
+		expectedState)
 }
