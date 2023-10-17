@@ -136,9 +136,7 @@ func (v *RequestVerifier) VerifySAN(certificate *x509.Certificate, kymaDomain st
 	dnsNames := certificate.DNSNames
 	IPAddresses := certificate.IPAddresses
 
-	if len(uris) > limitSANValues ||
-		len(dnsNames) > limitSANValues ||
-		len(IPAddresses) > limitSANValues {
+	if (len(uris) + len(dnsNames) + len(IPAddresses)) > limitSANValues {
 		return false, errTooManySANValues
 	}
 
