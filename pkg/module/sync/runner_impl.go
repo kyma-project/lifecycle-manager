@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -18,9 +20,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	commonErrors "github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"github.com/kyma-project/lifecycle-manager/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -74,7 +74,8 @@ func (r *RunnerImpl) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	}
 	ssaFinish := time.Since(ssaStart)
 	if len(errs) != 0 {
-		return fmt.Errorf("ServerSideApply failed (after %s): %w", ssaFinish, types.NewMultiError(errs))
+		errs = append(errs, fmt.Errorf("ServerSideApply failed (after %s)", ssaFinish)) //nolint:goerr113
+		return errors.Join(errs...)
 	}
 	baseLogger.V(log.DebugLevel).Info("ServerSideApply finished", "time", ssaFinish)
 	return nil

@@ -25,6 +25,8 @@ import (
 	"testing"
 	"time"
 
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -37,7 +39,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	admissionv1 "k8s.io/api/admission/v1"
 	//+kubebuilder:scaffold:imports
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -45,6 +47,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -91,7 +94,7 @@ var _ = BeforeSuite(func() {
 	scheme = runtime.NewScheme()
 	Expect(api.AddToScheme(scheme)).NotTo(HaveOccurred())
 	Expect(apiextensionsv1.AddToScheme(scheme)).NotTo(HaveOccurred())
-	Expect(admissionv1beta1.AddToScheme(scheme)).NotTo(HaveOccurred())
+	Expect(admissionv1.AddToScheme(scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 
@@ -110,14 +113,19 @@ func StopWebhook() {
 func SetupWebhook() {
 	// start webhook server using Manager
 	webhookInstallOptions := &testEnv.WebhookInstallOptions
+	webhookOpts := webhook.Options{
+		Host:    webhookInstallOptions.LocalServingHost,
+		Port:    webhookInstallOptions.LocalServingPort,
+		CertDir: webhookInstallOptions.LocalServingCertDir,
+	}
 	mgr, err := ctrl.NewManager(
 		cfg, ctrl.Options{
-			Scheme:             scheme,
-			Host:               webhookInstallOptions.LocalServingHost,
-			Port:               webhookInstallOptions.LocalServingPort,
-			CertDir:            webhookInstallOptions.LocalServingCertDir,
-			LeaderElection:     false,
-			MetricsBindAddress: "0",
+			Scheme:         scheme,
+			WebhookServer:  webhook.NewServer(webhookOpts),
+			LeaderElection: false,
+			Metrics: metricsserver.Options{
+				BindAddress: "0",
+			},
 		})
 	Expect(err).NotTo(HaveOccurred())
 

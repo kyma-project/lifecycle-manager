@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
 	"github.com/kyma-project/lifecycle-manager/internal"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -26,7 +28,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
+	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -251,8 +253,10 @@ func StartDeclarativeReconcilerForRun(
 		cfg, ctrl.Options{
 			// these bind addresses cause conflicts when run concurrently so we disable them
 			HealthProbeBindAddress: "0",
-			MetricsBindAddress:     "0",
-			Scheme:                 scheme.Scheme,
+			Metrics: metricsserver.Options{
+				BindAddress: "0",
+			},
+			Scheme: scheme.Scheme,
 		},
 	)
 	Expect(err).ToNot(HaveOccurred())
@@ -283,7 +287,7 @@ func StartDeclarativeReconcilerForRun(
 	Expect(
 		ctrl.NewControllerManagedBy(mgr).WithEventFilter(testWatchPredicate).
 			WithOptions(
-				controller.Options{RateLimiter: workqueue.NewMaxOfRateLimiter(
+				controllerRuntime.Options{RateLimiter: workqueue.NewMaxOfRateLimiter(
 					&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(30), 200)},
 				)},
 			).

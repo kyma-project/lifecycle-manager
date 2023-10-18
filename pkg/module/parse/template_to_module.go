@@ -104,6 +104,9 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 }
 
 func overwriteNameAndNamespace(template *channel.ModuleTemplateTO, name, namespace string) {
+	if template.ModuleTemplate.Spec.Data == nil {
+		return
+	}
 	// if the default data does not contain a name, default it to the module name
 	if template.ModuleTemplate.Spec.Data.GetName() == "" {
 		template.ModuleTemplate.Spec.Data.SetName(name)
@@ -128,7 +131,9 @@ func (p *Parser) newManifestFromTemplate(
 	case v1beta2.CustomResourcePolicyCreateAndDelete:
 		fallthrough
 	default:
-		manifest.Spec.Resource = template.Spec.Data.DeepCopy()
+		if template.Spec.Data != nil {
+			manifest.Spec.Resource = template.Spec.Data.DeepCopy()
+		}
 	}
 
 	clusterClient := p.Client
