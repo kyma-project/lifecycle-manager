@@ -92,12 +92,11 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 			WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
 			Should(Succeed())
 
-		It("Then state of KCP kyma in Warning", func() {
-			Eventually(IsKymaInState).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateWarning).
-				Should(Succeed())
-		})
+		By("Then state of KCP kyma in Warning")
+		Eventually(IsKymaInState).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateWarning).
+			Should(Succeed())
 	})
 
 	It("When the Module is disabled with an existing finalizer", func() {
