@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/ocm.software/v3alpha1"
 	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
@@ -14,6 +13,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8sruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/yaml"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 type ModuleTemplateBuilder struct {

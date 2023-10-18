@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 const (

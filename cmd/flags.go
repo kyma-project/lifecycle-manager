@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
-
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 

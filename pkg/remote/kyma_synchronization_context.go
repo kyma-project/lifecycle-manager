@@ -6,8 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -18,7 +16,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 type ClientFunc func() *rest.Config

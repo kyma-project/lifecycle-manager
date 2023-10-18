@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
+	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -17,12 +19,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest"
-
-	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
-	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
-
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 )
 

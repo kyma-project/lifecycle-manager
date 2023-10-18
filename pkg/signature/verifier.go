@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	ocmv1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
 	"github.com/open-component-model/ocm/pkg/signing"
@@ -16,6 +15,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 var ErrNoSignatureFound = errors.New("no signature was found")

@@ -1,8 +1,9 @@
 package status
 
 import (
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 // InitConditions initializes the required conditions in the Kyma CR.

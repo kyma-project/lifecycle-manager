@@ -7,7 +7,6 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )

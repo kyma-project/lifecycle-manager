@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	ctrlMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
 	listenerMetrics "github.com/kyma-project/runtime-watcher/listener/pkg/metrics"
 	"github.com/prometheus/client_golang/prometheus"
+	ctrlMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
 )
 
 const (

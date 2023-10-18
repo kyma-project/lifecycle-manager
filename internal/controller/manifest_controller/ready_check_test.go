@@ -5,23 +5,23 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
-
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/resource"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var _ = Describe("Manifest readiness check", Ordered, func() {

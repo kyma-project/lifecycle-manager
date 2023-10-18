@@ -5,15 +5,18 @@ import (
 	"errors"
 	"fmt"
 
+	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var (

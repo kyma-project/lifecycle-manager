@@ -17,10 +17,11 @@ limitations under the License.
 package v1beta1
 
 import (
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 // ModuleTemplate is a representation of a Template used for creating Module Instances within the Module Lifecycle.

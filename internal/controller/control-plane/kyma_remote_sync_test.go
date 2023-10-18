@@ -5,19 +5,22 @@ import (
 	"strconv"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
-	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/pkg/channel"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var (

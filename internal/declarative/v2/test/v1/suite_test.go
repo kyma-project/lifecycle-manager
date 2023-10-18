@@ -5,8 +5,6 @@ import (
 	"path/filepath"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	apiExtensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -14,6 +12,9 @@ import (
 	"sigs.k8s.io/yaml"
 
 	testv1 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 const (

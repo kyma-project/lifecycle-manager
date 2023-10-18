@@ -3,16 +3,17 @@ package manifest_controller_test
 import (
 	"os"
 
-	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
+	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe(

@@ -3,12 +3,11 @@ package status_test
 import (
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
 type testCase struct {

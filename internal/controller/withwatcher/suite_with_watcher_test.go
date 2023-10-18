@@ -23,24 +23,14 @@ import (
 	"testing"
 	"time"
 
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
-	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"github.com/kyma-project/lifecycle-manager/pkg/queue"
+	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/go-logr/logr"
 	"go.uber.org/zap/zapcore"
-
-	corev1 "k8s.io/api/core/v1"
-
 	istioapi "istio.io/api/networking/v1beta1"
 	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	versionedclient "istio.io/client-go/pkg/clientset/versioned"
 	istioscheme "istio.io/client-go/pkg/clientset/versioned/scheme"
-
-	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/go-logr/logr"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -53,13 +43,21 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to

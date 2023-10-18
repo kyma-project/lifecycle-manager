@@ -23,15 +23,6 @@ import (
 	"testing"
 	"time"
 
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
 	"go.uber.org/zap/zapcore"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
@@ -43,11 +34,21 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/api"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
+
+	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 

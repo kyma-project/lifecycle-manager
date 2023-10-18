@@ -17,9 +17,10 @@ limitations under the License.
 package v1beta1
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 //+kubebuilder:object:root=true

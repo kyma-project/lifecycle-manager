@@ -9,14 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-
-	"github.com/kyma-project/lifecycle-manager/internal"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"golang.org/x/time/rate"
 	v1 "k8s.io/api/core/v1"
 	apiExtensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -31,11 +23,20 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal"
 	testv1 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 //nolint:gochecknoglobals

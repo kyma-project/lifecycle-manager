@@ -26,12 +26,7 @@ import (
 	"strings"
 	"time"
 
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
-
-	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
-
+	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -41,7 +36,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/strings/slices"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -50,11 +44,12 @@ import (
 	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/kyma-project/lifecycle-manager/api"
 	operatorv1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
 	purgemetrics "github.com/kyma-project/lifecycle-manager/internal/controller/purge/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -63,6 +58,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+
+	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	//nolint:gci // kubebuilder's scaffold imports must be appended here.
 	//+kubebuilder:scaffold:imports
 )
 

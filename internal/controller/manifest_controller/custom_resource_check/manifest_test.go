@@ -6,19 +6,20 @@ import (
 	"path/filepath"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var _ = Describe("Warning state propagation test", Ordered, func() {

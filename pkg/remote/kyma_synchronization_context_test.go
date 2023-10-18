@@ -3,12 +3,12 @@ package remote_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestReplaceWithVirtualKyma(t *testing.T) {

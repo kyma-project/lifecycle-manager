@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 var ErrDeletionNotFinished = errors.New("deletion is not yet finished")

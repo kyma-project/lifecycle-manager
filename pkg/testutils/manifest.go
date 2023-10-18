@@ -5,14 +5,15 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
 var (

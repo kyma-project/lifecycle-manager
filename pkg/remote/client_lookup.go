@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 type ClientLookup struct {

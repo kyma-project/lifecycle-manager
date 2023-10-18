@@ -14,9 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	apiExtensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -27,7 +24,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 

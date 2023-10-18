@@ -23,37 +23,33 @@ import (
 	"testing"
 	"time"
 
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
-
-	operatorv1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
-
-	"k8s.io/client-go/rest"
-
-	"github.com/kyma-project/lifecycle-manager/api"
-	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"go.uber.org/zap/zapcore"
-
-	//nolint:gci
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
-
-	ctrl "sigs.k8s.io/controller-runtime"
-	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
-
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-	"github.com/kyma-project/lifecycle-manager/pkg/signature"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/manager"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
+	"github.com/kyma-project/lifecycle-manager/api"
+	operatorv1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
+	"github.com/kyma-project/lifecycle-manager/pkg/signature"
+
+	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to

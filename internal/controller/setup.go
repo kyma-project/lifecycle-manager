@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
+	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
+	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -20,10 +21,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-
-	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
-	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
-
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 	"github.com/kyma-project/lifecycle-manager/pkg/watch"

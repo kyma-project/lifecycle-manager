@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	ctrlMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
-	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (

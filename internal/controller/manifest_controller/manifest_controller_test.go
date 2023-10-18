@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
-
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )

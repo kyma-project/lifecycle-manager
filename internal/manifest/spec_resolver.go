@@ -7,15 +7,14 @@ import (
 	"os"
 	"reflect"
 
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/v1/google"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
-
-	"github.com/google/go-containerregistry/pkg/authn"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // RawManifestInfo defines raw manifest information.

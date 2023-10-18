@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 

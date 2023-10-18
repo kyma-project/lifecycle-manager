@@ -3,8 +3,9 @@ package v1beta2_test
 import (
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 //nolint:funlen

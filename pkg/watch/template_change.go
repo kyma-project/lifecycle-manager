@@ -3,7 +3,6 @@ package watch
 import (
 	"context"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -11,6 +10,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 type TemplateChangeHandler struct {

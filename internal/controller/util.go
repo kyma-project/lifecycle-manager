@@ -1,11 +1,12 @@
 package controller
 
 import (
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 func NewCacheOptions() cache.Options {
