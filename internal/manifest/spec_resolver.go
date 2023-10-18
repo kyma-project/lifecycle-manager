@@ -8,6 +8,8 @@ import (
 	"reflect"
 
 	"github.com/google/go-containerregistry/pkg/v1/google"
+	"sigs.k8s.io/yaml"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
@@ -56,9 +58,13 @@ func (m *SpecResolver) Spec(ctx context.Context, obj declarative.Object,
 	if manifest.Labels[v1beta2.IsRemoteModuleTemplate] == v1beta2.EnableLabelValue {
 		targetClient = remoteClient
 	}
+	var imageSpec v1beta2.ImageSpec
+	if err := yaml.Unmarshal(manifest.Spec.Install.Source.Raw, &imageSpec); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal data: %w", err)
+	}
 
 	var mode declarative.RenderMode
-	switch manifest.Spec.Install.Type {
+	switch imageSpec.Type {
 	case v1beta2.OciRefType:
 		mode = declarative.RenderModeRaw
 	default:
@@ -66,7 +72,7 @@ func (m *SpecResolver) Spec(ctx context.Context, obj declarative.Object,
 			client.ObjectKeyFromObject(manifest), ErrRenderModeInvalid)
 	}
 
-	rawManifestInfo, err := m.getRawManifestForInstall(ctx, manifest.Spec.Install, targetClient)
+	rawManifestInfo, err := m.getRawManifestForInstall(ctx, imageSpec, targetClient)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package img
 
 import (
+	"encoding/json"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -10,7 +11,12 @@ type LayerName string
 
 const (
 	ConfigLayer LayerName = "config"
+	CRDsLayer   LayerName = "crds"
 )
+
+type LayerRepresentation interface {
+	ToInstallRaw() ([]byte, error)
+}
 
 type OCI struct {
 	Repo               string                `json:"repo"`
@@ -18,6 +24,14 @@ type OCI struct {
 	Ref                string                `json:"ref"`
 	Type               string                `json:"type"`
 	CredSecretSelector *metav1.LabelSelector `json:"credSecretSelector,omitempty"`
+}
+
+func (o *OCI) ToInstallRaw() ([]byte, error) {
+	bytes, err := json.Marshal(o)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal to raw bytes: %w", err)
+	}
+	return bytes, nil
 }
 
 func (o *OCI) String() string {
@@ -28,7 +42,7 @@ type (
 	LayerType string
 	Layer     struct {
 		LayerName
-		LayerRepresentation *OCI
+		LayerRepresentation
 	}
 )
 

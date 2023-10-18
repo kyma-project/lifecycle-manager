@@ -8,6 +8,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
@@ -20,10 +21,7 @@ type ModuleConversionSettings struct {
 	signature.Verification
 }
 
-var (
-	ErrDefaultConfigParsing = errors.New("defaultConfig could not be parsed")
-	ErrInstallParsing       = errors.New("install layer could not be parsed")
-)
+var ErrDefaultConfigParsing = errors.New("defaultConfig could not be parsed")
 
 type Parser struct {
 	client.Client
@@ -211,21 +209,28 @@ func insertLayerIntoManifest(
 	manifest *v1beta2.Manifest, layer img.Layer,
 ) error {
 	switch layer.LayerName {
+	case img.CRDsLayer:
+		fallthrough
 	case img.ConfigLayer:
+		ociImage, ok := layer.LayerRepresentation.(*img.OCI)
+		if !ok {
+			return fmt.Errorf("%w: not an OCIImage", ErrDefaultConfigParsing)
+		}
 		manifest.Spec.Config = &v1beta2.ImageSpec{
-			Repo:               layer.LayerRepresentation.Repo,
-			Name:               layer.LayerRepresentation.Name,
-			Ref:                layer.LayerRepresentation.Ref,
+			Repo:               ociImage.Repo,
+			Name:               ociImage.Name,
+			Ref:                ociImage.Ref,
 			Type:               v1beta2.OciRefType,
-			CredSecretSelector: layer.LayerRepresentation.CredSecretSelector,
+			CredSecretSelector: ociImage.CredSecretSelector,
 		}
 	default:
-		manifest.Spec.Install = v1beta2.ImageSpec{
-			Repo:               layer.LayerRepresentation.Repo,
-			Name:               layer.LayerRepresentation.Name,
-			Ref:                layer.LayerRepresentation.Ref,
-			Type:               v1beta2.OciRefType,
-			CredSecretSelector: layer.LayerRepresentation.CredSecretSelector,
+		installRaw, err := layer.ToInstallRaw()
+		if err != nil {
+			return fmt.Errorf("error while merging the generic install representation: %w", err)
+		}
+		manifest.Spec.Install = v1beta2.InstallInfo{
+			Source: runtime.RawExtension{Raw: installRaw},
+			Name:   string(layer.LayerName),
 		}
 	}
 

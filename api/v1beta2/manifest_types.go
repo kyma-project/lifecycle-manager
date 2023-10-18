@@ -20,12 +20,27 @@ import (
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
 	ManifestKind         = "Manifest"
 	RawManifestLayerName = "raw-manifest"
 )
+
+// InstallInfo defines installation information.
+type InstallInfo struct {
+	// Source in the ImageSpec format
+	//+kubebuilder:pruning:PreserveUnknownFields
+	Source runtime.RawExtension `json:"source"`
+
+	// Name specifies a unique install name for Manifest
+	Name string `json:"name"`
+}
+
+func (i InstallInfo) Raw() []byte {
+	return i.Source.Raw
+}
 
 // ManifestSpec defines the desired state of Manifest.
 type ManifestSpec struct {
@@ -36,7 +51,7 @@ type ManifestSpec struct {
 	Config *ImageSpec `json:"config,omitempty"`
 
 	// Install specifies a list of installations for Manifest
-	Install ImageSpec `json:"install"`
+	Install InstallInfo `json:"install"`
 
 	//+kubebuilder:pruning:PreserveUnknownFields
 	//+kubebuilder:validation:XEmbeddedResource

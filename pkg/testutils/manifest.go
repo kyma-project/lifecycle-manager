@@ -14,10 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var (
-	ErrManifestResourceIsNil = errors.New("manifest spec.resource is nil")
-	ErrStatusManifestIsNil   = errors.New("kyma spec.status.modules.manifest is nil")
-)
+var ErrManifestResourceIsNil = errors.New("manifest spec.resource is nil")
 
 func NewTestManifest(prefix string) *v1beta2.Manifest {
 	return &v1beta2.Manifest{
@@ -46,9 +43,6 @@ func GetManifest(ctx context.Context,
 	var manifestKey v1beta2.TrackingObject
 	for _, module := range kyma.Status.Modules {
 		if module.Name == moduleName {
-			if module.Manifest == nil {
-				return nil, fmt.Errorf("get maifest %w", ErrStatusManifestIsNil)
-			}
 			manifestKey = *module.Manifest
 		}
 	}
