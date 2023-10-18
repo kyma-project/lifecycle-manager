@@ -40,7 +40,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 
 	admissionv1 "k8s.io/api/admission/v1"
-	//+kubebuilder:scaffold:imports
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"

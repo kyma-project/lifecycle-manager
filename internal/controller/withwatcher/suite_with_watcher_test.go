@@ -17,7 +17,6 @@ limitations under the License.
 package withwatcher_test
 
 import (
-	//+kubebuilder:scaffold:imports
 	"context"
 	"os"
 	"path/filepath"
