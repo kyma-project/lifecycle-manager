@@ -49,6 +49,7 @@ jobs:
       K3D_VERSION: v5.4.7
       ISTIO_VERSION: 1.17.1
       CM_VERSION: v1.12.3
+      KUBECTL_VERSION: 1.28.3
       KLM_VERSION_TAG: latest
       KLM_IMAGE_REPO: prod
     steps:
@@ -64,7 +65,7 @@ jobs:
           mv istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin
       - name: Install kubectl
         run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          curl -LO https://dl.k8s.io/release/$KUBECTL_VERSION/bin/linux/amd64/kubectl
           chmod +x kubectl
           mv kubectl /usr/local/bin
       - name: Install Kyma CLI

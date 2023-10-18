@@ -71,6 +71,7 @@ jobs:
       LIFECYCLE_MANAGER: ${{ github.repository }}
       K3D_VERSION: v5.4.7
       KUSTOMIZE_VERSION: 4.5.7
+      KUBECTL_VERSION: 1.28.3
       ISTIO_VERSION: 1.17.1
     steps:
       - name: Checkout Lifecycle-Manager
@@ -105,7 +106,7 @@ jobs:
       - name: Setup Control-Plane requirements
         if: ${{ matrix.target  == 'control-plane' }}
         run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          curl -LO https://dl.k8s.io/release/$KUBECTL_VERSION/bin/linux/amd64/kubectl
           chmod +x kubectl
           mv kubectl /usr/local/bin
           
