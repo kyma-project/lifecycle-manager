@@ -97,10 +97,33 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 		})
 
 		It("Given the Kyma Module is under deletion", func() {
+			By("When the Module channel is updated")
+			Eventually(ChangeModuleChannel).
+				WithContext(ctx).
+				WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", "fast", runtimeClient).
+				Should(Succeed())
+			By("Then the Module will be updated on SKR")
+			Eventually(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments("template-operator-v2-controller-manager", "template-operator-system", runtimeClient).
+				Should(Succeed())
+			By("And the old deployment will be removed")
+			Consistently(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments("template-operator-controller-manager", "template-operator-system", runtimeClient).
+				Should(Not(Succeed()))
+			By("And the Module Default CR is in a \"Deleting\" State")
+			Consistently(CheckSampleCRIsInState).
+				WithContext(ctx).
+				WithArguments("sample-yaml", "kyma-system", runtimeClient, "Deleting").
+				Should(Succeed())
+		})
+
+		It("Given the Kyma Module is under deletion", func() {
 			By("When the Module is re-enabled")
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", "regular", runtimeClient).
+				WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", "fast", runtimeClient).
 				Should(Succeed())
 			By("Then the Module Manifest CR is still in a \"Deleting\" State")
 			Consistently(CheckManifestIsInState).
