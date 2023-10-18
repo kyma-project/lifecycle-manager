@@ -50,6 +50,7 @@ const (
 	interval              = 1 * time.Second
 	remoteNamespace       = "kyma-system"
 	controlPlaneNamespace = "kcp-system"
+	moduleName            = "template-operator"
 )
 
 func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
@@ -426,17 +427,18 @@ func getMetricsBody(ctx context.Context) (string, error) {
 	return bodyString, nil
 }
 
-func GetPurgeTimeMetric(ctx context.Context) (time.Duration, error) {
+func GetPurgeTimeMetric(ctx context.Context) (float64, error) {
 	bodyString, err := getMetricsBody(ctx)
 	if err != nil {
 		return 0, err
 	}
-	re := regexp.MustCompile(`lifecycle_mgr_purgectrl_time (\d+)`)
+	re := regexp.MustCompile(`lifecycle_mgr_purgectrl_time ([0-9]*\.?[0-9]+)`)
 	match := re.FindStringSubmatch(bodyString)
 
 	if len(match) > 1 {
-		GinkgoWriter.Println("match:", match)
-		duration, err := time.ParseDuration(match[1])
+		duration, err := strconv.ParseFloat(match[1], 64)
+		GinkgoWriter.Println("duration: ", duration)
+		GinkgoWriter.Println("match: ", match)
 		if err != nil {
 			return 0, err
 		}

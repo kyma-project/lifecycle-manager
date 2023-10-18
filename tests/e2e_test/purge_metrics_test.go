@@ -1,8 +1,6 @@
 package e2e_test
 
 import (
-	"time"
-
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
@@ -12,11 +10,34 @@ import (
 var _ = Describe("Purge Metrics", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular",
 		v1beta2.SyncStrategyLocalSecret)
+	moduleCR := NewTestModuleCR(remoteNamespace)
+	moduleCRFinalizer := "cr-finalizer"
 
 	InitEmptyKymaBeforeAll(kyma)
 
-	Context("Given Kyma CR with purge finalizer", func() {
-		It("When Kyma deletion timestamp is set", func() {
+	Context("Given Template Operator", func() {
+		It("When enable Template Operator", func() {
+			Eventually(EnableModule).
+				WithContext(ctx).
+				WithArguments(defaultRemoteKymaName, remoteNamespace, moduleName, kyma.Spec.Channel, runtimeClient).
+				Should(Succeed())
+		})
+
+		It("Then module CR exists", func() {
+			Eventually(ModuleCRExists).
+				WithContext(ctx).
+				WithArguments(runtimeClient, moduleCR).
+				Should(Succeed())
+		})
+	})
+
+	Context("Given a module CR", func() {
+		It("When a finalizer is added to Module CR", func() {
+			Expect(AddFinalizerToModuleCR(ctx, runtimeClient, moduleCR, moduleCRFinalizer)).
+				Should(Succeed())
+		})
+
+		It("And Kyma has deletion timestamp set", func() {
 			Expect(DeleteKyma(ctx, controlPlaneClient, kyma)).
 				Should(Succeed())
 
@@ -24,25 +45,12 @@ var _ = Describe("Purge Metrics", Ordered, func() {
 				Should(BeTrue())
 		})
 
-		It("Then KCP and SKR kymas are deleted after purge timeout", func() {
-			time.Sleep(5 * time.Second)
-			Eventually(KymaDeleted).
-				WithContext(ctx).
-				WithArguments(defaultRemoteKymaName, remoteNamespace, runtimeClient).
-				Should(Succeed())
-
-			Eventually(KymaDeleted).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
-				Should(Succeed())
-		})
-
-		It("And lifecycle_mgr_purgectrl_time is updated", func() {
+		It("Then lifecycle_mgr_purgectrl_time is updated", func() {
 			duration, err := GetPurgeTimeMetric(ctx)
 			Expect(err).NotTo(HaveOccurred())
 
-			GinkgoWriter.Printf("Purge Metric Time: %d", duration)
-			Expect(duration).Should(BeNumerically(">", 0))
+			GinkgoWriter.Println("duration: ", duration)
+			Expect(duration).Should(BeNumerically(">", float64(0)))
 		})
 	})
 })

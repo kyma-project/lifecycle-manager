@@ -9,8 +9,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-const moduleName = "template-operator"
-
 var _ = Describe("Module Without Default CR", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular", v1beta2.SyncStrategyLocalSecret)
 

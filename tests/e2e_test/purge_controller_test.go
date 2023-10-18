@@ -12,7 +12,6 @@ import (
 var _ = Describe("Purge Controller", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular",
 		v1beta2.SyncStrategyLocalSecret)
-	moduleName := "template-operator"
 	moduleCR := NewTestModuleCR(remoteNamespace)
 	moduleCRFinalizer := "cr-finalizer"
 
