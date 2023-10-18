@@ -3,7 +3,7 @@ package v1beta2_test
 import (
 	"testing"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -15,37 +15,37 @@ func TestKyma_DetermineState(t *testing.T) {
 	tests := []struct {
 		name                 string
 		givenModulesState    []shared.State
-		givenConditionStatus []metav1.ConditionStatus
+		givenConditionStatus []apimachinerymeta.ConditionStatus
 		want                 shared.State
 	}{
 		{
 			"given moduleshared.State contains error",
 			[]shared.State{shared.StateError, shared.StateReady, shared.StateReady},
-			[]metav1.ConditionStatus{metav1.ConditionTrue},
+			[]apimachinerymeta.ConditionStatus{apimachinerymeta.ConditionTrue},
 			shared.StateError,
 		},
 		{
 			"given moduleshared.State contains warning but no error",
 			[]shared.State{shared.StateWarning, shared.StateReady, shared.StateReady},
-			[]metav1.ConditionStatus{metav1.ConditionTrue},
+			[]apimachinerymeta.ConditionStatus{apimachinerymeta.ConditionTrue},
 			shared.StateWarning,
 		},
 		{
 			"given moduleshared.State in ready",
 			[]shared.State{shared.StateReady, shared.StateReady, shared.StateReady},
-			[]metav1.ConditionStatus{metav1.ConditionTrue},
+			[]apimachinerymeta.ConditionStatus{apimachinerymeta.ConditionTrue},
 			shared.StateReady,
 		},
 		{
 			"given moduleshared.State contains error and warning",
 			[]shared.State{shared.StateError, shared.StateWarning, shared.StateReady},
-			[]metav1.ConditionStatus{metav1.ConditionTrue},
+			[]apimachinerymeta.ConditionStatus{apimachinerymeta.ConditionTrue},
 			shared.StateError,
 		},
 		{
 			"given conditions are not in true status but module in ready",
 			[]shared.State{shared.StateReady},
-			[]metav1.ConditionStatus{metav1.ConditionFalse},
+			[]apimachinerymeta.ConditionStatus{apimachinerymeta.ConditionFalse},
 			shared.StateProcessing,
 		},
 	}
@@ -61,7 +61,7 @@ func TestKyma_DetermineState(t *testing.T) {
 				kyma.Status.Modules = append(kyma.Status.Modules, moduleStatus)
 			}
 			for _, conditionStatus := range testCase.givenConditionStatus {
-				condition := metav1.Condition{Status: conditionStatus}
+				condition := apimachinerymeta.Condition{Status: conditionStatus}
 				kyma.Status.Conditions = append(kyma.Status.Conditions, condition)
 			}
 			if got := kyma.DetermineState(); got != testCase.want {

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/yaml"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
@@ -30,7 +30,7 @@ const (
 
 func expectManifestSpecDataEquals(kymaName, value string) func() error {
 	return func() error {
-		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, metav1.NamespaceDefault)
+		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, apimachinerymeta.NamespaceDefault)
 		if err != nil {
 			return err
 		}
@@ -83,7 +83,7 @@ func expectManifestSpecContainsCredSecretSelector(kymaName, kymaNamespace string
 
 func extractInstallImageSpec(installInfo v1beta2.InstallInfo) *v1beta2.ImageSpec {
 	var installImageSpec *v1beta2.ImageSpec
-	err := yaml.Unmarshal(installInfo.Source.Raw, &installImageSpec)
+	err := machineryaml.Unmarshal(installInfo.Source.Raw, &installImageSpec)
 	Expect(err).ToNot(HaveOccurred())
 	return installImageSpec
 }

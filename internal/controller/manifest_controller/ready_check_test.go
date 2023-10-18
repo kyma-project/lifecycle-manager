@@ -5,15 +5,16 @@ import (
 	"os"
 	"path/filepath"
 
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiapps "k8s.io/api/apps/v1"
+	apicore "k8s.io/api/core/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
 	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
@@ -29,7 +30,7 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 	installName := filepath.Join(customDir, "installs")
 	It(
 		"setup OCI", func() {
-			hlp.PushToRemoteOCIRegistry(installName)
+			manifesttest.PushToRemoteOCIRegistry(installName)
 		},
 	)
 	BeforeEach(
@@ -40,10 +41,10 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 	It("Install OCI specs including an nginx deployment", func() {
 		testManifest := testutils.NewTestManifest("custom-check-oci")
 		manifestName := testManifest.GetName()
-		validImageSpec := hlp.CreateOCIImageSpec(installName, hlp.Server.Listener.Addr().String(), false)
+		validImageSpec := manifesttest.CreateOCIImageSpec(installName, manifesttest.Server.Listener.Addr().String(), false)
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(hlp.InstallManifest(testManifest, imageSpecByte, false)).To(Succeed())
+		Expect(manifesttest.InstallManifest(testManifest, imageSpecByte, false)).To(Succeed())
 
 		Eventually(hlp.ExpectManifestStateIn(shared.StateReady), standardTimeout, standardInterval).
 			WithArguments(manifestName).Should(Succeed())
@@ -51,11 +52,11 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 		testClient, err := declarativeTestClient()
 		Expect(err).ToNot(HaveOccurred())
 		By("Verifying that deployment is deployed and ready")
-		deploy := &appsv1.Deployment{}
+		deploy := &apiapps.Deployment{}
 		Expect(verifyDeploymentInstallation(deploy)).To(Succeed())
 
 		By("Verifying manifest status contains all resources")
-		status, err := hlp.GetManifestStatus(manifestName)
+		status, err := manifesttest.GetManifestStatus(manifestName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(status.Synced).To(HaveLen(2))
 
@@ -72,7 +73,7 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 
 		By("Executing the CR readiness check")
 		customReadyCheck := manifest.NewCustomResourceReadyCheck()
-		stateInfo, err := customReadyCheck.Run(hlp.Ctx, testClient, testManifest, resources)
+		stateInfo, err := customReadyCheck.Run(manifesttest.Ctx, testClient, testManifest, resources)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(stateInfo.State).To(Equal(shared.StateReady))
 
@@ -81,7 +82,7 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 			Should(BeTrue())
 		Eventually(verifyObjectExists(expectedCRD.ToUnstructured()), standardTimeout, standardInterval).Should(BeTrue())
 
-		Eventually(hlp.DeleteManifestAndVerify(testManifest), standardTimeout, standardInterval).Should(Succeed())
+		Eventually(manifesttest.DeleteManifestAndVerify(testManifest), standardTimeout, standardInterval).Should(Succeed())
 
 		Eventually(verifyObjectExists(expectedDeployment.ToUnstructured()), standardTimeout, standardInterval).
 			Should(BeFalse())
@@ -90,10 +91,10 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 	})
 })
 
-func verifyDeploymentInstallation(deploy *appsv1.Deployment) error {
-	err := hlp.K8sClient.Get(
-		hlp.Ctx, client.ObjectKey{
-			Namespace: metav1.NamespaceDefault,
+func verifyDeploymentInstallation(deploy *apiapps.Deployment) error {
+	err := manifesttest.K8sClient.Get(
+		manifesttest.Ctx, client.ObjectKey{
+			Namespace: apimachinerymeta.NamespaceDefault,
 			Name:      "nginx-deployment",
 		}, deploy,
 	)
@@ -104,25 +105,25 @@ func verifyDeploymentInstallation(deploy *appsv1.Deployment) error {
 	deploy.Status.ReadyReplicas = *deploy.Spec.Replicas
 	deploy.Status.AvailableReplicas = *deploy.Spec.Replicas
 	deploy.Status.Conditions = append(deploy.Status.Conditions,
-		appsv1.DeploymentCondition{
-			Type:   appsv1.DeploymentAvailable,
-			Status: corev1.ConditionTrue,
+		apiapps.DeploymentCondition{
+			Type:   apiapps.DeploymentAvailable,
+			Status: apicore.ConditionTrue,
 		})
-	err = hlp.K8sClient.Status().Update(hlp.Ctx, deploy)
+	err = manifesttest.K8sClient.Status().Update(manifesttest.Ctx, deploy)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func prepareResourceInfosForCustomCheck(clt declarative.Client, deploy *appsv1.Deployment) ([]*resource.Info, error) {
-	deployUnstructuredObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(deploy)
+func prepareResourceInfosForCustomCheck(clt declarative.Client, deploy *apiapps.Deployment) ([]*resource.Info, error) {
+	deployUnstructuredObj, err := machineryruntime.DefaultUnstructuredConverter.ToUnstructured(deploy)
 	if err != nil {
 		return nil, err
 	}
 	deployUnstructured := &unstructured.Unstructured{}
 	deployUnstructured.SetUnstructuredContent(deployUnstructuredObj)
-	deployUnstructured.SetGroupVersionKind(appsv1.SchemeGroupVersion.WithKind("Deployment"))
+	deployUnstructured.SetGroupVersionKind(apiapps.SchemeGroupVersion.WithKind("Deployment"))
 	deployInfo, err := clt.ResourceInfo(deployUnstructured, true)
 	if err != nil {
 		return nil, err
@@ -133,7 +134,7 @@ func prepareResourceInfosForCustomCheck(clt declarative.Client, deploy *appsv1.D
 func declarativeTestClient() (declarative.Client, error) {
 	cluster := &declarative.ClusterInfo{
 		Config: cfg,
-		Client: hlp.K8sClient,
+		Client: manifesttest.K8sClient,
 	}
 
 	return declarative.NewSingletonClients(cluster)
@@ -142,7 +143,7 @@ func declarativeTestClient() (declarative.Client, error) {
 func asResource(name, namespace, group, version, kind string) shared.Resource {
 	return shared.Resource{
 		Name: name, Namespace: namespace,
-		GroupVersionKind: metav1.GroupVersionKind{
+		GroupVersionKind: apimachinerymeta.GroupVersionKind{
 			Group: group, Version: version, Kind: kind,
 		},
 	}
@@ -150,8 +151,8 @@ func asResource(name, namespace, group, version, kind string) shared.Resource {
 
 func verifyObjectExists(obj *unstructured.Unstructured) func() (bool, error) {
 	return func() (bool, error) {
-		err := hlp.K8sClient.Get(
-			hlp.Ctx, client.ObjectKeyFromObject(obj),
+		err := manifesttest.K8sClient.Get(
+			manifesttest.Ctx, client.ObjectKeyFromObject(obj),
 			obj,
 		)
 

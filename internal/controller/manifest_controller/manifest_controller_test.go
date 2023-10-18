@@ -7,6 +7,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
 	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -21,7 +22,7 @@ var _ = Describe(
 		installName := filepath.Join(mainOciTempDir, "installs")
 		It(
 			"setup OCI", func() {
-				hlp.PushToRemoteOCIRegistry(installName)
+				manifesttest.PushToRemoteOCIRegistry(installName)
 			},
 		)
 		BeforeEach(
@@ -44,7 +45,7 @@ var _ = Describe(
 						WithArguments(manifest.GetName()).Should(Succeed())
 				}
 
-				Eventually(hlp.DeleteManifestAndVerify(manifest), standardTimeout, standardInterval).Should(Succeed())
+				Eventually(manifesttest.DeleteManifestAndVerify(manifest), standardTimeout, standardInterval).Should(Succeed())
 			},
 			Entry(
 				"When Manifest CR contains a valid install OCI image specification, "+
@@ -78,7 +79,7 @@ var _ = Describe(
 		It(
 			"setup remote oci Registry",
 			func() {
-				hlp.PushToRemoteOCIRegistry(installName)
+				manifesttest.PushToRemoteOCIRegistry(installName)
 			},
 		)
 		BeforeEach(
@@ -89,10 +90,10 @@ var _ = Describe(
 
 		It("Manifest should be in Error state with no auth secret found error message", func() {
 			manifestWithInstall := testutils.NewTestManifest("private-oci-registry")
-			Eventually(hlp.WithValidInstallImageSpec(installName, false, true), standardTimeout, standardInterval).
+			Eventually(manifesttest.WithValidInstallImageSpec(installName, false, true), standardTimeout, standardInterval).
 				WithArguments(manifestWithInstall).Should(Succeed())
 			Eventually(func() string {
-				status, err := hlp.GetManifestStatus(manifestWithInstall.GetName())
+				status, err := manifesttest.GetManifestStatus(manifestWithInstall.GetName())
 				if err != nil {
 					return err.Error()
 				}

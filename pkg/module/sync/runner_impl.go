@@ -6,19 +6,19 @@ import (
 	"fmt"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
-	commonErrors "github.com/kyma-project/lifecycle-manager/pkg/common"
+	commonerrs "github.com/kyma-project/lifecycle-manager/pkg/common" //nolint:importas // a one-time reference for the package
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -34,8 +34,8 @@ func New(clnt client.Client) *RunnerImpl {
 
 type RunnerImpl struct {
 	client.Client
-	versioner runtime.GroupVersioner
-	converter runtime.ObjectConvertor
+	versioner machineryruntime.GroupVersioner
+	converter machineryruntime.ObjectConvertor
 }
 
 // ReconcileManifests implements Runner.Sync.
@@ -43,7 +43,7 @@ func (r *RunnerImpl) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	modules common.Modules,
 ) error {
 	ssaStart := time.Now()
-	baseLogger := ctrlLog.FromContext(ctx)
+	baseLogger := logf.FromContext(ctx)
 
 	results := make(chan error, len(modules))
 	for _, module := range modules {
@@ -101,7 +101,7 @@ func (r *RunnerImpl) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	}
 	manifestObj, ok := obj.(*v1beta2.Manifest)
 	if !ok {
-		return commonErrors.ErrTypeAssert
+		return commonerrs.ErrTypeAssert
 	}
 	if err := r.Patch(ctx, manifestObj,
 		client.Apply,
@@ -186,7 +186,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 			GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 		moduleResource = &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMetaFromObject(manifestObject.Spec.Resource),
-			TypeMeta:    metav1.TypeMeta{Kind: moduleCRKind, APIVersion: moduleCRAPIVersion},
+			TypeMeta:    apimachinerymeta.TypeMeta{Kind: moduleCRKind, APIVersion: moduleCRAPIVersion},
 		}
 
 		if module.Template.Annotations[v1beta2.IsClusterScopedAnnotation] == v1beta2.EnableLabelValue {
@@ -202,11 +202,11 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 		Version: module.Version,
 		Manifest: &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMetaFromObject(manifestObject),
-			TypeMeta:    metav1.TypeMeta{Kind: manifestKind, APIVersion: manifestAPIVersion},
+			TypeMeta:    apimachinerymeta.TypeMeta{Kind: manifestKind, APIVersion: manifestAPIVersion},
 		},
 		Template: &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMetaFromObject(module.Template),
-			TypeMeta:    metav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
+			TypeMeta:    apimachinerymeta.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
 		},
 		Resource: moduleResource,
 	}

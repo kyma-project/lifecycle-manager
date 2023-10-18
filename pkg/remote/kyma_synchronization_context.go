@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
-	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apicore "k8s.io/api/core/v1"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/rest"
@@ -116,13 +116,13 @@ func DeleteRemotelySyncedKyma(
 // ensureRemoteNamespaceExists tries to ensure existence of a namespace for synchronization based on
 // name of controlPlaneKyma.namespace in this order.
 func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Context, syncNamespace string) error {
-	namespace := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
+	namespace := &apicore.Namespace{
+		ObjectMeta: apimachinerymeta.ObjectMeta{
 			Name:   syncNamespace,
 			Labels: map[string]string{v1beta2.ManagedBy: v1beta2.OperatorName},
 		},
 		// setting explicit type meta is required for SSA on Namespaces
-		TypeMeta: metav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
+		TypeMeta: apimachinerymeta.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
 	}
 
 	var buf bytes.Buffer
@@ -144,8 +144,8 @@ func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Con
 }
 
 func (c *KymaSynchronizationContext) CreateOrUpdateCRD(ctx context.Context, plural string) error {
-	crd := &v1extensions.CustomResourceDefinition{}
-	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
+	crd := &apiextensions.CustomResourceDefinition{}
+	crdFromRuntime := &apiextensions.CustomResourceDefinition{}
 	var err error
 	err = c.ControlPlaneClient.Get(
 		ctx, client.ObjectKey{

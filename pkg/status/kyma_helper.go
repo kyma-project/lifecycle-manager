@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -50,7 +50,7 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 
 	kyma.Status.LastOperation = shared.LastOperation{
 		Operation:      message,
-		LastUpdateTime: metav1.NewTime(time.Now()),
+		LastUpdateTime: apimachinerymeta.NewTime(time.Now()),
 	}
 
 	fieldOwner := v1beta2.UnmanagedKyma

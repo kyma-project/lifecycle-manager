@@ -4,9 +4,9 @@ import (
 	"errors"
 	"strings"
 
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/runtime"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/discovery"
 )
 
@@ -14,9 +14,9 @@ func IsNotFound(err error) bool {
 	if err == nil {
 		return false
 	}
-	if runtime.IsNotRegisteredError(err) ||
+	if machineryruntime.IsNotRegisteredError(err) ||
 		meta.IsNoMatchError(err) ||
-		k8serrors.IsNotFound(err) {
+		apierrors.IsNotFound(err) {
 		return true
 	}
 
@@ -25,7 +25,7 @@ func IsNotFound(err error) bool {
 	groupErr := &discovery.ErrGroupDiscoveryFailed{}
 	if errors.As(err, &groupErr) {
 		for _, err := range groupErr.Groups {
-			if k8serrors.IsNotFound(err) {
+			if apierrors.IsNotFound(err) {
 				return true
 			}
 		}

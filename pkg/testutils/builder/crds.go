@@ -6,7 +6,7 @@ import (
 	"unicode"
 
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const group = "operator.kyma-project.io"
@@ -22,11 +22,11 @@ func NewCRDBuilder() CRDBuilder {
 
 	return CRDBuilder{
 		crd: &apiextensions.CustomResourceDefinition{
-			TypeMeta: metav1.TypeMeta{
+			TypeMeta: apimachinerymeta.TypeMeta{
 				Kind:       "CustomResourceDefinition",
 				APIVersion: "apiextensions.k8s.io/v1",
 			},
-			ObjectMeta: metav1.ObjectMeta{
+			ObjectMeta: apimachinerymeta.ObjectMeta{
 				Name: fmt.Sprintf("%ss.%s", strings.ToLower(crdName), group),
 			},
 			Spec: apiextensions.CustomResourceDefinitionSpec{
@@ -38,7 +38,7 @@ func NewCRDBuilder() CRDBuilder {
 	}
 }
 
-// WithName sets metav1.ObjectMeta.Name and all apiextensions.CustomResourceDefinitionNames.
+// WithName sets ObjectMeta.Name and all apiextensions.CustomResourceDefinitionNames.
 func (cb CRDBuilder) WithName(name string) CRDBuilder {
 	cb.crd.Name = fmt.Sprintf("%ss.%s", strings.ToLower(name), group)
 	cb.crd.Spec.Names = createCRDNamesFrom(name)

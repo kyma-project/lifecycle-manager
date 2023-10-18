@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/runtime"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -229,7 +229,7 @@ func insertLayerIntoManifest(
 			return fmt.Errorf("error while merging the generic install representation: %w", err)
 		}
 		manifest.Spec.Install = v1beta2.InstallInfo{
-			Source: runtime.RawExtension{Raw: installRaw},
+			Source: machineryruntime.RawExtension{Raw: installRaw},
 			Name:   string(layer.LayerName),
 		}
 	}

@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
+	apiapps "k8s.io/api/apps/v1"
+	apicore "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/resource"
-	deploymentutil "k8s.io/kubectl/pkg/util/deployment"
+	"k8s.io/kubectl/pkg/util/deployment"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -210,7 +210,7 @@ func parseStateChecks(manifest *v1beta2.Manifest) ([]*v1beta2.CustomStateCheck, 
 }
 
 func isDeploymentReady(clt declarative.Client, resources []*resource.Info) bool {
-	deploy := &appsv1.Deployment{}
+	deploy := &apiapps.Deployment{}
 	found := false
 	for _, res := range resources {
 		err := clt.Scheme().Convert(res.Object, deploy, nil)
@@ -223,8 +223,8 @@ func isDeploymentReady(clt declarative.Client, resources []*resource.Info) bool 
 	if !found {
 		return true
 	}
-	availableCond := deploymentutil.GetDeploymentCondition(deploy.Status, appsv1.DeploymentAvailable)
-	if availableCond != nil && availableCond.Status == corev1.ConditionTrue {
+	availableCond := deployment.GetDeploymentCondition(deploy.Status, apiapps.DeploymentAvailable)
+	if availableCond != nil && availableCond.Status == apicore.ConditionTrue {
 		return true
 	}
 	if deploy.Spec.Replicas != nil && *deploy.Spec.Replicas == deploy.Status.ReadyReplicas {

@@ -26,32 +26,32 @@ import (
 	"strings"
 	"time"
 
-	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanager "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
-	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
-	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apiextension "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	istioclientapi "istio.io/client-go/pkg/apis/networking/v1beta1"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
+	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/utils/strings/slices"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
+	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/api"
-	operatorv1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
-	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
-	purgemetrics "github.com/kyma-project/lifecycle-manager/internal/controller/purge/metrics"
+	kymametrics "github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"   //nolint:importas // ad-hoc import collision resolution
+	purgemetrics "github.com/kyma-project/lifecycle-manager/internal/controller/purge/metrics" //nolint:importas // ad-hoc import collision resolution
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -66,21 +66,21 @@ import (
 )
 
 var (
-	scheme   = runtime.NewScheme()        //nolint:gochecknoglobals
-	setupLog = ctrl.Log.WithName("setup") //nolint:gochecknoglobals
+	scheme   = machineryruntime.NewScheme() //nolint:gochecknoglobals
+	setupLog = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals
 )
 
 //nolint:gochecknoinits
 func init() {
-	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(api.AddToScheme(scheme))
+	machineryutilruntime.Must(k8sclientscheme.AddToScheme(scheme))
+	machineryutilruntime.Must(api.AddToScheme(scheme))
 
-	utilruntime.Must(v1extensions.AddToScheme(scheme))
-	utilruntime.Must(certManagerV1.AddToScheme(scheme))
+	machineryutilruntime.Must(apiextensions.AddToScheme(scheme))
+	machineryutilruntime.Must(certmanager.AddToScheme(scheme))
 
-	utilruntime.Must(istiov1beta1.AddToScheme(scheme))
+	machineryutilruntime.Must(istioclientapi.AddToScheme(scheme))
 
-	utilruntime.Must(operatorv1beta2.AddToScheme(scheme))
+	machineryutilruntime.Must(v1beta2.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -116,7 +116,7 @@ func pprofStartServer(addr string, timeout time.Duration) {
 	}
 }
 
-func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *runtime.Scheme) {
+func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *machineryruntime.Scheme) {
 	config := ctrl.GetConfigOrDie()
 	config.QPS = float32(flagVar.clientQPS)
 	config.Burst = flagVar.clientBurst
@@ -177,29 +177,29 @@ func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *runti
 }
 
 func enableWebhooks(mgr manager.Manager) {
-	if err := (&operatorv1beta2.ModuleTemplate{}).
+	if err := (&v1beta2.ModuleTemplate{}).
 		SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
 		os.Exit(1)
 	}
 
-	if err := (&operatorv1beta2.Kyma{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&v1beta2.Kyma{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Kyma")
 		os.Exit(1)
 	}
-	if err := (&operatorv1beta2.Watcher{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&v1beta2.Watcher{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Watcher")
 		os.Exit(1)
 	}
 
-	if err := (&operatorv1beta2.Manifest{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&v1beta2.Manifest{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Manifest")
 		os.Exit(1)
 	}
 }
 
-func controllerOptionsFromFlagVar(flagVar *FlagVar) controllerRuntime.Options {
-	return controllerRuntime.Options{
+func controllerOptionsFromFlagVar(flagVar *FlagVar) ctrlruntime.Options {
+	return ctrlruntime.Options{
 		RateLimiter: workqueue.NewMaxOfRateLimiter(
 			workqueue.NewItemExponentialFailureRateLimiter(flagVar.failureBaseDelay, flagVar.failureMaxDelay),
 			&workqueue.BucketRateLimiter{
@@ -213,7 +213,7 @@ func controllerOptionsFromFlagVar(flagVar *FlagVar) controllerRuntime.Options {
 
 func setupKymaReconciler(mgr ctrl.Manager,
 	remoteClientCache *remote.ClientCache,
-	flagVar *FlagVar, options controllerRuntime.Options,
+	flagVar *FlagVar, options ctrlruntime.Options,
 ) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentKymaReconciles
 	kcpRestConfig := mgr.GetConfig()
@@ -233,7 +233,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 
 	if err := (&controller.KymaReconciler{
 		Client:            mgr.GetClient(),
-		EventRecorder:     mgr.GetEventRecorderFor(operatorv1beta2.OperatorName),
+		EventRecorder:     mgr.GetEventRecorderFor(v1beta2.OperatorName),
 		KcpRestConfig:     kcpRestConfig,
 		RemoteClientCache: remoteClientCache,
 		SKRWebhookManager: skrWebhookManager,
@@ -260,7 +260,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		os.Exit(1)
 	}
 
-	metrics.Initialize()
+	kymametrics.Initialize()
 }
 
 func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (watcher.SKRWebhookManager, error) {
@@ -281,16 +281,16 @@ func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (watcher.SKRWeb
 func setupPurgeReconciler(mgr ctrl.Manager,
 	remoteClientCache *remote.ClientCache,
 	flagVar *FlagVar,
-	options controllerRuntime.Options,
+	options ctrlruntime.Options,
 ) {
 	resolveRemoteClientFunc := func(ctx context.Context, key client.ObjectKey) (client.Client, error) {
 		kcpClient := remote.NewClientWithConfig(mgr.GetClient(), mgr.GetConfig())
-		return remote.NewClientLookup(kcpClient, remoteClientCache, operatorv1beta2.SyncStrategyLocalSecret).Lookup(ctx, key)
+		return remote.NewClientLookup(kcpClient, remoteClientCache, v1beta2.SyncStrategyLocalSecret).Lookup(ctx, key)
 	}
 
 	if err := (&controller.PurgeReconciler{
 		Client:                mgr.GetClient(),
-		EventRecorder:         mgr.GetEventRecorderFor(operatorv1beta2.OperatorName),
+		EventRecorder:         mgr.GetEventRecorderFor(v1beta2.OperatorName),
 		ResolveRemoteClient:   resolveRemoteClientFunc,
 		PurgeFinalizerTimeout: flagVar.purgeFinalizerTimeout,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(flagVar.skipPurgingFor),
@@ -307,7 +307,7 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 func setupManifestReconciler(
 	mgr ctrl.Manager,
 	flagVar *FlagVar,
-	options controllerRuntime.Options,
+	options ctrlruntime.Options,
 ) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentManifestReconciles
 	options.RateLimiter = internal.ManifestRateLimiter(flagVar.failureBaseDelay,
@@ -324,7 +324,7 @@ func setupManifestReconciler(
 	}
 }
 
-func setupKcpWatcherReconciler(mgr ctrl.Manager, options controllerRuntime.Options, flagVar *FlagVar) {
+func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, flagVar *FlagVar) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentWatcherReconciles
 
 	if err := (&controller.WatcherReconciler{
@@ -345,19 +345,19 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options controllerRuntime.Optio
 
 func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved string) {
 	cfg := mgr.GetConfig()
-	kcpClient, err := apiextension.NewForConfig(cfg)
+	kcpClient, err := clientset.NewForConfig(cfg)
 	if err != nil {
 		setupLog.V(log.DebugLevel).Error(err, fmt.Sprintf("unable to initialize client to remove %s", versionToBeRemoved))
 	}
 	ctx := context.TODO()
-	var crdList *v1extensions.CustomResourceDefinitionList
-	if crdList, err = kcpClient.ApiextensionsV1().CustomResourceDefinitions().List(ctx, v1.ListOptions{}); err != nil {
+	var crdList *apiextensions.CustomResourceDefinitionList
+	if crdList, err = kcpClient.ApiextensionsV1().CustomResourceDefinitions().List(ctx, apimachinerymeta.ListOptions{}); err != nil {
 		setupLog.V(log.InfoLevel).Error(err, "unable to list CRDs")
 	}
 
 	crdsToPatch := []string{
-		string(operatorv1beta2.ModuleTemplateKind), string(operatorv1beta2.WatcherKind),
-		operatorv1beta2.ManifestKind, string(operatorv1beta2.KymaKind),
+		string(v1beta2.ModuleTemplateKind), string(v1beta2.WatcherKind),
+		v1beta2.ManifestKind, string(v1beta2.KymaKind),
 	}
 
 	for _, crdItem := range crdList.Items {
@@ -376,7 +376,7 @@ func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved strin
 		setupLog.V(log.InfoLevel).Info(fmt.Sprintf("The new storedVersions are %v", newStoredVersions))
 		crd := crdItem
 		if _, err := kcpClient.ApiextensionsV1().CustomResourceDefinitions().
-			UpdateStatus(ctx, &crd, v1.UpdateOptions{}); err != nil {
+			UpdateStatus(ctx, &crd, apimachinerymeta.UpdateOptions{}); err != nil {
 			msg := fmt.Sprintf("Failed to update CRD to remove %s from stored versions", versionToBeRemoved)
 			setupLog.V(log.InfoLevel).Error(err, msg)
 		}

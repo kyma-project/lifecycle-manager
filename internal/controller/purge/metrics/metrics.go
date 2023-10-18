@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	ctrlMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
+	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
@@ -42,9 +42,9 @@ var (
 )
 
 func Initialize() {
-	ctrlMetrics.Registry.MustRegister(purgeTimeGauge)
-	ctrlMetrics.Registry.MustRegister(purgeRequestsCounter)
-	ctrlMetrics.Registry.MustRegister(purgeErrorGauge)
+	ctrlmetrics.Registry.MustRegister(purgeTimeGauge)
+	ctrlmetrics.Registry.MustRegister(purgeRequestsCounter)
+	ctrlmetrics.Registry.MustRegister(purgeErrorGauge)
 }
 
 var errMetric = errors.New("failed to update metrics")

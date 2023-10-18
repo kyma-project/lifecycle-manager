@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	corev1 "k8s.io/api/core/v1"
-	apimachinerymetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	certmanager "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagermeta "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	apicore "k8s.io/api/core/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -88,7 +88,7 @@ func (c *CertificateManager) Create(ctx context.Context) error {
 
 // Remove removes the certificate including its certificate secret.
 func (c *CertificateManager) Remove(ctx context.Context) error {
-	certificate := &certmanagerv1.Certificate{}
+	certificate := &certmanager.Certificate{}
 	if err := c.kcpClient.Get(ctx, client.ObjectKey{
 		Name:      c.certificateName,
 		Namespace: c.istioNamespace,
@@ -98,7 +98,7 @@ func (c *CertificateManager) Remove(ctx context.Context) error {
 	if err := c.kcpClient.Delete(ctx, certificate); err != nil {
 		return fmt.Errorf("failed to delete certificate: %w", err)
 	}
-	certSecret := &corev1.Secret{}
+	certSecret := &apicore.Secret{}
 	if err := c.kcpClient.Get(ctx, client.ObjectKey{
 		Name:      c.secretName,
 		Namespace: c.istioNamespace,
@@ -114,7 +114,7 @@ func (c *CertificateManager) Remove(ctx context.Context) error {
 }
 
 func (c *CertificateManager) GetSecret(ctx context.Context) (*CertificateSecret, error) {
-	secret := &corev1.Secret{}
+	secret := &apicore.Secret{}
 	err := c.kcpClient.Get(ctx, client.ObjectKey{Name: c.secretName, Namespace: c.istioNamespace},
 		secret)
 	if err != nil {
@@ -137,36 +137,36 @@ func (c *CertificateManager) createCertificate(ctx context.Context, subjectAltNa
 		return fmt.Errorf("error getting issuer: %w", err)
 	}
 
-	cert := certmanagerv1.Certificate{
-		TypeMeta: apimachinerymetav1.TypeMeta{
-			Kind:       certmanagerv1.CertificateKind,
-			APIVersion: certmanagerv1.SchemeGroupVersion.String(),
+	cert := certmanager.Certificate{
+		TypeMeta: apimachinerymeta.TypeMeta{
+			Kind:       certmanager.CertificateKind,
+			APIVersion: certmanager.SchemeGroupVersion.String(),
 		},
-		ObjectMeta: apimachinerymetav1.ObjectMeta{
+		ObjectMeta: apimachinerymeta.ObjectMeta{
 			Name:      c.certificateName,
 			Namespace: c.istioNamespace,
 		},
-		Spec: certmanagerv1.CertificateSpec{
+		Spec: certmanager.CertificateSpec{
 			DNSNames:       subjectAltName.DNSNames,
 			IPAddresses:    subjectAltName.IPAddresses,
 			URIs:           subjectAltName.URIs,
 			EmailAddresses: subjectAltName.EmailAddresses,
 			SecretName:     c.secretName,
-			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+			SecretTemplate: &certmanager.CertificateSecretTemplate{
 				Labels: LabelSet,
 			},
-			IssuerRef: metav1.ObjectReference{
+			IssuerRef: certmanagermeta.ObjectReference{
 				Name: issuer.Name,
 			},
 			IsCA: false,
-			Usages: []certmanagerv1.KeyUsage{
-				certmanagerv1.UsageDigitalSignature,
-				certmanagerv1.UsageKeyEncipherment,
+			Usages: []certmanager.KeyUsage{
+				certmanager.UsageDigitalSignature,
+				certmanager.UsageKeyEncipherment,
 			},
-			PrivateKey: &certmanagerv1.CertificatePrivateKey{
+			PrivateKey: &certmanager.CertificatePrivateKey{
 				RotationPolicy: privateKeyRotationPolicy,
-				Encoding:       certmanagerv1.PKCS1,
-				Algorithm:      certmanagerv1.RSAKeyAlgorithm,
+				Encoding:       certmanager.PKCS1,
+				Algorithm:      certmanager.RSAKeyAlgorithm,
 			},
 		},
 	}
@@ -201,9 +201,9 @@ func (c *CertificateManager) getSubjectAltNames() (*SubjectAltName, error) {
 		c.kyma.Name, DomainAnnotation)
 }
 
-func (c *CertificateManager) getIssuer(ctx context.Context) (*certmanagerv1.Issuer, error) {
-	logger := log.FromContext(ctx)
-	issuerList := &certmanagerv1.IssuerList{}
+func (c *CertificateManager) getIssuer(ctx context.Context) (*certmanager.Issuer, error) {
+	logger := logf.FromContext(ctx)
+	issuerList := &certmanager.IssuerList{}
 	err := c.kcpClient.List(ctx, issuerList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(LabelSet),
 		Namespace:     c.istioNamespace,

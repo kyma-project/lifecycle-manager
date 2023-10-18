@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -65,7 +65,7 @@ var _ = Describe("Kyma with no Module", Ordered, func() {
 				return ErrWrongConditions
 			}
 			currentCondition := conditions[0]
-			expectedCondition := metav1.Condition{
+			expectedCondition := apimachinerymeta.Condition{
 				Type:    string(v1beta2.ConditionTypeModules),
 				Status:  "True",
 				Message: v1beta2.ConditionMessageModuleInReadyState,
@@ -121,9 +121,9 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 		kymaInCluster, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(
-			kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModules, metav1.ConditionTrue)).To(BeTrue())
+			kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModules, apimachinerymeta.ConditionTrue)).To(BeTrue())
 		Expect(
-			kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModuleCatalog, metav1.ConditionTrue)).To(BeFalse())
+			kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModuleCatalog, apimachinerymeta.ConditionTrue)).To(BeFalse())
 		By("Module Catalog created")
 		Eventually(AllModuleTemplatesExists, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, kyma).
@@ -275,7 +275,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 			WithModuleName(module.Name).
 			WithChannel(module.Channel).
 			WithModuleCR(data).
-			WithOCM(compdesc2.SchemaVersion).
+			WithOCM(compdescv2.SchemaVersion).
 			WithAnnotation(v1beta2.IsClusterScopedAnnotation, v1beta2.EnableLabelValue).Build()
 		Eventually(controlPlaneClient.Create, Timeout, Interval).WithContext(ctx).
 			WithArguments(template).
@@ -357,7 +357,7 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 				template := builder.NewModuleTemplateBuilder().
 					WithModuleName(module.Name).
 					WithChannel(module.Channel).
-					WithOCM(compdesc2.SchemaVersion).
+					WithOCM(compdescv2.SchemaVersion).
 					WithAnnotation(v1beta2.IsClusterScopedAnnotation, v1beta2.EnableLabelValue).Build()
 				Eventually(controlPlaneClient.Create, Timeout, Interval).WithContext(ctx).
 					WithArguments(template).

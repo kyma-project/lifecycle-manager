@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
+	watcherevent "github.com/kyma-project/runtime-watcher/listener/pkg/event"
 	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
-	v1 "k8s.io/api/core/v1"
+	apicore "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
+	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -26,11 +26,11 @@ import (
 
 func SetupWithManager(
 	mgr manager.Manager,
-	options controllerRuntime.Options,
+	options ctrlruntime.Options,
 	checkInterval time.Duration,
 	settings SetupUpSetting,
 ) error {
-	var verifyFunc listener.Verify
+	var verifyFunc watcherevent.Verify
 	if settings.EnableDomainNameVerification {
 		// Verifier used to verify incoming listener requests
 		verifyFunc = security.NewRequestVerifier(mgr.GetClient()).Verify
@@ -40,7 +40,7 @@ func SetupWithManager(
 		}
 	}
 
-	runnableListener, eventChannel := listener.RegisterListenerComponent(
+	runnableListener, eventChannel := watcherevent.RegisterListenerComponent(
 		settings.ListenerAddr, strings.ToLower(declarative.OperatorName), verifyFunc,
 	)
 
@@ -51,7 +51,7 @@ func SetupWithManager(
 
 	controllerManagedByManager := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
-		Watches(&v1.Secret{}, handler.Funcs{}).
+		Watches(&apicore.Secret{}, handler.Funcs{}).
 		WatchesRawSource(
 			eventChannel, &handler.Funcs{
 				GenericFunc: func(ctx context.Context, event event.GenericEvent, queue workqueue.RateLimitingInterface) {

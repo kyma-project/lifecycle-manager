@@ -3,7 +3,7 @@ package status_test
 import (
 	"testing"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/status"
@@ -62,14 +62,14 @@ func TestInitConditions(t *testing.T) {
 			t.Parallel()
 
 			kymaBuilder := builder.NewKymaBuilder().
-				WithCondition(metav1.Condition{
+				WithCondition(apimachinerymeta.Condition{
 					Type:   string(v1beta2.DeprecatedConditionTypeReady),
-					Status: metav1.ConditionFalse,
+					Status: apimachinerymeta.ConditionFalse,
 					Reason: "Deprecated",
 				}).
-				WithCondition(metav1.Condition{
+				WithCondition(apimachinerymeta.Condition{
 					Type:   "ThisConditionShouldBeRemoved",
-					Status: metav1.ConditionFalse,
+					Status: apimachinerymeta.ConditionFalse,
 					Reason: "Deprecated",
 				})
 

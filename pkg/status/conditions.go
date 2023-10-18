@@ -1,15 +1,15 @@
 package status
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 // InitConditions initializes the required conditions in the Kyma CR.
 func InitConditions(kyma *v1beta2.Kyma, syncEnabled bool, watcherEnabled bool) {
-	kyma.Status.Conditions = []metav1.Condition{}
+	kyma.Status.Conditions = []apimachinerymeta.Condition{}
 	for _, cond := range v1beta2.GetRequiredConditionTypes(syncEnabled, watcherEnabled) {
-		kyma.UpdateCondition(cond, metav1.ConditionUnknown)
+		kyma.UpdateCondition(cond, apimachinerymeta.ConditionUnknown)
 	}
 }

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	corev1 "k8s.io/api/core/v1"
+	certmanager "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	apicore "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -22,16 +22,16 @@ import (
 
 var ErrPrivateKeyNotMatching = errors.New("private Key for the TLS secret doesn't match")
 
-func getCertificate(clnt client.Client, kymaName string) (*certmanagerv1.Certificate, error) {
-	certificateCR := &certmanagerv1.Certificate{}
+func getCertificate(clnt client.Client, kymaName string) (*certmanager.Certificate, error) {
+	certificateCR := &certmanager.Certificate{}
 	err := clnt.Get(suiteCtx,
 		client.ObjectKey{Name: watcher.ResolveTLSCertName(kymaName), Namespace: istioSystemNs},
 		certificateCR)
 	return certificateCR, err
 }
 
-func getSecret(clnt client.Client, objKey client.ObjectKey) (*corev1.Secret, error) {
-	secretCR := &corev1.Secret{}
+func getSecret(clnt client.Client, objKey client.ObjectKey) (*apicore.Secret, error) {
+	secretCR := &apicore.Secret{}
 	err := clnt.Get(suiteCtx, objKey, secretCR)
 	return secretCR, err
 }
@@ -57,7 +57,7 @@ func matchTLSSecretPrivateKey(clnt client.Client, secretObjKey client.ObjectKey,
 	if err != nil {
 		return err
 	}
-	if !bytes.Equal(secretCR.Data[corev1.TLSPrivateKeyKey], privateKey) {
+	if !bytes.Equal(secretCR.Data[apicore.TLSPrivateKeyKey], privateKey) {
 		return ErrPrivateKeyNotMatching
 	}
 	return nil
@@ -120,7 +120,7 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 		newKey := "new-pk"
 
 		By("changing the TLS secret on KCP")
-		tlsSecret.Data[corev1.TLSPrivateKeyKey] = []byte(newKey)
+		tlsSecret.Data[apicore.TLSPrivateKeyKey] = []byte(newKey)
 		Expect(controlPlaneClient.Update(suiteCtx, tlsSecret)).To(Succeed())
 
 		By("updates the TLS secret on SKR")

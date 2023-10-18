@@ -17,7 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -32,8 +32,8 @@ import (
 
 // Manifest is the Schema for the manifests API.
 type Manifest struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	apimachinerymeta.TypeMeta   `json:",inline"`
+	apimachinerymeta.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   v1beta2.ManifestSpec `json:"spec,omitempty"`
 	Status shared.Status        `json:"status,omitempty"`
@@ -43,9 +43,9 @@ type Manifest struct {
 
 // ManifestList contains a list of Manifest.
 type ManifestList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Manifest `json:"items"`
+	apimachinerymeta.TypeMeta `json:",inline"`
+	apimachinerymeta.ListMeta `json:"metadata,omitempty"`
+	Items                     []Manifest `json:"items"`
 }
 
 //nolint:gochecknoinits

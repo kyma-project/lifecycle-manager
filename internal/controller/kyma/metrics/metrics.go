@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 
-	listenerMetrics "github.com/kyma-project/runtime-watcher/listener/pkg/metrics"
+	watchermetrics "github.com/kyma-project/runtime-watcher/listener/pkg/metrics"
 	"github.com/prometheus/client_golang/prometheus"
-	ctrlMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
+	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -35,9 +35,9 @@ var (
 )
 
 func Initialize() {
-	ctrlMetrics.Registry.MustRegister(kymaStateGauge)
-	ctrlMetrics.Registry.MustRegister(moduleStateGauge)
-	listenerMetrics.Init(ctrlMetrics.Registry)
+	ctrlmetrics.Registry.MustRegister(kymaStateGauge)
+	ctrlmetrics.Registry.MustRegister(moduleStateGauge)
+	watchermetrics.Init(ctrlmetrics.Registry)
 }
 
 var errMetric = errors.New("failed to update metrics")

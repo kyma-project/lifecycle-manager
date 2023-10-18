@@ -14,14 +14,14 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 
 	"github.com/google/go-containerregistry/pkg/name"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
+	containerregistry "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/partial"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/types"
-	gmg "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/onsi/gomega"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -57,37 +57,37 @@ func (m mockLayer) MediaType() (types.MediaType, error) {
 	return types.OCIUncompressedLayer, nil
 }
 
-func (m mockLayer) DiffID() (v1.Hash, error) {
-	return v1.Hash{Algorithm: "fake", Hex: "diff id"}, nil
+func (m mockLayer) DiffID() (containerregistry.Hash, error) {
+	return containerregistry.Hash{Algorithm: "fake", Hex: "diff id"}, nil
 }
 
-func CreateImageSpecLayer() v1.Layer {
+func CreateImageSpecLayer() containerregistry.Layer {
 	layer, err := partial.UncompressedToLayer(mockLayer{filePath: ManifestFilePath})
-	gmg.Expect(err).ToNot(gmg.HaveOccurred())
+	gomega.Expect(err).ToNot(gomega.HaveOccurred())
 	return layer
 }
 
 func PushToRemoteOCIRegistry(layerName string) {
 	layer := CreateImageSpecLayer()
 	digest, err := layer.Digest()
-	gmg.Expect(err).ToNot(gmg.HaveOccurred())
+	gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 	// Set up a fake registry and write what we pulled to it.
 	u, err := url.Parse(Server.URL)
-	gmg.Expect(err).NotTo(gmg.HaveOccurred())
+	gomega.Expect(err).NotTo(gomega.HaveOccurred())
 
 	dst := fmt.Sprintf("%s/%s@%s", u.Host, layerName, digest)
 	ref, err := name.NewDigest(dst)
-	gmg.Expect(err).ToNot(gmg.HaveOccurred())
+	gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 	err = remote.WriteLayer(ref.Context(), layer)
-	gmg.Expect(err).ToNot(gmg.HaveOccurred())
+	gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 	got, err := remote.Layer(ref)
-	gmg.Expect(err).ToNot(gmg.HaveOccurred())
+	gomega.Expect(err).ToNot(gomega.HaveOccurred())
 	gotHash, err := got.Digest()
-	gmg.Expect(err).ToNot(gmg.HaveOccurred())
-	gmg.Expect(gotHash).To(gmg.Equal(digest))
+	gomega.Expect(err).ToNot(gomega.HaveOccurred())
+	gomega.Expect(gotHash).To(gomega.Equal(digest))
 }
 
 func CreateOCIImageSpec(name, repo string, enableCredSecretSelector bool) v1beta2.ImageSpec {
@@ -101,7 +101,7 @@ func CreateOCIImageSpec(name, repo string, enableCredSecretSelector bool) v1beta
 	}
 	layer := CreateImageSpecLayer()
 	digest, err := layer.Digest()
-	gmg.Expect(err).ToNot(gmg.HaveOccurred())
+	gomega.Expect(err).ToNot(gomega.HaveOccurred())
 	imageSpec.Ref = digest.String()
 	return imageSpec
 }
@@ -110,7 +110,7 @@ func WithInvalidInstallImageSpec(enableResource bool) func(manifest *v1beta2.Man
 	return func(manifest *v1beta2.Manifest) error {
 		invalidImageSpec := CreateOCIImageSpec("invalid-image-spec", "domain.invalid", false)
 		imageSpecByte, err := json.Marshal(invalidImageSpec)
-		gmg.Expect(err).ToNot(gmg.HaveOccurred())
+		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 		return InstallManifest(manifest, imageSpecByte, enableResource)
 	}
 }
@@ -121,7 +121,7 @@ func WithValidInstallImageSpec(name string,
 	return func(manifest *v1beta2.Manifest) error {
 		validImageSpec := CreateOCIImageSpec(name, Server.Listener.Addr().String(), enableCredSecretSelector)
 		imageSpecByte, err := json.Marshal(validImageSpec)
-		gmg.Expect(err).ToNot(gmg.HaveOccurred())
+		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 		return InstallManifest(manifest, imageSpecByte, enableResource)
 	}
 }
@@ -129,7 +129,7 @@ func WithValidInstallImageSpec(name string,
 func InstallManifest(manifest *v1beta2.Manifest, installSpecByte []byte, enableResource bool) error {
 	if installSpecByte != nil {
 		manifest.Spec.Install = v1beta2.InstallInfo{
-			Source: runtime.RawExtension{
+			Source: machineryruntime.RawExtension{
 				Raw: installSpecByte,
 			},
 			Name: v1beta2.RawManifestLayerName,
@@ -143,7 +143,7 @@ func InstallManifest(manifest *v1beta2.Manifest, installSpecByte []byte, enableR
 				"kind":       "Sample",
 				"metadata": map[string]interface{}{
 					"name":      "sample-cr-" + manifest.GetName(),
-					"namespace": metav1.NamespaceDefault,
+					"namespace": apimachinerymeta.NamespaceDefault,
 				},
 				"namespace": "default",
 			},
@@ -204,7 +204,7 @@ func GetManifest(manifestName string) (*v1beta2.Manifest, error) {
 	manifest := &v1beta2.Manifest{}
 	err := K8sClient.Get(
 		Ctx, client.ObjectKey{
-			Namespace: metav1.NamespaceDefault,
+			Namespace: apimachinerymeta.NamespaceDefault,
 			Name:      manifestName,
 		}, manifest,
 	)
@@ -226,8 +226,8 @@ func DeleteManifestAndVerify(manifest *v1beta2.Manifest) func() error {
 	}
 }
 
-func CredSecretLabelSelector(labelValue string) *metav1.LabelSelector {
-	return &metav1.LabelSelector{
+func CredSecretLabelSelector(labelValue string) *apimachinerymeta.LabelSelector {
+	return &apimachinerymeta.LabelSelector{
 		MatchLabels: map[string]string{CredSecretLabelKeyForTest: labelValue},
 	}
 }

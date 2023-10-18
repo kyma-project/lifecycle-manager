@@ -3,12 +3,12 @@ package watch
 import (
 	"context"
 
-	"k8s.io/apimachinery/pkg/labels"
+	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -35,7 +35,7 @@ func (h *TemplateChangeHandler) Watch() handler.MapFunc {
 
 		kymas := &v1beta2.KymaList{}
 		listOptions := &client.ListOptions{
-			LabelSelector: labels.SelectorFromSet(labels.Set{v1beta2.ManagedBy: v1beta2.OperatorName}),
+			LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{v1beta2.ManagedBy: v1beta2.OperatorName}),
 		}
 		if h.NamespaceScoped {
 			listOptions.Namespace = template.Namespace
@@ -45,7 +45,7 @@ func (h *TemplateChangeHandler) Watch() handler.MapFunc {
 			return requests
 		}
 
-		logger := log.FromContext(ctx)
+		logger := logf.FromContext(ctx)
 
 		for _, kyma := range kymas.Items {
 			templateUsed := false

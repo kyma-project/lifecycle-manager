@@ -6,7 +6,7 @@ import (
 
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
@@ -51,7 +51,7 @@ func (l *ClientLookup) restConfigFromStrategy(ctx context.Context, key client.Ob
 
 	clusterClient := ClusterClient{
 		DefaultClient: l.kcp,
-		Logger:        log.FromContext(ctx),
+		Logger:        logf.FromContext(ctx),
 	}
 	switch l.strategy {
 	case v1beta2.SyncStrategyLocalClient:

@@ -7,12 +7,12 @@ import (
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	testv1 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
+	declarativetest "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
 	. "github.com/onsi/gomega"
@@ -50,14 +50,14 @@ func (matcher *BeInStateMatcher) NegatedFailureMessage(actual interface{}) strin
 }
 
 func HaveConditionWithStatus(
-	conditionType declarative.ConditionType, status metav1.ConditionStatus,
+	conditionType declarative.ConditionType, status apimachinerymeta.ConditionStatus,
 ) types.GomegaMatcher {
 	return &HaveConditionMatcher{condition: conditionType, status: status}
 }
 
 type HaveConditionMatcher struct {
 	condition declarative.ConditionType
-	status    metav1.ConditionStatus
+	status    apimachinerymeta.ConditionStatus
 }
 
 func (matcher *HaveConditionMatcher) Match(actual interface{}) (bool, error) {
@@ -95,10 +95,10 @@ func EventuallyDeclarativeStatusShould(ctx context.Context, key client.ObjectKey
 		Should(And(matchers...))
 }
 
-func EventuallyDeclarativeShouldBeUninstalled(ctx context.Context, obj *testv1.TestAPI, testClient client.Client) {
+func EventuallyDeclarativeShouldBeUninstalled(ctx context.Context, obj *declarativetest.TestAPI, testClient client.Client) {
 	EventuallyWithOffset(1, testClient.Get).
 		WithContext(ctx).
-		WithArguments(client.ObjectKeyFromObject(obj), &testv1.TestAPI{}).
+		WithArguments(client.ObjectKeyFromObject(obj), &declarativetest.TestAPI{}).
 		WithPolling(standardInterval).
 		WithTimeout(standardTimeout).
 		Should(Satisfy(util.IsNotFound))

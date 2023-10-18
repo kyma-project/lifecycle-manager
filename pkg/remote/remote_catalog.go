@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -206,7 +206,7 @@ func isManagedByKcp(skrTemplate v1beta2.ModuleTemplate) bool {
 func (c *RemoteCatalog) prepareForSSA(moduleTemplate *v1beta2.ModuleTemplate) {
 	moduleTemplate.SetResourceVersion("")
 	moduleTemplate.SetUID("")
-	moduleTemplate.SetManagedFields([]metav1.ManagedFieldsEntry{})
+	moduleTemplate.SetManagedFields([]apimachinerymeta.ManagedFieldsEntry{})
 
 	if c.settings.Namespace != "" {
 		moduleTemplate.SetNamespace(c.settings.Namespace)
@@ -242,8 +242,8 @@ func (c *RemoteCatalog) Delete(
 }
 
 func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, plural string) error {
-	crd := &v1extensions.CustomResourceDefinition{}
-	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
+	crd := &apiextensions.CustomResourceDefinition{}
+	crdFromRuntime := &apiextensions.CustomResourceDefinition{}
 
 	var err error
 
@@ -281,15 +281,15 @@ func (c *RemoteCatalog) CreateModuleTemplateCRDInRuntime(ctx context.Context, pl
 	return nil
 }
 
-func crdReady(crd *v1extensions.CustomResourceDefinition) bool {
+func crdReady(crd *apiextensions.CustomResourceDefinition) bool {
 	for _, cond := range crd.Status.Conditions {
-		if cond.Type == v1extensions.Established &&
-			cond.Status == v1extensions.ConditionTrue {
+		if cond.Type == apiextensions.Established &&
+			cond.Status == apiextensions.ConditionTrue {
 			return true
 		}
 
-		if cond.Type == v1extensions.NamesAccepted &&
-			cond.Status == v1extensions.ConditionFalse {
+		if cond.Type == apiextensions.NamesAccepted &&
+			cond.Status == apiextensions.ConditionFalse {
 			// This indicates a naming conflict, but it's probably not the
 			// job of this function to fail because of that. Instead,
 			// we treat it as a success, since the process should be able to

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	v1 "k8s.io/api/core/v1"
+	apicore "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
+	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -71,11 +71,11 @@ func GetResourceLabel(resource client.Object, labelName string) (string, error) 
 	return labelValue, nil
 }
 
-func GetCacheOptions(labelSelector labels.Set) cache.Options {
+func GetCacheOptions(labelSelector k8slabels.Set) cache.Options {
 	return cache.Options{
 		ByObject: map[client.Object]cache.ByObject{
-			&v1.Secret{}: {
-				Label: labels.SelectorFromSet(
+			&apicore.Secret{}: {
+				Label: k8slabels.SelectorFromSet(
 					labelSelector,
 				),
 			},

@@ -4,23 +4,24 @@ package v2
 import (
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
+	apiapps "k8s.io/api/apps/v1"
+	apicore "k8s.io/api/core/v1"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/resource"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
 func TestPruneResource(t *testing.T) {
 	t.Parallel()
-	kubeNs := &resource.Info{Object: &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "kube-system"}, TypeMeta: metav1.TypeMeta{Kind: "Namespace"}}}
-	service := &resource.Info{Object: &corev1.Service{ObjectMeta: metav1.ObjectMeta{Name: "some-service"}, TypeMeta: metav1.TypeMeta{Kind: "Service"}}}
-	kymaNs := &resource.Info{Object: &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "kyma-system"}, TypeMeta: metav1.TypeMeta{Kind: "Namespace"}}}
-	deployment := &resource.Info{Object: &appsv1.Deployment{ObjectMeta: metav1.ObjectMeta{Name: "some-deploy"}, TypeMeta: metav1.TypeMeta{Kind: "Deployment"}}}
-	crd := &resource.Info{Object: &apiextensions.CustomResourceDefinition{ObjectMeta: metav1.ObjectMeta{Name: "btpoperator"}, TypeMeta: metav1.TypeMeta{Kind: "CustomResourceDefinition"}}}
+	kubeNs := &resource.Info{Object: &apicore.Namespace{ObjectMeta: apimachinerymeta.ObjectMeta{Name: "kube-system"}, TypeMeta: apimachinerymeta.TypeMeta{Kind: "Namespace"}}}
+	service := &resource.Info{Object: &apicore.Service{ObjectMeta: apimachinerymeta.ObjectMeta{Name: "some-service"}, TypeMeta: apimachinerymeta.TypeMeta{Kind: "Service"}}}
+	kymaNs := &resource.Info{Object: &apicore.Namespace{ObjectMeta: apimachinerymeta.ObjectMeta{Name: "kyma-system"}, TypeMeta: apimachinerymeta.TypeMeta{Kind: "Namespace"}}}
+	deployment := &resource.Info{Object: &apiapps.Deployment{ObjectMeta: apimachinerymeta.ObjectMeta{Name: "some-deploy"}, TypeMeta: apimachinerymeta.TypeMeta{Kind: "Deployment"}}}
+	crd := &resource.Info{Object: &apiextensions.CustomResourceDefinition{ObjectMeta: apimachinerymeta.ObjectMeta{Name: "btpoperator"}, TypeMeta: apimachinerymeta.TypeMeta{Kind: "CustomResourceDefinition"}}}
 
 	t.Run("contains kyma-system", func(t *testing.T) {
 		t.Parallel()
@@ -78,7 +79,7 @@ func TestPruneResource(t *testing.T) {
 
 func Test_hasDiff(t *testing.T) {
 	t.Parallel()
-	testGVK := metav1.GroupVersionKind{Group: "test", Version: "v1", Kind: "test"}
+	testGVK := apimachinerymeta.GroupVersionKind{Group: "test", Version: "v1", Kind: "test"}
 	testResourceA := shared.Resource{Name: "r1", Namespace: "default", GroupVersionKind: testGVK}
 	testResourceB := shared.Resource{Name: "r2", Namespace: "", GroupVersionKind: testGVK}
 	testResourceC := shared.Resource{Name: "r3", Namespace: "kcp-system", GroupVersionKind: testGVK}

@@ -7,13 +7,14 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiapps "k8s.io/api/apps/v1"
+	apicore "k8s.io/api/core/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
 	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -29,7 +30,7 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 
 	It(
 		"setup OCI", func() {
-			hlp.PushToRemoteOCIRegistry(installName)
+			manifesttest.PushToRemoteOCIRegistry(installName)
 		},
 	)
 	BeforeEach(
@@ -41,14 +42,14 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		By("Install test Manifest CR")
 		testManifest := testutils.NewTestManifest("warning-check")
 		manifestName := testManifest.GetName()
-		validImageSpec := hlp.CreateOCIImageSpec(installName, hlp.Server.Listener.Addr().String(), false)
+		validImageSpec := manifesttest.CreateOCIImageSpec(installName, manifesttest.Server.Listener.Addr().String(), false)
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(hlp.InstallManifest(testManifest, imageSpecByte, true)).To(Succeed())
+		Expect(manifesttest.InstallManifest(testManifest, imageSpecByte, true)).To(Succeed())
 
 		By("Ensure that deployment and Sample CR are deployed and ready")
-		deploy := &appsv1.Deployment{}
+		deploy := &apiapps.Deployment{}
 		Eventually(setDeploymentStatus(deploymentName, deploy), standardTimeout, standardInterval).Should(Succeed())
 		sampleCR := emptySampleCR(manifestName)
 		Eventually(setCRStatus(sampleCR, shared.StateReady), standardTimeout, standardInterval).Should(Succeed())
@@ -58,7 +59,7 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 			WithArguments(manifestName).Should(Succeed())
 
 		By("Verify manifest status list all resources correctly")
-		status, err := hlp.GetManifestStatus(manifestName)
+		status, err := manifesttest.GetManifestStatus(manifestName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(status.Synced).To(HaveLen(2))
 		expectedDeployment := asResource(deploymentName, "default", "apps", "v1", "Deployment")
@@ -87,7 +88,7 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		Eventually(verifyObjectExists(expectedCRD.ToUnstructured()), standardTimeout, standardInterval).Should(BeTrue())
 		Eventually(verifyObjectExists(sampleCR), standardTimeout, standardInterval).Should(BeTrue())
 
-		Eventually(hlp.DeleteManifestAndVerify(testManifest), standardTimeout, standardInterval).Should(Succeed())
+		Eventually(manifesttest.DeleteManifestAndVerify(testManifest), standardTimeout, standardInterval).Should(Succeed())
 
 		By("verify target resources got deleted")
 		Eventually(verifyObjectExists(sampleCR), standardTimeout, standardInterval).Should(BeFalse())
@@ -100,7 +101,7 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 func asResource(name, namespace, group, version, kind string) shared.Resource {
 	return shared.Resource{
 		Name: name, Namespace: namespace,
-		GroupVersionKind: metav1.GroupVersionKind{
+		GroupVersionKind: apimachinerymeta.GroupVersionKind{
 			Group: group, Version: version, Kind: kind,
 		},
 	}
@@ -108,8 +109,8 @@ func asResource(name, namespace, group, version, kind string) shared.Resource {
 
 func verifyObjectExists(obj *unstructured.Unstructured) func() (bool, error) {
 	return func() (bool, error) {
-		err := hlp.K8sClient.Get(
-			hlp.Ctx, client.ObjectKeyFromObject(obj),
+		err := manifesttest.K8sClient.Get(
+			manifesttest.Ctx, client.ObjectKeyFromObject(obj),
 			obj,
 		)
 
@@ -128,14 +129,14 @@ func emptySampleCR(manifestName string) *unstructured.Unstructured {
 	res.SetGroupVersionKind(
 		schema.GroupVersionKind{Group: "operator.kyma-project.io", Version: "v1alpha1", Kind: "Sample"})
 	res.SetName("sample-cr-" + manifestName)
-	res.SetNamespace(metav1.NamespaceDefault)
+	res.SetNamespace(apimachinerymeta.NamespaceDefault)
 	return res
 }
 
 func setCRStatus(moduleCR *unstructured.Unstructured, statusValue shared.State) func() error {
 	return func() error {
-		err := hlp.K8sClient.Get(
-			hlp.Ctx, client.ObjectKeyFromObject(moduleCR),
+		err := manifesttest.K8sClient.Get(
+			manifesttest.Ctx, client.ObjectKeyFromObject(moduleCR),
 			moduleCR,
 		)
 		if err != nil {
@@ -147,15 +148,15 @@ func setCRStatus(moduleCR *unstructured.Unstructured, statusValue shared.State) 
 		if err = unstructured.SetNestedField(moduleCR.Object, string(statusValue), "status", "state"); err != nil {
 			return err
 		}
-		return hlp.K8sClient.Status().Update(hlp.Ctx, moduleCR)
+		return manifesttest.K8sClient.Status().Update(manifesttest.Ctx, moduleCR)
 	}
 }
 
-func setDeploymentStatus(name string, deploy *appsv1.Deployment) func() error {
+func setDeploymentStatus(name string, deploy *apiapps.Deployment) func() error {
 	return func() error {
-		err := hlp.K8sClient.Get(
-			hlp.Ctx, client.ObjectKey{
-				Namespace: metav1.NamespaceDefault,
+		err := manifesttest.K8sClient.Get(
+			manifesttest.Ctx, client.ObjectKey{
+				Namespace: apimachinerymeta.NamespaceDefault,
 				Name:      name,
 			}, deploy,
 		)
@@ -166,11 +167,11 @@ func setDeploymentStatus(name string, deploy *appsv1.Deployment) func() error {
 		deploy.Status.ReadyReplicas = *deploy.Spec.Replicas
 		deploy.Status.AvailableReplicas = *deploy.Spec.Replicas
 		deploy.Status.Conditions = append(deploy.Status.Conditions,
-			appsv1.DeploymentCondition{
-				Type:   appsv1.DeploymentAvailable,
-				Status: corev1.ConditionTrue,
+			apiapps.DeploymentCondition{
+				Type:   apiapps.DeploymentAvailable,
+				Status: apicore.ConditionTrue,
 			})
-		err = hlp.K8sClient.Status().Update(hlp.Ctx, deploy)
+		err = manifesttest.K8sClient.Status().Update(manifesttest.Ctx, deploy)
 		if err != nil {
 			return err
 		}

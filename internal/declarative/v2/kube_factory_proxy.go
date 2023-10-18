@@ -3,9 +3,9 @@ package v2
 import (
 	"fmt"
 
-	corev1 "k8s.io/api/core/v1"
+	apicore "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
@@ -43,7 +43,7 @@ func (s *SingletonClients) UnstructuredClientForMapping(mapping *meta.RESTMappin
 
 	cfg := rest.CopyConfig(s.config)
 	cfg.APIPath = apis
-	if mapping.GroupVersionKind.Group == corev1.GroupName {
+	if mapping.GroupVersionKind.Group == apicore.GroupName {
 		cfg.APIPath = api
 	}
 	gv := mapping.GroupVersionKind.GroupVersion()
@@ -74,7 +74,7 @@ func (s *SingletonClients) ClientForMapping(mapping *meta.RESTMapping) (resource
 	cfg := rest.CopyConfig(s.config)
 	gvk := mapping.GroupVersionKind
 	switch gvk.Group {
-	case corev1.GroupName:
+	case apicore.GroupName:
 		cfg.APIPath = api
 	default:
 		cfg.APIPath = apis
@@ -120,7 +120,7 @@ func (s *SingletonClients) RESTClient() (*rest.RESTClient, error) {
 func (s *SingletonClients) Validator(
 	validationDirective string,
 ) (validation.Schema, error) {
-	if validationDirective == metav1.FieldValidationIgnore {
+	if validationDirective == apimachinerymeta.FieldValidationIgnore {
 		return validation.NullSchema{}, nil
 	}
 

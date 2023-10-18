@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -82,7 +82,7 @@ func expectHTTPRouteRemoved(customIstioClient *istio.Client) error {
 	err := listenerHTTPRouteExists(suiteCtx, customIstioClient,
 		client.ObjectKey{
 			Name:      componentToBeRemoved,
-			Namespace: metav1.NamespaceDefault,
+			Namespace: apimachinerymeta.NamespaceDefault,
 		})
 	if !errors.Is(err, errRouteNotFound) {
 		return err

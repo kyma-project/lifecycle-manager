@@ -24,9 +24,9 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
@@ -39,8 +39,8 @@ import (
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 type ModuleTemplate struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	apimachinerymeta.TypeMeta   `json:",inline"`
+	apimachinerymeta.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec ModuleTemplateSpec `json:"spec,omitempty"`
 }
@@ -66,7 +66,7 @@ func (d *Descriptor) GetObjectKind() schema.ObjectKind {
 	return d
 }
 
-func (d *Descriptor) DeepCopyObject() runtime.Object {
+func (d *Descriptor) DeepCopyObject() machineryruntime.Object {
 	return &Descriptor{ComponentDescriptor: d.Copy()}
 }
 
@@ -103,7 +103,7 @@ type ModuleTemplateSpec struct {
 	// charts and kustomize renderers are deprecated and ignored.
 	//
 	//+kubebuilder:pruning:PreserveUnknownFields
-	Descriptor runtime.RawExtension `json:"descriptor"`
+	Descriptor machineryruntime.RawExtension `json:"descriptor"`
 
 	CustomStateCheck []*CustomStateCheck `json:"customStateCheck,omitempty"`
 }
@@ -174,9 +174,9 @@ func (m *ModuleTemplate) SetDescToCache(descriptor *Descriptor) {
 
 // ModuleTemplateList contains a list of ModuleTemplate.
 type ModuleTemplateList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ModuleTemplate `json:"items"`
+	apimachinerymeta.TypeMeta `json:",inline"`
+	apimachinerymeta.ListMeta `json:"metadata,omitempty"`
+	Items                     []ModuleTemplate `json:"items"`
 }
 
 //nolint:gochecknoinits

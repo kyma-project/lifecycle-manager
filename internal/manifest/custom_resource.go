@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -40,11 +40,11 @@ func PostRunCreateCR(
 
 	resource := manifest.Spec.Resource.DeepCopy()
 	err := skr.Create(ctx, resource, client.FieldOwner(declarative.CustomResourceManager))
-	if err != nil && !k8serrors.IsAlreadyExists(err) {
+	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return fmt.Errorf("failed to create resource: %w", err)
 	}
 
-	oMeta := &v1.PartialObjectMetadata{}
+	oMeta := &apimachinerymeta.PartialObjectMetadata{}
 	oMeta.SetName(obj.GetName())
 	oMeta.SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
 	oMeta.SetNamespace(obj.GetNamespace())
@@ -79,7 +79,7 @@ func PreDeleteDeleteCR(
 	}
 
 	resource := manifest.Spec.Resource.DeepCopy()
-	propagation := v1.DeletePropagationBackground
+	propagation := apimachinerymeta.DeletePropagationBackground
 	err := skr.Delete(ctx, resource, &client.DeleteOptions{PropagationPolicy: &propagation})
 
 	if !util.IsNotFound(err) {

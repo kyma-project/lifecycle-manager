@@ -23,17 +23,17 @@ import (
 	"time"
 
 	"go.uber.org/zap/zapcore"
-	apiExtensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/client-go/kubernetes/scheme"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
+	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/api"
-	operatorv1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
@@ -78,7 +78,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 	singleClusterEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
-		CRDs:                  append([]*apiExtensionsv1.CustomResourceDefinition{}, externalCRDs...),
+		CRDs:                  append([]*apiextensions.CustomResourceDefinition{}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}
 
@@ -86,8 +86,8 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	Expect(api.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
-	Expect(apiExtensionsv1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+	Expect(api.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
+	Expect(apiextensions.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 
@@ -96,7 +96,7 @@ var _ = BeforeSuite(func() {
 			Metrics: metricsserver.Options{
 				BindAddress: useRandomPort,
 			},
-			Scheme: scheme.Scheme,
+			Scheme: k8sclientscheme.Scheme,
 			Cache:  controller.NewCacheOptions(),
 		})
 	Expect(err).ToNot(HaveOccurred())
@@ -107,13 +107,13 @@ var _ = BeforeSuite(func() {
 
 	purgeReconciler = &controller.PurgeReconciler{
 		Client:                k8sManager.GetClient(),
-		EventRecorder:         k8sManager.GetEventRecorderFor(operatorv1beta2.OperatorName),
+		EventRecorder:         k8sManager.GetEventRecorderFor(v1beta2.OperatorName),
 		ResolveRemoteClient:   useLocalClient,
 		PurgeFinalizerTimeout: time.Second,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(skipFinalizerRemovalForCRDs),
 	}
 
-	err = purgeReconciler.SetupWithManager(k8sManager, controllerRuntime.Options{})
+	err = purgeReconciler.SetupWithManager(k8sManager, ctrlruntime.Options{})
 	Expect(err).ToNot(HaveOccurred())
 
 	controlPlaneClient = k8sManager.GetClient()

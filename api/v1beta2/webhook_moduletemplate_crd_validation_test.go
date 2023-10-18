@@ -8,12 +8,12 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
-	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
-	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/yaml"
+	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
@@ -41,7 +41,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 			WithModuleName("test-module").
 			WithModuleCR(&data).
 			WithChannel(v1beta2.DefaultChannel).
-			WithOCM(compdesc2.SchemaVersion).Build()
+			WithOCM(compdescv2.SchemaVersion).Build()
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
 		Expect(k8sClient.Delete(webhookServerContext, template)).Should(Succeed())
 
@@ -58,7 +58,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 			WithModuleName("test-module").
 			WithModuleCR(&data).
 			WithChannel(v1beta2.DefaultChannel).
-			WithOCM(compdesc2.SchemaVersion).Build()
+			WithOCM(compdescv2.SchemaVersion).Build()
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
 		Expect(k8sClient.Delete(webhookServerContext, template)).Should(Succeed())
 
@@ -74,7 +74,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 			WithModuleName("test-module").
 			WithModuleCR(&data).
 			WithChannel(v1beta2.DefaultChannel).
-			WithOCM(compdesc2.SchemaVersion).Build()
+			WithOCM(compdescv2.SchemaVersion).Build()
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
 
 		descriptor, err := template.GetDescriptor()
@@ -92,7 +92,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 		err = k8sClient.Update(webhookServerContext, template)
 
 		Expect(err).To(HaveOccurred())
-		var statusErr *k8serrors.StatusError
+		var statusErr *apierrors.StatusError
 		isStatusErr := errors.As(err, &statusErr)
 		Expect(isStatusErr).To(BeTrue())
 		Expect(statusErr.ErrStatus.Status).To(Equal("Failure"))
@@ -108,7 +108,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 },
 )
 
-func GetCRD(group, version, sample string) *v1.CustomResourceDefinition {
+func GetCRD(group, version, sample string) *apiextensions.CustomResourceDefinition {
 	crdFileName := fmt.Sprintf(
 		"%s_%s_%s.yaml",
 		group,
@@ -122,17 +122,17 @@ func GetCRD(group, version, sample string) *v1.CustomResourceDefinition {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(file).ToNot(BeEmpty())
 
-	var crd v1.CustomResourceDefinition
+	var crd apiextensions.CustomResourceDefinition
 
-	Expect(yaml.Unmarshal(file, &crd)).To(Succeed())
+	Expect(machineryaml.Unmarshal(file, &crd)).To(Succeed())
 	return &crd
 }
 
-func GetNonCompliantCRD(group, version, sample string) *v1.CustomResourceDefinition {
+func GetNonCompliantCRD(group, version, sample string) *apiextensions.CustomResourceDefinition {
 	crd := GetCRD(group, version, sample)
-	crd.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties["status"].Properties["state"] = v1.JSONSchemaProps{
+	crd.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties["status"].Properties["state"] = apiextensions.JSONSchemaProps{
 		Type: "string",
-		Enum: []v1.JSON{},
+		Enum: []apiextensions.JSON{},
 	}
 	return crd
 }

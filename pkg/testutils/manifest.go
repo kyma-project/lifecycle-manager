@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -23,9 +23,9 @@ var (
 
 func NewTestManifest(prefix string) *v1beta2.Manifest {
 	return &v1beta2.Manifest{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: apimachinerymeta.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%s", prefix, builder.RandomName()),
-			Namespace: v1.NamespaceDefault,
+			Namespace: apimachinerymeta.NamespaceDefault,
 			Labels: map[string]string{
 				v1beta2.KymaName: string(uuid.NewUUID()),
 			},

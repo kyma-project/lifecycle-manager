@@ -29,7 +29,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/purge/metrics"
@@ -53,7 +53,7 @@ type PurgeReconciler struct {
 
 //nolint:funlen
 func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := ctrlLog.FromContext(ctx)
+	logger := logf.FromContext(ctx)
 	logger.V(log.InfoLevel).Info("Purge Reconciliation started")
 
 	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)

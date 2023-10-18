@@ -24,20 +24,20 @@ import (
 	"time"
 
 	"go.uber.org/zap/zapcore"
-	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/kubernetes/scheme"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
+	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
+	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/api"
-	operatorv1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -84,17 +84,17 @@ var _ = BeforeSuite(func() {
 		"istio-v1.17.1.crds.yaml")
 	Expect(err).ToNot(HaveOccurred())
 
-	kcpModuleCRD := &v1.CustomResourceDefinition{}
+	kcpModuleCRD := &apiextensions.CustomResourceDefinition{}
 	modulePath := filepath.Join("..", "..", "..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(moduleFile).ToNot(BeEmpty())
-	Expect(yaml2.Unmarshal(moduleFile, &kcpModuleCRD)).To(Succeed())
+	Expect(machineryaml.Unmarshal(moduleFile, &kcpModuleCRD)).To(Succeed())
 
 	controlPlaneEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
-		CRDs:                  append([]*v1.CustomResourceDefinition{kcpModuleCRD}, externalCRDs...),
+		CRDs:                  append([]*apiextensions.CustomResourceDefinition{kcpModuleCRD}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}
 
@@ -102,8 +102,8 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	Expect(api.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
-	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+	Expect(api.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
+	Expect(apiextensions.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 
@@ -112,7 +112,7 @@ var _ = BeforeSuite(func() {
 			Metrics: metricsserver.Options{
 				BindAddress: UseRandomPort,
 			},
-			Scheme: scheme.Scheme,
+			Scheme: k8sclientscheme.Scheme,
 			Cache:  controller.NewCacheOptions(),
 		})
 	Expect(err).ToNot(HaveOccurred())
@@ -126,7 +126,7 @@ var _ = BeforeSuite(func() {
 	remoteClientCache := remote.NewClientCache()
 	err = (&controller.KymaReconciler{
 		Client:           k8sManager.GetClient(),
-		EventRecorder:    k8sManager.GetEventRecorderFor(operatorv1beta2.OperatorName),
+		EventRecorder:    k8sManager.GetEventRecorderFor(v1beta2.OperatorName),
 		RequeueIntervals: intervals,
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: false,
@@ -136,7 +136,7 @@ var _ = BeforeSuite(func() {
 		InKCPMode:           true,
 		RemoteSyncNamespace: controller.DefaultRemoteSyncNamespace,
 		IsManagedKyma:       true,
-	}).SetupWithManager(k8sManager, controllerRuntime.Options{},
+	}).SetupWithManager(k8sManager, ctrlruntime.Options{},
 		controller.SetupUpSetting{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())
 

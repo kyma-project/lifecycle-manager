@@ -9,7 +9,7 @@ import (
 	istioapi "istio.io/api/networking/v1beta1"
 	istioclientapi "istio.io/client-go/pkg/apis/networking/v1beta1"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -50,8 +50,8 @@ func NewVersionedIstioClient(cfg *rest.Config, recorder record.EventRecorder,
 
 func (c *Client) GetVirtualService(ctx context.Context, vsName string) (*istioclientapi.VirtualService, error) {
 	virtualService, err := c.NetworkingV1beta1().
-		VirtualServices(metav1.NamespaceDefault).
-		Get(ctx, vsName, metav1.GetOptions{})
+		VirtualServices(apimachinerymeta.NamespaceDefault).
+		Get(ctx, vsName, apimachinerymeta.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch virtual service %w", err)
 	}
@@ -60,8 +60,8 @@ func (c *Client) GetVirtualService(ctx context.Context, vsName string) (*istiocl
 
 func (c *Client) ListVirtualServices(ctx context.Context) (*istioclientapi.VirtualServiceList, error) {
 	virtualServiceList, err := c.NetworkingV1beta1().
-		VirtualServices(metav1.NamespaceDefault).
-		List(ctx, metav1.ListOptions{})
+		VirtualServices(apimachinerymeta.NamespaceDefault).
+		List(ctx, apimachinerymeta.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list virtual services %w", err)
 	}
@@ -76,7 +76,7 @@ func (c *Client) NewVirtualService(ctx context.Context, watcher *v1beta2.Watcher
 
 	virtualSvc := &istioclientapi.VirtualService{}
 	virtualSvc.SetName(watcher.Name)
-	virtualSvc.SetNamespace(metav1.NamespaceDefault)
+	virtualSvc.SetNamespace(apimachinerymeta.NamespaceDefault)
 
 	gateways, err := c.LookupGateways(ctx, watcher)
 	if err != nil {
@@ -98,8 +98,8 @@ func (c *Client) NewVirtualService(ctx context.Context, watcher *v1beta2.Watcher
 
 func (c *Client) CreateVirtualService(ctx context.Context, virtualSvc *istioclientapi.VirtualService) error {
 	_, err := c.NetworkingV1beta1().
-		VirtualServices(metav1.NamespaceDefault).
-		Create(ctx, virtualSvc, metav1.CreateOptions{})
+		VirtualServices(apimachinerymeta.NamespaceDefault).
+		Create(ctx, virtualSvc, apimachinerymeta.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create istio virtual service: %w", err)
 	}
@@ -147,14 +147,14 @@ func getHosts(gateways []*istioclientapi.Gateway) ([]string, error) {
 }
 
 func (c *Client) LookupGateways(ctx context.Context, watcher *v1beta2.Watcher) ([]*istioclientapi.Gateway, error) {
-	selector, err := metav1.LabelSelectorAsSelector(&watcher.Spec.Gateway.LabelSelector)
+	selector, err := apimachinerymeta.LabelSelectorAsSelector(&watcher.Spec.Gateway.LabelSelector)
 	if err != nil {
 		return nil, fmt.Errorf("error converting label selector: %w", err)
 	}
 	labelSelector := selector.String()
 	gateways, err := c.NetworkingV1beta1().
-		Gateways(metav1.NamespaceAll).
-		List(ctx, metav1.ListOptions{
+		Gateways(apimachinerymeta.NamespaceAll).
+		List(ctx, apimachinerymeta.ListOptions{
 			LabelSelector: labelSelector,
 		})
 	if err != nil {
@@ -180,7 +180,7 @@ func (c *Client) UpdateVirtualService(ctx context.Context, virtualService,
 
 	_, err := c.NetworkingV1beta1().
 		VirtualServices(virtualServiceRemote.Namespace).
-		Update(ctx, virtualServiceRemote, metav1.UpdateOptions{})
+		Update(ctx, virtualServiceRemote, apimachinerymeta.UpdateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to update istio virtual service: %w", err)
 	}
@@ -190,8 +190,8 @@ func (c *Client) UpdateVirtualService(ctx context.Context, virtualService,
 func (c *Client) RemoveVirtualServiceForCR(ctx context.Context, watcherObjKey client.ObjectKey,
 ) error {
 	err := c.NetworkingV1beta1().
-		VirtualServices(metav1.NamespaceDefault).
-		Delete(ctx, watcherObjKey.Name, metav1.DeleteOptions{})
+		VirtualServices(apimachinerymeta.NamespaceDefault).
+		Delete(ctx, watcherObjKey.Name, apimachinerymeta.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to delete virtual service for cr: %w", err)
 	}

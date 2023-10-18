@@ -26,12 +26,12 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/registry"
 	"go.uber.org/zap/zapcore"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/kubernetes/scheme"
+	apicore "k8s.io/api/core/v1"
+	k8slabels "k8s.io/apimachinery/pkg/labels"
+	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
-	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
+	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
@@ -40,7 +40,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -73,13 +73,13 @@ func TestAPIs(t *testing.T) {
 
 var _ = BeforeSuite(
 	func() {
-		hlp.ManifestFilePath = "../../../../pkg/test_samples/oci/rendered.yaml"
-		hlp.Ctx, hlp.Cancel = context.WithCancel(context.TODO())
+		manifesttest.ManifestFilePath = "../../../../pkg/test_samples/oci/rendered.yaml"
+		manifesttest.Ctx, manifesttest.Cancel = context.WithCancel(context.TODO())
 		logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
 
 		// create registry and server
 		newReg := registry.New()
-		hlp.Server = httptest.NewServer(newReg)
+		manifesttest.Server = httptest.NewServer(newReg)
 
 		By("bootstrapping test environment")
 		testEnv = &envtest.Environment{
@@ -94,14 +94,14 @@ var _ = BeforeSuite(
 
 		//+kubebuilder:scaffold:scheme
 
-		Expect(api.AddToScheme(scheme.Scheme)).To(Succeed())
-		Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+		Expect(api.AddToScheme(k8sclientscheme.Scheme)).To(Succeed())
+		Expect(apicore.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
 		metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
 		if !found {
 			metricsBindAddress = ":0"
 		}
-		cacheOpts := internal.GetCacheOptions(labels.Set{v1beta2.ManagedBy: v1beta2.OperatorName})
+		cacheOpts := internal.GetCacheOptions(k8slabels.Set{v1beta2.ManagedBy: v1beta2.OperatorName})
 		syncPeriod := 2 * time.Second
 		cacheOpts.SyncPeriod = &syncPeriod
 
@@ -110,7 +110,7 @@ var _ = BeforeSuite(
 				Metrics: metricsserver.Options{
 					BindAddress: metricsBindAddress,
 				},
-				Scheme: scheme.Scheme,
+				Scheme: k8sclientscheme.Scheme,
 				Cache:  cacheOpts,
 			},
 		)
@@ -126,9 +126,9 @@ var _ = BeforeSuite(
 		)
 		Expect(err).NotTo(HaveOccurred())
 
-		hlp.K8sClient = k8sManager.GetClient()
+		manifesttest.K8sClient = k8sManager.GetClient()
 
-		kcp := &declarative.ClusterInfo{Config: cfg, Client: hlp.K8sClient}
+		kcp := &declarative.ClusterInfo{Config: cfg, Client: manifesttest.K8sClient}
 		reconciler = declarative.NewFromManager(
 			k8sManager, &v1beta2.Manifest{},
 			declarative.WithSpecResolver(
@@ -148,9 +148,9 @@ var _ = BeforeSuite(
 
 		err = ctrl.NewControllerManagedBy(k8sManager).
 			For(&v1beta2.Manifest{}).
-			Watches(&v1.Secret{}, handler.Funcs{}).
+			Watches(&apicore.Secret{}, handler.Funcs{}).
 			WithOptions(
-				controllerRuntime.Options{
+				ctrlruntime.Options{
 					RateLimiter: internal.ManifestRateLimiter(
 						1*time.Second, 5*time.Second,
 						30, 200,
@@ -162,7 +162,7 @@ var _ = BeforeSuite(
 
 		go func() {
 			defer GinkgoRecover()
-			err = k8sManager.Start(hlp.Ctx)
+			err = k8sManager.Start(manifesttest.Ctx)
 			Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 		}()
 	},
@@ -170,9 +170,9 @@ var _ = BeforeSuite(
 
 var _ = AfterSuite(
 	func() {
-		hlp.Cancel()
+		manifesttest.Cancel()
 		By("tearing down the test environment")
-		hlp.Server.Close()
+		manifesttest.Server.Close()
 		Eventually(func() error { return testEnv.Stop() }, standardTimeout, standardInterval).Should(Succeed())
 	},
 )

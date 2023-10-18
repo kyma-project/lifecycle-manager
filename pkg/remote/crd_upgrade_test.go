@@ -4,8 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
@@ -60,30 +60,30 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			runtimeCrd := &v1extensions.CustomResourceDefinition{
-				ObjectMeta: metav1.ObjectMeta{
+			runtimeCrd := &apiextensions.CustomResourceDefinition{
+				ObjectMeta: apimachinerymeta.ObjectMeta{
 					Generation: testCase.args.runtimeCrdGeneration,
 				},
-				Spec: v1extensions.CustomResourceDefinitionSpec{
-					Names: v1extensions.CustomResourceDefinitionNames{
+				Spec: apiextensions.CustomResourceDefinitionSpec{
+					Names: apiextensions.CustomResourceDefinitionNames{
 						Kind: "ModuleTemplate",
 					},
 				},
 			}
 
-			kcpCrd := &v1extensions.CustomResourceDefinition{
-				ObjectMeta: metav1.ObjectMeta{
+			kcpCrd := &apiextensions.CustomResourceDefinition{
+				ObjectMeta: apimachinerymeta.ObjectMeta{
 					Generation: testCase.args.kcpCrdGeneration,
 				},
-				Spec: v1extensions.CustomResourceDefinitionSpec{
-					Names: v1extensions.CustomResourceDefinitionNames{
+				Spec: apiextensions.CustomResourceDefinitionSpec{
+					Names: apiextensions.CustomResourceDefinitionNames{
 						Kind: "ModuleTemplate",
 					},
 				},
 			}
 
 			kyma := &v1beta2.Kyma{
-				ObjectMeta: metav1.ObjectMeta{
+				ObjectMeta: apimachinerymeta.ObjectMeta{
 					Annotations: map[string]string{
 						"moduletemplate-skr-crd-generation": testCase.args.kymaSkrCrdAnnotationValue,
 						"moduletemplate-kcp-crd-generation": testCase.args.kymaKcpCrdAnnotationValue,

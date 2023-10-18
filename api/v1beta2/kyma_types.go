@@ -19,9 +19,10 @@ package v1beta2
 import (
 	"strings"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
 //+kubebuilder:object:root=true
@@ -31,8 +32,8 @@ import (
 
 // Kyma is the Schema for the kymas API.
 type Kyma struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	apimachinerymeta.TypeMeta   `json:",inline"`
+	apimachinerymeta.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   KymaSpec   `json:"spec,omitempty"`
 	Status KymaStatus `json:"status,omitempty"`
@@ -130,7 +131,7 @@ type KymaStatus struct {
 	// +optional
 	// +listType=map
 	// +listMapKey=type
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	Conditions []apimachinerymeta.Condition `json:"conditions,omitempty"`
 
 	// Contains essential information about the current deployed module
 	Modules []ModuleStatus `json:"modules,omitempty"`
@@ -177,12 +178,12 @@ type ModuleStatus struct {
 	Resource *TrackingObject `json:"resource,omitempty"`
 }
 
-// TrackingObject contains metav1.TypeMeta and PartialMeta to allow a generation based object tracking.
+// TrackingObject contains TypeMeta and PartialMeta to allow a generation based object tracking.
 // It purposefully does not use ObjectMeta as the generation of controller-runtime for crds would not validate
 // the generation fields even when embedding ObjectMeta.
 type TrackingObject struct {
-	metav1.TypeMeta `json:",inline"`
-	PartialMeta     `json:"metadata,omitempty"`
+	apimachinerymeta.TypeMeta `json:",inline"`
+	PartialMeta               `json:"metadata,omitempty"`
 }
 
 // PartialMeta is a subset of ObjectMeta that contains relevant information to track an Object.
@@ -214,7 +215,7 @@ type PartialMeta struct {
 
 const DefaultChannel = "regular"
 
-func PartialMetaFromObject(object metav1.Object) PartialMeta {
+func PartialMetaFromObject(object apimachinerymeta.Object) PartialMeta {
 	return PartialMeta{
 		Name:       object.GetName(),
 		Namespace:  object.GetNamespace(),
@@ -287,9 +288,9 @@ func (kyma *Kyma) GetNoLongerExistingModuleStatus() []*ModuleStatus {
 
 // KymaList contains a list of Kyma.
 type KymaList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Kyma `json:"items"`
+	apimachinerymeta.TypeMeta `json:",inline"`
+	apimachinerymeta.ListMeta `json:"metadata,omitempty"`
+	Items                     []Kyma `json:"items"`
 }
 
 //nolint:gochecknoinits
@@ -297,8 +298,8 @@ func init() {
 	SchemeBuilder.Register(&Kyma{}, &KymaList{})
 }
 
-func (kyma *Kyma) UpdateCondition(conditionType KymaConditionType, status metav1.ConditionStatus) {
-	meta.SetStatusCondition(&kyma.Status.Conditions, metav1.Condition{
+func (kyma *Kyma) UpdateCondition(conditionType KymaConditionType, status apimachinerymeta.ConditionStatus) {
+	meta.SetStatusCondition(&kyma.Status.Conditions, apimachinerymeta.Condition{
 		Type:               string(conditionType),
 		Status:             status,
 		Reason:             string(ConditionReason),
@@ -307,7 +308,7 @@ func (kyma *Kyma) UpdateCondition(conditionType KymaConditionType, status metav1
 	})
 }
 
-func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType, conditionStatus ...metav1.ConditionStatus,
+func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType, conditionStatus ...apimachinerymeta.ConditionStatus,
 ) bool {
 	for _, existingCondition := range kyma.Status.Conditions {
 		if existingCondition.Type != string(conditionType) {
@@ -351,7 +352,7 @@ func (kyma *Kyma) DetermineState() shared.State {
 	}
 
 	for _, condition := range status.Conditions {
-		if condition.Status != metav1.ConditionTrue {
+		if condition.Status != apimachinerymeta.ConditionTrue {
 			return shared.StateProcessing
 		}
 	}

@@ -26,9 +26,9 @@ import (
 	"time"
 
 	"go.uber.org/zap/zapcore"
-	admissionv1 "k8s.io/api/admission/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/runtime"
+	apiadmission "k8s.io/api/admission/v1"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -56,7 +56,7 @@ var (
 	webhookServerContext context.Context
 	webhookServerCancel  context.CancelFunc
 	cfg                  *rest.Config
-	scheme               *runtime.Scheme
+	scheme               *machineryruntime.Scheme
 )
 
 const (
@@ -88,10 +88,10 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	scheme = runtime.NewScheme()
+	scheme = machineryruntime.NewScheme()
 	Expect(api.AddToScheme(scheme)).NotTo(HaveOccurred())
-	Expect(apiextensionsv1.AddToScheme(scheme)).NotTo(HaveOccurred())
-	Expect(admissionv1.AddToScheme(scheme)).NotTo(HaveOccurred())
+	Expect(apiextensions.AddToScheme(scheme)).NotTo(HaveOccurred())
+	Expect(apiadmission.AddToScheme(scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 

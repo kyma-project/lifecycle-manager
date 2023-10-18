@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	v1 "k8s.io/api/core/v1"
+	apicore "k8s.io/api/core/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -25,7 +25,7 @@ type ClusterClient struct {
 var ErrAccessSecretNotFound = errors.New("access secret not found")
 
 func (cc *ClusterClient) GetRestConfigFromSecret(ctx context.Context, name, namespace string) (*rest.Config, error) {
-	kubeConfigSecretList := &v1.SecretList{}
+	kubeConfigSecretList := &apicore.SecretList{}
 	if err := cc.DefaultClient.List(ctx, kubeConfigSecretList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{v1beta2.KymaName: name}), Namespace: namespace,
 	}); err != nil {

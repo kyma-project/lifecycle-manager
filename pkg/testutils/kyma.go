@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -23,7 +23,7 @@ var (
 )
 
 func NewTestKyma(name string) *v1beta2.Kyma {
-	return NewKymaWithSyncLabel(name, v1.NamespaceDefault, v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalClient)
+	return NewKymaWithSyncLabel(name, apimachinerymeta.NamespaceDefault, v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalClient)
 }
 
 // NewKymaWithSyncLabel use this function to initialize kyma CR with SyncStrategyLocalSecret
@@ -205,7 +205,7 @@ func UpdateKymaLabel(
 func GetKyma(ctx context.Context, clnt client.Client, name, namespace string) (*v1beta2.Kyma, error) {
 	kymaInCluster := &v1beta2.Kyma{}
 	if namespace == "" {
-		namespace = v1.NamespaceDefault
+		namespace = apimachinerymeta.NamespaceDefault
 	}
 	err := clnt.Get(ctx, client.ObjectKey{
 		Namespace: namespace,

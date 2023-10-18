@@ -15,10 +15,10 @@ import (
 	"time"
 
 	"gopkg.in/yaml.v3"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiapps "k8s.io/api/apps/v1"
+	apicore "k8s.io/api/core/v1"
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/e2e-framework/klient"
 	"sigs.k8s.io/e2e-framework/klient/conf"
 	"sigs.k8s.io/e2e-framework/klient/k8s"
@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/features"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -229,7 +229,7 @@ func getRestConfig(t *testing.T, cfg *envconf.Config) *resources.Resources {
 	if err := v1beta2.AddToScheme(resourcesFromConfig.GetScheme()); err != nil {
 		t.Fatal(err)
 	}
-	if err := apiextensionsv1.AddToScheme(resourcesFromConfig.GetScheme()); err != nil {
+	if err := apiextensions.AddToScheme(resourcesFromConfig.GetScheme()); err != nil {
 		t.Fatal(err)
 	}
 	return resourcesFromConfig
@@ -246,7 +246,7 @@ func getManifest(ctx context.Context,
 		if err := resourcesFromConfig.Get(ctx, name, namespace, &manifest); err != nil {
 			t.Fatal(err)
 		}
-		return manifest.Status.State == v2.StateReady, nil
+		return manifest.Status.State == declarative.StateReady, nil
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -315,7 +315,7 @@ func moduleCRDDeleted(name string) features.Func {
 		t.Helper()
 		restConfig := getRestConfig(t, cfg)
 		if err := wait.For(func(ctx context.Context) (bool, error) {
-			err := restConfig.Get(ctx, name, "", &apiextensionsv1.CustomResourceDefinition{})
+			err := restConfig.Get(ctx, name, "", &apiextensions.CustomResourceDefinition{})
 			if util.IsNotFound(err) {
 				return true, nil
 			}
@@ -332,7 +332,7 @@ func moduleCRDExists(name string) features.Func {
 		t.Helper()
 		restConfig := getRestConfig(t, cfg)
 		if err := wait.For(func(ctx context.Context) (bool, error) {
-			err := restConfig.Get(ctx, name, "", &apiextensionsv1.CustomResourceDefinition{})
+			err := restConfig.Get(ctx, name, "", &apiextensions.CustomResourceDefinition{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -348,7 +348,7 @@ func deploymentDeleted(namespace, name string) features.Func {
 	return func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 		t.Helper()
 		restConfig := getRestConfig(t, cfg)
-		var deployment appsv1.Deployment
+		var deployment apiapps.Deployment
 		if err := wait.For(func(ctx context.Context) (bool, error) {
 			err := restConfig.Get(ctx, name, namespace, &deployment)
 			if util.IsNotFound(err) {
@@ -374,7 +374,7 @@ func deploymentAvailable(namespace, name string) features.Func {
 		err = wait.For(
 			conditions.New(client.Resources()).DeploymentConditionMatch(
 				dep.DeepCopy(),
-				appsv1.DeploymentAvailable, corev1.ConditionTrue,
+				apiapps.DeploymentAvailable, apicore.ConditionTrue,
 			),
 			wait.WithTimeout(time.Minute*3),
 		)
@@ -382,9 +382,9 @@ func deploymentAvailable(namespace, name string) features.Func {
 			t.Fatal(err)
 		}
 
-		pods := corev1.PodList{}
-		_ = client.Resources(namespace).List(ctx, &pods, func(options *metav1.ListOptions) {
-			sel, err := metav1.LabelSelectorAsSelector(dep.Spec.Selector)
+		pods := apicore.PodList{}
+		_ = client.Resources(namespace).List(ctx, &pods, func(options *apimachinerymeta.ListOptions) {
+			sel, err := apimachinerymeta.LabelSelectorAsSelector(dep.Spec.Selector)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -419,7 +419,7 @@ func logObj(ctx context.Context, t *testing.T, r *resources.Resources, obj k8s.O
 	}
 }
 
-func logDeployStatus(ctx context.Context, t *testing.T, client klient.Client, dep appsv1.Deployment) {
+func logDeployStatus(ctx context.Context, t *testing.T, client klient.Client, dep apiapps.Deployment) {
 	t.Helper()
 	errCheckCtx, cancelErrCheck := context.WithTimeout(ctx, 5*time.Second)
 	defer cancelErrCheck()
@@ -431,9 +431,9 @@ func logDeployStatus(ctx context.Context, t *testing.T, client klient.Client, de
 	}
 }
 
-func Deployment(namespace string, name string) appsv1.Deployment {
-	return appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
+func Deployment(namespace string, name string) apiapps.Deployment {
+	return apiapps.Deployment{
+		ObjectMeta: apimachinerymeta.ObjectMeta{
 			Name: name, Namespace: namespace,
 		},
 	}

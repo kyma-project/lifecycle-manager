@@ -17,7 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
@@ -30,10 +30,10 @@ import (
 
 // Watcher is the Schema for the watchers API.
 type Watcher struct {
-	metav1.TypeMeta `json:",inline"`
+	apimachinerymeta.TypeMeta `json:",inline"`
 
 	// +kubebuilder:validation:Optional
-	metav1.ObjectMeta `json:"metadata"`
+	apimachinerymeta.ObjectMeta `json:"metadata"`
 
 	// +kubebuilder:validation:Optional
 	Spec v1beta2.WatcherSpec `json:"spec"`
@@ -45,11 +45,11 @@ type Watcher struct {
 
 // WatcherList contains a list of Watcher.
 type WatcherList struct {
-	metav1.TypeMeta `json:",inline"`
+	apimachinerymeta.TypeMeta `json:",inline"`
 
 	// +kubebuilder:validation:Optional
-	metav1.ListMeta `json:"metadata"`
-	Items           []Watcher `json:"items"`
+	apimachinerymeta.ListMeta `json:"metadata"`
+	Items                     []Watcher `json:"items"`
 }
 
 func init() { //nolint:gochecknoinits

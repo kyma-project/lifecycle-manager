@@ -8,23 +8,23 @@ import (
 	"regexp"
 
 	"github.com/google/go-containerregistry/pkg/authn"
-	authnK8s "github.com/google/go-containerregistry/pkg/authn/kubernetes"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/google/go-containerregistry/pkg/authn/kubernetes"
+	apicore "k8s.io/api/core/v1"
+	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var ErrNoAuthSecretFound = errors.New("no auth secret found")
 
 func GetAuthnKeychain(ctx context.Context,
-	credSecretSelector *metav1.LabelSelector,
+	credSecretSelector *apimachinerymeta.LabelSelector,
 	clnt client.Client,
 ) (authn.Keychain, error) {
 	secretList, err := getCredSecrets(ctx, credSecretSelector, clnt)
 	if err != nil {
 		return nil, err
 	}
-	keychain, err := authnK8s.NewFromPullSecrets(ctx, secretList.Items)
+	keychain, err := kubernetes.NewFromPullSecrets(ctx, secretList.Items)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create auth keychain: %w", err)
 	}
@@ -33,11 +33,11 @@ func GetAuthnKeychain(ctx context.Context,
 
 func getCredSecrets(
 	ctx context.Context,
-	credSecretSelector *metav1.LabelSelector,
+	credSecretSelector *apimachinerymeta.LabelSelector,
 	clusterClient client.Client,
-) (corev1.SecretList, error) {
-	secretList := corev1.SecretList{}
-	selector, err := metav1.LabelSelectorAsSelector(credSecretSelector)
+) (apicore.SecretList, error) {
+	secretList := apicore.SecretList{}
+	selector, err := apimachinerymeta.LabelSelectorAsSelector(credSecretSelector)
 	if err != nil {
 		return secretList, fmt.Errorf("error converting labelSelector: %w", err)
 	}
@@ -55,12 +55,12 @@ func getCredSecrets(
 	return secretList, nil
 }
 
-func GenerateLabelSelector(registryCredValue []byte) (*metav1.LabelSelector, error) {
+func GenerateLabelSelector(registryCredValue []byte) (*apimachinerymeta.LabelSelector, error) {
 	credSecretLabel := make(map[string]string)
 	if err := json.Unmarshal(registryCredValue, &credSecretLabel); err != nil {
 		return nil, fmt.Errorf("failed to cred secret labels: %w", err)
 	}
-	return &metav1.LabelSelector{
+	return &apimachinerymeta.LabelSelector{
 		MatchLabels: credSecretLabel,
 	}, nil
 }
