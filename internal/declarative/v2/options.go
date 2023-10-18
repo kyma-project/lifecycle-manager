@@ -19,11 +19,11 @@ import (
 )
 
 const (
-	FinalizerDefault          = "declarative.kyma-project.io/finalizer"
-	FieldOwnerDefault         = "declarative.kyma-project.io/applier"
-	EventRecorderDefault      = "declarative.kyma-project.io/events"
-	DefaultSkipReconcileLabel = "operator.kyma-project.io/skip-reconciliation"
-	DefaultInMemoryParseTTL   = 24 * time.Hour
+	FinalizerDefault        = "declarative.kyma-project.io/finalizer"
+	FieldOwnerDefault       = "declarative.kyma-project.io/applier"
+	EventRecorderDefault    = "declarative.kyma-project.io/events"
+	SkipReconcileLabel      = "operator.kyma-project.io/skip-reconciliation"
+	DefaultInMemoryParseTTL = 24 * time.Hour
 )
 
 func DefaultOptions() *Options {
@@ -315,8 +315,8 @@ type SkipReconcile func(context.Context, Object) (skip bool)
 
 // SkipReconcileOnDefaultLabelPresentAndTrue determines SkipReconcile by checking if DefaultSkipReconcileLabel is true.
 func SkipReconcileOnDefaultLabelPresentAndTrue(ctx context.Context, object Object) bool {
-	if object.GetLabels() != nil && object.GetLabels()[DefaultSkipReconcileLabel] == "true" {
-		log.FromContext(ctx, "skip-label", DefaultSkipReconcileLabel).
+	if object.GetLabels() != nil && object.GetLabels()[SkipReconcileLabel] == "true" {
+		log.FromContext(ctx, "skip-label", SkipReconcileLabel).
 			V(internal.DebugLogLevel).Info("resource gets skipped because of label")
 		return true
 	}

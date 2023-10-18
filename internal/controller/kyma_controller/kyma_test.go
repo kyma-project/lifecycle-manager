@@ -268,7 +268,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 			Should(BeEquivalentTo(v1beta2.StateReady))
 
 		By("Add skip-reconciliation label to Kyma CR")
-		Eventually(UpdateKymaLabel(ctx, controlPlaneClient, kyma, v2.DefaultSkipReconcileLabel, "true"),
+		Eventually(UpdateKymaLabel(ctx, controlPlaneClient, kyma, v2.SkipReconcileLabel, "true"),
 			Timeout, Interval).Should(Succeed())
 	})
 
@@ -286,7 +286,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	)
 
 	It("Stop Kyma skip Reconciliation so that it can be deleted", func() {
-		Eventually(UpdateKymaLabel(ctx, controlPlaneClient, kyma, v2.DefaultSkipReconcileLabel, "false"),
+		Eventually(UpdateKymaLabel(ctx, controlPlaneClient, kyma, v2.SkipReconcileLabel, "false"),
 			Timeout, Interval).Should(Succeed())
 	})
 })

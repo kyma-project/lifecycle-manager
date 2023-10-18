@@ -417,7 +417,7 @@ func (kyma *Kyma) HasSyncLabelEnabled() bool {
 }
 
 func (kyma *Kyma) SkipReconciliation() bool {
-	skip, found := kyma.Labels[v2.DefaultSkipReconcileLabel]
+	skip, found := kyma.Labels[v2.SkipReconcileLabel]
 	return found && strings.ToLower(skip) == EnableLabelValue
 }
 
