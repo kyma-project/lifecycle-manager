@@ -170,60 +170,6 @@ func containsModuleTemplateCondition(clnt client.Client, kymaName, kymaNamespace
 	return nil
 }
 
-func notContainsModuleInSpec(clnt client.Client, kymaName, kymaNamespace, moduleName string) error {
-	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
-	if err != nil {
-		return err
-	}
-	for _, module := range kyma.Spec.Modules {
-		if module.Name == moduleName {
-			return ErrContainsUnexpectedModules
-		}
-	}
-
-	return nil
-}
-
-func containsModuleInSpec(clnt client.Client, kymaName, kymaNamespace, moduleName string) error {
-	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
-	if err != nil {
-		return err
-	}
-	for _, module := range kyma.Spec.Modules {
-		if module.Name == moduleName {
-			return nil
-		}
-	}
-
-	return ErrNotContainsExpectedModules
-}
-
-func addModuleToKyma(clnt client.Client, kymaName, kymaNamespace string, module v1beta2.Module) error {
-	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
-	if err != nil {
-		return err
-	}
-
-	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, module)
-	return clnt.Update(ctx, kyma)
-}
-
-func removeModuleFromKyma(clnt client.Client, kymaName, kymaNamespace, moduleName string) error {
-	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
-	if err != nil {
-		return err
-	}
-
-	for i, module := range kyma.Spec.Modules {
-		if module.Name == moduleName {
-			kyma.Spec.Modules = append(kyma.Spec.Modules[:i], kyma.Spec.Modules[i+1:]...)
-			break
-		}
-	}
-	return clnt.Update(ctx, kyma)
-}
-
 func updateKymaCRD(clnt client.Client) (*v1extensions.CustomResourceDefinition, error) {
 	crd, err := fetchCrd(clnt, v1beta2.KymaKind)
 	if err != nil {

@@ -224,42 +224,6 @@ func DeleteKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sCl
 	return k8sClient.Delete(ctx, secret)
 }
 
-func EnableModule(ctx context.Context,
-	kymaName, kymaNamespace, moduleName, moduleChannel string,
-	k8sClient client.Client,
-) error {
-	kyma := &v1beta2.Kyma{}
-	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
-		return err
-	}
-	GinkgoWriter.Printf("kyma %v\n", kyma)
-	kyma.Spec.Modules = append(kyma.Spec.Modules, v1beta2.Module{
-		Name:    moduleName,
-		Channel: moduleChannel,
-	})
-	return k8sClient.Update(ctx, kyma)
-}
-
-func DisableModule(ctx context.Context, kymaName, kymaNamespace, moduleName string, k8sClient client.Client) error {
-	kyma := &v1beta2.Kyma{}
-	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
-		return err
-	}
-	GinkgoWriter.Printf("kyma %v\n", kyma)
-
-	for i, module := range kyma.Spec.Modules {
-		if module.Name == moduleName {
-			kyma.Spec.Modules = removeModuleWithIndex(kyma.Spec.Modules, i)
-			break
-		}
-	}
-	return k8sClient.Update(ctx, kyma)
-}
-
-func removeModuleWithIndex(s []v1beta2.Module, index int) []v1beta2.Module {
-	return append(s[:index], s[index+1:]...)
-}
-
 func SetFinalizer(name, namespace, group, version, kind string, finalizers []string, clnt client.Client) error {
 	resourceCR := &unstructured.Unstructured{}
 	resourceCR.SetGroupVersionKind(schema.GroupVersionKind{

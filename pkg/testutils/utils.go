@@ -55,6 +55,13 @@ func NewTestModule(name, channel string) v1beta2.Module {
 	}
 }
 
+func NewTestModuleWithFixName(name, channel string) v1beta2.Module {
+	return v1beta2.Module{
+		Name:    name,
+		Channel: channel,
+	}
+}
+
 func NewTestIssuer(namespace string) *certmanagerv1.Issuer {
 	return &certmanagerv1.Issuer{
 		ObjectMeta: v1.ObjectMeta{
