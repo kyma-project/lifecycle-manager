@@ -201,11 +201,6 @@ func (r *Reconciler) partialObjectMetadata(obj Object) *metav1.PartialObjectMeta
 func (r *Reconciler) initialize(obj Object) error {
 	status := obj.GetStatus()
 
-	if !obj.GetDeletionTimestamp().IsZero() && obj.GetStatus().State != StateDeleting {
-		obj.SetStatus(status.WithState(StateDeleting).WithErr(ErrDeletionTimestampSetButNotInDeletingState))
-		return ErrDeletionTimestampSetButNotInDeletingState
-	}
-
 	for _, condition := range []metav1.Condition{
 		newResourcesCondition(obj),
 		newInstallationCondition(obj),
@@ -345,11 +340,6 @@ func (r *Reconciler) checkTargetReadiness(
 		r.Event(manifest, "Normal", "ResourceReadyCheck", waitingMsg)
 		manifest.SetStatus(status.WithState(StateProcessing).WithOperation(waitingMsg))
 		return ErrInstallationConditionRequiresUpdate
-	}
-
-	if crStateInfo.State != StateReady && crStateInfo.State != StateWarning {
-		// should not happen, if happens, skip status update
-		return nil
 	}
 
 	installationCondition := newInstallationCondition(manifest)
