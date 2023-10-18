@@ -59,7 +59,7 @@ func parseLayersByName(repo *genericocireg.RepositorySpec, descriptor *compdesc.
 	layers := Layers{}
 	for _, resource := range descriptor.Resources {
 		access := resource.Access
-		var layerRepresentation LayerRepresentation
+		var layerRepresentation *OCI
 		spec, err := ocm.DefaultContext().AccessSpecForSpec(access)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create spec for acccess: %w", err)

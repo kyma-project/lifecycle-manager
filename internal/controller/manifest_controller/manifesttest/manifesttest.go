@@ -3,7 +3,6 @@ package manifesttest
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -17,8 +16,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/google/go-containerregistry/pkg/name"
@@ -110,9 +107,7 @@ func CreateOCIImageSpec(name, repo string, enableCredSecretSelector bool) v1beta
 func WithInvalidInstallImageSpec(enableResource bool) func(manifest *v1beta2.Manifest) error {
 	return func(manifest *v1beta2.Manifest) error {
 		invalidImageSpec := CreateOCIImageSpec("invalid-image-spec", "domain.invalid", false)
-		imageSpecByte, err := json.Marshal(invalidImageSpec)
-		gmg.Expect(err).ToNot(gmg.HaveOccurred())
-		return InstallManifest(manifest, imageSpecByte, enableResource)
+		return InstallManifest(manifest, invalidImageSpec, enableResource)
 	}
 }
 
@@ -121,21 +116,12 @@ func WithValidInstallImageSpec(name string,
 ) func(manifest *v1beta2.Manifest) error {
 	return func(manifest *v1beta2.Manifest) error {
 		validImageSpec := CreateOCIImageSpec(name, Server.Listener.Addr().String(), enableCredSecretSelector)
-		imageSpecByte, err := json.Marshal(validImageSpec)
-		gmg.Expect(err).ToNot(gmg.HaveOccurred())
-		return InstallManifest(manifest, imageSpecByte, enableResource)
+		return InstallManifest(manifest, validImageSpec, enableResource)
 	}
 }
 
-func InstallManifest(manifest *v1beta2.Manifest, installSpecByte []byte, enableResource bool) error {
-	if installSpecByte != nil {
-		manifest.Spec.Install = v1beta2.InstallInfo{
-			Source: runtime.RawExtension{
-				Raw: installSpecByte,
-			},
-			Name: v1beta2.RawManifestLayerName,
-		}
-	}
+func InstallManifest(manifest *v1beta2.Manifest, installSpec v1beta2.ImageSpec, enableResource bool) error {
+	manifest.Spec.Install = installSpec
 	if enableResource {
 		// related CRD definition is in pkg/test_samples/oci/rendered.yaml
 		manifest.Spec.Resource = &unstructured.Unstructured{

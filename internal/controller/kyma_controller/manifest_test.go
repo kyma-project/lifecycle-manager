@@ -127,7 +127,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 		By("Manifest is updated with new value in spec.install.source")
 		{
 			hasDummyRepositoryURL := func(manifest *v1beta2.Manifest) error {
-				manifestImageSpec := extractInstallImageSpec(manifest.Spec.Install)
+				manifestImageSpec := manifest.Spec.Install
 				if !strings.HasPrefix(manifestImageSpec.Repo, updateRepositoryURL) {
 					return fmt.Errorf("Invalid manifest spec.install.repo: %s, expected prefix: %s", //nolint:goerr113
 						manifestImageSpec.Repo, updateRepositoryURL)
@@ -160,7 +160,7 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 				return err
 			}
 
-			return validateManifestSpecInstallSource(extractInstallImageSpec(manifest.Spec.Install), moduleTemplateDescriptor)
+			return validateManifestSpecInstallSource(&manifest.Spec.Install, moduleTemplateDescriptor)
 		}
 		Eventually(expectManifest(hasValidSpecInstall), Timeout, Interval).Should(Succeed())
 
@@ -189,13 +189,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 		manifest, err := GetManifest(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
 		Expect(err).ToNot(HaveOccurred())
 
-		manifestImageSpec := extractInstallImageSpec(manifest.Spec.Install)
-		manifestImageSpec.Repo = updateRepositoryURL
-
-		// is there a simpler way to update manifest.Spec.Install?
-		updatedBytes, err := json.Marshal(manifestImageSpec)
-		Expect(err).ToNot(HaveOccurred())
-		manifest.Spec.Install.Source.Raw = updatedBytes
+		manifest.Spec.Install.Repo = updateRepositoryURL
 
 		err = controlPlaneClient.Update(ctx, manifest)
 		Expect(err).ToNot(HaveOccurred())
@@ -214,7 +208,7 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 				return err
 			}
 
-			return validateManifestSpecInstallSource(extractInstallImageSpec(manifest.Spec.Install), moduleTemplateDescriptor)
+			return validateManifestSpecInstallSource(&manifest.Spec.Install, moduleTemplateDescriptor)
 		}
 		Eventually(expectManifest(hasValidSpecInstall), Timeout, Interval).Should(Succeed())
 
@@ -361,7 +355,7 @@ func validateManifestSpecInstallSourceRef(manifestImageSpec *v1beta2.ImageSpec,
 
 func validateManifestSpecInstallSourceRefValue(expectedSourceRef string) func(manifest *v1beta2.Manifest) error {
 	return func(manifest *v1beta2.Manifest) error {
-		manifestImageSpec := extractInstallImageSpec(manifest.Spec.Install)
+		manifestImageSpec := manifest.Spec.Install
 		actualSourceRef := manifestImageSpec.Ref
 
 		if actualSourceRef != expectedSourceRef {

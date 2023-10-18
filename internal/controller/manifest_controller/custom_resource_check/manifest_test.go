@@ -1,7 +1,6 @@
 package custom_resource_check_test
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 
@@ -41,10 +40,8 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		testManifest := testutils.NewTestManifest("warning-check")
 		manifestName := testManifest.GetName()
 		validImageSpec := hlp.CreateOCIImageSpec(installName, hlp.Server.Listener.Addr().String(), false)
-		imageSpecByte, err := json.Marshal(validImageSpec)
-		Expect(err).ToNot(HaveOccurred())
 
-		Expect(hlp.InstallManifest(testManifest, imageSpecByte, true)).To(Succeed())
+		Expect(hlp.InstallManifest(testManifest, validImageSpec, true)).To(Succeed())
 
 		By("Ensure that deployment and Sample CR are deployed and ready")
 		deploy := &appsv1.Deployment{}

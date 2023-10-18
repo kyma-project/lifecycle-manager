@@ -1,7 +1,6 @@
 package manifest_controller_test
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 
@@ -40,9 +39,7 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 		testManifest := testutils.NewTestManifest("custom-check-oci")
 		manifestName := testManifest.GetName()
 		validImageSpec := hlp.CreateOCIImageSpec(installName, hlp.Server.Listener.Addr().String(), false)
-		imageSpecByte, err := json.Marshal(validImageSpec)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(hlp.InstallManifest(testManifest, imageSpecByte, false)).To(Succeed())
+		Expect(hlp.InstallManifest(testManifest, validImageSpec, false)).To(Succeed())
 
 		Eventually(hlp.ExpectManifestStateIn(declarative.StateReady), standardTimeout, standardInterval).
 			WithArguments(manifestName).Should(Succeed())
