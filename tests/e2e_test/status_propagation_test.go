@@ -83,7 +83,7 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 	It("When enable Template Operator again", func() {
 		Eventually(EnableModule).
 			WithContext(ctx).
-			WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name, kyma.Spec.Channel).
+			WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
 			Should(Succeed())
 
 		By("Then module in KCP Kyma spec")
