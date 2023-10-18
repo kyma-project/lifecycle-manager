@@ -64,16 +64,16 @@ kyma-deletion:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "KCP Kyma CR Deletion"
 
 kyma-metrics:
-	go test -ginkgo.v -ginkgo.focus "Kyma Metrics"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Kyma Metrics"
 
 watcher-enqueue:
-	go test -ginkgo.v -ginkgo.focus "Enqueue Event from Watcher"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Enqueue Event from Watcher"
 
 module-status-propagation:
-	go test -ginkgo.v -ginkgo.focus "Warning Status Propagation"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Warning Status Propagation"
 
 module-without-default-cr:
-	go test -ginkgo.v -ginkgo.focus "Module Without Default CR"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Without Default CR"
 
 non-blocking-deletion: ## Runs the Status Propagation E2E Test
-	go test -ginkgo.focus "Non Blocking Kyma Module Deletion"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Non Blocking Kyma Module Deletion"
