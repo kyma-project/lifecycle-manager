@@ -11,6 +11,7 @@ linters:
     - ifshort # deprecated (since v1.48.0)
     - interfacer # deprecated (since v1.38.0)
     - ireturn # TODO enable and fix
+    - lll
     - maligned # deprecated (since v1.38.0)
     - nlreturn # too strict and mostly code is not more readable
     - nosnakecase  # deprecated (since v1.48.1) and replaced by 'revive'
@@ -54,7 +55,72 @@ linters-settings:
       - dot                                                  # Dot imports.
     custom-order: true
     skip-generated: true
-
+  importas:
+    no-unaliased: true
+    no-extra-aliases: true
+    alias:
+      - pkg: github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1
+        alias: certmanager
+      - pkg: github.com/cert-manager/cert-manager/pkg/apis/meta/v1
+        alias: certmanagermeta
+      - pkg: github.com/google/go-containerregistry/pkg/v1
+        alias: containerregistry
+      - pkg: github.com/kyma-project/lifecycle-manager/internal/declarative/v2
+        alias: declarative
+      - pkg: github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1
+        alias: declarativetest
+      - pkg: github.com/kyma-project/runtime-watcher/listener/pkg/event
+        alias: watcherevent
+      - pkg: github.com/kyma-project/runtime-watcher/listener/pkg/metrics
+        alias: watchermetrics
+      - pkg: github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1
+        alias: ocmmeta
+      - pkg: github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2
+        alias: compdescv2
+      - pkg: istio.io/api/networking/v1beta1
+        alias: istioapi
+      - pkg: istio.io/client-go/pkg/apis/networking/v1beta1
+        alias: istioclientapi
+      - pkg: istio.io/client-go/pkg/clientset/versioned
+        alias: istioclient
+      - pkg: istio.io/client-go/pkg/clientset/versioned/scheme
+        alias: istioscheme
+      - pkg: k8s.io/api/admission/v1
+        alias: apiadmission
+      - pkg: k8s.io/api/admissionregistration/v1
+        alias: admissionregistration
+      - pkg: k8s.io/api/apps/v1
+        alias: apiapps
+      - pkg: k8s.io/api/core/v1
+        alias: apicore
+      - pkg: k8s.io/api/rbac/v1
+        alias: apirbac
+      - pkg: k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1
+        alias: apiextensions
+      - pkg: k8s.io/apimachinery/pkg/api/errors
+        alias: apierrors
+      - pkg: k8s.io/apimachinery/pkg/apis/meta/v1
+        alias: apimachinerymeta
+      - pkg: k8s.io/apimachinery/pkg/labels
+        alias: k8slabels
+      - pkg: k8s.io/apimachinery/pkg/runtime
+        alias: machineryruntime
+      - pkg: k8s.io/apimachinery/pkg/util/runtime
+        alias: machineryutilruntime
+      - pkg: k8s.io/apimachinery/pkg/util/yaml
+        alias: machineryaml
+      - pkg: k8s.io/client-go/kubernetes/scheme
+        alias: k8sclientscheme
+      - pkg: sigs.k8s.io/controller-runtime
+        alias: ctrl
+      - pkg: sigs.k8s.io/controller-runtime/pkg/controller
+        alias: ctrlruntime
+      - pkg: sigs.k8s.io/controller-runtime/pkg/log
+        alias: logf
+      - pkg: sigs.k8s.io/controller-runtime/pkg/metrics
+        alias: ctrlmetrics
+      - pkg: sigs.k8s.io/controller-runtime/pkg/metrics/server
+        alias: metricsserver
   ireturn:
     allow:
       - anon
@@ -81,6 +147,9 @@ issues:
       linters: [ gci ] # Disable gci due to the test utilities dot import.
     - path: internal/controller/(control-plane|event-filters|kyma_controller|withwatcher|purge)/(.*)_test.go
       linters: [ gci ] # Disable gci due to the test utilities dot import.
+    - linters:
+      - importas
+      text: has alias "" which is not part of config # Ignore false positives that emerged due to https://github.com/julz/importas/issues/15.
   max-issues-per-linter: 0
   max-same-issues: 0
 output:
