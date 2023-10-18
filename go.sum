@@ -2436,8 +2436,8 @@ honnef.co/go/tools v0.0.1-2020.1.4/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9
 honnef.co/go/tools v0.0.1-2020.1.5/go.mod h1:X/FiERA/W4tHapMX5mGpAtMSVEeEUOyHaw9vFzvIQ3k=
 inet.af/netaddr v0.0.0-20220811202034-502d2d690317 h1:U2fwK6P2EqmopP/hFLTOAjWTki0qgd4GMJn5X8wOleU=
 inet.af/netaddr v0.0.0-20220811202034-502d2d690317/go.mod h1:OIezDfdzOgFhuw4HuWapWq2e9l0H9tK4F1j+ETRtF3k=
-istio.io/api v1.19.2-0.20231011000955-f3015ebb5bd4 h1:NoiArVONh9DPs/DovhCCl771BUeEkKp+/GhsRB1YbOk=
-istio.io/api v1.19.2-0.20231011000955-f3015ebb5bd4/go.mod h1:KstZe4bKbXouALUJ5PqpjNEhu5nj90HrDFitZfpNhlU=
+istio.io/api v1.19.3 h1:+Sxwn0IqoAXHcUJVCwigILxOo4yVXzmLamWATxNqhRk=
+istio.io/api v1.19.3/go.mod h1:KstZe4bKbXouALUJ5PqpjNEhu5nj90HrDFitZfpNhlU=
 istio.io/client-go v1.19.3 h1:nxNcBhtpJJmSoiTbCzO4Ay4Y1qve4Uct6oiqPSJVNMg=
 istio.io/client-go v1.19.3/go.mod h1:ra3fVlXcquh7EuQnNssuLxfp6lFv/nx5314PvNEzOUs=
 k8s.io/api v0.20.1/go.mod h1:KqwcCVogGxQY3nBlRpwt+wpAMF/KjaCc7RpywacvqUo=
