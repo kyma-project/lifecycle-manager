@@ -139,6 +139,41 @@ func removeModuleWithIndex(s []v1beta2.Module, index int) []v1beta2.Module {
 	return append(s[:index], s[index+1:]...)
 }
 
+func UpdateKymaModuleChannel(ctx context.Context, clnt client.Client,
+	kymaName, kymaNamespace, channel string,
+) error {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+	for i := range kyma.Spec.Modules {
+		kyma.Spec.Modules[i].Channel = channel
+	}
+	err = clnt.Update(ctx, kyma)
+	if err != nil {
+		return fmt.Errorf("update kyma: %w", err)
+	}
+	return nil
+}
+
+func UpdateKymaLabel(
+	ctx context.Context,
+	clnt client.Client,
+	kymaName, kymaNamespace,
+	labelKey, labelValue string,
+) error {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+	kyma.Labels[labelKey] = labelValue
+	err = clnt.Update(ctx, kyma)
+	if err != nil {
+		return fmt.Errorf("update kyma: %w", err)
+	}
+	return nil
+}
+
 func GetKyma(ctx context.Context, clnt client.Client, name, namespace string) (*v1beta2.Kyma, error) {
 	kymaInCluster := &v1beta2.Kyma{}
 	if namespace == "" {
@@ -163,10 +198,11 @@ func IsKymaInState(ctx context.Context, name, namespace string, clnt client.Clie
 		string(state))
 }
 
-func ExpectKymaManagerField(
-	ctx context.Context, controlPlaneClient client.Client, kymaName string, managerName string,
+func ContainsExpectKymaManagerField(
+	ctx context.Context, clnt client.Client,
+	kymaName, kymaNamespace, managerName string,
 ) (bool, error) {
-	createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
+	createdKyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
 	if err != nil {
 		return false, err
 	}

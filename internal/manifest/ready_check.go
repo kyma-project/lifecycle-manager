@@ -35,7 +35,6 @@ func NewCustomResourceReadyCheck() *CustomResourceReadyCheck {
 type CustomResourceReadyCheck struct{}
 
 var (
-	ErrCRInUnexpectedState  = errors.New("module CR in unexpected state during readiness check")
 	ErrNotSupportedState    = errors.New("module CR state not support")
 	ErrRequiredStateMissing = errors.New("required Ready and Error state mapping are missing")
 )

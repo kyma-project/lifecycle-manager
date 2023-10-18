@@ -84,9 +84,10 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 		}
 
 		By("Kyma CR should be in Ready state")
-		Eventually(GetKymaState, Timeout, Interval).
-			WithArguments(kyma.GetName()).
-			Should(BeEquivalentTo(string(v1beta2.StateReady)))
+		Eventually(IsKymaInState, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+			Should(Succeed())
 
 		By("Update Module Template spec.data.spec field")
 		valueUpdated := "valueUpdated"
@@ -252,9 +253,10 @@ var _ = Describe("Update Module Template Version", Ordered, func() {
 		}
 
 		By("Kyma CR should be in Ready state")
-		Eventually(GetKymaState, Timeout, Interval).
-			WithArguments(kyma.GetName()).
-			Should(BeEquivalentTo(string(v1beta2.StateReady)))
+		Eventually(IsKymaInState, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+			Should(Succeed())
 
 		By("Manifest spec.install.source.ref corresponds to Module Template resources[].access.digest")
 		{
