@@ -1,6 +1,8 @@
 package e2e_test
 
 import (
+	"time"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
@@ -45,12 +47,12 @@ var _ = Describe("Purge Metrics", Ordered, func() {
 				Should(BeTrue())
 		})
 
-		It("Then lifecycle_mgr_purgectrl_time is updated", func() {
-			duration, err := GetPurgeTimeMetric(ctx)
-			Expect(err).NotTo(HaveOccurred())
-
-			GinkgoWriter.Println("duration: ", duration)
-			Expect(duration).Should(BeNumerically(">", float64(0)))
+		It("Then purge metrics are updated", func() {
+			time.Sleep(5 * time.Second)
+			Eventually(PurgeMetricsAreAsExpected).
+				WithContext(ctx).
+				WithArguments(float64(0), 1).
+				Should(BeTrue())
 		})
 	})
 })

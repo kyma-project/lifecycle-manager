@@ -427,23 +427,35 @@ func getMetricsBody(ctx context.Context) (string, error) {
 	return bodyString, nil
 }
 
-func GetPurgeTimeMetric(ctx context.Context) (float64, error) {
+func PurgeMetricsAreAsExpected(ctx context.Context,
+	timeShouldBeMoreThan float64,
+	expectedRequests int,
+) bool {
+	correctCount := false
+	correctTime := false
 	bodyString, err := getMetricsBody(ctx)
 	if err != nil {
-		return 0, err
+		return false
 	}
-	re := regexp.MustCompile(`lifecycle_mgr_purgectrl_time ([0-9]*\.?[0-9]+)`)
-	match := re.FindStringSubmatch(bodyString)
+	reg := regexp.MustCompile(`lifecycle_mgr_purgectrl_time ([0-9]*\.?[0-9]+)`)
+	match := reg.FindStringSubmatch(bodyString)
 
 	if len(match) > 1 {
 		duration, err := strconv.ParseFloat(match[1], 64)
-		GinkgoWriter.Println("duration: ", duration)
-		GinkgoWriter.Println("match: ", match)
-		if err != nil {
-			return 0, err
+		if err == nil && duration > timeShouldBeMoreThan {
+			correctTime = true
 		}
-		return duration, nil
 	}
 
-	return 0, nil
+	reg = regexp.MustCompile(`lifecycle_mgr_purgectrl_requests_total (\d+)`)
+	match = reg.FindStringSubmatch(bodyString)
+
+	if len(match) > 1 {
+		count, err := strconv.Atoi(match[1])
+		if err == nil || count == expectedRequests {
+			correctCount = true
+		}
+	}
+
+	return correctTime && correctCount
 }

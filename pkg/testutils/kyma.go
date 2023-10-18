@@ -9,7 +9,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-	"github.com/onsi/ginkgo/v2/dsl/core"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -105,7 +104,7 @@ func KymaHasDeletionTimestamp(ctx context.Context,
 	if err != nil {
 		return false
 	}
-	core.GinkgoWriter.Println(kyma.DeletionTimestamp)
+
 	return !kyma.GetDeletionTimestamp().IsZero()
 }
 

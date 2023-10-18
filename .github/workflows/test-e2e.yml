@@ -124,7 +124,8 @@ jobs:
         run: |
           echo "KLM_VERSION_TAG=PR-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
           echo "KLM_IMAGE_REPO=dev" >> $GITHUB_ENV
-      - name: Deploy LM local testing kustomize with purge finalizer
+      - name: Patch purge finalizer flags
+        if: ${{ matrix.e2e-test == 'purge-controller' ||  matrix.e2e-test == 'purge-metrics'}}
         working-directory: lifecycle-manager
         run: |
           pushd config/watcher_local_test
@@ -138,6 +139,9 @@ jobs:
           cat purge_finalizer.yaml
           kustomize edit add patch --path purge_finalizer.yaml --kind Deployment
           popd
+      - name: Deploy LM local testing kustomize
+        working-directory: lifecycle-manager
+        run: |
           maxRetry=5
           for retry in $(seq 1 $maxRetry)
           do
