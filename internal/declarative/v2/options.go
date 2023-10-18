@@ -22,7 +22,7 @@ const (
 	FinalizerDefault          = "declarative.kyma-project.io/finalizer"
 	FieldOwnerDefault         = "declarative.kyma-project.io/applier"
 	EventRecorderDefault      = "declarative.kyma-project.io/events"
-	DefaultSkipReconcileLabel = "declarative.kyma-project.io/skip-reconciliation"
+	DefaultSkipReconcileLabel = "operator.kyma-project.io/skip-reconciliation"
 	DefaultInMemoryParseTTL   = 24 * time.Hour
 )
 

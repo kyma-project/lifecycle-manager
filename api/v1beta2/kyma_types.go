@@ -19,6 +19,7 @@ package v1beta2
 import (
 	"strings"
 
+	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -416,7 +417,7 @@ func (kyma *Kyma) HasSyncLabelEnabled() bool {
 }
 
 func (kyma *Kyma) SkipReconciliation() bool {
-	skip, found := kyma.Labels[SkipReconcileLabel]
+	skip, found := kyma.Labels[v2.DefaultSkipReconcileLabel]
 	return found && strings.ToLower(skip) == EnableLabelValue
 }
 
