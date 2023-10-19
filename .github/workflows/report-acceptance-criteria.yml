@@ -17,10 +17,10 @@ jobs:
       - name: Check out LM source code
         uses: actions/checkout@v4
       - name: Check out report highlighter
-          uses: actions/checkout@v4
-          with:
-            repository: kyma-project/qa-toolkit
-            path: scripts
+        uses: actions/checkout@v4
+        with:
+          repository: kyma-project/qa-toolkit
+          path: scripts
       - name: Prepare the highlighter utility
         run: |
           chmod a+x $highlighter
