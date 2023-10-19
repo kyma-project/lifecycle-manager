@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // NewModuleCRDeletionCheck creates a check that verifies that the Resource CR in the remote cluster is deleted.
