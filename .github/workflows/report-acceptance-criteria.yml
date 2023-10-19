@@ -1,0 +1,28 @@
+name: Report Acceptance Criteria
+run-name: Generate AC coverage report
+
+# The report generation is performed ad hoc via manual invocation.
+on: workflow_dispatch
+
+env:
+  glossaryURL: https://github.com/kyma-project/lifecycle-manager/wiki/Glossary.md
+  # The report highlighter utility that is checked out from the
+  # https://github.com/kyma-project/qa-toolkit/blob/main/coverage-metrics/bin/utils/report-highlighter/highlighter.py
+  highlighter: ${{ github.workspace }}/scripts/coverage-metrics/bin/utils/report-highlighter/highlighter.py
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out LM source code
+        uses: actions/checkout@v4
+      - name: Check out report highlighter
+          uses: actions/checkout@v4
+          with:
+            repository: kyma-project/qa-toolkit
+            path: scripts
+      - name: Prepare the highlighter utility
+        run: |
+          chmod a+x $highlighter
+      - name: Genarate a report
+        run: cd ${{ github.workspace }}/tests/e2e_test && make e2e-coverage | $highlighter $glossaryURL
