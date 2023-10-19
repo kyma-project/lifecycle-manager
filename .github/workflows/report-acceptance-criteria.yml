@@ -5,10 +5,10 @@ run-name: Generate AC coverage report
 on: workflow_dispatch
 
 env:
-  glossaryURL: https://github.com/ameteiko/goreleaser/wiki/Glossary.md
+  glossaryURL: https://github.com/kyma-project/lifecycle-manager/wiki/Glossary.md
   # The report highlighter utility that is checked out from the
-  # https://github.tools.sap/pandas/coverage-metrics/blob/main/bin/utils/report-highlighter/highlighter.py
-  highlighter: ${{ github.workspace }}/scripts/bin/utils/report-highlighter/highlighter.py
+  # https://github.com/kyma-project/qa-toolkit/blob/main/coverage-metrics/bin/utils/report-highlighter/highlighter.py
+  highlighter: ${{ github.workspace }}/scripts/coverage-metrics/bin/utils/report-highlighter/highlighter.py
 
 jobs:
   generate-report:
@@ -17,12 +17,10 @@ jobs:
       - name: Check out LM source code
         uses: actions/checkout@v4
       - name: Check out report highlighter
-        uses: actions/checkout@v4
-        with:
-          github-server-url: https://github.tools.sap
-          repository: pandas/coverage-metrics
-          path: scripts
-          token: ${{secrets.SAP_GITHUBTOOLS_PAT}}
+          uses: actions/checkout@v4
+          with:
+            repository: kyma-project/qa-toolkit
+            path: scripts
       - name: Prepare the highlighter utility
         run: |
           chmod a+x $highlighter
