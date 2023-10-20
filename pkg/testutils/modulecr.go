@@ -8,7 +8,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	"github.com/onsi/ginkgo/v2/dsl/core"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -121,9 +120,7 @@ func ModuleCRIsInExpectedState(ctx context.Context,
 		return false
 	}
 
-	core.GinkgoWriter.Println("moduleCR.Object ", moduleCR.Object)
-	state, _, err := unstructured.NestedString(moduleCR.Object, "status.state")
-	core.GinkgoWriter.Println("state ", state)
+	state, _, err := unstructured.NestedString(moduleCR.Object, "status", "state")
 	if err != nil {
 		return false
 	}

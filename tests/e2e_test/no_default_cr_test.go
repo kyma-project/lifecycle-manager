@@ -10,7 +10,8 @@ import (
 )
 
 var _ = Describe("Module Without Default CR", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular", v1beta2.SyncStrategyLocalSecret)
+	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalSecret)
+	module := NewTestModuleWithFixName("template-operator", v1beta2.DefaultChannel)
 
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
@@ -19,13 +20,13 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 		It("When enable Template Operator", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(defaultRemoteKymaName, remoteNamespace, moduleName, kyma.Spec.Channel, runtimeClient).
+				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
 				Should(Succeed())
 		})
 
 		It("Then no resources in manifest CR", func() {
 			Eventually(func(g Gomega, ctx context.Context) error {
-				_, err := GetManifestResource(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), moduleName)
+				_, err := GetManifestResource(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
 				return err
 			}).WithContext(ctx).Should(Equal(ErrManifestResourceIsNil))
 		})
@@ -45,7 +46,7 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 		It("Then module state of KCP Kyma in Ready", func() {
 			Eventually(CheckModuleState).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), moduleName, v1beta2.StateReady).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name, v1beta2.StateReady).
 				Should(Succeed())
 		})
 

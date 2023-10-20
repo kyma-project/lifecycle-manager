@@ -9,6 +9,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,6 +24,8 @@ const (
 	LowerVersion            = "0.0.1"
 	HigherVersion           = "0.0.2"
 )
+
+var errTemplateInfoChannelMismatch = errors.New("mismatch in template info channel")
 
 var _ = Describe("valid kyma.spec.channel should be deployed successful", func() {
 	kyma := NewTestKyma("kyma")
@@ -122,7 +125,7 @@ func givenModuleTemplateWithChannel(channel string, isValid bool) func() error {
 				Channel:        channel,
 			},
 		}
-		err := CreateModuleTemplateSetsForKyma(modules, LowerVersion, channel)
+		err := createModuleTemplateSetsForKyma(modules, LowerVersion, channel)
 		if isValid {
 			return err
 		}
@@ -138,7 +141,7 @@ func deployModuleInChannel(channel string, moduleName string) error {
 			Channel:        channel,
 		},
 	}
-	err := CreateModuleTemplateSetsForKyma(modules, LowerVersion, channel)
+	err := createModuleTemplateSetsForKyma(modules, LowerVersion, channel)
 	return err
 }
 
@@ -192,8 +195,8 @@ var _ = Describe("Channel switch", Ordered, func() {
 	})
 
 	BeforeAll(func() {
-		Expect(CreateModuleTemplateSetsForKyma(kyma.Spec.Modules, LowerVersion, v1beta2.DefaultChannel)).To(Succeed())
-		Expect(CreateModuleTemplateSetsForKyma(kyma.Spec.Modules, HigherVersion, FastChannel)).To(Succeed())
+		Expect(createModuleTemplateSetsForKyma(kyma.Spec.Modules, LowerVersion, v1beta2.DefaultChannel)).To(Succeed())
+		Expect(createModuleTemplateSetsForKyma(kyma.Spec.Modules, HigherVersion, FastChannel)).To(Succeed())
 	})
 
 	AfterAll(CleanupModuleTemplateSetsForKyma(kyma))
@@ -203,17 +206,19 @@ var _ = Describe("Channel switch", Ordered, func() {
 			Eventually(CreateCR, Timeout, Interval).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, kyma).Should(Succeed())
-			Eventually(GetKymaState, Timeout, Interval).
-				WithArguments(kyma.GetName()).
-				Should(BeEquivalentTo(string(v1beta2.StateProcessing)))
+			Eventually(KymaIsInState, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateProcessing).
+				Should(Succeed())
 			for _, module := range kyma.Spec.Modules {
 				Eventually(UpdateManifestState, Timeout, Interval).
 					WithArguments(ctx, controlPlaneClient,
 						kyma.GetName(), kyma.GetNamespace(), module.Name, v1beta2.StateReady).Should(Succeed())
 			}
-			Eventually(GetKymaState, Timeout, Interval).
-				WithArguments(kyma.GetName()).
-				Should(BeEquivalentTo(string(v1beta2.StateReady)))
+			Eventually(KymaIsInState, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+				Should(Succeed())
 		},
 	)
 
@@ -231,14 +236,16 @@ var _ = Describe("Channel switch", Ordered, func() {
 		Entry(
 			"When all modules are updated to fast channel with higher version,"+
 				" expect Modules to update to fast channel",
-			whenUpdatingEveryModuleChannel(kyma.Name, FastChannel),
+			whenUpdatingEveryModuleChannel(kyma.GetName(), kyma.GetNamespace(), FastChannel),
 			expectEveryModuleStatusToHaveChannel(kyma.Name, FastChannel),
 		),
 	)
 
 	It("When all modules are reverted to regular channel,"+
 		" expect Modules to stay in fast channel", func() {
-		Eventually(whenUpdatingEveryModuleChannel(kyma.Name, v1beta2.DefaultChannel), Timeout, Interval).
+		Eventually(UpdateKymaModuleChannel, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), v1beta2.DefaultChannel).
 			Should(Succeed())
 		Consistently(expectEveryModuleStatusToHaveChannel(kyma.Name, FastChannel), ConsistentCheckTimeout, Interval).
 			Should(Succeed())
@@ -249,9 +256,10 @@ var _ = Describe("Channel switch", Ordered, func() {
 
 	It(
 		"should lead to kyma being warning in the end of the channel switch", func() {
-			Eventually(GetKymaState, Timeout, Interval).
-				WithArguments(kyma.GetName()).
-				Should(BeEquivalentTo(string(v1beta2.StateWarning)))
+			Eventually(KymaIsInState, Timeout, Interval).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateWarning).
+				Should(Succeed())
 		},
 	)
 },
@@ -286,8 +294,24 @@ func CleanupModuleTemplateSetsForKyma(kyma *v1beta2.Kyma) func() {
 
 func expectEveryModuleStatusToHaveChannel(kymaName, channel string) func() error {
 	return func() error {
-		return TemplateInfosMatchChannel(kymaName, channel)
+		return templateInfosMatchChannel(kymaName, channel)
 	}
+}
+
+func templateInfosMatchChannel(kymaName, channel string) error {
+	kyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
+	if err != nil {
+		return err
+	}
+	for i := range kyma.Status.Modules {
+		if kyma.Status.Modules[i].Channel != channel {
+			return fmt.Errorf(
+				"%w: %s should be %s",
+				errTemplateInfoChannelMismatch, kyma.Status.Modules[i].Channel, channel,
+			)
+		}
+	}
+	return nil
 }
 
 func expectEveryManifestToHaveChannel(kymaName, kymaNamespace, channel string) error {
@@ -305,7 +329,7 @@ func expectEveryManifestToHaveChannel(kymaName, kymaNamespace, channel string) e
 			if manifestChannel != channel {
 				return fmt.Errorf(
 					"%w: %s should be %s",
-					ErrTemplateInfoChannelMismatch, manifestChannel, channel,
+					errTemplateInfoChannelMismatch, manifestChannel, channel,
 				)
 			}
 			return nil
@@ -313,7 +337,7 @@ func expectEveryManifestToHaveChannel(kymaName, kymaNamespace, channel string) e
 	}
 	return fmt.Errorf(
 		"%w: no %s found",
-		ErrTemplateInfoChannelMismatch, channel,
+		errTemplateInfoChannelMismatch, channel,
 	)
 }
 
@@ -332,19 +356,45 @@ func expectModuleManifestToHaveChannel(kymaName, kymaNamespace, moduleName, chan
 		if manifestChannel != channel {
 			return fmt.Errorf(
 				"%w: %s should be %s",
-				ErrTemplateInfoChannelMismatch, manifestChannel, channel,
+				errTemplateInfoChannelMismatch, manifestChannel, channel,
 			)
 		}
 		return nil
 	}
 	return fmt.Errorf(
 		"%w: no %s found",
-		ErrTemplateInfoChannelMismatch, channel,
+		errTemplateInfoChannelMismatch, channel,
 	)
 }
 
-func whenUpdatingEveryModuleChannel(kymaName, channel string) func() error {
+func whenUpdatingEveryModuleChannel(kymaName, kymaNamespace, channel string) func() error {
 	return func() error {
-		return UpdateKymaModuleChannels(kymaName, channel)
+		return UpdateKymaModuleChannel(ctx, controlPlaneClient, kymaName, kymaNamespace, channel)
 	}
+}
+
+func createModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, channel string) error {
+	for _, module := range modules {
+		template := builder.NewModuleTemplateBuilder().
+			WithModuleName(module.Name).
+			WithChannel(module.Channel).
+			WithOCM(compdesc2.SchemaVersion).Build()
+
+		descriptor, err := template.GetDescriptor()
+		if err != nil {
+			return err
+		}
+		descriptor.Version = modifiedVersion
+		newDescriptor, err := compdesc.Encode(descriptor.ComponentDescriptor, compdesc.DefaultJSONLCodec)
+		if err != nil {
+			return err
+		}
+		template.Spec.Descriptor.Raw = newDescriptor
+		template.Spec.Channel = channel
+		template.Name = fmt.Sprintf("%s-%s", template.Name, channel)
+		if err := controlPlaneClient.Create(ctx, template); err != nil {
+			return err
+		}
+	}
+	return nil
 }

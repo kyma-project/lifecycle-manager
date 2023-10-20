@@ -12,22 +12,24 @@ import (
 var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular",
 		v1beta2.SyncStrategyLocalSecret)
+	module := NewTestModuleWithFixName(moduleName, v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(remoteNamespace)
 
 	InitEmptyKymaBeforeAll(kyma)
-	BeforeAll(func() {
-		Eventually(EnableModule).
-			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), moduleName, kyma.Spec.Channel, controlPlaneClient).
-			Should(Succeed())
-		Eventually(ModuleCRExists).
-			WithContext(ctx).
-			WithArguments(runtimeClient, moduleCR).
-			Should(Succeed())
-	})
 
-	Context("Given kyma deployed in KCP with Template Operator enabled", func() {
-		It("When adding finalizer to Sample CR", func() {
+	Context("Given kyma deployed in KCP", func() {
+		It("When enabling Template Operator", func() {
+			Eventually(EnableModule).
+				WithContext(ctx).
+				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
+				Should(Succeed())
+			Eventually(ModuleCRExists).
+				WithContext(ctx).
+				WithArguments(runtimeClient, moduleCR).
+				Should(Succeed())
+		})
+
+		It("And adding finalizer to Sample CR", func() {
 			Expect(AddFinalizerToModuleCR(ctx, runtimeClient, moduleCR, moduleCRFinalizer)).
 				Should(Succeed())
 		})
@@ -35,7 +37,7 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 		It("And disabling Template Operator", func() {
 			Eventually(DisableModule).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), moduleName, controlPlaneClient).
+				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, moduleName).
 				Should(Succeed())
 		})
 
@@ -58,7 +60,8 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 		})
 
 		It("Then KCP Kyma should still exist", func() {
-			Expect(KymaExists(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())).Should(BeTrue())
+			Expect(KymaExists(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())).
+				Should(Equal(ErrDeletionTimestampFound))
 		})
 
 		It("When SKR Cluster is removed", func() {
@@ -72,7 +75,7 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateError).
-				Should(BeTrue())
+				Should(Succeed())
 		})
 
 		It("When KCP Kyma secret is deleted", func() {
