@@ -84,14 +84,10 @@ func DeleteKyma(ctx context.Context,
 	clnt client.Client,
 	kyma *v1beta2.Kyma,
 ) error {
-	if err := SyncKyma(ctx, clnt, kyma); err != nil {
-		return fmt.Errorf("sync kyma %w", err)
+	err := clnt.Delete(ctx, kyma)
+	if client.IgnoreNotFound(err) != nil {
+		return fmt.Errorf("updating kyma failed %w", err)
 	}
-
-	if err := clnt.Delete(ctx, kyma); err != nil {
-		return fmt.Errorf("updating kyma %w", err)
-	}
-
 	return nil
 }
 

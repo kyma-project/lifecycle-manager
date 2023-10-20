@@ -70,9 +70,8 @@ func AddFinalizerToModuleCR(ctx context.Context, clnt client.Client, moduleCR *u
 		Namespace: moduleCR.GetNamespace(),
 		Name:      moduleCR.GetName(),
 	}, moduleCR)
-
-	if err = CRExists(moduleCR, err); err != nil {
-		return err
+	if err != nil {
+		return fmt.Errorf("failed to get moduleCR %w", err)
 	}
 
 	finalizers := moduleCR.GetFinalizers()
