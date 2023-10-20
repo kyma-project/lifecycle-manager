@@ -18,7 +18,7 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 	BeforeAll(func() {
 		Eventually(EnableModule).
 			WithContext(ctx).
-			WithArguments(defaultRemoteKymaName, remoteNamespace, moduleName, kyma.Spec.Channel, runtimeClient).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), moduleName, kyma.Spec.Channel, controlPlaneClient).
 			Should(Succeed())
 		Eventually(ModuleCRExists).
 			WithContext(ctx).
@@ -40,6 +40,10 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 		})
 
 		It("Then Module CR should be stuck in Deleting state", func() {
+			Eventually(ModuleCRIsInExpectedState).
+				WithContext(ctx).
+				WithArguments(runtimeClient, moduleCR, v1beta2.StateDeleting).
+				Should(BeTrue())
 			Consistently(ModuleCRIsInExpectedState).
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR, v1beta2.StateDeleting).

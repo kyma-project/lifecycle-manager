@@ -84,15 +84,11 @@ func DeleteKyma(ctx context.Context,
 	clnt client.Client,
 	kyma *v1beta2.Kyma,
 ) error {
-	if err := SyncKyma(ctx, clnt, kyma); err != nil {
-		return fmt.Errorf("sync kyma %w", err)
-	}
-
 	propagation := v1.DeletePropagationForeground
-	if err := clnt.Delete(ctx, kyma, &client.DeleteOptions{PropagationPolicy: &propagation}); err != nil {
-		return fmt.Errorf("updating kyma %w", err)
+	err := clnt.Delete(ctx, kyma, &client.DeleteOptions{PropagationPolicy: &propagation})
+	if client.IgnoreNotFound(err) != nil {
+		return fmt.Errorf("updating kyma failed %w", err)
 	}
-
 	return nil
 }
 

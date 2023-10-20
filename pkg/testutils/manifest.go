@@ -121,3 +121,38 @@ func GetManifestResource(ctx context.Context,
 
 	return moduleInCluster.Spec.Resource, nil
 }
+
+func AddSkipLabelToManifest(
+	ctx context.Context,
+	clnt client.Client,
+	kymaName,
+	kymaNamespace,
+	moduleName string,
+) error {
+	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	if err != nil {
+		return fmt.Errorf("failed to get manifest, %w", err)
+	}
+
+	manifest.Labels[declarative.SkipReconcileLabel] = "true"
+	err = clnt.Update(ctx, manifest)
+	if err != nil {
+		return fmt.Errorf("failed to update manifest, %w", err)
+	}
+
+	return nil
+}
+
+func SkipLabelExistsInManifest(ctx context.Context,
+	clnt client.Client,
+	kymaName,
+	kymaNamespace,
+	moduleName string,
+) bool {
+	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	if err != nil {
+		return false
+	}
+
+	return manifest.Labels[declarative.SkipReconcileLabel] == "true"
+}

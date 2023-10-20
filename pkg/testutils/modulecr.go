@@ -8,6 +8,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
+	"github.com/onsi/ginkgo/v2/dsl/core"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -71,9 +72,8 @@ func AddFinalizerToModuleCR(ctx context.Context, clnt client.Client, moduleCR *u
 		Namespace: moduleCR.GetNamespace(),
 		Name:      moduleCR.GetName(),
 	}, moduleCR)
-
-	if err = CRExists(moduleCR, err); err != nil {
-		return err
+	if err != nil {
+		return fmt.Errorf("failed to get moduleCR %w", err)
 	}
 
 	finalizers := moduleCR.GetFinalizers()
@@ -121,7 +121,9 @@ func ModuleCRIsInExpectedState(ctx context.Context,
 		return false
 	}
 
+	core.GinkgoWriter.Println("moduleCR.Object ", moduleCR.Object)
 	state, _, err := unstructured.NestedString(moduleCR.Object, "status.state")
+	core.GinkgoWriter.Println("state ", state)
 	if err != nil {
 		return false
 	}
