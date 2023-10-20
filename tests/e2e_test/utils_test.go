@@ -50,6 +50,7 @@ const (
 	interval              = 1 * time.Second
 	remoteNamespace       = "kyma-system"
 	controlPlaneNamespace = "kcp-system"
+	moduleName            = "template-operator"
 )
 
 func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
@@ -241,21 +242,10 @@ func SetFinalizer(name, namespace, group, version, kind string, finalizers []str
 }
 
 func GetKymaStateMetricCount(ctx context.Context, kymaName, state string) (int, error) {
-	clnt := &http.Client{}
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost:9081/metrics", nil)
+	bodyString, err := getMetricsBody(ctx)
 	if err != nil {
 		return 0, err
 	}
-	response, err := clnt.Do(request)
-	if err != nil {
-		return 0, err
-	}
-	defer response.Body.Close()
-	bodyBytes, err := io.ReadAll(response.Body)
-	if err != nil {
-		return 0, err
-	}
-	bodyString := string(bodyBytes)
 
 	re := regexp.MustCompile(
 		`lifecycle_mgr_kyma_state{instance_id="[^"]+",kyma_name="` + kymaName + `",shoot="[^"]+",state="` + state +
@@ -379,4 +369,57 @@ func CheckSampleCRIsInState(ctx context.Context, name, namespace string, clnt cl
 		[]string{"status", "state"},
 		clnt,
 		expectedState)
+}
+
+func getMetricsBody(ctx context.Context) (string, error) {
+	clnt := &http.Client{}
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost:9081/metrics", nil)
+	if err != nil {
+		return "", err
+	}
+	response, err := clnt.Do(request)
+	if err != nil {
+		return "", err
+	}
+	defer response.Body.Close()
+	bodyBytes, err := io.ReadAll(response.Body)
+	if err != nil {
+		return "", err
+	}
+	bodyString := string(bodyBytes)
+
+	return bodyString, nil
+}
+
+func PurgeMetricsAreAsExpected(ctx context.Context,
+	timeShouldBeMoreThan float64,
+	expectedRequests int,
+) bool {
+	correctCount := false
+	correctTime := false
+	bodyString, err := getMetricsBody(ctx)
+	if err != nil {
+		return false
+	}
+	reg := regexp.MustCompile(`lifecycle_mgr_purgectrl_time ([0-9]*\.?[0-9]+)`)
+	match := reg.FindStringSubmatch(bodyString)
+
+	if len(match) > 1 {
+		duration, err := strconv.ParseFloat(match[1], 64)
+		if err == nil && duration > timeShouldBeMoreThan {
+			correctTime = true
+		}
+	}
+
+	reg = regexp.MustCompile(`lifecycle_mgr_purgectrl_requests_total (\d+)`)
+	match = reg.FindStringSubmatch(bodyString)
+
+	if len(match) > 1 {
+		count, err := strconv.Atoi(match[1])
+		if err == nil || count == expectedRequests {
+			correctCount = true
+		}
+	}
+
+	return correctTime && correctCount
 }

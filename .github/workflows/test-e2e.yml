@@ -40,7 +40,7 @@ jobs:
   e2e-integration:
     strategy:
       matrix:
-        e2e-test: ["watcher-enqueue", "kyma-deletion", "module-status-propagation", "kyma-metrics", "module-without-default-cr", "non-blocking-deletion"]
+        e2e-test: ["watcher-enqueue", "kyma-deletion", "module-status-propagation", "kyma-metrics", "module-without-default-cr", "non-blocking-deletion", "purge-controller", "purge-metrics"]
     name: "E2E"
     needs: [wait-for-img]
     runs-on: ubuntu-latest
@@ -120,8 +120,23 @@ jobs:
         run: |
           echo "KLM_VERSION_TAG=PR-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
           echo "KLM_IMAGE_REPO=dev" >> $GITHUB_ENV
+      - name: Patch purge finalizer flags
+        if: ${{ matrix.e2e-test == 'purge-controller' ||  matrix.e2e-test == 'purge-metrics'}}
+        working-directory: lifecycle-manager
+        run: |
+          pushd config/watcher_local_test
+          echo \
+          "- op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --enable-purge-finalizer=true
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --purge-finalizer-timeout=5s" >> purge_finalizer.yaml
+          cat purge_finalizer.yaml
+          kustomize edit add patch --path purge_finalizer.yaml --kind Deployment
+          popd
       - name: Deploy LM local testing kustomize
-        working-directory: ./lifecycle-manager
+        working-directory: lifecycle-manager
         run: |
           maxRetry=5
           for retry in $(seq 1 $maxRetry)
@@ -139,13 +154,13 @@ jobs:
           done
       - name: Checkout template-operator
         uses: actions/checkout@v3
-        if: ${{ matrix.e2e-test == 'module-status-propagation' || matrix.e2e-test == 'module-without-default-cr' || matrix.e2e-test == 'non-blocking-deletion' }}
+        if: ${{ matrix.e2e-test == 'module-status-propagation' ||  matrix.e2e-test == 'module-without-default-cr' ||  matrix.e2e-test == 'non-blocking-deletion' ||  matrix.e2e-test == 'purge-controller' ||  matrix.e2e-test == 'purge-metrics' }}
         with:
           repository: kyma-project/template-operator
           path: template-operator
       - name: Create Template Operator Module
-        working-directory: ./template-operator
-        if: ${{ matrix.e2e-test == 'non-blocking-deletion' }}
+        working-directory: template-operator
+        if: ${{ matrix.e2e-test == 'non-blocking-deletion' ||  matrix.e2e-test == 'purge-controller' ||  matrix.e2e-test == 'purge-metrics'}}
         run: |
           make build-manifests
           kyma alpha create module --module-config-file ./module-config.yaml --path . --registry k3d-kcp-registry:5111 --insecure
@@ -154,7 +169,7 @@ jobs:
           kubectl get crds
           kubectl apply -f template.yaml
       - name: Create Template Operator Module with final state `Warning`
-        working-directory: ./template-operator
+        working-directory: template-operator
         if: ${{ matrix.e2e-test == 'module-status-propagation'}}
         run: |
           pushd config/default
@@ -170,7 +185,7 @@ jobs:
           kubectl get crds
           kubectl apply -f template.yaml
       - name: Create Template Operator Module without default CR
-        working-directory: ./template-operator
+        working-directory: template-operator
         if: ${{ matrix.e2e-test == 'module-without-default-cr' }}
         run: |
           make build-manifests
@@ -191,11 +206,11 @@ jobs:
           kubectl get crds
           kubectl apply -f template.yaml
       - name: Expose Metrics Endpoint
-        working-directory: ./lifecycle-manager
-        if: ${{ matrix.e2e-test == 'kyma-metrics' }}
+        working-directory: lifecycle-manager
+        if: ${{ matrix.e2e-test == 'kyma-metrics' || matrix.e2e-test == 'purge-metrics' }}
         run: |
           kubectl patch svc klm-metrics-service -p '{"spec": {"type": "LoadBalancer"}}' -n kcp-system
       - name: Run ${{ matrix.e2e-test }}
-        working-directory: ./lifecycle-manager
+        working-directory: lifecycle-manager
         run: |
           make -C tests/e2e_test ${{ matrix.e2e-test }}

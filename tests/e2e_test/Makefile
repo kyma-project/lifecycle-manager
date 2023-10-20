@@ -84,5 +84,11 @@ module-status-propagation:
 module-without-default-cr:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Without Default CR"
 
-non-blocking-deletion: ## Runs the Status Propagation E2E Test
+non-blocking-deletion:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Non Blocking Kyma Module Deletion"
+
+purge-controller:
+	go test  -timeout 20m -ginkgo.v -ginkgo.focus "Purge Controller"
+
+purge-metrics:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Purge Metrics"
