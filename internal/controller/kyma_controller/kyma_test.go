@@ -238,12 +238,8 @@ var _ = Describe("Kyma enable multiple modules", Ordered, func() {
 
 	It("Disabled module should be removed from status.modules", func() {
 		Eventually(func() error {
-			createdKyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
-			if err != nil {
-				return err
-			}
-			modulesStatus := createdKyma.Status.Modules
-			if len(modulesStatus) != 1 {
+			moduleStatus := GetKymaModulesStatus(kyma.GetName())
+			if len(moduleStatus) != 1 {
 				return ErrWrongModulesStatus
 			}
 

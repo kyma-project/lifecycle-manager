@@ -294,6 +294,34 @@ var _ = Describe("Update Module Template Version", Ordered, func() {
 	})
 })
 
+var _ = Describe("Test Reconciliation Skip label for Manifest", Ordered, func() {
+	kyma := NewTestKyma("kyma")
+	module := NewTestModule("skip-reconciliation-module", v1beta2.DefaultChannel)
+	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
+
+	RegisterDefaultLifecycleForKyma(kyma)
+	It("Given a Manifest CR exists", func() {
+		Eventually(ManifestExists, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+			Should(Succeed())
+	})
+
+	It("When a skip label is added to Manifest", func() {
+		Eventually(AddSkipLabelToManifest, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+			Should(Succeed())
+	})
+
+	It("Then Skip label always exists in Manifest CR", func() {
+		Consistently(SkipLabelExistsInManifest, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+			Should(BeTrue())
+	})
+})
+
 func findRawManifestResource(reslist []compdesc.Resource) *compdesc.Resource {
 	for _, r := range reslist {
 		if r.Name == v1beta2.RawManifestLayerName {

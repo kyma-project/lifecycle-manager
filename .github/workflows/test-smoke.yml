@@ -73,6 +73,12 @@ jobs:
       KUSTOMIZE_VERSION: 4.5.7
       ISTIO_VERSION: 1.17.1
     steps:
+      - name: Install prerequisites
+        run: |
+          curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+          echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+          sudo apt update -y
+          sudo apt install kubectl -y
       - name: Checkout Lifecycle-Manager
         uses: actions/checkout@v3
       - name: Setup kustomize
@@ -105,10 +111,6 @@ jobs:
       - name: Setup Control-Plane requirements
         if: ${{ matrix.target  == 'control-plane' }}
         run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          chmod +x kubectl
-          mv kubectl /usr/local/bin
-          
           kubectl label node k3d-kyma-server-0 iam.gke.io/gke-metadata-server-enabled=true
 
           curl -L https://istio.io/downloadIstio | TARGET_ARCH=x86_64 sh -
@@ -152,11 +154,9 @@ jobs:
           kyma alpha enable module template-operator -c regular -n kyma-system -k default-kyma
       - run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
       - name: Set up Go for ${{ github.repository }}
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
-          cache: true
-          go-version-file: 'go.mod'
-          cache-dependency-path: 'go.sum'
+          go-version: '^1.21'
       - name: Run Smoke Tests for ${{ matrix.target }}
         run: go test --tags=smoke tests/smoke_test/smoke_test.go -v -feature="${{ matrix.target }}"
       - name: Run Smoke Tests for module upgrade
