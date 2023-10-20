@@ -136,7 +136,7 @@ func TestHandleState(t *testing.T) {
 				},
 			},
 			v2.StateInfo{State: v2.StateError},
-			true,
+			false,
 		},
 		{
 			"custom module with additional StateCheck, expected mapped to correct state",

@@ -23,7 +23,7 @@ spec:
         - name: security.kyma-project.io/scan
           value: enabled
           version: v1
-      name: kyma-project.io/template-operator
+      name: kyma-project.io/module/template-operator
       provider: '{"name":"kyma-project.io","labels":[{"name":"kyma-project.io/built-by","value":"cli","version":"v1"}]}'
       repositoryContexts:
         - baseUrl: europe-west3-docker.pkg.dev/sap-kyma-jellyfish-dev/template-operator

@@ -97,8 +97,8 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 		})
 
 		It("Given the Kyma Module is under deletion", func() {
-			By("When the Module channel is updated")
-			Eventually(ChangeModuleChannel).
+			By("When the Module is re-enabled in different channel")
+			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", "fast", runtimeClient).
 				Should(Succeed())
@@ -117,23 +117,10 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 				WithContext(ctx).
 				WithArguments("sample-yaml", "kyma-system", runtimeClient, "Deleting").
 				Should(Succeed())
-		})
-
-		It("Given the Kyma Module is under deletion", func() {
-			By("When the Module is re-enabled")
-			Eventually(EnableModule).
-				WithContext(ctx).
-				WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", "fast", runtimeClient).
-				Should(Succeed())
-			By("Then the Module Manifest CR is still in a \"Deleting\" State")
+			By("And the Module Manifest CR is still in a \"Deleting\" State")
 			Consistently(CheckManifestIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), "template-operator", controlPlaneClient, v2.StateDeleting).
-				Should(Succeed())
-			By("And the Module Default CR is in a \"Deleting\" State")
-			Consistently(CheckSampleCRIsInState).
-				WithContext(ctx).
-				WithArguments("sample-yaml", "kyma-system", runtimeClient, "Deleting").
 				Should(Succeed())
 		})
 

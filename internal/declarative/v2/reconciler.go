@@ -154,9 +154,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj)
 	}
 
-	if !obj.GetDeletionTimestamp().IsZero() {
-		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
-	}
 	if err := r.syncResources(ctx, clnt, obj, target); err != nil {
 		return r.ssaStatus(ctx, obj)
 	}
@@ -166,6 +163,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if requireUpdateSyncedOCIRefAnnotation(obj, spec.OCIRef) {
 		updateSyncedOCIRefAnnotation(obj, spec.OCIRef)
 		return ctrl.Result{Requeue: true}, r.Update(ctx, obj) //nolint:wrapcheck
+	}
+
+	if !obj.GetDeletionTimestamp().IsZero() {
+		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
 	}
 	return r.CtrlOnSuccess, nil
 }
@@ -200,11 +201,6 @@ func (r *Reconciler) partialObjectMetadata(obj Object) *metav1.PartialObjectMeta
 
 func (r *Reconciler) initialize(obj Object) error {
 	status := obj.GetStatus()
-
-	if !obj.GetDeletionTimestamp().IsZero() && obj.GetStatus().State != StateDeleting {
-		obj.SetStatus(status.WithState(StateDeleting).WithErr(ErrDeletionTimestampSetButNotInDeletingState))
-		return ErrDeletionTimestampSetButNotInDeletingState
-	}
 
 	for _, condition := range []metav1.Condition{
 		newResourcesCondition(obj),
@@ -290,7 +286,9 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 	status.Synced = newSynced
 
 	if hasDiff(oldSynced, newSynced) {
-		obj.SetStatus(status.WithState(StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
+		if obj.GetDeletionTimestamp().IsZero() { // TODO double check if correctly working
+			obj.SetStatus(status.WithState(StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
+		}
 		return ErrWarningResourceSyncStateDiff
 	}
 
@@ -345,11 +343,6 @@ func (r *Reconciler) checkTargetReadiness(
 		r.Event(manifest, "Normal", "ResourceReadyCheck", waitingMsg)
 		manifest.SetStatus(status.WithState(StateProcessing).WithOperation(waitingMsg))
 		return ErrInstallationConditionRequiresUpdate
-	}
-
-	if crStateInfo.State != StateReady && crStateInfo.State != StateWarning {
-		// should not happen, if happens, skip status update
-		return nil
 	}
 
 	installationCondition := newInstallationCondition(manifest)
