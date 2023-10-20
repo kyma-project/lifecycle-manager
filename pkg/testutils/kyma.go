@@ -80,6 +80,30 @@ func DeleteKymaByForceRemovePurgeFinalizer(ctx context.Context, clnt client.Clie
 	return DeleteCR(ctx, clnt, kyma)
 }
 
+func DeleteKyma(ctx context.Context,
+	clnt client.Client,
+	kyma *v1beta2.Kyma,
+) error {
+	err := clnt.Delete(ctx, kyma)
+	if client.IgnoreNotFound(err) != nil {
+		return fmt.Errorf("updating kyma failed %w", err)
+	}
+	return nil
+}
+
+func KymaHasDeletionTimestamp(ctx context.Context,
+	clnt client.Client,
+	kymaName string,
+	kymaNamespace string,
+) bool {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return false
+	}
+
+	return !kyma.GetDeletionTimestamp().IsZero()
+}
+
 func DeleteModule(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma, moduleName string) error {
 	manifest, err := GetManifest(ctx, clnt,
 		kyma.GetName(), kyma.GetNamespace(), moduleName)

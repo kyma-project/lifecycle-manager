@@ -11,7 +11,6 @@ import (
 
 var _ = Describe("Module Without Default CR", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular", v1beta2.SyncStrategyLocalSecret)
-	moduleName := "template-operator"
 
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
