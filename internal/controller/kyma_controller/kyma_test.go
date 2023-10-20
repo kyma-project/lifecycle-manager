@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	. "github.com/onsi/ginkgo/v2"
@@ -238,8 +239,12 @@ var _ = Describe("Kyma enable multiple modules", Ordered, func() {
 
 	It("Disabled module should be removed from status.modules", func() {
 		Eventually(func() error {
-			moduleStatus := GetKymaModulesStatus(kyma.GetName())
-			if len(moduleStatus) != 1 {
+			kyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+			if err != nil {
+				return err
+			}
+			modulesStatus := kyma.Status.Modules
+			if len(modulesStatus) != 1 {
 				return ErrWrongModulesStatus
 			}
 
@@ -299,7 +304,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 		By("Add skip-reconciliation label to Kyma CR")
 		Eventually(UpdateKymaLabel, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), v1beta2.SkipReconcileLabel, "true").
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), v2.SkipReconcileLabel, "true").
 			Should(Succeed())
 	})
 
@@ -319,7 +324,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	It("Stop Kyma skip Reconciliation so that it can be deleted", func() {
 		Eventually(UpdateKymaLabel, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), v1beta2.SkipReconcileLabel, "false").
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), v2.SkipReconcileLabel, "false").
 			Should(Succeed())
 	})
 })
