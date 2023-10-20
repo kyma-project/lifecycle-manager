@@ -3,6 +3,7 @@ package v2
 import (
 	"errors"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"k8s.io/apimachinery/pkg/api/meta"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -14,12 +15,12 @@ type ResourceInfoConverter interface {
 }
 
 type ResourceToInfoConverter interface {
-	ResourcesToInfos([]Resource) ([]*resource.Info, error)
+	ResourcesToInfos([]shared.Resource) ([]*resource.Info, error)
 	UnstructuredToInfos([]*unstructured.Unstructured) ([]*resource.Info, error)
 }
 
 type InfoToResourceConverter interface {
-	InfosToResources([]*resource.Info) []Resource
+	InfosToResources([]*resource.Info) []shared.Resource
 }
 
 func NewResourceToInfoConverter(
@@ -39,8 +40,8 @@ func NewInfoToResourceConverter() *DefaultInfoToResourceConverter {
 
 type DefaultInfoToResourceConverter struct{}
 
-func (c *DefaultInfoToResourceConverter) InfosToResources(infos []*resource.Info) []Resource {
-	resources := make([]Resource, 0, len(infos))
+func (c *DefaultInfoToResourceConverter) InfosToResources(infos []*resource.Info) []shared.Resource {
+	resources := make([]shared.Resource, 0, len(infos))
 	for _, info := range infos {
 		var gvk v1.GroupVersionKind
 		if info.Mapping != nil {
@@ -49,7 +50,7 @@ func (c *DefaultInfoToResourceConverter) InfosToResources(infos []*resource.Info
 			gvk = v1.GroupVersionKind(info.Object.GetObjectKind().GroupVersionKind())
 		}
 		resources = append(
-			resources, Resource{
+			resources, shared.Resource{
 				Name:             info.Name,
 				Namespace:        info.Namespace,
 				GroupVersionKind: gvk,
@@ -59,7 +60,7 @@ func (c *DefaultInfoToResourceConverter) InfosToResources(infos []*resource.Info
 	return resources
 }
 
-func (c *DefaultResourceToInfoConverter) ResourcesToInfos(resources []Resource) ([]*resource.Info, error) {
+func (c *DefaultResourceToInfoConverter) ResourcesToInfos(resources []shared.Resource) ([]*resource.Info, error) {
 	current := make([]*resource.Info, 0, len(resources))
 	errs := make([]error, 0, len(resources))
 	for _, res := range resources {

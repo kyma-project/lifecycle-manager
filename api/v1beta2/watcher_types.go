@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
+	. "github.com/kyma-project/lifecycle-manager/api/shared"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

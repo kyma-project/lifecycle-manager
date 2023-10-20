@@ -3,7 +3,7 @@ package queue
 import (
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
 type RequeueIntervals struct {
@@ -12,17 +12,17 @@ type RequeueIntervals struct {
 	Error   time.Duration
 }
 
-func DetermineRequeueInterval(state v1beta2.State, intervals RequeueIntervals) time.Duration {
+func DetermineRequeueInterval(state shared.State, intervals RequeueIntervals) time.Duration {
 	switch state {
-	case v1beta2.StateError:
+	case shared.StateError:
 		return intervals.Error
-	case v1beta2.StateDeleting:
+	case shared.StateDeleting:
 		fallthrough
-	case v1beta2.StateProcessing:
+	case shared.StateProcessing:
 		return intervals.Busy
-	case v1beta2.StateReady:
+	case shared.StateReady:
 		fallthrough
-	case v1beta2.StateWarning:
+	case shared.StateWarning:
 		fallthrough
 	default:
 		return intervals.Success

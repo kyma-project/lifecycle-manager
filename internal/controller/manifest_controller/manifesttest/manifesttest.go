@@ -12,8 +12,8 @@ import (
 	"os"
 
 	"github.com/google/go-containerregistry/pkg/v1/partial"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -157,7 +157,7 @@ func InstallManifest(manifest *v1beta2.Manifest, installSpecByte []byte, enableR
 	return nil
 }
 
-func ExpectManifestStateIn(state v2.State) func(manifestName string) error {
+func ExpectManifestStateIn(state shared.State) func(manifestName string) error {
 	return func(manifestName string) error {
 		status, err := GetManifestStatus(manifestName)
 		if err != nil {
@@ -193,12 +193,12 @@ func ExpectOCISyncRefAnnotationExists(mustExist bool) func(manifestName string) 
 	}
 }
 
-func GetManifestStatus(manifestName string) (v2.Status, error) {
+func GetManifestStatus(manifestName string) (shared.Status, error) {
 	manifest, err := GetManifest(manifestName)
 	if err != nil {
-		return v2.Status{}, err
+		return shared.Status{}, err
 	}
-	return v2.Status(manifest.Status), nil
+	return shared.Status(manifest.Status), nil
 }
 
 func GetManifest(manifestName string) (*v1beta2.Manifest, error) {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	. "github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -213,7 +214,7 @@ func GetKyma(ctx context.Context, clnt client.Client, name, namespace string) (*
 	return kymaInCluster, nil
 }
 
-func IsKymaInState(ctx context.Context, name, namespace string, clnt client.Client, state v1beta2.State) error {
+func IsKymaInState(ctx context.Context, name, namespace string, clnt client.Client, state State) error {
 	return CRIsInState(ctx,
 		v1beta2.GroupVersion.Group, v1beta2.GroupVersion.Version, string(v1beta2.KymaKind),
 		name, namespace,
@@ -245,7 +246,7 @@ func ContainsKymaManagerField(
 
 func CheckModuleState(ctx context.Context, clnt client.Client,
 	kymaName, kymaNamespace, moduleName string,
-	state v1beta2.State,
+	state State,
 ) error {
 	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
 	if err != nil {

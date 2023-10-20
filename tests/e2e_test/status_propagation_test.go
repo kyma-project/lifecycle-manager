@@ -3,8 +3,8 @@ package e2e_test
 import (
 	"context"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -49,14 +49,14 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 		It("Then module state of KCP Kyma in Warning", func() {
 			Eventually(CheckModuleState).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name, v1beta2.StateWarning).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name, shared.StateWarning).
 				Should(Succeed())
 		})
 
 		It("Then state of KCP kyma in Warning", func() {
 			Eventually(IsKymaInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateWarning).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateWarning).
 				Should(Succeed())
 		})
 	})
@@ -76,7 +76,7 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 		By("Then module state of KCP in Ready")
 		Eventually(IsKymaInState).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 			Should(Succeed())
 	})
 
@@ -95,7 +95,7 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 		By("Then state of KCP kyma in Warning")
 		Eventually(IsKymaInState).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateWarning).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateWarning).
 			Should(Succeed())
 	})
 
@@ -121,12 +121,12 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 		By("Then the KCP Kyma is in a \"Warning\" State")
 		Eventually(IsKymaInState).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateWarning).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateWarning).
 			Should(Succeed())
 		By("And the Module Manifest CR is in a \"Warning\" State")
 		Eventually(CheckManifestIsInState).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient, v2.StateWarning).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient, shared.StateWarning).
 			Should(Succeed())
 	})
 
@@ -153,7 +153,7 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 		By("Then module state of KCP in Ready")
 		Eventually(IsKymaInState).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 			Should(Succeed())
 	})
 })

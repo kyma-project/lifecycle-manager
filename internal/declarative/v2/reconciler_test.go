@@ -4,6 +4,7 @@ package v2
 import (
 	"testing"
 
+	. "github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"

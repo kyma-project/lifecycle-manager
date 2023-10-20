@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	. "github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -42,7 +43,7 @@ func kymaIsInExpectedStateWithUpdatedChannel(k8sClient client.Client,
 	kymaName string,
 	kymaNamespace string,
 	expectedChannel string,
-	expectedState v1beta2.State,
+	expectedState State,
 ) error {
 	kyma := &v1beta2.Kyma{}
 	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
@@ -62,7 +63,7 @@ func kymaIsInExpectedStateWithLabelUpdated(k8sClient client.Client,
 	kymaNamespace string,
 	expectedLabelKey string,
 	expectedLabelValue string,
-	expectedState v1beta2.State,
+	expectedState State,
 ) error {
 	kyma := &v1beta2.Kyma{}
 	if err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
@@ -77,7 +78,7 @@ func kymaIsInExpectedStateWithLabelUpdated(k8sClient client.Client,
 	return validateKymaStatus(kyma.Status.State, expectedState)
 }
 
-func validateKymaStatus(kymaState, expectedState v1beta2.State) error {
+func validateKymaStatus(kymaState, expectedState State) error {
 	if kymaState != expectedState {
 		return fmt.Errorf("%w: expected state: %s, but found: %s",
 			errKymaNotInExpectedState, expectedState, kymaState)

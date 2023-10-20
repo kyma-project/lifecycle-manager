@@ -7,6 +7,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 
+	. "github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
@@ -163,7 +164,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		By("KCP Manifest CR becomes ready")
 		Eventually(UpdateManifestState, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), moduleInSKR.Name, v1beta2.StateReady).
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), moduleInSKR.Name, StateReady).
 			Should(Succeed())
 
 		By("ModuleTemplate descriptor should be saved in cache")

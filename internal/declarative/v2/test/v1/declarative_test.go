@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	. "github.com/kyma-project/lifecycle-manager/api/shared"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/internal"

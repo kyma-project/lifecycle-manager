@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	. "github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
@@ -273,8 +274,8 @@ func updateRemoteKymaStatusSubresource(k8sClient client.Client, kymaNamespace st
 		return fmt.Errorf("failed to get Kyma %w", err)
 	}
 
-	kyma.Status.State = v1beta2.StateWarning
-	kyma.Status.LastOperation = v1beta2.LastOperation{
+	kyma.Status.State = StateWarning
+	kyma.Status.LastOperation = LastOperation{
 		Operation:      "Updated Kyma Status subresource for test",
 		LastUpdateTime: metav1.NewTime(time.Now()),
 	}

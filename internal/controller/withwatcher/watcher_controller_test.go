@@ -14,6 +14,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	. "github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
@@ -145,7 +146,7 @@ func watcherCRIsReady(watcherName string) error {
 	if err != nil {
 		return err
 	}
-	if watcher.Status.State != v1beta2.StateReady {
+	if watcher.Status.State != StateReady {
 		return errWatcherNotReady
 	}
 	return nil

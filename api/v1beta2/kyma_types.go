@@ -19,7 +19,7 @@ package v1beta2
 import (
 	"strings"
 
-	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	. "github.com/kyma-project/lifecycle-manager/api/shared"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -142,11 +142,6 @@ type KymaStatus struct {
 	LastOperation `json:"lastOperation,omitempty"`
 }
 
-type LastOperation struct {
-	Operation      string      `json:"operation"`
-	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty"`
-}
-
 type ModuleStatus struct {
 	// Name defines the name of the Module in the Spec that the status is used for.
 	// It can be any kind of Reference format supported by Module.Name.
@@ -218,32 +213,6 @@ type PartialMeta struct {
 }
 
 const DefaultChannel = "regular"
-
-// +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error;"";Warning
-type State string
-
-// Valid States.
-const (
-	// StateReady signifies specified resource is ready and has been installed successfully.
-	StateReady State = "Ready"
-
-	// StateProcessing signifies specified resource is reconciling and is in the process of installation.
-	// Processing can also signal that the Installation previously encountered an error and is now recovering.
-	StateProcessing State = "Processing"
-
-	// StateError signifies an error for specified resource.
-	// This signifies that the Installation process encountered an error.
-	// Contrary to Processing, it can be expected that this state should change on the next retry.
-	StateError State = "Error"
-
-	// StateDeleting signifies specified resource is being deleted. This is the state that is used when a deletionTimestamp
-	// was detected and Finalizers are picked up.
-	StateDeleting State = "Deleting"
-
-	// StateWarning signifies specified resource has been deployed, but cannot be used due to misconfiguration,
-	// usually it means that user interaction is required.
-	StateWarning State = "Warning"
-)
 
 func AllKymaStates() []State {
 	return []State{StateReady, StateProcessing, StateError, StateDeleting, StateWarning}
@@ -417,7 +386,7 @@ func (kyma *Kyma) HasSyncLabelEnabled() bool {
 }
 
 func (kyma *Kyma) SkipReconciliation() bool {
-	skip, found := kyma.Labels[v2.SkipReconcileLabel]
+	skip, found := kyma.Labels[SkipReconcileLabel]
 	return found && strings.ToLower(skip) == EnableLabelValue
 }
 

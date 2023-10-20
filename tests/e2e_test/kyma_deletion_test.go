@@ -3,6 +3,7 @@ package e2e_test
 import (
 	"os/exec"
 
+	. "github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
@@ -31,7 +32,7 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 		By("Kyma should be in Error state")
 		Eventually(IsKymaInState).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateError).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, StateError).
 			Should(Succeed())
 	})
 
@@ -61,7 +62,7 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 		By("Kyma should be in Ready state")
 		Eventually(IsKymaInState).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, StateReady).
 			Should(Succeed())
 	})
 

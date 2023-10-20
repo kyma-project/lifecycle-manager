@@ -6,6 +6,7 @@ import (
 
 	ctrlMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
+	. "github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
 	listenerMetrics "github.com/kyma-project/runtime-watcher/listener/pkg/metrics"
@@ -99,7 +100,7 @@ func RemoveModuleStateMetrics(kyma *v1beta2.Kyma, moduleName string) error {
 	return nil
 }
 
-func setKymaStateGauge(newState v1beta2.State, kymaName, shootID, instanceID string) {
+func setKymaStateGauge(newState State, kymaName, shootID, instanceID string) {
 	states := v1beta2.AllKymaStates()
 	for _, state := range states {
 		newValue := calcStateValue(state, newState)
@@ -112,7 +113,7 @@ func setKymaStateGauge(newState v1beta2.State, kymaName, shootID, instanceID str
 	}
 }
 
-func setModuleStateGauge(newState v1beta2.State, moduleName, kymaName, shootID, instanceID string) {
+func setModuleStateGauge(newState State, moduleName, kymaName, shootID, instanceID string) {
 	states := v1beta2.AllKymaStates()
 	for _, state := range states {
 		newValue := calcStateValue(state, newState)
@@ -126,7 +127,7 @@ func setModuleStateGauge(newState v1beta2.State, moduleName, kymaName, shootID, 
 	}
 }
 
-func calcStateValue(state, newState v1beta2.State) float64 {
+func calcStateValue(state, newState State) float64 {
 	if state == newState {
 		return 1
 	}

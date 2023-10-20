@@ -17,7 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	. "github.com/kyma-project/lifecycle-manager/api/shared"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -91,7 +91,7 @@ const (
 )
 
 // ManifestStatus defines the observed state of Manifest.
-type ManifestStatus declarative.Status
+type ManifestStatus Status
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
@@ -107,11 +107,11 @@ type Manifest struct {
 	Status ManifestStatus `json:"status,omitempty"`
 }
 
-func (manifest *Manifest) GetStatus() declarative.Status {
-	return declarative.Status(manifest.Status)
+func (manifest *Manifest) GetStatus() Status {
+	return Status(manifest.Status)
 }
 
-func (manifest *Manifest) SetStatus(status declarative.Status) {
+func (manifest *Manifest) SetStatus(status Status) {
 	manifest.Status = ManifestStatus(status)
 }
 

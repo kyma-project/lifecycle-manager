@@ -5,14 +5,15 @@ import (
 	"context"
 	"testing"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 type testObj struct{ *unstructured.Unstructured }
 
-func (t testObj) GetStatus() Status { panic("status not supported in test object") }
-func (t testObj) SetStatus(Status)  { panic("status not supported in test object") }
+func (t testObj) GetStatus() shared.Status { panic("status not supported in test object") }
+func (t testObj) SetStatus(shared.Status)  { panic("status not supported in test object") }
 
 //nolint:funlen
 func Test_defaultTransforms(t *testing.T) {

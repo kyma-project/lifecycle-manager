@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 
+	. "github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	commonErrors "github.com/kyma-project/lifecycle-manager/pkg/common"
@@ -164,7 +165,7 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(
 func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStatus) v1beta2.ModuleStatus {
 	if errors.Is(module.Template.Err, channel.ErrTemplateUpdateNotAllowed) {
 		newModuleStatus := existStatus.DeepCopy()
-		newModuleStatus.State = v1beta2.StateWarning
+		newModuleStatus.State = StateWarning
 		newModuleStatus.Message = module.Template.Err.Error()
 		return *newModuleStatus
 	}
@@ -173,7 +174,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 			Name:    module.ModuleName,
 			Channel: module.Template.DesiredChannel,
 			FQDN:    module.FQDN,
-			State:   v1beta2.StateError,
+			State:   StateError,
 			Message: module.Template.Err.Error(),
 		}
 	}
@@ -184,7 +185,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 			Name:    module.ModuleName,
 			Channel: module.Template.DesiredChannel,
 			FQDN:    module.FQDN,
-			State:   v1beta2.StateError,
+			State:   StateError,
 			Message: ErrManifestConversion.Error(),
 		}
 	}
@@ -208,7 +209,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 	return v1beta2.ModuleStatus{
 		Name:    module.ModuleName,
 		FQDN:    module.FQDN,
-		State:   v1beta2.State(manifestObject.Status.State),
+		State:   State(manifestObject.Status.State),
 		Channel: module.Template.Spec.Channel,
 		Version: module.Version,
 		Manifest: &v1beta2.TrackingObject{
@@ -223,13 +224,13 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 	}
 }
 
-func stateFromManifest(obj client.Object) v1beta2.State {
+func stateFromManifest(obj client.Object) State {
 	switch manifest := obj.(type) {
 	case *v1beta2.Manifest:
-		return v1beta2.State(manifest.Status.State)
+		return State(manifest.Status.State)
 	case *unstructured.Unstructured:
 		state, _, _ := unstructured.NestedString(manifest.Object, "status", "state")
-		return v1beta2.State(state)
+		return State(state)
 	default:
 		return ""
 	}

@@ -1,8 +1,8 @@
 package e2e_test
 
 import (
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -26,12 +26,12 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 			By("Then the Kyma CR is in a \"Ready\" State on the KCP cluster ")
 			Eventually(IsKymaInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 				Should(Succeed())
 			By("And the Kyma CR is in \"Ready\" State on the SKR cluster")
 			Eventually(CheckRemoteKymaCR).
 				WithContext(ctx).
-				WithArguments(remoteNamespace, []v1beta2.Module{}, runtimeClient, v1beta2.StateReady).
+				WithArguments(remoteNamespace, []v1beta2.Module{}, runtimeClient, shared.StateReady).
 				Should(Succeed())
 		})
 		It("When a Kyma Module is enabled", func() {
@@ -48,7 +48,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 			By("And the KCP Kyma CR is in a \"Ready\" State")
 			Eventually(IsKymaInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 				Should(Succeed())
 		})
 
@@ -65,12 +65,12 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 			By("Then the KCP Kyma CR is in a \"Processing\" State")
 			Eventually(IsKymaInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateProcessing).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateProcessing).
 				Should(Succeed())
 			By("And the Module Manifest CR is in a \"Deleting\" State")
 			Eventually(CheckManifestIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient, v2.StateDeleting).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient, shared.StateDeleting).
 				Should(Succeed())
 			By("And the SKR Module Default CR is not removed")
 			Consistently(CheckIfExists).
@@ -105,7 +105,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 			By("Then the Module Manifest CR is still in a \"Deleting\" State")
 			Consistently(CheckManifestIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient, v2.StateDeleting).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient, shared.StateDeleting).
 				Should(Succeed())
 			By("And the Module Default CR is in a \"Deleting\" State")
 			Consistently(CheckSampleCRIsInState).
@@ -133,7 +133,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 			By("And a new Manifest CR is created")
 			Eventually(CheckManifestIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient, v2.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient, shared.StateReady).
 				Should(Succeed())
 			Eventually(ManifestNoDeletionTimeStampSet).
 				WithContext(ctx).
@@ -142,7 +142,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 			By("And KCP Kyma CR is in a \"Ready\" State")
 			Eventually(IsKymaInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 				Should(Succeed())
 		})
 		It("When the Kyma Module gets disabled",
@@ -172,7 +172,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 				By("And the SKR Kyma CR is in a \"Ready\" State")
 				Eventually(IsKymaInState).
 					WithContext(ctx).
-					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 					Should(Succeed())
 			})
 
