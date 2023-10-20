@@ -88,7 +88,8 @@ func DeleteKyma(ctx context.Context,
 		return fmt.Errorf("sync kyma %w", err)
 	}
 
-	if err := clnt.Delete(ctx, kyma); err != nil {
+	propagation := v1.DeletePropagationForeground
+	if err := clnt.Delete(ctx, kyma, &client.DeleteOptions{PropagationPolicy: &propagation}); err != nil {
 		return fmt.Errorf("updating kyma %w", err)
 	}
 
@@ -136,7 +137,7 @@ func GetKyma(ctx context.Context, clnt client.Client, name, namespace string) (*
 	return kymaInCluster, nil
 }
 
-func IsKymaInState(ctx context.Context, name, namespace string, clnt client.Client, state v1beta2.State) error {
+func KymaIsInState(ctx context.Context, name, namespace string, clnt client.Client, state v1beta2.State) error {
 	return CRIsInState(ctx,
 		v1beta2.GroupVersion.Group, v1beta2.GroupVersion.Version, string(v1beta2.KymaKind),
 		name, namespace,

@@ -13,7 +13,6 @@ var _ = Describe("Purge Controller", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular",
 		v1beta2.SyncStrategyLocalSecret)
 	moduleCR := NewTestModuleCR(remoteNamespace)
-	moduleCRFinalizer := "cr-finalizer"
 
 	InitEmptyKymaBeforeAll(kyma)
 

@@ -24,7 +24,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 				WithArguments(kyma).
 				Should(Succeed())
 			By("Then the Kyma CR is in a \"Ready\" State on the KCP cluster ")
-			Eventually(IsKymaInState).
+			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 				Should(Succeed())
@@ -46,7 +46,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 					"Deployment", runtimeClient).
 				Should(Succeed())
 			By("And the KCP Kyma CR is in a \"Ready\" State")
-			Eventually(IsKymaInState).
+			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 				Should(Succeed())
@@ -63,7 +63,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 				WithArguments(defaultRemoteKymaName, remoteNamespace, "template-operator", runtimeClient).
 				Should(Succeed())
 			By("Then the KCP Kyma CR is in a \"Processing\" State")
-			Eventually(IsKymaInState).
+			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateProcessing).
 				Should(Succeed())
@@ -140,7 +140,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), "template-operator", controlPlaneClient).
 				Should(Succeed())
 			By("And KCP Kyma CR is in a \"Ready\" State")
-			Eventually(IsKymaInState).
+			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 				Should(Succeed())
@@ -164,7 +164,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 						"template-operator-system", "apps", "v1", "Deployment", runtimeClient).
 					Should(Succeed())
 				By("And the SKR Kyma CR is in a \"Ready\" State")
-				Eventually(IsKymaInState).
+				Eventually(KymaIsInState).
 					WithContext(ctx).
 					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 					Should(Succeed())
