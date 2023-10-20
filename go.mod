@@ -20,15 +20,18 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/xeipuuv/gojsonschema v1.2.0
 	go.uber.org/zap v1.26.0
-	golang.org/x/sync v0.3.0
+	golang.org/x/sync v0.4.0
 	golang.org/x/time v0.3.0
 	gopkg.in/yaml.v3 v3.0.1
-	istio.io/api v1.19.1
-	istio.io/client-go v1.19.1
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	sigs.k8s.io/controller-runtime v0.16.2
 	sigs.k8s.io/e2e-framework v0.3.0
 	sigs.k8s.io/yaml v1.3.0
+)
+
+require (
+	istio.io/api v1.19.3
+	istio.io/client-go v1.19.3
 )
 
 require (
