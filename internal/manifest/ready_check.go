@@ -35,7 +35,6 @@ func NewCustomResourceReadyCheck() *CustomResourceReadyCheck {
 type CustomResourceReadyCheck struct{}
 
 var (
-	ErrCRInUnexpectedState  = errors.New("module CR in unexpected state during readiness check")
 	ErrNotSupportedState    = errors.New("module CR state not support")
 	ErrRequiredStateMissing = errors.New("required Ready and Error state mapping are missing")
 )
@@ -101,9 +100,6 @@ func HandleState(manifest *v1beta2.Manifest, moduleCR *unstructured.Unstructured
 		return declarative.StateInfo{State: state, Info: info}, nil
 	}
 
-	if typedState == declarative.StateDeleting || typedState == declarative.StateError {
-		return declarative.StateInfo{State: typedState}, ErrCRInUnexpectedState
-	}
 	return declarative.StateInfo{State: typedState}, nil
 }
 

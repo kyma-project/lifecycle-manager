@@ -56,7 +56,7 @@ var _ = Describe("Kyma module control", Ordered, func() {
 		Entry("When deploy module, expect number of Manifests matches spec.modules",
 			noCondition(), expectCorrectNumberOfModuleStatus(kyma.Name)),
 		Entry("When module state become ready, expect Manifests state become ready",
-			UpdateAllManifestState(kyma.Name, v1beta2.StateReady),
+			UpdateAllManifestState(kyma.GetName(), kyma.GetNamespace(), v1beta2.StateReady),
 			expectKymaStatusModules(ctx, kyma, module.Name, v1beta2.StateReady)),
 		Entry("When remove module in spec, expect number of Manifests matches spec.modules",
 			removeModule(kyma.Name), expectCorrectNumberOfModuleStatus(kyma.Name)),
