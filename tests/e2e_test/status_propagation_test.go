@@ -36,7 +36,8 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 
 		It("Then resource is defined in manifest CR", func() {
 			Eventually(func(g Gomega, ctx context.Context) {
-				resource, err := GetManifestResource(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
+				resource, err := GetManifestResource(ctx, controlPlaneClient,
+					kyma.GetName(), kyma.GetNamespace(), module.Name)
 				Expect(err).ToNot(HaveOccurred())
 				Expect(resource.GetName()).To(Equal(moduleCR.GetName()))
 				Expect(resource.GetNamespace()).To(Equal(moduleCR.GetNamespace()))
@@ -49,7 +50,8 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 		It("Then module state of KCP Kyma in Warning", func() {
 			Eventually(CheckModuleState).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name, shared.StateWarning).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(),
+					module.Name, shared.StateWarning).
 				Should(Succeed())
 		})
 

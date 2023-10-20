@@ -15,7 +15,6 @@ import (
 	"go.uber.org/zap/zapcore"
 	"k8s.io/client-go/rest"
 
-	//nolint:gci
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
 

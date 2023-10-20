@@ -98,7 +98,7 @@ func UpdateManifestState(
 	if err != nil {
 		return err
 	}
-	component.Status.State = shared.State(state)
+	component.Status.State = state
 	err = clnt.Status().Update(ctx, component)
 	if err != nil {
 		return fmt.Errorf("update manifest: %w", err)

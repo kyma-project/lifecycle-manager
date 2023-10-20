@@ -9,5 +9,5 @@ import (
 type Object interface {
 	client.Object
 	GetStatus() shared.Status
-	SetStatus(shared.Status)
+	SetStatus(status shared.Status)
 }

@@ -15,12 +15,12 @@ type ResourceInfoConverter interface {
 }
 
 type ResourceToInfoConverter interface {
-	ResourcesToInfos([]shared.Resource) ([]*resource.Info, error)
-	UnstructuredToInfos([]*unstructured.Unstructured) ([]*resource.Info, error)
+	ResourcesToInfos(resource []shared.Resource) ([]*resource.Info, error)
+	UnstructuredToInfos(obj []*unstructured.Unstructured) ([]*resource.Info, error)
 }
 
 type InfoToResourceConverter interface {
-	InfosToResources([]*resource.Info) []shared.Resource
+	InfosToResources(resourceInfo []*resource.Info) []shared.Resource
 }
 
 func NewResourceToInfoConverter(

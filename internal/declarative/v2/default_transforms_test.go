@@ -7,6 +7,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -29,7 +30,8 @@ func Test_defaultTransforms(t *testing.T) {
 			disclaimerTransform,
 			[]*unstructured.Unstructured{},
 			func(testingT assert.TestingT, err error, i ...interface{}) bool {
-				return assert.NoError(testingT, err)
+				require.NoError(t, err)
+				return true
 			},
 		},
 		{
@@ -37,7 +39,8 @@ func Test_defaultTransforms(t *testing.T) {
 			kymaComponentTransform,
 			[]*unstructured.Unstructured{},
 			func(testingT assert.TestingT, err error, i ...interface{}) bool {
-				return assert.NoError(testingT, err)
+				require.NoError(t, err)
+				return true
 			},
 		},
 		{
@@ -45,7 +48,8 @@ func Test_defaultTransforms(t *testing.T) {
 			managedByDeclarativeV2,
 			[]*unstructured.Unstructured{},
 			func(testingT assert.TestingT, err error, i ...interface{}) bool {
-				return assert.NoError(testingT, err)
+				require.NoError(t, err)
+				return true
 			},
 		},
 		{
@@ -53,7 +57,7 @@ func Test_defaultTransforms(t *testing.T) {
 			disclaimerTransform,
 			[]*unstructured.Unstructured{{Object: map[string]any{}}},
 			func(testingT assert.TestingT, err error, i ...interface{}) bool {
-				assert.NoError(testingT, err)
+				assert.NoError(testingT, err) //nolint:testifylint
 				unstructs, ok := i[0].([]*unstructured.Unstructured)
 				assert.True(testingT, ok)
 				unstruct := unstructs[0]
@@ -69,7 +73,7 @@ func Test_defaultTransforms(t *testing.T) {
 			kymaComponentTransform,
 			[]*unstructured.Unstructured{{Object: map[string]any{}}},
 			func(testingT assert.TestingT, err error, i ...interface{}) bool {
-				assert.NoError(testingT, err)
+				require.NoError(t, err)
 				unstructs, ok := i[0].([]*unstructured.Unstructured)
 				assert.True(testingT, ok)
 				unstruct := unstructs[0]
@@ -86,7 +90,7 @@ func Test_defaultTransforms(t *testing.T) {
 			managedByDeclarativeV2,
 			[]*unstructured.Unstructured{{Object: map[string]any{}}},
 			func(testingT assert.TestingT, err error, i ...interface{}) bool {
-				assert.NoError(testingT, err)
+				require.NoError(t, err)
 				unstructs, ok := i[0].([]*unstructured.Unstructured)
 				assert.True(testingT, ok)
 				unstruct := unstructs[0]
