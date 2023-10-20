@@ -198,19 +198,19 @@ func IsKymaInState(ctx context.Context, name, namespace string, clnt client.Clie
 		string(state))
 }
 
-func ContainsExpectKymaManagerField(
+func ContainsKymaManagerField(
 	ctx context.Context, clnt client.Client,
 	kymaName, kymaNamespace, managerName string,
 ) (bool, error) {
-	createdKyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
 	if err != nil {
 		return false, err
 	}
-	if createdKyma.ManagedFields == nil {
+	if kyma.ManagedFields == nil {
 		return false, nil
 	}
 
-	for _, v := range createdKyma.ManagedFields {
+	for _, v := range kyma.ManagedFields {
 		if v.Subresource == "status" && v.Manager == managerName {
 			return true, nil
 		}

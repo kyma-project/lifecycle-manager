@@ -83,8 +83,7 @@ var _ = Describe("Kyma with no Module", Ordered, func() {
 var _ = Describe("Kyma enable one Module", Ordered, func() {
 	kyma := NewTestKyma("empty-module-kyma")
 	module := NewTestModule("test-module", v1beta2.DefaultChannel)
-	kyma.Spec.Modules = append(
-		kyma.Spec.Modules, module)
+	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
 
 	RegisterDefaultLifecycleForKyma(kyma)
 
@@ -96,17 +95,9 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 			Should(Succeed())
 
 		By("having created new conditions in its status")
-		Eventually(func() error {
-			createdKyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
-			if err != nil {
-				return err
-			}
-			conditions := createdKyma.Status.Conditions
-			if len(conditions) == 0 {
-				return ErrWrongConditions
-			}
-			return nil
-		}, Timeout, Interval).Should(Succeed())
+		Eventually(containsCondition, Timeout, Interval).
+			WithArguments(kyma).Should(Succeed())
+
 		By("reacting to a change of its Modules when they are set to ready")
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
@@ -168,6 +159,18 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 			Should(Succeed())
 	})
 })
+
+func containsCondition(kyma *v1beta2.Kyma) error {
+	createdKyma, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
+	if err != nil {
+		return err
+	}
+	conditions := createdKyma.Status.Conditions
+	if len(conditions) == 0 {
+		return ErrWrongConditions
+	}
+	return nil
+}
 
 var _ = Describe("Kyma enable multiple modules", Ordered, func() {
 	var (
@@ -330,7 +333,7 @@ var _ = Describe("Kyma with managed fields not in kcp mode", Ordered, func() {
 	RegisterDefaultLifecycleForKyma(kyma)
 
 	It("Should result in a managed field with manager named 'unmanaged-kyma'", func() {
-		Eventually(ContainsExpectKymaManagerField, Timeout, Interval).
+		Eventually(ContainsKymaManagerField, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), v1beta2.UnmanagedKyma).
 			Should(BeTrue())
 	})
