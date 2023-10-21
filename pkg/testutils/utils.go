@@ -43,7 +43,6 @@ var (
 	ErrNotDeleted                 = errors.New("resource not deleted")
 	ErrDeletionTimestampFound     = errors.New("deletion timestamp not nil")
 	ErrEmptyRestConfig            = errors.New("rest.Config is nil")
-	ErrDeletionTimestamp          = errors.New("DeletionTimeStamp does not exist or is not a string")
 	ErrSampleCrNotInExpectedState = errors.New("resource not in expected state")
 	ErrFetchingStatus             = errors.New("could not fetch status from resource")
 )
@@ -60,6 +59,10 @@ func NewTestModuleWithFixName(name, channel string) v1beta2.Module {
 		Name:    name,
 		Channel: channel,
 	}
+}
+
+func NewTemplateOperator(channel string) v1beta2.Module {
+	return NewTestModuleWithFixName("template-operator", channel)
 }
 
 func NewTestIssuer(namespace string) *certmanagerv1.Issuer {

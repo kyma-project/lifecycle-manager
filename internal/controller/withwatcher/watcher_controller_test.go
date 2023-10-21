@@ -47,8 +47,8 @@ func gatewayUpdated(customIstioClient *istio.Client) error {
 	}
 	Expect(gateways).To(HaveLen(1))
 	gateway := gateways[0]
-	Expect(gateway.Spec.Servers).To(HaveLen(1))
-	Expect(gateway.Spec.Servers[0].Hosts).To(HaveLen(1))
+	Expect(gateway.Spec.GetServers()).To(HaveLen(1))
+	Expect(gateway.Spec.GetServers()[0].GetHosts()).To(HaveLen(1))
 	gateway.Spec.Servers[0].Hosts[0] = "listener.updated.kyma.cloud.sap"
 	return controlPlaneClient.Update(suiteCtx, gateway)
 }

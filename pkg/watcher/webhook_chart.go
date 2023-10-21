@@ -60,7 +60,7 @@ func resolveKcpAddr(kcpClient client.Client, managerConfig *SkrWebhookManagerCon
 		return "", fmt.Errorf("failed to get istio gateway %s: %w", managerConfig.IstioGatewayName, err)
 	}
 
-	if len(gateway.Spec.Servers) != 1 || len(gateway.Spec.GetServers()[0].GetHosts()) != 1 {
+	if len(gateway.Spec.GetServers()) != 1 || len(gateway.Spec.GetServers()[0].GetHosts()) != 1 {
 		return "", ErrGatewayHostWronglyConfigured
 	}
 	host := gateway.Spec.GetServers()[0].GetHosts()[0]

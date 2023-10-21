@@ -13,7 +13,7 @@ import (
 var _ = Describe("Warning Status Propagation", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel,
 		v1beta2.SyncStrategyLocalSecret)
-	module := NewTestModuleWithFixName("template-operator", v1beta2.DefaultChannel)
+	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(remoteNamespace)
 
 	InitEmptyKymaBeforeAll(kyma)
