@@ -48,10 +48,11 @@ var (
 )
 
 func NewTestModule(name, channel string) v1beta2.Module {
-	return v1beta2.Module{
-		Name:    fmt.Sprintf("%s-%s", name, builder.RandomName()),
-		Channel: channel,
-	}
+	return NewTestModuleWithFixName(fmt.Sprintf("%s-%s", name, builder.RandomName()), channel)
+}
+
+func NewTemplateOperator(channel string) v1beta2.Module {
+	return NewTestModuleWithFixName("template-operator", channel)
 }
 
 func NewTestModuleWithFixName(name, channel string) v1beta2.Module {
@@ -59,10 +60,6 @@ func NewTestModuleWithFixName(name, channel string) v1beta2.Module {
 		Name:    name,
 		Channel: channel,
 	}
-}
-
-func NewTemplateOperator(channel string) v1beta2.Module {
-	return NewTestModuleWithFixName("template-operator", channel)
 }
 
 func NewTestIssuer(namespace string) *certmanagerv1.Issuer {
