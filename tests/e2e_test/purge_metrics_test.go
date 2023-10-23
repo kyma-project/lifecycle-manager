@@ -10,8 +10,9 @@ import (
 )
 
 var _ = Describe("Purge Metrics", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular",
-		v1beta2.SyncStrategyLocalSecret)
+	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system",
+		v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalSecret)
+	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(remoteNamespace)
 	moduleCRFinalizer := "cr-finalizer"
 
@@ -21,7 +22,7 @@ var _ = Describe("Purge Metrics", Ordered, func() {
 		It("When enable Template Operator", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(defaultRemoteKymaName, remoteNamespace, moduleName, kyma.Spec.Channel, runtimeClient).
+				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
 				Should(Succeed())
 		})
 
