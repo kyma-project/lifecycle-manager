@@ -51,6 +51,7 @@ jobs:
       CM_VERSION: v1.12.3
       KLM_VERSION_TAG: latest
       KLM_IMAGE_REPO: prod
+      GOSUMDB: off
     steps:
       - name: Install prerequisites
         run: |

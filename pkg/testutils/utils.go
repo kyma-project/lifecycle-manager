@@ -43,16 +43,16 @@ var (
 	ErrNotDeleted                 = errors.New("resource not deleted")
 	ErrDeletionTimestampFound     = errors.New("deletion timestamp not nil")
 	ErrEmptyRestConfig            = errors.New("rest.Config is nil")
-	ErrDeletionTimestamp          = errors.New("DeletionTimeStamp does not exist or is not a string")
 	ErrSampleCrNotInExpectedState = errors.New("resource not in expected state")
 	ErrFetchingStatus             = errors.New("could not fetch status from resource")
 )
 
 func NewTestModule(name, channel string) v1beta2.Module {
-	return v1beta2.Module{
-		Name:    fmt.Sprintf("%s-%s", name, builder.RandomName()),
-		Channel: channel,
-	}
+	return NewTestModuleWithFixName(fmt.Sprintf("%s-%s", name, builder.RandomName()), channel)
+}
+
+func NewTemplateOperator(channel string) v1beta2.Module {
+	return NewTestModuleWithFixName("template-operator", channel)
 }
 
 func NewTestModuleWithFixName(name, channel string) v1beta2.Module {

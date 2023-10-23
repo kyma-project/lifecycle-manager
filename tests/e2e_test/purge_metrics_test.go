@@ -10,10 +10,10 @@ import (
 )
 
 var _ = Describe("Purge Metrics", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular",
-		v1beta2.SyncStrategyLocalSecret)
+	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system",
+		v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalSecret)
+	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(remoteNamespace)
-	module := NewTestModuleWithFixName(moduleName, v1beta2.DefaultChannel)
 	InitEmptyKymaBeforeAll(kyma)
 
 	Context("Given Template Operator", func() {

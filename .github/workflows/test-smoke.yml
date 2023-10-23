@@ -72,6 +72,7 @@ jobs:
       K3D_VERSION: v5.4.7
       KUSTOMIZE_VERSION: 4.5.7
       ISTIO_VERSION: 1.17.1
+      GOSUMDB: off
     steps:
       - name: Install prerequisites
         run: |
