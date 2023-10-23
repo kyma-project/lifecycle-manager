@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	. "github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
@@ -61,14 +61,14 @@ var _ = Describe("When kyma is not deleted within configured timeout", Ordered, 
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(updateKymaStatus(ctx, controlPlaneClient, purgeReconciler.UpdateStatus,
-				client.ObjectKeyFromObject(kyma), StateDeleting), Timeout, Interval).
+				client.ObjectKeyFromObject(kyma), shared.StateDeleting), Timeout, Interval).
 				Should(Succeed())
 		})
 
 		By("Target finalizers should be dropped", func() {
 			Eventually(IsKymaInState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, StateDeleting).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateDeleting).
 				Should(Succeed())
 			Eventually(getIssuerFinalizers, Timeout, Interval).
 				WithContext(ctx).
@@ -308,7 +308,7 @@ func getDestinationRuleFinalizers(ctx context.Context, key client.ObjectKey, cl 
 }
 
 func updateKymaStatus(ctx context.Context, client client.Client, updateStatus func(context.Context, *v1beta2.Kyma,
-	State, string) error, key client.ObjectKey, state State,
+	shared.State, string) error, key client.ObjectKey, state shared.State,
 ) func() error {
 	return func() error {
 		kyma := v1beta2.Kyma{}

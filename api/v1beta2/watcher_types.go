@@ -17,7 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
-	. "github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -82,7 +82,7 @@ type Service struct {
 type WatcherStatus struct {
 	// State signifies current state of a Watcher.
 	// Value can be one of ("Ready", "Processing", "Error", "Deleting", "Warning")
-	State State `json:"state"`
+	State shared.State `json:"state"`
 
 	// List of status conditions to indicate the status of a Watcher.
 	// +kubebuilder:validation:Optional

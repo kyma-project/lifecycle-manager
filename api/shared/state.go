@@ -31,3 +31,7 @@ func (state State) IsSupportedState() bool {
 		state == StateDeleting ||
 		state == StateWarning
 }
+
+func AllStates() []State {
+	return []State{StateReady, StateProcessing, StateError, StateDeleting, StateWarning}
+}

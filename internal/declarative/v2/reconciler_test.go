@@ -4,7 +4,7 @@ package v2
 import (
 	"testing"
 
-	. "github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	appsv1 "k8s.io/api/apps/v1"
@@ -80,44 +80,44 @@ func TestPruneResource(t *testing.T) {
 func Test_hasDiff(t *testing.T) {
 	t.Parallel()
 	testGVK := metav1.GroupVersionKind{Group: "test", Version: "v1", Kind: "test"}
-	testResourceA := Resource{Name: "r1", Namespace: "default", GroupVersionKind: testGVK}
-	testResourceB := Resource{Name: "r2", Namespace: "", GroupVersionKind: testGVK}
-	testResourceC := Resource{Name: "r3", Namespace: "kcp-system", GroupVersionKind: testGVK}
-	testResourceD := Resource{Name: "r4", Namespace: "kcp-system", GroupVersionKind: testGVK}
+	testResourceA := shared.Resource{Name: "r1", Namespace: "default", GroupVersionKind: testGVK}
+	testResourceB := shared.Resource{Name: "r2", Namespace: "", GroupVersionKind: testGVK}
+	testResourceC := shared.Resource{Name: "r3", Namespace: "kcp-system", GroupVersionKind: testGVK}
+	testResourceD := shared.Resource{Name: "r4", Namespace: "kcp-system", GroupVersionKind: testGVK}
 	tests := []struct {
 		name         string
-		oldResources []Resource
-		newResources []Resource
+		oldResources []shared.Resource
+		newResources []shared.Resource
 		want         bool
 	}{
 		{
 			"test same resource",
-			[]Resource{testResourceA, testResourceB},
-			[]Resource{testResourceA, testResourceB},
+			[]shared.Resource{testResourceA, testResourceB},
+			[]shared.Resource{testResourceA, testResourceB},
 			false,
 		},
 		{
 			"test new contains more resources",
-			[]Resource{testResourceA, testResourceB},
-			[]Resource{testResourceA, testResourceB, testResourceC},
+			[]shared.Resource{testResourceA, testResourceB},
+			[]shared.Resource{testResourceA, testResourceB, testResourceC},
 			true,
 		},
 		{
 			"test old contains more",
-			[]Resource{testResourceA, testResourceB, testResourceC},
-			[]Resource{testResourceA, testResourceB},
+			[]shared.Resource{testResourceA, testResourceB, testResourceC},
+			[]shared.Resource{testResourceA, testResourceB},
 			true,
 		},
 		{
 			"test same amount of resources but contains different name",
-			[]Resource{testResourceA, testResourceC},
-			[]Resource{testResourceA, testResourceD},
+			[]shared.Resource{testResourceA, testResourceC},
+			[]shared.Resource{testResourceA, testResourceD},
 			true,
 		},
 		{
 			"test same amount of resources but contains duplicate resources",
-			[]Resource{testResourceA, testResourceB},
-			[]Resource{testResourceA, testResourceA},
+			[]shared.Resource{testResourceA, testResourceB},
+			[]shared.Resource{testResourceA, testResourceA},
 			true,
 		},
 	}

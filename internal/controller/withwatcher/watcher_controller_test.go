@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -14,7 +15,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	. "github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
@@ -146,7 +146,7 @@ func watcherCRIsReady(watcherName string) error {
 	if err != nil {
 		return err
 	}
-	if watcher.Status.State != StateReady {
+	if watcher.Status.State != shared.StateReady {
 		return errWatcherNotReady
 	}
 	return nil

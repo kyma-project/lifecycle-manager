@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	. "github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
@@ -209,16 +209,16 @@ var _ = Describe("Channel switch", Ordered, func() {
 				WithArguments(controlPlaneClient, kyma).Should(Succeed())
 			Eventually(IsKymaInState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, StateProcessing).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateProcessing).
 				Should(Succeed())
 			for _, module := range kyma.Spec.Modules {
 				Eventually(UpdateManifestState, Timeout, Interval).
 					WithArguments(ctx, controlPlaneClient,
-						kyma.GetName(), kyma.GetNamespace(), module.Name, StateReady).Should(Succeed())
+						kyma.GetName(), kyma.GetNamespace(), module.Name, shared.StateReady).Should(Succeed())
 			}
 			Eventually(IsKymaInState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 				Should(Succeed())
 		},
 	)
@@ -259,7 +259,7 @@ var _ = Describe("Channel switch", Ordered, func() {
 		"should lead to kyma being warning in the end of the channel switch", func() {
 			Eventually(IsKymaInState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, StateWarning).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateWarning).
 				Should(Succeed())
 		},
 	)

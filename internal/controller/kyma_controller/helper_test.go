@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
-	. "github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	crdV1beta2 "github.com/kyma-project/lifecycle-manager/config/samples/component-integration-installed/crd/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -89,7 +89,7 @@ func KCPModuleExistWithOverwrites(kyma *v1beta2.Kyma, module v1beta2.Module) str
 	return kcpModuleSpec.InitKey
 }
 
-func UpdateAllManifestState(kymaName, kymaNamespace string, state State) func() error {
+func UpdateAllManifestState(kymaName, kymaNamespace string, state shared.State) func() error {
 	return func() error {
 		kyma, err := GetKyma(ctx, controlPlaneClient, kymaName, kymaNamespace)
 		if err != nil {

@@ -19,7 +19,7 @@ package v1beta2
 import (
 	"strings"
 
-	. "github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -124,7 +124,7 @@ func (kyma *Kyma) GetModuleStatusMap() map[string]*ModuleStatus {
 type KymaStatus struct {
 	// State signifies current state of Kyma.
 	// Value can be one of ("Ready", "Processing", "Error", "Deleting").
-	State State `json:"state,omitempty"`
+	State shared.State `json:"state,omitempty"`
 
 	// List of status conditions to indicate the status of a ServiceInstance.
 	// +optional
@@ -139,7 +139,7 @@ type KymaStatus struct {
 	// +optional
 	ActiveChannel string `json:"activeChannel,omitempty"`
 
-	LastOperation `json:"lastOperation,omitempty"`
+	shared.LastOperation `json:"lastOperation,omitempty"`
 }
 
 type ModuleStatus struct {
@@ -171,7 +171,7 @@ type ModuleStatus struct {
 	Message string `json:"message,omitempty"`
 
 	// State of the Module in the currently tracked Generation
-	State State `json:"state"`
+	State shared.State `json:"state"`
 
 	// Resource contains information about the created module CR.
 	Resource *TrackingObject `json:"resource,omitempty"`
@@ -213,10 +213,6 @@ type PartialMeta struct {
 }
 
 const DefaultChannel = "regular"
-
-func AllKymaStates() []State {
-	return []State{StateReady, StateProcessing, StateError, StateDeleting, StateWarning}
-}
 
 func PartialMetaFromObject(object metav1.Object) PartialMeta {
 	return PartialMeta{
@@ -330,43 +326,43 @@ func (kyma *Kyma) ContainsCondition(conditionType KymaConditionType, conditionSt
 	return false
 }
 
-func (kyma *Kyma) DetermineState() State {
+func (kyma *Kyma) DetermineState() shared.State {
 	status := &kyma.Status
-	stateMap := map[State]bool{}
+	stateMap := map[shared.State]bool{}
 	for _, moduleStatus := range status.Modules {
-		if moduleStatus.State == StateError {
-			stateMap[StateError] = true
+		if moduleStatus.State == shared.StateError {
+			stateMap[shared.StateError] = true
 		}
-		if moduleStatus.State == StateWarning {
-			stateMap[StateWarning] = true
+		if moduleStatus.State == shared.StateWarning {
+			stateMap[shared.StateWarning] = true
 		}
-		if moduleStatus.State == StateProcessing {
-			stateMap[StateProcessing] = true
+		if moduleStatus.State == shared.StateProcessing {
+			stateMap[shared.StateProcessing] = true
 		}
 	}
 
 	switch {
-	case stateMap[StateError]:
-		return StateError
-	case stateMap[StateWarning]:
-		return StateWarning
-	case stateMap[StateProcessing]:
-		return StateProcessing
+	case stateMap[shared.StateError]:
+		return shared.StateError
+	case stateMap[shared.StateWarning]:
+		return shared.StateWarning
+	case stateMap[shared.StateProcessing]:
+		return shared.StateProcessing
 	}
 
 	for _, condition := range status.Conditions {
 		if condition.Status != metav1.ConditionTrue {
-			return StateProcessing
+			return shared.StateProcessing
 		}
 	}
 
-	return StateReady
+	return shared.StateReady
 }
 
 func (kyma *Kyma) AllModulesReady() bool {
 	for i := range kyma.Status.Modules {
 		moduleStatus := &kyma.Status.Modules[i]
-		if moduleStatus.State != StateReady {
+		if moduleStatus.State != shared.StateReady {
 			return false
 		}
 	}

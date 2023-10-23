@@ -17,7 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
-	. "github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -90,9 +90,6 @@ const (
 	OciRefType RefTypeMetadata = "oci-ref"
 )
 
-// ManifestStatus defines the observed state of Manifest.
-type ManifestStatus Status
-
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
@@ -103,16 +100,16 @@ type Manifest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ManifestSpec   `json:"spec,omitempty"`
-	Status ManifestStatus `json:"status,omitempty"`
+	Spec   ManifestSpec  `json:"spec,omitempty"`
+	Status shared.Status `json:"status,omitempty"`
 }
 
-func (manifest *Manifest) GetStatus() Status {
-	return Status(manifest.Status)
+func (manifest *Manifest) GetStatus() shared.Status {
+	return manifest.Status
 }
 
-func (manifest *Manifest) SetStatus(status Status) {
-	manifest.Status = ManifestStatus(status)
+func (manifest *Manifest) SetStatus(status shared.Status) {
+	manifest.Status = status
 }
 
 //+kubebuilder:object:root=true

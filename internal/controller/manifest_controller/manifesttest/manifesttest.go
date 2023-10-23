@@ -198,7 +198,7 @@ func GetManifestStatus(manifestName string) (shared.Status, error) {
 	if err != nil {
 		return shared.Status{}, err
 	}
-	return shared.Status(manifest.Status), nil
+	return manifest.Status, nil
 }
 
 func GetManifest(manifestName string) (*v1beta2.Manifest, error) {

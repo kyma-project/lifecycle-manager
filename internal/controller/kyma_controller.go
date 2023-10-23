@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	. "github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
@@ -156,11 +156,11 @@ func (r *KymaReconciler) getSyncedContext(ctx context.Context, kyma *v1beta2.Kym
 }
 
 func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
-	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != StateDeleting {
+	if !kyma.DeletionTimestamp.IsZero() && kyma.Status.State != shared.StateDeleting {
 		if err := r.deleteRemoteKyma(ctx, kyma); err != nil {
 			return r.requeueWithError(ctx, kyma, err)
 		}
-		if err := r.updateStatus(ctx, kyma, StateDeleting, "waiting for modules to be deleted"); err != nil {
+		if err := r.updateStatus(ctx, kyma, shared.StateDeleting, "waiting for modules to be deleted"); err != nil {
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma status after triggering deletion: %w", err))
 		}
 		return ctrl.Result{Requeue: true}, nil
@@ -300,13 +300,13 @@ func (r *KymaReconciler) processKymaState(ctx context.Context, kyma *v1beta2.Kym
 	switch kyma.Status.State {
 	case "":
 		return r.handleInitialState(ctx, kyma)
-	case StateProcessing:
+	case shared.StateProcessing:
 		return r.handleProcessingState(ctx, kyma)
-	case StateDeleting:
+	case shared.StateDeleting:
 		return r.handleDeletingState(ctx, kyma)
-	case StateError:
+	case shared.StateError:
 		return r.handleProcessingState(ctx, kyma)
-	case StateReady, StateWarning:
+	case shared.StateReady, shared.StateWarning:
 		return r.handleProcessingState(ctx, kyma)
 	}
 
@@ -315,7 +315,7 @@ func (r *KymaReconciler) processKymaState(ctx context.Context, kyma *v1beta2.Kym
 
 func (r *KymaReconciler) handleInitialState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
 	const msg = "started processing"
-	if err := r.updateStatus(ctx, kyma, StateProcessing, msg); err != nil {
+	if err := r.updateStatus(ctx, kyma, shared.StateProcessing, msg); err != nil {
 		return ctrl.Result{}, err
 	}
 	r.enqueueNormalEvent(kyma, updateStatus, msg)
@@ -369,9 +369,9 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 
 	state := kyma.DetermineState()
 	requeueInterval := queue.DetermineRequeueInterval(state, r.RequeueIntervals)
-	if state == StateReady {
+	if state == shared.StateReady {
 		const msg = "kyma is ready"
-		if kyma.Status.State != StateReady {
+		if kyma.Status.State != shared.StateReady {
 			logger.Info(msg)
 		}
 		return ctrl.Result{RequeueAfter: requeueInterval}, r.updateStatus(ctx, kyma, state, msg)
@@ -476,7 +476,7 @@ func (r *KymaReconciler) syncModuleCatalog(ctx context.Context, kyma *v1beta2.Ky
 }
 
 func (r *KymaReconciler) updateStatus(ctx context.Context, kyma *v1beta2.Kyma,
-	state State, message string,
+	state shared.State, message string,
 ) error {
 	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, message); err != nil {
 		return fmt.Errorf("error while updating status to %s because of %s: %w", state, message, err)
@@ -485,8 +485,8 @@ func (r *KymaReconciler) updateStatus(ctx context.Context, kyma *v1beta2.Kyma,
 }
 
 func (r *KymaReconciler) updateStatusWithError(ctx context.Context, kyma *v1beta2.Kyma, err error) error {
-	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, StateError, err.Error()); err != nil {
-		return fmt.Errorf("error while updating status to %s: %w", StateError, err)
+	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, shared.StateError, err.Error()); err != nil {
+		return fmt.Errorf("error while updating status to %s: %w", shared.StateError, err)
 	}
 	r.enqueueWarningEvent(kyma, moduleReconciliationError, err)
 	return nil

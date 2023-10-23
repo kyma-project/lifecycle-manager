@@ -16,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 
-	. "github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	commonErrors "github.com/kyma-project/lifecycle-manager/pkg/common"
@@ -165,7 +165,7 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(
 func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStatus) v1beta2.ModuleStatus {
 	if errors.Is(module.Template.Err, channel.ErrTemplateUpdateNotAllowed) {
 		newModuleStatus := existStatus.DeepCopy()
-		newModuleStatus.State = StateWarning
+		newModuleStatus.State = shared.StateWarning
 		newModuleStatus.Message = module.Template.Err.Error()
 		return *newModuleStatus
 	}
@@ -174,7 +174,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 			Name:    module.ModuleName,
 			Channel: module.Template.DesiredChannel,
 			FQDN:    module.FQDN,
-			State:   StateError,
+			State:   shared.StateError,
 			Message: module.Template.Err.Error(),
 		}
 	}
@@ -185,7 +185,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 			Name:    module.ModuleName,
 			Channel: module.Template.DesiredChannel,
 			FQDN:    module.FQDN,
-			State:   StateError,
+			State:   shared.StateError,
 			Message: ErrManifestConversion.Error(),
 		}
 	}
@@ -224,13 +224,13 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 	}
 }
 
-func stateFromManifest(obj client.Object) State {
+func stateFromManifest(obj client.Object) shared.State {
 	switch manifest := obj.(type) {
 	case *v1beta2.Manifest:
 		return manifest.Status.State
 	case *unstructured.Unstructured:
 		state, _, _ := unstructured.NestedString(manifest.Object, "status", "state")
-		return State(state)
+		return shared.State(state)
 	default:
 		return ""
 	}

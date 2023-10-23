@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	. "github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -31,7 +31,7 @@ var _ = Describe("Kyma with no Module", Ordered, func() {
 		By("having transitioned the CR State to Ready as there are no modules")
 		Eventually(IsKymaInState, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, StateReady).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 			Should(Succeed())
 	})
 
@@ -93,7 +93,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 		By("checking the state to be Processing")
 		Eventually(IsKymaInState, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, StateProcessing).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateProcessing).
 			Should(Succeed())
 
 		By("having created new conditions in its status")
@@ -104,14 +104,14 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, StateReady).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, shared.StateReady).
 				Should(Succeed())
 		}
 
 		By("having updated the Kyma CR state to ready")
 		Eventually(IsKymaInState, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, StateReady).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 			Should(Succeed())
 
 		By("Kyma status contains expected condition")
@@ -132,7 +132,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 		Eventually(func() error {
 			expectedModule := v1beta2.ModuleStatus{
 				Name:    module.Name,
-				State:   StateReady,
+				State:   shared.StateReady,
 				Channel: v1beta2.DefaultChannel,
 				Resource: &v1beta2.TrackingObject{
 					PartialMeta: v1beta2.PartialMeta{
@@ -292,14 +292,14 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, StateReady).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, shared.StateReady).
 				Should(Succeed())
 		}
 
 		By("Kyma CR should be in Ready state")
 		Eventually(IsKymaInState, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, StateReady).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 			Should(Succeed())
 
 		By("Add skip-reconciliation label to Kyma CR")
@@ -318,8 +318,8 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 			updateKCPModuleTemplateSpecData(kyma.Name, "valueUpdated"),
 			expectManifestSpecDataEquals(kyma.Name, InitSpecValue)),
 		Entry("When put manifest into progress, kyma spec.status.modules should not updated",
-			UpdateAllManifestState(kyma.GetName(), kyma.GetNamespace(), StateProcessing),
-			expectKymaStatusModules(ctx, kyma, module.Name, StateReady)),
+			UpdateAllManifestState(kyma.GetName(), kyma.GetNamespace(), shared.StateProcessing),
+			expectKymaStatusModules(ctx, kyma, module.Name, shared.StateReady)),
 	)
 
 	It("Stop Kyma skip Reconciliation so that it can be deleted", func() {
@@ -387,7 +387,7 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 	})
 
 func expectKymaStatusModules(ctx context.Context,
-	kyma *v1beta2.Kyma, moduleName string, state State,
+	kyma *v1beta2.Kyma, moduleName string, state shared.State,
 ) func() error {
 	return func() error {
 		return CheckModuleState(ctx, controlPlaneClient, kyma.Name, kyma.Namespace, moduleName, state)

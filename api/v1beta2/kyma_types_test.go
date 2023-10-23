@@ -3,7 +3,7 @@ package v1beta2_test
 import (
 	"testing"
 
-	. "github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,39 +13,39 @@ func TestKyma_DetermineState(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name                 string
-		givenModulesState    []State
+		givenModulesState    []shared.State
 		givenConditionStatus []metav1.ConditionStatus
-		want                 State
+		want                 shared.State
 	}{
 		{
-			"given moduleState contains error",
-			[]State{StateError, StateReady, StateReady},
+			"given moduleshared.State contains error",
+			[]shared.State{shared.StateError, shared.StateReady, shared.StateReady},
 			[]metav1.ConditionStatus{metav1.ConditionTrue},
-			StateError,
+			shared.StateError,
 		},
 		{
-			"given moduleState contains warning but no error",
-			[]State{StateWarning, StateReady, StateReady},
+			"given moduleshared.State contains warning but no error",
+			[]shared.State{shared.StateWarning, shared.StateReady, shared.StateReady},
 			[]metav1.ConditionStatus{metav1.ConditionTrue},
-			StateWarning,
+			shared.StateWarning,
 		},
 		{
-			"given moduleState in ready",
-			[]State{StateReady, StateReady, StateReady},
+			"given moduleshared.State in ready",
+			[]shared.State{shared.StateReady, shared.StateReady, shared.StateReady},
 			[]metav1.ConditionStatus{metav1.ConditionTrue},
-			StateReady,
+			shared.StateReady,
 		},
 		{
-			"given moduleState contains error and warning",
-			[]State{StateError, StateWarning, StateReady},
+			"given moduleshared.State contains error and warning",
+			[]shared.State{shared.StateError, shared.StateWarning, shared.StateReady},
 			[]metav1.ConditionStatus{metav1.ConditionTrue},
-			StateError,
+			shared.StateError,
 		},
 		{
 			"given conditions are not in true status but module in ready",
-			[]State{StateReady},
+			[]shared.State{shared.StateReady},
 			[]metav1.ConditionStatus{metav1.ConditionFalse},
-			StateProcessing,
+			shared.StateProcessing,
 		},
 	}
 	for _, testCase := range tests {
