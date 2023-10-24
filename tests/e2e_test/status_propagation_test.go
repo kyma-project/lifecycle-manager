@@ -54,7 +54,7 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 		})
 
 		It("Then state of KCP kyma in Warning", func() {
-			Eventually(IsKymaInState).
+			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateWarning).
 				Should(Succeed())
@@ -74,7 +74,7 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 			Should(Succeed())
 
 		By("Then module state of KCP in Ready")
-		Eventually(IsKymaInState).
+		Eventually(KymaIsInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 			Should(Succeed())
@@ -93,7 +93,7 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 			Should(Succeed())
 
 		By("Then state of KCP kyma in Warning")
-		Eventually(IsKymaInState).
+		Eventually(KymaIsInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateWarning).
 			Should(Succeed())
@@ -119,7 +119,7 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 			Should(Succeed())
 
 		By("Then the KCP Kyma is in a \"Warning\" State")
-		Eventually(IsKymaInState).
+		Eventually(KymaIsInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateWarning).
 			Should(Succeed())
@@ -151,7 +151,7 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 			Should(Equal(ErrNotFound))
 
 		By("Then module state of KCP in Ready")
-		Eventually(IsKymaInState).
+		Eventually(KymaIsInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 			Should(Succeed())

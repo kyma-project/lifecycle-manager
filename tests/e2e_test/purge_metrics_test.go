@@ -14,8 +14,6 @@ var _ = Describe("Purge Metrics", Ordered, func() {
 		v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalSecret)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(remoteNamespace)
-	moduleCRFinalizer := "cr-finalizer"
-
 	InitEmptyKymaBeforeAll(kyma)
 
 	Context("Given Template Operator", func() {

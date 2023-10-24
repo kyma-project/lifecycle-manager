@@ -84,7 +84,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 		}
 
 		By("Kyma CR should be in Ready state")
-		Eventually(IsKymaInState, Timeout, Interval).
+		Eventually(KymaIsInState, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 			Should(Succeed())
@@ -253,7 +253,7 @@ var _ = Describe("Update Module Template Version", Ordered, func() {
 		}
 
 		By("Kyma CR should be in Ready state")
-		Eventually(IsKymaInState, Timeout, Interval).
+		Eventually(KymaIsInState, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 			Should(Succeed())

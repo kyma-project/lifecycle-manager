@@ -50,6 +50,7 @@ const (
 	interval              = 1 * time.Second
 	remoteNamespace       = "kyma-system"
 	controlPlaneNamespace = "kcp-system"
+	moduleCRFinalizer     = "cr-finalizer"
 )
 
 func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
@@ -63,7 +64,7 @@ func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
 			WithArguments(kyma).
 			Should(Succeed())
 		By("verifying kyma is ready")
-		Eventually(IsKymaInState).
+		Eventually(KymaIsInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
 			Should(Succeed())
