@@ -52,7 +52,7 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 		})
 
 		It("Then state of KCP kyma in Ready", func() {
-			Eventually(IsKymaInState).
+			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 				Should(Succeed())

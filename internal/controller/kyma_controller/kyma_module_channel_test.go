@@ -207,7 +207,7 @@ var _ = Describe("Channel switch", Ordered, func() {
 			Eventually(CreateCR, Timeout, Interval).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, kyma).Should(Succeed())
-			Eventually(IsKymaInState, Timeout, Interval).
+			Eventually(KymaIsInState, Timeout, Interval).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateProcessing).
 				Should(Succeed())
@@ -216,7 +216,7 @@ var _ = Describe("Channel switch", Ordered, func() {
 					WithArguments(ctx, controlPlaneClient,
 						kyma.GetName(), kyma.GetNamespace(), module.Name, shared.StateReady).Should(Succeed())
 			}
-			Eventually(IsKymaInState, Timeout, Interval).
+			Eventually(KymaIsInState, Timeout, Interval).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 				Should(Succeed())
@@ -257,7 +257,7 @@ var _ = Describe("Channel switch", Ordered, func() {
 
 	It(
 		"should lead to kyma being warning in the end of the channel switch", func() {
-			Eventually(IsKymaInState, Timeout, Interval).
+			Eventually(KymaIsInState, Timeout, Interval).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateWarning).
 				Should(Succeed())

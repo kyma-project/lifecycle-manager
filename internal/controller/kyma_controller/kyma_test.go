@@ -29,7 +29,7 @@ var _ = Describe("Kyma with no Module", Ordered, func() {
 
 	It("Should result in a ready state immediately", func() {
 		By("having transitioned the CR State to Ready as there are no modules")
-		Eventually(IsKymaInState, Timeout, Interval).
+		Eventually(KymaIsInState, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 			Should(Succeed())
@@ -91,7 +91,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 
 	It("should result in Kyma becoming Ready", func() {
 		By("checking the state to be Processing")
-		Eventually(IsKymaInState, Timeout, Interval).
+		Eventually(KymaIsInState, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateProcessing).
 			Should(Succeed())
@@ -109,7 +109,7 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 		}
 
 		By("having updated the Kyma CR state to ready")
-		Eventually(IsKymaInState, Timeout, Interval).
+		Eventually(KymaIsInState, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 			Should(Succeed())
@@ -297,7 +297,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 		}
 
 		By("Kyma CR should be in Ready state")
-		Eventually(IsKymaInState, Timeout, Interval).
+		Eventually(KymaIsInState, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 			Should(Succeed())

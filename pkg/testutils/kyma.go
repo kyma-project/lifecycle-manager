@@ -89,7 +89,9 @@ func DeleteKyma(ctx context.Context,
 	clnt client.Client,
 	kyma *v1beta2.Kyma,
 ) error {
-	err := clnt.Delete(ctx, kyma)
+	// Foreground deletion is used to make sure the dependents (manifest CR) get deleted first before Kyma is deleted
+	propagation := v1.DeletePropagationForeground
+	err := clnt.Delete(ctx, kyma, &client.DeleteOptions{PropagationPolicy: &propagation})
 	if client.IgnoreNotFound(err) != nil {
 		return fmt.Errorf("updating kyma failed %w", err)
 	}
@@ -214,7 +216,7 @@ func GetKyma(ctx context.Context, clnt client.Client, name, namespace string) (*
 	return kymaInCluster, nil
 }
 
-func IsKymaInState(ctx context.Context, name, namespace string, clnt client.Client, state shared.State) error {
+func KymaIsInState(ctx context.Context, name, namespace string, clnt client.Client, state shared.State) error {
 	return CRIsInState(ctx,
 		v1beta2.GroupVersion.Group, v1beta2.GroupVersion.Version, string(v1beta2.KymaKind),
 		name, namespace,
