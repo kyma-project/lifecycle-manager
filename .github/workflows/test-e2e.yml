@@ -155,7 +155,7 @@ jobs:
           done
       - name: Checkout template-operator
         uses: actions/checkout@v3
-        if: ${{ matrix.e2e-test == 'module-status-propagation' ||  matrix.e2e-test == 'module-without-default-cr' ||  matrix.e2e-test == 'non-blocking-deletion' ||  matrix.e2e-test == 'purge-controller' ||  matrix.e2e-test == 'purge-metrics' || matrix.e2e-test == 'kyma-deletion'}}
+        if: ${{ matrix.e2e-test != 'watcher-enqueue' && matrix.e2e-test != 'kyma-metrics'}}
         with:
           repository: kyma-project/template-operator
           path: template-operator

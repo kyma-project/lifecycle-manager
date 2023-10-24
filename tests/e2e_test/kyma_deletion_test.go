@@ -12,7 +12,7 @@ import (
 var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular",
 		v1beta2.SyncStrategyLocalSecret)
-	module := NewTestModuleWithFixName(moduleName, v1beta2.DefaultChannel)
+	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(remoteNamespace)
 
 	InitEmptyKymaBeforeAll(kyma)
@@ -37,7 +37,7 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 		It("And disabling Template Operator", func() {
 			Eventually(DisableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, moduleName).
+				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, "template-operator").
 				Should(Succeed())
 		})
 

@@ -50,7 +50,6 @@ const (
 	interval              = 1 * time.Second
 	remoteNamespace       = "kyma-system"
 	controlPlaneNamespace = "kcp-system"
-	moduleName            = "template-operator"
 	moduleCRFinalizer     = "cr-finalizer"
 )
 
