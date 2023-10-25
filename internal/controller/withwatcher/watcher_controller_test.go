@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -46,8 +47,8 @@ func gatewayUpdated(customIstioClient *istio.Client) error {
 	}
 	Expect(gateways).To(HaveLen(1))
 	gateway := gateways[0]
-	Expect(gateway.Spec.Servers).To(HaveLen(1))
-	Expect(gateway.Spec.Servers[0].Hosts).To(HaveLen(1))
+	Expect(gateway.Spec.GetServers()).To(HaveLen(1))
+	Expect(gateway.Spec.GetServers()[0].GetHosts()).To(HaveLen(1))
 	gateway.Spec.Servers[0].Hosts[0] = "listener.updated.kyma.cloud.sap"
 	return controlPlaneClient.Update(suiteCtx, gateway)
 }
@@ -145,7 +146,7 @@ func watcherCRIsReady(watcherName string) error {
 	if err != nil {
 		return err
 	}
-	if watcher.Status.State != v1beta2.StateReady {
+	if watcher.Status.State != shared.StateReady {
 		return errWatcherNotReady
 	}
 	return nil

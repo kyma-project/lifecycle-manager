@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -33,8 +34,8 @@ type Manifest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   v1beta2.ManifestSpec   `json:"spec,omitempty"`
-	Status v1beta2.ManifestStatus `json:"status,omitempty"`
+	Spec   v1beta2.ManifestSpec `json:"spec,omitempty"`
+	Status shared.Status        `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true

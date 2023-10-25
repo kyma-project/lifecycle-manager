@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
@@ -91,13 +92,13 @@ func UpdateManifestState(
 	kymaName,
 	kymaNamespace,
 	moduleName string,
-	state v1beta2.State,
+	state shared.State,
 ) error {
 	component, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
 	if err != nil {
 		return err
 	}
-	component.Status.State = declarative.State(state)
+	component.Status.State = state
 	err = clnt.Status().Update(ctx, component)
 	if err != nil {
 		return fmt.Errorf("update manifest: %w", err)

@@ -21,6 +21,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -115,7 +116,7 @@ type CustomStateCheck struct {
 	Value string `json:"value" yaml:"value"`
 
 	// MappedState is the Kyma CR State
-	MappedState State `json:"mappedState" yaml:"mappedState"`
+	MappedState shared.State `json:"mappedState" yaml:"mappedState"`
 }
 
 func (m *ModuleTemplate) GetDescriptor() (*Descriptor, error) {

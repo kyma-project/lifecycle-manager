@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
@@ -50,21 +50,21 @@ var _ = Describe(
 				"When Manifest CR contains a valid install OCI image specification, "+
 					"expect state in ready",
 				hlp.WithValidInstallImageSpec(installName, false, false),
-				hlp.ExpectManifestStateIn(declarative.StateReady),
+				hlp.ExpectManifestStateIn(shared.StateReady),
 				hlp.ExpectOCISyncRefAnnotationExists(true),
 			),
 			Entry(
 				"When Manifest CR contains a valid install OCI image specification and enabled deploy resource, "+
 					"expect state in ready",
 				hlp.WithValidInstallImageSpec(installName, true, false),
-				hlp.ExpectManifestStateIn(declarative.StateReady),
+				hlp.ExpectManifestStateIn(shared.StateReady),
 				hlp.ExpectOCISyncRefAnnotationExists(true),
 			),
 			Entry(
 				"When Manifest CR contains an invalid install OCI image specification, "+
 					"expect state in error",
 				hlp.WithInvalidInstallImageSpec(false),
-				hlp.ExpectManifestStateIn(declarative.StateError),
+				hlp.ExpectManifestStateIn(shared.StateError),
 				hlp.ExpectOCISyncRefAnnotationExists(false),
 			),
 		)
@@ -97,7 +97,7 @@ var _ = Describe(
 					return err.Error()
 				}
 
-				if status.State != declarative.StateError {
+				if status.State != shared.StateError {
 					return "manifest not in error state"
 				}
 				if strings.Contains(status.LastOperation.Operation, ocmextensions.ErrNoAuthSecretFound.Error()) {

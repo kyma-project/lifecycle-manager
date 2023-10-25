@@ -3,6 +3,7 @@ package e2e_test
 import (
 	"context"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
@@ -11,7 +12,7 @@ import (
 
 var _ = Describe("Module Without Default CR", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalSecret)
-	module := NewTestModuleWithFixName("template-operator", v1beta2.DefaultChannel)
+	module := NewTemplateOperator(v1beta2.DefaultChannel)
 
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
@@ -46,14 +47,14 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 		It("Then module state of KCP Kyma in Ready", func() {
 			Eventually(CheckModuleState).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name, v1beta2.StateReady).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name, shared.StateReady).
 				Should(Succeed())
 		})
 
 		It("Then state of KCP kyma in Ready", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 				Should(Succeed())
 		})
 	})

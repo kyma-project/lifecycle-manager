@@ -133,14 +133,14 @@ func getHosts(gateways []*istioclientapi.Gateway) ([]string, error) {
 	hosts := make([]string, 0)
 
 	for _, g := range gateways {
-		servers := g.Spec.Servers
-		if len(servers) == 0 || len(servers[0].Hosts) == 0 {
+		servers := g.Spec.GetServers()
+		if len(servers) == 0 || len(servers[0].GetHosts()) == 0 {
 			return nil, fmt.Errorf("for gateway %s: %w",
 				client.ObjectKeyFromObject(g).String(),
 				ErrCantFindGatewayServersHost)
 		}
 		for _, s := range servers {
-			hosts = append(hosts, s.Hosts...)
+			hosts = append(hosts, s.GetHosts()...)
 		}
 	}
 
@@ -200,11 +200,11 @@ func (c *Client) RemoveVirtualServiceForCR(ctx context.Context, watcherObjKey cl
 }
 
 func IsRouteConfigEqual(route1 *istioapi.HTTPRoute, route2 *istioapi.HTTPRoute) bool {
-	stringMatch1, ok := route1.Match[firstElementIdx].Uri.MatchType.(*istioapi.StringMatch_Prefix)
+	stringMatch1, ok := route1.GetMatch()[firstElementIdx].GetUri().GetMatchType().(*istioapi.StringMatch_Prefix)
 	if !ok {
 		return false
 	}
-	stringMatch2, ok := route2.Match[firstElementIdx].Uri.MatchType.(*istioapi.StringMatch_Prefix)
+	stringMatch2, ok := route2.GetMatch()[firstElementIdx].GetUri().GetMatchType().(*istioapi.StringMatch_Prefix)
 	if !ok {
 		return false
 	}
@@ -213,13 +213,13 @@ func IsRouteConfigEqual(route1 *istioapi.HTTPRoute, route2 *istioapi.HTTPRoute) 
 		return false
 	}
 
-	if route1.Route[firstElementIdx].Destination.Host !=
-		route2.Route[firstElementIdx].Destination.Host {
+	if route1.GetRoute()[firstElementIdx].GetDestination().GetHost() !=
+		route2.GetRoute()[firstElementIdx].GetDestination().GetHost() {
 		return false
 	}
 
-	if route1.Route[firstElementIdx].Destination.Port.Number !=
-		route2.Route[firstElementIdx].Destination.Port.Number {
+	if route1.GetRoute()[firstElementIdx].GetDestination().GetPort().GetNumber() !=
+		route2.GetRoute()[firstElementIdx].GetDestination().GetPort().GetNumber() {
 		return false
 	}
 

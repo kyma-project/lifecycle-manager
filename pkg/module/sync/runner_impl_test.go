@@ -37,8 +37,7 @@ func TestDeleteNoLongerExistingModuleStatus(t *testing.T) {
 		getModule                   sync.GetModuleFunc
 	}{
 		{
-			"When status.modules contains valid modules not in spec.module, " +
-				"expect removed and spec.module keep",
+			"When status.modules contains valid modules not in spec.module, expect removed and spec.module keep",
 			[]string{ModuleShouldKeep},
 			[]string{ModuleShouldKeep, ModuleToBeRemoved},
 			[]string{ModuleShouldKeep},
@@ -46,16 +45,14 @@ func TestDeleteNoLongerExistingModuleStatus(t *testing.T) {
 		},
 
 		{
-			"When status.modules contains invalid modules not in spec.module, " +
-				"expect removed and spec.module keep",
+			"When status.modules contains invalid modules not in spec.module, expect removed and spec.module keep",
 			[]string{ModuleShouldKeep},
 			[]string{ModuleShouldKeep, InvalidModulePrefix + ModuleToBeRemoved},
 			[]string{ModuleShouldKeep},
 			moduleDeletedSuccessfullyMock,
 		},
 		{
-			"When status.modules contains invalid modules in spec.module, " +
-				"expect keep",
+			"When status.modules contains invalid modules in spec.module, expect keep",
 			[]string{InvalidModulePrefix + ModuleShouldKeep},
 			[]string{InvalidModulePrefix + ModuleShouldKeep, ModuleToBeRemoved},
 			[]string{InvalidModulePrefix + ModuleShouldKeep},
@@ -71,16 +68,14 @@ func TestDeleteNoLongerExistingModuleStatus(t *testing.T) {
 		},
 
 		{
-			"When status.modules contains invalid modules not in spec.module, " +
-				"expect removed and spec.module keep",
+			"When status.modules contains invalid modules not in spec.module, expect removed and spec.module keep",
 			[]string{ModuleShouldKeep},
 			[]string{ModuleShouldKeep, InvalidModulePrefix + ModuleToBeRemoved},
 			[]string{ModuleShouldKeep},
 			moduleStillExistsInClusterMock,
 		},
 		{
-			"When status.modules contains invalid modules in spec.module, " +
-				"expect keep",
+			"When status.modules contains invalid modules in spec.module, expect keep",
 			[]string{InvalidModulePrefix + ModuleShouldKeep},
 			[]string{InvalidModulePrefix + ModuleShouldKeep, ModuleToBeRemoved},
 			[]string{InvalidModulePrefix + ModuleShouldKeep, ModuleToBeRemoved},

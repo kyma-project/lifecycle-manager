@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -31,22 +32,22 @@ func Helper(handler HelperClient) *KymaHelper {
 }
 
 func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
-	kyma *v1beta2.Kyma, newState v1beta2.State, message string,
+	kyma *v1beta2.Kyma, newState shared.State, message string,
 ) error {
 	kyma.Status.State = newState
 	kyma.ManagedFields = nil
 
 	switch newState {
-	case v1beta2.StateReady, v1beta2.StateWarning:
+	case shared.StateReady, shared.StateWarning:
 		kyma.SetActiveChannel()
 	case "":
-	case v1beta2.StateDeleting:
-	case v1beta2.StateError:
-	case v1beta2.StateProcessing:
+	case shared.StateDeleting:
+	case shared.StateError:
+	case shared.StateProcessing:
 	default:
 	}
 
-	kyma.Status.LastOperation = v1beta2.LastOperation{
+	kyma.Status.LastOperation = shared.LastOperation{
 		Operation:      message,
 		LastUpdateTime: metav1.NewTime(time.Now()),
 	}

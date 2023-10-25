@@ -13,7 +13,7 @@ import (
 var ErrDeletionNotFinished = errors.New("deletion is not yet finished")
 
 type Cleanup interface {
-	Run(context.Context, []*resource.Info) error
+	Run(ctx context.Context, resourceInfo []*resource.Info) error
 }
 
 type ConcurrentCleanup struct {

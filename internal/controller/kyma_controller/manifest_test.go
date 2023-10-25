@@ -9,6 +9,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
@@ -79,14 +80,14 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, v1beta2.StateReady).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, shared.StateReady).
 				Should(Succeed())
 		}
 
 		By("Kyma CR should be in Ready state")
 		Eventually(KymaIsInState, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 			Should(Succeed())
 
 		By("Update Module Template spec.data.spec field")
@@ -248,14 +249,14 @@ var _ = Describe("Update Module Template Version", Ordered, func() {
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, v1beta2.StateReady).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, shared.StateReady).
 				Should(Succeed())
 		}
 
 		By("Kyma CR should be in Ready state")
 		Eventually(KymaIsInState, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 			Should(Succeed())
 
 		By("Manifest spec.install.source.ref corresponds to Module Template resources[].access.digest")

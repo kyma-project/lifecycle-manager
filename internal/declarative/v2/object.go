@@ -1,112 +1,13 @@
 package v2
 
 import (
-	"strings"
-	"time"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 //go:generate mockgen -source object.go -destination mock/object.go Object
 type Object interface {
 	client.Object
-	GetStatus() Status
-	SetStatus(Status)
-}
-
-// Status defines the observed state of CustomObject.
-// +k8s:deepcopy-gen=true
-type Status struct {
-	// State signifies current state of CustomObject.
-	// Value can be one of ("Ready", "Processing", "Error", "Deleting", "Warning").
-	// +kubebuilder:validation:Required
-	// +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error;Warning
-	State State `json:"state,omitempty"`
-
-	// Conditions contain a set of conditionals to determine the State of Status.
-	// If all Conditions are met, the State is expected to be in StateReady.
-	// +listType=map
-	// +listMapKey=type
-	Conditions []metav1.Condition `json:"conditions,omitempty" patchMergeKey:"type" patchStrategy:"merge"`
-
-	// Synced determine a list of Resources that are currently actively synced.
-	// All resources that are synced are considered for orphan removal on configuration changes,
-	// and it is used to determine effective differences from one state to the next.
-	// +listType=atomic
-	Synced        []Resource `json:"synced,omitempty"`
-	LastOperation `json:"lastOperation,omitempty"`
-}
-
-type State string
-
-// Valid States.
-const (
-	// StateReady signifies CustomObject is ready and has been installed successfully.
-	StateReady State = "Ready"
-	// StateProcessing signifies CustomObject is reconciling and is in the process of installation.
-	// Processing can also signal that the Installation previously encountered an error and is now recovering.
-	StateProcessing State = "Processing"
-	// StateError signifies an error for CustomObject. This signifies that the Installation
-	// process encountered an error.
-	// Contrary to Processing, it can be expected that this state should change on the next retry.
-	StateError State = "Error"
-	// StateDeleting signifies CustomObject is being deleted. This is the state that is used
-	// when a deletionTimestamp was detected and Finalizers are picked up.
-	StateDeleting State = "Deleting"
-
-	// StateWarning signifies specified resource has been deployed, but cannot be used due to misconfiguration,
-	// usually it means that user interaction is required.
-	StateWarning State = "Warning"
-)
-
-// IsSupportedState These states will be used by module CR.
-func (state State) IsSupportedState() bool {
-	return state == StateReady ||
-		state == StateProcessing ||
-		state == StateError ||
-		state == StateDeleting ||
-		state == StateWarning
-}
-
-func (s Status) WithState(state State) Status {
-	s.State = state
-	return s
-}
-
-type Resource struct {
-	Name                    string `json:"name"`
-	Namespace               string `json:"namespace"`
-	metav1.GroupVersionKind `json:",inline"`
-}
-
-func (r Resource) ToUnstructured() *unstructured.Unstructured {
-	obj := unstructured.Unstructured{}
-	obj.SetGroupVersionKind(schema.GroupVersionKind(r.GroupVersionKind))
-	obj.SetName(r.Name)
-	obj.SetNamespace(r.Namespace)
-	return &obj
-}
-
-func (r Resource) ID() string {
-	return strings.Join([]string{r.Namespace, r.Name, r.Group, r.Version, r.Kind}, "/")
-}
-
-// LastOperation defines the last operation from the control-loop.
-// +k8s:deepcopy-gen=true
-type LastOperation struct {
-	Operation      string      `json:"operation"`
-	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty"`
-}
-
-func (s Status) WithErr(err error) Status {
-	s.LastOperation = LastOperation{Operation: err.Error(), LastUpdateTime: metav1.NewTime(time.Now())}
-	return s
-}
-
-func (s Status) WithOperation(operation string) Status {
-	s.LastOperation = LastOperation{Operation: operation, LastUpdateTime: metav1.NewTime(time.Now())}
-	return s
+	GetStatus() shared.Status
+	SetStatus(status shared.Status)
 }

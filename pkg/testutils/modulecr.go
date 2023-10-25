@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -110,7 +110,7 @@ func FinalizerIsRemoved(ctx context.Context, clnt client.Client, moduleCR *unstr
 func ModuleCRIsInExpectedState(ctx context.Context,
 	clnt client.Client,
 	moduleCR *unstructured.Unstructured,
-	expectedState v1beta2.State,
+	expectedState shared.State,
 ) bool {
 	err := clnt.Get(ctx, client.ObjectKey{
 		Namespace: moduleCR.GetNamespace(),

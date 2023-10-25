@@ -145,7 +145,7 @@ spec:
             - remote
             type: object
           status:
-            description: ManifestStatus defines the observed state of Manifest.
+            description: Status defines the observed state of CustomObject.
             properties:
               conditions:
                 description: Conditions contain a set of conditionals to determine
@@ -236,11 +236,12 @@ spec:
                 description: State signifies current state of CustomObject. Value
                   can be one of ("Ready", "Processing", "Error", "Deleting", "Warning").
                 enum:
-                - Processing
-                - Deleting
-                - Ready
-                - Error
-                - Warning
+                  - Processing
+                  - Deleting
+                  - Ready
+                  - Error
+                  - ""
+                  - Warning
                 type: string
               synced:
                 description: Synced determine a list of Resources that are currently
@@ -402,7 +403,7 @@ spec:
             - remote
             type: object
           status:
-            description: ManifestStatus defines the observed state of Manifest.
+            description: Status defines the observed state of CustomObject.
             properties:
               conditions:
                 description: Conditions contain a set of conditionals to determine
@@ -493,11 +494,12 @@ spec:
                 description: State signifies current state of CustomObject. Value
                   can be one of ("Ready", "Processing", "Error", "Deleting", "Warning").
                 enum:
-                - Processing
-                - Deleting
-                - Ready
-                - Error
-                - Warning
+                  - Processing
+                  - Deleting
+                  - Ready
+                  - Error
+                  - ""
+                  - Warning
                 type: string
               synced:
                 description: Synced determine a list of Resources that are currently

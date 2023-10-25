@@ -19,7 +19,7 @@ import (
 var ErrClientObjectConversionFailed = errors.New("client object conversion failed")
 
 type SSA interface {
-	Run(context.Context, []*resource.Info) error
+	Run(ctx context.Context, resourceInfo []*resource.Info) error
 }
 
 type ConcurrentDefaultSSA struct {
