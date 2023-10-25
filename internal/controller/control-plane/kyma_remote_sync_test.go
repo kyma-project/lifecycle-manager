@@ -2,8 +2,9 @@ package control_plane_test
 
 import (
 	"errors"
-	"fmt"
+	"strconv"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 
@@ -163,7 +164,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		By("KCP Manifest CR becomes ready")
 		Eventually(UpdateManifestState, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), moduleInSKR.Name, v1beta2.StateReady).
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), moduleInSKR.Name, shared.StateReady).
 			Should(Succeed())
 
 		By("ModuleTemplate descriptor should be saved in cache")
@@ -459,10 +460,10 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 				return err
 			}
 
-			if kcpKyma.Annotations["kyma-skr-crd-generation"] != fmt.Sprint(skrKymaCrd.Generation) {
+			if kcpKyma.Annotations["kyma-skr-crd-generation"] != strconv.FormatInt(skrKymaCrd.Generation, 10) {
 				return ErrAnnotationNotUpdated
 			}
-			if kcpKyma.Annotations["kyma-kcp-crd-generation"] != fmt.Sprint(skrKymaCrd.Generation) {
+			if kcpKyma.Annotations["kyma-kcp-crd-generation"] != strconv.FormatInt(kcpKymaCrd.Generation, 10) {
 				return ErrAnnotationNotUpdated
 			}
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"k8s.io/client-go/tools/record"
 )
 
@@ -36,7 +37,7 @@ func (r *RawRenderer) Render(_ context.Context, obj Object) ([]byte, error) {
 	manifest, err := os.ReadFile(r.Path)
 	if err != nil {
 		r.Event(obj, "Warning", "ReadRawManifest", err.Error())
-		obj.SetStatus(status.WithState(StateError).WithErr(err))
+		obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return nil, fmt.Errorf("failed to read from file path [%v]: %w", r.Path, err)
 	}
 	return manifest, nil

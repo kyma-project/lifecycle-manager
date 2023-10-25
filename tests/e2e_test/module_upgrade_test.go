@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
@@ -13,6 +14,7 @@ var _ = Describe("Module Upgrade", Ordered, func() {
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(remoteNamespace)
 	InitEmptyKymaBeforeAll(kyma)
+	CleanupKymaAfterAll(kyma)
 
 	Context("Given Template Operator", func() {
 		It("When enable Template Operator", func() {
@@ -29,31 +31,38 @@ var _ = Describe("Module Upgrade", Ordered, func() {
 				Should(Succeed())
 		})
 
+		It("And template operator manager exists", func() {
+			Eventually(ModuleDeploymentExists).
+				WithContext(ctx).
+				WithArguments(runtimeClient, "template-operator-system", "template-operator-v1-controller-manager").
+				Should(BeTrue())
+		})
+
 		It("And KCP kyma is ready", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 				Should(Succeed())
 		})
 
 		It("When Template Operator channel is changed", func() {
-			Eventually(ChangeRemoteKymaChannel).
+			Eventually(ChangeKymaModuleChannel).
 				WithContext(ctx).
-				WithArguments(defaultRemoteKymaName, remoteNamespace, "fast", runtimeClient).
+				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, "template-operator", "fast").
 				Should(Succeed())
 		})
 
 		It("Then new template operator manager exists", func() {
 			Eventually(ModuleDeploymentExists).
 				WithContext(ctx).
-				WithArguments(runtimeClient, "kyma-system", "template-operator-v2-controller-manager").
+				WithArguments(runtimeClient, "template-operator-system", "template-operator-v2-controller-manager").
 				Should(BeTrue())
 		})
 
 		It("And kyma is ready", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 				Should(Succeed())
 		})
 	})

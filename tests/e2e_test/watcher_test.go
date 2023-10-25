@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
@@ -87,9 +88,9 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 		timeNow := &metav1.Time{Time: time.Now()}
 		GinkgoWriter.Println(fmt.Sprintf("Spec watching logs since %s: ", timeNow))
 		switchedChannel := "fast"
-		Eventually(ChangeRemoteKymaChannel).
+		Eventually(changeRemoteKymaChannel).
 			WithContext(ctx).
-			WithArguments(remoteNamespace, defaultRemoteKymaName, switchedChannel, runtimeClient).
+			WithArguments(remoteNamespace, switchedChannel, runtimeClient).
 			Should(Succeed())
 		By("verifying new reconciliation got triggered for corresponding KymaCR on KCP")
 		Eventually(checkKLMLogs).
@@ -120,6 +121,19 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 			Should(Succeed())
 	})
 })
+
+func changeRemoteKymaChannel(ctx context.Context, kymaNamespace, channel string, k8sClient client.Client) error {
+	kyma := &v1beta2.Kyma{}
+	if err := k8sClient.Get(ctx,
+		client.ObjectKey{Name: defaultRemoteKymaName, Namespace: kymaNamespace},
+		kyma); err != nil {
+		return err
+	}
+
+	kyma.Spec.Channel = channel
+
+	return k8sClient.Update(ctx, kyma)
+}
 
 func checkKLMLogs(ctx context.Context,
 	logMsg string,
@@ -260,8 +274,8 @@ func updateRemoteKymaStatusSubresource(k8sClient client.Client, kymaNamespace st
 		return fmt.Errorf("failed to get Kyma %w", err)
 	}
 
-	kyma.Status.State = v1beta2.StateWarning
-	kyma.Status.LastOperation = v1beta2.LastOperation{
+	kyma.Status.State = shared.StateWarning
+	kyma.Status.LastOperation = shared.LastOperation{
 		Operation:      "Updated Kyma Status subresource for test",
 		LastUpdateTime: metav1.NewTime(time.Now()),
 	}

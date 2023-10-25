@@ -170,7 +170,7 @@ jobs:
           kubectl get crds
           kubectl apply -f template.yaml
       - name: Create Template Operator Module for regular and fast channels
-        working-directory: template-operator
+        working-directory: lifecycle-manager
         if: ${{ matrix.e2e-test == 'module-upgrade'}}
         run: |
           kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_fast.yaml

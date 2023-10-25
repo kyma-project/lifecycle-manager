@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -121,7 +122,7 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	return ctrl.Result{}, nil
 }
 
-func (r *PurgeReconciler) UpdateStatus(ctx context.Context, kyma *v1beta2.Kyma, state v1beta2.State, message string,
+func (r *PurgeReconciler) UpdateStatus(ctx context.Context, kyma *v1beta2.Kyma, state shared.State, message string,
 ) error {
 	if err := status.Helper(r).UpdateStatusForExistingModules(ctx, kyma, state, message); err != nil {
 		return fmt.Errorf("error while updating status to %s because of %s: %w", state, message, err)

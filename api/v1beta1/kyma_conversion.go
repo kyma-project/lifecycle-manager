@@ -27,7 +27,7 @@ func (src *Kyma) ConvertTo(dstRaw conversion.Hub) error {
 	return nil
 }
 
-//nolint:revive,stylecheck
+//nolint:stylecheck
 func (dst *Kyma) ConvertFrom(srcRaw conversion.Hub) error {
 	src, ok := srcRaw.(*v1beta2.Kyma)
 	if !ok {

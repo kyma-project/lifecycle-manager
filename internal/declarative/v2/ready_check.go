@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -12,7 +13,7 @@ import (
 var ErrNotValidClientObject = errors.New("object in resource info is not a valid client object")
 
 type StateInfo struct {
-	State
+	shared.State
 	Info string
 }
 
@@ -35,11 +36,11 @@ func (c *ExistsReadyCheck) Run(
 	for i := range resources {
 		obj, ok := resources[i].Object.(client.Object)
 		if !ok {
-			return StateInfo{State: StateError}, ErrNotValidClientObject
+			return StateInfo{State: shared.StateError}, ErrNotValidClientObject
 		}
 		if err := clnt.Get(ctx, client.ObjectKeyFromObject(obj), obj); client.IgnoreNotFound(err) != nil {
-			return StateInfo{State: StateError}, fmt.Errorf("failed to fetch object by key: %w", err)
+			return StateInfo{State: shared.StateError}, fmt.Errorf("failed to fetch object by key: %w", err)
 		}
 	}
-	return StateInfo{State: StateReady}, nil
+	return StateInfo{State: shared.StateReady}, nil
 }

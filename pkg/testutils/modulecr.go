@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -111,7 +112,7 @@ func FinalizerIsRemoved(ctx context.Context, clnt client.Client, moduleCR *unstr
 func ModuleCRIsInExpectedState(ctx context.Context,
 	clnt client.Client,
 	moduleCR *unstructured.Unstructured,
-	expectedState v1beta2.State,
+	expectedState shared.State,
 ) bool {
 	err := clnt.Get(ctx, client.ObjectKey{
 		Namespace: moduleCR.GetNamespace(),
@@ -131,7 +132,8 @@ func ModuleCRIsInExpectedState(ctx context.Context,
 func ModuleDeploymentExists(ctx context.Context,
 	clnt client.Client,
 	namespace string,
-	deploymentName string) bool {
+	deploymentName string,
+) bool {
 	var deployment appsv1.Deployment
 	err := clnt.Get(ctx, client.ObjectKey{
 		Namespace: namespace,
@@ -139,4 +141,32 @@ func ModuleDeploymentExists(ctx context.Context,
 	}, &deployment)
 
 	return err == nil && deployment.Status.AvailableReplicas != 0
+}
+
+func ChangeKymaModuleChannel(ctx context.Context,
+	clnt client.Client,
+	kymaName string,
+	kymaNamespace string,
+	moduleName string,
+	channel string,
+) error {
+	kyma := &v1beta2.Kyma{}
+	if err := clnt.Get(ctx,
+		client.ObjectKey{Name: kymaName, Namespace: kymaNamespace},
+		kyma); err != nil {
+		return fmt.Errorf("failed to fetch kyma, %w", err)
+	}
+
+	for i, module := range kyma.Spec.Modules {
+		if module.Name == moduleName {
+			kyma.Spec.Modules[i].Channel = channel
+			break
+		}
+	}
+
+	err := clnt.Update(ctx, kyma)
+	if err != nil {
+		return fmt.Errorf("failed to update kyma %w", err)
+	}
+	return nil
 }
