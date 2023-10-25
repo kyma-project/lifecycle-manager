@@ -87,9 +87,9 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 		timeNow := &metav1.Time{Time: time.Now()}
 		GinkgoWriter.Println(fmt.Sprintf("Spec watching logs since %s: ", timeNow))
 		switchedChannel := "fast"
-		Eventually(changeRemoteKymaChannel).
+		Eventually(ChangeRemoteKymaChannel).
 			WithContext(ctx).
-			WithArguments(remoteNamespace, switchedChannel, runtimeClient).
+			WithArguments(remoteNamespace, defaultRemoteKymaName, switchedChannel, runtimeClient).
 			Should(Succeed())
 		By("verifying new reconciliation got triggered for corresponding KymaCR on KCP")
 		Eventually(checkKLMLogs).
@@ -120,19 +120,6 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 			Should(Succeed())
 	})
 })
-
-func changeRemoteKymaChannel(ctx context.Context, kymaNamespace, channel string, k8sClient client.Client) error {
-	kyma := &v1beta2.Kyma{}
-	if err := k8sClient.Get(ctx,
-		client.ObjectKey{Name: defaultRemoteKymaName, Namespace: kymaNamespace},
-		kyma); err != nil {
-		return err
-	}
-
-	kyma.Spec.Channel = channel
-
-	return k8sClient.Update(ctx, kyma)
-}
 
 func checkKLMLogs(ctx context.Context,
 	logMsg string,

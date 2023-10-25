@@ -304,3 +304,20 @@ func ContainsModuleInSpec(ctx context.Context,
 
 	return ErrNotContainsExpectedModules
 }
+
+func ChangeRemoteKymaChannel(ctx context.Context,
+	kymaName string,
+	kymaNamespace,
+	channel string,
+	k8sClient client.Client) error {
+	kyma := &v1beta2.Kyma{}
+	if err := k8sClient.Get(ctx,
+		client.ObjectKey{Name: kymaName, Namespace: kymaNamespace},
+		kyma); err != nil {
+		return err
+	}
+
+	kyma.Spec.Channel = channel
+
+	return k8sClient.Update(ctx, kyma)
+}
