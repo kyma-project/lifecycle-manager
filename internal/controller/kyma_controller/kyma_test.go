@@ -267,7 +267,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	RegisterDefaultLifecycleForKymaWithoutTemplate(kyma)
 
 	It("Should deploy ModuleTemplate", func() {
-		data := builder.NewModuleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
+		data := builder.NewSampleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
 		template := builder.NewModuleTemplateBuilder().
 			WithModuleName(module.Name).
 			WithChannel(module.Channel).

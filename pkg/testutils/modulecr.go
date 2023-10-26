@@ -33,7 +33,7 @@ func ModuleCRExists(ctx context.Context, clnt client.Client, moduleCR *unstructu
 
 // NewTestModuleCR init one module cr used by template-operator.
 func NewTestModuleCR(namespace string) *unstructured.Unstructured {
-	return builder.NewModuleCRBuilder().
+	return builder.NewSampleCRBuilder().
 		WithName(TestModuleCRName).
 		WithNamespace(namespace).Build()
 }

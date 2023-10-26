@@ -1,6 +1,12 @@
 module github.com/kyma-project/lifecycle-manager
 
-go 1.21
+go 1.21.3
+
+require (
+	github.com/kyma-project/template-operator/api v0.0.0-00010101000000-000000000000
+)
+
+replace github.com/kyma-project/template-operator/api => ../template-operator/api
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
@@ -22,7 +28,7 @@ require (
 	golang.org/x/time v0.3.0
 	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
-	sigs.k8s.io/controller-runtime v0.16.2
+	sigs.k8s.io/controller-runtime v0.16.3
 	sigs.k8s.io/e2e-framework v0.3.0
 	sigs.k8s.io/yaml v1.3.0
 )
@@ -33,11 +39,11 @@ require (
 )
 
 require (
-	k8s.io/api v0.28.2
-	k8s.io/apiextensions-apiserver v0.28.2
-	k8s.io/apimachinery v0.28.2
+	k8s.io/api v0.28.3
+	k8s.io/apiextensions-apiserver v0.28.3
+	k8s.io/apimachinery v0.28.3
 	k8s.io/cli-runtime v0.28.2
-	k8s.io/client-go v0.28.2
+	k8s.io/client-go v0.28.3
 	k8s.io/kubectl v0.28.2
 )
 
@@ -323,7 +329,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	helm.sh/helm/v3 v3.12.2 // indirect
 	inet.af/netaddr v0.0.0-20220811202034-502d2d690317 // indirect
-	k8s.io/component-base v0.28.2 // indirect
+	k8s.io/component-base v0.28.3 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230905202853-d090da108d2f // indirect
 	oras.land/oras-go v1.2.4 // indirect

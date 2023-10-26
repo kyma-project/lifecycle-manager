@@ -312,7 +312,7 @@ func TestHandleState(t *testing.T) {
 				}
 			}
 			manifestCR.CreationTimestamp = v1.Now()
-			moduleCR := builder.NewModuleCRBuilder().WithName("test").WithNamespace(v1.NamespaceDefault).
+			moduleCR := builder.NewSampleCRBuilder().WithName("test").WithNamespace(v1.NamespaceDefault).
 				WithGroupVersionKind(v1beta2.GroupVersion.Group, "v1", "TestCR").Build()
 			for _, check := range testCase.checkInModuleCR {
 				err := unstructured.SetNestedField(moduleCR.Object, check.value, check.fields...)
@@ -424,7 +424,7 @@ func TestHandleStateWithDuration(t *testing.T) {
 				}
 			}
 			manifestCR.CreationTimestamp = testCase.manifestCreatedAt
-			moduleCR := builder.NewModuleCRBuilder().WithName("test").WithNamespace(v1.NamespaceDefault).
+			moduleCR := builder.NewSampleCRBuilder().WithName("test").WithNamespace(v1.NamespaceDefault).
 				WithGroupVersionKind(v1beta2.GroupVersion.Group, "v1", "TestCR").Build()
 			for _, check := range testCase.checkInModuleCR {
 				err := unstructured.SetNestedField(moduleCR.Object, check.value, check.fields...)
