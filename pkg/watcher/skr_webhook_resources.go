@@ -22,8 +22,9 @@ import (
 )
 
 const (
-	podRestartLabelKey = "operator.kyma-project.io/pod-restart-trigger"
-	kcpAddressEnvName  = "KCP_ADDR"
+	podRestartLabelKey      = "operator.kyma-project.io/pod-restart-trigger"
+	kcpAddressEnvName       = "KCP_ADDR"
+	watcherBaseImageAddress = "europe-docker.pkg.dev/kyma-project/prod/"
 )
 
 var (
@@ -150,7 +151,7 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 
 	serverContainer := deployment.Spec.Template.Spec.Containers[0]
 	if cfg.skrWatcherImage != "" {
-		serverContainer.Image = cfg.skrWatcherImage
+		serverContainer.Image = fmt.Sprintf("%s%s", watcherBaseImageAddress, cfg.skrWatcherImage)
 	}
 
 	for i := 0; i < len(serverContainer.Env); i++ {
