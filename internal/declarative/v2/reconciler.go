@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
@@ -26,6 +25,7 @@ var (
 	ErrDeletionTimestampSetButNotInDeletingState = errors.New("resource is not set to deleting yet")
 	ErrObjectHasEmptyState                       = errors.New("object has an empty state")
 	ErrKubeconfigFetchFailed                     = errors.New("could not fetch kubeconfig")
+	ErrCustomResourceDoesNotExist                = errors.New("custom resource does not exist")
 )
 
 const (
@@ -148,13 +148,25 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	diff := ResourceList(current).Difference(target)
-	if err := r.pruneDiff(ctx, clnt, obj, renderer, diff, spec); errors.Is(err, ErrDeletionNotFinished) {
+	if err := r.pruneDiff(ctx, clnt, obj, renderer, diff, spec); errors.Is(err, ErrDeletionNotFinished) { // TODO hier wird sample CR gelöscht + Finalizer
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
 		return r.ssaStatus(ctx, obj)
 	}
 
-	if err := r.syncResources(ctx, clnt, obj, target); err != nil {
+	//if !obj.GetDeletionTimestamp().IsZero() { // TODO dass hier hatten wir eigentlich zum ende der funktion verschoben
+	//	return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
+	//}
+
+	err = r.syncResources(ctx, clnt, obj, target) // TODO, wenn sample cr schon gelöscht ist, failt es hier, heist wir sollten auch den deltion time, aber hier wird die sample cr (default) auch erstellt, sollte somit beim delete nicht aufgerufen werden
+	// stamp vom manifest CR checkn und somit ned mehr die readniess überprürfen
+	// in syncResources wird auch die Module Default CR erstellt
+	// TODO wenn die sample CR hier nicht gefudnen wird, dann den finalizer löschen
+	if err != nil && err == ErrCustomResourceDoesNotExist && !obj.GetDeletionTimestamp().IsZero() {
+		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
+	} else if err != nil {
+		// finalizer for sample cr is removed
+		// finalizer for declarative is still existing
 		return r.ssaStatus(ctx, obj)
 	}
 
@@ -292,7 +304,8 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 		return ErrWarningResourceSyncStateDiff
 	}
 
-	for i := range r.PostRuns {
+	// create module default CR
+	for i := range r.PostRuns { // sample CR created
 		if err := r.PostRuns[i](ctx, clnt, r.Client, obj); err != nil {
 			r.Event(obj, "Warning", "PostRun", err.Error())
 			obj.SetStatus(status.WithState(StateError).WithErr(err))

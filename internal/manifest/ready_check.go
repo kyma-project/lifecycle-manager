@@ -58,8 +58,8 @@ func (c *CustomResourceReadyCheck) Run(ctx context.Context,
 		return declarative.StateInfo{State: declarative.StateReady}, nil
 	}
 	moduleCR := manifest.Spec.Resource.DeepCopy()
-	if err := clnt.Get(ctx, client.ObjectKeyFromObject(moduleCR), moduleCR); err != nil {
-		return declarative.StateInfo{State: declarative.StateError}, fmt.Errorf("failed to fetch resource: %w", err)
+	if err := clnt.Get(ctx, client.ObjectKeyFromObject(moduleCR), moduleCR); err != nil { // TODO hier failt es mit samples.operator.kyma-project.io "sample-yaml" not found'
+		return declarative.StateInfo{State: declarative.StateError}, declarative.ErrCustomResourceDoesNotExist
 	}
 	return HandleState(manifest, moduleCR)
 }

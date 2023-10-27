@@ -13,6 +13,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 		v1beta2.SyncStrategyLocalSecret)
 	GinkgoWriter.Printf("kyma before create %v\n", kyma)
 
+	// TODO think about using init kyma before testing
 	Context("Given an SKR cluster", func() {
 		It("When a KCP Kyma CR is created on the KCP cluster", func() {
 			Eventually(CreateKymaSecret).
