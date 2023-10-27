@@ -100,7 +100,8 @@ func defineFlagVar() *FlagVar {
 	flag.StringVar(&flagVar.listenerPortOverwrite, "listener-port-overwrite", "",
 		"Port that is mapped to HTTP port of the local k3d cluster using --port 9443:443@loadbalancer when "+
 			"creating the KCP cluster")
-	flag.StringVar(&flagVar.skrWatcherImage, "skr-watcher-image", "", `Image of the SKR watcher.`)
+	flag.StringVar(&flagVar.skrWatcherImage, "skr-watcher-image", "runtime-watcher-skr:v20230824-f4459bad",
+		`Image of the SKR watcher.`)
 	flag.BoolVar(&flagVar.pprof, "pprof", false, "Whether to start up a pprof server.")
 	flag.DurationVar(&flagVar.pprofServerTimeout, "pprof-server-timeout", defaultPprofServerTimeout,
 		"Timeout of Read / Write for the pprof server.")

@@ -139,11 +139,6 @@ func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *runti
 		os.Exit(1)
 	}
 
-	if flagVar.enableKcpWatcher && flagVar.skrWatcherImage == "" {
-		setupLog.V(log.DebugLevel).Info("Falling back to the hard coded skr watcher image.")
-		flagVar.skrWatcherImage = "runtime-watcher-skr:v20230824-f4459bad"
-	}
-
 	options := controllerOptionsFromFlagVar(flagVar)
 
 	remoteClientCache := remote.NewClientCache()
