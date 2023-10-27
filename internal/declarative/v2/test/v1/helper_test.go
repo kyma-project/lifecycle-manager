@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
@@ -19,16 +20,16 @@ import (
 // BeInState determines if the resource is in a given declarative state
 //
 
-func BeInState(state declarative.State) types.GomegaMatcher {
+func BeInState(state shared.State) types.GomegaMatcher {
 	return &BeInStateMatcher{state: state}
 }
 
 type BeInStateMatcher struct {
-	state declarative.State
+	state shared.State
 }
 
 func (matcher *BeInStateMatcher) Match(actual interface{}) (bool, error) {
-	status, ok := actual.(declarative.Status)
+	status, ok := actual.(shared.Status)
 	if !ok {
 		//nolint:goerr113
 		return false, fmt.Errorf("Expected a Status. Got:\n%s", format.Object(actual, 1))
@@ -59,7 +60,7 @@ type HaveConditionMatcher struct {
 }
 
 func (matcher *HaveConditionMatcher) Match(actual interface{}) (bool, error) {
-	status, ok := actual.(declarative.Status)
+	status, ok := actual.(shared.Status)
 	if !ok {
 		//nolint:goerr113
 		return false, fmt.Errorf("Expected a Status. Got:\n%s", format.Object(actual, 1))
@@ -122,7 +123,7 @@ type SyncedResourcesExistingMatcher struct {
 }
 
 func (matcher *SyncedResourcesExistingMatcher) Match(actual interface{}) (bool, error) {
-	status, ok := actual.(declarative.Status)
+	status, ok := actual.(shared.Status)
 	if !ok {
 		//nolint:goerr113
 		return false, fmt.Errorf("Expected a Status. Got:\n%s", format.Object(actual, 1))

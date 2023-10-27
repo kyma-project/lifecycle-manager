@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -86,8 +87,8 @@ func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 		return ctrl.Result{Requeue: false}, nil
 	}
 
-	if !watcherObj.DeletionTimestamp.IsZero() && watcherObj.Status.State != v1beta2.StateDeleting {
-		return r.updateWatcherState(ctx, watcherObj, v1beta2.StateDeleting, nil)
+	if !watcherObj.DeletionTimestamp.IsZero() && watcherObj.Status.State != shared.StateDeleting {
+		return r.updateWatcherState(ctx, watcherObj, shared.StateDeleting, nil)
 	}
 
 	// check finalizer on native object
@@ -119,14 +120,14 @@ func (r *WatcherReconciler) updateFinalizer(ctx context.Context, watcherCR *v1be
 func (r *WatcherReconciler) stateHandling(ctx context.Context, watcherCR *v1beta2.Watcher) (ctrl.Result, error) {
 	switch watcherCR.Status.State {
 	case "":
-		return r.updateWatcherState(ctx, watcherCR, v1beta2.StateProcessing, nil)
-	case v1beta2.StateProcessing:
+		return r.updateWatcherState(ctx, watcherCR, shared.StateProcessing, nil)
+	case shared.StateProcessing:
 		return r.handleProcessingState(ctx, watcherCR)
-	case v1beta2.StateDeleting:
+	case shared.StateDeleting:
 		return r.handleDeletingState(ctx, watcherCR)
-	case v1beta2.StateError:
+	case shared.StateError:
 		return r.handleProcessingState(ctx, watcherCR)
-	case v1beta2.StateReady, v1beta2.StateWarning:
+	case shared.StateReady, shared.StateWarning:
 		return r.handleProcessingState(ctx, watcherCR)
 	}
 
@@ -137,11 +138,11 @@ func (r *WatcherReconciler) handleDeletingState(ctx context.Context, watcherCR *
 	err := r.IstioClient.RemoveVirtualServiceForCR(ctx, client.ObjectKeyFromObject(watcherCR))
 	if err != nil {
 		vsConfigDelErr := fmt.Errorf("failed to delete virtual service (config): %w", err)
-		return r.updateWatcherState(ctx, watcherCR, v1beta2.StateError, vsConfigDelErr)
+		return r.updateWatcherState(ctx, watcherCR, shared.StateError, vsConfigDelErr)
 	}
 	finalizerRemoved := controllerutil.RemoveFinalizer(watcherCR, watcherFinalizer)
 	if !finalizerRemoved {
-		return r.updateWatcherState(ctx, watcherCR, v1beta2.StateError, errRemovingFinalizer)
+		return r.updateWatcherState(ctx, watcherCR, shared.StateError, errRemovingFinalizer)
 	}
 	return ctrl.Result{Requeue: true}, r.updateFinalizer(ctx, watcherCR)
 }
@@ -152,37 +153,37 @@ func (r *WatcherReconciler) handleProcessingState(ctx context.Context,
 	// Create virtualService in Memory
 	virtualSvc, err := r.IstioClient.NewVirtualService(ctx, watcherCR)
 	if err != nil {
-		return r.updateWatcherState(ctx, watcherCR, v1beta2.StateError, err)
+		return r.updateWatcherState(ctx, watcherCR, shared.StateError, err)
 	}
 
 	virtualSvcRemote, err := r.IstioClient.GetVirtualService(ctx, watcherCR.Name)
 	if client.IgnoreNotFound(err) != nil {
-		return r.updateWatcherState(ctx, watcherCR, v1beta2.StateError, err)
+		return r.updateWatcherState(ctx, watcherCR, shared.StateError, err)
 	}
 	if util.IsNotFound(err) {
 		err = r.IstioClient.CreateVirtualService(ctx, virtualSvc)
 		if err != nil {
 			vsCreateErr := fmt.Errorf("failed to create virtual service: %w", err)
-			return r.updateWatcherState(ctx, watcherCR, v1beta2.StateError, vsCreateErr)
+			return r.updateWatcherState(ctx, watcherCR, shared.StateError, vsCreateErr)
 		}
-		return r.updateWatcherState(ctx, watcherCR, v1beta2.StateReady, nil)
+		return r.updateWatcherState(ctx, watcherCR, shared.StateReady, nil)
 	}
 
 	err = r.IstioClient.UpdateVirtualService(ctx, virtualSvc, virtualSvcRemote)
 	if err != nil {
 		vsUpdateErr := fmt.Errorf("failed to update virtual service: %w", err)
-		return r.updateWatcherState(ctx, watcherCR, v1beta2.StateError, vsUpdateErr)
+		return r.updateWatcherState(ctx, watcherCR, shared.StateError, vsUpdateErr)
 	}
-	return r.updateWatcherState(ctx, watcherCR, v1beta2.StateReady, nil)
+	return r.updateWatcherState(ctx, watcherCR, shared.StateReady, nil)
 }
 
 func (r *WatcherReconciler) updateWatcherState(ctx context.Context, watcherCR *v1beta2.Watcher,
-	state v1beta2.State, err error,
+	state shared.State, err error,
 ) (ctrl.Result, error) {
 	watcherCR.Status.State = state
-	if state == v1beta2.StateReady {
+	if state == shared.StateReady {
 		watcherCR.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, metav1.ConditionTrue)
-	} else if state == v1beta2.StateError {
+	} else if state == shared.StateError {
 		watcherCR.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, metav1.ConditionFalse)
 	}
 	if err != nil {

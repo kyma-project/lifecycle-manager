@@ -17,7 +17,6 @@ func NewDefaultDeletionCheck() *DefaultDeletionCheck {
 
 type DefaultDeletionCheck struct{}
 
-//nolint:revive
 func (c *DefaultDeletionCheck) Run(ctx context.Context, clnt client.Client, obj Object) (bool, error) {
 	return true, nil
 }

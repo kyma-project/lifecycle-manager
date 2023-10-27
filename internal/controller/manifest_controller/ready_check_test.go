@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
 
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
@@ -44,7 +45,7 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(hlp.InstallManifest(testManifest, imageSpecByte, false)).To(Succeed())
 
-		Eventually(hlp.ExpectManifestStateIn(declarative.StateReady), standardTimeout, standardInterval).
+		Eventually(hlp.ExpectManifestStateIn(shared.StateReady), standardTimeout, standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
 		testClient, err := declarativeTestClient()
@@ -73,7 +74,7 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 		customReadyCheck := manifest.NewCustomResourceReadyCheck()
 		stateInfo, err := customReadyCheck.Run(hlp.Ctx, testClient, testManifest, resources)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(stateInfo.State).To(Equal(declarative.StateReady))
+		Expect(stateInfo.State).To(Equal(shared.StateReady))
 
 		By("cleaning up the manifest")
 		Eventually(verifyObjectExists(expectedDeployment.ToUnstructured()), standardTimeout, standardInterval).
@@ -138,8 +139,8 @@ func declarativeTestClient() (declarative.Client, error) {
 	return declarative.NewSingletonClients(cluster)
 }
 
-func asResource(name, namespace, group, version, kind string) declarative.Resource {
-	return declarative.Resource{
+func asResource(name, namespace, group, version, kind string) shared.Resource {
+	return shared.Resource{
 		Name: name, Namespace: namespace,
 		GroupVersionKind: metav1.GroupVersionKind{
 			Group: group, Version: version, Kind: kind,

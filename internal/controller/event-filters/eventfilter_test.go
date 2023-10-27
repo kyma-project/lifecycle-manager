@@ -1,7 +1,7 @@
 package event_filters_test
 
 import (
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -16,7 +16,7 @@ var _ = Describe("Kyma is reconciled correctly based on the event filters", Orde
 
 		Eventually(KymaIsInState, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, v1beta2.StateReady).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 			Should(Succeed())
 	})
 
@@ -39,7 +39,7 @@ var _ = Describe("Kyma is reconciled correctly based on the event filters", Orde
 		It("Then Kyma should be reconciled immediately", func() {
 			Eventually(kymaIsInExpectedStateWithUpdatedChannel).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.Name, kyma.Namespace, newChannel, v1beta2.StateReady).
+				WithArguments(controlPlaneClient, kyma.Name, kyma.Namespace, newChannel, shared.StateReady).
 				Should(Succeed())
 		})
 	})
@@ -57,7 +57,7 @@ var _ = Describe("Kyma is reconciled correctly based on the event filters", Orde
 		It("Then Kyma should be reconciled immediately", func() {
 			Eventually(kymaIsInExpectedStateWithLabelUpdated).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.Name, kyma.Namespace, labelKey, labelValue, v1beta2.StateReady).
+				WithArguments(controlPlaneClient, kyma.Name, kyma.Namespace, labelKey, labelValue, shared.StateReady).
 				Should(Succeed())
 		})
 	})

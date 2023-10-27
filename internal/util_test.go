@@ -59,7 +59,7 @@ func TestParseManifestToObjects(t *testing.T) {
 				fmt.Sprintf("ParseManifestToObjects(%v)", testCase.manifestFile)) {
 				return
 			}
-			assert.Equalf(t, testCase.expectedResources, len(got.Items),
+			assert.Lenf(t, got.Items, testCase.expectedResources,
 				fmt.Sprintf("ParseManifestToObjects(%v)", testCase.manifestFile))
 		})
 	}

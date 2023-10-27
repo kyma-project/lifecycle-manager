@@ -6,7 +6,7 @@
 package mock_v2
 
 import (
-	"github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -264,10 +264,10 @@ func (mr *MockObjectMockRecorder) GetSelfLink() *gomock.Call {
 }
 
 // GetStatus mocks base method.
-func (m *MockObject) GetStatus() v2.Status {
+func (m *MockObject) GetStatus() shared.Status {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetStatus")
-	ret0, _ := ret[0].(v2.Status)
+	ret0, _ := ret[0].(shared.Status)
 	return ret0
 }
 
@@ -460,7 +460,7 @@ func (mr *MockObjectMockRecorder) SetSelfLink(selfLink interface{}) *gomock.Call
 }
 
 // SetStatus mocks base method.
-func (m *MockObject) SetStatus(arg0 v2.Status) {
+func (m *MockObject) SetStatus(arg0 shared.Status) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "SetStatus", arg0)
 }

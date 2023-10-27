@@ -21,6 +21,23 @@ linters:
     - varcheck # deprecated (since v1.49.0) and replaced by 'unused'
     - wsl # too strict and mostly code is not more readable
 linters-settings:
+  stylecheck:
+    dot-import-whitelist:
+      - github.com/onsi/ginkgo/v2
+      - github.com/onsi/gomega
+  revive:
+    enable-all-rules: false
+    severity: error
+    rules:
+      - name: comment-spacings
+        disabled: true
+      - name: dot-imports
+        severity: warning
+        disabled: true
+      - name: line-length-limit
+        severity: warning
+        disabled: true
+        arguments: [ 120 ]
   gomoddirectives:
     replace-allow-list:
   funlen:
