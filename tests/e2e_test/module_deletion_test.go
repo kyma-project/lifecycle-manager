@@ -98,9 +98,10 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 
 		It("Given the Kyma Module is under deletion", func() {
 			By("When the Module is re-enabled in different channel")
+			module.Channel = "fast"
 			Eventually(EnableModule).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module). // TODO enabled module in fast channel
+				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
 				Should(Succeed())
 			By("Then the Module will be updated on SKR")
 			Eventually(DeploymentIsReady).
