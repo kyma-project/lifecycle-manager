@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	ctrlMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -13,7 +14,6 @@ import (
 )
 
 const (
-	//nolint:gosec
 	metricKymaState   = "lifecycle_mgr_kyma_state"
 	metricModuleState = "lifecycle_mgr_module_state"
 	kymaNameLabel     = "kyma_name"
@@ -99,8 +99,8 @@ func RemoveModuleStateMetrics(kyma *v1beta2.Kyma, moduleName string) error {
 	return nil
 }
 
-func setKymaStateGauge(newState v1beta2.State, kymaName, shootID, instanceID string) {
-	states := v1beta2.AllKymaStates()
+func setKymaStateGauge(newState shared.State, kymaName, shootID, instanceID string) {
+	states := shared.AllStates()
 	for _, state := range states {
 		newValue := calcStateValue(state, newState)
 		kymaStateGauge.With(prometheus.Labels{
@@ -112,8 +112,8 @@ func setKymaStateGauge(newState v1beta2.State, kymaName, shootID, instanceID str
 	}
 }
 
-func setModuleStateGauge(newState v1beta2.State, moduleName, kymaName, shootID, instanceID string) {
-	states := v1beta2.AllKymaStates()
+func setModuleStateGauge(newState shared.State, moduleName, kymaName, shootID, instanceID string) {
+	states := shared.AllStates()
 	for _, state := range states {
 		newValue := calcStateValue(state, newState)
 		moduleStateGauge.With(prometheus.Labels{
@@ -126,7 +126,7 @@ func setModuleStateGauge(newState v1beta2.State, moduleName, kymaName, shootID, 
 	}
 }
 
-func calcStateValue(state, newState v1beta2.State) float64 {
+func calcStateValue(state, newState shared.State) float64 {
 	if state == newState {
 		return 1
 	}

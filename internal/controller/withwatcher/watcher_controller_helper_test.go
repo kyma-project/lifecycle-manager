@@ -142,7 +142,7 @@ func isVirtualServiceHostsConfigured(ctx context.Context,
 	if err != nil {
 		return err
 	}
-	if !contains(virtualService.Spec.Hosts, gateway.Spec.Servers[0].Hosts[0]) {
+	if !contains(virtualService.Spec.GetHosts(), gateway.Spec.GetServers()[0].GetHosts()[0]) {
 		return errVirtualServiceHostsNotMatchGateway
 	}
 	return nil
@@ -163,14 +163,14 @@ func isListenerHTTPRouteConfigured(ctx context.Context, clt *istio.Client, watch
 	if err != nil {
 		return err
 	}
-	if len(virtualService.Spec.Http) == 0 {
+	if len(virtualService.Spec.GetHttp()) == 0 {
 		return errHTTPRoutesEmpty
 	}
 
-	for idx, route := range virtualService.Spec.Http {
-		if route.Name == client.ObjectKeyFromObject(watcher).String() {
+	for idx, route := range virtualService.Spec.GetHttp() {
+		if route.GetName() == client.ObjectKeyFromObject(watcher).String() {
 			istioHTTPRoute := istio.PrepareIstioHTTPRouteForCR(watcher)
-			if !istio.IsRouteConfigEqual(virtualService.Spec.Http[idx], istioHTTPRoute) {
+			if !istio.IsRouteConfigEqual(virtualService.Spec.GetHttp()[idx], istioHTTPRoute) {
 				return errRouteConfigMismatch
 			}
 			return nil
@@ -185,12 +185,12 @@ func listenerHTTPRouteExists(ctx context.Context, clt *istio.Client, watcherObjK
 	if err != nil {
 		return err
 	}
-	if len(virtualService.Spec.Http) == 0 {
+	if len(virtualService.Spec.GetHttp()) == 0 {
 		return errHTTPRoutesEmpty
 	}
 
-	for _, route := range virtualService.Spec.Http {
-		if route.Name == watcherObjKey.String() {
+	for _, route := range virtualService.Spec.GetHttp() {
+		if route.GetName() == watcherObjKey.String() {
 			return nil
 		}
 	}

@@ -52,8 +52,17 @@ $(GINKGO): $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install github.com/onsi/ginkgo/v2/ginkgo@$(GINKGO_VERSION)
 
 e2e-coverage: ginkgo ## Generate the effective Acceptance Criteria for all the test suites.
+	@# for file in        - Iterates over all the E2E test suite files.
+	@#     ginkgo outline - Exports the Ginkgo DSL outline for a file.
+	@#     awk            - Cherry-picks only the Ginkgo DSL nodes (Describe, It, By, etc.) and respective descriptions.
+	@#     tail           - Drops the outline header.
+	@#     sed            - Adjusts the scenarios to the Gherkin syntax.
+
 	@for file in $(shell ls *_test.go | grep -v suite_test.go) ; do \
-        $(GINKGO) outline --format indent $$file  | awk -F "," '{print $$1" "$$2}' | tail -n +2 ; \
+        $(GINKGO) outline --format indent $$file  | \
+			awk -F "," '{print $$1" "$$2}' | \
+			tail -n +2 | \
+			sed -r 's/(By|Context|Describe|It) (Given|When|Then|And|Describe)/\2/' ; \
     done
 
 ##@ E2E Tests
@@ -75,5 +84,11 @@ module-status-propagation:
 module-without-default-cr:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Without Default CR"
 
-non-blocking-deletion: ## Runs the Status Propagation E2E Test
+non-blocking-deletion:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Non Blocking Kyma Module Deletion"
+
+purge-controller:
+	go test  -timeout 20m -ginkgo.v -ginkgo.focus "Purge Controller"
+
+purge-metrics:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Purge Metrics"

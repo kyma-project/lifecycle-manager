@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -46,20 +47,20 @@ func (c *CustomResourceReadyCheck) Run(ctx context.Context,
 ) (declarative.StateInfo, error) {
 	if !isDeploymentReady(clnt, resources) {
 		return declarative.StateInfo{
-			State: declarative.StateProcessing,
+			State: shared.StateProcessing,
 			Info:  "module operator deployment is not ready",
 		}, nil
 	}
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
-		return declarative.StateInfo{State: declarative.StateError}, v1beta2.ErrTypeAssertManifest
+		return declarative.StateInfo{State: shared.StateError}, v1beta2.ErrTypeAssertManifest
 	}
 	if manifest.Spec.Resource == nil {
-		return declarative.StateInfo{State: declarative.StateReady}, nil
+		return declarative.StateInfo{State: shared.StateReady}, nil
 	}
 	moduleCR := manifest.Spec.Resource.DeepCopy()
 	if err := clnt.Get(ctx, client.ObjectKeyFromObject(moduleCR), moduleCR); err != nil { // TODO hier failt es mit samples.operator.kyma-project.io "sample-yaml" not found'
-		return declarative.StateInfo{State: declarative.StateError}, declarative.ErrCustomResourceDoesNotExist
+		return declarative.StateInfo{State: shared.StateError}, declarative.ErrCustomResourceDoesNotExist
 	}
 	return HandleState(manifest, moduleCR)
 }
@@ -67,7 +68,7 @@ func (c *CustomResourceReadyCheck) Run(ctx context.Context,
 func HandleState(manifest *v1beta2.Manifest, moduleCR *unstructured.Unstructured) (declarative.StateInfo, error) {
 	stateChecks, customStateFound, err := parseStateChecks(manifest)
 	if err != nil {
-		return declarative.StateInfo{State: declarative.StateError}, fmt.Errorf(
+		return declarative.StateInfo{State: shared.StateError}, fmt.Errorf(
 			"could not get state from module CR %s to determine readiness: %w",
 			moduleCR.GetName(), err,
 		)
@@ -77,11 +78,11 @@ func HandleState(manifest *v1beta2.Manifest, moduleCR *unstructured.Unstructured
 		// Only happens for kyma module CR
 		if errors.Is(err, ErrNotSupportedState) {
 			return declarative.StateInfo{
-				State: declarative.StateWarning,
+				State: shared.StateWarning,
 				Info:  ErrNotSupportedState.Error(),
 			}, nil
 		}
-		return declarative.StateInfo{State: declarative.StateError}, fmt.Errorf(
+		return declarative.StateInfo{State: shared.StateError}, fmt.Errorf(
 			"could not get state from module CR %s to determine readiness: %w",
 			moduleCR.GetName(), err,
 		)
@@ -91,10 +92,10 @@ func HandleState(manifest *v1beta2.Manifest, moduleCR *unstructured.Unstructured
 		if customStateFound {
 			info = ModuleCRWithCustomCheckWarning
 		}
-		state := declarative.StateProcessing
+		state := shared.StateProcessing
 		// If wait for certain period of time, state still not found, put manifest state into Warning
 		if manifest.CreationTimestamp.Add(ToWarningDuration).Before(time.Now()) {
-			state = declarative.StateWarning
+			state = shared.StateWarning
 		}
 
 		return declarative.StateInfo{State: state, Info: info}, nil
@@ -106,12 +107,12 @@ func HandleState(manifest *v1beta2.Manifest, moduleCR *unstructured.Unstructured
 func mappingState(stateChecks []*v1beta2.CustomStateCheck,
 	moduleCR *unstructured.Unstructured,
 	customStateFound bool,
-) (declarative.State, bool, error) {
+) (shared.State, bool, error) {
 	// make sure ready and error state exists, for other missing customized state, can be ignored.
 	if requiredStateMissing(stateChecks) {
 		return "", false, ErrRequiredStateMissing
 	}
-	stateResult := map[v1beta2.State]bool{}
+	stateResult := map[shared.State]bool{}
 	foundStateInCR := false
 	for _, stateCheck := range stateChecks {
 		stateFromCR, stateExists, err := unstructured.NestedString(moduleCR.Object,
@@ -123,7 +124,7 @@ func mappingState(stateChecks []*v1beta2.CustomStateCheck,
 		if !stateExists {
 			continue
 		}
-		if !customStateFound && !declarative.State(stateFromCR).IsSupportedState() {
+		if !customStateFound && !shared.State(stateFromCR).IsSupportedState() {
 			return "", false, ErrNotSupportedState
 		}
 		foundStateInCR = true
@@ -137,32 +138,32 @@ func mappingState(stateChecks []*v1beta2.CustomStateCheck,
 	return calculateFinalState(stateResult), foundStateInCR, nil
 }
 
-func calculateFinalState(stateResult map[v1beta2.State]bool) declarative.State {
-	if stateResult[v1beta2.StateError] {
-		return declarative.StateError
+func calculateFinalState(stateResult map[shared.State]bool) shared.State {
+	if stateResult[shared.StateError] {
+		return shared.StateError
 	}
-	if stateResult[v1beta2.StateReady] {
-		return declarative.StateReady
+	if stateResult[shared.StateReady] {
+		return shared.StateReady
 	}
-	if stateResult[v1beta2.StateWarning] {
-		return declarative.StateWarning
+	if stateResult[shared.StateWarning] {
+		return shared.StateWarning
 	}
-	if stateResult[v1beta2.StateDeleting] {
-		return declarative.StateDeleting
+	if stateResult[shared.StateDeleting] {
+		return shared.StateDeleting
 	}
 
 	// by default, if ready/error state condition not match, assume module CR under processing
-	return declarative.StateProcessing
+	return shared.StateProcessing
 }
 
 func requiredStateMissing(stateChecks []*v1beta2.CustomStateCheck) bool {
 	readyMissing := true
 	errorMissing := true
 	for _, stateCheck := range stateChecks {
-		if stateCheck.MappedState == v1beta2.StateReady {
+		if stateCheck.MappedState == shared.StateReady {
 			readyMissing = false
 		}
-		if stateCheck.MappedState == v1beta2.StateError {
+		if stateCheck.MappedState == shared.StateError {
 			errorMissing = false
 		}
 	}
@@ -175,23 +176,23 @@ func parseStateChecks(manifest *v1beta2.Manifest) ([]*v1beta2.CustomStateCheck, 
 		return []*v1beta2.CustomStateCheck{
 			{
 				JSONPath:    customResourceStatePath,
-				Value:       string(v1beta2.StateReady),
-				MappedState: v1beta2.StateReady,
+				Value:       string(shared.StateReady),
+				MappedState: shared.StateReady,
 			},
 			{
 				JSONPath:    customResourceStatePath,
-				Value:       string(v1beta2.StateError),
-				MappedState: v1beta2.StateError,
+				Value:       string(shared.StateError),
+				MappedState: shared.StateError,
 			},
 			{
 				JSONPath:    customResourceStatePath,
-				Value:       string(v1beta2.StateDeleting),
-				MappedState: v1beta2.StateDeleting,
+				Value:       string(shared.StateDeleting),
+				MappedState: shared.StateDeleting,
 			},
 			{
 				JSONPath:    customResourceStatePath,
-				Value:       string(v1beta2.StateWarning),
-				MappedState: v1beta2.StateWarning,
+				Value:       string(shared.StateWarning),
+				MappedState: shared.StateWarning,
 			},
 		}, false, nil
 	}

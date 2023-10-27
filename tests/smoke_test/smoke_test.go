@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -194,7 +194,7 @@ func getKyma(ctx context.Context,
 		if err := resourcesFromConfig.Get(ctx, name, namespace, &kyma); err != nil {
 			t.Fatal(err)
 		}
-		return kyma.Status.State == v1beta2.StateReady, nil
+		return kyma.Status.State == shared.StateReady, nil
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -245,7 +245,7 @@ func getManifest(ctx context.Context,
 		if err := resourcesFromConfig.Get(ctx, name, namespace, &manifest); err != nil {
 			t.Fatal(err)
 		}
-		return manifest.Status.State == v2.StateReady, nil
+		return manifest.Status.State == shared.StateReady, nil
 	}); err != nil {
 		t.Fatal(err)
 	}

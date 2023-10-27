@@ -40,7 +40,7 @@ jobs:
   e2e-integration:
     strategy:
       matrix:
-        e2e-test: ["watcher-enqueue", "kyma-deletion", "module-status-propagation", "kyma-metrics", "module-without-default-cr", "non-blocking-deletion"]
+        e2e-test: ["watcher-enqueue", "kyma-deletion", "module-status-propagation", "kyma-metrics", "module-without-default-cr", "non-blocking-deletion", "purge-controller", "purge-metrics"]
     name: "E2E"
     needs: [wait-for-img]
     runs-on: ubuntu-latest
@@ -51,22 +51,23 @@ jobs:
       CM_VERSION: v1.12.3
       KLM_VERSION_TAG: latest
       KLM_IMAGE_REPO: prod
+      GOSUMDB: off
     steps:
       - name: Install prerequisites
         run: |
-          sudo add-apt-repository ppa:longsleep/golang-backports -y
+          curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+          echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
           sudo apt update -y
-          sudo apt install git curl wget make bash golang-go -y
+          sudo apt install kubectl -y
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '^1.21'
       - name: Install Istio CLI
         run: |
           curl -L https://istio.io/downloadIstio | TARGET_ARCH=x86_64 sh -
           chmod +x istio-$ISTIO_VERSION/bin/istioctl
           mv istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin
-      - name: Install kubectl
-        run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          chmod +x kubectl
-          mv kubectl /usr/local/bin
       - name: Install Kyma CLI
         run: |
           wget -q https://storage.googleapis.com/kyma-cli-unstable/kyma-linux
@@ -115,17 +116,28 @@ jobs:
         uses: actions/checkout@v3
         with:
           path: lifecycle-manager
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21'
       - name: Override Kustomize Controller Image TAG and Image repository environment variables in Pull Request to PR Image
         if: ${{ github.event_name == 'pull_request' }}
         run: |
           echo "KLM_VERSION_TAG=PR-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
           echo "KLM_IMAGE_REPO=dev" >> $GITHUB_ENV
+      - name: Patch purge finalizer flags
+        if: ${{ matrix.e2e-test == 'purge-controller' ||  matrix.e2e-test == 'purge-metrics'}}
+        working-directory: lifecycle-manager
+        run: |
+          pushd config/watcher_local_test
+          echo \
+          "- op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --enable-purge-finalizer=true
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --purge-finalizer-timeout=5s" >> purge_finalizer.yaml
+          cat purge_finalizer.yaml
+          kustomize edit add patch --path purge_finalizer.yaml --kind Deployment
+          popd
       - name: Deploy LM local testing kustomize
-        working-directory: ./lifecycle-manager
+        working-directory: lifecycle-manager
         run: |
           maxRetry=5
           for retry in $(seq 1 $maxRetry)
@@ -143,13 +155,13 @@ jobs:
           done
       - name: Checkout template-operator
         uses: actions/checkout@v3
-        if: ${{ matrix.e2e-test == 'module-status-propagation' || matrix.e2e-test == 'module-without-default-cr' || matrix.e2e-test == 'non-blocking-deletion' }}
+        if: ${{ matrix.e2e-test != 'watcher-enqueue' && matrix.e2e-test != 'kyma-metrics'}}
         with:
           repository: kyma-project/template-operator
           path: template-operator
       - name: Create Template Operator Module and apply
-        working-directory: ./template-operator
-        if: ${{ matrix.e2e-test == 'non-blocking-deletion' }}
+        working-directory: template-operator
+        if: ${{ matrix.e2e-test == 'non-blocking-deletion' ||  matrix.e2e-test == 'purge-controller' ||  matrix.e2e-test == 'purge-metrics' || matrix.e2e-test == 'kyma-deletion'}}
         run: |
           make build-manifests
           kyma alpha create module --module-config-file ./module-config.yaml --path . --registry k3d-kcp-registry:5111 --insecure
@@ -163,7 +175,7 @@ jobs:
         run: |
           kubectl apply -f tests/data/module_upgrade/moduletemplate_template_operator_v2_fast.yaml
       - name: Create Template Operator Module with final state `Warning` and apply
-        working-directory: ./template-operator
+        working-directory: template-operator
         if: ${{ matrix.e2e-test == 'module-status-propagation'}}
         run: |
           pushd config/default
@@ -179,7 +191,7 @@ jobs:
           kubectl get crds
           kubectl apply -f template.yaml
       - name: Create Template Operator Module without default CR and apply
-        working-directory: ./template-operator
+        working-directory: template-operator
         if: ${{ matrix.e2e-test == 'module-without-default-cr' }}
         run: |
           make build-manifests
@@ -200,11 +212,11 @@ jobs:
           kubectl get crds
           kubectl apply -f template.yaml
       - name: Expose Metrics Endpoint
-        working-directory: ./lifecycle-manager
-        if: ${{ matrix.e2e-test == 'kyma-metrics' }}
+        working-directory: lifecycle-manager
+        if: ${{ matrix.e2e-test == 'kyma-metrics' || matrix.e2e-test == 'purge-metrics' }}
         run: |
           kubectl patch svc klm-metrics-service -p '{"spec": {"type": "LoadBalancer"}}' -n kcp-system
       - name: Run ${{ matrix.e2e-test }}
-        working-directory: ./lifecycle-manager
+        working-directory: lifecycle-manager
         run: |
           make -C tests/e2e_test ${{ matrix.e2e-test }}

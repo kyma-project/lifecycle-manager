@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
 
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	appsv1 "k8s.io/api/apps/v1"
@@ -50,10 +50,10 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		deploy := &appsv1.Deployment{}
 		Eventually(setDeploymentStatus(deploymentName, deploy), standardTimeout, standardInterval).Should(Succeed())
 		sampleCR := emptySampleCR(manifestName)
-		Eventually(setCRStatus(sampleCR, declarative.StateReady), standardTimeout, standardInterval).Should(Succeed())
+		Eventually(setCRStatus(sampleCR, shared.StateReady), standardTimeout, standardInterval).Should(Succeed())
 
 		By("Verify the Manifest CR is in the \"Ready\" state")
-		Eventually(hlp.ExpectManifestStateIn(declarative.StateReady), standardTimeout, standardInterval).
+		Eventually(hlp.ExpectManifestStateIn(shared.StateReady), standardTimeout, standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
 		By("Verify manifest status list all resources correctly")
@@ -67,17 +67,17 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		Expect(status.Synced).To(ContainElement(expectedCRD))
 
 		By("When the Module CR state is changed to \"Warning\"")
-		Eventually(setCRStatus(sampleCR, declarative.StateWarning), standardTimeout, standardInterval).Should(Succeed())
+		Eventually(setCRStatus(sampleCR, shared.StateWarning), standardTimeout, standardInterval).Should(Succeed())
 
 		By("Verify the Manifest CR state also changes to \"Warning\"")
-		Eventually(hlp.ExpectManifestStateIn(declarative.StateWarning), standardTimeout, standardInterval).
+		Eventually(hlp.ExpectManifestStateIn(shared.StateWarning), standardTimeout, standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
 		By("When the Module CR state is changed back to \"Ready\"")
-		Eventually(setCRStatus(sampleCR, declarative.StateReady), standardTimeout, standardInterval).Should(Succeed())
+		Eventually(setCRStatus(sampleCR, shared.StateReady), standardTimeout, standardInterval).Should(Succeed())
 
 		By("Verify the Manifest CR state changes back to \"Ready\"")
-		Eventually(hlp.ExpectManifestStateIn(declarative.StateReady), standardTimeout, standardInterval).
+		Eventually(hlp.ExpectManifestStateIn(shared.StateReady), standardTimeout, standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
 		By("cleaning up the manifest")
@@ -96,8 +96,8 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 	})
 })
 
-func asResource(name, namespace, group, version, kind string) declarative.Resource {
-	return declarative.Resource{
+func asResource(name, namespace, group, version, kind string) shared.Resource {
+	return shared.Resource{
 		Name: name, Namespace: namespace,
 		GroupVersionKind: metav1.GroupVersionKind{
 			Group: group, Version: version, Kind: kind,
@@ -131,7 +131,7 @@ func emptySampleCR(manifestName string) *unstructured.Unstructured {
 	return res
 }
 
-func setCRStatus(moduleCR *unstructured.Unstructured, statusValue declarative.State) func() error {
+func setCRStatus(moduleCR *unstructured.Unstructured, statusValue shared.State) func() error {
 	return func() error {
 		err := hlp.K8sClient.Get(
 			hlp.Ctx, client.ObjectKeyFromObject(moduleCR),

@@ -13,6 +13,8 @@ jobs:
   envtest-and-unittest:
     name: "Run 'make test'"
     runs-on: ubuntu-latest
+    env:
+      GOSUMDB: off
     steps:
       - name: Checkout lifecycle-manager
         uses: actions/checkout@v3

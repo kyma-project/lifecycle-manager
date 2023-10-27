@@ -9,6 +9,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
@@ -79,14 +80,15 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, v1beta2.StateReady).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, shared.StateReady).
 				Should(Succeed())
 		}
 
 		By("Kyma CR should be in Ready state")
-		Eventually(GetKymaState, Timeout, Interval).
-			WithArguments(kyma.GetName()).
-			Should(BeEquivalentTo(string(v1beta2.StateReady)))
+		Eventually(KymaIsInState, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+			Should(Succeed())
 
 		By("Update Module Template spec.data.spec field")
 		valueUpdated := "valueUpdated"
@@ -247,14 +249,15 @@ var _ = Describe("Update Module Template Version", Ordered, func() {
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, v1beta2.StateReady).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, shared.StateReady).
 				Should(Succeed())
 		}
 
 		By("Kyma CR should be in Ready state")
-		Eventually(GetKymaState, Timeout, Interval).
-			WithArguments(kyma.GetName()).
-			Should(BeEquivalentTo(string(v1beta2.StateReady)))
+		Eventually(KymaIsInState, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+			Should(Succeed())
 
 		By("Manifest spec.install.source.ref corresponds to Module Template resources[].access.digest")
 		{
@@ -289,6 +292,34 @@ var _ = Describe("Update Module Template Version", Ordered, func() {
 
 			Eventually(expectManifest(hasUpdatedSourceRef), Timeout, Interval*2).Should(Succeed())
 		}
+	})
+})
+
+var _ = Describe("Test Reconciliation Skip label for Manifest", Ordered, func() {
+	kyma := NewTestKyma("kyma")
+	module := NewTestModule("skip-reconciliation-module", v1beta2.DefaultChannel)
+	kyma.Spec.Modules = append(kyma.Spec.Modules, module)
+
+	RegisterDefaultLifecycleForKyma(kyma)
+	It("Given a Manifest CR exists", func() {
+		Eventually(ManifestExists, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+			Should(Succeed())
+	})
+
+	It("When a skip label is added to Manifest", func() {
+		Eventually(AddSkipLabelToManifest, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+			Should(Succeed())
+	})
+
+	It("Then Skip label always exists in Manifest CR", func() {
+		Consistently(SkipLabelExistsInManifest, Timeout, Interval).
+			WithContext(ctx).
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+			Should(BeTrue())
 	})
 })
 

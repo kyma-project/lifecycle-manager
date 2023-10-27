@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
@@ -128,7 +130,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 			return r.removeFinalizers(ctx, obj, []string{r.Finalizer, CustomResourceManager})
 		}
 		r.Event(obj, "Warning", "ClientInitialization", err.Error())
-		obj.SetStatus(obj.GetStatus().WithState(StateError).WithErr(err))
+		obj.SetStatus(obj.GetStatus().WithState(shared.StateError).WithErr(err))
 		return r.ssaStatus(ctx, obj)
 	}
 
@@ -198,7 +200,7 @@ func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizer
 	}
 	msg := fmt.Sprintf("waiting as other finalizers are present: %s", obj.GetFinalizers())
 	r.Event(obj, "Normal", "FinalizerRemoval", msg)
-	obj.SetStatus(obj.GetStatus().WithState(StateDeleting).WithOperation(msg))
+	obj.SetStatus(obj.GetStatus().WithState(shared.StateDeleting).WithOperation(msg))
 	return r.ssaStatus(ctx, obj)
 }
 
@@ -224,11 +226,11 @@ func (r *Reconciler) initialize(obj Object) error {
 	}
 
 	if status.Synced == nil {
-		status.Synced = []Resource{}
+		status.Synced = []shared.Resource{}
 	}
 
 	if status.State == "" {
-		obj.SetStatus(status.WithState(StateProcessing).WithErr(ErrObjectHasEmptyState))
+		obj.SetStatus(status.WithState(shared.StateProcessing).WithErr(ErrObjectHasEmptyState))
 		return ErrObjectHasEmptyState
 	}
 
@@ -245,7 +247,7 @@ func (r *Reconciler) Spec(ctx context.Context, obj Object) (*Spec, error) {
 	spec, err := r.SpecResolver.Spec(ctx, obj, targetClient)
 	if err != nil {
 		r.Event(obj, "Warning", "Spec", err.Error())
-		obj.SetStatus(obj.GetStatus().WithState(StateError).WithErr(err))
+		obj.SetStatus(obj.GetStatus().WithState(shared.StateError).WithErr(err))
 	}
 	return spec, err
 }
@@ -270,7 +272,7 @@ func (r *Reconciler) renderResources(
 	current, err = converter.ResourcesToInfos(status.Synced)
 	if err != nil {
 		r.Event(obj, "Warning", "CurrentResourceParsing", err.Error())
-		obj.SetStatus(status.WithState(StateError).WithErr(err))
+		obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return nil, nil, err
 	}
 
@@ -289,7 +291,7 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 
 	if err := ConcurrentSSA(clnt, r.FieldOwner).Run(ctx, target); err != nil {
 		r.Event(obj, "Warning", "ServerSideApply", err.Error())
-		obj.SetStatus(status.WithState(StateError).WithErr(err))
+		obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return err
 	}
 
@@ -299,7 +301,7 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 
 	if hasDiff(oldSynced, newSynced) {
 		if obj.GetDeletionTimestamp().IsZero() { // TODO double check if correctly working
-			obj.SetStatus(status.WithState(StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
+			obj.SetStatus(status.WithState(shared.StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
 		}
 		return ErrWarningResourceSyncStateDiff
 	}
@@ -308,7 +310,7 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 	for i := range r.PostRuns { // sample CR created
 		if err := r.PostRuns[i](ctx, clnt, r.Client, obj); err != nil {
 			r.Event(obj, "Warning", "PostRun", err.Error())
-			obj.SetStatus(status.WithState(StateError).WithErr(err))
+			obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
 			return err
 		}
 	}
@@ -316,7 +318,7 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 	return r.checkTargetReadiness(ctx, clnt, obj, target)
 }
 
-func hasDiff(oldResources []Resource, newResources []Resource) bool {
+func hasDiff(oldResources []shared.Resource, newResources []shared.Resource) bool {
 	if len(oldResources) != len(newResources) {
 		return true
 	}
@@ -347,14 +349,14 @@ func (r *Reconciler) checkTargetReadiness(
 	crStateInfo, err := resourceReadyCheck.Run(ctx, clnt, manifest, target)
 	if err != nil {
 		r.Event(manifest, "Warning", "ResourceReadyCheck", err.Error())
-		manifest.SetStatus(status.WithState(StateError).WithErr(err))
+		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return err
 	}
 
-	if crStateInfo.State == StateProcessing {
+	if crStateInfo.State == shared.StateProcessing {
 		waitingMsg := fmt.Sprintf("waiting for resources to become ready: %s", crStateInfo.Info)
 		r.Event(manifest, "Normal", "ResourceReadyCheck", waitingMsg)
-		manifest.SetStatus(status.WithState(StateProcessing).WithOperation(waitingMsg))
+		manifest.SetStatus(status.WithState(shared.StateProcessing).WithOperation(waitingMsg))
 		return ErrInstallationConditionRequiresUpdate
 	}
 
@@ -388,7 +390,7 @@ func (r *Reconciler) deleteDiffResources(
 		return err
 	} else if err != nil {
 		r.Event(obj, "Warning", "Deletion", err.Error())
-		obj.SetStatus(status.WithState(StateError).WithErr(err))
+		obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return err
 	}
 
@@ -430,14 +432,14 @@ func (r *Reconciler) renderTargetResources(
 	targetResources, err := r.ManifestParser.Parse(spec)
 	if err != nil {
 		r.Event(obj, "Warning", "ManifestParsing", err.Error())
-		obj.SetStatus(status.WithState(StateError).WithErr(err))
+		obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return nil, err
 	}
 
 	for _, transform := range r.PostRenderTransforms {
 		if err := transform(ctx, obj, targetResources.Items); err != nil {
 			r.Event(obj, "Warning", "PostRenderTransform", err.Error())
-			obj.SetStatus(status.WithState(StateError).WithErr(err))
+			obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
 			return nil, err
 		}
 	}
@@ -445,7 +447,7 @@ func (r *Reconciler) renderTargetResources(
 	target, err := converter.UnstructuredToInfos(targetResources.Items)
 	if err != nil {
 		r.Event(obj, "Warning", "TargetResourceParsing", err.Error())
-		obj.SetStatus(status.WithState(StateError).WithErr(err))
+		obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return nil, err
 	}
 
@@ -476,7 +478,7 @@ func (r *Reconciler) pruneDiff(
 		// and we should prevent diff resources to be deleted.
 		// Meanwhile, evict cache to hope newly created resources back to normal.
 		r.Event(obj, "Warning", "PruneDiff", ErrResourceSyncDiffInSameOCILayer.Error())
-		obj.SetStatus(obj.GetStatus().WithState(StateWarning).WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()))
+		obj.SetStatus(obj.GetStatus().WithState(shared.StateWarning).WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()))
 		r.ManifestParser.EvictCache(spec)
 		return ErrResourceSyncDiffInSameOCILayer
 	}

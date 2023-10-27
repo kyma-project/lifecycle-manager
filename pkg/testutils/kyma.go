@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -14,7 +15,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-var ErrStatusModuleStateMismatch = errors.New("status.modules.state not match")
+var (
+	ErrStatusModuleStateMismatch  = errors.New("status.modules.state not match")
+	ErrContainsUnexpectedModules  = errors.New("kyma CR contains unexpected modules")
+	ErrNotContainsExpectedModules = errors.New("kyma CR not contains expected modules")
+)
 
 func NewTestKyma(name string) *v1beta2.Kyma {
 	return NewKymaWithSyncLabel(name, v1.NamespaceDefault, v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalClient)
@@ -80,6 +85,32 @@ func DeleteKymaByForceRemovePurgeFinalizer(ctx context.Context, clnt client.Clie
 	return DeleteCR(ctx, clnt, kyma)
 }
 
+func DeleteKyma(ctx context.Context,
+	clnt client.Client,
+	kyma *v1beta2.Kyma,
+) error {
+	// Foreground deletion is used to make sure the dependents (manifest CR) get deleted first before Kyma is deleted
+	propagation := v1.DeletePropagationForeground
+	err := clnt.Delete(ctx, kyma, &client.DeleteOptions{PropagationPolicy: &propagation})
+	if client.IgnoreNotFound(err) != nil {
+		return fmt.Errorf("updating kyma failed %w", err)
+	}
+	return nil
+}
+
+func KymaHasDeletionTimestamp(ctx context.Context,
+	clnt client.Client,
+	kymaName string,
+	kymaNamespace string,
+) bool {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return false
+	}
+
+	return !kyma.GetDeletionTimestamp().IsZero()
+}
+
 func DeleteModule(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma, moduleName string) error {
 	manifest, err := GetManifest(ctx, clnt,
 		kyma.GetName(), kyma.GetNamespace(), moduleName)
@@ -89,6 +120,83 @@ func DeleteModule(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma, m
 	err = client.IgnoreNotFound(clnt.Delete(ctx, manifest))
 	if err != nil {
 		return fmt.Errorf("module not deleted: %w", err)
+	}
+	return nil
+}
+
+func EnableModule(ctx context.Context,
+	clnt client.Client,
+	kymaName, kymaNamespace string,
+	module v1beta2.Module,
+) error {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+	kyma.Spec.Modules = append(
+		kyma.Spec.Modules, module)
+	err = clnt.Update(ctx, kyma)
+	if err != nil {
+		return fmt.Errorf("update kyma: %w", err)
+	}
+	return nil
+}
+
+func DisableModule(ctx context.Context, clnt client.Client,
+	kymaName, kymaNamespace, moduleName string,
+) error {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+	for i, module := range kyma.Spec.Modules {
+		if module.Name == moduleName {
+			kyma.Spec.Modules = removeModuleWithIndex(kyma.Spec.Modules, i)
+			break
+		}
+	}
+	err = clnt.Update(ctx, kyma)
+	if err != nil {
+		return fmt.Errorf("update kyma: %w", err)
+	}
+	return nil
+}
+
+func removeModuleWithIndex(s []v1beta2.Module, index int) []v1beta2.Module {
+	return append(s[:index], s[index+1:]...)
+}
+
+func UpdateKymaModuleChannel(ctx context.Context, clnt client.Client,
+	kymaName, kymaNamespace, channel string,
+) error {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+	for i := range kyma.Spec.Modules {
+		kyma.Spec.Modules[i].Channel = channel
+	}
+	err = clnt.Update(ctx, kyma)
+	if err != nil {
+		return fmt.Errorf("update kyma: %w", err)
+	}
+	return nil
+}
+
+func UpdateKymaLabel(
+	ctx context.Context,
+	clnt client.Client,
+	kymaName, kymaNamespace,
+	labelKey, labelValue string,
+) error {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+	kyma.Labels[labelKey] = labelValue
+	err = clnt.Update(ctx, kyma)
+	if err != nil {
+		return fmt.Errorf("update kyma: %w", err)
 	}
 	return nil
 }
@@ -108,7 +216,7 @@ func GetKyma(ctx context.Context, clnt client.Client, name, namespace string) (*
 	return kymaInCluster, nil
 }
 
-func IsKymaInState(ctx context.Context, name, namespace string, clnt client.Client, state v1beta2.State) error {
+func KymaIsInState(ctx context.Context, name, namespace string, clnt client.Client, state shared.State) error {
 	return CRIsInState(ctx,
 		v1beta2.GroupVersion.Group, v1beta2.GroupVersion.Version, string(v1beta2.KymaKind),
 		name, namespace,
@@ -117,18 +225,19 @@ func IsKymaInState(ctx context.Context, name, namespace string, clnt client.Clie
 		string(state))
 }
 
-func ExpectKymaManagerField(
-	ctx context.Context, controlPlaneClient client.Client, kymaName string, managerName string,
+func ContainsKymaManagerField(
+	ctx context.Context, clnt client.Client,
+	kymaName, kymaNamespace, managerName string,
 ) (bool, error) {
-	createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, "")
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
 	if err != nil {
 		return false, err
 	}
-	if createdKyma.ManagedFields == nil {
+	if kyma.ManagedFields == nil {
 		return false, nil
 	}
 
-	for _, v := range createdKyma.ManagedFields {
+	for _, v := range kyma.ManagedFields {
 		if v.Subresource == "status" && v.Manager == managerName {
 			return true, nil
 		}
@@ -139,7 +248,7 @@ func ExpectKymaManagerField(
 
 func CheckModuleState(ctx context.Context, clnt client.Client,
 	kymaName, kymaNamespace, moduleName string,
-	state v1beta2.State,
+	state shared.State,
 ) error {
 	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
 	if err != nil {
@@ -159,4 +268,40 @@ func CheckModuleState(ctx context.Context, clnt client.Client,
 	}
 
 	return nil
+}
+
+func NotContainsModuleInSpec(ctx context.Context,
+	clnt client.Client,
+	kymaName, kymaNamespace,
+	moduleName string,
+) error {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+	for _, module := range kyma.Spec.Modules {
+		if module.Name == moduleName {
+			return ErrContainsUnexpectedModules
+		}
+	}
+
+	return nil
+}
+
+func ContainsModuleInSpec(ctx context.Context,
+	clnt client.Client,
+	kymaName, kymaNamespace,
+	moduleName string,
+) error {
+	kyma, err := GetKyma(ctx, clnt, kymaName, kymaNamespace)
+	if err != nil {
+		return err
+	}
+	for _, module := range kyma.Spec.Modules {
+		if module.Name == moduleName {
+			return nil
+		}
+	}
+
+	return ErrNotContainsExpectedModules
 }

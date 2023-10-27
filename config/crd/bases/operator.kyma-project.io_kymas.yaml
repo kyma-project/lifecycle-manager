@@ -215,6 +215,7 @@ spec:
                 - type
                 x-kubernetes-list-type: map
               lastOperation:
+                description: LastOperation defines the last operation from the control-loop.
                 properties:
                   lastUpdateTime:
                     format: date-time
@@ -593,6 +594,7 @@ spec:
                 - type
                 x-kubernetes-list-type: map
               lastOperation:
+                description: LastOperation defines the last operation from the control-loop.
                 properties:
                   lastUpdateTime:
                     format: date-time

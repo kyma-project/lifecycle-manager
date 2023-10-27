@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/internal"
@@ -100,7 +101,7 @@ var _ = Describe(
 
 			EventuallyDeclarativeStatusShould(
 				ctx, key, testClient,
-				BeInState(StateReady),
+				BeInState(shared.StateReady),
 				HaveConditionWithStatus(ConditionTypeResources, metav1.ConditionTrue),
 				HaveConditionWithStatus(ConditionTypeInstallation, metav1.ConditionTrue),
 			)
@@ -185,7 +186,7 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 
 		EventuallyDeclarativeStatusShould(
 			ctx, key, testClient,
-			BeInState(StateReady),
+			BeInState(shared.StateReady),
 			HaveConditionWithStatus(ConditionTypeResources, metav1.ConditionTrue),
 			HaveConditionWithStatus(ConditionTypeInstallation, metav1.ConditionTrue),
 		)
@@ -207,7 +208,7 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 	It("Should remove module resources from status.synced", func() {
 		EventuallyDeclarativeStatusShould(
 			ctx, key, testClient,
-			BeInState(StateReady),
+			BeInState(shared.StateReady),
 			HaveConditionWithStatus(ConditionTypeResources, metav1.ConditionTrue),
 			HaveConditionWithStatus(ConditionTypeInstallation, metav1.ConditionTrue),
 		)
@@ -224,8 +225,8 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 	})
 })
 
-func isResourceFoundInSynced(res *unstructured.Unstructured, resource Resource) bool {
-	return resource == Resource{
+func isResourceFoundInSynced(res *unstructured.Unstructured, resource shared.Resource) bool {
+	return resource == shared.Resource{
 		Name:      res.GetName(),
 		Namespace: res.GetNamespace(),
 		GroupVersionKind: metav1.GroupVersionKind{
@@ -304,7 +305,7 @@ func StartDeclarativeReconcilerForRun(
 
 func StatusOnCluster(ctx context.Context, key client.ObjectKey,
 	testClient client.Client,
-) Status {
+) shared.Status {
 	obj := &testv1.TestAPI{}
 	Expect(testClient.Get(ctx, key, obj)).To(Succeed())
 	return obj.GetStatus()
