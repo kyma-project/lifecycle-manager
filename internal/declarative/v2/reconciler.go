@@ -156,14 +156,15 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj)
 	}
 
-	//if !obj.GetDeletionTimestamp().IsZero() { // TODO dass hier hatten wir eigentlich zum ende der funktion verschoben
-	//	return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
-	//}
+	resourceCRDeleted, err := r.DeletionCheck.Run(ctx, clnt, obj)
+	if err != nil {
+		return r.ssaStatus(ctx, obj)
+	}
+	if !obj.GetDeletionTimestamp().IsZero() && resourceCRDeleted {
+		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
+	}
 
-	err = r.syncResources(ctx, clnt, obj, target) // TODO, wenn sample cr schon gelöscht ist, failt es hier, heist wir sollten auch den deltion time, aber hier wird die sample cr (default) auch erstellt, sollte somit beim delete nicht aufgerufen werden
-	// stamp vom manifest CR checkn und somit ned mehr die readniess überprürfen
-	// in syncResources wird auch die Module Default CR erstellt
-	// TODO wenn die sample CR hier nicht gefudnen wird, dann den finalizer löschen
+	err = r.syncResources(ctx, clnt, obj, target)
 	if err != nil && err == ErrCustomResourceDoesNotExist && !obj.GetDeletionTimestamp().IsZero() {
 		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
 	} else if err != nil {
@@ -229,7 +230,9 @@ func (r *Reconciler) initialize(obj Object) error {
 		status.Synced = []shared.Resource{}
 	}
 
-	if status.State == "" {
+	if !obj.GetDeletionTimestamp().IsZero() {
+		status.State = shared.StateDeleting
+	} else if status.State == "" {
 		obj.SetStatus(status.WithState(shared.StateProcessing).WithErr(ErrObjectHasEmptyState))
 		return ErrObjectHasEmptyState
 	}
@@ -300,11 +303,11 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 	status.Synced = newSynced
 
 	if hasDiff(oldSynced, newSynced) {
-		if obj.GetDeletionTimestamp().IsZero() { // TODO double check if correctly working
+		if obj.GetDeletionTimestamp().IsZero() {
 			obj.SetStatus(status.WithState(shared.StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
 		}
 		return ErrWarningResourceSyncStateDiff
-	}
+	} // TODO check if sample CR is in deleting state return error
 
 	// create module default CR
 	for i := range r.PostRuns { // sample CR created
@@ -349,7 +352,9 @@ func (r *Reconciler) checkTargetReadiness(
 	crStateInfo, err := resourceReadyCheck.Run(ctx, clnt, manifest, target)
 	if err != nil {
 		r.Event(manifest, "Warning", "ResourceReadyCheck", err.Error())
-		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
+		if !manifest.GetDeletionTimestamp().IsZero() {
+			manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
+		}
 		return err
 	}
 

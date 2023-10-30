@@ -202,32 +202,6 @@ func DeleteKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sCl
 	return k8sClient.Delete(ctx, secret)
 }
 
-func ChangeModuleChannel(ctx context.Context,
-	kymaName, kymaNamespace, moduleName, moduleChannel string,
-	clnt client.Client,
-) error {
-	kyma := &v1beta2.Kyma{}
-	if err := clnt.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, kyma); err != nil {
-		return err
-	}
-	updateNeeded := false
-	for i, module := range kyma.Spec.Modules {
-		if module.Name == moduleName {
-			kyma.Spec.Modules[i].Channel = moduleChannel
-			updateNeeded = true
-			break
-		}
-	}
-	if updateNeeded {
-		return clnt.Update(ctx, kyma)
-	}
-	return fmt.Errorf("error updating kyma module channel: %w", errModuleNotFound)
-}
-
-func removeModuleWithIndex(s []v1beta2.Module, index int) []v1beta2.Module {
-	return append(s[:index], s[index+1:]...)
-}
-
 func SetFinalizer(name, namespace, group, version, kind string, finalizers []string, clnt client.Client) error {
 	resourceCR := &unstructured.Unstructured{}
 	resourceCR.SetGroupVersionKind(schema.GroupVersionKind{
