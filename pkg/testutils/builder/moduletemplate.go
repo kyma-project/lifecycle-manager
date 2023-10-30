@@ -2,6 +2,7 @@ package builder
 
 import (
 	"fmt"
+	"github.com/kyma-project/template-operator/api/v1alpha1"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -21,7 +22,6 @@ type ModuleTemplateBuilder struct {
 }
 
 func NewModuleTemplateBuilder() ModuleTemplateBuilder {
-	data := NewSampleCRBuilder().Build()
 	return ModuleTemplateBuilder{
 		moduleTemplate: &v1beta2.ModuleTemplate{
 			TypeMeta: metav1.TypeMeta{
@@ -32,9 +32,7 @@ func NewModuleTemplateBuilder() ModuleTemplateBuilder {
 				Name:      RandomName(),
 				Namespace: metav1.NamespaceDefault,
 			},
-			Spec: v1beta2.ModuleTemplateSpec{
-				Data: data,
-			},
+			Spec: v1beta2.ModuleTemplateSpec{},
 		},
 	}
 }
@@ -73,8 +71,12 @@ func (m ModuleTemplateBuilder) WithLabel(key string, value string) ModuleTemplat
 	return m
 }
 
-func (m ModuleTemplateBuilder) WithModuleCR(data *unstructured.Unstructured) ModuleTemplateBuilder {
-	m.moduleTemplate.Spec.Data = data
+func (m ModuleTemplateBuilder) WithModuleCR(data *v1alpha1.Sample) ModuleTemplateBuilder {
+	obj := unstructured.Unstructured{}
+	obj.SetGroupVersionKind(data.GroupVersionKind())
+	obj.SetName(data.Name)
+	obj.SetNamespace(data.Namespace)
+	m.moduleTemplate.Spec.Data = &obj
 	return m
 }
 

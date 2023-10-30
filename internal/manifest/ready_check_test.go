@@ -312,16 +312,19 @@ func TestHandleState(t *testing.T) {
 				}
 			}
 			manifestCR.CreationTimestamp = v1.Now()
-			moduleCR := builder.NewSampleCRBuilder().WithName("test").WithNamespace(v1.NamespaceDefault).
-				WithGroupVersionKind(v1beta2.GroupVersion.Group, "v1", "TestCR").Build()
+			moduleCR := builder.NewSampleCRBuilder().WithName("test").WithNamespace(v1.NamespaceDefault).Build()
+			obj := unstructured.Unstructured{}
+			obj.SetGroupVersionKind(moduleCR.GroupVersionKind())
+			obj.SetName(moduleCR.Name)
+			obj.SetNamespace(moduleCR.Namespace)
 			for _, check := range testCase.checkInModuleCR {
-				err := unstructured.SetNestedField(moduleCR.Object, check.value, check.fields...)
+				err := unstructured.SetNestedField(obj.Object, check.value, check.fields...)
 				if err != nil {
 					t.Errorf("HandleState() error = %v", err)
 					return
 				}
 			}
-			got, err := manifest.HandleState(manifestCR, moduleCR)
+			got, err := manifest.HandleState(manifestCR, &obj)
 			if !reflect.DeepEqual(got, testCase.want) {
 				t.Errorf("HandleState() got = %v, want %v", got, testCase.want)
 			}
@@ -424,16 +427,19 @@ func TestHandleStateWithDuration(t *testing.T) {
 				}
 			}
 			manifestCR.CreationTimestamp = testCase.manifestCreatedAt
-			moduleCR := builder.NewSampleCRBuilder().WithName("test").WithNamespace(v1.NamespaceDefault).
-				WithGroupVersionKind(v1beta2.GroupVersion.Group, "v1", "TestCR").Build()
+			moduleCR := builder.NewSampleCRBuilder().WithName("test").WithNamespace(v1.NamespaceDefault).Build()
+			obj := unstructured.Unstructured{}
+			obj.SetGroupVersionKind(moduleCR.GroupVersionKind())
+			obj.SetName(moduleCR.Name)
+			obj.SetNamespace(moduleCR.Namespace)
 			for _, check := range testCase.checkInModuleCR {
-				err := unstructured.SetNestedField(moduleCR.Object, check.value, check.fields...)
+				err := unstructured.SetNestedField(obj.Object, check.value, check.fields...)
 				if err != nil {
 					t.Errorf("HandleState() error = %v", err)
 					return
 				}
 			}
-			got, err := manifest.HandleState(manifestCR, moduleCR)
+			got, err := manifest.HandleState(manifestCR, &obj)
 			if !reflect.DeepEqual(got, testCase.want) {
 				t.Errorf("HandleState() got = %v, want %v", got, testCase.want)
 			}

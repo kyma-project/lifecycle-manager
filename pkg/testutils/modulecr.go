@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/template-operator/api/v1alpha1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
@@ -32,7 +33,7 @@ func ModuleCRExists(ctx context.Context, clnt client.Client, moduleCR *unstructu
 }
 
 // NewTestModuleCR init one module cr used by template-operator.
-func NewTestModuleCR(namespace string) *unstructured.Unstructured {
+func NewTestModuleCR(namespace string) *v1alpha1.Sample {
 	return builder.NewSampleCRBuilder().
 		WithName(TestModuleCRName).
 		WithNamespace(namespace).Build()
@@ -64,7 +65,7 @@ func SampleCRDeletionTimeStampSet(ctx context.Context, name, namespace string, c
 	return nil
 }
 
-func AddFinalizerToModuleCR(ctx context.Context, clnt client.Client, moduleCR *unstructured.Unstructured,
+func AddFinalizerToModuleCR(ctx context.Context, clnt client.Client, moduleCR *v1alpha1.Sample,
 	finalizer string,
 ) error {
 	err := clnt.Get(ctx, client.ObjectKey{

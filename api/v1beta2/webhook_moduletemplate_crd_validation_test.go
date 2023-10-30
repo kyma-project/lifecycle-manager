@@ -15,20 +15,13 @@ import (
 	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
 
 var testFiles = filepath.Join("..", "..", "config", "samples", "tests") //nolint:gochecknoglobals
 
 var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
-	data := unstructured.Unstructured{}
-	data.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   v1beta2.OperatorPrefix,
-		Version: v1beta2.GroupVersion.Version,
-		Kind:    "SampleCRD",
-	})
+	sampleCR := builder.NewSampleCRBuilder().Build()
 	It("should successfully fetch accept a moduletemplate based on a compliant crd", func() {
 		crd := GetCRD(v1beta2.OperatorPrefix, v1beta2.GroupVersion.Version, "samplecrd")
 		Eventually(k8sClient.Create, Timeout, Interval).
@@ -37,7 +30,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 
 		template := builder.NewModuleTemplateBuilder().
 			WithModuleName("test-module").
-			WithModuleCR(&data).
+			WithModuleCR(sampleCR).
 			WithChannel(v1beta2.DefaultChannel).
 			WithOCM(compdesc2.SchemaVersion).Build()
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
@@ -54,7 +47,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 			WithArguments(crd).Should(Succeed())
 		template := builder.NewModuleTemplateBuilder().
 			WithModuleName("test-module").
-			WithModuleCR(&data).
+			WithModuleCR(sampleCR).
 			WithChannel(v1beta2.DefaultChannel).
 			WithOCM(compdesc2.SchemaVersion).Build()
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
@@ -70,7 +63,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 			WithArguments(crd).Should(Succeed())
 		template := builder.NewModuleTemplateBuilder().
 			WithModuleName("test-module").
-			WithModuleCR(&data).
+			WithModuleCR(sampleCR).
 			WithChannel(v1beta2.DefaultChannel).
 			WithOCM(compdesc2.SchemaVersion).Build()
 		Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())

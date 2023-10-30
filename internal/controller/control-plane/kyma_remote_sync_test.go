@@ -43,7 +43,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	customModuleInSKR := NewTestModule("custom-in-skr", v1beta2.DefaultChannel)
 	customModuleInSKR.RemoteModuleTemplateRef = customModuleInSKR.Name
 
-	defaultCR := builder.NewSampleCRBuilder().WithSpec(InitSpecKey, InitSpecValue).Build()
+	defaultCR := builder.NewSampleCRBuilder().Build()
 
 	SKRTemplate := builder.NewModuleTemplateBuilder().
 		WithModuleName(moduleInSKR.Name).
