@@ -6,20 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/ocm.software/v3alpha1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 var _ = Describe(
 	"Webhook Validation OCM Schemas", Ordered, func() {
-		data := unstructured.Unstructured{}
-		data.SetGroupVersionKind(
-			schema.GroupVersionKind{
-				Group:   v1beta2.OperatorPrefix,
-				Version: v1beta2.GroupVersion.Version,
-				Kind:    "SampleCRD",
-			},
-		)
 		It(
 			"should successfully fetch accept a moduletemplate based on template with a v3alpha1 ocm descriptor",
 			func() {
@@ -30,7 +20,7 @@ var _ = Describe(
 				template := builder.NewModuleTemplateBuilder().
 					WithModuleName("test-module").
 					WithChannel(v1beta2.DefaultChannel).
-					WithModuleCR(&data).
+					WithModuleCR(builder.NewSampleCRBuilder().Build()).
 					WithOCM(v3alpha1.SchemaVersion).Build()
 				Expect(k8sClient.Create(webhookServerContext, template)).Should(Succeed())
 				Expect(k8sClient.Delete(webhookServerContext, template)).Should(Succeed())
