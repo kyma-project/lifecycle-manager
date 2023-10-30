@@ -1147,6 +1147,8 @@ github.com/kylelemons/godebug v1.1.0 h1:RPNrshWIDI6G2gRW9EHilWtl7Z6Sb1BR0xunSBf0
 github.com/kylelemons/godebug v1.1.0/go.mod h1:9/0rRGxNHcop5bhtWyNeEfOS8JIWk580+fNqagV/RAw=
 github.com/kyma-project/runtime-watcher/listener v0.0.0-20231011102033-b8383d92883e h1:yJoi2kUTS1CKOBQOG8BRNxWAdEAk63DurKSJif6miUU=
 github.com/kyma-project/runtime-watcher/listener v0.0.0-20231011102033-b8383d92883e/go.mod h1:h+qRkxtzjaBmmwNW8om8othH+xCm4iK4a53WoMoMe50=
+github.com/kyma-project/template-operator/api v0.0.0-20231026153532-5034207c9fed h1:zRMP2UMdrxzXhUn9urcO6HCa9EE2l2glY8N6sWgtcbI=
+github.com/kyma-project/template-operator/api v0.0.0-20231026153532-5034207c9fed/go.mod h1:zz645UFLGfaPSqHLJ5FOGe949mSKhiqQhlp0fKzLI3s=
 github.com/leodido/go-urn v1.2.4 h1:XlAE/cm/ms7TE/VMVoduSpNBoyc2dOxHs5MZSwAN63Q=
 github.com/leodido/go-urn v1.2.4/go.mod h1:7ZrI8mTSeBSHl/UaRyKQW1qZeMgak41ANeCNaVckg+4=
 github.com/lestrrat-go/blackmagic v1.0.1 h1:lS5Zts+5HIC/8og6cGHb0uCcNCa3OUt1ygh3Qz2Fe80=

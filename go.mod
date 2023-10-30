@@ -3,12 +3,7 @@ module github.com/kyma-project/lifecycle-manager
 go 1.21.3
 
 require (
-	github.com/kyma-project/template-operator/api v0.0.0-00010101000000-000000000000
-)
-
-replace github.com/kyma-project/template-operator/api => ../template-operator/api
-
-require (
+	github.com/kyma-project/template-operator/api v0.0.0-20231026153532-5034207c9fed
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/cert-manager/cert-manager v1.13.1
 	github.com/go-logr/logr v1.2.4
