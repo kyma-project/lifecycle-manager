@@ -113,7 +113,6 @@ jobs:
         if: ${{ matrix.target  == 'control-plane' }}
         run: |
           kubectl label node k3d-kyma-server-0 iam.gke.io/gke-metadata-server-enabled=true
-
           curl -L https://istio.io/downloadIstio | TARGET_ARCH=x86_64 sh -
           chmod +x istio-$ISTIO_VERSION/bin/istioctl
           mv istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin
@@ -121,11 +120,11 @@ jobs:
           
           kubectl create namespace kyma-system
           kubectl create namespace kcp-system
-
           kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-47.0.0/charts/kube-prometheus-stack/crds/crd-servicemonitors.yaml
-      - run: kyma --ci alpha deploy -k config/${{ matrix.target }}
+      - name: Deploy lifecycle manager with Kyma CLI
+        run: kyma --ci alpha deploy -k config/${{ matrix.target }}
       - name: Deploy template operator module template and enable module
-        if: ${{ matrix.target  == 'default' }}
+        if: ${{ matrix.target == 'default' }}
         run: |
           cat << EOF | kubectl apply -f - 
           apiVersion: rbac.authorization.k8s.io/v1
@@ -150,19 +149,5 @@ jobs:
               name: lifecycle-manager-controller-manager
               namespace: kcp-system
           EOF
-          kubectl apply -f tests/smoke_test/module_upgrade/moduletemplate_template_operator_fast.yaml
-          kubectl apply -f tests/smoke_test/module_upgrade/moduletemplate_template_operator_regular.yaml
+          kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_regular.yaml
           kyma alpha enable module template-operator -c regular -n kyma-system -k default-kyma
-      - run: echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-      - name: Set up Go for ${{ github.repository }}
-        uses: actions/setup-go@v4
-        with:
-          go-version: '^1.21'
-      - name: Run Smoke Tests for ${{ matrix.target }}
-        run: go test --tags=smoke tests/smoke_test/smoke_test.go -v -feature="${{ matrix.target }}"
-      - name: Run Smoke Tests for module upgrade
-        if: ${{ matrix.target  == 'default' }}
-        run: go test --tags=smoke tests/smoke_test/smoke_test.go -v -feature="module upgrade"
-      - name: Run Smoke Tests for kyma delete
-        if: ${{ matrix.target  == 'default' }}
-        run: go test --tags=smoke tests/smoke_test/smoke_test.go -v -feature="kyma delete"
