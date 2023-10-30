@@ -9,6 +9,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
+	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -126,4 +127,18 @@ func ModuleCRIsInExpectedState(ctx context.Context,
 		return false
 	}
 	return state == string(expectedState)
+}
+
+func ModuleDeploymentExists(ctx context.Context,
+	clnt client.Client,
+	namespace string,
+	deploymentName string,
+) bool {
+	var deployment appsv1.Deployment
+	err := clnt.Get(ctx, client.ObjectKey{
+		Namespace: namespace,
+		Name:      deploymentName,
+	}, &deployment)
+
+	return err == nil && deployment.Status.AvailableReplicas != 0
 }

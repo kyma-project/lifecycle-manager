@@ -3,7 +3,6 @@ module github.com/kyma-project/lifecycle-manager
 go 1.21.3
 
 require (
-	github.com/kyma-project/template-operator/api v0.0.0-20231026153532-5034207c9fed
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/cert-manager/cert-manager v1.13.1
 	github.com/go-logr/logr v1.2.4
@@ -13,6 +12,7 @@ require (
 	github.com/google/go-containerregistry/pkg/authn/kubernetes v0.0.0-20230104193340-e797859b62b6
 	github.com/jellydator/ttlcache/v3 v3.1.0
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20231011102033-b8383d92883e
+	github.com/kyma-project/template-operator/api v0.0.0-20231026153532-5034207c9fed
 	github.com/onsi/ginkgo/v2 v2.13.0
 	github.com/onsi/gomega v1.28.0
 	github.com/open-component-model/ocm v0.4.0
@@ -21,7 +21,6 @@ require (
 	go.uber.org/zap v1.26.0
 	golang.org/x/sync v0.4.0
 	golang.org/x/time v0.3.0
-	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	sigs.k8s.io/controller-runtime v0.16.3
 	sigs.k8s.io/e2e-framework v0.3.0
@@ -34,12 +33,13 @@ require (
 )
 
 require (
+	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/api v0.28.3
 	k8s.io/apiextensions-apiserver v0.28.3
 	k8s.io/apimachinery v0.28.3
-	k8s.io/cli-runtime v0.28.2
+	k8s.io/cli-runtime v0.28.3
 	k8s.io/client-go v0.28.3
-	k8s.io/kubectl v0.28.2
+	k8s.io/kubectl v0.28.3
 )
 
 require (
