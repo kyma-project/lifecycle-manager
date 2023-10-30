@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	appsv1 "k8s.io/api/apps/v1"
@@ -141,32 +140,4 @@ func ModuleDeploymentExists(ctx context.Context,
 	}, &deployment)
 
 	return err == nil && deployment.Status.AvailableReplicas != 0
-}
-
-func ChangeKymaModuleChannel(ctx context.Context,
-	clnt client.Client,
-	kymaName string,
-	kymaNamespace string,
-	moduleName string,
-	channel string,
-) error {
-	kyma := &v1beta2.Kyma{}
-	if err := clnt.Get(ctx,
-		client.ObjectKey{Name: kymaName, Namespace: kymaNamespace},
-		kyma); err != nil {
-		return fmt.Errorf("failed to fetch kyma, %w", err)
-	}
-
-	for i, module := range kyma.Spec.Modules {
-		if module.Name == moduleName {
-			kyma.Spec.Modules[i].Channel = channel
-			break
-		}
-	}
-
-	err := clnt.Update(ctx, kyma)
-	if err != nil {
-		return fmt.Errorf("failed to update kyma %w", err)
-	}
-	return nil
 }

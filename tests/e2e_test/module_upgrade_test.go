@@ -46,17 +46,31 @@ var _ = Describe("Module Upgrade", Ordered, func() {
 		})
 
 		It("When Template Operator channel is changed", func() {
-			Eventually(ChangeKymaModuleChannel).
+			Eventually(UpdateKymaModuleChannel).
 				WithContext(ctx).
-				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, "template-operator", "fast").
+				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, "fast").
 				Should(Succeed())
 		})
 
-		It("Then new template operator manager exists", func() {
+		It("Then module CR exists", func() {
+			Eventually(ModuleCRExists).
+				WithContext(ctx).
+				WithArguments(runtimeClient, moduleCR).
+				Should(Succeed())
+		})
+
+		It("And new template operator manager exists", func() {
 			Eventually(ModuleDeploymentExists).
 				WithContext(ctx).
 				WithArguments(runtimeClient, "template-operator-system", "template-operator-v2-controller-manager").
 				Should(BeTrue())
+		})
+
+		It("And old template operator manager does not exist", func() {
+			Eventually(ModuleDeploymentExists).
+				WithContext(ctx).
+				WithArguments(runtimeClient, "template-operator-system", "template-operator-v1-controller-manager").
+				Should(BeFalse())
 		})
 
 		It("And kyma is ready", func() {

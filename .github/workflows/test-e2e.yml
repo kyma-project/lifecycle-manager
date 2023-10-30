@@ -155,7 +155,6 @@ jobs:
           done
       - name: Checkout template-operator
         uses: actions/checkout@v3
-        if: ${{ matrix.e2e-test != 'watcher-enqueue' && matrix.e2e-test != 'kyma-metrics' && matrix.e2e-test != 'module-upgrade'}}
         with:
           repository: kyma-project/template-operator
           path: template-operator

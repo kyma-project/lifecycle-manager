@@ -121,7 +121,7 @@ jobs:
           kubectl create namespace kyma-system
           kubectl create namespace kcp-system
           kubectl apply -f https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-47.0.0/charts/kube-prometheus-stack/crds/crd-servicemonitors.yaml
-      - name: Deploy lifecycle manager
+      - name: Deploy lifecycle manager with Kyma CLI
         run: kyma --ci alpha deploy -k config/${{ matrix.target }}
       - name: Deploy template operator module template and enable module
         if: ${{ matrix.target == 'default' }}
