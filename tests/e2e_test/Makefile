@@ -92,3 +92,6 @@ purge-controller:
 
 purge-metrics:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Purge Metrics"
+
+module-upgrade:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Upgrade"

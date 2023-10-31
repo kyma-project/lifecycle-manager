@@ -40,7 +40,7 @@ jobs:
   e2e-integration:
     strategy:
       matrix:
-        e2e-test: ["watcher-enqueue", "kyma-deletion", "module-status-propagation", "kyma-metrics", "module-without-default-cr", "non-blocking-deletion", "purge-controller", "purge-metrics"]
+        e2e-test: ["watcher-enqueue", "kyma-deletion", "module-status-propagation", "kyma-metrics", "module-without-default-cr", "non-blocking-deletion", "purge-controller", "purge-metrics", "module-upgrade"]
     name: "E2E"
     needs: [wait-for-img]
     runs-on: ubuntu-latest
@@ -55,7 +55,7 @@ jobs:
     steps:
       - name: Install prerequisites
         run: |
-          curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+          curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
           echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
           sudo apt update -y
           sudo apt install kubectl -y
@@ -155,7 +155,6 @@ jobs:
           done
       - name: Checkout template-operator
         uses: actions/checkout@v3
-        if: ${{ matrix.e2e-test != 'watcher-enqueue' && matrix.e2e-test != 'kyma-metrics'}}
         with:
           repository: kyma-project/template-operator
           path: template-operator
@@ -169,11 +168,17 @@ jobs:
           kubectl config use-context k3d-kcp
           kubectl get crds
           kubectl apply -f template.yaml
+      - name: Create Template Operator Module for regular and fast channels
+        working-directory: lifecycle-manager
+        if: ${{ matrix.e2e-test == 'module-upgrade'}}
+        run: |
+          kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
+          kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml
       - name: Apply Template Operator Module V2, fast channel
         working-directory: ./lifecycle-manager
         if: ${{ matrix.e2e-test == 'non-blocking-deletion' }}
         run: |
-          kubectl apply -f tests/data/module_upgrade/moduletemplate_template_operator_v2_fast.yaml
+          kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
       - name: Create Template Operator Module with final state `Warning` and apply
         working-directory: template-operator
         if: ${{ matrix.e2e-test == 'module-status-propagation'}}

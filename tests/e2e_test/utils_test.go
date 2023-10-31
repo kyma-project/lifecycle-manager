@@ -295,7 +295,7 @@ func PurgeMetricsAreAsExpected(ctx context.Context,
 
 	if len(match) > 1 {
 		count, err := strconv.Atoi(match[1])
-		if err == nil || count == expectedRequests {
+		if err == nil && count == expectedRequests {
 			correctCount = true
 		}
 	}

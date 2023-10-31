@@ -20,10 +20,8 @@ require (
 	go.uber.org/zap v1.26.0
 	golang.org/x/sync v0.4.0
 	golang.org/x/time v0.3.0
-	gopkg.in/yaml.v3 v3.0.1
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	sigs.k8s.io/controller-runtime v0.16.2
-	sigs.k8s.io/e2e-framework v0.3.0
 	sigs.k8s.io/yaml v1.3.0
 )
 
@@ -33,12 +31,12 @@ require (
 )
 
 require (
-	k8s.io/api v0.28.2
-	k8s.io/apiextensions-apiserver v0.28.2
-	k8s.io/apimachinery v0.28.2
-	k8s.io/cli-runtime v0.28.2
-	k8s.io/client-go v0.28.2
-	k8s.io/kubectl v0.28.2
+	k8s.io/api v0.28.3
+	k8s.io/apiextensions-apiserver v0.28.3
+	k8s.io/apimachinery v0.28.3
+	k8s.io/cli-runtime v0.28.3
+	k8s.io/client-go v0.28.3
+	k8s.io/kubectl v0.28.3
 )
 
 require (
@@ -221,7 +219,6 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/locker v1.0.1 // indirect
-	github.com/moby/spdystream v0.2.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
 	github.com/moby/term v0.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
@@ -321,9 +318,10 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v3 v3.12.2 // indirect
 	inet.af/netaddr v0.0.0-20220811202034-502d2d690317 // indirect
-	k8s.io/component-base v0.28.2 // indirect
+	k8s.io/component-base v0.28.3 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20230905202853-d090da108d2f // indirect
 	oras.land/oras-go v1.2.4 // indirect
