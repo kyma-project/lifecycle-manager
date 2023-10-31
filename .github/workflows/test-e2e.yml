@@ -40,7 +40,16 @@ jobs:
   e2e-integration:
     strategy:
       matrix:
-        e2e-test: ["watcher-enqueue", "kyma-deletion", "module-status-propagation", "kyma-metrics", "module-without-default-cr", "non-blocking-deletion", "purge-controller", "purge-metrics", "module-upgrade"]
+        e2e-test: [ "watcher-enqueue",
+                    "kyma-deletion",
+                    "module-status-propagation",
+                    "kyma-metrics",
+                    "module-without-default-cr",
+                    "non-blocking-deletion",
+                    "purge-controller",
+                    "purge-metrics",
+                    "module-upgrade"
+        ]
     name: "E2E"
     needs: [wait-for-img]
     runs-on: ubuntu-latest

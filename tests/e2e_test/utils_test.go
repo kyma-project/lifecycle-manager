@@ -48,6 +48,7 @@ const (
 
 func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
+		By("When a KCP Kyma CR is created on the KCP cluster")
 		Eventually(CreateKymaSecret).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
@@ -56,12 +57,12 @@ func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
 			WithContext(ctx).
 			WithArguments(kyma).
 			Should(Succeed())
-		By("verifying kyma is ready")
+		By("Then the Kyma CR is in a \"Ready\" State on the KCP cluster ")
 		Eventually(KymaIsInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 			Should(Succeed())
-		By("verifying remote kyma is ready")
+		By("And the Kyma CR is in \"Ready\" State on the SKR cluster")
 		Eventually(CheckRemoteKymaCR).
 			WithContext(ctx).
 			WithArguments(remoteNamespace, []v1beta2.Module{}, runtimeClient, shared.StateReady).
