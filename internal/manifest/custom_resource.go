@@ -45,6 +45,7 @@ func PostRunCreateCR(
 		return fmt.Errorf("failed to create resource: %w", err)
 	}
 
+	// only add finalizer if Manifest is not under deletion
 	if obj.GetDeletionTimestamp().IsZero() {
 		oMeta := &v1.PartialObjectMetadata{}
 		oMeta.SetName(obj.GetName())
