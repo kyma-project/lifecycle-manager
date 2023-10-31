@@ -116,6 +116,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, remote.ErrAccessSecretNotFound) {
 		logger.Info("access secret not found for kyma, assuming already deleted cluster")
+		metrics.CleanupMetrics(kyma)
 		r.removeAllFinalizers(kyma)
 		return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
 	}
@@ -409,9 +410,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		logger.Info("removed remote finalizer")
 	}
 
-	if err := metrics.RemoveKymaStateMetrics(kyma); err != nil {
-		logger.V(log.DebugLevel).Info(fmt.Sprintf("error occurred while removing kyma state metrics: %s", err))
-	}
+	metrics.CleanupMetrics(kyma)
 
 	controllerutil.RemoveFinalizer(kyma, v1beta2.Finalizer)
 	return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
