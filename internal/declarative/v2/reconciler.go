@@ -151,12 +151,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	diff := ResourceList(current).Difference(target)
-	if err := r.pruneDiff(ctx, clnt, obj, renderer, diff, spec); errors.Is(err, ErrDeletionNotFinished) { // TODO hier wird sample CR gelöscht + Finalizer
+	if err := r.pruneDiff(ctx, clnt, obj, renderer, diff, spec); errors.Is(err, ErrDeletionNotFinished) {
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
 		return r.ssaStatus(ctx, obj)
 	}
 
+	// if manifest is under deletion and default module CR is deleted, remove finalizers
 	resourceCRDeleted, err := r.DeletionCheck.Run(ctx, clnt, obj)
 	if err != nil {
 		return r.ssaStatus(ctx, obj)
@@ -319,8 +320,7 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 		}
 	}
 
-	// create module default CR
-	for i := range r.PostRuns { // sample CR created
+	for i := range r.PostRuns {
 		if err := r.PostRuns[i](ctx, clnt, r.Client, obj); err != nil {
 			r.Event(obj, "Warning", "PostRun", err.Error())
 			obj.SetStatus(status.WithState(shared.StateError).WithErr(err))
