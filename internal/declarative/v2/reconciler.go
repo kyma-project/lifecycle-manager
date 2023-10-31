@@ -28,6 +28,7 @@ var (
 	ErrObjectHasEmptyState                       = errors.New("object has an empty state")
 	ErrKubeconfigFetchFailed                     = errors.New("could not fetch kubeconfig")
 	ErrCustomResourceDoesNotExist                = errors.New("custom resource does not exist")
+	errManifestShouldBeDeleted                   = errors.New("manifest should be deleted")
 )
 
 const (
@@ -307,7 +308,16 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 			obj.SetStatus(status.WithState(shared.StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
 		}
 		return ErrWarningResourceSyncStateDiff
-	} // TODO check if sample CR is in deleting state return error
+	} else if !obj.GetDeletionTimestamp().IsZero() {
+		state, err := r.CustomReadyCheck.Run(ctx, clnt, obj, target)
+		if err == ErrCustomResourceDoesNotExist || state.State == shared.StateDeleting {
+			obj.SetStatus(status.WithState(shared.StateDeleting).WithOperation(errManifestShouldBeDeleted.Error()))
+			if err == ErrCustomResourceDoesNotExist {
+				return ErrCustomResourceDoesNotExist
+			}
+			return errManifestShouldBeDeleted
+		}
+	}
 
 	// create module default CR
 	for i := range r.PostRuns { // sample CR created
