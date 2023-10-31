@@ -172,7 +172,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 				By("And the SKR Kyma CR is in a \"Ready\" State")
 				Eventually(KymaIsInState).
 					WithContext(ctx).
-					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+					WithArguments(kyma.GetName(), kyma.GetNamespace(), runtimeClient, shared.StateReady).
 					Should(Succeed())
 			})
 

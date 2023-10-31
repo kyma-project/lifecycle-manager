@@ -160,7 +160,12 @@ jobs:
           path: template-operator
       - name: Create Template Operator Module
         working-directory: template-operator
-        if: ${{ matrix.e2e-test == 'non-blocking-deletion' ||  matrix.e2e-test == 'purge-controller' ||  matrix.e2e-test == 'purge-metrics' || matrix.e2e-test == 'kyma-deletion'}}
+        if: ${{ matrix.e2e-test == 'kyma-metrics' ||
+          matrix.e2e-test == 'non-blocking-deletion' ||
+          matrix.e2e-test == 'purge-controller' ||
+          matrix.e2e-test == 'purge-metrics' ||
+          matrix.e2e-test == 'kyma-deletion'
+          }}
         run: |
           make build-manifests
           kyma alpha create module --module-config-file ./module-config.yaml --path . --registry k3d-kcp-registry:5111 --insecure

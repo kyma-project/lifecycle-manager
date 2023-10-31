@@ -239,6 +239,29 @@ func GetKymaStateMetricCount(ctx context.Context, kymaName, state string) (int, 
 	return 0, nil
 }
 
+func GetModuleStateMetricCount(ctx context.Context, kymaName, moduleName, state string) (int, error) {
+	bodyString, err := getMetricsBody(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	re := regexp.MustCompile(
+		`lifecycle_mgr_module_state{instance_id="[^"]+",kyma_name="` + kymaName +
+			`",module_name="` + moduleName +
+			`",shoot="[^"]+",state="` + state +
+			`"} (\d+)`)
+	match := re.FindStringSubmatch(bodyString)
+	if len(match) > 1 {
+		count, err := strconv.Atoi(match[1])
+		if err != nil {
+			return 0, err
+		}
+		return count, nil
+	}
+
+	return 0, nil
+}
+
 func CheckSampleCRIsInState(ctx context.Context, name, namespace string, clnt client.Client,
 	expectedState string,
 ) error {
