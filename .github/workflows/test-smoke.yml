@@ -149,5 +149,5 @@ jobs:
               name: lifecycle-manager-controller-manager
               namespace: kcp-system
           EOF
-          kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_regular.yaml
+          kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml
           kyma alpha enable module template-operator -c regular -n kyma-system -k default-kyma
