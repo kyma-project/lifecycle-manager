@@ -39,25 +39,25 @@ func PostRunCreateCR(
 		return nil
 	}
 
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		return nil
+	}
 	resource := manifest.Spec.Resource.DeepCopy()
 	err := skr.Create(ctx, resource, client.FieldOwner(declarative.CustomResourceManager))
 	if err != nil && !k8serrors.IsAlreadyExists(err) {
 		return fmt.Errorf("failed to create resource: %w", err)
 	}
 
-	// only add finalizer if Manifest is not under deletion
-	if obj.GetDeletionTimestamp().IsZero() {
-		oMeta := &v1.PartialObjectMetadata{}
-		oMeta.SetName(obj.GetName())
-		oMeta.SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
-		oMeta.SetNamespace(obj.GetNamespace())
-		oMeta.SetFinalizers(obj.GetFinalizers())
-		if added := controllerutil.AddFinalizer(oMeta, declarative.CustomResourceManager); added {
-			if err := kcp.Patch(
-				ctx, oMeta, client.Apply, client.ForceOwnership, client.FieldOwner(declarative.CustomResourceManager),
-			); err != nil {
-				return fmt.Errorf("failed to patch resource: %w", err)
-			}
+	oMeta := &v1.PartialObjectMetadata{}
+	oMeta.SetName(obj.GetName())
+	oMeta.SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
+	oMeta.SetNamespace(obj.GetNamespace())
+	oMeta.SetFinalizers(obj.GetFinalizers())
+	if added := controllerutil.AddFinalizer(oMeta, declarative.CustomResourceManager); added {
+		if err := kcp.Patch(
+			ctx, oMeta, client.Apply, client.ForceOwnership, client.FieldOwner(declarative.CustomResourceManager),
+		); err != nil {
+			return fmt.Errorf("failed to patch resource: %w", err)
 		}
 	}
 	return nil

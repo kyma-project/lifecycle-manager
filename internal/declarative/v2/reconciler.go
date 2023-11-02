@@ -161,6 +161,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj)
 	}
 
+	if !obj.GetDeletionTimestamp().IsZero() {
+		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
+	}
+
 	if err := r.syncResources(ctx, clnt, obj, target); err != nil {
 		return r.ssaStatus(ctx, obj)
 	}
@@ -172,9 +176,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{Requeue: true}, r.Update(ctx, obj) //nolint:wrapcheck
 	}
 
-	if !obj.GetDeletionTimestamp().IsZero() {
-		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
-	}
 	return r.CtrlOnSuccess, nil
 }
 
