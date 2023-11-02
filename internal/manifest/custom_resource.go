@@ -84,12 +84,9 @@ func PreDeleteDeleteCR(
 	resource := manifest.Spec.Resource.DeepCopy()
 	propagation := v1.DeletePropagationBackground
 	err := skr.Delete(ctx, resource, &client.DeleteOptions{PropagationPolicy: &propagation})
-	if err == nil {
-		return ErrWaitingForAsyncCustomResourceDeletion
-	}
 
 	if !util.IsNotFound(err) {
-		return fmt.Errorf("PreDeleteDeleteCR: %w", err)
+		return nil
 	}
 
 	var crd unstructured.Unstructured
@@ -101,12 +98,9 @@ func PreDeleteDeleteCR(
 	})
 	crdCopy := crd.DeepCopy()
 	err = skr.Delete(ctx, crdCopy, &client.DeleteOptions{PropagationPolicy: &propagation})
-	if err == nil {
-		return ErrWaitingForAsyncCustomResourceDefinitionDeletion
-	}
 
 	if !util.IsNotFound(err) {
-		return fmt.Errorf("PreDeleteDeleteCR: %w", err)
+		return nil
 	}
 
 	onCluster := manifest.DeepCopy()

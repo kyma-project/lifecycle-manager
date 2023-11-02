@@ -164,11 +164,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
 		return r.ssaStatus(ctx, obj)
 	}
-
-	if !obj.GetDeletionTimestamp().IsZero() {
-		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
-	}
-
 	// This situation happens when manifest get new installation layer to update resources,
 	// we need to make sure all updates successfully before we can update synced oci ref
 	if requireUpdateSyncedOCIRefAnnotation(obj, spec.OCIRef) {
@@ -226,9 +221,7 @@ func (r *Reconciler) initialize(obj Object) error {
 		status.Synced = []shared.Resource{}
 	}
 
-	if !obj.GetDeletionTimestamp().IsZero() {
-		status.State = shared.StateDeleting
-	} else if status.State == "" {
+	if status.State == "" {
 		obj.SetStatus(status.WithState(shared.StateProcessing).WithErr(ErrObjectHasEmptyState))
 		return ErrObjectHasEmptyState
 	}
@@ -301,17 +294,10 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 	if hasDiff(oldSynced, newSynced) {
 		if obj.GetDeletionTimestamp().IsZero() {
 			obj.SetStatus(status.WithState(shared.StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
+		} else {
+			obj.SetStatus(status.WithState(shared.StateDeleting).WithOperation(errManifestShouldBeDeleted.Error()))
 		}
 		return ErrWarningResourceSyncStateDiff
-	} else if !obj.GetDeletionTimestamp().IsZero() {
-		state, err := r.CustomReadyCheck.Run(ctx, clnt, obj, target)
-		if errors.Is(err, ErrCustomResourceDoesNotExist) || state.State == shared.StateDeleting {
-			obj.SetStatus(status.WithState(shared.StateDeleting).WithOperation(errManifestShouldBeDeleted.Error()))
-			if errors.Is(err, ErrCustomResourceDoesNotExist) {
-				return ErrCustomResourceDoesNotExist
-			}
-			return errManifestShouldBeDeleted
-		}
 	}
 
 	for i := range r.PostRuns {
@@ -356,9 +342,7 @@ func (r *Reconciler) checkTargetReadiness(
 	crStateInfo, err := resourceReadyCheck.Run(ctx, clnt, manifest, target)
 	if err != nil {
 		r.Event(manifest, "Warning", "ResourceReadyCheck", err.Error())
-		if !manifest.GetDeletionTimestamp().IsZero() {
-			manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
-		}
+		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return err
 	}
 

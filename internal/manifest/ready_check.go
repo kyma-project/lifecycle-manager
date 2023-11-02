@@ -60,7 +60,7 @@ func (c *CustomResourceReadyCheck) Run(ctx context.Context,
 	}
 	moduleCR := manifest.Spec.Resource.DeepCopy()
 	if err := clnt.Get(ctx, client.ObjectKeyFromObject(moduleCR), moduleCR); err != nil {
-		return declarative.StateInfo{State: shared.StateError}, declarative.ErrCustomResourceDoesNotExist
+		return declarative.StateInfo{State: shared.StateError}, fmt.Errorf("failed to fetch resource: %w", err)
 	}
 	return HandleState(manifest, moduleCR)
 }
