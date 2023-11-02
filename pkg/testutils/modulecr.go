@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/kyma-project/template-operator/api/v1alpha1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"

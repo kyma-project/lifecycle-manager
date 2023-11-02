@@ -2,10 +2,11 @@ package builder
 
 import (
 	"fmt"
-	"github.com/kyma-project/template-operator/api/v1alpha1"
 	"os"
 	"path/filepath"
 	"runtime"
+
+	"github.com/kyma-project/template-operator/api/v1alpha1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
