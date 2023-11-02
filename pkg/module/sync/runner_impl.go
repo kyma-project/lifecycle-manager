@@ -241,15 +241,12 @@ func DeleteNoLongerExistingModuleStatus(
 	kyma *v1beta2.Kyma,
 	moduleFunc GetModuleFunc,
 ) {
-	logger := ctrlLog.FromContext(ctx).V(log.DebugLevel)
 	moduleStatusMap := kyma.GetModuleStatusMap()
 	moduleStatus := kyma.GetNoLongerExistingModuleStatus()
 	for idx := range moduleStatus {
 		moduleStatus := moduleStatus[idx]
 		if moduleStatus.Manifest == nil {
-			if err := metrics.RemoveModuleStateMetrics(kyma, moduleStatus.Name); err != nil {
-				logger.Info(fmt.Sprintf("error occurred while removing module state metrics: %s", err))
-			}
+			metrics.RemoveModuleStateMetrics(kyma, moduleStatus.Name)
 			delete(moduleStatusMap, moduleStatus.Name)
 			continue
 		}
@@ -259,9 +256,7 @@ func DeleteNoLongerExistingModuleStatus(
 		module.SetNamespace(moduleStatus.Manifest.GetNamespace())
 		err := moduleFunc(ctx, module)
 		if util.IsNotFound(err) {
-			if err := metrics.RemoveModuleStateMetrics(kyma, moduleStatus.Name); err != nil {
-				logger.Info(fmt.Sprintf("error occurred while removing module state metrics: %s", err))
-			}
+			metrics.RemoveModuleStateMetrics(kyma, moduleStatus.Name)
 			delete(moduleStatusMap, moduleStatus.Name)
 		} else {
 			moduleStatus.State = stateFromManifest(module)

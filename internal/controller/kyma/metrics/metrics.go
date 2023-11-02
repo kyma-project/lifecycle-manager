@@ -60,43 +60,23 @@ func UpdateAll(kyma *v1beta2.Kyma) error {
 	return nil
 }
 
-// RemoveKymaStateMetrics deletes all 'lifecycle_mgr_kyma_state' metrics for the matching Kyma.
-func RemoveKymaStateMetrics(kyma *v1beta2.Kyma) error {
-	shootID, err := metrics.ExtractShootID(kyma)
-	if err != nil {
-		return err
-	}
-	instanceID, err := metrics.ExtractInstanceID(kyma)
-	if err != nil {
-		return err
-	}
-
+// CleanupMetrics deletes all 'lifecycle_mgr_kyma_state',
+// 'lifecycle_mgr_module_state' metrics for the matching Kyma.
+func CleanupMetrics(kyma *v1beta2.Kyma) {
 	kymaStateGauge.DeletePartialMatch(prometheus.Labels{
-		kymaNameLabel:   kyma.Name,
-		shootIDLabel:    shootID,
-		instanceIDLabel: instanceID,
+		kymaNameLabel: kyma.Name,
 	})
-	return nil
+	moduleStateGauge.DeletePartialMatch(prometheus.Labels{
+		kymaNameLabel: kyma.Name,
+	})
 }
 
 // RemoveModuleStateMetrics deletes all 'lifecycle_mgr_module_state' metrics for the matching module.
-func RemoveModuleStateMetrics(kyma *v1beta2.Kyma, moduleName string) error {
-	shootID, err := metrics.ExtractShootID(kyma)
-	if err != nil {
-		return err
-	}
-	instanceID, err := metrics.ExtractInstanceID(kyma)
-	if err != nil {
-		return err
-	}
-
+func RemoveModuleStateMetrics(kyma *v1beta2.Kyma, moduleName string) {
 	moduleStateGauge.DeletePartialMatch(prometheus.Labels{
 		moduleNameLabel: moduleName,
 		kymaNameLabel:   kyma.Name,
-		shootIDLabel:    shootID,
-		instanceIDLabel: instanceID,
 	})
-	return nil
 }
 
 func setKymaStateGauge(newState shared.State, kymaName, shootID, instanceID string) {

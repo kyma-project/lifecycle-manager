@@ -13,28 +13,11 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 		v1beta2.SyncStrategyLocalSecret)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 
-	Context("Given an SKR cluster", func() {
-		It("When a KCP Kyma CR is created on the KCP cluster", func() {
-			Eventually(CreateKymaSecret).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
-				Should(Succeed())
-			Eventually(controlPlaneClient.Create).
-				WithContext(ctx).
-				WithArguments(kyma).
-				Should(Succeed())
-			By("Then the Kyma CR is in a \"Ready\" State on the KCP cluster ")
-			Eventually(KymaIsInState).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
-				Should(Succeed())
-			By("And the Kyma CR is in \"Ready\" State on the SKR cluster")
-			Eventually(CheckRemoteKymaCR).
-				WithContext(ctx).
-				WithArguments(remoteNamespace, []v1beta2.Module{}, runtimeClient, shared.StateReady).
-				Should(Succeed())
-		})
-		It("When a Kyma Module is enabled", func() {
+	InitEmptyKymaBeforeAll(kyma)
+	CleanupKymaAfterAll(kyma)
+
+	Context("Given kyma deployed in KCP", func() {
+		It("When enabling Template Operator", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
@@ -169,18 +152,17 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 					WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
 					Should(Equal(ErrNotFound))
 
-				By("And the SKR Kyma CR is in a \"Ready\" State")
+				By("And the KCP Kyma CR is in a \"Ready\" State")
 				Eventually(KymaIsInState).
 					WithContext(ctx).
 					WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 					Should(Succeed())
-			})
 
-		AfterAll(func() {
-			Eventually(controlPlaneClient.Delete).
-				WithContext(ctx).
-				WithArguments(kyma).
-				Should(Succeed())
-		})
+				By("And the SKR Kyma CR is in a \"Ready\" State")
+				Eventually(KymaIsInState).
+					WithContext(ctx).
+					WithArguments(defaultRemoteKymaName, remoteNamespace, runtimeClient, shared.StateReady).
+					Should(Succeed())
+			})
 	})
 })
