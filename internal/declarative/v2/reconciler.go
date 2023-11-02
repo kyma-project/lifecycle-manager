@@ -471,11 +471,6 @@ func (r *Reconciler) pruneDiff(
 	if err != nil {
 		return err
 	}
-	resourceName := r.ModuleCRDName(obj)
-	diff, err = pruneResource(diff, "CustomResourceDefinition", resourceName)
-	if err != nil {
-		return err
-	}
 
 	if manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff, obj, spec) {
 		// This case should not happen normally, but if happens, it means the resources read from cache is incomplete,
