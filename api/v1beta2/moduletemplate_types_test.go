@@ -7,6 +7,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+//nolint:funlen
 func TestModuleTemplate_GetComponentDescriptorCacheKey(t *testing.T) {
 	t.Parallel()
 
@@ -64,6 +65,23 @@ func TestModuleTemplate_GetComponentDescriptorCacheKey(t *testing.T) {
 				},
 			},
 			want: "test-module-without-version:regular:2",
+		},
+		{
+			name: "ModuleTemplate with invalid version annotation ",
+			fields: fields{
+				ObjectMeta: v1.ObjectMeta{
+					Name:       "test-module-with-invalid-version",
+					Generation: 2,
+					Annotations: map[string]string{
+						v1beta2.IsClusterScopedAnnotation: "true",
+						v1beta2.ModuleVersionAnnotation:   "1",
+					},
+				},
+				Spec: v1beta2.ModuleTemplateSpec{
+					Channel: "regular",
+				},
+			},
+			want: "test-module-with-invalid-version:regular:2",
 		},
 	}
 	for _, testCase := range tests {
