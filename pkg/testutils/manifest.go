@@ -90,15 +90,16 @@ func ManifestExists(
 }
 
 func NoManifestExist(ctx context.Context,
-	clnt client.Client) error {
+	clnt client.Client,
+) error {
 	manifestList := &v1beta2.ManifestList{}
 	if err := clnt.List(ctx, manifestList); err != nil {
-		return err
+		return fmt.Errorf("error listing manifests: %w", err)
 	}
 	if len(manifestList.Items) == 0 {
 		return nil
 	}
-	return ErrManifestsExist
+	return fmt.Errorf("error checking no manifests exist on cluster: %w", ErrManifestsExist)
 }
 
 func UpdateManifestState(

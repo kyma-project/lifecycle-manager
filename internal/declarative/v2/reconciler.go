@@ -83,7 +83,7 @@ func newResourcesCondition(obj Object) metav1.Condition {
 	}
 }
 
-//nolint:funlen,cyclop
+//nolint:funlen,cyclop, gocognit
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	obj, ok := r.prototype.DeepCopyObject().(Object)
 	if !ok {
@@ -167,7 +167,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	err = r.syncResources(ctx, clnt, obj, target)
-	if err != nil && err == ErrCustomResourceDoesNotExist && !obj.GetDeletionTimestamp().IsZero() {
+	if err != nil && errors.Is(err, ErrCustomResourceDoesNotExist) && !obj.GetDeletionTimestamp().IsZero() {
 		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
 	} else if err != nil {
 		// finalizer for sample cr is removed
@@ -311,9 +311,9 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 		return ErrWarningResourceSyncStateDiff
 	} else if !obj.GetDeletionTimestamp().IsZero() {
 		state, err := r.CustomReadyCheck.Run(ctx, clnt, obj, target)
-		if err == ErrCustomResourceDoesNotExist || state.State == shared.StateDeleting {
+		if errors.Is(err, ErrCustomResourceDoesNotExist) || state.State == shared.StateDeleting {
 			obj.SetStatus(status.WithState(shared.StateDeleting).WithOperation(errManifestShouldBeDeleted.Error()))
-			if err == ErrCustomResourceDoesNotExist {
+			if errors.Is(err, ErrCustomResourceDoesNotExist) {
 				return ErrCustomResourceDoesNotExist
 			}
 			return errManifestShouldBeDeleted
