@@ -157,19 +157,16 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj)
 	}
 
-	resourceCRDeleted, err := r.DeletionCheck.Run(ctx, clnt, obj)
-	if err != nil {
+	if err := r.syncResources(ctx, clnt, obj, target); err != nil {
 		return r.ssaStatus(ctx, obj)
-	}
-	if !obj.GetDeletionTimestamp().IsZero() && resourceCRDeleted {
-		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
 	}
 
-	err = r.syncResources(ctx, clnt, obj, target)
-	if err != nil && errors.Is(err, ErrCustomResourceDoesNotExist) && !obj.GetDeletionTimestamp().IsZero() {
-		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
-	} else if err != nil {
+	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
 		return r.ssaStatus(ctx, obj)
+	}
+
+	if !obj.GetDeletionTimestamp().IsZero() {
+		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
 	}
 
 	// This situation happens when manifest get new installation layer to update resources,
@@ -493,10 +490,6 @@ func (r *Reconciler) pruneDiff(
 		obj.SetStatus(obj.GetStatus().WithState(shared.StateWarning).WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()))
 		r.ManifestParser.EvictCache(spec)
 		return ErrResourceSyncDiffInSameOCILayer
-	}
-
-	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
-		return err
 	}
 
 	if err := r.deleteDiffResources(ctx, clnt, obj, diff); err != nil {
