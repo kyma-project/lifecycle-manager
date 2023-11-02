@@ -157,13 +157,14 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj)
 	}
 
+	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
+		return r.ssaStatus(ctx, obj)
+	}
+
 	if err := r.syncResources(ctx, clnt, obj, target); err != nil {
 		return r.ssaStatus(ctx, obj)
 	}
 
-	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
-		return r.ssaStatus(ctx, obj)
-	}
 	// This situation happens when manifest get new installation layer to update resources,
 	// we need to make sure all updates successfully before we can update synced oci ref
 	if requireUpdateSyncedOCIRefAnnotation(obj, spec.OCIRef) {
