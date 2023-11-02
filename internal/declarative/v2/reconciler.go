@@ -157,7 +157,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj)
 	}
 
-	// if manifest is under deletion and default module CR is deleted, remove finalizers
 	resourceCRDeleted, err := r.DeletionCheck.Run(ctx, clnt, obj)
 	if err != nil {
 		return r.ssaStatus(ctx, obj)
@@ -170,8 +169,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if err != nil && errors.Is(err, ErrCustomResourceDoesNotExist) && !obj.GetDeletionTimestamp().IsZero() {
 		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
 	} else if err != nil {
-		// finalizer for sample cr is removed
-		// finalizer for declarative is still existing
 		return r.ssaStatus(ctx, obj)
 	}
 
