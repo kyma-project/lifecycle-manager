@@ -5,11 +5,11 @@ package v1
 import (
 	"fmt"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
-
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
 //+kubebuilder:object:root=true
@@ -18,8 +18,8 @@ import (
 type TestAPI struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              TestAPISpec        `json:"spec,omitempty"`
-	Status            declarative.Status `json:"status,omitempty"`
+	Spec              TestAPISpec   `json:"spec,omitempty"`
+	Status            shared.Status `json:"status,omitempty"`
 }
 
 // TestAPISpec defines the desired state of TestAPI.
@@ -56,11 +56,11 @@ func init() {
 
 var _ declarative.Object = &TestAPI{}
 
-func (s *TestAPI) GetStatus() declarative.Status {
+func (s *TestAPI) GetStatus() shared.Status {
 	return s.Status
 }
 
-func (s *TestAPI) SetStatus(status declarative.Status) {
+func (s *TestAPI) SetStatus(status shared.Status) {
 	s.Status = status
 }
 

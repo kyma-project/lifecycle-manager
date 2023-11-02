@@ -3,6 +3,7 @@ package v1beta2_test
 import (
 	"testing"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -12,39 +13,39 @@ func TestKyma_DetermineState(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
 		name                 string
-		givenModulesState    []v1beta2.State
+		givenModulesState    []shared.State
 		givenConditionStatus []metav1.ConditionStatus
-		want                 v1beta2.State
+		want                 shared.State
 	}{
 		{
-			"given moduleState contains error",
-			[]v1beta2.State{v1beta2.StateError, v1beta2.StateReady, v1beta2.StateReady},
+			"given moduleshared.State contains error",
+			[]shared.State{shared.StateError, shared.StateReady, shared.StateReady},
 			[]metav1.ConditionStatus{metav1.ConditionTrue},
-			v1beta2.StateError,
+			shared.StateError,
 		},
 		{
-			"given moduleState contains warning but no error",
-			[]v1beta2.State{v1beta2.StateWarning, v1beta2.StateReady, v1beta2.StateReady},
+			"given moduleshared.State contains warning but no error",
+			[]shared.State{shared.StateWarning, shared.StateReady, shared.StateReady},
 			[]metav1.ConditionStatus{metav1.ConditionTrue},
-			v1beta2.StateWarning,
+			shared.StateWarning,
 		},
 		{
-			"given moduleState in ready",
-			[]v1beta2.State{v1beta2.StateReady, v1beta2.StateReady, v1beta2.StateReady},
+			"given moduleshared.State in ready",
+			[]shared.State{shared.StateReady, shared.StateReady, shared.StateReady},
 			[]metav1.ConditionStatus{metav1.ConditionTrue},
-			v1beta2.StateReady,
+			shared.StateReady,
 		},
 		{
-			"given moduleState contains error and warning",
-			[]v1beta2.State{v1beta2.StateError, v1beta2.StateWarning, v1beta2.StateReady},
+			"given moduleshared.State contains error and warning",
+			[]shared.State{shared.StateError, shared.StateWarning, shared.StateReady},
 			[]metav1.ConditionStatus{metav1.ConditionTrue},
-			v1beta2.StateError,
+			shared.StateError,
 		},
 		{
 			"given conditions are not in true status but module in ready",
-			[]v1beta2.State{v1beta2.StateReady},
+			[]shared.State{shared.StateReady},
 			[]metav1.ConditionStatus{metav1.ConditionFalse},
-			v1beta2.StateProcessing,
+			shared.StateProcessing,
 		},
 	}
 	for _, testCase := range tests {

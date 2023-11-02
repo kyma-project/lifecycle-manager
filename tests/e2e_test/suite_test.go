@@ -1,5 +1,3 @@
-//go:build watcher_e2e || deletion_e2e || status_propagation_e2e
-
 //nolint:gochecknoglobals
 package e2e_test
 
@@ -17,7 +15,6 @@ import (
 	"go.uber.org/zap/zapcore"
 	"k8s.io/client-go/rest"
 
-	//nolint:gci
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
 
@@ -85,8 +82,6 @@ var _ = BeforeSuite(func() {
 	runtimeRESTConfig.Burst = clientBurst
 	Expect(err).ToNot(HaveOccurred())
 
-	Expect(err).NotTo(HaveOccurred())
-
 	controlPlaneClient, err = client.New(controlPlaneRESTConfig, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	runtimeClient, err = client.New(runtimeRESTConfig, client.Options{Scheme: scheme.Scheme})
@@ -94,7 +89,10 @@ var _ = BeforeSuite(func() {
 
 	Expect(api.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
-
+	SetDefaultEventuallyPollingInterval(interval)
+	SetDefaultEventuallyTimeout(timeout)
+	SetDefaultConsistentlyDuration(timeout)
+	SetDefaultConsistentlyPollingInterval(interval)
 	//+kubebuilder:scaffold:scheme
 
 	go func() {

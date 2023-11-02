@@ -21,6 +21,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/blang/semver"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -86,7 +88,7 @@ type ModuleTemplateSpec struct {
 	//
 	//+kubebuilder:pruning:PreserveUnknownFields
 	//+kubebuilder:validation:XEmbeddedResource
-	Data unstructured.Unstructured `json:"data,omitempty"`
+	Data *unstructured.Unstructured `json:"data,omitempty"`
 
 	// The Descriptor is the Open Component Model Descriptor of a Module, containing all relevant information
 	// to correctly initialize a module (e.g. Manifests, References to Binaries and/or configuration)
@@ -115,7 +117,7 @@ type CustomStateCheck struct {
 	Value string `json:"value" yaml:"value"`
 
 	// MappedState is the Kyma CR State
-	MappedState State `json:"mappedState" yaml:"mappedState"`
+	MappedState shared.State `json:"mappedState" yaml:"mappedState"`
 }
 
 func (m *ModuleTemplate) GetDescriptor() (*Descriptor, error) {
@@ -143,7 +145,7 @@ func (m *ModuleTemplate) GetDescriptor() (*Descriptor, error) {
 	if !ok {
 		return nil, ErrTypeAssertDescriptor
 	}
-	m.SetDescToCache(mDesc)
+
 	return mDesc, nil
 }
 
@@ -184,6 +186,14 @@ func init() {
 }
 
 func (m *ModuleTemplate) GetComponentDescriptorCacheKey() string {
+	if m.Annotations != nil {
+		moduleVersion := m.Annotations[ModuleVersionAnnotation]
+		_, err := semver.Parse(moduleVersion)
+		if moduleVersion != "" && err == nil {
+			return fmt.Sprintf("%s:%s:%s", m.Name, m.Spec.Channel, moduleVersion)
+		}
+	}
+
 	return fmt.Sprintf("%s:%s:%d", m.Name, m.Spec.Channel, m.Generation)
 }
 

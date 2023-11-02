@@ -6,10 +6,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -38,10 +40,10 @@ func TestHandleState(t *testing.T) {
 			[]moduleCheck{
 				{
 					[]string{"status", "state"},
-					string(v2.StateReady),
+					string(shared.StateReady),
 				},
 			},
-			v2.StateInfo{State: v2.StateReady},
+			v2.StateInfo{State: shared.StateReady},
 			false,
 		},
 		{
@@ -54,7 +56,7 @@ func TestHandleState(t *testing.T) {
 					"not support state",
 				},
 			},
-			v2.StateInfo{State: v2.StateWarning, Info: manifest.ErrNotSupportedState.Error()},
+			v2.StateInfo{State: shared.StateWarning, Info: manifest.ErrNotSupportedState.Error()},
 			false,
 		},
 		{
@@ -67,7 +69,7 @@ func TestHandleState(t *testing.T) {
 					"customState",
 				},
 			},
-			v2.StateInfo{State: v2.StateProcessing, Info: manifest.ModuleCRWithNoCustomCheckWarning},
+			v2.StateInfo{State: shared.StateProcessing, Info: manifest.ModuleCRWithNoCustomCheckWarning},
 			false,
 		},
 		{
@@ -76,7 +78,7 @@ func TestHandleState(t *testing.T) {
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       "customState",
-					MappedState: v1beta2.StateReady,
+					MappedState: shared.StateReady,
 				},
 			},
 			true,
@@ -86,7 +88,7 @@ func TestHandleState(t *testing.T) {
 					"customState",
 				},
 			},
-			v2.StateInfo{State: v2.StateError},
+			v2.StateInfo{State: shared.StateError},
 			true,
 		},
 		{
@@ -95,12 +97,12 @@ func TestHandleState(t *testing.T) {
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForReady,
-					MappedState: v1beta2.StateReady,
+					MappedState: shared.StateReady,
 				},
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForError,
-					MappedState: v1beta2.StateError,
+					MappedState: shared.StateError,
 				},
 			},
 			true,
@@ -110,21 +112,21 @@ func TestHandleState(t *testing.T) {
 					definedValueForReady,
 				},
 			},
-			v2.StateInfo{State: v2.StateReady},
+			v2.StateInfo{State: shared.StateReady},
 			false,
 		},
 		{
-			"custom module found mapped value with StateError, expected mapped to StateError with error",
+			"custom module found mapped value with StateError, expected mapped to StateError",
 			[]*v1beta2.CustomStateCheck{
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForReady,
-					MappedState: v1beta2.StateReady,
+					MappedState: shared.StateReady,
 				},
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForError,
-					MappedState: v1beta2.StateError,
+					MappedState: shared.StateError,
 				},
 			},
 			true,
@@ -134,8 +136,8 @@ func TestHandleState(t *testing.T) {
 					definedValueForError,
 				},
 			},
-			v2.StateInfo{State: v2.StateError},
-			true,
+			v2.StateInfo{State: shared.StateError},
+			false,
 		},
 		{
 			"custom module with additional StateCheck, expected mapped to correct state",
@@ -143,17 +145,17 @@ func TestHandleState(t *testing.T) {
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForReady,
-					MappedState: v1beta2.StateReady,
+					MappedState: shared.StateReady,
 				},
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForError,
-					MappedState: v1beta2.StateError,
+					MappedState: shared.StateError,
 				},
 				{
 					JSONPath:    "fieldLevel3.fieldLevel4.fieldLevel5",
 					Value:       "customStateForWarning",
-					MappedState: v1beta2.StateWarning,
+					MappedState: shared.StateWarning,
 				},
 			},
 			true,
@@ -167,7 +169,7 @@ func TestHandleState(t *testing.T) {
 					"customStateForWarning",
 				},
 			},
-			v2.StateInfo{State: v2.StateWarning},
+			v2.StateInfo{State: shared.StateWarning},
 			false,
 		},
 		{
@@ -176,17 +178,17 @@ func TestHandleState(t *testing.T) {
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForReady,
-					MappedState: v1beta2.StateReady,
+					MappedState: shared.StateReady,
 				},
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForError,
-					MappedState: v1beta2.StateError,
+					MappedState: shared.StateError,
 				},
 				{
 					JSONPath:    "fieldLevel3.fieldLevel4.fieldLevel5",
 					Value:       definedValueForReady,
-					MappedState: v1beta2.StateReady,
+					MappedState: shared.StateReady,
 				},
 			},
 			true,
@@ -200,7 +202,7 @@ func TestHandleState(t *testing.T) {
 					definedValueForReady,
 				},
 			},
-			v2.StateInfo{State: v2.StateReady},
+			v2.StateInfo{State: shared.StateReady},
 			false,
 		},
 		{
@@ -209,17 +211,17 @@ func TestHandleState(t *testing.T) {
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForReady,
-					MappedState: v1beta2.StateReady,
+					MappedState: shared.StateReady,
 				},
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForError,
-					MappedState: v1beta2.StateError,
+					MappedState: shared.StateError,
 				},
 				{
 					JSONPath:    "fieldLevel3.fieldLevel4.fieldLevel5",
 					Value:       definedValueForReady,
-					MappedState: v1beta2.StateReady,
+					MappedState: shared.StateReady,
 				},
 			},
 			true,
@@ -233,7 +235,7 @@ func TestHandleState(t *testing.T) {
 					definedValueForReady,
 				},
 			},
-			v2.StateInfo{State: v2.StateProcessing},
+			v2.StateInfo{State: shared.StateProcessing},
 			false,
 		},
 		{
@@ -242,17 +244,17 @@ func TestHandleState(t *testing.T) {
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForReady,
-					MappedState: v1beta2.StateReady,
+					MappedState: shared.StateReady,
 				},
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForError,
-					MappedState: v1beta2.StateError,
+					MappedState: shared.StateError,
 				},
 				{
 					JSONPath:    "fieldLevel3.fieldLevel4.fieldLevel5",
 					Value:       "customStateForWarning",
-					MappedState: v1beta2.StateWarning,
+					MappedState: shared.StateWarning,
 				},
 			},
 			true,
@@ -266,7 +268,7 @@ func TestHandleState(t *testing.T) {
 					"customStateWithOtherValue",
 				},
 			},
-			v2.StateInfo{State: v2.StateProcessing},
+			v2.StateInfo{State: shared.StateProcessing},
 			false,
 		},
 		{
@@ -275,12 +277,12 @@ func TestHandleState(t *testing.T) {
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForReady,
-					MappedState: v1beta2.StateReady,
+					MappedState: shared.StateReady,
 				},
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForError,
-					MappedState: v1beta2.StateError,
+					MappedState: shared.StateError,
 				},
 			},
 			true,
@@ -290,7 +292,7 @@ func TestHandleState(t *testing.T) {
 					"customStateWithOtherValue",
 				},
 			},
-			v2.StateInfo{State: v2.StateProcessing},
+			v2.StateInfo{State: shared.StateProcessing},
 			false,
 		},
 	}
@@ -310,7 +312,8 @@ func TestHandleState(t *testing.T) {
 				}
 			}
 			manifestCR.CreationTimestamp = v1.Now()
-			moduleCR := testutils.NewTestModuleCR("test", v1.NamespaceDefault, "v1", "TestCR")
+			moduleCR := builder.NewModuleCRBuilder().WithName("test").WithNamespace(v1.NamespaceDefault).
+				WithGroupVersionKind(v1beta2.GroupVersion.Group, "v1", "TestCR").Build()
 			for _, check := range testCase.checkInModuleCR {
 				err := unstructured.SetNestedField(moduleCR.Object, check.value, check.fields...)
 				if err != nil {
@@ -318,7 +321,7 @@ func TestHandleState(t *testing.T) {
 					return
 				}
 			}
-			got, err := manifest.HandleState(manifestCR, &moduleCR)
+			got, err := manifest.HandleState(manifestCR, moduleCR)
 			if !reflect.DeepEqual(got, testCase.want) {
 				t.Errorf("HandleState() got = %v, want %v", got, testCase.want)
 			}
@@ -353,7 +356,7 @@ func TestHandleStateWithDuration(t *testing.T) {
 			false,
 			v1.Now(),
 			nil,
-			v2.StateInfo{State: v2.StateProcessing, Info: manifest.ModuleCRWithNoCustomCheckWarning},
+			v2.StateInfo{State: shared.StateProcessing, Info: manifest.ModuleCRWithNoCustomCheckWarning},
 			false,
 		},
 		{
@@ -364,10 +367,10 @@ func TestHandleStateWithDuration(t *testing.T) {
 			[]moduleCheck{
 				{
 					[]string{"status", "state"},
-					string(v2.StateReady),
+					string(shared.StateReady),
 				},
 			},
-			v2.StateInfo{State: v2.StateReady},
+			v2.StateInfo{State: shared.StateReady},
 			false,
 		},
 		{
@@ -376,7 +379,7 @@ func TestHandleStateWithDuration(t *testing.T) {
 			false,
 			v1.NewTime(v1.Now().Add(-10 * time.Minute)),
 			nil,
-			v2.StateInfo{State: v2.StateWarning, Info: manifest.ModuleCRWithNoCustomCheckWarning},
+			v2.StateInfo{State: shared.StateWarning, Info: manifest.ModuleCRWithNoCustomCheckWarning},
 			false,
 		},
 		{
@@ -385,12 +388,12 @@ func TestHandleStateWithDuration(t *testing.T) {
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForReady,
-					MappedState: v1beta2.StateReady,
+					MappedState: shared.StateReady,
 				},
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
 					Value:       definedValueForError,
-					MappedState: v1beta2.StateError,
+					MappedState: shared.StateError,
 				},
 			},
 			true,
@@ -401,7 +404,7 @@ func TestHandleStateWithDuration(t *testing.T) {
 					definedValueForReady,
 				},
 			},
-			v2.StateInfo{State: v2.StateWarning, Info: manifest.ModuleCRWithCustomCheckWarning},
+			v2.StateInfo{State: shared.StateWarning, Info: manifest.ModuleCRWithCustomCheckWarning},
 			false,
 		},
 	}
@@ -421,7 +424,8 @@ func TestHandleStateWithDuration(t *testing.T) {
 				}
 			}
 			manifestCR.CreationTimestamp = testCase.manifestCreatedAt
-			moduleCR := testutils.NewTestModuleCR("test", v1.NamespaceDefault, "v1", "TestCR")
+			moduleCR := builder.NewModuleCRBuilder().WithName("test").WithNamespace(v1.NamespaceDefault).
+				WithGroupVersionKind(v1beta2.GroupVersion.Group, "v1", "TestCR").Build()
 			for _, check := range testCase.checkInModuleCR {
 				err := unstructured.SetNestedField(moduleCR.Object, check.value, check.fields...)
 				if err != nil {
@@ -429,7 +433,7 @@ func TestHandleStateWithDuration(t *testing.T) {
 					return
 				}
 			}
-			got, err := manifest.HandleState(manifestCR, &moduleCR)
+			got, err := manifest.HandleState(manifestCR, moduleCR)
 			if !reflect.DeepEqual(got, testCase.want) {
 				t.Errorf("HandleState() got = %v, want %v", got, testCase.want)
 			}

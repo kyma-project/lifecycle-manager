@@ -18,4 +18,4 @@ See the [Run the e2e tests locally](#run-the-e2e-tests-locally) section for deta
     export KCP_KUBECONFIG=$(k3d kubeconfig write kcp-local)
     export SKR_KUBECONFIG=$(k3d kubeconfig write skr-local)
     ```
-3. Run `make test-watcher-e2e`.
+3. Run `make watcher-enqueue`.

@@ -29,7 +29,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           # Context for which we should look for the matching status
           statusName: ${{ (github.event_name == 'pull_request') && 'pull-lifecycle-mgr-build' || 'main-lifecycle-mgr-build' }}
-          timeoutSeconds: 600
+          timeoutSeconds: 900
           intervalSeconds: 10
       - name: Exit If Failing Build Requirement
         if: steps.wait-for-build.outputs.state != 'success'
@@ -40,39 +40,49 @@ jobs:
   e2e-integration:
     strategy:
       matrix:
-        e2e-test: ["test-watcher-e2e", "test-kyma-deletion-e2e", "test-status-propagation-e2e"]
-        cli-stability: [ "unstable" ]
-    name: "Run E2E tests"
+        e2e-test: [ "watcher-enqueue",
+                    "kyma-deletion",
+                    "module-status-propagation",
+                    "kyma-metrics",
+                    "module-without-default-cr",
+                    "non-blocking-deletion",
+                    "purge-controller",
+                    "purge-metrics",
+                    "module-upgrade"
+        ]
+    name: "E2E"
     needs: [wait-for-img]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       K3D_VERSION: v5.4.7
       ISTIO_VERSION: 1.17.1
       CM_VERSION: v1.12.3
       KLM_VERSION_TAG: latest
       KLM_IMAGE_REPO: prod
+      GOSUMDB: off
     steps:
       - name: Install prerequisites
         run: |
-          sudo add-apt-repository ppa:longsleep/golang-backports -y
+          curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --batch --yes --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+          echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
           sudo apt update -y
-          sudo apt install git curl wget make bash golang-go -y
+          sudo apt install kubectl -y
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '^1.21'
       - name: Install Istio CLI
         run: |
           curl -L https://istio.io/downloadIstio | TARGET_ARCH=x86_64 sh -
           chmod +x istio-$ISTIO_VERSION/bin/istioctl
           mv istio-$ISTIO_VERSION/bin/istioctl /usr/local/bin
-      - name: Install kubectl
-        run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          chmod +x kubectl
-          mv kubectl /usr/local/bin
       - name: Install Kyma CLI
         run: |
-          wget -q https://storage.googleapis.com/kyma-cli-${{ matrix.cli-stability }}/kyma-linux
-          chmod +x kyma-linux && mv kyma-linux /usr/local/bin/kyma-${{ matrix.cli-stability }}
-          echo "PATH=/usr/local/bin/kyma-${{ matrix.cli-stability }}" >> $GITHUB_OUTPUT
-      - run: ln -s /usr/local/bin/kyma-${{ matrix.cli-stability }} /usr/local/bin/kyma
+          wget -q https://storage.googleapis.com/kyma-cli-unstable/kyma-linux
+          chmod +x kyma-linux && mv kyma-linux /usr/local/bin/kyma-unstable
+          echo "PATH=/usr/local/bin/kyma-unstable" >> $GITHUB_OUTPUT
+      - run: ln -s /usr/local/bin/kyma-unstable /usr/local/bin/kyma
       - name: Install Cert Manager Command Line Tool
         run: |
           OS=$(go env GOOS); ARCH=$(go env GOARCH); curl -fsSL -o cmctl.tar.gz https://github.com/cert-manager/cert-manager/releases/latest/download/cmctl-$OS-$ARCH.tar.gz
@@ -85,7 +95,7 @@ jobs:
           k3d cluster create skr -p 10080:80@loadbalancer -p 10443:443@loadbalancer --k3s-arg '--disable=traefik@server:0'
       - name: Provision KCP cluster
         run: |
-          kyma provision k3d --name=kcp -p 9080:80@loadbalancer -p 9443:443@loadbalancer --ci --registry-port 5111
+          kyma provision k3d --name=kcp -p 9443:443@loadbalancer -p 9080:80@loadbalancer -p 9081:8080@loadbalancer --ci --registry-port 5111
       - name: Update Kubeconfigs
         run: k3d kubeconfig merge -a -d
       - name: Export required Kubeconfig Env vars
@@ -114,18 +124,29 @@ jobs:
       - name: Checkout lifecycle-manager
         uses: actions/checkout@v3
         with:
-          path: ./lifecycle-manager/
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.21'
+          path: lifecycle-manager
       - name: Override Kustomize Controller Image TAG and Image repository environment variables in Pull Request to PR Image
         if: ${{ github.event_name == 'pull_request' }}
         run: |
           echo "KLM_VERSION_TAG=PR-${{ github.event.pull_request.number }}" >> $GITHUB_ENV
           echo "KLM_IMAGE_REPO=dev" >> $GITHUB_ENV
+      - name: Patch purge finalizer flags
+        if: ${{ matrix.e2e-test == 'purge-controller' ||  matrix.e2e-test == 'purge-metrics'}}
+        working-directory: lifecycle-manager
+        run: |
+          pushd config/watcher_local_test
+          echo \
+          "- op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --enable-purge-finalizer=true
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --purge-finalizer-timeout=5s" >> purge_finalizer.yaml
+          cat purge_finalizer.yaml
+          kustomize edit add patch --path purge_finalizer.yaml --kind Deployment
+          popd
       - name: Deploy LM local testing kustomize
-        working-directory: ./lifecycle-manager
+        working-directory: lifecycle-manager
         run: |
           maxRetry=5
           for retry in $(seq 1 $maxRetry)
@@ -143,13 +164,33 @@ jobs:
           done
       - name: Checkout template-operator
         uses: actions/checkout@v3
-        if: ${{ matrix.e2e-test == 'test-status-propagation-e2e' }}
         with:
           repository: kyma-project/template-operator
-          path: ./template-operator/
+          path: template-operator
       - name: Create Template Operator Module
-        working-directory: ./template-operator
-        if: ${{ matrix.e2e-test == 'test-status-propagation-e2e' }}
+        working-directory: template-operator
+        if: ${{ matrix.e2e-test == 'kyma-metrics' ||
+          matrix.e2e-test == 'non-blocking-deletion' ||
+          matrix.e2e-test == 'purge-controller' ||
+          matrix.e2e-test == 'purge-metrics' ||
+          matrix.e2e-test == 'kyma-deletion'
+          }}
+        run: |
+          make build-manifests
+          kyma alpha create module --module-config-file ./module-config.yaml --path . --registry k3d-kcp-registry:5111 --insecure
+          sed -i 's/k3d-kcp-registry:5111/k3d-kcp-registry:5000/g' ./template.yaml
+          kubectl config use-context k3d-kcp
+          kubectl get crds
+          kubectl apply -f template.yaml
+      - name: Create Template Operator Module for regular and fast channels
+        working-directory: lifecycle-manager
+        if: ${{ matrix.e2e-test == 'module-upgrade'}}
+        run: |
+          kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_fast.yaml
+          kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_regular.yaml
+      - name: Create Template Operator Module with final state `Warning`
+        working-directory: template-operator
+        if: ${{ matrix.e2e-test == 'module-status-propagation'}}
         run: |
           pushd config/default
           echo "- op: replace
@@ -163,7 +204,33 @@ jobs:
           kubectl config use-context k3d-kcp
           kubectl get crds
           kubectl apply -f template.yaml
+      - name: Create Template Operator Module without default CR
+        working-directory: template-operator
+        if: ${{ matrix.e2e-test == 'module-without-default-cr' }}
+        run: |
+          make build-manifests
+          echo "name: kyma-project.io/module/template-operator
+          channel: regular
+          version: v1.0.0
+          manifest: template-operator.yaml
+          security: sec-scanners-config.yaml
+          annotations:
+            operator.kyma-project.io/doc-url: https://kyma-project.io" >> module-config-no-cr.yaml
+          kyma alpha create module \
+          --module-config-file ./module-config-no-cr.yaml \
+          --path . \
+          --registry k3d-kcp-registry:5111 \
+          --insecure
+          sed -i 's/k3d-kcp-registry:5111/k3d-kcp-registry:5000/g' ./template.yaml
+          kubectl config use-context k3d-kcp
+          kubectl get crds
+          kubectl apply -f template.yaml
+      - name: Expose Metrics Endpoint
+        working-directory: lifecycle-manager
+        if: ${{ matrix.e2e-test == 'kyma-metrics' || matrix.e2e-test == 'purge-metrics' }}
+        run: |
+          kubectl patch svc klm-metrics-service -p '{"spec": {"type": "LoadBalancer"}}' -n kcp-system
       - name: Run ${{ matrix.e2e-test }}
-        working-directory: ./lifecycle-manager
+        working-directory: lifecycle-manager
         run: |
           make -C tests/e2e_test ${{ matrix.e2e-test }}

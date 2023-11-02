@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -14,13 +16,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	commonErrors "github.com/kyma-project/lifecycle-manager/pkg/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"github.com/kyma-project/lifecycle-manager/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
-	"github.com/kyma-project/lifecycle-manager/pkg/types"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -74,7 +75,8 @@ func (r *RunnerImpl) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	}
 	ssaFinish := time.Since(ssaStart)
 	if len(errs) != 0 {
-		return fmt.Errorf("ServerSideApply failed (after %s): %w", ssaFinish, types.NewMultiError(errs))
+		errs = append(errs, fmt.Errorf("ServerSideApply failed (after %s)", ssaFinish)) //nolint:goerr113
+		return errors.Join(errs...)
 	}
 	baseLogger.V(log.DebugLevel).Info("ServerSideApply finished", "time", ssaFinish)
 	return nil
@@ -163,7 +165,7 @@ func (r *RunnerImpl) updateModuleStatusFromExistingModules(
 func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStatus) v1beta2.ModuleStatus {
 	if errors.Is(module.Template.Err, channel.ErrTemplateUpdateNotAllowed) {
 		newModuleStatus := existStatus.DeepCopy()
-		newModuleStatus.State = v1beta2.StateWarning
+		newModuleStatus.State = shared.StateWarning
 		newModuleStatus.Message = module.Template.Err.Error()
 		return *newModuleStatus
 	}
@@ -172,7 +174,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 			Name:    module.ModuleName,
 			Channel: module.Template.DesiredChannel,
 			FQDN:    module.FQDN,
-			State:   v1beta2.StateError,
+			State:   shared.StateError,
 			Message: module.Template.Err.Error(),
 		}
 	}
@@ -183,7 +185,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 			Name:    module.ModuleName,
 			Channel: module.Template.DesiredChannel,
 			FQDN:    module.FQDN,
-			State:   v1beta2.StateError,
+			State:   shared.StateError,
 			Message: ErrManifestConversion.Error(),
 		}
 	}
@@ -207,7 +209,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 	return v1beta2.ModuleStatus{
 		Name:    module.ModuleName,
 		FQDN:    module.FQDN,
-		State:   v1beta2.State(manifestObject.Status.State),
+		State:   manifestObject.Status.State,
 		Channel: module.Template.Spec.Channel,
 		Version: module.Version,
 		Manifest: &v1beta2.TrackingObject{
@@ -222,13 +224,13 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 	}
 }
 
-func stateFromManifest(obj client.Object) v1beta2.State {
+func stateFromManifest(obj client.Object) shared.State {
 	switch manifest := obj.(type) {
 	case *v1beta2.Manifest:
-		return v1beta2.State(manifest.Status.State)
+		return manifest.Status.State
 	case *unstructured.Unstructured:
 		state, _, _ := unstructured.NestedString(manifest.Object, "status", "state")
-		return v1beta2.State(state)
+		return shared.State(state)
 	default:
 		return ""
 	}
@@ -239,15 +241,12 @@ func DeleteNoLongerExistingModuleStatus(
 	kyma *v1beta2.Kyma,
 	moduleFunc GetModuleFunc,
 ) {
-	logger := ctrlLog.FromContext(ctx).V(log.DebugLevel)
 	moduleStatusMap := kyma.GetModuleStatusMap()
 	moduleStatus := kyma.GetNoLongerExistingModuleStatus()
 	for idx := range moduleStatus {
 		moduleStatus := moduleStatus[idx]
 		if moduleStatus.Manifest == nil {
-			if err := metrics.RemoveModuleStateMetrics(kyma, moduleStatus.Name); err != nil {
-				logger.Info(fmt.Sprintf("error occurred while removing module state metrics: %s", err))
-			}
+			metrics.RemoveModuleStateMetrics(kyma, moduleStatus.Name)
 			delete(moduleStatusMap, moduleStatus.Name)
 			continue
 		}
@@ -257,9 +256,7 @@ func DeleteNoLongerExistingModuleStatus(
 		module.SetNamespace(moduleStatus.Manifest.GetNamespace())
 		err := moduleFunc(ctx, module)
 		if util.IsNotFound(err) {
-			if err := metrics.RemoveModuleStateMetrics(kyma, moduleStatus.Name); err != nil {
-				logger.Info(fmt.Sprintf("error occurred while removing module state metrics: %s", err))
-			}
+			metrics.RemoveModuleStateMetrics(kyma, moduleStatus.Name)
 			delete(moduleStatusMap, moduleStatus.Name)
 		} else {
 			moduleStatus.State = stateFromManifest(module)

@@ -19,11 +19,11 @@ import (
 )
 
 const (
-	FinalizerDefault          = "declarative.kyma-project.io/finalizer"
-	FieldOwnerDefault         = "declarative.kyma-project.io/applier"
-	EventRecorderDefault      = "declarative.kyma-project.io/events"
-	DefaultSkipReconcileLabel = "declarative.kyma-project.io/skip-reconciliation"
-	DefaultInMemoryParseTTL   = 24 * time.Hour
+	FinalizerDefault        = "declarative.kyma-project.io/finalizer"
+	FieldOwnerDefault       = "declarative.kyma-project.io/applier"
+	EventRecorderDefault    = "declarative.kyma-project.io/events"
+	SkipReconcileLabel      = "operator.kyma-project.io/skip-reconciliation"
+	DefaultInMemoryParseTTL = 24 * time.Hour
 )
 
 func DefaultOptions() *Options {
@@ -43,6 +43,7 @@ func DefaultOptions() *Options {
 		WithManifestCache(os.TempDir()),
 		WithSkipReconcileOn(SkipReconcileOnDefaultLabelPresentAndTrue),
 		WithManifestParser(NewInMemoryCachedManifestParser(DefaultInMemoryParseTTL)),
+		WithModuleCRDeletionCheck(NewDefaultDeletionCheck()),
 	)
 }
 
@@ -73,6 +74,8 @@ type Options struct {
 
 	PostRuns   []PostRun
 	PreDeletes []PreDelete
+
+	DeletionCheck ModuleCRDeletionCheck
 
 	DeletePrerequisites bool
 
@@ -216,6 +219,18 @@ func (o WithPreDelete) Apply(options *Options) {
 	options.PreDeletes = append(options.PreDeletes, o...)
 }
 
+func WithModuleCRDeletionCheck(deletionCheckFn ModuleCRDeletionCheck) WithModuleCRDeletionCheckOption {
+	return WithModuleCRDeletionCheckOption{ModuleCRDeletionCheck: deletionCheckFn}
+}
+
+type WithModuleCRDeletionCheckOption struct {
+	ModuleCRDeletionCheck
+}
+
+func (o WithModuleCRDeletionCheckOption) Apply(options *Options) {
+	options.DeletionCheck = o
+}
+
 type WithPeriodicConsistencyCheck time.Duration
 
 func (o WithPeriodicConsistencyCheck) Apply(options *Options) {
@@ -300,8 +315,8 @@ type SkipReconcile func(context.Context, Object) (skip bool)
 
 // SkipReconcileOnDefaultLabelPresentAndTrue determines SkipReconcile by checking if DefaultSkipReconcileLabel is true.
 func SkipReconcileOnDefaultLabelPresentAndTrue(ctx context.Context, object Object) bool {
-	if object.GetLabels() != nil && object.GetLabels()[DefaultSkipReconcileLabel] == "true" {
-		log.FromContext(ctx, "skip-label", DefaultSkipReconcileLabel).
+	if object.GetLabels() != nil && object.GetLabels()[SkipReconcileLabel] == "true" {
+		log.FromContext(ctx, "skip-label", SkipReconcileLabel).
 			V(internal.DebugLogLevel).Info("resource gets skipped because of label")
 		return true
 	}

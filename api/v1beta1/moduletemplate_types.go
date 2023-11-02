@@ -57,7 +57,7 @@ type ModuleTemplateSpec struct {
 	//
 	//+kubebuilder:pruning:PreserveUnknownFields
 	//+kubebuilder:validation:XEmbeddedResource
-	Data unstructured.Unstructured `json:"data,omitempty"`
+	Data *unstructured.Unstructured `json:"data,omitempty"`
 
 	// The Descriptor is the Open Component Model Descriptor of a Module, containing all relevant information
 	// to correctly initialize a module (e.g. Charts, Manifests, References to Binaries and/or configuration)

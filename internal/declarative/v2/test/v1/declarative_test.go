@@ -9,6 +9,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
 	"github.com/kyma-project/lifecycle-manager/internal"
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -26,7 +29,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller"
+	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -98,7 +101,7 @@ var _ = Describe(
 
 			EventuallyDeclarativeStatusShould(
 				ctx, key, testClient,
-				BeInState(StateReady),
+				BeInState(shared.StateReady),
 				HaveConditionWithStatus(ConditionTypeResources, metav1.ConditionTrue),
 				HaveConditionWithStatus(ConditionTypeInstallation, metav1.ConditionTrue),
 			)
@@ -183,7 +186,7 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 
 		EventuallyDeclarativeStatusShould(
 			ctx, key, testClient,
-			BeInState(StateReady),
+			BeInState(shared.StateReady),
 			HaveConditionWithStatus(ConditionTypeResources, metav1.ConditionTrue),
 			HaveConditionWithStatus(ConditionTypeInstallation, metav1.ConditionTrue),
 		)
@@ -205,7 +208,7 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 	It("Should remove module resources from status.synced", func() {
 		EventuallyDeclarativeStatusShould(
 			ctx, key, testClient,
-			BeInState(StateReady),
+			BeInState(shared.StateReady),
 			HaveConditionWithStatus(ConditionTypeResources, metav1.ConditionTrue),
 			HaveConditionWithStatus(ConditionTypeInstallation, metav1.ConditionTrue),
 		)
@@ -222,8 +225,8 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 	})
 })
 
-func isResourceFoundInSynced(res *unstructured.Unstructured, resource Resource) bool {
-	return resource == Resource{
+func isResourceFoundInSynced(res *unstructured.Unstructured, resource shared.Resource) bool {
+	return resource == shared.Resource{
 		Name:      res.GetName(),
 		Namespace: res.GetNamespace(),
 		GroupVersionKind: metav1.GroupVersionKind{
@@ -251,8 +254,10 @@ func StartDeclarativeReconcilerForRun(
 		cfg, ctrl.Options{
 			// these bind addresses cause conflicts when run concurrently so we disable them
 			HealthProbeBindAddress: "0",
-			MetricsBindAddress:     "0",
-			Scheme:                 scheme.Scheme,
+			Metrics: metricsserver.Options{
+				BindAddress: "0",
+			},
+			Scheme: scheme.Scheme,
 		},
 	)
 	Expect(err).ToNot(HaveOccurred())
@@ -283,7 +288,7 @@ func StartDeclarativeReconcilerForRun(
 	Expect(
 		ctrl.NewControllerManagedBy(mgr).WithEventFilter(testWatchPredicate).
 			WithOptions(
-				controller.Options{RateLimiter: workqueue.NewMaxOfRateLimiter(
+				controllerRuntime.Options{RateLimiter: workqueue.NewMaxOfRateLimiter(
 					&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(30), 200)},
 				)},
 			).
@@ -300,7 +305,7 @@ func StartDeclarativeReconcilerForRun(
 
 func StatusOnCluster(ctx context.Context, key client.ObjectKey,
 	testClient client.Client,
-) Status {
+) shared.Status {
 	obj := &testv1.TestAPI{}
 	Expect(testClient.Get(ctx, key, obj)).To(Succeed())
 	return obj.GetStatus()

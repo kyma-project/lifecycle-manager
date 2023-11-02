@@ -17,7 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -60,8 +60,35 @@ type ManifestSpec struct {
 	Resource *unstructured.Unstructured `json:"resource,omitempty"`
 }
 
-// ManifestStatus defines the observed state of Manifest.
-type ManifestStatus declarative.Status
+// ImageSpec defines OCI Image specifications.
+// +k8s:deepcopy-gen=true
+type ImageSpec struct {
+	// Repo defines the Image repo
+	Repo string `json:"repo,omitempty"`
+
+	// Name defines the Image name
+	Name string `json:"name,omitempty"`
+
+	// Ref is either a sha value, tag or version
+	Ref string `json:"ref,omitempty"`
+
+	// Type specifies the type of installation specification
+	// that could be provided as part of a custom resource.
+	// This time is used in codec to successfully decode from raw extensions.
+	// +kubebuilder:validation:Enum=helm-chart;oci-ref;"kustomize";""
+	Type RefTypeMetadata `json:"type,omitempty"`
+
+	// CredSecretSelector is an optional field, for OCI image saved in private registry,
+	// use it to indicate the secret which contains registry credentials,
+	// must exist in the namespace same as manifest
+	CredSecretSelector *metav1.LabelSelector `json:"credSecretSelector,omitempty"`
+}
+
+type RefTypeMetadata string
+
+const (
+	OciRefType RefTypeMetadata = "oci-ref"
+)
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
@@ -73,16 +100,16 @@ type Manifest struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ManifestSpec   `json:"spec,omitempty"`
-	Status ManifestStatus `json:"status,omitempty"`
+	Spec   ManifestSpec  `json:"spec,omitempty"`
+	Status shared.Status `json:"status,omitempty"`
 }
 
-func (manifest *Manifest) GetStatus() declarative.Status {
-	return declarative.Status(manifest.Status)
+func (manifest *Manifest) GetStatus() shared.Status {
+	return manifest.Status
 }
 
-func (manifest *Manifest) SetStatus(status declarative.Status) {
-	manifest.Status = ManifestStatus(status)
+func (manifest *Manifest) SetStatus(status shared.Status) {
+	manifest.Status = status
 }
 
 //+kubebuilder:object:root=true

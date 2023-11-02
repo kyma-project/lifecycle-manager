@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -76,31 +77,12 @@ type Service struct {
 	Namespace string `json:"namespace"`
 }
 
-// +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error;""
-type WatcherState string
-
-// Valid Watcher States.
-const (
-	// WatcherStateReady signifies Watcher is ready and has been installed successfully.
-	WatcherStateReady WatcherState = "Ready"
-
-	// WatcherStateProcessing signifies Watcher is reconciling and is in the process of installation.
-	WatcherStateProcessing WatcherState = "Processing"
-
-	// WatcherStateError signifies an error for Watcher. This signifies that the Installation
-	// process encountered an error.
-	WatcherStateError WatcherState = "Error"
-
-	// WatcherStateDeleting signifies Watcher is being deleted.
-	WatcherStateDeleting WatcherState = "Deleting"
-)
-
 // WatcherStatus defines the observed state of Watcher.
 // +kubebuilder:subresource:status
 type WatcherStatus struct {
 	// State signifies current state of a Watcher.
-	// Value can be one of ("Ready", "Processing", "Error", "Deleting")
-	State WatcherState `json:"state"`
+	// Value can be one of ("Ready", "Processing", "Error", "Deleting", "Warning")
+	State shared.State `json:"state"`
 
 	// List of status conditions to indicate the status of a Watcher.
 	// +kubebuilder:validation:Optional

@@ -3,8 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.11.2
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.13.0
   name: kymas.operator.kyma-project.io
 spec:
   group: operator.kyma-project.io
@@ -216,6 +215,7 @@ spec:
                 - type
                 x-kubernetes-list-type: map
               lastOperation:
+                description: LastOperation defines the last operation from the control-loop.
                 properties:
                   lastUpdateTime:
                     format: date-time
@@ -594,6 +594,7 @@ spec:
                 - type
                 x-kubernetes-list-type: map
               lastOperation:
+                description: LastOperation defines the last operation from the control-loop.
                 properties:
                   lastUpdateTime:
                     format: date-time

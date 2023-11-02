@@ -17,11 +17,6 @@ components:
 generatorOptions:
   disableNameSuffixHash: true
 
-patchesStrategicMerge:
-  - patches/servicemonitor_delete.yaml
-  - patches/adjust_resources_for_local_setup.yaml
-
-
 # Patches enable the local testing mode for the KLM
 # and sets the namespace for the watcher resources to `kcp-system`.
 # When deployed on KCP it will be set by the default kustomize.
@@ -42,6 +37,9 @@ patches:
     - op: add
       path: /spec/template/spec/containers/0/args/-
       value: --listener-port-overwrite=9443
+    - op: add
+      path: /spec/template/spec/containers/0/args/-
+      value: --skr-watcher-image=runtime-watcher-skr:latest
     - op: replace
       path: /spec/template/spec/containers/0/imagePullPolicy
       value: Always
@@ -86,48 +84,44 @@ patches:
     version: v1beta1
     kind: Gateway
     name: lifecycle-manager-watcher-gateway
-
-
-# JSON patches needed to ensure certificate setup namespaces are not
-# being overwritten by kustomize global namespace patch. The certificate
-# setup needs to be in the `istio-system` namespace
-patchesJson6902:
-  - patch: |-
-      - op: replace
-        path: /spec/dnsNames/0
-        value: "localhost"
-      - op: add
-        path: /spec/dnsNames/1
-        value: "host.k3d.internal"
-      - op: replace
-        path: /metadata/namespace
-        value: "istio-system"
-      - op: add
-        path: /spec/issuerRef/name
-        value: "watcher-selfsigned-cluster-issuer"
-    target:
-      group: cert-manager.io
-      version: v1
-      kind: Certificate
-      name: watcher-serving-cert
-  - patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: "istio-system"
-    target:
-      group: cert-manager.io
-      version: v1
-      kind: ClusterIssuer
-      name: watcher-selfsigned-cluster-issuer
-  - patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: "istio-system"
-    target:
-      group: cert-manager.io
-      version: v1
-      kind: Issuer
-      name: watcher-selfsigned-issuer
+- path: patches/servicemonitor_delete.yaml
+- path: patches/adjust_resources_for_local_setup.yaml
+- patch: |-
+    - op: replace
+      path: /spec/dnsNames/0
+      value: "localhost"
+    - op: add
+      path: /spec/dnsNames/1
+      value: "host.k3d.internal"
+    - op: replace
+      path: /metadata/namespace
+      value: "istio-system"
+    - op: add
+      path: /spec/issuerRef/name
+      value: "watcher-selfsigned-cluster-issuer"
+  target:
+    group: cert-manager.io
+    version: v1
+    kind: Certificate
+    name: watcher-serving-cert
+- patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: "istio-system"
+  target:
+    group: cert-manager.io
+    version: v1
+    kind: ClusterIssuer
+    name: watcher-selfsigned-cluster-issuer
+- patch: |-
+    - op: replace
+      path: /metadata/namespace
+      value: "istio-system"
+  target:
+    group: cert-manager.io
+    version: v1
+    kind: Issuer
+    name: watcher-selfsigned-issuer
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization

@@ -1,0 +1,64 @@
+name: Feature Request
+description: Suggest an improvement to the project
+title: "Feature Title"
+labels: [ "kind/feature" ]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for your contribution. Before you submit the issue:
+        1. Search open and closed issues for duplicates.
+        2. Read the contributing guidelines.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Provide a clear and concise description of the feature.
+      placeholder: Type a feature description here.
+    validations:
+      required: true
+  - type: textarea
+    id: reason
+    attributes:
+      label: Reasons
+      description: Explain why we should add this feature. Provide use cases to illustrate its benefits.
+      placeholder: Type a feature reasoning here.
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: List acceptance criteria for the issue.
+      value: |
+        - [ ] Acceptance criterion 1
+        - [ ] Acceptance criterion 2
+    validations:
+      required: true
+  - type: dropdown
+    id: test-suites
+    attributes:
+      label: Feature Testing
+      multiple: true
+      options:
+        - Unit tests
+        - Integration tests
+        - End-to-End tests
+        - Smoke test
+        - Performance tests
+  - type: textarea
+    id: testing-approach
+    attributes:
+      label: Testing approach
+      description: Describe a testing approach for the feature.
+      placeholder: Type a testing approach description here.
+    validations:
+      required: false
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Attachments
+      description: Attach any files, links, code samples, or screenshots that will convince us to your idea.
+      placeholder: Put your attachments in here.
+    validations:
+      required: false
