@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 
+	commonMetrics "github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
 	"golang.org/x/sync/errgroup"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
@@ -55,6 +56,7 @@ type (
 const (
 	moduleReconciliationError  EventReasonError = "ModuleReconciliationError"
 	syncContextError           EventReasonError = "SyncContextError"
+	metricsError               EventReasonError = "MetricsError"
 	deletionError              EventReasonError = "DeletionError"
 	updateStatus               EventReasonInfo  = "StatusUpdate"
 	webhookChartRemoval        EventReasonInfo  = "WebhookChartRemoval"
@@ -539,6 +541,9 @@ func (r *KymaReconciler) deleteManifest(ctx context.Context, trackedManifest *v1
 
 func (r *KymaReconciler) UpdateMetrics(ctx context.Context, kyma *v1beta2.Kyma) {
 	if err := metrics.UpdateAll(kyma); err != nil {
+		if r.IsMissingMetricsAnnotationOrLabel(err) {
+			r.enqueueWarningEvent(kyma, metricsError, err)
+		}
 		ctrlLog.FromContext(ctx).V(log.DebugLevel).Info(fmt.Sprintf("error occurred while updating all metrics: %s", err))
 	}
 }
@@ -560,4 +565,11 @@ func (r *KymaReconciler) SyncKymaEnabled(kyma *v1beta2.Kyma) bool {
 
 func (r *KymaReconciler) IsKymaManaged() bool {
 	return r.IsManagedKyma
+}
+
+func (r *KymaReconciler) IsMissingMetricsAnnotationOrLabel(err error) bool {
+	return errors.Is(err, commonMetrics.ErrInstanceLabelNoValue) ||
+		errors.Is(err, commonMetrics.ErrMissingInstanceLabel) ||
+		errors.Is(err, commonMetrics.ErrShootAnnotationNoValue) ||
+		errors.Is(err, commonMetrics.ErrMissingShootAnnotation)
 }
