@@ -160,6 +160,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
+			r.Event(obj, "Warning", "Requeue for PreDelete", err.Error())
 			return ctrl.Result{Requeue: true}, nil
 		}
 		return r.ssaStatus(ctx, obj)
@@ -171,6 +172,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if err := r.syncResources(ctx, clnt, obj, target); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
+			r.Event(obj, "Warning", "Requeue for sync resources", err.Error())
 			return ctrl.Result{Requeue: true}, nil
 		}
 		return r.ssaStatus(ctx, obj)
