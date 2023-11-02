@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"strings"
 
+	lfLog "github.com/kyma-project/lifecycle-manager/pkg/log"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -74,6 +76,7 @@ func PostRunCreateCR(
 func PreDeleteDeleteCR(
 	ctx context.Context, skr declarative.Client, kcp client.Client, obj declarative.Object,
 ) error {
+	logger := log.FromContext(ctx)
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
 		return nil
@@ -85,7 +88,9 @@ func PreDeleteDeleteCR(
 	resource := manifest.Spec.Resource.DeepCopy()
 	propagation := v1.DeletePropagationBackground
 	err := skr.Delete(ctx, resource, &client.DeleteOptions{PropagationPolicy: &propagation})
-
+	if err != nil {
+		logger.V(lfLog.DebugLevel).Error(err, "resource CR delete error")
+	}
 	if !util.IsNotFound(err) {
 		return nil
 	}
@@ -99,6 +104,9 @@ func PreDeleteDeleteCR(
 	})
 	crdCopy := crd.DeepCopy()
 	err = skr.Delete(ctx, crdCopy, &client.DeleteOptions{PropagationPolicy: &propagation})
+	if err != nil {
+		logger.V(lfLog.DebugLevel).Error(err, "resource CRD delete error")
+	}
 
 	if !util.IsNotFound(err) {
 		return nil
@@ -112,6 +120,7 @@ func PreDeleteDeleteCR(
 	if err != nil {
 		return fmt.Errorf("failed to fetch resource: %w", err)
 	}
+	logger.V(lfLog.DebugLevel).Info("remove CustomResourceManager finalizer")
 	if removed := controllerutil.RemoveFinalizer(onCluster, declarative.CustomResourceManager); removed {
 		if err := kcp.Update(
 			ctx, onCluster, client.FieldOwner(declarative.CustomResourceManager),
