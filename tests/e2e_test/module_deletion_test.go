@@ -35,6 +35,41 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 				Should(Succeed())
 		})
 
+		It("When the Module is disabled", func() {
+			Eventually(DisableModule).
+				WithContext(ctx).
+				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
+				Should(Succeed())
+			By("Then the Manifest CR is removed")
+			Eventually(ManifestExists).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+				Should(Equal(ErrNotFound))
+			By("And the KCP Kyma CR is in a \"Ready\" State")
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+				Should(Succeed())
+		})
+
+		It("When enabling Template Operator again", func() {
+			Eventually(EnableModule).
+				WithContext(ctx).
+				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
+				Should(Succeed())
+			By("Then the Module Operator is deployed on the SKR cluster")
+			Eventually(CheckIfExists).
+				WithContext(ctx).
+				WithArguments("template-operator-controller-manager", "template-operator-system", "apps", "v1",
+					"Deployment", runtimeClient).
+				Should(Succeed())
+			By("And the KCP Kyma CR is in a \"Ready\" State")
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+				Should(Succeed())
+		})
+
 		It("When the Module is disabled with an existing finalizer", func() {
 			Eventually(SetFinalizer).
 				WithContext(ctx).
