@@ -33,6 +33,8 @@ var (
 func PostRunCreateCR(
 	ctx context.Context, skr declarative.Client, kcp client.Client, obj declarative.Object,
 ) error {
+	logger := log.FromContext(ctx)
+
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
 		return nil
@@ -42,8 +44,11 @@ func PostRunCreateCR(
 	}
 
 	if !manifest.GetDeletionTimestamp().IsZero() {
+		logger.V(lfLog.DebugLevel).Info("stop create resource CR for manifest under delete")
 		return nil
 	}
+	logger.V(lfLog.DebugLevel).Info("create resource CR")
+
 	resource := manifest.Spec.Resource.DeepCopy()
 	err := skr.Create(ctx, resource, client.FieldOwner(declarative.CustomResourceManager))
 	if err != nil && !k8serrors.IsAlreadyExists(err) {
@@ -88,9 +93,8 @@ func PreDeleteDeleteCR(
 	resource := manifest.Spec.Resource.DeepCopy()
 	propagation := v1.DeletePropagationBackground
 	err := skr.Delete(ctx, resource, &client.DeleteOptions{PropagationPolicy: &propagation})
-	if err != nil {
-		logger.V(lfLog.DebugLevel).Error(err, "resource CR delete error")
-	}
+	logger.V(lfLog.DebugLevel).Error(err, "resource CR delete error")
+
 	if !util.IsNotFound(err) {
 		return nil
 	}
@@ -104,9 +108,7 @@ func PreDeleteDeleteCR(
 	})
 	crdCopy := crd.DeepCopy()
 	err = skr.Delete(ctx, crdCopy, &client.DeleteOptions{PropagationPolicy: &propagation})
-	if err != nil {
-		logger.V(lfLog.DebugLevel).Error(err, "resource CRD delete error")
-	}
+	logger.V(lfLog.DebugLevel).Error(err, "resource CRD delete error")
 
 	if !util.IsNotFound(err) {
 		return nil

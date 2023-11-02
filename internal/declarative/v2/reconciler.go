@@ -166,10 +166,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj)
 	}
 
-	if !obj.GetDeletionTimestamp().IsZero() {
-		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
-	}
-
 	if err := r.syncResources(ctx, clnt, obj, target); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
 			r.Event(obj, "Warning", "Requeue for sync resources", err.Error())
@@ -183,6 +179,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if requireUpdateSyncedOCIRefAnnotation(obj, spec.OCIRef) {
 		updateSyncedOCIRefAnnotation(obj, spec.OCIRef)
 		return ctrl.Result{Requeue: true}, r.Update(ctx, obj) //nolint:wrapcheck
+	}
+
+	if !obj.GetDeletionTimestamp().IsZero() {
+		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
 	}
 
 	return r.CtrlOnSuccess, nil
