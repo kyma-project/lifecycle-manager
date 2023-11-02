@@ -59,6 +59,7 @@ func PostRunCreateCR(
 		); err != nil {
 			return fmt.Errorf("failed to patch resource: %w", err)
 		}
+		return declarative.ErrRequeueRequired
 	}
 	return nil
 }
@@ -117,6 +118,7 @@ func PreDeleteDeleteCR(
 		); err != nil {
 			return fmt.Errorf("failed to update resource: %w", err)
 		}
+		return declarative.ErrRequeueRequired
 	}
 	return nil
 }

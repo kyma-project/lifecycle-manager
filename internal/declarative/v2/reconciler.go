@@ -29,6 +29,7 @@ var (
 	ErrKubeconfigFetchFailed                     = errors.New("could not fetch kubeconfig")
 	ErrCustomResourceDoesNotExist                = errors.New("custom resource does not exist")
 	errManifestShouldBeDeleted                   = errors.New("manifest should be deleted")
+	ErrRequeueRequired                           = errors.New("requeue required")
 )
 
 const (
@@ -158,6 +159,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
+		if errors.Is(err, ErrRequeueRequired) {
+			return ctrl.Result{Requeue: true}, nil
+		}
 		return r.ssaStatus(ctx, obj)
 	}
 
@@ -166,6 +170,9 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	}
 
 	if err := r.syncResources(ctx, clnt, obj, target); err != nil {
+		if errors.Is(err, ErrRequeueRequired) {
+			return ctrl.Result{Requeue: true}, nil
+		}
 		return r.ssaStatus(ctx, obj)
 	}
 
