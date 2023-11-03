@@ -87,3 +87,8 @@ The resource is the default data that should be initialized for the module and i
 ### `.status`
 
 The Manifest status is an unmodified version of the [declarative status](/internal/declarative/README.md#resource-tracking), so the tracking process of the library applies. There is no custom API for this.
+
+### `.metadata.labels`
+
+* `operator.kyma-project.io/skip-reconciliation`: A label that can be used with the value `true` to disable reconciliation for a module. This will avoid all reconciliations for the Manifest CR.
+
