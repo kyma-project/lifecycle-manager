@@ -117,7 +117,6 @@ func CreateRSAVerifierFromSecrets(
 	if err != nil {
 		return nil, fmt.Errorf("error converting signature labelSelector: %w", err)
 	}
-	// TODO: consider later if need to introduce cache due to performance issue
 	if err = k8sClient.List(ctx, secretList, &client.ListOptions{LabelSelector: selector}); err != nil {
 		return nil, fmt.Errorf("failed to list secrets: %w", err)
 	} else if len(secretList.Items) < 1 {

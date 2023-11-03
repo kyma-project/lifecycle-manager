@@ -25,6 +25,11 @@ const (
 	podRestartLabelKey      = "operator.kyma-project.io/pod-restart-trigger"
 	kcpAddressEnvName       = "KCP_ADDR"
 	watcherBaseImageAddress = "europe-docker.pkg.dev/kyma-project/prod/"
+	SkrTLSName              = "skr-webhook-tls"
+	SkrResourceName         = "skr-webhook"
+	skrChartFieldOwner      = client.FieldOwner(v1beta2.OperatorName)
+	version                 = "v1"
+	webhookTimeOutInSeconds = 15
 )
 
 var (
