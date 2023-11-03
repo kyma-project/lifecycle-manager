@@ -21,15 +21,12 @@ import (
 )
 
 var (
-	ErrWarningResourceSyncStateDiff              = errors.New("resource syncTarget state diff detected")
-	ErrResourceSyncDiffInSameOCILayer            = errors.New("resource syncTarget diff detected but in same oci layer, prevent sync resource to be deleted") //nolint:lll
-	ErrInstallationConditionRequiresUpdate       = errors.New("installation condition needs an update")
-	ErrDeletionTimestampSetButNotInDeletingState = errors.New("resource is not set to deleting yet")
-	ErrObjectHasEmptyState                       = errors.New("object has an empty state")
-	ErrKubeconfigFetchFailed                     = errors.New("could not fetch kubeconfig")
-	ErrCustomResourceDoesNotExist                = errors.New("custom resource does not exist")
-	errManifestShouldBeDeleted                   = errors.New("manifest should be deleted")
-	ErrRequeueRequired                           = errors.New("requeue required")
+	ErrWarningResourceSyncStateDiff        = errors.New("resource syncTarget state diff detected")
+	ErrResourceSyncDiffInSameOCILayer      = errors.New("resource syncTarget diff detected but in same oci layer, prevent sync resource to be deleted") //nolint:lll
+	ErrInstallationConditionRequiresUpdate = errors.New("installation condition needs an update")
+	ErrObjectHasEmptyState                 = errors.New("object has an empty state")
+	ErrKubeconfigFetchFailed               = errors.New("could not fetch kubeconfig")
+	ErrRequeueRequired                     = errors.New("requeue required")
 )
 
 const (
@@ -160,7 +157,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
-			r.Event(obj, "Warning", "Requeue for PreDelete", err.Error())
 			return ctrl.Result{Requeue: true}, nil
 		}
 		return r.ssaStatus(ctx, obj)
@@ -168,7 +164,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if err := r.syncResources(ctx, clnt, obj, target); err != nil {
 		if errors.Is(err, ErrRequeueRequired) {
-			r.Event(obj, "Warning", "Requeue for sync resources", err.Error())
 			return ctrl.Result{Requeue: true}, nil
 		}
 		return r.ssaStatus(ctx, obj)
@@ -306,7 +301,7 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 		if obj.GetDeletionTimestamp().IsZero() {
 			obj.SetStatus(status.WithState(shared.StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
 		} else {
-			obj.SetStatus(status.WithState(shared.StateDeleting).WithOperation(errManifestShouldBeDeleted.Error()))
+			obj.SetStatus(status.WithState(shared.StateDeleting).WithOperation("manifest should be deleted"))
 		}
 		return ErrWarningResourceSyncStateDiff
 	}
