@@ -128,7 +128,6 @@ func addHosts(gateways []*istioclientapi.Gateway, virtualSvc *istioclientapi.Vir
 	return nil
 }
 
-// TODO: Create Test to handle hosts.
 func getHosts(gateways []*istioclientapi.Gateway) ([]string, error) {
 	hosts := make([]string, 0)
 
