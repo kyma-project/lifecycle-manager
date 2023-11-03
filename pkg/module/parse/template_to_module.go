@@ -77,8 +77,8 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 		version := descriptor.GetVersion()
 		name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
 		overwriteNameAndNamespace(template, name, p.remoteSyncNamespace)
-		var obj client.Object
-		if obj, err = p.newManifestFromTemplate(ctx, module,
+		var manifest *v1beta2.Manifest
+		if manifest, err = p.newManifestFromTemplate(ctx, module,
 			template.ModuleTemplate); err != nil {
 			template.Err = err
 			modules = append(modules, &common.Module{
@@ -88,15 +88,15 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 			continue
 		}
 		// we name the manifest after the module name
-		obj.SetName(name)
+		manifest.SetName(name)
 		// to have correct owner references, the manifest must always have the same namespace as kyma
-		obj.SetNamespace(kyma.GetNamespace())
+		manifest.SetNamespace(kyma.GetNamespace())
 		modules = append(modules, &common.Module{
 			ModuleName: module.Name,
 			FQDN:       fqdn,
 			Version:    version,
 			Template:   template,
-			Object:     obj,
+			Manifest:   manifest,
 		})
 	}
 
