@@ -21,12 +21,11 @@ import (
 )
 
 var (
-	ErrWarningResourceSyncStateDiff              = errors.New("resource syncTarget state diff detected")
-	ErrResourceSyncDiffInSameOCILayer            = errors.New("resource syncTarget diff detected but in same oci layer, prevent sync resource to be deleted") //nolint:lll
-	ErrInstallationConditionRequiresUpdate       = errors.New("installation condition needs an update")
-	ErrDeletionTimestampSetButNotInDeletingState = errors.New("resource is not set to deleting yet")
-	ErrObjectHasEmptyState                       = errors.New("object has an empty state")
-	ErrKubeconfigFetchFailed                     = errors.New("could not fetch kubeconfig")
+	ErrWarningResourceSyncStateDiff        = errors.New("resource syncTarget state diff detected")
+	ErrResourceSyncDiffInSameOCILayer      = errors.New("resource syncTarget diff detected but in same oci layer, prevent sync resource to be deleted") //nolint:lll
+	ErrInstallationConditionRequiresUpdate = errors.New("installation condition needs an update")
+	ErrObjectHasEmptyState                 = errors.New("object has an empty state")
+	ErrKubeconfigFetchFailed               = errors.New("could not fetch kubeconfig")
 )
 
 const (
@@ -588,14 +587,10 @@ func (r *Reconciler) ssaStatus(ctx context.Context, obj client.Object) (ctrl.Res
 	obj.SetUID("")
 	obj.SetManagedFields(nil)
 	obj.SetResourceVersion("")
-	// TODO: replace the SubResourcePatchOptions with  client.ForceOwnership, r.FieldOwner in later compatible version
-	return ctrl.Result{Requeue: true}, r.Status().Patch( //nolint:wrapcheck
-		ctx, obj, client.Apply, subResourceOpts(client.ForceOwnership, r.FieldOwner),
-	)
-}
 
-func subResourceOpts(opts ...client.PatchOption) client.SubResourcePatchOption {
-	return &client.SubResourcePatchOptions{PatchOptions: *(&client.PatchOptions{}).ApplyOptions(opts)}
+	return ctrl.Result{Requeue: true}, r.Status().Patch( //nolint:wrapcheck
+		ctx, obj, client.Apply, client.ForceOwnership, r.FieldOwner,
+	)
 }
 
 func (r *Reconciler) ssa(ctx context.Context, obj client.Object) (ctrl.Result, error) {
