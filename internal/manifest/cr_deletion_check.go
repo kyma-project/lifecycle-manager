@@ -9,7 +9,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -23,7 +23,7 @@ type ModuleCRDeletionCheck struct{}
 func (c *ModuleCRDeletionCheck) Run(
 	ctx context.Context,
 	clnt client.Client,
-	obj declarative.Object,
+	obj declarativev2.Object,
 ) (bool, error) {
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {

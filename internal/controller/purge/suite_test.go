@@ -23,7 +23,7 @@ import (
 	"time"
 
 	"go.uber.org/zap/zapcore"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -78,7 +78,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 	singleClusterEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
-		CRDs:                  append([]*apiextensions.CustomResourceDefinition{}, externalCRDs...),
+		CRDs:                  append([]*apiextensionsv1.CustomResourceDefinition{}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}
 
@@ -87,7 +87,7 @@ var _ = BeforeSuite(func() {
 	Expect(cfg).NotTo(BeNil())
 
 	Expect(api.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
-	Expect(apiextensions.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
+	Expect(apiextensionsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 

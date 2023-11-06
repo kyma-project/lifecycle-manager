@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	apicore "k8s.io/api/core/v1"
+	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/resource"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -61,21 +61,21 @@ const (
 	ConditionReasonReady                 ConditionReason = "Ready"
 )
 
-func newInstallationCondition(obj Object) apimachinerymeta.Condition {
-	return apimachinerymeta.Condition{
+func newInstallationCondition(obj Object) apimetav1.Condition {
+	return apimetav1.Condition{
 		Type:               string(ConditionTypeInstallation),
 		Reason:             string(ConditionReasonReady),
-		Status:             apimachinerymeta.ConditionFalse,
+		Status:             apimetav1.ConditionFalse,
 		Message:            "installation is ready and resources can be used",
 		ObservedGeneration: obj.GetGeneration(),
 	}
 }
 
-func newResourcesCondition(obj Object) apimachinerymeta.Condition {
-	return apimachinerymeta.Condition{
+func newResourcesCondition(obj Object) apimetav1.Condition {
+	return apimetav1.Condition{
 		Type:               string(ConditionTypeResources),
 		Reason:             string(ConditionReasonResourcesAreAvailable),
-		Status:             apimachinerymeta.ConditionFalse,
+		Status:             apimetav1.ConditionFalse,
 		Message:            "resources are parsed and ready for use",
 		ObservedGeneration: obj.GetGeneration(),
 	}
@@ -191,8 +191,8 @@ func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizer
 	return r.ssaStatus(ctx, obj)
 }
 
-func (r *Reconciler) partialObjectMetadata(obj Object) *apimachinerymeta.PartialObjectMetadata {
-	objMeta := &apimachinerymeta.PartialObjectMetadata{}
+func (r *Reconciler) partialObjectMetadata(obj Object) *apimetav1.PartialObjectMetadata {
+	objMeta := &apimetav1.PartialObjectMetadata{}
 	objMeta.SetName(obj.GetName())
 	objMeta.SetNamespace(obj.GetNamespace())
 	objMeta.SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
@@ -203,7 +203,7 @@ func (r *Reconciler) partialObjectMetadata(obj Object) *apimachinerymeta.Partial
 func (r *Reconciler) initialize(obj Object) error {
 	status := obj.GetStatus()
 
-	for _, condition := range []apimachinerymeta.Condition{
+	for _, condition := range []apimetav1.Condition{
 		newResourcesCondition(obj),
 		newInstallationCondition(obj),
 	} {
@@ -266,7 +266,7 @@ func (r *Reconciler) renderResources(
 
 	if !meta.IsStatusConditionTrue(status.Conditions, resourceCondition.Type) {
 		r.Event(obj, "Normal", resourceCondition.Reason, resourceCondition.Message)
-		resourceCondition.Status = apimachinerymeta.ConditionTrue
+		resourceCondition.Status = apimetav1.ConditionTrue
 		meta.SetStatusCondition(&status.Conditions, resourceCondition)
 		obj.SetStatus(status.WithOperation(resourceCondition.Message))
 	}
@@ -352,7 +352,7 @@ func (r *Reconciler) checkTargetReadiness(
 	installationCondition := newInstallationCondition(manifest)
 	if !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) || status.State != crStateInfo.State {
 		r.Event(manifest, "Normal", installationCondition.Reason, installationCondition.Message)
-		installationCondition.Status = apimachinerymeta.ConditionTrue
+		installationCondition.Status = apimetav1.ConditionTrue
 		meta.SetStatusCondition(&status.Conditions, installationCondition)
 		manifest.SetStatus(status.WithState(crStateInfo.State).
 			WithOperation(generateOperationMessage(installationCondition, crStateInfo)))
@@ -362,7 +362,7 @@ func (r *Reconciler) checkTargetReadiness(
 	return nil
 }
 
-func generateOperationMessage(installationCondition apimachinerymeta.Condition, stateInfo StateInfo) string {
+func generateOperationMessage(installationCondition apimetav1.Condition, stateInfo StateInfo) string {
 	if stateInfo.Info != "" {
 		return stateInfo.Info
 	}
@@ -539,11 +539,11 @@ func (r *Reconciler) getTargetClient(ctx context.Context, obj Object) (Client, e
 		r.SetClientInCache(clientsCacheKey, clnt)
 	}
 
-	if r.Namespace != apimachinerymeta.NamespaceNone && r.Namespace != apimachinerymeta.NamespaceDefault {
+	if r.Namespace != apimetav1.NamespaceNone && r.Namespace != apimetav1.NamespaceDefault {
 		err := clnt.Patch(
-			ctx, &apicore.Namespace{
-				TypeMeta:   apimachinerymeta.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
-				ObjectMeta: apimachinerymeta.ObjectMeta{Name: r.Namespace},
+			ctx, &apicorev1.Namespace{
+				TypeMeta:   apimetav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
+				ObjectMeta: apimetav1.ObjectMeta{Name: r.Namespace},
 			}, client.Apply, client.ForceOwnership, r.FieldOwner,
 		)
 		if err != nil {

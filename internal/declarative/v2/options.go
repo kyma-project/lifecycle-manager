@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
@@ -28,7 +28,12 @@ const (
 
 func DefaultOptions() *Options {
 	return (&Options{}).Apply(
+<<<<<<< HEAD
 		WithNamespace(apimachinerymeta.NamespaceDefault, false),
+=======
+		WithDeleteCRDs(false),
+		WithNamespace(apimetav1.NamespaceDefault, false),
+>>>>>>> 2671919 (Adjusts the import aliases to be versioned ones)
 		WithFinalizer(FinalizerDefault),
 		WithFieldOwner(FieldOwnerDefault),
 		WithPostRenderTransform(

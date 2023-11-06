@@ -8,7 +8,7 @@ import (
 
 	watcherevent "github.com/kyma-project/runtime-watcher/listener/pkg/event"
 	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
-	apicore "k8s.io/api/core/v1"
+	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -57,7 +57,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 			builder.WithPredicates(predicates),
 		).
 		// here we define a watch on secrets for the lifecycle-manager so that the cache is picking up changes
-		Watches(&apicore.Secret{}, handler.Funcs{})
+		Watches(&apicorev1.Secret{}, handler.Funcs{})
 
 	controllerBuilder = controllerBuilder.Watches(&v1beta2.Manifest{},
 		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1beta2.Kyma{}, IsController: true})

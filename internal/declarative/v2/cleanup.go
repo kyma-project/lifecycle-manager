@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -23,7 +23,7 @@ type ConcurrentCleanup struct {
 }
 
 func NewConcurrentCleanup(clnt client.Client) Cleanup {
-	return &ConcurrentCleanup{clnt: clnt, policy: client.PropagationPolicy(apimachinerymeta.DeletePropagationBackground)}
+	return &ConcurrentCleanup{clnt: clnt, policy: client.PropagationPolicy(apimetav1.DeletePropagationBackground)}
 }
 
 func (c *ConcurrentCleanup) Run(ctx context.Context, infos []*resource.Info) error {

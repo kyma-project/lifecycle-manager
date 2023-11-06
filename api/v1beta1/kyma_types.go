@@ -17,7 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
@@ -32,8 +32,8 @@ import (
 
 // Kyma is the Schema for the kymas API.
 type Kyma struct {
-	apimachinerymeta.TypeMeta   `json:",inline"`
-	apimachinerymeta.ObjectMeta `json:"metadata,omitempty"`
+	apimetav1.TypeMeta   `json:",inline"`
+	apimetav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   KymaSpec           `json:"spec,omitempty"`
 	Status v1beta2.KymaStatus `json:"status,omitempty"`
@@ -87,9 +87,9 @@ type KymaSpec struct {
 
 // KymaList contains a list of Kyma.
 type KymaList struct {
-	apimachinerymeta.TypeMeta `json:",inline"`
-	apimachinerymeta.ListMeta `json:"metadata,omitempty"`
-	Items                     []Kyma `json:"items"`
+	apimetav1.TypeMeta `json:",inline"`
+	apimetav1.ListMeta `json:"metadata,omitempty"`
+	Items              []Kyma `json:"items"`
 }
 
 //nolint:gochecknoinits

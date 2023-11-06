@@ -23,7 +23,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -40,8 +40,8 @@ import (
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 type ModuleTemplate struct {
-	apimachinerymeta.TypeMeta   `json:",inline"`
-	apimachinerymeta.ObjectMeta `json:"metadata,omitempty"`
+	apimetav1.TypeMeta   `json:",inline"`
+	apimetav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec ModuleTemplateSpec `json:"spec,omitempty"`
 }
@@ -175,9 +175,9 @@ func (m *ModuleTemplate) SetDescToCache(descriptor *Descriptor) {
 
 // ModuleTemplateList contains a list of ModuleTemplate.
 type ModuleTemplateList struct {
-	apimachinerymeta.TypeMeta `json:",inline"`
-	apimachinerymeta.ListMeta `json:"metadata,omitempty"`
-	Items                     []ModuleTemplate `json:"items"`
+	apimetav1.TypeMeta `json:",inline"`
+	apimetav1.ListMeta `json:"metadata,omitempty"`
+	Items              []ModuleTemplate `json:"items"`
 }
 
 //nolint:gochecknoinits

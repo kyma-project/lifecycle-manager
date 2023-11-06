@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
-	apicore "k8s.io/api/core/v1"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apicorev1 "k8s.io/api/core/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -16,13 +16,13 @@ import (
 
 func createKyma(kymaName string, annotations map[string]string) *v1beta2.Kyma {
 	return &v1beta2.Kyma{
-		TypeMeta: apimachinerymeta.TypeMeta{
+		TypeMeta: apimetav1.TypeMeta{
 			APIVersion: v1beta2.GroupVersion.String(),
 			Kind:       string(v1beta2.KymaKind),
 		},
-		ObjectMeta: apimachinerymeta.ObjectMeta{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name:        kymaName,
-			Namespace:   apicore.NamespaceDefault,
+			Namespace:   apicorev1.NamespaceDefault,
 			Annotations: annotations,
 		},
 		Spec: v1beta2.KymaSpec{
@@ -60,7 +60,7 @@ func createWatcherCR(kymaName string) *types.WatchEvent {
 			Namespace: "default",
 			Name:      kymaName,
 		},
-		WatchedGvk: apimachinerymeta.GroupVersionKind{
+		WatchedGvk: apimetav1.GroupVersionKind{
 			Group:   "testGroup",
 			Version: "testResourceVersion",
 			Kind:    "testResourceKind",

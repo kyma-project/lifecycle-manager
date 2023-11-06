@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	certmanager "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -59,8 +59,8 @@ var _ = BeforeSuite(func() {
 	Expect(cfg).NotTo(BeNil())
 
 	Expect(v1beta2.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
-	Expect(apiextensions.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
-	Expect(certmanager.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
+	Expect(apiextensionsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
+	Expect(certmanagerv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 

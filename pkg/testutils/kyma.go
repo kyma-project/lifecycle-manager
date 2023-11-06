@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -23,7 +23,7 @@ var (
 )
 
 func NewTestKyma(name string) *v1beta2.Kyma {
-	return NewKymaWithSyncLabel(name, apimachinerymeta.NamespaceDefault, v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalClient)
+	return NewKymaWithSyncLabel(name, apimetav1.NamespaceDefault, v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalClient)
 }
 
 // NewKymaWithSyncLabel use this function to initialize kyma CR with SyncStrategyLocalSecret
@@ -91,7 +91,7 @@ func DeleteKyma(ctx context.Context,
 	kyma *v1beta2.Kyma,
 ) error {
 	// Foreground deletion is used to make sure the dependents (manifest CR) get deleted first before Kyma is deleted
-	propagation := apimachinerymeta.DeletePropagationForeground
+	propagation := apimetav1.DeletePropagationForeground
 	err := clnt.Delete(ctx, kyma, &client.DeleteOptions{PropagationPolicy: &propagation})
 	if client.IgnoreNotFound(err) != nil {
 		return fmt.Errorf("updating kyma failed %w", err)
@@ -205,7 +205,7 @@ func UpdateKymaLabel(
 func GetKyma(ctx context.Context, clnt client.Client, name, namespace string) (*v1beta2.Kyma, error) {
 	kymaInCluster := &v1beta2.Kyma{}
 	if namespace == "" {
-		namespace = apimachinerymeta.NamespaceDefault
+		namespace = apimetav1.NamespaceDefault
 	}
 	err := clnt.Get(ctx, client.ObjectKey{
 		Namespace: namespace,

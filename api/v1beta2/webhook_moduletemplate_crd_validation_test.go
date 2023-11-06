@@ -9,7 +9,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -108,7 +108,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 },
 )
 
-func GetCRD(group, version, sample string) *apiextensions.CustomResourceDefinition {
+func GetCRD(group, version, sample string) *apiextensionsv1.CustomResourceDefinition {
 	crdFileName := fmt.Sprintf(
 		"%s_%s_%s.yaml",
 		group,
@@ -122,17 +122,17 @@ func GetCRD(group, version, sample string) *apiextensions.CustomResourceDefiniti
 	Expect(err).ToNot(HaveOccurred())
 	Expect(file).ToNot(BeEmpty())
 
-	var crd apiextensions.CustomResourceDefinition
+	var crd apiextensionsv1.CustomResourceDefinition
 
 	Expect(machineryaml.Unmarshal(file, &crd)).To(Succeed())
 	return &crd
 }
 
-func GetNonCompliantCRD(group, version, sample string) *apiextensions.CustomResourceDefinition {
+func GetNonCompliantCRD(group, version, sample string) *apiextensionsv1.CustomResourceDefinition {
 	crd := GetCRD(group, version, sample)
-	crd.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties["status"].Properties["state"] = apiextensions.JSONSchemaProps{
+	crd.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties["status"].Properties["state"] = apiextensionsv1.JSONSchemaProps{
 		Type: "string",
-		Enum: []apiextensions.JSON{},
+		Enum: []apiextensionsv1.JSON{},
 	}
 	return crd
 }

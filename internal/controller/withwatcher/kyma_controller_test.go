@@ -7,10 +7,10 @@ import (
 	"reflect"
 	"strings"
 
-	certmanager "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	admissionregistration "k8s.io/api/admissionregistration/v1"
-	apiapps "k8s.io/api/apps/v1"
-	apicore "k8s.io/api/core/v1"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	apiappsv1 "k8s.io/api/apps/v1"
+	apicorev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -101,7 +101,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 })
 
 func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1beta2.Watcher,
-	tlsSecret *apicore.Secret, issuer *certmanager.Issuer,
+	tlsSecret *apicorev1.Secret, issuer *certmanagerv1.Issuer,
 ) {
 	BeforeAll(func() {
 		By("Creating watcher CR")
@@ -173,7 +173,7 @@ func getSkrChartDeployment(ctx context.Context, skrClient client.Client, kymaObj
 		return skrClient.Get(ctx, client.ObjectKey{
 			Namespace: kymaObjKey.Namespace,
 			Name:      watcher.SkrResourceName,
-		}, &apiapps.Deployment{})
+		}, &apiappsv1.Deployment{})
 	}
 }
 
@@ -191,8 +191,8 @@ func latestWebhookIsConfigured(ctx context.Context, skrClient client.Client, wat
 
 func getSKRWebhookConfig(ctx context.Context, skrClient client.Client,
 	kymaObjKey client.ObjectKey,
-) (*admissionregistration.ValidatingWebhookConfiguration, error) {
-	webhookCfg := &admissionregistration.ValidatingWebhookConfiguration{}
+) (*admissionregistrationv1.ValidatingWebhookConfiguration, error) {
+	webhookCfg := &admissionregistrationv1.ValidatingWebhookConfiguration{}
 	err := skrClient.Get(ctx, client.ObjectKey{
 		Namespace: kymaObjKey.Namespace,
 		Name:      watcher.SkrResourceName,
@@ -200,7 +200,7 @@ func getSKRWebhookConfig(ctx context.Context, skrClient client.Client,
 	return webhookCfg, err
 }
 
-func isWebhookConfigured(watcher *v1beta2.Watcher, webhookConfig *admissionregistration.ValidatingWebhookConfiguration,
+func isWebhookConfigured(watcher *v1beta2.Watcher, webhookConfig *admissionregistrationv1.ValidatingWebhookConfiguration,
 	kymaName string,
 ) error {
 	if len(webhookConfig.Webhooks) < 1 {
@@ -215,7 +215,7 @@ func isWebhookConfigured(watcher *v1beta2.Watcher, webhookConfig *admissionregis
 	return verifyWebhookConfig(webhookConfig.Webhooks[idx], watcher)
 }
 
-func lookupWebhookConfigForCR(webhooks []admissionregistration.ValidatingWebhook, watcher *v1beta2.Watcher) int {
+func lookupWebhookConfigForCR(webhooks []admissionregistrationv1.ValidatingWebhook, watcher *v1beta2.Watcher) int {
 	cfgIdx := -1
 	for idx, webhook := range webhooks {
 		webhookNameParts := strings.Split(webhook.Name, ".")
@@ -231,7 +231,7 @@ func lookupWebhookConfigForCR(webhooks []admissionregistration.ValidatingWebhook
 }
 
 func verifyWebhookConfig(
-	webhook admissionregistration.ValidatingWebhook,
+	webhook admissionregistrationv1.ValidatingWebhook,
 	watcherCR *v1beta2.Watcher,
 ) error {
 	webhookNameParts := strings.Split(webhook.Name, ".")

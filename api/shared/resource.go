@@ -3,16 +3,16 @@ package shared
 import (
 	"strings"
 
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // +k8s:deepcopy-gen=true
 type Resource struct {
-	Name                              string `json:"name"`
-	Namespace                         string `json:"namespace"`
-	apimachinerymeta.GroupVersionKind `json:",inline"`
+	Name                       string `json:"name"`
+	Namespace                  string `json:"namespace"`
+	apimetav1.GroupVersionKind `json:",inline"`
 }
 
 func (r Resource) ToUnstructured() *unstructured.Unstructured {

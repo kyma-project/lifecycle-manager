@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/record"
@@ -162,7 +162,7 @@ func (r *PurgeReconciler) dropPurgeFinalizer(ctx context.Context, kyma *v1beta2.
 }
 
 func (r *PurgeReconciler) performCleanup(ctx context.Context, remoteClient client.Client) error {
-	crdList := apiextensions.CustomResourceDefinitionList{}
+	crdList := apiextensionsv1.CustomResourceDefinitionList{}
 	if err := remoteClient.List(ctx, &crdList); err != nil {
 		return fmt.Errorf("failed to fetch CRDs from remote cluster: %w", err)
 	}
@@ -185,7 +185,7 @@ func (r *PurgeReconciler) performCleanup(ctx context.Context, remoteClient clien
 	return nil
 }
 
-func shouldSkip(crd apiextensions.CustomResourceDefinition, matcher matcher.CRDMatcherFunc) bool {
+func shouldSkip(crd apiextensionsv1.CustomResourceDefinition, matcher matcher.CRDMatcherFunc) bool {
 	if crd.Spec.Group == v1beta2.GroupVersion.Group && crd.Spec.Names.Kind == string(v1beta2.KymaKind) {
 		return true
 	}
@@ -193,7 +193,7 @@ func shouldSkip(crd apiextensions.CustomResourceDefinition, matcher matcher.CRDM
 }
 
 func getAllRemainingCRs(ctx context.Context, remoteClient client.Client,
-	crd apiextensions.CustomResourceDefinition,
+	crd apiextensionsv1.CustomResourceDefinition,
 ) (unstructured.UnstructuredList, error) {
 	staleResources := unstructured.UnstructuredList{}
 

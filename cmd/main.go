@@ -26,13 +26,13 @@ import (
 	"strings"
 	"time"
 
-	certmanager "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
-	istioclientapi "istio.io/client-go/pkg/apis/networking/v1beta1"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	machineryutilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
@@ -75,10 +75,10 @@ func init() {
 	machineryutilruntime.Must(k8sclientscheme.AddToScheme(scheme))
 	machineryutilruntime.Must(api.AddToScheme(scheme))
 
-	machineryutilruntime.Must(apiextensions.AddToScheme(scheme))
-	machineryutilruntime.Must(certmanager.AddToScheme(scheme))
+	machineryutilruntime.Must(apiextensionsv1.AddToScheme(scheme))
+	machineryutilruntime.Must(certmanagerv1.AddToScheme(scheme))
 
-	machineryutilruntime.Must(istioclientapi.AddToScheme(scheme))
+	machineryutilruntime.Must(istioclientapiv1beta1.AddToScheme(scheme))
 
 	machineryutilruntime.Must(v1beta2.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
@@ -350,8 +350,8 @@ func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved strin
 		setupLog.V(log.DebugLevel).Error(err, fmt.Sprintf("unable to initialize client to remove %s", versionToBeRemoved))
 	}
 	ctx := context.TODO()
-	var crdList *apiextensions.CustomResourceDefinitionList
-	if crdList, err = kcpClient.ApiextensionsV1().CustomResourceDefinitions().List(ctx, apimachinerymeta.ListOptions{}); err != nil {
+	var crdList *apiextensionsv1.CustomResourceDefinitionList
+	if crdList, err = kcpClient.ApiextensionsV1().CustomResourceDefinitions().List(ctx, apimetav1.ListOptions{}); err != nil {
 		setupLog.V(log.InfoLevel).Error(err, "unable to list CRDs")
 	}
 
@@ -376,7 +376,7 @@ func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved strin
 		setupLog.V(log.InfoLevel).Info(fmt.Sprintf("The new storedVersions are %v", newStoredVersions))
 		crd := crdItem
 		if _, err := kcpClient.ApiextensionsV1().CustomResourceDefinitions().
-			UpdateStatus(ctx, &crd, apimachinerymeta.UpdateOptions{}); err != nil {
+			UpdateStatus(ctx, &crd, apimetav1.UpdateOptions{}); err != nil {
 			msg := fmt.Sprintf("Failed to update CRD to remove %s from stored versions", versionToBeRemoved)
 			setupLog.V(log.InfoLevel).Error(err, msg)
 		}

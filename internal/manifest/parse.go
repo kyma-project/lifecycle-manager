@@ -14,7 +14,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/crane"
-	containerregistry "github.com/google/go-containerregistry/pkg/v1"
+	containerregistryv1 "github.com/google/go-containerregistry/pkg/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
@@ -83,7 +83,7 @@ func GetPathFromRawManifest(ctx context.Context,
 	return manifestPath, nil
 }
 
-func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (containerregistry.Layer, error) {
+func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (containerregistryv1.Layer, error) {
 	noSchemeImageRef := ocmextensions.NoSchemeURL(imageRef)
 	isInsecureLayer, err := regexp.MatchString("^http://", imageRef)
 	if err != nil {

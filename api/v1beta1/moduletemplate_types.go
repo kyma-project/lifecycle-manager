@@ -17,7 +17,7 @@ limitations under the License.
 package v1beta1
 
 import (
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 
@@ -35,8 +35,8 @@ import (
 //+kubebuilder:storageversion
 
 type ModuleTemplate struct {
-	apimachinerymeta.TypeMeta   `json:",inline"`
-	apimachinerymeta.ObjectMeta `json:"metadata,omitempty"`
+	apimetav1.TypeMeta   `json:",inline"`
+	apimetav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec ModuleTemplateSpec `json:"spec,omitempty"`
 }
@@ -84,9 +84,9 @@ type ModuleTemplateSpec struct {
 
 // ModuleTemplateList contains a list of ModuleTemplate.
 type ModuleTemplateList struct {
-	apimachinerymeta.TypeMeta `json:",inline"`
-	apimachinerymeta.ListMeta `json:"metadata,omitempty"`
-	Items                     []ModuleTemplate `json:"items"`
+	apimetav1.TypeMeta `json:",inline"`
+	apimetav1.ListMeta `json:"metadata,omitempty"`
+	Items              []ModuleTemplate `json:"items"`
 }
 
 // Target serves as a potential Installation Hint for the Controller to determine which Client to use for installation.

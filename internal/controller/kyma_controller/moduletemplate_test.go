@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -30,7 +30,7 @@ const (
 
 func expectManifestSpecDataEquals(kymaName, value string) func() error {
 	return func() error {
-		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, apimachinerymeta.NamespaceDefault)
+		createdKyma, err := GetKyma(ctx, controlPlaneClient, kymaName, apimetav1.NamespaceDefault)
 		if err != nil {
 			return err
 		}

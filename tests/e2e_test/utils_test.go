@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	apicore "k8s.io/api/core/v1"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apicorev1 "k8s.io/api/core/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -150,8 +150,8 @@ func CheckIfNotExists(ctx context.Context, name, namespace, group, version, kind
 
 func CreateKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
 	patchedRuntimeConfig := strings.ReplaceAll(string(*runtimeConfig), localHostname, k3dHostname)
-	secret := &apicore.Secret{
-		ObjectMeta: apimachinerymeta.ObjectMeta{
+	secret := &apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      kymaName,
 			Namespace: kymaNamespace,
 			Labels: map[string]string{
@@ -194,7 +194,7 @@ func CheckRemoteKymaCR(ctx context.Context,
 }
 
 func DeleteKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
-	secret := &apicore.Secret{}
+	secret := &apicorev1.Secret{}
 	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, secret)
 	if util.IsNotFound(err) {
 		return nil

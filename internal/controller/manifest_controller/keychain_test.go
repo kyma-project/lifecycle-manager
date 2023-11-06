@@ -3,7 +3,7 @@ package manifest_controller_test
 import (
 	"os"
 
-	apicore "k8s.io/api/core/v1"
+	apicorev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
@@ -66,7 +66,7 @@ func (d TestRegistry) RegistryStr() string {
 
 func installCredSecret(secretLabelValue string) func() error {
 	return func() error {
-		secret := &apicore.Secret{}
+		secret := &apicorev1.Secret{}
 		secretFile, err := os.ReadFile("../../../pkg/test_samples/auth_secret.yaml")
 		Expect(err).ToNot(HaveOccurred())
 		err = yaml.Unmarshal(secretFile, secret)
@@ -77,6 +77,6 @@ func installCredSecret(secretLabelValue string) func() error {
 			return nil
 		}
 		Expect(err).ToNot(HaveOccurred())
-		return manifestctrltest.K8sClient.Get(manifestctrltest.Ctx, client.ObjectKeyFromObject(secret), &apicore.Secret{})
+		return manifestctrltest.K8sClient.Get(manifestctrltest.Ctx, client.ObjectKeyFromObject(secret), &apicorev1.Secret{})
 	}
 }

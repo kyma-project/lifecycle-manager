@@ -18,7 +18,7 @@ limitations under the License.
 package v1beta1
 
 import (
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -38,8 +38,8 @@ type RefTypeMetadata string
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // KCPModule is the Schema for the moduletemplates API.
 type KCPModule struct {
-	apimachinerymeta.TypeMeta   `json:",inline"`
-	apimachinerymeta.ObjectMeta `json:"metadata,omitempty"`
+	apimetav1.TypeMeta   `json:",inline"`
+	apimetav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   KCPModuleSpec   `json:"spec,omitempty"`
 	Status KCPModuleStatus `json:"status,omitempty"`
@@ -58,7 +58,7 @@ type KCPModuleStatus struct {
 
 // KCPModuleList contains a list of KCPModule.
 type KCPModuleList struct {
-	apimachinerymeta.TypeMeta `json:",inline"`
-	apimachinerymeta.ListMeta `json:"metadata,omitempty"`
-	Items                     []KCPModule `json:"items"`
+	apimetav1.TypeMeta `json:",inline"`
+	apimetav1.ListMeta `json:"metadata,omitempty"`
+	Items              []KCPModule `json:"items"`
 }

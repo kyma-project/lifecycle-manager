@@ -11,7 +11,7 @@ import (
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods/localociblob"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/accessmethods/ociartifact"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
-	ocmmeta "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
+	ocmmetav1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/cpi"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
 	"github.com/open-component-model/ocm/pkg/runtime"
@@ -111,7 +111,7 @@ func getOCIRef(
 	repo *genericocireg.RepositorySpec,
 	descriptor *compdesc.ComponentDescriptor,
 	ref string,
-	labels ocmmeta.Labels,
+	labels ocmmetav1.Labels,
 ) (*OCI, error) {
 	layerRef := OCI{
 		Type: string(v1beta2.OciRefType),

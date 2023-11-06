@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	apicore "k8s.io/api/core/v1"
+	apicorev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
@@ -17,7 +17,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/types"
 )
 
@@ -30,8 +30,8 @@ var ErrMoreThanOneSecretFound = errors.New("more than one secret found")
 func (cc *ClusterClient) GetRESTConfig(
 	ctx context.Context, kymaOwner, kymaNameLabel, namespace string,
 ) (*rest.Config, error) {
-	kubeConfigSecretList := &apicore.SecretList{}
-	groupResource := apicore.SchemeGroupVersion.WithResource(string(apicore.ResourceSecrets)).GroupResource()
+	kubeConfigSecretList := &apicorev1.SecretList{}
+	groupResource := apicorev1.SchemeGroupVersion.WithResource(string(apicorev1.ResourceSecrets)).GroupResource()
 	labelSelector := k8slabels.SelectorFromSet(k8slabels.Set{kymaNameLabel: kymaOwner})
 	err := cc.DefaultClient.List(
 		ctx, kubeConfigSecretList, &client.ListOptions{LabelSelector: labelSelector, Namespace: namespace},
@@ -40,12 +40,12 @@ func (cc *ClusterClient) GetRESTConfig(
 		return nil,
 			fmt.Errorf("failed to list resources by {LabelSelector: %v, Namespace: %v}: %w", labelSelector, namespace, err)
 	}
-	kubeConfigSecret := &apicore.Secret{}
+	kubeConfigSecret := &apicorev1.Secret{}
 	if len(kubeConfigSecretList.Items) < 1 {
 		key := client.ObjectKey{Name: kymaOwner, Namespace: namespace}
 		if err := cc.DefaultClient.Get(ctx, key, kubeConfigSecret); err != nil {
 			return nil, fmt.Errorf("could not get by key (%s) or selector (%s): %w",
-				key, labelSelector.String(), declarative.ErrKubeconfigFetchFailed)
+				key, labelSelector.String(), declarativev2.ErrKubeconfigFetchFailed)
 		}
 	} else {
 		kubeConfigSecret = &kubeConfigSecretList.Items[0]
@@ -62,8 +62,8 @@ func (cc *ClusterClient) GetRESTConfig(
 	return restConfig, nil
 }
 
-func WithClientCacheKey() declarative.WithClientCacheKeyOption {
-	cacheKey := func(ctx context.Context, resource declarative.Object) (any, bool) {
+func WithClientCacheKey() declarativev2.WithClientCacheKeyOption {
+	cacheKey := func(ctx context.Context, resource declarativev2.Object) (any, bool) {
 		logger := logf.FromContext(ctx)
 		manifest, ok := resource.(*v1beta2.Manifest)
 		if !ok {
@@ -82,7 +82,7 @@ func WithClientCacheKey() declarative.WithClientCacheKeyOption {
 		cacheKey := GenerateCacheKey(labelValue, strconv.FormatBool(manifest.Spec.Remote), manifest.GetNamespace())
 		return cacheKey, true
 	}
-	return declarative.WithClientCacheKeyOption{ClientCacheKeyFn: cacheKey}
+	return declarativev2.WithClientCacheKeyOption{ClientCacheKeyFn: cacheKey}
 }
 
 func GenerateCacheKey(values ...string) string {

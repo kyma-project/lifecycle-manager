@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	apiapps "k8s.io/api/apps/v1"
-	apicore "k8s.io/api/core/v1"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiappsv1 "k8s.io/api/apps/v1"
+	apicorev1 "k8s.io/api/core/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/resource"
@@ -15,7 +15,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	manifestctrltest "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -51,7 +51,7 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 		testClient, err := declarativeTestClient()
 		Expect(err).ToNot(HaveOccurred())
 		By("Verifying that deployment is deployed and ready")
-		deploy := &apiapps.Deployment{}
+		deploy := &apiappsv1.Deployment{}
 		Expect(verifyDeploymentInstallation(deploy)).To(Succeed())
 
 		By("Verifying manifest status contains all resources")
@@ -90,10 +90,10 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 	})
 })
 
-func verifyDeploymentInstallation(deploy *apiapps.Deployment) error {
+func verifyDeploymentInstallation(deploy *apiappsv1.Deployment) error {
 	err := manifestctrltest.K8sClient.Get(
 		manifestctrltest.Ctx, client.ObjectKey{
-			Namespace: apimachinerymeta.NamespaceDefault,
+			Namespace: apimetav1.NamespaceDefault,
 			Name:      "nginx-deployment",
 		}, deploy,
 	)
@@ -104,9 +104,9 @@ func verifyDeploymentInstallation(deploy *apiapps.Deployment) error {
 	deploy.Status.ReadyReplicas = *deploy.Spec.Replicas
 	deploy.Status.AvailableReplicas = *deploy.Spec.Replicas
 	deploy.Status.Conditions = append(deploy.Status.Conditions,
-		apiapps.DeploymentCondition{
-			Type:   apiapps.DeploymentAvailable,
-			Status: apicore.ConditionTrue,
+		apiappsv1.DeploymentCondition{
+			Type:   apiappsv1.DeploymentAvailable,
+			Status: apicorev1.ConditionTrue,
 		})
 	err = manifestctrltest.K8sClient.Status().Update(manifestctrltest.Ctx, deploy)
 	if err != nil {
@@ -115,14 +115,14 @@ func verifyDeploymentInstallation(deploy *apiapps.Deployment) error {
 	return nil
 }
 
-func prepareResourceInfosForCustomCheck(clt declarative.Client, deploy *apiapps.Deployment) ([]*resource.Info, error) {
+func prepareResourceInfosForCustomCheck(clt declarativev2.Client, deploy *apiappsv1.Deployment) ([]*resource.Info, error) {
 	deployUnstructuredObj, err := machineryruntime.DefaultUnstructuredConverter.ToUnstructured(deploy)
 	if err != nil {
 		return nil, err
 	}
 	deployUnstructured := &unstructured.Unstructured{}
 	deployUnstructured.SetUnstructuredContent(deployUnstructuredObj)
-	deployUnstructured.SetGroupVersionKind(apiapps.SchemeGroupVersion.WithKind("Deployment"))
+	deployUnstructured.SetGroupVersionKind(apiappsv1.SchemeGroupVersion.WithKind("Deployment"))
 	deployInfo, err := clt.ResourceInfo(deployUnstructured, true)
 	if err != nil {
 		return nil, err
@@ -130,19 +130,19 @@ func prepareResourceInfosForCustomCheck(clt declarative.Client, deploy *apiapps.
 	return []*resource.Info{deployInfo}, nil
 }
 
-func declarativeTestClient() (declarative.Client, error) {
-	cluster := &declarative.ClusterInfo{
+func declarativeTestClient() (declarativev2.Client, error) {
+	cluster := &declarativev2.ClusterInfo{
 		Config: cfg,
 		Client: manifestctrltest.K8sClient,
 	}
 
-	return declarative.NewSingletonClients(cluster)
+	return declarativev2.NewSingletonClients(cluster)
 }
 
 func asResource(name, namespace, group, version, kind string) shared.Resource {
 	return shared.Resource{
 		Name: name, Namespace: namespace,
-		GroupVersionKind: apimachinerymeta.GroupVersionKind{
+		GroupVersionKind: apimetav1.GroupVersionKind{
 			Group: group, Version: version, Kind: kind,
 		},
 	}

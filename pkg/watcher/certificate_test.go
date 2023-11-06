@@ -1,9 +1,9 @@
 package watcher_test
 
 import (
-	certmanager "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	apicore "k8s.io/api/core/v1"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	apicorev1 "k8s.io/api/core/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
@@ -16,17 +16,17 @@ import (
 var _ = Describe("Create Watcher Certificates", Ordered, func() {
 	tests := []struct {
 		name           string
-		namespace      *apicore.Namespace
+		namespace      *apicorev1.Namespace
 		kyma           *v1beta2.Kyma
 		wantNewCertErr bool
 		wantCreateErr  bool
-		issuer         *certmanager.Issuer
+		issuer         *certmanagerv1.Issuer
 	}{
 		{
 			name:      "Should create a valid CertificateCR",
 			namespace: testutils.NewTestNamespace("testcase-1"),
 			kyma: &v1beta2.Kyma{
-				ObjectMeta: apimachinerymeta.ObjectMeta{
+				ObjectMeta: apimetav1.ObjectMeta{
 					Name:        "test-kyma-1",
 					Namespace:   "testcase-1",
 					Annotations: map[string]string{watcher.DomainAnnotation: "example.domain.com"},
@@ -40,7 +40,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 			name:      "Should fail since no Issuer can be found",
 			namespace: testutils.NewTestNamespace("testcase-2"),
 			kyma: &v1beta2.Kyma{
-				ObjectMeta: apimachinerymeta.ObjectMeta{
+				ObjectMeta: apimetav1.ObjectMeta{
 					Name:        "test-kyma-2",
 					Namespace:   "testcase-2",
 					Annotations: map[string]string{watcher.DomainAnnotation: "example.domain.com"},
@@ -54,7 +54,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 			name:      "Should fail since KymaCR is missing domain annotation",
 			namespace: testutils.NewTestNamespace("testcase-3"),
 			kyma: &v1beta2.Kyma{
-				ObjectMeta: apimachinerymeta.ObjectMeta{
+				ObjectMeta: apimetav1.ObjectMeta{
 					Name:      "test-kyma-3",
 					Namespace: "testcase-3",
 				},

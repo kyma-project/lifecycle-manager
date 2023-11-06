@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
@@ -31,7 +31,7 @@ func TestHandleState(t *testing.T) {
 		customState         []*v1beta2.CustomStateCheck
 		customStateExpected bool
 		checkInModuleCR     []moduleCheck
-		want                declarative.StateInfo
+		want                declarativev2.StateInfo
 		wantErr             bool
 	}{
 		{
@@ -44,7 +44,7 @@ func TestHandleState(t *testing.T) {
 					string(shared.StateReady),
 				},
 			},
-			declarative.StateInfo{State: shared.StateReady},
+			declarativev2.StateInfo{State: shared.StateReady},
 			false,
 		},
 		{
@@ -57,7 +57,7 @@ func TestHandleState(t *testing.T) {
 					"not support state",
 				},
 			},
-			declarative.StateInfo{State: shared.StateWarning, Info: manifest.ErrNotSupportedState.Error()},
+			declarativev2.StateInfo{State: shared.StateWarning, Info: manifest.ErrNotSupportedState.Error()},
 			false,
 		},
 		{
@@ -70,7 +70,7 @@ func TestHandleState(t *testing.T) {
 					"customState",
 				},
 			},
-			declarative.StateInfo{State: shared.StateProcessing, Info: manifest.ModuleCRWithNoCustomCheckWarning},
+			declarativev2.StateInfo{State: shared.StateProcessing, Info: manifest.ModuleCRWithNoCustomCheckWarning},
 			false,
 		},
 		{
@@ -89,7 +89,7 @@ func TestHandleState(t *testing.T) {
 					"customState",
 				},
 			},
-			declarative.StateInfo{State: shared.StateError},
+			declarativev2.StateInfo{State: shared.StateError},
 			true,
 		},
 		{
@@ -113,7 +113,7 @@ func TestHandleState(t *testing.T) {
 					definedValueForReady,
 				},
 			},
-			declarative.StateInfo{State: shared.StateReady},
+			declarativev2.StateInfo{State: shared.StateReady},
 			false,
 		},
 		{
@@ -137,7 +137,7 @@ func TestHandleState(t *testing.T) {
 					definedValueForError,
 				},
 			},
-			declarative.StateInfo{State: shared.StateError},
+			declarativev2.StateInfo{State: shared.StateError},
 			false,
 		},
 		{
@@ -170,7 +170,7 @@ func TestHandleState(t *testing.T) {
 					"customStateForWarning",
 				},
 			},
-			declarative.StateInfo{State: shared.StateWarning},
+			declarativev2.StateInfo{State: shared.StateWarning},
 			false,
 		},
 		{
@@ -203,7 +203,7 @@ func TestHandleState(t *testing.T) {
 					definedValueForReady,
 				},
 			},
-			declarative.StateInfo{State: shared.StateReady},
+			declarativev2.StateInfo{State: shared.StateReady},
 			false,
 		},
 		{
@@ -236,7 +236,7 @@ func TestHandleState(t *testing.T) {
 					definedValueForReady,
 				},
 			},
-			declarative.StateInfo{State: shared.StateProcessing},
+			declarativev2.StateInfo{State: shared.StateProcessing},
 			false,
 		},
 		{
@@ -269,7 +269,7 @@ func TestHandleState(t *testing.T) {
 					"customStateWithOtherValue",
 				},
 			},
-			declarative.StateInfo{State: shared.StateProcessing},
+			declarativev2.StateInfo{State: shared.StateProcessing},
 			false,
 		},
 		{
@@ -293,7 +293,7 @@ func TestHandleState(t *testing.T) {
 					"customStateWithOtherValue",
 				},
 			},
-			declarative.StateInfo{State: shared.StateProcessing},
+			declarativev2.StateInfo{State: shared.StateProcessing},
 			false,
 		},
 	}
@@ -312,8 +312,8 @@ func TestHandleState(t *testing.T) {
 					manifestCR.Annotations[v1beta2.CustomStateCheckAnnotation] = string(marshal)
 				}
 			}
-			manifestCR.CreationTimestamp = apimachinerymeta.Now()
-			moduleCR := builder.NewModuleCRBuilder().WithName("test").WithNamespace(apimachinerymeta.NamespaceDefault).
+			manifestCR.CreationTimestamp = apimetav1.Now()
+			moduleCR := builder.NewModuleCRBuilder().WithName("test").WithNamespace(apimetav1.NamespaceDefault).
 				WithGroupVersionKind(v1beta2.GroupVersion.Group, "v1", "TestCR").Build()
 			for _, check := range testCase.checkInModuleCR {
 				err := unstructured.SetNestedField(moduleCR.Object, check.value, check.fields...)
@@ -346,41 +346,41 @@ func TestHandleStateWithDuration(t *testing.T) {
 		name                string
 		customState         []*v1beta2.CustomStateCheck
 		customStateExpected bool
-		manifestCreatedAt   apimachinerymeta.Time
+		manifestCreatedAt   apimetav1.Time
 		checkInModuleCR     []moduleCheck
-		want                declarative.StateInfo
+		want                declarativev2.StateInfo
 		wantErr             bool
 	}{
 		{
 			"kyma module just created with no state, expected to StateProcessing",
 			nil,
 			false,
-			apimachinerymeta.Now(),
+			apimetav1.Now(),
 			nil,
-			declarative.StateInfo{State: shared.StateProcessing, Info: manifest.ModuleCRWithNoCustomCheckWarning},
+			declarativev2.StateInfo{State: shared.StateProcessing, Info: manifest.ModuleCRWithNoCustomCheckWarning},
 			false,
 		},
 		{
 			"kyma module with state updated, expected to StateReady",
 			nil,
 			false,
-			apimachinerymeta.Now(),
+			apimetav1.Now(),
 			[]moduleCheck{
 				{
 					[]string{"status", "state"},
 					string(shared.StateReady),
 				},
 			},
-			declarative.StateInfo{State: shared.StateReady},
+			declarativev2.StateInfo{State: shared.StateReady},
 			false,
 		},
 		{
 			"kyma module with no state after certain time, expected to StateWarning",
 			nil,
 			false,
-			apimachinerymeta.NewTime(apimachinerymeta.Now().Add(-10 * time.Minute)),
+			apimetav1.NewTime(apimetav1.Now().Add(-10 * time.Minute)),
 			nil,
-			declarative.StateInfo{State: shared.StateWarning, Info: manifest.ModuleCRWithNoCustomCheckWarning},
+			declarativev2.StateInfo{State: shared.StateWarning, Info: manifest.ModuleCRWithNoCustomCheckWarning},
 			false,
 		},
 		{
@@ -398,14 +398,14 @@ func TestHandleStateWithDuration(t *testing.T) {
 				},
 			},
 			true,
-			apimachinerymeta.NewTime(apimachinerymeta.Now().Add(-10 * time.Minute)),
+			apimetav1.NewTime(apimetav1.Now().Add(-10 * time.Minute)),
 			[]moduleCheck{
 				{
 					[]string{"fieldLevel1", "fieldLevel3"},
 					definedValueForReady,
 				},
 			},
-			declarative.StateInfo{State: shared.StateWarning, Info: manifest.ModuleCRWithCustomCheckWarning},
+			declarativev2.StateInfo{State: shared.StateWarning, Info: manifest.ModuleCRWithCustomCheckWarning},
 			false,
 		},
 	}
@@ -425,7 +425,7 @@ func TestHandleStateWithDuration(t *testing.T) {
 				}
 			}
 			manifestCR.CreationTimestamp = testCase.manifestCreatedAt
-			moduleCR := builder.NewModuleCRBuilder().WithName("test").WithNamespace(apimachinerymeta.NamespaceDefault).
+			moduleCR := builder.NewModuleCRBuilder().WithName("test").WithNamespace(apimetav1.NamespaceDefault).
 				WithGroupVersionKind(v1beta2.GroupVersion.Group, "v1", "TestCR").Build()
 			for _, check := range testCase.checkInModuleCR {
 				err := unstructured.SetNestedField(moduleCR.Object, check.value, check.fields...)

@@ -26,8 +26,8 @@ import (
 	"time"
 
 	"go.uber.org/zap/zapcore"
-	apiadmission "k8s.io/api/admission/v1"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiadmissionv1 "k8s.io/api/admission/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -90,8 +90,8 @@ var _ = BeforeSuite(func() {
 
 	scheme = machineryruntime.NewScheme()
 	Expect(api.AddToScheme(scheme)).NotTo(HaveOccurred())
-	Expect(apiextensions.AddToScheme(scheme)).NotTo(HaveOccurred())
-	Expect(apiadmission.AddToScheme(scheme)).NotTo(HaveOccurred())
+	Expect(apiextensionsv1.AddToScheme(scheme)).NotTo(HaveOccurred())
+	Expect(apiadmissionv1.AddToScheme(scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 

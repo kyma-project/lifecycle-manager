@@ -21,7 +21,7 @@ import (
 	"errors"
 	"fmt"
 
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
@@ -179,9 +179,9 @@ func (r *WatcherReconciler) updateWatcherState(ctx context.Context, watcherCR *v
 ) (ctrl.Result, error) {
 	watcherCR.Status.State = state
 	if state == shared.StateReady {
-		watcherCR.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, apimachinerymeta.ConditionTrue)
+		watcherCR.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, apimetav1.ConditionTrue)
 	} else if state == shared.StateError {
-		watcherCR.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, apimachinerymeta.ConditionFalse)
+		watcherCR.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, apimetav1.ConditionFalse)
 	}
 	if err != nil {
 		r.EventRecorder.Event(watcherCR, "Warning", "WatcherStatusUpdate", err.Error())

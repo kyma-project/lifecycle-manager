@@ -5,13 +5,13 @@ import (
 	"path/filepath"
 	"time"
 
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/yaml"
 
-	declarativetest "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
+	declarativetestv1 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -33,9 +33,9 @@ var _ = BeforeSuite(
 		crds := filepath.Join(root, "config", "crd", "bases")
 
 		logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
-		Expect(declarativetest.AddToScheme(k8sclientscheme.Scheme)).To(Succeed())
+		Expect(declarativetestv1.AddToScheme(k8sclientscheme.Scheme)).To(Succeed())
 
-		testAPICRD = &apiextensions.CustomResourceDefinition{}
+		testAPICRD = &apiextensionsv1.CustomResourceDefinition{}
 		testAPICRDRaw, err := os.ReadFile(
 			filepath.Join(crds, "test.declarative.kyma-project.io_testapis.yaml"),
 		)

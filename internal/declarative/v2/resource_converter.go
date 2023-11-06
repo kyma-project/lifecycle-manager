@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"k8s.io/apimachinery/pkg/api/meta"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/resource"
 
@@ -44,11 +44,11 @@ type DefaultInfoToResourceConverter struct{}
 func (c *DefaultInfoToResourceConverter) InfosToResources(infos []*resource.Info) []shared.Resource {
 	resources := make([]shared.Resource, 0, len(infos))
 	for _, info := range infos {
-		var gvk apimachinerymeta.GroupVersionKind
+		var gvk apimetav1.GroupVersionKind
 		if info.Mapping != nil {
-			gvk = apimachinerymeta.GroupVersionKind(info.ResourceMapping().GroupVersionKind)
+			gvk = apimetav1.GroupVersionKind(info.ResourceMapping().GroupVersionKind)
 		} else {
-			gvk = apimachinerymeta.GroupVersionKind(info.Object.GetObjectKind().GroupVersionKind())
+			gvk = apimetav1.GroupVersionKind(info.Object.GetObjectKind().GroupVersionKind())
 		}
 		resources = append(
 			resources, shared.Resource{
@@ -119,7 +119,7 @@ func (c *DefaultResourceToInfoConverter) UnstructuredToInfos(
 // normaliseNamespaces is only a workaround for malformed resources, e.g. by bad charts or wrong type configs.
 func (c *DefaultResourceToInfoConverter) normaliseNamespaces(infos []*resource.Info) {
 	for _, info := range infos {
-		obj, ok := info.Object.(apimachinerymeta.Object)
+		obj, ok := info.Object.(apimetav1.Object)
 		if !ok {
 			continue
 		}

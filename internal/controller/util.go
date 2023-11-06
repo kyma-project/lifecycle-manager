@@ -1,7 +1,7 @@
 package controller
 
 import (
-	apicore "k8s.io/api/core/v1"
+	apicorev1 "k8s.io/api/core/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -15,8 +15,8 @@ func NewCacheOptions() cache.Options {
 	)
 	return cache.Options{
 		ByObject: map[client.Object]cache.ByObject{
-			&apicore.Secret{}: {Label: cacheLabelSelector},
-			&apicore.Service{}: {Label: k8slabels.SelectorFromSet(k8slabels.Set{
+			&apicorev1.Secret{}: {Label: cacheLabelSelector},
+			&apicorev1.Service{}: {Label: k8slabels.SelectorFromSet(k8slabels.Set{
 				"app": "istio-ingressgateway",
 			})},
 		},

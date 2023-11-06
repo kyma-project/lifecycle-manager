@@ -5,14 +5,14 @@ import (
 	"strings"
 	"unicode"
 
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const group = "operator.kyma-project.io"
 
 type CRDBuilder struct {
-	crd *apiextensions.CustomResourceDefinition
+	crd *apiextensionsv1.CustomResourceDefinition
 }
 
 // NewCRDBuilder returns a CRDBuilder for CustomResourceDefinitions of Group
@@ -21,15 +21,15 @@ func NewCRDBuilder() CRDBuilder {
 	crdName := RandomName()
 
 	return CRDBuilder{
-		crd: &apiextensions.CustomResourceDefinition{
-			TypeMeta: apimachinerymeta.TypeMeta{
+		crd: &apiextensionsv1.CustomResourceDefinition{
+			TypeMeta: apimetav1.TypeMeta{
 				Kind:       "CustomResourceDefinition",
 				APIVersion: "apiextensions.k8s.io/v1",
 			},
-			ObjectMeta: apimachinerymeta.ObjectMeta{
+			ObjectMeta: apimetav1.ObjectMeta{
 				Name: fmt.Sprintf("%ss.%s", strings.ToLower(crdName), group),
 			},
-			Spec: apiextensions.CustomResourceDefinitionSpec{
+			Spec: apiextensionsv1.CustomResourceDefinitionSpec{
 				Group: group,
 				Names: createCRDNamesFrom(crdName),
 				Scope: "Namespaced",
@@ -46,13 +46,13 @@ func (cb CRDBuilder) WithName(name string) CRDBuilder {
 }
 
 // Build returns the apiextensions.CustomResourceDefinition from the Builder.
-func (cb CRDBuilder) Build() apiextensions.CustomResourceDefinition {
+func (cb CRDBuilder) Build() apiextensionsv1.CustomResourceDefinition {
 	return *cb.crd
 }
 
-func createCRDNamesFrom(s string) apiextensions.CustomResourceDefinitionNames {
+func createCRDNamesFrom(s string) apiextensionsv1.CustomResourceDefinitionNames {
 	name := strings.ToLower(s)
-	return apiextensions.CustomResourceDefinitionNames{
+	return apiextensionsv1.CustomResourceDefinitionNames{
 		Kind:     upperCaseFirst(name),
 		ListKind: upperCaseFirst(name) + "List",
 		Plural:   name + "s",

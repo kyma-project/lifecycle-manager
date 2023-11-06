@@ -10,11 +10,11 @@ import (
 	"path/filepath"
 	"time"
 
-	certmanager "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	apicore "k8s.io/api/core/v1"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	apicorev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -61,24 +61,24 @@ func NewTestModuleWithFixName(name, channel string) v1beta2.Module {
 	}
 }
 
-func NewTestIssuer(namespace string) *certmanager.Issuer {
-	return &certmanager.Issuer{
-		ObjectMeta: apimachinerymeta.ObjectMeta{
+func NewTestIssuer(namespace string) *certmanagerv1.Issuer {
+	return &certmanagerv1.Issuer{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      "test-issuer",
 			Namespace: namespace,
 			Labels:    watcher.LabelSet,
 		},
-		Spec: certmanager.IssuerSpec{
-			IssuerConfig: certmanager.IssuerConfig{
-				SelfSigned: &certmanager.SelfSignedIssuer{},
+		Spec: certmanagerv1.IssuerSpec{
+			IssuerConfig: certmanagerv1.IssuerConfig{
+				SelfSigned: &certmanagerv1.SelfSignedIssuer{},
 			},
 		},
 	}
 }
 
-func NewTestNamespace(namespace string) *apicore.Namespace {
-	return &apicore.Namespace{
-		ObjectMeta: apimachinerymeta.ObjectMeta{
+func NewTestNamespace(namespace string) *apicorev1.Namespace {
+	return &apicorev1.Namespace{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name: namespace,
 		},
 	}
@@ -105,7 +105,7 @@ func CreateCR(ctx context.Context, clnt client.Client, obj client.Object) error 
 	return nil
 }
 
-func CRExists(obj apimachinerymeta.Object, clientError error) error {
+func CRExists(obj apimetav1.Object, clientError error) error {
 	if util.IsNotFound(clientError) {
 		return ErrNotFound
 	}
@@ -151,8 +151,8 @@ func NewSKRCluster(scheme *machineryruntime.Scheme) (client.Client, *envtest.Env
 	return skrClient, skrEnv, err
 }
 
-func AppendExternalCRDs(path string, files ...string) ([]*apiextensions.CustomResourceDefinition, error) {
-	var crds []*apiextensions.CustomResourceDefinition
+func AppendExternalCRDs(path string, files ...string) ([]*apiextensionsv1.CustomResourceDefinition, error) {
+	var crds []*apiextensionsv1.CustomResourceDefinition
 	for _, file := range files {
 		crdPath := filepath.Join(path, file)
 		moduleFile, err := os.Open(crdPath)
@@ -161,7 +161,7 @@ func AppendExternalCRDs(path string, files ...string) ([]*apiextensions.CustomRe
 		}
 		decoder := machineryaml.NewYAMLOrJSONDecoder(moduleFile, defaultBufferSize)
 		for {
-			crd := &apiextensions.CustomResourceDefinition{}
+			crd := &apiextensionsv1.CustomResourceDefinition{}
 			if err = decoder.Decode(crd); err != nil {
 				if errors.Is(err, io.EOF) {
 					break

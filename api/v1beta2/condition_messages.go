@@ -1,7 +1,7 @@
 package v1beta2
 
 import (
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Extend this list by actual needs.
@@ -26,34 +26,34 @@ const (
 	ConditionMessageModuleCatalogStateUnknown = "module templates synchronization state is unknown"
 )
 
-func GenerateMessage(conditionType KymaConditionType, status apimachinerymeta.ConditionStatus) string {
+func GenerateMessage(conditionType KymaConditionType, status apimetav1.ConditionStatus) string {
 	switch conditionType {
 	case ConditionTypeModules:
 		switch status {
-		case apimachinerymeta.ConditionTrue:
+		case apimetav1.ConditionTrue:
 			return ConditionMessageModuleInReadyState
-		case apimachinerymeta.ConditionUnknown:
+		case apimetav1.ConditionUnknown:
 			return ConditionMessageModuleStateUnknown
-		case apimachinerymeta.ConditionFalse:
+		case apimetav1.ConditionFalse:
 		}
 
 		return ConditionMessageModuleNotInReadyState
 	case ConditionTypeModuleCatalog:
 		switch status {
-		case apimachinerymeta.ConditionTrue:
+		case apimetav1.ConditionTrue:
 			return ConditionMessageModuleCatalogIsSynced
-		case apimachinerymeta.ConditionUnknown:
+		case apimetav1.ConditionUnknown:
 			return ConditionMessageModuleCatalogStateUnknown
-		case apimachinerymeta.ConditionFalse:
+		case apimetav1.ConditionFalse:
 		}
 
 		return ConditionMessageModuleCatalogIsOutOfSync
 	case ConditionTypeSKRWebhook:
 		switch status {
-		case apimachinerymeta.ConditionTrue:
+		case apimetav1.ConditionTrue:
 			return ConditionMessageSKRWebhookIsSynced
-		case apimachinerymeta.ConditionUnknown:
-		case apimachinerymeta.ConditionFalse:
+		case apimetav1.ConditionUnknown:
+		case apimetav1.ConditionFalse:
 		}
 
 		return ConditionMessageSKRWebhookIsOutOfSync

@@ -9,15 +9,15 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/authn/kubernetes"
-	apicore "k8s.io/api/core/v1"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apicorev1 "k8s.io/api/core/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var ErrNoAuthSecretFound = errors.New("no auth secret found")
 
 func GetAuthnKeychain(ctx context.Context,
-	credSecretSelector *apimachinerymeta.LabelSelector,
+	credSecretSelector *apimetav1.LabelSelector,
 	clnt client.Client,
 ) (authn.Keychain, error) {
 	secretList, err := getCredSecrets(ctx, credSecretSelector, clnt)
@@ -33,11 +33,11 @@ func GetAuthnKeychain(ctx context.Context,
 
 func getCredSecrets(
 	ctx context.Context,
-	credSecretSelector *apimachinerymeta.LabelSelector,
+	credSecretSelector *apimetav1.LabelSelector,
 	clusterClient client.Client,
-) (apicore.SecretList, error) {
-	secretList := apicore.SecretList{}
-	selector, err := apimachinerymeta.LabelSelectorAsSelector(credSecretSelector)
+) (apicorev1.SecretList, error) {
+	secretList := apicorev1.SecretList{}
+	selector, err := apimetav1.LabelSelectorAsSelector(credSecretSelector)
 	if err != nil {
 		return secretList, fmt.Errorf("error converting labelSelector: %w", err)
 	}
@@ -55,12 +55,12 @@ func getCredSecrets(
 	return secretList, nil
 }
 
-func GenerateLabelSelector(registryCredValue []byte) (*apimachinerymeta.LabelSelector, error) {
+func GenerateLabelSelector(registryCredValue []byte) (*apimetav1.LabelSelector, error) {
 	credSecretLabel := make(map[string]string)
 	if err := json.Unmarshal(registryCredValue, &credSecretLabel); err != nil {
 		return nil, fmt.Errorf("failed to cred secret labels: %w", err)
 	}
-	return &apimachinerymeta.LabelSelector{
+	return &apimetav1.LabelSelector{
 		MatchLabels: credSecretLabel,
 	}, nil
 }

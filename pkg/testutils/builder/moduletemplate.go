@@ -9,7 +9,7 @@ import (
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/ocm.software/v3alpha1"
 	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -25,13 +25,13 @@ func NewModuleTemplateBuilder() ModuleTemplateBuilder {
 	data := NewModuleCRBuilder().Build()
 	return ModuleTemplateBuilder{
 		moduleTemplate: &v1beta2.ModuleTemplate{
-			TypeMeta: apimachinerymeta.TypeMeta{
+			TypeMeta: apimetav1.TypeMeta{
 				APIVersion: v1beta2.GroupVersion.String(),
 				Kind:       string(v1beta2.KymaKind),
 			},
-			ObjectMeta: apimachinerymeta.ObjectMeta{
+			ObjectMeta: apimetav1.ObjectMeta{
 				Name:      RandomName(),
-				Namespace: apimachinerymeta.NamespaceDefault,
+				Namespace: apimetav1.NamespaceDefault,
 			},
 			Spec: v1beta2.ModuleTemplateSpec{
 				Data: data,

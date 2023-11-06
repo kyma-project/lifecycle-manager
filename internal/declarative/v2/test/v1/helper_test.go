@@ -7,12 +7,12 @@ import (
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
 	"k8s.io/apimachinery/pkg/api/meta"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	declarativetest "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	declarativetestv1 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
 	. "github.com/onsi/gomega"
@@ -50,14 +50,14 @@ func (matcher *BeInStateMatcher) NegatedFailureMessage(actual interface{}) strin
 }
 
 func HaveConditionWithStatus(
-	conditionType declarative.ConditionType, status apimachinerymeta.ConditionStatus,
+	conditionType declarativev2.ConditionType, status apimetav1.ConditionStatus,
 ) types.GomegaMatcher {
 	return &HaveConditionMatcher{condition: conditionType, status: status}
 }
 
 type HaveConditionMatcher struct {
-	condition declarative.ConditionType
-	status    apimachinerymeta.ConditionStatus
+	condition declarativev2.ConditionType
+	status    apimetav1.ConditionStatus
 }
 
 func (matcher *HaveConditionMatcher) Match(actual interface{}) (bool, error) {
@@ -95,10 +95,10 @@ func EventuallyDeclarativeStatusShould(ctx context.Context, key client.ObjectKey
 		Should(And(matchers...))
 }
 
-func EventuallyDeclarativeShouldBeUninstalled(ctx context.Context, obj *declarativetest.TestAPI, testClient client.Client) {
+func EventuallyDeclarativeShouldBeUninstalled(ctx context.Context, obj *declarativetestv1.TestAPI, testClient client.Client) {
 	EventuallyWithOffset(1, testClient.Get).
 		WithContext(ctx).
-		WithArguments(client.ObjectKeyFromObject(obj), &declarativetest.TestAPI{}).
+		WithArguments(client.ObjectKeyFromObject(obj), &declarativetestv1.TestAPI{}).
 		WithPolling(standardInterval).
 		WithTimeout(standardTimeout).
 		Should(Satisfy(util.IsNotFound))

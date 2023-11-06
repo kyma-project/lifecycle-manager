@@ -10,7 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
 func TestConcurrentSSA(t *testing.T) {
@@ -63,7 +63,7 @@ func TestConcurrentSSA(t *testing.T) {
 		t.Run(
 			testCase.name, func(t *testing.T) {
 				t.Parallel()
-				ssa := declarative.ConcurrentSSA(testCase.ssa.clnt, testCase.ssa.owner)
+				ssa := declarativev2.ConcurrentSSA(testCase.ssa.clnt, testCase.ssa.owner)
 				if err := ssa.Run(context.Background(), testCase.apply); err != nil {
 					require.ErrorIs(t, err, testCase.err)
 				}

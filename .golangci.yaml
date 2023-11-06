@@ -60,51 +60,51 @@ linters-settings:
     no-extra-aliases: true
     alias:
       - pkg: github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1
-        alias: certmanager
+        alias: certmanagerv1
       - pkg: github.com/cert-manager/cert-manager/pkg/apis/meta/v1
-        alias: certmanagermeta
+        alias: certmanagermetav1
       - pkg: github.com/google/go-containerregistry/pkg/v1
-        alias: containerregistry
+        alias: containerregistryv1
       - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics
         alias: commonmetrics
       - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest
         alias: manifestctrltest
       - pkg: github.com/kyma-project/lifecycle-manager/internal/declarative/v2
-        alias: declarative
+        alias: declarativev2
       - pkg: github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1
-        alias: declarativetest
+        alias: declarativetestv1
       - pkg: github.com/kyma-project/runtime-watcher/listener/pkg/event
         alias: watcherevent
       - pkg: github.com/kyma-project/runtime-watcher/listener/pkg/metrics
         alias: watchermetrics
       - pkg: github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1
-        alias: ocmmeta
+        alias: ocmmetav1
       - pkg: github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2
         alias: compdescv2
       - pkg: istio.io/api/networking/v1beta1
-        alias: istioapi
+        alias: istioapiv1beta1
       - pkg: istio.io/client-go/pkg/apis/networking/v1beta1
-        alias: istioclientapi
+        alias: istioclientapiv1beta1
       - pkg: istio.io/client-go/pkg/clientset/versioned
         alias: istioclient
       - pkg: istio.io/client-go/pkg/clientset/versioned/scheme
         alias: istioscheme
       - pkg: k8s.io/api/admission/v1
-        alias: apiadmission
+        alias: apiadmissionv1
       - pkg: k8s.io/api/admissionregistration/v1
-        alias: admissionregistration
+        alias: admissionregistrationv1
       - pkg: k8s.io/api/apps/v1
-        alias: apiapps
+        alias: apiappsv1
       - pkg: k8s.io/api/core/v1
-        alias: apicore
+        alias: apicorev1
       - pkg: k8s.io/api/rbac/v1
-        alias: apirbac
+        alias: apirbacv1
       - pkg: k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1
-        alias: apiextensions
+        alias: apiextensionsv1
       - pkg: k8s.io/apimachinery/pkg/api/errors
         alias: apierrors
       - pkg: k8s.io/apimachinery/pkg/apis/meta/v1
-        alias: apimachinerymeta
+        alias: apimetav1
       - pkg: k8s.io/apimachinery/pkg/labels
         alias: k8slabels
       - pkg: k8s.io/apimachinery/pkg/runtime

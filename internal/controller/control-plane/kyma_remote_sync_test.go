@@ -7,8 +7,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 
 	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
@@ -133,11 +133,11 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 		By("Remote Kyma contains correct conditions for Modules and ModuleTemplates")
 		Eventually(kymaHasCondition, Timeout, Interval).
 			WithArguments(runtimeClient, v1beta2.ConditionTypeModules, string(v1beta2.ConditionReason),
-				apimachinerymeta.ConditionTrue, remoteKyma.GetName(), remoteKyma.GetNamespace()).
+				apimetav1.ConditionTrue, remoteKyma.GetName(), remoteKyma.GetNamespace()).
 			Should(Succeed())
 		Eventually(kymaHasCondition, Timeout, Interval).
 			WithArguments(runtimeClient, v1beta2.ConditionTypeModuleCatalog, string(v1beta2.ConditionReason),
-				apimachinerymeta.ConditionTrue, remoteKyma.GetName(), remoteKyma.GetNamespace()).
+				apimetav1.ConditionTrue, remoteKyma.GetName(), remoteKyma.GetNamespace()).
 			Should(Succeed())
 
 		By("Remote Kyma should contain Watcher labels and annotations")
@@ -175,7 +175,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("Remote Kyma contains correct conditions for Modules")
 		Eventually(kymaHasCondition, Timeout, Interval).
-			WithArguments(runtimeClient, v1beta2.ConditionTypeModules, string(v1beta2.ConditionReason), apimachinerymeta.ConditionTrue,
+			WithArguments(runtimeClient, v1beta2.ConditionTypeModules, string(v1beta2.ConditionReason), apimetav1.ConditionTrue,
 				remoteKyma.GetName(), remoteKyma.GetNamespace()).
 			Should(Succeed())
 	})
@@ -432,8 +432,8 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	})
 
 	It("Kyma CRD should sync to SKR and annotations get updated", func() {
-		var kcpKymaCrd *apiextensions.CustomResourceDefinition
-		var skrKymaCrd *apiextensions.CustomResourceDefinition
+		var kcpKymaCrd *apiextensionsv1.CustomResourceDefinition
+		var skrKymaCrd *apiextensionsv1.CustomResourceDefinition
 		By("Update KCP Kyma CRD")
 		Eventually(func() string {
 			var err error
@@ -446,7 +446,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 		}, Timeout, Interval).Should(Equal("test change"))
 
 		By("SKR Kyma CRD should be updated")
-		Eventually(func() *apiextensions.CustomResourceValidation {
+		Eventually(func() *apiextensionsv1.CustomResourceValidation {
 			var err error
 			skrKymaCrd, err = fetchCrd(runtimeClient, v1beta2.KymaKind)
 			if err != nil {

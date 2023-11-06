@@ -22,7 +22,7 @@ import (
 	"fmt"
 
 	"golang.org/x/sync/errgroup"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -335,19 +335,19 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 			return fmt.Errorf("could not reconciling manifest: %w", err)
 		}
 		if kyma.AllModulesReady() {
-			kyma.UpdateCondition(v1beta2.ConditionTypeModules, apimachinerymeta.ConditionTrue)
+			kyma.UpdateCondition(v1beta2.ConditionTypeModules, apimetav1.ConditionTrue)
 		} else {
-			kyma.UpdateCondition(v1beta2.ConditionTypeModules, apimachinerymeta.ConditionFalse)
+			kyma.UpdateCondition(v1beta2.ConditionTypeModules, apimetav1.ConditionFalse)
 		}
 		return nil
 	})
 	if r.SyncKymaEnabled(kyma) {
 		errGroup.Go(func() error {
 			if err := r.syncModuleCatalog(ctx, kyma); err != nil {
-				kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, apimachinerymeta.ConditionFalse)
+				kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, apimetav1.ConditionFalse)
 				return fmt.Errorf("could not synchronize remote module catalog: %w", err)
 			}
-			kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, apimachinerymeta.ConditionTrue)
+			kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, apimetav1.ConditionTrue)
 			return nil
 		})
 	}
@@ -356,12 +356,12 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 		errGroup.Go(func() error {
 			if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
 				if errors.Is(err, &watcher.CertificateNotReadyError{}) {
-					kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, apimachinerymeta.ConditionFalse)
+					kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, apimetav1.ConditionFalse)
 					return nil
 				}
 				return err
 			}
-			kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, apimachinerymeta.ConditionTrue)
+			kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, apimetav1.ConditionTrue)
 			return nil
 		})
 	}
@@ -527,7 +527,7 @@ func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma
 }
 
 func (r *KymaReconciler) deleteManifest(ctx context.Context, trackedManifest *v1beta2.TrackingObject) error {
-	manifest := apimachinerymeta.PartialObjectMetadata{}
+	manifest := apimetav1.PartialObjectMetadata{}
 	manifest.SetGroupVersionKind(trackedManifest.GroupVersionKind())
 	manifest.SetNamespace(trackedManifest.GetNamespace())
 	manifest.SetName(trackedManifest.GetName())

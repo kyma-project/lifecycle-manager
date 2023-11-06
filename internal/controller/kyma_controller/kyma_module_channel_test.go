@@ -7,7 +7,7 @@ import (
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -162,8 +162,8 @@ func ignoreInvalidError(err error) error {
 	var statusError *apierrors.StatusError
 	ok := errors.As(err, &statusError)
 	Expect(ok).Should(BeTrue())
-	if statusError.ErrStatus.Reason != apimachinerymeta.StatusReasonInvalid {
-		return fmt.Errorf("status error not match: expect %s, actual %w", apimachinerymeta.StatusReasonInvalid, err)
+	if statusError.ErrStatus.Reason != apimetav1.StatusReasonInvalid {
+		return fmt.Errorf("status error not match: expect %s, actual %w", apimetav1.StatusReasonInvalid, err)
 	}
 	return nil
 }

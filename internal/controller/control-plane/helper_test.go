@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -144,7 +144,7 @@ func kymaHasCondition(
 	clnt client.Client,
 	conditionType v1beta2.KymaConditionType,
 	reason string,
-	status apimachinerymeta.ConditionStatus,
+	status apimetav1.ConditionStatus,
 	kymaName,
 	kymaNamespace string,
 ) error {
@@ -173,7 +173,7 @@ func containsModuleTemplateCondition(clnt client.Client, kymaName, kymaNamespace
 	return nil
 }
 
-func updateKymaCRD(clnt client.Client) (*apiextensions.CustomResourceDefinition, error) {
+func updateKymaCRD(clnt client.Client) (*apiextensionsv1.CustomResourceDefinition, error) {
 	crd, err := fetchCrd(clnt, v1beta2.KymaKind)
 	if err != nil {
 		return nil, err
@@ -184,7 +184,7 @@ func updateKymaCRD(clnt client.Client) (*apiextensions.CustomResourceDefinition,
 	channelProperty := getCrdSpec(crd).Properties["channel"]
 	channelProperty.Description = "test change"
 	getCrdSpec(crd).Properties["channel"] = channelProperty
-	crd.Spec = apiextensions.CustomResourceDefinitionSpec{
+	crd.Spec = apiextensionsv1.CustomResourceDefinitionSpec{
 		Versions:              crdSpecVersions,
 		Names:                 crd.Spec.Names,
 		Group:                 crd.Spec.Group,
@@ -212,12 +212,12 @@ func updateKymaCRD(clnt client.Client) (*apiextensions.CustomResourceDefinition,
 	return crd, nil
 }
 
-func getCrdSpec(crd *apiextensions.CustomResourceDefinition) apiextensions.JSONSchemaProps {
+func getCrdSpec(crd *apiextensionsv1.CustomResourceDefinition) apiextensionsv1.JSONSchemaProps {
 	return crd.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties["spec"]
 }
 
-func fetchCrd(clnt client.Client, crdKind v1beta2.Kind) (*apiextensions.CustomResourceDefinition, error) {
-	crd := &apiextensions.CustomResourceDefinition{}
+func fetchCrd(clnt client.Client, crdKind v1beta2.Kind) (*apiextensionsv1.CustomResourceDefinition, error) {
+	crd := &apiextensionsv1.CustomResourceDefinition{}
 	if err := clnt.Get(
 		ctx, client.ObjectKey{
 			Name: fmt.Sprintf("%s.%s", crdKind.Plural(), v1beta2.GroupVersion.Group),

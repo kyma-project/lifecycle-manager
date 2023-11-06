@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type LayerName string
@@ -19,11 +19,11 @@ type LayerRepresentation interface {
 }
 
 type OCI struct {
-	Repo               string                          `json:"repo"`
-	Name               string                          `json:"name"`
-	Ref                string                          `json:"ref"`
-	Type               string                          `json:"type"`
-	CredSecretSelector *apimachinerymeta.LabelSelector `json:"credSecretSelector,omitempty"`
+	Repo               string                   `json:"repo"`
+	Name               string                   `json:"name"`
+	Ref                string                   `json:"ref"`
+	Type               string                   `json:"type"`
+	CredSecretSelector *apimetav1.LabelSelector `json:"credSecretSelector,omitempty"`
 }
 
 func (o *OCI) ToInstallRaw() ([]byte, error) {

@@ -6,11 +6,11 @@ import (
 	"fmt"
 
 	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -65,7 +65,7 @@ var _ = Describe("Kyma with no Module", Ordered, func() {
 				return ErrWrongConditions
 			}
 			currentCondition := conditions[0]
-			expectedCondition := apimachinerymeta.Condition{
+			expectedCondition := apimetav1.Condition{
 				Type:    string(v1beta2.ConditionTypeModules),
 				Status:  "True",
 				Message: v1beta2.ConditionMessageModuleInReadyState,
@@ -121,9 +121,9 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 		kymaInCluster, err := GetKyma(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(
-			kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModules, apimachinerymeta.ConditionTrue)).To(BeTrue())
+			kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModules, apimetav1.ConditionTrue)).To(BeTrue())
 		Expect(
-			kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModuleCatalog, apimachinerymeta.ConditionTrue)).To(BeFalse())
+			kymaInCluster.ContainsCondition(v1beta2.ConditionTypeModuleCatalog, apimetav1.ConditionTrue)).To(BeFalse())
 		By("Module Catalog created")
 		Eventually(AllModuleTemplatesExists, Timeout, Interval).
 			WithArguments(ctx, controlPlaneClient, kyma).
@@ -308,7 +308,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 		By("Add skip-reconciliation label to Kyma CR")
 		Eventually(UpdateKymaLabel, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), declarative.SkipReconcileLabel, "true").
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), declarativev2.SkipReconcileLabel, "true").
 			Should(Succeed())
 	})
 
@@ -328,7 +328,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	It("Stop Kyma skip Reconciliation so that it can be deleted", func() {
 		Eventually(UpdateKymaLabel, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), declarative.SkipReconcileLabel, "false").
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), declarativev2.SkipReconcileLabel, "false").
 			Should(Succeed())
 	})
 })

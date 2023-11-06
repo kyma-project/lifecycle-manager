@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	apiapps "k8s.io/api/apps/v1"
+	apiappsv1 "k8s.io/api/apps/v1"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -50,7 +50,7 @@ var _ = BeforeSuite(func() {
 	Expect(cfg).NotTo(BeNil())
 
 	Expect(api.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
-	Expect(apiapps.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
+	Expect(apiappsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 

@@ -3,10 +3,10 @@ package matcher
 import (
 	"strings"
 
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
-type CRDMatcherFunc func(crd apiextensions.CustomResourceDefinition) bool
+type CRDMatcherFunc func(crd apiextensionsv1.CustomResourceDefinition) bool
 
 // CreateCRDMatcherFrom returns a CRDMatcherFunc for a comma-separated list of CRDs.
 // Every CRD is defined using  the syntax: `<names.plural>.<group>` or `<names.singular>.<group>`,
@@ -31,7 +31,7 @@ func crdMatcherForItems(defs []string) CRDMatcherFunc {
 		}
 	}
 
-	return func(crd apiextensions.CustomResourceDefinition) bool {
+	return func(crd apiextensionsv1.CustomResourceDefinition) bool {
 		for _, doesMatch := range matchers {
 			if doesMatch(crd) {
 				return true
@@ -56,7 +56,7 @@ func crdMatcherForItem(givenCRDReference string) CRDMatcherFunc {
 	givenKind := strings.TrimSpace(strings.ToLower(nameSegments[0]))
 	givenGroup := strings.TrimSpace(strings.ToLower(strings.Join(nameSegments[1:], ".")))
 
-	return func(crd apiextensions.CustomResourceDefinition) bool {
+	return func(crd apiextensionsv1.CustomResourceDefinition) bool {
 		lKind := strings.ToLower(crd.Spec.Names.Kind)
 		lSingular := strings.ToLower(crd.Spec.Names.Singular)
 		lPlural := strings.ToLower(crd.Spec.Names.Plural)
@@ -71,7 +71,7 @@ func crdMatcherForItem(givenCRDReference string) CRDMatcherFunc {
 }
 
 func emptyMatcher() CRDMatcherFunc {
-	return func(crd apiextensions.CustomResourceDefinition) bool {
+	return func(crd apiextensionsv1.CustomResourceDefinition) bool {
 		return false
 	}
 }

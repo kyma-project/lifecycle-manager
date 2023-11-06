@@ -23,16 +23,16 @@ import (
 	"testing"
 	"time"
 
-	certmanager "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-logr/logr"
 	"go.uber.org/zap/zapcore"
-	istioapi "istio.io/api/networking/v1beta1"
-	istioclientapi "istio.io/client-go/pkg/apis/networking/v1beta1"
+	istioapiv1beta1 "istio.io/api/networking/v1beta1"
+	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
 	istioscheme "istio.io/client-go/pkg/clientset/versioned/scheme"
-	apicore "k8s.io/api/core/v1"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apicorev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
@@ -104,7 +104,7 @@ var _ = BeforeSuite(func() {
 		"cert-manager-v1.10.1.crds.yaml",
 		"istio-v1.17.1.crds.yaml")
 	Expect(err).ToNot(HaveOccurred())
-	kcpModuleCRD := &apiextensions.CustomResourceDefinition{}
+	kcpModuleCRD := &apiextensionsv1.CustomResourceDefinition{}
 	modulePath := filepath.Join("..", "..", "..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
@@ -114,7 +114,7 @@ var _ = BeforeSuite(func() {
 
 	controlPlaneEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
-		CRDs:                  append([]*apiextensions.CustomResourceDefinition{kcpModuleCRD}, externalCRDs...),
+		CRDs:                  append([]*apiextensionsv1.CustomResourceDefinition{kcpModuleCRD}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}
 
@@ -123,9 +123,9 @@ var _ = BeforeSuite(func() {
 	Expect(restCfg).NotTo(BeNil())
 
 	Expect(api.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
-	Expect(apiextensions.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
+	Expect(apiextensionsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	Expect(istioscheme.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
-	Expect(certmanager.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
+	Expect(certmanagerv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 
@@ -235,8 +235,8 @@ var _ = AfterSuite(func() {
 })
 
 func createNamespace(ctx context.Context, namespace string, k8sClient client.Client) error {
-	ns := &apicore.Namespace{
-		ObjectMeta: apimachinerymeta.ObjectMeta{
+	ns := &apicorev1.Namespace{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name: namespace,
 		},
 	}
@@ -244,18 +244,18 @@ func createNamespace(ctx context.Context, namespace string, k8sClient client.Cli
 }
 
 func createGateway(ctx context.Context, restConfig *rest.Config) error {
-	gateway := &istioclientapi.Gateway{
-		ObjectMeta: apimachinerymeta.ObjectMeta{
+	gateway := &istioclientapiv1beta1.Gateway{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      gatewayName,
 			Namespace: kcpSystemNs,
 			Labels: map[string]string{
 				"app": gatewayName,
 			},
 		},
-		Spec: istioapi.Gateway{
-			Servers: []*istioapi.Server{
+		Spec: istioapiv1beta1.Gateway{
+			Servers: []*istioapiv1beta1.Server{
 				{
-					Port: &istioapi.Port{
+					Port: &istioapiv1beta1.Port{
 						Number: 443,
 						Name:   "https",
 					},
@@ -270,7 +270,7 @@ func createGateway(ctx context.Context, restConfig *rest.Config) error {
 	if err != nil {
 		return err
 	}
-	_, err = ic.NetworkingV1beta1().Gateways(kcpSystemNs).Create(ctx, gateway, apimachinerymeta.CreateOptions{})
+	_, err = ic.NetworkingV1beta1().Gateways(kcpSystemNs).Create(ctx, gateway, apimetav1.CreateOptions{})
 
 	return err
 }

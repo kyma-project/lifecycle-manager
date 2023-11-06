@@ -9,7 +9,7 @@ import (
 	"strconv"
 
 	"golang.org/x/sync/errgroup"
-	istioclientapi "istio.io/client-go/pkg/apis/networking/v1beta1"
+	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -46,7 +46,7 @@ func resolveKcpAddr(kcpClient client.Client, managerConfig *SkrWebhookManagerCon
 	ctx := context.TODO()
 
 	// Get public KCP DNS name and port from the Gateway
-	gateway := &istioclientapi.Gateway{}
+	gateway := &istioclientapiv1beta1.Gateway{}
 
 	if err := kcpClient.Get(ctx, client.ObjectKey{
 		Namespace: managerConfig.IstioGatewayNamespace,

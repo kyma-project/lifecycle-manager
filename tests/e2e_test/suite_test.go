@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"go.uber.org/zap/zapcore"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -61,7 +61,7 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 
-	kcpModuleCRD := &apiextensions.CustomResourceDefinition{}
+	kcpModuleCRD := &apiextensionsv1.CustomResourceDefinition{}
 	modulePath := filepath.Join("../..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
@@ -86,7 +86,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	Expect(api.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
-	Expect(apiextensions.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
+	Expect(apiextensionsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	SetDefaultEventuallyPollingInterval(interval)
 	SetDefaultEventuallyTimeout(timeout)
 	SetDefaultConsistentlyDuration(timeout)

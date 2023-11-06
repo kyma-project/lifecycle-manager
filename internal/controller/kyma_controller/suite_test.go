@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"go.uber.org/zap/zapcore"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -84,7 +84,7 @@ var _ = BeforeSuite(func() {
 		"istio-v1.17.1.crds.yaml")
 	Expect(err).ToNot(HaveOccurred())
 
-	kcpModuleCRD := &apiextensions.CustomResourceDefinition{}
+	kcpModuleCRD := &apiextensionsv1.CustomResourceDefinition{}
 	modulePath := filepath.Join("..", "..", "..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
@@ -94,7 +94,7 @@ var _ = BeforeSuite(func() {
 
 	controlPlaneEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
-		CRDs:                  append([]*apiextensions.CustomResourceDefinition{kcpModuleCRD}, externalCRDs...),
+		CRDs:                  append([]*apiextensionsv1.CustomResourceDefinition{kcpModuleCRD}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}
 
@@ -103,7 +103,7 @@ var _ = BeforeSuite(func() {
 	Expect(cfg).NotTo(BeNil())
 
 	Expect(api.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
-	Expect(apiextensions.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
+	Expect(apiextensionsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 

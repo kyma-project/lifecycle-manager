@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	apiapps "k8s.io/api/apps/v1"
-	apicore "k8s.io/api/core/v1"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiappsv1 "k8s.io/api/apps/v1"
+	apicorev1 "k8s.io/api/core/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -87,7 +87,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 
 	It("Should trigger new reconciliation by spec watching", func() {
 		By("changing the spec of the remote KymaCR")
-		timeNow := &apimachinerymeta.Time{Time: time.Now()}
+		timeNow := &apimetav1.Time{Time: time.Now()}
 		GinkgoWriter.Println(fmt.Sprintf("Spec watching logs since %s: ", timeNow))
 		switchedChannel := "fast"
 		Eventually(changeRemoteKymaChannel).
@@ -104,7 +104,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 
 	It("Should trigger new reconciliation by status sub-resource watching", func() {
 		time.Sleep(1 * time.Second)
-		patchingTimestamp := &apimachinerymeta.Time{Time: time.Now()}
+		patchingTimestamp := &apimetav1.Time{Time: time.Now()}
 		GinkgoWriter.Println(fmt.Sprintf("Status subresource watching logs since %s: ", patchingTimestamp))
 		By("changing the Watcher spec.field to status")
 		Expect(updateWatcherSpecField(ctx, controlPlaneClient, watcherCrName)).
@@ -141,7 +141,7 @@ func checkKLMLogs(ctx context.Context,
 	logMsg string,
 	controlPlaneConfig, runtimeConfig *rest.Config,
 	k8sClient, runtimeClient client.Client,
-	logsSince *apimachinerymeta.Time,
+	logsSince *apimetav1.Time,
 ) error {
 	logs, err := getPodLogs(ctx, controlPlaneConfig, k8sClient, controlPlaneNamespace, KLMPodPrefix, KLMPodContainer,
 		logsSince)
@@ -167,10 +167,10 @@ func getPodLogs(ctx context.Context,
 	config *rest.Config,
 	k8sClient client.Client,
 	namespace, podPrefix, container string,
-	logsSince *apimachinerymeta.Time,
+	logsSince *apimetav1.Time,
 ) (string, error) {
-	pod := &apicore.Pod{}
-	podList := &apicore.PodList{}
+	pod := &apicorev1.Pod{}
+	podList := &apicorev1.PodList{}
 	if err := k8sClient.List(ctx, podList, &client.ListOptions{Namespace: namespace}); err != nil {
 		return "", err
 	}
@@ -195,7 +195,7 @@ func getPodLogs(ctx context.Context,
 	if err != nil {
 		return "", err
 	}
-	req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &apicore.PodLogOptions{
+	req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &apicorev1.PodLogOptions{
 		Container: container,
 		SinceTime: logsSince,
 	})
@@ -220,8 +220,8 @@ func getPodLogs(ctx context.Context,
 }
 
 func deleteWatcherDeployment(ctx context.Context, watcherName, watcherNamespace string, k8sClient client.Client) error {
-	watcherDeployment := &apiapps.Deployment{
-		ObjectMeta: apimachinerymeta.ObjectMeta{
+	watcherDeployment := &apiappsv1.Deployment{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      watcherName,
 			Namespace: watcherNamespace,
 		},
@@ -232,7 +232,7 @@ func deleteWatcherDeployment(ctx context.Context, watcherName, watcherNamespace 
 func checkWatcherDeploymentReady(ctx context.Context,
 	deploymentName, deploymentNamespace string, k8sClient client.Client,
 ) error {
-	watcherDeployment := &apiapps.Deployment{}
+	watcherDeployment := &apiappsv1.Deployment{}
 	if err := k8sClient.Get(ctx,
 		client.ObjectKey{Name: deploymentName, Namespace: deploymentNamespace},
 		watcherDeployment,
@@ -250,8 +250,8 @@ func checkWatcherDeploymentReady(ctx context.Context,
 func deleteCertificateSecret(ctx context.Context,
 	secretName, secretNamespace string, k8sClient client.Client,
 ) error {
-	certificateSecret := &apicore.Secret{
-		ObjectMeta: apimachinerymeta.ObjectMeta{
+	certificateSecret := &apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      secretName,
 			Namespace: secretNamespace,
 		},
@@ -262,7 +262,7 @@ func deleteCertificateSecret(ctx context.Context,
 func checkCertificateSecretExists(ctx context.Context,
 	secretName, secretNamespace string, k8sClient client.Client,
 ) error {
-	certificateSecret := &apicore.Secret{}
+	certificateSecret := &apicorev1.Secret{}
 	return k8sClient.Get(ctx,
 		client.ObjectKey{Name: secretName, Namespace: secretNamespace},
 		certificateSecret,
@@ -279,7 +279,7 @@ func updateRemoteKymaStatusSubresource(k8sClient client.Client, kymaNamespace st
 	kyma.Status.State = shared.StateWarning
 	kyma.Status.LastOperation = shared.LastOperation{
 		Operation:      "Updated Kyma Status subresource for test",
-		LastUpdateTime: apimachinerymeta.NewTime(time.Now()),
+		LastUpdateTime: apimetav1.NewTime(time.Now()),
 	}
 	kyma.ManagedFields = nil
 	if err := k8sClient.Status().Update(ctx, kyma); err != nil {

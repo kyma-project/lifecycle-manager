@@ -3,7 +3,7 @@ package v1beta2_test
 import (
 	"testing"
 
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
@@ -13,8 +13,8 @@ func TestModuleTemplate_GetComponentDescriptorCacheKey(t *testing.T) {
 	t.Parallel()
 
 	type fields struct {
-		TypeMeta   apimachinerymeta.TypeMeta
-		ObjectMeta apimachinerymeta.ObjectMeta
+		TypeMeta   apimetav1.TypeMeta
+		ObjectMeta apimetav1.ObjectMeta
 		Spec       v1beta2.ModuleTemplateSpec
 	}
 	tests := []struct {
@@ -25,7 +25,7 @@ func TestModuleTemplate_GetComponentDescriptorCacheKey(t *testing.T) {
 		{
 			name: "ModuleTemplate with version annotation",
 			fields: fields{
-				ObjectMeta: apimachinerymeta.ObjectMeta{
+				ObjectMeta: apimetav1.ObjectMeta{
 					Annotations: map[string]string{
 						v1beta2.ModuleVersionAnnotation: "1.1.0",
 					},
@@ -41,7 +41,7 @@ func TestModuleTemplate_GetComponentDescriptorCacheKey(t *testing.T) {
 		{
 			name: "ModuleTemplate without version annotation",
 			fields: fields{
-				ObjectMeta: apimachinerymeta.ObjectMeta{
+				ObjectMeta: apimetav1.ObjectMeta{
 					Name:       "test-module-without-version",
 					Generation: 2,
 				},
@@ -54,7 +54,7 @@ func TestModuleTemplate_GetComponentDescriptorCacheKey(t *testing.T) {
 		{
 			name: "ModuleTemplate without version annotation but with other annotations",
 			fields: fields{
-				ObjectMeta: apimachinerymeta.ObjectMeta{
+				ObjectMeta: apimetav1.ObjectMeta{
 					Name:       "test-module-without-version",
 					Generation: 2,
 					Annotations: map[string]string{
@@ -70,7 +70,7 @@ func TestModuleTemplate_GetComponentDescriptorCacheKey(t *testing.T) {
 		{
 			name: "ModuleTemplate with invalid version annotation ",
 			fields: fields{
-				ObjectMeta: apimachinerymeta.ObjectMeta{
+				ObjectMeta: apimetav1.ObjectMeta{
 					Name:       "test-module-with-invalid-version",
 					Generation: 2,
 					Annotations: map[string]string{

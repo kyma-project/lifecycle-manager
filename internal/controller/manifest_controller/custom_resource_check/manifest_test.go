@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	apiapps "k8s.io/api/apps/v1"
-	apicore "k8s.io/api/core/v1"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiappsv1 "k8s.io/api/apps/v1"
+	apicorev1 "k8s.io/api/core/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -47,7 +47,7 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		Expect(manifestctrltest.InstallManifest(testManifest, imageSpecByte, true)).To(Succeed())
 
 		By("Ensure that deployment and Sample CR are deployed and ready")
-		deploy := &apiapps.Deployment{}
+		deploy := &apiappsv1.Deployment{}
 		Eventually(setDeploymentStatus(deploymentName, deploy), standardTimeout, standardInterval).Should(Succeed())
 		sampleCR := emptySampleCR(manifestName)
 		Eventually(setCRStatus(sampleCR, shared.StateReady), standardTimeout, standardInterval).Should(Succeed())
@@ -99,7 +99,7 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 func asResource(name, namespace, group, version, kind string) shared.Resource {
 	return shared.Resource{
 		Name: name, Namespace: namespace,
-		GroupVersionKind: apimachinerymeta.GroupVersionKind{
+		GroupVersionKind: apimetav1.GroupVersionKind{
 			Group: group, Version: version, Kind: kind,
 		},
 	}
@@ -127,7 +127,7 @@ func emptySampleCR(manifestName string) *unstructured.Unstructured {
 	res.SetGroupVersionKind(
 		schema.GroupVersionKind{Group: "operator.kyma-project.io", Version: "v1alpha1", Kind: "Sample"})
 	res.SetName("sample-cr-" + manifestName)
-	res.SetNamespace(apimachinerymeta.NamespaceDefault)
+	res.SetNamespace(apimetav1.NamespaceDefault)
 	return res
 }
 
@@ -150,11 +150,11 @@ func setCRStatus(moduleCR *unstructured.Unstructured, statusValue shared.State) 
 	}
 }
 
-func setDeploymentStatus(name string, deploy *apiapps.Deployment) func() error {
+func setDeploymentStatus(name string, deploy *apiappsv1.Deployment) func() error {
 	return func() error {
 		err := manifestctrltest.K8sClient.Get(
 			manifestctrltest.Ctx, client.ObjectKey{
-				Namespace: apimachinerymeta.NamespaceDefault,
+				Namespace: apimetav1.NamespaceDefault,
 				Name:      name,
 			}, deploy,
 		)
@@ -165,9 +165,9 @@ func setDeploymentStatus(name string, deploy *apiapps.Deployment) func() error {
 		deploy.Status.ReadyReplicas = *deploy.Spec.Replicas
 		deploy.Status.AvailableReplicas = *deploy.Spec.Replicas
 		deploy.Status.Conditions = append(deploy.Status.Conditions,
-			apiapps.DeploymentCondition{
-				Type:   apiapps.DeploymentAvailable,
-				Status: apicore.ConditionTrue,
+			apiappsv1.DeploymentCondition{
+				Type:   apiappsv1.DeploymentAvailable,
+				Status: apicorev1.ConditionTrue,
 			})
 		err = manifestctrltest.K8sClient.Status().Update(manifestctrltest.Ctx, deploy)
 		if err != nil {

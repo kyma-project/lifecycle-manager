@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
@@ -22,13 +22,13 @@ type KymaBuilder struct {
 func NewKymaBuilder() KymaBuilder {
 	return KymaBuilder{
 		kyma: &v1beta2.Kyma{
-			TypeMeta: apimachinerymeta.TypeMeta{
+			TypeMeta: apimetav1.TypeMeta{
 				APIVersion: v1beta2.GroupVersion.String(),
 				Kind:       string(v1beta2.KymaKind),
 			},
-			ObjectMeta: apimachinerymeta.ObjectMeta{
+			ObjectMeta: apimetav1.ObjectMeta{
 				Name:      RandomName(),
-				Namespace: apimachinerymeta.NamespaceDefault,
+				Namespace: apimetav1.NamespaceDefault,
 			},
 			Spec:   v1beta2.KymaSpec{},
 			Status: v1beta2.KymaStatus{},
@@ -79,9 +79,9 @@ func (kb KymaBuilder) WithChannel(channel string) KymaBuilder {
 }
 
 // WithCondition adds a Condition to v1beta2.Kyma.Status.Conditions.
-func (kb KymaBuilder) WithCondition(condition apimachinerymeta.Condition) KymaBuilder {
+func (kb KymaBuilder) WithCondition(condition apimetav1.Condition) KymaBuilder {
 	if kb.kyma.Status.Conditions == nil {
-		kb.kyma.Status.Conditions = []apimachinerymeta.Condition{}
+		kb.kyma.Status.Conditions = []apimetav1.Condition{}
 	}
 	kb.kyma.Status.Conditions = append(kb.kyma.Status.Conditions, condition)
 	return kb

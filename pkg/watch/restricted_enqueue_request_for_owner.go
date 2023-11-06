@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/meta"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -149,7 +149,7 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequest(
 func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequestFromOwnerReference(
 	oldIfAny, object client.Object,
 	result map[reconcile.Request]any,
-	ref apimachinerymeta.OwnerReference,
+	ref apimetav1.OwnerReference,
 	refGV schema.GroupVersion,
 ) {
 	// Compare the OwnerReference Group and Kind against the OwnerType Group and Kind specified by the user.
@@ -197,7 +197,7 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequestFromOwnerRefe
 // getOwnersReferences returns the OwnerReferences for an object as specified by the EnqueueRequestForOwner
 // - if IsController is true: only take the Controller OwnerReference (if found)
 // - if IsController is false: take all OwnerReferences.
-func (e *RestrictedEnqueueRequestForOwner) getOwnersReferences(object apimachinerymeta.Object) []apimachinerymeta.OwnerReference {
+func (e *RestrictedEnqueueRequestForOwner) getOwnersReferences(object apimetav1.Object) []apimetav1.OwnerReference {
 	if object == nil {
 		return nil
 	}
@@ -207,8 +207,8 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnersReferences(object apimachine
 		return object.GetOwnerReferences()
 	}
 	// If filtered to a Controller, only take the Controller OwnerReference
-	if ownerRef := apimachinerymeta.GetControllerOf(object); ownerRef != nil {
-		return []apimachinerymeta.OwnerReference{*ownerRef}
+	if ownerRef := apimetav1.GetControllerOf(object); ownerRef != nil {
+		return []apimetav1.OwnerReference{*ownerRef}
 	}
 	// No Controller OwnerReference found
 	return nil

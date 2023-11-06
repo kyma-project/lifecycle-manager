@@ -26,7 +26,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/registry"
 	"go.uber.org/zap/zapcore"
-	apicore "k8s.io/api/core/v1"
+	apicorev1 "k8s.io/api/core/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -41,7 +41,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	manifestctrltest "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 
@@ -55,7 +55,7 @@ import (
 var (
 	testEnv    *envtest.Environment
 	k8sManager ctrl.Manager
-	reconciler *declarative.Reconciler
+	reconciler *declarativev2.Reconciler
 	cfg        *rest.Config
 )
 
@@ -95,7 +95,7 @@ var _ = BeforeSuite(
 		//+kubebuilder:scaffold:scheme
 
 		Expect(api.AddToScheme(k8sclientscheme.Scheme)).To(Succeed())
-		Expect(apicore.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
+		Expect(apicorev1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
 		metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
 		if !found {
@@ -123,27 +123,27 @@ var _ = BeforeSuite(
 
 		manifestctrltest.K8sClient = k8sManager.GetClient()
 
-		kcp := &declarative.ClusterInfo{Config: cfg, Client: manifestctrltest.K8sClient}
-		reconciler = declarative.NewFromManager(
+		kcp := &declarativev2.ClusterInfo{Config: cfg, Client: manifestctrltest.K8sClient}
+		reconciler = declarativev2.NewFromManager(
 			k8sManager, &v1beta2.Manifest{},
-			declarative.WithSpecResolver(
+			declarativev2.WithSpecResolver(
 				manifest.NewSpecResolver(kcp),
 			),
-			declarative.WithPermanentConsistencyCheck(true),
-			declarative.WithRemoteTargetCluster(
-				func(_ context.Context, _ declarative.Object) (*declarative.ClusterInfo, error) {
-					return &declarative.ClusterInfo{Config: authUser.Config()}, nil
+			declarativev2.WithPermanentConsistencyCheck(true),
+			declarativev2.WithRemoteTargetCluster(
+				func(_ context.Context, _ declarativev2.Object) (*declarativev2.ClusterInfo, error) {
+					return &declarativev2.ClusterInfo{Config: authUser.Config()}, nil
 				},
 			),
 			manifest.WithClientCacheKey(),
-			declarative.WithPostRun{manifest.PostRunCreateCR},
-			declarative.WithPreDelete{manifest.PreDeleteDeleteCR},
-			declarative.WithCustomReadyCheck(declarative.NewExistsReadyCheck()),
+			declarativev2.WithPostRun{manifest.PostRunCreateCR},
+			declarativev2.WithPreDelete{manifest.PreDeleteDeleteCR},
+			declarativev2.WithCustomReadyCheck(declarativev2.NewExistsReadyCheck()),
 		)
 
 		err = ctrl.NewControllerManagedBy(k8sManager).
 			For(&v1beta2.Manifest{}).
-			Watches(&apicore.Secret{}, handler.Funcs{}).
+			Watches(&apicorev1.Secret{}, handler.Funcs{}).
 			WithOptions(
 				ctrlruntime.Options{
 					RateLimiter: internal.ManifestRateLimiter(

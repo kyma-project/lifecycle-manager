@@ -7,12 +7,12 @@ import (
 	"io"
 
 	"github.com/go-logr/logr"
-	admissionregistration "k8s.io/api/admissionregistration/v1"
-	apiapps "k8s.io/api/apps/v1"
-	apicore "k8s.io/api/core/v1"
-	apirbac "k8s.io/api/rbac/v1"
+	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
+	apiappsv1 "k8s.io/api/apps/v1"
+	apicorev1 "k8s.io/api/core/v1"
+	apirbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -40,13 +40,13 @@ var (
 )
 
 func createSKRSecret(cfg *unstructuredResourcesConfig, secretObjKey client.ObjectKey,
-) *apicore.Secret {
-	return &apicore.Secret{
-		TypeMeta: apimachinerymeta.TypeMeta{
+) *apicorev1.Secret {
+	return &apicorev1.Secret{
+		TypeMeta: apimetav1.TypeMeta{
 			Kind:       "Secret",
-			APIVersion: apicore.SchemeGroupVersion.String(),
+			APIVersion: apicorev1.SchemeGroupVersion.String(),
 		},
-		ObjectMeta: apimachinerymeta.ObjectMeta{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      secretObjKey.Name,
 			Namespace: secretObjKey.Namespace,
 		},
@@ -56,7 +56,7 @@ func createSKRSecret(cfg *unstructuredResourcesConfig, secretObjKey client.Objec
 			tlsCertKey:       cfg.tlsCert,
 			tlsPrivateKeyKey: cfg.tlsKey,
 		},
-		Type: apicore.SecretTypeOpaque,
+		Type: apicorev1.SecretTypeOpaque,
 	}
 }
 
@@ -69,37 +69,37 @@ func ResolveWebhookRuleResources(resource string, fieldName v1beta2.FieldName) [
 
 func generateValidatingWebhookConfigFromWatchers(webhookObjKey,
 	svcObjKey client.ObjectKey, caCert []byte, watchers []v1beta2.Watcher,
-) *admissionregistration.ValidatingWebhookConfiguration {
-	webhooks := make([]admissionregistration.ValidatingWebhook, 0)
+) *admissionregistrationv1.ValidatingWebhookConfiguration {
+	webhooks := make([]admissionregistrationv1.ValidatingWebhook, 0)
 	for _, watcher := range watchers {
 		moduleName := watcher.GetModuleName()
 		webhookName := fmt.Sprintf("%s.%s.operator.kyma-project.io", watcher.Namespace, watcher.Name)
 		svcPath := fmt.Sprintf("/validate/%s", moduleName)
 		watchableResources := ResolveWebhookRuleResources(watcher.Spec.ResourceToWatch.Resource, watcher.Spec.Field)
-		sideEffects := admissionregistration.SideEffectClassNoneOnDryRun
-		failurePolicy := admissionregistration.Ignore
+		sideEffects := admissionregistrationv1.SideEffectClassNoneOnDryRun
+		failurePolicy := admissionregistrationv1.Ignore
 		timeout := new(int32)
 		*timeout = webhookTimeOutInSeconds
-		webhook := admissionregistration.ValidatingWebhook{
+		webhook := admissionregistrationv1.ValidatingWebhook{
 			Name:                    webhookName,
-			ObjectSelector:          &apimachinerymeta.LabelSelector{MatchLabels: watcher.Spec.LabelsToWatch},
+			ObjectSelector:          &apimetav1.LabelSelector{MatchLabels: watcher.Spec.LabelsToWatch},
 			AdmissionReviewVersions: []string{version},
-			ClientConfig: admissionregistration.WebhookClientConfig{
+			ClientConfig: admissionregistrationv1.WebhookClientConfig{
 				CABundle: caCert,
-				Service: &admissionregistration.ServiceReference{
+				Service: &admissionregistrationv1.ServiceReference{
 					Name:      svcObjKey.Name,
 					Namespace: svcObjKey.Namespace,
 					Path:      &svcPath,
 				},
 			},
-			Rules: []admissionregistration.RuleWithOperations{
+			Rules: []admissionregistrationv1.RuleWithOperations{
 				{
-					Rule: admissionregistration.Rule{
+					Rule: admissionregistrationv1.Rule{
 						APIGroups:   []string{watcher.Spec.ResourceToWatch.Group},
 						APIVersions: []string{watcher.Spec.ResourceToWatch.Version},
 						Resources:   watchableResources,
 					},
-					Operations: []admissionregistration.OperationType{
+					Operations: []admissionregistrationv1.OperationType{
 						"CREATE", "UPDATE", "DELETE",
 					},
 				},
@@ -110,12 +110,12 @@ func generateValidatingWebhookConfigFromWatchers(webhookObjKey,
 		}
 		webhooks = append(webhooks, webhook)
 	}
-	return &admissionregistration.ValidatingWebhookConfiguration{
-		TypeMeta: apimachinerymeta.TypeMeta{
+	return &admissionregistrationv1.ValidatingWebhookConfiguration{
+		TypeMeta: apimetav1.TypeMeta{
 			Kind:       "ValidatingWebhookConfiguration",
-			APIVersion: admissionregistration.SchemeGroupVersion.String(),
+			APIVersion: admissionregistrationv1.SchemeGroupVersion.String(),
 		},
-		ObjectMeta: apimachinerymeta.ObjectMeta{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      webhookObjKey.Name,
 			Namespace: webhookObjKey.Namespace,
 		},
@@ -126,8 +126,8 @@ func generateValidatingWebhookConfigFromWatchers(webhookObjKey,
 var errConvertUnstruct = errors.New("failed to convert deployment to unstructured")
 
 func configureClusterRoleBinding(cfg *unstructuredResourcesConfig, resource *unstructured.Unstructured,
-) (*apirbac.ClusterRoleBinding, error) {
-	crb := &apirbac.ClusterRoleBinding{}
+) (*apirbacv1.ClusterRoleBinding, error) {
+	crb := &apirbacv1.ClusterRoleBinding{}
 	if err := machineryruntime.DefaultUnstructuredConverter.FromUnstructured(resource.Object, crb); err != nil {
 		return nil, fmt.Errorf("%w: %w", errConvertUnstruct, err)
 	}
@@ -141,8 +141,8 @@ func configureClusterRoleBinding(cfg *unstructuredResourcesConfig, resource *uns
 }
 
 func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Unstructured,
-) (*apiapps.Deployment, error) {
-	deployment := &apiapps.Deployment{}
+) (*apiappsv1.Deployment, error) {
+	deployment := &apiappsv1.Deployment{}
 	if err := machineryruntime.DefaultUnstructuredConverter.FromUnstructured(obj.Object, deployment); err != nil {
 		return nil, fmt.Errorf("%w: %w", errConvertUnstruct, err)
 	}
@@ -174,9 +174,9 @@ func configureDeployment(cfg *unstructuredResourcesConfig, obj *unstructured.Uns
 	if err != nil {
 		return nil, fmt.Errorf("error parsing memory resource limit: %w", err)
 	}
-	serverContainer.Resources.Limits = map[apicore.ResourceName]resource.Quantity{
-		apicore.ResourceCPU:    cpuResQty,
-		apicore.ResourceMemory: memResQty,
+	serverContainer.Resources.Limits = map[apicorev1.ResourceName]resource.Quantity{
+		apicorev1.ResourceCPU:    cpuResQty,
+		apicorev1.ResourceMemory: memResQty,
 	}
 	deployment.Spec.Template.Spec.Containers[0] = serverContainer
 
@@ -228,10 +228,10 @@ type unstructuredResourcesConfig struct {
 
 func configureUnstructuredObject(cfg *unstructuredResourcesConfig, object *unstructured.Unstructured,
 ) (client.Object, error) {
-	if object.GetAPIVersion() == apiapps.SchemeGroupVersion.String() && object.GetKind() == "Deployment" {
+	if object.GetAPIVersion() == apiappsv1.SchemeGroupVersion.String() && object.GetKind() == "Deployment" {
 		return configureDeployment(cfg, object)
 	}
-	if object.GetAPIVersion() == apirbac.SchemeGroupVersion.String() && object.GetKind() == "ClusterRoleBinding" {
+	if object.GetAPIVersion() == apirbacv1.SchemeGroupVersion.String() && object.GetKind() == "ClusterRoleBinding" {
 		return configureClusterRoleBinding(cfg, object)
 	}
 	return object.DeepCopy(), nil

@@ -12,12 +12,12 @@ import (
 	"os"
 
 	"github.com/google/go-containerregistry/pkg/name"
-	containerregistry "github.com/google/go-containerregistry/pkg/v1"
+	containerregistryv1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/partial"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/onsi/gomega"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -56,11 +56,11 @@ func (m mockLayer) MediaType() (types.MediaType, error) {
 	return types.OCIUncompressedLayer, nil
 }
 
-func (m mockLayer) DiffID() (containerregistry.Hash, error) {
-	return containerregistry.Hash{Algorithm: "fake", Hex: "diff id"}, nil
+func (m mockLayer) DiffID() (containerregistryv1.Hash, error) {
+	return containerregistryv1.Hash{Algorithm: "fake", Hex: "diff id"}, nil
 }
 
-func CreateImageSpecLayer() containerregistry.Layer {
+func CreateImageSpecLayer() containerregistryv1.Layer {
 	layer, err := partial.UncompressedToLayer(mockLayer{filePath: ManifestFilePath})
 	gomega.Expect(err).ToNot(gomega.HaveOccurred())
 	return layer
@@ -142,7 +142,7 @@ func InstallManifest(manifest *v1beta2.Manifest, installSpecByte []byte, enableR
 				"kind":       "Sample",
 				"metadata": map[string]interface{}{
 					"name":      "sample-cr-" + manifest.GetName(),
-					"namespace": apimachinerymeta.NamespaceDefault,
+					"namespace": apimetav1.NamespaceDefault,
 				},
 				"namespace": "default",
 			},
@@ -203,7 +203,7 @@ func GetManifest(manifestName string) (*v1beta2.Manifest, error) {
 	manifest := &v1beta2.Manifest{}
 	err := K8sClient.Get(
 		Ctx, client.ObjectKey{
-			Namespace: apimachinerymeta.NamespaceDefault,
+			Namespace: apimetav1.NamespaceDefault,
 			Name:      manifestName,
 		}, manifest,
 	)
@@ -225,8 +225,8 @@ func DeleteManifestAndVerify(manifest *v1beta2.Manifest) func() error {
 	}
 }
 
-func CredSecretLabelSelector(labelValue string) *apimachinerymeta.LabelSelector {
-	return &apimachinerymeta.LabelSelector{
+func CredSecretLabelSelector(labelValue string) *apimetav1.LabelSelector {
+	return &apimetav1.LabelSelector{
 		MatchLabels: map[string]string{CredSecretLabelKeyForTest: labelValue},
 	}
 }

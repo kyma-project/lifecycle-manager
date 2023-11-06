@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -186,7 +186,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 			GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 		moduleResource = &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMetaFromObject(manifestObject.Spec.Resource),
-			TypeMeta:    apimachinerymeta.TypeMeta{Kind: moduleCRKind, APIVersion: moduleCRAPIVersion},
+			TypeMeta:    apimetav1.TypeMeta{Kind: moduleCRKind, APIVersion: moduleCRAPIVersion},
 		}
 
 		if module.Template.Annotations[v1beta2.IsClusterScopedAnnotation] == v1beta2.EnableLabelValue {
@@ -202,11 +202,11 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 		Version: module.Version,
 		Manifest: &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMetaFromObject(manifestObject),
-			TypeMeta:    apimachinerymeta.TypeMeta{Kind: manifestKind, APIVersion: manifestAPIVersion},
+			TypeMeta:    apimetav1.TypeMeta{Kind: manifestKind, APIVersion: manifestAPIVersion},
 		},
 		Template: &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMetaFromObject(module.Template),
-			TypeMeta:    apimachinerymeta.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
+			TypeMeta:    apimetav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
 		},
 		Resource: moduleResource,
 	}

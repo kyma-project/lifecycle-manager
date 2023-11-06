@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/go-logr/logr"
-	apicore "k8s.io/api/core/v1"
+	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -204,7 +204,7 @@ func (m *SKRWebhookManifestManager) getRawManifestClientObjects(cfg *unstructure
 func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.Context, kcpClient client.Client,
 	kymaObjKey client.ObjectKey, remoteNs string,
 ) (*unstructuredResourcesConfig, error) {
-	tlsSecret := &apicore.Secret{}
+	tlsSecret := &apicorev1.Secret{}
 	certObjKey := client.ObjectKey{
 		Namespace: m.config.IstioNamespace,
 		Name:      ResolveTLSCertName(kymaObjKey.Name),
