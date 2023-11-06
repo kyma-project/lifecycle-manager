@@ -57,8 +57,8 @@ func TestConcurrentSSA(t *testing.T) {
 			nil,
 		},
 	}
-	for _, testCase := range tests {
 
+	for _, testCase := range tests {
 		testCase := testCase
 		t.Run(
 			testCase.name, func(t *testing.T) {
