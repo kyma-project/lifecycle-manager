@@ -346,9 +346,7 @@ func (r *Reconciler) checkTargetReadiness(
 	crStateInfo, err := resourceReadyCheck.Run(ctx, clnt, manifest, target)
 	if err != nil {
 		r.Event(manifest, "Warning", "ResourceReadyCheck", err.Error())
-		if manifest.GetDeletionTimestamp().IsZero() {
-			manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
-		}
+		manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		return err
 	}
 

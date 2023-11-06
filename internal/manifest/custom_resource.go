@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -105,22 +104,4 @@ func PreDeleteDeleteCR(
 		return declarative.ErrRequeueRequired
 	}
 	return nil
-}
-
-func GetModuleCRDName(obj declarative.Object) string {
-	manifest, ok := obj.(*v1beta2.Manifest)
-	if !ok {
-		return ""
-	}
-	if manifest.Spec.Resource == nil {
-		return ""
-	}
-
-	group := manifest.Spec.Resource.GroupVersionKind().Group
-	name := manifest.Spec.Resource.GroupVersionKind().Kind
-	return fmt.Sprintf("%s.%s", getPlural(name), group)
-}
-
-func getPlural(moduleName string) string {
-	return strings.ToLower(moduleName) + "s"
 }
