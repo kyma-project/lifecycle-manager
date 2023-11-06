@@ -28,7 +28,6 @@ const (
 
 func DefaultOptions() *Options {
 	return (&Options{}).Apply(
-		WithDeleteCRDs(false),
 		WithNamespace(metav1.NamespaceDefault, false),
 		WithFinalizer(FinalizerDefault),
 		WithFieldOwner(FieldOwnerDefault),
@@ -245,12 +244,6 @@ func WithSingletonClientCache(cache ClientCache) WithSingletonClientCacheOption 
 
 func (o WithSingletonClientCacheOption) Apply(options *Options) {
 	options.ClientCache = o
-}
-
-type WithDeleteCRDs bool
-
-func (o WithDeleteCRDs) Apply(options *Options) {
-	options.DeletePrerequisites = bool(o)
 }
 
 type ManifestCache string

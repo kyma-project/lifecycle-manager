@@ -81,7 +81,7 @@ func newResourcesCondition(obj Object) metav1.Condition {
 	}
 }
 
-//nolint:funlen,cyclop, gocognit
+//nolint:funlen,cyclop
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	obj, ok := r.prototype.DeepCopyObject().(Object)
 	if !ok {
@@ -133,22 +133,13 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj)
 	}
 
-	converter := NewResourceToInfoConverter(clnt, r.Namespace)
-
-	renderer, err := InitializeRenderer(ctx, obj, spec, r.Options)
-	if err != nil {
-		if !obj.GetDeletionTimestamp().IsZero() {
-			return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
-		}
-		return r.ssaStatus(ctx, obj)
-	}
-	target, current, err := r.renderResources(ctx, clnt, obj, spec, converter)
+	target, current, err := r.renderResources(ctx, clnt, obj, spec)
 	if err != nil {
 		return r.ssaStatus(ctx, obj)
 	}
 
 	diff := ResourceList(current).Difference(target)
-	if err := r.pruneDiff(ctx, clnt, obj, renderer, diff, spec); errors.Is(err, ErrDeletionNotFinished) {
+	if err := r.pruneDiff(ctx, clnt, obj, diff, spec); errors.Is(err, ErrDeletionNotFinished) {
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
 		return r.ssaStatus(ctx, obj)
@@ -250,16 +241,17 @@ func (r *Reconciler) Spec(ctx context.Context, obj Object) (*Spec, error) {
 
 func (r *Reconciler) renderResources(
 	ctx context.Context,
-	clnt client.Client,
+	clnt Client,
 	obj Object,
 	spec *Spec,
-	converter ResourceToInfoConverter,
 ) ([]*resource.Info, []*resource.Info, error) {
 	resourceCondition := newResourcesCondition(obj)
 	status := obj.GetStatus()
 
 	var err error
 	var target, current ResourceList
+
+	converter := NewResourceToInfoConverter(ResourceInfoConverter(clnt), r.Namespace)
 
 	if target, err = r.renderTargetResources(ctx, clnt, converter, obj, spec); err != nil {
 		return nil, nil, err
@@ -455,7 +447,6 @@ func (r *Reconciler) pruneDiff(
 	ctx context.Context,
 	clnt Client,
 	obj Object,
-	renderer Renderer,
 	diff []*resource.Info,
 	spec *Spec,
 ) error {
@@ -479,11 +470,7 @@ func (r *Reconciler) pruneDiff(
 		return err
 	}
 
-	if obj.GetDeletionTimestamp().IsZero() || !r.DeletePrerequisites {
-		return nil
-	}
-
-	return renderer.RemovePrerequisites(ctx, obj)
+	return nil
 }
 
 func manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff []*resource.Info, obj Object, spec *Spec) bool {
