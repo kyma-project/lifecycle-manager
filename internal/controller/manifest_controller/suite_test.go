@@ -40,7 +40,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	"github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
+	manifestctrltest "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
 	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -73,13 +73,13 @@ func TestAPIs(t *testing.T) {
 
 var _ = BeforeSuite(
 	func() {
-		manifesttest.ManifestFilePath = "../../../pkg/test_samples/oci/rendered.yaml"
-		manifesttest.Ctx, manifesttest.Cancel = context.WithCancel(context.TODO())
+		manifestctrltest.ManifestFilePath = "../../../pkg/test_samples/oci/rendered.yaml"
+		manifestctrltest.Ctx, manifestctrltest.Cancel = context.WithCancel(context.TODO())
 		logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
 
 		// create registry and server
 		newReg := registry.New()
-		manifesttest.Server = httptest.NewServer(newReg)
+		manifestctrltest.Server = httptest.NewServer(newReg)
 
 		By("bootstrapping test environment")
 		testEnv = &envtest.Environment{
@@ -121,9 +121,9 @@ var _ = BeforeSuite(
 		)
 		Expect(err).NotTo(HaveOccurred())
 
-		manifesttest.K8sClient = k8sManager.GetClient()
+		manifestctrltest.K8sClient = k8sManager.GetClient()
 
-		kcp := &declarative.ClusterInfo{Config: cfg, Client: manifesttest.K8sClient}
+		kcp := &declarative.ClusterInfo{Config: cfg, Client: manifestctrltest.K8sClient}
 		reconciler = declarative.NewFromManager(
 			k8sManager, &v1beta2.Manifest{},
 			declarative.WithSpecResolver(
@@ -157,7 +157,7 @@ var _ = BeforeSuite(
 
 		go func() {
 			defer GinkgoRecover()
-			err = k8sManager.Start(manifesttest.Ctx)
+			err = k8sManager.Start(manifestctrltest.Ctx)
 			Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 		}()
 	},
@@ -165,9 +165,9 @@ var _ = BeforeSuite(
 
 var _ = AfterSuite(
 	func() {
-		manifesttest.Cancel()
+		manifestctrltest.Cancel()
 		By("tearing down the test environment")
-		manifesttest.Server.Close()
+		manifestctrltest.Server.Close()
 		Eventually(func() error { return testEnv.Stop() }, standardTimeout, standardInterval).Should(Succeed())
 	},
 )

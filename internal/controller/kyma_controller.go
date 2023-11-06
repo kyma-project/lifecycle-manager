@@ -32,7 +32,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	commonMetrics "github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
+	commonmetrics "github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
@@ -568,8 +568,8 @@ func (r *KymaReconciler) IsKymaManaged() bool {
 }
 
 func (r *KymaReconciler) IsMissingMetricsAnnotationOrLabel(err error) bool {
-	return errors.Is(err, commonMetrics.ErrInstanceLabelNoValue) ||
-		errors.Is(err, commonMetrics.ErrMissingInstanceLabel) ||
-		errors.Is(err, commonMetrics.ErrShootAnnotationNoValue) ||
-		errors.Is(err, commonMetrics.ErrMissingShootAnnotation)
+	return errors.Is(err, commonmetrics.ErrInstanceLabelNoValue) ||
+		errors.Is(err, commonmetrics.ErrMissingInstanceLabel) ||
+		errors.Is(err, commonmetrics.ErrShootAnnotationNoValue) ||
+		errors.Is(err, commonmetrics.ErrMissingShootAnnotation)
 }

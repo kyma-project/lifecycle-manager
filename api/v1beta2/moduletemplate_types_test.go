@@ -70,7 +70,7 @@ func TestModuleTemplate_GetComponentDescriptorCacheKey(t *testing.T) {
 		{
 			name: "ModuleTemplate with invalid version annotation ",
 			fields: fields{
-				ObjectMeta: v1.ObjectMeta{
+				ObjectMeta: apimachinerymeta.ObjectMeta{
 					Name:       "test-module-with-invalid-version",
 					Generation: 2,
 					Annotations: map[string]string{

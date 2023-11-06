@@ -82,7 +82,7 @@ type ImageSpec struct {
 	// CredSecretSelector is an optional field, for OCI image saved in private registry,
 	// use it to indicate the secret which contains registry credentials,
 	// must exist in the namespace same as manifest
-	CredSecretSelector *metav1.LabelSelector `json:"credSecretSelector,omitempty"`
+	CredSecretSelector *apimachinerymeta.LabelSelector `json:"credSecretSelector,omitempty"`
 }
 
 type RefTypeMetadata string

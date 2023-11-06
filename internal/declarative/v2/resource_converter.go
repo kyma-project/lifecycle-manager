@@ -3,11 +3,12 @@ package v2
 import (
 	"errors"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/cli-runtime/pkg/resource"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
 type ResourceInfoConverter interface {

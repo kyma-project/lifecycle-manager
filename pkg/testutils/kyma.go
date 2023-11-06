@@ -91,7 +91,7 @@ func DeleteKyma(ctx context.Context,
 	kyma *v1beta2.Kyma,
 ) error {
 	// Foreground deletion is used to make sure the dependents (manifest CR) get deleted first before Kyma is deleted
-	propagation := v1.DeletePropagationForeground
+	propagation := apimachinerymeta.DeletePropagationForeground
 	err := clnt.Delete(ctx, kyma, &client.DeleteOptions{PropagationPolicy: &propagation})
 	if client.IgnoreNotFound(err) != nil {
 		return fmt.Errorf("updating kyma failed %w", err)

@@ -10,7 +10,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -308,7 +308,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 		By("Add skip-reconciliation label to Kyma CR")
 		Eventually(UpdateKymaLabel, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), v2.SkipReconcileLabel, "true").
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), declarative.SkipReconcileLabel, "true").
 			Should(Succeed())
 	})
 
@@ -328,7 +328,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	It("Stop Kyma skip Reconciliation so that it can be deleted", func() {
 		Eventually(UpdateKymaLabel, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), v2.SkipReconcileLabel, "false").
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), declarative.SkipReconcileLabel, "false").
 			Should(Succeed())
 	})
 })

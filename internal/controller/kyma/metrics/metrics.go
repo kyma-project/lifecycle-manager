@@ -10,7 +10,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
+	commonmetrics "github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
 )
 
 const (
@@ -44,11 +44,11 @@ var errMetric = errors.New("failed to update metrics")
 
 // UpdateAll sets both metrics 'lifecycle_mgr_kyma_state' and 'lifecycle_mgr_module_state' to new states.
 func UpdateAll(kyma *v1beta2.Kyma) error {
-	shootID, err := metrics.ExtractShootID(kyma)
+	shootID, err := commonmetrics.ExtractShootID(kyma)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errMetric, err)
 	}
-	instanceID, err := metrics.ExtractInstanceID(kyma)
+	instanceID, err := commonmetrics.ExtractInstanceID(kyma)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errMetric, err)
 	}

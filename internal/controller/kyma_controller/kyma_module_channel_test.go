@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
-	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -383,7 +382,7 @@ func createModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, 
 		template := builder.NewModuleTemplateBuilder().
 			WithModuleName(module.Name).
 			WithChannel(module.Channel).
-			WithOCM(compdesc2.SchemaVersion).Build()
+			WithOCM(compdescv2.SchemaVersion).Build()
 
 		descriptor, err := template.GetDescriptor()
 		if err != nil {

@@ -30,7 +30,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarativetest "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
-	testv1 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -307,7 +306,7 @@ func StartDeclarativeReconcilerForRun(
 func StatusOnCluster(ctx context.Context, key client.ObjectKey,
 	testClient client.Client,
 ) shared.Status {
-	obj := &testv1.TestAPI{}
+	obj := &declarativetest.TestAPI{}
 	Expect(testClient.Get(ctx, key, obj)).To(Succeed())
 	return obj.GetStatus()
 }

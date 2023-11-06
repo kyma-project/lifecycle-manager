@@ -65,6 +65,10 @@ linters-settings:
         alias: certmanagermeta
       - pkg: github.com/google/go-containerregistry/pkg/v1
         alias: containerregistry
+      - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics
+        alias: commonmetrics
+      - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest
+        alias: manifestctrltest
       - pkg: github.com/kyma-project/lifecycle-manager/internal/declarative/v2
         alias: declarative
       - pkg: github.com/kyma-project/lifecycle-manager/internal/declarative/v2/test/v1

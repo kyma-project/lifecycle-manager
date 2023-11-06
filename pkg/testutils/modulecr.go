@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	appsv1 "k8s.io/api/apps/v1"
+	apiapps "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -134,7 +134,7 @@ func ModuleDeploymentExists(ctx context.Context,
 	namespace string,
 	deploymentName string,
 ) bool {
-	var deployment appsv1.Deployment
+	var deployment apiapps.Deployment
 	err := clnt.Get(ctx, client.ObjectKey{
 		Namespace: namespace,
 		Name:      deploymentName,
