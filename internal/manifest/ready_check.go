@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"strings"
 	"time"
 
@@ -59,8 +60,13 @@ func (c *CustomResourceReadyCheck) Run(ctx context.Context,
 		return declarative.StateInfo{State: shared.StateReady}, nil
 	}
 	moduleCR := manifest.Spec.Resource.DeepCopy()
-	if err := clnt.Get(ctx, client.ObjectKeyFromObject(moduleCR), moduleCR); err != nil {
-		return declarative.StateInfo{State: shared.StateError}, declarative.ErrCustomResourceDoesNotExist
+
+	err := clnt.Get(ctx, client.ObjectKeyFromObject(moduleCR), moduleCR)
+	if err != nil {
+		if util.IsNotFound(err) && !manifest.DeletionTimestamp.IsZero() {
+			return declarative.StateInfo{State: shared.StateDeleting}, nil
+		}
+		return declarative.StateInfo{State: shared.StateError}, fmt.Errorf("failed to fetch resource: %w", err)
 	}
 	return HandleState(manifest, moduleCR)
 }

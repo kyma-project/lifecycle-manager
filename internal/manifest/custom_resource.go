@@ -8,8 +8,6 @@ import (
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -38,6 +36,9 @@ func PostRunCreateCR(
 	if manifest.Spec.Resource == nil {
 		return nil
 	}
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		return nil
+	}
 
 	resource := manifest.Spec.Resource.DeepCopy()
 	err := skr.Create(ctx, resource, client.FieldOwner(declarative.CustomResourceManager))
@@ -45,20 +46,18 @@ func PostRunCreateCR(
 		return fmt.Errorf("failed to create resource: %w", err)
 	}
 
-	// only add finalizer if Manifest is not under deletion
-	if obj.GetDeletionTimestamp().IsZero() {
-		oMeta := &v1.PartialObjectMetadata{}
-		oMeta.SetName(obj.GetName())
-		oMeta.SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
-		oMeta.SetNamespace(obj.GetNamespace())
-		oMeta.SetFinalizers(obj.GetFinalizers())
-		if added := controllerutil.AddFinalizer(oMeta, declarative.CustomResourceManager); added {
-			if err := kcp.Patch(
-				ctx, oMeta, client.Apply, client.ForceOwnership, client.FieldOwner(declarative.CustomResourceManager),
-			); err != nil {
-				return fmt.Errorf("failed to patch resource: %w", err)
-			}
+	oMeta := &v1.PartialObjectMetadata{}
+	oMeta.SetName(obj.GetName())
+	oMeta.SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
+	oMeta.SetNamespace(obj.GetNamespace())
+	oMeta.SetFinalizers(obj.GetFinalizers())
+	if added := controllerutil.AddFinalizer(oMeta, declarative.CustomResourceManager); added {
+		if err := kcp.Patch(
+			ctx, oMeta, client.Apply, client.ForceOwnership, client.FieldOwner(declarative.CustomResourceManager),
+		); err != nil {
+			return fmt.Errorf("failed to patch resource: %w", err)
 		}
+		return declarative.ErrRequeueRequired
 	}
 	return nil
 }
@@ -89,20 +88,6 @@ func PreDeleteDeleteCR(
 		return nil
 	}
 
-	var crd unstructured.Unstructured
-	crd.SetName(GetModuleCRDName(obj))
-	crd.SetGroupVersionKind(schema.GroupVersionKind{
-		Version: "v1",
-		Group:   "apiextensions.k8s.io",
-		Kind:    "CustomResourceDefinition",
-	})
-	crdCopy := crd.DeepCopy()
-	err = skr.Delete(ctx, crdCopy, &client.DeleteOptions{PropagationPolicy: &propagation})
-
-	if !util.IsNotFound(err) {
-		return nil
-	}
-
 	onCluster := manifest.DeepCopy()
 	err = kcp.Get(ctx, client.ObjectKeyFromObject(obj), onCluster)
 	if util.IsNotFound(err) {
@@ -117,6 +102,7 @@ func PreDeleteDeleteCR(
 		); err != nil {
 			return fmt.Errorf("failed to update resource: %w", err)
 		}
+		return declarative.ErrRequeueRequired
 	}
 	return nil
 }

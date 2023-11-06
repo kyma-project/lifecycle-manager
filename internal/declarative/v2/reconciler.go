@@ -21,14 +21,12 @@ import (
 )
 
 var (
-	ErrWarningResourceSyncStateDiff              = errors.New("resource syncTarget state diff detected")
-	ErrResourceSyncDiffInSameOCILayer            = errors.New("resource syncTarget diff detected but in same oci layer, prevent sync resource to be deleted") //nolint:lll
-	ErrInstallationConditionRequiresUpdate       = errors.New("installation condition needs an update")
-	ErrDeletionTimestampSetButNotInDeletingState = errors.New("resource is not set to deleting yet")
-	ErrObjectHasEmptyState                       = errors.New("object has an empty state")
-	ErrKubeconfigFetchFailed                     = errors.New("could not fetch kubeconfig")
-	ErrCustomResourceDoesNotExist                = errors.New("custom resource does not exist")
-	errManifestShouldBeDeleted                   = errors.New("manifest should be deleted")
+	ErrWarningResourceSyncStateDiff        = errors.New("resource syncTarget state diff detected")
+	ErrResourceSyncDiffInSameOCILayer      = errors.New("resource syncTarget diff detected but in same oci layer, prevent sync resource to be deleted") //nolint:lll
+	ErrInstallationConditionRequiresUpdate = errors.New("installation condition needs an update")
+	ErrObjectHasEmptyState                 = errors.New("object has an empty state")
+	ErrKubeconfigFetchFailed               = errors.New("could not fetch kubeconfig")
+	ErrRequeueRequired                     = errors.New("requeue required")
 )
 
 const (
@@ -144,7 +142,6 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		}
 		return r.ssaStatus(ctx, obj)
 	}
-
 	target, current, err := r.renderResources(ctx, clnt, obj, spec, converter)
 	if err != nil {
 		return r.ssaStatus(ctx, obj)
@@ -157,18 +154,17 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj)
 	}
 
-	resourceCRDeleted, err := r.DeletionCheck.Run(ctx, clnt, obj)
-	if err != nil {
+	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
+		if errors.Is(err, ErrRequeueRequired) {
+			return ctrl.Result{Requeue: true}, nil
+		}
 		return r.ssaStatus(ctx, obj)
 	}
-	if !obj.GetDeletionTimestamp().IsZero() && resourceCRDeleted {
-		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
-	}
 
-	err = r.syncResources(ctx, clnt, obj, target)
-	if err != nil && errors.Is(err, ErrCustomResourceDoesNotExist) && !obj.GetDeletionTimestamp().IsZero() {
-		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
-	} else if err != nil {
+	if err = r.syncResources(ctx, clnt, obj, target); err != nil {
+		if errors.Is(err, ErrRequeueRequired) {
+			return ctrl.Result{Requeue: true}, nil
+		}
 		return r.ssaStatus(ctx, obj)
 	}
 
@@ -229,9 +225,7 @@ func (r *Reconciler) initialize(obj Object) error {
 		status.Synced = []shared.Resource{}
 	}
 
-	if !obj.GetDeletionTimestamp().IsZero() {
-		status.State = shared.StateDeleting
-	} else if status.State == "" {
+	if status.State == "" {
 		obj.SetStatus(status.WithState(shared.StateProcessing).WithErr(ErrObjectHasEmptyState))
 		return ErrObjectHasEmptyState
 	}
@@ -304,17 +298,10 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 	if hasDiff(oldSynced, newSynced) {
 		if obj.GetDeletionTimestamp().IsZero() {
 			obj.SetStatus(status.WithState(shared.StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
+		} else {
+			obj.SetStatus(status.WithState(shared.StateDeleting).WithOperation("manifest should be deleted"))
 		}
 		return ErrWarningResourceSyncStateDiff
-	} else if !obj.GetDeletionTimestamp().IsZero() {
-		state, err := r.CustomReadyCheck.Run(ctx, clnt, obj, target)
-		if errors.Is(err, ErrCustomResourceDoesNotExist) || state.State == shared.StateDeleting {
-			obj.SetStatus(status.WithState(shared.StateDeleting).WithOperation(errManifestShouldBeDeleted.Error()))
-			if errors.Is(err, ErrCustomResourceDoesNotExist) {
-				return ErrCustomResourceDoesNotExist
-			}
-			return errManifestShouldBeDeleted
-		}
 	}
 
 	for i := range r.PostRuns {
@@ -359,7 +346,7 @@ func (r *Reconciler) checkTargetReadiness(
 	crStateInfo, err := resourceReadyCheck.Run(ctx, clnt, manifest, target)
 	if err != nil {
 		r.Event(manifest, "Warning", "ResourceReadyCheck", err.Error())
-		if !manifest.GetDeletionTimestamp().IsZero() {
+		if manifest.GetDeletionTimestamp().IsZero() {
 			manifest.SetStatus(status.WithState(shared.StateError).WithErr(err))
 		}
 		return err
@@ -479,11 +466,6 @@ func (r *Reconciler) pruneDiff(
 	if err != nil {
 		return err
 	}
-	resourceName := r.ModuleCRDName(obj)
-	diff, err = pruneResource(diff, "CustomResourceDefinition", resourceName)
-	if err != nil {
-		return err
-	}
 
 	if manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff, obj, spec) {
 		// This case should not happen normally, but if happens, it means the resources read from cache is incomplete,
@@ -493,10 +475,6 @@ func (r *Reconciler) pruneDiff(
 		obj.SetStatus(obj.GetStatus().WithState(shared.StateWarning).WithOperation(ErrResourceSyncDiffInSameOCILayer.Error()))
 		r.ManifestParser.EvictCache(spec)
 		return ErrResourceSyncDiffInSameOCILayer
-	}
-
-	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
-		return err
 	}
 
 	if err := r.deleteDiffResources(ctx, clnt, obj, diff); err != nil {
