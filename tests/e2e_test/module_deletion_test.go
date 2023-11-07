@@ -104,7 +104,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
 				Should(Succeed())
 			By("Then the Module will be updated on SKR")
-			Consistently(DeploymentIsReady).
+			Eventually(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments("template-operator-v2-controller-manager", "template-operator-system", runtimeClient).
 				Should(Succeed())
