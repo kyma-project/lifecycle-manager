@@ -277,7 +277,6 @@ func StartDeclarativeReconcilerForRun(
 			WithCustomReadyCheck(NewExistsReadyCheck()),
 			WithCustomResourceLabels(labels.Set{testRunLabel: runID}),
 			WithPeriodicConsistencyCheck(2*time.Second),
-			WithModuleCRDName(func(obj Object) string { return "" }),
 		)...,
 	)
 	// in case there is any leak of CRs from another test run, but this is most likely never necessary

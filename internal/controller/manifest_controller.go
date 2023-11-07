@@ -94,7 +94,6 @@ func ManifestReconciler(
 		declarative.WithPostRun{manifest.PostRunCreateCR},
 		declarative.WithPreDelete{manifest.PreDeleteDeleteCR},
 		declarative.WithPeriodicConsistencyCheck(checkInterval),
-		declarative.WithModuleCRDName(manifest.GetModuleCRDName),
 		declarative.WithModuleCRDeletionCheck(manifest.NewModuleCRDeletionCheck()),
 	)
 }

@@ -15,7 +15,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-var ErrManifestResourceIsNil = errors.New("manifest spec.resource is nil")
+var (
+	ErrManifestResourceIsNil = errors.New("manifest spec.resource is nil")
+	ErrManifestsExist        = errors.New("cluster contains manifest CRs")
+)
 
 func NewTestManifest(prefix string) *v1beta2.Manifest {
 	return &v1beta2.Manifest{
@@ -56,7 +59,7 @@ func GetManifest(ctx context.Context,
 		}, manifest,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("get maifest %w", err)
+		return nil, fmt.Errorf("get manifest: %w", err)
 	}
 	return manifest, nil
 }
@@ -84,6 +87,19 @@ func ManifestExists(
 ) error {
 	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
 	return CRExists(manifest, err)
+}
+
+func NoManifestExist(ctx context.Context,
+	clnt client.Client,
+) error {
+	manifestList := &v1beta2.ManifestList{}
+	if err := clnt.List(ctx, manifestList); err != nil {
+		return fmt.Errorf("error listing manifests: %w", err)
+	}
+	if len(manifestList.Items) == 0 {
+		return nil
+	}
+	return fmt.Errorf("error checking no manifests exist on cluster: %w", ErrManifestsExist)
 }
 
 func UpdateManifestState(

@@ -21,7 +21,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/blang/semver"
+	"github.com/Masterminds/semver/v3"
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -188,7 +188,7 @@ func init() {
 func (m *ModuleTemplate) GetComponentDescriptorCacheKey() string {
 	if m.Annotations != nil {
 		moduleVersion := m.Annotations[ModuleVersionAnnotation]
-		_, err := semver.Parse(moduleVersion)
+		_, err := semver.NewVersion(moduleVersion)
 		if moduleVersion != "" && err == nil {
 			return fmt.Sprintf("%s:%s:%s", m.Name, m.Spec.Channel, moduleVersion)
 		}

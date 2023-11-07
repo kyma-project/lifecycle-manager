@@ -74,7 +74,7 @@ func TestModuleTemplate_GetComponentDescriptorCacheKey(t *testing.T) {
 					Generation: 2,
 					Annotations: map[string]string{
 						v1beta2.IsClusterScopedAnnotation: "true",
-						v1beta2.ModuleVersionAnnotation:   "1",
+						v1beta2.ModuleVersionAnnotation:   "a",
 					},
 				},
 				Spec: v1beta2.ModuleTemplateSpec{

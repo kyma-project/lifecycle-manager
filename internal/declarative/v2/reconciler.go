@@ -26,6 +26,7 @@ var (
 	ErrInstallationConditionRequiresUpdate = errors.New("installation condition needs an update")
 	ErrObjectHasEmptyState                 = errors.New("object has an empty state")
 	ErrKubeconfigFetchFailed               = errors.New("could not fetch kubeconfig")
+	ErrRequeueRequired                     = errors.New("requeue required")
 )
 
 const (
@@ -132,32 +133,29 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj)
 	}
 
-	converter := NewResourceToInfoConverter(clnt, r.Namespace)
-
-	renderer, err := InitializeRenderer(ctx, obj, spec, r.Options)
-	if err != nil {
-		if !obj.GetDeletionTimestamp().IsZero() {
-			return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
-		}
-		return r.ssaStatus(ctx, obj)
-	}
-
-	target, current, err := r.renderResources(ctx, clnt, obj, spec, converter)
+	target, current, err := r.renderResources(ctx, clnt, obj, spec)
 	if err != nil {
 		return r.ssaStatus(ctx, obj)
 	}
 
 	diff := ResourceList(current).Difference(target)
-	if err := r.pruneDiff(ctx, clnt, obj, renderer, diff, spec); errors.Is(err, ErrDeletionNotFinished) {
+	if err := r.pruneDiff(ctx, clnt, obj, diff, spec); errors.Is(err, ErrDeletionNotFinished) {
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
 		return r.ssaStatus(ctx, obj)
 	}
 
-	if !obj.GetDeletionTimestamp().IsZero() {
-		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
+	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
+		if errors.Is(err, ErrRequeueRequired) {
+			return ctrl.Result{Requeue: true}, nil
+		}
+		return r.ssaStatus(ctx, obj)
 	}
-	if err := r.syncResources(ctx, clnt, obj, target); err != nil {
+
+	if err = r.syncResources(ctx, clnt, obj, target); err != nil {
+		if errors.Is(err, ErrRequeueRequired) {
+			return ctrl.Result{Requeue: true}, nil
+		}
 		return r.ssaStatus(ctx, obj)
 	}
 
@@ -166,6 +164,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if requireUpdateSyncedOCIRefAnnotation(obj, spec.OCIRef) {
 		updateSyncedOCIRefAnnotation(obj, spec.OCIRef)
 		return ctrl.Result{Requeue: true}, r.Update(ctx, obj) //nolint:wrapcheck
+	}
+
+	if !obj.GetDeletionTimestamp().IsZero() {
+		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
 	}
 	return r.CtrlOnSuccess, nil
 }
@@ -239,16 +241,17 @@ func (r *Reconciler) Spec(ctx context.Context, obj Object) (*Spec, error) {
 
 func (r *Reconciler) renderResources(
 	ctx context.Context,
-	clnt client.Client,
+	clnt Client,
 	obj Object,
 	spec *Spec,
-	converter ResourceToInfoConverter,
 ) ([]*resource.Info, []*resource.Info, error) {
 	resourceCondition := newResourcesCondition(obj)
 	status := obj.GetStatus()
 
 	var err error
 	var target, current ResourceList
+
+	converter := NewResourceToInfoConverter(ResourceInfoConverter(clnt), r.Namespace)
 
 	if target, err = r.renderTargetResources(ctx, clnt, converter, obj, spec); err != nil {
 		return nil, nil, err
@@ -285,7 +288,11 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 	status.Synced = newSynced
 
 	if hasDiff(oldSynced, newSynced) {
-		obj.SetStatus(status.WithState(shared.StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
+		if obj.GetDeletionTimestamp().IsZero() {
+			obj.SetStatus(status.WithState(shared.StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
+		} else {
+			obj.SetStatus(status.WithState(shared.StateDeleting).WithOperation("manifest should be deleted"))
+		}
 		return ErrWarningResourceSyncStateDiff
 	}
 
@@ -440,17 +447,11 @@ func (r *Reconciler) pruneDiff(
 	ctx context.Context,
 	clnt Client,
 	obj Object,
-	renderer Renderer,
 	diff []*resource.Info,
 	spec *Spec,
 ) error {
 	var err error
 	diff, err = pruneResource(diff, "Namespace", namespaceNotBeRemoved)
-	if err != nil {
-		return err
-	}
-	resourceName := r.ModuleCRDName(obj)
-	diff, err = pruneResource(diff, "CustomResourceDefinition", resourceName)
 	if err != nil {
 		return err
 	}
@@ -465,19 +466,11 @@ func (r *Reconciler) pruneDiff(
 		return ErrResourceSyncDiffInSameOCILayer
 	}
 
-	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
-		return err
-	}
-
 	if err := r.deleteDiffResources(ctx, clnt, obj, diff); err != nil {
 		return err
 	}
 
-	if obj.GetDeletionTimestamp().IsZero() || !r.DeletePrerequisites {
-		return nil
-	}
-
-	return renderer.RemovePrerequisites(ctx, obj)
+	return nil
 }
 
 func manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff []*resource.Info, obj Object, spec *Spec) bool {
