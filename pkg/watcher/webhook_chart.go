@@ -15,7 +15,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// TODO PKI move consts into other file if they are not needed here.
 const (
 	webhookTLSCfgNameTpl = "%s-webhook-tls"
 	defaultBufferSize    = 2048
