@@ -10,6 +10,12 @@ type SpecResolver interface {
 	Spec(ctx context.Context, object Object, remoteClient client.Client) (*Spec, error)
 }
 
+type RenderMode string
+
+const (
+	RenderModeRaw RenderMode = "raw"
+)
+
 type Spec struct {
 	ManifestName string
 	Path         string

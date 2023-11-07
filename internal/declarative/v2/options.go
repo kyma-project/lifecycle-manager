@@ -28,7 +28,6 @@ const (
 
 func DefaultOptions() *Options {
 	return (&Options{}).Apply(
-		WithDeleteCRDs(false),
 		WithNamespace(metav1.NamespaceDefault, false),
 		WithFinalizer(FinalizerDefault),
 		WithFieldOwner(FieldOwnerDefault),
@@ -62,8 +61,6 @@ type Options struct {
 
 	Namespace       string
 	CreateNamespace bool
-
-	ModuleCRDName func(obj Object) string
 
 	Finalizer string
 
@@ -122,12 +119,6 @@ type WithFinalizer string
 
 func (o WithFinalizer) Apply(options *Options) {
 	options.Finalizer = string(o)
-}
-
-type WithModuleCRDName func(obj Object) string
-
-func (o WithModuleCRDName) Apply(options *Options) {
-	options.ModuleCRDName = o
 }
 
 type WithManagerOption struct {
@@ -253,12 +244,6 @@ func WithSingletonClientCache(cache ClientCache) WithSingletonClientCacheOption 
 
 func (o WithSingletonClientCacheOption) Apply(options *Options) {
 	options.ClientCache = o
-}
-
-type WithDeleteCRDs bool
-
-func (o WithDeleteCRDs) Apply(options *Options) {
-	options.DeletePrerequisites = bool(o)
 }
 
 type ManifestCache string

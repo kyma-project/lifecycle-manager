@@ -145,7 +145,6 @@ var _ = BeforeSuite(
 			declarative.WithPostRun{manifest.PostRunCreateCR},
 			declarative.WithPreDelete{manifest.PreDeleteDeleteCR},
 			declarative.WithCustomReadyCheck(manifest.NewCustomResourceReadyCheck()),
-			declarative.WithModuleCRDName(manifest.GetModuleCRDName),
 		)
 
 		err = ctrl.NewControllerManagedBy(k8sManager).

@@ -154,7 +154,7 @@ jobs:
         with:
           repository: kyma-project/template-operator
           path: template-operator
-      - name: Create Template Operator Module
+      - name: Create Template Operator Module and apply
         working-directory: template-operator
         if: ${{ matrix.e2e-test == 'kyma-metrics' ||
           matrix.e2e-test == 'non-blocking-deletion' ||
@@ -173,9 +173,14 @@ jobs:
         working-directory: lifecycle-manager
         if: ${{ matrix.e2e-test == 'module-upgrade'}}
         run: |
-          kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_fast.yaml
-          kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_regular.yaml
-      - name: Create Template Operator Module with final state `Warning`
+          kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
+          kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml
+      - name: Apply Template Operator Module V2, fast channel
+        working-directory: ./lifecycle-manager
+        if: ${{ matrix.e2e-test == 'non-blocking-deletion' }}
+        run: |
+          kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
+      - name: Create Template Operator Module with final state `Warning` and apply
         working-directory: template-operator
         if: ${{ matrix.e2e-test == 'module-status-propagation'}}
         run: |
@@ -191,7 +196,7 @@ jobs:
           kubectl config use-context k3d-kcp
           kubectl get crds
           kubectl apply -f template.yaml
-      - name: Create Template Operator Module without default CR
+      - name: Create Template Operator Module without default CR and apply
         working-directory: template-operator
         if: ${{ matrix.e2e-test == 'module-without-default-cr' }}
         run: |

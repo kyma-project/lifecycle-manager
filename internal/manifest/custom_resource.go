@@ -4,12 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -38,6 +35,9 @@ func PostRunCreateCR(
 	if manifest.Spec.Resource == nil {
 		return nil
 	}
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		return nil
+	}
 
 	resource := manifest.Spec.Resource.DeepCopy()
 	err := skr.Create(ctx, resource, client.FieldOwner(declarative.CustomResourceManager))
@@ -56,6 +56,7 @@ func PostRunCreateCR(
 		); err != nil {
 			return fmt.Errorf("failed to patch resource: %w", err)
 		}
+		return declarative.ErrRequeueRequired
 	}
 	return nil
 }
@@ -86,20 +87,6 @@ func PreDeleteDeleteCR(
 		return nil
 	}
 
-	var crd unstructured.Unstructured
-	crd.SetName(GetModuleCRDName(obj))
-	crd.SetGroupVersionKind(schema.GroupVersionKind{
-		Version: "v1",
-		Group:   "apiextensions.k8s.io",
-		Kind:    "CustomResourceDefinition",
-	})
-	crdCopy := crd.DeepCopy()
-	err = skr.Delete(ctx, crdCopy, &client.DeleteOptions{PropagationPolicy: &propagation})
-
-	if !util.IsNotFound(err) {
-		return nil
-	}
-
 	onCluster := manifest.DeepCopy()
 	err = kcp.Get(ctx, client.ObjectKeyFromObject(obj), onCluster)
 	if util.IsNotFound(err) {
@@ -114,24 +101,7 @@ func PreDeleteDeleteCR(
 		); err != nil {
 			return fmt.Errorf("failed to update resource: %w", err)
 		}
+		return declarative.ErrRequeueRequired
 	}
 	return nil
-}
-
-func GetModuleCRDName(obj declarative.Object) string {
-	manifest, ok := obj.(*v1beta2.Manifest)
-	if !ok {
-		return ""
-	}
-	if manifest.Spec.Resource == nil {
-		return ""
-	}
-
-	group := manifest.Spec.Resource.GroupVersionKind().Group
-	name := manifest.Spec.Resource.GroupVersionKind().Kind
-	return fmt.Sprintf("%s.%s", getPlural(name), group)
-}
-
-func getPlural(moduleName string) string {
-	return strings.ToLower(moduleName) + "s"
 }

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	appsv1 "k8s.io/api/apps/v1"
@@ -59,7 +61,12 @@ func (c *CustomResourceReadyCheck) Run(ctx context.Context,
 		return declarative.StateInfo{State: shared.StateReady}, nil
 	}
 	moduleCR := manifest.Spec.Resource.DeepCopy()
-	if err := clnt.Get(ctx, client.ObjectKeyFromObject(moduleCR), moduleCR); err != nil {
+
+	err := clnt.Get(ctx, client.ObjectKeyFromObject(moduleCR), moduleCR)
+	if err != nil {
+		if util.IsNotFound(err) && !manifest.DeletionTimestamp.IsZero() {
+			return declarative.StateInfo{State: shared.StateDeleting}, nil
+		}
 		return declarative.StateInfo{State: shared.StateError}, fmt.Errorf("failed to fetch resource: %w", err)
 	}
 	return HandleState(manifest, moduleCR)
