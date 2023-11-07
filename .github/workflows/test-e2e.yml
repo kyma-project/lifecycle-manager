@@ -3,21 +3,8 @@ name: TestSuite E2E
 on:
   push:
     branches: [ "main" ]
-    paths:
-      - 'go.mod'
-      - 'go.sum'
-      - 'Makefile'
-      - '**.go'
-      - '**.ya?ml'
   pull_request:
     branches: [ "main" ]
-    paths:
-      - 'go.mod'
-      - 'go.sum'
-      - 'Makefile'
-      - '**.sh'
-      - '**.go'
-      - '**.ya?ml'
 jobs:
   wait-for-img:
     name: "Wait for Image Build"
