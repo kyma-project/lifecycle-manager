@@ -104,7 +104,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
 				Should(Succeed())
 			By("Then the Module will be updated on SKR")
-			Eventually(DeploymentIsReady).
+			Consistently(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments("template-operator-v2-controller-manager", "template-operator-system", runtimeClient).
 				Should(Succeed())
@@ -131,7 +131,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 				WithArguments("sample-yaml", "kyma-system", "operator.kyma-project.io", "v1alpha1", "Sample",
 					[]string{}, runtimeClient).
 				Should(Succeed())
-			By("Then a new Default Module CR is created")
+			By("Then a new Default Module CR is created and in a \"Ready\" State")
 			Eventually(CheckIfExists).
 				WithContext(ctx).
 				WithArguments("sample-yaml", "kyma-system", "operator.kyma-project.io", "v1alpha1", "Sample",
@@ -140,6 +140,15 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 			Eventually(SampleCRNoDeletionTimeStampSet).
 				WithContext(ctx).
 				WithArguments("sample-yaml", "kyma-system", runtimeClient).
+				Should(Succeed())
+			Consistently(CheckSampleCRIsInState).
+				WithContext(ctx).
+				WithArguments("sample-yaml", "kyma-system", runtimeClient, "Ready").
+				Should(Succeed())
+			By("And Module Deployment is running")
+			Consistently(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments("template-operator-v2-controller-manager", "template-operator-system", runtimeClient).
 				Should(Succeed())
 			By("And a new Manifest CR is created")
 			Eventually(CheckManifestIsInState).
