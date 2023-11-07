@@ -580,14 +580,10 @@ func (r *Reconciler) ssaStatus(ctx context.Context, obj client.Object) (ctrl.Res
 	obj.SetUID("")
 	obj.SetManagedFields(nil)
 	obj.SetResourceVersion("")
-	// TODO: replace the SubResourcePatchOptions with  client.ForceOwnership, r.FieldOwner in later compatible version
-	return ctrl.Result{Requeue: true}, r.Status().Patch( //nolint:wrapcheck
-		ctx, obj, client.Apply, subResourceOpts(client.ForceOwnership, r.FieldOwner),
-	)
-}
 
-func subResourceOpts(opts ...client.PatchOption) client.SubResourcePatchOption {
-	return &client.SubResourcePatchOptions{PatchOptions: *(&client.PatchOptions{}).ApplyOptions(opts)}
+	return ctrl.Result{Requeue: true}, r.Status().Patch( //nolint:wrapcheck
+		ctx, obj, client.Apply, client.ForceOwnership, r.FieldOwner,
+	)
 }
 
 func (r *Reconciler) ssa(ctx context.Context, obj client.Object) (ctrl.Result, error) {

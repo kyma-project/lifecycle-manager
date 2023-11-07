@@ -96,11 +96,11 @@ func (r *RunnerImpl) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	if err := r.setupModule(module, kyma); err != nil {
 		return err
 	}
-	obj, err := r.converter.ConvertToVersion(module.Object, r.versioner)
+	obj, err := r.converter.ConvertToVersion(module.Manifest, r.versioner)
 	if err != nil {
 		return fmt.Errorf("failed to convert object to version: %w", err)
 	}
-	manifestObj, ok := obj.(client.Object)
+	manifestObj, ok := obj.(*v1beta2.Manifest)
 	if !ok {
 		return commonErrors.ErrTypeAssert
 	}
@@ -111,13 +111,13 @@ func (r *RunnerImpl) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	); err != nil {
 		return fmt.Errorf("error applying manifest %s: %w", client.ObjectKeyFromObject(module), err)
 	}
-	module.Object = manifestObj
+	module.Manifest = manifestObj
 
 	return nil
 }
 
 func (r *RunnerImpl) deleteManifest(ctx context.Context, module *common.Module) error {
-	err := r.Delete(ctx, module.Object)
+	err := r.Delete(ctx, module.Manifest)
 	if util.IsNotFound(err) {
 		return nil
 	}
@@ -130,7 +130,7 @@ func (r *RunnerImpl) setupModule(module *common.Module, kyma *v1beta2.Kyma) erro
 	refs := module.GetOwnerReferences()
 	if len(refs) == 0 {
 		// set owner reference
-		if err := controllerutil.SetControllerReference(kyma, module.Object, r.Scheme()); err != nil {
+		if err := controllerutil.SetControllerReference(kyma, module.Manifest, r.Scheme()); err != nil {
 			return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w",
 				module.GetName(), kyma.Name, err)
 		}
@@ -178,18 +178,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 			Message: module.Template.Err.Error(),
 		}
 	}
-	manifestObject, ok := module.Object.(*v1beta2.Manifest)
-	if !ok {
-		// TODO: impossible case, remove casting check after module use typed Manifest instead of client.Object
-		return v1beta2.ModuleStatus{
-			Name:    module.ModuleName,
-			Channel: module.Template.DesiredChannel,
-			FQDN:    module.FQDN,
-			State:   shared.StateError,
-			Message: ErrManifestConversion.Error(),
-		}
-	}
-
+	manifestObject := module.Manifest
 	manifestAPIVersion, manifestKind := manifestObject.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	templateAPIVersion, templateKind := module.Template.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	var moduleResource *v1beta2.TrackingObject
