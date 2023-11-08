@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	ctrlMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
-	listenerMetrics "github.com/kyma-project/runtime-watcher/listener/pkg/metrics"
+	watchermetrics "github.com/kyma-project/runtime-watcher/listener/pkg/metrics"
 	"github.com/prometheus/client_golang/prometheus"
+	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	commonmetrics "github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
 )
 
 const (
@@ -35,20 +35,20 @@ var (
 )
 
 func Initialize() {
-	ctrlMetrics.Registry.MustRegister(kymaStateGauge)
-	ctrlMetrics.Registry.MustRegister(moduleStateGauge)
-	listenerMetrics.Init(ctrlMetrics.Registry)
+	ctrlmetrics.Registry.MustRegister(kymaStateGauge)
+	ctrlmetrics.Registry.MustRegister(moduleStateGauge)
+	watchermetrics.Init(ctrlmetrics.Registry)
 }
 
 var errMetric = errors.New("failed to update metrics")
 
 // UpdateAll sets both metrics 'lifecycle_mgr_kyma_state' and 'lifecycle_mgr_module_state' to new states.
 func UpdateAll(kyma *v1beta2.Kyma) error {
-	shootID, err := metrics.ExtractShootID(kyma)
+	shootID, err := commonmetrics.ExtractShootID(kyma)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errMetric, err)
 	}
-	instanceID, err := metrics.ExtractInstanceID(kyma)
+	instanceID, err := commonmetrics.ExtractInstanceID(kyma)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errMetric, err)
 	}
@@ -60,43 +60,23 @@ func UpdateAll(kyma *v1beta2.Kyma) error {
 	return nil
 }
 
-// RemoveKymaStateMetrics deletes all 'lifecycle_mgr_kyma_state' metrics for the matching Kyma.
-func RemoveKymaStateMetrics(kyma *v1beta2.Kyma) error {
-	shootID, err := metrics.ExtractShootID(kyma)
-	if err != nil {
-		return err
-	}
-	instanceID, err := metrics.ExtractInstanceID(kyma)
-	if err != nil {
-		return err
-	}
-
+// CleanupMetrics deletes all 'lifecycle_mgr_kyma_state',
+// 'lifecycle_mgr_module_state' metrics for the matching Kyma.
+func CleanupMetrics(kyma *v1beta2.Kyma) {
 	kymaStateGauge.DeletePartialMatch(prometheus.Labels{
-		kymaNameLabel:   kyma.Name,
-		shootIDLabel:    shootID,
-		instanceIDLabel: instanceID,
+		kymaNameLabel: kyma.Name,
 	})
-	return nil
+	moduleStateGauge.DeletePartialMatch(prometheus.Labels{
+		kymaNameLabel: kyma.Name,
+	})
 }
 
 // RemoveModuleStateMetrics deletes all 'lifecycle_mgr_module_state' metrics for the matching module.
-func RemoveModuleStateMetrics(kyma *v1beta2.Kyma, moduleName string) error {
-	shootID, err := metrics.ExtractShootID(kyma)
-	if err != nil {
-		return err
-	}
-	instanceID, err := metrics.ExtractInstanceID(kyma)
-	if err != nil {
-		return err
-	}
-
+func RemoveModuleStateMetrics(kyma *v1beta2.Kyma, moduleName string) {
 	moduleStateGauge.DeletePartialMatch(prometheus.Labels{
 		moduleNameLabel: moduleName,
 		kymaNameLabel:   kyma.Name,
-		shootIDLabel:    shootID,
-		instanceIDLabel: instanceID,
 	})
-	return nil
 }
 
 func setKymaStateGauge(newState shared.State, kymaName, shootID, instanceID string) {

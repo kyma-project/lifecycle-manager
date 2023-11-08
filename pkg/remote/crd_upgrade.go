@@ -7,21 +7,22 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/cache"
-	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/discovery"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/cache"
 )
 
-func PatchCRD(ctx context.Context, clnt client.Client, crd *v1extensions.CustomResourceDefinition) error {
-	crdToApply := &v1extensions.CustomResourceDefinition{}
+func PatchCRD(ctx context.Context, clnt client.Client, crd *apiextensionsv1.CustomResourceDefinition) error {
+	crdToApply := &apiextensionsv1.CustomResourceDefinition{}
 	crdToApply.SetGroupVersionKind(crd.GroupVersionKind())
 	crdToApply.SetName(crd.Name)
 	crdToApply.Spec = crd.Spec
-	crdToApply.Spec.Conversion.Strategy = v1extensions.NoneConverter
+	crdToApply.Spec.Conversion.Strategy = apiextensionsv1.NoneConverter
 	crdToApply.Spec.Conversion.Webhook = nil
 	err := clnt.Patch(ctx, crdToApply,
 		client.Apply,
@@ -41,7 +42,7 @@ const (
 )
 
 func updateRemoteCRD(ctx context.Context, kyma *v1beta2.Kyma, runtimeClient Client,
-	crdFromRuntime *v1extensions.CustomResourceDefinition, kcpCrd *v1extensions.CustomResourceDefinition,
+	crdFromRuntime *apiextensionsv1.CustomResourceDefinition, kcpCrd *apiextensionsv1.CustomResourceDefinition,
 ) (bool, error) {
 	if ShouldPatchRemoteCRD(crdFromRuntime, kcpCrd, kyma) {
 		err := PatchCRD(ctx, runtimeClient, kcpCrd)
@@ -56,7 +57,7 @@ func updateRemoteCRD(ctx context.Context, kyma *v1beta2.Kyma, runtimeClient Clie
 }
 
 func ShouldPatchRemoteCRD(
-	runtimeCrd *v1extensions.CustomResourceDefinition, kcpCrd *v1extensions.CustomResourceDefinition,
+	runtimeCrd *apiextensionsv1.CustomResourceDefinition, kcpCrd *apiextensionsv1.CustomResourceDefinition,
 	kyma *v1beta2.Kyma,
 ) bool {
 	kcpAnnotation := getAnnotation(kcpCrd, KCP)
@@ -68,7 +69,7 @@ func ShouldPatchRemoteCRD(
 		kyma.Annotations[skrAnnotation] != runtimeCRDGeneration
 }
 
-func updateKymaAnnotations(kyma *v1beta2.Kyma, crd *v1extensions.CustomResourceDefinition, crdType CrdType) {
+func updateKymaAnnotations(kyma *v1beta2.Kyma, crd *apiextensionsv1.CustomResourceDefinition, crdType CrdType) {
 	if kyma.Annotations == nil {
 		kyma.Annotations = make(map[string]string)
 	}
@@ -76,7 +77,7 @@ func updateKymaAnnotations(kyma *v1beta2.Kyma, crd *v1extensions.CustomResourceD
 	kyma.Annotations[annotation] = strconv.FormatInt(crd.Generation, 10)
 }
 
-func getAnnotation(crd *v1extensions.CustomResourceDefinition, crdType CrdType) string {
+func getAnnotation(crd *apiextensionsv1.CustomResourceDefinition, crdType CrdType) string {
 	return fmt.Sprintf("%s-%s-crd-generation", strings.ToLower(crd.Spec.Names.Kind), strings.ToLower(string(crdType)))
 }
 
@@ -132,15 +133,15 @@ func fetchCrdsAndUpdateKymaAnnotations(ctx context.Context, controlPlaneClient C
 }
 
 func fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Client, plural string) (
-	*v1extensions.CustomResourceDefinition, *v1extensions.CustomResourceDefinition, error,
+	*apiextensionsv1.CustomResourceDefinition, *apiextensionsv1.CustomResourceDefinition, error,
 ) {
-	crdFromRuntime := &v1extensions.CustomResourceDefinition{}
+	crdFromRuntime := &apiextensionsv1.CustomResourceDefinition{}
 
 	kcpCrdName := fmt.Sprintf("%s.%s", plural, v1beta2.GroupVersion.Group)
 
 	crd, ok := cache.GetCachedCRD(kcpCrdName)
 	if !ok {
-		crd = v1extensions.CustomResourceDefinition{}
+		crd = apiextensionsv1.CustomResourceDefinition{}
 		err := controlPlaneClient.Get(
 			ctx, client.ObjectKey{Name: kcpCrdName}, &crd,
 		)
@@ -162,7 +163,7 @@ func fetchCrds(ctx context.Context, controlPlaneClient Client, runtimeClient Cli
 	return &crd, crdFromRuntime, nil
 }
 
-func ContainsLatestVersion(crdFromRuntime *v1extensions.CustomResourceDefinition, latestVersion string) bool {
+func ContainsLatestVersion(crdFromRuntime *apiextensionsv1.CustomResourceDefinition, latestVersion string) bool {
 	for _, version := range crdFromRuntime.Spec.Versions {
 		if latestVersion == version.Name {
 			return true
@@ -185,10 +186,10 @@ func CRDNotFoundErr(err error) bool {
 }
 
 func cannotFoundResource(err error) bool {
-	var apiStatusErr k8serrors.APIStatus
+	var apiStatusErr apierrors.APIStatus
 	if ok := errors.As(err, &apiStatusErr); ok && apiStatusErr.Status().Details != nil {
 		for _, cause := range apiStatusErr.Status().Details.Causes {
-			if cause.Type == metav1.CauseTypeUnexpectedServerResponse &&
+			if cause.Type == apimetav1.CauseTypeUnexpectedServerResponse &&
 				strings.Contains(cause.Message, "not found") {
 				return true
 			}

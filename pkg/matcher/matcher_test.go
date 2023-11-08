@@ -3,9 +3,10 @@ package matcher_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
-	"github.com/stretchr/testify/require"
 )
 
 func TestCreateCRDMatcherFrom(t *testing.T) {

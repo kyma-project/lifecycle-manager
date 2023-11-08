@@ -9,19 +9,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-
-	v1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apiappsv1 "k8s.io/api/apps/v1"
+	apicorev1 "k8s.io/api/core/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 const (
@@ -85,7 +87,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 
 	It("Should trigger new reconciliation by spec watching", func() {
 		By("changing the spec of the remote KymaCR")
-		timeNow := &metav1.Time{Time: time.Now()}
+		timeNow := &apimetav1.Time{Time: time.Now()}
 		GinkgoWriter.Println(fmt.Sprintf("Spec watching logs since %s: ", timeNow))
 		switchedChannel := "fast"
 		Eventually(changeRemoteKymaChannel).
@@ -102,7 +104,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 
 	It("Should trigger new reconciliation by status sub-resource watching", func() {
 		time.Sleep(1 * time.Second)
-		patchingTimestamp := &metav1.Time{Time: time.Now()}
+		patchingTimestamp := &apimetav1.Time{Time: time.Now()}
 		GinkgoWriter.Println(fmt.Sprintf("Status subresource watching logs since %s: ", patchingTimestamp))
 		By("changing the Watcher spec.field to status")
 		Expect(updateWatcherSpecField(ctx, controlPlaneClient, watcherCrName)).
@@ -139,7 +141,7 @@ func checkKLMLogs(ctx context.Context,
 	logMsg string,
 	controlPlaneConfig, runtimeConfig *rest.Config,
 	k8sClient, runtimeClient client.Client,
-	logsSince *metav1.Time,
+	logsSince *apimetav1.Time,
 ) error {
 	logs, err := getPodLogs(ctx, controlPlaneConfig, k8sClient, controlPlaneNamespace, KLMPodPrefix, KLMPodContainer,
 		logsSince)
@@ -165,10 +167,10 @@ func getPodLogs(ctx context.Context,
 	config *rest.Config,
 	k8sClient client.Client,
 	namespace, podPrefix, container string,
-	logsSince *metav1.Time,
+	logsSince *apimetav1.Time,
 ) (string, error) {
-	pod := &corev1.Pod{}
-	podList := &corev1.PodList{}
+	pod := &apicorev1.Pod{}
+	podList := &apicorev1.PodList{}
 	if err := k8sClient.List(ctx, podList, &client.ListOptions{Namespace: namespace}); err != nil {
 		return "", err
 	}
@@ -193,7 +195,7 @@ func getPodLogs(ctx context.Context,
 	if err != nil {
 		return "", err
 	}
-	req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &corev1.PodLogOptions{
+	req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &apicorev1.PodLogOptions{
 		Container: container,
 		SinceTime: logsSince,
 	})
@@ -218,8 +220,8 @@ func getPodLogs(ctx context.Context,
 }
 
 func deleteWatcherDeployment(ctx context.Context, watcherName, watcherNamespace string, k8sClient client.Client) error {
-	watcherDeployment := &v1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
+	watcherDeployment := &apiappsv1.Deployment{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      watcherName,
 			Namespace: watcherNamespace,
 		},
@@ -230,7 +232,7 @@ func deleteWatcherDeployment(ctx context.Context, watcherName, watcherNamespace 
 func checkWatcherDeploymentReady(ctx context.Context,
 	deploymentName, deploymentNamespace string, k8sClient client.Client,
 ) error {
-	watcherDeployment := &v1.Deployment{}
+	watcherDeployment := &apiappsv1.Deployment{}
 	if err := k8sClient.Get(ctx,
 		client.ObjectKey{Name: deploymentName, Namespace: deploymentNamespace},
 		watcherDeployment,
@@ -248,8 +250,8 @@ func checkWatcherDeploymentReady(ctx context.Context,
 func deleteCertificateSecret(ctx context.Context,
 	secretName, secretNamespace string, k8sClient client.Client,
 ) error {
-	certificateSecret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
+	certificateSecret := &apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      secretName,
 			Namespace: secretNamespace,
 		},
@@ -260,7 +262,7 @@ func deleteCertificateSecret(ctx context.Context,
 func checkCertificateSecretExists(ctx context.Context,
 	secretName, secretNamespace string, k8sClient client.Client,
 ) error {
-	certificateSecret := &corev1.Secret{}
+	certificateSecret := &apicorev1.Secret{}
 	return k8sClient.Get(ctx,
 		client.ObjectKey{Name: secretName, Namespace: secretNamespace},
 		certificateSecret,
@@ -277,7 +279,7 @@ func updateRemoteKymaStatusSubresource(k8sClient client.Client, kymaNamespace st
 	kyma.Status.State = shared.StateWarning
 	kyma.Status.LastOperation = shared.LastOperation{
 		Operation:      "Updated Kyma Status subresource for test",
-		LastUpdateTime: metav1.NewTime(time.Now()),
+		LastUpdateTime: apimetav1.NewTime(time.Now()),
 	}
 	kyma.ManagedFields = nil
 	if err := k8sClient.Status().Update(ctx, kyma); err != nil {

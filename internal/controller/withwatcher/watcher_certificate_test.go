@@ -5,16 +5,17 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
-
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	apicorev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
@@ -29,8 +30,8 @@ func getCertificate(clnt client.Client, kymaName string) (*certmanagerv1.Certifi
 	return certificateCR, err
 }
 
-func getSecret(clnt client.Client, objKey client.ObjectKey) (*corev1.Secret, error) {
-	secretCR := &corev1.Secret{}
+func getSecret(clnt client.Client, objKey client.ObjectKey) (*apicorev1.Secret, error) {
+	secretCR := &apicorev1.Secret{}
 	err := clnt.Get(suiteCtx, objKey, secretCR)
 	return secretCR, err
 }
@@ -56,7 +57,7 @@ func matchTLSSecretPrivateKey(clnt client.Client, secretObjKey client.ObjectKey,
 	if err != nil {
 		return err
 	}
-	if !bytes.Equal(secretCR.Data[corev1.TLSPrivateKeyKey], privateKey) {
+	if !bytes.Equal(secretCR.Data[apicorev1.TLSPrivateKeyKey], privateKey) {
 		return ErrPrivateKeyNotMatching
 	}
 	return nil
@@ -119,7 +120,7 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 		newKey := "new-pk"
 
 		By("changing the TLS secret on KCP")
-		tlsSecret.Data[corev1.TLSPrivateKeyKey] = []byte(newKey)
+		tlsSecret.Data[apicorev1.TLSPrivateKeyKey] = []byte(newKey)
 		Expect(controlPlaneClient.Update(suiteCtx, tlsSecret)).To(Succeed())
 
 		By("updates the TLS secret on SKR")

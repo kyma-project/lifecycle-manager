@@ -6,24 +6,21 @@ import (
 	"fmt"
 	"net/http"
 
+	watcherevent "github.com/kyma-project/runtime-watcher/listener/pkg/event"
+	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
+	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
+	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-
-	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
-	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
-
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 	"github.com/kyma-project/lifecycle-manager/pkg/watch"
@@ -47,7 +44,7 @@ var (
 
 // SetupWithManager sets up the Kyma controller with the Manager.
 func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
-	options controllerRuntime.Options, settings SetupUpSetting,
+	options ctrlruntime.Options, settings SetupUpSetting,
 ) error {
 	predicates := predicate.Or(predicate.GenerationChangedPredicate{}, predicate.LabelChangedPredicate{})
 
@@ -60,14 +57,14 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 			builder.WithPredicates(predicates),
 		).
 		// here we define a watch on secrets for the lifecycle-manager so that the cache is picking up changes
-		Watches(&corev1.Secret{}, handler.Funcs{})
+		Watches(&apicorev1.Secret{}, handler.Funcs{})
 
 	controllerBuilder = controllerBuilder.Watches(&v1beta2.Manifest{},
 		&watch.RestrictedEnqueueRequestForOwner{Log: ctrl.Log, OwnerType: &v1beta2.Kyma{}, IsController: true})
 
-	var runnableListener *listener.SKREventListener
+	var runnableListener *watcherevent.SKREventListener
 	var eventChannel *source.Channel
-	var verifyFunc listener.Verify
+	var verifyFunc watcherevent.Verify
 
 	if settings.EnableDomainNameVerification {
 		// Verifier used to verify incoming listener requests
@@ -78,7 +75,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 		}
 	}
 	// register listener component incl. domain name verification
-	runnableListener, eventChannel = listener.RegisterListenerComponent(
+	runnableListener, eventChannel = watcherevent.RegisterListenerComponent(
 		settings.ListenerAddr,
 		v1beta2.OperatorName,
 		verifyFunc,
@@ -134,7 +131,7 @@ func (r *KymaReconciler) watchEventChannel(controllerBuilder *builder.Builder, e
 }
 
 // SetupWithManager sets up the Watcher controller with the Manager.
-func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controllerRuntime.Options,
+func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options ctrlruntime.Options,
 ) error {
 	if r.RestConfig == nil {
 		return errRestConfigIsNotSet
@@ -161,7 +158,7 @@ func (r *WatcherReconciler) SetupWithManager(mgr ctrl.Manager, options controlle
 
 // SetupWithManager sets up the Purge controller with the Manager.
 func (r *PurgeReconciler) SetupWithManager(mgr ctrl.Manager,
-	options controllerRuntime.Options,
+	options ctrlruntime.Options,
 ) error {
 	controllerBuilder := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Kyma{}).

@@ -17,9 +17,10 @@ limitations under the License.
 package v1beta2
 
 import (
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
 // WatcherSpec defines the desired state of Watcher.
@@ -62,7 +63,7 @@ const (
 // GatewayConfig is used to select an Istio Gateway object in the cluster.
 type GatewayConfig struct {
 	// LabelSelector allows to select the Gateway using label selectors as defined in the K8s LIST API.
-	LabelSelector metav1.LabelSelector `json:"selector"`
+	LabelSelector apimetav1.LabelSelector `json:"selector"`
 }
 
 // Service describes the service specification for the corresponding operator container.
@@ -88,7 +89,7 @@ type WatcherStatus struct {
 	// +kubebuilder:validation:Optional
 	// +listType=map
 	// +listMapKey=type
-	Conditions []metav1.Condition `json:"conditions"`
+	Conditions []apimetav1.Condition `json:"conditions"`
 
 	// ObservedGeneration
 	// +kubebuilder:validation:Optional
@@ -101,8 +102,8 @@ type WatcherStatus struct {
 
 // Watcher is the Schema for the watchers API.
 type Watcher struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	apimetav1.TypeMeta   `json:",inline"`
+	apimetav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   WatcherSpec   `json:"spec,omitempty"`
 	Status WatcherStatus `json:"status,omitempty"`
@@ -119,9 +120,9 @@ func (watcher *Watcher) GetModuleName() string {
 
 // WatcherList contains a list of Watcher.
 type WatcherList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Watcher `json:"items"`
+	apimetav1.TypeMeta `json:",inline"`
+	apimetav1.ListMeta `json:"metadata,omitempty"`
+	Items              []Watcher `json:"items"`
 }
 
 //nolint:gochecknoinits
@@ -131,8 +132,8 @@ func init() {
 
 // DefaultIstioGatewaySelector defines a default label selector for a Gateway to configure a VirtualService
 // for the Watcher.
-func DefaultIstioGatewaySelector() metav1.LabelSelector {
-	return metav1.LabelSelector{
+func DefaultIstioGatewaySelector() apimetav1.LabelSelector {
+	return apimetav1.LabelSelector{
 		MatchLabels: map[string]string{OperatorPrefix + Separator + "watcher-gateway": "default"},
 	}
 }
@@ -162,29 +163,29 @@ const (
 )
 
 func (watcher *Watcher) InitializeConditions() {
-	watcher.Status.Conditions = []metav1.Condition{{
+	watcher.Status.Conditions = []apimetav1.Condition{{
 		Type:               string(WatcherConditionTypeVirtualService),
-		Status:             metav1.ConditionUnknown,
+		Status:             apimetav1.ConditionUnknown,
 		Message:            string(VirtualServiceNotConfiguredConditionMessage),
 		Reason:             string(ReadyConditionReason),
-		LastTransitionTime: metav1.Now(),
+		LastTransitionTime: apimetav1.Now(),
 	}}
 }
 
 func (watcher *Watcher) UpdateWatcherConditionStatus(conditionType WatcherConditionType,
-	conditionStatus metav1.ConditionStatus,
+	conditionStatus apimetav1.ConditionStatus,
 ) {
-	newCondition := metav1.Condition{
+	newCondition := apimetav1.Condition{
 		Type:               string(conditionType),
 		Status:             conditionStatus,
 		Message:            string(VirtualServiceNotConfiguredConditionMessage),
 		Reason:             string(ReadyConditionReason),
-		LastTransitionTime: metav1.Now(),
+		LastTransitionTime: apimetav1.Now(),
 	}
 	switch conditionStatus {
-	case metav1.ConditionTrue:
+	case apimetav1.ConditionTrue:
 		newCondition.Message = string(VirtualServiceConfiguredConditionMessage)
-	case metav1.ConditionFalse, metav1.ConditionUnknown:
+	case apimetav1.ConditionFalse, apimetav1.ConditionUnknown:
 		fallthrough
 	default:
 		newCondition.Message = string(VirtualServiceNotConfiguredConditionMessage)

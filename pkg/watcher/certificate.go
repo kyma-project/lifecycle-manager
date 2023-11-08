@@ -5,14 +5,15 @@ import (
 	"fmt"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	metav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	corev1 "k8s.io/api/core/v1"
-	apimachinerymetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
+	apicorev1 "k8s.io/api/core/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 const (
@@ -97,7 +98,7 @@ func (c *CertificateManager) Remove(ctx context.Context) error {
 	if err := c.kcpClient.Delete(ctx, certificate); err != nil {
 		return fmt.Errorf("failed to delete certificate: %w", err)
 	}
-	certSecret := &corev1.Secret{}
+	certSecret := &apicorev1.Secret{}
 	if err := c.kcpClient.Get(ctx, client.ObjectKey{
 		Name:      c.secretName,
 		Namespace: c.istioNamespace,
@@ -113,7 +114,7 @@ func (c *CertificateManager) Remove(ctx context.Context) error {
 }
 
 func (c *CertificateManager) GetSecret(ctx context.Context) (*CertificateSecret, error) {
-	secret := &corev1.Secret{}
+	secret := &apicorev1.Secret{}
 	err := c.kcpClient.Get(ctx, client.ObjectKey{Name: c.secretName, Namespace: c.istioNamespace},
 		secret)
 	if err != nil {
@@ -137,11 +138,11 @@ func (c *CertificateManager) createCertificate(ctx context.Context, subjectAltNa
 	}
 
 	cert := certmanagerv1.Certificate{
-		TypeMeta: apimachinerymetav1.TypeMeta{
+		TypeMeta: apimetav1.TypeMeta{
 			Kind:       certmanagerv1.CertificateKind,
 			APIVersion: certmanagerv1.SchemeGroupVersion.String(),
 		},
-		ObjectMeta: apimachinerymetav1.ObjectMeta{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      c.certificateName,
 			Namespace: c.istioNamespace,
 		},
@@ -154,7 +155,7 @@ func (c *CertificateManager) createCertificate(ctx context.Context, subjectAltNa
 			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
 				Labels: LabelSet,
 			},
-			IssuerRef: metav1.ObjectReference{
+			IssuerRef: certmanagermetav1.ObjectReference{
 				Name: issuer.Name,
 			},
 			IsCA: false,
@@ -201,7 +202,7 @@ func (c *CertificateManager) getSubjectAltNames() (*SubjectAltName, error) {
 }
 
 func (c *CertificateManager) getIssuer(ctx context.Context) (*certmanagerv1.Issuer, error) {
-	logger := log.FromContext(ctx)
+	logger := logf.FromContext(ctx)
 	issuerList := &certmanagerv1.IssuerList{}
 	err := c.kcpClient.List(ctx, issuerList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(LabelSet),

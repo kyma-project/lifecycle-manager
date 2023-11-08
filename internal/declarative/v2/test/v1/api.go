@@ -5,21 +5,22 @@ package v1
 import (
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
 type TestAPI struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-	Spec              TestAPISpec   `json:"spec,omitempty"`
-	Status            shared.Status `json:"status,omitempty"`
+	apimetav1.TypeMeta   `json:",inline"`
+	apimetav1.ObjectMeta `json:"metadata,omitempty"`
+	Spec                 TestAPISpec   `json:"spec,omitempty"`
+	Status               shared.Status `json:"status,omitempty"`
 }
 
 // TestAPISpec defines the desired state of TestAPI.
@@ -33,9 +34,9 @@ type TestAPISpec struct {
 
 // TestAPIList contains a list of TestAPI.
 type TestAPIList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []TestAPI `json:"items"`
+	apimetav1.TypeMeta `json:",inline"`
+	apimetav1.ListMeta `json:"metadata,omitempty"`
+	Items              []TestAPI `json:"items"`
 }
 
 var (
@@ -54,7 +55,7 @@ func init() {
 	SchemeBuilder.Register(&TestAPI{}, &TestAPIList{})
 }
 
-var _ declarative.Object = &TestAPI{}
+var _ declarativev2.Object = &TestAPI{}
 
 func (s *TestAPI) GetStatus() shared.Status {
 	return s.Status

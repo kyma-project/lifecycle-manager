@@ -3,12 +3,15 @@ package kyma_controller_test
 import (
 	"fmt"
 
+	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var _ = Describe("ModuleTemplate installation", func() {
@@ -95,7 +98,7 @@ func givenKymaAndModuleTemplateCondition(
 			mtBuilder := builder.NewModuleTemplateBuilder().
 				WithModuleName(module.Name).
 				WithChannel(module.Channel).
-				WithOCM(compdesc2.SchemaVersion)
+				WithOCM(compdescv2.SchemaVersion)
 			if isModuleTemplateInternal {
 				mtBuilder.WithLabel(v1beta2.InternalLabel, v1beta2.EnableLabelValue)
 			}

@@ -4,16 +4,19 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
+	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
-	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
-	apiErrors "k8s.io/apimachinery/pkg/api/errors"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 const (
@@ -156,11 +159,11 @@ func givenKymaWithInvalidChannel(channel string) func() error {
 }
 
 func ignoreInvalidError(err error) error {
-	var statusError *apiErrors.StatusError
+	var statusError *apierrors.StatusError
 	ok := errors.As(err, &statusError)
 	Expect(ok).Should(BeTrue())
-	if statusError.ErrStatus.Reason != metaV1.StatusReasonInvalid {
-		return fmt.Errorf("status error not match: expect %s, actual %w", metaV1.StatusReasonInvalid, err)
+	if statusError.ErrStatus.Reason != apimetav1.StatusReasonInvalid {
+		return fmt.Errorf("status error not match: expect %s, actual %w", apimetav1.StatusReasonInvalid, err)
 	}
 	return nil
 }
@@ -274,7 +277,7 @@ func CleanupModuleTemplateSetsForKyma(kyma *v1beta2.Kyma) func() {
 				WithName(fmt.Sprintf("%s-%s", module.Name, v1beta2.DefaultChannel)).
 				WithModuleName(module.Name).
 				WithChannel(module.Channel).
-				WithOCM(compdesc2.SchemaVersion).Build()
+				WithOCM(compdescv2.SchemaVersion).Build()
 			Eventually(DeleteCR, Timeout, Interval).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, template).Should(Succeed())
@@ -285,7 +288,7 @@ func CleanupModuleTemplateSetsForKyma(kyma *v1beta2.Kyma) func() {
 				WithName(fmt.Sprintf("%s-%s", module.Name, FastChannel)).
 				WithModuleName(module.Name).
 				WithChannel(module.Channel).
-				WithOCM(compdesc2.SchemaVersion).Build()
+				WithOCM(compdescv2.SchemaVersion).Build()
 			Eventually(DeleteCR, Timeout, Interval).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, template).Should(Succeed())
@@ -379,7 +382,7 @@ func createModuleTemplateSetsForKyma(modules []v1beta2.Module, modifiedVersion, 
 		template := builder.NewModuleTemplateBuilder().
 			WithModuleName(module.Name).
 			WithChannel(module.Channel).
-			WithOCM(compdesc2.SchemaVersion).Build()
+			WithOCM(compdescv2.SchemaVersion).Build()
 
 		descriptor, err := template.GetDescriptor()
 		if err != nil {

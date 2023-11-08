@@ -21,25 +21,22 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	"k8s.io/apimachinery/pkg/runtime"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
-
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/status"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
+	"github.com/kyma-project/lifecycle-manager/pkg/status"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 const (
@@ -58,7 +55,7 @@ type WatcherReconciler struct {
 	record.EventRecorder
 	IstioClient *istio.Client
 	RestConfig  *rest.Config
-	Scheme      *runtime.Scheme
+	Scheme      *machineryruntime.Scheme
 	queue.RequeueIntervals
 }
 
@@ -75,7 +72,7 @@ type WatcherReconciler struct {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 func (r *WatcherReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := ctrlLog.FromContext(ctx).WithName(req.NamespacedName.String())
+	logger := logf.FromContext(ctx).WithName(req.NamespacedName.String())
 	logger.V(log.DebugLevel).Info("Reconciliation loop starting")
 
 	watcherObj := &v1beta2.Watcher{}
@@ -182,9 +179,9 @@ func (r *WatcherReconciler) updateWatcherState(ctx context.Context, watcherCR *v
 ) (ctrl.Result, error) {
 	watcherCR.Status.State = state
 	if state == shared.StateReady {
-		watcherCR.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, metav1.ConditionTrue)
+		watcherCR.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, apimetav1.ConditionTrue)
 	} else if state == shared.StateError {
-		watcherCR.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, metav1.ConditionFalse)
+		watcherCR.UpdateWatcherConditionStatus(v1beta2.WatcherConditionTypeVirtualService, apimetav1.ConditionFalse)
 	}
 	if err != nil {
 		r.EventRecorder.Event(watcherCR, "Warning", "WatcherStatusUpdate", err.Error())

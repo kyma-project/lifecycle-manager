@@ -5,14 +5,14 @@ import (
 	"os"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/labels"
+	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kyma-project/lifecycle-manager/internal"
@@ -28,8 +28,7 @@ const (
 
 func DefaultOptions() *Options {
 	return (&Options{}).Apply(
-		WithDeleteCRDs(false),
-		WithNamespace(metav1.NamespaceDefault, false),
+		WithNamespace(apimetav1.NamespaceDefault, false),
 		WithFinalizer(FinalizerDefault),
 		WithFieldOwner(FieldOwnerDefault),
 		WithPostRenderTransform(
@@ -62,8 +61,6 @@ type Options struct {
 
 	Namespace       string
 	CreateNamespace bool
-
-	ModuleCRDName func(obj Object) string
 
 	Finalizer string
 
@@ -124,12 +121,6 @@ func (o WithFinalizer) Apply(options *Options) {
 	options.Finalizer = string(o)
 }
 
-type WithModuleCRDName func(obj Object) string
-
-func (o WithModuleCRDName) Apply(options *Options) {
-	options.ModuleCRDName = o
-}
-
 type WithManagerOption struct {
 	manager.Manager
 }
@@ -144,14 +135,14 @@ func (o WithManagerOption) Apply(options *Options) {
 	options.Client = o.GetClient()
 }
 
-type WithCustomResourceLabels labels.Set
+type WithCustomResourceLabels k8slabels.Set
 
 func (o WithCustomResourceLabels) Apply(options *Options) {
 	labelTransform := func(ctx context.Context, object Object, resources []*unstructured.Unstructured) error {
 		for _, targetResource := range resources {
 			lbls := targetResource.GetLabels()
 			if lbls == nil {
-				lbls = labels.Set{}
+				lbls = k8slabels.Set{}
 			}
 			for s := range o {
 				lbls[s] = o[s]
@@ -255,12 +246,6 @@ func (o WithSingletonClientCacheOption) Apply(options *Options) {
 	options.ClientCache = o
 }
 
-type WithDeleteCRDs bool
-
-func (o WithDeleteCRDs) Apply(options *Options) {
-	options.DeletePrerequisites = bool(o)
-}
-
 type ManifestCache string
 
 type WithManifestCache ManifestCache
@@ -316,7 +301,7 @@ type SkipReconcile func(context.Context, Object) (skip bool)
 // SkipReconcileOnDefaultLabelPresentAndTrue determines SkipReconcile by checking if DefaultSkipReconcileLabel is true.
 func SkipReconcileOnDefaultLabelPresentAndTrue(ctx context.Context, object Object) bool {
 	if object.GetLabels() != nil && object.GetLabels()[SkipReconcileLabel] == "true" {
-		log.FromContext(ctx, "skip-label", SkipReconcileLabel).
+		logf.FromContext(ctx, "skip-label", SkipReconcileLabel).
 			V(internal.DebugLogLevel).Info("resource gets skipped because of label")
 		return true
 	}

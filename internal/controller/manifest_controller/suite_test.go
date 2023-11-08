@@ -24,30 +24,29 @@ import (
 	"testing"
 	"time"
 
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-
-	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
-
 	"github.com/google/go-containerregistry/pkg/registry"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/manifest"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"go.uber.org/zap/zapcore"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/kubernetes/scheme"
+	apicorev1 "k8s.io/api/core/v1"
+	k8slabels "k8s.io/apimachinery/pkg/labels"
+	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
-	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
+	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/api"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	manifestctrltest "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -56,7 +55,7 @@ import (
 var (
 	testEnv    *envtest.Environment
 	k8sManager ctrl.Manager
-	reconciler *declarative.Reconciler
+	reconciler *declarativev2.Reconciler
 	cfg        *rest.Config
 )
 
@@ -74,13 +73,13 @@ func TestAPIs(t *testing.T) {
 
 var _ = BeforeSuite(
 	func() {
-		hlp.ManifestFilePath = "../../../pkg/test_samples/oci/rendered.yaml"
-		hlp.Ctx, hlp.Cancel = context.WithCancel(context.TODO())
+		manifestctrltest.ManifestFilePath = "../../../pkg/test_samples/oci/rendered.yaml"
+		manifestctrltest.Ctx, manifestctrltest.Cancel = context.WithCancel(context.TODO())
 		logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
 
 		// create registry and server
 		newReg := registry.New()
-		hlp.Server = httptest.NewServer(newReg)
+		manifestctrltest.Server = httptest.NewServer(newReg)
 
 		By("bootstrapping test environment")
 		testEnv = &envtest.Environment{
@@ -95,8 +94,8 @@ var _ = BeforeSuite(
 
 		//+kubebuilder:scaffold:scheme
 
-		Expect(api.AddToScheme(scheme.Scheme)).To(Succeed())
-		Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+		Expect(api.AddToScheme(k8sclientscheme.Scheme)).To(Succeed())
+		Expect(apicorev1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
 		metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
 		if !found {
@@ -108,8 +107,8 @@ var _ = BeforeSuite(
 				Metrics: metricsserver.Options{
 					BindAddress: metricsBindAddress,
 				},
-				Scheme: scheme.Scheme,
-				Cache:  internal.GetCacheOptions(labels.Set{v1beta2.ManagedBy: v1beta2.OperatorName}),
+				Scheme: k8sclientscheme.Scheme,
+				Cache:  internal.GetCacheOptions(k8slabels.Set{v1beta2.ManagedBy: v1beta2.OperatorName}),
 			},
 		)
 		Expect(err).ToNot(HaveOccurred())
@@ -122,32 +121,31 @@ var _ = BeforeSuite(
 		)
 		Expect(err).NotTo(HaveOccurred())
 
-		hlp.K8sClient = k8sManager.GetClient()
+		manifestctrltest.K8sClient = k8sManager.GetClient()
 
-		kcp := &declarative.ClusterInfo{Config: cfg, Client: hlp.K8sClient}
-		reconciler = declarative.NewFromManager(
+		kcp := &declarativev2.ClusterInfo{Config: cfg, Client: manifestctrltest.K8sClient}
+		reconciler = declarativev2.NewFromManager(
 			k8sManager, &v1beta2.Manifest{},
-			declarative.WithSpecResolver(
+			declarativev2.WithSpecResolver(
 				manifest.NewSpecResolver(kcp),
 			),
-			declarative.WithPermanentConsistencyCheck(true),
-			declarative.WithRemoteTargetCluster(
-				func(_ context.Context, _ declarative.Object) (*declarative.ClusterInfo, error) {
-					return &declarative.ClusterInfo{Config: authUser.Config()}, nil
+			declarativev2.WithPermanentConsistencyCheck(true),
+			declarativev2.WithRemoteTargetCluster(
+				func(_ context.Context, _ declarativev2.Object) (*declarativev2.ClusterInfo, error) {
+					return &declarativev2.ClusterInfo{Config: authUser.Config()}, nil
 				},
 			),
 			manifest.WithClientCacheKey(),
-			declarative.WithPostRun{manifest.PostRunCreateCR},
-			declarative.WithPreDelete{manifest.PreDeleteDeleteCR},
-			declarative.WithCustomReadyCheck(declarative.NewExistsReadyCheck()),
-			declarative.WithModuleCRDName(manifest.GetModuleCRDName),
+			declarativev2.WithPostRun{manifest.PostRunCreateCR},
+			declarativev2.WithPreDelete{manifest.PreDeleteDeleteCR},
+			declarativev2.WithCustomReadyCheck(declarativev2.NewExistsReadyCheck()),
 		)
 
 		err = ctrl.NewControllerManagedBy(k8sManager).
 			For(&v1beta2.Manifest{}).
-			Watches(&v1.Secret{}, handler.Funcs{}).
+			Watches(&apicorev1.Secret{}, handler.Funcs{}).
 			WithOptions(
-				controllerRuntime.Options{
+				ctrlruntime.Options{
 					RateLimiter: internal.ManifestRateLimiter(
 						1*time.Second, 5*time.Second,
 						30, 200,
@@ -159,7 +157,7 @@ var _ = BeforeSuite(
 
 		go func() {
 			defer GinkgoRecover()
-			err = k8sManager.Start(hlp.Ctx)
+			err = k8sManager.Start(manifestctrltest.Ctx)
 			Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 		}()
 	},
@@ -167,9 +165,9 @@ var _ = BeforeSuite(
 
 var _ = AfterSuite(
 	func() {
-		hlp.Cancel()
+		manifestctrltest.Cancel()
 		By("tearing down the test environment")
-		hlp.Server.Close()
+		manifestctrltest.Server.Close()
 		Eventually(func() error { return testEnv.Stop() }, standardTimeout, standardInterval).Should(Succeed())
 	},
 )

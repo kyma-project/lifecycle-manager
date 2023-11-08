@@ -17,10 +17,11 @@ limitations under the License.
 package v1beta1
 
 import (
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 // ModuleTemplate is a representation of a Template used for creating Module Instances within the Module Lifecycle.
@@ -34,8 +35,8 @@ import (
 //+kubebuilder:storageversion
 
 type ModuleTemplate struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	apimetav1.TypeMeta   `json:",inline"`
+	apimetav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec ModuleTemplateSpec `json:"spec,omitempty"`
 }
@@ -70,7 +71,7 @@ type ModuleTemplateSpec struct {
 	// (e.g. by updating the controller binary linked in a chart referenced in the descriptor)
 	//
 	//+kubebuilder:pruning:PreserveUnknownFields
-	Descriptor runtime.RawExtension `json:"descriptor"`
+	Descriptor machineryruntime.RawExtension `json:"descriptor"`
 
 	// Target describes where the Module should later on be installed if parsed correctly. It is used as installation
 	// hint by downstream controllers to determine which client implementation to use for working with the Module
@@ -83,9 +84,9 @@ type ModuleTemplateSpec struct {
 
 // ModuleTemplateList contains a list of ModuleTemplate.
 type ModuleTemplateList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ModuleTemplate `json:"items"`
+	apimetav1.TypeMeta `json:",inline"`
+	apimetav1.ListMeta `json:"metadata,omitempty"`
+	Items              []ModuleTemplate `json:"items"`
 }
 
 // Target serves as a potential Installation Hint for the Controller to determine which Client to use for installation.

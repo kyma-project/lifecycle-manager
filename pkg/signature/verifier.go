@@ -6,16 +6,17 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
-	ocmv1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
+	ocmmetav1 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/meta/v1"
 	"github.com/open-component-model/ocm/pkg/signing"
 	"github.com/open-component-model/ocm/pkg/signing/handlers/rsa"
-	v1 "k8s.io/api/core/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apicorev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 var ErrNoSignatureFound = errors.New("no signature was found")
@@ -23,7 +24,7 @@ var ErrNoSignatureFound = errors.New("no signature was found")
 const ValidSignatureName = "kyma-module-signature"
 
 type Verifier interface {
-	Verify(componentDescriptor *compdesc.ComponentDescriptor, signature ocmv1.Signature) error
+	Verify(componentDescriptor *compdesc.ComponentDescriptor, signature ocmmetav1.Signature) error
 }
 
 type MultiVerifier struct {
@@ -93,7 +94,7 @@ func CreateMultiRSAVerifier(keys signing.KeyRegistry) (*MultiVerifier, error) {
 	return &MultiVerifier{registry: signing.NewRegistry(handlers, keys)}, nil
 }
 
-func (v MultiVerifier) Verify(descriptor *compdesc.ComponentDescriptor, signature ocmv1.Signature) error {
+func (v MultiVerifier) Verify(descriptor *compdesc.ComponentDescriptor, signature ocmmetav1.Signature) error {
 	err := compdesc.Verify(descriptor, v.registry, signature.Name)
 	if err != nil {
 		return fmt.Errorf("failed to verify descriptor signature: %w", err)
@@ -108,21 +109,20 @@ func CreateRSAVerifierFromSecrets(
 	k8sClient client.Client,
 	moduleName string,
 ) (*MultiVerifier, error) {
-	secretList := &v1.SecretList{}
+	secretList := &apicorev1.SecretList{}
 
-	secretSelector := &metav1.LabelSelector{
+	secretSelector := &apimetav1.LabelSelector{
 		MatchLabels: k8slabels.Set{v1beta2.Signature: ValidSignatureName, v1beta2.ModuleName: moduleName},
 	}
-	selector, err := metav1.LabelSelectorAsSelector(secretSelector)
+	selector, err := apimetav1.LabelSelectorAsSelector(secretSelector)
 	if err != nil {
 		return nil, fmt.Errorf("error converting signature labelSelector: %w", err)
 	}
-	// TODO: consider later if need to introduce cache due to performance issue
 	if err = k8sClient.List(ctx, secretList, &client.ListOptions{LabelSelector: selector}); err != nil {
 		return nil, fmt.Errorf("failed to list secrets: %w", err)
 	} else if len(secretList.Items) < 1 {
-		gr := v1.SchemeGroupVersion.WithResource(fmt.Sprintf("secrets with label %s", v1beta2.KymaName)).GroupResource()
-		return nil, k8serrors.NewNotFound(gr, selector.String())
+		gr := apicorev1.SchemeGroupVersion.WithResource(fmt.Sprintf("secrets with label %s", v1beta2.KymaName)).GroupResource()
+		return nil, apierrors.NewNotFound(gr, selector.String())
 	}
 	registry := signing.NewKeyRegistry()
 	for _, item := range secretList.Items {

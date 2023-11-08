@@ -3,21 +3,8 @@ name: TestSuite E2E
 on:
   push:
     branches: [ "main" ]
-    paths:
-      - 'go.mod'
-      - 'go.sum'
-      - 'Makefile'
-      - '**.go'
-      - '**.ya?ml'
   pull_request:
     branches: [ "main" ]
-    paths:
-      - 'go.mod'
-      - 'go.sum'
-      - 'Makefile'
-      - '**.sh'
-      - '**.go'
-      - '**.ya?ml'
 jobs:
   wait-for-img:
     name: "Wait for Image Build"
@@ -40,7 +27,16 @@ jobs:
   e2e-integration:
     strategy:
       matrix:
-        e2e-test: ["watcher-enqueue", "kyma-deletion", "module-status-propagation", "kyma-metrics", "module-without-default-cr", "non-blocking-deletion", "purge-controller", "purge-metrics", "module-upgrade"]
+        e2e-test: [ "watcher-enqueue",
+                    "kyma-deletion",
+                    "module-status-propagation",
+                    "kyma-metrics",
+                    "module-without-default-cr",
+                    "non-blocking-deletion",
+                    "purge-controller",
+                    "purge-metrics",
+                    "module-upgrade"
+        ]
     name: "E2E"
     needs: [wait-for-img]
     runs-on: ubuntu-latest
@@ -158,9 +154,14 @@ jobs:
         with:
           repository: kyma-project/template-operator
           path: template-operator
-      - name: Create Template Operator Module
+      - name: Create Template Operator Module and apply
         working-directory: template-operator
-        if: ${{ matrix.e2e-test == 'non-blocking-deletion' ||  matrix.e2e-test == 'purge-controller' ||  matrix.e2e-test == 'purge-metrics' || matrix.e2e-test == 'kyma-deletion'}}
+        if: ${{ matrix.e2e-test == 'kyma-metrics' ||
+          matrix.e2e-test == 'non-blocking-deletion' ||
+          matrix.e2e-test == 'purge-controller' ||
+          matrix.e2e-test == 'purge-metrics' ||
+          matrix.e2e-test == 'kyma-deletion'
+          }}
         run: |
           make build-manifests
           kyma alpha create module --module-config-file ./module-config.yaml --path . --registry k3d-kcp-registry:5111 --insecure
@@ -172,9 +173,14 @@ jobs:
         working-directory: lifecycle-manager
         if: ${{ matrix.e2e-test == 'module-upgrade'}}
         run: |
-          kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_fast.yaml
-          kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_regular.yaml
-      - name: Create Template Operator Module with final state `Warning`
+          kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
+          kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml
+      - name: Apply Template Operator Module V2, fast channel
+        working-directory: ./lifecycle-manager
+        if: ${{ matrix.e2e-test == 'non-blocking-deletion' }}
+        run: |
+          kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
+      - name: Create Template Operator Module with final state `Warning` and apply
         working-directory: template-operator
         if: ${{ matrix.e2e-test == 'module-status-propagation'}}
         run: |
@@ -190,7 +196,7 @@ jobs:
           kubectl config use-context k3d-kcp
           kubectl get crds
           kubectl apply -f template.yaml
-      - name: Create Template Operator Module without default CR
+      - name: Create Template Operator Module without default CR and apply
         working-directory: template-operator
         if: ${{ matrix.e2e-test == 'module-without-default-cr' }}
         run: |

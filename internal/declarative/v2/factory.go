@@ -13,7 +13,7 @@ import (
 	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
+	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/kubectl/pkg/util/openapi"
@@ -172,7 +172,7 @@ func setKubernetesDefaults(config *rest.Config) error {
 		// This codec factory ensures the resources are not converted. Therefore, resources
 		// will not be round-tripped through internal versions. Defaulting does not happen
 		// on the client.
-		config.NegotiatedSerializer = scheme.Codecs.WithoutConversion()
+		config.NegotiatedSerializer = k8sclientscheme.Codecs.WithoutConversion()
 	}
 	err := rest.SetKubernetesDefaults(config)
 	if err != nil {

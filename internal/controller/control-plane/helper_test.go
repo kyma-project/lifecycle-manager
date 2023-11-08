@@ -5,16 +5,19 @@ import (
 	"errors"
 	"fmt"
 
+	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/cache"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
-	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var (
@@ -56,7 +59,7 @@ func DeleteModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 		template := builder.NewModuleTemplateBuilder().
 			WithModuleName(module.Name).
 			WithChannel(module.Channel).
-			WithOCM(compdesc2.SchemaVersion).Build()
+			WithOCM(compdescv2.SchemaVersion).Build()
 		Eventually(DeleteCR, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(kcpClient, template).Should(Succeed())
@@ -68,7 +71,7 @@ func DeployModuleTemplates(ctx context.Context, kcpClient client.Client, kyma *v
 		template := builder.NewModuleTemplateBuilder().
 			WithModuleName(module.Name).
 			WithChannel(module.Channel).
-			WithOCM(compdesc2.SchemaVersion).Build()
+			WithOCM(compdescv2.SchemaVersion).Build()
 		Eventually(kcpClient.Create, Timeout, Interval).WithContext(ctx).
 			WithArguments(template).
 			Should(Succeed())
@@ -141,7 +144,7 @@ func kymaHasCondition(
 	clnt client.Client,
 	conditionType v1beta2.KymaConditionType,
 	reason string,
-	status metav1.ConditionStatus,
+	status apimetav1.ConditionStatus,
 	kymaName,
 	kymaNamespace string,
 ) error {
@@ -170,7 +173,7 @@ func containsModuleTemplateCondition(clnt client.Client, kymaName, kymaNamespace
 	return nil
 }
 
-func updateKymaCRD(clnt client.Client) (*v1extensions.CustomResourceDefinition, error) {
+func updateKymaCRD(clnt client.Client) (*apiextensionsv1.CustomResourceDefinition, error) {
 	crd, err := fetchCrd(clnt, v1beta2.KymaKind)
 	if err != nil {
 		return nil, err
@@ -181,7 +184,7 @@ func updateKymaCRD(clnt client.Client) (*v1extensions.CustomResourceDefinition, 
 	channelProperty := getCrdSpec(crd).Properties["channel"]
 	channelProperty.Description = "test change"
 	getCrdSpec(crd).Properties["channel"] = channelProperty
-	crd.Spec = v1extensions.CustomResourceDefinitionSpec{
+	crd.Spec = apiextensionsv1.CustomResourceDefinitionSpec{
 		Versions:              crdSpecVersions,
 		Names:                 crd.Spec.Names,
 		Group:                 crd.Spec.Group,
@@ -209,12 +212,12 @@ func updateKymaCRD(clnt client.Client) (*v1extensions.CustomResourceDefinition, 
 	return crd, nil
 }
 
-func getCrdSpec(crd *v1extensions.CustomResourceDefinition) v1extensions.JSONSchemaProps {
+func getCrdSpec(crd *apiextensionsv1.CustomResourceDefinition) apiextensionsv1.JSONSchemaProps {
 	return crd.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties["spec"]
 }
 
-func fetchCrd(clnt client.Client, crdKind v1beta2.Kind) (*v1extensions.CustomResourceDefinition, error) {
-	crd := &v1extensions.CustomResourceDefinition{}
+func fetchCrd(clnt client.Client, crdKind v1beta2.Kind) (*apiextensionsv1.CustomResourceDefinition, error) {
+	crd := &apiextensionsv1.CustomResourceDefinition{}
 	if err := clnt.Get(
 		ctx, client.ObjectKey{
 			Name: fmt.Sprintf("%s.%s", crdKind.Plural(), v1beta2.GroupVersion.Group),

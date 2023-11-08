@@ -3,13 +3,6 @@ name: Lint golangci
 on:
   pull_request:
     branches: [ "main" ]
-    paths:
-      - 'go.mod'
-      - 'go.sum'
-      - 'Makefile'
-      - '**.sh'
-      - '**.go'
-      - '**.ya?ml'
   workflow_dispatch:
 jobs:
   golangci:
