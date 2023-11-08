@@ -7,9 +7,9 @@ import (
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/util/workqueue"
@@ -40,7 +40,7 @@ type RestrictedEnqueueRequestForOwner struct {
 	Log logr.Logger
 
 	// OwnerType is the type of the Owner object to look for in OwnerReferences.  Only Group and Kind are compared.
-	OwnerType runtime.Object
+	OwnerType machineryruntime.Object
 
 	// IsController if set will only look at the first OwnerReference with Controller: true.
 	IsController bool
@@ -106,7 +106,7 @@ func (e *RestrictedEnqueueRequestForOwner) Generic(
 
 // parseOwnerTypeGroupKind parses the OwnerType into a Group and Kind and caches the result.  Returns false
 // if the OwnerType could not be parsed using the scheme.
-func (e *RestrictedEnqueueRequestForOwner) parseOwnerTypeGroupKind(scheme *runtime.Scheme) error {
+func (e *RestrictedEnqueueRequestForOwner) parseOwnerTypeGroupKind(scheme *machineryruntime.Scheme) error {
 	// Get the kinds of the type
 	kinds, _, err := scheme.ObjectKinds(e.OwnerType)
 	if err != nil {
@@ -149,7 +149,7 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequest(
 func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequestFromOwnerReference(
 	oldIfAny, object client.Object,
 	result map[reconcile.Request]any,
-	ref metav1.OwnerReference,
+	ref apimetav1.OwnerReference,
 	refGV schema.GroupVersion,
 ) {
 	// Compare the OwnerReference Group and Kind against the OwnerType Group and Kind specified by the user.
@@ -176,8 +176,8 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequestFromOwnerRefe
 	}
 
 	if oldIfAny != nil {
-		componentOld, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(oldIfAny)
-		componentNew, _ := runtime.DefaultUnstructuredConverter.ToUnstructured(object)
+		componentOld, _ := machineryruntime.DefaultUnstructuredConverter.ToUnstructured(oldIfAny)
+		componentNew, _ := machineryruntime.DefaultUnstructuredConverter.ToUnstructured(object)
 		oldState, okOld, _ := unstructured.NestedString(componentOld, "status", "state")
 		newState, okNew, _ := unstructured.NestedString(componentNew, "status", "state")
 
@@ -197,7 +197,7 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnerReconcileRequestFromOwnerRefe
 // getOwnersReferences returns the OwnerReferences for an object as specified by the EnqueueRequestForOwner
 // - if IsController is true: only take the Controller OwnerReference (if found)
 // - if IsController is false: take all OwnerReferences.
-func (e *RestrictedEnqueueRequestForOwner) getOwnersReferences(object metav1.Object) []metav1.OwnerReference {
+func (e *RestrictedEnqueueRequestForOwner) getOwnersReferences(object apimetav1.Object) []apimetav1.OwnerReference {
 	if object == nil {
 		return nil
 	}
@@ -207,15 +207,15 @@ func (e *RestrictedEnqueueRequestForOwner) getOwnersReferences(object metav1.Obj
 		return object.GetOwnerReferences()
 	}
 	// If filtered to a Controller, only take the Controller OwnerReference
-	if ownerRef := metav1.GetControllerOf(object); ownerRef != nil {
-		return []metav1.OwnerReference{*ownerRef}
+	if ownerRef := apimetav1.GetControllerOf(object); ownerRef != nil {
+		return []apimetav1.OwnerReference{*ownerRef}
 	}
 	// No Controller OwnerReference found
 	return nil
 }
 
 // InjectScheme is called by the Controller to provide a singleton scheme to the EnqueueRequestForOwner.
-func (e *RestrictedEnqueueRequestForOwner) InjectScheme(s *runtime.Scheme) error {
+func (e *RestrictedEnqueueRequestForOwner) InjectScheme(s *machineryruntime.Scheme) error {
 	return e.parseOwnerTypeGroupKind(s)
 }
 

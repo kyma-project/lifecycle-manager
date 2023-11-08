@@ -5,14 +5,15 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/util/uuid"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
 var (
@@ -22,9 +23,9 @@ var (
 
 func NewTestManifest(prefix string) *v1beta2.Manifest {
 	return &v1beta2.Manifest{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      fmt.Sprintf("%s-%s", prefix, builder.RandomName()),
-			Namespace: v1.NamespaceDefault,
+			Namespace: apimetav1.NamespaceDefault,
 			Labels: map[string]string{
 				v1beta2.KymaName: string(uuid.NewUUID()),
 			},
@@ -151,7 +152,7 @@ func AddSkipLabelToManifest(
 		return fmt.Errorf("failed to get manifest, %w", err)
 	}
 
-	manifest.Labels[declarative.SkipReconcileLabel] = "true"
+	manifest.Labels[declarativev2.SkipReconcileLabel] = "true"
 	err = clnt.Update(ctx, manifest)
 	if err != nil {
 		return fmt.Errorf("failed to update manifest, %w", err)
@@ -171,5 +172,5 @@ func SkipLabelExistsInManifest(ctx context.Context,
 		return false
 	}
 
-	return manifest.Labels[declarative.SkipReconcileLabel] == "true"
+	return manifest.Labels[declarativev2.SkipReconcileLabel] == "true"
 }

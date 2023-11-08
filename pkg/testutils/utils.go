@@ -10,24 +10,23 @@ import (
 	"path/filepath"
 	"time"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	corev1 "k8s.io/api/core/v1"
-	apiExtensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	k8sruntime "k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/yaml"
+	apicorev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
+	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
@@ -64,7 +63,7 @@ func NewTestModuleWithFixName(name, channel string) v1beta2.Module {
 
 func NewTestIssuer(namespace string) *certmanagerv1.Issuer {
 	return &certmanagerv1.Issuer{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      "test-issuer",
 			Namespace: namespace,
 			Labels:    watcher.LabelSet,
@@ -77,9 +76,9 @@ func NewTestIssuer(namespace string) *certmanagerv1.Issuer {
 	}
 }
 
-func NewTestNamespace(namespace string) *corev1.Namespace {
-	return &corev1.Namespace{
-		ObjectMeta: v1.ObjectMeta{
+func NewTestNamespace(namespace string) *apicorev1.Namespace {
+	return &apicorev1.Namespace{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name: namespace,
 		},
 	}
@@ -100,13 +99,13 @@ func DeleteCR(ctx context.Context, clnt client.Client, obj client.Object) error 
 
 func CreateCR(ctx context.Context, clnt client.Client, obj client.Object) error {
 	err := clnt.Create(ctx, obj)
-	if !k8serrors.IsAlreadyExists(err) {
+	if !apierrors.IsAlreadyExists(err) {
 		return err
 	}
 	return nil
 }
 
-func CRExists(obj v1.Object, clientError error) error {
+func CRExists(obj apimetav1.Object, clientError error) error {
 	if util.IsNotFound(clientError) {
 		return ErrNotFound
 	}
@@ -122,7 +121,7 @@ func CRExists(obj v1.Object, clientError error) error {
 	return nil
 }
 
-func NewSKRCluster(scheme *k8sruntime.Scheme) (client.Client, *envtest.Environment, error) {
+func NewSKRCluster(scheme *machineryruntime.Scheme) (client.Client, *envtest.Environment, error) {
 	skrEnv := &envtest.Environment{
 		ErrorIfCRDPathMissing: true,
 	}
@@ -152,17 +151,17 @@ func NewSKRCluster(scheme *k8sruntime.Scheme) (client.Client, *envtest.Environme
 	return skrClient, skrEnv, err
 }
 
-func AppendExternalCRDs(path string, files ...string) ([]*apiExtensionsv1.CustomResourceDefinition, error) {
-	var crds []*apiExtensionsv1.CustomResourceDefinition
+func AppendExternalCRDs(path string, files ...string) ([]*apiextensionsv1.CustomResourceDefinition, error) {
+	var crds []*apiextensionsv1.CustomResourceDefinition
 	for _, file := range files {
 		crdPath := filepath.Join(path, file)
 		moduleFile, err := os.Open(crdPath)
 		if err != nil {
 			return nil, err
 		}
-		decoder := yaml.NewYAMLOrJSONDecoder(moduleFile, defaultBufferSize)
+		decoder := machineryaml.NewYAMLOrJSONDecoder(moduleFile, defaultBufferSize)
 		for {
-			crd := &apiExtensionsv1.CustomResourceDefinition{}
+			crd := &apiextensionsv1.CustomResourceDefinition{}
 			if err = decoder.Decode(crd); err != nil {
 				if errors.Is(err, io.EOF) {
 					break

@@ -3,9 +3,10 @@ package builder
 import (
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 type ModuleCRBuilder struct {

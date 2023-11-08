@@ -5,7 +5,7 @@ import (
 	"github.com/go-logr/zapr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	ctrlZap "sigs.k8s.io/controller-runtime/pkg/log/zap"
+	k8szap "sigs.k8s.io/controller-runtime/pkg/log/zap" //nolint:importas // a one-time reference for the package
 )
 
 func ConfigLogger(level int8, syncer zapcore.WriteSyncer) logr.Logger {
@@ -23,7 +23,7 @@ func ConfigLogger(level int8, syncer zapcore.WriteSyncer) logr.Logger {
 	encoder := zapcore.NewJSONEncoder(encoderConfig)
 
 	core := zapcore.NewCore(
-		&ctrlZap.KubeAwareEncoder{Encoder: encoder}, syncer, atomicLevel,
+		&k8szap.KubeAwareEncoder{Encoder: encoder}, syncer, atomicLevel,
 	)
 	zapLog := zap.New(core, zap.AddCaller(), zap.AddStacktrace(zapcore.ErrorLevel))
 	logger := zapr.NewLogger(zapLog.With(zap.Namespace("context")))

@@ -2,9 +2,11 @@ package event_filters_test
 
 import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var _ = Describe("Kyma is reconciled correctly based on the event filters", Ordered, func() {

@@ -8,18 +8,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
+	apiappsv1 "k8s.io/api/apps/v1"
+	apicorev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/cli-runtime/pkg/resource"
+	"k8s.io/kubectl/pkg/util/deployment"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/cli-runtime/pkg/resource"
-	deploymentutil "k8s.io/kubectl/pkg/util/deployment"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 const (
@@ -43,39 +42,39 @@ var (
 )
 
 func (c *CustomResourceReadyCheck) Run(ctx context.Context,
-	clnt declarative.Client,
-	obj declarative.Object,
+	clnt declarativev2.Client,
+	obj declarativev2.Object,
 	resources []*resource.Info,
-) (declarative.StateInfo, error) {
+) (declarativev2.StateInfo, error) {
 	if !isDeploymentReady(clnt, resources) {
-		return declarative.StateInfo{
+		return declarativev2.StateInfo{
 			State: shared.StateProcessing,
 			Info:  "module operator deployment is not ready",
 		}, nil
 	}
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
-		return declarative.StateInfo{State: shared.StateError}, v1beta2.ErrTypeAssertManifest
+		return declarativev2.StateInfo{State: shared.StateError}, v1beta2.ErrTypeAssertManifest
 	}
 	if manifest.Spec.Resource == nil {
-		return declarative.StateInfo{State: shared.StateReady}, nil
+		return declarativev2.StateInfo{State: shared.StateReady}, nil
 	}
 	moduleCR := manifest.Spec.Resource.DeepCopy()
 
 	err := clnt.Get(ctx, client.ObjectKeyFromObject(moduleCR), moduleCR)
 	if err != nil {
 		if util.IsNotFound(err) && !manifest.DeletionTimestamp.IsZero() {
-			return declarative.StateInfo{State: shared.StateDeleting}, nil
+			return declarativev2.StateInfo{State: shared.StateDeleting}, nil
 		}
-		return declarative.StateInfo{State: shared.StateError}, fmt.Errorf("failed to fetch resource: %w", err)
+		return declarativev2.StateInfo{State: shared.StateError}, fmt.Errorf("failed to fetch resource: %w", err)
 	}
 	return HandleState(manifest, moduleCR)
 }
 
-func HandleState(manifest *v1beta2.Manifest, moduleCR *unstructured.Unstructured) (declarative.StateInfo, error) {
+func HandleState(manifest *v1beta2.Manifest, moduleCR *unstructured.Unstructured) (declarativev2.StateInfo, error) {
 	stateChecks, customStateFound, err := parseStateChecks(manifest)
 	if err != nil {
-		return declarative.StateInfo{State: shared.StateError}, fmt.Errorf(
+		return declarativev2.StateInfo{State: shared.StateError}, fmt.Errorf(
 			"could not get state from module CR %s to determine readiness: %w",
 			moduleCR.GetName(), err,
 		)
@@ -84,12 +83,12 @@ func HandleState(manifest *v1beta2.Manifest, moduleCR *unstructured.Unstructured
 	if err != nil {
 		// Only happens for kyma module CR
 		if errors.Is(err, ErrNotSupportedState) {
-			return declarative.StateInfo{
+			return declarativev2.StateInfo{
 				State: shared.StateWarning,
 				Info:  ErrNotSupportedState.Error(),
 			}, nil
 		}
-		return declarative.StateInfo{State: shared.StateError}, fmt.Errorf(
+		return declarativev2.StateInfo{State: shared.StateError}, fmt.Errorf(
 			"could not get state from module CR %s to determine readiness: %w",
 			moduleCR.GetName(), err,
 		)
@@ -105,10 +104,10 @@ func HandleState(manifest *v1beta2.Manifest, moduleCR *unstructured.Unstructured
 			state = shared.StateWarning
 		}
 
-		return declarative.StateInfo{State: state, Info: info}, nil
+		return declarativev2.StateInfo{State: state, Info: info}, nil
 	}
 
-	return declarative.StateInfo{State: typedState}, nil
+	return declarativev2.StateInfo{State: typedState}, nil
 }
 
 func mappingState(stateChecks []*v1beta2.CustomStateCheck,
@@ -210,8 +209,8 @@ func parseStateChecks(manifest *v1beta2.Manifest) ([]*v1beta2.CustomStateCheck, 
 	return stateCheck, true, nil
 }
 
-func isDeploymentReady(clt declarative.Client, resources []*resource.Info) bool {
-	deploy := &appsv1.Deployment{}
+func isDeploymentReady(clt declarativev2.Client, resources []*resource.Info) bool {
+	deploy := &apiappsv1.Deployment{}
 	found := false
 	for _, res := range resources {
 		err := clt.Scheme().Convert(res.Object, deploy, nil)
@@ -224,8 +223,8 @@ func isDeploymentReady(clt declarative.Client, resources []*resource.Info) bool 
 	if !found {
 		return true
 	}
-	availableCond := deploymentutil.GetDeploymentCondition(deploy.Status, appsv1.DeploymentAvailable)
-	if availableCond != nil && availableCond.Status == corev1.ConditionTrue {
+	availableCond := deployment.GetDeploymentCondition(deploy.Status, apiappsv1.DeploymentAvailable)
+	if availableCond != nil && availableCond.Status == apicorev1.ConditionTrue {
 		return true
 	}
 	if deploy.Spec.Replicas != nil && *deploy.Spec.Replicas == deploy.Status.ReadyReplicas {

@@ -22,13 +22,13 @@ import (
 	"sync"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
 // ModuleTemplate is a representation of a Template used for creating Module Instances within the Module Lifecycle.
@@ -40,8 +40,8 @@ import (
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 type ModuleTemplate struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	apimetav1.TypeMeta   `json:",inline"`
+	apimetav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec ModuleTemplateSpec `json:"spec,omitempty"`
 }
@@ -67,7 +67,7 @@ func (d *Descriptor) GetObjectKind() schema.ObjectKind {
 	return d
 }
 
-func (d *Descriptor) DeepCopyObject() runtime.Object {
+func (d *Descriptor) DeepCopyObject() machineryruntime.Object {
 	return &Descriptor{ComponentDescriptor: d.Copy()}
 }
 
@@ -104,7 +104,7 @@ type ModuleTemplateSpec struct {
 	// charts and kustomize renderers are deprecated and ignored.
 	//
 	//+kubebuilder:pruning:PreserveUnknownFields
-	Descriptor runtime.RawExtension `json:"descriptor"`
+	Descriptor machineryruntime.RawExtension `json:"descriptor"`
 
 	CustomStateCheck []*CustomStateCheck `json:"customStateCheck,omitempty"`
 }
@@ -175,9 +175,9 @@ func (m *ModuleTemplate) SetDescToCache(descriptor *Descriptor) {
 
 // ModuleTemplateList contains a list of ModuleTemplate.
 type ModuleTemplateList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ModuleTemplate `json:"items"`
+	apimetav1.TypeMeta `json:",inline"`
+	apimetav1.ListMeta `json:"metadata,omitempty"`
+	Items              []ModuleTemplate `json:"items"`
 }
 
 //nolint:gochecknoinits

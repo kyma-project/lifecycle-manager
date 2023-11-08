@@ -5,10 +5,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
 type testObj struct{ *unstructured.Unstructured }

@@ -4,13 +4,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	ctrlMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
-	listenerMetrics "github.com/kyma-project/runtime-watcher/listener/pkg/metrics"
+	watchermetrics "github.com/kyma-project/runtime-watcher/listener/pkg/metrics"
 	"github.com/prometheus/client_golang/prometheus"
+	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	commonmetrics "github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
 )
 
 const (
@@ -35,20 +35,20 @@ var (
 )
 
 func Initialize() {
-	ctrlMetrics.Registry.MustRegister(kymaStateGauge)
-	ctrlMetrics.Registry.MustRegister(moduleStateGauge)
-	listenerMetrics.Init(ctrlMetrics.Registry)
+	ctrlmetrics.Registry.MustRegister(kymaStateGauge)
+	ctrlmetrics.Registry.MustRegister(moduleStateGauge)
+	watchermetrics.Init(ctrlmetrics.Registry)
 }
 
 var errMetric = errors.New("failed to update metrics")
 
 // UpdateAll sets both metrics 'lifecycle_mgr_kyma_state' and 'lifecycle_mgr_module_state' to new states.
 func UpdateAll(kyma *v1beta2.Kyma) error {
-	shootID, err := metrics.ExtractShootID(kyma)
+	shootID, err := commonmetrics.ExtractShootID(kyma)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errMetric, err)
 	}
-	instanceID, err := metrics.ExtractInstanceID(kyma)
+	instanceID, err := commonmetrics.ExtractInstanceID(kyma)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errMetric, err)
 	}

@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 var ErrDeletionNotFinished = errors.New("deletion is not yet finished")
@@ -22,7 +23,7 @@ type ConcurrentCleanup struct {
 }
 
 func NewConcurrentCleanup(clnt client.Client) Cleanup {
-	return &ConcurrentCleanup{clnt: clnt, policy: client.PropagationPolicy(metav1.DeletePropagationBackground)}
+	return &ConcurrentCleanup{clnt: clnt, policy: client.PropagationPolicy(apimetav1.DeletePropagationBackground)}
 }
 
 func (c *ConcurrentCleanup) Run(ctx context.Context, infos []*resource.Info) error {

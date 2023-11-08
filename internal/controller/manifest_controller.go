@@ -7,32 +7,30 @@ import (
 	"strings"
 	"time"
 
-	v1 "k8s.io/api/core/v1"
+	watcherevent "github.com/kyma-project/runtime-watcher/listener/pkg/event"
+	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
+	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/util/workqueue"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
+	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
-
-	listener "github.com/kyma-project/runtime-watcher/listener/pkg/event"
-	"github.com/kyma-project/runtime-watcher/listener/pkg/types"
-
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
 )
 
 func SetupWithManager(
 	mgr manager.Manager,
-	options controllerRuntime.Options,
+	options ctrlruntime.Options,
 	checkInterval time.Duration,
 	settings SetupUpSetting,
 ) error {
-	var verifyFunc listener.Verify
+	var verifyFunc watcherevent.Verify
 	if settings.EnableDomainNameVerification {
 		// Verifier used to verify incoming listener requests
 		verifyFunc = security.NewRequestVerifier(mgr.GetClient()).Verify
@@ -42,8 +40,8 @@ func SetupWithManager(
 		}
 	}
 
-	runnableListener, eventChannel := listener.RegisterListenerComponent(
-		settings.ListenerAddr, strings.ToLower(declarative.OperatorName), verifyFunc,
+	runnableListener, eventChannel := watcherevent.RegisterListenerComponent(
+		settings.ListenerAddr, strings.ToLower(declarativev2.OperatorName), verifyFunc,
 	)
 
 	// start listener as a manager runnable
@@ -53,7 +51,7 @@ func SetupWithManager(
 
 	controllerManagedByManager := ctrl.NewControllerManagedBy(mgr).
 		For(&v1beta2.Manifest{}).
-		Watches(&v1.Secret{}, handler.Funcs{}).
+		Watches(&apicorev1.Secret{}, handler.Funcs{}).
 		WatchesRawSource(
 			eventChannel, &handler.Funcs{
 				GenericFunc: func(ctx context.Context, event event.GenericEvent, queue workqueue.RateLimitingInterface) {
@@ -77,23 +75,23 @@ func SetupWithManager(
 func ManifestReconciler(
 	mgr manager.Manager,
 	checkInterval time.Duration,
-) *declarative.Reconciler {
-	kcp := &declarative.ClusterInfo{
+) *declarativev2.Reconciler {
+	kcp := &declarativev2.ClusterInfo{
 		Client: mgr.GetClient(),
 		Config: mgr.GetConfig(),
 	}
 	lookup := &manifest.RemoteClusterLookup{KCP: kcp}
-	return declarative.NewFromManager(
+	return declarativev2.NewFromManager(
 		mgr, &v1beta2.Manifest{},
-		declarative.WithSpecResolver(
+		declarativev2.WithSpecResolver(
 			manifest.NewSpecResolver(kcp),
 		),
-		declarative.WithCustomReadyCheck(manifest.NewCustomResourceReadyCheck()),
-		declarative.WithRemoteTargetCluster(lookup.ConfigResolver),
+		declarativev2.WithCustomReadyCheck(manifest.NewCustomResourceReadyCheck()),
+		declarativev2.WithRemoteTargetCluster(lookup.ConfigResolver),
 		manifest.WithClientCacheKey(),
-		declarative.WithPostRun{manifest.PostRunCreateCR},
-		declarative.WithPreDelete{manifest.PreDeleteDeleteCR},
-		declarative.WithPeriodicConsistencyCheck(checkInterval),
-		declarative.WithModuleCRDeletionCheck(manifest.NewModuleCRDeletionCheck()),
+		declarativev2.WithPostRun{manifest.PostRunCreateCR},
+		declarativev2.WithPreDelete{manifest.PreDeleteDeleteCR},
+		declarativev2.WithPeriodicConsistencyCheck(checkInterval),
+		declarativev2.WithModuleCRDeletionCheck(manifest.NewModuleCRDeletionCheck()),
 	)
 }

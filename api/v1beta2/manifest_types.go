@@ -17,10 +17,11 @@ limitations under the License.
 package v1beta2
 
 import (
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
 const (
@@ -32,7 +33,7 @@ const (
 type InstallInfo struct {
 	// Source in the ImageSpec format
 	//+kubebuilder:pruning:PreserveUnknownFields
-	Source runtime.RawExtension `json:"source"`
+	Source machineryruntime.RawExtension `json:"source"`
 
 	// Name specifies a unique install name for Manifest
 	Name string `json:"name"`
@@ -81,7 +82,7 @@ type ImageSpec struct {
 	// CredSecretSelector is an optional field, for OCI image saved in private registry,
 	// use it to indicate the secret which contains registry credentials,
 	// must exist in the namespace same as manifest
-	CredSecretSelector *metav1.LabelSelector `json:"credSecretSelector,omitempty"`
+	CredSecretSelector *apimetav1.LabelSelector `json:"credSecretSelector,omitempty"`
 }
 
 type RefTypeMetadata string
@@ -97,8 +98,8 @@ const (
 
 // Manifest is the Schema for the manifests API.
 type Manifest struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	apimetav1.TypeMeta   `json:",inline"`
+	apimetav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   ManifestSpec  `json:"spec,omitempty"`
 	Status shared.Status `json:"status,omitempty"`
@@ -116,9 +117,9 @@ func (manifest *Manifest) SetStatus(status shared.Status) {
 
 // ManifestList contains a list of Manifest.
 type ManifestList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Manifest `json:"items"`
+	apimetav1.TypeMeta `json:",inline"`
+	apimetav1.ListMeta `json:"metadata,omitempty"`
+	Items              []Manifest `json:"items"`
 }
 
 //nolint:gochecknoinits

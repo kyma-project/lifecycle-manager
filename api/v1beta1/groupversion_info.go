@@ -20,9 +20,10 @@ limitations under the License.
 package v1beta1
 
 import (
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 var (
