@@ -28,12 +28,7 @@ const (
 
 func DefaultOptions() *Options {
 	return (&Options{}).Apply(
-<<<<<<< HEAD
-		WithNamespace(apimachinerymeta.NamespaceDefault, false),
-=======
-		WithDeleteCRDs(false),
 		WithNamespace(apimetav1.NamespaceDefault, false),
->>>>>>> 2671919 (Adjusts the import aliases to be versioned ones)
 		WithFinalizer(FinalizerDefault),
 		WithFieldOwner(FieldOwnerDefault),
 		WithPostRenderTransform(

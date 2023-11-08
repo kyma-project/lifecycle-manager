@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	apimachinerymeta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -44,7 +44,7 @@ func PostRunCreateCR(
 		return fmt.Errorf("failed to create resource: %w", err)
 	}
 
-	oMeta := &apimachinerymeta.PartialObjectMetadata{}
+	oMeta := &apimetav1.PartialObjectMetadata{}
 	oMeta.SetName(obj.GetName())
 	oMeta.SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
 	oMeta.SetNamespace(obj.GetNamespace())
@@ -79,7 +79,7 @@ func PreDeleteDeleteCR(
 	}
 
 	resource := manifest.Spec.Resource.DeepCopy()
-	propagation := apimachinerymeta.DeletePropagationBackground
+	propagation := apimetav1.DeletePropagationBackground
 	err := skr.Delete(ctx, resource, &client.DeleteOptions{PropagationPolicy: &propagation})
 
 	if !util.IsNotFound(err) {
