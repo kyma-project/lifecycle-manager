@@ -15,7 +15,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	manifestctrltest "github.com/kyma-project/lifecycle-manager/tests/integration/controller/manifest/manifesttest"
+	"github.com/kyma-project/lifecycle-manager/tests/integration/controller/manifest/manifesttest"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -28,7 +28,7 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 
 	It(
 		"setup OCI", func() {
-			manifestctrltest.PushToRemoteOCIRegistry(installName)
+			manifesttest.PushToRemoteOCIRegistry(installName)
 		},
 	)
 	BeforeEach(
@@ -40,11 +40,11 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		By("Install test Manifest CR")
 		testManifest := testutils.NewTestManifest("warning-check")
 		manifestName := testManifest.GetName()
-		validImageSpec := manifestctrltest.CreateOCIImageSpec(installName, manifestctrltest.Server.Listener.Addr().String(), false)
+		validImageSpec := manifesttest.CreateOCIImageSpec(installName, manifesttest.Server.Listener.Addr().String(), false)
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(manifestctrltest.InstallManifest(testManifest, imageSpecByte, true)).To(Succeed())
+		Expect(manifesttest.InstallManifest(testManifest, imageSpecByte, true)).To(Succeed())
 
 		By("Ensure that deployment and Sample CR are deployed and ready")
 		deploy := &apiappsv1.Deployment{}
@@ -53,11 +53,11 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		Eventually(setCRStatus(sampleCR, shared.StateReady), standardTimeout, standardInterval).Should(Succeed())
 
 		By("Verify the Manifest CR is in the \"Ready\" state")
-		Eventually(manifestctrltest.ExpectManifestStateIn(shared.StateReady), standardTimeout, standardInterval).
+		Eventually(manifesttest.ExpectManifestStateIn(shared.StateReady), standardTimeout, standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
 		By("Verify manifest status list all resources correctly")
-		status, err := manifestctrltest.GetManifestStatus(manifestName)
+		status, err := manifesttest.GetManifestStatus(manifestName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(status.Synced).To(HaveLen(2))
 		expectedDeployment := asResource(deploymentName, "default", "apps", "v1", "Deployment")
@@ -70,14 +70,14 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		Eventually(setCRStatus(sampleCR, shared.StateWarning), standardTimeout, standardInterval).Should(Succeed())
 
 		By("Verify the Manifest CR state also changes to \"Warning\"")
-		Eventually(manifestctrltest.ExpectManifestStateIn(shared.StateWarning), standardTimeout, standardInterval).
+		Eventually(manifesttest.ExpectManifestStateIn(shared.StateWarning), standardTimeout, standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
 		By("When the Module CR state is changed back to \"Ready\"")
 		Eventually(setCRStatus(sampleCR, shared.StateReady), standardTimeout, standardInterval).Should(Succeed())
 
 		By("Verify the Manifest CR state changes back to \"Ready\"")
-		Eventually(manifestctrltest.ExpectManifestStateIn(shared.StateReady), standardTimeout, standardInterval).
+		Eventually(manifesttest.ExpectManifestStateIn(shared.StateReady), standardTimeout, standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
 		By("cleaning up the manifest")
@@ -86,7 +86,7 @@ var _ = Describe("Warning state propagation test", Ordered, func() {
 		Eventually(verifyObjectExists(expectedCRD.ToUnstructured()), standardTimeout, standardInterval).Should(BeTrue())
 		Eventually(verifyObjectExists(sampleCR), standardTimeout, standardInterval).Should(BeTrue())
 
-		Eventually(manifestctrltest.DeleteManifestAndVerify(testManifest), standardTimeout, standardInterval).Should(Succeed())
+		Eventually(manifesttest.DeleteManifestAndVerify(testManifest), standardTimeout, standardInterval).Should(Succeed())
 
 		By("verify target resources got deleted")
 		Eventually(verifyObjectExists(sampleCR), standardTimeout, standardInterval).Should(BeFalse())
@@ -107,8 +107,8 @@ func asResource(name, namespace, group, version, kind string) shared.Resource {
 
 func verifyObjectExists(obj *unstructured.Unstructured) func() (bool, error) {
 	return func() (bool, error) {
-		err := manifestctrltest.K8sClient.Get(
-			manifestctrltest.Ctx, client.ObjectKeyFromObject(obj),
+		err := manifesttest.K8sClient.Get(
+			manifesttest.Ctx, client.ObjectKeyFromObject(obj),
 			obj,
 		)
 
@@ -133,8 +133,8 @@ func emptySampleCR(manifestName string) *unstructured.Unstructured {
 
 func setCRStatus(moduleCR *unstructured.Unstructured, statusValue shared.State) func() error {
 	return func() error {
-		err := manifestctrltest.K8sClient.Get(
-			manifestctrltest.Ctx, client.ObjectKeyFromObject(moduleCR),
+		err := manifesttest.K8sClient.Get(
+			manifesttest.Ctx, client.ObjectKeyFromObject(moduleCR),
 			moduleCR,
 		)
 		if err != nil {
@@ -146,14 +146,14 @@ func setCRStatus(moduleCR *unstructured.Unstructured, statusValue shared.State) 
 		if err = unstructured.SetNestedField(moduleCR.Object, string(statusValue), "status", "state"); err != nil {
 			return err
 		}
-		return manifestctrltest.K8sClient.Status().Update(manifestctrltest.Ctx, moduleCR)
+		return manifesttest.K8sClient.Status().Update(manifesttest.Ctx, moduleCR)
 	}
 }
 
 func setDeploymentStatus(name string, deploy *apiappsv1.Deployment) func() error {
 	return func() error {
-		err := manifestctrltest.K8sClient.Get(
-			manifestctrltest.Ctx, client.ObjectKey{
+		err := manifesttest.K8sClient.Get(
+			manifesttest.Ctx, client.ObjectKey{
 				Namespace: apimetav1.NamespaceDefault,
 				Name:      name,
 			}, deploy,
@@ -169,7 +169,7 @@ func setDeploymentStatus(name string, deploy *apiappsv1.Deployment) func() error
 				Type:   apiappsv1.DeploymentAvailable,
 				Status: apicorev1.ConditionTrue,
 			})
-		err = manifestctrltest.K8sClient.Status().Update(manifestctrltest.Ctx, deploy)
+		err = manifesttest.K8sClient.Status().Update(manifesttest.Ctx, deploy)
 		if err != nil {
 			return err
 		}

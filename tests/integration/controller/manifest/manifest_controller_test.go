@@ -9,7 +9,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
-	manifestctrltest "github.com/kyma-project/lifecycle-manager/tests/integration/controller/manifest/manifesttest"
+	"github.com/kyma-project/lifecycle-manager/tests/integration/controller/manifest/manifesttest"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -21,7 +21,7 @@ var _ = Describe(
 		installName := filepath.Join(mainOciTempDir, "installs")
 		It(
 			"setup OCI", func() {
-				manifestctrltest.PushToRemoteOCIRegistry(installName)
+				manifesttest.PushToRemoteOCIRegistry(installName)
 			},
 		)
 		BeforeEach(
@@ -44,28 +44,28 @@ var _ = Describe(
 						WithArguments(manifest.GetName()).Should(Succeed())
 				}
 
-				Eventually(manifestctrltest.DeleteManifestAndVerify(manifest), standardTimeout, standardInterval).Should(Succeed())
+				Eventually(manifesttest.DeleteManifestAndVerify(manifest), standardTimeout, standardInterval).Should(Succeed())
 			},
 			Entry(
 				"When Manifest CR contains a valid install OCI image specification, "+
 					"expect state in ready",
-				manifestctrltest.WithValidInstallImageSpec(installName, false, false),
-				manifestctrltest.ExpectManifestStateIn(shared.StateReady),
-				manifestctrltest.ExpectOCISyncRefAnnotationExists(true),
+				manifesttest.WithValidInstallImageSpec(installName, false, false),
+				manifesttest.ExpectManifestStateIn(shared.StateReady),
+				manifesttest.ExpectOCISyncRefAnnotationExists(true),
 			),
 			Entry(
 				"When Manifest CR contains a valid install OCI image specification and enabled deploy resource, "+
 					"expect state in ready",
-				manifestctrltest.WithValidInstallImageSpec(installName, true, false),
-				manifestctrltest.ExpectManifestStateIn(shared.StateReady),
-				manifestctrltest.ExpectOCISyncRefAnnotationExists(true),
+				manifesttest.WithValidInstallImageSpec(installName, true, false),
+				manifesttest.ExpectManifestStateIn(shared.StateReady),
+				manifesttest.ExpectOCISyncRefAnnotationExists(true),
 			),
 			Entry(
 				"When Manifest CR contains an invalid install OCI image specification, "+
 					"expect state in error",
-				manifestctrltest.WithInvalidInstallImageSpec(false),
-				manifestctrltest.ExpectManifestStateIn(shared.StateError),
-				manifestctrltest.ExpectOCISyncRefAnnotationExists(false),
+				manifesttest.WithInvalidInstallImageSpec(false),
+				manifesttest.ExpectManifestStateIn(shared.StateError),
+				manifesttest.ExpectOCISyncRefAnnotationExists(false),
 			),
 		)
 	},
@@ -78,7 +78,7 @@ var _ = Describe(
 		It(
 			"setup remote oci Registry",
 			func() {
-				manifestctrltest.PushToRemoteOCIRegistry(installName)
+				manifesttest.PushToRemoteOCIRegistry(installName)
 			},
 		)
 		BeforeEach(
@@ -89,10 +89,10 @@ var _ = Describe(
 
 		It("Manifest should be in Error state with no auth secret found error message", func() {
 			manifestWithInstall := testutils.NewTestManifest("private-oci-registry")
-			Eventually(manifestctrltest.WithValidInstallImageSpec(installName, false, true), standardTimeout, standardInterval).
+			Eventually(manifesttest.WithValidInstallImageSpec(installName, false, true), standardTimeout, standardInterval).
 				WithArguments(manifestWithInstall).Should(Succeed())
 			Eventually(func() string {
-				status, err := manifestctrltest.GetManifestStatus(manifestWithInstall.GetName())
+				status, err := manifesttest.GetManifestStatus(manifestWithInstall.GetName())
 				if err != nil {
 					return err.Error()
 				}

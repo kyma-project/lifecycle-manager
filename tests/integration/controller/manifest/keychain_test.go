@@ -12,7 +12,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
-	manifestctrltest "github.com/kyma-project/lifecycle-manager/tests/integration/controller/manifest/manifesttest"
+	"github.com/kyma-project/lifecycle-manager/tests/integration/controller/manifest/manifesttest"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -28,7 +28,7 @@ var _ = Describe(
 				const repo = "test.registry.io"
 				imageSpecWithCredSelect := CreateOCIImageSpecWithCredSelect("imageName", repo,
 					"digest", CredSecretLabelValue)
-				keychain, err := ocmextensions.GetAuthnKeychain(manifestctrltest.Ctx, imageSpecWithCredSelect.CredSecretSelector, manifestctrltest.K8sClient)
+				keychain, err := ocmextensions.GetAuthnKeychain(manifesttest.Ctx, imageSpecWithCredSelect.CredSecretSelector, manifesttest.K8sClient)
 				Expect(err).ToNot(HaveOccurred())
 				dig := &TestRegistry{target: repo, registry: repo}
 				authenticator, err := keychain.Resolve(dig)
@@ -48,7 +48,7 @@ func CreateOCIImageSpecWithCredSelect(name, repo, digest, secretLabelValue strin
 		Repo:               repo,
 		Type:               "oci-ref",
 		Ref:                digest,
-		CredSecretSelector: manifestctrltest.CredSecretLabelSelector(secretLabelValue),
+		CredSecretSelector: manifesttest.CredSecretLabelSelector(secretLabelValue),
 	}
 	return imageSpec
 }
@@ -73,12 +73,12 @@ func installCredSecret(secretLabelValue string) func() error {
 		Expect(err).ToNot(HaveOccurred())
 		err = yaml.Unmarshal(secretFile, secret)
 		Expect(err).ToNot(HaveOccurred())
-		secret.Labels[manifestctrltest.CredSecretLabelKeyForTest] = secretLabelValue
-		err = manifestctrltest.K8sClient.Create(manifestctrltest.Ctx, secret)
+		secret.Labels[manifesttest.CredSecretLabelKeyForTest] = secretLabelValue
+		err = manifesttest.K8sClient.Create(manifesttest.Ctx, secret)
 		if apierrors.IsAlreadyExists(err) {
 			return nil
 		}
 		Expect(err).ToNot(HaveOccurred())
-		return manifestctrltest.K8sClient.Get(manifestctrltest.Ctx, client.ObjectKeyFromObject(secret), &apicorev1.Secret{})
+		return manifesttest.K8sClient.Get(manifesttest.Ctx, client.ObjectKeyFromObject(secret), &apicorev1.Secret{})
 	}
 }

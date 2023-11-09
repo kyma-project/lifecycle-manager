@@ -18,7 +18,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	manifestctrltest "github.com/kyma-project/lifecycle-manager/tests/integration/controller/manifest/manifesttest"
+	"github.com/kyma-project/lifecycle-manager/tests/integration/controller/manifest/manifesttest"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -29,7 +29,7 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 	installName := filepath.Join(customDir, "installs")
 	It(
 		"setup OCI", func() {
-			manifestctrltest.PushToRemoteOCIRegistry(installName)
+			manifesttest.PushToRemoteOCIRegistry(installName)
 		},
 	)
 	BeforeEach(
@@ -40,12 +40,12 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 	It("Install OCI specs including an nginx deployment", func() {
 		testManifest := testutils.NewTestManifest("custom-check-oci")
 		manifestName := testManifest.GetName()
-		validImageSpec := manifestctrltest.CreateOCIImageSpec(installName, manifestctrltest.Server.Listener.Addr().String(), false)
+		validImageSpec := manifesttest.CreateOCIImageSpec(installName, manifesttest.Server.Listener.Addr().String(), false)
 		imageSpecByte, err := json.Marshal(validImageSpec)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(manifestctrltest.InstallManifest(testManifest, imageSpecByte, false)).To(Succeed())
+		Expect(manifesttest.InstallManifest(testManifest, imageSpecByte, false)).To(Succeed())
 
-		Eventually(manifestctrltest.ExpectManifestStateIn(shared.StateReady), standardTimeout, standardInterval).
+		Eventually(manifesttest.ExpectManifestStateIn(shared.StateReady), standardTimeout, standardInterval).
 			WithArguments(manifestName).Should(Succeed())
 
 		testClient, err := declarativeTestClient()
@@ -55,7 +55,7 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 		Expect(verifyDeploymentInstallation(deploy)).To(Succeed())
 
 		By("Verifying manifest status contains all resources")
-		status, err := manifestctrltest.GetManifestStatus(manifestName)
+		status, err := manifesttest.GetManifestStatus(manifestName)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(status.Synced).To(HaveLen(2))
 
@@ -72,7 +72,7 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 
 		By("Executing the CR readiness check")
 		customReadyCheck := manifest.NewCustomResourceReadyCheck()
-		stateInfo, err := customReadyCheck.Run(manifestctrltest.Ctx, testClient, testManifest, resources)
+		stateInfo, err := customReadyCheck.Run(manifesttest.Ctx, testClient, testManifest, resources)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(stateInfo.State).To(Equal(shared.StateReady))
 
@@ -81,7 +81,7 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 			Should(BeTrue())
 		Eventually(verifyObjectExists(expectedCRD.ToUnstructured()), standardTimeout, standardInterval).Should(BeTrue())
 
-		Eventually(manifestctrltest.DeleteManifestAndVerify(testManifest), standardTimeout, standardInterval).Should(Succeed())
+		Eventually(manifesttest.DeleteManifestAndVerify(testManifest), standardTimeout, standardInterval).Should(Succeed())
 
 		Eventually(verifyObjectExists(expectedDeployment.ToUnstructured()), standardTimeout, standardInterval).
 			Should(BeFalse())
@@ -91,8 +91,8 @@ var _ = Describe("Manifest readiness check", Ordered, func() {
 })
 
 func verifyDeploymentInstallation(deploy *apiappsv1.Deployment) error {
-	err := manifestctrltest.K8sClient.Get(
-		manifestctrltest.Ctx, client.ObjectKey{
+	err := manifesttest.K8sClient.Get(
+		manifesttest.Ctx, client.ObjectKey{
 			Namespace: apimetav1.NamespaceDefault,
 			Name:      "nginx-deployment",
 		}, deploy,
@@ -108,7 +108,7 @@ func verifyDeploymentInstallation(deploy *apiappsv1.Deployment) error {
 			Type:   apiappsv1.DeploymentAvailable,
 			Status: apicorev1.ConditionTrue,
 		})
-	err = manifestctrltest.K8sClient.Status().Update(manifestctrltest.Ctx, deploy)
+	err = manifesttest.K8sClient.Status().Update(manifesttest.Ctx, deploy)
 	if err != nil {
 		return err
 	}
@@ -133,7 +133,7 @@ func prepareResourceInfosForCustomCheck(clt declarativev2.Client, deploy *apiapp
 func declarativeTestClient() (declarativev2.Client, error) {
 	cluster := &declarativev2.ClusterInfo{
 		Config: cfg,
-		Client: manifestctrltest.K8sClient,
+		Client: manifesttest.K8sClient,
 	}
 
 	return declarativev2.NewSingletonClients(cluster)
@@ -150,8 +150,8 @@ func asResource(name, namespace, group, version, kind string) shared.Resource {
 
 func verifyObjectExists(obj *unstructured.Unstructured) func() (bool, error) {
 	return func() (bool, error) {
-		err := manifestctrltest.K8sClient.Get(
-			manifestctrltest.Ctx, client.ObjectKeyFromObject(obj),
+		err := manifesttest.K8sClient.Get(
+			manifesttest.Ctx, client.ObjectKeyFromObject(obj),
 			obj,
 		)
 
