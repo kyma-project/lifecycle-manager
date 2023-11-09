@@ -4,19 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime/schema"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
 var (
@@ -29,7 +25,7 @@ var (
 // PostRunCreateCR is a hook for creating the manifest default custom resource if not available in the cluster
 // It is used to provide the controller with default data in the Runtime.
 func PostRunCreateCR(
-	ctx context.Context, skr declarative.Client, kcp client.Client, obj declarative.Object,
+	ctx context.Context, skr declarativev2.Client, kcp client.Client, obj declarativev2.Object,
 ) error {
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
@@ -38,24 +34,28 @@ func PostRunCreateCR(
 	if manifest.Spec.Resource == nil {
 		return nil
 	}
+	if !manifest.GetDeletionTimestamp().IsZero() {
+		return nil
+	}
 
 	resource := manifest.Spec.Resource.DeepCopy()
-	err := skr.Create(ctx, resource, client.FieldOwner(declarative.CustomResourceManager))
-	if err != nil && !k8serrors.IsAlreadyExists(err) {
+	err := skr.Create(ctx, resource, client.FieldOwner(declarativev2.CustomResourceManager))
+	if err != nil && !apierrors.IsAlreadyExists(err) {
 		return fmt.Errorf("failed to create resource: %w", err)
 	}
 
-	oMeta := &v1.PartialObjectMetadata{}
+	oMeta := &apimetav1.PartialObjectMetadata{}
 	oMeta.SetName(obj.GetName())
 	oMeta.SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
 	oMeta.SetNamespace(obj.GetNamespace())
 	oMeta.SetFinalizers(obj.GetFinalizers())
-	if added := controllerutil.AddFinalizer(oMeta, declarative.CustomResourceManager); added {
+	if added := controllerutil.AddFinalizer(oMeta, declarativev2.CustomResourceManager); added {
 		if err := kcp.Patch(
-			ctx, oMeta, client.Apply, client.ForceOwnership, client.FieldOwner(declarative.CustomResourceManager),
+			ctx, oMeta, client.Apply, client.ForceOwnership, client.FieldOwner(declarativev2.CustomResourceManager),
 		); err != nil {
 			return fmt.Errorf("failed to patch resource: %w", err)
 		}
+		return declarativev2.ErrRequeueRequired
 	}
 	return nil
 }
@@ -68,7 +68,7 @@ func PostRunCreateCR(
 // it will either say that the resource is already being deleted (2xx) and retry or its no longer found.
 // Then the finalizer is dropped, and we consider the CR removal successful.
 func PreDeleteDeleteCR(
-	ctx context.Context, skr declarative.Client, kcp client.Client, obj declarative.Object,
+	ctx context.Context, skr declarativev2.Client, kcp client.Client, obj declarativev2.Object,
 ) error {
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
@@ -79,22 +79,8 @@ func PreDeleteDeleteCR(
 	}
 
 	resource := manifest.Spec.Resource.DeepCopy()
-	propagation := v1.DeletePropagationBackground
+	propagation := apimetav1.DeletePropagationBackground
 	err := skr.Delete(ctx, resource, &client.DeleteOptions{PropagationPolicy: &propagation})
-
-	if !util.IsNotFound(err) {
-		return nil
-	}
-
-	var crd unstructured.Unstructured
-	crd.SetName(GetModuleCRDName(obj))
-	crd.SetGroupVersionKind(schema.GroupVersionKind{
-		Version: "v1",
-		Group:   "apiextensions.k8s.io",
-		Kind:    "CustomResourceDefinition",
-	})
-	crdCopy := crd.DeepCopy()
-	err = skr.Delete(ctx, crdCopy, &client.DeleteOptions{PropagationPolicy: &propagation})
 
 	if !util.IsNotFound(err) {
 		return nil
@@ -108,30 +94,13 @@ func PreDeleteDeleteCR(
 	if err != nil {
 		return fmt.Errorf("failed to fetch resource: %w", err)
 	}
-	if removed := controllerutil.RemoveFinalizer(onCluster, declarative.CustomResourceManager); removed {
+	if removed := controllerutil.RemoveFinalizer(onCluster, declarativev2.CustomResourceManager); removed {
 		if err := kcp.Update(
-			ctx, onCluster, client.FieldOwner(declarative.CustomResourceManager),
+			ctx, onCluster, client.FieldOwner(declarativev2.CustomResourceManager),
 		); err != nil {
 			return fmt.Errorf("failed to update resource: %w", err)
 		}
+		return declarativev2.ErrRequeueRequired
 	}
 	return nil
-}
-
-func GetModuleCRDName(obj declarative.Object) string {
-	manifest, ok := obj.(*v1beta2.Manifest)
-	if !ok {
-		return ""
-	}
-	if manifest.Spec.Resource == nil {
-		return ""
-	}
-
-	group := manifest.Spec.Resource.GroupVersionKind().Group
-	name := manifest.Spec.Resource.GroupVersionKind().Kind
-	return fmt.Sprintf("%s.%s", getPlural(name), group)
-}
-
-func getPlural(moduleName string) string {
-	return strings.ToLower(moduleName) + "s"
 }

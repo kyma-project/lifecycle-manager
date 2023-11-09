@@ -3,12 +3,6 @@ name: TestSuite integration and unit tests
 on:
   pull_request:
     branches: [ "main" ]
-    paths:
-      - 'go.mod'
-      - 'go.sum'
-      - 'Makefile'
-      - '**.go'
-      - '**.ya?ml'
 jobs:
   envtest-and-unittest:
     name: "Run 'make test'"

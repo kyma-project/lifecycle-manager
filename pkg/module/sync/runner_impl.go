@@ -6,20 +6,19 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/runtime"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
-	commonErrors "github.com/kyma-project/lifecycle-manager/pkg/common"
+	commonerrs "github.com/kyma-project/lifecycle-manager/pkg/common" //nolint:importas // a one-time reference for the package
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -35,8 +34,8 @@ func New(clnt client.Client) *RunnerImpl {
 
 type RunnerImpl struct {
 	client.Client
-	versioner runtime.GroupVersioner
-	converter runtime.ObjectConvertor
+	versioner machineryruntime.GroupVersioner
+	converter machineryruntime.ObjectConvertor
 }
 
 // ReconcileManifests implements Runner.Sync.
@@ -44,7 +43,7 @@ func (r *RunnerImpl) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	modules common.Modules,
 ) error {
 	ssaStart := time.Now()
-	baseLogger := ctrlLog.FromContext(ctx)
+	baseLogger := logf.FromContext(ctx)
 
 	results := make(chan error, len(modules))
 	for _, module := range modules {
@@ -96,13 +95,13 @@ func (r *RunnerImpl) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	if err := r.setupModule(module, kyma); err != nil {
 		return err
 	}
-	obj, err := r.converter.ConvertToVersion(module.Object, r.versioner)
+	obj, err := r.converter.ConvertToVersion(module.Manifest, r.versioner)
 	if err != nil {
 		return fmt.Errorf("failed to convert object to version: %w", err)
 	}
-	manifestObj, ok := obj.(client.Object)
+	manifestObj, ok := obj.(*v1beta2.Manifest)
 	if !ok {
-		return commonErrors.ErrTypeAssert
+		return commonerrs.ErrTypeAssert
 	}
 	if err := r.Patch(ctx, manifestObj,
 		client.Apply,
@@ -111,13 +110,13 @@ func (r *RunnerImpl) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	); err != nil {
 		return fmt.Errorf("error applying manifest %s: %w", client.ObjectKeyFromObject(module), err)
 	}
-	module.Object = manifestObj
+	module.Manifest = manifestObj
 
 	return nil
 }
 
 func (r *RunnerImpl) deleteManifest(ctx context.Context, module *common.Module) error {
-	err := r.Delete(ctx, module.Object)
+	err := r.Delete(ctx, module.Manifest)
 	if util.IsNotFound(err) {
 		return nil
 	}
@@ -130,7 +129,7 @@ func (r *RunnerImpl) setupModule(module *common.Module, kyma *v1beta2.Kyma) erro
 	refs := module.GetOwnerReferences()
 	if len(refs) == 0 {
 		// set owner reference
-		if err := controllerutil.SetControllerReference(kyma, module.Object, r.Scheme()); err != nil {
+		if err := controllerutil.SetControllerReference(kyma, module.Manifest, r.Scheme()); err != nil {
 			return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w",
 				module.GetName(), kyma.Name, err)
 		}
@@ -178,18 +177,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 			Message: module.Template.Err.Error(),
 		}
 	}
-	manifestObject, ok := module.Object.(*v1beta2.Manifest)
-	if !ok {
-		// TODO: impossible case, remove casting check after module use typed Manifest instead of client.Object
-		return v1beta2.ModuleStatus{
-			Name:    module.ModuleName,
-			Channel: module.Template.DesiredChannel,
-			FQDN:    module.FQDN,
-			State:   shared.StateError,
-			Message: ErrManifestConversion.Error(),
-		}
-	}
-
+	manifestObject := module.Manifest
 	manifestAPIVersion, manifestKind := manifestObject.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	templateAPIVersion, templateKind := module.Template.GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 	var moduleResource *v1beta2.TrackingObject
@@ -198,7 +186,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 			GetObjectKind().GroupVersionKind().ToAPIVersionAndKind()
 		moduleResource = &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMetaFromObject(manifestObject.Spec.Resource),
-			TypeMeta:    metav1.TypeMeta{Kind: moduleCRKind, APIVersion: moduleCRAPIVersion},
+			TypeMeta:    apimetav1.TypeMeta{Kind: moduleCRKind, APIVersion: moduleCRAPIVersion},
 		}
 
 		if module.Template.Annotations[v1beta2.IsClusterScopedAnnotation] == v1beta2.EnableLabelValue {
@@ -214,11 +202,11 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 		Version: module.Version,
 		Manifest: &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMetaFromObject(manifestObject),
-			TypeMeta:    metav1.TypeMeta{Kind: manifestKind, APIVersion: manifestAPIVersion},
+			TypeMeta:    apimetav1.TypeMeta{Kind: manifestKind, APIVersion: manifestAPIVersion},
 		},
 		Template: &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMetaFromObject(module.Template),
-			TypeMeta:    metav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
+			TypeMeta:    apimetav1.TypeMeta{Kind: templateKind, APIVersion: templateAPIVersion},
 		},
 		Resource: moduleResource,
 	}

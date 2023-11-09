@@ -3,11 +3,12 @@ package remote_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-	"github.com/stretchr/testify/assert"
-	v1extensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 //nolint:funlen
@@ -59,30 +60,30 @@ func TestShouldPatchRemoteCRD(t *testing.T) {
 		testCase := tt
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			runtimeCrd := &v1extensions.CustomResourceDefinition{
-				ObjectMeta: metav1.ObjectMeta{
+			runtimeCrd := &apiextensionsv1.CustomResourceDefinition{
+				ObjectMeta: apimetav1.ObjectMeta{
 					Generation: testCase.args.runtimeCrdGeneration,
 				},
-				Spec: v1extensions.CustomResourceDefinitionSpec{
-					Names: v1extensions.CustomResourceDefinitionNames{
+				Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+					Names: apiextensionsv1.CustomResourceDefinitionNames{
 						Kind: "ModuleTemplate",
 					},
 				},
 			}
 
-			kcpCrd := &v1extensions.CustomResourceDefinition{
-				ObjectMeta: metav1.ObjectMeta{
+			kcpCrd := &apiextensionsv1.CustomResourceDefinition{
+				ObjectMeta: apimetav1.ObjectMeta{
 					Generation: testCase.args.kcpCrdGeneration,
 				},
-				Spec: v1extensions.CustomResourceDefinitionSpec{
-					Names: v1extensions.CustomResourceDefinitionNames{
+				Spec: apiextensionsv1.CustomResourceDefinitionSpec{
+					Names: apiextensionsv1.CustomResourceDefinitionNames{
 						Kind: "ModuleTemplate",
 					},
 				},
 			}
 
 			kyma := &v1beta2.Kyma{
-				ObjectMeta: metav1.ObjectMeta{
+				ObjectMeta: apimetav1.ObjectMeta{
 					Annotations: map[string]string{
 						"moduletemplate-skr-crd-generation": testCase.args.kymaSkrCrdAnnotationValue,
 						"moduletemplate-kcp-crd-generation": testCase.args.kymaKcpCrdAnnotationValue,

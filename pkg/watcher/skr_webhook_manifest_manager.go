@@ -6,19 +6,18 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/rest"
-
 	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
+	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 // SKRWebhookManifestManager is a SKRWebhookManager implementation that applies
@@ -55,7 +54,7 @@ type SkrWebhookManagerConfig struct {
 const rawManifestFilePathTpl = "%s/resources.yaml"
 
 func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
-	schema *runtime.Scheme,
+	schema *machineryruntime.Scheme,
 	managerConfig *SkrWebhookManagerConfig,
 ) (SKRWebhookManager, error) {
 	logger := logf.FromContext(context.TODO())
@@ -205,7 +204,7 @@ func (m *SKRWebhookManifestManager) getRawManifestClientObjects(cfg *unstructure
 func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.Context, kcpClient client.Client,
 	kymaObjKey client.ObjectKey, remoteNs string,
 ) (*unstructuredResourcesConfig, error) {
-	tlsSecret := &corev1.Secret{}
+	tlsSecret := &apicorev1.Secret{}
 	certObjKey := client.ObjectKey{
 		Namespace: m.config.IstioNamespace,
 		Name:      ResolveTLSCertName(kymaObjKey.Name),

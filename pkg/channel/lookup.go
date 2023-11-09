@@ -5,15 +5,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/remote"
-
 	"github.com/Masterminds/semver/v3"
 	"github.com/go-logr/logr"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 )
 
 var (
@@ -37,7 +36,7 @@ type ModuleTemplatesByModuleName map[string]*ModuleTemplateTO
 func GetTemplates(
 	ctx context.Context, kymaClient client.Reader, kyma *v1beta2.Kyma, syncEnabled bool,
 ) ModuleTemplatesByModuleName {
-	logger := ctrlLog.FromContext(ctx)
+	logger := logf.FromContext(ctx)
 	templates := make(ModuleTemplatesByModuleName)
 
 	for _, module := range kyma.Spec.Modules {
@@ -242,7 +241,7 @@ func (c *TemplateLookup) WithContext(ctx context.Context) ModuleTemplateTO {
 		}
 	}
 
-	logger := ctrlLog.FromContext(ctx)
+	logger := logf.FromContext(ctx)
 	if actualChannel != c.defaultChannel {
 		logger.V(log.DebugLevel).Info(
 			fmt.Sprintf(

@@ -4,10 +4,10 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/runtime"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 )
 
-func getResourceMapping(obj runtime.Object, mapper meta.RESTMapper, retryOnNoMatch bool) (*meta.RESTMapping, error) {
+func getResourceMapping(obj machineryruntime.Object, mapper meta.RESTMapper, retryOnNoMatch bool) (*meta.RESTMapping, error) {
 	gvk := obj.GetObjectKind().GroupVersionKind()
 	mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 	if gvk.Empty() {

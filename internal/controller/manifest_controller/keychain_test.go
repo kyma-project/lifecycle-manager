@@ -3,16 +3,17 @@ package manifest_controller_test
 import (
 	"os"
 
-	hlp "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apicorev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	manifestctrltest "github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest"
+	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe(
@@ -25,7 +26,7 @@ var _ = Describe(
 				const repo = "test.registry.io"
 				imageSpecWithCredSelect := CreateOCIImageSpecWithCredSelect("imageName", repo,
 					"digest", CredSecretLabelValue)
-				keychain, err := ocmextensions.GetAuthnKeychain(hlp.Ctx, imageSpecWithCredSelect.CredSecretSelector, hlp.K8sClient)
+				keychain, err := ocmextensions.GetAuthnKeychain(manifestctrltest.Ctx, imageSpecWithCredSelect.CredSecretSelector, manifestctrltest.K8sClient)
 				Expect(err).ToNot(HaveOccurred())
 				dig := &TestRegistry{target: repo, registry: repo}
 				authenticator, err := keychain.Resolve(dig)
@@ -45,7 +46,7 @@ func CreateOCIImageSpecWithCredSelect(name, repo, digest, secretLabelValue strin
 		Repo:               repo,
 		Type:               "oci-ref",
 		Ref:                digest,
-		CredSecretSelector: hlp.CredSecretLabelSelector(secretLabelValue),
+		CredSecretSelector: manifestctrltest.CredSecretLabelSelector(secretLabelValue),
 	}
 	return imageSpec
 }
@@ -65,17 +66,17 @@ func (d TestRegistry) RegistryStr() string {
 
 func installCredSecret(secretLabelValue string) func() error {
 	return func() error {
-		secret := &corev1.Secret{}
+		secret := &apicorev1.Secret{}
 		secretFile, err := os.ReadFile("../../../pkg/test_samples/auth_secret.yaml")
 		Expect(err).ToNot(HaveOccurred())
 		err = yaml.Unmarshal(secretFile, secret)
 		Expect(err).ToNot(HaveOccurred())
-		secret.Labels[hlp.CredSecretLabelKeyForTest] = secretLabelValue
-		err = hlp.K8sClient.Create(hlp.Ctx, secret)
-		if errors.IsAlreadyExists(err) {
+		secret.Labels[manifestctrltest.CredSecretLabelKeyForTest] = secretLabelValue
+		err = manifestctrltest.K8sClient.Create(manifestctrltest.Ctx, secret)
+		if apierrors.IsAlreadyExists(err) {
 			return nil
 		}
 		Expect(err).ToNot(HaveOccurred())
-		return hlp.K8sClient.Get(hlp.Ctx, client.ObjectKeyFromObject(secret), &corev1.Secret{})
+		return manifestctrltest.K8sClient.Get(manifestctrltest.Ctx, client.ObjectKeyFromObject(secret), &apicorev1.Secret{})
 	}
 }

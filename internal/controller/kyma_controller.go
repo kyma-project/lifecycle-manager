@@ -21,25 +21,25 @@ import (
 	"errors"
 	"fmt"
 
-	commonMetrics "github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
 	"golang.org/x/sync/errgroup"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	commonmetrics "github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/parse"
-	modulesync "github.com/kyma-project/lifecycle-manager/pkg/module/sync"
+	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
@@ -92,7 +92,7 @@ type KymaReconciler struct {
 //+kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions/status,verbs=update
 
 func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := ctrlLog.FromContext(ctx)
+	logger := logf.FromContext(ctx)
 	logger.V(log.DebugLevel).Info("reconciling")
 
 	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
@@ -135,7 +135,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 }
 
 func (r *KymaReconciler) deleteRemoteClientCache(ctx context.Context, kyma *v1beta2.Kyma) {
-	logger := ctrlLog.FromContext(ctx)
+	logger := logf.FromContext(ctx)
 	logger.Info("connection refused, assuming connection is invalid and resetting cache-entry for kyma")
 	r.RemoteClientCache.Del(client.ObjectKeyFromObject(kyma))
 }
@@ -224,7 +224,7 @@ func (r *KymaReconciler) syncCrdsAndUpdateKymaAnnotations(ctx context.Context, k
 }
 
 func (r *KymaReconciler) deleteRemoteKyma(ctx context.Context, kyma *v1beta2.Kyma) error {
-	logger := ctrlLog.FromContext(ctx).V(log.InfoLevel)
+	logger := logf.FromContext(ctx).V(log.InfoLevel)
 	if r.SyncKymaEnabled(kyma) {
 		if err := remote.DeleteRemotelySyncedKyma(ctx, r.RemoteSyncNamespace); client.IgnoreNotFound(err) != nil {
 			logger.Error(err, "Failed to be deleted remotely!")
@@ -326,7 +326,7 @@ func (r *KymaReconciler) handleInitialState(ctx context.Context, kyma *v1beta2.K
 }
 
 func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
-	logger := ctrlLog.FromContext(ctx)
+	logger := logf.FromContext(ctx)
 
 	var errGroup errgroup.Group
 	errGroup.Go(func() error {
@@ -335,19 +335,19 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 			return fmt.Errorf("could not reconciling manifest: %w", err)
 		}
 		if kyma.AllModulesReady() {
-			kyma.UpdateCondition(v1beta2.ConditionTypeModules, metav1.ConditionTrue)
+			kyma.UpdateCondition(v1beta2.ConditionTypeModules, apimetav1.ConditionTrue)
 		} else {
-			kyma.UpdateCondition(v1beta2.ConditionTypeModules, metav1.ConditionFalse)
+			kyma.UpdateCondition(v1beta2.ConditionTypeModules, apimetav1.ConditionFalse)
 		}
 		return nil
 	})
 	if r.SyncKymaEnabled(kyma) {
 		errGroup.Go(func() error {
 			if err := r.syncModuleCatalog(ctx, kyma); err != nil {
-				kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, metav1.ConditionFalse)
+				kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, apimetav1.ConditionFalse)
 				return fmt.Errorf("could not synchronize remote module catalog: %w", err)
 			}
-			kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, metav1.ConditionTrue)
+			kyma.UpdateCondition(v1beta2.ConditionTypeModuleCatalog, apimetav1.ConditionTrue)
 			return nil
 		})
 	}
@@ -356,12 +356,12 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 		errGroup.Go(func() error {
 			if err := r.SKRWebhookManager.Install(ctx, kyma); err != nil {
 				if errors.Is(err, &watcher.CertificateNotReadyError{}) {
-					kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, metav1.ConditionFalse)
+					kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, apimetav1.ConditionFalse)
 					return nil
 				}
 				return err
 			}
-			kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, metav1.ConditionTrue)
+			kyma.UpdateCondition(v1beta2.ConditionTypeSKRWebhook, apimetav1.ConditionTrue)
 			return nil
 		})
 	}
@@ -385,7 +385,7 @@ func (r *KymaReconciler) handleProcessingState(ctx context.Context, kyma *v1beta
 }
 
 func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.Kyma) (ctrl.Result, error) {
-	logger := ctrlLog.FromContext(ctx).V(log.InfoLevel)
+	logger := logf.FromContext(ctx).V(log.InfoLevel)
 
 	if r.WatcherEnabled(kyma) {
 		if err := r.SKRWebhookManager.Remove(ctx, kyma); err != nil {
@@ -441,7 +441,7 @@ func (r *KymaReconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.K
 		return fmt.Errorf("error while fetching modules during processing: %w", err)
 	}
 
-	runner := modulesync.New(r)
+	runner := sync.New(r)
 
 	if err := runner.ReconcileManifests(ctx, kyma, modules); err != nil {
 		return fmt.Errorf("sync failed: %w", err)
@@ -527,7 +527,7 @@ func (r *KymaReconciler) DeleteNoLongerExistingModules(ctx context.Context, kyma
 }
 
 func (r *KymaReconciler) deleteManifest(ctx context.Context, trackedManifest *v1beta2.TrackingObject) error {
-	manifest := metav1.PartialObjectMetadata{}
+	manifest := apimetav1.PartialObjectMetadata{}
 	manifest.SetGroupVersionKind(trackedManifest.GroupVersionKind())
 	manifest.SetNamespace(trackedManifest.GetNamespace())
 	manifest.SetName(trackedManifest.GetName())
@@ -544,7 +544,7 @@ func (r *KymaReconciler) UpdateMetrics(ctx context.Context, kyma *v1beta2.Kyma) 
 		if r.IsMissingMetricsAnnotationOrLabel(err) {
 			r.enqueueWarningEvent(kyma, metricsError, err)
 		}
-		ctrlLog.FromContext(ctx).V(log.DebugLevel).Info(fmt.Sprintf("error occurred while updating all metrics: %s", err))
+		logf.FromContext(ctx).V(log.DebugLevel).Info(fmt.Sprintf("error occurred while updating all metrics: %s", err))
 	}
 }
 
@@ -568,8 +568,8 @@ func (r *KymaReconciler) IsKymaManaged() bool {
 }
 
 func (r *KymaReconciler) IsMissingMetricsAnnotationOrLabel(err error) bool {
-	return errors.Is(err, commonMetrics.ErrInstanceLabelNoValue) ||
-		errors.Is(err, commonMetrics.ErrMissingInstanceLabel) ||
-		errors.Is(err, commonMetrics.ErrShootAnnotationNoValue) ||
-		errors.Is(err, commonMetrics.ErrMissingShootAnnotation)
+	return errors.Is(err, commonmetrics.ErrInstanceLabelNoValue) ||
+		errors.Is(err, commonmetrics.ErrMissingInstanceLabel) ||
+		errors.Is(err, commonmetrics.ErrShootAnnotationNoValue) ||
+		errors.Is(err, commonmetrics.ErrMissingShootAnnotation)
 }

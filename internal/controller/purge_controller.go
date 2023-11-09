@@ -21,16 +21,16 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	ctrlLog "sigs.k8s.io/controller-runtime/pkg/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller/purge/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
@@ -53,7 +53,7 @@ type PurgeReconciler struct {
 
 //nolint:funlen
 func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := ctrlLog.FromContext(ctx)
+	logger := logf.FromContext(ctx)
 	logger.V(log.InfoLevel).Info("Purge Reconciliation started")
 
 	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
@@ -162,7 +162,7 @@ func (r *PurgeReconciler) dropPurgeFinalizer(ctx context.Context, kyma *v1beta2.
 }
 
 func (r *PurgeReconciler) performCleanup(ctx context.Context, remoteClient client.Client) error {
-	crdList := apiextensions.CustomResourceDefinitionList{}
+	crdList := apiextensionsv1.CustomResourceDefinitionList{}
 	if err := remoteClient.List(ctx, &crdList); err != nil {
 		return fmt.Errorf("failed to fetch CRDs from remote cluster: %w", err)
 	}
@@ -185,7 +185,7 @@ func (r *PurgeReconciler) performCleanup(ctx context.Context, remoteClient clien
 	return nil
 }
 
-func shouldSkip(crd apiextensions.CustomResourceDefinition, matcher matcher.CRDMatcherFunc) bool {
+func shouldSkip(crd apiextensionsv1.CustomResourceDefinition, matcher matcher.CRDMatcherFunc) bool {
 	if crd.Spec.Group == v1beta2.GroupVersion.Group && crd.Spec.Names.Kind == string(v1beta2.KymaKind) {
 		return true
 	}
@@ -193,7 +193,7 @@ func shouldSkip(crd apiextensions.CustomResourceDefinition, matcher matcher.CRDM
 }
 
 func getAllRemainingCRs(ctx context.Context, remoteClient client.Client,
-	crd apiextensions.CustomResourceDefinition,
+	crd apiextensionsv1.CustomResourceDefinition,
 ) (unstructured.UnstructuredList, error) {
 	staleResources := unstructured.UnstructuredList{}
 

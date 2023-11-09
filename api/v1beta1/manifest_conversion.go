@@ -1,8 +1,9 @@
 package v1beta1
 
 import (
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 // ConvertTo converts this to the Hub version.

@@ -4,9 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 func GetModuleTemplate(ctx context.Context,

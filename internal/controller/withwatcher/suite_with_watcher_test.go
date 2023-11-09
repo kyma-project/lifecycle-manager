@@ -17,50 +17,47 @@ limitations under the License.
 package withwatcher_test
 
 import (
-	//+kubebuilder:scaffold:imports
 	"context"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
-	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
-	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"github.com/kyma-project/lifecycle-manager/pkg/queue"
-	"go.uber.org/zap/zapcore"
-
-	corev1 "k8s.io/api/core/v1"
-
-	istioapi "istio.io/api/networking/v1beta1"
-	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
-	versionedclient "istio.io/client-go/pkg/clientset/versioned"
-	istioscheme "istio.io/client-go/pkg/clientset/versioned/scheme"
-
-	certManagerV1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-logr/logr"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"go.uber.org/zap/zapcore"
+	istioapiv1beta1 "istio.io/api/networking/v1beta1"
+	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
+	istioclient "istio.io/client-go/pkg/clientset/versioned"
+	istioscheme "istio.io/client-go/pkg/clientset/versioned/scheme"
+	apicorev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/client-go/kubernetes/scheme"
+	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
+	k8sclientscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	controllerRuntime "sigs.k8s.io/controller-runtime/pkg/controller"
+	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
+	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/signature"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -107,17 +104,17 @@ var _ = BeforeSuite(func() {
 		"cert-manager-v1.10.1.crds.yaml",
 		"istio-v1.17.1.crds.yaml")
 	Expect(err).ToNot(HaveOccurred())
-	kcpModuleCRD := &v1.CustomResourceDefinition{}
+	kcpModuleCRD := &apiextensionsv1.CustomResourceDefinition{}
 	modulePath := filepath.Join("..", "..", "..", "config", "samples", "component-integration-installed",
 		"crd", "operator.kyma-project.io_kcpmodules.yaml")
 	moduleFile, err := os.ReadFile(modulePath)
 	Expect(err).ToNot(HaveOccurred())
 	Expect(moduleFile).ToNot(BeEmpty())
-	Expect(yaml.Unmarshal(moduleFile, &kcpModuleCRD)).To(Succeed())
+	Expect(machineryaml.Unmarshal(moduleFile, &kcpModuleCRD)).To(Succeed())
 
 	controlPlaneEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
-		CRDs:                  append([]*v1.CustomResourceDefinition{kcpModuleCRD}, externalCRDs...),
+		CRDs:                  append([]*apiextensionsv1.CustomResourceDefinition{kcpModuleCRD}, externalCRDs...),
 		ErrorIfCRDPathMissing: true,
 	}
 
@@ -125,10 +122,10 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(restCfg).NotTo(BeNil())
 
-	Expect(api.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
-	Expect(v1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
-	Expect(istioscheme.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
-	Expect(certManagerV1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
+	Expect(api.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
+	Expect(apiextensionsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
+	Expect(istioscheme.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
+	Expect(certmanagerv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 
@@ -142,7 +139,7 @@ var _ = BeforeSuite(func() {
 			Metrics: metricsserver.Options{
 				BindAddress: metricsBindAddress,
 			},
-			Scheme: scheme.Scheme,
+			Scheme: k8sclientscheme.Scheme,
 			Cache:  controller.NewCacheOptions(),
 		})
 	Expect(err).ToNot(HaveOccurred())
@@ -158,7 +155,7 @@ var _ = BeforeSuite(func() {
 	}
 
 	// This k8sClient is used to install external resources
-	k8sClient, err := client.New(restCfg, client.Options{Scheme: scheme.Scheme})
+	k8sClient, err := client.New(restCfg, client.Options{Scheme: k8sclientscheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
@@ -183,7 +180,7 @@ var _ = BeforeSuite(func() {
 		RemoteSyncNamespace:    controller.DefaultRemoteSyncNamespace,
 	}
 
-	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(restCfg, scheme.Scheme, skrChartCfg)
+	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(restCfg, k8sclientscheme.Scheme, skrChartCfg)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controller.KymaReconciler{
 		Client:            k8sManager.GetClient(),
@@ -197,17 +194,17 @@ var _ = BeforeSuite(func() {
 		KcpRestConfig:       k8sManager.GetConfig(),
 		RemoteSyncNamespace: controller.DefaultRemoteSyncNamespace,
 		InKCPMode:           true,
-	}).SetupWithManager(k8sManager, controllerRuntime.Options{}, controller.SetupUpSetting{ListenerAddr: listenerAddr})
+	}).SetupWithManager(k8sManager, ctrlruntime.Options{}, controller.SetupUpSetting{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&controller.WatcherReconciler{
 		Client:           k8sManager.GetClient(),
 		RestConfig:       k8sManager.GetConfig(),
 		EventRecorder:    k8sManager.GetEventRecorderFor(controller.WatcherControllerName),
-		Scheme:           scheme.Scheme,
+		Scheme:           k8sclientscheme.Scheme,
 		RequeueIntervals: intervals,
 	}).SetupWithManager(
-		k8sManager, controllerRuntime.Options{
+		k8sManager, ctrlruntime.Options{
 			MaxConcurrentReconciles: 1,
 		},
 	)
@@ -238,8 +235,8 @@ var _ = AfterSuite(func() {
 })
 
 func createNamespace(ctx context.Context, namespace string, k8sClient client.Client) error {
-	ns := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
+	ns := &apicorev1.Namespace{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name: namespace,
 		},
 	}
@@ -247,18 +244,18 @@ func createNamespace(ctx context.Context, namespace string, k8sClient client.Cli
 }
 
 func createGateway(ctx context.Context, restConfig *rest.Config) error {
-	gateway := &istiov1beta1.Gateway{
-		ObjectMeta: metav1.ObjectMeta{
+	gateway := &istioclientapiv1beta1.Gateway{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      gatewayName,
 			Namespace: kcpSystemNs,
 			Labels: map[string]string{
 				"app": gatewayName,
 			},
 		},
-		Spec: istioapi.Gateway{
-			Servers: []*istioapi.Server{
+		Spec: istioapiv1beta1.Gateway{
+			Servers: []*istioapiv1beta1.Server{
 				{
-					Port: &istioapi.Port{
+					Port: &istioapiv1beta1.Port{
 						Number: 443,
 						Name:   "https",
 					},
@@ -269,11 +266,11 @@ func createGateway(ctx context.Context, restConfig *rest.Config) error {
 		},
 	}
 
-	ic, err := versionedclient.NewForConfig(restConfig)
+	ic, err := istioclient.NewForConfig(restConfig)
 	if err != nil {
 		return err
 	}
-	_, err = ic.NetworkingV1beta1().Gateways(kcpSystemNs).Create(ctx, gateway, metav1.CreateOptions{})
+	_, err = ic.NetworkingV1beta1().Gateways(kcpSystemNs).Create(ctx, gateway, apimetav1.CreateOptions{})
 
 	return err
 }

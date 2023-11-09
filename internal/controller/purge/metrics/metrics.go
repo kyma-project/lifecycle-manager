@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"time"
 
-	ctrlMetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
+	"github.com/prometheus/client_golang/prometheus"
+	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
-	"github.com/prometheus/client_golang/prometheus"
+	commonmetrics "github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
 )
 
 const (
@@ -42,9 +42,9 @@ var (
 )
 
 func Initialize() {
-	ctrlMetrics.Registry.MustRegister(purgeTimeGauge)
-	ctrlMetrics.Registry.MustRegister(purgeRequestsCounter)
-	ctrlMetrics.Registry.MustRegister(purgeErrorGauge)
+	ctrlmetrics.Registry.MustRegister(purgeTimeGauge)
+	ctrlmetrics.Registry.MustRegister(purgeRequestsCounter)
+	ctrlmetrics.Registry.MustRegister(purgeErrorGauge)
 }
 
 var errMetric = errors.New("failed to update metrics")
@@ -58,11 +58,11 @@ func UpdatePurgeTime(duration time.Duration) {
 }
 
 func UpdatePurgeError(kyma *v1beta2.Kyma, purgeError PurgeError) error {
-	shootID, err := metrics.ExtractShootID(kyma)
+	shootID, err := commonmetrics.ExtractShootID(kyma)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errMetric, err)
 	}
-	instanceID, err := metrics.ExtractInstanceID(kyma)
+	instanceID, err := commonmetrics.ExtractInstanceID(kyma)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errMetric, err)
 	}

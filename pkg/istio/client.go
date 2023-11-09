@@ -6,10 +6,10 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	istioapi "istio.io/api/networking/v1beta1"
-	istioclientapi "istio.io/client-go/pkg/apis/networking/v1beta1"
+	istioapiv1beta1 "istio.io/api/networking/v1beta1"
+	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	istioclient "istio.io/client-go/pkg/clientset/versioned"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/record"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -48,20 +48,20 @@ func NewVersionedIstioClient(cfg *rest.Config, recorder record.EventRecorder,
 	}, nil
 }
 
-func (c *Client) GetVirtualService(ctx context.Context, vsName string) (*istioclientapi.VirtualService, error) {
+func (c *Client) GetVirtualService(ctx context.Context, vsName string) (*istioclientapiv1beta1.VirtualService, error) {
 	virtualService, err := c.NetworkingV1beta1().
-		VirtualServices(metav1.NamespaceDefault).
-		Get(ctx, vsName, metav1.GetOptions{})
+		VirtualServices(apimetav1.NamespaceDefault).
+		Get(ctx, vsName, apimetav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch virtual service %w", err)
 	}
 	return virtualService, nil
 }
 
-func (c *Client) ListVirtualServices(ctx context.Context) (*istioclientapi.VirtualServiceList, error) {
+func (c *Client) ListVirtualServices(ctx context.Context) (*istioclientapiv1beta1.VirtualServiceList, error) {
 	virtualServiceList, err := c.NetworkingV1beta1().
-		VirtualServices(metav1.NamespaceDefault).
-		List(ctx, metav1.ListOptions{})
+		VirtualServices(apimetav1.NamespaceDefault).
+		List(ctx, apimetav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list virtual services %w", err)
 	}
@@ -69,14 +69,14 @@ func (c *Client) ListVirtualServices(ctx context.Context) (*istioclientapi.Virtu
 }
 
 func (c *Client) NewVirtualService(ctx context.Context, watcher *v1beta2.Watcher,
-) (*istioclientapi.VirtualService, error) {
+) (*istioclientapiv1beta1.VirtualService, error) {
 	if watcher == nil {
-		return &istioclientapi.VirtualService{}, nil
+		return &istioclientapiv1beta1.VirtualService{}, nil
 	}
 
-	virtualSvc := &istioclientapi.VirtualService{}
+	virtualSvc := &istioclientapiv1beta1.VirtualService{}
 	virtualSvc.SetName(watcher.Name)
-	virtualSvc.SetNamespace(metav1.NamespaceDefault)
+	virtualSvc.SetNamespace(apimetav1.NamespaceDefault)
 
 	gateways, err := c.LookupGateways(ctx, watcher)
 	if err != nil {
@@ -89,29 +89,29 @@ func (c *Client) NewVirtualService(ctx context.Context, watcher *v1beta2.Watcher
 		return nil, err
 	}
 
-	virtualSvc.Spec.Http = []*istioapi.HTTPRoute{
+	virtualSvc.Spec.Http = []*istioapiv1beta1.HTTPRoute{
 		PrepareIstioHTTPRouteForCR(watcher),
 	}
 
 	return virtualSvc, nil
 }
 
-func (c *Client) CreateVirtualService(ctx context.Context, virtualSvc *istioclientapi.VirtualService) error {
+func (c *Client) CreateVirtualService(ctx context.Context, virtualSvc *istioclientapiv1beta1.VirtualService) error {
 	_, err := c.NetworkingV1beta1().
-		VirtualServices(metav1.NamespaceDefault).
-		Create(ctx, virtualSvc, metav1.CreateOptions{})
+		VirtualServices(apimetav1.NamespaceDefault).
+		Create(ctx, virtualSvc, apimetav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create istio virtual service: %w", err)
 	}
 	return nil
 }
 
-func addGateways(gateways []*istioclientapi.Gateway, virtualSvc *istioclientapi.VirtualService) {
+func addGateways(gateways []*istioclientapiv1beta1.Gateway, virtualSvc *istioclientapiv1beta1.VirtualService) {
 	gatewayLists := convertToGatewayList(gateways)
 	virtualSvc.Spec.Gateways = gatewayLists
 }
 
-func convertToGatewayList(gateways []*istioclientapi.Gateway) []string {
+func convertToGatewayList(gateways []*istioclientapiv1beta1.Gateway) []string {
 	gatewayLists := make([]string, 0)
 	for i := range gateways {
 		gatewayLists = append(gatewayLists, client.ObjectKeyFromObject(gateways[i]).String())
@@ -119,7 +119,7 @@ func convertToGatewayList(gateways []*istioclientapi.Gateway) []string {
 	return gatewayLists
 }
 
-func addHosts(gateways []*istioclientapi.Gateway, virtualSvc *istioclientapi.VirtualService) error {
+func addHosts(gateways []*istioclientapiv1beta1.Gateway, virtualSvc *istioclientapiv1beta1.VirtualService) error {
 	hosts, err := getHosts(gateways)
 	if err != nil {
 		return err
@@ -128,8 +128,7 @@ func addHosts(gateways []*istioclientapi.Gateway, virtualSvc *istioclientapi.Vir
 	return nil
 }
 
-// TODO: Create Test to handle hosts.
-func getHosts(gateways []*istioclientapi.Gateway) ([]string, error) {
+func getHosts(gateways []*istioclientapiv1beta1.Gateway) ([]string, error) {
 	hosts := make([]string, 0)
 
 	for _, g := range gateways {
@@ -147,15 +146,15 @@ func getHosts(gateways []*istioclientapi.Gateway) ([]string, error) {
 	return hosts, nil
 }
 
-func (c *Client) LookupGateways(ctx context.Context, watcher *v1beta2.Watcher) ([]*istioclientapi.Gateway, error) {
-	selector, err := metav1.LabelSelectorAsSelector(&watcher.Spec.Gateway.LabelSelector)
+func (c *Client) LookupGateways(ctx context.Context, watcher *v1beta2.Watcher) ([]*istioclientapiv1beta1.Gateway, error) {
+	selector, err := apimetav1.LabelSelectorAsSelector(&watcher.Spec.Gateway.LabelSelector)
 	if err != nil {
 		return nil, fmt.Errorf("error converting label selector: %w", err)
 	}
 	labelSelector := selector.String()
 	gateways, err := c.NetworkingV1beta1().
-		Gateways(metav1.NamespaceAll).
-		List(ctx, metav1.ListOptions{
+		Gateways(apimetav1.NamespaceAll).
+		List(ctx, apimetav1.ListOptions{
 			LabelSelector: labelSelector,
 		})
 	if err != nil {
@@ -173,7 +172,7 @@ func (c *Client) LookupGateways(ctx context.Context, watcher *v1beta2.Watcher) (
 }
 
 func (c *Client) UpdateVirtualService(ctx context.Context, virtualService,
-	virtualServiceRemote *istioclientapi.VirtualService,
+	virtualServiceRemote *istioclientapiv1beta1.VirtualService,
 ) error {
 	virtualServiceRemote.Name = virtualService.Name
 	virtualServiceRemote.Namespace = virtualService.Namespace
@@ -181,7 +180,7 @@ func (c *Client) UpdateVirtualService(ctx context.Context, virtualService,
 
 	_, err := c.NetworkingV1beta1().
 		VirtualServices(virtualServiceRemote.Namespace).
-		Update(ctx, virtualServiceRemote, metav1.UpdateOptions{})
+		Update(ctx, virtualServiceRemote, apimetav1.UpdateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to update istio virtual service: %w", err)
 	}
@@ -191,20 +190,20 @@ func (c *Client) UpdateVirtualService(ctx context.Context, virtualService,
 func (c *Client) RemoveVirtualServiceForCR(ctx context.Context, watcherObjKey client.ObjectKey,
 ) error {
 	err := c.NetworkingV1beta1().
-		VirtualServices(metav1.NamespaceDefault).
-		Delete(ctx, watcherObjKey.Name, metav1.DeleteOptions{})
+		VirtualServices(apimetav1.NamespaceDefault).
+		Delete(ctx, watcherObjKey.Name, apimetav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to delete virtual service for cr: %w", err)
 	}
 	return nil
 }
 
-func IsRouteConfigEqual(route1 *istioapi.HTTPRoute, route2 *istioapi.HTTPRoute) bool {
-	stringMatch1, ok := route1.GetMatch()[firstElementIdx].GetUri().GetMatchType().(*istioapi.StringMatch_Prefix)
+func IsRouteConfigEqual(route1 *istioapiv1beta1.HTTPRoute, route2 *istioapiv1beta1.HTTPRoute) bool {
+	stringMatch1, ok := route1.GetMatch()[firstElementIdx].GetUri().GetMatchType().(*istioapiv1beta1.StringMatch_Prefix)
 	if !ok {
 		return false
 	}
-	stringMatch2, ok := route2.GetMatch()[firstElementIdx].GetUri().GetMatchType().(*istioapi.StringMatch_Prefix)
+	stringMatch2, ok := route2.GetMatch()[firstElementIdx].GetUri().GetMatchType().(*istioapiv1beta1.StringMatch_Prefix)
 	if !ok {
 		return false
 	}
@@ -226,23 +225,23 @@ func IsRouteConfigEqual(route1 *istioapi.HTTPRoute, route2 *istioapi.HTTPRoute) 
 	return true
 }
 
-func PrepareIstioHTTPRouteForCR(obj *v1beta2.Watcher) *istioapi.HTTPRoute {
-	return &istioapi.HTTPRoute{
+func PrepareIstioHTTPRouteForCR(obj *v1beta2.Watcher) *istioapiv1beta1.HTTPRoute {
+	return &istioapiv1beta1.HTTPRoute{
 		Name: client.ObjectKeyFromObject(obj).String(),
-		Match: []*istioapi.HTTPMatchRequest{
+		Match: []*istioapiv1beta1.HTTPMatchRequest{
 			{
-				Uri: &istioapi.StringMatch{
-					MatchType: &istioapi.StringMatch_Prefix{ //nolint:nosnakecase
+				Uri: &istioapiv1beta1.StringMatch{
+					MatchType: &istioapiv1beta1.StringMatch_Prefix{ //nolint:nosnakecase
 						Prefix: fmt.Sprintf(prefixFormat, contractVersion, obj.GetModuleName()),
 					},
 				},
 			},
 		},
-		Route: []*istioapi.HTTPRouteDestination{
+		Route: []*istioapiv1beta1.HTTPRouteDestination{
 			{
-				Destination: &istioapi.Destination{
+				Destination: &istioapiv1beta1.Destination{
 					Host: destinationHost(obj.Spec.ServiceInfo.Name, obj.Spec.ServiceInfo.Namespace),
-					Port: &istioapi.PortSelector{
+					Port: &istioapiv1beta1.PortSelector{
 						Number: uint32(obj.Spec.ServiceInfo.Port),
 					},
 				},

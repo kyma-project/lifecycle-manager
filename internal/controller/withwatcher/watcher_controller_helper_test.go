@@ -7,15 +7,14 @@ import (
 	"io"
 	"os"
 
-	istioclientapi "istio.io/client-go/pkg/apis/networking/v1beta1"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
+	apicorev1 "k8s.io/api/core/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/util/yaml"
+	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
@@ -50,7 +49,7 @@ func deserializeIstioResources() ([]*unstructured.Unstructured, error) {
 			logger.Error(err, "failed to close test resources", "path", istioResourcesFilePath)
 		}
 	}(file)
-	decoder := yaml.NewYAMLOrJSONDecoder(file, defaultBufferSize)
+	decoder := machineryaml.NewYAMLOrJSONDecoder(file, defaultBufferSize)
 	for {
 		istioResource := &unstructured.Unstructured{}
 		err = decoder.Decode(istioResource)
@@ -74,13 +73,13 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 		field = v1beta2.StatusField
 	}
 	return &v1beta2.Watcher{
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: apimetav1.TypeMeta{
 			Kind:       string(v1beta2.WatcherKind),
 			APIVersion: v1beta2.GroupVersion.String(),
 		},
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      managerInstanceName,
-			Namespace: metav1.NamespaceDefault,
+			Namespace: apimetav1.NamespaceDefault,
 			Labels: map[string]string{
 				v1beta2.ManagedBy: managerInstanceName,
 			},
@@ -89,7 +88,7 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 			ServiceInfo: v1beta2.Service{
 				Port:      8082,
 				Name:      fmt.Sprintf("%s-svc", managerInstanceName),
-				Namespace: metav1.NamespaceDefault,
+				Namespace: apimetav1.NamespaceDefault,
 			},
 			LabelsToWatch: map[string]string{
 				fmt.Sprintf("%s-watchable", managerInstanceName): "true",
@@ -107,9 +106,9 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 	}
 }
 
-func createTLSSecret(kymaObjKey client.ObjectKey) *corev1.Secret {
-	return &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
+func createTLSSecret(kymaObjKey client.ObjectKey) *apicorev1.Secret {
+	return &apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      watcher.ResolveTLSCertName(kymaObjKey.Name),
 			Namespace: istioSystemNs,
 			Labels: map[string]string{
@@ -121,14 +120,14 @@ func createTLSSecret(kymaObjKey client.ObjectKey) *corev1.Secret {
 			"tls.crt": []byte("jellyfish"),
 			"tls.key": []byte("jellyfishes"),
 		},
-		Type: corev1.SecretTypeOpaque,
+		Type: apicorev1.SecretTypeOpaque,
 	}
 }
 
 func getWatcher(name string) (*v1beta2.Watcher, error) {
 	watcherCR := &v1beta2.Watcher{}
 	err := controlPlaneClient.Get(suiteCtx,
-		client.ObjectKey{Name: name, Namespace: metav1.NamespaceDefault},
+		client.ObjectKey{Name: name, Namespace: apimetav1.NamespaceDefault},
 		watcherCR)
 	return watcherCR, err
 }
@@ -136,7 +135,7 @@ func getWatcher(name string) (*v1beta2.Watcher, error) {
 func isVirtualServiceHostsConfigured(ctx context.Context,
 	vsName string,
 	istioClient *istio.Client,
-	gateway *istioclientapi.Gateway,
+	gateway *istioclientapiv1beta1.Gateway,
 ) error {
 	virtualService, err := istioClient.GetVirtualService(ctx, vsName)
 	if err != nil {

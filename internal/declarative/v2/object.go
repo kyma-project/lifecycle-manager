@@ -1,8 +1,9 @@
 package v2
 
 import (
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
 //go:generate mockgen -source object.go -destination mock/object.go Object
