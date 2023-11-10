@@ -1,4 +1,4 @@
-package v1_test
+package declarative_test
 
 import (
 	"os"

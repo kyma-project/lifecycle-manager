@@ -1,6 +1,7 @@
 // +kubebuilder:object:generate=true
 // +groupName=test.declarative.kyma-project.io
-package v1
+// +versionName=v1
+package declarative
 
 import (
 	"fmt"
