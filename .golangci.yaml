@@ -6,7 +6,6 @@ linters:
     - depguard # checks if package imports are whitelisted
     - exhaustivestruct # deprecated (since v1.46.0) and replaced by 'exhaustruct'
     - exhaustruct # TODO enable and fix, use regex to exclude certain cases
-    - godox # TODO enable and fix
     - golint # deprecated (since v1.41.0) and replaced by 'revive'
     - ifshort # deprecated (since v1.48.0)
     - interfacer # deprecated (since v1.38.0)
@@ -38,8 +37,6 @@ linters-settings:
         severity: warning
         disabled: true
         arguments: [ 120 ]
-  gomoddirectives:
-    replace-allow-list:
   funlen:
     lines: 80
   cyclop:
