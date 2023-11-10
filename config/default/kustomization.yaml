@@ -20,8 +20,9 @@ commonLabels:
   app.kubernetes.io/managed-by: kustomize
   app.kubernetes.io/part-of: manual-deployment
 
+
+patches:
 # [WATCHER]
-#patches:
 #- patch: |-
 #    - op: replace
 #      path: /metadata/name
