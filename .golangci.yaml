@@ -67,12 +67,12 @@ linters-settings:
         alias: containerregistryv1
       - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics
         alias: commonmetrics
-      - pkg: github.com/kyma-project/lifecycle-manager/internal/controller/manifest_controller/manifesttest
-        alias: manifestctrltest
       - pkg: github.com/kyma-project/lifecycle-manager/internal/declarative/v2
         alias: declarativev2
       - pkg: github.com/kyma-project/lifecycle-manager/tests/integration/declarative
         alias: declarativetest
+      - pkg: github.com/kyma-project/lifecycle-manager/tests/integration/controller/manifest
+        alias: manifesttest
       - pkg: github.com/kyma-project/runtime-watcher/listener/pkg/event
         alias: watcherevent
       - pkg: github.com/kyma-project/runtime-watcher/listener/pkg/metrics

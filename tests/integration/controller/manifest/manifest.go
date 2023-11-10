@@ -1,5 +1,5 @@
 //nolint:gochecknoglobals
-package manifesttest
+package manifest
 
 import (
 	"context"
