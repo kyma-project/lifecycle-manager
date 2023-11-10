@@ -18,6 +18,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"net/http"
@@ -66,8 +67,9 @@ import (
 )
 
 var (
-	scheme   = machineryruntime.NewScheme() //nolint:gochecknoglobals
-	setupLog = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals
+	scheme                 = machineryruntime.NewScheme() //nolint:gochecknoglobals
+	setupLog               = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals
+	errMissingWatcherImage = errors.New("runtime watcher image is not provided")
 )
 
 //nolint:gochecknoinits
@@ -139,7 +141,10 @@ func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *machi
 	}
 
 	options := controllerOptionsFromFlagVar(flagVar)
-
+	if flagVar.enableKcpWatcher && flagVar.skrWatcherImage == "" {
+		setupLog.Error(errMissingWatcherImage, "unable to start manager")
+		os.Exit(1)
+	}
 	remoteClientCache := remote.NewClientCache()
 
 	setupKymaReconciler(mgr, remoteClientCache, flagVar, options)

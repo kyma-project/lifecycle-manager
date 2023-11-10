@@ -2005,7 +2005,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "lifecycle_mgr_purgectrl_requests_total",
+          "expr": "rate(lifecycle_mgr_purgectrl_requests_total{service=\"klm-metrics-service\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
@@ -2061,7 +2061,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "lifecycle_mgr_purgectrl_error{err_reason=\"CleanupError\"} == 1",
+          "expr": "lifecycle_mgr_purgectrl_error{err_reason=\"CleanupError\"}",
           "interval": "",
           "legendFormat": "{{err_reason}} Kyma: {{kyma_name}} ShootID: {{shoot}} InstanceID: {{instance_id}}",
           "refId": "A"
