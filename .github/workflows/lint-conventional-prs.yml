@@ -24,6 +24,7 @@ jobs:
             docs
             feat
             fix
+            refactor
             test
           requireScope: false
           # https://regex101.com/r/YybDgS/1
