@@ -20,16 +20,17 @@ commonLabels:
   app.kubernetes.io/managed-by: kustomize
   app.kubernetes.io/part-of: manual-deployment
 
-patches:
-- patch: |-
-    - op: replace
-      path: /metadata/name
-      value: lifecycle-manager-watcher-gateway
-  target:
-    group: networking.istio.io
-    version: v1beta1
-    kind: Gateway
-    name: watcher-gateway
+# [WATCHER]
+#patches:
+#- patch: |-
+#    - op: replace
+#      path: /metadata/name
+#      value: klm-watcher-gateway
+#  target:
+#    group: networking.istio.io
+#    version: v1beta1
+#    kind: Gateway
+#    name: watcher-gateway
 # Mount the controller config file for loading manager configurations
 # through a ComponentConfig type
 #  - manager_config_patch.yaml

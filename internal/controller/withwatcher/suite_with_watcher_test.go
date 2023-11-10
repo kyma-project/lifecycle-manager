@@ -84,7 +84,7 @@ const (
 	istioResourcesFilePath = "../../../config/samples/tests/istio-test-resources.yaml"
 	istioSystemNs          = "istio-system"
 	kcpSystemNs            = "kcp-system"
-	gatewayName            = "lifecycle-manager-watcher-gateway"
+	gatewayName            = "klm-watcher-gateway"
 )
 
 func TestAPIs(t *testing.T) {

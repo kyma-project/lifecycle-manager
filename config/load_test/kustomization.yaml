@@ -145,18 +145,19 @@ patches:
         value: --watcher-requeue-success-interval=1m
     target:
       kind: Deployment
-  - patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: default
-      - op: replace
-        path: /metadata/name
-        value: lifecycle-manager-watcher-gateway
-    target:
-      group: networking.istio.io
-      version: v1beta1
-      kind: Gateway
-      name: watcher-gateway
+# [WATCHER]
+#  - patch: |-
+#      - op: replace
+#        path: /metadata/namespace
+#        value: default
+#      - op: replace
+#        path: /metadata/name
+#        value: klm-watcher-gateway
+#    target:
+#      group: networking.istio.io
+#      version: v1beta1
+#      kind: Gateway
+#      name: watcher-gateway
   - path: patches/adjust_resources_in_deployment.yaml
   # Mount the controller config file for loading manager configurations
   # through a ComponentConfig type
