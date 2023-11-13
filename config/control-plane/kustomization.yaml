@@ -107,6 +107,17 @@ transformers:
     kind: ConfigMap
     name: klm-status
     version: v1
+- |-
+  apiVersion: builtin
+  kind: PatchTransformer
+  metadata:
+    name: fix-namespace-watcher
+  patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "istio-system"}]'
+  target:
+    group: cert-manager.io
+    version: v1
+    kind: Certificate
+    name: klm-watcher-serving-cert
 
 replacements:
 # substitutes CERTIFICATE_NAMESPACE, the namespace of the certificate CR
