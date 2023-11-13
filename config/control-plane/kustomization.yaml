@@ -65,9 +65,6 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --is-kyma-managed
-      - op: add
-        path: /spec/template/spec/containers/0/args/-
-        value: --enable-domain-name-pinning=true
     target:
       kind: Deployment
     # We expect a kcp-system namespace to be already present in KCP
