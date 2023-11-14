@@ -8,7 +8,7 @@ body:
       value: |
         Thank you for your report. Before you submit the issue please:
         1. Search open and closed issues for duplicates.
-        2. Check the [Discussions](https://github.com/kyma-project/lifecycle-manager/discussions) and the FAQ sections of the Lifecycle Manager repository.
+        2. Check the [Discussions](https://github.com/kyma-project/lifecycle-manager/discussions) and the [FAQ](https://github.com/kyma-project/lifecycle-manager/wiki/FAQ) sections of the Lifecycle Manager repository.
   - type: textarea
     id: description
     attributes:
@@ -36,17 +36,16 @@ body:
     validations:
       required: true
   - type: textarea
-    id: k8s-version
+    id: environment-info
     attributes:
-      label: Kubernetes Version
-      description: Kubernetes version of your cluster.
-      placeholder: 1.27.0
-  - type: textarea
-    id: docker-version
-    attributes:
-      label: Docker Version
-      description: Docker version that you use.
-      placeholder: 23.0.3
+      label: Environment Info
+      description: More information on the environment where the bug was found.
+      value: |
+        Kubernetes Version: x.y.z
+        Docker Version: x.y.z
+        Minikube Version: 
+    validations:
+      required: true
   - type: markdown
     attributes:
       value: |
@@ -54,6 +53,7 @@ body:
         - Kyma CR of the affected cluster.
         - Manifest CR of the affected module.
         - ModuleTemplate CR that you have used.
+        Any additional input has a chance to skyrocket the work pace on the issue.
   - type: textarea
     id: attachments
     attributes:
