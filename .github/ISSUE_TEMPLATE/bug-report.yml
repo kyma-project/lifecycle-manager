@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        ## Thank you for your report. Before you submit the issue please:
+        ### Thank you for your report. Before you submit the issue please:
         1. Search open and closed issues for duplicates.
         2. Check the [Discussions](https://github.com/kyma-project/lifecycle-manager/discussions) and the [FAQ](https://github.com/kyma-project/lifecycle-manager/wiki/FAQ) sections of the Lifecycle Manager repository.
   - type: textarea
@@ -49,7 +49,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        ## To help us identify and resolve the issue efficiently please consider attaching the following:
+        ### To help us identify and resolve the issue efficiently please consider attaching the following:
         - Kyma CR of the affected cluster.
         - Manifest CR of the affected module.
         - ModuleTemplate CR that you have used.
