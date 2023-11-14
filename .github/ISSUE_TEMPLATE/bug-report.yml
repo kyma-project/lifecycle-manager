@@ -1,0 +1,62 @@
+name: Bug Report
+description: Report a bug in the project
+title: "Bug Title"
+labels: ["kind/bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for your report. Before you submit the issue please:
+        1. Search open and closed issues for duplicates.
+        2. Check the [Discussions](https://github.com/kyma-project/lifecycle-manager/discussions) and the FAQ sections of the Lifecycle Manager repository.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Provide a general description of the bug that you would like to report.
+      placeholder: Provide your bug description here.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide a detailed list of steps required to reproduce this issue.
+      placeholder: Provide your list here.
+    validations:
+      required: true
+  - type: dropdown
+    id: env-type
+    attributes:
+      label: Environment Type
+      multiple: false
+      options:
+        - Managed
+        - minikube
+    validations:
+      required: true
+  - type: textarea
+    id: k8s-version
+    attributes:
+      label: Kubernetes Version
+      description: Kubernetes version of your cluster.
+      placeholder: 1.27.0
+  - type: textarea
+    id: docker-version
+    attributes:
+      label: Docker Version
+      description: Docker version that you use.
+      placeholder: 23.0.3
+  - type: markdown
+    attributes:
+      value: |
+        To help us identify and resolve the issue efficiently please consider attaching the following:
+        - Kyma CR of the affected cluster.
+        - Manifest CR of the affected module.
+        - ModuleTemplate CR that you have used.
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Attachments
+      description: Attach any files, links, code samples, or screenshots that will help us debug the issue.
+      placeholder: Put your attachments in here.
