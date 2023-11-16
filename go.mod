@@ -2,6 +2,8 @@ module github.com/kyma-project/lifecycle-manager
 
 go 1.21
 
+replace golang.org/x/exp => golang.org/x/exp v0.0.0-20230321023759-10a507213a29
+
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/cert-manager/cert-manager v1.13.2
@@ -14,10 +16,11 @@ require (
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20231011102033-b8383d92883e
 	github.com/onsi/ginkgo/v2 v2.13.1
 	github.com/onsi/gomega v1.30.0
-	github.com/open-component-model/ocm v0.4.0
+	github.com/open-component-model/ocm v0.4.3
 	github.com/prometheus/client_golang v1.17.0
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/zap v1.26.0
+	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/sync v0.5.0
 	golang.org/x/time v0.4.0
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
@@ -298,7 +301,6 @@ require (
 	go4.org/intern v0.0.0-20230525184215-6c62f75575cb // indirect
 	go4.org/unsafe/assume-no-moving-gc v0.0.0-20230525183740-e7c30c78aeb2 // indirect
 	golang.org/x/crypto v0.14.0 // indirect
-	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/mod v0.13.0 // indirect
 	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.13.0 // indirect
