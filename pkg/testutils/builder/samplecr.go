@@ -2,7 +2,7 @@ package builder
 
 import (
 	"github.com/kyma-project/template-operator/api/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type SampleCRBuilder struct {
@@ -11,12 +11,15 @@ type SampleCRBuilder struct {
 
 func NewSampleCRBuilder() SampleCRBuilder {
 	return SampleCRBuilder{&v1alpha1.Sample{
-		TypeMeta: metav1.TypeMeta{
+		TypeMeta: apimetav1.TypeMeta{
 			Kind:       "Sample",
 			APIVersion: "v1alpha1",
 		},
-		ObjectMeta: metav1.ObjectMeta{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name: "sample-cr",
+		},
+		Spec: v1alpha1.SampleSpec{
+			ResourceFilePath: "/some/resource/filepath",
 		},
 	}}
 }
@@ -30,14 +33,6 @@ func (sb SampleCRBuilder) WithNamespace(namespace string) SampleCRBuilder {
 	sb.sample.SetNamespace(namespace)
 	return sb
 }
-
-//func (sb SampleCRBuilder) WithSpec(key, value string) SampleCRBuilder {
-//	err := unstructured.SetNestedField(sb.sample.Spec, value, "spec", key)
-//	if err != nil {
-//		panic(fmt.Errorf("default cr: %w", err))
-//	}
-//	return sb
-//}
 
 func (sb SampleCRBuilder) Build() *v1alpha1.Sample {
 	return sb.sample
