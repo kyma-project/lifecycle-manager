@@ -7,7 +7,6 @@ import (
 
 	"github.com/kyma-project/template-operator/api/v1alpha1"
 	apiappsv1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/utils/strings/slices"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -26,7 +25,7 @@ var (
 	errFinalizerStillExists            = errors.New("finalizer still exists after purge timeout")
 )
 
-func ModuleCRExists(ctx context.Context, clnt client.Client, moduleCR *unstructured.Unstructured) error {
+func ModuleCRExists(ctx context.Context, clnt client.Client, moduleCR *v1alpha1.Sample) error {
 	err := clnt.Get(ctx, client.ObjectKey{
 		Namespace: moduleCR.GetNamespace(),
 		Name:      moduleCR.GetName(),
@@ -91,7 +90,7 @@ func AddFinalizerToModuleCR(ctx context.Context, clnt client.Client, moduleCR *v
 	return nil
 }
 
-func FinalizerIsRemoved(ctx context.Context, clnt client.Client, moduleCR *unstructured.Unstructured,
+func FinalizerIsRemoved(ctx context.Context, clnt client.Client, moduleCR *v1alpha1.Sample,
 	finalizer string,
 ) error {
 	err := clnt.Get(ctx, client.ObjectKey{
@@ -112,7 +111,7 @@ func FinalizerIsRemoved(ctx context.Context, clnt client.Client, moduleCR *unstr
 
 func ModuleCRIsInExpectedState(ctx context.Context,
 	clnt client.Client,
-	moduleCR *unstructured.Unstructured,
+	moduleCR *v1alpha1.Sample,
 	expectedState shared.State,
 ) bool {
 	err := clnt.Get(ctx, client.ObjectKey{
@@ -123,11 +122,7 @@ func ModuleCRIsInExpectedState(ctx context.Context,
 		return false
 	}
 
-	state, _, err := unstructured.NestedString(moduleCR.Object, "status", "state")
-	if err != nil {
-		return false
-	}
-	return state == string(expectedState)
+	return string(moduleCR.Status.State) == string(expectedState)
 }
 
 func ModuleDeploymentExists(ctx context.Context,
