@@ -32,7 +32,7 @@ body:
       multiple: false
       options:
         - Managed
-        - minikube
+        - local (k3d/k3s)
     validations:
       required: true
   - type: textarea
@@ -43,7 +43,8 @@ body:
       value: |
         Kubernetes Version: x.y.z
         Docker Version: x.y.z
-        Minikube Version: x.y.z
+        Kyma CLI Version: x.y.z
+        If used - k3d/k3s/minikube versions
     validations:
       required: true
   - type: markdown
