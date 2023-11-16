@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/runtime"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/cli-runtime/pkg/resource"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/internal"
 )
@@ -25,8 +25,8 @@ type SSA interface {
 type ConcurrentDefaultSSA struct {
 	clnt      client.Client
 	owner     client.FieldOwner
-	versioner runtime.GroupVersioner
-	converter runtime.ObjectConvertor
+	versioner machineryruntime.GroupVersioner
+	converter machineryruntime.ObjectConvertor
 }
 
 func ConcurrentSSA(clnt client.Client, owner client.FieldOwner) *ConcurrentDefaultSSA {
@@ -39,7 +39,7 @@ func ConcurrentSSA(clnt client.Client, owner client.FieldOwner) *ConcurrentDefau
 
 func (c *ConcurrentDefaultSSA) Run(ctx context.Context, resources []*resource.Info) error {
 	ssaStart := time.Now()
-	logger := log.FromContext(ctx, "owner", c.owner)
+	logger := logf.FromContext(ctx, "owner", c.owner)
 	logger.V(internal.TraceLogLevel).Info("ServerSideApply", "resources", len(resources))
 
 	// The Runtime Complexity of this Branch is N as only ServerSideApplier Patch is required
@@ -72,7 +72,7 @@ func (c *ConcurrentDefaultSSA) serverSideApply(
 	results chan error,
 ) {
 	start := time.Now()
-	logger := log.FromContext(ctx, "owner", c.owner)
+	logger := logf.FromContext(ctx, "owner", c.owner)
 
 	// this converts unstructured to typed objects if possible, leveraging native APIs
 	resource.Object = c.convertUnstructuredToTyped(resource.Object, resource.Mapping)
@@ -115,8 +115,8 @@ func (c *ConcurrentDefaultSSA) serverSideApplyResourceInfo(
 //
 
 func (c *ConcurrentDefaultSSA) convertUnstructuredToTyped(
-	obj runtime.Object, mapping *meta.RESTMapping,
-) runtime.Object {
+	obj machineryruntime.Object, mapping *meta.RESTMapping,
+) machineryruntime.Object {
 	gv := c.versioner
 	if mapping != nil {
 		gv = mapping.GroupVersionKind.GroupVersion()

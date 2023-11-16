@@ -6,12 +6,13 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	v1 "k8s.io/api/core/v1"
+	apicorev1 "k8s.io/api/core/v1"
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 const KubeConfigKey = "config"
@@ -24,7 +25,7 @@ type ClusterClient struct {
 var ErrAccessSecretNotFound = errors.New("access secret not found")
 
 func (cc *ClusterClient) GetRestConfigFromSecret(ctx context.Context, name, namespace string) (*rest.Config, error) {
-	kubeConfigSecretList := &v1.SecretList{}
+	kubeConfigSecretList := &apicorev1.SecretList{}
 	if err := cc.DefaultClient.List(ctx, kubeConfigSecretList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{v1beta2.KymaName: name}), Namespace: namespace,
 	}); err != nil {

@@ -7,10 +7,10 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"k8s.io/apimachinery/pkg/util/validation"
+
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
-	"k8s.io/apimachinery/pkg/util/validation"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type (
@@ -20,7 +20,7 @@ type (
 		FQDN       string
 		Version    string
 		Template   *channel.ModuleTemplateTO
-		client.Object
+		*v1beta2.Manifest
 	}
 )
 

@@ -77,7 +77,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.26",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -215,7 +215,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.26",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -315,7 +315,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.26",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -634,7 +634,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.26",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -748,7 +748,7 @@
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "",
+      "pluginVersion": "7.5.26",
       "targets": [
         {
           "datasource": {
@@ -1102,7 +1102,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.26",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1212,7 +1212,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.26",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1322,7 +1322,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.26",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1435,7 +1435,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.26",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1635,7 +1635,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.26",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1738,7 +1738,7 @@
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "",
+      "pluginVersion": "7.5.26",
       "targets": [
         {
           "exemplar": true,
@@ -1897,7 +1897,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.26",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1956,63 +1956,98 @@
       }
     },
     {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
       "datasource": null,
       "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
-        },
+        "defaults": {},
         "overrides": []
       },
+      "fill": 1,
+      "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
         "y": 97
       },
+      "hiddenSeries": false,
       "id": 64,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "text": {},
-        "textMode": "auto"
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": true,
+        "total": false,
+        "values": false
       },
-      "pluginVersion": "",
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.26",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
       "targets": [
         {
           "exemplar": true,
-          "expr": "lifecycle_mgr_purgectrl_requests_total",
+          "expr": "rate(lifecycle_mgr_purgectrl_requests_total{service=\"klm-metrics-service\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "",
           "refId": "A"
         }
       ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
       "title": "Purge Count",
-      "type": "stat"
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     },
     {
       "aliasColors": {},
@@ -2050,7 +2085,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "",
+      "pluginVersion": "7.5.26",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -2061,7 +2096,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "lifecycle_mgr_purgectrl_error{err_reason=\"CleanupError\"} == 1",
+          "expr": "lifecycle_mgr_purgectrl_error{err_reason=\"CleanupError\"}",
           "interval": "",
           "legendFormat": "{{err_reason}} Kyma: {{kyma_name}} ShootID: {{shoot}} InstanceID: {{instance_id}}",
           "refId": "A"

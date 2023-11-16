@@ -10,18 +10,23 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 )
 
 func TestConcurrentSSA(t *testing.T) {
 	t.Parallel()
 
-	_ = &resource.Info{Object: &unstructured.Unstructured{Object: map[string]any{
-		"name":       "valid",
-		"namespace":  "some-namespace",
+	pod := &unstructured.Unstructured{Object: map[string]any{
 		"kind":       "Pod",
 		"apiVersion": "v1",
-	}}}
+		"metadata": map[string]interface{}{
+			"name":      "valid",
+			"namespace": "some-namespace",
+		},
+	}}
+	structuredInfo := &resource.Info{Object: pod}
+	fakeClientBuilder := fake.NewClientBuilder().WithRuntimeObjects(pod).Build()
+	_ = fakeClientBuilder.Create(context.Background(), pod)
 
 	type args struct {
 		clnt  client.Client
@@ -36,29 +41,29 @@ func TestConcurrentSSA(t *testing.T) {
 		{
 			"simple apply nothing",
 			args{
-				clnt:  fake.NewClientBuilder().Build(),
+				clnt:  fakeClientBuilder,
 				owner: client.FieldOwner("test"),
 			},
 			[]*resource.Info{},
 			nil,
 		},
-		// TODO https://github.com/kubernetes/client-go/issues/970 causes SSA to not be testable
-		//{
-		//	"simple apply",
-		//	args{
-		//		clnt:  fake.NewClientBuilder().Build(),
-		//		owner: client.FieldOwner("test"),
-		//	},
-		//	[]*resource.Info{structuredInfo},
-		//	nil,
-		// },
+		{
+			"simple apply",
+			args{
+				clnt:  fakeClientBuilder,
+				owner: client.FieldOwner("test"),
+			},
+			[]*resource.Info{structuredInfo},
+			nil,
+		},
 	}
+
 	for _, testCase := range tests {
 		testCase := testCase
 		t.Run(
 			testCase.name, func(t *testing.T) {
 				t.Parallel()
-				ssa := v2.ConcurrentSSA(testCase.ssa.clnt, testCase.ssa.owner)
+				ssa := declarativev2.ConcurrentSSA(testCase.ssa.clnt, testCase.ssa.owner)
 				if err := ssa.Run(context.Background(), testCase.apply); err != nil {
 					require.ErrorIs(t, err, testCase.err)
 				}

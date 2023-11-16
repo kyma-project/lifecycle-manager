@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/api/meta"
-	"k8s.io/apimachinery/pkg/runtime"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,7 +38,7 @@ func NewClientProxy(config *rest.Config, mapper meta.RESTMapper) (client.Client,
 	}, nil
 }
 
-func (p *ProxyClient) GroupVersionKindFor(obj runtime.Object) (schema.GroupVersionKind, error) {
+func (p *ProxyClient) GroupVersionKindFor(obj machineryruntime.Object) (schema.GroupVersionKind, error) {
 	groupVersion, err := p.baseClient.GroupVersionKindFor(obj)
 	if err != nil {
 		return schema.GroupVersionKind{}, fmt.Errorf("failed to fetch group version: %w", err)
@@ -46,7 +46,7 @@ func (p *ProxyClient) GroupVersionKindFor(obj runtime.Object) (schema.GroupVersi
 	return groupVersion, nil
 }
 
-func (p *ProxyClient) IsObjectNamespaced(obj runtime.Object) (bool, error) {
+func (p *ProxyClient) IsObjectNamespaced(obj machineryruntime.Object) (bool, error) {
 	isNameSpaced, err := p.baseClient.IsObjectNamespaced(obj)
 	if err != nil {
 		return isNameSpaced, fmt.Errorf("failed to fetch group version is namespaced or not: %w", err)
@@ -55,7 +55,7 @@ func (p *ProxyClient) IsObjectNamespaced(obj runtime.Object) (bool, error) {
 }
 
 // Scheme returns the scheme this client is using.
-func (p *ProxyClient) Scheme() *runtime.Scheme {
+func (p *ProxyClient) Scheme() *machineryruntime.Scheme {
 	return p.baseClient.Scheme()
 }
 

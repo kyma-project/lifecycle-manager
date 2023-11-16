@@ -11,20 +11,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
+	apicorev1 "k8s.io/api/core/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var (
@@ -48,6 +48,7 @@ const (
 
 func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
 	BeforeAll(func() {
+		By("When a KCP Kyma CR is created on the KCP cluster")
 		Eventually(CreateKymaSecret).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
@@ -56,12 +57,12 @@ func InitEmptyKymaBeforeAll(kyma *v1beta2.Kyma) {
 			WithContext(ctx).
 			WithArguments(kyma).
 			Should(Succeed())
-		By("verifying kyma is ready")
+		By("Then the Kyma CR is in a \"Ready\" State on the KCP cluster ")
 		Eventually(KymaIsInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 			Should(Succeed())
-		By("verifying remote kyma is ready")
+		By("And the Kyma CR is in \"Ready\" State on the SKR cluster")
 		Eventually(CheckRemoteKymaCR).
 			WithContext(ctx).
 			WithArguments(remoteNamespace, []v1beta2.Module{}, runtimeClient, shared.StateReady).
@@ -149,8 +150,8 @@ func CheckIfNotExists(ctx context.Context, name, namespace, group, version, kind
 
 func CreateKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
 	patchedRuntimeConfig := strings.ReplaceAll(string(*runtimeConfig), localHostname, k3dHostname)
-	secret := &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
+	secret := &apicorev1.Secret{
+		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      kymaName,
 			Namespace: kymaNamespace,
 			Labels: map[string]string{
@@ -193,7 +194,7 @@ func CheckRemoteKymaCR(ctx context.Context,
 }
 
 func DeleteKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
-	secret := &corev1.Secret{}
+	secret := &apicorev1.Secret{}
 	err := k8sClient.Get(ctx, client.ObjectKey{Name: kymaName, Namespace: kymaNamespace}, secret)
 	if util.IsNotFound(err) {
 		return nil
@@ -226,6 +227,29 @@ func GetKymaStateMetricCount(ctx context.Context, kymaName, state string) (int, 
 
 	re := regexp.MustCompile(
 		`lifecycle_mgr_kyma_state{instance_id="[^"]+",kyma_name="` + kymaName + `",shoot="[^"]+",state="` + state +
+			`"} (\d+)`)
+	match := re.FindStringSubmatch(bodyString)
+	if len(match) > 1 {
+		count, err := strconv.Atoi(match[1])
+		if err != nil {
+			return 0, err
+		}
+		return count, nil
+	}
+
+	return 0, nil
+}
+
+func GetModuleStateMetricCount(ctx context.Context, kymaName, moduleName, state string) (int, error) {
+	bodyString, err := getMetricsBody(ctx)
+	if err != nil {
+		return 0, err
+	}
+
+	re := regexp.MustCompile(
+		`lifecycle_mgr_module_state{instance_id="[^"]+",kyma_name="` + kymaName +
+			`",module_name="` + moduleName +
+			`",shoot="[^"]+",state="` + state +
 			`"} (\d+)`)
 	match := re.FindStringSubmatch(bodyString)
 	if len(match) > 1 {

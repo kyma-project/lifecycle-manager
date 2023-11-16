@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	errMissingShootAnnotation = fmt.Errorf("expected annotation '%s' not found", v1beta2.SKRDomainAnnotation)
-	errShootAnnotationNoValue = fmt.Errorf("annotation '%s' has empty value", v1beta2.SKRDomainAnnotation)
+	ErrMissingShootAnnotation = fmt.Errorf("expected annotation '%s' not found", v1beta2.SKRDomainAnnotation)
+	ErrShootAnnotationNoValue = fmt.Errorf("annotation '%s' has empty value", v1beta2.SKRDomainAnnotation)
 )
 
 func ExtractShootID(kyma *v1beta2.Kyma) (string, error) {
@@ -23,26 +23,26 @@ func ExtractShootID(kyma *v1beta2.Kyma) (string, error) {
 		}
 	}
 	if !keyExists {
-		return "", errMissingShootAnnotation
+		return "", ErrMissingShootAnnotation
 	}
 	if shoot == "" {
-		return shoot, errShootAnnotationNoValue
+		return shoot, ErrShootAnnotationNoValue
 	}
 	return shoot, nil
 }
 
 var (
-	errMissingInstanceLabel = fmt.Errorf("expected label '%s' not found", v1beta2.InstanceIDLabel)
-	errInstanceLabelNoValue = fmt.Errorf("label '%s' has empty value", v1beta2.InstanceIDLabel)
+	ErrMissingInstanceLabel = fmt.Errorf("expected label '%s' not found", v1beta2.InstanceIDLabel)
+	ErrInstanceLabelNoValue = fmt.Errorf("label '%s' has empty value", v1beta2.InstanceIDLabel)
 )
 
 func ExtractInstanceID(kyma *v1beta2.Kyma) (string, error) {
 	instanceID, keyExists := kyma.Labels[v1beta2.InstanceIDLabel]
 	if !keyExists {
-		return "", errMissingInstanceLabel
+		return "", ErrMissingInstanceLabel
 	}
 	if instanceID == "" {
-		return instanceID, errInstanceLabelNoValue
+		return instanceID, ErrInstanceLabelNoValue
 	}
 	return instanceID, nil
 }

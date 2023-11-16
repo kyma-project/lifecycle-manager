@@ -6,14 +6,14 @@ import (
 	"fmt"
 
 	"github.com/kyma-project/template-operator/api/v1alpha1"
+	apiappsv1 "k8s.io/api/apps/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/utils/strings/slices"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	appsv1 "k8s.io/api/apps/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/utils/strings/slices"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -135,7 +135,7 @@ func ModuleDeploymentExists(ctx context.Context,
 	namespace string,
 	deploymentName string,
 ) bool {
-	var deployment appsv1.Deployment
+	var deployment apiappsv1.Deployment
 	err := clnt.Get(ctx, client.ObjectKey{
 		Namespace: namespace,
 		Name:      deploymentName,

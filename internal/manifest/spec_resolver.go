@@ -7,15 +7,14 @@ import (
 	"os"
 	"reflect"
 
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/v1/google"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	declarative "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
-
-	"github.com/google/go-containerregistry/pkg/authn"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // RawManifestInfo defines raw manifest information.
@@ -25,12 +24,12 @@ type RawManifestInfo struct {
 }
 
 type SpecResolver struct {
-	KCP          *declarative.ClusterInfo
+	KCP          *declarativev2.ClusterInfo
 	ChartCache   string
 	cachedCharts map[string]string
 }
 
-func NewSpecResolver(kcp *declarative.ClusterInfo) *SpecResolver {
+func NewSpecResolver(kcp *declarativev2.ClusterInfo) *SpecResolver {
 	return &SpecResolver{
 		KCP:          kcp,
 		ChartCache:   os.TempDir(),
@@ -43,9 +42,9 @@ var (
 	ErrInvalidObjectPassedToSpecResolution = errors.New("invalid object passed to spec resolution")
 )
 
-func (m *SpecResolver) Spec(ctx context.Context, obj declarative.Object,
+func (m *SpecResolver) Spec(ctx context.Context, obj declarativev2.Object,
 	remoteClient client.Client,
-) (*declarative.Spec, error) {
+) (*declarativev2.Spec, error) {
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
 		return nil, fmt.Errorf(
@@ -63,10 +62,10 @@ func (m *SpecResolver) Spec(ctx context.Context, obj declarative.Object,
 		return nil, fmt.Errorf("failed to unmarshal data: %w", err)
 	}
 
-	var mode declarative.RenderMode
+	var mode declarativev2.RenderMode
 	switch imageSpec.Type {
 	case v1beta2.OciRefType:
-		mode = declarative.RenderModeRaw
+		mode = declarativev2.RenderModeRaw
 	default:
 		return nil, fmt.Errorf("could not determine render mode for %s: %w",
 			client.ObjectKeyFromObject(manifest), ErrRenderModeInvalid)
@@ -77,7 +76,7 @@ func (m *SpecResolver) Spec(ctx context.Context, obj declarative.Object,
 		return nil, err
 	}
 
-	return &declarative.Spec{
+	return &declarativev2.Spec{
 		ManifestName: manifest.Spec.Install.Name,
 		Path:         rawManifestInfo.Path,
 		OCIRef:       rawManifestInfo.OCIRef,

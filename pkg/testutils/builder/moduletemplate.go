@@ -7,15 +7,15 @@ import (
 	"runtime"
 
 	"github.com/kyma-project/template-operator/api/v1alpha1"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/ocm.software/v3alpha1"
-	compdesc2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	k8sruntime "k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/yaml"
+	machineryruntime "k8s.io/apimachinery/pkg/runtime"
+	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
+
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 type ModuleTemplateBuilder struct {
@@ -25,13 +25,13 @@ type ModuleTemplateBuilder struct {
 func NewModuleTemplateBuilder() ModuleTemplateBuilder {
 	return ModuleTemplateBuilder{
 		moduleTemplate: &v1beta2.ModuleTemplate{
-			TypeMeta: metav1.TypeMeta{
+			TypeMeta: apimetav1.TypeMeta{
 				APIVersion: v1beta2.GroupVersion.String(),
 				Kind:       string(v1beta2.KymaKind),
 			},
-			ObjectMeta: metav1.ObjectMeta{
+			ObjectMeta: apimetav1.ObjectMeta{
 				Name:      RandomName(),
-				Namespace: metav1.NamespaceDefault,
+				Namespace: apimetav1.NamespaceDefault,
 			},
 			Spec: v1beta2.ModuleTemplateSpec{},
 		},
@@ -101,10 +101,10 @@ func (m ModuleTemplateBuilder) Build() *v1beta2.ModuleTemplate {
 	return m.moduleTemplate
 }
 
-func ComponentDescriptorFactoryFromSchema(schemaVersion compdesc.SchemaVersion) k8sruntime.RawExtension {
+func ComponentDescriptorFactoryFromSchema(schemaVersion compdesc.SchemaVersion) machineryruntime.RawExtension {
 	var moduleTemplate v1beta2.ModuleTemplate
 	switch schemaVersion {
-	case compdesc2.SchemaVersion:
+	case compdescv2.SchemaVersion:
 		template := "operator_v1beta2_moduletemplate_kcp-module.yaml"
 		readComponentDescriptorFromYaml(template, &moduleTemplate)
 	case v3alpha1.GroupVersion:
@@ -131,7 +131,7 @@ func readComponentDescriptorFromYaml(template string, moduleTemplate *v1beta2.Mo
 	if err != nil {
 		panic(fmt.Errorf("read module template: %w", err))
 	}
-	if err := yaml.Unmarshal(moduleFile, &moduleTemplate); err != nil {
+	if err := machineryaml.Unmarshal(moduleFile, &moduleTemplate); err != nil {
 		panic(fmt.Errorf("unmarshal module template: %w", err))
 	}
 }

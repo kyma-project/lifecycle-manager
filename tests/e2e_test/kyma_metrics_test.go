@@ -1,44 +1,110 @@
 package e2e_test
 
 import (
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 var _ = Describe("Kyma Metrics", Ordered, func() {
-	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular",
+	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel,
 		v1beta2.SyncStrategyLocalSecret)
-	GinkgoWriter.Printf("kyma before create %v\n", kyma)
-
+	module := NewTemplateOperator(v1beta2.DefaultChannel)
+	moduleCR := NewTestModuleCR(remoteNamespace)
 	InitEmptyKymaBeforeAll(kyma)
 
-	It("Kyma reconciliation should remove metric when Kyma CR deleted ", func() {
-		By("getting the current kyma Ready state metric count")
-		kymaStateReadyCount, err := GetKymaStateMetricCount(ctx, kyma.GetName(), "Ready")
-		Expect(err).Should(Not(HaveOccurred()))
-		GinkgoWriter.Printf("Kyma State Ready Metric count before CR deletion: %d", kymaStateReadyCount)
-		Expect(kymaStateReadyCount).Should(Equal(1))
+	Context("Given kyma deployed in KCP", func() {
+		It("When enabling Template Operator", func() {
+			Eventually(EnableModule).
+				WithContext(ctx).
+				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
+				Should(Succeed())
+			Eventually(ModuleCRExists).
+				WithContext(ctx).
+				WithArguments(runtimeClient, moduleCR).
+				Should(Succeed())
+		})
 
-		By("deleting KCP Kyma")
-		Eventually(DeleteKymaByForceRemovePurgeFinalizer).
-			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma).
-			Should(Succeed())
+		It("Then KCP Kyma should be in Ready state", func() {
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+				Should(Succeed())
+		})
 
-		By("waiting for Kyma CR to be removed")
-		Eventually(KymaDeleted).
-			WithContext(ctx).
-			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
-			Should(Succeed())
+		It("Then the count of kyma metric in ready equals 1", func() {
+			Eventually(GetKymaStateMetricCount).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), string(shared.StateReady)).
+				Should(Equal(1))
+		})
 
-		By("should decrease the metric count")
-		for _, state := range []string{"Deleting", "Warning", "Ready", "Processing", "Error"} {
-			count, err := GetKymaStateMetricCount(ctx, kyma.GetName(), state)
-			Expect(err).Should(Not(HaveOccurred()))
-			GinkgoWriter.Printf("Kyma %s State Metric count after CR deletion: %d", state, count)
-			Expect(count).Should(Equal(0))
-		}
+		It("And the count of kyma module metric in ready equals 1", func() {
+			Eventually(GetModuleStateMetricCount).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), module.Name, string(shared.StateReady)).
+				Should(Equal(1))
+		})
+
+		It("When disabling Template Operator", func() {
+			Eventually(DisableModule).
+				WithContext(ctx).
+				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
+				Should(Succeed())
+
+			By("Then the Manifest CR is removed")
+			Eventually(ManifestExists).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
+				Should(Equal(ErrNotFound))
+
+			By("And the Kyma CR is in a \"Ready\" State")
+			Eventually(KymaIsInState).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
+				Should(Succeed())
+		})
+
+		It("Then the count of kyma metric in ready equals 1", func() {
+			Eventually(GetKymaStateMetricCount).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), string(shared.StateReady)).
+				Should(Equal(1))
+		})
+
+		It("And the count of kyma module metric in ready equals 0", func() {
+			Eventually(GetModuleStateMetricCount).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), module.Name, string(shared.StateReady)).
+				Should(Equal(0))
+		})
+
+		It("When Kyma in KCP cluster is deleted", func() {
+			Eventually(DeleteKymaByForceRemovePurgeFinalizer).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma).
+				Should(Succeed())
+			Eventually(KymaDeleted).
+				WithContext(ctx).
+				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
+				Should(Succeed())
+		})
+
+		It("Then the count of metric should be removed", func() {
+			for _, state := range shared.AllStates() {
+				Eventually(GetKymaStateMetricCount).
+					WithContext(ctx).
+					WithArguments(kyma.GetName(), string(state)).
+					Should(Equal(0))
+				Eventually(GetModuleStateMetricCount).
+					WithContext(ctx).
+					WithArguments(kyma.GetName(), module.Name, string(state)).
+					Should(Equal(0))
+			}
+		})
 	})
 })

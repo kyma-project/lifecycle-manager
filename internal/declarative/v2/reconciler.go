@@ -5,28 +5,28 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
-	"github.com/kyma-project/lifecycle-manager/pkg/common"
-	"github.com/kyma-project/lifecycle-manager/pkg/util"
-
-	v1 "k8s.io/api/core/v1"
+	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/resource"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/pkg/common"
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 var (
-	ErrWarningResourceSyncStateDiff              = errors.New("resource syncTarget state diff detected")
-	ErrResourceSyncDiffInSameOCILayer            = errors.New("resource syncTarget diff detected but in same oci layer, prevent sync resource to be deleted") //nolint:lll
-	ErrInstallationConditionRequiresUpdate       = errors.New("installation condition needs an update")
-	ErrDeletionTimestampSetButNotInDeletingState = errors.New("resource is not set to deleting yet")
-	ErrObjectHasEmptyState                       = errors.New("object has an empty state")
-	ErrKubeconfigFetchFailed                     = errors.New("could not fetch kubeconfig")
+	ErrWarningResourceSyncStateDiff        = errors.New("resource syncTarget state diff detected")
+	ErrResourceSyncDiffInSameOCILayer      = errors.New("resource syncTarget diff detected but in same oci layer, prevent sync resource to be deleted") //nolint:lll
+	ErrInstallationConditionRequiresUpdate = errors.New("installation condition needs an update")
+	ErrObjectHasEmptyState                 = errors.New("object has an empty state")
+	ErrKubeconfigFetchFailed               = errors.New("could not fetch kubeconfig")
+	ErrRequeueRequired                     = errors.New("requeue required")
 )
 
 const (
@@ -61,21 +61,21 @@ const (
 	ConditionReasonReady                 ConditionReason = "Ready"
 )
 
-func newInstallationCondition(obj Object) metav1.Condition {
-	return metav1.Condition{
+func newInstallationCondition(obj Object) apimetav1.Condition {
+	return apimetav1.Condition{
 		Type:               string(ConditionTypeInstallation),
 		Reason:             string(ConditionReasonReady),
-		Status:             metav1.ConditionFalse,
+		Status:             apimetav1.ConditionFalse,
 		Message:            "installation is ready and resources can be used",
 		ObservedGeneration: obj.GetGeneration(),
 	}
 }
 
-func newResourcesCondition(obj Object) metav1.Condition {
-	return metav1.Condition{
+func newResourcesCondition(obj Object) apimetav1.Condition {
+	return apimetav1.Condition{
 		Type:               string(ConditionTypeResources),
 		Reason:             string(ConditionReasonResourcesAreAvailable),
-		Status:             metav1.ConditionFalse,
+		Status:             apimetav1.ConditionFalse,
 		Message:            "resources are parsed and ready for use",
 		ObservedGeneration: obj.GetGeneration(),
 	}
@@ -88,7 +88,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return ctrl.Result{}, common.ErrTypeAssert
 	}
 	if err := r.Get(ctx, req.NamespacedName, obj); err != nil {
-		log.FromContext(ctx).Info(req.NamespacedName.String() + " got deleted!")
+		logf.FromContext(ctx).Info(req.NamespacedName.String() + " got deleted!")
 		if !util.IsNotFound(err) {
 			return ctrl.Result{}, fmt.Errorf("manifestController: %w", err)
 		}
@@ -133,32 +133,29 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 		return r.ssaStatus(ctx, obj)
 	}
 
-	converter := NewResourceToInfoConverter(clnt, r.Namespace)
-
-	renderer, err := InitializeRenderer(ctx, obj, spec, r.Options)
-	if err != nil {
-		if !obj.GetDeletionTimestamp().IsZero() {
-			return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
-		}
-		return r.ssaStatus(ctx, obj)
-	}
-
-	target, current, err := r.renderResources(ctx, clnt, obj, spec, converter)
+	target, current, err := r.renderResources(ctx, clnt, obj, spec)
 	if err != nil {
 		return r.ssaStatus(ctx, obj)
 	}
 
 	diff := ResourceList(current).Difference(target)
-	if err := r.pruneDiff(ctx, clnt, obj, renderer, diff, spec); errors.Is(err, ErrDeletionNotFinished) {
+	if err := r.pruneDiff(ctx, clnt, obj, diff, spec); errors.Is(err, ErrDeletionNotFinished) {
 		return ctrl.Result{Requeue: true}, nil
 	} else if err != nil {
 		return r.ssaStatus(ctx, obj)
 	}
 
-	if !obj.GetDeletionTimestamp().IsZero() {
-		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
+	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
+		if errors.Is(err, ErrRequeueRequired) {
+			return ctrl.Result{Requeue: true}, nil
+		}
+		return r.ssaStatus(ctx, obj)
 	}
-	if err := r.syncResources(ctx, clnt, obj, target); err != nil {
+
+	if err = r.syncResources(ctx, clnt, obj, target); err != nil {
+		if errors.Is(err, ErrRequeueRequired) {
+			return ctrl.Result{Requeue: true}, nil
+		}
 		return r.ssaStatus(ctx, obj)
 	}
 
@@ -167,6 +164,10 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	if requireUpdateSyncedOCIRefAnnotation(obj, spec.OCIRef) {
 		updateSyncedOCIRefAnnotation(obj, spec.OCIRef)
 		return ctrl.Result{Requeue: true}, r.Update(ctx, obj) //nolint:wrapcheck
+	}
+
+	if !obj.GetDeletionTimestamp().IsZero() {
+		return r.removeFinalizers(ctx, obj, []string{r.Finalizer})
 	}
 	return r.CtrlOnSuccess, nil
 }
@@ -190,8 +191,8 @@ func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizer
 	return r.ssaStatus(ctx, obj)
 }
 
-func (r *Reconciler) partialObjectMetadata(obj Object) *metav1.PartialObjectMetadata {
-	objMeta := &metav1.PartialObjectMetadata{}
+func (r *Reconciler) partialObjectMetadata(obj Object) *apimetav1.PartialObjectMetadata {
+	objMeta := &apimetav1.PartialObjectMetadata{}
 	objMeta.SetName(obj.GetName())
 	objMeta.SetNamespace(obj.GetNamespace())
 	objMeta.SetGroupVersionKind(obj.GetObjectKind().GroupVersionKind())
@@ -202,7 +203,7 @@ func (r *Reconciler) partialObjectMetadata(obj Object) *metav1.PartialObjectMeta
 func (r *Reconciler) initialize(obj Object) error {
 	status := obj.GetStatus()
 
-	for _, condition := range []metav1.Condition{
+	for _, condition := range []apimetav1.Condition{
 		newResourcesCondition(obj),
 		newInstallationCondition(obj),
 	} {
@@ -240,16 +241,17 @@ func (r *Reconciler) Spec(ctx context.Context, obj Object) (*Spec, error) {
 
 func (r *Reconciler) renderResources(
 	ctx context.Context,
-	clnt client.Client,
+	clnt Client,
 	obj Object,
 	spec *Spec,
-	converter ResourceToInfoConverter,
 ) ([]*resource.Info, []*resource.Info, error) {
 	resourceCondition := newResourcesCondition(obj)
 	status := obj.GetStatus()
 
 	var err error
 	var target, current ResourceList
+
+	converter := NewResourceToInfoConverter(ResourceInfoConverter(clnt), r.Namespace)
 
 	if target, err = r.renderTargetResources(ctx, clnt, converter, obj, spec); err != nil {
 		return nil, nil, err
@@ -264,7 +266,7 @@ func (r *Reconciler) renderResources(
 
 	if !meta.IsStatusConditionTrue(status.Conditions, resourceCondition.Type) {
 		r.Event(obj, "Normal", resourceCondition.Reason, resourceCondition.Message)
-		resourceCondition.Status = metav1.ConditionTrue
+		resourceCondition.Status = apimetav1.ConditionTrue
 		meta.SetStatusCondition(&status.Conditions, resourceCondition)
 		obj.SetStatus(status.WithOperation(resourceCondition.Message))
 	}
@@ -286,7 +288,11 @@ func (r *Reconciler) syncResources(ctx context.Context, clnt Client, obj Object,
 	status.Synced = newSynced
 
 	if hasDiff(oldSynced, newSynced) {
-		obj.SetStatus(status.WithState(shared.StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
+		if obj.GetDeletionTimestamp().IsZero() {
+			obj.SetStatus(status.WithState(shared.StateProcessing).WithOperation(ErrWarningResourceSyncStateDiff.Error()))
+		} else {
+			obj.SetStatus(status.WithState(shared.StateDeleting).WithOperation("manifest should be deleted"))
+		}
 		return ErrWarningResourceSyncStateDiff
 	}
 
@@ -346,7 +352,7 @@ func (r *Reconciler) checkTargetReadiness(
 	installationCondition := newInstallationCondition(manifest)
 	if !meta.IsStatusConditionTrue(status.Conditions, installationCondition.Type) || status.State != crStateInfo.State {
 		r.Event(manifest, "Normal", installationCondition.Reason, installationCondition.Message)
-		installationCondition.Status = metav1.ConditionTrue
+		installationCondition.Status = apimetav1.ConditionTrue
 		meta.SetStatusCondition(&status.Conditions, installationCondition)
 		manifest.SetStatus(status.WithState(crStateInfo.State).
 			WithOperation(generateOperationMessage(installationCondition, crStateInfo)))
@@ -356,7 +362,7 @@ func (r *Reconciler) checkTargetReadiness(
 	return nil
 }
 
-func generateOperationMessage(installationCondition metav1.Condition, stateInfo StateInfo) string {
+func generateOperationMessage(installationCondition apimetav1.Condition, stateInfo StateInfo) string {
 	if stateInfo.Info != "" {
 		return stateInfo.Info
 	}
@@ -441,17 +447,11 @@ func (r *Reconciler) pruneDiff(
 	ctx context.Context,
 	clnt Client,
 	obj Object,
-	renderer Renderer,
 	diff []*resource.Info,
 	spec *Spec,
 ) error {
 	var err error
 	diff, err = pruneResource(diff, "Namespace", namespaceNotBeRemoved)
-	if err != nil {
-		return err
-	}
-	resourceName := r.ModuleCRDName(obj)
-	diff, err = pruneResource(diff, "CustomResourceDefinition", resourceName)
 	if err != nil {
 		return err
 	}
@@ -466,19 +466,11 @@ func (r *Reconciler) pruneDiff(
 		return ErrResourceSyncDiffInSameOCILayer
 	}
 
-	if err := r.doPreDelete(ctx, clnt, obj); err != nil {
-		return err
-	}
-
 	if err := r.deleteDiffResources(ctx, clnt, obj, diff); err != nil {
 		return err
 	}
 
-	if obj.GetDeletionTimestamp().IsZero() || !r.DeletePrerequisites {
-		return nil
-	}
-
-	return renderer.RemovePrerequisites(ctx, obj)
+	return nil
 }
 
 func manifestNotInDeletingAndOciRefNotChangedButDiffDetected(diff []*resource.Info, obj Object, spec *Spec) bool {
@@ -547,11 +539,11 @@ func (r *Reconciler) getTargetClient(ctx context.Context, obj Object) (Client, e
 		r.SetClientInCache(clientsCacheKey, clnt)
 	}
 
-	if r.Namespace != metav1.NamespaceNone && r.Namespace != metav1.NamespaceDefault {
+	if r.Namespace != apimetav1.NamespaceNone && r.Namespace != apimetav1.NamespaceDefault {
 		err := clnt.Patch(
-			ctx, &v1.Namespace{
-				TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
-				ObjectMeta: metav1.ObjectMeta{Name: r.Namespace},
+			ctx, &apicorev1.Namespace{
+				TypeMeta:   apimetav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
+				ObjectMeta: apimetav1.ObjectMeta{Name: r.Namespace},
 			}, client.Apply, client.ForceOwnership, r.FieldOwner,
 		)
 		if err != nil {
@@ -588,14 +580,10 @@ func (r *Reconciler) ssaStatus(ctx context.Context, obj client.Object) (ctrl.Res
 	obj.SetUID("")
 	obj.SetManagedFields(nil)
 	obj.SetResourceVersion("")
-	// TODO: replace the SubResourcePatchOptions with  client.ForceOwnership, r.FieldOwner in later compatible version
-	return ctrl.Result{Requeue: true}, r.Status().Patch( //nolint:wrapcheck
-		ctx, obj, client.Apply, subResourceOpts(client.ForceOwnership, r.FieldOwner),
-	)
-}
 
-func subResourceOpts(opts ...client.PatchOption) client.SubResourcePatchOption {
-	return &client.SubResourcePatchOptions{PatchOptions: *(&client.PatchOptions{}).ApplyOptions(opts)}
+	return ctrl.Result{Requeue: true}, r.Status().Patch( //nolint:wrapcheck
+		ctx, obj, client.Apply, client.ForceOwnership, r.FieldOwner,
+	)
 }
 
 func (r *Reconciler) ssa(ctx context.Context, obj client.Object) (ctrl.Result, error) {

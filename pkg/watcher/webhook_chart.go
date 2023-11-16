@@ -8,23 +8,16 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"golang.org/x/sync/errgroup"
-	istiov1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
+	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/util/yaml"
+	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// TODO PKI move consts into other file if they are not needed here.
 const (
-	webhookTLSCfgNameTpl    = "%s-webhook-tls"
-	SkrTLSName              = "skr-webhook-tls"
-	SkrResourceName         = "skr-webhook"
-	defaultBufferSize       = 2048
-	skrChartFieldOwner      = client.FieldOwner(v1beta2.OperatorName)
-	version                 = "v1"
-	webhookTimeOutInSeconds = 15
+	webhookTLSCfgNameTpl = "%s-webhook-tls"
+	defaultBufferSize    = 2048
 )
 
 var ErrGatewayHostWronglyConfigured = errors.New("gateway should have configured exactly one server and one host")
@@ -51,7 +44,7 @@ func resolveKcpAddr(kcpClient client.Client, managerConfig *SkrWebhookManagerCon
 	ctx := context.TODO()
 
 	// Get public KCP DNS name and port from the Gateway
-	gateway := &istiov1beta1.Gateway{}
+	gateway := &istioclientapiv1beta1.Gateway{}
 
 	if err := kcpClient.Get(ctx, client.ObjectKey{
 		Namespace: managerConfig.IstioGatewayNamespace,
@@ -78,7 +71,7 @@ func ResolveTLSCertName(kymaName string) string {
 }
 
 func getRawManifestUnstructuredResources(rawManifestReader io.Reader) ([]*unstructured.Unstructured, error) {
-	decoder := yaml.NewYAMLOrJSONDecoder(rawManifestReader, defaultBufferSize)
+	decoder := machineryaml.NewYAMLOrJSONDecoder(rawManifestReader, defaultBufferSize)
 	var resources []*unstructured.Unstructured
 	for {
 		resource := &unstructured.Unstructured{}
