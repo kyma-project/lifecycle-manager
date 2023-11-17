@@ -14,6 +14,9 @@ import (
 )
 
 var _ = Describe("Create Watcher Certificates", Ordered, func() {
+
+	const caCertName = "klm-watcher-serving-cert"
+
 	tests := []struct {
 		name           string
 		namespace      *apicorev1.Namespace
@@ -72,7 +75,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				Expect(controlPlaneClient.Create(ctx, test.issuer)).Should(Succeed())
 			}
 			cert, err := watcher.NewCertificateManager(controlPlaneClient,
-				test.kyma, test.namespace.Name, test.namespace.Name, []string{})
+				test.kyma, test.namespace.Name, test.namespace.Name, caCertName, []string{})
 			if test.wantNewCertErr {
 				Expect(err).Should(HaveOccurred())
 				return

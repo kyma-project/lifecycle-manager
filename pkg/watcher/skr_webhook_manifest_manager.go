@@ -49,6 +49,8 @@ type SkrWebhookManagerConfig struct {
 	// AdditionalDNSNames indicates the DNS Names which should be added additional to the Subject
 	// Alternative Names of each Kyma Certificate
 	AdditionalDNSNames []string
+	// CACertificateName indicates the Name of the CA Root Certificate in the Istio Namespace
+	CACertificateName string
 }
 
 const rawManifestFilePathTpl = "%s/resources.yaml"
@@ -93,7 +95,7 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 
 	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
 	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma,
-		m.config.IstioNamespace, m.config.RemoteSyncNamespace, m.config.AdditionalDNSNames)
+		m.config.IstioNamespace, m.config.RemoteSyncNamespace, m.config.CACertificateName, m.config.AdditionalDNSNames)
 	if err != nil {
 		return fmt.Errorf("error while creating new CertificateManager struct: %w", err)
 	}
@@ -132,7 +134,7 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 		return fmt.Errorf("failed to get syncContext: %w", err)
 	}
 	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma,
-		m.config.IstioNamespace, m.config.RemoteSyncNamespace, []string{})
+		m.config.IstioNamespace, m.config.RemoteSyncNamespace, m.config.CACertificateName, []string{})
 	if err != nil {
 		logger.Error(err, "Error while creating new CertificateManager")
 		return err

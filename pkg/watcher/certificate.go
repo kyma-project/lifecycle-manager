@@ -46,6 +46,7 @@ type CertificateManager struct {
 	secretName          string
 	istioNamespace      string
 	remoteSyncNamespace string
+	caCertName          string
 	additionalDNSNames  []string
 }
 
@@ -58,7 +59,7 @@ type CertificateSecret struct {
 
 // NewCertificateManager returns a new CertificateManager, which can be used for creating a cert-manager Certificates.
 func NewCertificateManager(kcpClient client.Client, kyma *v1beta2.Kyma,
-	istioNamespace, remoteSyncNamespace string, additionalDNSNames []string,
+	istioNamespace, remoteSyncNamespace, caCertName string, additionalDNSNames []string,
 ) (*CertificateManager, error) {
 	return &CertificateManager{
 		kcpClient:           kcpClient,
@@ -67,6 +68,7 @@ func NewCertificateManager(kcpClient client.Client, kyma *v1beta2.Kyma,
 		secretName:          ResolveTLSCertName(kyma.Name),
 		istioNamespace:      istioNamespace,
 		remoteSyncNamespace: remoteSyncNamespace,
+		caCertName:          caCertName,
 		additionalDNSNames:  additionalDNSNames,
 	}, nil
 }
