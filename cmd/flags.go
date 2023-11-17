@@ -27,7 +27,7 @@ const (
 	defaultMaxConcurrentManifestReconciles = 1
 	defaultMaxConcurrentKymaReconciles     = 1
 	defaultMaxConcurrentWatcherReconciles  = 1
-	defaultIstioGatewayName                = "lifecycle-manager-watcher-gateway"
+	defaultIstioGatewayName                = "klm-watcher-gateway"
 	defaultIstioGatewayNamespace           = "kcp-system"
 	defaultIstioNamespace                  = "istio-system"
 )

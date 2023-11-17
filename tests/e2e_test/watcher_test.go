@@ -30,7 +30,7 @@ const (
 	watcherPodContainer = "server"
 	KLMPodPrefix        = "klm-controller-manager"
 	KLMPodContainer     = "manager"
-	watcherCrName       = "kyma-watcher"
+	watcherCrName       = "klm-kyma-watcher"
 )
 
 var (

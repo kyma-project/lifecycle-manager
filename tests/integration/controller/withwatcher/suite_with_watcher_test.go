@@ -83,7 +83,7 @@ var (
 const (
 	istioSystemNs = "istio-system"
 	kcpSystemNs   = "kcp-system"
-	gatewayName   = "lifecycle-manager-watcher-gateway"
+	gatewayName   = "klm-watcher-gateway"
 )
 
 var (
