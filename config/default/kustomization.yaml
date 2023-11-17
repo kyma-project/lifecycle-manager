@@ -22,16 +22,6 @@ commonLabels:
 
 
 patches:
-# [WATCHER]
-#- patch: |-
-#    - op: replace
-#      path: /metadata/name
-#      value: klm-watcher-gateway
-#  target:
-#    group: networking.istio.io
-#    version: v1beta1
-#    kind: Gateway
-#    name: watcher-gateway
 # Mount the controller config file for loading manager configurations
 # through a ComponentConfig type
 #  - manager_config_patch.yaml
@@ -51,8 +41,6 @@ resources:
 components:
   - ../crd
   - ../rbac
-  # [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
-  #- ../watcher
   # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
   #- ../istio
   # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
