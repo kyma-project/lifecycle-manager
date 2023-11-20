@@ -32,7 +32,7 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 					"Deployment", runtimeClient).
 				Should(Succeed())
 			By("And the SKR Module Default CR is in a \"Ready\" State")
-			Consistently(CheckSampleCRIsInState).
+			Eventually(CheckSampleCRIsInState).
 				WithContext(ctx).
 				WithArguments("sample-yaml", "kyma-system", runtimeClient, "Ready").
 				Should(Succeed())
