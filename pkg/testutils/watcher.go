@@ -101,10 +101,10 @@ func DeleteCertificateSecret(ctx context.Context,
 }
 
 func GetCACertificate(ctx context.Context,
-	secretName, secretNamespace string, k8sClient client.Client,
+	certName, certNamespace string, k8sClient client.Client,
 ) (*certmanagerv1.Certificate, error) {
 	caCert := &certmanagerv1.Certificate{}
-	if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: secretNamespace, Name: secretName}, caCert); err != nil {
+	if err := k8sClient.Get(ctx, client.ObjectKey{Namespace: certNamespace, Name: certName}, caCert); err != nil {
 		return nil, fmt.Errorf("failed to get secret %w", err)
 	}
 

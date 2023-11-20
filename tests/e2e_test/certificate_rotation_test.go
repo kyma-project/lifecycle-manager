@@ -4,22 +4,23 @@ import (
 	"fmt"
 	"time"
 
-	v1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("", Ordered, func() {
+var _ = Describe("Certificate Rotation", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel,
 		v1beta2.SyncStrategyLocalSecret)
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
-	var caCertificate *v1.Certificate
+	var caCertificate *certmanagerv1.Certificate
 	caCertName := "klm-watcher-serving-cert"
 
 	Context("Given Kyma deployed in KCP and CA certificate is rotated", func() {

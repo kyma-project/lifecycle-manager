@@ -81,9 +81,11 @@ var (
 )
 
 const (
-	istioSystemNs = "istio-system"
-	kcpSystemNs   = "kcp-system"
-	gatewayName   = "klm-watcher-gateway"
+	istioSystemNs           = "istio-system"
+	kcpSystemNs             = "kcp-system"
+	gatewayName             = "klm-watcher-gateway"
+	caCertificateName       = "klm-watcher-serving-cert"
+	caCertificateSecretName = "klm-watcher-root-secret"
 )
 
 var (
@@ -182,6 +184,8 @@ var _ = BeforeSuite(func() {
 		IstioGatewayName:       gatewayName,
 		IstioGatewayNamespace:  kcpSystemNs,
 		RemoteSyncNamespace:    controller.DefaultRemoteSyncNamespace,
+		CACertSecretName:       caCertificateSecretName,
+		CACertificateName:      caCertificateName,
 	}
 
 	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(restCfg, k8sclientscheme.Scheme, skrChartCfg)

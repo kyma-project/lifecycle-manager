@@ -97,4 +97,4 @@ module-upgrade:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Upgrade"
 
 certificate-rotation:
-	go test -timeout 20m -ginkgo.v ginkgo.focus "Certificate Rotation"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Certificate Rotation"

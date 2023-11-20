@@ -142,7 +142,7 @@ jobs:
           "- op: replace
             path: /spec/renewBefore
             value: 59m 
-           - op: replace
+          - op: replace
             path: /spec/duration
             value: 1h">> certificate_renewal.yaml
           cat certificate_renewal.yaml

@@ -8,12 +8,13 @@ import (
 	"io"
 	"strings"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
 const (
