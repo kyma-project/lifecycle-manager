@@ -2,11 +2,12 @@ package watcher
 
 import (
 	"context"
+	"sync"
+	"time"
+
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sync"
-	"time"
 )
 
 //nolint:gochecknoglobals
@@ -30,8 +31,8 @@ func (c *CertificateManager) SetCACertToCache(cert *certmanagerv1.Certificate) {
 }
 
 func (c *CertificateManager) GetCACertificate(ctx context.Context) (*certmanagerv1.Certificate, error) {
-
 	cachedCert := c.GetCACertFromCache()
+
 	// If Cache is empty or Renewal Time has been passed, then renew Cache
 	if cachedCert == nil || cachedCert.Status.RenewalTime.Before(&(apimetav1.Time{Time: time.Now()})) {
 		caCert := &certmanagerv1.Certificate{}

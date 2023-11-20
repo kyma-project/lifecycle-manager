@@ -99,6 +99,12 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 	if err != nil {
 		return fmt.Errorf("error while creating new CertificateManager struct: %w", err)
 	}
+
+	_, err = certificate.GetCACertificate(ctx)
+	if err != nil {
+		return fmt.Errorf("error while fetching CA Certificate: %w", err)
+	}
+
 	if err = certificate.Create(ctx); err != nil {
 		return fmt.Errorf("error while creating new Certificate on KCP: %w", err)
 	}
