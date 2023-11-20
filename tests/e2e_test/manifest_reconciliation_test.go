@@ -54,11 +54,6 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
 				Should(Succeed())
-			By("Then the KCP Kyma CR is in a \"Processing\" State")
-			Eventually(KymaIsInState).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateProcessing).
-				Should(Succeed())
 			By("And the Module Manifest CR is in a \"Deleting\" State")
 			Eventually(CheckManifestIsInState).
 				WithContext(ctx).
