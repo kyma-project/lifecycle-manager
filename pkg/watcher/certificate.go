@@ -47,6 +47,7 @@ type CertificateManager struct {
 	istioNamespace      string
 	remoteSyncNamespace string
 	caCertName          string
+	caCertSecretName    string
 	additionalDNSNames  []string
 }
 
@@ -59,7 +60,7 @@ type CertificateSecret struct {
 
 // NewCertificateManager returns a new CertificateManager, which can be used for creating a cert-manager Certificates.
 func NewCertificateManager(kcpClient client.Client, kyma *v1beta2.Kyma,
-	istioNamespace, remoteSyncNamespace, caCertName string, additionalDNSNames []string,
+	istioNamespace, remoteSyncNamespace, caCertName, caCertSecretName string, additionalDNSNames []string,
 ) (*CertificateManager, error) {
 	return &CertificateManager{
 		kcpClient:           kcpClient,
@@ -69,6 +70,7 @@ func NewCertificateManager(kcpClient client.Client, kyma *v1beta2.Kyma,
 		istioNamespace:      istioNamespace,
 		remoteSyncNamespace: remoteSyncNamespace,
 		caCertName:          caCertName,
+		caCertSecretName:    caCertSecretName,
 		additionalDNSNames:  additionalDNSNames,
 	}, nil
 }
@@ -222,16 +224,15 @@ func (c *CertificateManager) getIssuer(ctx context.Context) (*certmanagerv1.Issu
 	return &issuerList.Items[0], nil
 }
 
-func (c *CertificateManager) GetCertificate(ctx context.Context) (*certmanagerv1.Certificate, error) {
-	certificate := &certmanagerv1.Certificate{}
-	if err := c.kcpClient.Get(ctx, client.ObjectKey{
-		Name:      c.certificateName,
-		Namespace: c.istioNamespace,
-	}, certificate); err != nil && !util.IsNotFound(err) {
-		return nil, fmt.Errorf("failed to get certificate: %w", err)
+func (c *CertificateManager) GetCertificateSecret(ctx context.Context) (*apicorev1.Secret, error) {
+	secret := &apicorev1.Secret{}
+	err := c.kcpClient.Get(ctx, client.ObjectKey{Name: c.secretName, Namespace: c.istioNamespace},
+		secret)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get secret for certificate %s-%s: %w", c.secretName, c.istioNamespace, err)
 	}
 
-	return certificate, nil
+	return secret, nil
 }
 
 type CertificateNotReadyError struct{}

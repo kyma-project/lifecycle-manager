@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -37,7 +38,7 @@ func (c *CertificateManager) GetCACertificate(ctx context.Context) (*certmanager
 	if cachedCert == nil || cachedCert.Status.RenewalTime.Before(&(apimetav1.Time{Time: time.Now()})) {
 		caCert := &certmanagerv1.Certificate{}
 		if err := c.kcpClient.Get(ctx, client.ObjectKey{Namespace: c.istioNamespace, Name: c.caCertName}, caCert); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to get CA certificate %w", err)
 		}
 		c.SetCACertToCache(caCert)
 		return caCert, nil

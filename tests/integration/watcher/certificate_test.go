@@ -14,8 +14,8 @@ import (
 )
 
 var _ = Describe("Create Watcher Certificates", Ordered, func() {
-
 	const caCertName = "klm-watcher-serving-cert"
+	const caCertSecretName = "klm-watcher-root-secret"
 
 	tests := []struct {
 		name           string
@@ -75,7 +75,7 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				Expect(controlPlaneClient.Create(ctx, test.issuer)).Should(Succeed())
 			}
 			cert, err := watcher.NewCertificateManager(controlPlaneClient,
-				test.kyma, test.namespace.Name, test.namespace.Name, caCertName, []string{})
+				test.kyma, test.namespace.Name, test.namespace.Name, caCertName, caCertSecretName, []string{})
 			if test.wantNewCertErr {
 				Expect(err).Should(HaveOccurred())
 				return

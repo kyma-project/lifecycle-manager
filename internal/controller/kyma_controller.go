@@ -62,6 +62,7 @@ const (
 	webhookChartRemoval        EventReasonInfo  = "WebhookChartRemoval"
 	DefaultRemoteSyncNamespace string           = "kyma-system"
 	DefaultCACertName          string           = "klm-watcher-serving-cert"
+	DefaultCACertSecretName    string           = "klm-watcher-root-secret"
 )
 
 type KymaReconciler struct {

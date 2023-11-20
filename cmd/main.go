@@ -281,6 +281,7 @@ func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (watcher.SKRWeb
 		RemoteSyncNamespace:       flagVar.remoteSyncNamespace,
 		AdditionalDNSNames:        strings.Split(flagVar.additionalDNSNames, ","),
 		CACertificateName:         flagVar.caCertName,
+		CACertSecretName:          flagVar.caCertSecretName,
 	})
 }
 

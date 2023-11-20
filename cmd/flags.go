@@ -128,6 +128,8 @@ func defineFlagVar() *FlagVar {
 		"Name of the namespace for syncing remote Kyma and module catalog")
 	flag.StringVar(&flagVar.caCertName, "ca-cert-name", controller.DefaultCACertName,
 		"Name of the CA Certificate in Istio Namespace which is used to sign SKR Certificates")
+	flag.StringVar(&flagVar.caCertSecretName, "ca-cert-secret-name", controller.DefaultCACertSecretName,
+		"Name of the CA Certificate Secret in Istio Namespace")
 	flag.BoolVar(&flagVar.isKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
 	return flagVar
 }
@@ -176,6 +178,7 @@ type FlagVar struct {
 	skipPurgingFor                         string
 	remoteSyncNamespace                    string
 	caCertName                             string
+	caCertSecretName                       string
 	enableVerification                     bool
 	isKymaManaged                          bool
 }

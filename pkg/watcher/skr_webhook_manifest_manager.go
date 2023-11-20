@@ -51,6 +51,8 @@ type SkrWebhookManagerConfig struct {
 	AdditionalDNSNames []string
 	// CACertificateName indicates the Name of the CA Root Certificate in the Istio Namespace
 	CACertificateName string
+	// CACertSecretName indicates the Name of the CA Root Certificate Secret in the Istio Namespace
+	CACertSecretName string
 }
 
 const rawManifestFilePathTpl = "%s/resources.yaml"
@@ -95,7 +97,8 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 
 	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
 	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma,
-		m.config.IstioNamespace, m.config.RemoteSyncNamespace, m.config.CACertificateName, m.config.AdditionalDNSNames)
+		m.config.IstioNamespace, m.config.RemoteSyncNamespace, m.config.CACertificateName, m.config.CACertSecretName,
+		m.config.AdditionalDNSNames)
 	if err != nil {
 		return fmt.Errorf("error while creating new CertificateManager struct: %w", err)
 	}
@@ -109,12 +112,14 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 		return fmt.Errorf("error while fetching CA Certificate: %w", err)
 	}
 
-	cert, err := certificate.GetCertificate(ctx)
+	cert, err := certificate.GetCertificateSecret(ctx)
 	if err != nil {
 		return fmt.Errorf("error while fetching certificate: %w", err)
 	}
 
-	if cert != nil && cert.CreationTimestamp.Before(&caCertificate.CreationTimestamp) {
+	if cert != nil && cert.CreationTimestamp.Before(caCertificate.Status.NotBefore) {
+		logger.V(log.DebugLevel).Info("CA Certificate was rotated, removing certificate",
+			"kyma", kymaObjKey)
 		if err = certificate.Remove(ctx); err != nil {
 			return fmt.Errorf("error while removing certificate: %w", err)
 		}
@@ -152,7 +157,8 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 		return fmt.Errorf("failed to get syncContext: %w", err)
 	}
 	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma,
-		m.config.IstioNamespace, m.config.RemoteSyncNamespace, m.config.CACertificateName, []string{})
+		m.config.IstioNamespace, m.config.RemoteSyncNamespace, m.config.CACertificateName, m.config.CACertSecretName,
+		[]string{})
 	if err != nil {
 		logger.Error(err, "Error while creating new CertificateManager")
 		return err

@@ -1,19 +1,13 @@
 package e2e_test
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"strings"
 	"time"
 
 	apiappsv1 "k8s.io/api/apps/v1"
-	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -27,17 +21,10 @@ import (
 )
 
 const (
-	watcherPodContainer = "server"
-	KLMPodPrefix        = "klm-controller-manager"
-	KLMPodContainer     = "manager"
-	watcherCrName       = "klm-kyma-watcher"
+	watcherCrName = "klm-kyma-watcher"
 )
 
-var (
-	errPodNotFound               = errors.New("could not find pod")
-	errWatcherDeploymentNotReady = errors.New("watcher Deployment is not ready")
-	errLogNotFound               = errors.New("logMsg was not found in log")
-)
+var errWatcherDeploymentNotReady = errors.New("watcher Deployment is not ready")
 
 var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular",
@@ -69,17 +56,17 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 
 	It("Should redeploy certificates if deleted on remote cluster", func() {
 		By("verifying certificate secret exists on remote cluster")
-		Eventually(checkCertificateSecretExists).
+		Eventually(CertificateSecretExists).
 			WithContext(ctx).
 			WithArguments(watcher.SkrTLSName, remoteNamespace, runtimeClient).
 			Should(Succeed())
 		By("Deleting certificate secret on remote cluster")
-		Eventually(deleteCertificateSecret).
+		Eventually(DeleteCertificateSecret).
 			WithContext(ctx).
 			WithArguments(watcher.SkrTLSName, remoteNamespace, runtimeClient).
 			Should(Succeed())
 		By("verifying certificate secret will be recreated on remote cluster")
-		Eventually(checkCertificateSecretExists).
+		Eventually(CertificateSecretExists).
 			WithContext(ctx).
 			WithArguments(watcher.SkrTLSName, remoteNamespace, runtimeClient).
 			Should(Succeed())
@@ -95,10 +82,10 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 			WithArguments(remoteNamespace, switchedChannel, runtimeClient).
 			Should(Succeed())
 		By("verifying new reconciliation got triggered for corresponding KymaCR on KCP")
-		Eventually(checkKLMLogs).
+		Eventually(CheckKLMLogs).
 			WithContext(ctx).
-			WithArguments(incomingRequestMsg, controlPlaneRESTConfig, runtimeRESTConfig, controlPlaneClient,
-				runtimeClient, timeNow).
+			WithArguments(remoteNamespace, incomingRequestMsg, controlPlaneRESTConfig, runtimeRESTConfig,
+				controlPlaneClient, runtimeClient, timeNow).
 			Should(Succeed())
 	})
 
@@ -116,10 +103,10 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 			WithArguments(runtimeClient, remoteNamespace).
 			Should(Succeed())
 		By("verifying new reconciliation got triggered for corresponding KymaCR on KCP")
-		Eventually(checkKLMLogs).
+		Eventually(CheckKLMLogs).
 			WithContext(ctx).
-			WithArguments(incomingRequestMsg, controlPlaneRESTConfig, runtimeRESTConfig, controlPlaneClient,
-				runtimeClient, patchingTimestamp).
+			WithArguments(remoteNamespace, incomingRequestMsg, controlPlaneRESTConfig, runtimeRESTConfig,
+				controlPlaneClient, runtimeClient, patchingTimestamp).
 			Should(Succeed())
 	})
 })
@@ -135,88 +122,6 @@ func changeRemoteKymaChannel(ctx context.Context, kymaNamespace, channel string,
 	kyma.Spec.Channel = channel
 
 	return k8sClient.Update(ctx, kyma)
-}
-
-func checkKLMLogs(ctx context.Context,
-	logMsg string,
-	controlPlaneConfig, runtimeConfig *rest.Config,
-	k8sClient, runtimeClient client.Client,
-	logsSince *apimetav1.Time,
-) error {
-	logs, err := getPodLogs(ctx, controlPlaneConfig, k8sClient, controlPlaneNamespace, KLMPodPrefix, KLMPodContainer,
-		logsSince)
-	if err != nil {
-		return err
-	}
-
-	GinkgoWriter.Printf("KLM Logs:  %s\n", logs)
-	if strings.Contains(logs, logMsg) {
-		return nil
-	}
-
-	watcherLogs, err := getPodLogs(ctx, runtimeConfig,
-		runtimeClient, remoteNamespace, watcher.SkrResourceName, watcherPodContainer, logsSince)
-	if err != nil {
-		return err
-	}
-	GinkgoWriter.Printf("watcher Logs:  %s\n", watcherLogs)
-	return errLogNotFound
-}
-
-func getPodLogs(ctx context.Context,
-	config *rest.Config,
-	k8sClient client.Client,
-	namespace, podPrefix, container string,
-	logsSince *apimetav1.Time,
-) (string, error) {
-	pod := &apicorev1.Pod{}
-	podList := &apicorev1.PodList{}
-	if err := k8sClient.List(ctx, podList, &client.ListOptions{Namespace: namespace}); err != nil {
-		return "", err
-	}
-
-	for _, p := range podList.Items {
-		p := p
-		pod = &p
-		GinkgoWriter.Printf("Found Pod:  %s/%s\n", pod.Namespace, pod.Name)
-		if strings.HasPrefix(pod.Name, podPrefix) {
-			GinkgoWriter.Printf("Pod has Prefix %s:  %s/%s\n", podPrefix, pod.Namespace, pod.Name)
-			break
-		}
-	}
-	if pod.Name == "" {
-		return "", fmt.Errorf("%w: Prefix: %s Container: %s", errPodNotFound, podPrefix, container)
-	}
-
-	GinkgoWriter.Printf("Pod has prefix:  %s/%s\n", pod.Namespace, pod.Name)
-	// temporary clientset, since controller-runtime client library does not support non-CRUD subresources
-	// Open issue: https://github.com/kubernetes-sigs/controller-runtime/issues/452
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return "", err
-	}
-	req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &apicorev1.PodLogOptions{
-		Container: container,
-		SinceTime: logsSince,
-	})
-	GinkgoWriter.Printf("Request: %#v", req)
-	GinkgoWriter.Printf("Request URL: %s", req.URL())
-	podLogs, err := req.Stream(ctx)
-	if err != nil {
-		GinkgoWriter.Printf("Error while stream %w\n", err)
-		return "", err
-	}
-	defer podLogs.Close()
-
-	buf := new(bytes.Buffer)
-	_, err = io.Copy(buf, podLogs)
-	if err != nil {
-		GinkgoWriter.Printf("Error while copy %w\n", err)
-		return "", err
-	}
-	str := buf.String()
-
-	return str, nil
 }
 
 func deleteWatcherDeployment(ctx context.Context, watcherName, watcherNamespace string, k8sClient client.Client) error {
@@ -245,28 +150,6 @@ func checkWatcherDeploymentReady(ctx context.Context,
 	}
 
 	return nil
-}
-
-func deleteCertificateSecret(ctx context.Context,
-	secretName, secretNamespace string, k8sClient client.Client,
-) error {
-	certificateSecret := &apicorev1.Secret{
-		ObjectMeta: apimetav1.ObjectMeta{
-			Name:      secretName,
-			Namespace: secretNamespace,
-		},
-	}
-	return k8sClient.Delete(ctx, certificateSecret)
-}
-
-func checkCertificateSecretExists(ctx context.Context,
-	secretName, secretNamespace string, k8sClient client.Client,
-) error {
-	certificateSecret := &apicorev1.Secret{}
-	return k8sClient.Get(ctx,
-		client.ObjectKey{Name: secretName, Namespace: secretNamespace},
-		certificateSecret,
-	)
 }
 
 func updateRemoteKymaStatusSubresource(k8sClient client.Client, kymaNamespace string) error {
