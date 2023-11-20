@@ -35,7 +35,8 @@ jobs:
                     "non-blocking-deletion",
                     "purge-controller",
                     "purge-metrics",
-                    "module-upgrade"
+                    "module-upgrade",
+                    "skip-manifest-reconciliation"
         ]
     name: "E2E"
     needs: [wait-for-img]
@@ -160,7 +161,8 @@ jobs:
           matrix.e2e-test == 'non-blocking-deletion' ||
           matrix.e2e-test == 'purge-controller' ||
           matrix.e2e-test == 'purge-metrics' ||
-          matrix.e2e-test == 'kyma-deletion'
+          matrix.e2e-test == 'kyma-deletion' ||
+          matrix.e2e-test == 'skip-manifest-reconciliation'
           }}
         run: |
           make build-manifests
