@@ -222,6 +222,18 @@ func (c *CertificateManager) getIssuer(ctx context.Context) (*certmanagerv1.Issu
 	return &issuerList.Items[0], nil
 }
 
+func (c *CertificateManager) GetCertificate(ctx context.Context) (*certmanagerv1.Certificate, error) {
+	certificate := &certmanagerv1.Certificate{}
+	if err := c.kcpClient.Get(ctx, client.ObjectKey{
+		Name:      c.certificateName,
+		Namespace: c.istioNamespace,
+	}, certificate); err != nil && !util.IsNotFound(err) {
+		return nil, fmt.Errorf("failed to get certificate: %w", err)
+	}
+
+	return certificate, nil
+}
+
 type CertificateNotReadyError struct{}
 
 func (e *CertificateNotReadyError) Error() string {

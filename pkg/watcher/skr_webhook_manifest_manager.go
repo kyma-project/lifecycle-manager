@@ -100,14 +100,26 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 		return fmt.Errorf("error while creating new CertificateManager struct: %w", err)
 	}
 
-	_, err = certificate.GetCACertificate(ctx)
+	if err = certificate.Create(ctx); err != nil {
+		return fmt.Errorf("error while creating new Certificate on KCP: %w", err)
+	}
+
+	caCertificate, err := certificate.GetCACertificate(ctx)
 	if err != nil {
 		return fmt.Errorf("error while fetching CA Certificate: %w", err)
 	}
 
-	if err = certificate.Create(ctx); err != nil {
-		return fmt.Errorf("error while creating new Certificate on KCP: %w", err)
+	cert, err := certificate.GetCertificate(ctx)
+	if err != nil {
+		return fmt.Errorf("error while fetching certificate: %w", err)
 	}
+
+	if cert != nil && cert.CreationTimestamp.Before(&caCertificate.CreationTimestamp) {
+		if err = certificate.Remove(ctx); err != nil {
+			return fmt.Errorf("error while removing certificate: %w", err)
+		}
+	}
+
 	logger.V(log.DebugLevel).Info("Successfully created Certificate", "kyma", kymaObjKey)
 
 	resources, err := m.getSKRClientObjectsForInstall(
