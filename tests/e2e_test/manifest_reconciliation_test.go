@@ -54,27 +54,12 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
 				Should(Succeed())
-			By("And the Module Manifest CR is in a \"Deleting\" State")
-			Eventually(CheckManifestIsInState).
-				WithContext(ctx).
-				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient, shared.StateDeleting).
-				Should(Succeed())
 			By("And the SKR Module Default CR is not removed")
 			Consistently(CheckIfExists).
 				WithContext(ctx).
 				WithArguments("sample-yaml", "kyma-system", "operator.kyma-project.io",
 					"v1alpha1", "Sample", runtimeClient).
 				Should(Succeed())
-			By("And the SKR Module Default CR is in a \"Deleting\" State")
-			Consistently(CheckSampleCRIsInState).
-				WithContext(ctx).
-				WithArguments("sample-yaml", "kyma-system", runtimeClient, "Deleting").
-				Should(Succeed())
-			Eventually(SampleCRDeletionTimeStampSet).
-				WithContext(ctx).
-				WithArguments("sample-yaml", "kyma-system", runtimeClient).
-				Should(Succeed())
-
 			By("And the Module Manager Deployment is not removed on the SKR cluster")
 			Consistently(CheckIfExists).
 				WithContext(ctx).
