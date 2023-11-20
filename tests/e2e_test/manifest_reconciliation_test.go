@@ -3,7 +3,7 @@ package e2e_test
 import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	v2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -46,7 +46,7 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 		It("When the Manifest is labelled to skip reconciliation", func() {
 			labels, err := GetManifestLabels(ctx, kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient)
 			Expect(err).ToNot(HaveOccurred())
-			labels[v2.SkipReconcileLabel] = "true"
+			labels[declarativev2.SkipReconcileLabel] = "true"
 			err = SetManifestLabels(ctx, kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient, labels)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -92,7 +92,7 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 			func() {
 				labels, err := GetManifestLabels(ctx, kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient)
 				Expect(err).ToNot(HaveOccurred())
-				delete(labels, v2.SkipReconcileLabel)
+				delete(labels, declarativev2.SkipReconcileLabel)
 				err = SetManifestLabels(ctx, kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient, labels)
 				Expect(err).ToNot(HaveOccurred())
 
