@@ -67,7 +67,7 @@ envtest-dir:
 test: unittest manifests test-crd generate fmt vet envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test `go list ./tests/integration/...` -ginkgo.flake-attempts 10
 
-.PHONY: test
+.PHONY: unittest
 unittest: ## Run the unit test suite.
 	go test `go list ./... | grep -v /tests/` -coverprofile cover.out -coverpkg=./...
 
