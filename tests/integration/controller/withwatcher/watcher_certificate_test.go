@@ -7,6 +7,7 @@ import (
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	apicorev1 "k8s.io/api/core/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -64,6 +65,31 @@ func matchTLSSecretPrivateKey(clnt client.Client, secretObjKey client.ObjectKey,
 }
 
 var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordered, func() {
+	caCertificate := &certmanagerv1.Certificate{
+		TypeMeta: apimetav1.TypeMeta{
+			Kind:       certmanagerv1.CertificateKind,
+			APIVersion: certmanagerv1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:      "klm-watcher-serving-cert",
+			Namespace: istioSystemNs,
+		},
+		Spec: certmanagerv1.CertificateSpec{
+			DNSNames:   []string{"listener.kyma.cloud.sap"},
+			IsCA:       true,
+			CommonName: "klm-watcher-selfsigned-ca",
+			SecretName: "klm-watcher-root-secret",
+			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+				Labels: map[string]string{
+					"operator.kyma-project.io/managed-by": "lifecycle-manager",
+				},
+			},
+			PrivateKey: &certmanagerv1.CertificatePrivateKey{
+				Algorithm: certmanagerv1.PrivateKeyAlgorithm("RSA"),
+			},
+		},
+	}
+
 	kyma := NewTestKyma("kyma-remote-sync")
 
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
@@ -72,7 +98,7 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 	tlsSecret := createTLSSecret(kymaObjKey)
 	skrTLSSecretObjKey := client.ObjectKey{Name: watcher.SkrTLSName, Namespace: controller.DefaultRemoteSyncNamespace}
 
-	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer)
+	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer, caCertificate)
 	It("remote kyma created on SKR", func() {
 		Eventually(KymaExists, Timeout, Interval).
 			WithContext(suiteCtx).

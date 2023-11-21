@@ -11,6 +11,7 @@ import (
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	apiappsv1 "k8s.io/api/apps/v1"
 	apicorev1 "k8s.io/api/core/v1"
+	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
@@ -41,13 +42,36 @@ var (
 
 var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, func() {
 	kyma := NewTestKyma("kyma-remote-sync")
-
+	caCertificate := &certmanagerv1.Certificate{
+		TypeMeta: apimetav1.TypeMeta{
+			Kind:       certmanagerv1.CertificateKind,
+			APIVersion: certmanagerv1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:      "klm-watcher-serving-cert",
+			Namespace: istioSystemNs,
+		},
+		Spec: certmanagerv1.CertificateSpec{
+			DNSNames:   []string{"listener.kyma.cloud.sap"},
+			IsCA:       true,
+			CommonName: "klm-watcher-selfsigned-ca",
+			SecretName: "klm-watcher-root-secret",
+			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+				Labels: map[string]string{
+					"operator.kyma-project.io/managed-by": "lifecycle-manager",
+				},
+			},
+			PrivateKey: &certmanagerv1.CertificatePrivateKey{
+				Algorithm: certmanagerv1.PrivateKeyAlgorithm("RSA"),
+			},
+		},
+	}
 	watcherCrForKyma := createWatcherCR("skr-webhook-manager", true)
 	issuer := NewTestIssuer(istioSystemNs)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	tlsSecret := createTLSSecret(kymaObjKey)
 
-	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer)
+	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer, caCertificate)
 
 	It("kyma reconciliation installs watcher with correct webhook config", func() {
 		Eventually(latestWebhookIsConfigured(suiteCtx, runtimeClient, watcherCrForKyma,
@@ -101,7 +125,7 @@ var _ = Describe("Kyma with multiple module CRs in remote sync mode", Ordered, f
 })
 
 func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1beta2.Watcher,
-	tlsSecret *apicorev1.Secret, issuer *certmanagerv1.Issuer,
+	tlsSecret *apicorev1.Secret, issuer *certmanagerv1.Issuer, caCert *certmanagerv1.Certificate,
 ) {
 	BeforeAll(func() {
 		By("Creating watcher CR")
@@ -112,6 +136,8 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1b
 		Expect(controlPlaneClient.Create(suiteCtx, tlsSecret)).To(Succeed())
 		By("Creating Cert-Manager Issuer")
 		Expect(controlPlaneClient.Create(suiteCtx, issuer)).To(Succeed())
+		By("Creating CA Certificate")
+		Expect(controlPlaneClient.Create(suiteCtx, caCert)).To(Succeed())
 	})
 
 	AfterAll(func() {
@@ -124,6 +150,8 @@ func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1b
 			Should(BeTrue())
 		By("Deleting Cert-Manager Issuer")
 		Expect(controlPlaneClient.Delete(suiteCtx, issuer)).To(Succeed())
+		By("Deleting CA Certificate")
+		Expect(controlPlaneClient.Delete(suiteCtx, caCert)).To(Succeed())
 	})
 
 	BeforeEach(func() {

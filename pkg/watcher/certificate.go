@@ -3,6 +3,7 @@ package watcher
 import (
 	"context"
 	"fmt"
+	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -239,4 +240,20 @@ type CertificateNotReadyError struct{}
 
 func (e *CertificateNotReadyError) Error() string {
 	return "Certificate-Secret does not exist"
+}
+
+func (c *CertificateManager) GetCACertificate(ctx context.Context) (*certmanagerv1.Certificate, error) {
+	cachedCert := c.GetCACertFromCache()
+
+	// If Cache is empty or Renewal Time has been passed, then renew Cache
+	if cachedCert == nil || cachedCert.Status.RenewalTime.Before(&(apimetav1.Time{Time: time.Now()})) {
+		caCert := &certmanagerv1.Certificate{}
+		if err := c.kcpClient.Get(ctx, client.ObjectKey{Namespace: c.istioNamespace, Name: c.caCertName}, caCert); err != nil {
+			return nil, fmt.Errorf("failed to get CA certificate %w", err)
+		}
+		c.SetCACertToCache(caCert)
+		return caCert, nil
+	}
+
+	return cachedCert, nil
 }
