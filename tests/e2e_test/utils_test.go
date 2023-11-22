@@ -180,6 +180,24 @@ func CheckIfNotExists(ctx context.Context, name, namespace, group, version, kind
 	return fmt.Errorf("%w: %s %s/%s should be deleted", errResourceExists, kind, namespace, name)
 }
 
+func DeleteCRWithGVK(ctx context.Context, clnt client.Client, group, version, kind, name, namespace string) error {
+	obj := &unstructured.Unstructured{}
+	obj.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   group,
+		Version: version,
+		Kind:    kind,
+	})
+	if err := clnt.Get(ctx,
+		client.ObjectKey{Name: name, Namespace: namespace}, obj); err != nil {
+		return err
+	}
+	if err := DeleteCR(ctx, clnt, obj); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func CreateKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
 	patchedRuntimeConfig := strings.ReplaceAll(string(*runtimeConfig), localHostname, k3dHostname)
 	secret := &apicorev1.Secret{
