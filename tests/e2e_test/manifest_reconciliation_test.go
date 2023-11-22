@@ -50,16 +50,6 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 			err = SetManifestLabels(ctx, kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient, labels)
 			Expect(err).ToNot(HaveOccurred())
 
-			By("When deleting the SKR Default CR")
-			err = DeleteCRWithGVK(ctx, runtimeClient, "sample-yaml", "kyma-system",
-				"operator.kyma-project.io", "v1alpha1", "Sample")
-			Expect(err).ToNot(HaveOccurred())
-			By("Then SKR Module Default CR is not recreated")
-			Consistently(CheckIfNotExists).
-				WithContext(ctx).
-				WithArguments("sample-yaml", "kyma-system", "operator.kyma-project.io",
-					"v1alpha1", "Sample", runtimeClient).
-				Should(Succeed())
 			By("When deleting the SKR Module Manager Deployment")
 			err = DeleteCRWithGVK(ctx, runtimeClient, "template-operator-controller-manager",
 				"template-operator-system", "apps", "v1", "Deployment")
@@ -69,6 +59,16 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				WithContext(ctx).
 				WithArguments("template-operator-controller-manager", "template-operator-system",
 					"apps", "v1", "Deployment", runtimeClient).
+				Should(Succeed())
+			By("When deleting the SKR Default CR")
+			err = DeleteCRWithGVK(ctx, runtimeClient, "sample-yaml", "kyma-system",
+				"operator.kyma-project.io", "v1alpha1", "Sample")
+			Expect(err).ToNot(HaveOccurred())
+			By("Then SKR Module Default CR is not recreated")
+			Consistently(CheckIfNotExists).
+				WithContext(ctx).
+				WithArguments("sample-yaml", "kyma-system", "operator.kyma-project.io",
+					"v1alpha1", "Sample", runtimeClient).
 				Should(Succeed())
 		})
 
