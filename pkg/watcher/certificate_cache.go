@@ -1,27 +1,33 @@
 package watcher
 
 import (
-	"sync"
+	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	"github.com/jellydator/ttlcache/v3"
 )
 
-//nolint:gochecknoglobals
-var certificateCache = sync.Map{}
-
-func (c *CertificateManager) GetCACertFromCache() *certmanagerv1.Certificate {
-	value, ok := certificateCache.Load(c.caCertName)
-	if !ok {
-		return nil
-	}
-	cert, ok := value.(*certmanagerv1.Certificate)
-	if !ok {
-		return nil
-	}
-
-	return cert
+type CertificateCache struct {
+	TTL time.Duration
+	*ttlcache.Cache[string, *certmanagerv1.Certificate]
 }
 
-func (c *CertificateManager) SetCACertToCache(cert *certmanagerv1.Certificate) {
-	certificateCache.Store(c.caCertName, cert)
+func NewCertificateCache(ttl time.Duration) *CertificateCache {
+	cache := ttlcache.New[string, *certmanagerv1.Certificate]()
+	go cache.Start()
+	return &CertificateCache{Cache: cache, TTL: ttl}
+}
+
+func (c *CertificateCache) GetCACertFromCache(caCertName string) *certmanagerv1.Certificate {
+	value := c.Cache.Get(caCertName)
+	if value != nil {
+		cert := value.Value()
+		return cert
+	}
+
+	return nil
+}
+
+func (c *CertificateCache) SetCACertToCache(cert *certmanagerv1.Certificate) {
+	c.Cache.Set(cert.Name, cert, c.TTL)
 }

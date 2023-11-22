@@ -43,12 +43,12 @@ type SubjectAltName struct {
 type CertificateManager struct {
 	kcpClient           client.Client
 	kyma                *v1beta2.Kyma
+	caCertCache         *CertificateCache
 	certificateName     string
 	secretName          string
 	istioNamespace      string
 	remoteSyncNamespace string
 	caCertName          string
-	caCertSecretName    string
 	additionalDNSNames  []string
 }
 
@@ -61,7 +61,7 @@ type CertificateSecret struct {
 
 // NewCertificateManager returns a new CertificateManager, which can be used for creating a cert-manager Certificates.
 func NewCertificateManager(kcpClient client.Client, kyma *v1beta2.Kyma,
-	istioNamespace, remoteSyncNamespace, caCertName, caCertSecretName string, additionalDNSNames []string,
+	istioNamespace, remoteSyncNamespace, caCertName string, additionalDNSNames []string, caCertCache *CertificateCache,
 ) (*CertificateManager, error) {
 	return &CertificateManager{
 		kcpClient:           kcpClient,
@@ -71,7 +71,7 @@ func NewCertificateManager(kcpClient client.Client, kyma *v1beta2.Kyma,
 		istioNamespace:      istioNamespace,
 		remoteSyncNamespace: remoteSyncNamespace,
 		caCertName:          caCertName,
-		caCertSecretName:    caCertSecretName,
+		caCertCache:         caCertCache,
 		additionalDNSNames:  additionalDNSNames,
 	}, nil
 }
@@ -243,7 +243,7 @@ func (e *CertificateNotReadyError) Error() string {
 }
 
 func (c *CertificateManager) GetCACertificate(ctx context.Context) (*certmanagerv1.Certificate, error) {
-	cachedCert := c.GetCACertFromCache()
+	cachedCert := c.caCertCache.GetCACertFromCache(c.caCertName)
 
 	// If Cache is empty or Renewal Time has been passed, then renew Cache
 	if cachedCert == nil || cachedCert.Status.RenewalTime.Before(&(apimetav1.Time{Time: time.Now()})) {
@@ -251,7 +251,7 @@ func (c *CertificateManager) GetCACertificate(ctx context.Context) (*certmanager
 		if err := c.kcpClient.Get(ctx, client.ObjectKey{Namespace: c.istioNamespace, Name: c.caCertName}, caCert); err != nil {
 			return nil, fmt.Errorf("failed to get CA certificate %w", err)
 		}
-		c.SetCACertToCache(caCert)
+		c.caCertCache.SetCACertToCache(caCert)
 		return caCert, nil
 	}
 

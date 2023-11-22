@@ -1,6 +1,8 @@
 package watcher_test
 
 import (
+	"time"
+
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,7 +17,6 @@ import (
 
 var _ = Describe("Create Watcher Certificates", Ordered, func() {
 	const caCertName = "klm-watcher-serving-cert"
-	const caCertSecretName = "klm-watcher-root-secret"
 
 	tests := []struct {
 		name           string
@@ -75,7 +76,8 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				Expect(controlPlaneClient.Create(ctx, test.issuer)).Should(Succeed())
 			}
 			cert, err := watcher.NewCertificateManager(controlPlaneClient,
-				test.kyma, test.namespace.Name, test.namespace.Name, caCertName, caCertSecretName, []string{})
+				test.kyma, test.namespace.Name, test.namespace.Name, caCertName, []string{},
+				watcher.NewCertificateCache(1*time.Minute))
 			if test.wantNewCertErr {
 				Expect(err).Should(HaveOccurred())
 				return
