@@ -54,7 +54,7 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 			Eventually(DeleteCRWithGVK).
 				WithContext(ctx).
 				WithArguments(runtimeClient, "template-operator-controller-manager", "template-operator-system",
-					"apps", "v1", "Deployment", "Sample").
+					"apps", "v1", "Deployment").
 				Should(Succeed())
 			By("Then Module Manager Deployment is not recreated on the SKR cluster")
 			Consistently(CheckIfNotExists).
