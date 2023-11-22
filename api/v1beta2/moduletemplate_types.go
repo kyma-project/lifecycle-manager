@@ -80,6 +80,11 @@ type ModuleTemplateSpec struct {
 	// +kubebuilder:validation:MinLength:=3
 	Channel string `json:"channel"`
 
+	// Mandatory indicates whether the Module is mandatory. It is used to enforce the installation of the module with
+	// its configuration in all runtime clusters.
+	// +optional
+	Mandatory bool `json:"mandatory"`
+
 	// Data is the default set of attributes that are used to generate the Module. It contains a default set of values
 	// for a given channel, and is thus different from default values allocated during struct parsing of the Module.
 	// While Data can change after the initial creation of ModuleTemplate, it is not expected to be propagated to
