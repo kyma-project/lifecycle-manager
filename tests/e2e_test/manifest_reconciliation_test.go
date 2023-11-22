@@ -50,18 +50,6 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 			err = SetManifestLabels(ctx, kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient, labels)
 			Expect(err).ToNot(HaveOccurred())
 
-			By("When deleting the SKR Default CR")
-			Eventually(DeleteCRWithGVK).
-				WithContext(ctx).
-				WithArguments(runtimeClient, "sample-yaml", "kyma-system", "operator.kyma-project.io",
-					"v1alpha1", "Sample").
-				Should(Succeed())
-			By("Then SKR Module Default CR is not recreated")
-			Consistently(CheckIfNotExists).
-				WithContext(ctx).
-				WithArguments("sample-yaml", "kyma-system", "operator.kyma-project.io",
-					"v1alpha1", "Sample", runtimeClient).
-				Should(Succeed())
 			By("When deleting the SKR Module Manager Deployment")
 			Eventually(DeleteCRWithGVK).
 				WithContext(ctx).
@@ -74,6 +62,18 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				WithArguments("template-operator-controller-manager", "template-operator-system",
 					"apps", "v1", "Deployment", runtimeClient).
 				Should(Succeed())
+			By("When deleting the SKR Default CR")
+			Eventually(DeleteCRWithGVK).
+				WithContext(ctx).
+				WithArguments(runtimeClient, "sample-yaml", "kyma-system", "operator.kyma-project.io",
+					"v1alpha1", "Sample").
+				Should(Succeed())
+			By("Then SKR Module Default CR is not recreated")
+			Consistently(CheckIfNotExists).
+				WithContext(ctx).
+				WithArguments("sample-yaml", "kyma-system", "operator.kyma-project.io",
+					"v1alpha1", "Sample", runtimeClient).
+				Should(Succeed())
 		})
 
 		It("When the Manifest skip reconciliation label removed",
@@ -84,17 +84,17 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				err = SetManifestLabels(ctx, kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient, labels)
 				Expect(err).ToNot(HaveOccurred())
 
-				By("Then Module Default CR is recreated")
-				Eventually(CheckIfExists).
-					WithContext(ctx).
-					WithArguments("sample-yaml", "kyma-system",
-						"operator.kyma-project.io", "v1alpha1", "Sample", runtimeClient).
-					Should(Succeed())
 				By("Then Module Deployment is recreated")
 				Eventually(CheckIfExists).
 					WithContext(ctx).
 					WithArguments("template-operator-v2-controller-manager",
 						"template-operator-system", "apps", "v1", "Deployment", runtimeClient).
+					Should(Succeed())
+				By("Then Module Default CR is recreated")
+				Eventually(CheckIfExists).
+					WithContext(ctx).
+					WithArguments("sample-yaml", "kyma-system",
+						"operator.kyma-project.io", "v1alpha1", "Sample", runtimeClient).
 					Should(Succeed())
 
 				By("And the KCP Kyma CR is in a \"Ready\" State")
