@@ -9,7 +9,7 @@ This flag determines wether the given module should be installed in the remote c
 Thus a Manifest like
 
 ```yaml
-apiVersion: operator.kyma-project.io/v1beta1
+apiVersion: operator.kyma-project.io/v1beta2
 kind: Manifest
 metadata:
   labels:
@@ -82,7 +82,6 @@ The [internal spec resolver](/internal/manifest/spec_resolver.go) will use this 
 ### `.spec.resource`
 
 The resource is the default data that should be initialized for the module and is directly copied from `.spec.data` of the `ModuleTemplate` after normalizing it with the `namespace` for the synchronized module.
-
 
 ### `.status`
 
