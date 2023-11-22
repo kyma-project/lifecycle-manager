@@ -180,7 +180,7 @@ func CheckIfNotExists(ctx context.Context, name, namespace, group, version, kind
 	return fmt.Errorf("%w: %s %s/%s should be deleted", errResourceExists, kind, namespace, name)
 }
 
-func DeleteCRWithGVK(ctx context.Context, clnt client.Client, group, version, kind, name, namespace string) error {
+func DeleteCRWithGVK(ctx context.Context, clnt client.Client, name, namespace, group, version, kind string) error {
 	obj := &unstructured.Unstructured{}
 	obj.SetGroupVersionKind(schema.GroupVersionKind{
 		Group:   group,
