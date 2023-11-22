@@ -51,11 +51,9 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			By("When deleting the SKR Default CR")
-			Eventually(DeleteCRWithGVK).
-				WithContext(ctx).
-				WithArguments(runtimeClient, "sample-yaml", "kyma-system", "operator.kyma-project.io",
-					"v1alpha1", "Sample").
-				Should(Succeed())
+			err = DeleteCRWithGVK(ctx, runtimeClient, "sample-yaml", "kyma-system",
+				"operator.kyma-project.io", "v1alpha1", "Sample")
+			Expect(err).ToNot(HaveOccurred())
 			By("Then SKR Module Default CR is not recreated")
 			Consistently(CheckIfNotExists).
 				WithContext(ctx).
@@ -63,11 +61,9 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 					"v1alpha1", "Sample", runtimeClient).
 				Should(Succeed())
 			By("When deleting the SKR Module Manager Deployment")
-			Eventually(DeleteCRWithGVK).
-				WithContext(ctx).
-				WithArguments(runtimeClient, "template-operator-controller-manager", "template-operator-system",
-					"apps", "v1", "Deployment").
-				Should(Succeed())
+			err = DeleteCRWithGVK(ctx, runtimeClient, "template-operator-controller-manager",
+				"template-operator-system", "apps", "v1", "Deployment")
+			Expect(err).ToNot(HaveOccurred())
 			By("Then Module Manager Deployment is not recreated on the SKR cluster")
 			Consistently(CheckIfNotExists).
 				WithContext(ctx).
@@ -78,10 +74,12 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 
 		It("When the Manifest skip reconciliation label removed",
 			func() {
-				labels, err := GetManifestLabels(ctx, kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient)
+				labels, err := GetManifestLabels(ctx, kyma.GetName(), kyma.GetNamespace(),
+					module.Name, controlPlaneClient)
 				Expect(err).ToNot(HaveOccurred())
 				delete(labels, declarativev2.SkipReconcileLabel)
-				err = SetManifestLabels(ctx, kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient, labels)
+				err = SetManifestLabels(ctx, kyma.GetName(), kyma.GetNamespace(), module.Name,
+					controlPlaneClient, labels)
 				Expect(err).ToNot(HaveOccurred())
 
 				Eventually(CheckIfExists).
