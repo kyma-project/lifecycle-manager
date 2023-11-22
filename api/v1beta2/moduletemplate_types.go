@@ -80,7 +80,7 @@ type ModuleTemplateSpec struct {
 	// +kubebuilder:validation:MinLength:=3
 	Channel string `json:"channel"`
 
-	// Mandatory indicates whether the Module is mandatory. It is used to enforce the installation of the module with
+	// Mandatory indicates whether the module is mandatory. It is used to enforce the installation of the module with
 	// its configuration in all runtime clusters.
 	// +optional
 	Mandatory bool `json:"mandatory"`
