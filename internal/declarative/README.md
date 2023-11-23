@@ -15,7 +15,6 @@ The core of the reconciliation is compromised of two main components:
 2. A generic [Reconciler](v2/reconciler.go) which delegates various parts of the resource synchronization based on the [object specification](v2/spec.go) and the [options for reconciliation](v2/options.go). It owns the central conditions maintained and reported in the [object status](v2/object.go).
 
 While the client is the main subsystem of the `Reconciler` implementation, the `Reconciler` also redirects to other subsystems to achieve its goal:
-- A `Renderer` which determines all resources to reconcile as a byte stream
 - A `Converter` which converts the rendered resources into internal objects for synchronization
 - A `ReadyCheck` which introduces more detailed status checks rather than `Exists/NotFound` to the synchronization process, allowing more fine-grained error reporting.
 - A `Status` which is embedded in the reconciled object and which returns the state of the synchronization
@@ -60,26 +59,9 @@ These options include but are not limited to:
 - Post/Pre Run Hooks to inject additional logic and side-effects before and after specific installation steps
 - Consistency Check configurations determining frequency of reconciliation efforts.
 
-
-## Resource Rendering
-
-All renderer implementations must implement the [renderer interface](v2/renderer.go) and are initialized based on a given `RendererMode` that is available in the [object specification](v2/spec.go).
-
-This is our current selection of rendering engines:
-
-- [raw](v2/renderer_raw.go): Easy to use raw renderer that just passes through manifests as `.yaml` to the converter.
-
-Every renderer reconciles in a particular order through the [renderer interface](v2/renderer.go):
-
-1. Construction of the Renderer based on the [object specification](v2/spec.go)
-2. Initializing of the Renderer through `Initializer(Object)`, setting up necessary status conditions or environment settings
-3. Prerequisite Initialization, e.g. dependencies of the output
-4. Rendering of the Resources into a valid `.yaml` compliant byte array
-5. Removal of the PreRequisites if explicitly desired (by default they are not removed unlike the standard resources, imagine a CRD uninstallation)
-
 ## Resource Conversion
 
-To allow tracking the resources created by the `renderer`, every resource is converted to a generic [resource](v2/resource_converter.go), which translates all objects into a [k8s cli-runtime compliant resource represenation](https://pkg.go.dev/k8s.io/cli-runtime/pkg/resource#Info), which contains information about the object, its API Version and Mappings towards a specific API Resource of the API server.
+Every resource is converted to a generic [resource](v2/resource_converter.go), which translates all objects into a [k8s cli-runtime compliant resource represenation](https://pkg.go.dev/k8s.io/cli-runtime/pkg/resource#Info), which contains information about the object, its API Version and Mappings towards a specific API Resource of the API server.
 
 ## Resource Synchronization
 
@@ -90,7 +72,7 @@ All [create/update](v2/ssa.go) and [delete](v2/cleanup.go) cluster interactions 
 
 ## Resource Tracking
 
-Every resource rendered by the [renderer](v2/renderer.go) is tracked through a set of fields in the [declarative status in the object](v2/object.go). This can be embedded in objects through implementing the [Object interface](v2/object.go), a superset of the [`client.Object` from controller-runtime](https://github.com/kubernetes-sigs/controller-runtime/blob/main/pkg/client/object.go).
+Every resource rendered is tracked through a set of fields in the [declarative status in the object](v2/object.go). This can be embedded in objects through implementing the [Object interface](v2/object.go), a superset of the [`client.Object` from controller-runtime](https://github.com/kubernetes-sigs/controller-runtime/blob/main/pkg/client/object.go).
 
 The library will use this status to report important events and status changes by levaring the `SetStatus` method. One can choose to either directly embed the `Status` and to implement `GetStatus()` and `SetStatus()` on the object, or to use a conversion instead that translates the declarative status to a versioned API status.
 

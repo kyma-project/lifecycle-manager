@@ -111,7 +111,7 @@ Namespace/Name, or module name label) to the ModuleTemplate CR. If not specified
 
 The **state** attribute is a simple representation of the state of the entire Kyma CR installation. It is defined as an aggregated status that is either `Ready`, `Processing`, `Error`, or `Deleting`, based on the status of _all_ Manifest CRs on top of the validity/integrity of the synchronization to a remote cluster if enabled.
 
-The **state** will always be reported based on the last reconciliation loop of the [Kyma controller](/controllers/kyma_controller.go). It will be set to `Ready` only if all installations were successfully executed and are consistent at the time of the reconciliation.
+The **state** will always be reported based on the last reconciliation loop of the [Kyma controller](../../../internal/controller/kyma_controller.go). It will be set to `Ready` only if all installations were successfully executed and are consistent at the time of the reconciliation.
 
 ### **.status.conditions**
 
