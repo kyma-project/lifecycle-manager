@@ -30,7 +30,7 @@ const (
 	defaultIstioGatewayName                              = "klm-watcher-gateway"
 	defaultIstioGatewayNamespace                         = "kcp-system"
 	defaultIstioNamespace                                = "istio-system"
-	defaultCaCertName                      string        = "klm-watcher-serving-cert"
+	defaultCaCertName                                    = "klm-watcher-serving-cert"
 	defaultCaCertCacheTTL                  time.Duration = 1 * time.Hour
 )
 
@@ -59,15 +59,20 @@ func defineFlagVar() *FlagVar {
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.DurationVar(&flagVar.kymaRequeueSuccessInterval, "kyma-requeue-success-interval",
-		defaultKymaRequeueSuccessInterval, "determines the duration a Kyma in Ready state is enqueued for reconciliation.") //nolint:lll
+		defaultKymaRequeueSuccessInterval,
+		"determines the duration a Kyma in Ready state is enqueued for reconciliation.") //nolint:lll
 	flag.DurationVar(&flagVar.kymaRequeueErrInterval, "kyma-requeue-error-interval",
-		defaultKymaRequeueErrInterval, "determines the duration after which a Kyma in Error state is enqueued for reconciliation.") //nolint:lll
+		defaultKymaRequeueErrInterval,
+		"determines the duration after which a Kyma in Error state is enqueued for reconciliation.") //nolint:lll
 	flag.DurationVar(&flagVar.kymaRequeueBusyInterval, "kyma-requeue-busy-interval",
-		defaultKymaRequeueBusyInterval, "determines the duration after which a Kyma in Processing state is enqueued for reconciliation.") //nolint:lll
+		defaultKymaRequeueBusyInterval,
+		"determines the duration after which a Kyma in Processing state is enqueued for reconciliation.") //nolint:lll
 	flag.DurationVar(&flagVar.manifestRequeueSuccessInterval, "manifest-requeue-success-interval",
-		defaultManifestRequeueSuccessInterval, "determines the duration a Manifest in Ready state is enqueued for reconciliation.") //nolint:lll
+		defaultManifestRequeueSuccessInterval,
+		"determines the duration a Manifest in Ready state is enqueued for reconciliation.") //nolint:lll
 	flag.DurationVar(&flagVar.watcherRequeueSuccessInterval, "watcher-requeue-success-interval",
-		defaultWatcherRequeueSuccessInterval, "determines the duration a Watcher in Ready state is enqueued for reconciliation.") //nolint:lll
+		defaultWatcherRequeueSuccessInterval,
+		"determines the duration a Watcher in Ready state is enqueued for reconciliation.") //nolint:lll
 
 	flag.Float64Var(&flagVar.clientQPS, "k8s-client-qps", defaultClientQPS, "kubernetes client QPS")
 	flag.IntVar(&flagVar.clientBurst, "k8s-client-burst", defaultClientBurst, "kubernetes client Burst")

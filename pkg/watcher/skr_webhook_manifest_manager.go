@@ -51,8 +51,7 @@ type SkrWebhookManagerConfig struct {
 	// Alternative Names of each Kyma Certificate
 	AdditionalDNSNames []string
 	// CACertificateName indicates the Name of the CA Root Certificate in the Istio Namespace
-	CACertificateName string
-	// Ca Certificate Cache
+	CACertificateName  string
 	CACertificateCache *CertificateCache
 }
 

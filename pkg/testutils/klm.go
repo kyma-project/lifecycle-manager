@@ -22,6 +22,7 @@ const (
 	watcherPodContainer   = "server"
 	KLMPodPrefix          = "klm-controller-manager"
 	KLMPodContainer       = "manager"
+	remoteNamespace       = "kyma-system"
 )
 
 var (
@@ -30,7 +31,6 @@ var (
 )
 
 func CheckKLMLogs(ctx context.Context,
-	remoteNamespace string,
 	logMsg string,
 	controlPlaneConfig, runtimeConfig *rest.Config,
 	k8sClient, runtimeClient client.Client,
@@ -61,15 +61,14 @@ func getPodLogs(ctx context.Context,
 	namespace, podPrefix, container string,
 	logsSince *apimetav1.Time,
 ) (string, error) {
-	pod := &apicorev1.Pod{}
+	pod := apicorev1.Pod{}
 	podList := &apicorev1.PodList{}
 	if err := k8sClient.List(ctx, podList, &client.ListOptions{Namespace: namespace}); err != nil {
 		return "", fmt.Errorf("failed to list pods %w", err)
 	}
 
-	for _, p := range podList.Items {
-		p := p
-		pod = &p
+	for i := range podList.Items {
+		pod = podList.Items[i]
 		if strings.HasPrefix(pod.Name, podPrefix) {
 			break
 		}

@@ -8,6 +8,7 @@ import (
 
 	apiappsv1 "k8s.io/api/apps/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
@@ -55,20 +56,24 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 	})
 
 	It("Should redeploy certificates if deleted on remote cluster", func() {
+		skrNamespacedSecretName := types.NamespacedName{
+			Name:      watcher.SkrTLSName,
+			Namespace: remoteNamespace,
+		}
 		By("verifying certificate secret exists on remote cluster")
 		Eventually(CertificateSecretExists).
 			WithContext(ctx).
-			WithArguments(watcher.SkrTLSName, remoteNamespace, runtimeClient).
+			WithArguments(skrNamespacedSecretName, runtimeClient).
 			Should(Succeed())
 		By("Deleting certificate secret on remote cluster")
 		Eventually(DeleteCertificateSecret).
 			WithContext(ctx).
-			WithArguments(watcher.SkrTLSName, remoteNamespace, runtimeClient).
+			WithArguments(skrNamespacedSecretName, runtimeClient).
 			Should(Succeed())
 		By("verifying certificate secret will be recreated on remote cluster")
 		Eventually(CertificateSecretExists).
 			WithContext(ctx).
-			WithArguments(watcher.SkrTLSName, remoteNamespace, runtimeClient).
+			WithArguments(skrNamespacedSecretName, runtimeClient).
 			Should(Succeed())
 	})
 
@@ -84,7 +89,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 		By("verifying new reconciliation got triggered for corresponding KymaCR on KCP")
 		Eventually(CheckKLMLogs).
 			WithContext(ctx).
-			WithArguments(remoteNamespace, incomingRequestMsg, controlPlaneRESTConfig, runtimeRESTConfig,
+			WithArguments(incomingRequestMsg, controlPlaneRESTConfig, runtimeRESTConfig,
 				controlPlaneClient, runtimeClient, timeNow).
 			Should(Succeed())
 	})
@@ -105,7 +110,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 		By("verifying new reconciliation got triggered for corresponding KymaCR on KCP")
 		Eventually(CheckKLMLogs).
 			WithContext(ctx).
-			WithArguments(remoteNamespace, incomingRequestMsg, controlPlaneRESTConfig, runtimeRESTConfig,
+			WithArguments(incomingRequestMsg, controlPlaneRESTConfig, runtimeRESTConfig,
 				controlPlaneClient, runtimeClient, patchingTimestamp).
 			Should(Succeed())
 	})

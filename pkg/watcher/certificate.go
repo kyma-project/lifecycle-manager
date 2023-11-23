@@ -28,7 +28,8 @@ const (
 	tlsPrivateKeyKey = "tls.key"
 )
 
-var LabelSet = k8slabels.Set{ //nolint:gochecknoglobals
+//nolint:gochecknoglobals
+var LabelSet = k8slabels.Set{
 	v1beta2.PurposeLabel: v1beta2.CertManager,
 	v1beta2.ManagedBy:    v1beta2.OperatorName,
 }
@@ -245,10 +246,10 @@ func (e *CertificateNotReadyError) Error() string {
 func (c *CertificateManager) GetCACertificate(ctx context.Context) (*certmanagerv1.Certificate, error) {
 	cachedCert := c.caCertCache.GetCACertFromCache(c.caCertName)
 
-	// If Cache is empty or Renewal Time has been passed, then renew Cache
-	if cachedCert == nil || cachedCert.Status.RenewalTime.Before(&(apimetav1.Time{Time: time.Now()})) {
+	if cachedCert == nil || certificateRenewalTimePassed(cachedCert) {
 		caCert := &certmanagerv1.Certificate{}
-		if err := c.kcpClient.Get(ctx, client.ObjectKey{Namespace: c.istioNamespace, Name: c.caCertName}, caCert); err != nil {
+		if err := c.kcpClient.Get(ctx, client.ObjectKey{Namespace: c.istioNamespace, Name: c.caCertName},
+			caCert); err != nil {
 			return nil, fmt.Errorf("failed to get CA certificate %w", err)
 		}
 		c.caCertCache.SetCACertToCache(caCert)
@@ -256,4 +257,8 @@ func (c *CertificateManager) GetCACertificate(ctx context.Context) (*certmanager
 	}
 
 	return cachedCert, nil
+}
+
+func certificateRenewalTimePassed(cert *certmanagerv1.Certificate) bool {
+	return cert.Status.RenewalTime.Before(&(apimetav1.Time{Time: time.Now()}))
 }
