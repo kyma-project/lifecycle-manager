@@ -9,7 +9,6 @@ linters:
     - golint # deprecated (since v1.41.0) and replaced by 'revive'
     - ifshort # deprecated (since v1.48.0)
     - interfacer # deprecated (since v1.38.0)
-    - ireturn # TODO enable and fix
     - lll
     - maligned # deprecated (since v1.38.0)
     - nlreturn # too strict and mostly code is not more readable

@@ -11,6 +11,9 @@ func (s *SingletonClients) ToRESTConfig() (*rest.Config, error) {
 	return s.config, nil
 }
 
+// TODO: Fix nolint
+//
+//nolint:ireturn
 func (s *SingletonClients) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, error) {
 	return s.discoveryClient, nil
 }

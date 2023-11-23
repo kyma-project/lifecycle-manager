@@ -60,7 +60,7 @@ func (p *ProxyClient) Scheme() *machineryruntime.Scheme {
 }
 
 // RESTMapper returns the rest mapper this client is using.
-func (p *ProxyClient) RESTMapper() meta.RESTMapper {
+func (p *ProxyClient) RESTMapper() meta.RESTMapper { //nolint:ireturn
 	return p.baseClient.RESTMapper()
 }
 
@@ -157,7 +157,7 @@ func (p *ProxyClient) List(ctx context.Context, obj client.ObjectList, opts ...c
 }
 
 // Status implements client.StatusClient.
-func (p *ProxyClient) Status() client.StatusWriter {
+func (p *ProxyClient) Status() client.StatusWriter { //nolint:ireturn
 	return p.baseClient.Status()
 }
 

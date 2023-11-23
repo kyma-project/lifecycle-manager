@@ -7,7 +7,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/resource"
-	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -17,6 +16,8 @@ import (
 
 // OpenAPISchema returns metadata and structural information about
 // Kubernetes object definitions.
+//
+//nolint:ireturn //invoked library function already returns an interface
 func (s *SingletonClients) OpenAPISchema() (openapi.Resources, error) {
 	parsedMetadata, err := s.openAPIParser.Parse()
 	if err != nil {
@@ -26,7 +27,7 @@ func (s *SingletonClients) OpenAPISchema() (openapi.Resources, error) {
 }
 
 // OpenAPIGetter returns a getter for the openapi schema document.
-func (s *SingletonClients) OpenAPIGetter() discovery.OpenAPISchemaInterface {
+func (s *SingletonClients) OpenAPIGetter() *openapi.CachedOpenAPIGetter {
 	return s.openAPIGetter
 }
 
@@ -97,8 +98,9 @@ func (s *SingletonClients) KubernetesClientSet() (*kubernetes.Clientset, error) 
 	return s.kubernetesClient, nil
 }
 
+// TODO: Fix nolint
 // DynamicClient returns a dynamic client ready for use.
-func (s *SingletonClients) DynamicClient() (dynamic.Interface, error) {
+func (s *SingletonClients) DynamicClient() (dynamic.Interface, error) { //nolint:ireturn
 	return s.dynamicClient, nil
 }
 
@@ -117,6 +119,8 @@ func (s *SingletonClients) RESTClient() (*rest.RESTClient, error) {
 }
 
 // Validator returns a schema that can validate objects stored on disk.
+//
+//nolint:ireturn //underlying library already returns an interface
 func (s *SingletonClients) Validator(
 	validationDirective string,
 ) (validation.Schema, error) {
