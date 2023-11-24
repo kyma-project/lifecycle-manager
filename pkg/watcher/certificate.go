@@ -43,14 +43,25 @@ type SubjectAltName struct {
 }
 
 type CertificateManager struct {
-	kcpClient           client.Client
-	caCertCache         *CertificateCache
-	certificateName     string
-	secretName          string
-	istioNamespace      string
-	remoteSyncNamespace string
-	caCertName          string
-	additionalDNSNames  []string
+	kcpClient       client.Client
+	caCertCache     *CertificateCache
+	certificateName string
+	secretName      string
+	config          CertificateConfig
+}
+
+type CertificateConfig struct {
+	// IstioNamespace represents the cluster resource namespace of istio
+	IstioNamespace string
+	// RemoteSyncNamespace indicates the sync namespace for Kyma and module catalog
+	RemoteSyncNamespace string
+	// CACertificateName indicates the Name of the CA Root Certificate in the Istio Namespace
+	CACertificateName string
+	// AdditionalDNSNames indicates the DNS Names which should be added additional to the Subject
+	// Alternative Names of each Kyma Certificate
+	AdditionalDNSNames []string
+	Duration           apimetav1.Duration
+	RenewBefore        apimetav1.Duration
 }
 
 type CertificateSecret struct {
@@ -61,19 +72,17 @@ type CertificateSecret struct {
 }
 
 // NewCertificateManager returns a new CertificateManager, which can be used for creating a cert-manager Certificates.
-func NewCertificateManager(kcpClient client.Client, kymaName,
-	istioNamespace, remoteSyncNamespace, caCertName string, additionalDNSNames []string, caCertCache *CertificateCache,
-) (*CertificateManager, error) {
+func NewCertificateManager(kcpClient client.Client, kymaName string,
+	config CertificateConfig,
+	caCertCache *CertificateCache,
+) *CertificateManager {
 	return &CertificateManager{
-		kcpClient:           kcpClient,
-		certificateName:     ResolveTLSCertName(kymaName),
-		secretName:          ResolveTLSCertName(kymaName),
-		istioNamespace:      istioNamespace,
-		remoteSyncNamespace: remoteSyncNamespace,
-		caCertName:          caCertName,
-		caCertCache:         caCertCache,
-		additionalDNSNames:  additionalDNSNames,
-	}, nil
+		kcpClient:       kcpClient,
+		certificateName: ResolveTLSCertName(kymaName),
+		secretName:      ResolveTLSCertName(kymaName),
+		config:          config,
+		caCertCache:     caCertCache,
+	}
 }
 
 // Create creates a cert-manager Certificate with a sufficient set of Subject-Alternative-Names.
@@ -90,7 +99,7 @@ func (c *CertificateManager) Remove(ctx context.Context) error {
 	certificate := &certmanagerv1.Certificate{}
 	if err := c.kcpClient.Get(ctx, client.ObjectKey{
 		Name:      c.certificateName,
-		Namespace: c.istioNamespace,
+		Namespace: c.config.IstioNamespace,
 	}, certificate); err != nil && !util.IsNotFound(err) {
 		return fmt.Errorf("failed to get certificate: %w", err)
 	}
@@ -100,7 +109,7 @@ func (c *CertificateManager) Remove(ctx context.Context) error {
 	certSecret := &apicorev1.Secret{}
 	if err := c.kcpClient.Get(ctx, client.ObjectKey{
 		Name:      c.secretName,
-		Namespace: c.istioNamespace,
+		Namespace: c.config.IstioNamespace,
 	}, certSecret); err != nil && !util.IsNotFound(err) {
 		return fmt.Errorf("failed to get certificate secret: %w", err)
 	}
@@ -114,10 +123,11 @@ func (c *CertificateManager) Remove(ctx context.Context) error {
 
 func (c *CertificateManager) GetSecret(ctx context.Context) (*CertificateSecret, error) {
 	secret := &apicorev1.Secret{}
-	err := c.kcpClient.Get(ctx, client.ObjectKey{Name: c.secretName, Namespace: c.istioNamespace},
+	err := c.kcpClient.Get(ctx, client.ObjectKey{Name: c.secretName, Namespace: c.config.IstioNamespace},
 		secret)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get secret for certificate %s-%s: %w", c.secretName, c.istioNamespace, err)
+		return nil, fmt.Errorf("failed to get secret for certificate %s-%s: %w", c.secretName, c.config.IstioNamespace,
+			err)
 	}
 	certSecret := CertificateSecret{
 		CACrt:           string(secret.Data[caCertKey]),
@@ -145,9 +155,11 @@ func (c *CertificateManager) patchCertificate(ctx context.Context,
 		},
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      c.certificateName,
-			Namespace: c.istioNamespace,
+			Namespace: c.config.IstioNamespace,
 		},
 		Spec: certmanagerv1.CertificateSpec{
+			Duration:       &c.config.Duration,
+			RenewBefore:    &c.config.RenewBefore,
 			DNSNames:       subjectAltName.DNSNames,
 			IPAddresses:    subjectAltName.IPAddresses,
 			URIs:           subjectAltName.URIs,
@@ -189,10 +201,10 @@ func (c *CertificateManager) getSubjectAltNames(kyma *v1beta2.Kyma) (*SubjectAlt
 		dnsNames := []string{domain}
 
 		for _, suffix := range svcSuffix {
-			dnsNames = append(dnsNames, fmt.Sprintf("%s.%s.%s", SkrResourceName, c.remoteSyncNamespace, suffix))
+			dnsNames = append(dnsNames, fmt.Sprintf("%s.%s.%s", SkrResourceName, c.config.RemoteSyncNamespace, suffix))
 		}
 
-		dnsNames = append(dnsNames, c.additionalDNSNames...)
+		dnsNames = append(dnsNames, c.config.AdditionalDNSNames...)
 
 		return &SubjectAltName{
 			DNSNames: dnsNames,
@@ -207,13 +219,13 @@ func (c *CertificateManager) getIssuer(ctx context.Context) (*certmanagerv1.Issu
 	issuerList := &certmanagerv1.IssuerList{}
 	err := c.kcpClient.List(ctx, issuerList, &client.ListOptions{
 		LabelSelector: k8slabels.SelectorFromSet(LabelSet),
-		Namespace:     c.istioNamespace,
+		Namespace:     c.config.IstioNamespace,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("could not list cert-manager issuer %w", err)
 	}
 	if len(issuerList.Items) == 0 {
-		return nil, fmt.Errorf("no issuer found in Namespace `%s`", c.istioNamespace) //nolint:goerr113
+		return nil, fmt.Errorf("no issuer found in Namespace `%s`", c.config.IstioNamespace) //nolint:goerr113
 	} else if len(issuerList.Items) > 1 {
 		logger.Info("Found more than one issuer, will use by default first one in list",
 			"issuer", issuerList.Items)
@@ -223,10 +235,11 @@ func (c *CertificateManager) getIssuer(ctx context.Context) (*certmanagerv1.Issu
 
 func (c *CertificateManager) GetCertificateSecret(ctx context.Context) (*apicorev1.Secret, error) {
 	secret := &apicorev1.Secret{}
-	err := c.kcpClient.Get(ctx, client.ObjectKey{Name: c.secretName, Namespace: c.istioNamespace},
+	err := c.kcpClient.Get(ctx, client.ObjectKey{Name: c.secretName, Namespace: c.config.IstioNamespace},
 		secret)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get secret for certificate %s-%s: %w", c.secretName, c.istioNamespace, err)
+		return nil, fmt.Errorf("failed to get secret for certificate %s-%s: %w", c.secretName, c.config.IstioNamespace,
+			err)
 	}
 
 	return secret, nil
@@ -239,11 +252,12 @@ func (e *CertificateNotReadyError) Error() string {
 }
 
 func (c *CertificateManager) GetCACertificate(ctx context.Context) (*certmanagerv1.Certificate, error) {
-	cachedCert := c.caCertCache.GetCACertFromCache(c.caCertName)
+	cachedCert := c.caCertCache.GetCACertFromCache(c.config.CACertificateName)
 
 	if cachedCert == nil || certificateRenewalTimePassed(cachedCert) {
 		caCert := &certmanagerv1.Certificate{}
-		if err := c.kcpClient.Get(ctx, client.ObjectKey{Namespace: c.istioNamespace, Name: c.caCertName},
+		if err := c.kcpClient.Get(ctx,
+			client.ObjectKey{Namespace: c.config.IstioNamespace, Name: c.config.CACertificateName},
 			caCert); err != nil {
 			return nil, fmt.Errorf("failed to get CA certificate %w", err)
 		}

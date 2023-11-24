@@ -26,11 +26,12 @@ import (
 // SKRWebhookManifestManager is a SKRWebhookManager implementation that applies
 // the SKR webhook's raw manifest using a native kube-client.
 type SKRWebhookManifestManager struct {
-	config             *SkrWebhookManagerConfig
+	config             SkrWebhookManagerConfig
 	kcpAddr            string
 	baseResources      []*unstructured.Unstructured
 	caCertificateCache *CertificateCache
 	WatcherMetrics     *metrics.WatcherMetrics
+	certificateConfig  CertificateConfig
 }
 
 type SkrWebhookManagerConfig struct {
@@ -40,23 +41,8 @@ type SkrWebhookManagerConfig struct {
 	SkrWatcherImage        string
 	SkrWebhookMemoryLimits string
 	SkrWebhookCPULimits    string
-	// IstioNamespace represents the cluster resource namespace of istio
-	IstioNamespace string
-	// IstioGatewayName represents the cluster resource name of the klm istio gateway
-	IstioGatewayName string
-	// IstioGatewayNamespace represents the cluster resource namespace of the klm istio gateway
-	IstioGatewayNamespace string
 	// RemoteSyncNamespace indicates the sync namespace for Kyma and module catalog
 	RemoteSyncNamespace string
-	// LocalGatewayPortOverwrite indicates the port used to expose the KCP cluster locally in k3d
-	// for the watcher callbacks
-	LocalGatewayPortOverwrite string
-	// AdditionalDNSNames indicates the DNS Names which should be added additional to the Subject
-	// Alternative Names of each Kyma Certificate
-	AdditionalDNSNames []string
-	// CACertificateName indicates the Name of the CA Root Certificate in the Istio Namespace
-	CACertificateName  string
-	CACertificateCache *CertificateCache
 }
 
 const rawManifestFilePathTpl = "%s/resources.yaml"
@@ -64,15 +50,18 @@ const rawManifestFilePathTpl = "%s/resources.yaml"
 func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
 	schema *machineryruntime.Scheme,
 	caCertificateCache *CertificateCache,
-	managerConfig *SkrWebhookManagerConfig,
+	managerConfig SkrWebhookManagerConfig,
+	certificateConfig CertificateConfig,
+	gatewayConfig GatewayConfig,
 ) (*SKRWebhookManifestManager, error) {
-	logger := logf.FromContext(context.TODO())
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
 	manifestFilePath := fmt.Sprintf(rawManifestFilePathTpl, managerConfig.SKRWatcherPath)
 	rawManifestFile, err := os.Open(manifestFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open manifest file path: %w", err)
 	}
-	defer closeFileAndLogErr(rawManifestFile, logger, manifestFilePath)
+	defer closeFileAndLogErr(ctx, rawManifestFile, manifestFilePath)
 	baseResources, err := getRawManifestUnstructuredResources(rawManifestFile)
 	if err != nil {
 		return nil, err
@@ -81,12 +70,13 @@ func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
 	if err != nil {
 		return nil, fmt.Errorf("can't create kcpClient: %w", err)
 	}
-	resolvedKcpAddr, err := resolveKcpAddr(kcpClient, managerConfig)
+	resolvedKcpAddr, err := resolveKcpAddr(ctx, kcpClient, gatewayConfig)
 	if err != nil {
 		return nil, err
 	}
 	return &SKRWebhookManifestManager{
 		config:             managerConfig,
+		certificateConfig:  certificateConfig,
 		kcpAddr:            resolvedKcpAddr,
 		baseResources:      baseResources,
 		caCertificateCache: caCertificateCache,
@@ -103,15 +93,8 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 	}
 
 	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
-	certificateMgr, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma.Name,
-		m.config.IstioNamespace,
-		m.config.RemoteSyncNamespace,
-		m.config.CACertificateName,
-		m.config.AdditionalDNSNames,
-		m.caCertificateCache)
-	if err != nil {
-		return fmt.Errorf("error while creating new CertificateManager struct: %w", err)
-	}
+	certificateMgr := NewCertificateManager(syncContext.ControlPlaneClient, kyma.Name,
+		m.certificateConfig, m.caCertificateCache)
 
 	certificate, err := certificateMgr.Create(ctx, kyma)
 	if err != nil {
@@ -189,13 +172,8 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 	if err != nil {
 		return fmt.Errorf("failed to get syncContext: %w", err)
 	}
-	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma.Name,
-		m.config.IstioNamespace, m.config.RemoteSyncNamespace, m.config.CACertificateName, []string{},
-		m.config.CACertificateCache)
-	if err != nil {
-		logger.Error(err, "Error while creating new CertificateManager")
-		return err
-	}
+	certificate := NewCertificateManager(syncContext.ControlPlaneClient, kyma.Name,
+		m.certificateConfig, m.caCertificateCache)
 	if err = certificate.Remove(ctx); err != nil {
 		return err
 	}
@@ -265,7 +243,7 @@ func (m *SKRWebhookManifestManager) getUnstructuredResourcesConfig(ctx context.C
 ) (*unstructuredResourcesConfig, error) {
 	tlsSecret := &apicorev1.Secret{}
 	certObjKey := client.ObjectKey{
-		Namespace: m.config.IstioNamespace,
+		Namespace: m.certificateConfig.IstioNamespace,
 		Name:      ResolveTLSCertName(kymaObjKey.Name),
 	}
 

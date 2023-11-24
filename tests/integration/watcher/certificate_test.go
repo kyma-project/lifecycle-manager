@@ -75,16 +75,18 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 			if test.issuer != nil {
 				Expect(controlPlaneClient.Create(ctx, test.issuer)).Should(Succeed())
 			}
-			cert, err := watcher.NewCertificateManager(controlPlaneClient,
-				test.kyma.Name, test.namespace.Name, test.namespace.Name, caCertName, []string{},
-				watcher.NewCertificateCache(1*time.Minute))
-			if test.wantNewCertErr {
-				Expect(err).Should(HaveOccurred())
-				return
+			config := watcher.CertificateConfig{
+				IstioNamespace:      test.namespace.Name,
+				RemoteSyncNamespace: test.namespace.Name,
+				CACertificateName:   caCertName,
+				AdditionalDNSNames:  []string{},
+				Duration:            apimetav1.Duration{Duration: 1 * time.Hour},
+				RenewBefore:         apimetav1.Duration{Duration: 5 * time.Minute},
 			}
-			Expect(err).ShouldNot(HaveOccurred())
+			cert := watcher.NewCertificateManager(controlPlaneClient,
+				test.kyma.Name, config, watcher.NewCertificateCache(1*time.Minute))
 
-			_, err = cert.Create(ctx, test.kyma)
+			_, err := cert.Create(ctx, test.kyma)
 			if test.wantCreateErr {
 				Expect(err).Should(HaveOccurred())
 				return

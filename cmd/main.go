@@ -266,18 +266,23 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (*watcher.SKRWebhookManifestManager, error) {
 	caCertificateCache := watcher.NewCertificateCache(flagVar.caCertCacheTTL)
 	return watcher.NewSKRWebhookManifestManager(mgr.GetConfig(), mgr.GetScheme(), caCertificateCache,
-		&watcher.SkrWebhookManagerConfig{
-			SKRWatcherPath:            flagVar.skrWatcherPath,
-			SkrWatcherImage:           flagVar.skrWatcherImage,
-			SkrWebhookCPULimits:       flagVar.skrWebhookCPULimits,
-			SkrWebhookMemoryLimits:    flagVar.skrWebhookMemoryLimits,
-			LocalGatewayPortOverwrite: flagVar.listenerPortOverwrite,
-			IstioNamespace:            flagVar.istioNamespace,
+		watcher.SkrWebhookManagerConfig{
+			SKRWatcherPath:         flagVar.skrWatcherPath,
+			SkrWatcherImage:        flagVar.skrWatcherImage,
+			SkrWebhookCPULimits:    flagVar.skrWebhookCPULimits,
+			SkrWebhookMemoryLimits: flagVar.skrWebhookMemoryLimits,
+			RemoteSyncNamespace:    flagVar.remoteSyncNamespace,
+		}, watcher.CertificateConfig{
+			IstioNamespace:      flagVar.istioNamespace,
+			RemoteSyncNamespace: flagVar.remoteSyncNamespace,
+			CACertificateName:   flagVar.caCertName,
+			AdditionalDNSNames:  strings.Split(flagVar.additionalDNSNames, ","),
+			Duration:            apimetav1.Duration{Duration: flagVar.certificateDuration},
+			RenewBefore:         apimetav1.Duration{Duration: flagVar.certificateRenewBefore},
+		}, watcher.GatewayConfig{
 			IstioGatewayName:          flagVar.istioGatewayName,
 			IstioGatewayNamespace:     flagVar.istioGatewayNamespace,
-			RemoteSyncNamespace:       flagVar.remoteSyncNamespace,
-			AdditionalDNSNames:        strings.Split(flagVar.additionalDNSNames, ","),
-			CACertificateName:         flagVar.caCertName,
+			LocalGatewayPortOverwrite: flagVar.listenerPortOverwrite,
 		})
 }
 

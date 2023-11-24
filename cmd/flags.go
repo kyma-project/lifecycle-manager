@@ -32,6 +32,8 @@ const (
 	defaultIstioNamespace                                = "istio-system"
 	defaultCaCertName                                    = "klm-watcher-serving-cert"
 	defaultCaCertCacheTTL                  time.Duration = 1 * time.Hour
+	defaultCertificateDuration             time.Duration = 90 * 24 * time.Hour
+	defaultCertificateRenewBefore          time.Duration = 60 * 24 * time.Hour
 )
 
 //nolint:funlen
@@ -137,6 +139,10 @@ func defineFlagVar() *FlagVar {
 		"Name of the CA Certificate in Istio Namespace which is used to sign SKR Certificates")
 	flag.DurationVar(&flagVar.caCertCacheTTL, "ca-cert-cache-ttl", defaultCaCertCacheTTL,
 		"The ttl for the CA Certificate Cache")
+	flag.DurationVar(&flagVar.certificateDuration, "cert-duration", defaultCertificateDuration,
+		"The lifetime duration of certificate")
+	flag.DurationVar(&flagVar.certificateRenewBefore, "cert-renew-before", defaultCertificateRenewBefore,
+		"The duration time to renew certificate")
 	flag.BoolVar(&flagVar.isKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
 	return flagVar
 }
@@ -188,4 +194,6 @@ type FlagVar struct {
 	caCertCacheTTL                         time.Duration
 	enableVerification                     bool
 	isKymaManaged                          bool
+	certificateDuration                    time.Duration
+	certificateRenewBefore                 time.Duration
 }
