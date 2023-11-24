@@ -83,7 +83,7 @@ func GetPathFromRawManifest(ctx context.Context,
 	return manifestPath, nil
 }
 
-//nolint:ireturn //external dependency used here already returns an interface
+//nolint:ireturn //the external dependency used here already returns an interface
 func pullLayer(ctx context.Context, imageRef string, keyChain authn.Keychain) (containerregistryv1.Layer, error) {
 	noSchemeImageRef := ocmextensions.NoSchemeURL(imageRef)
 	isInsecureLayer, err := regexp.MatchString("^http://", imageRef)

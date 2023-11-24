@@ -11,13 +11,12 @@ func (s *SingletonClients) ToRESTConfig() (*rest.Config, error) {
 	return s.config, nil
 }
 
-// TODO: Fix nolint
-//
-//nolint:ireturn
+//nolint:ireturn //the external dependency involved here already uses an interface
 func (s *SingletonClients) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, error) {
 	return s.discoveryClient, nil
 }
 
+//nolint:ireturn //the external dependency involved here already uses an interface
 func (s *SingletonClients) ToRESTMapper() (meta.RESTMapper, error) {
 	return s.discoveryShortcutExpander, nil
 }
