@@ -113,7 +113,7 @@ func (c *ConcurrentDefaultSSA) serverSideApplyResourceInfo(
 // convertWithMapper converts the given object with the optional provided
 // RESTMapping. If no mapping is provided, the default schema versioner is used.
 //
-
+//nolint:ireturn //the external dependency used here already returns an interface
 func (c *ConcurrentDefaultSSA) convertUnstructuredToTyped(
 	obj machineryruntime.Object, mapping *meta.RESTMapping,
 ) machineryruntime.Object {

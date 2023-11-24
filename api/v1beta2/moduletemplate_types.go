@@ -63,10 +63,12 @@ func (d *Descriptor) GroupVersionKind() schema.GroupVersionKind {
 	}
 }
 
+//nolint:ireturn //this method is necessary to implement the interface: "k8s.io/apimachinery/pkg/runtime".Object
 func (d *Descriptor) GetObjectKind() schema.ObjectKind {
 	return d
 }
 
+//nolint:ireturn //this method is necessary to implement the interface: "k8s.io/apimachinery/pkg/runtime".Object
 func (d *Descriptor) DeepCopyObject() machineryruntime.Object {
 	return &Descriptor{ComponentDescriptor: d.Copy()}
 }

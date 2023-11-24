@@ -18,7 +18,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// BeInState determines if the resource is in a given declarative state
+// BeInState determines if the resource is in a given declarative state.
 func BeInState(state shared.State) *BeInStateMatcher {
 	return &BeInStateMatcher{state: state}
 }

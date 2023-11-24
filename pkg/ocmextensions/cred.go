@@ -16,6 +16,7 @@ import (
 
 var ErrNoAuthSecretFound = errors.New("no auth secret found")
 
+//nolint:ireturn //external dependency used here already returns an interface
 func GetAuthnKeychain(ctx context.Context,
 	credSecretSelector *apimetav1.LabelSelector,
 	clnt client.Client,

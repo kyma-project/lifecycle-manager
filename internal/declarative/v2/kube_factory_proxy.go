@@ -17,7 +17,7 @@ import (
 // OpenAPISchema returns metadata and structural information about
 // Kubernetes object definitions.
 //
-//nolint:ireturn //invoked library function already returns an interface
+//nolint:ireturn //the external dependency used here already returns an interface
 func (s *SingletonClients) OpenAPISchema() (openapi.Resources, error) {
 	parsedMetadata, err := s.openAPIParser.Parse()
 	if err != nil {
@@ -98,9 +98,8 @@ func (s *SingletonClients) KubernetesClientSet() (*kubernetes.Clientset, error) 
 	return s.kubernetesClient, nil
 }
 
-// TODO: Fix nolint
 // DynamicClient returns a dynamic client ready for use.
-func (s *SingletonClients) DynamicClient() (dynamic.Interface, error) { //nolint:ireturn
+func (s *SingletonClients) DynamicClient() (*dynamic.DynamicClient, error) {
 	return s.dynamicClient, nil
 }
 

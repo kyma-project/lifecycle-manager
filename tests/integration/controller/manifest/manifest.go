@@ -62,6 +62,7 @@ func (m mockLayer) DiffID() (containerregistryv1.Hash, error) {
 	return containerregistryv1.Hash{Algorithm: "fake", Hex: "diff id"}, nil
 }
 
+//nolint:ireturn //external dependency used here already returns an interface
 func CreateImageSpecLayer() containerregistryv1.Layer {
 	layer, err := partial.UncompressedToLayer(mockLayer{filePath: ManifestFilePath})
 	gomega.Expect(err).ToNot(gomega.HaveOccurred())
