@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"errors"
 	"fmt"
 
 	watchermetrics "github.com/kyma-project/runtime-watcher/listener/pkg/metrics"
@@ -10,45 +9,41 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	commonmetrics "github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
 )
 
 const (
 	metricKymaState   = "lifecycle_mgr_kyma_state"
 	metricModuleState = "lifecycle_mgr_module_state"
-	kymaNameLabel     = "kyma_name"
 	stateLabel        = "state"
-	shootIDLabel      = "shoot"
-	instanceIDLabel   = "instance_id"
 	moduleNameLabel   = "module_name"
 )
 
 var (
-	kymaStateGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{ //nolint:gochecknoglobals
+	//nolint:gochecknoglobals
+	kymaStateGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: metricKymaState,
 		Help: "Indicates the Status.state for a given Kyma object",
 	}, []string{kymaNameLabel, stateLabel, shootIDLabel, instanceIDLabel})
-	moduleStateGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{ //nolint:gochecknoglobals
+	//nolint:gochecknoglobals
+	moduleStateGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: metricModuleState,
 		Help: "Indicates the Status.state for modules of Kyma",
 	}, []string{moduleNameLabel, kymaNameLabel, stateLabel, shootIDLabel, instanceIDLabel})
 )
 
-func Initialize() {
+func InitKymaMetrics() {
 	ctrlmetrics.Registry.MustRegister(kymaStateGauge)
 	ctrlmetrics.Registry.MustRegister(moduleStateGauge)
 	watchermetrics.Init(ctrlmetrics.Registry)
 }
 
-var errMetric = errors.New("failed to update metrics")
-
 // UpdateAll sets both metrics 'lifecycle_mgr_kyma_state' and 'lifecycle_mgr_module_state' to new states.
 func UpdateAll(kyma *v1beta2.Kyma) error {
-	shootID, err := commonmetrics.ExtractShootID(kyma)
+	shootID, err := ExtractShootID(kyma)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errMetric, err)
 	}
-	instanceID, err := commonmetrics.ExtractInstanceID(kyma)
+	instanceID, err := ExtractInstanceID(kyma)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errMetric, err)
 	}
