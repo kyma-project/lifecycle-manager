@@ -17,6 +17,8 @@ const (
 var (
 	errMissingShootAnnotation = fmt.Errorf("expected annotation '%s' not found", v1beta2.SKRDomainAnnotation)
 	errShootAnnotationNoValue = fmt.Errorf("annotation '%s' has empty value", v1beta2.SKRDomainAnnotation)
+	errMissingInstanceLabel   = fmt.Errorf("expected label '%s' not found", v1beta2.InstanceIDLabel)
+	errInstanceLabelNoValue   = fmt.Errorf("label '%s' has empty value", v1beta2.InstanceIDLabel)
 	errMetric                 = errors.New("failed to update metrics")
 )
 
@@ -39,25 +41,20 @@ func ExtractShootID(kyma *v1beta2.Kyma) (string, error) {
 	return shoot, nil
 }
 
-var (
-	ErrMissingInstanceLabel = fmt.Errorf("expected label '%s' not found", v1beta2.InstanceIDLabel)
-	ErrInstanceLabelNoValue = fmt.Errorf("label '%s' has empty value", v1beta2.InstanceIDLabel)
-)
-
 func ExtractInstanceID(kyma *v1beta2.Kyma) (string, error) {
 	instanceID, keyExists := kyma.Labels[v1beta2.InstanceIDLabel]
 	if !keyExists {
-		return "", ErrMissingInstanceLabel
+		return "", errMissingInstanceLabel
 	}
 	if instanceID == "" {
-		return instanceID, ErrInstanceLabelNoValue
+		return instanceID, errInstanceLabelNoValue
 	}
 	return instanceID, nil
 }
 
 func IsMissingMetricsAnnotationOrLabel(err error) bool {
-	return errors.Is(err, ErrInstanceLabelNoValue) ||
-		errors.Is(err, ErrMissingInstanceLabel) ||
+	return errors.Is(err, errInstanceLabelNoValue) ||
+		errors.Is(err, errMissingInstanceLabel) ||
 		errors.Is(err, errShootAnnotationNoValue) ||
 		errors.Is(err, errMissingShootAnnotation)
 }

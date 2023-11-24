@@ -267,22 +267,24 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
-
 }
 
 func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (watcher.SKRWebhookManager, error) {
-	return watcher.NewSKRWebhookManifestManager(mgr.GetConfig(), mgr.GetScheme(), &watcher.SkrWebhookManagerConfig{
-		SKRWatcherPath:            flagVar.skrWatcherPath,
-		SkrWatcherImage:           flagVar.skrWatcherImage,
-		SkrWebhookCPULimits:       flagVar.skrWebhookCPULimits,
-		SkrWebhookMemoryLimits:    flagVar.skrWebhookMemoryLimits,
-		LocalGatewayPortOverwrite: flagVar.listenerPortOverwrite,
-		IstioNamespace:            flagVar.istioNamespace,
-		IstioGatewayName:          flagVar.istioGatewayName,
-		IstioGatewayNamespace:     flagVar.istioGatewayNamespace,
-		RemoteSyncNamespace:       flagVar.remoteSyncNamespace,
-		AdditionalDNSNames:        strings.Split(flagVar.additionalDNSNames, ","),
-	})
+	caCertificateCache := watcher.NewCertificateCache(flagVar.caCertCacheTTL)
+	return watcher.NewSKRWebhookManifestManager(mgr.GetConfig(), mgr.GetScheme(), caCertificateCache,
+		&watcher.SkrWebhookManagerConfig{
+			SKRWatcherPath:            flagVar.skrWatcherPath,
+			SkrWatcherImage:           flagVar.skrWatcherImage,
+			SkrWebhookCPULimits:       flagVar.skrWebhookCPULimits,
+			SkrWebhookMemoryLimits:    flagVar.skrWebhookMemoryLimits,
+			LocalGatewayPortOverwrite: flagVar.listenerPortOverwrite,
+			IstioNamespace:            flagVar.istioNamespace,
+			IstioGatewayName:          flagVar.istioGatewayName,
+			IstioGatewayNamespace:     flagVar.istioGatewayNamespace,
+			RemoteSyncNamespace:       flagVar.remoteSyncNamespace,
+			AdditionalDNSNames:        strings.Split(flagVar.additionalDNSNames, ","),
+			CACertificateName:         flagVar.caCertName,
+		})
 }
 
 func setupPurgeReconciler(mgr ctrl.Manager,

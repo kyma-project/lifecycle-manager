@@ -105,7 +105,7 @@ func TestDeleteNoLongerExistingModuleStatus(t *testing.T) {
 				}
 				kyma.Status.Modules = append(kyma.Status.Modules, module)
 			}
-			sync.DeleteNoLongerExistingModuleStatus(context.TODO(), kyma, testCase.getModule)
+			sync.DeleteNoLongerExistingModuleStatus(context.TODO(), kyma, testCase.getModule, nil)
 			var modulesInFinalModuleStatus []string
 			for _, moduleStatus := range kyma.Status.Modules {
 				modulesInFinalModuleStatus = append(modulesInFinalModuleStatus, moduleStatus.Name)
