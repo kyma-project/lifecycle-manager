@@ -71,8 +71,9 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
 	tlsSecret := createTLSSecret(kymaObjKey)
 	skrTLSSecretObjKey := client.ObjectKey{Name: watcher.SkrTLSName, Namespace: controller.DefaultRemoteSyncNamespace}
+	caCertificate := createCaCertificate()
 
-	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer)
+	registerDefaultLifecycleForKymaWithWatcher(kyma, watcherCrForKyma, tlsSecret, issuer, caCertificate)
 	It("remote kyma created on SKR", func() {
 		Eventually(KymaExists, Timeout, Interval).
 			WithContext(suiteCtx).

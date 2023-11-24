@@ -3,6 +3,7 @@ package watcher
 import (
 	"context"
 	"fmt"
+	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	certmanagermetav1 "github.com/cert-manager/cert-manager/pkg/apis/meta/v1"
@@ -27,7 +28,8 @@ const (
 	tlsPrivateKeyKey = "tls.key"
 )
 
-var LabelSet = k8slabels.Set{ //nolint:gochecknoglobals
+//nolint:gochecknoglobals
+var LabelSet = k8slabels.Set{
 	v1beta2.PurposeLabel: v1beta2.CertManager,
 	v1beta2.ManagedBy:    v1beta2.OperatorName,
 }
@@ -42,10 +44,12 @@ type SubjectAltName struct {
 type CertificateManager struct {
 	kcpClient           client.Client
 	kyma                *v1beta2.Kyma
+	caCertCache         *CertificateCache
 	certificateName     string
 	secretName          string
 	istioNamespace      string
 	remoteSyncNamespace string
+	caCertName          string
 	additionalDNSNames  []string
 }
 
@@ -58,7 +62,7 @@ type CertificateSecret struct {
 
 // NewCertificateManager returns a new CertificateManager, which can be used for creating a cert-manager Certificates.
 func NewCertificateManager(kcpClient client.Client, kyma *v1beta2.Kyma,
-	istioNamespace, remoteSyncNamespace string, additionalDNSNames []string,
+	istioNamespace, remoteSyncNamespace, caCertName string, additionalDNSNames []string, caCertCache *CertificateCache,
 ) (*CertificateManager, error) {
 	return &CertificateManager{
 		kcpClient:           kcpClient,
@@ -67,6 +71,8 @@ func NewCertificateManager(kcpClient client.Client, kyma *v1beta2.Kyma,
 		secretName:          ResolveTLSCertName(kyma.Name),
 		istioNamespace:      istioNamespace,
 		remoteSyncNamespace: remoteSyncNamespace,
+		caCertName:          caCertName,
+		caCertCache:         caCertCache,
 		additionalDNSNames:  additionalDNSNames,
 	}, nil
 }
@@ -220,8 +226,39 @@ func (c *CertificateManager) getIssuer(ctx context.Context) (*certmanagerv1.Issu
 	return &issuerList.Items[0], nil
 }
 
+func (c *CertificateManager) GetCertificateSecret(ctx context.Context) (*apicorev1.Secret, error) {
+	secret := &apicorev1.Secret{}
+	err := c.kcpClient.Get(ctx, client.ObjectKey{Name: c.secretName, Namespace: c.istioNamespace},
+		secret)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get secret for certificate %s-%s: %w", c.secretName, c.istioNamespace, err)
+	}
+
+	return secret, nil
+}
+
 type CertificateNotReadyError struct{}
 
 func (e *CertificateNotReadyError) Error() string {
 	return "Certificate-Secret does not exist"
+}
+
+func (c *CertificateManager) GetCACertificate(ctx context.Context) (*certmanagerv1.Certificate, error) {
+	cachedCert := c.caCertCache.GetCACertFromCache(c.caCertName)
+
+	if cachedCert == nil || certificateRenewalTimePassed(cachedCert) {
+		caCert := &certmanagerv1.Certificate{}
+		if err := c.kcpClient.Get(ctx, client.ObjectKey{Namespace: c.istioNamespace, Name: c.caCertName},
+			caCert); err != nil {
+			return nil, fmt.Errorf("failed to get CA certificate %w", err)
+		}
+		c.caCertCache.SetCACertToCache(caCert)
+		return caCert, nil
+	}
+
+	return cachedCert, nil
+}
+
+func certificateRenewalTimePassed(cert *certmanagerv1.Certificate) bool {
+	return cert.Status.RenewalTime.Before(&(apimetav1.Time{Time: time.Now()}))
 }
