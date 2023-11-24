@@ -94,6 +94,18 @@ func (c *CertificateManager) Create(ctx context.Context) error {
 
 // Remove removes the certificate including its certificate secret.
 func (c *CertificateManager) Remove(ctx context.Context) error {
+	err := c.RemoveCertificate(ctx)
+	if err != nil {
+		return err
+	}
+	err = c.RemoveSecret(ctx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *CertificateManager) RemoveCertificate(ctx context.Context) error {
 	certificate := &certmanagerv1.Certificate{}
 	if err := c.kcpClient.Get(ctx, client.ObjectKey{
 		Name:      c.certificateName,
@@ -101,9 +113,15 @@ func (c *CertificateManager) Remove(ctx context.Context) error {
 	}, certificate); err != nil && !util.IsNotFound(err) {
 		return fmt.Errorf("failed to get certificate: %w", err)
 	}
+
 	if err := c.kcpClient.Delete(ctx, certificate); err != nil {
 		return fmt.Errorf("failed to delete certificate: %w", err)
 	}
+
+	return nil
+}
+
+func (c *CertificateManager) RemoveSecret(ctx context.Context) error {
 	certSecret := &apicorev1.Secret{}
 	if err := c.kcpClient.Get(ctx, client.ObjectKey{
 		Name:      c.secretName,
