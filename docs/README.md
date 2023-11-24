@@ -24,7 +24,6 @@ The table of contents lists all the documents in repository with their short des
   - [Running Modes](technical-reference/running-modes.md) - describes Lifecycle Manager's running modes
   - [Declarative Reconciliation Library Reference Documentation](/internal/declarative/README.md)
   - [Internal Manifest Reconciliation Library Extensions](/internal/manifest/README.md)
-  - [Smoke tests](/tests/smoke_test/README.md)
 - User tutorials
   - [Managing module enablement with the CustomResourcePolicy](user-tutorials/02-10-manage-module-with-custom-resource-policy.md)
   - [Quick Start](user-tutorials/01-10-control-plane-quick-start.md)
