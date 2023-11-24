@@ -9,27 +9,29 @@ import (
 )
 
 const (
-	defaultKymaRequeueSuccessInterval      = 30 * time.Second
-	defaultKymaRequeueErrInterval          = 2 * time.Second
-	defaultKymaRequeueBusyInterval         = 5 * time.Second
-	defaultManifestRequeueSuccessInterval  = 30 * time.Second
-	defaultWatcherRequeueSuccessInterval   = 30 * time.Second
-	defaultClientQPS                       = 300
-	defaultClientBurst                     = 600
-	defaultPprofServerTimeout              = 90 * time.Second
-	rateLimiterBurstDefault                = 200
-	rateLimiterFrequencyDefault            = 30
-	failureBaseDelayDefault                = 100 * time.Millisecond
-	failureMaxDelayDefault                 = 5 * time.Second
-	defaultCacheSyncTimeout                = 2 * time.Minute
-	defaultLogLevel                        = log.WarnLevel
-	defaultPurgeFinalizerTimeout           = 5 * time.Minute
-	defaultMaxConcurrentManifestReconciles = 1
-	defaultMaxConcurrentKymaReconciles     = 1
-	defaultMaxConcurrentWatcherReconciles  = 1
-	defaultIstioGatewayName                = "klm-watcher-gateway"
-	defaultIstioGatewayNamespace           = "kcp-system"
-	defaultIstioNamespace                  = "istio-system"
+	defaultKymaRequeueSuccessInterval                    = 30 * time.Second
+	defaultKymaRequeueErrInterval                        = 2 * time.Second
+	defaultKymaRequeueBusyInterval                       = 5 * time.Second
+	defaultManifestRequeueSuccessInterval                = 30 * time.Second
+	defaultWatcherRequeueSuccessInterval                 = 30 * time.Second
+	defaultClientQPS                                     = 300
+	defaultClientBurst                                   = 600
+	defaultPprofServerTimeout                            = 90 * time.Second
+	rateLimiterBurstDefault                              = 200
+	rateLimiterFrequencyDefault                          = 30
+	failureBaseDelayDefault                              = 100 * time.Millisecond
+	failureMaxDelayDefault                               = 5 * time.Second
+	defaultCacheSyncTimeout                              = 2 * time.Minute
+	defaultLogLevel                                      = log.WarnLevel
+	defaultPurgeFinalizerTimeout                         = 5 * time.Minute
+	defaultMaxConcurrentManifestReconciles               = 1
+	defaultMaxConcurrentKymaReconciles                   = 1
+	defaultMaxConcurrentWatcherReconciles                = 1
+	defaultIstioGatewayName                              = "klm-watcher-gateway"
+	defaultIstioGatewayNamespace                         = "kcp-system"
+	defaultIstioNamespace                                = "istio-system"
+	defaultCaCertName                                    = "klm-watcher-serving-cert"
+	defaultCaCertCacheTTL                  time.Duration = 1 * time.Hour
 )
 
 //nolint:funlen
@@ -57,15 +59,20 @@ func defineFlagVar() *FlagVar {
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.DurationVar(&flagVar.kymaRequeueSuccessInterval, "kyma-requeue-success-interval",
-		defaultKymaRequeueSuccessInterval, "determines the duration a Kyma in Ready state is enqueued for reconciliation.") //nolint:lll
+		defaultKymaRequeueSuccessInterval,
+		"determines the duration a Kyma in Ready state is enqueued for reconciliation.") //nolint:lll
 	flag.DurationVar(&flagVar.kymaRequeueErrInterval, "kyma-requeue-error-interval",
-		defaultKymaRequeueErrInterval, "determines the duration after which a Kyma in Error state is enqueued for reconciliation.") //nolint:lll
+		defaultKymaRequeueErrInterval,
+		"determines the duration after which a Kyma in Error state is enqueued for reconciliation.") //nolint:lll
 	flag.DurationVar(&flagVar.kymaRequeueBusyInterval, "kyma-requeue-busy-interval",
-		defaultKymaRequeueBusyInterval, "determines the duration after which a Kyma in Processing state is enqueued for reconciliation.") //nolint:lll
+		defaultKymaRequeueBusyInterval,
+		"determines the duration after which a Kyma in Processing state is enqueued for reconciliation.") //nolint:lll
 	flag.DurationVar(&flagVar.manifestRequeueSuccessInterval, "manifest-requeue-success-interval",
-		defaultManifestRequeueSuccessInterval, "determines the duration a Manifest in Ready state is enqueued for reconciliation.") //nolint:lll
+		defaultManifestRequeueSuccessInterval,
+		"determines the duration a Manifest in Ready state is enqueued for reconciliation.") //nolint:lll
 	flag.DurationVar(&flagVar.watcherRequeueSuccessInterval, "watcher-requeue-success-interval",
-		defaultWatcherRequeueSuccessInterval, "determines the duration a Watcher in Ready state is enqueued for reconciliation.") //nolint:lll
+		defaultWatcherRequeueSuccessInterval,
+		"determines the duration a Watcher in Ready state is enqueued for reconciliation.") //nolint:lll
 
 	flag.Float64Var(&flagVar.clientQPS, "k8s-client-qps", defaultClientQPS, "kubernetes client QPS")
 	flag.IntVar(&flagVar.clientBurst, "k8s-client-burst", defaultClientBurst, "kubernetes client Burst")
@@ -126,6 +133,10 @@ func defineFlagVar() *FlagVar {
 		" from finalizer removal. Example: 'ingressroutetcps.traefik.containo.us,*.helm.cattle.io'.")
 	flag.StringVar(&flagVar.remoteSyncNamespace, "sync-namespace", controller.DefaultRemoteSyncNamespace,
 		"Name of the namespace for syncing remote Kyma and module catalog")
+	flag.StringVar(&flagVar.caCertName, "ca-cert-name", defaultCaCertName,
+		"Name of the CA Certificate in Istio Namespace which is used to sign SKR Certificates")
+	flag.DurationVar(&flagVar.caCertCacheTTL, "ca-cert-cache-ttl", defaultCaCertCacheTTL,
+		"The ttl for the CA Certificate Cache")
 	flag.BoolVar(&flagVar.isKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
 	return flagVar
 }
@@ -173,6 +184,8 @@ type FlagVar struct {
 	purgeFinalizerTimeout                  time.Duration
 	skipPurgingFor                         string
 	remoteSyncNamespace                    string
+	caCertName                             string
+	caCertCacheTTL                         time.Duration
 	enableVerification                     bool
 	isKymaManaged                          bool
 }
