@@ -32,7 +32,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/metrics"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -73,6 +73,7 @@ type KymaReconciler struct {
 	InKCPMode           bool
 	RemoteSyncNamespace string
 	IsManagedKyma       bool
+	Metrics             *metrics.KymaMetrics
 }
 
 //nolint:lll
@@ -118,7 +119,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, remote.ErrAccessSecretNotFound) {
 		logger.Info("access secret not found for kyma, assuming already deleted cluster")
-		metrics.CleanupMetrics(kyma)
+		r.Metrics.CleanupMetrics(kyma)
 		r.removeAllFinalizers(kyma)
 		return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
 	}
@@ -413,7 +414,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		logger.Info("removed remote finalizer")
 	}
 
-	metrics.CleanupMetrics(kyma)
+	r.Metrics.CleanupMetrics(kyma)
 
 	controllerutil.RemoveFinalizer(kyma, v1beta2.Finalizer)
 	return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
@@ -541,8 +542,8 @@ func (r *KymaReconciler) deleteManifest(ctx context.Context, trackedManifest *v1
 }
 
 func (r *KymaReconciler) UpdateMetrics(ctx context.Context, kyma *v1beta2.Kyma) {
-	if err := metrics.UpdateAll(kyma); err != nil {
-		if r.IsMissingMetricsAnnotationOrLabel(err) {
+	if err := r.Metrics.UpdateAll(kyma); err != nil {
+		if metrics.IsMissingMetricsAnnotationOrLabel(err) {
 			r.enqueueWarningEvent(kyma, metricsError, err)
 		}
 		logf.FromContext(ctx).V(log.DebugLevel).Info(fmt.Sprintf("error occurred while updating all metrics: %s", err))
@@ -566,11 +567,4 @@ func (r *KymaReconciler) SyncKymaEnabled(kyma *v1beta2.Kyma) bool {
 
 func (r *KymaReconciler) IsKymaManaged() bool {
 	return r.IsManagedKyma
-}
-
-func (r *KymaReconciler) IsMissingMetricsAnnotationOrLabel(err error) bool {
-	return errors.Is(err, metrics.ErrInstanceLabelNoValue) ||
-		errors.Is(err, metrics.ErrMissingInstanceLabel) ||
-		errors.Is(err, metrics.ErrShootAnnotationNoValue) ||
-		errors.Is(err, metrics.ErrMissingShootAnnotation)
 }
