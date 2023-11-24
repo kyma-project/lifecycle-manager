@@ -51,7 +51,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
-	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/internal/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -299,13 +299,13 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 		PurgeFinalizerTimeout: flagVar.purgeFinalizerTimeout,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(flagVar.skipPurgingFor),
 		IsManagedKyma:         flagVar.isKymaManaged,
+		Metrics:               metrics.NewPurgeMetrics(),
 	}).SetupWithManager(
 		mgr, options,
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PurgeReconciler")
 		os.Exit(1)
 	}
-	metrics.InitPurgeMetrics()
 }
 
 func setupManifestReconciler(
