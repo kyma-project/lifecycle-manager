@@ -23,9 +23,10 @@ const (
 
 	DomainAnnotation = v1beta2.SKRDomainAnnotation
 
-	caCertKey        = "ca.crt"
-	tlsCertKey       = "tls.crt"
-	tlsPrivateKeyKey = "tls.key"
+	caCertKey                  = "ca.crt"
+	tlsCertKey                 = "tls.crt"
+	tlsPrivateKeyKey           = "tls.key"
+	certificateRenewBufferTime = 24 * time.Hour
 )
 
 //nolint:gochecknoglobals
@@ -43,7 +44,6 @@ type SubjectAltName struct {
 
 type CertificateManager struct {
 	kcpClient           client.Client
-	kyma                *v1beta2.Kyma
 	caCertCache         *CertificateCache
 	certificateName     string
 	secretName          string
@@ -61,14 +61,13 @@ type CertificateSecret struct {
 }
 
 // NewCertificateManager returns a new CertificateManager, which can be used for creating a cert-manager Certificates.
-func NewCertificateManager(kcpClient client.Client, kyma *v1beta2.Kyma,
+func NewCertificateManager(kcpClient client.Client, kymaName,
 	istioNamespace, remoteSyncNamespace, caCertName string, additionalDNSNames []string, caCertCache *CertificateCache,
 ) (*CertificateManager, error) {
 	return &CertificateManager{
 		kcpClient:           kcpClient,
-		kyma:                kyma,
-		certificateName:     ResolveTLSCertName(kyma.Name),
-		secretName:          ResolveTLSCertName(kyma.Name),
+		certificateName:     ResolveTLSCertName(kymaName),
+		secretName:          ResolveTLSCertName(kymaName),
 		istioNamespace:      istioNamespace,
 		remoteSyncNamespace: remoteSyncNamespace,
 		caCertName:          caCertName,
@@ -78,18 +77,12 @@ func NewCertificateManager(kcpClient client.Client, kyma *v1beta2.Kyma,
 }
 
 // Create creates a cert-manager Certificate with a sufficient set of Subject-Alternative-Names.
-func (c *CertificateManager) Create(ctx context.Context) error {
-	// fetch Subject-Alternative-Name from KymaCR
-	subjectAltNames, err := c.getSubjectAltNames()
+func (c *CertificateManager) Create(ctx context.Context, kyma *v1beta2.Kyma) (*certmanagerv1.Certificate, error) {
+	subjectAltNames, err := c.getSubjectAltNames(kyma)
 	if err != nil {
-		return fmt.Errorf("error get Subject Alternative Name from KymaCR: %w", err)
+		return nil, fmt.Errorf("error get Subject Alternative Name from KymaCR: %w", err)
 	}
-	// create cert-manager CertificateCR
-	err = c.createCertificate(ctx, subjectAltNames)
-	if err != nil {
-		return fmt.Errorf("error while creating certificate: %w", err)
-	}
-	return nil
+	return c.patchCertificate(ctx, subjectAltNames)
 }
 
 // Remove removes the certificate including its certificate secret.
@@ -135,12 +128,14 @@ func (c *CertificateManager) GetSecret(ctx context.Context) (*CertificateSecret,
 	return &certSecret, nil
 }
 
-func (c *CertificateManager) createCertificate(ctx context.Context, subjectAltName *SubjectAltName) error {
+func (c *CertificateManager) patchCertificate(ctx context.Context,
+	subjectAltName *SubjectAltName,
+) (*certmanagerv1.Certificate, error) {
 	// Default Duration 90 days
 	// Default RenewBefore default 2/3 of Duration
 	issuer, err := c.getIssuer(ctx)
 	if err != nil {
-		return fmt.Errorf("error getting issuer: %w", err)
+		return nil, fmt.Errorf("error getting issuer: %w", err)
 	}
 
 	cert := certmanagerv1.Certificate{
@@ -179,15 +174,15 @@ func (c *CertificateManager) createCertificate(ctx context.Context, subjectAltNa
 
 	err = c.kcpClient.Patch(ctx, &cert, client.Apply, client.ForceOwnership, skrChartFieldOwner)
 	if err != nil {
-		return fmt.Errorf("failed to patch certificate: %w", err)
+		return nil, fmt.Errorf("failed to patch certificate: %w", err)
 	}
-	return nil
+	return &cert, nil
 }
 
-func (c *CertificateManager) getSubjectAltNames() (*SubjectAltName, error) {
-	if domain, ok := c.kyma.Annotations[DomainAnnotation]; ok {
+func (c *CertificateManager) getSubjectAltNames(kyma *v1beta2.Kyma) (*SubjectAltName, error) {
+	if domain, ok := kyma.Annotations[DomainAnnotation]; ok {
 		if domain == "" {
-			return nil, fmt.Errorf("Domain-Annotation of KymaCR %s is empty", c.kyma.Name) //nolint:goerr113
+			return nil, fmt.Errorf("Domain-Annotation of KymaCR %s is empty", kyma.Name) //nolint:goerr113
 		}
 
 		svcSuffix := []string{"svc.cluster.local", "svc"}
@@ -204,7 +199,7 @@ func (c *CertificateManager) getSubjectAltNames() (*SubjectAltName, error) {
 		}, nil
 	}
 	return nil, fmt.Errorf("kymaCR %s does not contain annotation '%s' with specified domain", //nolint:goerr113
-		c.kyma.Name, DomainAnnotation)
+		kyma.Name, DomainAnnotation)
 }
 
 func (c *CertificateManager) getIssuer(ctx context.Context) (*certmanagerv1.Issuer, error) {

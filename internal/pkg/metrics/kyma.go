@@ -59,12 +59,12 @@ func (k *KymaMetrics) UpdateAll(kyma *v1beta2.Kyma) error {
 
 // CleanupMetrics deletes all 'lifecycle_mgr_kyma_state',
 // 'lifecycle_mgr_module_state' metrics for the matching Kyma.
-func (k *KymaMetrics) CleanupMetrics(kyma *v1beta2.Kyma) {
+func (k *KymaMetrics) CleanupMetrics(kymaName string) {
 	k.kymaStateGauge.DeletePartialMatch(prometheus.Labels{
-		kymaNameLabel: kyma.Name,
+		kymaNameLabel: kymaName,
 	})
 	k.moduleStateGauge.DeletePartialMatch(prometheus.Labels{
-		kymaNameLabel: kyma.Name,
+		kymaNameLabel: kymaName,
 	})
 }
 

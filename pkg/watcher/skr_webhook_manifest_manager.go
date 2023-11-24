@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	"github.com/go-logr/logr"
 	apicorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -15,6 +17,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
@@ -27,6 +30,7 @@ type SKRWebhookManifestManager struct {
 	kcpAddr            string
 	baseResources      []*unstructured.Unstructured
 	caCertificateCache *CertificateCache
+	WatcherMetrics     *metrics.WatcherMetrics
 }
 
 type SkrWebhookManagerConfig struct {
@@ -61,7 +65,7 @@ func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
 	schema *machineryruntime.Scheme,
 	caCertificateCache *CertificateCache,
 	managerConfig *SkrWebhookManagerConfig,
-) (SKRWebhookManager, error) {
+) (*SKRWebhookManifestManager, error) {
 	logger := logf.FromContext(context.TODO())
 	manifestFilePath := fmt.Sprintf(rawManifestFilePathTpl, managerConfig.SKRWatcherPath)
 	rawManifestFile, err := os.Open(manifestFilePath)
@@ -86,6 +90,7 @@ func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
 		kcpAddr:            resolvedKcpAddr,
 		baseResources:      baseResources,
 		caCertificateCache: caCertificateCache,
+		WatcherMetrics:     metrics.NewWatcherMetrics(),
 	}, nil
 }
 
@@ -98,33 +103,25 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 	}
 
 	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
-	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma,
-		m.config.IstioNamespace, m.config.RemoteSyncNamespace, m.config.CACertificateName, m.config.AdditionalDNSNames,
+	certificateMgr, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma.Name,
+		m.config.IstioNamespace,
+		m.config.RemoteSyncNamespace,
+		m.config.CACertificateName,
+		m.config.AdditionalDNSNames,
 		m.caCertificateCache)
 	if err != nil {
 		return fmt.Errorf("error while creating new CertificateManager struct: %w", err)
 	}
 
-	if err = certificate.Create(ctx); err != nil {
-		return fmt.Errorf("error while creating new Certificate on KCP: %w", err)
-	}
-
-	caCertificate, err := certificate.GetCACertificate(ctx)
+	certificate, err := certificateMgr.Create(ctx, kyma)
 	if err != nil {
-		return fmt.Errorf("error while fetching CA Certificate: %w", err)
+		return fmt.Errorf("error while patching certificate: %w", err)
 	}
 
-	certSecret, err := certificate.GetCertificateSecret(ctx)
-	if err != nil {
-		return fmt.Errorf("error while fetching certificate: %w", err)
-	}
+	m.verifyCertNotRenew(certificate, kyma)
 
-	if certSecret != nil && (certSecret.CreationTimestamp.Before(caCertificate.Status.NotBefore)) {
-		logger.V(log.DebugLevel).Info("CA Certificate was rotated, removing certificate",
-			"kyma", kymaObjKey)
-		if err = certificate.Remove(ctx); err != nil {
-			return fmt.Errorf("error while removing certificate: %w", err)
-		}
+	if err := verifyCACertRotation(ctx, certificateMgr, kymaObjKey); err != nil {
+		return fmt.Errorf("error verify CA cert rotation: %w", err)
 	}
 
 	logger.V(log.DebugLevel).Info("Successfully created Certificate", "kyma", kymaObjKey)
@@ -151,6 +148,40 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 	return nil
 }
 
+func (m *SKRWebhookManifestManager) verifyCertNotRenew(certificate *certmanagerv1.Certificate,
+	kyma *v1beta2.Kyma,
+) {
+	if certificate.Status.RenewalTime != nil &&
+		time.Now().Add(-certificateRenewBufferTime).After(certificate.Status.RenewalTime.Time) {
+		m.WatcherMetrics.SetCertNotRenew(kyma.Name)
+	} else {
+		m.WatcherMetrics.CleanupMetrics(kyma.Name)
+	}
+}
+
+func verifyCACertRotation(ctx context.Context,
+	certificateMgr *CertificateManager,
+	kymaObjKey client.ObjectKey,
+) error {
+	caCertificate, err := certificateMgr.GetCACertificate(ctx)
+	if err != nil {
+		return fmt.Errorf("error while fetching CA Certificate: %w", err)
+	}
+
+	certSecret, err := certificateMgr.GetCertificateSecret(ctx)
+	if err != nil {
+		return fmt.Errorf("error while fetching certificate: %w", err)
+	}
+	if certSecret != nil && (certSecret.CreationTimestamp.Before(caCertificate.Status.NotBefore)) {
+		logf.FromContext(ctx).V(log.DebugLevel).Info("CA Certificate was rotated, removing certificate",
+			"kyma", kymaObjKey)
+		if err = certificateMgr.Remove(ctx); err != nil {
+			return fmt.Errorf("error while removing certificate: %w", err)
+		}
+	}
+	return nil
+}
+
 func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Kyma) error {
 	logger := logf.FromContext(ctx)
 	kymaObjKey := client.ObjectKeyFromObject(kyma)
@@ -158,7 +189,7 @@ func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Ky
 	if err != nil {
 		return fmt.Errorf("failed to get syncContext: %w", err)
 	}
-	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma,
+	certificate, err := NewCertificateManager(syncContext.ControlPlaneClient, kyma.Name,
 		m.config.IstioNamespace, m.config.RemoteSyncNamespace, m.config.CACertificateName, []string{},
 		m.config.CACertificateCache)
 	if err != nil {
