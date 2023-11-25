@@ -124,20 +124,22 @@ var _ = Describe(
 			fmt.Sprintf("Starting Controller and Testing Declarative Reconciler (Run %s)", runID),
 			tableTest,
 			Entry(
-				"Create simple raw manifest with a different Control Plane and Runtime Client",
+				"CreateSelfSignedCert simple raw manifest with a different Control Plane and Runtime Client",
 				declarativetest.TestAPISpec{ManifestName: "custom-client"},
 				DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), ocirefSynced, RenderModeRaw),
-				[]Option{WithRemoteTargetCluster(
-					func(context.Context, Object) (*ClusterInfo, error) {
-						return &ClusterInfo{
-							Config: cfg,
-						}, nil
-					},
-				)},
+				[]Option{
+					WithRemoteTargetCluster(
+						func(context.Context, Object) (*ClusterInfo, error) {
+							return &ClusterInfo{
+								Config: cfg,
+							}, nil
+						},
+					),
+				},
 				nil,
 			),
 			Entry(
-				"Create simple Raw manifest",
+				"CreateSelfSignedCert simple Raw manifest",
 				declarativetest.TestAPISpec{ManifestName: "simple-raw"},
 				DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), ocirefSynced, RenderModeRaw),
 				[]Option{},
@@ -164,13 +166,15 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 
 	key := client.ObjectKeyFromObject(obj)
 
-	opts := []Option{WithRemoteTargetCluster(
-		func(context.Context, Object) (*ClusterInfo, error) {
-			return &ClusterInfo{
-				Config: cfg,
-			}, nil
-		},
-	)}
+	opts := []Option{
+		WithRemoteTargetCluster(
+			func(context.Context, Object) (*ClusterInfo, error) {
+				return &ClusterInfo{
+					Config: cfg,
+				}, nil
+			},
+		),
+	}
 	source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), ocirefSynced,
 		RenderModeRaw))
 	oldDeployedResources, err := internal.ParseManifestToObjects(path.Join(testSamplesDir, "raw-manifest.yaml"))
@@ -289,9 +293,11 @@ func StartDeclarativeReconcilerForRun(
 	Expect(
 		ctrl.NewControllerManagedBy(mgr).WithEventFilter(testWatchPredicate).
 			WithOptions(
-				ctrlruntime.Options{RateLimiter: workqueue.NewMaxOfRateLimiter(
-					&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(30), 200)},
-				)},
+				ctrlruntime.Options{
+					RateLimiter: workqueue.NewMaxOfRateLimiter(
+						&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(30), 200)},
+					),
+				},
 			).
 			For(&declarativetest.TestAPI{}).Complete(reconciler),
 	).To(Succeed())

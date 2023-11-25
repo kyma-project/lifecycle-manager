@@ -28,7 +28,7 @@ var _ = Describe("When kyma is not deleted within configured timeout", Ordered, 
 		var issuer1 *unstructured.Unstructured
 		var issuer2 *unstructured.Unstructured
 
-		By("Create the Kyma object", func() {
+		By("CreateSelfSignedCert the Kyma object", func() {
 			Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
 			if updateRequired := kyma.EnsureLabelsAndFinalizers(); updateRequired {
 				var err error
@@ -44,7 +44,7 @@ var _ = Describe("When kyma is not deleted within configured timeout", Ordered, 
 			}
 		})
 
-		By("Create some CR with finalizer(s)", func() {
+		By("CreateSelfSignedCert some CR with finalizer(s)", func() {
 			issuer1 = createIssuerFor(kyma, "1")
 			Expect(issuer1).NotTo(BeNil())
 			Expect(controlPlaneClient.Create(ctx, issuer1)).Should(Succeed())
@@ -107,7 +107,7 @@ var _ = Describe("When kyma is deleted before configured timeout", Ordered, func
 			}
 		})
 
-		By("Create some CR with finalizer(s)", func() {
+		By("CreateSelfSignedCert some CR with finalizer(s)", func() {
 			issuer1 = createIssuerFor(kyma, "1")
 			Expect(issuer1).NotTo(BeNil())
 			Expect(controlPlaneClient.Create(ctx, issuer1)).Should(Succeed())
@@ -167,7 +167,7 @@ var _ = Describe("When some important CRDs should be skipped", Ordered, func() {
 			}
 		})
 
-		By("Create some CR with finalizer(s)", func() {
+		By("CreateSelfSignedCert some CR with finalizer(s)", func() {
 			issuer1 = createIssuerFor(kyma, "1")
 			Expect(issuer1).NotTo(BeNil())
 			Expect(controlPlaneClient.Create(ctx, issuer1)).Should(Succeed())

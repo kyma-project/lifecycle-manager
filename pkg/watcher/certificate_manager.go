@@ -23,10 +23,9 @@ const (
 
 	DomainAnnotation = v1beta2.SKRDomainAnnotation
 
-	caCertKey                  = "ca.crt"
-	tlsCertKey                 = "tls.crt"
-	tlsPrivateKeyKey           = "tls.key"
-	certificateRenewBufferTime = 24 * time.Hour
+	caCertKey        = "ca.crt"
+	tlsCertKey       = "tls.crt"
+	tlsPrivateKeyKey = "tls.key"
 )
 
 //nolint:gochecknoglobals
@@ -44,7 +43,7 @@ type SubjectAltName struct {
 
 type CertificateManager struct {
 	kcpClient       client.Client
-	caCertCache     *CertificateCache
+	caCertCache     *CACertificateCache
 	certificateName string
 	secretName      string
 	config          CertificateConfig
@@ -62,6 +61,7 @@ type CertificateConfig struct {
 	AdditionalDNSNames []string
 	Duration           apimetav1.Duration
 	RenewBefore        apimetav1.Duration
+	RenewBuffer        time.Duration
 }
 
 type CertificateSecret struct {
@@ -74,7 +74,7 @@ type CertificateSecret struct {
 // NewCertificateManager returns a new CertificateManager, which can be used for creating a cert-manager Certificates.
 func NewCertificateManager(kcpClient client.Client, kymaName string,
 	config CertificateConfig,
-	caCertCache *CertificateCache,
+	caCertCache *CACertificateCache,
 ) *CertificateManager {
 	return &CertificateManager{
 		kcpClient:       kcpClient,
@@ -85,8 +85,10 @@ func NewCertificateManager(kcpClient client.Client, kymaName string,
 	}
 }
 
-// Create creates a cert-manager Certificate with a sufficient set of Subject-Alternative-Names.
-func (c *CertificateManager) Create(ctx context.Context, kyma *v1beta2.Kyma) (*certmanagerv1.Certificate, error) {
+// CreateSelfSignedCert creates a cert-manager Certificate with a sufficient set of Subject-Alternative-Names.
+func (c *CertificateManager) CreateSelfSignedCert(ctx context.Context, kyma *v1beta2.Kyma) (*certmanagerv1.Certificate,
+	error,
+) {
 	subjectAltNames, err := c.getSubjectAltNames(kyma)
 	if err != nil {
 		return nil, fmt.Errorf("error get Subject Alternative Name from KymaCR: %w", err)
@@ -141,8 +143,6 @@ func (c *CertificateManager) GetSecret(ctx context.Context) (*CertificateSecret,
 func (c *CertificateManager) patchCertificate(ctx context.Context,
 	subjectAltName *SubjectAltName,
 ) (*certmanagerv1.Certificate, error) {
-	// Default Duration 90 days
-	// Default RenewBefore default 2/3 of Duration
 	issuer, err := c.getIssuer(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting issuer: %w", err)

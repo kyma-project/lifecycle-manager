@@ -175,7 +175,8 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("Remote Kyma contains correct conditions for Modules")
 		Eventually(kymaHasCondition, Timeout, Interval).
-			WithArguments(runtimeClient, v1beta2.ConditionTypeModules, string(v1beta2.ConditionReason), apimetav1.ConditionTrue,
+			WithArguments(runtimeClient, v1beta2.ConditionTypeModules, string(v1beta2.ConditionReason),
+				apimetav1.ConditionTrue,
 				remoteKyma.GetName(), remoteKyma.GetNamespace()).
 			Should(Succeed())
 	})
@@ -208,7 +209,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	})
 
 	It("Enable Custom ModuleTemplate in SKR", func() {
-		By("Create SKRCustomTemplate in SKR")
+		By("CreateSelfSignedCert SKRCustomTemplate in SKR")
 		SKRCustomTemplate.Namespace = kyma.Namespace
 		Eventually(runtimeClient.Create, Timeout, Interval).
 			WithContext(ctx).

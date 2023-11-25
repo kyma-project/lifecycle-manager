@@ -29,7 +29,7 @@ type SKRWebhookManifestManager struct {
 	config             SkrWebhookManagerConfig
 	kcpAddr            string
 	baseResources      []*unstructured.Unstructured
-	caCertificateCache *CertificateCache
+	caCertificateCache *CACertificateCache
 	WatcherMetrics     *metrics.WatcherMetrics
 	certificateConfig  CertificateConfig
 }
@@ -49,7 +49,7 @@ const rawManifestFilePathTpl = "%s/resources.yaml"
 
 func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
 	schema *machineryruntime.Scheme,
-	caCertificateCache *CertificateCache,
+	caCertificateCache *CACertificateCache,
 	managerConfig SkrWebhookManagerConfig,
 	certificateConfig CertificateConfig,
 	gatewayConfig GatewayConfig,
@@ -92,11 +92,11 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 		return fmt.Errorf("failed to get syncContext: %w", err)
 	}
 
-	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
+	// CreateSelfSignedCert CertificateCR which will be used for mTLS connection from SKR to KCP
 	certificateMgr := NewCertificateManager(syncContext.ControlPlaneClient, kyma.Name,
 		m.certificateConfig, m.caCertificateCache)
 
-	certificate, err := certificateMgr.Create(ctx, kyma)
+	certificate, err := certificateMgr.CreateSelfSignedCert(ctx, kyma)
 	if err != nil {
 		return fmt.Errorf("error while patching certificate: %w", err)
 	}
@@ -135,7 +135,7 @@ func (m *SKRWebhookManifestManager) verifyCertNotRenew(certificate *certmanagerv
 	kyma *v1beta2.Kyma,
 ) {
 	if certificate.Status.RenewalTime != nil &&
-		time.Now().Add(-certificateRenewBufferTime).After(certificate.Status.RenewalTime.Time) {
+		time.Now().Add(-m.certificateConfig.RenewBuffer).After(certificate.Status.RenewalTime.Time) {
 		m.WatcherMetrics.SetCertNotRenew(kyma.Name)
 	} else {
 		m.WatcherMetrics.CleanupMetrics(kyma.Name)

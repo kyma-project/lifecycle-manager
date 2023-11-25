@@ -96,5 +96,8 @@ purge-metrics:
 module-upgrade:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Upgrade"
 
-certificate-rotation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Certificate Rotation"
+ca-certificate-rotation:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "CA Certificate Rotation"
+
+self-signed-certificate-rotation:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Self Signed Certificate Rotation"

@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	CertNotRenewMetrics = "lifecycle_mgr_cert_not_renew"
+	SelfSignedCertNotRenewMetrics = "lifecycle_mgr_self_signed_cert_not_renew"
 )
 
 type WatcherMetrics struct {
@@ -17,9 +17,9 @@ type WatcherMetrics struct {
 func NewWatcherMetrics() *WatcherMetrics {
 	watcherMetrics := &WatcherMetrics{
 		certNotRenewGauge: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: CertNotRenewMetrics,
-			Help: "Indicates the Certificate CR of related Kyma is not renewed yet",
-		}, []string{kymaNameLabel}),
+			Name: SelfSignedCertNotRenewMetrics,
+			Help: "Indicates the self-signed Certificate of related Kyma is not renewed yet",
+		}, []string{KymaNameLabel}),
 	}
 	ctrlmetrics.Registry.MustRegister(watcherMetrics.certNotRenewGauge)
 	watchermetrics.Init(ctrlmetrics.Registry)
@@ -28,12 +28,12 @@ func NewWatcherMetrics() *WatcherMetrics {
 
 func (w *WatcherMetrics) CleanupMetrics(kymaName string) {
 	w.certNotRenewGauge.DeletePartialMatch(prometheus.Labels{
-		kymaNameLabel: kymaName,
+		KymaNameLabel: kymaName,
 	})
 }
 
 func (w *WatcherMetrics) SetCertNotRenew(kymaName string) {
 	w.certNotRenewGauge.With(prometheus.Labels{
-		kymaNameLabel: kymaName,
+		KymaNameLabel: kymaName,
 	}).Set(1)
 }

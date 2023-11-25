@@ -17,7 +17,7 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-var _ = Describe("Certificate Rotation", Ordered, func() {
+var _ = Describe("CA Certificate Rotation", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", v1beta2.DefaultChannel,
 		v1beta2.SyncStrategyLocalSecret)
 	InitEmptyKymaBeforeAll(kyma)
@@ -53,7 +53,7 @@ var _ = Describe("Certificate Rotation", Ordered, func() {
 				Name:      caCertName,
 				Namespace: "istio-system",
 			}
-			caCertificate, err = GetCACertificate(ctx, namespacedCertName, controlPlaneClient)
+			caCertificate, err = GetCertificate(ctx, namespacedCertName, controlPlaneClient)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(CertificateSecretIsCreatedAfter).
 				WithContext(ctx).

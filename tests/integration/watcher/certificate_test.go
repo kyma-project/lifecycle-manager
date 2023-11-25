@@ -15,7 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Create Watcher Certificates", Ordered, func() {
+var _ = Describe("CreateSelfSignedCert Watcher Certificates", Ordered, func() {
 	const caCertName = "klm-watcher-serving-cert"
 
 	tests := []struct {
@@ -84,9 +84,9 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				RenewBefore:         apimetav1.Duration{Duration: 5 * time.Minute},
 			}
 			cert := watcher.NewCertificateManager(controlPlaneClient,
-				test.kyma.Name, config, watcher.NewCertificateCache(1*time.Minute))
+				test.kyma.Name, config, watcher.NewCACertificateCache(1*time.Minute))
 
-			_, err := cert.Create(ctx, test.kyma)
+			_, err := cert.CreateSelfSignedCert(ctx, test.kyma)
 			if test.wantCreateErr {
 				Expect(err).Should(HaveOccurred())
 				return

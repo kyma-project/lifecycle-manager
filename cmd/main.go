@@ -86,7 +86,7 @@ func init() {
 }
 
 func main() {
-	flagVar := defineFlagVar()
+	flagVar := DefineFlagVar()
 	flag.Parse()
 	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.logLevel), zapcore.Lock(os.Stdout)))
 	if flagVar.pprof {
@@ -249,7 +249,7 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 		},
 		InKCPMode:           flagVar.inKCPMode,
 		RemoteSyncNamespace: flagVar.remoteSyncNamespace,
-		IsManagedKyma:       flagVar.isKymaManaged,
+		IsManagedKyma:       flagVar.IsKymaManaged,
 		KymaMetrics:         metrics.NewKymaMetrics(),
 	}).SetupWithManager(
 		mgr, options, controller.SetupUpSetting{
@@ -264,7 +264,7 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 }
 
 func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (*watcher.SKRWebhookManifestManager, error) {
-	caCertificateCache := watcher.NewCertificateCache(flagVar.caCertCacheTTL)
+	caCertificateCache := watcher.NewCACertificateCache(flagVar.caCertCacheTTL)
 	return watcher.NewSKRWebhookManifestManager(mgr.GetConfig(), mgr.GetScheme(), caCertificateCache,
 		watcher.SkrWebhookManagerConfig{
 			SKRWatcherPath:         flagVar.skrWatcherPath,
@@ -277,8 +277,8 @@ func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (*watcher.SKRWe
 			RemoteSyncNamespace: flagVar.remoteSyncNamespace,
 			CACertificateName:   flagVar.caCertName,
 			AdditionalDNSNames:  strings.Split(flagVar.additionalDNSNames, ","),
-			Duration:            apimetav1.Duration{Duration: flagVar.certificateDuration},
-			RenewBefore:         apimetav1.Duration{Duration: flagVar.certificateRenewBefore},
+			Duration:            apimetav1.Duration{Duration: flagVar.SelfSignedCertDuration},
+			RenewBefore:         apimetav1.Duration{Duration: flagVar.SelfSignedCertRenewBefore},
 		}, watcher.GatewayConfig{
 			IstioGatewayName:          flagVar.istioGatewayName,
 			IstioGatewayNamespace:     flagVar.istioGatewayNamespace,
@@ -302,7 +302,7 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 		ResolveRemoteClient:   resolveRemoteClientFunc,
 		PurgeFinalizerTimeout: flagVar.purgeFinalizerTimeout,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(flagVar.skipPurgingFor),
-		IsManagedKyma:         flagVar.isKymaManaged,
+		IsManagedKyma:         flagVar.IsKymaManaged,
 		Metrics:               metrics.NewPurgeMetrics(),
 	}).SetupWithManager(
 		mgr, options,

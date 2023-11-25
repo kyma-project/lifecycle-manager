@@ -199,7 +199,7 @@ var _ = BeforeSuite(func() {
 		LocalGatewayPortOverwrite: "",
 	}
 
-	caCertCache := watcher.NewCertificateCache(5 * time.Minute)
+	caCertCache := watcher.NewCACertificateCache(5 * time.Minute)
 
 	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(
 		restCfg, k8sclientscheme.Scheme,

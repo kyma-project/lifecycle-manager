@@ -9,35 +9,36 @@ import (
 )
 
 const (
-	defaultKymaRequeueSuccessInterval                    = 30 * time.Second
-	defaultKymaRequeueErrInterval                        = 2 * time.Second
-	defaultKymaRequeueBusyInterval                       = 5 * time.Second
-	defaultManifestRequeueSuccessInterval                = 30 * time.Second
-	defaultWatcherRequeueSuccessInterval                 = 30 * time.Second
-	defaultClientQPS                                     = 300
-	defaultClientBurst                                   = 600
-	defaultPprofServerTimeout                            = 90 * time.Second
-	rateLimiterBurstDefault                              = 200
-	rateLimiterFrequencyDefault                          = 30
-	failureBaseDelayDefault                              = 100 * time.Millisecond
-	failureMaxDelayDefault                               = 5 * time.Second
-	defaultCacheSyncTimeout                              = 2 * time.Minute
-	defaultLogLevel                                      = log.WarnLevel
-	defaultPurgeFinalizerTimeout                         = 5 * time.Minute
-	defaultMaxConcurrentManifestReconciles               = 1
-	defaultMaxConcurrentKymaReconciles                   = 1
-	defaultMaxConcurrentWatcherReconciles                = 1
-	defaultIstioGatewayName                              = "klm-watcher-gateway"
-	defaultIstioGatewayNamespace                         = "kcp-system"
-	defaultIstioNamespace                                = "istio-system"
-	defaultCaCertName                                    = "klm-watcher-serving-cert"
-	defaultCaCertCacheTTL                  time.Duration = 1 * time.Hour
-	defaultCertificateDuration             time.Duration = 90 * 24 * time.Hour
-	defaultCertificateRenewBefore          time.Duration = 60 * 24 * time.Hour
+	defaultKymaRequeueSuccessInterval                     = 30 * time.Second
+	defaultKymaRequeueErrInterval                         = 2 * time.Second
+	defaultKymaRequeueBusyInterval                        = 5 * time.Second
+	defaultManifestRequeueSuccessInterval                 = 30 * time.Second
+	defaultWatcherRequeueSuccessInterval                  = 30 * time.Second
+	defaultClientQPS                                      = 300
+	defaultClientBurst                                    = 600
+	defaultPprofServerTimeout                             = 90 * time.Second
+	rateLimiterBurstDefault                               = 200
+	rateLimiterFrequencyDefault                           = 30
+	failureBaseDelayDefault                               = 100 * time.Millisecond
+	failureMaxDelayDefault                                = 5 * time.Second
+	defaultCacheSyncTimeout                               = 2 * time.Minute
+	defaultLogLevel                                       = log.WarnLevel
+	defaultPurgeFinalizerTimeout                          = 5 * time.Minute
+	defaultMaxConcurrentManifestReconciles                = 1
+	defaultMaxConcurrentKymaReconciles                    = 1
+	defaultMaxConcurrentWatcherReconciles                 = 1
+	defaultIstioGatewayName                               = "klm-watcher-gateway"
+	defaultIstioGatewayNamespace                          = "kcp-system"
+	defaultIstioNamespace                                 = "istio-system"
+	defaultCaCertName                                     = "klm-watcher-serving-cert"
+	defaultCaCertCacheTTL                   time.Duration = 1 * time.Hour
+	defaultSelfSignedCertDuration           time.Duration = 90 * 24 * time.Hour
+	defaultSelfSignedCertRenewBefore        time.Duration = 60 * 24 * time.Hour
+	defaultSelfSignedCertificateRenewBuffer               = 24 * time.Hour
 )
 
 //nolint:funlen
-func defineFlagVar() *FlagVar {
+func DefineFlagVar() *FlagVar {
 	flagVar := new(FlagVar)
 	flag.StringVar(&flagVar.metricsAddr, "metrics-bind-address", ":8080",
 		"The address the metric endpoint binds to.")
@@ -139,11 +140,15 @@ func defineFlagVar() *FlagVar {
 		"Name of the CA Certificate in Istio Namespace which is used to sign SKR Certificates")
 	flag.DurationVar(&flagVar.caCertCacheTTL, "ca-cert-cache-ttl", defaultCaCertCacheTTL,
 		"The ttl for the CA Certificate Cache")
-	flag.DurationVar(&flagVar.certificateDuration, "cert-duration", defaultCertificateDuration,
-		"The lifetime duration of certificate")
-	flag.DurationVar(&flagVar.certificateRenewBefore, "cert-renew-before", defaultCertificateRenewBefore,
-		"The duration time to renew certificate")
-	flag.BoolVar(&flagVar.isKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
+	flag.DurationVar(&flagVar.SelfSignedCertDuration, "self-signed-cert-duration", defaultSelfSignedCertDuration,
+		"The lifetime duration of self-signed certificate")
+	flag.DurationVar(&flagVar.SelfSignedCertRenewBefore, "self-signed-cert-renew-before",
+		defaultSelfSignedCertRenewBefore,
+		"How long before the currently issued self-signed certificate's expiry cert-manager should renew the certificate")
+	flag.DurationVar(&flagVar.SelfSignedCertRenewBuffer, "self-signed-cert-renew-buffer",
+		defaultSelfSignedCertificateRenewBuffer,
+		"The buffer duration to wait before confirm self-signed certificate not renewed")
+	flag.BoolVar(&flagVar.IsKymaManaged, "is-kyma-managed", false, "indicates whether Kyma is managed")
 	return flagVar
 }
 
@@ -193,7 +198,8 @@ type FlagVar struct {
 	caCertName                             string
 	caCertCacheTTL                         time.Duration
 	enableVerification                     bool
-	isKymaManaged                          bool
-	certificateDuration                    time.Duration
-	certificateRenewBefore                 time.Duration
+	IsKymaManaged                          bool
+	SelfSignedCertDuration                 time.Duration
+	SelfSignedCertRenewBefore              time.Duration
+	SelfSignedCertRenewBuffer              time.Duration
 }

@@ -7,18 +7,18 @@ import (
 	"github.com/jellydator/ttlcache/v3"
 )
 
-type CertificateCache struct {
+type CACertificateCache struct {
 	TTL time.Duration
 	*ttlcache.Cache[string, *certmanagerv1.Certificate]
 }
 
-func NewCertificateCache(ttl time.Duration) *CertificateCache {
+func NewCACertificateCache(ttl time.Duration) *CACertificateCache {
 	cache := ttlcache.New[string, *certmanagerv1.Certificate]()
 	go cache.Start()
-	return &CertificateCache{Cache: cache, TTL: ttl}
+	return &CACertificateCache{Cache: cache, TTL: ttl}
 }
 
-func (c *CertificateCache) GetCACertFromCache(caCertName string) *certmanagerv1.Certificate {
+func (c *CACertificateCache) GetCACertFromCache(caCertName string) *certmanagerv1.Certificate {
 	value := c.Cache.Get(caCertName)
 	if value != nil {
 		cert := value.Value()
@@ -28,6 +28,6 @@ func (c *CertificateCache) GetCACertFromCache(caCertName string) *certmanagerv1.
 	return nil
 }
 
-func (c *CertificateCache) SetCACertToCache(cert *certmanagerv1.Certificate) {
+func (c *CACertificateCache) SetCACertToCache(cert *certmanagerv1.Certificate) {
 	c.Cache.Set(cert.Name, cert, c.TTL)
 }
