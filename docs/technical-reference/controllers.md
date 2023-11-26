@@ -4,7 +4,7 @@ This document describes the controllers used by Lifecycle Manager.
 
 ## Kyma Controller
 
-[Kyma Controller](/controllers/kyma_controller.go) is dealing with the introspection, interpretation and status update of the [Kyma custom resource (CR)](/api/v1beta2/kyma_types.go).
+[Kyma Controller](../../internal/controller/kyma_controller.go) is dealing with the introspection, interpretation and status update of the [Kyma custom resource (CR)](/api/v1beta2/kyma_types.go).
 
 Its main responsibilities are:
 
@@ -33,9 +33,9 @@ For more information, checkout the `ReplaceWithVirtualKyma` function.
 
 ## Manifest Controller
 
-[Manifest Controller](/controllers/manifest_controller.go) deals with the reconciliation and installation of data desired through a Manifest CR, a representation of a single module desired in a cluster.
+[Manifest Controller](../../internal/controller/manifest_controller.go) deals with the reconciliation and installation of data desired through a Manifest CR, a representation of a single module desired in a cluster.
 Since it mainly is a delegation to the [declarative reconciliation library](/internal/declarative/README.md) with certain [internal implementation additions](/internal/manifest/README.md) please look at the respective documentation for these parts to understand them more.
 
 ## Watcher Controller
 
-[Watcher Controller](/controllers/watcher_controller.go) deals with the update of VirtualService rules derived from the [Watcher CR](/api/v1beta2/watcher_types.go). This is then used to initialize the Watcher CR from the Kyma Controller in each runtime, a small component initialized to propagate changes from the runtime(remote) clusters back to react to changes that can affect the Manifest CR integrity.
+[Watcher Controller](../../internal/controller/watcher_controller.go) deals with the update of VirtualService rules derived from the [Watcher CR](/api/v1beta2/watcher_types.go). This is then used to initialize the Watcher CR from the Kyma Controller in each runtime, a small component initialized to propagate changes from the runtime(remote) clusters back to react to changes that can affect the Manifest CR integrity.

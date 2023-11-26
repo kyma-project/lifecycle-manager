@@ -14,7 +14,7 @@ To use Lifecycle Manager in a local setup, you need the following prerequisites:
 
 - [k3d](https://k3d.io/)
 - [istioctl](https://istio.io/latest/docs/setup/install/istioctl/)
-- [Kyma CLI](https://kyma-project.io/docs/kyma/latest/04-operation-guides/operations/01-install-kyma-CLI)
+- [Kyma CLI](https://kyma-project.io/#/04-operation-guides/operations/01-install-kyma-CLI)
 
 ## Procedure
 

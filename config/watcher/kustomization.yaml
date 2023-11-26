@@ -16,32 +16,11 @@ patches:
       - op: add
         path: /spec/template/spec/containers/0/args/-
         value: --skr-watcher-path=/skr-webhook
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --skr-watcher-image=runtime-watcher-skr:v20231025-140215fd
+      - op: add
+        path: /spec/template/spec/containers/0/args/-
+        value: --enable-domain-name-pinning=true
     target:
       kind: Deployment
-  - patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: "istio-system"
-    target:
-      group: cert-manager.io
-      version: v1
-      kind: Certificate
-      name: watcher-serving-cert
-  - patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: "istio-system"
-    target:
-      group: cert-manager.io
-      version: v1
-      kind: ClusterIssuer
-      name: watcher-selfsigned-cluster-issuer
-  - patch: |-
-      - op: replace
-        path: /metadata/namespace
-        value: "istio-system"
-    target:
-      group: cert-manager.io
-      version: v1
-      kind: Issuer
-      name: watcher-selfsigned-issuer

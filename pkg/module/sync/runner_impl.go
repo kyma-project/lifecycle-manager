@@ -16,7 +16,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	commonerrs "github.com/kyma-project/lifecycle-manager/pkg/common" //nolint:importas // a one-time reference for the package
 	"github.com/kyma-project/lifecycle-manager/pkg/log"

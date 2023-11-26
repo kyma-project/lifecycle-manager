@@ -32,8 +32,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	commonmetrics "github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
-	"github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -77,19 +76,19 @@ type KymaReconciler struct {
 }
 
 //nolint:lll
-//+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/finalizers,verbs=update
-//+kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch
-//+kubebuilder:rbac:groups="",resources=events,verbs=create;patch;get;list;watch
-//+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
-//+kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=operator.kyma-project.io,resources=moduletemplates,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=operator.kyma-project.io,resources=moduletemplates/finalizers,verbs=update
-//+kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
-//+kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch
-//+kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;create;update;delete;patch
-//+kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions/status,verbs=update
+// +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/finalizers,verbs=update
+// +kubebuilder:rbac:groups="",resources=services,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=events,verbs=create;patch;get;list;watch
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
+// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=operator.kyma-project.io,resources=moduletemplates,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=operator.kyma-project.io,resources=moduletemplates/finalizers,verbs=update
+// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
+// +kubebuilder:rbac:groups=cert-manager.io,resources=issuers,verbs=get;list;watch
+// +kubebuilder:rbac:groups=cert-manager.io,resources=certificates,verbs=get;list;create;update;delete;patch;watch
+// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions/status,verbs=update
 
 func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx)
@@ -100,7 +99,8 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
 		if !util.IsNotFound(err) {
-			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted", req.NamespacedName))
+			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
+				req.NamespacedName))
 			return ctrl.Result{}, fmt.Errorf("KymaController: %w", err)
 		}
 		// if indeed not found, stop put this kyma in queue
@@ -164,7 +164,8 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 			return r.requeueWithError(ctx, kyma, err)
 		}
 		if err := r.updateStatus(ctx, kyma, shared.StateDeleting, "waiting for modules to be deleted"); err != nil {
-			return r.requeueWithError(ctx, kyma, fmt.Errorf("could not update kyma status after triggering deletion: %w", err))
+			return r.requeueWithError(ctx, kyma,
+				fmt.Errorf("could not update kyma status after triggering deletion: %w", err))
 		}
 		return ctrl.Result{Requeue: true}, nil
 	}
@@ -568,8 +569,8 @@ func (r *KymaReconciler) IsKymaManaged() bool {
 }
 
 func (r *KymaReconciler) IsMissingMetricsAnnotationOrLabel(err error) bool {
-	return errors.Is(err, commonmetrics.ErrInstanceLabelNoValue) ||
-		errors.Is(err, commonmetrics.ErrMissingInstanceLabel) ||
-		errors.Is(err, commonmetrics.ErrShootAnnotationNoValue) ||
-		errors.Is(err, commonmetrics.ErrMissingShootAnnotation)
+	return errors.Is(err, metrics.ErrInstanceLabelNoValue) ||
+		errors.Is(err, metrics.ErrMissingInstanceLabel) ||
+		errors.Is(err, metrics.ErrShootAnnotationNoValue) ||
+		errors.Is(err, metrics.ErrMissingShootAnnotation)
 }
