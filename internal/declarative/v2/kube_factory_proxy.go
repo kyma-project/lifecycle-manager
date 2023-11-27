@@ -16,8 +16,6 @@ import (
 
 // OpenAPISchema returns metadata and structural information about
 // Kubernetes object definitions.
-//
-//nolint:ireturn //the external dependency used here already returns an interface
 func (s *SingletonClients) OpenAPISchema() (openapi.Resources, error) {
 	parsedMetadata, err := s.openAPIParser.Parse()
 	if err != nil {
@@ -118,8 +116,6 @@ func (s *SingletonClients) RESTClient() (*rest.RESTClient, error) {
 }
 
 // Validator returns a schema that can validate objects stored on disk.
-//
-//nolint:ireturn //the external dependency used here already returns an interface
 func (s *SingletonClients) Validator(
 	validationDirective string,
 ) (validation.Schema, error) {

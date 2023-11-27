@@ -8,7 +8,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/ratelimiter"
 )
 
-//nolint:ireturn //the external dependency used here already returns an interface
 func ManifestRateLimiter(
 	failureBaseDelay time.Duration, failureMaxDelay time.Duration,
 	frequency int, burst int,

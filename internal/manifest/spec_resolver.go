@@ -104,7 +104,6 @@ func (m *SpecResolver) getRawManifestForInstall(ctx context.Context,
 	}, nil
 }
 
-//nolint:ireturn //the external dependency used here already returns an interface
 func (m *SpecResolver) lookupKeyChain(
 	ctx context.Context, imageSpec v1beta2.ImageSpec, targetClient client.Client,
 ) (authn.Keychain, error) {
