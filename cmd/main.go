@@ -267,7 +267,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 	metrics.InitKymaMetrics()
 }
 
-func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (watcher.SKRWebhookManager, error) {
+func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (*watcher.SKRWebhookManifestManager, error) {
 	caCertificateCache := watcher.NewCertificateCache(flagVar.caCertCacheTTL)
 	return watcher.NewSKRWebhookManifestManager(mgr.GetConfig(), mgr.GetScheme(), caCertificateCache,
 		&watcher.SkrWebhookManagerConfig{

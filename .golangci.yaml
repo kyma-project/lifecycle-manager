@@ -9,7 +9,6 @@ linters:
     - golint # deprecated (since v1.41.0) and replaced by 'revive'
     - ifshort # deprecated (since v1.48.0)
     - interfacer # deprecated (since v1.38.0)
-    - ireturn # TODO enable and fix
     - lll
     - maligned # deprecated (since v1.38.0)
     - nlreturn # too strict and mostly code is not more readable
@@ -131,6 +130,17 @@ linters-settings:
       - Client
       - record.EventRecorder
       - client.Object
+      - schema.ObjectKind #api/v1beta2/moduletemplate_types.go
+      - runtime.Object #api/v1beta2/moduletemplate_types.go
+      - meta.RESTMapper #internal/declarative/v2/client_proxy.go, internal/declarative/v2/rest_getter_proxy.go
+      - client.SubResourceWriter #internal/declarative/v2/client_proxy.go
+      - openapi.Resources #internal/declarative/v2/kube_factory_proxy.go
+      - validation.Schema #internal/declarative/v2/kube_factory_proxy.go
+      - discovery.CachedDiscoveryInterface #internal/declarative/v2/rest_getter_proxy.go
+      - machineryruntime.Object #internal/declarative/v2/ssa.go
+      - v1.Layer #internal/manifest/parse.go, tests/integration/controller/manifest/manifest.go
+      - authn.Keychain #internal/manifest/spec_resolver.go, pkg/ocmextensions/cred.go
+      - ratelimiter.RateLimiter #internal/rate_limiter.go
   wrapcheck:
     ignorePackageGlobs:
       - github.com/kyma-project/lifecycle-manager/pkg/*

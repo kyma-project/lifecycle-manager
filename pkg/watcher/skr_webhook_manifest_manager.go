@@ -61,7 +61,7 @@ func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
 	schema *machineryruntime.Scheme,
 	caCertificateCache *CertificateCache,
 	managerConfig *SkrWebhookManagerConfig,
-) (SKRWebhookManager, error) {
+) (*SKRWebhookManifestManager, error) {
 	logger := logf.FromContext(context.TODO())
 	manifestFilePath := fmt.Sprintf(rawManifestFilePathTpl, managerConfig.SKRWatcherPath)
 	rawManifestFile, err := os.Open(manifestFilePath)
