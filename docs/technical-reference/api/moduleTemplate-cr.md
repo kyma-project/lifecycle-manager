@@ -9,7 +9,7 @@ The channel that a ModuleTemplate CR is registered in. It is used alongside the 
 For the following ModuleTemplate CR:
 
 ```yaml
-apiVersion: operator.kyma-project.io/v1beta1
+apiVersion: operator.kyma-project.io/v1beta2
 kind: ModuleTemplate
 metadata:
   name: moduletemplate-sample
@@ -86,6 +86,11 @@ In this scenario, the `Ready` state will only be reached if both `module.state.f
 The core of any ModuleTemplate CR, the descriptor can be one of the schemas mentioned in the latest version of the [OCM Software Specification](https://ocm.software/spec/). While it is a `runtime.RawExtension` in the Go types, it will be resolved via ValidatingWebhook into an internal descriptor with the help of the official [OCM library](https://github.com/open-component-model/ocm).
 
 By default, it will most likely be easiest to use [Kyma CLI](https://github.com/kyma-project/cli/tree/main) and its `create module` command to create a template with a valid descriptor, but it can also be generated manually, for example using [OCM CLI](https://github.com/open-component-model/ocm/tree/main/cmds/ocm).
+
+### `.spec.mandatory`
+
+The `mandatory` field indicates whether the module is installed in all runtime clusters without any interaction from the user.
+Mandatory modules do not appear in the Kyma CR `.status` and `.spec.modules`, furthermore they have the same configuration across all runtime clusters.
 
 ### `operator.kyma-project.io` labels
 

@@ -1,7 +1,6 @@
 package metrics
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -9,16 +8,12 @@ import (
 	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	commonmetrics "github.com/kyma-project/lifecycle-manager/internal/controller/common/metrics"
 )
 
 const (
 	metricPurgeTime                     = "lifecycle_mgr_purgectrl_time"
 	metricPurgeRequests                 = "lifecycle_mgr_purgectrl_requests_total"
 	metricPurgeError                    = "lifecycle_mgr_purgectrl_error"
-	kymaNameLabel                       = "kyma_name"
-	shootIDLabel                        = "shoot"
-	instanceIDLabel                     = "instance_id"
 	errorReasonLabel                    = "err_reason"
 	ErrPurgeFinalizerRemoval PurgeError = "PurgeFinalizerRemovalError"
 	ErrCleanup               PurgeError = "CleanupError"
@@ -27,27 +22,28 @@ const (
 type PurgeError string
 
 var (
-	purgeTimeGauge = prometheus.NewGauge(prometheus.GaugeOpts{ //nolint:gochecknoglobals
+	//nolint:gochecknoglobals
+	purgeTimeGauge = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name: metricPurgeTime,
 		Help: "Indicates average purge duration",
 	})
-	purgeRequestsCounter = prometheus.NewCounter(prometheus.CounterOpts{ //nolint:gochecknoglobals
+	//nolint:gochecknoglobals
+	purgeRequestsCounter = prometheus.NewCounter(prometheus.CounterOpts{
 		Name: metricPurgeRequests,
 		Help: "Indicates total purge count ",
 	})
-	purgeErrorGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{ //nolint:gochecknoglobals
+	//nolint:gochecknoglobals
+	purgeErrorGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: metricPurgeError,
 		Help: "Indicates purge errors",
 	}, []string{kymaNameLabel, shootIDLabel, instanceIDLabel, errorReasonLabel})
 )
 
-func Initialize() {
+func InitPurgeMetrics() {
 	ctrlmetrics.Registry.MustRegister(purgeTimeGauge)
 	ctrlmetrics.Registry.MustRegister(purgeRequestsCounter)
 	ctrlmetrics.Registry.MustRegister(purgeErrorGauge)
 }
-
-var errMetric = errors.New("failed to update metrics")
 
 func UpdatePurgeCount() {
 	purgeRequestsCounter.Inc()
@@ -58,11 +54,11 @@ func UpdatePurgeTime(duration time.Duration) {
 }
 
 func UpdatePurgeError(kyma *v1beta2.Kyma, purgeError PurgeError) error {
-	shootID, err := commonmetrics.ExtractShootID(kyma)
+	shootID, err := ExtractShootID(kyma)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errMetric, err)
 	}
-	instanceID, err := commonmetrics.ExtractInstanceID(kyma)
+	instanceID, err := ExtractInstanceID(kyma)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errMetric, err)
 	}

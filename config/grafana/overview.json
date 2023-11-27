@@ -572,7 +572,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "rate(controller_runtime_reconcile_errors_total{controller=\"kyma\"}[$__rate_interval])",
+          "expr": "increase(controller_runtime_reconcile_errors_total{controller=\"kyma\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "{{controller}}",
           "refId": "A"
@@ -583,7 +583,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "rate(controller_runtime_reconcile_errors_total{controller=\"manifest\"}[$__rate_interval])",
+          "expr": "increase(controller_runtime_reconcile_errors_total{controller=\"manifest\"}[$__rate_interval])",
           "hide": false,
           "interval": "",
           "legendFormat": "{{controller}}",
@@ -1450,7 +1450,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(rate(workqueue_adds_total{name=\"manifest\"}[$__rate_interval])) by (name)",
+          "expr": "sum(increase(workqueue_adds_total{name=\"manifest\"}[$__rate_interval])) by (name)",
           "format": "time_series",
           "interval": "",
           "intervalFactor": 2,
@@ -1463,7 +1463,7 @@
             "uid": "P1809F7CD0C75ACF3"
           },
           "exemplar": true,
-          "expr": "sum(rate(workqueue_adds_total{name=\"kyma\"}[$__rate_interval])) by (name)",
+          "expr": "sum(increase(workqueue_adds_total{name=\"kyma\"}[$__rate_interval])) by (name)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{name}}",
@@ -1585,7 +1585,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "increase(watcher_listener_requests_total[1m])",
+          "expr": "increase(watcher_listener_requests_total[$__rate_interval])",
           "instant": false,
           "interval": "",
           "legendFormat": "Pod: {{pod}}",
@@ -1820,14 +1820,14 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "increase(watcher_listener_request_errors_total[1m])",
+          "expr": "increase(watcher_listener_request_errors_total[$__rate_interval])",
           "interval": "",
           "legendFormat": "Total Failed Requests",
           "refId": "A"
         },
         {
           "exemplar": true,
-          "expr": "increase(watcher_listener_exceeding_size_limit_requests_total[1m])",
+          "expr": "increase(watcher_listener_exceeding_size_limit_requests_total[$__rate_interval])",
           "hide": false,
           "interval": "",
           "legendFormat": "Failed Requests due to Size Limit",
@@ -1835,7 +1835,7 @@
         },
         {
           "exemplar": true,
-          "expr": "increase(watcher_listener_failed_verification_requests_total[1m])",
+          "expr": "increase(watcher_listener_failed_verification_requests_total[$__rate_interval])",
           "hide": false,
           "interval": "",
           "legendFormat": "Failed Requests due to Verification Error",
@@ -2002,7 +2002,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "rate(lifecycle_mgr_purgectrl_requests_total{service=\"klm-metrics-service\"}[$__rate_interval])",
+          "expr": "increase(lifecycle_mgr_purgectrl_requests_total{service=\"klm-metrics-service\"}[$__rate_interval])",
           "interval": "",
           "legendFormat": "",
           "refId": "A"

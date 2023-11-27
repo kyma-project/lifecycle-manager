@@ -7,7 +7,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/resource"
-	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -26,7 +25,7 @@ func (s *SingletonClients) OpenAPISchema() (openapi.Resources, error) {
 }
 
 // OpenAPIGetter returns a getter for the openapi schema document.
-func (s *SingletonClients) OpenAPIGetter() discovery.OpenAPISchemaInterface {
+func (s *SingletonClients) OpenAPIGetter() *openapi.CachedOpenAPIGetter {
 	return s.openAPIGetter
 }
 
@@ -98,7 +97,7 @@ func (s *SingletonClients) KubernetesClientSet() (*kubernetes.Clientset, error) 
 }
 
 // DynamicClient returns a dynamic client ready for use.
-func (s *SingletonClients) DynamicClient() (dynamic.Interface, error) {
+func (s *SingletonClients) DynamicClient() (*dynamic.DynamicClient, error) {
 	return s.dynamicClient, nil
 }
 
