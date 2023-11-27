@@ -1,7 +1,6 @@
 package shared
 
 // +kubebuilder:validation:Enum=Processing;Deleting;Ready;Error;"";Warning
-
 type State string
 
 // Valid States.
