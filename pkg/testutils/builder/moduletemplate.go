@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/kyma-project/template-operator/api/v1alpha1"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/ocm.software/v3alpha1"
 	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
@@ -23,6 +22,7 @@ type ModuleTemplateBuilder struct {
 }
 
 func NewModuleTemplateBuilder() ModuleTemplateBuilder {
+	data := NewModuleCRBuilder().Build()
 	return ModuleTemplateBuilder{
 		moduleTemplate: &v1beta2.ModuleTemplate{
 			TypeMeta: apimetav1.TypeMeta{
@@ -33,7 +33,9 @@ func NewModuleTemplateBuilder() ModuleTemplateBuilder {
 				Name:      RandomName(),
 				Namespace: apimetav1.NamespaceDefault,
 			},
-			Spec: v1beta2.ModuleTemplateSpec{},
+			Spec: v1beta2.ModuleTemplateSpec{
+				Data: data,
+			},
 		},
 	}
 }
@@ -72,12 +74,8 @@ func (m ModuleTemplateBuilder) WithLabel(key string, value string) ModuleTemplat
 	return m
 }
 
-func (m ModuleTemplateBuilder) WithModuleCR(data *v1alpha1.Sample) ModuleTemplateBuilder {
-	obj := unstructured.Unstructured{}
-	obj.SetGroupVersionKind(data.GroupVersionKind())
-	obj.SetName(data.Name)
-	obj.SetNamespace(data.Namespace)
-	m.moduleTemplate.Spec.Data = &obj
+func (m ModuleTemplateBuilder) WithModuleCR(data *unstructured.Unstructured) ModuleTemplateBuilder {
+	m.moduleTemplate.Spec.Data = data
 	return m
 }
 
