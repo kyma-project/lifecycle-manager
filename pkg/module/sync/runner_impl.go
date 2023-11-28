@@ -16,7 +16,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	commonerrs "github.com/kyma-project/lifecycle-manager/pkg/common" //nolint:importas // a one-time reference for the package
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -139,10 +138,10 @@ func (r *RunnerImpl) setupModule(module *common.Module, kyma *v1beta2.Kyma) erro
 }
 
 func (r *RunnerImpl) SyncModuleStatus(ctx context.Context, kyma *v1beta2.Kyma, modules common.Modules,
-	kymaMetrics *metrics.KymaMetrics,
+	removeModuleStateMetrics func(kyma *v1beta2.Kyma, moduleName string),
 ) {
 	r.updateModuleStatusFromExistingModules(modules, kyma)
-	DeleteNoLongerExistingModuleStatus(ctx, kyma, r.getModule, kymaMetrics)
+	DeleteNoLongerExistingModuleStatus(ctx, kyma, r.getModule, removeModuleStateMetrics)
 }
 
 func (r *RunnerImpl) updateModuleStatusFromExistingModules(
@@ -227,15 +226,15 @@ func stateFromManifest(obj client.Object) shared.State {
 }
 
 func DeleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1beta2.Kyma, moduleFunc GetModuleFunc,
-	kymaMetrics *metrics.KymaMetrics,
+	removeModuleStateMetrics func(kyma *v1beta2.Kyma, moduleName string),
 ) {
 	moduleStatusMap := kyma.GetModuleStatusMap()
 	moduleStatus := kyma.GetNoLongerExistingModuleStatus()
 	for idx := range moduleStatus {
 		moduleStatus := moduleStatus[idx]
 		if moduleStatus.Manifest == nil {
-			if kymaMetrics != nil {
-				kymaMetrics.RemoveModuleStateMetrics(kyma, moduleStatus.Name)
+			if removeModuleStateMetrics != nil {
+				removeModuleStateMetrics(kyma, moduleStatus.Name)
 			}
 			delete(moduleStatusMap, moduleStatus.Name)
 			continue
@@ -246,8 +245,8 @@ func DeleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1beta2.Kyma,
 		module.SetNamespace(moduleStatus.Manifest.GetNamespace())
 		err := moduleFunc(ctx, module)
 		if util.IsNotFound(err) {
-			if kymaMetrics != nil {
-				kymaMetrics.RemoveModuleStateMetrics(kyma, moduleStatus.Name)
+			if removeModuleStateMetrics != nil {
+				removeModuleStateMetrics(kyma, moduleStatus.Name)
 			}
 			delete(moduleStatusMap, moduleStatus.Name)
 		} else {

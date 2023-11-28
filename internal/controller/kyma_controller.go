@@ -449,7 +449,7 @@ func (r *KymaReconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.K
 		return fmt.Errorf("sync failed: %w", err)
 	}
 
-	runner.SyncModuleStatus(ctx, kyma, modules, r.Metrics)
+	runner.SyncModuleStatus(ctx, kyma, modules, r.Metrics.RemoveModuleStateMetrics)
 	// If module get removed from kyma, the module deletion happens here.
 
 	if err := r.DeleteNoLongerExistingModules(ctx, kyma); err != nil {
