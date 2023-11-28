@@ -138,7 +138,7 @@ func (r *RunnerImpl) setupModule(module *common.Module, kyma *v1beta2.Kyma) erro
 }
 
 func (r *RunnerImpl) SyncModuleStatus(ctx context.Context, kyma *v1beta2.Kyma, modules common.Modules,
-	removeModuleStateMetrics func(kyma *v1beta2.Kyma, moduleName string),
+	removeModuleStateMetrics func(kymaName, moduleName string),
 ) {
 	r.updateModuleStatusFromExistingModules(modules, kyma)
 	DeleteNoLongerExistingModuleStatus(ctx, kyma, r.getModule, removeModuleStateMetrics)
@@ -226,7 +226,7 @@ func stateFromManifest(obj client.Object) shared.State {
 }
 
 func DeleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1beta2.Kyma, moduleFunc GetModuleFunc,
-	removeModuleStateMetrics func(kyma *v1beta2.Kyma, moduleName string),
+	removeModuleStateMetrics func(kymaName, moduleName string),
 ) {
 	moduleStatusMap := kyma.GetModuleStatusMap()
 	moduleStatus := kyma.GetNoLongerExistingModuleStatus()
@@ -234,7 +234,7 @@ func DeleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1beta2.Kyma,
 		moduleStatus := moduleStatus[idx]
 		if moduleStatus.Manifest == nil {
 			if removeModuleStateMetrics != nil {
-				removeModuleStateMetrics(kyma, moduleStatus.Name)
+				removeModuleStateMetrics(kyma.Name, moduleStatus.Name)
 			}
 			delete(moduleStatusMap, moduleStatus.Name)
 			continue
@@ -246,7 +246,7 @@ func DeleteNoLongerExistingModuleStatus(ctx context.Context, kyma *v1beta2.Kyma,
 		err := moduleFunc(ctx, module)
 		if util.IsNotFound(err) {
 			if removeModuleStateMetrics != nil {
-				removeModuleStateMetrics(kyma, moduleStatus.Name)
+				removeModuleStateMetrics(kyma.Name, moduleStatus.Name)
 			}
 			delete(moduleStatusMap, moduleStatus.Name)
 		} else {
