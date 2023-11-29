@@ -98,11 +98,8 @@ func (c *CertificateManager) Remove(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	err = c.RemoveSecret(ctx)
-	if err != nil {
-		return err
-	}
-	return nil
+
+	return c.RemoveSecret(ctx)
 }
 
 func (c *CertificateManager) RemoveCertificate(ctx context.Context) error {
