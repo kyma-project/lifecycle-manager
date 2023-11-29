@@ -19,22 +19,22 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
-	Context("Given Template Operator without Default CR", func() {
-		It("When enable Template Operator", func() {
+	Context("Given Kyma Module without Module Default CR", func() {
+		It("When Kyma Module is enabled", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
 				Should(Succeed())
 		})
 
-		It("Then no resources in manifest CR", func() {
+		It("Then no resources exist in Manifest CR", func() {
 			Eventually(func(g Gomega, ctx context.Context) error {
 				_, err := GetManifestResource(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name)
 				return err
 			}).WithContext(ctx).Should(Equal(ErrManifestResourceIsNil))
 		})
 
-		It("Then no module CR exist", func() {
+		It("And no Module CR exists", func() {
 			moduleCR := NewTestModuleCR(remoteNamespace)
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
@@ -46,14 +46,14 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 				Should(Equal(ErrNotFound))
 		})
 
-		It("Then module state of KCP Kyma in Ready", func() {
+		It("Then Kyma Module state of KCP Kyma CR is in \"Ready\" State", func() {
 			Eventually(CheckModuleState).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name, shared.StateReady).
 				Should(Succeed())
 		})
 
-		It("Then state of KCP kyma in Ready", func() {
+		It("Then KCP Kyma CR is in \"Ready\" State", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
