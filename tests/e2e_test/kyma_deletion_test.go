@@ -44,7 +44,7 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("Then Module CR is stuck in Deleting State", func() {
+		It("Then Module CR is stuck in \"Deleting\" State", func() {
 			Eventually(ModuleCRIsInExpectedState).
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR, shared.StateDeleting).
@@ -74,7 +74,7 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 			GinkgoWriter.Printf(string(out))
 		})
 
-		It("Then KCP Kyma CR is in Error State", func() {
+		It("Then KCP Kyma CR is in \"Error\" State", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateError).

@@ -17,8 +17,8 @@ var _ = Describe("Kyma Metrics", Ordered, func() {
 	moduleCR := NewTestModuleCR(remoteNamespace)
 	InitEmptyKymaBeforeAll(kyma)
 
-	Context("Given kyma deployed in KCP", func() {
-		It("When enabling Template Operator", func() {
+	Context("Given an SKR Cluster", func() {
+		It("When Kyma Module is enabled on SKR Kyma CR", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
@@ -29,28 +29,28 @@ var _ = Describe("Kyma Metrics", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("Then KCP Kyma should be in Ready state", func() {
+		It("Then KCP Kyma CR is in \"Ready\" State", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 				Should(Succeed())
 		})
 
-		It("Then the count of kyma metric in ready equals 1", func() {
+		It("And the count of Kyma State Metric in \"Ready\" State is 1", func() {
 			Eventually(GetKymaStateMetricCount).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), string(shared.StateReady)).
 				Should(Equal(1))
 		})
 
-		It("And the count of kyma module metric in ready equals 1", func() {
+		It("And the count of Kyma Module Metric in \"Ready\" State is 1", func() {
 			Eventually(GetModuleStateMetricCount).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), module.Name, string(shared.StateReady)).
 				Should(Equal(1))
 		})
 
-		It("When disabling Template Operator", func() {
+		It("When Kyma Module is disabled", func() {
 			Eventually(DisableModule).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
@@ -62,28 +62,28 @@ var _ = Describe("Kyma Metrics", Ordered, func() {
 				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
 				Should(Equal(ErrNotFound))
 
-			By("And the Kyma CR is in a \"Ready\" State")
+			By("And the KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 				Should(Succeed())
 		})
 
-		It("Then the count of kyma metric in ready equals 1", func() {
+		It("And the count of Kyma State Metric in \"Ready\" State is 1", func() {
 			Eventually(GetKymaStateMetricCount).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), string(shared.StateReady)).
 				Should(Equal(1))
 		})
 
-		It("And the count of kyma module metric in ready equals 0", func() {
+		It("And the count of Kyma Module Metric in \"Ready\" State is 0", func() {
 			Eventually(GetModuleStateMetricCount).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), module.Name, string(shared.StateReady)).
 				Should(Equal(0))
 		})
 
-		It("When Kyma in KCP cluster is deleted", func() {
+		It("When KCP Kyma CR is deleted", func() {
 			Eventually(DeleteKymaByForceRemovePurgeFinalizer).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, kyma).
@@ -94,7 +94,7 @@ var _ = Describe("Kyma Metrics", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("Then the count of metric should be removed", func() {
+		It("Then the count of all Kyma Metrics is 0", func() {
 			for _, state := range shared.AllStates() {
 				Eventually(GetKymaStateMetricCount).
 					WithContext(ctx).
