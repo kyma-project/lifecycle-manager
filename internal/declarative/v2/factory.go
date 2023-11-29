@@ -46,7 +46,7 @@ type SingletonClients struct {
 
 	// kubernetes client
 	kubernetesClient *kubernetes.Clientset
-	dynamicClient    dynamic.Interface
+	dynamicClient    *dynamic.DynamicClient
 
 	// OpenAPI document parser singleton
 	openAPIParser *openapi.CachedOpenAPIParser

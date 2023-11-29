@@ -69,6 +69,6 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 	return nil
 }
 
-func SubResourceOpts(opts ...client.PatchOption) client.SubResourcePatchOption {
+func SubResourceOpts(opts ...client.PatchOption) *client.SubResourcePatchOptions {
 	return &client.SubResourcePatchOptions{PatchOptions: *(&client.PatchOptions{}).ApplyOptions(opts)}
 }

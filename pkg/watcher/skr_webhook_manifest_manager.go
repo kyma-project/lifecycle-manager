@@ -155,13 +155,15 @@ func verifyCACertRotation(ctx context.Context,
 	if err != nil {
 		return fmt.Errorf("error while fetching certificate: %w", err)
 	}
+
 	if certSecret != nil && (certSecret.CreationTimestamp.Before(caCertificate.Status.NotBefore)) {
 		logf.FromContext(ctx).V(log.DebugLevel).Info("CA Certificate was rotated, removing certificate",
 			"kyma", kymaObjKey)
-		if err = certificateMgr.Remove(ctx); err != nil {
+		if err = certificateMgr.RemoveSecret(ctx); err != nil {
 			return fmt.Errorf("error while removing certificate: %w", err)
 		}
 	}
+
 	return nil
 }
 
