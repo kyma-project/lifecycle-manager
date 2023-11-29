@@ -143,11 +143,11 @@ func (r *Runner) setupModule(module *common.Module, kyma *v1beta2.Kyma) error {
 func (r *Runner) SyncModuleStatus(ctx context.Context, kyma *v1beta2.Kyma, modules common.Modules,
 	metrics ModuleMetrics,
 ) {
-	r.updateModuleStatusFromExistingModules(modules, kyma)
+	updateModuleStatusFromExistingModules(modules, kyma)
 	DeleteNoLongerExistingModuleStatus(ctx, kyma, r.getModule, metrics)
 }
 
-func (r *Runner) updateModuleStatusFromExistingModules(
+func updateModuleStatusFromExistingModules(
 	modules common.Modules,
 	kyma *v1beta2.Kyma,
 ) {
