@@ -69,10 +69,10 @@ func (k *KymaMetrics) CleanupMetrics(kymaName string) {
 }
 
 // RemoveModuleStateMetrics deletes all 'lifecycle_mgr_module_state' metrics for the matching module.
-func (k *KymaMetrics) RemoveModuleStateMetrics(kyma *v1beta2.Kyma, moduleName string) {
+func (k *KymaMetrics) RemoveModuleStateMetrics(kymaName, moduleName string) {
 	k.moduleStateGauge.DeletePartialMatch(prometheus.Labels{
 		moduleNameLabel: moduleName,
-		KymaNameLabel:   kyma.Name,
+		KymaNameLabel:   kymaName,
 	})
 }
 
