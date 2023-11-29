@@ -4,7 +4,6 @@ import (
 	"flag"
 	"time"
 
-	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
 
@@ -35,6 +34,7 @@ const (
 	defaultSelfSignedCertDuration           time.Duration = 90 * 24 * time.Hour
 	defaultSelfSignedCertRenewBefore        time.Duration = 60 * 24 * time.Hour
 	defaultSelfSignedCertificateRenewBuffer               = 24 * time.Hour
+	DefaultRemoteSyncNamespace                            = "kyma-system"
 )
 
 //nolint:funlen
@@ -134,7 +134,7 @@ func DefineFlagVar() *FlagVar {
 		"Indicates the SKR Purge Finalizers execution delay in seconds")
 	flag.StringVar(&flagVar.skipPurgingFor, "skip-finalizer-purging-for", "", "Exclude the passed CRDs"+
 		" from finalizer removal. Example: 'ingressroutetcps.traefik.containo.us,*.helm.cattle.io'.")
-	flag.StringVar(&flagVar.remoteSyncNamespace, "sync-namespace", controller.DefaultRemoteSyncNamespace,
+	flag.StringVar(&flagVar.remoteSyncNamespace, "sync-namespace", DefaultRemoteSyncNamespace,
 		"Name of the namespace for syncing remote Kyma and module catalog")
 	flag.StringVar(&flagVar.caCertName, "ca-cert-name", defaultCaCertName,
 		"Name of the CA Certificate in Istio Namespace which is used to sign SKR Certificates")
