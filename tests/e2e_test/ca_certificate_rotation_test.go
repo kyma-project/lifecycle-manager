@@ -36,7 +36,7 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 			Name:      watcher.SkrTLSName,
 			Namespace: remoteNamespace,
 		}
-		It("Then KCP Kyma certificate is removed", func() {
+		It("Then KCP TLS certificate is removed", func() {
 			timeNow := &apimetav1.Time{Time: time.Now()}
 			expectedLogMessage := "CA Certificate was rotated, removing certificate"
 			// The timeout used is 4 minutes bec the certificate gets rotated every 1 minute
@@ -47,7 +47,7 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("And new certificate is created", func() {
+		It("And new TLS Certificate is created", func() {
 			var err error
 			namespacedCertName := types.NamespacedName{
 				Name:      caCertName,
@@ -61,7 +61,7 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("And new certificate is synced to SKR Cluster", func() {
+		It("And new TLS Certificate is synced to SKR Cluster", func() {
 			Eventually(CertificateSecretIsSyncedToSkrCluster).
 				WithContext(ctx).
 				WithArguments(kcpNamespacedSecretName, controlPlaneClient, skrNamespacedSecretName, runtimeClient).

@@ -20,8 +20,8 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 
 	InitEmptyKymaBeforeAll(kyma)
 
-	Context("Given kyma deployed in KCP", func() {
-		It("When enabling Template Operator", func() {
+	Context("Given an SKR Cluster", func() {
+		It("When Kyma Module is enabled on SKR Kyma CR", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
@@ -32,19 +32,19 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("And adding finalizer to Sample CR", func() {
+		It("And a finalizer is added to Module CR", func() {
 			Expect(AddFinalizerToModuleCR(ctx, runtimeClient, moduleCR, moduleCRFinalizer)).
 				Should(Succeed())
 		})
 
-		It("And disabling Template Operator", func() {
+		It("And Kyma Module is disabled", func() {
 			Eventually(DisableModule).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
 				Should(Succeed())
 		})
 
-		It("Then Module CR should be stuck in Deleting state", func() {
+		It("Then Module CR is stuck in Deleting State", func() {
 			Eventually(ModuleCRIsInExpectedState).
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR, shared.StateDeleting).
@@ -55,14 +55,14 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 				Should(BeTrue())
 		})
 
-		It("When Kyma in KCP cluster is deleted", func() {
+		It("When KCP Kyma CR is deleted", func() {
 			Eventually(DeleteKyma).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, kyma).
 				Should(Succeed())
 		})
 
-		It("Then KCP Kyma should still exist", func() {
+		It("Then KCP Kyma CR still exists", func() {
 			Expect(KymaExists(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())).
 				Should(Equal(ErrDeletionTimestampFound))
 		})
@@ -74,21 +74,21 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 			GinkgoWriter.Printf(string(out))
 		})
 
-		It("Then KCP Kyma should be in Error state", func() {
+		It("Then KCP Kyma CR is in Error State", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateError).
 				Should(Succeed())
 		})
 
-		It("When KCP Kyma secret is deleted", func() {
+		It("When Kubeconfig Secret is deleted", func() {
 			Eventually(DeleteKymaSecret).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 				Should(Succeed())
 		})
 
-		It("Then KCP Kyma should be deleted", func() {
+		It("Then KCP Kyma CR is deleted", func() {
 			Eventually(KymaDeleted).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
