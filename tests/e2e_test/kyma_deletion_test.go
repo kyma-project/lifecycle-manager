@@ -30,21 +30,18 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR).
 				Should(Succeed())
-		})
 
-		It("And a finalizer is added to Module CR", func() {
+			By("And a finalizer is added to Module CR")
 			Expect(AddFinalizerToModuleCR(ctx, runtimeClient, moduleCR, moduleCRFinalizer)).
 				Should(Succeed())
-		})
 
-		It("And Kyma Module is disabled", func() {
+			By("And Kyma Module is disabled")
 			Eventually(DisableModule).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
 				Should(Succeed())
-		})
 
-		It("Then Module CR is stuck in \"Deleting\" State", func() {
+			By("Then Module CR is stuck in \"Deleting\" State")
 			Eventually(ModuleCRIsInExpectedState).
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR, shared.StateDeleting).
@@ -60,9 +57,8 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, kyma).
 				Should(Succeed())
-		})
 
-		It("Then KCP Kyma CR still exists", func() {
+			By("Then KCP Kyma CR still exists")
 			Expect(KymaExists(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())).
 				Should(Equal(ErrDeletionTimestampFound))
 		})
@@ -72,9 +68,8 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 			out, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))
-		})
 
-		It("Then KCP Kyma CR is in \"Error\" State", func() {
+			By("Then KCP Kyma CR is in \"Error\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateError).
@@ -86,9 +81,8 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 				Should(Succeed())
-		})
 
-		It("Then KCP Kyma CR is deleted", func() {
+			By("Then KCP Kyma CR is deleted")
 			Eventually(KymaDeleted).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).

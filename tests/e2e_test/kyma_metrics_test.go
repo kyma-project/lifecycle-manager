@@ -27,23 +27,20 @@ var _ = Describe("Kyma Metrics", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR).
 				Should(Succeed())
-		})
 
-		It("Then KCP Kyma CR is in \"Ready\" State", func() {
+			By("Then KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 				Should(Succeed())
-		})
 
-		It("And the count of Kyma State Metric in \"Ready\" State is 1", func() {
+			By("And the count of Kyma State Metric in \"Ready\" State is 1")
 			Eventually(GetKymaStateMetricCount).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), string(shared.StateReady)).
 				Should(Equal(1))
-		})
 
-		It("And the count of Kyma Module Metric in \"Ready\" State is 1", func() {
+			By("And the count of Kyma Module Metric in \"Ready\" State is 1")
 			Eventually(GetModuleStateMetricCount).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), module.Name, string(shared.StateReady)).
@@ -67,16 +64,14 @@ var _ = Describe("Kyma Metrics", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 				Should(Succeed())
-		})
 
-		It("And the count of Kyma State Metric in \"Ready\" State is 1", func() {
+			By("And the count of Kyma State Metric in \"Ready\" State is 1")
 			Eventually(GetKymaStateMetricCount).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), string(shared.StateReady)).
 				Should(Equal(1))
-		})
 
-		It("And the count of Kyma Module Metric in \"Ready\" State is 0", func() {
+			By("And the count of Kyma Module Metric in \"Ready\" State is 0")
 			Eventually(GetModuleStateMetricCount).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), module.Name, string(shared.StateReady)).
@@ -92,9 +87,8 @@ var _ = Describe("Kyma Metrics", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 				Should(Succeed())
-		})
 
-		It("Then the count of all Kyma Metrics is 0", func() {
+			By("Then the count of all Kyma Metrics is 0")
 			for _, state := range shared.AllStates() {
 				Eventually(GetKymaStateMetricCount).
 					WithContext(ctx).

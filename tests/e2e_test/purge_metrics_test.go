@@ -23,9 +23,8 @@ var _ = Describe("Purge Metrics", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
 				Should(Succeed())
-		})
 
-		It("Then Module CR exists", func() {
+			By("Then Module CR exists")
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR).
@@ -35,17 +34,15 @@ var _ = Describe("Purge Metrics", Ordered, func() {
 		It("When a finalizer is added to Module CR", func() {
 			Expect(AddFinalizerToModuleCR(ctx, runtimeClient, moduleCR, moduleCRFinalizer)).
 				Should(Succeed())
-		})
 
-		It("And KCP Kyma CR has deletion timestamp set", func() {
+			By("And KCP Kyma CR has deletion timestamp set")
 			Expect(DeleteKyma(ctx, controlPlaneClient, kyma)).
 				Should(Succeed())
 
 			Expect(KymaHasDeletionTimestamp(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())).
 				Should(BeTrue())
-		})
 
-		It("Then Purge Metrics are updated", func() {
+			By("Then Purge Metrics are updated")
 			time.Sleep(5 * time.Second)
 			Eventually(PurgeMetricsAreAsExpected).
 				WithContext(ctx).

@@ -23,23 +23,20 @@ var _ = Describe("Module Upgrade", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
 				Should(Succeed())
-		})
 
-		It("Then Module CR exists", func() {
+			By("Then Module CR exists")
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR).
 				Should(Succeed())
-		})
 
-		It("And Module Operator Deployment exists", func() {
+			By("And Module Operator Deployment exists")
 			Eventually(ModuleDeploymentExists).
 				WithContext(ctx).
 				WithArguments(runtimeClient, "template-operator-system", "template-operator-v1-controller-manager").
 				Should(BeTrue())
-		})
 
-		It("And KCP Kyma CR is in \"Ready\" State", func() {
+			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
@@ -51,30 +48,26 @@ var _ = Describe("Module Upgrade", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, "fast").
 				Should(Succeed())
-		})
 
-		It("Then Module CR exists", func() {
+			By("Then Module CR exists")
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR).
 				Should(Succeed())
-		})
 
-		It("And new Module Operator Deployment exists", func() {
+			By("And new Module Operator Deployment exists")
 			Eventually(ModuleDeploymentExists).
 				WithContext(ctx).
 				WithArguments(runtimeClient, "template-operator-system", "template-operator-v2-controller-manager").
 				Should(BeTrue())
-		})
 
-		It("And old Module Operator Deployment does not exist", func() {
+			By("And old Module Operator Deployment does not exist")
 			Eventually(ModuleDeploymentExists).
 				WithContext(ctx).
 				WithArguments(runtimeClient, "template-operator-system", "template-operator-v1-controller-manager").
 				Should(BeFalse())
-		})
 
-		It("And KCP Kyma CR is in \"Ready\" State", func() {
+			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).

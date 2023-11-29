@@ -23,9 +23,8 @@ var _ = Describe("Purge Controller", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
 				Should(Succeed())
-		})
 
-		It("Then Module CR exists", func() {
+			By("Then Module CR exists")
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR).
@@ -35,39 +34,34 @@ var _ = Describe("Purge Controller", Ordered, func() {
 		It("When a finalizer is added to Module CR", func() {
 			Expect(AddFinalizerToModuleCR(ctx, runtimeClient, moduleCR, moduleCRFinalizer)).
 				Should(Succeed())
-		})
 
-		It("And KCP Kyma CR has deletion timestamp set", func() {
+			By("And KCP Kyma CR has deletion timestamp set")
 			Expect(DeleteKyma(ctx, controlPlaneClient, kyma)).
 				Should(Succeed())
 
 			Expect(KymaHasDeletionTimestamp(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())).
 				Should(BeTrue())
-		})
 
-		It("Then finalizer is removed from Module CR after purge timeout", func() {
+			By("Then finalizer is removed from Module CR after purge timeout")
 			time.Sleep(5 * time.Second)
 			Eventually(FinalizerIsRemoved).
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR, moduleCRFinalizer).
 				Should(Succeed())
-		})
 
-		It("And Module CR is deleted", func() {
+			By("And Module CR is deleted")
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR).
 				Should(Equal(ErrNotFound))
-		})
 
-		It("And KCP Kyma CR is deleted", func() {
+			By("And KCP Kyma CR is deleted")
 			Eventually(KymaDeleted).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 				Should(Succeed())
-		})
 
-		It("And SKR Kyma CR is deleted", func() {
+			By("And SKR Kyma CR is deleted")
 			Eventually(KymaDeleted).
 				WithContext(ctx).
 				WithArguments(defaultRemoteKymaName, remoteNamespace, runtimeClient).

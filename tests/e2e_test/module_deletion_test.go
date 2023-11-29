@@ -47,23 +47,27 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
 				Should(Succeed())
+
 			By("Then the KCP Kyma CR is in \"Processing\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateProcessing).
 				Should(Succeed())
+
 			By("And the Manifest CR is in \"Deleting\" State")
 			Eventually(CheckManifestIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient,
 					shared.StateDeleting).
 				Should(Succeed())
+
 			By("And the Module CR on SKR Cluster is not removed")
 			Consistently(CheckIfExists).
 				WithContext(ctx).
 				WithArguments("sample-yaml", "kyma-system", "operator.kyma-project.io",
 					"v1alpha1", "Sample", runtimeClient).
 				Should(Succeed())
+
 			By("And the Module CR on SKR Cluster is in \"Deleting\" State")
 			Consistently(CheckSampleCRIsInState).
 				WithContext(ctx).
@@ -82,28 +86,31 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("Given the Kyma Module is under deletion", func() {
-			By("When the Kyma Module is re-enabled in a different Module Distribution Channel")
+		It("When the Kyma Module is re-enabled in a different Module Distribution Channel", func() {
 			module.Channel = "fast"
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
 				Should(Succeed())
+
 			By("Then the Kyma Module is updated on the SKR Cluster")
 			Eventually(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments("template-operator-v2-controller-manager", "template-operator-system", runtimeClient).
 				Should(Succeed())
+
 			By("And the old Module Operator Deployment is removed")
 			Consistently(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments("template-operator-controller-manager", "template-operator-system", runtimeClient).
 				Should(Not(Succeed()))
+
 			By("And the Module CR is in \"Deleting\" State")
 			Consistently(CheckSampleCRIsInState).
 				WithContext(ctx).
 				WithArguments("sample-yaml", "kyma-system", runtimeClient, "Deleting").
 				Should(Succeed())
+
 			By("And the Manifest CR is still in \"Deleting\" State")
 			Consistently(CheckManifestIsInState).
 				WithContext(ctx).
@@ -118,6 +125,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 				WithArguments("sample-yaml", "kyma-system", "operator.kyma-project.io", "v1alpha1", "Sample",
 					[]string{}, runtimeClient).
 				Should(Succeed())
+
 			By("Then a new Module CR is created in SKR Cluster and in \"Ready\" State")
 			Eventually(CheckIfExists).
 				WithContext(ctx).
@@ -132,11 +140,13 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 				WithContext(ctx).
 				WithArguments("sample-yaml", "kyma-system", runtimeClient, "Ready").
 				Should(Succeed())
+
 			By("And Module Operator Deployment is running")
 			Consistently(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments("template-operator-v2-controller-manager", "template-operator-system", runtimeClient).
 				Should(Succeed())
+
 			By("And a new Manifest CR is created")
 			Eventually(CheckManifestIsInState).
 				WithContext(ctx).
@@ -146,30 +156,35 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), module.Name, controlPlaneClient).
 				Should(Succeed())
+
 			By("And KCP Kyma CR is in \"Ready\" State")
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 				Should(Succeed())
 		})
+
 		It("When the Kyma Module gets disabled",
 			func() {
 				Eventually(DisableModule).
 					WithContext(ctx).
 					WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
 					Should(Succeed())
+
 				By("Then the Module CR is removed")
 				Eventually(CheckIfNotExists).
 					WithContext(ctx).
 					WithArguments("sample-yaml", "kyma-system",
 						"operator.kyma-project.io", "v1alpha1", "Sample", runtimeClient).
 					Should(Succeed())
+
 				By("And the Module Operator Deployment is deleted")
 				Eventually(CheckIfNotExists).
 					WithContext(ctx).
 					WithArguments("template-operator-v2-controller-manager",
 						"template-operator-system", "apps", "v1", "Deployment", runtimeClient).
 					Should(Succeed())
+
 				By("And the Manifest CR is removed")
 				Eventually(NoManifestExist).
 					WithContext(ctx).

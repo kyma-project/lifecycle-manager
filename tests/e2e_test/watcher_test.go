@@ -37,25 +37,27 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
-	Context("Given an SKR Cluser", func() {
+	Context("Given an SKR Cluster with a TLS Secret", func() {
 		It("When Runtime Watcher deployment is ready", func() {
 			Eventually(checkWatcherDeploymentReady).
 				WithContext(ctx).
 				WithArguments(watcher.SkrResourceName, remoteNamespace, runtimeClient).
 				Should(Succeed())
-			By("When Runtime Watcher deployment is deleted")
+
+			By("And Runtime Watcher deployment is deleted")
 			Eventually(deleteWatcherDeployment).
 				WithContext(ctx).
 				WithArguments(watcher.SkrResourceName, remoteNamespace, runtimeClient).
 				Should(Succeed())
-			By("The Runtime Watcher deployment is reapplied and becomes ready")
+
+			By("Then Runtime Watcher deployment is reapplied and becomes ready")
 			Eventually(checkWatcherDeploymentReady).
 				WithContext(ctx).
 				WithArguments(watcher.SkrResourceName, remoteNamespace, runtimeClient).
 				Should(Succeed())
 		})
 
-		It("Given TLS Secret is in SKR Cluster", func() {
+		It("When TLS Secret is deleted on SKR Cluster", func() {
 			skrNamespacedSecretName := types.NamespacedName{
 				Name:      watcher.SkrTLSName,
 				Namespace: remoteNamespace,
@@ -64,11 +66,11 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(skrNamespacedSecretName, runtimeClient).
 				Should(Succeed())
-			By("When TLS Secret is deleted on SKR Cluster")
 			Eventually(DeleteCertificateSecret).
 				WithContext(ctx).
 				WithArguments(skrNamespacedSecretName, runtimeClient).
 				Should(Succeed())
+
 			By("Then TLS Secret is recreated")
 			Eventually(CertificateSecretExists).
 				WithContext(ctx).
@@ -77,7 +79,6 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 		})
 
 		It("When the spec of SKR Kyma CR is changed", func() {
-			By("changing the spec of the remote KymaCR")
 			timeNow := &apimetav1.Time{Time: time.Now()}
 			GinkgoWriter.Println(fmt.Sprintf("Spec watching logs since %s: ", timeNow))
 			switchedChannel := "fast"
@@ -85,6 +86,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(remoteNamespace, switchedChannel, runtimeClient).
 				Should(Succeed())
+
 			By("Then new reconciliation gets triggered for KCP Kyma CR")
 			Eventually(CheckKLMLogs).
 				WithContext(ctx).
@@ -105,6 +107,7 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(runtimeClient, remoteNamespace).
 				Should(Succeed())
+
 			By("Then new reconciliation gets triggered for KCP Kyma CR")
 			Eventually(CheckKLMLogs).
 				WithContext(ctx).
