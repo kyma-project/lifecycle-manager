@@ -19,8 +19,8 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
-	Context("Given Kyma Module without Module Default CR", func() {
-		It("When Kyma Module is enabled", func() {
+	Context("Given an SKR Cluster", func() {
+		It("When a Kyma Module without Module Default CR is enabled", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).

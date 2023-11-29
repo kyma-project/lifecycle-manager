@@ -19,7 +19,7 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 	CleanupKymaAfterAll(kyma)
 
 	Context("Given SKR Cluster", func() {
-		It("When Kyma Module is enabled on SKR Kyma CR", func() {
+		It("When a Kyma Module is enabled on SKR Kyma CR", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).

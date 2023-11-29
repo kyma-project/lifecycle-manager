@@ -21,22 +21,22 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
-	Context("Given Template Operator Default CR", func() {
-		It("When enable Template Operator", func() {
+	Context("Given an SKR Cluster", func() {
+		It("When a Kyma Module is enabled", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
 				Should(Succeed())
 		})
 
-		It("Then module CR exist", func() {
+		It("Then Module CR exists", func() {
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR).
 				Should(Succeed())
 		})
 
-		It("Then resource is defined in manifest CR", func() {
+		It("And resource is defined in Manifest CR", func() {
 			Eventually(func(g Gomega, ctx context.Context) {
 				resource, err := GetManifestResource(ctx, controlPlaneClient,
 					kyma.GetName(), kyma.GetNamespace(), module.Name)
@@ -49,7 +49,7 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 			}).WithContext(ctx).Should(Succeed())
 		})
 
-		It("Then module state of KCP Kyma in Warning", func() {
+		It("And the Module in KCP Kyma CR is in \"Warning\" State", func() {
 			Eventually(CheckModuleState).
 				WithContext(ctx).
 				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(),
@@ -57,7 +57,7 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("Then state of KCP kyma in Warning", func() {
+		It("Then KCP kyma CR is in \"Warning\" State", func() {
 			Eventually(KymaIsInState).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateWarning).
@@ -65,38 +65,38 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 		})
 	})
 
-	It("When disable Template Operator", func() {
+	It("When Kyma Module is disabled", func() {
 		Eventually(DisableModule).
 			WithContext(ctx).
 			WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
 			Should(Succeed())
 
-		By("Then no module in KCP Kyma spec")
+		By("Then no Module in KCP Kyma CR spec")
 		Eventually(NotContainsModuleInSpec, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
 			Should(Succeed())
 
-		By("Then module state of KCP in Ready")
+		By("And KCP Kyma CR is in \"Ready\" State")
 		Eventually(KymaIsInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).
 			Should(Succeed())
 	})
 
-	It("When enable Template Operator again", func() {
+	It("When Kyma Module is re-enabled", func() {
 		Eventually(EnableModule).
 			WithContext(ctx).
 			WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
 			Should(Succeed())
 
-		By("Then module in KCP Kyma spec")
+		By("Then Module is in KCP Kyma CR spec")
 		Eventually(ContainsModuleInSpec, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
 			Should(Succeed())
 
-		By("Then state of KCP kyma in Warning")
+		By("And KCP Kyma CR is in \"Warning\" State")
 		Eventually(KymaIsInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateWarning).
@@ -110,19 +110,20 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 				[]string{"sample.kyma-project.io/finalizer", "blocking-finalizer"}, runtimeClient).
 			Should(Succeed())
 
-		By("Disabling module")
 		Eventually(DisableModule).
 			WithContext(ctx).
 			WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
 			Should(Succeed())
+	})
 
-		By("Then no module in KCP Kyma spec")
+	It("Then there is no Module in KCP Kyma CR spec", func() {
 		Eventually(NotContainsModuleInSpec, Timeout, Interval).
 			WithContext(ctx).
 			WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module.Name).
 			Should(Succeed())
+	})
 
-		By("Then the KCP Kyma is in a \"Warning\" State")
+	It("And KCP Kyma CR is in \"Warning\" State", func() {
 		Eventually(KymaIsInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateWarning).
@@ -134,27 +135,27 @@ var _ = Describe("Warning Status Propagation", Ordered, func() {
 			Should(Succeed())
 	})
 
-	It("When the blocking finalizers from the Default Module CR get removed", func() {
+	It("When the blocking finalizers from the Module CR get removed", func() {
 		Eventually(SetFinalizer).
 			WithContext(ctx).
 			WithArguments("sample-yaml", "kyma-system", "operator.kyma-project.io", "v1alpha1", "Sample",
 				[]string{}, runtimeClient).
 			Should(Succeed())
 
-		By("Then the Module Default CR is removed")
+		By("Then the Module CR is removed")
 		Eventually(CheckIfNotExists).
 			WithContext(ctx).
 			WithArguments("sample-yaml", "kyma-system",
 				"operator.kyma-project.io", "v1alpha1", "Sample", runtimeClient).
 			Should(Succeed())
 
-		By("Then the Manifest CR is removed")
+		By("And the Manifest CR is removed")
 		Eventually(ManifestExists).
 			WithContext(ctx).
 			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), module.Name).
 			Should(Equal(ErrNotFound))
 
-		By("Then module state of KCP in Ready")
+		By("And KCP Kyma CR is in \"Ready\" State")
 		Eventually(KymaIsInState).
 			WithContext(ctx).
 			WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient, shared.StateReady).

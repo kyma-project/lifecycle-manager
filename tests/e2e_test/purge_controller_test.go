@@ -18,7 +18,7 @@ var _ = Describe("Purge Controller", Ordered, func() {
 	InitEmptyKymaBeforeAll(kyma)
 
 	Context("Given an SKR Cluster", func() {
-		It("When Kyma Module is enabled", func() {
+		It("When a Kyma Module is enabled", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).

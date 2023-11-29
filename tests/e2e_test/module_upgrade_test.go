@@ -18,7 +18,7 @@ var _ = Describe("Module Upgrade", Ordered, func() {
 	CleanupKymaAfterAll(kyma)
 
 	Context("Given an SKR Cluster", func() {
-		It("When Kyma Module is enabled on SKR Kyma CR", func() {
+		It("When a Kyma Module is enabled on SKR Kyma CR", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).

@@ -37,82 +37,81 @@ var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
-	It("Should redeploy watcher if it is deleted on remote cluster", func() {
-		By("verifying Runtime-Watcher is ready")
-		Eventually(checkWatcherDeploymentReady).
-			WithContext(ctx).
-			WithArguments(watcher.SkrResourceName, remoteNamespace, runtimeClient).
-			Should(Succeed())
-		By("deleting Runtime-Watcher deployment")
-		Eventually(deleteWatcherDeployment).
-			WithContext(ctx).
-			WithArguments(watcher.SkrResourceName, remoteNamespace, runtimeClient).
-			Should(Succeed())
-		By("verifying Runtime-Watcher deployment will be reapplied and becomes ready")
-		Eventually(checkWatcherDeploymentReady).
-			WithContext(ctx).
-			WithArguments(watcher.SkrResourceName, remoteNamespace, runtimeClient).
-			Should(Succeed())
-	})
+	Context("Given an SKR Cluser", func() {
+		It("When Runtime Watcher deployment is ready", func() {
+			Eventually(checkWatcherDeploymentReady).
+				WithContext(ctx).
+				WithArguments(watcher.SkrResourceName, remoteNamespace, runtimeClient).
+				Should(Succeed())
+			By("When Runtime Watcher deployment is deleted")
+			Eventually(deleteWatcherDeployment).
+				WithContext(ctx).
+				WithArguments(watcher.SkrResourceName, remoteNamespace, runtimeClient).
+				Should(Succeed())
+			By("The Runtime Watcher deployment is reapplied and becomes ready")
+			Eventually(checkWatcherDeploymentReady).
+				WithContext(ctx).
+				WithArguments(watcher.SkrResourceName, remoteNamespace, runtimeClient).
+				Should(Succeed())
+		})
 
-	It("Should redeploy certificates if deleted on remote cluster", func() {
-		skrNamespacedSecretName := types.NamespacedName{
-			Name:      watcher.SkrTLSName,
-			Namespace: remoteNamespace,
-		}
-		By("verifying certificate secret exists on remote cluster")
-		Eventually(CertificateSecretExists).
-			WithContext(ctx).
-			WithArguments(skrNamespacedSecretName, runtimeClient).
-			Should(Succeed())
-		By("Deleting certificate secret on remote cluster")
-		Eventually(DeleteCertificateSecret).
-			WithContext(ctx).
-			WithArguments(skrNamespacedSecretName, runtimeClient).
-			Should(Succeed())
-		By("verifying certificate secret will be recreated on remote cluster")
-		Eventually(CertificateSecretExists).
-			WithContext(ctx).
-			WithArguments(skrNamespacedSecretName, runtimeClient).
-			Should(Succeed())
-	})
+		It("Given TLS Secret is in SKR Cluster", func() {
+			skrNamespacedSecretName := types.NamespacedName{
+				Name:      watcher.SkrTLSName,
+				Namespace: remoteNamespace,
+			}
+			Eventually(CertificateSecretExists).
+				WithContext(ctx).
+				WithArguments(skrNamespacedSecretName, runtimeClient).
+				Should(Succeed())
+			By("When TLS Secret is deleted on SKR Cluster")
+			Eventually(DeleteCertificateSecret).
+				WithContext(ctx).
+				WithArguments(skrNamespacedSecretName, runtimeClient).
+				Should(Succeed())
+			By("Then TLS Secret is recreated")
+			Eventually(CertificateSecretExists).
+				WithContext(ctx).
+				WithArguments(skrNamespacedSecretName, runtimeClient).
+				Should(Succeed())
+		})
 
-	It("Should trigger new reconciliation by spec watching", func() {
-		By("changing the spec of the remote KymaCR")
-		timeNow := &apimetav1.Time{Time: time.Now()}
-		GinkgoWriter.Println(fmt.Sprintf("Spec watching logs since %s: ", timeNow))
-		switchedChannel := "fast"
-		Eventually(changeRemoteKymaChannel).
-			WithContext(ctx).
-			WithArguments(remoteNamespace, switchedChannel, runtimeClient).
-			Should(Succeed())
-		By("verifying new reconciliation got triggered for corresponding KymaCR on KCP")
-		Eventually(CheckKLMLogs).
-			WithContext(ctx).
-			WithArguments(incomingRequestMsg, controlPlaneRESTConfig, runtimeRESTConfig,
-				controlPlaneClient, runtimeClient, timeNow).
-			Should(Succeed())
-	})
+		It("When the spec of SKR Kyma CR is changed", func() {
+			By("changing the spec of the remote KymaCR")
+			timeNow := &apimetav1.Time{Time: time.Now()}
+			GinkgoWriter.Println(fmt.Sprintf("Spec watching logs since %s: ", timeNow))
+			switchedChannel := "fast"
+			Eventually(changeRemoteKymaChannel).
+				WithContext(ctx).
+				WithArguments(remoteNamespace, switchedChannel, runtimeClient).
+				Should(Succeed())
+			By("Then new reconciliation gets triggered for KCP Kyma CR")
+			Eventually(CheckKLMLogs).
+				WithContext(ctx).
+				WithArguments(incomingRequestMsg, controlPlaneRESTConfig, runtimeRESTConfig,
+					controlPlaneClient, runtimeClient, timeNow).
+				Should(Succeed())
+		})
 
-	It("Should trigger new reconciliation by status sub-resource watching", func() {
-		time.Sleep(1 * time.Second)
-		patchingTimestamp := &apimetav1.Time{Time: time.Now()}
-		GinkgoWriter.Println(fmt.Sprintf("Status subresource watching logs since %s: ", patchingTimestamp))
-		By("changing the Watcher spec.field to status")
-		Expect(updateWatcherSpecField(ctx, controlPlaneClient, watcherCrName)).
-			Should(Succeed())
+		It("When the Runtime Watcher Spec field is changed to status", func() {
+			time.Sleep(1 * time.Second)
+			patchingTimestamp := &apimetav1.Time{Time: time.Now()}
+			GinkgoWriter.Println(fmt.Sprintf("Status subresource watching logs since %s: ", patchingTimestamp))
+			Expect(updateWatcherSpecField(ctx, controlPlaneClient, watcherCrName)).
+				Should(Succeed())
 
-		By("changing the status sub-resource of the remote KymaCR")
-		Eventually(updateRemoteKymaStatusSubresource).
-			WithContext(ctx).
-			WithArguments(runtimeClient, remoteNamespace).
-			Should(Succeed())
-		By("verifying new reconciliation got triggered for corresponding KymaCR on KCP")
-		Eventually(CheckKLMLogs).
-			WithContext(ctx).
-			WithArguments(incomingRequestMsg, controlPlaneRESTConfig, runtimeRESTConfig,
-				controlPlaneClient, runtimeClient, patchingTimestamp).
-			Should(Succeed())
+			By("And SKR Kyma CR Status is updated")
+			Eventually(updateRemoteKymaStatusSubresource).
+				WithContext(ctx).
+				WithArguments(runtimeClient, remoteNamespace).
+				Should(Succeed())
+			By("Then new reconciliation gets triggered for KCP Kyma CR")
+			Eventually(CheckKLMLogs).
+				WithContext(ctx).
+				WithArguments(incomingRequestMsg, controlPlaneRESTConfig, runtimeRESTConfig,
+					controlPlaneClient, runtimeClient, patchingTimestamp).
+				Should(Succeed())
+		})
 	})
 })
 
