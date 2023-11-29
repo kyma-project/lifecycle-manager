@@ -23,8 +23,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
-func New(clnt client.Client) *RunnerImpl {
-	return &RunnerImpl{
+func New(clnt client.Client) *Runner {
+	return &Runner{
 		Client:    clnt,
 		versioner: schema.GroupVersions(clnt.Scheme().PreferredVersionAllGroups()),
 		converter: clnt.Scheme(),
@@ -37,14 +37,14 @@ type ModuleMetrics interface {
 
 type GetModuleFunc func(ctx context.Context, module client.Object) error
 
-type RunnerImpl struct {
+type Runner struct {
 	client.Client
 	versioner machineryruntime.GroupVersioner
 	converter machineryruntime.ObjectConvertor
 }
 
 // ReconcileManifests implements Runner.Sync.
-func (r *RunnerImpl) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
+func (r *Runner) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	modules common.Modules,
 ) error {
 	ssaStart := time.Now()
@@ -86,7 +86,7 @@ func (r *RunnerImpl) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	return nil
 }
 
-func (r *RunnerImpl) getModule(ctx context.Context, module client.Object) error {
+func (r *Runner) getModule(ctx context.Context, module client.Object) error {
 	err := r.Get(ctx, client.ObjectKey{Namespace: module.GetNamespace(), Name: module.GetName()}, module)
 	if err != nil {
 		return fmt.Errorf("failed to get module by name-namespace: %w", err)
@@ -94,7 +94,7 @@ func (r *RunnerImpl) getModule(ctx context.Context, module client.Object) error 
 	return nil
 }
 
-func (r *RunnerImpl) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
+func (r *Runner) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	module *common.Module,
 ) error {
 	if err := r.setupModule(module, kyma); err != nil {
@@ -120,7 +120,7 @@ func (r *RunnerImpl) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	return nil
 }
 
-func (r *RunnerImpl) deleteManifest(ctx context.Context, module *common.Module) error {
+func (r *Runner) deleteManifest(ctx context.Context, module *common.Module) error {
 	err := r.Delete(ctx, module.Manifest)
 	if util.IsNotFound(err) {
 		return nil
@@ -128,7 +128,7 @@ func (r *RunnerImpl) deleteManifest(ctx context.Context, module *common.Module) 
 	return fmt.Errorf("failed to delete manifest: %w", err)
 }
 
-func (r *RunnerImpl) setupModule(module *common.Module, kyma *v1beta2.Kyma) error {
+func (r *Runner) setupModule(module *common.Module, kyma *v1beta2.Kyma) error {
 	// set labels
 	module.ApplyLabelsAndAnnotations(kyma)
 	refs := module.GetOwnerReferences()
@@ -143,14 +143,14 @@ func (r *RunnerImpl) setupModule(module *common.Module, kyma *v1beta2.Kyma) erro
 	return nil
 }
 
-func (r *RunnerImpl) SyncModuleStatus(ctx context.Context, kyma *v1beta2.Kyma, modules common.Modules,
+func (r *Runner) SyncModuleStatus(ctx context.Context, kyma *v1beta2.Kyma, modules common.Modules,
 	metrics ModuleMetrics,
 ) {
 	r.updateModuleStatusFromExistingModules(modules, kyma)
 	DeleteNoLongerExistingModuleStatus(ctx, kyma, r.getModule, metrics)
 }
 
-func (r *RunnerImpl) updateModuleStatusFromExistingModules(
+func (r *Runner) updateModuleStatusFromExistingModules(
 	modules common.Modules,
 	kyma *v1beta2.Kyma,
 ) {
