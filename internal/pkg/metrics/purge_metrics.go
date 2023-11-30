@@ -21,39 +21,42 @@ const (
 
 type PurgeError string
 
-var (
-	//nolint:gochecknoglobals
-	purgeTimeGauge = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: metricPurgeTime,
-		Help: "Indicates average purge duration",
-	})
-	//nolint:gochecknoglobals
-	purgeRequestsCounter = prometheus.NewCounter(prometheus.CounterOpts{
-		Name: metricPurgeRequests,
-		Help: "Indicates total purge count ",
-	})
-	//nolint:gochecknoglobals
-	purgeErrorGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: metricPurgeError,
-		Help: "Indicates purge errors",
-	}, []string{kymaNameLabel, shootIDLabel, instanceIDLabel, errorReasonLabel})
-)
-
-func InitPurgeMetrics() {
-	ctrlmetrics.Registry.MustRegister(purgeTimeGauge)
-	ctrlmetrics.Registry.MustRegister(purgeRequestsCounter)
-	ctrlmetrics.Registry.MustRegister(purgeErrorGauge)
+type PurgeMetrics struct {
+	purgeTimeGauge       prometheus.Gauge
+	purgeRequestsCounter prometheus.Counter
+	purgeErrorGauge      prometheus.GaugeVec
 }
 
-func UpdatePurgeCount() {
-	purgeRequestsCounter.Inc()
+func NewPurgeMetrics() *PurgeMetrics {
+	purgeMetrics := &PurgeMetrics{
+		purgeTimeGauge: prometheus.NewGauge(prometheus.GaugeOpts{
+			Name: metricPurgeTime,
+			Help: "Indicates average purge duration",
+		}),
+		purgeRequestsCounter: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: metricPurgeRequests,
+			Help: "Indicates total purge count ",
+		}),
+		purgeErrorGauge: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: metricPurgeError,
+			Help: "Indicates purge errors",
+		}, []string{kymaNameLabel, shootIDLabel, instanceIDLabel, errorReasonLabel}),
+	}
+	ctrlmetrics.Registry.MustRegister(purgeMetrics.purgeTimeGauge)
+	ctrlmetrics.Registry.MustRegister(purgeMetrics.purgeRequestsCounter)
+	ctrlmetrics.Registry.MustRegister(purgeMetrics.purgeErrorGauge)
+	return purgeMetrics
 }
 
-func UpdatePurgeTime(duration time.Duration) {
-	purgeTimeGauge.Set(duration.Seconds())
+func (p *PurgeMetrics) UpdatePurgeCount() {
+	p.purgeRequestsCounter.Inc()
 }
 
-func UpdatePurgeError(kyma *v1beta2.Kyma, purgeError PurgeError) error {
+func (p *PurgeMetrics) UpdatePurgeTime(duration time.Duration) {
+	p.purgeTimeGauge.Set(duration.Seconds())
+}
+
+func (p *PurgeMetrics) UpdatePurgeError(kyma *v1beta2.Kyma, purgeError PurgeError) error {
 	shootID, err := ExtractShootID(kyma)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errMetric, err)
@@ -62,7 +65,7 @@ func UpdatePurgeError(kyma *v1beta2.Kyma, purgeError PurgeError) error {
 	if err != nil {
 		return fmt.Errorf("%w: %w", errMetric, err)
 	}
-	metric, err := purgeErrorGauge.GetMetricWith(prometheus.Labels{
+	metric, err := p.purgeErrorGauge.GetMetricWith(prometheus.Labels{
 		kymaNameLabel:    kyma.Name,
 		shootIDLabel:     shootID,
 		instanceIDLabel:  instanceID,

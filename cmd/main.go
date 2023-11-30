@@ -28,6 +28,7 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	watchermetrics "github.com/kyma-project/runtime-watcher/listener/pkg/metrics"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -45,6 +46,7 @@ import (
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/api"
@@ -155,6 +157,7 @@ func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *machi
 
 	if flagVar.enableKcpWatcher {
 		setupKcpWatcherReconciler(mgr, options, flagVar)
+		watchermetrics.Init(ctrlmetrics.Registry)
 	}
 	if flagVar.enableWebhooks {
 		enableWebhooks(mgr)
@@ -253,6 +256,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		InKCPMode:           flagVar.inKCPMode,
 		RemoteSyncNamespace: flagVar.remoteSyncNamespace,
 		IsManagedKyma:       flagVar.isKymaManaged,
+		Metrics:             metrics.NewKymaMetrics(),
 	}).SetupWithManager(
 		mgr, options, controller.SetupUpSetting{
 			ListenerAddr:                 flagVar.kymaListenerAddr,
@@ -263,8 +267,6 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
-
-	metrics.InitKymaMetrics()
 }
 
 func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (*watcher.SKRWebhookManifestManager, error) {
@@ -302,13 +304,13 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 		PurgeFinalizerTimeout: flagVar.purgeFinalizerTimeout,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(flagVar.skipPurgingFor),
 		IsManagedKyma:         flagVar.isKymaManaged,
+		Metrics:               metrics.NewPurgeMetrics(),
 	}).SetupWithManager(
 		mgr, options,
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PurgeReconciler")
 		os.Exit(1)
 	}
-	metrics.InitPurgeMetrics()
 }
 
 func setupManifestReconciler(
