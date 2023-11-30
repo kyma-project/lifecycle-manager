@@ -92,7 +92,7 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 		return fmt.Errorf("failed to get syncContext: %w", err)
 	}
 
-	// CreateSelfSignedCert CertificateCR which will be used for mTLS connection from SKR to KCP
+	// Create CertificateCR which will be used for mTLS connection from SKR to KCP
 	certificateMgr := NewCertificateManager(syncContext.ControlPlaneClient, kyma.Name,
 		m.certificateConfig, m.caCertificateCache)
 

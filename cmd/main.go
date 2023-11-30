@@ -28,7 +28,6 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
-	watchermetrics "github.com/kyma-project/runtime-watcher/listener/pkg/metrics"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -46,7 +45,6 @@ import (
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
-	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/api"

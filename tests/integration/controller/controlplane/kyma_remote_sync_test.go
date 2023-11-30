@@ -209,7 +209,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 	})
 
 	It("Enable Custom ModuleTemplate in SKR", func() {
-		By("CreateSelfSignedCert SKRCustomTemplate in SKR")
+		By("Create SKRCustomTemplate in SKR")
 		SKRCustomTemplate.Namespace = kyma.Namespace
 		Eventually(runtimeClient.Create, Timeout, Interval).
 			WithContext(ctx).

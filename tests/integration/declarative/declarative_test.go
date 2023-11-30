@@ -124,7 +124,7 @@ var _ = Describe(
 			fmt.Sprintf("Starting Controller and Testing Declarative Reconciler (Run %s)", runID),
 			tableTest,
 			Entry(
-				"CreateSelfSignedCert simple raw manifest with a different Control Plane and Runtime Client",
+				"Create simple raw manifest with a different Control Plane and Runtime Client",
 				declarativetest.TestAPISpec{ManifestName: "custom-client"},
 				DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), ocirefSynced, RenderModeRaw),
 				[]Option{
@@ -139,7 +139,7 @@ var _ = Describe(
 				nil,
 			),
 			Entry(
-				"CreateSelfSignedCert simple Raw manifest",
+				"Create simple Raw manifest",
 				declarativetest.TestAPISpec{ManifestName: "simple-raw"},
 				DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), ocirefSynced, RenderModeRaw),
 				[]Option{},

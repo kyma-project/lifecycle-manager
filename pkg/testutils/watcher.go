@@ -97,7 +97,7 @@ func DeleteCertificateSecret(ctx context.Context, namespacedSecretName types.Nam
 	return nil
 }
 
-func GetCertificate(ctx context.Context, namespacedCertName types.NamespacedName, k8sClient client.Client,
+func GetCACertificate(ctx context.Context, namespacedCertName types.NamespacedName, k8sClient client.Client,
 ) (*certmanagerv1.Certificate, error) {
 	caCert := &certmanagerv1.Certificate{}
 	if err := k8sClient.Get(ctx, namespacedCertName, caCert); err != nil {

@@ -167,18 +167,15 @@ var _ = Describe("Verify Request using SAN", Ordered, func() {
 	for _, tt := range tests {
 		test := tt
 		It(test.name, func() {
-			// CreateSelfSignedCert Request Verifier
 			verifier := &security.RequestVerifier{
 				Client: k8sClient,
 				Log:    zapr.NewLogger(zapLog),
 			}
 
-			// CreateSelfSignedCert Kyma CR
 			if test.kyma != nil {
 				Expect(k8sClient.Create(context.TODO(), test.kyma)).Should(Succeed())
 			}
 
-			// Actual Test
 			err := verifier.Verify(test.args.request, test.args.watcherEventObject)
 			if test.wantErr {
 				Expect(err).Should(HaveOccurred())
@@ -186,7 +183,6 @@ var _ = Describe("Verify Request using SAN", Ordered, func() {
 			}
 			Expect(err).ShouldNot(HaveOccurred())
 
-			// Cleanup
 			if test.kyma != nil {
 				Expect(k8sClient.Delete(context.TODO(), test.kyma)).Should(Succeed())
 			}

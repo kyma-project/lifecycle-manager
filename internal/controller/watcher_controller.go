@@ -147,7 +147,6 @@ func (r *WatcherReconciler) handleDeletingState(ctx context.Context, watcherCR *
 func (r *WatcherReconciler) handleProcessingState(ctx context.Context,
 	watcherCR *v1beta2.Watcher,
 ) (ctrl.Result, error) {
-	// CreateSelfSignedCert virtualService in Memory
 	virtualSvc, err := r.IstioClient.NewVirtualService(ctx, watcherCR)
 	if err != nil {
 		return r.updateWatcherState(ctx, watcherCR, shared.StateError, err)

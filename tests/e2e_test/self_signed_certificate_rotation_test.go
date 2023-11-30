@@ -27,7 +27,7 @@ var _ = Describe("Self Signed Certificate Rotation", Ordered, func() {
 				Namespace: "istio-system",
 			}
 			Eventually(func() error {
-				_, err := GetCertificate(ctx, namespacedCertName, controlPlaneClient)
+				_, err := GetCACertificate(ctx, namespacedCertName, controlPlaneClient)
 				return err
 			}).Should(Succeed())
 		})

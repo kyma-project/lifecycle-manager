@@ -83,7 +83,7 @@ func NewSingletonClients(info *ClusterInfo) (*SingletonClients, error) {
 	discoveryRESTMapper := restmapper.NewDeferredDiscoveryRESTMapper(cachedDiscoveryClient)
 	discoveryShortcutExpander := restmapper.NewShortcutExpander(discoveryRESTMapper, cachedDiscoveryClient)
 
-	// CreateSelfSignedCert target cluster client only if not passed.
+	// Create target cluster client only if not passed.
 	// Clients should be passed only in two cases:
 	// 1. Single cluster mode is enabled.
 	// Since such clients are similar to the root client instance.

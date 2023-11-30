@@ -53,7 +53,7 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 				Name:      caCertName,
 				Namespace: "istio-system",
 			}
-			caCertificate, err = GetCertificate(ctx, namespacedCertName, controlPlaneClient)
+			caCertificate, err = GetCACertificate(ctx, namespacedCertName, controlPlaneClient)
 			Expect(err).NotTo(HaveOccurred())
 			Eventually(CertificateSecretIsCreatedAfter).
 				WithContext(ctx).

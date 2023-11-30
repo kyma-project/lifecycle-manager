@@ -15,7 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("CreateSelfSignedCert Watcher Certificates", Ordered, func() {
+var _ = Describe("Create Watcher Certificates", Ordered, func() {
 	const caCertName = "klm-watcher-serving-cert"
 
 	tests := []struct {
