@@ -103,6 +103,5 @@ var _ = Describe("Kyma Metrics", Ordered, func() {
 					Should(Equal(0))
 			}
 		})
-
 	})
 })
