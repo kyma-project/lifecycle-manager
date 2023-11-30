@@ -1,4 +1,5 @@
 title: "[Question] "
+labels: ["question"]
 body:
   - type: markdown
     attributes:
@@ -33,3 +34,5 @@ body:
       options:
         - no
         - yes
+    validations:
+      required: false
