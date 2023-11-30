@@ -67,7 +67,7 @@ func defineFlagVar() *FlagVar {
 		"determines the duration after which a Kyma in Error state is enqueued for reconciliation.") //nolint:lll
 	flag.DurationVar(&flagVar.kymaRequeueWarningInterval, "kyma-requeue-warning-interval",
 		defaultKymaRequeueWarningInterval,
-		"determines the duration after which a Kyma in Error state is enqueued for reconciliation.")
+		"determines the duration after which a Kyma in Warning state is enqueued for reconciliation.")
 	flag.DurationVar(&flagVar.kymaRequeueBusyInterval, "kyma-requeue-busy-interval",
 		defaultKymaRequeueBusyInterval,
 		"determines the duration after which a Kyma in Processing state is enqueued for reconciliation.") //nolint:lll
