@@ -39,6 +39,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
@@ -106,7 +107,7 @@ var _ = BeforeSuite(func() {
 	Expect(api.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	Expect(apiextensionsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
-	//+kubebuilder:scaffold:scheme
+	// +kubebuilder:scaffold:scheme
 
 	k8sManager, err = ctrl.NewManager(
 		cfg, ctrl.Options{
@@ -122,6 +123,7 @@ var _ = BeforeSuite(func() {
 		Success: 1 * time.Second,
 		Busy:    100 * time.Millisecond,
 		Error:   100 * time.Millisecond,
+		Warning: 100 * time.Millisecond,
 	}
 
 	remoteClientCache := remote.NewClientCache()
@@ -137,6 +139,7 @@ var _ = BeforeSuite(func() {
 		InKCPMode:           true,
 		RemoteSyncNamespace: controller.DefaultRemoteSyncNamespace,
 		IsManagedKyma:       true,
+		Metrics:             metrics.NewKymaMetrics(),
 	}).SetupWithManager(k8sManager, ctrlruntime.Options{},
 		controller.SetupUpSetting{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())

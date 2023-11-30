@@ -22,7 +22,7 @@ type ReadyCheck interface {
 	Run(ctx context.Context, clnt Client, obj Object, resources []*resource.Info) (StateInfo, error)
 }
 
-func NewExistsReadyCheck() ReadyCheck {
+func NewExistsReadyCheck() *ExistsReadyCheck {
 	return &ExistsReadyCheck{}
 }
 

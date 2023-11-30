@@ -36,8 +36,8 @@ jobs:
                     "purge-controller",
                     "purge-metrics",
                     "module-upgrade",
-                    "skip-manifest-reconciliation"
-                    "certificate-rotation"
+                    "skip-manifest-reconciliation",
+                    "ca-certificate-rotation"
         ]
     name: "E2E"
     needs: [wait-for-img]
@@ -135,7 +135,7 @@ jobs:
           kustomize edit add patch --path purge_finalizer.yaml --kind Deployment
           popd
       - name: Patch CA certificate renewBefore
-        if: ${{matrix.e2e-test == 'certificate-rotation'}}
+        if: ${{matrix.e2e-test == 'ca-certificate-rotation'}}
         working-directory: lifecycle-manager
         run: |
           pushd config/watcher_local_test

@@ -13,17 +13,16 @@ import (
 
 var ErrDeletionNotFinished = errors.New("deletion is not yet finished")
 
-type Cleanup interface {
-	Run(ctx context.Context, resourceInfo []*resource.Info) error
-}
-
 type ConcurrentCleanup struct {
 	clnt   client.Client
 	policy client.PropagationPolicy
 }
 
-func NewConcurrentCleanup(clnt client.Client) Cleanup {
-	return &ConcurrentCleanup{clnt: clnt, policy: client.PropagationPolicy(apimetav1.DeletePropagationBackground)}
+func NewConcurrentCleanup(clnt client.Client) *ConcurrentCleanup {
+	return &ConcurrentCleanup{
+		clnt:   clnt,
+		policy: client.PropagationPolicy(apimetav1.DeletePropagationBackground),
+	}
 }
 
 func (c *ConcurrentCleanup) Run(ctx context.Context, infos []*resource.Info) error {

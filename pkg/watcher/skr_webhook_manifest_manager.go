@@ -61,7 +61,7 @@ func NewSKRWebhookManifestManager(kcpConfig *rest.Config,
 	schema *machineryruntime.Scheme,
 	caCertificateCache *CertificateCache,
 	managerConfig *SkrWebhookManagerConfig,
-) (SKRWebhookManager, error) {
+) (*SKRWebhookManifestManager, error) {
 	logger := logf.FromContext(context.TODO())
 	manifestFilePath := fmt.Sprintf(rawManifestFilePathTpl, managerConfig.SKRWatcherPath)
 	rawManifestFile, err := os.Open(manifestFilePath)
@@ -122,7 +122,7 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 	if certSecret != nil && (certSecret.CreationTimestamp.Before(caCertificate.Status.NotBefore)) {
 		logger.V(log.DebugLevel).Info("CA Certificate was rotated, removing certificate",
 			"kyma", kymaObjKey)
-		if err = certificate.Remove(ctx); err != nil {
+		if err = certificate.RemoveSecret(ctx); err != nil {
 			return fmt.Errorf("error while removing certificate: %w", err)
 		}
 	}
