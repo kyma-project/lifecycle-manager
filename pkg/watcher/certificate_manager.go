@@ -14,6 +14,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -267,6 +268,7 @@ func (e *CertificateNotReadyError) Error() string {
 }
 
 func (c *CertificateManager) GetCACertificate(ctx context.Context) (*certmanagerv1.Certificate, error) {
+	logger := logf.FromContext(ctx)
 	cachedCert := c.caCertCache.GetCACertFromCache(c.config.CACertificateName)
 
 	if cachedCert == nil || certificateRenewalTimePassed(cachedCert) {
@@ -277,9 +279,10 @@ func (c *CertificateManager) GetCACertificate(ctx context.Context) (*certmanager
 			return nil, fmt.Errorf("failed to get CA certificate %w", err)
 		}
 		c.caCertCache.SetCACertToCache(caCert)
+		logger.V(log.InfoLevel).Info("get caCert from cluster")
 		return caCert, nil
 	}
-
+	logger.V(log.InfoLevel).Info("get caCert from cache")
 	return cachedCert, nil
 }
 
