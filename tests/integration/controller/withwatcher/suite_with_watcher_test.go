@@ -48,6 +48,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
@@ -81,14 +82,16 @@ var (
 )
 
 const (
-	istioSystemNs = "istio-system"
-	kcpSystemNs   = "kcp-system"
-	gatewayName   = "lifecycle-manager-watcher-gateway"
+	istioSystemNs     = "istio-system"
+	kcpSystemNs       = "kcp-system"
+	gatewayName       = "klm-watcher-gateway"
+	caCertificateName = "klm-watcher-serving-cert"
 )
 
 var (
 	skrWatcherPath         = filepath.Join(integration.GetProjectRoot(), "skr-webhook")
-	istioResourcesFilePath = filepath.Join(integration.GetProjectRoot(), "config", "samples", "tests", "istio-test-resources.yaml")
+	istioResourcesFilePath = filepath.Join(integration.GetProjectRoot(), "config", "samples", "tests",
+		"istio-test-resources.yaml")
 )
 
 func TestAPIs(t *testing.T) {
@@ -131,7 +134,7 @@ var _ = BeforeSuite(func() {
 	Expect(istioscheme.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	Expect(certmanagerv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
-	//+kubebuilder:scaffold:scheme
+	// +kubebuilder:scaffold:scheme
 
 	metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
 	if !found {
@@ -156,6 +159,7 @@ var _ = BeforeSuite(func() {
 		Success: 1 * time.Second,
 		Busy:    100 * time.Millisecond,
 		Error:   100 * time.Millisecond,
+		Warning: 100 * time.Millisecond,
 	}
 
 	// This k8sClient is used to install external resources
@@ -182,9 +186,13 @@ var _ = BeforeSuite(func() {
 		IstioGatewayName:       gatewayName,
 		IstioGatewayNamespace:  kcpSystemNs,
 		RemoteSyncNamespace:    controller.DefaultRemoteSyncNamespace,
+		CACertificateName:      caCertificateName,
 	}
 
-	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(restCfg, k8sclientscheme.Scheme, skrChartCfg)
+	caCertCache := watcher.NewCertificateCache(5 * time.Minute)
+
+	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(restCfg, k8sclientscheme.Scheme, caCertCache,
+		skrChartCfg)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controller.KymaReconciler{
 		Client:            k8sManager.GetClient(),
@@ -198,6 +206,7 @@ var _ = BeforeSuite(func() {
 		KcpRestConfig:       k8sManager.GetConfig(),
 		RemoteSyncNamespace: controller.DefaultRemoteSyncNamespace,
 		InKCPMode:           true,
+		Metrics:             metrics.NewKymaMetrics(),
 	}).SetupWithManager(k8sManager, ctrlruntime.Options{}, controller.SetupUpSetting{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 

@@ -36,7 +36,8 @@ jobs:
                     "purge-controller",
                     "purge-metrics",
                     "module-upgrade",
-                    "skip-manifest-reconciliation"
+                    "skip-manifest-reconciliation",
+                    "ca-certificate-rotation"
         ]
     name: "E2E"
     needs: [wait-for-img]
@@ -132,6 +133,21 @@ jobs:
             value: --purge-finalizer-timeout=5s" >> purge_finalizer.yaml
           cat purge_finalizer.yaml
           kustomize edit add patch --path purge_finalizer.yaml --kind Deployment
+          popd
+      - name: Patch CA certificate renewBefore
+        if: ${{matrix.e2e-test == 'ca-certificate-rotation'}}
+        working-directory: lifecycle-manager
+        run: |
+          pushd config/watcher_local_test
+          echo \
+          "- op: replace
+            path: /spec/renewBefore
+            value: 59m 
+          - op: replace
+            path: /spec/duration
+            value: 1h">> certificate_renewal.yaml
+          cat certificate_renewal.yaml
+          kustomize edit add patch --path certificate_renewal.yaml --kind Certificate --group cert-manager.io --version v1 --name watcher-serving-cert
           popd
       - name: Deploy LM local testing kustomize
         working-directory: lifecycle-manager

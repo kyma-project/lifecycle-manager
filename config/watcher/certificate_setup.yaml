@@ -12,7 +12,7 @@ spec:
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: watcher-serving-cert  # this name should match the one appeared in kustomizeconfig.yaml
+  name: watcher-serving-cert
   namespace: istio-system
 spec:
   dnsNames:
@@ -26,7 +26,7 @@ spec:
   privateKey:
     algorithm: RSA
   issuerRef:
-    name: lifecycle-manager-watcher-selfsigned-cluster-issuer # this needs to match the prefixed ClusterIssuer
+    name: klm-watcher-selfsigned-cluster-issuer
     kind: ClusterIssuer
     group: cert-manager.io
 ---

@@ -32,7 +32,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/internal/controller/purge/metrics"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
@@ -49,6 +49,7 @@ type PurgeReconciler struct {
 	PurgeFinalizerTimeout time.Duration
 	SkipCRDs              matcher.CRDMatcherFunc
 	IsManagedKyma         bool
+	Metrics               *metrics.PurgeMetrics
 }
 
 //nolint:funlen
@@ -61,7 +62,8 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
 		if !util.IsNotFound(err) {
-			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted", req.NamespacedName))
+			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
+				req.NamespacedName))
 			return ctrl.Result{}, fmt.Errorf("purgeController: %w", err)
 		}
 		return ctrl.Result{Requeue: false}, nil
@@ -89,7 +91,7 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	if util.IsNotFound(err) {
 		if err := r.dropPurgeFinalizer(ctx, kyma); err != nil {
 			logger.Error(err, "Couldn't remove Purge Finalizer from the Kyma object")
-			if err := metrics.UpdatePurgeError(kyma, metrics.ErrPurgeFinalizerRemoval); err != nil {
+			if err := r.Metrics.UpdatePurgeError(kyma, metrics.ErrPurgeFinalizerRemoval); err != nil {
 				logger.Error(err, "Failed to update error metrics")
 			}
 			return ctrl.Result{}, err
@@ -100,10 +102,10 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{}, err
 	}
 
-	metrics.UpdatePurgeCount()
+	r.Metrics.UpdatePurgeCount()
 	if err := r.performCleanup(ctx, remoteClient); err != nil {
 		logger.Error(err, "Finalizer Purging failed")
-		if err := metrics.UpdatePurgeError(kyma, metrics.ErrCleanup); err != nil {
+		if err := r.Metrics.UpdatePurgeError(kyma, metrics.ErrCleanup); err != nil {
 			logger.Error(err, "Failed to update error metrics")
 		}
 		return ctrl.Result{}, err
@@ -111,13 +113,13 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	if err := r.dropPurgeFinalizer(ctx, kyma); err != nil {
 		logger.Error(err, "Couldn't remove Purge Finalizer from the Kyma object")
-		if err := metrics.UpdatePurgeError(kyma, metrics.ErrPurgeFinalizerRemoval); err != nil {
+		if err := r.Metrics.UpdatePurgeError(kyma, metrics.ErrPurgeFinalizerRemoval); err != nil {
 			logger.Error(err, "Failed to update error metrics")
 		}
 		return ctrl.Result{}, err
 	}
 	duration := time.Since(start)
-	metrics.UpdatePurgeTime(duration)
+	r.Metrics.UpdatePurgeTime(duration)
 
 	return ctrl.Result{}, nil
 }

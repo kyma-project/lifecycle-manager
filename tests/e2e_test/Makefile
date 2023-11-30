@@ -58,7 +58,7 @@ e2e-coverage: ginkgo ## Generate the effective Acceptance Criteria for all the t
 	@#     tail           - Drops the outline header.
 	@#     sed            - Adjusts the scenarios to the Gherkin syntax.
 
-	@for file in $(shell ls *_test.go | grep -v suite_test.go) ; do \
+	@for file in $(shell ls *_test.go | grep -v suite_test.go | grep -v utils_test.go) ; do \
         $(GINKGO) outline --format indent $$file  | \
 			awk -F "," '{print $$1" "$$2}' | \
 			tail -n +2 | \
@@ -98,3 +98,6 @@ purge-metrics:
 
 module-upgrade:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Upgrade"
+
+ca-certificate-rotation:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "CA Certificate Rotation"

@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 
+	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	apicorev1 "k8s.io/api/core/v1"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -17,6 +18,11 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
+	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 const (
@@ -35,6 +41,58 @@ var (
 	errWatcherExistsAfterDeletion         = errors.New("watcher CR still exists after deletion")
 	errWatcherNotReady                    = errors.New("watcher not ready")
 )
+
+func registerDefaultLifecycleForKymaWithWatcher(kyma *v1beta2.Kyma, watcher *v1beta2.Watcher,
+	tlsSecret *apicorev1.Secret, issuer *certmanagerv1.Issuer, caCert *certmanagerv1.Certificate,
+) {
+	BeforeAll(func() {
+		By("Creating watcher CR")
+		Expect(controlPlaneClient.Create(suiteCtx, watcher)).To(Succeed())
+		By("Creating kyma CR")
+		Expect(controlPlaneClient.Create(suiteCtx, kyma)).To(Succeed())
+		By("Creating TLS Secret")
+		Expect(controlPlaneClient.Create(suiteCtx, tlsSecret)).To(Succeed())
+		By("Creating Cert-Manager Issuer")
+		Expect(controlPlaneClient.Create(suiteCtx, issuer)).To(Succeed())
+		By("Creating CA Certificate")
+		Expect(controlPlaneClient.Create(suiteCtx, caCert)).To(Succeed())
+	})
+
+	AfterAll(func() {
+		By("Deleting watcher CR")
+		Eventually(DeleteCR, Timeout, Interval).
+			WithContext(suiteCtx).
+			WithArguments(controlPlaneClient, watcher).Should(Succeed())
+		By("Ensuring watcher CR is properly deleted")
+		Eventually(isWatcherCrDeletionFinished, Timeout, Interval).WithArguments(watcher).
+			Should(BeTrue())
+		By("Deleting Cert-Manager Issuer")
+		Expect(controlPlaneClient.Delete(suiteCtx, issuer)).To(Succeed())
+		By("Deleting CA Certificate")
+		Expect(controlPlaneClient.Delete(suiteCtx, caCert)).To(Succeed())
+	})
+
+	BeforeEach(func() {
+		By("asserting only one kyma CR exists")
+		kcpKymas := &v1beta2.KymaList{}
+		Eventually(controlPlaneClient.List, Timeout, Interval).
+			WithContext(suiteCtx).
+			WithArguments(kcpKymas).Should(Succeed())
+		Expect(kcpKymas.Items).NotTo(BeEmpty())
+		By("get latest kyma CR")
+		Eventually(controlPlaneClient.Get, Timeout, Interval).
+			WithContext(suiteCtx).
+			WithArguments(client.ObjectKeyFromObject(kyma), kyma).Should(Succeed())
+		By("get latest watcher CR")
+		Eventually(controlPlaneClient.Get, Timeout, Interval).
+			WithContext(suiteCtx).
+			WithArguments(client.ObjectKeyFromObject(watcher), watcher).Should(Succeed())
+		By("get latest TLS secret")
+		Eventually(controlPlaneClient.Get, Timeout, Interval).
+			WithContext(suiteCtx).
+			WithArguments(client.ObjectKeyFromObject(tlsSecret), tlsSecret).Should(Succeed())
+	})
+}
 
 func deserializeIstioResources() ([]*unstructured.Unstructured, error) {
 	var istioResourcesList []*unstructured.Unstructured
@@ -65,6 +123,33 @@ func deserializeIstioResources() ([]*unstructured.Unstructured, error) {
 
 func isEven(idx int) bool {
 	return idx%2 == 0
+}
+
+func createCaCertificate() *certmanagerv1.Certificate {
+	return &certmanagerv1.Certificate{
+		TypeMeta: apimetav1.TypeMeta{
+			Kind:       certmanagerv1.CertificateKind,
+			APIVersion: certmanagerv1.SchemeGroupVersion.String(),
+		},
+		ObjectMeta: apimetav1.ObjectMeta{
+			Name:      "klm-watcher-serving-cert",
+			Namespace: istioSystemNs,
+		},
+		Spec: certmanagerv1.CertificateSpec{
+			DNSNames:   []string{"listener.kyma.cloud.sap"},
+			IsCA:       true,
+			CommonName: "klm-watcher-selfsigned-ca",
+			SecretName: "klm-watcher-root-secret",
+			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
+				Labels: map[string]string{
+					"operator.kyma-project.io/managed-by": "lifecycle-manager",
+				},
+			},
+			PrivateKey: &certmanagerv1.CertificatePrivateKey{
+				Algorithm: "RSA",
+			},
+		},
+	}
 }
 
 func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watcher {

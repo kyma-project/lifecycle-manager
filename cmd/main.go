@@ -28,6 +28,7 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	watchermetrics "github.com/kyma-project/runtime-watcher/listener/pkg/metrics"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -45,14 +46,14 @@ import (
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
-	kymametrics "github.com/kyma-project/lifecycle-manager/internal/controller/kyma/metrics"   //nolint:importas // ad-hoc import collision resolution
-	purgemetrics "github.com/kyma-project/lifecycle-manager/internal/controller/purge/metrics" //nolint:importas // ad-hoc import collision resolution
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -63,7 +64,7 @@ import (
 	_ "github.com/open-component-model/ocm/pkg/contexts/ocm"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	//nolint:gci // kubebuilder's scaffold imports must be appended here.
-	//+kubebuilder:scaffold:imports
+	// +kubebuilder:scaffold:imports
 )
 
 var (
@@ -83,7 +84,7 @@ func init() {
 	machineryutilruntime.Must(istioclientapiv1beta1.AddToScheme(scheme))
 
 	machineryutilruntime.Must(v1beta2.AddToScheme(scheme))
-	//+kubebuilder:scaffold:scheme
+	// +kubebuilder:scaffold:scheme
 }
 
 func main() {
@@ -156,12 +157,13 @@ func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *machi
 
 	if flagVar.enableKcpWatcher {
 		setupKcpWatcherReconciler(mgr, options, flagVar)
+		watchermetrics.Init(ctrlmetrics.Registry)
 	}
 	if flagVar.enableWebhooks {
 		enableWebhooks(mgr)
 	}
 
-	//+kubebuilder:scaffold:builder
+	// +kubebuilder:scaffold:builder
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
 		os.Exit(1)
@@ -246,6 +248,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 			Success: flagVar.kymaRequeueSuccessInterval,
 			Busy:    flagVar.kymaRequeueBusyInterval,
 			Error:   flagVar.kymaRequeueErrInterval,
+			Warning: flagVar.kymaRequeueWarningInterval,
 		},
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: flagVar.enableVerification,
@@ -254,6 +257,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		InKCPMode:           flagVar.inKCPMode,
 		RemoteSyncNamespace: flagVar.remoteSyncNamespace,
 		IsManagedKyma:       flagVar.isKymaManaged,
+		Metrics:             metrics.NewKymaMetrics(),
 	}).SetupWithManager(
 		mgr, options, controller.SetupUpSetting{
 			ListenerAddr:                 flagVar.kymaListenerAddr,
@@ -264,23 +268,24 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
-
-	kymametrics.Initialize()
 }
 
-func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (watcher.SKRWebhookManager, error) {
-	return watcher.NewSKRWebhookManifestManager(mgr.GetConfig(), mgr.GetScheme(), &watcher.SkrWebhookManagerConfig{
-		SKRWatcherPath:            flagVar.skrWatcherPath,
-		SkrWatcherImage:           flagVar.skrWatcherImage,
-		SkrWebhookCPULimits:       flagVar.skrWebhookCPULimits,
-		SkrWebhookMemoryLimits:    flagVar.skrWebhookMemoryLimits,
-		LocalGatewayPortOverwrite: flagVar.listenerPortOverwrite,
-		IstioNamespace:            flagVar.istioNamespace,
-		IstioGatewayName:          flagVar.istioGatewayName,
-		IstioGatewayNamespace:     flagVar.istioGatewayNamespace,
-		RemoteSyncNamespace:       flagVar.remoteSyncNamespace,
-		AdditionalDNSNames:        strings.Split(flagVar.additionalDNSNames, ","),
-	})
+func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (*watcher.SKRWebhookManifestManager, error) {
+	caCertificateCache := watcher.NewCertificateCache(flagVar.caCertCacheTTL)
+	return watcher.NewSKRWebhookManifestManager(mgr.GetConfig(), mgr.GetScheme(), caCertificateCache,
+		&watcher.SkrWebhookManagerConfig{
+			SKRWatcherPath:            flagVar.skrWatcherPath,
+			SkrWatcherImage:           flagVar.skrWatcherImage,
+			SkrWebhookCPULimits:       flagVar.skrWebhookCPULimits,
+			SkrWebhookMemoryLimits:    flagVar.skrWebhookMemoryLimits,
+			LocalGatewayPortOverwrite: flagVar.listenerPortOverwrite,
+			IstioNamespace:            flagVar.istioNamespace,
+			IstioGatewayName:          flagVar.istioGatewayName,
+			IstioGatewayNamespace:     flagVar.istioGatewayNamespace,
+			RemoteSyncNamespace:       flagVar.remoteSyncNamespace,
+			AdditionalDNSNames:        strings.Split(flagVar.additionalDNSNames, ","),
+			CACertificateName:         flagVar.caCertName,
+		})
 }
 
 func setupPurgeReconciler(mgr ctrl.Manager,
@@ -300,13 +305,13 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 		PurgeFinalizerTimeout: flagVar.purgeFinalizerTimeout,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(flagVar.skipPurgingFor),
 		IsManagedKyma:         flagVar.isKymaManaged,
+		Metrics:               metrics.NewPurgeMetrics(),
 	}).SetupWithManager(
 		mgr, options,
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PurgeReconciler")
 		os.Exit(1)
 	}
-	purgemetrics.Initialize()
 }
 
 func setupManifestReconciler(
@@ -341,6 +346,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 			Success: flagVar.watcherRequeueSuccessInterval,
 			Busy:    defaultKymaRequeueBusyInterval,
 			Error:   defaultKymaRequeueErrInterval,
+			Warning: defaultKymaRequeueWarningInterval,
 		},
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controller.WatcherControllerName)
@@ -352,11 +358,13 @@ func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved strin
 	cfg := mgr.GetConfig()
 	kcpClient, err := clientset.NewForConfig(cfg)
 	if err != nil {
-		setupLog.V(log.DebugLevel).Error(err, fmt.Sprintf("unable to initialize client to remove %s", versionToBeRemoved))
+		setupLog.V(log.DebugLevel).Error(err,
+			fmt.Sprintf("unable to initialize client to remove %s", versionToBeRemoved))
 	}
 	ctx := context.TODO()
 	var crdList *apiextensionsv1.CustomResourceDefinitionList
-	if crdList, err = kcpClient.ApiextensionsV1().CustomResourceDefinitions().List(ctx, apimetav1.ListOptions{}); err != nil {
+	if crdList, err = kcpClient.ApiextensionsV1().CustomResourceDefinitions().List(ctx,
+		apimetav1.ListOptions{}); err != nil {
 		setupLog.V(log.InfoLevel).Error(err, "unable to list CRDs")
 	}
 

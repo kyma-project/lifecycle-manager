@@ -18,10 +18,8 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-// BeInState determines if the resource is in a given declarative state
-//
-
-func BeInState(state shared.State) types.GomegaMatcher {
+// BeInState determines if the resource is in a given declarative state.
+func BeInState(state shared.State) *BeInStateMatcher {
 	return &BeInStateMatcher{state: state}
 }
 
@@ -51,7 +49,7 @@ func (matcher *BeInStateMatcher) NegatedFailureMessage(actual interface{}) strin
 
 func HaveConditionWithStatus(
 	conditionType declarativev2.ConditionType, status apimetav1.ConditionStatus,
-) types.GomegaMatcher {
+) *HaveConditionMatcher {
 	return &HaveConditionMatcher{condition: conditionType, status: status}
 }
 

@@ -9,6 +9,7 @@ import (
 type RequeueIntervals struct {
 	Success time.Duration
 	Busy    time.Duration
+	Warning time.Duration
 	Error   time.Duration
 }
 
@@ -23,7 +24,7 @@ func DetermineRequeueInterval(state shared.State, intervals RequeueIntervals) ti
 	case shared.StateReady:
 		fallthrough
 	case shared.StateWarning:
-		fallthrough
+		return intervals.Warning
 	default:
 		return intervals.Success
 	}

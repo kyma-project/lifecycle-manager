@@ -10,7 +10,6 @@ resources:
 # [WATCHER] To enable the watcher, uncomment all the sections with [WATCHER]
 # [ISTIO] To enable istio, uncomment all sections with 'ISTIO'.
 components:
-  - ../watcher
   - ../istio
 
 
@@ -21,10 +20,9 @@ generatorOptions:
 # and sets the namespace for the watcher resources to `kcp-system`.
 # When deployed on KCP it will be set by the default kustomize.
 patches:
+- path: patches/servicemonitor_delete.yaml
+- path: patches/adjust_resources_for_local_setup.yaml
 - patch: |-
-    - op: add
-      path: /spec/template/spec/containers/0/args/-
-      value: --enable-domain-name-pinning=true
     - op: add
       path: /spec/template/spec/containers/0/args/-
       value: --kyma-requeue-success-interval=20s
@@ -50,32 +48,11 @@ patches:
       path: /metadata/namespace
       value: kcp-system
   target:
-    group: operator.kyma-project.io
-    version: v1beta2
-    kind: Watcher
-- patch: |-
-    - op: replace
-      path: /metadata/name
-      value: klm-event-service
-    - op: replace
-      path: /metadata/namespace
-      value: kcp-system
-  target:
-    kind: Service
-    name: event-service
-- patch: |-
-    - op: replace
-      path: /metadata/namespace
-      value: kcp-system
-  target:
     group: security.istio.io
     version: v1beta1
     kind: AuthorizationPolicy
     name: controller-manager
 - patch: |-
-    - op: replace
-      path: /metadata/namespace
-      value: kcp-system
     - op: replace
       path: /spec/servers/0/hosts/0
       value: "host.k3d.internal"
@@ -83,9 +60,7 @@ patches:
     group: networking.istio.io
     version: v1beta1
     kind: Gateway
-    name: lifecycle-manager-watcher-gateway
-- path: patches/servicemonitor_delete.yaml
-- path: patches/adjust_resources_for_local_setup.yaml
+    name: watcher-gateway
 - patch: |-
     - op: replace
       path: /spec/dnsNames/0
@@ -93,35 +68,11 @@ patches:
     - op: add
       path: /spec/dnsNames/1
       value: "host.k3d.internal"
-    - op: replace
-      path: /metadata/namespace
-      value: "istio-system"
-    - op: add
-      path: /spec/issuerRef/name
-      value: "watcher-selfsigned-cluster-issuer"
   target:
     group: cert-manager.io
     version: v1
     kind: Certificate
     name: watcher-serving-cert
-- patch: |-
-    - op: replace
-      path: /metadata/namespace
-      value: "istio-system"
-  target:
-    group: cert-manager.io
-    version: v1
-    kind: ClusterIssuer
-    name: watcher-selfsigned-cluster-issuer
-- patch: |-
-    - op: replace
-      path: /metadata/namespace
-      value: "istio-system"
-  target:
-    group: cert-manager.io
-    version: v1
-    kind: Issuer
-    name: watcher-selfsigned-issuer
 
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
