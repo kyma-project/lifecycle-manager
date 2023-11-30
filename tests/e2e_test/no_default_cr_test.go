@@ -19,14 +19,15 @@ var _ = Describe("Module Without Default CR", Ordered, func() {
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
-	Context("Given an SKR Cluster", func() {
-		It("When a Kyma Module without Module Default CR is enabled", func() {
+	Context("Given SKR Cluster", func() {
+		It("When Kyma Module without Module Default CR is enabled", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
 				Should(Succeed())
+		})
 
-			By("Then no resources exist in Manifest CR")
+		It("Then no resources exist in Manifest CR", func() {
 			Eventually(func(g Gomega, ctx context.Context) error {
 				_, err := GetManifestResource(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(),
 					module.Name)

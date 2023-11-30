@@ -17,14 +17,15 @@ var _ = Describe("Module Upgrade", Ordered, func() {
 	InitEmptyKymaBeforeAll(kyma)
 	CleanupKymaAfterAll(kyma)
 
-	Context("Given an SKR Cluster", func() {
-		It("When a Kyma Module is enabled on SKR Kyma CR", func() {
+	Context("Given SKR Cluster", func() {
+		It("When Kyma Module is enabled on SKR Kyma CR", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
 				Should(Succeed())
+		})
 
-			By("Then Module CR exists")
+		It("Then Module CR exists", func() {
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR).
@@ -43,13 +44,14 @@ var _ = Describe("Module Upgrade", Ordered, func() {
 				Should(Succeed())
 		})
 
-		It("When the Module Distribution Channel is changed", func() {
+		It("When Module Distribution Channel is changed", func() {
 			Eventually(UpdateKymaModuleChannel).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, "fast").
 				Should(Succeed())
+		})
 
-			By("Then Module CR exists")
+		It("Then Module CR exists", func() {
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR).

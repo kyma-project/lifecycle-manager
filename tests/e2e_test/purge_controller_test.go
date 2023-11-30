@@ -17,21 +17,22 @@ var _ = Describe("Purge Controller", Ordered, func() {
 	moduleCR := NewTestModuleCR(remoteNamespace)
 	InitEmptyKymaBeforeAll(kyma)
 
-	Context("Given an SKR Cluster", func() {
-		It("When a Kyma Module is enabled", func() {
+	Context("Given SKR Cluster", func() {
+		It("When Kyma Module is enabled", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
 				Should(Succeed())
+		})
 
-			By("Then Module CR exists")
+		It("Then Module CR exists", func() {
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR).
 				Should(Succeed())
 		})
 
-		It("When a finalizer is added to Module CR", func() {
+		It("When finalizer is added to Module CR", func() {
 			Expect(AddFinalizerToModuleCR(ctx, runtimeClient, moduleCR, moduleCRFinalizer)).
 				Should(Succeed())
 
@@ -41,27 +42,24 @@ var _ = Describe("Purge Controller", Ordered, func() {
 
 			Expect(KymaHasDeletionTimestamp(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())).
 				Should(BeTrue())
+		})
 
-			By("Then finalizer is removed from Module CR after purge timeout")
+		It("Then finalizer is removed from Module CR after purge timeout", func() {
 			time.Sleep(5 * time.Second)
 			Eventually(FinalizerIsRemoved).
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR, moduleCRFinalizer).
 				Should(Succeed())
 
-			By("And Module CR is deleted")
+			By("And Module CR, KCP Kyma CR and SKR Kyma CR are deleted")
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR).
 				Should(Equal(ErrNotFound))
-
-			By("And KCP Kyma CR is deleted")
 			Eventually(KymaDeleted).
 				WithContext(ctx).
 				WithArguments(kyma.GetName(), kyma.GetNamespace(), controlPlaneClient).
 				Should(Succeed())
-
-			By("And SKR Kyma CR is deleted")
 			Eventually(KymaDeleted).
 				WithContext(ctx).
 				WithArguments(defaultRemoteKymaName, remoteNamespace, runtimeClient).
