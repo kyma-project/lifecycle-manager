@@ -250,6 +250,7 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 		},
 		InKCPMode:           flagVar.inKCPMode,
 		RemoteSyncNamespace: flagVar.remoteSyncNamespace,
+		IsManagedKyma:       flagVar.IsKymaManaged,
 		Metrics:             metrics.NewKymaMetrics(),
 	}).SetupWithManager(
 		mgr, options, controller.SetupUpSetting{
