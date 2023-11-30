@@ -87,25 +87,25 @@ patches:
 # Note1: Now as the 'patchesJson6902' is deprecated, the direct use of the 'PatchTransformer' is the only way to change a resource namespace to something different from the value configured by the global namespace transformer.
 # Note2: the 'grafana_dashboard' label could be applied using a standard JSON patch, but a namespace must be patched here and it's better to have all related customizations in a single place. 
 transformers:
-- |-
-  apiVersion: builtin
-  kind: PatchTransformer
-  metadata:
-    name: fix-overview-cm
-  patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "kyma-system"}, {"op": "add", "path": "/metadata/labels/grafana_dashboard", "value": "1"}]'
-  target:
-    kind: ConfigMap
-    name: klm-overview
-    version: v1
-- |-
-  apiVersion: builtin
-  kind: PatchTransformer
-  metadata:
-    name: fix-status-cm
-  patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "kyma-system"}, {"op": "add", "path": "/metadata/labels/grafana_dashboard", "value": "1"}]'
-  target:
-    kind: ConfigMap
-    name: klm-status
+  - |-
+    apiVersion: builtin
+    kind: PatchTransformer
+    metadata:
+      name: fix-overview-cm
+    patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "kyma-system"}, {"op": "add", "path": "/metadata/labels/grafana_dashboard", "value": "1"}]'
+    target:
+      kind: ConfigMap
+      name: klm-overview
+      version: v1
+  - |-
+    apiVersion: builtin
+    kind: PatchTransformer
+    metadata:
+      name: fix-status-cm
+    patch: '[{"op": "replace", "path": "/metadata/namespace", "value": "kyma-system"}, {"op": "add", "path": "/metadata/labels/grafana_dashboard", "value": "1"}]'
+    target:
+      kind: ConfigMap
+      name: klm-status
     version: v1
 - |-
   apiVersion: builtin
@@ -131,81 +131,81 @@ transformers:
     name: klm-watcher-selfsigned-issuer
 
 replacements:
-# substitutes CERTIFICATE_NAMESPACE, the namespace of the certificate CR
-- source:
-    kind: Certificate
+  # substitutes CERTIFICATE_NAMESPACE, the namespace of the certificate CR
+  - source:
+      kind: Certificate
     name: serving-cert # this name should match the one in certificate.yaml
-    fieldPath: metadata.namespace
-  targets:
-  - select:
-      kind: ValidatingWebhookConfiguration
-      name: validating-webhook-configuration
-    fieldpaths:
-    - metadata.annotations.[cert-manager.io/inject-ca-from]
-    options:
-      delimiter: '/'
-      index: 0
-  - select:
-      kind: CustomResourceDefinition
-    fieldpaths:
-    - metadata.annotations.[cert-manager.io/inject-ca-from]
-    options:
-      delimiter: '/'
-      index: 0
-# substitutes CERTIFICATE_NAME, the name of the certificate CR
-- source:
+      fieldPath: metadata.namespace
+    targets:
+      - select:
+          kind: ValidatingWebhookConfiguration
+          name: validating-webhook-configuration
+        fieldpaths:
+          - metadata.annotations.[cert-manager.io/inject-ca-from]
+        options:
+          delimiter: '/'
+          index: 0
+      - select:
+          kind: CustomResourceDefinition
+        fieldpaths:
+          - metadata.annotations.[cert-manager.io/inject-ca-from]
+        options:
+          delimiter: '/'
+          index: 0
+  # substitutes CERTIFICATE_NAME, the name of the certificate CR
+  - source:
     kind: Certificate
     name: serving-cert # this name should match the one in certificate.yaml
     fieldPath: metadata.name
-  targets:
-  - select:
-      kind: ValidatingWebhookConfiguration
-      name: validating-webhook-configuration
-    fieldpaths:
-    - metadata.annotations.[cert-manager.io/inject-ca-from]
-    options:
-      delimiter: '/'
-      index: 1
-  - select:
-      kind: CustomResourceDefinition
-    fieldpaths:
-    - metadata.annotations.[cert-manager.io/inject-ca-from]
-    options:
-      delimiter: '/'
-      index: 1
-# substitutes SERVICE_NAMESPACE, the namespace of the service
-- source:
+    targets:
+      - select:
+          kind: ValidatingWebhookConfiguration
+          name: validating-webhook-configuration
+        fieldpaths:
+          - metadata.annotations.[cert-manager.io/inject-ca-from]
+        options:
+          delimiter: '/'
+          index: 1
+      - select:
+          kind: CustomResourceDefinition
+        fieldpaths:
+          - metadata.annotations.[cert-manager.io/inject-ca-from]
+        options:
+          delimiter: '/'
+          index: 1
+  # substitutes SERVICE_NAMESPACE, the namespace of the service
+  - source:
     kind: Service
     version: v1
     name: webhook-service
     fieldpath: metadata.namespace
-  targets:
-  - select:
-      group: cert-manager.io
-      version: v1
-      kind: Certificate
-      name: serving-cert
-    fieldpaths:
-    - spec.dnsNames.0
-    - spec.dnsNames.1
-    options:
-      delimiter: '.'
-      index: 1
-# substitutes SERVICE_NAME, the name of the service
-- source:
+    targets:
+      - select:
+          group: cert-manager.io
+          version: v1
+          kind: Certificate
+          name: serving-cert
+        fieldpaths:
+          - spec.dnsNames.0
+          - spec.dnsNames.1
+        options:
+          delimiter: '.'
+          index: 1
+  # substitutes SERVICE_NAME, the name of the service
+  - source:
     kind: Service
     version: v1
     name: webhook-service
     fieldpath: metadata.name
-  targets:
-  - select:
-      group: cert-manager.io
-      version: v1
-      kind: Certificate
-      name: serving-cert
-    fieldpaths:
-    - spec.dnsNames.0
-    - spec.dnsNames.1
-    options:
-      delimiter: '.'
-      index: 0
+    targets:
+      - select:
+          group: cert-manager.io
+          version: v1
+          kind: Certificate
+          name: serving-cert
+        fieldpaths:
+          - spec.dnsNames.0
+          - spec.dnsNames.1
+        options:
+          delimiter: '.'
+          index: 0
