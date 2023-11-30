@@ -4,7 +4,7 @@ body:
     attributes:
       value: |
         Hello! Thanks for reaching out to us with your question! 
-        Before you submit the question we would like to ask - please make sure to check other discussions and FAQ page, perhaps it was already answered!
+        Before you submit the question we would like to ask - please make sure to check other discussions and the FAQ page, perhaps it was already answered!
   - type: textarea
     id: question
     attributes:
@@ -16,7 +16,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Is there anything that could help us answer the question? Perhaps there are resources or screenshots that could provide an additional context?
+        Is there anything that could help us answer the question? Perhaps there are resources or screenshots that could provide additional context?
   - type: textarea
     id: attachments
     attributes:
