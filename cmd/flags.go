@@ -11,6 +11,7 @@ import (
 const (
 	defaultKymaRequeueSuccessInterval                    = 30 * time.Second
 	defaultKymaRequeueErrInterval                        = 2 * time.Second
+	defaultKymaRequeueWarningInterval                    = 30 * time.Second
 	defaultKymaRequeueBusyInterval                       = 5 * time.Second
 	defaultManifestRequeueSuccessInterval                = 30 * time.Second
 	defaultWatcherRequeueSuccessInterval                 = 30 * time.Second
@@ -64,6 +65,9 @@ func defineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.kymaRequeueErrInterval, "kyma-requeue-error-interval",
 		defaultKymaRequeueErrInterval,
 		"determines the duration after which a Kyma in Error state is enqueued for reconciliation.") //nolint:lll
+	flag.DurationVar(&flagVar.kymaRequeueWarningInterval, "kyma-requeue-warning-interval",
+		defaultKymaRequeueWarningInterval,
+		"determines the duration after which a Kyma in Warning state is enqueued for reconciliation.")
 	flag.DurationVar(&flagVar.kymaRequeueBusyInterval, "kyma-requeue-busy-interval",
 		defaultKymaRequeueBusyInterval,
 		"determines the duration after which a Kyma in Processing state is enqueued for reconciliation.") //nolint:lll
@@ -152,6 +156,7 @@ type FlagVar struct {
 	kymaRequeueSuccessInterval             time.Duration
 	kymaRequeueErrInterval                 time.Duration
 	kymaRequeueBusyInterval                time.Duration
+	kymaRequeueWarningInterval             time.Duration
 	manifestRequeueSuccessInterval         time.Duration
 	watcherRequeueSuccessInterval          time.Duration
 	moduleVerificationKeyFilePath          string
