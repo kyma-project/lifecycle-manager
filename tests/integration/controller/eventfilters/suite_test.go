@@ -128,6 +128,7 @@ var _ = BeforeSuite(func() {
 		Success: 5 * time.Minute,
 		Busy:    100 * time.Millisecond,
 		Error:   100 * time.Millisecond,
+		Warning: 100 * time.Millisecond,
 	}
 
 	remoteClientCache := remote.NewClientCache()
