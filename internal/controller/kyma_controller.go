@@ -73,7 +73,7 @@ type KymaReconciler struct {
 	InKCPMode           bool
 	RemoteSyncNamespace string
 	IsManagedKyma       bool
-	KymaMetrics         *metrics.KymaMetrics
+	Metrics             *metrics.KymaMetrics
 }
 
 //nolint:lll
@@ -119,7 +119,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, remote.ErrAccessSecretNotFound) {
 		logger.Info("access secret not found for kyma, assuming already deleted cluster")
-		r.KymaMetrics.CleanupMetrics(kyma.Name)
+		r.Metrics.CleanupMetrics(kyma)
 		r.removeAllFinalizers(kyma)
 		return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
 	}
@@ -415,7 +415,8 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		logger.Info("removed remote finalizer")
 	}
 
-	r.KymaMetrics.CleanupMetrics(kyma.Name)
+	r.Metrics.CleanupMetrics(kyma)
+
 	controllerutil.RemoveFinalizer(kyma, v1beta2.Finalizer)
 	return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
 }
@@ -449,7 +450,7 @@ func (r *KymaReconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.K
 		return fmt.Errorf("sync failed: %w", err)
 	}
 
-	runner.SyncModuleStatus(ctx, kyma, modules, r.KymaMetrics)
+	runner.SyncModuleStatus(ctx, kyma, modules, r.Metrics)
 	// If module get removed from kyma, the module deletion happens here.
 
 	if err := r.DeleteNoLongerExistingModules(ctx, kyma); err != nil {
@@ -542,7 +543,7 @@ func (r *KymaReconciler) deleteManifest(ctx context.Context, trackedManifest *v1
 }
 
 func (r *KymaReconciler) UpdateMetrics(ctx context.Context, kyma *v1beta2.Kyma) {
-	if err := r.KymaMetrics.UpdateAll(kyma); err != nil {
+	if err := r.Metrics.UpdateAll(kyma); err != nil {
 		if metrics.IsMissingMetricsAnnotationOrLabel(err) {
 			r.enqueueWarningEvent(kyma, metricsError, err)
 		}

@@ -159,6 +159,7 @@ var _ = BeforeSuite(func() {
 		Success: 1 * time.Second,
 		Busy:    100 * time.Millisecond,
 		Error:   100 * time.Millisecond,
+		Warning: 100 * time.Millisecond,
 	}
 
 	// This k8sClient is used to install external resources
@@ -218,7 +219,7 @@ var _ = BeforeSuite(func() {
 		KcpRestConfig:       k8sManager.GetConfig(),
 		RemoteSyncNamespace: controller.DefaultRemoteSyncNamespace,
 		InKCPMode:           true,
-		KymaMetrics:         metrics.NewKymaMetrics(),
+		Metrics:             metrics.NewKymaMetrics(),
 	}).SetupWithManager(k8sManager, ctrlruntime.Options{}, controller.SetupUpSetting{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 

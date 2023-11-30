@@ -8,29 +8,30 @@ import (
 )
 
 const (
-	defaultKymaRequeueSuccessInterval                     = 30 * time.Second
-	defaultKymaRequeueErrInterval                         = 2 * time.Second
-	defaultKymaRequeueBusyInterval                        = 5 * time.Second
-	defaultManifestRequeueSuccessInterval                 = 30 * time.Second
-	defaultWatcherRequeueSuccessInterval                  = 30 * time.Second
-	defaultClientQPS                                      = 300
-	defaultClientBurst                                    = 600
-	defaultPprofServerTimeout                             = 90 * time.Second
-	rateLimiterBurstDefault                               = 200
-	rateLimiterFrequencyDefault                           = 30
-	failureBaseDelayDefault                               = 100 * time.Millisecond
-	failureMaxDelayDefault                                = 5 * time.Second
-	defaultCacheSyncTimeout                               = 2 * time.Minute
-	defaultLogLevel                                       = log.WarnLevel
-	defaultPurgeFinalizerTimeout                          = 5 * time.Minute
-	defaultMaxConcurrentManifestReconciles                = 1
-	defaultMaxConcurrentKymaReconciles                    = 1
-	defaultMaxConcurrentWatcherReconciles                 = 1
-	defaultIstioGatewayName                               = "klm-watcher-gateway"
-	defaultIstioGatewayNamespace                          = "kcp-system"
-	defaultIstioNamespace                                 = "istio-system"
-	defaultCaCertName                                     = "klm-watcher-serving-cert"
-	defaultCaCertCacheTTL                   time.Duration = 1 * time.Hour
+	defaultKymaRequeueSuccessInterval                    = 30 * time.Second
+	defaultKymaRequeueErrInterval                        = 2 * time.Second
+	defaultKymaRequeueWarningInterval                    = 30 * time.Second
+	defaultKymaRequeueBusyInterval                       = 5 * time.Second
+	defaultManifestRequeueSuccessInterval                = 30 * time.Second
+	defaultWatcherRequeueSuccessInterval                 = 30 * time.Second
+	defaultClientQPS                                     = 300
+	defaultClientBurst                                   = 600
+	defaultPprofServerTimeout                            = 90 * time.Second
+	rateLimiterBurstDefault                              = 200
+	rateLimiterFrequencyDefault                          = 30
+	failureBaseDelayDefault                              = 100 * time.Millisecond
+	failureMaxDelayDefault                               = 5 * time.Second
+	defaultCacheSyncTimeout                              = 2 * time.Minute
+	defaultLogLevel                                      = log.WarnLevel
+	defaultPurgeFinalizerTimeout                         = 5 * time.Minute
+	defaultMaxConcurrentManifestReconciles               = 1
+	defaultMaxConcurrentKymaReconciles                   = 1
+	defaultMaxConcurrentWatcherReconciles                = 1
+	defaultIstioGatewayName                              = "klm-watcher-gateway"
+	defaultIstioGatewayNamespace                         = "kcp-system"
+	defaultIstioNamespace                                = "istio-system"
+	defaultCaCertName                                    = "klm-watcher-serving-cert"
+	defaultCaCertCacheTTL                  time.Duration = 1 * time.Hour
 	defaultSelfSignedCertDuration           time.Duration = 90 * 24 * time.Hour
 	defaultSelfSignedCertRenewBefore        time.Duration = 60 * 24 * time.Hour
 	defaultSelfSignedCertificateRenewBuffer               = 24 * time.Hour
@@ -67,6 +68,9 @@ func DefineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.kymaRequeueErrInterval, "kyma-requeue-error-interval",
 		defaultKymaRequeueErrInterval,
 		"determines the duration after which a Kyma in Error state is enqueued for reconciliation.") //nolint:lll
+	flag.DurationVar(&flagVar.kymaRequeueWarningInterval, "kyma-requeue-warning-interval",
+		defaultKymaRequeueWarningInterval,
+		"determines the duration after which a Kyma in Warning state is enqueued for reconciliation.")
 	flag.DurationVar(&flagVar.kymaRequeueBusyInterval, "kyma-requeue-busy-interval",
 		defaultKymaRequeueBusyInterval,
 		"determines the duration after which a Kyma in Processing state is enqueued for reconciliation.") //nolint:lll
@@ -163,6 +167,7 @@ type FlagVar struct {
 	kymaRequeueSuccessInterval             time.Duration
 	kymaRequeueErrInterval                 time.Duration
 	kymaRequeueBusyInterval                time.Duration
+	kymaRequeueWarningInterval             time.Duration
 	manifestRequeueSuccessInterval         time.Duration
 	watcherRequeueSuccessInterval          time.Duration
 	moduleVerificationKeyFilePath          string

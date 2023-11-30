@@ -123,6 +123,7 @@ var _ = BeforeSuite(func() {
 		Success: 1 * time.Second,
 		Busy:    100 * time.Millisecond,
 		Error:   100 * time.Millisecond,
+		Warning: 100 * time.Millisecond,
 	}
 
 	remoteClientCache := remote.NewClientCache()
@@ -138,7 +139,7 @@ var _ = BeforeSuite(func() {
 		InKCPMode:           true,
 		RemoteSyncNamespace: controller.DefaultRemoteSyncNamespace,
 		IsManagedKyma:       true,
-		KymaMetrics:         metrics.NewKymaMetrics(),
+		Metrics:             metrics.NewKymaMetrics(),
 	}).SetupWithManager(k8sManager, ctrlruntime.Options{},
 		controller.SetupUpSetting{ListenerAddr: UseRandomPort})
 	Expect(err).ToNot(HaveOccurred())

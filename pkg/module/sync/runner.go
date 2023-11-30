@@ -43,7 +43,6 @@ type Runner struct {
 	converter machineryruntime.ObjectConvertor
 }
 
-// ReconcileManifests implements Runner.Sync.
 func (r *Runner) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	modules common.Modules,
 ) error {
@@ -129,11 +128,9 @@ func (r *Runner) deleteManifest(ctx context.Context, module *common.Module) erro
 }
 
 func (r *Runner) setupModule(module *common.Module, kyma *v1beta2.Kyma) error {
-	// set labels
 	module.ApplyLabelsAndAnnotations(kyma)
 	refs := module.GetOwnerReferences()
 	if len(refs) == 0 {
-		// set owner reference
 		if err := controllerutil.SetControllerReference(kyma, module.Manifest, r.Scheme()); err != nil {
 			return fmt.Errorf("error setting owner reference on component CR of type: %s for resource %s %w",
 				module.GetName(), kyma.Name, err)
@@ -146,11 +143,11 @@ func (r *Runner) setupModule(module *common.Module, kyma *v1beta2.Kyma) error {
 func (r *Runner) SyncModuleStatus(ctx context.Context, kyma *v1beta2.Kyma, modules common.Modules,
 	metrics ModuleMetrics,
 ) {
-	r.updateModuleStatusFromExistingModules(modules, kyma)
+	updateModuleStatusFromExistingModules(modules, kyma)
 	DeleteNoLongerExistingModuleStatus(ctx, kyma, r.getModule, metrics)
 }
 
-func (r *Runner) updateModuleStatusFromExistingModules(
+func updateModuleStatusFromExistingModules(
 	modules common.Modules,
 	kyma *v1beta2.Kyma,
 ) {

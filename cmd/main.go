@@ -28,6 +28,7 @@ import (
 	"time"
 
 	certmanagerv1 "github.com/cert-manager/cert-manager/pkg/apis/certmanager/v1"
+	watchermetrics "github.com/kyma-project/runtime-watcher/listener/pkg/metrics"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/time/rate"
 	istioclientapiv1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
@@ -45,6 +46,7 @@ import (
 	ctrlruntime "sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	"github.com/kyma-project/lifecycle-manager/api"
@@ -242,6 +244,7 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 			Success: flagVar.kymaRequeueSuccessInterval,
 			Busy:    flagVar.kymaRequeueBusyInterval,
 			Error:   flagVar.kymaRequeueErrInterval,
+			Warning: flagVar.kymaRequeueWarningInterval,
 		},
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: flagVar.enableVerification,
@@ -249,8 +252,7 @@ func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache
 		},
 		InKCPMode:           flagVar.inKCPMode,
 		RemoteSyncNamespace: flagVar.remoteSyncNamespace,
-		IsManagedKyma:       flagVar.IsKymaManaged,
-		KymaMetrics:         metrics.NewKymaMetrics(),
+		Metrics:             metrics.NewKymaMetrics(),
 	}).SetupWithManager(
 		mgr, options, controller.SetupUpSetting{
 			ListenerAddr:                 flagVar.kymaListenerAddr,
@@ -344,6 +346,7 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 			Success: flagVar.watcherRequeueSuccessInterval,
 			Busy:    defaultKymaRequeueBusyInterval,
 			Error:   defaultKymaRequeueErrInterval,
+			Warning: defaultKymaRequeueWarningInterval,
 		},
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controller.WatcherControllerName)
