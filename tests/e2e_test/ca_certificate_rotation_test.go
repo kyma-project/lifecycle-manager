@@ -26,7 +26,7 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 	var caCertificate *certmanagerv1.Certificate
 	caCertName := "klm-watcher-serving-cert"
 
-	Context("Given Kyma deployed in KCP and CA certificate is rotated", func() {
+	Context("Given KCP Cluster and rotated CA certificate", func() {
 		kcpNamespacedSecretName := types.NamespacedName{
 			Name:      fmt.Sprintf("%s-webhook-tls", kyma.Name),
 			Namespace: "istio-system",
@@ -36,7 +36,7 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 			Name:      watcher.SkrTLSName,
 			Namespace: remoteNamespace,
 		}
-		It("Then Kyma certificate is removed", func() {
+		It("Then KCP TLS Certificate is removed", func() {
 			timeNow := &apimetav1.Time{Time: time.Now()}
 			expectedLogMessage := "CA Certificate was rotated, removing certificate"
 			// The timeout used is 4 minutes bec the certificate gets rotated every 1 minute
@@ -45,9 +45,8 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 				WithArguments(expectedLogMessage, controlPlaneRESTConfig, runtimeRESTConfig,
 					controlPlaneClient, runtimeClient, timeNow).
 				Should(Succeed())
-		})
 
-		It("And new certificate is created", func() {
+			By("And new TLS Certificate is created")
 			var err error
 			namespacedCertName := types.NamespacedName{
 				Name:      caCertName,
@@ -59,9 +58,8 @@ var _ = Describe("CA Certificate Rotation", Ordered, func() {
 				WithContext(ctx).
 				WithArguments(kcpNamespacedSecretName, controlPlaneClient, caCertificate.Status.NotBefore).
 				Should(Succeed())
-		})
 
-		It("And new certificate is synced to SKR cluster", func() {
+			By("And new TLS Certificate is synced to SKR Cluster")
 			Eventually(CertificateSecretIsSyncedToSkrCluster).
 				WithContext(ctx).
 				WithArguments(kcpNamespacedSecretName, controlPlaneClient, skrNamespacedSecretName, runtimeClient).

@@ -17,29 +17,26 @@ var _ = Describe("Purge Metrics", Ordered, func() {
 	moduleCR := NewTestModuleCR(remoteNamespace)
 	InitEmptyKymaBeforeAll(kyma)
 
-	Context("Given Template Operator", func() {
-		It("When enable Template Operator", func() {
+	Context("Given SKR Cluster", func() {
+		It("When Kyma Module is enabled", func() {
 			Eventually(EnableModule).
 				WithContext(ctx).
 				WithArguments(runtimeClient, defaultRemoteKymaName, remoteNamespace, module).
 				Should(Succeed())
 		})
 
-		It("Then module CR exists", func() {
+		It("Then Module CR exists", func() {
 			Eventually(ModuleCRExists).
 				WithContext(ctx).
 				WithArguments(runtimeClient, moduleCR).
 				Should(Succeed())
 		})
-	})
 
-	Context("Given a module CR", func() {
-		It("When a finalizer is added to Module CR", func() {
+		It("When finalizer is added to Module CR", func() {
 			Expect(AddFinalizerToModuleCR(ctx, runtimeClient, moduleCR, moduleCRFinalizer)).
 				Should(Succeed())
-		})
 
-		It("And Kyma has deletion timestamp set", func() {
+			By("And KCP Kyma CR has deletion timestamp set")
 			Expect(DeleteKyma(ctx, controlPlaneClient, kyma)).
 				Should(Succeed())
 
@@ -47,7 +44,7 @@ var _ = Describe("Purge Metrics", Ordered, func() {
 				Should(BeTrue())
 		})
 
-		It("Then purge metrics are updated", func() {
+		It("Then Purge Metrics are updated", func() {
 			time.Sleep(5 * time.Second)
 			Eventually(PurgeMetricsAreAsExpected).
 				WithContext(ctx).
