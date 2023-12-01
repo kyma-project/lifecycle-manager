@@ -17,8 +17,10 @@ import (
 )
 
 var (
-	ErrManifestResourceIsNil = errors.New("manifest spec.resource is nil")
-	ErrManifestsExist        = errors.New("cluster contains manifest CRs")
+	ErrManifestResourceIsNil        = errors.New("manifest spec.resource is nil")
+	ErrManifestsExist               = errors.New("cluster contains manifest CRs")
+	errManifestNotInExpectedState   = errors.New("manifest CR not in expected state")
+	errManifestDeletionTimestampSet = errors.New("manifest CR has set DeletionTimeStamp")
 )
 
 func NewTestManifest(prefix string) *v1beta2.Manifest {
@@ -173,4 +175,69 @@ func SkipLabelExistsInManifest(ctx context.Context,
 	}
 
 	return manifest.Labels[declarativev2.SkipReconcileLabel] == "true"
+}
+
+func CheckManifestIsInState(
+	ctx context.Context,
+	kymaName, kymaNamespace, moduleName string,
+	clnt client.Client,
+	expectedState shared.State,
+) error {
+	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	if err != nil {
+		return err
+	}
+
+	if manifest.Status.State != expectedState {
+		return fmt.Errorf("%w: expect %s, but in %s",
+			errManifestNotInExpectedState, expectedState, manifest.Status.State)
+	}
+	return nil
+}
+
+func GetManifestLabels(
+	ctx context.Context,
+	kymaName, kymaNamespace, moduleName string,
+	clnt client.Client,
+) (map[string]string, error) {
+	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	if err != nil {
+		return nil, err
+	}
+
+	return manifest.GetLabels(), nil
+}
+
+func SetManifestLabels(
+	ctx context.Context,
+	kymaName, kymaNamespace, moduleName string,
+	clnt client.Client,
+	labels map[string]string,
+) error {
+	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	if err != nil {
+		return err
+	}
+	manifest.SetLabels(labels)
+	err = clnt.Update(ctx, manifest)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ManifestNoDeletionTimeStampSet(ctx context.Context,
+	kymaName, kymaNamespace, moduleName string,
+	clnt client.Client,
+) error {
+	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
+	if err != nil {
+		return err
+	}
+
+	if !manifest.ObjectMeta.DeletionTimestamp.IsZero() {
+		return errManifestDeletionTimestampSet
+	}
+	return nil
 }
