@@ -202,7 +202,7 @@ func GetManifestLabels(
 ) (map[string]string, error) {
 	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error getting manifest: %w", err)
 	}
 
 	return manifest.GetLabels(), nil
@@ -216,12 +216,12 @@ func SetManifestLabels(
 ) error {
 	manifest, err := GetManifest(ctx, clnt, kymaName, kymaNamespace, moduleName)
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting manifest: %w", err)
 	}
 	manifest.SetLabels(labels)
 	err = clnt.Update(ctx, manifest)
 	if err != nil {
-		return err
+		return fmt.Errorf("error updating manifest: %w", err)
 	}
 
 	return nil

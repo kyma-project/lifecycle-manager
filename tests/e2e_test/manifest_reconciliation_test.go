@@ -74,7 +74,6 @@ var _ = Describe("Manifest Skip Reconciliation Label", Ordered, func() {
 				WithArguments("template-operator-controller-manager", "template-operator-system",
 					"apps", "v1", "Deployment", runtimeClient).
 				Should(Succeed())
-
 		})
 
 		It("When the Manifest skip reconciliation label removed",
