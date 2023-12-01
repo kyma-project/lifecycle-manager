@@ -14,6 +14,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -59,8 +60,8 @@ type CertificateConfig struct {
 	// AdditionalDNSNames indicates the DNS Names which should be added additional to the Subject
 	// Alternative Names of each Kyma Certificate
 	AdditionalDNSNames []string
-	Duration           apimetav1.Duration
-	RenewBefore        apimetav1.Duration
+	Duration           time.Duration
+	RenewBefore        time.Duration
 	RenewBuffer        time.Duration
 }
 
@@ -103,7 +104,7 @@ func (c *CertificateManager) Remove(ctx context.Context) error {
 		return err
 	}
 
-	return c.RemoveSecret(ctx)
+	return c.removeSecret(ctx)
 }
 
 func (c *CertificateManager) RemoveCertificate(ctx context.Context) error {
@@ -122,7 +123,7 @@ func (c *CertificateManager) RemoveCertificate(ctx context.Context) error {
 	return nil
 }
 
-func (c *CertificateManager) RemoveSecret(ctx context.Context) error {
+func (c *CertificateManager) removeSecret(ctx context.Context) error {
 	certSecret := &apicorev1.Secret{}
 	if err := c.kcpClient.Get(ctx, client.ObjectKey{
 		Name:      c.secretName,
@@ -173,8 +174,8 @@ func (c *CertificateManager) patchCertificate(ctx context.Context,
 			Namespace: c.config.IstioNamespace,
 		},
 		Spec: certmanagerv1.CertificateSpec{
-			Duration:       &c.config.Duration,
-			RenewBefore:    &c.config.RenewBefore,
+			Duration:       &apimetav1.Duration{Duration: c.config.Duration},
+			RenewBefore:    &apimetav1.Duration{Duration: c.config.RenewBefore},
 			DNSNames:       subjectAltName.DNSNames,
 			IPAddresses:    subjectAltName.IPAddresses,
 			URIs:           subjectAltName.URIs,
@@ -248,7 +249,7 @@ func (c *CertificateManager) getIssuer(ctx context.Context) (*certmanagerv1.Issu
 	return &issuerList.Items[0], nil
 }
 
-func (c *CertificateManager) GetCertificateSecret(ctx context.Context) (*apicorev1.Secret, error) {
+func (c *CertificateManager) getCertificateSecret(ctx context.Context) (*apicorev1.Secret, error) {
 	secret := &apicorev1.Secret{}
 	err := c.kcpClient.Get(ctx, client.ObjectKey{Name: c.secretName, Namespace: c.config.IstioNamespace},
 		secret)
@@ -266,7 +267,7 @@ func (e *CertificateNotReadyError) Error() string {
 	return "Certificate-Secret does not exist"
 }
 
-func (c *CertificateManager) GetCACertificate(ctx context.Context) (*certmanagerv1.Certificate, error) {
+func (c *CertificateManager) getCACertificate(ctx context.Context) (*certmanagerv1.Certificate, error) {
 	cachedCert := c.caCertCache.GetCACertFromCache(c.config.CACertificateName)
 
 	if cachedCert == nil || certificateRenewalTimePassed(cachedCert) {
@@ -281,6 +282,28 @@ func (c *CertificateManager) GetCACertificate(ctx context.Context) (*certmanager
 	}
 
 	return cachedCert, nil
+}
+
+func (c *CertificateManager) RemoveSecretAfterCARotated(ctx context.Context, kymaObjKey client.ObjectKey) error {
+	caCertificate, err := c.getCACertificate(ctx)
+	if err != nil {
+		return fmt.Errorf("error while fetching CA Certificate: %w", err)
+	}
+
+	certSecret, err := c.getCertificateSecret(ctx)
+	if err != nil {
+		return fmt.Errorf("error while fetching certificate: %w", err)
+	}
+
+	if certSecret != nil && (certSecret.CreationTimestamp.Before(caCertificate.Status.NotBefore)) {
+		logf.FromContext(ctx).V(log.DebugLevel).Info("CA Certificate was rotated, removing certificate",
+			"kyma", kymaObjKey)
+		if err = c.removeSecret(ctx); err != nil {
+			return fmt.Errorf("error while removing certificate: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func certificateRenewalTimePassed(cert *certmanagerv1.Certificate) bool {

@@ -80,8 +80,8 @@ var _ = Describe("Create Watcher Certificates", Ordered, func() {
 				RemoteSyncNamespace: test.namespace.Name,
 				CACertificateName:   caCertName,
 				AdditionalDNSNames:  []string{},
-				Duration:            apimetav1.Duration{Duration: 1 * time.Hour},
-				RenewBefore:         apimetav1.Duration{Duration: 5 * time.Minute},
+				Duration:            1 * time.Hour,
+				RenewBefore:         5 * time.Minute,
 			}
 			cert := watcher.NewCertificateManager(controlPlaneClient,
 				test.kyma.Name, config, watcher.NewCACertificateCache(1*time.Minute))

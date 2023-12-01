@@ -101,9 +101,9 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 		return fmt.Errorf("error while patching certificate: %w", err)
 	}
 
-	m.verifyCertNotRenew(certificate, kyma)
+	m.updateCertNotRenewMetrics(certificate, kyma)
 
-	if err := verifyCACertRotation(ctx, certificateMgr, kymaObjKey); err != nil {
+	if err := certificateMgr.RemoveSecretAfterCARotated(ctx, kymaObjKey); err != nil {
 		return fmt.Errorf("error verify CA cert rotation: %w", err)
 	}
 
@@ -131,7 +131,7 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 	return nil
 }
 
-func (m *SKRWebhookManifestManager) verifyCertNotRenew(certificate *certmanagerv1.Certificate,
+func (m *SKRWebhookManifestManager) updateCertNotRenewMetrics(certificate *certmanagerv1.Certificate,
 	kyma *v1beta2.Kyma,
 ) {
 	if certificate.Status.RenewalTime != nil &&
@@ -140,31 +140,6 @@ func (m *SKRWebhookManifestManager) verifyCertNotRenew(certificate *certmanagerv
 	} else {
 		m.WatcherMetrics.CleanupMetrics(kyma.Name)
 	}
-}
-
-func verifyCACertRotation(ctx context.Context,
-	certificateMgr *CertificateManager,
-	kymaObjKey client.ObjectKey,
-) error {
-	caCertificate, err := certificateMgr.GetCACertificate(ctx)
-	if err != nil {
-		return fmt.Errorf("error while fetching CA Certificate: %w", err)
-	}
-
-	certSecret, err := certificateMgr.GetCertificateSecret(ctx)
-	if err != nil {
-		return fmt.Errorf("error while fetching certificate: %w", err)
-	}
-
-	if certSecret != nil && (certSecret.CreationTimestamp.Before(caCertificate.Status.NotBefore)) {
-		logf.FromContext(ctx).V(log.DebugLevel).Info("CA Certificate was rotated, removing certificate",
-			"kyma", kymaObjKey)
-		if err = certificateMgr.RemoveSecret(ctx); err != nil {
-			return fmt.Errorf("error while removing certificate: %w", err)
-		}
-	}
-
-	return nil
 }
 
 func (m *SKRWebhookManifestManager) Remove(ctx context.Context, kyma *v1beta2.Kyma) error {

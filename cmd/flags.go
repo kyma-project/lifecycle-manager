@@ -145,7 +145,7 @@ func DefineFlagVar() *FlagVar {
 	flag.DurationVar(&flagVar.caCertCacheTTL, "ca-cert-cache-ttl", defaultCaCertCacheTTL,
 		"The ttl for the CA Certificate Cache")
 	flag.DurationVar(&flagVar.SelfSignedCertDuration, "self-signed-cert-duration", defaultSelfSignedCertDuration,
-		"The lifetime duration of self-signed certificate")
+		"The lifetime duration of self-signed certificate, minimum accepted duration is 1 hour.")
 	flag.DurationVar(&flagVar.SelfSignedCertRenewBefore, "self-signed-cert-renew-before",
 		defaultSelfSignedCertRenewBefore,
 		"How long before the currently issued self-signed certificate's expiry cert-manager should renew the certificate")

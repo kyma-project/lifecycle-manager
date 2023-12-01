@@ -278,8 +278,8 @@ func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (*watcher.SKRWe
 			RemoteSyncNamespace: flagVar.remoteSyncNamespace,
 			CACertificateName:   flagVar.caCertName,
 			AdditionalDNSNames:  strings.Split(flagVar.additionalDNSNames, ","),
-			Duration:            apimetav1.Duration{Duration: flagVar.SelfSignedCertDuration},
-			RenewBefore:         apimetav1.Duration{Duration: flagVar.SelfSignedCertRenewBefore},
+			Duration:            flagVar.SelfSignedCertDuration,
+			RenewBefore:         flagVar.SelfSignedCertRenewBefore,
 		}, watcher.GatewayConfig{
 			IstioGatewayName:          flagVar.istioGatewayName,
 			IstioGatewayNamespace:     flagVar.istioGatewayNamespace,

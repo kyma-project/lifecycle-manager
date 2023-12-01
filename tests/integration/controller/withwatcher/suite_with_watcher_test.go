@@ -189,9 +189,9 @@ var _ = BeforeSuite(func() {
 		IstioNamespace:      istioSystemNs,
 		RemoteSyncNamespace: controller.DefaultRemoteSyncNamespace,
 		CACertificateName:   caCertificateName,
-		AdditionalDNSNames:  nil,
-		Duration:            apimetav1.Duration{Duration: 1 * time.Hour},
-		RenewBefore:         apimetav1.Duration{Duration: 5 * time.Minute},
+		AdditionalDNSNames:  []string{},
+		Duration:            1 * time.Hour,
+		RenewBefore:         5 * time.Minute,
 	}
 
 	gatewayConfig := watcher.GatewayConfig{
