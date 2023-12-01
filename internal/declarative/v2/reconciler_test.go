@@ -1,4 +1,4 @@
-//nolint:testpackage,lll
+//nolint:testpackage // test private functions
 package v2
 
 import (
@@ -15,13 +15,39 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
+//nolint:funlen // Unit-Testing
 func TestPruneResource(t *testing.T) {
 	t.Parallel()
-	kubeNs := &resource.Info{Object: &apicorev1.Namespace{ObjectMeta: apimetav1.ObjectMeta{Name: "kube-system"}, TypeMeta: apimetav1.TypeMeta{Kind: "Namespace"}}}
-	service := &resource.Info{Object: &apicorev1.Service{ObjectMeta: apimetav1.ObjectMeta{Name: "some-service"}, TypeMeta: apimetav1.TypeMeta{Kind: "Service"}}}
-	kymaNs := &resource.Info{Object: &apicorev1.Namespace{ObjectMeta: apimetav1.ObjectMeta{Name: "kyma-system"}, TypeMeta: apimetav1.TypeMeta{Kind: "Namespace"}}}
-	deployment := &resource.Info{Object: &apiappsv1.Deployment{ObjectMeta: apimetav1.ObjectMeta{Name: "some-deploy"}, TypeMeta: apimetav1.TypeMeta{Kind: "Deployment"}}}
-	crd := &resource.Info{Object: &apiextensionsv1.CustomResourceDefinition{ObjectMeta: apimetav1.ObjectMeta{Name: "btpoperator"}, TypeMeta: apimetav1.TypeMeta{Kind: "CustomResourceDefinition"}}}
+	kubeNs := &resource.Info{
+		Object: &apicorev1.Namespace{
+			ObjectMeta: apimetav1.ObjectMeta{Name: "kube-system"},
+			TypeMeta:   apimetav1.TypeMeta{Kind: "Namespace"},
+		},
+	}
+	service := &resource.Info{
+		Object: &apicorev1.Service{
+			ObjectMeta: apimetav1.ObjectMeta{Name: "some-service"},
+			TypeMeta:   apimetav1.TypeMeta{Kind: "Service"},
+		},
+	}
+	kymaNs := &resource.Info{
+		Object: &apicorev1.Namespace{
+			ObjectMeta: apimetav1.ObjectMeta{Name: "kyma-system"},
+			TypeMeta:   apimetav1.TypeMeta{Kind: "Namespace"},
+		},
+	}
+	deployment := &resource.Info{
+		Object: &apiappsv1.Deployment{
+			ObjectMeta: apimetav1.ObjectMeta{Name: "some-deploy"},
+			TypeMeta:   apimetav1.TypeMeta{Kind: "Deployment"},
+		},
+	}
+	crd := &resource.Info{
+		Object: &apiextensionsv1.CustomResourceDefinition{
+			ObjectMeta: apimetav1.ObjectMeta{Name: "btpoperator"},
+			TypeMeta:   apimetav1.TypeMeta{Kind: "CustomResourceDefinition"},
+		},
+	}
 
 	t.Run("contains kyma-system", func(t *testing.T) {
 		t.Parallel()

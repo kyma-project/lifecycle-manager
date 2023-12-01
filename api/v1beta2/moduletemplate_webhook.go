@@ -41,8 +41,8 @@ func (m *ModuleTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return nil
 }
 
-//nolint:lll
-//+kubebuilder:webhook:path=/validate-operator-kyma-project-io-v1beta2-moduletemplate,mutating=false,failurePolicy=fail,sideEffects=None,groups=operator.kyma-project.io,resources=moduletemplates,verbs=create;update,versions=v1beta2,name=v1beta2.vmoduletemplate.kb.io,admissionReviewVersions=v1
+//nolint:lll // kubebuilder syntax
+// +kubebuilder:webhook:path=/validate-operator-kyma-project-io-v1beta2-moduletemplate,mutating=false,failurePolicy=fail,sideEffects=None,groups=operator.kyma-project.io,resources=moduletemplates,verbs=create;update,versions=v1beta2,name=v1beta2.vmoduletemplate.kb.io,admissionReviewVersions=v1
 
 var _ webhook.Validator = &ModuleTemplate{}
 
@@ -109,11 +109,13 @@ func Validate(oldDescriptor, newDescriptor *Descriptor, newTemplateName string) 
 func validationErr(newTemplateName string, newVersion string, errMsg string) *apierrors.StatusError {
 	return apierrors.NewInvalid(
 		schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
-		newTemplateName, field.ErrorList{field.Invalid(
-			field.NewPath("spec").Child("descriptor").
-				Child("version"),
-			newVersion, errMsg,
-		)},
+		newTemplateName, field.ErrorList{
+			field.Invalid(
+				field.NewPath("spec").Child("descriptor").
+					Child("version"),
+				newVersion, errMsg,
+			),
+		},
 	)
 }
 

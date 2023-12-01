@@ -1,3 +1,4 @@
+//nolint:gochecknoglobals // does not apply to unit and integration tests
 package declarative_test
 
 import (
@@ -40,7 +41,6 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-//nolint:gochecknoglobals
 var (
 	// this is a unique base testing directory that will be used within a given run
 	// it is expected to be removed externally (e.g. by testing.T) to cleanup leftovers
@@ -127,13 +127,15 @@ var _ = Describe(
 				"Create simple raw manifest with a different Control Plane and Runtime Client",
 				declarativetest.TestAPISpec{ManifestName: "custom-client"},
 				DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), ocirefSynced, RenderModeRaw),
-				[]Option{WithRemoteTargetCluster(
-					func(context.Context, Object) (*ClusterInfo, error) {
-						return &ClusterInfo{
-							Config: cfg,
-						}, nil
-					},
-				)},
+				[]Option{
+					WithRemoteTargetCluster(
+						func(context.Context, Object) (*ClusterInfo, error) {
+							return &ClusterInfo{
+								Config: cfg,
+							}, nil
+						},
+					),
+				},
 				nil,
 			),
 			Entry(
@@ -164,13 +166,15 @@ var _ = Describe("Test Manifest Reconciliation for module deletion", Ordered, fu
 
 	key := client.ObjectKeyFromObject(obj)
 
-	opts := []Option{WithRemoteTargetCluster(
-		func(context.Context, Object) (*ClusterInfo, error) {
-			return &ClusterInfo{
-				Config: cfg,
-			}, nil
-		},
-	)}
+	opts := []Option{
+		WithRemoteTargetCluster(
+			func(context.Context, Object) (*ClusterInfo, error) {
+				return &ClusterInfo{
+					Config: cfg,
+				}, nil
+			},
+		),
+	}
 	source := WithSpecResolver(DefaultSpec(filepath.Join(testSamplesDir, "raw-manifest.yaml"), ocirefSynced,
 		RenderModeRaw))
 	oldDeployedResources, err := internal.ParseManifestToObjects(path.Join(testSamplesDir, "raw-manifest.yaml"))
@@ -289,9 +293,11 @@ func StartDeclarativeReconcilerForRun(
 	Expect(
 		ctrl.NewControllerManagedBy(mgr).WithEventFilter(testWatchPredicate).
 			WithOptions(
-				ctrlruntime.Options{RateLimiter: workqueue.NewMaxOfRateLimiter(
-					&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(30), 200)},
-				)},
+				ctrlruntime.Options{
+					RateLimiter: workqueue.NewMaxOfRateLimiter(
+						&workqueue.BucketRateLimiter{Limiter: rate.NewLimiter(rate.Limit(30), 200)},
+					),
+				},
 			).
 			For(&declarativetest.TestAPI{}).Complete(reconciler),
 	).To(Succeed())

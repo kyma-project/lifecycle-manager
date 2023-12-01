@@ -23,12 +23,12 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
-//+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-//+kubebuilder:deprecatedversion:warning="kyma-project.io/v1beta1 Manifest is deprecated. Use v1beta2 instead."
-//+kubebuilder:storageversion
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:deprecatedversion:warning="kyma-project.io/v1beta1 Manifest is deprecated. Use v1beta2 instead."
+// +kubebuilder:storageversion
 
 // Manifest is the Schema for the manifests API.
 type Manifest struct {
@@ -39,7 +39,7 @@ type Manifest struct {
 	Status shared.Status        `json:"status,omitempty"`
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // ManifestList contains a list of Manifest.
 type ManifestList struct {
@@ -48,7 +48,7 @@ type ManifestList struct {
 	Items              []Manifest `json:"items"`
 }
 
-//nolint:gochecknoinits
+//nolint:gochecknoinits // registers Kyma CRD on startup
 func init() {
 	SchemeBuilder.Register(&Manifest{}, &ManifestList{})
 }

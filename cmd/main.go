@@ -68,12 +68,13 @@ import (
 )
 
 var (
-	scheme                 = machineryruntime.NewScheme() //nolint:gochecknoglobals
-	setupLog               = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals
+	// TODO: brauchen wir die nolints hier????
+	scheme                 = machineryruntime.NewScheme() //nolint:gochecknoglobals // scheme used to add CRDs
+	setupLog               = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals // logger used for setup
 	errMissingWatcherImage = errors.New("runtime watcher image is not provided")
 )
 
-//nolint:gochecknoinits
+//nolint:gochecknoinits // used to register all needed schemas
 func init() {
 	machineryutilruntime.Must(k8sclientscheme.AddToScheme(scheme))
 	machineryutilruntime.Must(api.AddToScheme(scheme))

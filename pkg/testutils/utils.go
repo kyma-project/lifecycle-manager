@@ -1,4 +1,4 @@
-//nolint:wrapcheck
+//nolint:wrapcheck // errors do not need to be wrapped in unit and integration test usage
 package testutils
 
 import (
@@ -16,6 +16,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	k8slabels "k8s.io/apimachinery/pkg/labels"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
@@ -27,7 +28,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
-	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 )
 
 const (
@@ -66,7 +66,10 @@ func NewTestIssuer(namespace string) *certmanagerv1.Issuer {
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      "test-issuer",
 			Namespace: namespace,
-			Labels:    watcher.LabelSet,
+			Labels: k8slabels.Set{
+				v1beta2.PurposeLabel: v1beta2.CertManager,
+				v1beta2.ManagedBy:    v1beta2.OperatorName,
+			},
 		},
 		Spec: certmanagerv1.IssuerSpec{
 			IssuerConfig: certmanagerv1.IssuerConfig{

@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-//nolint:gochecknoglobals
+//nolint:gochecknoglobals // does not apply to unit and integration tests
 package apiwebhook_test
 
 import (
@@ -94,7 +94,7 @@ var _ = BeforeSuite(func() {
 	Expect(apiextensionsv1.AddToScheme(scheme)).NotTo(HaveOccurred())
 	Expect(apiadmissionv1.AddToScheme(scheme)).NotTo(HaveOccurred())
 
-	//+kubebuilder:scaffold:scheme
+	// +kubebuilder:scaffold:scheme
 
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme})
 	Expect(err).NotTo(HaveOccurred())
@@ -131,7 +131,7 @@ func SetupWebhook() {
 	Expect((&v1beta2.Kyma{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
 	Expect((&v1beta2.Manifest{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
 	Expect((&v1beta2.Watcher{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
-	//+kubebuilder:scaffold:webhook
+	// +kubebuilder:scaffold:webhook
 
 	go func() {
 		defer GinkgoRecover()

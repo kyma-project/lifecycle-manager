@@ -6,7 +6,7 @@ import (
 
 // ParsedFile contains the parsed content and any error encountered during processing of a file.
 //
-//nolint:errname
+//nolint:errname // Error as part of struct for simplification
 type ParsedFile struct {
 	content string
 	err     error

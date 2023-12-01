@@ -1,3 +1,4 @@
+//nolint:gochecknoglobals // does not apply to unit and integration tests
 package withwatcher_test
 
 import (
@@ -31,7 +32,6 @@ const (
 	componentToBeUpdated = "lifecycle-manager"
 )
 
-//nolint:gochecknoglobals
 var (
 	centralComponents                     = []string{componentToBeUpdated, componentToBeRemoved}
 	errRouteNotFound                      = errors.New("http route is not found")

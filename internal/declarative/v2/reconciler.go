@@ -21,8 +21,9 @@ import (
 )
 
 var (
-	ErrWarningResourceSyncStateDiff        = errors.New("resource syncTarget state diff detected")
-	ErrResourceSyncDiffInSameOCILayer      = errors.New("resource syncTarget diff detected but in same oci layer, prevent sync resource to be deleted") //nolint:lll
+	ErrWarningResourceSyncStateDiff   = errors.New("resource syncTarget state diff detected")
+	ErrResourceSyncDiffInSameOCILayer = errors.New("resource syncTarget diff detected but in " +
+		"same oci layer, prevent sync resource to be deleted")
 	ErrInstallationConditionRequiresUpdate = errors.New("installation condition needs an update")
 	ErrObjectHasEmptyState                 = errors.New("object has an empty state")
 	ErrKubeconfigFetchFailed               = errors.New("could not fetch kubeconfig")
@@ -81,7 +82,7 @@ func newResourcesCondition(obj Object) apimetav1.Condition {
 	}
 }
 
-//nolint:funlen,cyclop
+//nolint:funlen,cyclop // Declarative pkg will be removed soon
 func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	obj, ok := r.prototype.DeepCopyObject().(Object)
 	if !ok {
@@ -505,14 +506,13 @@ func updateSyncedOCIRefAnnotation(obj Object, ref string) {
 }
 
 func pruneResource(diff []*resource.Info, resourceType string, resourceName string) ([]*resource.Info, error) {
-	//nolint:varnamelen
-	for i, info := range diff {
+	for index, info := range diff {
 		obj, ok := info.Object.(client.Object)
 		if !ok {
 			return diff, common.ErrTypeAssert
 		}
 		if obj.GetObjectKind().GroupVersionKind().Kind == resourceType && obj.GetName() == resourceName {
-			return append(diff[:i], diff[i+1:]...), nil
+			return append(diff[:index], diff[index+1:]...), nil
 		}
 	}
 

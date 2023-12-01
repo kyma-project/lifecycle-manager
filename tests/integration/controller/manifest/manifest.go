@@ -1,4 +1,4 @@
-//nolint:gochecknoglobals
+//nolint:gochecknoglobals // does not apply to unit and integration tests
 package manifest
 
 import (
@@ -35,7 +35,8 @@ var (
 	K8sClient                client.Client
 	Server                   *httptest.Server
 	ErrManifestStateMisMatch = errors.New("ManifestState mismatch")
-	ManifestFilePath         = filepath.Join(integration.GetProjectRoot(), "pkg", "test_samples", "oci", "rendered.yaml")
+	ManifestFilePath         = filepath.Join(integration.GetProjectRoot(), "pkg", "test_samples", "oci",
+		"rendered.yaml")
 )
 
 const (

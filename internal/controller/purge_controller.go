@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-logr/logr"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -45,6 +46,7 @@ type RemoteClientResolver func(context.Context, client.ObjectKey) (client.Client
 type PurgeReconciler struct {
 	client.Client
 	record.EventRecorder
+	logger                logr.Logger
 	ResolveRemoteClient   RemoteClientResolver
 	PurgeFinalizerTimeout time.Duration
 	SkipCRDs              matcher.CRDMatcherFunc
@@ -52,48 +54,40 @@ type PurgeReconciler struct {
 	Metrics               *metrics.PurgeMetrics
 }
 
-//nolint:funlen
 func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := logf.FromContext(ctx)
-	logger.V(log.InfoLevel).Info("Purge Reconciliation started")
+	r.logger = logf.FromContext(ctx)
+	r.logger.V(log.InfoLevel).Info("Purge Reconciliation started")
 
 	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
 
 	kyma := &v1beta2.Kyma{}
 	if err := r.Get(ctx, req.NamespacedName, kyma); err != nil {
 		if !util.IsNotFound(err) {
-			logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
+			r.logger.V(log.DebugLevel).Info(fmt.Sprintf("Kyma %s not found, probably already deleted",
 				req.NamespacedName))
 			return ctrl.Result{}, fmt.Errorf("purgeController: %w", err)
 		}
 		return ctrl.Result{Requeue: false}, nil
 	}
 
-	if kyma.DeletionTimestamp.IsZero() {
-		if err := r.ensurePurgeFinalizer(ctx, kyma); err != nil {
-			logger.V(log.DebugLevel).Info(fmt.Sprintf("Updating purge finalizers for Kyma  %s failed with err %s",
-				req.NamespacedName, err))
-			return ctrl.Result{}, err
-		}
-		return ctrl.Result{Requeue: true}, nil
+	updateNeeded, err := r.ensurePurgeFinalizer(ctx, kyma)
+	if updateNeeded || err != nil {
+		return ctrl.Result{Requeue: updateNeeded}, err
 	}
 
-	deletionDeadline := kyma.DeletionTimestamp.Add(r.PurgeFinalizerTimeout)
-	if time.Now().Before(deletionDeadline) {
-		requeueAfter := time.Until(deletionDeadline.Add(time.Second))
-		logger.V(log.DebugLevel).Info(fmt.Sprintf("Purge reconciliation for Kyma  %s will be requeued after %s",
-			req.NamespacedName, requeueAfter))
+	deadlineReached, requeueAfter := r.deadlineReached(kyma)
+	if !deadlineReached {
 		return ctrl.Result{RequeueAfter: requeueAfter}, nil
 	}
 
+	// Used for metrics
 	start := time.Now()
+
 	remoteClient, err := r.ResolveRemoteClient(ctx, client.ObjectKeyFromObject(kyma))
 	if util.IsNotFound(err) {
 		if err := r.dropPurgeFinalizer(ctx, kyma); err != nil {
-			logger.Error(err, "Couldn't remove Purge Finalizer from the Kyma object")
-			if err := r.Metrics.UpdatePurgeError(kyma, metrics.ErrPurgeFinalizerRemoval); err != nil {
-				logger.Error(err, "Failed to update error metrics")
-			}
+			r.logger.Error(err, "Couldn't remove Purge Finalizer from the Kyma object")
+			r.Metrics.UpdatePurgeError(r.logger, kyma, metrics.ErrPurgeFinalizerRemoval)
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{Requeue: true}, nil
@@ -104,18 +98,14 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 
 	r.Metrics.UpdatePurgeCount()
 	if err := r.performCleanup(ctx, remoteClient); err != nil {
-		logger.Error(err, "Finalizer Purging failed")
-		if err := r.Metrics.UpdatePurgeError(kyma, metrics.ErrCleanup); err != nil {
-			logger.Error(err, "Failed to update error metrics")
-		}
+		r.logger.Error(err, "Purge Cleanup failed")
+		r.Metrics.UpdatePurgeError(r.logger, kyma, metrics.ErrCleanup)
 		return ctrl.Result{}, err
 	}
 
 	if err := r.dropPurgeFinalizer(ctx, kyma); err != nil {
-		logger.Error(err, "Couldn't remove Purge Finalizer from the Kyma object")
-		if err := r.Metrics.UpdatePurgeError(kyma, metrics.ErrPurgeFinalizerRemoval); err != nil {
-			logger.Error(err, "Failed to update error metrics")
-		}
+		r.logger.Error(err, "Couldn't remove Purge Finalizer from the Kyma object")
+		r.Metrics.UpdatePurgeError(r.logger, kyma, metrics.ErrPurgeFinalizerRemoval)
 		return ctrl.Result{}, err
 	}
 	duration := time.Since(start)
@@ -138,17 +128,21 @@ func (r *PurgeReconciler) IsKymaManaged() bool {
 	return r.IsManagedKyma
 }
 
-func (r *PurgeReconciler) ensurePurgeFinalizer(ctx context.Context, kyma *v1beta2.Kyma) error {
-	if controllerutil.ContainsFinalizer(kyma, v1beta2.PurgeFinalizer) {
-		return nil
+func (r *PurgeReconciler) ensurePurgeFinalizer(ctx context.Context, kyma *v1beta2.Kyma) (bool,
+	error) {
+	if kyma.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(kyma, v1beta2.PurgeFinalizer) {
+		controllerutil.AddFinalizer(kyma, v1beta2.PurgeFinalizer)
+		if err := r.Update(ctx, kyma); err != nil {
+			err = fmt.Errorf("failed to add purge finalizer: %w", err)
+			r.logger.V(log.DebugLevel).Info(
+				fmt.Sprintf("Updating purge finalizers for Kyma  %s/%s failed with err %s",
+					kyma.Namespace, kyma.Name, err))
+			r.setFinalizerWarningEvent(kyma, err)
+			return true, err
+		}
+		return true, nil
 	}
-	controllerutil.AddFinalizer(kyma, v1beta2.PurgeFinalizer)
-	if err := r.Update(ctx, kyma); err != nil {
-		err = fmt.Errorf("failed to add purge finalizer: %w", err)
-		r.setFinalizerWarningEvent(kyma, err)
-		return err
-	}
-	return nil
+	return false, nil
 }
 
 func (r *PurgeReconciler) dropPurgeFinalizer(ctx context.Context, kyma *v1beta2.Kyma) error {
@@ -161,6 +155,17 @@ func (r *PurgeReconciler) dropPurgeFinalizer(ctx context.Context, kyma *v1beta2.
 		}
 	}
 	return nil
+}
+
+func (r *PurgeReconciler) deadlineReached(kyma *v1beta2.Kyma) (bool, time.Duration) {
+	deletionDeadline := kyma.DeletionTimestamp.Add(r.PurgeFinalizerTimeout)
+	if time.Now().Before(deletionDeadline) {
+		requeueAfter := time.Until(deletionDeadline.Add(time.Second))
+		r.logger.V(log.DebugLevel).Info(fmt.Sprintf("Purge reconciliation for Kyma  %s/%s will be requeued after %s",
+			kyma.Namespace, kyma.Namespace, requeueAfter))
+		return false, requeueAfter
+	}
+	return true, 0
 }
 
 func (r *PurgeReconciler) performCleanup(ctx context.Context, remoteClient client.Client) error {
@@ -184,6 +189,7 @@ func (r *PurgeReconciler) performCleanup(ctx context.Context, remoteClient clien
 			return fmt.Errorf("failed to purge stale resources: %w", err)
 		}
 	}
+
 	return nil
 }
 

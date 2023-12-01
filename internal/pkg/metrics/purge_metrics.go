@@ -1,9 +1,9 @@
 package metrics
 
 import (
-	"fmt"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
 	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 
@@ -56,14 +56,15 @@ func (p *PurgeMetrics) UpdatePurgeTime(duration time.Duration) {
 	p.purgeTimeGauge.Set(duration.Seconds())
 }
 
-func (p *PurgeMetrics) UpdatePurgeError(kyma *v1beta2.Kyma, purgeError PurgeError) error {
+func (p *PurgeMetrics) UpdatePurgeError(logger logr.Logger, kyma *v1beta2.Kyma, purgeError PurgeError) {
 	shootID, err := ExtractShootID(kyma)
 	if err != nil {
-		return fmt.Errorf("%w: %w", errMetric, err)
+		logger.Error(err, "Failed to update error metrics")
+		return
 	}
 	instanceID, err := ExtractInstanceID(kyma)
 	if err != nil {
-		return fmt.Errorf("%w: %w", errMetric, err)
+		return
 	}
 	metric, err := p.purgeErrorGauge.GetMetricWith(prometheus.Labels{
 		kymaNameLabel:    kyma.Name,
@@ -72,9 +73,8 @@ func (p *PurgeMetrics) UpdatePurgeError(kyma *v1beta2.Kyma, purgeError PurgeErro
 		errorReasonLabel: string(purgeError),
 	})
 	if err != nil {
-		return fmt.Errorf("%w: %w", errMetric, err)
+		logger.Error(err, "Failed to update error metrics")
+		return
 	}
 	metric.Set(1)
-
-	return nil
 }

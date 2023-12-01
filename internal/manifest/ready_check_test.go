@@ -17,7 +17,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
-//nolint:funlen,maintidx
+//nolint:funlen,maintidx //nolint:funlen // Unit-Testing
 func TestHandleState(t *testing.T) {
 	t.Parallel()
 	type moduleCheck struct {
@@ -207,7 +207,8 @@ func TestHandleState(t *testing.T) {
 			false,
 		},
 		{
-			"custom module with multiple StateReady condition, expected mapped to StateProcessing when not all condition matched", //nolint:lll
+			"custom module with multiple StateReady condition, expected " +
+				"mapped to StateProcessing when not all condition matched",
 			[]*v1beta2.CustomStateCheck{
 				{
 					JSONPath:    "fieldLevel1.fieldLevel2",
@@ -333,7 +334,7 @@ func TestHandleState(t *testing.T) {
 	}
 }
 
-//nolint:funlen
+//nolint:funlen // Unit-Testing
 func TestHandleStateWithDuration(t *testing.T) {
 	t.Parallel()
 	type moduleCheck struct {

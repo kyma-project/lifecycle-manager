@@ -28,12 +28,6 @@ const (
 	tlsPrivateKeyKey = "tls.key"
 )
 
-//nolint:gochecknoglobals
-var LabelSet = k8slabels.Set{
-	v1beta2.PurposeLabel: v1beta2.CertManager,
-	v1beta2.ManagedBy:    v1beta2.OperatorName,
-}
-
 type SubjectAltName struct {
 	DNSNames       []string
 	IPAddresses    []string
@@ -51,6 +45,7 @@ type CertificateManager struct {
 	remoteSyncNamespace string
 	caCertName          string
 	additionalDNSNames  []string
+	labelSet            k8slabels.Set
 }
 
 type CertificateSecret struct {
@@ -74,6 +69,10 @@ func NewCertificateManager(kcpClient client.Client, kyma *v1beta2.Kyma,
 		caCertName:          caCertName,
 		caCertCache:         caCertCache,
 		additionalDNSNames:  additionalDNSNames,
+		labelSet: k8slabels.Set{
+			v1beta2.PurposeLabel: v1beta2.CertManager,
+			v1beta2.ManagedBy:    v1beta2.OperatorName,
+		},
 	}, nil
 }
 
@@ -174,7 +173,7 @@ func (c *CertificateManager) createCertificate(ctx context.Context, subjectAltNa
 			EmailAddresses: subjectAltName.EmailAddresses,
 			SecretName:     c.secretName,
 			SecretTemplate: &certmanagerv1.CertificateSecretTemplate{
-				Labels: LabelSet,
+				Labels: c.labelSet,
 			},
 			IssuerRef: certmanagermetav1.ObjectReference{
 				Name: issuer.Name,
@@ -226,7 +225,7 @@ func (c *CertificateManager) getIssuer(ctx context.Context) (*certmanagerv1.Issu
 	logger := logf.FromContext(ctx)
 	issuerList := &certmanagerv1.IssuerList{}
 	err := c.kcpClient.List(ctx, issuerList, &client.ListOptions{
-		LabelSelector: k8slabels.SelectorFromSet(LabelSet),
+		LabelSelector: k8slabels.SelectorFromSet(c.labelSet),
 		Namespace:     c.istioNamespace,
 	})
 	if err != nil {

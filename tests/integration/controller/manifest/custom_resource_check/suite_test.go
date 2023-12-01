@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-//nolint:gochecknoglobals
+//nolint:gochecknoglobals // does not apply to unit and integration tests
 package custom_resource_check_test
 
 import (
@@ -74,7 +74,8 @@ func TestAPIs(t *testing.T) {
 
 var _ = BeforeSuite(
 	func() {
-		manifesttest.ManifestFilePath = filepath.Join(integration.GetProjectRoot(), "pkg", "test_samples", "oci", "rendered.yaml")
+		manifesttest.ManifestFilePath = filepath.Join(integration.GetProjectRoot(), "pkg", "test_samples", "oci",
+			"rendered.yaml")
 		manifesttest.Ctx, manifesttest.Cancel = context.WithCancel(context.TODO())
 		logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
 
@@ -93,7 +94,7 @@ var _ = BeforeSuite(
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg).NotTo(BeNil())
 
-		//+kubebuilder:scaffold:scheme
+		// +kubebuilder:scaffold:scheme
 
 		Expect(api.AddToScheme(k8sclientscheme.Scheme)).To(Succeed())
 		Expect(apicorev1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())

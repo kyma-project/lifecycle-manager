@@ -20,10 +20,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
 )
 
-//nolint:gochecknoglobals
+//nolint:gochecknoglobals // in-memory cache used mutex
 var (
-	ErrImageLayerPull = errors.New("failed to pull layer")
 	fileMutexMap      = sync.Map{}
+	ErrImageLayerPull = errors.New("failed to pull layer")
 )
 
 func GetPathFromRawManifest(ctx context.Context,

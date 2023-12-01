@@ -81,7 +81,8 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, shared.StateReady).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name,
+					shared.StateReady).
 				Should(Succeed())
 		}
 
@@ -163,7 +164,8 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 				return err
 			}
 
-			return validateManifestSpecInstallSource(extractInstallImageSpec(manifest.Spec.Install), moduleTemplateDescriptor)
+			return validateManifestSpecInstallSource(extractInstallImageSpec(manifest.Spec.Install),
+				moduleTemplateDescriptor)
 		}
 		Eventually(expectManifest(hasValidSpecInstall), Timeout, Interval).Should(Succeed())
 
@@ -217,7 +219,8 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 				return err
 			}
 
-			return validateManifestSpecInstallSource(extractInstallImageSpec(manifest.Spec.Install), moduleTemplateDescriptor)
+			return validateManifestSpecInstallSource(extractInstallImageSpec(manifest.Spec.Install),
+				moduleTemplateDescriptor)
 		}
 		Eventually(expectManifest(hasValidSpecInstall), Timeout, Interval).Should(Succeed())
 
@@ -250,7 +253,8 @@ var _ = Describe("Update Module Template Version", Ordered, func() {
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, shared.StateReady).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name,
+					shared.StateReady).
 				Should(Succeed())
 		}
 
@@ -365,7 +369,6 @@ func validateManifestSpecInstallSourceName(manifestImageSpec *v1beta2.ImageSpec,
 	return nil
 }
 
-//nolint:goerr113
 func validateManifestSpecInstallSourceRef(manifestImageSpec *v1beta2.ImageSpec,
 	moduleTemplateDescriptor *v1beta2.Descriptor,
 ) error {
@@ -384,7 +387,7 @@ func validateManifestSpecInstallSourceRef(manifestImageSpec *v1beta2.ImageSpec,
 	expectedSourceRef := concreteAccessSpec.LocalReference
 
 	if actualSourceRef != expectedSourceRef {
-		return fmt.Errorf("Invalid manifest spec.install.source.ref: %s, expected: %s", //nolint:goerr113
+		return fmt.Errorf("invalid manifest spec.install.source.ref: %s, expected: %s", //nolint:goerr113
 			actualSourceRef, expectedSourceRef)
 	}
 
@@ -465,7 +468,8 @@ func validateManifestSpecResource(manifestResource, moduleTemplateData *unstruct
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("Invalid ManifestResource.\nActual:\n%s\nExpected:\n%s", actualJSON, expectedJSON) //nolint:goerr113
+		return fmt.Errorf("Invalid ManifestResource.\nActual:\n%s\nExpected:\n%s", actualJSON,
+			expectedJSON) //nolint:goerr113
 	}
 	return nil
 }

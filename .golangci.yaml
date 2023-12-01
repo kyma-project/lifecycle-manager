@@ -51,6 +51,8 @@ linters-settings:
       - dot                                                  # Dot imports.
     custom-order: true
     skip-generated: true
+  nolintlint:
+    require-explanation: true
   importas:
     no-unaliased: true
     no-extra-aliases: true
