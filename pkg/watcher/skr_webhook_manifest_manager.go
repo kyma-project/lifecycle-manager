@@ -109,7 +109,7 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 		return fmt.Errorf("error while creating new Certificate on KCP: %w", err)
 	}
 
-	caCertificate, err := certificate.GetCACertificate(ctx)
+	caCertificateStatus, err := certificate.GetCACertificateStatus(ctx)
 	if err != nil {
 		return fmt.Errorf("error while fetching CA Certificate: %w", err)
 	}
@@ -119,7 +119,7 @@ func (m *SKRWebhookManifestManager) Install(ctx context.Context, kyma *v1beta2.K
 		return fmt.Errorf("error while fetching certificate: %w", err)
 	}
 
-	if certSecret != nil && (certSecret.CreationTimestamp.Before(caCertificate.Status.NotBefore)) {
+	if certSecret != nil && (certSecret.CreationTimestamp.Before(caCertificateStatus.NotBefore)) {
 		logger.V(log.DebugLevel).Info("CA Certificate was rotated, removing certificate",
 			"kyma", kymaObjKey)
 		if err = certificate.RemoveSecret(ctx); err != nil {
