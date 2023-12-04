@@ -39,9 +39,7 @@ func GetTemplates(
 	logger := logf.FromContext(ctx)
 	templates := make(ModuleTemplatesByModuleName)
 
-	getTemplateFromModuleStatus(ctx, kymaClient, kyma, templates)
-
-	for _, module := range kyma.Spec.Modules {
+	for _, module := range kyma.AvailableModules() {
 		var template ModuleTemplateTO
 		_, found := templates[module.Name]
 		if found {
@@ -81,22 +79,6 @@ func GetTemplates(
 	checkValidTemplatesUpdate(logger, kyma, templates)
 
 	return templates
-}
-
-func getTemplateFromModuleStatus(ctx context.Context, kymaClient client.Reader, kyma *v1beta2.Kyma,
-	templates ModuleTemplatesByModuleName,
-) {
-	for _, module := range kyma.Status.Modules {
-		template := NewTemplateLookup(kymaClient, module.Name, module.Channel, kyma.Spec.Channel).WithContext(ctx)
-		if template.Err != nil {
-			continue
-		}
-
-		if err := saveDescriptorToCache(template.ModuleTemplate); err != nil {
-			template.Err = fmt.Errorf("failed to get descriptor: %w", err)
-		}
-		templates[module.Name] = &template
-	}
 }
 
 func determineTemplatesVisibility(kyma *v1beta2.Kyma, templates ModuleTemplatesByModuleName) {
