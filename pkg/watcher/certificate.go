@@ -258,22 +258,22 @@ func (e *CertificateNotReadyError) Error() string {
 	return "Certificate-Secret does not exist"
 }
 
-func (c *CertificateManager) GetCACertificate(ctx context.Context) (*certmanagerv1.Certificate, error) {
-	cachedCert := c.caCertCache.GetCACertFromCache(c.caCertName)
+func (c *CertificateManager) GetCACertificateStatus(ctx context.Context) (certmanagerv1.CertificateStatus, error) {
+	cachedCertStatus := c.caCertCache.GetCACertStatusFromCache(c.caCertName)
 
-	if cachedCert == nil || certificateRenewalTimePassed(cachedCert) {
-		caCert := &certmanagerv1.Certificate{}
+	if cachedCertStatus.RenewalTime == nil || certificateRenewalTimePassed(cachedCertStatus) {
+		caCert := certmanagerv1.Certificate{}
 		if err := c.kcpClient.Get(ctx, client.ObjectKey{Namespace: c.istioNamespace, Name: c.caCertName},
-			caCert); err != nil {
-			return nil, fmt.Errorf("failed to get CA certificate %w", err)
+			&caCert); err != nil {
+			return certmanagerv1.CertificateStatus{}, fmt.Errorf("failed to get CA certificate %w", err)
 		}
 		c.caCertCache.SetCACertToCache(caCert)
-		return caCert, nil
+		return caCert.Status, nil
 	}
 
-	return cachedCert, nil
+	return cachedCertStatus, nil
 }
 
-func certificateRenewalTimePassed(cert *certmanagerv1.Certificate) bool {
-	return cert.Status.RenewalTime.Before(&(apimetav1.Time{Time: time.Now()}))
+func certificateRenewalTimePassed(certStatus certmanagerv1.CertificateStatus) bool {
+	return certStatus.RenewalTime.Before(&(apimetav1.Time{Time: time.Now()}))
 }

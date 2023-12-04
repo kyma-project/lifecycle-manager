@@ -9,25 +9,25 @@ import (
 
 type CertificateCache struct {
 	TTL time.Duration
-	*ttlcache.Cache[string, *certmanagerv1.Certificate]
+	*ttlcache.Cache[string, certmanagerv1.Certificate]
 }
 
 func NewCertificateCache(ttl time.Duration) *CertificateCache {
-	cache := ttlcache.New[string, *certmanagerv1.Certificate]()
+	cache := ttlcache.New[string, certmanagerv1.Certificate]()
 	go cache.Start()
 	return &CertificateCache{Cache: cache, TTL: ttl}
 }
 
-func (c *CertificateCache) GetCACertFromCache(caCertName string) *certmanagerv1.Certificate {
+func (c *CertificateCache) GetCACertStatusFromCache(caCertName string) certmanagerv1.CertificateStatus {
 	value := c.Cache.Get(caCertName)
 	if value != nil {
 		cert := value.Value()
-		return cert
+		return cert.Status
 	}
 
-	return nil
+	return certmanagerv1.CertificateStatus{}
 }
 
-func (c *CertificateCache) SetCACertToCache(cert *certmanagerv1.Certificate) {
+func (c *CertificateCache) SetCACertToCache(cert certmanagerv1.Certificate) {
 	c.Cache.Set(cert.Name, cert, c.TTL)
 }
