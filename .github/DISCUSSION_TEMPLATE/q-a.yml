@@ -5,7 +5,7 @@ body:
     attributes:
       value: |
         Hello! Thanks for reaching out to us with your question! 
-        Before you submit the question we would like to ask - please make sure to check other discussions and the FAQ page, perhaps it was already answered!
+        Before you submit the question, please check other discussions and the FAQ page. Perhaps your question was already answered!
   - type: textarea
     id: question
     attributes:
