@@ -1,0 +1,38 @@
+title: "[Question] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Hello! Thanks for reaching out to us with your question! 
+        Before you submit the question, please check other discussions and the FAQ page. Perhaps your question was already answered!
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: Type your question here.
+      placeholder: What would you like to ask?
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        Is there anything that could help us answer the question? Perhaps there are resources or screenshots that could provide additional context?
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Attachments
+      description: Attach any files, links, code samples, or screenshots that will give us any additional context.
+      placeholder: Put your attachments in here.
+    validations:
+      required: false
+  - type: dropdown
+    id: faq
+    attributes:
+      label: Should this question be covered by our FAQ?
+      multiple: false
+      options:
+        - no
+        - yes
+    validations:
+      required: false
