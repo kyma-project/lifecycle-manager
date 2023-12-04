@@ -10,6 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
@@ -292,7 +293,7 @@ func (c *TemplateLookup) getTemplate(ctx context.Context, desiredChannel string)
 	moduleIdentifier := c.module.Name
 	var filteredTemplates []v1beta2.ModuleTemplate
 	for _, template := range templateList.Items {
-		if template.Labels[v1beta2.ModuleName] == moduleIdentifier && template.Spec.Channel == desiredChannel {
+		if template.Labels[shared.ModuleName] == moduleIdentifier && template.Spec.Channel == desiredChannel {
 			filteredTemplates = append(filteredTemplates, template)
 			continue
 		}

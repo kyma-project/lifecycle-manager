@@ -12,6 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/yaml"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/pkg/ocmextensions"
@@ -54,7 +55,7 @@ func (m *SpecResolver) Spec(ctx context.Context, obj declarativev2.Object,
 	}
 
 	targetClient := m.KCP.Client
-	if manifest.Labels[v1beta2.IsRemoteModuleTemplate] == v1beta2.EnableLabelValue {
+	if manifest.Labels[shared.IsRemoteModuleTemplate] == v1beta2.EnableLabelValue {
 		targetClient = remoteClient
 	}
 	var imageSpec v1beta2.ImageSpec

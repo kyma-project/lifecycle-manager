@@ -25,8 +25,8 @@ import (
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:subresource:status
-//+kubebuilder:deprecatedversion:warning="kyma-project.io/v1beta1 Watcher is deprecated. Use v1beta2 instead."
-//+kubebuilder:storageversion
+// +kubebuilder:deprecatedversion:warning="kyma-project.io/v1beta1 Watcher is deprecated. Use v1beta2 instead."
+// +kubebuilder:storageversion
 
 // Watcher is the Schema for the watchers API.
 type Watcher struct {
@@ -41,7 +41,7 @@ type Watcher struct {
 	Status v1beta2.WatcherStatus `json:"status,omitempty"`
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // WatcherList contains a list of Watcher.
 type WatcherList struct {
@@ -50,8 +50,4 @@ type WatcherList struct {
 	// +kubebuilder:validation:Optional
 	apimetav1.ListMeta `json:"metadata"`
 	Items              []Watcher `json:"items"`
-}
-
-func init() { //nolint:gochecknoinits
-	SchemeBuilder.Register(&Watcher{}, &WatcherList{})
 }

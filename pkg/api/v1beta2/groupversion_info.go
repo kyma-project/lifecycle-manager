@@ -14,21 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package v1beta1 contains API Schema definitions for the operator v1beta1 API group
+// Package v1beta2 contains API Schema definitions for the operator v1beta2 API group
 // +kubebuilder:object:generate=true
 // +groupName=operator.kyma-project.io
-package v1beta1
+package v1beta2
 
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"sigs.k8s.io/controller-runtime/pkg/scheme"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
 var (
 	// GroupVersion is group version used to register these objects.
-	GroupVersion = schema.GroupVersion{Group: "operator.kyma-project.io", Version: "v1beta1"} //nolint:gochecknoglobals
+	GroupVersion = schema.GroupVersion{Group: "operator.kyma-project.io", Version: "v1beta2"} //nolint:gochecknoglobals
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme.
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion} //nolint:gochecknoglobals
@@ -37,6 +37,6 @@ var (
 	AddToScheme = SchemeBuilder.AddToScheme //nolint:gochecknoglobals
 
 	// GroupVersionResource is group version resource.
-	GroupVersionResource = GroupVersion.WithResource(v1beta2.KymaKind.Plural()) //nolint:gochecknoglobals
+	GroupVersionResource = GroupVersion.WithResource(shared.KymaKind.Plural()) //nolint:gochecknoglobals
 
 )

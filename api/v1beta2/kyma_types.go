@@ -25,10 +25,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
-//+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // Kyma is the Schema for the kymas API.
 type Kyma struct {
@@ -100,15 +100,6 @@ const (
 	// This is useful if another controller should manage module configuration as data and not be auto-initialized.
 	// It can also be used to initialize controllers without interacting with them.
 	CustomResourcePolicyIgnore = "Ignore"
-)
-
-// SyncStrategy determines how the Remote Cluster is synchronized with the Control Plane. This can influence secret
-// lookup, or other behavioral patterns when interacting with the remote cluster.
-type SyncStrategy string
-
-const (
-	SyncStrategyLocalSecret = "local-secret"
-	SyncStrategyLocalClient = "local-client"
 )
 
 func (kyma *Kyma) GetModuleStatusMap() map[string]*ModuleStatus {
@@ -284,18 +275,13 @@ func (kyma *Kyma) GetNoLongerExistingModuleStatus() []*ModuleStatus {
 	return notExistsModules
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // KymaList contains a list of Kyma.
 type KymaList struct {
 	apimetav1.TypeMeta `json:",inline"`
 	apimetav1.ListMeta `json:"metadata,omitempty"`
 	Items              []Kyma `json:"items"`
-}
-
-//nolint:gochecknoinits
-func init() {
-	SchemeBuilder.Register(&Kyma{}, &KymaList{})
 }
 
 func (kyma *Kyma) UpdateCondition(conditionType KymaConditionType, status apimetav1.ConditionStatus) {
@@ -376,23 +362,23 @@ const (
 )
 
 func (kyma *Kyma) HasSyncLabelEnabled() bool {
-	if sync, found := kyma.Labels[SyncLabel]; found {
+	if sync, found := kyma.Labels[shared.SyncLabel]; found {
 		return strings.ToLower(sync) == EnableLabelValue
 	}
 	return true // missing label defaults to enabled sync
 }
 
 func (kyma *Kyma) SkipReconciliation() bool {
-	skip, found := kyma.Labels[SkipReconcileLabel]
+	skip, found := kyma.Labels[shared.SkipReconcileLabel]
 	return found && strings.ToLower(skip) == EnableLabelValue
 }
 
 func (kyma *Kyma) IsInternal() bool {
-	internal, found := kyma.Labels[InternalLabel]
+	internal, found := kyma.Labels[shared.InternalLabel]
 	return found && strings.ToLower(internal) == EnableLabelValue
 }
 
 func (kyma *Kyma) IsBeta() bool {
-	beta, found := kyma.Labels[BetaLabel]
+	beta, found := kyma.Labels[shared.BetaLabel]
 	return found && strings.ToLower(beta) == EnableLabelValue
 }

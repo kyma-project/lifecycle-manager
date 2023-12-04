@@ -109,7 +109,7 @@ func (r *Runner) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	}
 	if err := r.Patch(ctx, manifestObj,
 		client.Apply,
-		client.FieldOwner(kyma.Labels[v1beta2.ManagedBy]),
+		client.FieldOwner(kyma.Labels[shared.ManagedBy]),
 		client.ForceOwnership,
 	); err != nil {
 		return fmt.Errorf("error applying manifest %s: %w", client.ObjectKeyFromObject(module), err)
@@ -193,7 +193,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 			TypeMeta:    apimetav1.TypeMeta{Kind: moduleCRKind, APIVersion: moduleCRAPIVersion},
 		}
 
-		if module.Template.Annotations[v1beta2.IsClusterScopedAnnotation] == v1beta2.EnableLabelValue {
+		if module.Template.Annotations[shared.IsClusterScopedAnnotation] == v1beta2.EnableLabelValue {
 			moduleResource.PartialMeta.Namespace = ""
 		}
 	}

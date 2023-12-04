@@ -15,7 +15,9 @@ import (
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	pkgApiV1beta2 "github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
@@ -159,14 +161,14 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 	}
 	return &v1beta2.Watcher{
 		TypeMeta: apimetav1.TypeMeta{
-			Kind:       string(v1beta2.WatcherKind),
-			APIVersion: v1beta2.GroupVersion.String(),
+			Kind:       string(shared.WatcherKind),
+			APIVersion: pkgApiV1beta2.GroupVersion.String(),
 		},
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      managerInstanceName,
 			Namespace: apimetav1.NamespaceDefault,
 			Labels: map[string]string{
-				v1beta2.ManagedBy: managerInstanceName,
+				shared.ManagedBy: managerInstanceName,
 			},
 		},
 		Spec: v1beta2.WatcherSpec{
@@ -179,9 +181,9 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 				fmt.Sprintf("%s-watchable", managerInstanceName): "true",
 			},
 			ResourceToWatch: v1beta2.WatchableGVR{
-				Group:    v1beta2.GroupVersionResource.Group,
-				Version:  v1beta2.GroupVersionResource.Version,
-				Resource: v1beta2.GroupVersionResource.Resource,
+				Group:    pkgApiV1beta2.GroupVersionResource.Group,
+				Version:  pkgApiV1beta2.GroupVersionResource.Version,
+				Resource: pkgApiV1beta2.GroupVersionResource.Resource,
 			},
 			Field: field,
 			Gateway: v1beta2.GatewayConfig{
@@ -197,7 +199,7 @@ func createTLSSecret(kymaObjKey client.ObjectKey) *apicorev1.Secret {
 			Name:      watcher.ResolveTLSCertName(kymaObjKey.Name),
 			Namespace: istioSystemNs,
 			Labels: map[string]string{
-				v1beta2.ManagedBy: v1beta2.OperatorName,
+				shared.ManagedBy: shared.OperatorName,
 			},
 		},
 		Data: map[string][]byte{

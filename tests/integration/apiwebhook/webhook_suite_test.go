@@ -37,8 +37,8 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	"github.com/kyma-project/lifecycle-manager/api"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	pkgApi "github.com/kyma-project/lifecycle-manager/pkg/api"
+	pkgApiV1beta2 "github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
@@ -90,11 +90,11 @@ var _ = BeforeSuite(func() {
 	Expect(cfg).NotTo(BeNil())
 
 	scheme = machineryruntime.NewScheme()
-	Expect(api.AddToScheme(scheme)).NotTo(HaveOccurred())
+	Expect(pkgApi.AddToScheme(scheme)).NotTo(HaveOccurred())
 	Expect(apiextensionsv1.AddToScheme(scheme)).NotTo(HaveOccurred())
 	Expect(apiadmissionv1.AddToScheme(scheme)).NotTo(HaveOccurred())
 
-	//+kubebuilder:scaffold:scheme
+	// +kubebuilder:scaffold:scheme
 
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme})
 	Expect(err).NotTo(HaveOccurred())
@@ -127,11 +127,11 @@ func SetupWebhook() {
 		})
 	Expect(err).NotTo(HaveOccurred())
 
-	Expect((&v1beta2.ModuleTemplate{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
-	Expect((&v1beta2.Kyma{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
-	Expect((&v1beta2.Manifest{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
-	Expect((&v1beta2.Watcher{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
-	//+kubebuilder:scaffold:webhook
+	Expect((&pkgApiV1beta2.ModuleTemplateInCtrlRuntime{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
+	Expect((&pkgApiV1beta2.KymaInCtrlRuntime{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
+	Expect((&pkgApiV1beta2.ManifestInCtrlRuntime{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
+	Expect((&pkgApiV1beta2.WatcherInCtrlRuntime{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
+	// +kubebuilder:scaffold:webhook
 
 	go func() {
 		defer GinkgoRecover()

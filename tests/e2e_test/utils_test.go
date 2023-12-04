@@ -155,8 +155,8 @@ func CreateKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sCl
 			Name:      kymaName,
 			Namespace: kymaNamespace,
 			Labels: map[string]string{
-				v1beta2.KymaName:  kymaName,
-				v1beta2.ManagedBy: v1beta2.OperatorName,
+				shared.KymaName:  kymaName,
+				shared.ManagedBy: shared.OperatorName,
 			},
 		},
 		Data: map[string][]byte{"config": []byte(patchedRuntimeConfig)},

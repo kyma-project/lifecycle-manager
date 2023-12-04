@@ -25,14 +25,13 @@ import (
 )
 
 const (
-	ManifestKind         = "Manifest"
 	RawManifestLayerName = "raw-manifest"
 )
 
 // InstallInfo defines installation information.
 type InstallInfo struct {
 	// Source in the ImageSpec format
-	//+kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:pruning:PreserveUnknownFields
 	Source machineryruntime.RawExtension `json:"source"`
 
 	// Name specifies a unique install name for Manifest
@@ -54,9 +53,9 @@ type ManifestSpec struct {
 	// Install specifies a list of installations for Manifest
 	Install InstallInfo `json:"install"`
 
-	//+kubebuilder:pruning:PreserveUnknownFields
-	//+kubebuilder:validation:XEmbeddedResource
-	//+nullable
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:XEmbeddedResource
+	// +nullable
 	// Resource specifies a resource to be watched for state updates
 	Resource *unstructured.Unstructured `json:"resource,omitempty"`
 }
@@ -91,10 +90,10 @@ const (
 	OciRefType RefTypeMetadata = "oci-ref"
 )
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
-//+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // Manifest is the Schema for the manifests API.
 type Manifest struct {
@@ -113,16 +112,11 @@ func (manifest *Manifest) SetStatus(status shared.Status) {
 	manifest.Status = status
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // ManifestList contains a list of Manifest.
 type ManifestList struct {
 	apimetav1.TypeMeta `json:",inline"`
 	apimetav1.ListMeta `json:"metadata,omitempty"`
 	Items              []Manifest `json:"items"`
-}
-
-//nolint:gochecknoinits
-func init() {
-	SchemeBuilder.Register(&Manifest{}, &ManifestList{})
 }

@@ -3,11 +3,13 @@ package v1beta1
 import (
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+	apiV1beta2 "github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
 )
 
-func (src *Kyma) ConvertTo(dstRaw conversion.Hub) error {
-	dst, ok := dstRaw.(*v1beta2.Kyma)
+func (src *KymaInCtrlRuntime) ConvertTo(dstRaw conversion.Hub) error {
+	dst, ok := dstRaw.(*v1beta2.KymaInCtrlRuntime)
 	if !ok {
 		return v1beta2.ErrTypeAssertKyma
 	}
@@ -17,9 +19,9 @@ func (src *Kyma) ConvertTo(dstRaw conversion.Hub) error {
 		dst.ObjectMeta.Labels = make(map[string]string)
 	}
 	if !src.Spec.Sync.Enabled {
-		dst.ObjectMeta.Labels[v1beta2.SyncLabel] = v1beta2.DisableLabelValue
+		dst.ObjectMeta.Labels[shared.SyncLabel] = apiV1beta2.DisableLabelValue
 	} else {
-		dst.ObjectMeta.Labels[v1beta2.SyncLabel] = v1beta2.EnableLabelValue
+		dst.ObjectMeta.Labels[shared.SyncLabel] = apiV1beta2.EnableLabelValue
 	}
 	dst.Spec.Channel = src.Spec.Channel
 	dst.Spec.Modules = src.Spec.Modules
@@ -29,8 +31,8 @@ func (src *Kyma) ConvertTo(dstRaw conversion.Hub) error {
 }
 
 //nolint:stylecheck
-func (dst *Kyma) ConvertFrom(srcRaw conversion.Hub) error {
-	src, ok := srcRaw.(*v1beta2.Kyma)
+func (dst *KymaInCtrlRuntime) ConvertFrom(srcRaw conversion.Hub) error {
+	src, ok := srcRaw.(*v1beta2.KymaInCtrlRuntime)
 	if !ok {
 		return v1beta2.ErrTypeAssertKyma
 	}

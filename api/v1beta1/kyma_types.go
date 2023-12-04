@@ -19,16 +19,17 @@ package v1beta1
 import (
 	apimetav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
-//+genclient
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
-//+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-//+kubebuilder:deprecatedversion:warning="kyma-project.io/v1beta1 Kyma is deprecated. Use v1beta2 instead."
-//+kubebuilder:storageversion
+// +genclient
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:deprecatedversion:warning="kyma-project.io/v1beta1 Kyma is deprecated. Use v1beta2 instead."
+// +kubebuilder:storageversion
 
 // Kyma is the Schema for the kymas API.
 type Kyma struct {
@@ -49,7 +50,7 @@ type Sync struct {
 
 	// +kubebuilder:default:=secret
 	// Strategy determines the way to look up the remotely synced kubeconfig, by default it is fetched from a secret
-	Strategy v1beta2.SyncStrategy `json:"strategy,omitempty"`
+	Strategy shared.SyncStrategy `json:"strategy,omitempty"`
 
 	// The target namespace, if empty the namespace is reflected from the control plane
 	// Note that cleanup is currently not supported if you are switching the namespace, so you will
@@ -83,16 +84,11 @@ type KymaSpec struct {
 	Sync Sync `json:"sync,omitempty"`
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // KymaList contains a list of Kyma.
 type KymaList struct {
 	apimetav1.TypeMeta `json:",inline"`
 	apimetav1.ListMeta `json:"metadata,omitempty"`
 	Items              []Kyma `json:"items"`
-}
-
-//nolint:gochecknoinits
-func init() {
-	SchemeBuilder.Register(&Kyma{}, &KymaList{})
 }

@@ -36,7 +36,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 	remoteKyma := &v1beta2.Kyma{}
 
-	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
+	remoteKyma.Name = shared.DefaultRemoteKymaName
 	remoteKyma.Namespace = controller.DefaultRemoteSyncNamespace
 	var runtimeClient client.Client
 	var runtimeEnv *envtest.Environment
@@ -175,7 +175,8 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 		By("Remote Kyma contains correct conditions for Modules")
 		Eventually(kymaHasCondition, Timeout, Interval).
-			WithArguments(runtimeClient, v1beta2.ConditionTypeModules, string(v1beta2.ConditionReason), apimetav1.ConditionTrue,
+			WithArguments(runtimeClient, v1beta2.ConditionTypeModules, string(v1beta2.ConditionReason),
+				apimetav1.ConditionTrue,
 				remoteKyma.GetName(), remoteKyma.GetNamespace()).
 			Should(Succeed())
 	})
@@ -251,7 +252,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 				return err
 			}
 
-			if manifest.Labels[v1beta2.IsRemoteModuleTemplate] != v1beta2.EnableLabelValue {
+			if manifest.Labels[shared.IsRemoteModuleTemplate] != v1beta2.EnableLabelValue {
 				return ErrRemoteTemplateLabelNotFound
 			}
 			return nil
@@ -297,7 +298,7 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 	var runtimeEnv *envtest.Environment
 	var err error
 	remoteKyma := &v1beta2.Kyma{}
-	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
+	remoteKyma.Name = shared.DefaultRemoteKymaName
 	remoteKyma.Namespace = controller.DefaultRemoteSyncNamespace
 
 	BeforeAll(func() {
@@ -369,7 +370,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 
 	remoteKyma := &v1beta2.Kyma{}
 
-	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
+	remoteKyma.Name = shared.DefaultRemoteKymaName
 	remoteKyma.Namespace = controller.DefaultRemoteSyncNamespace
 	var runtimeClient client.Client
 	var runtimeEnv *envtest.Environment
@@ -448,7 +449,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 		By("SKR Kyma CRD should be updated")
 		Eventually(func() *apiextensionsv1.CustomResourceValidation {
 			var err error
-			skrKymaCrd, err = fetchCrd(runtimeClient, v1beta2.KymaKind)
+			skrKymaCrd, err = fetchCrd(runtimeClient, shared.KymaKind)
 			if err != nil {
 				return nil
 			}
@@ -475,7 +476,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 	})
 
 	It("Should regenerate Kyma CRD in SKR when deleted", func() {
-		kymaCrd, err := fetchCrd(runtimeClient, v1beta2.KymaKind)
+		kymaCrd, err := fetchCrd(runtimeClient, shared.KymaKind)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(runtimeClient.Delete, Timeout, Interval).
 			WithArguments(ctx, kymaCrd).
@@ -483,13 +484,13 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 			Should(Succeed())
 
 		Eventually(func() error {
-			_, err := fetchCrd(runtimeClient, v1beta2.KymaKind)
+			_, err := fetchCrd(runtimeClient, shared.KymaKind)
 			return err
 		}, Timeout, Interval).WithContext(ctx).Should(Not(HaveOccurred()))
 	})
 
 	It("Should regenerate ModuleTemplate CRD in SKR when deleted", func() {
-		moduleTemplateCrd, err := fetchCrd(runtimeClient, v1beta2.ModuleTemplateKind)
+		moduleTemplateCrd, err := fetchCrd(runtimeClient, shared.ModuleTemplateKind)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(runtimeClient.Delete, Timeout, Interval).
 			WithArguments(ctx, moduleTemplateCrd).
@@ -497,7 +498,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 			Should(Succeed())
 
 		Eventually(func() error {
-			_, err := fetchCrd(runtimeClient, v1beta2.ModuleTemplateKind)
+			_, err := fetchCrd(runtimeClient, shared.ModuleTemplateKind)
 			return err
 		}, Timeout, Interval).WithContext(ctx).Should(Not(HaveOccurred()))
 	})

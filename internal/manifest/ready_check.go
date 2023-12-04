@@ -18,6 +18,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
+	v1beta22 "github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -54,7 +55,7 @@ func (c *CustomResourceReadyCheck) Run(ctx context.Context,
 	}
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
-		return declarativev2.StateInfo{State: shared.StateError}, v1beta2.ErrTypeAssertManifest
+		return declarativev2.StateInfo{State: shared.StateError}, v1beta22.ErrTypeAssertManifest
 	}
 	if manifest.Spec.Resource == nil {
 		return declarativev2.StateInfo{State: shared.StateReady}, nil
@@ -177,7 +178,7 @@ func requiredStateMissing(stateChecks []*v1beta2.CustomStateCheck) bool {
 }
 
 func parseStateChecks(manifest *v1beta2.Manifest) ([]*v1beta2.CustomStateCheck, bool, error) {
-	customStateCheckAnnotation, found := manifest.Annotations[v1beta2.CustomStateCheckAnnotation]
+	customStateCheckAnnotation, found := manifest.Annotations[shared.CustomStateCheckAnnotation]
 	if !found {
 		return []*v1beta2.CustomStateCheck{
 			{

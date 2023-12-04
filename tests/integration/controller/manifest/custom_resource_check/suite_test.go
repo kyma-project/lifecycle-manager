@@ -37,11 +37,12 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	"github.com/kyma-project/lifecycle-manager/api"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
+	pkgApi "github.com/kyma-project/lifecycle-manager/pkg/api"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	manifesttest "github.com/kyma-project/lifecycle-manager/tests/integration/controller/manifest"
@@ -74,7 +75,8 @@ func TestAPIs(t *testing.T) {
 
 var _ = BeforeSuite(
 	func() {
-		manifesttest.ManifestFilePath = filepath.Join(integration.GetProjectRoot(), "pkg", "test_samples", "oci", "rendered.yaml")
+		manifesttest.ManifestFilePath = filepath.Join(integration.GetProjectRoot(), "pkg", "test_samples", "oci",
+			"rendered.yaml")
 		manifesttest.Ctx, manifesttest.Cancel = context.WithCancel(context.TODO())
 		logf.SetLogger(log.ConfigLogger(9, zapcore.AddSync(GinkgoWriter)))
 
@@ -93,16 +95,16 @@ var _ = BeforeSuite(
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg).NotTo(BeNil())
 
-		//+kubebuilder:scaffold:scheme
+		// +kubebuilder:scaffold:scheme
 
-		Expect(api.AddToScheme(k8sclientscheme.Scheme)).To(Succeed())
+		Expect(pkgApi.AddToScheme(k8sclientscheme.Scheme)).To(Succeed())
 		Expect(apicorev1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
 		metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
 		if !found {
 			metricsBindAddress = ":0"
 		}
-		cacheOpts := internal.GetCacheOptions(k8slabels.Set{v1beta2.ManagedBy: v1beta2.OperatorName})
+		cacheOpts := internal.GetCacheOptions(k8slabels.Set{shared.ManagedBy: shared.OperatorName})
 		syncPeriod := 2 * time.Second
 		cacheOpts.SyncPeriod = &syncPeriod
 

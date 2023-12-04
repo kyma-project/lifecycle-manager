@@ -192,7 +192,7 @@ func (r *WatcherReconciler) updateWatcherState(ctx context.Context, watcherCR *v
 
 func (r *WatcherReconciler) updateWatcherStatusUsingSSA(ctx context.Context, watcher *v1beta2.Watcher) error {
 	watcher.ManagedFields = nil
-	err := r.Client.Status().Patch(ctx, watcher, client.Apply, client.FieldOwner(v1beta2.OperatorName),
+	err := r.Client.Status().Patch(ctx, watcher, client.Apply, client.FieldOwner(shared.OperatorName),
 		status.SubResourceOpts(client.ForceOwnership))
 	if err != nil {
 		reason := "WatcherStatusUpdate"

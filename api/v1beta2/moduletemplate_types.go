@@ -17,6 +17,7 @@ limitations under the License.
 package v1beta2
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -91,8 +92,8 @@ type ModuleTemplateSpec struct {
 	// downstream modules as it is considered a set of default values. This means that an update of the data block
 	// will only propagate to new Modules created form ModuleTemplate, not any existing Module.
 	//
-	//+kubebuilder:pruning:PreserveUnknownFields
-	//+kubebuilder:validation:XEmbeddedResource
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:XEmbeddedResource
 	Data *unstructured.Unstructured `json:"data,omitempty"`
 
 	// The Descriptor is the Open Component Model Descriptor of a Module, containing all relevant information
@@ -108,7 +109,7 @@ type ModuleTemplateSpec struct {
 	// NOTE: Only Raw Rendering is Supported for the layers. So previously used "config" layers for the helm
 	// charts and kustomize renderers are deprecated and ignored.
 	//
-	//+kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:pruning:PreserveUnknownFields
 	Descriptor machineryruntime.RawExtension `json:"descriptor"`
 
 	CustomStateCheck []*CustomStateCheck `json:"customStateCheck,omitempty"`
@@ -125,11 +126,15 @@ type CustomStateCheck struct {
 	MappedState shared.State `json:"mappedState" yaml:"mappedState"`
 }
 
+var (
+	errTypeAssertDescriptor = errors.New("value can not be converted to v1beta2.Descriptor")
+)
+
 func (m *ModuleTemplate) GetDescriptor() (*Descriptor, error) {
 	if m.Spec.Descriptor.Object != nil {
 		desc, ok := m.Spec.Descriptor.Object.(*Descriptor)
 		if !ok {
-			return nil, ErrTypeAssertDescriptor
+			return nil, errTypeAssertDescriptor
 		}
 		return desc, nil
 	}
@@ -148,7 +153,7 @@ func (m *ModuleTemplate) GetDescriptor() (*Descriptor, error) {
 	m.Spec.Descriptor.Object = &Descriptor{ComponentDescriptor: desc}
 	mDesc, ok := m.Spec.Descriptor.Object.(*Descriptor)
 	if !ok {
-		return nil, ErrTypeAssertDescriptor
+		return nil, errTypeAssertDescriptor
 	}
 
 	return mDesc, nil
@@ -176,7 +181,7 @@ func (m *ModuleTemplate) SetDescToCache(descriptor *Descriptor) {
 	descriptorCache.Store(key, descriptor)
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // ModuleTemplateList contains a list of ModuleTemplate.
 type ModuleTemplateList struct {
@@ -185,14 +190,9 @@ type ModuleTemplateList struct {
 	Items              []ModuleTemplate `json:"items"`
 }
 
-//nolint:gochecknoinits
-func init() {
-	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{}, &Descriptor{})
-}
-
 func (m *ModuleTemplate) GetComponentDescriptorCacheKey() string {
 	if m.Annotations != nil {
-		moduleVersion := m.Annotations[ModuleVersionAnnotation]
+		moduleVersion := m.Annotations[shared.ModuleVersionAnnotation]
 		_, err := semver.NewVersion(moduleVersion)
 		if moduleVersion != "" && err == nil {
 			return fmt.Sprintf("%s:%s:%s", m.Name, m.Spec.Channel, moduleVersion)
@@ -219,21 +219,21 @@ func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
 }
 
 func (m *ModuleTemplate) syncDisabled() bool {
-	if isSync, found := m.Labels[SyncLabel]; found {
+	if isSync, found := m.Labels[shared.SyncLabel]; found {
 		return strings.ToLower(isSync) == DisableLabelValue
 	}
 	return false
 }
 
 func (m *ModuleTemplate) IsInternal() bool {
-	if isInternal, found := m.Labels[InternalLabel]; found {
+	if isInternal, found := m.Labels[shared.InternalLabel]; found {
 		return strings.ToLower(isInternal) == EnableLabelValue
 	}
 	return false
 }
 
 func (m *ModuleTemplate) IsBeta() bool {
-	if isBeta, found := m.Labels[BetaLabel]; found {
+	if isBeta, found := m.Labels[shared.BetaLabel]; found {
 		return strings.ToLower(isBeta) == EnableLabelValue
 	}
 	return false

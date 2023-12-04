@@ -107,7 +107,8 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, shared.StateReady).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name,
+					shared.StateReady).
 				Should(Succeed())
 		}
 
@@ -276,7 +277,7 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 			WithChannel(module.Channel).
 			WithModuleCR(data).
 			WithOCM(compdescv2.SchemaVersion).
-			WithAnnotation(v1beta2.IsClusterScopedAnnotation, v1beta2.EnableLabelValue).Build()
+			WithAnnotation(shared.IsClusterScopedAnnotation, v1beta2.EnableLabelValue).Build()
 		Eventually(controlPlaneClient.Create, Timeout, Interval).WithContext(ctx).
 			WithArguments(template).
 			Should(Succeed())
@@ -295,7 +296,8 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, shared.StateReady).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name,
+					shared.StateReady).
 				Should(Succeed())
 		}
 
@@ -308,7 +310,8 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 		By("Add skip-reconciliation label to Kyma CR")
 		Eventually(UpdateKymaLabel, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), declarativev2.SkipReconcileLabel, "true").
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), declarativev2.SkipReconcileLabel,
+				"true").
 			Should(Succeed())
 	})
 
@@ -328,7 +331,8 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	It("Stop Kyma skip Reconciliation so that it can be deleted", func() {
 		Eventually(UpdateKymaLabel, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), declarativev2.SkipReconcileLabel, "false").
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), declarativev2.SkipReconcileLabel,
+				"false").
 			Should(Succeed())
 	})
 })
@@ -339,7 +343,7 @@ var _ = Describe("Kyma with managed fields not in kcp mode", Ordered, func() {
 
 	It("Should result in a managed field with manager named 'unmanaged-kyma'", func() {
 		Eventually(ContainsKymaManagerField, Timeout, Interval).
-			WithArguments(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), v1beta2.UnmanagedKyma).
+			WithArguments(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), shared.UnmanagedKyma).
 			Should(BeTrue())
 	})
 })
@@ -358,7 +362,7 @@ var _ = Describe("Kyma.Spec.Status.Modules.Resource.Namespace should be empty fo
 					WithModuleName(module.Name).
 					WithChannel(module.Channel).
 					WithOCM(compdescv2.SchemaVersion).
-					WithAnnotation(v1beta2.IsClusterScopedAnnotation, v1beta2.EnableLabelValue).Build()
+					WithAnnotation(shared.IsClusterScopedAnnotation, v1beta2.EnableLabelValue).Build()
 				Eventually(controlPlaneClient.Create, Timeout, Interval).WithContext(ctx).
 					WithArguments(template).
 					Should(Succeed())

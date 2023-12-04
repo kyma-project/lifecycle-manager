@@ -1,11 +1,11 @@
-package v1beta2_test
+package api_test
 
 import (
 	"testing"
 
 	"github.com/Masterminds/semver/v3"
 
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
 )
 
 func Test_ValidateVersion(t *testing.T) {

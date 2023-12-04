@@ -1,4 +1,4 @@
-package v1beta2
+package shared
 
 const (
 	InstanceIDLabel = "kyma-project.io/instance-id"

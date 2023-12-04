@@ -15,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
@@ -28,12 +29,12 @@ var testFiles = filepath.Join(integration.GetProjectRoot(), "config", "samples",
 var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	data := unstructured.Unstructured{}
 	data.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   v1beta2.OperatorPrefix,
+		Group:   shared.OperatorPrefix,
 		Version: v1beta2.GroupVersion.Version,
 		Kind:    "SampleCRD",
 	})
 	It("should successfully fetch accept a moduletemplate based on a compliant crd", func() {
-		crd := GetCRD(v1beta2.OperatorPrefix, v1beta2.GroupVersion.Version, "samplecrd")
+		crd := GetCRD(shared.OperatorPrefix, v1beta2.GroupVersion.Version, "samplecrd")
 		Eventually(k8sClient.Create, Timeout, Interval).
 			WithContext(webhookServerContext).
 			WithArguments(crd).Should(Succeed())
@@ -50,7 +51,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	})
 
 	It("should accept a moduletemplate based on a non-compliant crd in non-strict mode", func() {
-		crd := GetNonCompliantCRD(v1beta2.OperatorPrefix, v1beta2.GroupVersion.Version, "samplecrd")
+		crd := GetNonCompliantCRD(shared.OperatorPrefix, v1beta2.GroupVersion.Version, "samplecrd")
 
 		Eventually(k8sClient.Create, Timeout, Interval).
 			WithContext(webhookServerContext).
@@ -67,7 +68,7 @@ var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	})
 
 	It("should deny a version downgrade when updating", func() {
-		crd := GetCRD(v1beta2.OperatorPrefix, v1beta2.GroupVersion.Version, "samplecrd")
+		crd := GetCRD(shared.OperatorPrefix, v1beta2.GroupVersion.Version, "samplecrd")
 		Eventually(k8sClient.Create, Timeout, Interval).
 			WithContext(webhookServerContext).
 			WithArguments(crd).Should(Succeed())

@@ -11,7 +11,7 @@ import (
 
 var _ = Describe("Module Upgrade", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system",
-		v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalSecret)
+		v1beta2.DefaultChannel, shared.SyncStrategyLocalSecret)
 	module := NewTemplateOperator(v1beta2.DefaultChannel)
 	moduleCR := NewTestModuleCR(remoteNamespace)
 	InitEmptyKymaBeforeAll(kyma)

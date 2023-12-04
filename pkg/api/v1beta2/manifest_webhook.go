@@ -22,12 +22,12 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-func (watcher *Watcher) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (manifest *ManifestInCtrlRuntime) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	err := ctrl.NewWebhookManagedBy(mgr).
-		For(watcher).
+		For(manifest).
 		Complete()
 	if err != nil {
-		return fmt.Errorf("failed to setup Webhook Manager for watcher: %w", err)
+		return fmt.Errorf("failed to setup webhook manager for manifest: %w", err)
 	}
 	return nil
 }

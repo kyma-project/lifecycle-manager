@@ -113,10 +113,10 @@ func (watcher *Watcher) GetModuleName() string {
 	if watcher.Labels == nil {
 		return ""
 	}
-	return watcher.Labels[ManagedBy]
+	return watcher.Labels[shared.ManagedBy]
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // WatcherList contains a list of Watcher.
 type WatcherList struct {
@@ -125,16 +125,11 @@ type WatcherList struct {
 	Items              []Watcher `json:"items"`
 }
 
-//nolint:gochecknoinits
-func init() {
-	SchemeBuilder.Register(&Watcher{}, &WatcherList{})
-}
-
 // DefaultIstioGatewaySelector defines a default label selector for a Gateway to configure a VirtualService
 // for the Watcher.
 func DefaultIstioGatewaySelector() apimetav1.LabelSelector {
 	return apimetav1.LabelSelector{
-		MatchLabels: map[string]string{OperatorPrefix + Separator + "watcher-gateway": "default"},
+		MatchLabels: map[string]string{shared.OperatorPrefix + shared.Separator + "watcher-gateway": "default"},
 	}
 }
 
@@ -163,13 +158,15 @@ const (
 )
 
 func (watcher *Watcher) InitializeConditions() {
-	watcher.Status.Conditions = []apimetav1.Condition{{
-		Type:               string(WatcherConditionTypeVirtualService),
-		Status:             apimetav1.ConditionUnknown,
-		Message:            string(VirtualServiceNotConfiguredConditionMessage),
-		Reason:             string(ReadyConditionReason),
-		LastTransitionTime: apimetav1.Now(),
-	}}
+	watcher.Status.Conditions = []apimetav1.Condition{
+		{
+			Type:               string(WatcherConditionTypeVirtualService),
+			Status:             apimetav1.ConditionUnknown,
+			Message:            string(VirtualServiceNotConfiguredConditionMessage),
+			Reason:             string(ReadyConditionReason),
+			LastTransitionTime: apimetav1.Now(),
+		},
+	}
 }
 
 func (watcher *Watcher) UpdateWatcherConditionStatus(conditionType WatcherConditionType,

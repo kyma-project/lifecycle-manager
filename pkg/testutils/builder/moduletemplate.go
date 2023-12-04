@@ -14,6 +14,7 @@ import (
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	machineryaml "k8s.io/apimachinery/pkg/util/yaml"
 
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
@@ -27,7 +28,7 @@ func NewModuleTemplateBuilder() ModuleTemplateBuilder {
 		moduleTemplate: &v1beta2.ModuleTemplate{
 			TypeMeta: apimetav1.TypeMeta{
 				APIVersion: v1beta2.GroupVersion.String(),
-				Kind:       string(v1beta2.KymaKind),
+				Kind:       string(shared.KymaKind),
 			},
 			ObjectMeta: apimetav1.ObjectMeta{
 				Name:      RandomName(),
@@ -49,7 +50,7 @@ func (m ModuleTemplateBuilder) WithModuleName(moduleName string) ModuleTemplateB
 	if m.moduleTemplate.Labels == nil {
 		m.moduleTemplate.Labels = make(map[string]string)
 	}
-	m.moduleTemplate.Labels[v1beta2.ModuleName] = moduleName
+	m.moduleTemplate.Labels[shared.ModuleName] = moduleName
 	return m
 }
 

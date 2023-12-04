@@ -49,11 +49,12 @@ import (
 	ctrlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	"github.com/kyma-project/lifecycle-manager/api"
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
+	"github.com/kyma-project/lifecycle-manager/pkg/api"
+	"github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -184,22 +185,22 @@ func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *machi
 }
 
 func enableWebhooks(mgr manager.Manager) {
-	if err := (&v1beta2.ModuleTemplate{}).
+	if err := (&v1beta2.ModuleTemplateInCtrlRuntime{}).
 		SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
 		os.Exit(1)
 	}
 
-	if err := (&v1beta2.Kyma{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&v1beta2.KymaInCtrlRuntime{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Kyma")
 		os.Exit(1)
 	}
-	if err := (&v1beta2.Watcher{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&v1beta2.WatcherInCtrlRuntime{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Watcher")
 		os.Exit(1)
 	}
 
-	if err := (&v1beta2.Manifest{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&v1beta2.ManifestInCtrlRuntime{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Manifest")
 		os.Exit(1)
 	}
@@ -240,7 +241,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 
 	if err := (&controller.KymaReconciler{
 		Client:            mgr.GetClient(),
-		EventRecorder:     mgr.GetEventRecorderFor(v1beta2.OperatorName),
+		EventRecorder:     mgr.GetEventRecorderFor(shared.OperatorName),
 		KcpRestConfig:     kcpRestConfig,
 		RemoteClientCache: remoteClientCache,
 		SKRWebhookManager: skrWebhookManager,
@@ -295,12 +296,12 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 ) {
 	resolveRemoteClientFunc := func(ctx context.Context, key client.ObjectKey) (client.Client, error) {
 		kcpClient := remote.NewClientWithConfig(mgr.GetClient(), mgr.GetConfig())
-		return remote.NewClientLookup(kcpClient, remoteClientCache, v1beta2.SyncStrategyLocalSecret).Lookup(ctx, key)
+		return remote.NewClientLookup(kcpClient, remoteClientCache, shared.SyncStrategyLocalSecret).Lookup(ctx, key)
 	}
 
 	if err := (&controller.PurgeReconciler{
 		Client:                mgr.GetClient(),
-		EventRecorder:         mgr.GetEventRecorderFor(v1beta2.OperatorName),
+		EventRecorder:         mgr.GetEventRecorderFor(shared.OperatorName),
 		ResolveRemoteClient:   resolveRemoteClientFunc,
 		PurgeFinalizerTimeout: flagVar.purgeFinalizerTimeout,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(flagVar.skipPurgingFor),
@@ -369,8 +370,8 @@ func dropVersionFromStoredVersions(mgr manager.Manager, versionToBeRemoved strin
 	}
 
 	crdsToPatch := []string{
-		string(v1beta2.ModuleTemplateKind), string(v1beta2.WatcherKind),
-		v1beta2.ManifestKind, string(v1beta2.KymaKind),
+		string(shared.ModuleTemplateKind), string(shared.WatcherKind),
+		string(shared.ManifestKind), string(shared.KymaKind),
 	}
 
 	for _, crdItem := range crdList.Items {

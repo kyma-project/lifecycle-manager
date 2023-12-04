@@ -29,7 +29,7 @@ var errWatcherDeploymentNotReady = errors.New("watcher Deployment is not ready")
 
 var _ = Describe("Enqueue Event from Watcher", Ordered, func() {
 	kyma := NewKymaWithSyncLabel("kyma-sample", "kcp-system", "regular",
-		v1beta2.SyncStrategyLocalSecret)
+		shared.SyncStrategyLocalSecret)
 	GinkgoWriter.Printf("kyma before create %v\n", kyma)
 	incomingRequestMsg := fmt.Sprintf("event received from SKR, adding %s/%s to queue",
 		kyma.GetNamespace(), kyma.GetName())

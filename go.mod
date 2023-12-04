@@ -1,6 +1,8 @@
 module github.com/kyma-project/lifecycle-manager
 
-go 1.21
+go 1.21.0
+
+replace github.com/kyma-project/lifecycle-manager/api => ./api
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
@@ -14,7 +16,7 @@ require (
 	github.com/kyma-project/runtime-watcher/listener v0.0.0-20231011102033-b8383d92883e
 	github.com/onsi/ginkgo/v2 v2.13.2
 	github.com/onsi/gomega v1.30.0
-	github.com/open-component-model/ocm v0.4.0
+	github.com/open-component-model/ocm v0.4.3
 	github.com/prometheus/client_golang v1.17.0
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/zap v1.26.0
@@ -31,6 +33,7 @@ require (
 )
 
 require (
+	github.com/kyma-project/lifecycle-manager/api v0.0.0-00010101000000-000000000000
 	k8s.io/api v0.28.4
 	k8s.io/apiextensions-apiserver v0.28.4
 	k8s.io/apimachinery v0.28.4

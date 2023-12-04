@@ -34,6 +34,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
+	internalV1beta2 "github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
@@ -171,7 +172,7 @@ func (r *KymaReconciler) reconcile(ctx context.Context, kyma *v1beta2.Kyma) (ctr
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	if needsUpdate := kyma.EnsureLabelsAndFinalizers(); needsUpdate {
+	if needsUpdate := internalV1beta2.EnsureLabelsAndFinalizers(kyma); needsUpdate {
 		if err := r.Update(ctx, kyma); err != nil {
 			return r.requeueWithError(ctx, kyma, fmt.Errorf("failed to update kyma after finalizer check: %w", err))
 		}
@@ -416,7 +417,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 
 	r.Metrics.CleanupMetrics(kyma)
 
-	controllerutil.RemoveFinalizer(kyma, v1beta2.Finalizer)
+	controllerutil.RemoveFinalizer(kyma, shared.Finalizer)
 	return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
 }
 
