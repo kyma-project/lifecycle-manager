@@ -80,7 +80,8 @@ func GetTemplates(
 }
 
 func getMissingTemplateFromModuleStatus(ctx context.Context, kymaClient client.Reader, kyma *v1beta2.Kyma,
-	templates ModuleTemplatesByModuleName) {
+	templates ModuleTemplatesByModuleName,
+) {
 	for _, module := range kyma.Status.Modules {
 		_, found := templates[module.Name]
 		if found {
@@ -236,7 +237,6 @@ type TemplateLookup struct {
 }
 
 func (c *TemplateLookup) WithContext(ctx context.Context) ModuleTemplateTO {
-
 	template, err := c.getTemplate(ctx, c.desiredChannel)
 	if err != nil {
 		return ModuleTemplateTO{
