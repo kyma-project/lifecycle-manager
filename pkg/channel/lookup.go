@@ -39,9 +39,14 @@ func GetTemplates(
 	logger := logf.FromContext(ctx)
 	templates := make(ModuleTemplatesByModuleName)
 
+	getTemplateFromModuleStatus(ctx, kymaClient, kyma, templates)
+
 	for _, module := range kyma.Spec.Modules {
 		var template ModuleTemplateTO
-
+		_, found := templates[module.Name]
+		if found {
+			continue
+		}
 		switch {
 		case module.RemoteModuleTemplateRef == "":
 			template = NewTemplateLookup(kymaClient, module.Name, module.Channel, kyma.Spec.Channel).WithContext(ctx)
@@ -72,24 +77,23 @@ func GetTemplates(
 		templates[module.Name] = &template
 	}
 
-	getMissingTemplateFromModuleStatus(ctx, kymaClient, kyma, templates)
 	determineTemplatesVisibility(kyma, templates)
 	checkValidTemplatesUpdate(logger, kyma, templates)
 
 	return templates
 }
 
-func getMissingTemplateFromModuleStatus(ctx context.Context, kymaClient client.Reader, kyma *v1beta2.Kyma,
+func getTemplateFromModuleStatus(ctx context.Context, kymaClient client.Reader, kyma *v1beta2.Kyma,
 	templates ModuleTemplatesByModuleName,
 ) {
 	for _, module := range kyma.Status.Modules {
-		_, found := templates[module.Name]
-		if found {
-			continue
-		}
 		template := NewTemplateLookup(kymaClient, module.Name, module.Channel, kyma.Spec.Channel).WithContext(ctx)
 		if template.Err != nil {
 			continue
+		}
+
+		if err := saveDescriptorToCache(template.ModuleTemplate); err != nil {
+			template.Err = fmt.Errorf("failed to get descriptor: %w", err)
 		}
 		templates[module.Name] = &template
 	}
