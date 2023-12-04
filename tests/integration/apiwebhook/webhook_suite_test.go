@@ -144,7 +144,7 @@ func SetupWebhook() {
 	addrPort := fmt.Sprintf("%s:%d", webhookInstallOptions.LocalServingHost, webhookInstallOptions.LocalServingPort)
 	Eventually(func() error {
 		conn, err := tls.DialWithDialer(dialer, "tcp", addrPort, &tls.Config{
-			InsecureSkipVerify: true, //nolint:gosec
+			InsecureSkipVerify: true, //nolint:gosec // TLS check can be skipped for this integration test suit
 		})
 		if err != nil {
 			return err

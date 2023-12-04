@@ -121,7 +121,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 
 	if notContainsSyncedOCIRefAnnotation(obj) {
 		updateSyncedOCIRefAnnotation(obj, spec.OCIRef)
-		return ctrl.Result{Requeue: true}, r.Update(ctx, obj) //nolint:wrapcheck
+		return r.updateObject(ctx, obj)
 	}
 
 	clnt, err := r.getTargetClient(ctx, obj)
@@ -164,7 +164,7 @@ func (r *Reconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Resu
 	// we need to make sure all updates successfully before we can update synced oci ref
 	if requireUpdateSyncedOCIRefAnnotation(obj, spec.OCIRef) {
 		updateSyncedOCIRefAnnotation(obj, spec.OCIRef)
-		return ctrl.Result{Requeue: true}, r.Update(ctx, obj) //nolint:wrapcheck
+		return r.updateObject(ctx, obj)
 	}
 
 	if !obj.GetDeletionTimestamp().IsZero() {
@@ -183,8 +183,7 @@ func (r *Reconciler) removeFinalizers(ctx context.Context, obj Object, finalizer
 		}
 	}
 	if finalizerRemoved {
-		// no SSA since delete does not work for finalizers
-		return ctrl.Result{Requeue: true}, r.Update(ctx, obj) //nolint:wrapcheck
+		return r.updateObject(ctx, obj)
 	}
 	msg := fmt.Sprintf("waiting as other finalizers are present: %s", obj.GetFinalizers())
 	r.Event(obj, "Normal", "FinalizerRemoval", msg)
@@ -581,18 +580,33 @@ func (r *Reconciler) ssaStatus(ctx context.Context, obj client.Object) (ctrl.Res
 	obj.SetManagedFields(nil)
 	obj.SetResourceVersion("")
 
-	return ctrl.Result{Requeue: true}, r.Status().Patch( //nolint:wrapcheck
-		ctx, obj, client.Apply, client.ForceOwnership, r.FieldOwner,
-	)
+	return r.patchStatus(ctx, obj)
 }
 
 func (r *Reconciler) ssa(ctx context.Context, obj client.Object) (ctrl.Result, error) {
 	obj.SetUID("")
 	obj.SetManagedFields(nil)
 	obj.SetResourceVersion("")
-	return ctrl.Result{Requeue: true},
-		r.Patch(ctx, obj, //nolint:wrapcheck
-			client.Apply,
-			client.ForceOwnership,
-			r.FieldOwner)
+	return r.patchObject(ctx, obj)
+}
+
+func (r *Reconciler) updateObject(ctx context.Context, obj client.Object) (ctrl.Result, error) {
+	if err := r.Update(ctx, obj); err != nil {
+		return ctrl.Result{Requeue: true}, fmt.Errorf("failed to update object: %w", err)
+	}
+	return ctrl.Result{Requeue: true}, nil
+}
+
+func (r *Reconciler) patchObject(ctx context.Context, obj client.Object) (ctrl.Result, error) {
+	if err := r.Patch(ctx, obj, client.Apply, client.ForceOwnership, r.FieldOwner); err != nil {
+		return ctrl.Result{Requeue: true}, fmt.Errorf("failed to patch object: %w", err)
+	}
+	return ctrl.Result{Requeue: true}, nil
+}
+
+func (r *Reconciler) patchStatus(ctx context.Context, obj client.Object) (ctrl.Result, error) {
+	if err := r.Status().Patch(ctx, obj, client.Apply, client.ForceOwnership, r.FieldOwner); err != nil {
+		return ctrl.Result{Requeue: true}, fmt.Errorf("failed to patch status: %w", err)
+	}
+	return ctrl.Result{Requeue: true}, nil
 }

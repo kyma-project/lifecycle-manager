@@ -58,7 +58,7 @@ func Test_defaultTransforms(t *testing.T) {
 			disclaimerTransform,
 			[]*unstructured.Unstructured{{Object: map[string]any{}}},
 			func(testingT assert.TestingT, err error, i ...interface{}) bool {
-				assert.NoError(testingT, err) //nolint:testifylint
+				require.NoError(t, err)
 				unstructs, ok := i[0].([]*unstructured.Unstructured)
 				assert.True(testingT, ok)
 				unstruct := unstructs[0]

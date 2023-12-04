@@ -2,6 +2,7 @@ package watcher
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -26,6 +27,12 @@ const (
 	caCertKey        = "ca.crt"
 	tlsCertKey       = "tls.crt"
 	tlsPrivateKeyKey = "tls.key"
+)
+
+var (
+	ErrDomainAnnotationEmpty   = errors.New("domain annotation is empty")
+	ErrDomainAnnotationMissing = errors.New("domain annotation is missing")
+	ErrIssuerNotFound          = errors.New("no certificate issuer found")
 )
 
 type SubjectAltName struct {
@@ -201,7 +208,7 @@ func (c *CertificateManager) createCertificate(ctx context.Context, subjectAltNa
 func (c *CertificateManager) getSubjectAltNames() (*SubjectAltName, error) {
 	if domain, ok := c.kyma.Annotations[DomainAnnotation]; ok {
 		if domain == "" {
-			return nil, fmt.Errorf("Domain-Annotation of KymaCR %s is empty", c.kyma.Name) //nolint:goerr113
+			return nil, fmt.Errorf("%w (Kyma: %s)", ErrDomainAnnotationEmpty, c.kyma.Name)
 		}
 
 		svcSuffix := []string{"svc.cluster.local", "svc"}
@@ -217,8 +224,7 @@ func (c *CertificateManager) getSubjectAltNames() (*SubjectAltName, error) {
 			DNSNames: dnsNames,
 		}, nil
 	}
-	return nil, fmt.Errorf("kymaCR %s does not contain annotation '%s' with specified domain", //nolint:goerr113
-		c.kyma.Name, DomainAnnotation)
+	return nil, fmt.Errorf("%w (Kyma: %s)", ErrDomainAnnotationMissing, c.kyma.Name)
 }
 
 func (c *CertificateManager) getIssuer(ctx context.Context) (*certmanagerv1.Issuer, error) {
@@ -232,7 +238,8 @@ func (c *CertificateManager) getIssuer(ctx context.Context) (*certmanagerv1.Issu
 		return nil, fmt.Errorf("could not list cert-manager issuer %w", err)
 	}
 	if len(issuerList.Items) == 0 {
-		return nil, fmt.Errorf("no issuer found in Namespace `%s`", c.istioNamespace) //nolint:goerr113
+		return nil, fmt.Errorf("%w (Namespace: %s, Labels %s)",
+			ErrIssuerNotFound, c.istioNamespace, c.labelSet.String())
 	} else if len(issuerList.Items) > 1 {
 		logger.Info("Found more than one issuer, will use by default first one in list",
 			"issuer", issuerList.Items)

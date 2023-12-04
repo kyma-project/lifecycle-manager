@@ -40,7 +40,8 @@ var (
 )
 
 const (
-	CredSecretLabelKeyForTest = "operator.kyma-project.io/oci-registry-cred" //nolint:gosec
+	//nolint:gosec// OCI registry credits label used for testing, no confidential content
+	CredSecretLabelKeyForTest = "operator.kyma-project.io/oci-registry-cred"
 )
 
 type mockLayer struct {
@@ -223,8 +224,10 @@ func DeleteManifestAndVerify(manifest *v1beta2.Manifest) func() error {
 		}
 		newManifest := v1beta2.Manifest{}
 		err := K8sClient.Get(Ctx, client.ObjectKeyFromObject(manifest), &newManifest)
-		//nolint:wrapcheck
-		return client.IgnoreNotFound(err)
+		if client.IgnoreNotFound(err) != nil {
+			return fmt.Errorf("failed to fetch manifest %w", err)
+		}
+		return nil
 	}
 }
 

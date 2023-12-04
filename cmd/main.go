@@ -68,7 +68,6 @@ import (
 )
 
 var (
-	// TODO: brauchen wir die nolints hier????
 	scheme                 = machineryruntime.NewScheme() //nolint:gochecknoglobals // scheme used to add CRDs
 	setupLog               = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals // logger used for setup
 	errMissingWatcherImage = errors.New("runtime watcher image is not provided")

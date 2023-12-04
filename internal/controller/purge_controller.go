@@ -129,7 +129,8 @@ func (r *PurgeReconciler) IsKymaManaged() bool {
 }
 
 func (r *PurgeReconciler) ensurePurgeFinalizer(ctx context.Context, kyma *v1beta2.Kyma) (bool,
-	error) {
+	error,
+) {
 	if kyma.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(kyma, v1beta2.PurgeFinalizer) {
 		controllerutil.AddFinalizer(kyma, v1beta2.PurgeFinalizer)
 		if err := r.Update(ctx, kyma); err != nil {

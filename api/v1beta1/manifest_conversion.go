@@ -22,7 +22,7 @@ func (src *Manifest) ConvertTo(dstRaw conversion.Hub) error {
 
 // ConvertFrom converts from the Hub version to this version.
 //
-//nolint:stylecheck
+//nolint:stylecheck // stick to controller-runtime.conversion naming convention
 func (dst *Manifest) ConvertFrom(srcRaw conversion.Hub) error {
 	src, ok := srcRaw.(*v1beta2.Manifest)
 	if !ok {

@@ -22,8 +22,9 @@ import (
 
 //nolint:gochecknoglobals // in-memory cache used mutex
 var (
-	fileMutexMap      = sync.Map{}
-	ErrImageLayerPull = errors.New("failed to pull layer")
+	fileMutexMap       = sync.Map{}
+	ErrImageLayerPull  = errors.New("failed to pull layer")
+	ErrMutexConversion = errors.New("failed to convert cached value to mutex")
 )
 
 func GetPathFromRawManifest(ctx context.Context,
@@ -37,7 +38,10 @@ func GetPathFromRawManifest(ctx context.Context,
 	installPath := getFsChartPath(imageSpec)
 	manifestPath := path.Join(installPath, v1beta2.RawManifestLayerName+".yaml")
 
-	fileMutex := getLockerForPath(installPath)
+	fileMutex, err := getLockerForPath(installPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to load locker from cache: %w", err)
+	}
 	fileMutex.Lock()
 	defer fileMutex.Unlock()
 
@@ -109,12 +113,15 @@ func getFsChartPath(imageSpec v1beta2.ImageSpec) string {
 }
 
 // getLockerForPath always returns the same sync.Locker instance for given path argument.
-func getLockerForPath(path string) sync.Locker {
-	val, ok := fileMutexMap.Load(path)
+func getLockerForPath(path string) (sync.Locker, error) {
+	val, ok := fileMutexMap.Load(path) //nolint:varnamelen // ok is sufficient naming for conversion check
 	if !ok {
 		val, _ = fileMutexMap.LoadOrStore(path, &sync.Mutex{})
 	}
-	// no alternative here
-	//nolint:forcetypeassert
-	return val.(*sync.Mutex)
+
+	mutex, ok := val.(*sync.Mutex)
+	if !ok {
+		return nil, ErrMutexConversion
+	}
+	return mutex, nil
 }

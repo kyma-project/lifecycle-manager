@@ -1,3 +1,4 @@
+//nolint:goerr113 // dynamic error creation in unit and integration tests is sufficient
 package withwatcher_test
 
 import (
@@ -67,7 +68,8 @@ func expectVirtualServiceConfiguredCorrectly(customIstioClient *istio.Client) er
 			return err
 		}
 		Expect(gateways).To(HaveLen(1))
-		if err := isVirtualServiceHostsConfigured(suiteCtx, watcherCR.Name, customIstioClient, gateways[0]); err != nil {
+		if err := isVirtualServiceHostsConfigured(suiteCtx, watcherCR.Name, customIstioClient,
+			gateways[0]); err != nil {
 			return err
 		}
 	}
@@ -104,7 +106,7 @@ func expectVirtualServiceRemoved(customIstioClient *istio.Client) error {
 		return err
 	}
 	if len(listVirtualServices.Items) != 0 {
-		return fmt.Errorf("VirtualServiceList is not empty: %d", len(listVirtualServices.Items)) //nolint:goerr113
+		return fmt.Errorf("VirtualServiceList is not empty: %d", len(listVirtualServices.Items))
 	}
 	return nil
 }
