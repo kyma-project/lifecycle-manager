@@ -337,10 +337,11 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentWatcherReconciles
 
 	if err := (&controller.WatcherReconciler{
-		Client:        mgr.GetClient(),
-		EventRecorder: mgr.GetEventRecorderFor(controller.WatcherControllerName),
-		Scheme:        mgr.GetScheme(),
-		RestConfig:    mgr.GetConfig(),
+		Client:             mgr.GetClient(),
+		EventRecorder:      mgr.GetEventRecorderFor(controller.WatcherControllerName),
+		WatcherVSNamespace: flagVar.istioGatewayNamespace,
+		Scheme:             mgr.GetScheme(),
+		RestConfig:         mgr.GetConfig(),
 		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.watcherRequeueSuccessInterval,
 			Busy:    defaultKymaRequeueBusyInterval,
