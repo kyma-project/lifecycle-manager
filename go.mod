@@ -2,7 +2,6 @@ module github.com/kyma-project/lifecycle-manager
 
 go 1.21.0
 
-// nolint:gomoddirectives
 replace github.com/kyma-project/lifecycle-manager/api => ./api
 
 require (
