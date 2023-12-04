@@ -437,7 +437,6 @@ func (r *KymaReconciler) updateKyma(ctx context.Context, kyma *v1beta2.Kyma) err
 }
 
 func (r *KymaReconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma) error {
-	// these are the actual modules
 	modules, err := r.GenerateModulesFromTemplate(ctx, kyma)
 	if err != nil {
 		return fmt.Errorf("error while fetching modules during processing: %w", err)
