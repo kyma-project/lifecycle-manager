@@ -2,7 +2,7 @@
 // +groupName=test.declarative.kyma-project.io
 // +versionName=v1
 //
-//nolint:gochecknoglobals // needed for API usage
+//nolint:gochecknoglobals // required for utilizing the API
 package declarative
 
 import (

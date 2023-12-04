@@ -18,7 +18,7 @@ limitations under the License.
 // +kubebuilder:object:generate=true
 // +groupName=operator.kyma-project.io
 //
-//nolint:gochecknoglobals // needed for API usage
+//nolint:gochecknoglobals // required for utilizing the API
 package v1beta1
 
 import (

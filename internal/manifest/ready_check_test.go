@@ -17,7 +17,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 )
 
-//nolint:funlen,maintidx //nolint:funlen // Unit-Testing
+//nolint:funlen,maintidx // Unit-Testing
 func TestHandleState(t *testing.T) {
 	t.Parallel()
 	type moduleCheck struct {
