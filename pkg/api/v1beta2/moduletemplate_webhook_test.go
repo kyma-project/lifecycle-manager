@@ -1,4 +1,4 @@
-package api_test
+package v1beta2_test
 
 import (
 	"testing"
