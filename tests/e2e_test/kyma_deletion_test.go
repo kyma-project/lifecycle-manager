@@ -61,7 +61,9 @@ var _ = Describe("KCP Kyma CR Deletion", Ordered, func() {
 		})
 
 		It("Then KCP Kyma CR still exists", func() {
-			Expect(KymaExists(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace())).
+			Eventually(KymaExists).
+				WithContext(ctx).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace()).
 				Should(Equal(ErrDeletionTimestampFound))
 		})
 

@@ -131,7 +131,9 @@ func CheckIfExists(ctx context.Context, name, namespace, group, version, kind st
 		Version: version,
 		Kind:    kind,
 	})
-	return clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, resourceCR)
+
+	err := clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, resourceCR)
+	return CRExists(resourceCR, err)
 }
 
 func CheckIfNotExists(ctx context.Context, name, namespace, group, version, kind string, clnt client.Client) error {
