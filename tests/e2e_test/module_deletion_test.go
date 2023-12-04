@@ -104,6 +104,10 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 				Should(Succeed())
 
 			By("And old Module Operator Deployment is removed")
+			Eventually(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments("template-operator-controller-manager", "template-operator-system", runtimeClient).
+				Should(Equal(ErrNotFound))
 			Consistently(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments("template-operator-controller-manager", "template-operator-system", runtimeClient).
@@ -179,18 +183,17 @@ var _ = Describe("Non Blocking Kyma Module Deletion", Ordered, func() {
 		})
 
 		It("Then Module CR is removed", func() {
-			Eventually(CheckIfNotExists).
+			Eventually(CheckIfExists).
 				WithContext(ctx).
 				WithArguments("sample-yaml", "kyma-system",
 					"operator.kyma-project.io", "v1alpha1", "Sample", runtimeClient).
-				Should(Succeed())
+				Should(Equal(ErrNotFound))
 
 			By("And Module Operator Deployment is deleted")
-			Eventually(CheckIfNotExists).
+			Eventually(DeploymentIsReady).
 				WithContext(ctx).
-				WithArguments("template-operator-v2-controller-manager",
-					"template-operator-system", "apps", "v1", "Deployment", runtimeClient).
-				Should(Succeed())
+				WithArguments("template-operator-v2-controller-manager", "template-operator-system", runtimeClient).
+				Should(Equal(ErrNotFound))
 
 			By("And Manifest CR is removed")
 			Eventually(NoManifestExist).

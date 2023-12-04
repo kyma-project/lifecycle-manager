@@ -136,20 +136,6 @@ func CheckIfExists(ctx context.Context, name, namespace, group, version, kind st
 	return CRExists(resourceCR, err)
 }
 
-func CheckIfNotExists(ctx context.Context, name, namespace, group, version, kind string, clnt client.Client) error {
-	resourceCR := &unstructured.Unstructured{}
-	resourceCR.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   group,
-		Version: version,
-		Kind:    kind,
-	})
-	err := clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, resourceCR)
-	if util.IsNotFound(err) {
-		return nil
-	}
-	return fmt.Errorf("%w: %s %s/%s should be deleted", errResourceExists, kind, namespace, name)
-}
-
 func CreateKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
 	patchedRuntimeConfig := strings.ReplaceAll(string(*runtimeConfig), localHostname, k3dHostname)
 	secret := &apicorev1.Secret{

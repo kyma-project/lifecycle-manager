@@ -83,7 +83,7 @@ var _ = Describe("Kyma Module Upgrade Under Deletion", Ordered, func() {
 
 		It("When new version of ModuleTemplate is applied", func() {
 			cmd := exec.Command("kubectl", "apply", "-f",
-				"tests/moduletemplates/moduletemplate_template_operator_v2_regular_new_version.yaml")
+				"../moduletemplates/moduletemplate_template_operator_v2_regular_new_version.yaml")
 			out, err := cmd.CombinedOutput()
 			Expect(err).NotTo(HaveOccurred())
 			GinkgoWriter.Printf(string(out))
@@ -96,6 +96,10 @@ var _ = Describe("Kyma Module Upgrade Under Deletion", Ordered, func() {
 				Should(Succeed())
 
 			By("And old Module Operator Deployment is removed")
+			Eventually(DeploymentIsReady).
+				WithContext(ctx).
+				WithArguments("template-operator-v1-controller-manager", "template-operator-system", runtimeClient).
+				Should(Equal(ErrNotFound))
 			Consistently(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments("template-operator-v1-controller-manager", "template-operator-system", runtimeClient).
@@ -130,8 +134,8 @@ var _ = Describe("Kyma Module Upgrade Under Deletion", Ordered, func() {
 					runtimeClient).
 				Should(Equal(ErrNotFound))
 
-			By("And Module Operator Deployment is removed")
-			Consistently(DeploymentIsReady).
+			By("And Module Operator Deployment is deleted")
+			Eventually(DeploymentIsReady).
 				WithContext(ctx).
 				WithArguments("template-operator-v2-controller-manager", "template-operator-system", runtimeClient).
 				Should(Equal(ErrNotFound))
