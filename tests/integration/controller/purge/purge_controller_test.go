@@ -13,7 +13,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	pkgApiV1beta2 "github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
+	pkgapiv1beta2 "github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
 
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
@@ -31,7 +31,7 @@ var _ = Describe("When kyma is not deleted within configured timeout", Ordered, 
 
 		By("Create the Kyma object", func() {
 			Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
-			if updateRequired := pkgApiV1beta2.EnsureLabelsAndFinalizers(kyma); updateRequired {
+			if updateRequired := pkgapiv1beta2.EnsureLabelsAndFinalizers(kyma); updateRequired {
 				var err error
 				for i := 0; i < 2; i++ {
 					err = controlPlaneClient.Update(ctx, kyma)
@@ -94,7 +94,7 @@ var _ = Describe("When kyma is deleted before configured timeout", Ordered, func
 
 		By("Creating the kyma object first", func() {
 			Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
-			if updateRequired := pkgApiV1beta2.EnsureLabelsAndFinalizers(kyma); updateRequired {
+			if updateRequired := pkgapiv1beta2.EnsureLabelsAndFinalizers(kyma); updateRequired {
 				var err error
 				for i := 0; i < 2; i++ {
 					err = controlPlaneClient.Update(ctx, kyma)
@@ -153,7 +153,7 @@ var _ = Describe("When some important CRDs should be skipped", Ordered, func() {
 
 		By("Creating the kyma object first and adding custom finalizers to be skipped", func() {
 			Expect(controlPlaneClient.Create(ctx, kyma)).Should(Succeed())
-			if updateRequired := pkgApiV1beta2.EnsureLabelsAndFinalizers(kyma); updateRequired {
+			if updateRequired := pkgapiv1beta2.EnsureLabelsAndFinalizers(kyma); updateRequired {
 				var err error
 				// 5 Retries
 				for i := 0; i < 5; i++ {

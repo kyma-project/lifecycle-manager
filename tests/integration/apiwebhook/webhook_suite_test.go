@@ -38,7 +38,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	pkgApi "github.com/kyma-project/lifecycle-manager/pkg/api"
-	pkgApiV1beta2 "github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
+	pkgapiv1beta2 "github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 
@@ -127,10 +127,10 @@ func SetupWebhook() {
 		})
 	Expect(err).NotTo(HaveOccurred())
 
-	Expect((&pkgApiV1beta2.ModuleTemplateInCtrlRuntime{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
-	Expect((&pkgApiV1beta2.KymaInCtrlRuntime{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
-	Expect((&pkgApiV1beta2.ManifestInCtrlRuntime{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
-	Expect((&pkgApiV1beta2.WatcherInCtrlRuntime{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
+	Expect((&pkgapiv1beta2.ModuleTemplateInCtrlRuntime{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
+	Expect((&pkgapiv1beta2.KymaInCtrlRuntime{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
+	Expect((&pkgapiv1beta2.ManifestInCtrlRuntime{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
+	Expect((&pkgapiv1beta2.WatcherInCtrlRuntime{}).SetupWebhookWithManager(mgr)).NotTo(HaveOccurred())
 	// +kubebuilder:scaffold:webhook
 
 	go func() {

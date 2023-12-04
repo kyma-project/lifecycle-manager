@@ -10,7 +10,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	v1beta22 "github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
+	pkgapiv1beta2 "github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
 )
 
 type RESTConfigGetter func() (*rest.Config, error)
@@ -25,7 +25,7 @@ func (r *RemoteClusterLookup) ConfigResolver(
 ) (*declarativev2.ClusterInfo, error) {
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
-		return nil, v1beta22.ErrTypeAssertManifest
+		return nil, pkgapiv1beta2.ErrTypeAssertManifest
 	}
 	// in single cluster mode return the default cluster info
 	// since the resources need to be installed in the same cluster

@@ -17,7 +17,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	pkgApiV1beta2 "github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
+	pkgapiv1beta2 "github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
 
@@ -162,7 +162,7 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 	return &v1beta2.Watcher{
 		TypeMeta: apimetav1.TypeMeta{
 			Kind:       string(shared.WatcherKind),
-			APIVersion: pkgApiV1beta2.GroupVersion.String(),
+			APIVersion: pkgapiv1beta2.GroupVersion.String(),
 		},
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:      managerInstanceName,
@@ -181,9 +181,9 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 				fmt.Sprintf("%s-watchable", managerInstanceName): "true",
 			},
 			ResourceToWatch: v1beta2.WatchableGVR{
-				Group:    pkgApiV1beta2.GroupVersionResource.Group,
-				Version:  pkgApiV1beta2.GroupVersionResource.Version,
-				Resource: pkgApiV1beta2.GroupVersionResource.Resource,
+				Group:    pkgapiv1beta2.GroupVersionResource.Group,
+				Version:  pkgapiv1beta2.GroupVersionResource.Version,
+				Resource: pkgapiv1beta2.GroupVersionResource.Resource,
 			},
 			Field: field,
 			Gateway: v1beta2.GatewayConfig{
