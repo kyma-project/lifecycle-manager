@@ -75,6 +75,10 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{Requeue: updateNeeded}, err
 	}
 
+	if kyma.DeletionTimestamp.IsZero() {
+		return ctrl.Result{Requeue: true}, nil
+	}
+
 	deadlineReached, requeueAfter := r.deadlineReached(kyma)
 	if !deadlineReached {
 		return ctrl.Result{RequeueAfter: requeueAfter}, nil
