@@ -55,12 +55,13 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 	// (since we do not know which module we are dealing with)
 	modules := make(common.Modules, 0)
 
-	for _, module := range kyma.AvailableModules() {
+	for _, module := range kyma.GetAvailableModules() {
 		template := templates[module.Name]
 		if template.Err != nil && !errors.Is(template.Err, channel.ErrTemplateNotAllowed) {
 			modules = append(modules, &common.Module{
 				ModuleName: module.Name,
 				Template:   template,
+				Enabled:    module.Enabled,
 			})
 			continue
 		}
@@ -70,6 +71,7 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 			modules = append(modules, &common.Module{
 				ModuleName: module.Name,
 				Template:   template,
+				Enabled:    module.Enabled,
 			})
 			continue
 		}
@@ -78,12 +80,13 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 		name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
 		overwriteNameAndNamespace(template, name, p.remoteSyncNamespace)
 		var manifest *v1beta2.Manifest
-		if manifest, err = p.newManifestFromTemplate(ctx, module,
+		if manifest, err = p.newManifestFromTemplate(ctx, module.Module,
 			template.ModuleTemplate); err != nil {
 			template.Err = err
 			modules = append(modules, &common.Module{
 				ModuleName: module.Name,
 				Template:   template,
+				Enabled:    module.Enabled,
 			})
 			continue
 		}
@@ -97,6 +100,7 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 			Version:    version,
 			Template:   template,
 			Manifest:   manifest,
+			Enabled:    module.Enabled,
 		})
 	}
 

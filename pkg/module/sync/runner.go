@@ -107,13 +107,27 @@ func (r *Runner) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	if !ok {
 		return commonerrs.ErrTypeAssert
 	}
-	if err := r.Patch(ctx, manifestObj,
-		client.Apply,
-		client.FieldOwner(kyma.Labels[v1beta2.ManagedBy]),
-		client.ForceOwnership,
-	); err != nil {
-		return fmt.Errorf("error applying manifest %s: %w", client.ObjectKeyFromObject(module), err)
+	if module.Enabled {
+		if err := r.Patch(ctx, manifestObj,
+			client.Apply,
+			client.FieldOwner(kyma.Labels[v1beta2.ManagedBy]),
+			client.ForceOwnership,
+		); err != nil {
+			return fmt.Errorf("error applying manifest %s: %w", client.ObjectKeyFromObject(module), err)
+		}
+	} else {
+		manifestInCluster := &v1beta2.Manifest{}
+		err := r.Get(ctx, client.ObjectKey{Namespace: manifestObj.GetNamespace(), Name: manifestObj.GetName()},
+			manifestInCluster)
+		if err != nil {
+			return fmt.Errorf("error get manifest %s: %w", client.ObjectKeyFromObject(module), err)
+		}
+		manifestObj.ResourceVersion = manifestInCluster.ResourceVersion
+		if err := r.Update(ctx, manifestObj); err != nil {
+			return fmt.Errorf("error update manifest %s: %w", client.ObjectKeyFromObject(module), err)
+		}
 	}
+
 	module.Manifest = manifestObj
 
 	return nil

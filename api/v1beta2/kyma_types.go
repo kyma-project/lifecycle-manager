@@ -397,12 +397,17 @@ func (kyma *Kyma) IsBeta() bool {
 	return found && strings.ToLower(beta) == EnableLabelValue
 }
 
-func (kyma *Kyma) AvailableModules() []Module {
+type AvailableModule struct {
+	Module
+	Enabled bool
+}
+
+func (kyma *Kyma) GetAvailableModules() []AvailableModule {
 	moduleMap := make(map[string]bool)
-	modules := make([]Module, 0)
+	modules := make([]AvailableModule, 0)
 	for _, module := range kyma.Spec.Modules {
 		moduleMap[module.Name] = true
-		modules = append(modules, module)
+		modules = append(modules, AvailableModule{Module: module, Enabled: true})
 	}
 
 	for _, module := range kyma.Status.Modules {
@@ -410,9 +415,12 @@ func (kyma *Kyma) AvailableModules() []Module {
 		if exist {
 			continue
 		}
-		modules = append(modules, Module{
-			Name:    module.Name,
-			Channel: module.Channel,
+		modules = append(modules, AvailableModule{
+			Module: Module{
+				Name:    module.Name,
+				Channel: module.Channel,
+			},
+			Enabled: false,
 		})
 	}
 	return modules

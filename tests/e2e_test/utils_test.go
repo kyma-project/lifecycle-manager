@@ -32,7 +32,6 @@ var (
 	errManifestNotInExpectedState   = errors.New("manifest CR not in expected state")
 	errModuleNotExisting            = errors.New("module does not exists in KymaCR")
 	errManifestDeletionTimestampSet = errors.New("manifest CR has set DeletionTimeStamp")
-	errResourceExists               = errors.New("resource still exists")
 )
 
 const (

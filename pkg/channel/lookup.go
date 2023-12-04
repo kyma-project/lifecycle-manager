@@ -39,7 +39,7 @@ func GetTemplates(
 	logger := logf.FromContext(ctx)
 	templates := make(ModuleTemplatesByModuleName)
 
-	for _, module := range kyma.AvailableModules() {
+	for _, module := range kyma.GetAvailableModules() {
 		var template ModuleTemplateTO
 		_, found := templates[module.Name]
 		if found {
