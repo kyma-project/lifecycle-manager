@@ -70,12 +70,11 @@ func (r *PurgeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 		return ctrl.Result{Requeue: false}, nil
 	}
 
-	updateNeeded, err := r.ensurePurgeFinalizer(ctx, kyma)
-	if updateNeeded || err != nil {
-		return ctrl.Result{Requeue: updateNeeded}, err
-	}
-
 	if kyma.DeletionTimestamp.IsZero() {
+		err := r.ensurePurgeFinalizer(ctx, kyma)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 		return ctrl.Result{Requeue: true}, nil
 	}
 
@@ -132,10 +131,8 @@ func (r *PurgeReconciler) IsKymaManaged() bool {
 	return r.IsManagedKyma
 }
 
-func (r *PurgeReconciler) ensurePurgeFinalizer(ctx context.Context, kyma *v1beta2.Kyma) (bool,
-	error,
-) {
-	if kyma.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(kyma, v1beta2.PurgeFinalizer) {
+func (r *PurgeReconciler) ensurePurgeFinalizer(ctx context.Context, kyma *v1beta2.Kyma) error {
+	if !controllerutil.ContainsFinalizer(kyma, v1beta2.PurgeFinalizer) {
 		controllerutil.AddFinalizer(kyma, v1beta2.PurgeFinalizer)
 		if err := r.Update(ctx, kyma); err != nil {
 			err = fmt.Errorf("failed to add purge finalizer: %w", err)
@@ -143,11 +140,10 @@ func (r *PurgeReconciler) ensurePurgeFinalizer(ctx context.Context, kyma *v1beta
 				fmt.Sprintf("Updating purge finalizers for Kyma  %s/%s failed with err %s",
 					kyma.Namespace, kyma.Name, err))
 			r.setFinalizerWarningEvent(kyma, err)
-			return true, err
+			return err
 		}
-		return true, nil
 	}
-	return false, nil
+	return nil
 }
 
 func (r *PurgeReconciler) dropPurgeFinalizer(ctx context.Context, kyma *v1beta2.Kyma) error {
