@@ -67,7 +67,7 @@ type KymaReconciler struct {
 	record.EventRecorder
 	queue.RequeueIntervals
 	signature.VerificationSettings
-	SKRWebhookManager   watcher.SKRWebhookManager
+	SKRWebhookManager   *watcher.SKRWebhookManifestManager
 	KcpRestConfig       *rest.Config
 	RemoteClientCache   *remote.ClientCache
 	InKCPMode           bool
@@ -119,7 +119,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, remote.ErrAccessSecretNotFound) {
 		logger.Info("access secret not found for kyma, assuming already deleted cluster")
-		r.Metrics.CleanupMetrics(kyma)
+		r.Metrics.CleanupMetrics(kyma.Name)
 		r.removeAllFinalizers(kyma)
 		return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
 	}
@@ -395,6 +395,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 			r.enqueueNormalEvent(kyma, webhookChartRemoval, err.Error())
 			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
 		}
+		r.SKRWebhookManager.WatcherMetrics.CleanupMetrics(kyma.Name)
 	}
 
 	if r.SyncKymaEnabled(kyma) {
@@ -414,7 +415,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		logger.Info("removed remote finalizer")
 	}
 
-	r.Metrics.CleanupMetrics(kyma)
+	r.Metrics.CleanupMetrics(kyma.Name)
 
 	controllerutil.RemoveFinalizer(kyma, v1beta2.Finalizer)
 	return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
