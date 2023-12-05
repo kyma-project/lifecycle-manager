@@ -24,7 +24,7 @@ type PurgeError string
 type PurgeMetrics struct {
 	purgeTimeGauge       prometheus.Gauge
 	purgeRequestsCounter prometheus.Counter
-	purgeErrorGauge      prometheus.GaugeVec
+	purgeErrorGauge      *prometheus.GaugeVec
 }
 
 func NewPurgeMetrics() *PurgeMetrics {
@@ -37,10 +37,10 @@ func NewPurgeMetrics() *PurgeMetrics {
 			Name: metricPurgeRequests,
 			Help: "Indicates total purge count ",
 		}),
-		purgeErrorGauge: *prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		purgeErrorGauge: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: metricPurgeError,
 			Help: "Indicates purge errors",
-		}, []string{kymaNameLabel, shootIDLabel, instanceIDLabel, errorReasonLabel}),
+		}, []string{KymaNameLabel, shootIDLabel, instanceIDLabel, errorReasonLabel}),
 	}
 	ctrlmetrics.Registry.MustRegister(purgeMetrics.purgeTimeGauge)
 	ctrlmetrics.Registry.MustRegister(purgeMetrics.purgeRequestsCounter)
@@ -66,7 +66,7 @@ func (p *PurgeMetrics) UpdatePurgeError(kyma *v1beta2.Kyma, purgeError PurgeErro
 		return fmt.Errorf("%w: %w", errMetric, err)
 	}
 	metric, err := p.purgeErrorGauge.GetMetricWith(prometheus.Labels{
-		kymaNameLabel:    kyma.Name,
+		KymaNameLabel:    kyma.Name,
 		shootIDLabel:     shootID,
 		instanceIDLabel:  instanceID,
 		errorReasonLabel: string(purgeError),
