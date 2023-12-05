@@ -20,7 +20,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	pkgApi "github.com/kyma-project/lifecycle-manager/pkg/api"
+	pkgapi "github.com/kyma-project/lifecycle-manager/pkg/api"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -86,7 +86,7 @@ var _ = BeforeSuite(func() {
 	runtimeClient, err = client.New(runtimeRESTConfig, client.Options{Scheme: k8sclientscheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 
-	Expect(pkgApi.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
+	Expect(pkgapi.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	Expect(apiextensionsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	Expect(certmanagerv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	SetDefaultEventuallyPollingInterval(interval)

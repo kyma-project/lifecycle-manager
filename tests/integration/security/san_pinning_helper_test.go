@@ -74,8 +74,8 @@ var (
 	annotationsWithWrongDomain   = map[string]string{"skr-domain": "wrong.domain.com"}   //nolint:gochecknoglobals
 	emptyAnnotations             = map[string]string{}                                   //nolint:gochecknoglobals
 
+	//nolint:gochecknoglobals
 	headerWithSufficientCertificate = map[string][]string{
-		//nolint:gochecknoglobals
 		security.XFCCHeader: {
 			"Hash=d54ce461112371914142ca640f0ff7edb5b47778e1e97185336b79f4590e2ce4;Cert=\"" +
 				"-----BEGIN%20CERTIFICATE-----%0AMIIDRzCCAi%2BgAwIBAgIBATANBgkqhkiG9w0BAQs" +
@@ -100,8 +100,8 @@ var (
 				"ple.domain.com;DNS=*.example.domain.com",
 		},
 	}
+	//nolint:gochecknoglobals
 	headerWithMalformedCertificate = map[string][]string{
-		//nolint:gochecknoglobals
 		security.XFCCHeader: {
 			"Hash=d54ce461112371914142ca640f0ff7edb5b47778e1e97185336b79f4590e2ce4;Cert=\"" +
 				"-----BEGIN%20CERTIFICATE-----%0WRONGRzCCAi%2BgAwIBAgIBATANBgkqhkiG9w0BAQs" +

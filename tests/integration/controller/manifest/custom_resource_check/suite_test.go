@@ -42,7 +42,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
-	pkgApi "github.com/kyma-project/lifecycle-manager/pkg/api"
+	pkgapi "github.com/kyma-project/lifecycle-manager/pkg/api"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	manifesttest "github.com/kyma-project/lifecycle-manager/tests/integration/controller/manifest"
@@ -97,7 +97,7 @@ var _ = BeforeSuite(
 
 		// +kubebuilder:scaffold:scheme
 
-		Expect(pkgApi.AddToScheme(k8sclientscheme.Scheme)).To(Succeed())
+		Expect(pkgapi.AddToScheme(k8sclientscheme.Scheme)).To(Succeed())
 		Expect(apicorev1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
 		metricsBindAddress, found := os.LookupEnv("metrics-bind-address")

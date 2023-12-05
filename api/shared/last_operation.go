@@ -5,7 +5,7 @@ import (
 )
 
 // LastOperation defines the last operation from the control-loop.
-// +k8s:deepcopy-gen=true
+// +kubebuilder:object:generate=true
 type LastOperation struct {
 	Operation      string         `json:"operation"`
 	LastUpdateTime apimetav1.Time `json:"lastUpdateTime,omitempty"`

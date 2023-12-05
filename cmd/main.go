@@ -51,8 +51,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/internal"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
-	"github.com/kyma-project/lifecycle-manager/pkg/api"
-	"github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
+	pkgapi "github.com/kyma-project/lifecycle-manager/pkg/api"
+	pkgapiv1beta2 "github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
@@ -75,14 +75,14 @@ var (
 //nolint:gochecknoinits
 func init() {
 	machineryutilruntime.Must(k8sclientscheme.AddToScheme(scheme))
-	machineryutilruntime.Must(api.AddToScheme(scheme))
+	machineryutilruntime.Must(pkgapi.AddToScheme(scheme))
 
 	machineryutilruntime.Must(apiextensionsv1.AddToScheme(scheme))
 	machineryutilruntime.Must(certmanagerv1.AddToScheme(scheme))
 
 	machineryutilruntime.Must(istioclientapiv1beta1.AddToScheme(scheme))
 
-	machineryutilruntime.Must(v1beta2.AddToScheme(scheme))
+	machineryutilruntime.Must(pkgapiv1beta2.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -193,22 +193,22 @@ func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *machi
 }
 
 func enableWebhooks(mgr manager.Manager) {
-	if err := (&v1beta2.ModuleTemplateInCtrlRuntime{}).
+	if err := (&pkgapiv1beta2.ModuleTemplateInCtrlRuntime{}).
 		SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "ModuleTemplate")
 		os.Exit(1)
 	}
 
-	if err := (&v1beta2.KymaInCtrlRuntime{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&pkgapiv1beta2.KymaInCtrlRuntime{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Kyma")
 		os.Exit(1)
 	}
-	if err := (&v1beta2.WatcherInCtrlRuntime{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&pkgapiv1beta2.WatcherInCtrlRuntime{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Watcher")
 		os.Exit(1)
 	}
 
-	if err := (&v1beta2.ManifestInCtrlRuntime{}).SetupWebhookWithManager(mgr); err != nil {
+	if err := (&pkgapiv1beta2.ManifestInCtrlRuntime{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "Manifest")
 		os.Exit(1)
 	}

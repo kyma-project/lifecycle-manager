@@ -3,14 +3,14 @@ package v1beta1
 import (
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 
-	"github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
+	pkgapiv1beta2 "github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
 )
 
 // ConvertTo converts this to the Hub version.
 func (src *ManifestInCtrlRuntime) ConvertTo(dstRaw conversion.Hub) error {
-	dst, ok := dstRaw.(*v1beta2.ManifestInCtrlRuntime)
+	dst, ok := dstRaw.(*pkgapiv1beta2.ManifestInCtrlRuntime)
 	if !ok {
-		return v1beta2.ErrTypeAssertManifest
+		return pkgapiv1beta2.ErrTypeAssertManifest
 	}
 
 	dst.ObjectMeta = src.ObjectMeta
@@ -24,9 +24,9 @@ func (src *ManifestInCtrlRuntime) ConvertTo(dstRaw conversion.Hub) error {
 //
 //nolint:stylecheck
 func (dst *ManifestInCtrlRuntime) ConvertFrom(srcRaw conversion.Hub) error {
-	src, ok := srcRaw.(*v1beta2.ManifestInCtrlRuntime)
+	src, ok := srcRaw.(*pkgapiv1beta2.ManifestInCtrlRuntime)
 	if !ok {
-		return v1beta2.ErrTypeAssertManifest
+		return pkgapiv1beta2.ErrTypeAssertManifest
 	}
 
 	dst.ObjectMeta = src.ObjectMeta

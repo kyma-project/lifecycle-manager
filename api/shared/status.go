@@ -7,7 +7,7 @@ import (
 )
 
 // Status defines the observed state of CustomObject.
-// +k8s:deepcopy-gen=true
+// +kubebuilder:object:generate=true
 type Status struct {
 	// State signifies current state of CustomObject.
 	// Value can be one of ("Ready", "Processing", "Error", "Deleting", "Warning").

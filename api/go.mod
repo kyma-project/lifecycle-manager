@@ -1,10 +1,10 @@
 module github.com/kyma-project/lifecycle-manager/api
 
-go 1.21.0
+go 1.21
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
-	github.com/open-component-model/ocm v0.4.3
+	github.com/open-component-model/ocm v0.4.0
 	k8s.io/apimachinery v0.28.4
 )
 

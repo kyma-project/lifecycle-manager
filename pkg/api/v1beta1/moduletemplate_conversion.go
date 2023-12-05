@@ -4,13 +4,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta1"
-	"github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
+	pkgapiv1beta2 "github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
 )
 
 func (src *ModuleTemplateInCtrlRuntime) ConvertTo(dstRaw conversion.Hub) error {
-	dst, ok := dstRaw.(*v1beta2.ModuleTemplateInCtrlRuntime)
+	dst, ok := dstRaw.(*pkgapiv1beta2.ModuleTemplateInCtrlRuntime)
 	if !ok {
-		return v1beta2.ErrTypeAssertModuleTemplate
+		return pkgapiv1beta2.ErrTypeAssertModuleTemplate
 	}
 
 	dst.ObjectMeta = src.ObjectMeta
@@ -23,9 +23,9 @@ func (src *ModuleTemplateInCtrlRuntime) ConvertTo(dstRaw conversion.Hub) error {
 
 //nolint:stylecheck
 func (dst *ModuleTemplateInCtrlRuntime) ConvertFrom(srcRaw conversion.Hub) error {
-	src, ok := srcRaw.(*v1beta2.ModuleTemplateInCtrlRuntime)
+	src, ok := srcRaw.(*pkgapiv1beta2.ModuleTemplateInCtrlRuntime)
 	if !ok {
-		return v1beta2.ErrTypeAssertModuleTemplate
+		return pkgapiv1beta2.ErrTypeAssertModuleTemplate
 	}
 
 	dst.ObjectMeta = src.ObjectMeta

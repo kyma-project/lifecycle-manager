@@ -54,7 +54,7 @@ func (m *ModuleTemplateInCtrlRuntime) ValidateCreate() (admission.Warnings, erro
 		Info("validate create", "name", m.Name)
 	newDescriptor, err := m.GetDescriptor()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get descriptor for ModuleTemplate: %w", err)
 	}
 	return nil, Validate(nil, newDescriptor, m.Name)
 }
@@ -65,7 +65,7 @@ func (m *ModuleTemplateInCtrlRuntime) ValidateUpdate(old machineryruntime.Object
 		Info("validate update", "name", m.Name)
 	newDescriptor, err := m.GetDescriptor()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get descriptor for ModuleTemplate: %w", err)
 	}
 	oldTemplate, ok := old.(*v1beta2.ModuleTemplate)
 	if !ok {
@@ -73,7 +73,7 @@ func (m *ModuleTemplateInCtrlRuntime) ValidateUpdate(old machineryruntime.Object
 	}
 	oldDescriptor, err := oldTemplate.GetDescriptor()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get descriptor for ModuleTemplate: %w", err)
 	}
 	return nil, Validate(oldDescriptor, newDescriptor, m.Name)
 }
@@ -110,7 +110,7 @@ func Validate(oldDescriptor, newDescriptor *v1beta2.Descriptor, newTemplateName 
 
 func validationErr(newTemplateName string, newVersion string, errMsg string) *apierrors.StatusError {
 	return apierrors.NewInvalid(
-		schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
+		schema.GroupKind{Group: v1beta2.GroupVersion.Group, Kind: "ModuleTemplate"},
 		newTemplateName, field.ErrorList{
 			field.Invalid(
 				field.NewPath("spec").Child("descriptor").

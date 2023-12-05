@@ -37,7 +37,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	pkgApi "github.com/kyma-project/lifecycle-manager/pkg/api"
+	pkgapi "github.com/kyma-project/lifecycle-manager/pkg/api"
 	pkgapiv1beta2 "github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
@@ -90,7 +90,7 @@ var _ = BeforeSuite(func() {
 	Expect(cfg).NotTo(BeNil())
 
 	scheme = machineryruntime.NewScheme()
-	Expect(pkgApi.AddToScheme(scheme)).NotTo(HaveOccurred())
+	Expect(pkgapi.AddToScheme(scheme)).NotTo(HaveOccurred())
 	Expect(apiextensionsv1.AddToScheme(scheme)).NotTo(HaveOccurred())
 	Expect(apiadmissionv1.AddToScheme(scheme)).NotTo(HaveOccurred())
 

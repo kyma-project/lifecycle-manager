@@ -61,7 +61,6 @@ type ManifestSpec struct {
 }
 
 // ImageSpec defines OCI Image specifications.
-// +k8s:deepcopy-gen=true
 type ImageSpec struct {
 	// Repo defines the Image repo
 	Repo string `json:"repo,omitempty"`

@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-// +k8s:deepcopy-gen=true
+// +kubebuilder:object:generate=true
 type Resource struct {
 	Name                       string `json:"name"`
 	Namespace                  string `json:"namespace"`

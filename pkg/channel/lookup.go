@@ -12,6 +12,7 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	pkgapiv1beta2 "github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 )
@@ -174,7 +175,7 @@ func CheckValidTemplateUpdate(
 		// of module versions here (fast: v2.0.0 get downgraded to regular: v1.0.0). In this
 		// case we want to suspend updating the module until we reach v2.0.0 in regular, since downgrades
 		// are not supported. To circumvent this, a module can be uninstalled and then reinstalled in the old channel.
-		if !v1beta2.IsValidVersionChange(versionInTemplate, versionInStatus) {
+		if !pkgapiv1beta2.IsValidVersionChange(versionInTemplate, versionInStatus) {
 			msg := fmt.Sprintf("ignore channel skew (from %s to %s), "+
 				"as a higher version (%s) of the module was previously installed",
 				moduleStatus.Channel, moduleTemplate.Spec.Channel, versionInStatus.String())
