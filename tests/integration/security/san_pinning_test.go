@@ -48,9 +48,9 @@ func TestRequestVerifier_verifySAN(t *testing.T) {
 			args: args{
 				certificate: &x509.Certificate{
 					IPAddresses: nil,
-					URIs: []*url.URL{{
-						Path: "example.domain.com",
-					}},
+					URIs: []*url.URL{
+						{Path: "example.domain.com"},
+					},
 					DNSNames: nil,
 				},
 				kymaDomain: "example.domain.com",
@@ -74,9 +74,9 @@ func TestRequestVerifier_verifySAN(t *testing.T) {
 			args: args{
 				certificate: &x509.Certificate{
 					IPAddresses: []net.IP{{192, 168, 127, 1}, {192, 168, 127, 2}},
-					URIs: []*url.URL{{
-						Path: "wrong.domain.com",
-					}},
+					URIs: []*url.URL{
+						{Path: "wrong.domain.com"},
+					},
 					DNSNames: []string{"wrong.domain.com"},
 				},
 				kymaDomain: "example.domain.com",
@@ -167,18 +167,15 @@ var _ = Describe("Verify Request using SAN", Ordered, func() {
 	for _, tt := range tests {
 		test := tt
 		It(test.name, func() {
-			// Create Request Verifier
 			verifier := &security.RequestVerifier{
 				Client: k8sClient,
 				Log:    zapr.NewLogger(zapLog),
 			}
 
-			// Create Kyma CR
 			if test.kyma != nil {
 				Expect(k8sClient.Create(context.TODO(), test.kyma)).Should(Succeed())
 			}
 
-			// Actual Test
 			err := verifier.Verify(test.args.request, test.args.watcherEventObject)
 			if test.wantErr {
 				Expect(err).Should(HaveOccurred())
@@ -186,7 +183,6 @@ var _ = Describe("Verify Request using SAN", Ordered, func() {
 			}
 			Expect(err).ShouldNot(HaveOccurred())
 
-			// Cleanup
 			if test.kyma != nil {
 				Expect(k8sClient.Delete(context.TODO(), test.kyma)).Should(Succeed())
 			}

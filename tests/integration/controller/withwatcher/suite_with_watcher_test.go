@@ -178,21 +178,34 @@ var _ = BeforeSuite(func() {
 	}
 
 	remoteClientCache = remote.NewClientCache()
-	skrChartCfg := &watcher.SkrWebhookManagerConfig{
+	skrChartCfg := watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         skrWatcherPath,
 		SkrWebhookMemoryLimits: "200Mi",
 		SkrWebhookCPULimits:    "1",
-		IstioNamespace:         istioSystemNs,
-		IstioGatewayName:       gatewayName,
-		IstioGatewayNamespace:  kcpSystemNs,
 		RemoteSyncNamespace:    controller.DefaultRemoteSyncNamespace,
-		CACertificateName:      caCertificateName,
 	}
 
-	caCertCache := watcher.NewCertificateCache(5 * time.Minute)
+	certificateConfig := watcher.CertificateConfig{
+		IstioNamespace:      istioSystemNs,
+		RemoteSyncNamespace: controller.DefaultRemoteSyncNamespace,
+		CACertificateName:   caCertificateName,
+		AdditionalDNSNames:  []string{},
+		Duration:            1 * time.Hour,
+		RenewBefore:         5 * time.Minute,
+	}
 
-	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(restCfg, k8sclientscheme.Scheme, caCertCache,
-		skrChartCfg)
+	gatewayConfig := watcher.GatewayConfig{
+		IstioGatewayName:          gatewayName,
+		IstioGatewayNamespace:     kcpSystemNs,
+		LocalGatewayPortOverwrite: "",
+	}
+
+	caCertCache := watcher.NewCACertificateCache(5 * time.Minute)
+
+	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(
+		restCfg, k8sclientscheme.Scheme,
+		caCertCache,
+		skrChartCfg, certificateConfig, gatewayConfig)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controller.KymaReconciler{
 		Client:            k8sManager.GetClient(),

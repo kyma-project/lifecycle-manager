@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/go-logr/logr"
 	admissionregistrationv1 "k8s.io/api/admissionregistration/v1"
 	apiappsv1 "k8s.io/api/apps/v1"
 	apicorev1 "k8s.io/api/core/v1"
@@ -16,6 +15,7 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	machineryruntime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
@@ -237,7 +237,8 @@ func configureUnstructuredObject(cfg *unstructuredResourcesConfig, object *unstr
 	return object.DeepCopy(), nil
 }
 
-func closeFileAndLogErr(closer io.Closer, logger logr.Logger, path string) {
+func closeFileAndLogErr(ctx context.Context, closer io.Closer, path string) {
+	logger := logf.FromContext(ctx)
 	err := closer.Close()
 	if err != nil {
 		logger.V(log.DebugLevel).Info("failed to close raw manifest file", "path", path)
