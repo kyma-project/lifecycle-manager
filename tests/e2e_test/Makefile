@@ -97,7 +97,7 @@ purge-metrics:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Purge Metrics"
 
 module-upgrade:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Upgrade"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Upgrade By Channel Switch"
 
 ca-certificate-rotation:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "CA Certificate Rotation"
