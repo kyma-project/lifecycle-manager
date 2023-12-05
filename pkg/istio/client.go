@@ -234,7 +234,7 @@ func PrepareIstioHTTPRouteForCR(obj *v1beta2.Watcher) *istioapiv1beta1.HTTPRoute
 			{
 				Uri: &istioapiv1beta1.StringMatch{
 					MatchType: &istioapiv1beta1.StringMatch_Prefix{
-						//nolint:nosnakecase // cannot be avoided
+						//nolint:nosnakecase // external type
 						Prefix: fmt.Sprintf(prefixFormat, contractVersion, obj.GetModuleName()),
 					},
 				},

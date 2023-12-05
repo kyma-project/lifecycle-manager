@@ -41,7 +41,6 @@ func (m *ModuleTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return nil
 }
 
-//nolint:lll // kubebuilder syntax
 // +kubebuilder:webhook:path=/validate-operator-kyma-project-io-v1beta2-moduletemplate,mutating=false,failurePolicy=fail,sideEffects=None,groups=operator.kyma-project.io,resources=moduletemplates,verbs=create;update,versions=v1beta2,name=v1beta2.vmoduletemplate.kb.io,admissionReviewVersions=v1
 
 var _ webhook.Validator = &ModuleTemplate{}

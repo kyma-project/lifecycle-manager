@@ -15,7 +15,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
-//nolint:funlen // Unit-Testing
 func TestPruneResource(t *testing.T) {
 	t.Parallel()
 	kubeNs := &resource.Info{

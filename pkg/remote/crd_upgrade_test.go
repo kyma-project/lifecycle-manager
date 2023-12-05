@@ -11,7 +11,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
 )
 
-//nolint:funlen // Unit-Testing
 func TestShouldPatchRemoteCRD(t *testing.T) {
 	t.Parallel()
 	type args struct {

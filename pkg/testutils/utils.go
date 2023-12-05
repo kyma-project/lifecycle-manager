@@ -1,4 +1,3 @@
-//nolint:wrapcheck // errors do not need to be wrapped in unit and integration test usage
 package testutils
 
 import (

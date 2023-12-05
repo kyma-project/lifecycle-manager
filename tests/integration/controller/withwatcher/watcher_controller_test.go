@@ -1,4 +1,3 @@
-//nolint:goerr113 // dynamic error creation in unit and integration tests is sufficient
 package withwatcher_test
 
 import (

@@ -147,11 +147,28 @@ linters-settings:
     ignorePackageGlobs:
       - github.com/kyma-project/lifecycle-manager/pkg/*
       - github.com/kyma-project/lifecycle-manager/internal/*
+  varnamelen:
+    ignore-names:
+      - ok # Ignore "ok" variables as return values of functions
+    # Ignore "ok" variables that hold the bool return value of a type assertion. (defaults to false)
+    ignore-type-assert-ok: true
+    # Ignore "ok" variables that hold the bool return value of a map index. (defaults to false)
+    ignore-map-index-ok: true
+    # Ignore "ok" variables that hold the bool return value of a channel receive. (defaults to false)
+    ignore-chan-recv-ok: true
 issues:
   exclude-rules:
     - path: "_test\\.go"
       linters:
-        - wrapcheck
+        - wrapcheck # Errors do not need to be wrapped in unit and integration tests
+        - goerr113 # Dynamic error creation in unit and integration tests is sufficient
+        - gochecknoglobals # Does not apply to unit and integration tests
+        - funlen # Table driven unit and integration tests exceed function length by design
+        - maintidx # Table driven unit and integration tests exceed maintainability index by design
+    - path: "pkg/testutils/"
+      linters:
+        - wrapcheck # Errors do not need to be wrapped in unit and integration test utils
+        - goerr113 # Dynamic error creation in unit and integration test utils is sufficient
     - path: tests/e2e_test/
       linters: [ gci ] # Disable gci due to the test utilities dot import.
     - path: tests/integration/watcher/certificate_suite_test.go
@@ -163,6 +180,12 @@ issues:
     - linters:
       - importas
       text: has alias "" which is not part of config # Ignore false positives that emerged due to https://github.com/julz/importas/issues/15.
+    - linters:
+        - lll
+      source: "^// +kubebuilder: " # Exclude lll issues for long lines starting with kubebuilder marker prefix
+    - linters:
+        - lll # Exclude lll issues for long lines starting with an url
+      source: "^// http "
   max-issues-per-linter: 0
   max-same-issues: 0
 output:

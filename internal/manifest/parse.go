@@ -114,7 +114,7 @@ func getFsChartPath(imageSpec v1beta2.ImageSpec) string {
 
 // getLockerForPath always returns the same sync.Locker instance for given path argument.
 func getLockerForPath(path string) (sync.Locker, error) {
-	val, ok := fileMutexMap.Load(path) //nolint:varnamelen // ok is sufficient naming for conversion check
+	val, ok := fileMutexMap.Load(path)
 	if !ok {
 		val, _ = fileMutexMap.LoadOrStore(path, &sync.Mutex{})
 	}

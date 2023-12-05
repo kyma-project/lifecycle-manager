@@ -6,7 +6,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
-//nolint:funlen // Unit-Testing
 func TestSyncEnabled(t *testing.T) {
 	t.Parallel()
 

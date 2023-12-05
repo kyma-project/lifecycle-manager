@@ -1,4 +1,3 @@
-//nolint:gochecknoglobals // does not apply to unit and integration tests
 package watcher_test
 
 import (

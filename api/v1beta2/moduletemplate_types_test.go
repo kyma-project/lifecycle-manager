@@ -8,7 +8,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
-//nolint:funlen // Unit-Testing
 func TestModuleTemplate_GetComponentDescriptorCacheKey(t *testing.T) {
 	t.Parallel()
 
