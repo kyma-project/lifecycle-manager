@@ -107,7 +107,8 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, shared.StateReady).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name,
+					shared.StateReady).
 				Should(Succeed())
 		}
 
@@ -295,7 +296,8 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, shared.StateReady).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name,
+					shared.StateReady).
 				Should(Succeed())
 		}
 
@@ -308,7 +310,8 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 		By("Add skip-reconciliation label to Kyma CR")
 		Eventually(UpdateKymaLabel, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), declarativev2.SkipReconcileLabel, "true").
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), declarativev2.SkipReconcileLabel,
+				"true").
 			Should(Succeed())
 	})
 
@@ -328,7 +331,8 @@ var _ = Describe("Kyma skip Reconciliation", Ordered, func() {
 	It("Stop Kyma skip Reconciliation so that it can be deleted", func() {
 		Eventually(UpdateKymaLabel, Timeout, Interval).
 			WithContext(ctx).
-			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), declarativev2.SkipReconcileLabel, "false").
+			WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), declarativev2.SkipReconcileLabel,
+				"false").
 			Should(Succeed())
 	})
 })
