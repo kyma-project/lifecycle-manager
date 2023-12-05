@@ -272,7 +272,8 @@ func (c *CertificateManager) GetCACertificateStatus(ctx context.Context) (certma
 
 	if cachedCertStatus.RenewalTime == nil || certificateRenewalTimePassed(cachedCertStatus) {
 		caCert := certmanagerv1.Certificate{}
-		if err := c.kcpClient.Get(ctx, client.ObjectKey{Namespace: c.config.IstioNamespace, Name: c.config.CACertificateName},
+		if err := c.kcpClient.Get(ctx,
+			client.ObjectKey{Namespace: c.config.IstioNamespace, Name: c.config.CACertificateName},
 			&caCert); err != nil {
 			return certmanagerv1.CertificateStatus{}, fmt.Errorf("failed to get CA certificate %w", err)
 		}
@@ -284,7 +285,7 @@ func (c *CertificateManager) GetCACertificateStatus(ctx context.Context) (certma
 }
 
 func (c *CertificateManager) RemoveSecretAfterCARotated(ctx context.Context, kymaObjKey client.ObjectKey) error {
-	caCertificate, err := c.getCACertificate(ctx)
+	caCertificateStatus, err := c.GetCACertificateStatus(ctx)
 	if err != nil {
 		return fmt.Errorf("error while fetching CA Certificate: %w", err)
 	}
@@ -294,7 +295,7 @@ func (c *CertificateManager) RemoveSecretAfterCARotated(ctx context.Context, kym
 		return fmt.Errorf("error while fetching certificate: %w", err)
 	}
 
-	if certSecret != nil && (certSecret.CreationTimestamp.Before(caCertificate.Status.NotBefore)) {
+	if certSecret != nil && (certSecret.CreationTimestamp.Before(caCertificateStatus.NotBefore)) {
 		logf.FromContext(ctx).V(log.DebugLevel).Info("CA Certificate was rotated, removing certificate",
 			"kyma", kymaObjKey)
 		if err = c.removeSecret(ctx); err != nil {
@@ -305,6 +306,6 @@ func (c *CertificateManager) RemoveSecretAfterCARotated(ctx context.Context, kym
 	return nil
 }
 
-		func certificateRenewalTimePassed(certStatus certmanagerv1.CertificateStatus) bool {
-			return certStatus.RenewalTime.Before(&(apimetav1.Time{Time: time.Now()}))
-		}
+func certificateRenewalTimePassed(certStatus certmanagerv1.CertificateStatus) bool {
+	return certStatus.RenewalTime.Before(&(apimetav1.Time{Time: time.Now()}))
+}

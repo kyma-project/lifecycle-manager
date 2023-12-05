@@ -13,7 +13,7 @@ type CACertificateCache struct {
 }
 
 func NewCACertificateCache(ttl time.Duration) *CACertificateCache {
-	cache := ttlcache.New[string, *certmanagerv1.Certificate]()
+	cache := ttlcache.New[string, certmanagerv1.Certificate]()
 	go cache.Start()
 	return &CACertificateCache{Cache: cache, TTL: ttl}
 }
