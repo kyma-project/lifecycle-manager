@@ -12,7 +12,7 @@ import (
 const (
 	shootIDLabel    = "shoot"
 	instanceIDLabel = "instance_id"
-	kymaNameLabel   = "kyma_name"
+	KymaNameLabel   = "kyma_name"
 )
 
 var (
