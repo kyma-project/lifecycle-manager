@@ -32,11 +32,11 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/internal/manifest"
 	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/adapter"
 	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
-	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/common"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/parse"
 	"github.com/kyma-project/lifecycle-manager/pkg/module/sync"
@@ -96,7 +96,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	logger := logf.FromContext(ctx)
 	logger.V(log.DebugLevel).Info("reconciling")
 
-	matcher.CreateCRDMatcherFrom("23")
+	print(manifest.CustomResourceReadyCheck{})
 
 	ctx = adapter.ContextWithRecorder(ctx, r.EventRecorder)
 
