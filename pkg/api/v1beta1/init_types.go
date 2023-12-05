@@ -21,11 +21,6 @@ func init() {
 	SchemeBuilder.Register(&v1beta1.Manifest{}, &v1beta1.ManifestList{})
 	SchemeBuilder.Register(&v1beta1.Watcher{}, &v1beta1.WatcherList{})
 	SchemeBuilder.Register(&v1beta1.ModuleTemplate{}, &v1beta1.ModuleTemplateList{}, &v1beta2.Descriptor{})
-
-	SchemeBuilder.Register(&KymaInCtrlRuntime{})
-	SchemeBuilder.Register(&ManifestInCtrlRuntime{})
-	SchemeBuilder.Register(&WatcherInCtrlRuntime{})
-	SchemeBuilder.Register(&ModuleTemplateInCtrlRuntime{})
 }
 
 type KymaInCtrlRuntime struct {
