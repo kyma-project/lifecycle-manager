@@ -48,7 +48,7 @@ type CertificateManager struct {
 	caCertCache     *CACertificateCache
 	certificateName string
 	secretName      string
-	labelSet            k8slabels.Set
+	labelSet        k8slabels.Set
 	config          CertificateConfig
 }
 
@@ -213,10 +213,10 @@ func (c *CertificateManager) patchCertificate(ctx context.Context,
 	return &cert, nil
 }
 
-func (c *CertificateManager) getSubjectAltNames() (*SubjectAltName, error) {
+func (c *CertificateManager) getSubjectAltNames(kyma *v1beta2.Kyma) (*SubjectAltName, error) {
 	if domain, ok := kyma.Annotations[DomainAnnotation]; ok {
 		if domain == "" {
-			return nil, fmt.Errorf("%w (Kyma: %s)", ErrDomainAnnotationEmpty, c.kyma.Name)
+			return nil, fmt.Errorf("%w (Kyma: %s)", ErrDomainAnnotationEmpty, kyma.Name)
 		}
 
 		svcSuffix := []string{"svc.cluster.local", "svc"}
@@ -232,7 +232,7 @@ func (c *CertificateManager) getSubjectAltNames() (*SubjectAltName, error) {
 			DNSNames: dnsNames,
 		}, nil
 	}
-	return nil, fmt.Errorf("%w (Kyma: %s)", ErrDomainAnnotationMissing, c.kyma.Name)
+	return nil, fmt.Errorf("%w (Kyma: %s)", ErrDomainAnnotationMissing, kyma.Name)
 }
 
 func (c *CertificateManager) getIssuer(ctx context.Context) (*certmanagerv1.Issuer, error) {
