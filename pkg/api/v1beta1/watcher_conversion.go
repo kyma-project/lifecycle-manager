@@ -12,9 +12,9 @@ func (src *WatcherInCtrlRuntime) ConvertTo(dstRaw conversion.Hub) error {
 		return pkgapiv1beta2.ErrTypeAssertWatcher
 	}
 
-	dst.Watcher.ObjectMeta = src.Watcher.ObjectMeta
-	dst.Watcher.Spec = src.Watcher.Spec
-	dst.Watcher.Status = src.Watcher.Status
+	dst.ObjectMeta = src.ObjectMeta
+	dst.Spec = src.Spec
+	dst.Status = src.Status
 
 	return nil
 }
@@ -26,9 +26,9 @@ func (dst *WatcherInCtrlRuntime) ConvertFrom(srcRaw conversion.Hub) error {
 		return pkgapiv1beta2.ErrTypeAssertWatcher
 	}
 
-	dst.Watcher.ObjectMeta = src.Watcher.ObjectMeta
-	dst.Watcher.Spec = src.Watcher.Spec
-	dst.Watcher.Status = src.Watcher.Status
+	dst.ObjectMeta = src.ObjectMeta
+	dst.Spec = src.Spec
+	dst.Status = src.Status
 
 	return nil
 }
