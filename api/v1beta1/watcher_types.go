@@ -50,3 +50,7 @@ type WatcherList struct {
 	apimetav1.ListMeta `json:"metadata"`
 	Items              []Watcher `json:"items"`
 }
+
+func init() { //nolint:gochecknoinits
+	SchemeBuilder.Register(&Watcher{}, &WatcherList{})
+}

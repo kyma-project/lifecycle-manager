@@ -37,12 +37,11 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
 	"github.com/kyma-project/lifecycle-manager/internal/manifest"
-	pkgapi "github.com/kyma-project/lifecycle-manager/pkg/api"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
 	manifesttest "github.com/kyma-project/lifecycle-manager/tests/integration/controller/manifest"
@@ -97,14 +96,14 @@ var _ = BeforeSuite(
 
 		// +kubebuilder:scaffold:scheme
 
-		Expect(pkgapi.AddToScheme(k8sclientscheme.Scheme)).To(Succeed())
+		Expect(api.AddToScheme(k8sclientscheme.Scheme)).To(Succeed())
 		Expect(apicorev1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
 		metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
 		if !found {
 			metricsBindAddress = ":0"
 		}
-		cacheOpts := internal.GetCacheOptions(k8slabels.Set{shared.ManagedBy: shared.OperatorName})
+		cacheOpts := internal.GetCacheOptions(k8slabels.Set{v1beta2.ManagedBy: v1beta2.OperatorName})
 		syncPeriod := 2 * time.Second
 		cacheOpts.SyncPeriod = &syncPeriod
 

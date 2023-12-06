@@ -5,7 +5,6 @@ import (
 
 	compdescv2 "github.com/open-component-model/ocm/pkg/contexts/ocm/compdesc/versions/v2"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/testutils/builder"
 
@@ -90,10 +89,10 @@ func givenKymaAndModuleTemplateCondition(
 			kyma.Labels = map[string]string{}
 		}
 		if isKymaInternal {
-			kyma.Labels[shared.InternalLabel] = v1beta2.EnableLabelValue
+			kyma.Labels[v1beta2.InternalLabel] = v1beta2.EnableLabelValue
 		}
 		if isKymaBeta {
-			kyma.Labels[shared.BetaLabel] = v1beta2.EnableLabelValue
+			kyma.Labels[v1beta2.BetaLabel] = v1beta2.EnableLabelValue
 		}
 		for _, module := range kyma.Spec.Modules {
 			mtBuilder := builder.NewModuleTemplateBuilder().
@@ -101,10 +100,10 @@ func givenKymaAndModuleTemplateCondition(
 				WithChannel(module.Channel).
 				WithOCM(compdescv2.SchemaVersion)
 			if isModuleTemplateInternal {
-				mtBuilder.WithLabel(shared.InternalLabel, v1beta2.EnableLabelValue)
+				mtBuilder.WithLabel(v1beta2.InternalLabel, v1beta2.EnableLabelValue)
 			}
 			if isModuleTemplateBeta {
-				mtBuilder.WithLabel(shared.BetaLabel, v1beta2.EnableLabelValue)
+				mtBuilder.WithLabel(v1beta2.BetaLabel, v1beta2.EnableLabelValue)
 			}
 			template := mtBuilder.Build()
 			Eventually(controlPlaneClient.Create, Timeout, Interval).WithContext(ctx).

@@ -41,15 +41,15 @@ func (m *Module) ApplyLabelsAndAnnotations(
 	if lbls == nil {
 		lbls = make(map[string]string)
 	}
-	lbls[shared.KymaName] = kyma.Name
+	lbls[v1beta2.KymaName] = kyma.Name
 
 	templateLabels := m.Template.GetLabels()
 	if templateLabels != nil {
-		lbls[shared.ControllerName] = m.Template.GetLabels()[shared.ControllerName]
+		lbls[v1beta2.ControllerName] = m.Template.GetLabels()[v1beta2.ControllerName]
 	}
-	lbls[shared.ChannelLabel] = m.Template.Spec.Channel
-	lbls[shared.IsRemoteModuleTemplate] = strconv.FormatBool(m.IsRemoteModuleTemplate(kyma))
-	lbls[shared.ManagedBy] = shared.OperatorName
+	lbls[v1beta2.ChannelLabel] = m.Template.Spec.Channel
+	lbls[v1beta2.IsRemoteModuleTemplate] = strconv.FormatBool(m.IsRemoteModuleTemplate(kyma))
+	lbls[v1beta2.ManagedBy] = v1beta2.OperatorName
 
 	m.SetLabels(lbls)
 

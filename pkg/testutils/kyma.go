@@ -36,7 +36,7 @@ func NewKymaWithSyncLabel(name, namespace, channel, syncStrategy string) *v1beta
 		WithAnnotation(watcher.DomainAnnotation, "example.domain.com").
 		WithAnnotation(shared.SyncStrategyAnnotation, syncStrategy).
 		WithLabel(shared.InstanceIDLabel, "test-instance").
-		WithLabel(shared.SyncLabel, v1beta2.EnableLabelValue).
+		WithLabel(v1beta2.SyncLabel, v1beta2.EnableLabelValue).
 		WithChannel(channel).
 		Build()
 }
@@ -77,8 +77,8 @@ func DeleteKymaByForceRemovePurgeFinalizer(ctx context.Context, clnt client.Clie
 	}
 
 	if !kyma.DeletionTimestamp.IsZero() {
-		if controllerutil.ContainsFinalizer(kyma, shared.PurgeFinalizer) {
-			controllerutil.RemoveFinalizer(kyma, shared.PurgeFinalizer)
+		if controllerutil.ContainsFinalizer(kyma, v1beta2.PurgeFinalizer) {
+			controllerutil.RemoveFinalizer(kyma, v1beta2.PurgeFinalizer)
 			if err := clnt.Update(ctx, kyma); err != nil {
 				return fmt.Errorf("can't remove purge finalizer %w", err)
 			}

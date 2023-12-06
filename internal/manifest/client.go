@@ -15,7 +15,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
@@ -72,7 +71,7 @@ func WithClientCacheKey() declarativev2.WithClientCacheKeyOption {
 			return nil, false
 		}
 
-		labelValue, err := internal.GetResourceLabel(resource, shared.KymaName)
+		labelValue, err := internal.GetResourceLabel(resource, v1beta2.KymaName)
 		objectKey := client.ObjectKeyFromObject(resource)
 		var labelErr *types.LabelNotFoundError
 		if errors.As(err, &labelErr) {

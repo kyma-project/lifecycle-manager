@@ -328,7 +328,7 @@ func expectEveryManifestToHaveChannel(kymaName, kymaNamespace, channel string) e
 		if err != nil {
 			return err
 		}
-		manifestChannel, found := component.Labels[shared.ChannelLabel]
+		manifestChannel, found := component.Labels[v1beta2.ChannelLabel]
 		if found {
 			if manifestChannel != channel {
 				return fmt.Errorf(
@@ -355,7 +355,7 @@ func expectModuleManifestToHaveChannel(kymaName, kymaNamespace, moduleName, chan
 	if err != nil {
 		return err
 	}
-	manifestChannel, found := component.Labels[shared.ChannelLabel]
+	manifestChannel, found := component.Labels[v1beta2.ChannelLabel]
 	if found {
 		if manifestChannel != channel {
 			return fmt.Errorf(

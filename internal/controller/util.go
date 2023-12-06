@@ -6,12 +6,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 func NewCacheOptions() cache.Options {
 	cacheLabelSelector := k8slabels.SelectorFromSet(
-		k8slabels.Set{shared.ManagedBy: shared.OperatorName},
+		k8slabels.Set{v1beta2.ManagedBy: v1beta2.OperatorName},
 	)
 	return cache.Options{
 		ByObject: map[client.Object]cache.ByObject{

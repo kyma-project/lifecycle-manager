@@ -47,3 +47,8 @@ type ManifestList struct {
 	apimetav1.ListMeta `json:"metadata,omitempty"`
 	Items              []Manifest `json:"items"`
 }
+
+//nolint:gochecknoinits
+func init() {
+	SchemeBuilder.Register(&Manifest{}, &ManifestList{})
+}

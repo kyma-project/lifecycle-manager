@@ -53,9 +53,9 @@ func (k *KymaHelper) UpdateStatusForExistingModules(ctx context.Context,
 		LastUpdateTime: apimetav1.NewTime(time.Now()),
 	}
 
-	fieldOwner := shared.UnmanagedKyma
+	fieldOwner := v1beta2.UnmanagedKyma
 	if k.isManagedKyma {
-		fieldOwner = shared.OperatorName
+		fieldOwner = v1beta2.OperatorName
 	}
 	if err := k.Patch(ctx, kyma, client.Apply, SubResourceOpts(client.ForceOwnership),
 		client.FieldOwner(fieldOwner)); err != nil {

@@ -36,7 +36,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 
 	remoteKyma := &v1beta2.Kyma{}
 
-	remoteKyma.Name = shared.DefaultRemoteKymaName
+	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
 	remoteKyma.Namespace = controller.DefaultRemoteSyncNamespace
 	var runtimeClient client.Client
 	var runtimeEnv *envtest.Environment
@@ -252,7 +252,7 @@ var _ = Describe("Kyma sync into Remote Cluster", Ordered, func() {
 				return err
 			}
 
-			if manifest.Labels[shared.IsRemoteModuleTemplate] != v1beta2.EnableLabelValue {
+			if manifest.Labels[v1beta2.IsRemoteModuleTemplate] != v1beta2.EnableLabelValue {
 				return ErrRemoteTemplateLabelNotFound
 			}
 			return nil
@@ -298,7 +298,7 @@ var _ = Describe("Kyma sync default module list into Remote Cluster", Ordered, f
 	var runtimeEnv *envtest.Environment
 	var err error
 	remoteKyma := &v1beta2.Kyma{}
-	remoteKyma.Name = shared.DefaultRemoteKymaName
+	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
 	remoteKyma.Namespace = controller.DefaultRemoteSyncNamespace
 
 	BeforeAll(func() {
@@ -370,7 +370,7 @@ var _ = Describe("CRDs sync to SKR and annotations updated in KCP kyma", Ordered
 
 	remoteKyma := &v1beta2.Kyma{}
 
-	remoteKyma.Name = shared.DefaultRemoteKymaName
+	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
 	remoteKyma.Namespace = controller.DefaultRemoteSyncNamespace
 	var runtimeClient client.Client
 	var runtimeEnv *envtest.Environment

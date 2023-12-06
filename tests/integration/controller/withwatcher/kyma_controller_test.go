@@ -11,7 +11,6 @@ import (
 	apiappsv1 "k8s.io/api/apps/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
@@ -200,7 +199,7 @@ func verifyWebhookConfig(
 				Name:      watcherName,
 			})
 	}
-	expectedModuleName, exists := watcherCR.Labels[shared.ManagedBy]
+	expectedModuleName, exists := watcherCR.Labels[v1beta2.ManagedBy]
 	if !exists {
 		return fmt.Errorf("%w: (labels=%v)", ErrManagedByLabelNotFound, watcherCR.Labels)
 	}

@@ -27,7 +27,7 @@ func NewTestManifest(prefix string) *v1beta2.Manifest {
 			Name:      fmt.Sprintf("%s-%s", prefix, builder.RandomName()),
 			Namespace: apimetav1.NamespaceDefault,
 			Labels: map[string]string{
-				shared.KymaName: string(uuid.NewUUID()),
+				v1beta2.KymaName: string(uuid.NewUUID()),
 			},
 			Annotations: map[string]string{},
 		},

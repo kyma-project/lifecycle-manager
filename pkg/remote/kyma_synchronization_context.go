@@ -65,7 +65,7 @@ func (c *KymaSynchronizationContext) GetRemotelySyncedKyma(
 	ctx context.Context, remoteSyncNamespace string,
 ) (*v1beta2.Kyma, error) {
 	remoteKyma := &v1beta2.Kyma{}
-	remoteKyma.Name = shared.DefaultRemoteKymaName
+	remoteKyma.Name = v1beta2.DefaultRemoteKymaName
 	remoteKyma.Namespace = remoteSyncNamespace
 	if err := c.RuntimeClient.Get(ctx, client.ObjectKeyFromObject(remoteKyma), remoteKyma); err != nil {
 		return remoteKyma, fmt.Errorf("failed to get remote kyma: %w", err)
@@ -87,7 +87,7 @@ func RemoveFinalizerFromRemoteKyma(
 		return err
 	}
 
-	controllerutil.RemoveFinalizer(remoteKyma, shared.Finalizer)
+	controllerutil.RemoveFinalizer(remoteKyma, v1beta2.Finalizer)
 
 	err = syncContext.RuntimeClient.Update(ctx, remoteKyma)
 	if err != nil {
@@ -120,7 +120,7 @@ func (c *KymaSynchronizationContext) ensureRemoteNamespaceExists(ctx context.Con
 	namespace := &apicorev1.Namespace{
 		ObjectMeta: apimetav1.ObjectMeta{
 			Name:   syncNamespace,
-			Labels: map[string]string{shared.ManagedBy: shared.OperatorName},
+			Labels: map[string]string{v1beta2.ManagedBy: v1beta2.OperatorName},
 		},
 		// setting explicit type meta is required for SSA on Namespaces
 		TypeMeta: apimetav1.TypeMeta{APIVersion: "v1", Kind: "Namespace"},
@@ -253,7 +253,7 @@ func (c *KymaSynchronizationContext) SyncWatcherLabelsAnnotations(controlPlaneKy
 		remoteKyma.Labels = make(map[string]string)
 	}
 
-	remoteKyma.Labels[shared.WatchedByLabel] = shared.OperatorName
+	remoteKyma.Labels[v1beta2.WatchedByLabel] = v1beta2.OperatorName
 
 	if remoteKyma.Annotations == nil {
 		remoteKyma.Annotations = make(map[string]string)

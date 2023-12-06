@@ -1,4 +1,10 @@
-package shared
+package v1beta2
+
+import (
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	"github.com/kyma-project/lifecycle-manager/api/shared"
+)
 
 const (
 	OperatorPrefix = "operator.kyma-project.io"
@@ -7,7 +13,7 @@ const (
 	ChannelLabel   = OperatorPrefix + Separator + "channel"
 	// ManagedBy defines the controller managing the resource.
 	ManagedBy              = OperatorPrefix + Separator + "managed-by"
-	Finalizer              = OperatorPrefix + Separator + string(KymaKind)
+	Finalizer              = OperatorPrefix + Separator + string(shared.KymaKind)
 	PurgeFinalizer         = OperatorPrefix + Separator + "purge-finalizer"
 	KymaName               = OperatorPrefix + Separator + "kyma-name"
 	Signature              = OperatorPrefix + Separator + "signature"
@@ -35,3 +41,25 @@ const (
 	// If put on a single ModuleTemplate, allows to disable sync just for this object.
 	SyncLabel = OperatorPrefix + Separator + "sync"
 )
+
+func (kyma *Kyma) EnsureLabelsAndFinalizers() bool {
+	if controllerutil.ContainsFinalizer(kyma, "foregroundDeletion") {
+		return false
+	}
+
+	updateRequired := false
+	if kyma.DeletionTimestamp.IsZero() && !controllerutil.ContainsFinalizer(kyma, Finalizer) {
+		controllerutil.AddFinalizer(kyma, Finalizer)
+		updateRequired = true
+	}
+
+	if kyma.ObjectMeta.Labels == nil {
+		kyma.ObjectMeta.Labels = make(map[string]string)
+	}
+
+	if _, ok := kyma.ObjectMeta.Labels[ManagedBy]; !ok {
+		kyma.ObjectMeta.Labels[ManagedBy] = OperatorName
+		updateRequired = true
+	}
+	return updateRequired
+}

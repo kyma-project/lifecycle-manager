@@ -21,6 +21,7 @@ package v1beta1
 
 import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"sigs.k8s.io/controller-runtime/pkg/scheme"
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
@@ -28,6 +29,12 @@ import (
 var (
 	// GroupVersion is group version used to register these objects.
 	GroupVersion = schema.GroupVersion{Group: "operator.kyma-project.io", Version: "v1beta1"} //nolint:gochecknoglobals
+
+	// SchemeBuilder is used to add go types to the GroupVersionKind scheme.
+	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion} //nolint:gochecknoglobals
+
+	// AddToScheme adds the types in this group-version to the given scheme.
+	AddToScheme = SchemeBuilder.AddToScheme //nolint:gochecknoglobals
 
 	// GroupVersionResource is group version resource.
 	GroupVersionResource = GroupVersion.WithResource(shared.KymaKind.Plural()) //nolint:gochecknoglobals

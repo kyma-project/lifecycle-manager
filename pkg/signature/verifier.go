@@ -16,7 +16,7 @@ import (
 	k8slabels "k8s.io/apimachinery/pkg/labels"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 var ErrNoSignatureFound = errors.New("no signature was found")
@@ -112,7 +112,7 @@ func CreateRSAVerifierFromSecrets(
 	secretList := &apicorev1.SecretList{}
 
 	secretSelector := &apimetav1.LabelSelector{
-		MatchLabels: k8slabels.Set{shared.Signature: ValidSignatureName, shared.ModuleName: moduleName},
+		MatchLabels: k8slabels.Set{v1beta2.Signature: ValidSignatureName, v1beta2.ModuleName: moduleName},
 	}
 	selector, err := apimetav1.LabelSelectorAsSelector(secretSelector)
 	if err != nil {
@@ -122,7 +122,7 @@ func CreateRSAVerifierFromSecrets(
 		return nil, fmt.Errorf("failed to list secrets: %w", err)
 	} else if len(secretList.Items) < 1 {
 		gr := apicorev1.SchemeGroupVersion.WithResource(fmt.Sprintf("secrets with label %s",
-			shared.KymaName)).GroupResource()
+			v1beta2.KymaName)).GroupResource()
 		return nil, apierrors.NewNotFound(gr, selector.String())
 	}
 	registry := signing.NewKeyRegistry()
@@ -133,7 +133,7 @@ func CreateRSAVerifierFromSecrets(
 			return nil, fmt.Errorf("failed to parse public key: %w", err)
 		}
 		registry.RegisterPublicKey(ValidSignatureName, key)
-		registry.RegisterPublicKey(item.Labels[shared.Signature], key)
+		registry.RegisterPublicKey(item.Labels[v1beta2.Signature], key)
 	}
 	return CreateMultiRSAVerifier(registry)
 }

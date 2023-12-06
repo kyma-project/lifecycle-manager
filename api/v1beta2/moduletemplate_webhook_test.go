@@ -5,7 +5,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 
-	pkgapiv1beta2 "github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
 func Test_ValidateVersion(t *testing.T) {
@@ -53,7 +53,7 @@ func Test_ValidateVersion(t *testing.T) {
 			t.Parallel()
 			newVersion, _ := semver.NewVersion(testCase.newVersion)
 			oldVersion, _ := semver.NewVersion(testCase.oldVersion)
-			if got := pkgapiv1beta2.IsValidVersionChange(newVersion, oldVersion); got != testCase.isValid {
+			if got := v1beta2.IsValidVersionChange(newVersion, oldVersion); got != testCase.isValid {
 				t.Errorf("IsValidVersionChange() = %v, isValid %v", got, testCase.isValid)
 			}
 		})

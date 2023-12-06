@@ -32,8 +32,8 @@ const (
 
 //nolint:gochecknoglobals
 var LabelSet = k8slabels.Set{
-	shared.PurposeLabel: shared.CertManager,
-	shared.ManagedBy:    shared.OperatorName,
+	v1beta2.PurposeLabel: v1beta2.CertManager,
+	v1beta2.ManagedBy:    v1beta2.OperatorName,
 }
 
 type SubjectAltName struct {

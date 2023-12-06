@@ -284,6 +284,11 @@ type KymaList struct {
 	Items              []Kyma `json:"items"`
 }
 
+//nolint:gochecknoinits
+func init() {
+	SchemeBuilder.Register(&Kyma{}, &KymaList{})
+}
+
 func (kyma *Kyma) UpdateCondition(conditionType KymaConditionType, status apimetav1.ConditionStatus) {
 	meta.SetStatusCondition(&kyma.Status.Conditions, apimetav1.Condition{
 		Type:               string(conditionType),
@@ -362,23 +367,23 @@ const (
 )
 
 func (kyma *Kyma) HasSyncLabelEnabled() bool {
-	if sync, found := kyma.Labels[shared.SyncLabel]; found {
+	if sync, found := kyma.Labels[SyncLabel]; found {
 		return strings.ToLower(sync) == EnableLabelValue
 	}
 	return true // missing label defaults to enabled sync
 }
 
 func (kyma *Kyma) SkipReconciliation() bool {
-	skip, found := kyma.Labels[shared.SkipReconcileLabel]
+	skip, found := kyma.Labels[SkipReconcileLabel]
 	return found && strings.ToLower(skip) == EnableLabelValue
 }
 
 func (kyma *Kyma) IsInternal() bool {
-	internal, found := kyma.Labels[shared.InternalLabel]
+	internal, found := kyma.Labels[InternalLabel]
 	return found && strings.ToLower(internal) == EnableLabelValue
 }
 
 func (kyma *Kyma) IsBeta() bool {
-	beta, found := kyma.Labels[shared.BetaLabel]
+	beta, found := kyma.Labels[BetaLabel]
 	return found && strings.ToLower(beta) == EnableLabelValue
 }

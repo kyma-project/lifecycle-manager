@@ -343,7 +343,7 @@ var _ = Describe("Kyma with managed fields not in kcp mode", Ordered, func() {
 
 	It("Should result in a managed field with manager named 'unmanaged-kyma'", func() {
 		Eventually(ContainsKymaManagerField, Timeout, Interval).
-			WithArguments(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), shared.UnmanagedKyma).
+			WithArguments(ctx, controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), v1beta2.UnmanagedKyma).
 			Should(BeTrue())
 	})
 })

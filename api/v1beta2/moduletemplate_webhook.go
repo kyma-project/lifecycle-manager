@@ -29,11 +29,9 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-
-	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
-func (m *ModuleTemplateInCtrlRuntime) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (m *ModuleTemplate) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	err := ctrl.NewWebhookManagedBy(mgr).
 		For(m).
 		Complete()
@@ -46,44 +44,44 @@ func (m *ModuleTemplateInCtrlRuntime) SetupWebhookWithManager(mgr ctrl.Manager) 
 //nolint:lll
 // +kubebuilder:webhook:path=/validate-operator-kyma-project-io-v1beta2-moduletemplate,mutating=false,failurePolicy=fail,sideEffects=None,groups=operator.kyma-project.io,resources=moduletemplates,verbs=create;update,versions=v1beta2,name=v1beta2.vmoduletemplate.kb.io,admissionReviewVersions=v1
 
-var _ webhook.Validator = &ModuleTemplateInCtrlRuntime{}
+var _ webhook.Validator = &ModuleTemplate{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type.
-func (m *ModuleTemplateInCtrlRuntime) ValidateCreate() (admission.Warnings, error) {
+func (m *ModuleTemplate) ValidateCreate() (admission.Warnings, error) {
 	logf.Log.WithName("moduletemplate-resource").
 		Info("validate create", "name", m.Name)
 	newDescriptor, err := m.GetDescriptor()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get descriptor for ModuleTemplate: %w", err)
+		return nil, err
 	}
 	return nil, Validate(nil, newDescriptor, m.Name)
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type.
-func (m *ModuleTemplateInCtrlRuntime) ValidateUpdate(old machineryruntime.Object) (admission.Warnings, error) {
+func (m *ModuleTemplate) ValidateUpdate(old machineryruntime.Object) (admission.Warnings, error) {
 	logf.Log.WithName("moduletemplate-resource").
 		Info("validate update", "name", m.Name)
 	newDescriptor, err := m.GetDescriptor()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get descriptor for ModuleTemplate: %w", err)
+		return nil, err
 	}
-	oldTemplate, ok := old.(*v1beta2.ModuleTemplate)
+	oldTemplate, ok := old.(*ModuleTemplate)
 	if !ok {
 		return nil, ErrTypeAssertModuleTemplate
 	}
 	oldDescriptor, err := oldTemplate.GetDescriptor()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get descriptor for ModuleTemplate: %w", err)
+		return nil, err
 	}
 	return nil, Validate(oldDescriptor, newDescriptor, m.Name)
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type.
-func (m *ModuleTemplateInCtrlRuntime) ValidateDelete() (admission.Warnings, error) {
+func (m *ModuleTemplate) ValidateDelete() (admission.Warnings, error) {
 	return nil, nil
 }
 
-func Validate(oldDescriptor, newDescriptor *v1beta2.Descriptor, newTemplateName string) error {
+func Validate(oldDescriptor, newDescriptor *Descriptor, newTemplateName string) error {
 	if err := compdesc.Validate(newDescriptor.ComponentDescriptor); err != nil {
 		return fmt.Errorf("failed to validate componentDescriptor; %w", err)
 	}
@@ -110,7 +108,7 @@ func Validate(oldDescriptor, newDescriptor *v1beta2.Descriptor, newTemplateName 
 
 func validationErr(newTemplateName string, newVersion string, errMsg string) *apierrors.StatusError {
 	return apierrors.NewInvalid(
-		schema.GroupKind{Group: v1beta2.GroupVersion.Group, Kind: "ModuleTemplate"},
+		schema.GroupKind{Group: GroupVersion.Group, Kind: "ModuleTemplate"},
 		newTemplateName, field.ErrorList{
 			field.Invalid(
 				field.NewPath("spec").Child("descriptor").

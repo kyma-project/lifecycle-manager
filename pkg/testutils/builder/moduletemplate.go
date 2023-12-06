@@ -50,7 +50,7 @@ func (m ModuleTemplateBuilder) WithModuleName(moduleName string) ModuleTemplateB
 	if m.moduleTemplate.Labels == nil {
 		m.moduleTemplate.Labels = make(map[string]string)
 	}
-	m.moduleTemplate.Labels[shared.ModuleName] = moduleName
+	m.moduleTemplate.Labels[v1beta2.ModuleName] = moduleName
 	return m
 }
 

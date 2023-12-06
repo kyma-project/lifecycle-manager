@@ -22,7 +22,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
-func (kyma *KymaInCtrlRuntime) SetupWebhookWithManager(mgr ctrl.Manager) error {
+func (kyma *Kyma) SetupWebhookWithManager(mgr ctrl.Manager) error {
 	err := ctrl.NewWebhookManagedBy(mgr).
 		For(kyma).
 		Complete()

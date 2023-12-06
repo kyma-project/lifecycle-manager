@@ -97,3 +97,8 @@ const (
 	TargetRemote       Target = "remote"
 	TargetControlPlane Target = "control-plane"
 )
+
+//nolint:gochecknoinits
+func init() {
+	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{}, &v1beta2.Descriptor{})
+}

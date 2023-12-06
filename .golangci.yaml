@@ -122,12 +122,6 @@ linters-settings:
         alias: ctrlmetrics
       - pkg: sigs.k8s.io/controller-runtime/pkg/metrics/server
         alias: metricsserver
-      - pkg: github.com/kyma-project/lifecycle-manager/pkg/api
-        alias: pkgapi
-      - pkg: github.com/kyma-project/lifecycle-manager/pkg/api/v1beta1
-        alias: pkgapiv1beta1
-      - pkg: github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2
-        alias: pkgapiv1beta2
   ireturn:
     allow:
       - anon

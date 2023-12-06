@@ -113,7 +113,7 @@ func (watcher *Watcher) GetModuleName() string {
 	if watcher.Labels == nil {
 		return ""
 	}
-	return watcher.Labels[shared.ManagedBy]
+	return watcher.Labels[ManagedBy]
 }
 
 // +kubebuilder:object:root=true
@@ -125,11 +125,16 @@ type WatcherList struct {
 	Items              []Watcher `json:"items"`
 }
 
+//nolint:gochecknoinits
+func init() {
+	SchemeBuilder.Register(&Watcher{}, &WatcherList{})
+}
+
 // DefaultIstioGatewaySelector defines a default label selector for a Gateway to configure a VirtualService
 // for the Watcher.
 func DefaultIstioGatewaySelector() apimetav1.LabelSelector {
 	return apimetav1.LabelSelector{
-		MatchLabels: map[string]string{shared.OperatorPrefix + shared.Separator + "watcher-gateway": "default"},
+		MatchLabels: map[string]string{OperatorPrefix + Separator + "watcher-gateway": "default"},
 	}
 }
 

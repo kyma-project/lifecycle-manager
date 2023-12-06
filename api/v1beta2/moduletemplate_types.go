@@ -190,6 +190,11 @@ type ModuleTemplateList struct {
 	Items              []ModuleTemplate `json:"items"`
 }
 
+//nolint:gochecknoinits
+func init() {
+	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{}, &Descriptor{})
+}
+
 func (m *ModuleTemplate) GetComponentDescriptorCacheKey() string {
 	if m.Annotations != nil {
 		moduleVersion := m.Annotations[shared.ModuleVersionAnnotation]
@@ -219,21 +224,21 @@ func (m *ModuleTemplate) SyncEnabled(betaEnabled, internalEnabled bool) bool {
 }
 
 func (m *ModuleTemplate) syncDisabled() bool {
-	if isSync, found := m.Labels[shared.SyncLabel]; found {
+	if isSync, found := m.Labels[SyncLabel]; found {
 		return strings.ToLower(isSync) == DisableLabelValue
 	}
 	return false
 }
 
 func (m *ModuleTemplate) IsInternal() bool {
-	if isInternal, found := m.Labels[shared.InternalLabel]; found {
+	if isInternal, found := m.Labels[InternalLabel]; found {
 		return strings.ToLower(isInternal) == EnableLabelValue
 	}
 	return false
 }
 
 func (m *ModuleTemplate) IsBeta() bool {
-	if isBeta, found := m.Labels[shared.BetaLabel]; found {
+	if isBeta, found := m.Labels[BetaLabel]; found {
 		return strings.ToLower(isBeta) == EnableLabelValue
 	}
 	return false

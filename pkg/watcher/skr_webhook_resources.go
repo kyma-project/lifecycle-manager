@@ -17,7 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 )
@@ -28,7 +27,7 @@ const (
 	watcherBaseImageAddress = "europe-docker.pkg.dev/kyma-project/prod/"
 	SkrTLSName              = "skr-webhook-tls"
 	SkrResourceName         = "skr-webhook"
-	skrChartFieldOwner      = client.FieldOwner(shared.OperatorName)
+	skrChartFieldOwner      = client.FieldOwner(v1beta2.OperatorName)
 	version                 = "v1"
 	webhookTimeOutInSeconds = 15
 )

@@ -20,7 +20,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/istio"
 	"github.com/kyma-project/lifecycle-manager/pkg/security"
@@ -78,7 +77,7 @@ func (r *KymaReconciler) SetupWithManager(mgr ctrl.Manager,
 	// register listener component incl. domain name verification
 	runnableListener, eventChannel = watcherevent.RegisterListenerComponent(
 		settings.ListenerAddr,
-		shared.OperatorName,
+		v1beta2.OperatorName,
 		verifyFunc,
 	)
 

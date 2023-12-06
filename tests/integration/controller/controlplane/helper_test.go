@@ -97,7 +97,7 @@ func watcherLabelsAnnotationsExist(clnt client.Client, remoteKyma *v1beta2.Kyma,
 	if err != nil {
 		return err
 	}
-	if remoteKyma.Labels[shared.WatchedByLabel] != shared.OperatorName {
+	if remoteKyma.Labels[v1beta2.WatchedByLabel] != v1beta2.OperatorName {
 		return ErrWatcherLabelMissing
 	}
 	if remoteKyma.Annotations[shared.OwnedByAnnotation] != fmt.Sprintf(shared.OwnedByFormat,
@@ -196,7 +196,7 @@ func updateKymaCRD(clnt client.Client) (*apiextensionsv1.CustomResourceDefinitio
 	if err := clnt.Patch(ctx, crd,
 		client.Apply,
 		client.ForceOwnership,
-		client.FieldOwner(shared.OperatorName)); err != nil {
+		client.FieldOwner(v1beta2.OperatorName)); err != nil {
 		return nil, err
 	}
 	crd, err = fetchCrd(clnt, shared.KymaKind)

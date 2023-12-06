@@ -9,7 +9,7 @@ import (
 	apicorev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
+	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 	"github.com/kyma-project/lifecycle-manager/pkg/watcher"
@@ -77,7 +77,7 @@ var _ = Describe("Watcher Certificate Configuration in remote sync mode", Ordere
 	It("remote kyma created on SKR", func() {
 		Eventually(KymaExists, Timeout, Interval).
 			WithContext(suiteCtx).
-			WithArguments(runtimeClient, shared.DefaultRemoteKymaName, controller.DefaultRemoteSyncNamespace).
+			WithArguments(runtimeClient, v1beta2.DefaultRemoteKymaName, controller.DefaultRemoteSyncNamespace).
 			Should(Succeed())
 	})
 

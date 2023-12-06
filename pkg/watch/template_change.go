@@ -11,7 +11,6 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 )
 
@@ -36,7 +35,7 @@ func (h *TemplateChangeHandler) Watch() handler.MapFunc {
 
 		kymas := &v1beta2.KymaList{}
 		listOptions := &client.ListOptions{
-			LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{shared.ManagedBy: shared.OperatorName}),
+			LabelSelector: k8slabels.SelectorFromSet(k8slabels.Set{v1beta2.ManagedBy: v1beta2.OperatorName}),
 		}
 		if h.NamespaceScoped {
 			listOptions.Namespace = template.Namespace

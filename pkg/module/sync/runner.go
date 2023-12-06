@@ -109,7 +109,7 @@ func (r *Runner) updateManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	}
 	if err := r.Patch(ctx, manifestObj,
 		client.Apply,
-		client.FieldOwner(kyma.Labels[shared.ManagedBy]),
+		client.FieldOwner(kyma.Labels[v1beta2.ManagedBy]),
 		client.ForceOwnership,
 	); err != nil {
 		return fmt.Errorf("error applying manifest %s: %w", client.ObjectKeyFromObject(module), err)

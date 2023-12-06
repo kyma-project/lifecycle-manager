@@ -18,7 +18,6 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	pkgapiv1beta2 "github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -55,7 +54,7 @@ func (c *CustomResourceReadyCheck) Run(ctx context.Context,
 	}
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
-		return declarativev2.StateInfo{State: shared.StateError}, pkgapiv1beta2.ErrTypeAssertManifest
+		return declarativev2.StateInfo{State: shared.StateError}, v1beta2.ErrTypeAssertManifest
 	}
 	if manifest.Spec.Resource == nil {
 		return declarativev2.StateInfo{State: shared.StateReady}, nil

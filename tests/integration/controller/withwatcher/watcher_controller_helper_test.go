@@ -167,7 +167,7 @@ func createWatcherCR(managerInstanceName string, statusOnly bool) *v1beta2.Watch
 			Name:      managerInstanceName,
 			Namespace: apimetav1.NamespaceDefault,
 			Labels: map[string]string{
-				shared.ManagedBy: managerInstanceName,
+				v1beta2.ManagedBy: managerInstanceName,
 			},
 		},
 		Spec: v1beta2.WatcherSpec{
@@ -198,7 +198,7 @@ func createTLSSecret(kymaObjKey client.ObjectKey) *apicorev1.Secret {
 			Name:      watcher.ResolveTLSCertName(kymaObjKey.Name),
 			Namespace: istioSystemNs,
 			Labels: map[string]string{
-				shared.ManagedBy: shared.OperatorName,
+				v1beta2.ManagedBy: v1beta2.OperatorName,
 			},
 		},
 		Data: map[string][]byte{

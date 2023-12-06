@@ -92,3 +92,8 @@ type KymaList struct {
 	apimetav1.ListMeta `json:"metadata,omitempty"`
 	Items              []Kyma `json:"items"`
 }
+
+//nolint:gochecknoinits
+func init() {
+	SchemeBuilder.Register(&Kyma{}, &KymaList{})
+}

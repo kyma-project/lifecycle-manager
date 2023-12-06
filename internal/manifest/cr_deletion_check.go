@@ -10,7 +10,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	declarativev2 "github.com/kyma-project/lifecycle-manager/internal/declarative/v2"
-	pkgapiv1beta2 "github.com/kyma-project/lifecycle-manager/pkg/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
@@ -28,7 +27,7 @@ func (c *ModuleCRDeletionCheck) Run(
 ) (bool, error) {
 	manifest, ok := obj.(*v1beta2.Manifest)
 	if !ok {
-		return false, pkgapiv1beta2.ErrTypeAssertManifest
+		return false, v1beta2.ErrTypeAssertManifest
 	}
 	if manifest.Spec.Resource == nil {
 		return true, nil
