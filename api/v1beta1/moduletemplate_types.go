@@ -31,8 +31,8 @@ import (
 // +genclient
 // +kubebuilder:object:root=true
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
-//+kubebuilder:deprecatedversion:warning="kyma-project.io/v1beta1 ModuleTemplate is deprecated. Use v1beta2 instead."
-//+kubebuilder:storageversion
+// +kubebuilder:deprecatedversion:warning="kyma-project.io/v1beta1 ModuleTemplate is deprecated. Use v1beta2 instead."
+// +kubebuilder:storageversion
 
 type ModuleTemplate struct {
 	apimetav1.TypeMeta   `json:",inline"`
@@ -50,14 +50,19 @@ type ModuleTemplateSpec struct {
 	// +kubebuilder:validation:MinLength:=3
 	Channel string `json:"channel"`
 
+	// Mandatory indicates whether the module is mandatory. It is used to enforce the installation of the module with
+	// its configuration in all runtime clusters.
+	// +optional
+	Mandatory bool `json:"mandatory"`
+
 	// Data is the default set of attributes that are used to generate the Module. It contains a default set of values
 	// for a given channel, and is thus different from default values allocated during struct parsing of the Module.
 	// While Data can change after the initial creation of ModuleTemplate, it is not expected to be propagated to
 	// downstream modules as it is considered a set of default values. This means that an update of the data block
 	// will only propagate to new Modules created form ModuleTemplate, not any existing Module.
 	//
-	//+kubebuilder:pruning:PreserveUnknownFields
-	//+kubebuilder:validation:XEmbeddedResource
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:XEmbeddedResource
 	Data *unstructured.Unstructured `json:"data,omitempty"`
 
 	// The Descriptor is the Open Component Model Descriptor of a Module, containing all relevant information
@@ -70,7 +75,7 @@ type ModuleTemplateSpec struct {
 	// This means for upgrades of the Descriptor, downstream controllers will also update the dependant modules
 	// (e.g. by updating the controller binary linked in a chart referenced in the descriptor)
 	//
-	//+kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:pruning:PreserveUnknownFields
 	Descriptor machineryruntime.RawExtension `json:"descriptor"`
 
 	// Target describes where the Module should later on be installed if parsed correctly. It is used as installation
@@ -80,7 +85,7 @@ type ModuleTemplateSpec struct {
 	CustomStateCheck []*v1beta2.CustomStateCheck `json:"customStateCheck,omitempty"`
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // ModuleTemplateList contains a list of ModuleTemplate.
 type ModuleTemplateList struct {
