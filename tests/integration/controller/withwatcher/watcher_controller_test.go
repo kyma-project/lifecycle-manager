@@ -53,13 +53,13 @@ func gatewayUpdated(customIstioClient *istio.Client) error {
 	return controlPlaneClient.Update(suiteCtx, gateway)
 }
 
-func expectVirtualServiceConfiguredCorrectly(customIstioClient *istio.Client) error {
+func expectVirtualServiceConfiguredCorrectly(customIstioClient *istio.Client, namespace string) error {
 	for _, component := range centralComponents {
 		watcherCR, err := getWatcher(component)
 		if err != nil {
 			return err
 		}
-		if err := isListenerHTTPRouteConfigured(suiteCtx, customIstioClient, watcherCR); err != nil {
+		if err := isListenerHTTPRouteConfigured(suiteCtx, customIstioClient, namespace, watcherCR); err != nil {
 			return err
 		}
 		gateways, err := customIstioClient.LookupGateways(suiteCtx, watcherCR)
@@ -67,7 +67,7 @@ func expectVirtualServiceConfiguredCorrectly(customIstioClient *istio.Client) er
 			return err
 		}
 		Expect(gateways).To(HaveLen(1))
-		if err := isVirtualServiceHostsConfigured(suiteCtx, watcherCR.Name, customIstioClient, gateways[0]); err != nil {
+		if err := isVirtualServiceHostsConfigured(suiteCtx, watcherCR.Name, namespace, customIstioClient, gateways[0]); err != nil {
 			return err
 		}
 	}
@@ -78,8 +78,8 @@ func deleteOneWatcherCR(_ *istio.Client) error {
 	return deleteWatcher(componentToBeRemoved)
 }
 
-func expectHTTPRouteRemoved(customIstioClient *istio.Client) error {
-	err := listenerHTTPRouteExists(suiteCtx, customIstioClient,
+func expectHTTPRouteRemoved(customIstioClient *istio.Client, namespace string) error {
+	err := listenerHTTPRouteExists(suiteCtx, customIstioClient, namespace,
 		client.ObjectKey{
 			Name:      componentToBeRemoved,
 			Namespace: apimetav1.NamespaceDefault,
@@ -98,8 +98,8 @@ func expectWatcherCRRemoved(watcherName string) error {
 	return nil
 }
 
-func expectVirtualServiceRemoved(customIstioClient *istio.Client) error {
-	listVirtualServices, err := customIstioClient.ListVirtualServices(suiteCtx)
+func expectVirtualServiceRemoved(customIstioClient *istio.Client, namespace string) error {
+	listVirtualServices, err := customIstioClient.ListVirtualServices(suiteCtx, namespace)
 	if !util.IsNotFound(err) {
 		return err
 	}
@@ -127,18 +127,20 @@ func allCRsDeleted(_ *istio.Client) error {
 	return nil
 }
 
-func allVirtualServicesDeleted(customIstioClient *istio.Client) error {
-	for _, component := range centralComponents {
-		watcherCR, err := getWatcher(component)
-		if err != nil {
-			return err
+func allVirtualServicesDeletedForNs(namespace string) func(customIstioClient *istio.Client) error {
+	return func(customIstioClient *istio.Client) error {
+		for _, component := range centralComponents {
+			watcherCR, err := getWatcher(component)
+			if err != nil {
+				return err
+			}
+			err = customIstioClient.RemoveVirtualServiceForCR(suiteCtx, client.ObjectKeyFromObject(watcherCR), namespace)
+			if err != nil {
+				return err
+			}
 		}
-		err = customIstioClient.RemoveVirtualServiceForCR(suiteCtx, client.ObjectKeyFromObject(watcherCR))
-		if err != nil {
-			return err
-		}
+		return nil
 	}
-	return nil
 }
 
 func watcherCRIsReady(watcherName string) error {
@@ -197,18 +199,20 @@ var _ = Describe("Watcher CR scenarios", Ordered, func() {
 			WithArguments([]string{}).Should(Succeed())
 	})
 
+	allVirtualServicesDeleted := allVirtualServicesDeletedForNs(kcpSystemNs)
+
 	DescribeTable("Test VirtualService",
 		func(
 			timeout, interval time.Duration,
 			givenCondition func(istioClt *istio.Client) error,
-			expectedVirtualServiceBehavior func(istioClt *istio.Client) error,
+			expectedVirtualServiceBehavior func(istioClt *istio.Client, namespace string) error,
 			expectedWatcherCRBehavior func(watcherNames []string) error,
 			watcherNames []string,
 		) {
 			Eventually(givenCondition, timeout, interval).
 				WithArguments(customIstioClient).Should(Succeed())
 			Eventually(expectedVirtualServiceBehavior, timeout, interval).
-				WithArguments(customIstioClient).Should(Succeed())
+				WithArguments(customIstioClient, kcpSystemNs).Should(Succeed())
 			Eventually(expectedWatcherCRBehavior, timeout, interval).
 				WithArguments(watcherNames).Should(Succeed())
 		},
