@@ -43,6 +43,7 @@ const (
 var (
 	ErrEmptyModuleTemplateData = errors.New("module template spec.data is empty")
 	ErrVersionMismatch         = errors.New("manifest spec.version mismatch with module template")
+	ErrInvalidManifest         = errors.New("invalid ManifestResource")
 )
 
 var _ = Describe("Manifest.Spec.Remote in default mode", Ordered, func() {
@@ -486,8 +487,8 @@ func validateManifestSpecResource(manifestResource, moduleTemplateData *unstruct
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("Invalid ManifestResource.\nActual:\n%s\nExpected:\n%s", actualJSON,
-			expectedJSON) //nolint:goerr113
+		return fmt.Errorf("%w: \nActual:\n%s\nExpected:\n%s", ErrInvalidManifest, actualJSON,
+			expectedJSON)
 	}
 	return nil
 }
