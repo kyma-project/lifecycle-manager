@@ -48,9 +48,9 @@ func NewVersionedIstioClient(cfg *rest.Config, recorder record.EventRecorder,
 	}, nil
 }
 
-func (c *Client) GetVirtualService(ctx context.Context, vsName string) (*istioclientapiv1beta1.VirtualService, error) {
+func (c *Client) GetVirtualService(ctx context.Context, vsName, vsNamespace string) (*istioclientapiv1beta1.VirtualService, error) {
 	virtualService, err := c.NetworkingV1beta1().
-		VirtualServices(apimetav1.NamespaceDefault).
+		VirtualServices(vsNamespace).
 		Get(ctx, vsName, apimetav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch virtual service %w", err)
@@ -58,9 +58,9 @@ func (c *Client) GetVirtualService(ctx context.Context, vsName string) (*istiocl
 	return virtualService, nil
 }
 
-func (c *Client) ListVirtualServices(ctx context.Context) (*istioclientapiv1beta1.VirtualServiceList, error) {
+func (c *Client) ListVirtualServices(ctx context.Context, namespace string) (*istioclientapiv1beta1.VirtualServiceList, error) {
 	virtualServiceList, err := c.NetworkingV1beta1().
-		VirtualServices(apimetav1.NamespaceDefault).
+		VirtualServices(namespace).
 		List(ctx, apimetav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list virtual services %w", err)
@@ -68,7 +68,7 @@ func (c *Client) ListVirtualServices(ctx context.Context) (*istioclientapiv1beta
 	return virtualServiceList, nil
 }
 
-func (c *Client) NewVirtualService(ctx context.Context, watcher *v1beta2.Watcher,
+func (c *Client) NewVirtualService(ctx context.Context, watcher *v1beta2.Watcher, targetNamespace string,
 ) (*istioclientapiv1beta1.VirtualService, error) {
 	if watcher == nil {
 		return &istioclientapiv1beta1.VirtualService{}, nil
@@ -76,7 +76,7 @@ func (c *Client) NewVirtualService(ctx context.Context, watcher *v1beta2.Watcher
 
 	virtualSvc := &istioclientapiv1beta1.VirtualService{}
 	virtualSvc.SetName(watcher.Name)
-	virtualSvc.SetNamespace(apimetav1.NamespaceDefault)
+	virtualSvc.SetNamespace(targetNamespace)
 
 	gateways, err := c.LookupGateways(ctx, watcher)
 	if err != nil {
@@ -98,7 +98,7 @@ func (c *Client) NewVirtualService(ctx context.Context, watcher *v1beta2.Watcher
 
 func (c *Client) CreateVirtualService(ctx context.Context, virtualSvc *istioclientapiv1beta1.VirtualService) error {
 	_, err := c.NetworkingV1beta1().
-		VirtualServices(apimetav1.NamespaceDefault).
+		VirtualServices(virtualSvc.GetNamespace()).
 		Create(ctx, virtualSvc, apimetav1.CreateOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to create istio virtual service: %w", err)
@@ -189,10 +189,10 @@ func (c *Client) UpdateVirtualService(ctx context.Context, virtualService,
 	return nil
 }
 
-func (c *Client) RemoveVirtualServiceForCR(ctx context.Context, watcherObjKey client.ObjectKey,
+func (c *Client) RemoveVirtualServiceForCR(ctx context.Context, watcherObjKey client.ObjectKey, vsNamespace string,
 ) error {
 	err := c.NetworkingV1beta1().
-		VirtualServices(apimetav1.NamespaceDefault).
+		VirtualServices(vsNamespace).
 		Delete(ctx, watcherObjKey.Name, apimetav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to delete virtual service for cr: %w", err)

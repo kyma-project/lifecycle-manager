@@ -217,11 +217,11 @@ func getWatcher(name string) (*v1beta2.Watcher, error) {
 }
 
 func isVirtualServiceHostsConfigured(ctx context.Context,
-	vsName string,
+	vsName, vsNamespace string,
 	istioClient *istio.Client,
 	gateway *istioclientapiv1beta1.Gateway,
 ) error {
-	virtualService, err := istioClient.GetVirtualService(ctx, vsName)
+	virtualService, err := istioClient.GetVirtualService(ctx, vsName, vsNamespace)
 	if err != nil {
 		return err
 	}
@@ -240,9 +240,9 @@ func contains(source []string, target string) bool {
 	return false
 }
 
-func isListenerHTTPRouteConfigured(ctx context.Context, clt *istio.Client, watcher *v1beta2.Watcher,
+func isListenerHTTPRouteConfigured(ctx context.Context, clt *istio.Client, namespace string, watcher *v1beta2.Watcher,
 ) error {
-	virtualService, err := clt.GetVirtualService(ctx, watcher.Name)
+	virtualService, err := clt.GetVirtualService(ctx, watcher.Name, namespace)
 	if err != nil {
 		return err
 	}
@@ -263,8 +263,8 @@ func isListenerHTTPRouteConfigured(ctx context.Context, clt *istio.Client, watch
 	return errRouteNotFound
 }
 
-func listenerHTTPRouteExists(ctx context.Context, clt *istio.Client, watcherObjKey client.ObjectKey) error {
-	virtualService, err := clt.GetVirtualService(ctx, watcherObjKey.Name)
+func listenerHTTPRouteExists(ctx context.Context, clt *istio.Client, namespace string, watcherObjKey client.ObjectKey) error {
+	virtualService, err := clt.GetVirtualService(ctx, watcherObjKey.Name, namespace)
 	if err != nil {
 		return err
 	}
