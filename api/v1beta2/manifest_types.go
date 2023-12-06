@@ -48,6 +48,10 @@ type ManifestSpec struct {
 	// Remote indicates if Manifest should be installed on a remote cluster
 	Remote bool `json:"remote"`
 
+	// Version specifies current Resource version
+	// +optional
+	Version string `json:"version,omitempty"`
+
 	// Config specifies OCI image configuration for Manifest
 	Config *ImageSpec `json:"config,omitempty"`
 
