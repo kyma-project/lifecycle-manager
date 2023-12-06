@@ -7,7 +7,6 @@ import (
 
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
-	"github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
 func TestKyma_DetermineState(t *testing.T) {
@@ -53,7 +52,14 @@ func TestKyma_DetermineState(t *testing.T) {
 		testCase := testCase
 		t.Run(testCase.name, func(t *testing.T) {
 			t.Parallel()
-			kyma := testutils.NewTestKyma("test-kyma")
+			kyma := &v1beta2.Kyma{
+				ObjectMeta: apimetav1.ObjectMeta{
+					Name:      "test-kyma",
+					Namespace: apimetav1.NamespaceDefault,
+				},
+				Spec:   v1beta2.KymaSpec{},
+				Status: v1beta2.KymaStatus{},
+			}
 			for _, state := range testCase.givenModulesState {
 				moduleStatus := v1beta2.ModuleStatus{
 					State: state,
