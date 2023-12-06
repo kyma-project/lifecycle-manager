@@ -40,7 +40,11 @@ const (
 	updatedModuleTemplateVersion = "v3.1.0"
 )
 
-var ErrEmptyModuleTemplateData = errors.New("module template spec.data is empty")
+var (
+	ErrEmptyModuleTemplateData = errors.New("module template spec.data is empty")
+	ErrVersionMismatch         = errors.New("manifest spec.version mismatch with module template")
+	ErrInvalidManifest         = errors.New("invalid ManifestResource")
+)
 
 var _ = Describe("Manifest.Spec.Remote in default mode", Ordered, func() {
 	kyma := NewTestKyma("kyma")
@@ -81,7 +85,8 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, shared.StateReady).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name,
+					shared.StateReady).
 				Should(Succeed())
 		}
 
@@ -163,7 +168,8 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 				return err
 			}
 
-			return validateManifestSpecInstallSource(extractInstallImageSpec(manifest.Spec.Install), moduleTemplateDescriptor)
+			return validateManifestSpecInstallSource(extractInstallImageSpec(manifest.Spec.Install),
+				moduleTemplateDescriptor)
 		}
 		Eventually(expectManifest(hasValidSpecInstall), Timeout, Interval).Should(Succeed())
 
@@ -172,6 +178,20 @@ var _ = Describe("Manifest.Spec is rendered correctly", Ordered, func() {
 			return validateManifestSpecResource(manifest.Spec.Resource, moduleTemplate.Spec.Data)
 		}
 		Eventually(expectManifest(hasValidSpecResource), Timeout, Interval).Should(Succeed())
+
+		By("checking Spec.Version")
+		hasValidSpecVersion := func(manifest *v1beta2.Manifest) error {
+			moduleTemplateDescriptor, err := moduleTemplate.GetDescriptor()
+			if err != nil {
+				return err
+			}
+
+			if manifest.Spec.Version != moduleTemplateDescriptor.Version {
+				return ErrVersionMismatch
+			}
+			return nil
+		}
+		Eventually(expectManifest(hasValidSpecVersion), Timeout, Interval).Should(Succeed())
 	})
 })
 
@@ -217,7 +237,8 @@ var _ = Describe("Manifest.Spec is reset after manual update", Ordered, func() {
 				return err
 			}
 
-			return validateManifestSpecInstallSource(extractInstallImageSpec(manifest.Spec.Install), moduleTemplateDescriptor)
+			return validateManifestSpecInstallSource(extractInstallImageSpec(manifest.Spec.Install),
+				moduleTemplateDescriptor)
 		}
 		Eventually(expectManifest(hasValidSpecInstall), Timeout, Interval).Should(Succeed())
 
@@ -250,7 +271,8 @@ var _ = Describe("Update Module Template Version", Ordered, func() {
 		for _, activeModule := range kyma.Spec.Modules {
 			Eventually(UpdateManifestState, Timeout, Interval).
 				WithContext(ctx).
-				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name, shared.StateReady).
+				WithArguments(controlPlaneClient, kyma.GetName(), kyma.GetNamespace(), activeModule.Name,
+					shared.StateReady).
 				Should(Succeed())
 		}
 
@@ -465,7 +487,8 @@ func validateManifestSpecResource(manifestResource, moduleTemplateData *unstruct
 		if err != nil {
 			return err
 		}
-		return fmt.Errorf("Invalid ManifestResource.\nActual:\n%s\nExpected:\n%s", actualJSON, expectedJSON) //nolint:goerr113
+		return fmt.Errorf("%w: \nActual:\n%s\nExpected:\n%s", ErrInvalidManifest, actualJSON,
+			expectedJSON)
 	}
 	return nil
 }
