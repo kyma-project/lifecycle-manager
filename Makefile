@@ -73,7 +73,7 @@ unittest: ## Run the unit test suite.
 
 .PHONY: apitest
 apitest:
-	find ./api -execdir go test ./... \;
+	find ./api -name go.mod -execdir go test ./... \;
 
 .PHONY: dry-run
 dry-run: kustomize manifests
