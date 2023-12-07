@@ -76,7 +76,6 @@ type KymaReconciler struct {
 	Metrics             *metrics.KymaMetrics
 }
 
-//nolint:lll
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/finalizers,verbs=update

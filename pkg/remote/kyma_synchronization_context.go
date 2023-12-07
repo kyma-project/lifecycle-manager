@@ -23,8 +23,8 @@ import (
 
 type ClientFunc func() *rest.Config
 
-//nolint:gochecknoglobals
 var (
+	//nolint:gochecknoglobals // used for testing
 	LocalClient                        ClientFunc
 	ErrNotFoundAndKCPKymaUnderDeleting = errors.New("not found and kcp kyma under deleting")
 )

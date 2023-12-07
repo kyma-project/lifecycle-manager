@@ -152,11 +152,22 @@ var _ = Describe("Kyma enable one Module", Ordered, func() {
 			if len(modulesStatus) != 1 {
 				return ErrWrongModulesStatus
 			}
-
-			if modulesStatus[0].Name != expectedModule.Name ||
-				modulesStatus[0].State != expectedModule.State ||
-				modulesStatus[0].Channel != expectedModule.Channel ||
-				modulesStatus[0].Resource.Namespace != expectedModule.Resource.Namespace {
+			template, err := GetModuleTemplate(ctx, controlPlaneClient, module, v1beta2.DefaultChannel)
+			if err != nil {
+				return err
+			}
+			moduleStatus := modulesStatus[0]
+			descriptor, err := template.GetDescriptor()
+			if err != nil {
+				return err
+			}
+			if moduleStatus.Version != descriptor.Version {
+				return fmt.Errorf("version mismatch: %w", ErrWrongModulesStatus)
+			}
+			if moduleStatus.Name != expectedModule.Name ||
+				moduleStatus.State != expectedModule.State ||
+				moduleStatus.Channel != expectedModule.Channel ||
+				moduleStatus.Resource.Namespace != expectedModule.Resource.Namespace {
 				return ErrWrongModulesStatus
 			}
 

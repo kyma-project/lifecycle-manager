@@ -76,7 +76,6 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 			continue
 		}
 		fqdn := descriptor.GetName()
-		version := descriptor.GetVersion()
 		name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
 		overwriteNameAndNamespace(template, name, p.remoteSyncNamespace)
 		var manifest *v1beta2.Manifest
@@ -97,7 +96,6 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 		modules = append(modules, &common.Module{
 			ModuleName: module.Name,
 			FQDN:       fqdn,
-			Version:    version,
 			Template:   template,
 			Manifest:   manifest,
 			Enabled:    module.Enabled,
@@ -179,7 +177,7 @@ func (p *Parser) newManifestFromTemplate(
 	if err := appendOptionalCustomStateCheck(manifest, template.Spec.CustomStateCheck); err != nil {
 		return nil, fmt.Errorf("could not translate custom state check: %w", err)
 	}
-
+	manifest.Spec.Version = descriptor.Version
 	return manifest, nil
 }
 

@@ -293,7 +293,7 @@ type KymaList struct {
 	Items              []Kyma `json:"items"`
 }
 
-//nolint:gochecknoinits
+//nolint:gochecknoinits // registers Kyma CRD on startup
 func init() {
 	SchemeBuilder.Register(&Kyma{}, &KymaList{})
 }
