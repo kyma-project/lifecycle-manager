@@ -18,7 +18,7 @@ func Test_AnnotationHasExternalDependencies(t *testing.T) {
 
 func Test_LabelHasExternalDependencies(t *testing.T) {
 	t.Parallel()
-	assert.Equal(t, "kyma-project.ioinstance-id", v1beta2.InstanceIDLabel)
+	assert.Equal(t, "kyma-project.io/instance-id", v1beta2.InstanceIDLabel)
 	assert.Equal(t, "operator.kyma-project.io/skip-reconciliation", v1beta2.SkipReconcileLabel)
 	assert.Equal(t, "operator.kyma-project.io/internal", v1beta2.InternalLabel)
 	assert.Equal(t, "operator.kyma-project.io/beta", v1beta2.BetaLabel)
