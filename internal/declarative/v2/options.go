@@ -32,10 +32,10 @@ func DefaultOptions() *Options {
 		WithFinalizer(FinalizerDefault),
 		WithFieldOwner(FieldOwnerDefault),
 		WithPostRenderTransform(
-			managedByDeclarativeV2,
+			ManagedByDeclarativeV2,
 			watchedByOwnedBy,
-			kymaComponentTransform,
-			disclaimerTransform,
+			KymaComponentTransform,
+			DisclaimerTransform,
 		),
 		WithPermanentConsistencyCheck(false),
 		WithSingletonClientCache(NewMemorySingletonClientCache()),

@@ -146,7 +146,9 @@ func getHosts(gateways []*istioclientapiv1beta1.Gateway) ([]string, error) {
 	return hosts, nil
 }
 
-func (c *Client) LookupGateways(ctx context.Context, watcher *v1beta2.Watcher) ([]*istioclientapiv1beta1.Gateway, error) {
+func (c *Client) LookupGateways(ctx context.Context, watcher *v1beta2.Watcher) ([]*istioclientapiv1beta1.Gateway,
+	error,
+) {
 	selector, err := apimetav1.LabelSelectorAsSelector(&watcher.Spec.Gateway.LabelSelector)
 	if err != nil {
 		return nil, fmt.Errorf("error converting label selector: %w", err)
@@ -231,7 +233,8 @@ func PrepareIstioHTTPRouteForCR(obj *v1beta2.Watcher) *istioapiv1beta1.HTTPRoute
 		Match: []*istioapiv1beta1.HTTPMatchRequest{
 			{
 				Uri: &istioapiv1beta1.StringMatch{
-					MatchType: &istioapiv1beta1.StringMatch_Prefix{ //nolint:nosnakecase
+					MatchType: &istioapiv1beta1.StringMatch_Prefix{
+						//nolint:nosnakecase // external type
 						Prefix: fmt.Sprintf(prefixFormat, contractVersion, obj.GetModuleName()),
 					},
 				},

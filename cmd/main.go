@@ -66,13 +66,12 @@ import (
 )
 
 var (
-	scheme                 = machineryruntime.NewScheme() //nolint:gochecknoglobals
-	setupLog               = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals
+	scheme                 = machineryruntime.NewScheme() //nolint:gochecknoglobals // scheme used to add CRDs
+	setupLog               = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals // logger used for setup
 	errMissingWatcherImage = errors.New("runtime watcher image is not provided")
 )
 
-//nolint:gochecknoinits
-func init() {
+func registerSchemas() {
 	machineryutilruntime.Must(k8sclientscheme.AddToScheme(scheme))
 	machineryutilruntime.Must(api.AddToScheme(scheme))
 
@@ -86,6 +85,8 @@ func init() {
 }
 
 func main() {
+	registerSchemas()
+
 	flagVar := DefineFlagVar()
 	flag.Parse()
 	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.logLevel), zapcore.Lock(os.Stdout)))

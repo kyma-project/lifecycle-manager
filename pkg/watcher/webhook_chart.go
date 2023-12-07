@@ -33,8 +33,10 @@ func runResourceOperationWithGroupedErrors(ctx context.Context, clt client.Clien
 			return operation(grpCtx, clt, resources[resIdx])
 		})
 	}
-	//nolint:wrapcheck
-	return errGrp.Wait()
+	if err := errGrp.Wait(); err != nil {
+		return fmt.Errorf("failed to run resource operation: %w", err)
+	}
+	return nil
 }
 
 func ResolveTLSCertName(kymaName string) string {

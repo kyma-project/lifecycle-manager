@@ -126,7 +126,7 @@ type ManifestList struct {
 	Items              []Manifest `json:"items"`
 }
 
-//nolint:gochecknoinits
+//nolint:gochecknoinits // registers Manifest CRD on startup
 func init() {
 	SchemeBuilder.Register(&Manifest{}, &ManifestList{})
 }

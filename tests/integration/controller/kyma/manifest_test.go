@@ -137,7 +137,7 @@ var _ = Describe("Update Manifest CR", Ordered, func() {
 			hasDummyRepositoryURL := func(manifest *v1beta2.Manifest) error {
 				manifestImageSpec := extractInstallImageSpec(manifest.Spec.Install)
 				if !strings.HasPrefix(manifestImageSpec.Repo, updateRepositoryURL) {
-					return fmt.Errorf("Invalid manifest spec.install.repo: %s, expected prefix: %s", //nolint:goerr113
+					return fmt.Errorf("Invalid manifest spec.install.repo: %s, expected prefix: %s",
 						manifestImageSpec.Repo, updateRepositoryURL)
 				}
 				return nil
@@ -374,7 +374,6 @@ func validateManifestSpecInstallSource(manifestImageSpec *v1beta2.ImageSpec,
 	return validateManifestSpecInstallSourceType(manifestImageSpec)
 }
 
-//nolint:goerr113
 func validateManifestSpecInstallSourceName(manifestImageSpec *v1beta2.ImageSpec,
 	moduleTemplateDescriptor *v1beta2.Descriptor,
 ) error {
@@ -387,7 +386,6 @@ func validateManifestSpecInstallSourceName(manifestImageSpec *v1beta2.ImageSpec,
 	return nil
 }
 
-//nolint:goerr113
 func validateManifestSpecInstallSourceRef(manifestImageSpec *v1beta2.ImageSpec,
 	moduleTemplateDescriptor *v1beta2.Descriptor,
 ) error {
@@ -406,7 +404,7 @@ func validateManifestSpecInstallSourceRef(manifestImageSpec *v1beta2.ImageSpec,
 	expectedSourceRef := concreteAccessSpec.LocalReference
 
 	if actualSourceRef != expectedSourceRef {
-		return fmt.Errorf("Invalid manifest spec.install.source.ref: %s, expected: %s", //nolint:goerr113
+		return fmt.Errorf("invalid manifest spec.install.source.ref: %s, expected: %s",
 			actualSourceRef, expectedSourceRef)
 	}
 
@@ -419,7 +417,7 @@ func validateManifestSpecInstallSourceRefValue(expectedSourceRef string) func(ma
 		actualSourceRef := manifestImageSpec.Ref
 
 		if actualSourceRef != expectedSourceRef {
-			return fmt.Errorf("Invalid manifest spec.install.source.ref: %s, expected: %s", //nolint:goerr113
+			return fmt.Errorf("Invalid manifest spec.install.source.ref: %s, expected: %s",
 				actualSourceRef, expectedSourceRef)
 		}
 
@@ -427,7 +425,6 @@ func validateManifestSpecInstallSourceRefValue(expectedSourceRef string) func(ma
 	}
 }
 
-//nolint:goerr113
 func validateManifestSpecInstallSourceRepo(manifestImageSpec *v1beta2.ImageSpec,
 	moduleTemplateDescriptor *v1beta2.Descriptor,
 ) error {
@@ -458,7 +455,6 @@ func validateManifestSpecInstallSourceRepo(manifestImageSpec *v1beta2.ImageSpec,
 	return nil
 }
 
-//nolint:goerr113
 func validateManifestSpecInstallSourceType(manifestImageSpec *v1beta2.ImageSpec) error {
 	actualSourceType := string(manifestImageSpec.Type)
 	expectedSourceType := string(v1beta2.OciRefType) // no corresponding value in the ModuleTemplate?
@@ -587,7 +583,6 @@ func updateModuleTemplateVersion(moduleTemplate *v1beta2.ModuleTemplate) error {
 	return nil
 }
 
-//nolint:goerr113
 func validateModuleTemplateVersionUpdated(moduleTemplate *v1beta2.ModuleTemplate) error {
 	descriptor, err := moduleTemplate.GetDescriptor()
 	if err != nil {

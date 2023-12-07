@@ -67,7 +67,8 @@ func expectVirtualServiceConfiguredCorrectly(customIstioClient *istio.Client, na
 			return err
 		}
 		Expect(gateways).To(HaveLen(1))
-		if err := isVirtualServiceHostsConfigured(suiteCtx, watcherCR.Name, namespace, customIstioClient, gateways[0]); err != nil {
+		if err := isVirtualServiceHostsConfigured(suiteCtx, watcherCR.Name, namespace, customIstioClient,
+			gateways[0]); err != nil {
 			return err
 		}
 	}
@@ -104,7 +105,7 @@ func expectVirtualServiceRemoved(customIstioClient *istio.Client, namespace stri
 		return err
 	}
 	if len(listVirtualServices.Items) != 0 {
-		return fmt.Errorf("VirtualServiceList is not empty: %d", len(listVirtualServices.Items)) //nolint:goerr113
+		return fmt.Errorf("VirtualServiceList is not empty: %d", len(listVirtualServices.Items))
 	}
 	return nil
 }

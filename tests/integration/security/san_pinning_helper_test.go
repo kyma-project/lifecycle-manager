@@ -69,11 +69,11 @@ func createWatcherCR(kymaName string) *types.WatchEvent {
 }
 
 var (
-	annotationsWithCorrectDomain = map[string]string{"skr-domain": "example.domain.com"} //nolint:gochecknoglobals
-	annotationsWithWrongDomain   = map[string]string{"skr-domain": "wrong.domain.com"}   //nolint:gochecknoglobals
-	emptyAnnotations             = map[string]string{}                                   //nolint:gochecknoglobals
+	annotationsWithCorrectDomain = map[string]string{"skr-domain": "example.domain.com"}
+	annotationsWithWrongDomain   = map[string]string{"skr-domain": "wrong.domain.com"}
+	emptyAnnotations             = map[string]string{}
 
-	headerWithSufficientCertificate = map[string][]string{ //nolint:gochecknoglobals
+	headerWithSufficientCertificate = map[string][]string{
 		security.XFCCHeader: {
 			"Hash=d54ce461112371914142ca640f0ff7edb5b47778e1e97185336b79f4590e2ce4;Cert=\"" +
 				"-----BEGIN%20CERTIFICATE-----%0AMIIDRzCCAi%2BgAwIBAgIBATANBgkqhkiG9w0BAQs" +
@@ -98,7 +98,7 @@ var (
 				"ple.domain.com;DNS=*.example.domain.com",
 		},
 	}
-	headerWithMalformedCertificate = map[string][]string{ //nolint:gochecknoglobals
+	headerWithMalformedCertificate = map[string][]string{
 		security.XFCCHeader: {
 			"Hash=d54ce461112371914142ca640f0ff7edb5b47778e1e97185336b79f4590e2ce4;Cert=\"" +
 				"-----BEGIN%20CERTIFICATE-----%0WRONGRzCCAi%2BgAwIBAgIBATANBgkqhkiG9w0BAQs" +
