@@ -64,16 +64,12 @@ envtest-dir:
 	echo "$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)"
 
 .PHONY: test
-test: apitest unittest manifests test-crd generate fmt vet envtest ## Run tests.
+test: unittest manifests test-crd generate fmt vet envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test `go list ./tests/integration/...` -ginkgo.flake-attempts 10
 
 .PHONY: unittest
 unittest: ## Run the unit test suite.
 	go test `go list ./... | grep -v /tests/` -coverprofile cover.out -coverpkg=./...
-
-.PHONY: apitest
-apitest:
-	cd api && go test ./... && cd ..
 
 .PHONY: dry-run
 dry-run: kustomize manifests

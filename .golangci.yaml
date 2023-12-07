@@ -18,8 +18,11 @@ linters:
     - sqlclosecheck # not needed for this project
     - varcheck # deprecated (since v1.49.0) and replaced by 'unused'
     - wsl # too strict and mostly code is not more readable
-    - gomoddirectives # to allow local replacement
 linters-settings:
+  gomoddirectives:
+    replace-local: true
+    replace-allow-list:
+      - github.com/kyma-project/lifecycle-manager/api
   stylecheck:
     dot-import-whitelist:
       - github.com/onsi/ginkgo/v2
