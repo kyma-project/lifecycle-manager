@@ -149,11 +149,18 @@ func (r *Runner) updateAvailableManifestSpec(ctx context.Context, manifestObj *v
 		manifestInCluster); err != nil {
 		return fmt.Errorf("error get manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
 	}
+	if !needToUpdate(manifestInCluster, manifestObj) {
+		return nil
+	}
 	manifestInCluster.Spec = manifestObj.Spec
 	if err := r.Update(ctx, manifestInCluster); err != nil {
 		return fmt.Errorf("error update manifest %s: %w", client.ObjectKeyFromObject(manifestObj), err)
 	}
 	return nil
+}
+
+func needToUpdate(manifestInCluster, manifestObj *v1beta2.Manifest) bool {
+	return manifestInCluster.Spec.Version != manifestObj.Spec.Version
 }
 
 func (r *Runner) deleteManifest(ctx context.Context, module *common.Module) error {
