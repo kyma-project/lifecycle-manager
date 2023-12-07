@@ -51,7 +51,6 @@ import (
 
 const useRandomPort = "0"
 
-//nolint:gochecknoglobals
 var (
 	purgeReconciler             *controller.PurgeReconciler
 	controlPlaneClient          client.Client

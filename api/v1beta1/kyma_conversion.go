@@ -28,7 +28,7 @@ func (src *Kyma) ConvertTo(dstRaw conversion.Hub) error {
 	return nil
 }
 
-//nolint:stylecheck
+//nolint:stylecheck // stick to controller-runtime.conversion naming convention
 func (dst *Kyma) ConvertFrom(srcRaw conversion.Hub) error {
 	src, ok := srcRaw.(*v1beta2.Kyma)
 	if !ok {

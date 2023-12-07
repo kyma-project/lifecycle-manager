@@ -23,6 +23,8 @@ import (
 	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
+var ErrServerSideApplyFailed = errors.New("ServerSideApply failed")
+
 func New(clnt client.Client) *Runner {
 	return &Runner{
 		Client:    clnt,
@@ -78,7 +80,7 @@ func (r *Runner) ReconcileManifests(ctx context.Context, kyma *v1beta2.Kyma,
 	}
 	ssaFinish := time.Since(ssaStart)
 	if len(errs) != 0 {
-		errs = append(errs, fmt.Errorf("ServerSideApply failed (after %s)", ssaFinish)) //nolint:goerr113
+		errs = append(errs, fmt.Errorf("%w (after %s)", ErrServerSideApplyFailed, ssaFinish))
 		return errors.Join(errs...)
 	}
 	baseLogger.V(log.DebugLevel).Info("ServerSideApply finished", "time", ssaFinish)
@@ -203,7 +205,7 @@ func generateModuleStatus(module *common.Module, existStatus *v1beta2.ModuleStat
 		FQDN:    module.FQDN,
 		State:   manifestObject.Status.State,
 		Channel: module.Template.Spec.Channel,
-		Version: module.Version,
+		Version: manifestObject.Spec.Version,
 		Manifest: &v1beta2.TrackingObject{
 			PartialMeta: v1beta2.PartialMetaFromObject(manifestObject),
 			TypeMeta:    apimetav1.TypeMeta{Kind: manifestKind, APIVersion: manifestAPIVersion},

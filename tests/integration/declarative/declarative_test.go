@@ -40,7 +40,6 @@ import (
 	. "github.com/kyma-project/lifecycle-manager/pkg/testutils"
 )
 
-//nolint:gochecknoglobals
 var (
 	// this is a unique base testing directory that will be used within a given run
 	// it is expected to be removed externally (e.g. by testing.T) to cleanup leftovers

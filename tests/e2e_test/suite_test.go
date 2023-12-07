@@ -1,4 +1,3 @@
-//nolint:gochecknoglobals
 package e2e_test
 
 import (
@@ -93,7 +92,7 @@ var _ = BeforeSuite(func() {
 	SetDefaultEventuallyTimeout(timeout)
 	SetDefaultConsistentlyDuration(timeout)
 	SetDefaultConsistentlyPollingInterval(interval)
-	//+kubebuilder:scaffold:scheme
+	// +kubebuilder:scaffold:scheme
 
 	go func() {
 		defer GinkgoRecover()

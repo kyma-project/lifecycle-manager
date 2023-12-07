@@ -6,7 +6,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
-//nolint:gochecknoglobals
+//nolint:gochecknoglobals // in-memory cache used for CRDs
 var crdCache = sync.Map{}
 
 func GetCachedCRD(key string) (apiextensionsv1.CustomResourceDefinition, bool) {
