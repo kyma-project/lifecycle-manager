@@ -31,12 +31,23 @@ metadata:
   name: skr-webhook
 spec:
   selector:
-    #selector for deployment labels (key, values)
     app: skr-webhook
   ports:
     - port: 443
       targetPort: watcher-port
       name: webhook
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: skr-webhook-metrics
+spec:
+  selector:
+    app: skr-webhook
+  ports:
+    - port: 2112
+      targetPort: metrics-port
+      name: http-metrics
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -67,6 +78,8 @@ spec:
                   fieldPath: metadata.name
             - name: WEBHOOK_PORT
               value: "8443"
+            - name: METRICS_PORT
+              value: "2112"
             - name: TLS_KEY
               value: "/app/etc/ssl/tls.key"
             - name: TLS_CERT
@@ -94,6 +107,8 @@ spec:
           ports:
             - containerPort: 8443
               name: watcher-port
+            - containerPort: 2112
+              name: metrics-port
       volumes:
         - name: ssl
           secret:
