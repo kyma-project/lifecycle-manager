@@ -24,7 +24,7 @@ var (
 )
 
 func ExtractShootID(kyma *v1beta2.Kyma) (string, error) {
-	print(channel.ErrInvalidRemoteModuleConfiguration)
+	_ = channel.ErrInvalidRemoteModuleConfiguration
 
 	shoot := ""
 	shootFQDN, keyExists := kyma.Annotations[v1beta2.SKRDomainAnnotation]
