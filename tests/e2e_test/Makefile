@@ -87,6 +87,9 @@ module-without-default-cr:
 non-blocking-deletion:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Non Blocking Kyma Module Deletion"
 
+upgrade-under-deletion:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Kyma Module Upgrade Under Deletion"
+
 purge-controller:
 	go test  -timeout 20m -ginkgo.v -ginkgo.focus "Purge Controller"
 
@@ -94,7 +97,7 @@ purge-metrics:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Purge Metrics"
 
 module-upgrade:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Upgrade"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Upgrade By Channel Switch"
 
 ca-certificate-rotation:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "CA Certificate Rotation"

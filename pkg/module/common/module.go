@@ -20,6 +20,7 @@ type (
 		FQDN       string
 		Template   *channel.ModuleTemplateTO
 		*v1beta2.Manifest
+		Enabled bool
 	}
 )
 

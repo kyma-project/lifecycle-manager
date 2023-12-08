@@ -7,6 +7,8 @@ import (
 
 	apiappsv1 "k8s.io/api/apps/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/kyma-project/lifecycle-manager/pkg/util"
 )
 
 var (
@@ -17,6 +19,9 @@ var (
 func DeploymentIsReady(ctx context.Context, name, namespace string, clnt client.Client) error {
 	deploy, err := GetDeployment(ctx, clnt, name, namespace)
 	if err != nil {
+		if util.IsNotFound(err) {
+			return ErrNotFound
+		}
 		return fmt.Errorf("could not get deployment: %w", err)
 	}
 

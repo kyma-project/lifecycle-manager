@@ -28,7 +28,6 @@ var (
 	errManifestNotInExpectedState   = errors.New("manifest CR not in expected state")
 	errModuleNotExisting            = errors.New("module does not exists in KymaCR")
 	errManifestDeletionTimestampSet = errors.New("manifest CR has set DeletionTimeStamp")
-	errResourceExists               = errors.New("resource still exists")
 )
 
 const (
@@ -127,21 +126,9 @@ func CheckIfExists(ctx context.Context, name, namespace, group, version, kind st
 		Version: version,
 		Kind:    kind,
 	})
-	return clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, resourceCR)
-}
 
-func CheckIfNotExists(ctx context.Context, name, namespace, group, version, kind string, clnt client.Client) error {
-	resourceCR := &unstructured.Unstructured{}
-	resourceCR.SetGroupVersionKind(schema.GroupVersionKind{
-		Group:   group,
-		Version: version,
-		Kind:    kind,
-	})
 	err := clnt.Get(ctx, client.ObjectKey{Name: name, Namespace: namespace}, resourceCR)
-	if util.IsNotFound(err) {
-		return nil
-	}
-	return fmt.Errorf("%w: %s %s/%s should be deleted", errResourceExists, kind, namespace, name)
+	return CRExists(resourceCR, err)
 }
 
 func CreateKymaSecret(ctx context.Context, kymaName, kymaNamespace string, k8sClient client.Client) error {
