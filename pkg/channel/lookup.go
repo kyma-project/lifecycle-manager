@@ -39,17 +39,20 @@ func GetTemplates(
 	logger := logf.FromContext(ctx)
 	templates := make(ModuleTemplatesByModuleName)
 
-	for _, module := range kyma.Spec.Modules {
+	for _, module := range kyma.GetAvailableModules() {
 		var template ModuleTemplateTO
-
+		_, found := templates[module.Name]
+		if found {
+			continue
+		}
 		switch {
 		case module.RemoteModuleTemplateRef == "":
-			template = NewTemplateLookup(kymaClient, module, kyma.Spec.Channel).WithContext(ctx)
+			template = NewTemplateLookup(kymaClient, module.Name, module.Channel, kyma.Spec.Channel).WithContext(ctx)
 			if template.Err != nil {
 				break
 			}
 
-			if err := saveDescriptorToCache(template); err != nil {
+			if err := saveDescriptorToCache(template.ModuleTemplate); err != nil {
 				template.Err = fmt.Errorf("failed to get descriptor: %w", err)
 			}
 
@@ -62,7 +65,7 @@ func GetTemplates(
 			runtimeClient := syncContext.RuntimeClient
 			originalModuleName := module.Name
 			module.Name = module.RemoteModuleTemplateRef // To search template with the Remote Ref
-			template = NewTemplateLookup(runtimeClient, module, kyma.Spec.Channel).WithContext(ctx)
+			template = NewTemplateLookup(runtimeClient, module.Name, module.Channel, kyma.Spec.Channel).WithContext(ctx)
 			module.Name = originalModuleName
 		default:
 			template.Err = fmt.Errorf("enable sync to use a remote module template for %s: %w", module.Name,
@@ -72,13 +75,13 @@ func GetTemplates(
 		templates[module.Name] = &template
 	}
 
-	DetermineTemplatesVisibility(kyma, templates)
-	CheckValidTemplatesUpdate(logger, kyma, templates)
+	determineTemplatesVisibility(kyma, templates)
+	checkValidTemplatesUpdate(logger, kyma, templates)
 
 	return templates
 }
 
-func DetermineTemplatesVisibility(kyma *v1beta2.Kyma, templates ModuleTemplatesByModuleName) {
+func determineTemplatesVisibility(kyma *v1beta2.Kyma, templates ModuleTemplatesByModuleName) {
 	for moduleName, moduleTemplate := range templates {
 		if moduleTemplate.Err != nil {
 			continue
@@ -95,7 +98,7 @@ func DetermineTemplatesVisibility(kyma *v1beta2.Kyma, templates ModuleTemplatesB
 	}
 }
 
-func CheckValidTemplatesUpdate(logger logr.Logger, kyma *v1beta2.Kyma, templates ModuleTemplatesByModuleName) {
+func checkValidTemplatesUpdate(logger logr.Logger, kyma *v1beta2.Kyma, templates ModuleTemplatesByModuleName) {
 	// in the case that the kyma spec did not change, we only have to verify
 	// that all desired templates are still referenced in the latest spec generation
 	for moduleName, moduleTemplate := range templates {
@@ -199,30 +202,32 @@ type Lookup interface {
 	WithContext(ctx context.Context) (*ModuleTemplateTO, error)
 }
 
-func NewTemplateLookup(client client.Reader, module v1beta2.Module,
+func NewTemplateLookup(client client.Reader,
+	moduleName,
+	moduleChannel,
 	defaultChannel string,
 ) *TemplateLookup {
 	return &TemplateLookup{
 		reader:         client,
-		module:         module,
+		moduleName:     moduleName,
+		desiredChannel: getDesiredChannel(moduleChannel, defaultChannel),
 		defaultChannel: defaultChannel,
 	}
 }
 
 type TemplateLookup struct {
 	reader         client.Reader
-	module         v1beta2.Module
+	moduleName     string
+	desiredChannel string
 	defaultChannel string
 }
 
 func (c *TemplateLookup) WithContext(ctx context.Context) ModuleTemplateTO {
-	desiredChannel := c.getDesiredChannel()
-
-	template, err := c.getTemplate(ctx, desiredChannel)
+	template, err := c.getTemplate(ctx, c.desiredChannel)
 	if err != nil {
 		return ModuleTemplateTO{
 			ModuleTemplate: nil,
-			DesiredChannel: desiredChannel,
+			DesiredChannel: c.desiredChannel,
 			Err:            err,
 		}
 	}
@@ -233,10 +238,10 @@ func (c *TemplateLookup) WithContext(ctx context.Context) ModuleTemplateTO {
 	if actualChannel == "" {
 		return ModuleTemplateTO{
 			ModuleTemplate: nil,
-			DesiredChannel: desiredChannel,
+			DesiredChannel: c.desiredChannel,
 			Err: fmt.Errorf(
 				"no channel found on template for module: %s: %w",
-				c.module.Name, ErrNotDefaultChannelAllowed,
+				c.moduleName, ErrNotDefaultChannelAllowed,
 			),
 		}
 	}
@@ -246,33 +251,33 @@ func (c *TemplateLookup) WithContext(ctx context.Context) ModuleTemplateTO {
 		logger.V(log.DebugLevel).Info(
 			fmt.Sprintf(
 				"using %s (instead of %s) for module %s",
-				actualChannel, c.defaultChannel, c.module.Name,
+				actualChannel, c.defaultChannel, c.moduleName,
 			),
 		)
 	} else {
 		logger.V(log.DebugLevel).Info(
 			fmt.Sprintf(
 				"using %s for module %s",
-				actualChannel, c.module.Name,
+				actualChannel, c.moduleName,
 			),
 		)
 	}
 
 	return ModuleTemplateTO{
 		ModuleTemplate: template,
-		DesiredChannel: desiredChannel,
+		DesiredChannel: c.desiredChannel,
 		Err:            nil,
 	}
 }
 
-func (c *TemplateLookup) getDesiredChannel() string {
+func getDesiredChannel(moduleChannel, globalChannel string) string {
 	var desiredChannel string
 
 	switch {
-	case c.module.Channel != "":
-		desiredChannel = c.module.Channel
-	case c.defaultChannel != "":
-		desiredChannel = c.defaultChannel
+	case moduleChannel != "":
+		desiredChannel = moduleChannel
+	case globalChannel != "":
+		desiredChannel = globalChannel
 	default:
 		desiredChannel = v1beta2.DefaultChannel
 	}
@@ -289,7 +294,7 @@ func (c *TemplateLookup) getTemplate(ctx context.Context, desiredChannel string)
 		return nil, fmt.Errorf("failed to list module templates on lookup: %w", err)
 	}
 
-	moduleIdentifier := c.module.Name
+	moduleIdentifier := c.moduleName
 	var filteredTemplates []v1beta2.ModuleTemplate
 	for _, template := range templateList.Items {
 		if template.Labels[v1beta2.ModuleName] == moduleIdentifier && template.Spec.Channel == desiredChannel {
@@ -316,7 +321,7 @@ func (c *TemplateLookup) getTemplate(ctx context.Context, desiredChannel string)
 	}
 
 	if len(filteredTemplates) > 1 {
-		return nil, NewMoreThanOneTemplateCandidateErr(c.module, templateList.Items)
+		return nil, NewMoreThanOneTemplateCandidateErr(c.moduleName, templateList.Items)
 	}
 	if len(filteredTemplates) == 0 {
 		return nil, fmt.Errorf("%w: in channel %s for module %s",
@@ -325,7 +330,7 @@ func (c *TemplateLookup) getTemplate(ctx context.Context, desiredChannel string)
 	return &filteredTemplates[0], nil
 }
 
-func NewMoreThanOneTemplateCandidateErr(component v1beta2.Module,
+func NewMoreThanOneTemplateCandidateErr(moduleName string,
 	candidateTemplates []v1beta2.ModuleTemplate,
 ) error {
 	candidates := make([]string, len(candidateTemplates))
@@ -334,11 +339,11 @@ func NewMoreThanOneTemplateCandidateErr(component v1beta2.Module,
 	}
 
 	return fmt.Errorf("%w: more than one module template found for module: %s, candidates: %v",
-		ErrTemplateNotIdentified, component.Name, candidates)
+		ErrTemplateNotIdentified, moduleName, candidates)
 }
 
-func saveDescriptorToCache(template ModuleTemplateTO) error {
-	if template.ModuleTemplate == nil {
+func saveDescriptorToCache(template *v1beta2.ModuleTemplate) error {
+	if template == nil {
 		return ErrModuleTemplateIsNil
 	}
 	descriptor := template.GetDescFromCache()

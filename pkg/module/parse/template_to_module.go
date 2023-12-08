@@ -55,12 +55,13 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 	// (since we do not know which module we are dealing with)
 	modules := make(common.Modules, 0)
 
-	for _, module := range kyma.Spec.Modules {
+	for _, module := range kyma.GetAvailableModules() {
 		template := templates[module.Name]
 		if template.Err != nil && !errors.Is(template.Err, channel.ErrTemplateNotAllowed) {
 			modules = append(modules, &common.Module{
 				ModuleName: module.Name,
 				Template:   template,
+				Enabled:    module.Enabled,
 			})
 			continue
 		}
@@ -70,20 +71,21 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 			modules = append(modules, &common.Module{
 				ModuleName: module.Name,
 				Template:   template,
+				Enabled:    module.Enabled,
 			})
 			continue
 		}
 		fqdn := descriptor.GetName()
-		version := descriptor.GetVersion()
 		name := common.CreateModuleName(fqdn, kyma.Name, module.Name)
 		overwriteNameAndNamespace(template, name, p.remoteSyncNamespace)
 		var manifest *v1beta2.Manifest
-		if manifest, err = p.newManifestFromTemplate(ctx, module,
+		if manifest, err = p.newManifestFromTemplate(ctx, module.Module,
 			template.ModuleTemplate); err != nil {
 			template.Err = err
 			modules = append(modules, &common.Module{
 				ModuleName: module.Name,
 				Template:   template,
+				Enabled:    module.Enabled,
 			})
 			continue
 		}
@@ -94,9 +96,9 @@ func (p *Parser) GenerateModulesFromTemplates(ctx context.Context,
 		modules = append(modules, &common.Module{
 			ModuleName: module.Name,
 			FQDN:       fqdn,
-			Version:    version,
 			Template:   template,
 			Manifest:   manifest,
+			Enabled:    module.Enabled,
 		})
 	}
 
@@ -175,7 +177,7 @@ func (p *Parser) newManifestFromTemplate(
 	if err := appendOptionalCustomStateCheck(manifest, template.Spec.CustomStateCheck); err != nil {
 		return nil, fmt.Errorf("could not translate custom state check: %w", err)
 	}
-
+	manifest.Spec.Version = descriptor.Version
 	return manifest, nil
 }
 

@@ -66,13 +66,12 @@ import (
 )
 
 var (
-	scheme                 = machineryruntime.NewScheme() //nolint:gochecknoglobals
-	setupLog               = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals
+	scheme                 = machineryruntime.NewScheme() //nolint:gochecknoglobals // scheme used to add CRDs
+	setupLog               = ctrl.Log.WithName("setup")   //nolint:gochecknoglobals // logger used for setup
 	errMissingWatcherImage = errors.New("runtime watcher image is not provided")
 )
 
-//nolint:gochecknoinits
-func init() {
+func registerSchemas() {
 	machineryutilruntime.Must(k8sclientscheme.AddToScheme(scheme))
 	machineryutilruntime.Must(api.AddToScheme(scheme))
 
@@ -86,7 +85,9 @@ func init() {
 }
 
 func main() {
-	flagVar := defineFlagVar()
+	registerSchemas()
+
+	flagVar := DefineFlagVar()
 	flag.Parse()
 	ctrl.SetLogger(log.ConfigLogger(int8(flagVar.logLevel), zapcore.Lock(os.Stdout)))
 	if flagVar.pprof {
@@ -145,17 +146,28 @@ func setupManager(flagVar *FlagVar, newCacheOptions cache.Options, scheme *machi
 		os.Exit(1)
 	}
 	remoteClientCache := remote.NewClientCache()
+	var skrWebhookManager *watcher.SKRWebhookManifestManager
+	if flagVar.enableKcpWatcher {
+		watcherChartDirInfo, err := os.Stat(flagVar.skrWatcherPath)
+		if err != nil || !watcherChartDirInfo.IsDir() {
+			setupLog.Error(err, "failed to read local skr chart")
+			os.Exit(1)
+		}
 
-	setupKymaReconciler(mgr, remoteClientCache, flagVar, options)
+		if skrWebhookManager, err = createSkrWebhookManager(mgr, flagVar); err != nil {
+			setupLog.Error(err, "failed to create webhook chart manager")
+			os.Exit(1)
+		}
+		setupKcpWatcherReconciler(mgr, options, flagVar)
+	}
+
+	setupKymaReconciler(mgr, remoteClientCache, flagVar, options, skrWebhookManager)
 	setupManifestReconciler(mgr, flagVar, options)
 
 	if flagVar.enablePurgeFinalizer {
 		setupPurgeReconciler(mgr, remoteClientCache, flagVar, options)
 	}
 
-	if flagVar.enableKcpWatcher {
-		setupKcpWatcherReconciler(mgr, options, flagVar)
-	}
 	if flagVar.enableWebhooks {
 		enableWebhooks(mgr)
 	}
@@ -215,25 +227,11 @@ func controllerOptionsFromFlagVar(flagVar *FlagVar) ctrlruntime.Options {
 	}
 }
 
-func setupKymaReconciler(mgr ctrl.Manager,
-	remoteClientCache *remote.ClientCache,
-	flagVar *FlagVar, options ctrlruntime.Options,
+func setupKymaReconciler(mgr ctrl.Manager, remoteClientCache *remote.ClientCache, flagVar *FlagVar,
+	options ctrlruntime.Options, skrWebhookManager *watcher.SKRWebhookManifestManager,
 ) {
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentKymaReconciles
 	kcpRestConfig := mgr.GetConfig()
-	var skrWebhookManager watcher.SKRWebhookManager
-	if flagVar.enableKcpWatcher {
-		watcherChartDirInfo, err := os.Stat(flagVar.skrWatcherPath)
-		if err != nil || !watcherChartDirInfo.IsDir() {
-			setupLog.Error(err, "failed to read local skr chart")
-			os.Exit(1)
-		}
-
-		if skrWebhookManager, err = createSkrWebhookManager(mgr, flagVar); err != nil {
-			setupLog.Error(err, "failed to create webhook chart manager")
-			os.Exit(1)
-		}
-	}
 
 	if err := (&controller.KymaReconciler{
 		Client:            mgr.GetClient(),
@@ -245,6 +243,7 @@ func setupKymaReconciler(mgr ctrl.Manager,
 			Success: flagVar.kymaRequeueSuccessInterval,
 			Busy:    flagVar.kymaRequeueBusyInterval,
 			Error:   flagVar.kymaRequeueErrInterval,
+			Warning: flagVar.kymaRequeueWarningInterval,
 		},
 		VerificationSettings: signature.VerificationSettings{
 			EnableVerification: flagVar.enableVerification,
@@ -252,7 +251,8 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		},
 		InKCPMode:           flagVar.inKCPMode,
 		RemoteSyncNamespace: flagVar.remoteSyncNamespace,
-		IsManagedKyma:       flagVar.isKymaManaged,
+		IsManagedKyma:       flagVar.IsKymaManaged,
+		Metrics:             metrics.NewKymaMetrics(),
 	}).SetupWithManager(
 		mgr, options, controller.SetupUpSetting{
 			ListenerAddr:                 flagVar.kymaListenerAddr,
@@ -263,25 +263,28 @@ func setupKymaReconciler(mgr ctrl.Manager,
 		setupLog.Error(err, "unable to create controller", "controller", "Kyma")
 		os.Exit(1)
 	}
-
-	metrics.InitKymaMetrics()
 }
 
 func createSkrWebhookManager(mgr ctrl.Manager, flagVar *FlagVar) (*watcher.SKRWebhookManifestManager, error) {
-	caCertificateCache := watcher.NewCertificateCache(flagVar.caCertCacheTTL)
+	caCertificateCache := watcher.NewCACertificateCache(flagVar.caCertCacheTTL)
 	return watcher.NewSKRWebhookManifestManager(mgr.GetConfig(), mgr.GetScheme(), caCertificateCache,
-		&watcher.SkrWebhookManagerConfig{
-			SKRWatcherPath:            flagVar.skrWatcherPath,
-			SkrWatcherImage:           flagVar.skrWatcherImage,
-			SkrWebhookCPULimits:       flagVar.skrWebhookCPULimits,
-			SkrWebhookMemoryLimits:    flagVar.skrWebhookMemoryLimits,
-			LocalGatewayPortOverwrite: flagVar.listenerPortOverwrite,
-			IstioNamespace:            flagVar.istioNamespace,
+		watcher.SkrWebhookManagerConfig{
+			SKRWatcherPath:         flagVar.skrWatcherPath,
+			SkrWatcherImage:        flagVar.skrWatcherImage,
+			SkrWebhookCPULimits:    flagVar.skrWebhookCPULimits,
+			SkrWebhookMemoryLimits: flagVar.skrWebhookMemoryLimits,
+			RemoteSyncNamespace:    flagVar.remoteSyncNamespace,
+		}, watcher.CertificateConfig{
+			IstioNamespace:      flagVar.istioNamespace,
+			RemoteSyncNamespace: flagVar.remoteSyncNamespace,
+			CACertificateName:   flagVar.caCertName,
+			AdditionalDNSNames:  strings.Split(flagVar.additionalDNSNames, ","),
+			Duration:            flagVar.SelfSignedCertDuration,
+			RenewBefore:         flagVar.SelfSignedCertRenewBefore,
+		}, watcher.GatewayConfig{
 			IstioGatewayName:          flagVar.istioGatewayName,
 			IstioGatewayNamespace:     flagVar.istioGatewayNamespace,
-			RemoteSyncNamespace:       flagVar.remoteSyncNamespace,
-			AdditionalDNSNames:        strings.Split(flagVar.additionalDNSNames, ","),
-			CACertificateName:         flagVar.caCertName,
+			LocalGatewayPortOverwrite: flagVar.listenerPortOverwrite,
 		})
 }
 
@@ -301,14 +304,14 @@ func setupPurgeReconciler(mgr ctrl.Manager,
 		ResolveRemoteClient:   resolveRemoteClientFunc,
 		PurgeFinalizerTimeout: flagVar.purgeFinalizerTimeout,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(flagVar.skipPurgingFor),
-		IsManagedKyma:         flagVar.isKymaManaged,
+		IsManagedKyma:         flagVar.IsKymaManaged,
+		Metrics:               metrics.NewPurgeMetrics(),
 	}).SetupWithManager(
 		mgr, options,
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PurgeReconciler")
 		os.Exit(1)
 	}
-	metrics.InitPurgeMetrics()
 }
 
 func setupManifestReconciler(
@@ -335,14 +338,16 @@ func setupKcpWatcherReconciler(mgr ctrl.Manager, options ctrlruntime.Options, fl
 	options.MaxConcurrentReconciles = flagVar.maxConcurrentWatcherReconciles
 
 	if err := (&controller.WatcherReconciler{
-		Client:        mgr.GetClient(),
-		EventRecorder: mgr.GetEventRecorderFor(controller.WatcherControllerName),
-		Scheme:        mgr.GetScheme(),
-		RestConfig:    mgr.GetConfig(),
+		Client:             mgr.GetClient(),
+		EventRecorder:      mgr.GetEventRecorderFor(controller.WatcherControllerName),
+		WatcherVSNamespace: flagVar.istioGatewayNamespace,
+		Scheme:             mgr.GetScheme(),
+		RestConfig:         mgr.GetConfig(),
 		RequeueIntervals: queue.RequeueIntervals{
 			Success: flagVar.watcherRequeueSuccessInterval,
 			Busy:    defaultKymaRequeueBusyInterval,
 			Error:   defaultKymaRequeueErrInterval,
+			Warning: defaultKymaRequeueWarningInterval,
 		},
 	}).SetupWithManager(mgr, options); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", controller.WatcherControllerName)

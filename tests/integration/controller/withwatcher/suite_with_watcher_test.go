@@ -5,7 +5,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+	http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -13,7 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-//nolint:gochecknoglobals
 package withwatcher_test
 
 import (
@@ -48,6 +47,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/queue"
 	"github.com/kyma-project/lifecycle-manager/pkg/remote"
@@ -89,7 +89,8 @@ const (
 
 var (
 	skrWatcherPath         = filepath.Join(integration.GetProjectRoot(), "skr-webhook")
-	istioResourcesFilePath = filepath.Join(integration.GetProjectRoot(), "config", "samples", "tests", "istio-test-resources.yaml")
+	istioResourcesFilePath = filepath.Join(integration.GetProjectRoot(), "config", "samples", "tests",
+		"istio-test-resources.yaml")
 )
 
 func TestAPIs(t *testing.T) {
@@ -132,7 +133,7 @@ var _ = BeforeSuite(func() {
 	Expect(istioscheme.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	Expect(certmanagerv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
-	//+kubebuilder:scaffold:scheme
+	// +kubebuilder:scaffold:scheme
 
 	metricsBindAddress, found := os.LookupEnv("metrics-bind-address")
 	if !found {
@@ -157,6 +158,7 @@ var _ = BeforeSuite(func() {
 		Success: 1 * time.Second,
 		Busy:    100 * time.Millisecond,
 		Error:   100 * time.Millisecond,
+		Warning: 100 * time.Millisecond,
 	}
 
 	// This k8sClient is used to install external resources
@@ -175,21 +177,34 @@ var _ = BeforeSuite(func() {
 	}
 
 	remoteClientCache = remote.NewClientCache()
-	skrChartCfg := &watcher.SkrWebhookManagerConfig{
+	skrChartCfg := watcher.SkrWebhookManagerConfig{
 		SKRWatcherPath:         skrWatcherPath,
 		SkrWebhookMemoryLimits: "200Mi",
 		SkrWebhookCPULimits:    "1",
-		IstioNamespace:         istioSystemNs,
-		IstioGatewayName:       gatewayName,
-		IstioGatewayNamespace:  kcpSystemNs,
 		RemoteSyncNamespace:    controller.DefaultRemoteSyncNamespace,
-		CACertificateName:      caCertificateName,
 	}
 
-	caCertCache := watcher.NewCertificateCache(5 * time.Minute)
+	certificateConfig := watcher.CertificateConfig{
+		IstioNamespace:      istioSystemNs,
+		RemoteSyncNamespace: controller.DefaultRemoteSyncNamespace,
+		CACertificateName:   caCertificateName,
+		AdditionalDNSNames:  []string{},
+		Duration:            1 * time.Hour,
+		RenewBefore:         5 * time.Minute,
+	}
 
-	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(restCfg, k8sclientscheme.Scheme, caCertCache,
-		skrChartCfg)
+	gatewayConfig := watcher.GatewayConfig{
+		IstioGatewayName:          gatewayName,
+		IstioGatewayNamespace:     kcpSystemNs,
+		LocalGatewayPortOverwrite: "",
+	}
+
+	caCertCache := watcher.NewCACertificateCache(5 * time.Minute)
+
+	skrWebhookChartManager, err := watcher.NewSKRWebhookManifestManager(
+		restCfg, k8sclientscheme.Scheme,
+		caCertCache,
+		skrChartCfg, certificateConfig, gatewayConfig)
 	Expect(err).ToNot(HaveOccurred())
 	err = (&controller.KymaReconciler{
 		Client:            k8sManager.GetClient(),
@@ -203,15 +218,17 @@ var _ = BeforeSuite(func() {
 		KcpRestConfig:       k8sManager.GetConfig(),
 		RemoteSyncNamespace: controller.DefaultRemoteSyncNamespace,
 		InKCPMode:           true,
+		Metrics:             metrics.NewKymaMetrics(),
 	}).SetupWithManager(k8sManager, ctrlruntime.Options{}, controller.SetupUpSetting{ListenerAddr: listenerAddr})
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&controller.WatcherReconciler{
-		Client:           k8sManager.GetClient(),
-		RestConfig:       k8sManager.GetConfig(),
-		EventRecorder:    k8sManager.GetEventRecorderFor(controller.WatcherControllerName),
-		Scheme:           k8sclientscheme.Scheme,
-		RequeueIntervals: intervals,
+		Client:             k8sManager.GetClient(),
+		WatcherVSNamespace: kcpSystemNs,
+		RestConfig:         k8sManager.GetConfig(),
+		EventRecorder:      k8sManager.GetEventRecorderFor(controller.WatcherControllerName),
+		Scheme:             k8sclientscheme.Scheme,
+		RequeueIntervals:   intervals,
 	}).SetupWithManager(
 		k8sManager, ctrlruntime.Options{
 			MaxConcurrentReconciles: 1,

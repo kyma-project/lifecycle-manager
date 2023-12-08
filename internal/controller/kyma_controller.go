@@ -67,15 +67,15 @@ type KymaReconciler struct {
 	record.EventRecorder
 	queue.RequeueIntervals
 	signature.VerificationSettings
-	SKRWebhookManager   watcher.SKRWebhookManager
+	SKRWebhookManager   *watcher.SKRWebhookManifestManager
 	KcpRestConfig       *rest.Config
 	RemoteClientCache   *remote.ClientCache
 	InKCPMode           bool
 	RemoteSyncNamespace string
 	IsManagedKyma       bool
+	Metrics             *metrics.KymaMetrics
 }
 
-//nolint:lll
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=operator.kyma-project.io,resources=kymas/finalizers,verbs=update
@@ -118,7 +118,7 @@ func (r *KymaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	if !kyma.DeletionTimestamp.IsZero() && errors.Is(err, remote.ErrAccessSecretNotFound) {
 		logger.Info("access secret not found for kyma, assuming already deleted cluster")
-		metrics.CleanupMetrics(kyma)
+		r.Metrics.CleanupMetrics(kyma.Name)
 		r.removeAllFinalizers(kyma)
 		return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
 	}
@@ -394,6 +394,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 			r.enqueueNormalEvent(kyma, webhookChartRemoval, err.Error())
 			return ctrl.Result{RequeueAfter: r.RequeueIntervals.Busy}, nil
 		}
+		r.SKRWebhookManager.WatcherMetrics.CleanupMetrics(kyma.Name)
 	}
 
 	if r.SyncKymaEnabled(kyma) {
@@ -413,7 +414,7 @@ func (r *KymaReconciler) handleDeletingState(ctx context.Context, kyma *v1beta2.
 		logger.Info("removed remote finalizer")
 	}
 
-	metrics.CleanupMetrics(kyma)
+	r.Metrics.CleanupMetrics(kyma.Name)
 
 	controllerutil.RemoveFinalizer(kyma, v1beta2.Finalizer)
 	return ctrl.Result{Requeue: true}, r.updateKyma(ctx, kyma)
@@ -436,7 +437,6 @@ func (r *KymaReconciler) updateKyma(ctx context.Context, kyma *v1beta2.Kyma) err
 }
 
 func (r *KymaReconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.Kyma) error {
-	// these are the actual modules
 	modules, err := r.GenerateModulesFromTemplate(ctx, kyma)
 	if err != nil {
 		return fmt.Errorf("error while fetching modules during processing: %w", err)
@@ -448,7 +448,7 @@ func (r *KymaReconciler) reconcileManifests(ctx context.Context, kyma *v1beta2.K
 		return fmt.Errorf("sync failed: %w", err)
 	}
 
-	runner.SyncModuleStatus(ctx, kyma, modules)
+	runner.SyncModuleStatus(ctx, kyma, modules, r.Metrics)
 	// If module get removed from kyma, the module deletion happens here.
 
 	if err := r.DeleteNoLongerExistingModules(ctx, kyma); err != nil {
@@ -541,8 +541,8 @@ func (r *KymaReconciler) deleteManifest(ctx context.Context, trackedManifest *v1
 }
 
 func (r *KymaReconciler) UpdateMetrics(ctx context.Context, kyma *v1beta2.Kyma) {
-	if err := metrics.UpdateAll(kyma); err != nil {
-		if r.IsMissingMetricsAnnotationOrLabel(err) {
+	if err := r.Metrics.UpdateAll(kyma); err != nil {
+		if metrics.IsMissingMetricsAnnotationOrLabel(err) {
 			r.enqueueWarningEvent(kyma, metricsError, err)
 		}
 		logf.FromContext(ctx).V(log.DebugLevel).Info(fmt.Sprintf("error occurred while updating all metrics: %s", err))
@@ -566,11 +566,4 @@ func (r *KymaReconciler) SyncKymaEnabled(kyma *v1beta2.Kyma) bool {
 
 func (r *KymaReconciler) IsKymaManaged() bool {
 	return r.IsManagedKyma
-}
-
-func (r *KymaReconciler) IsMissingMetricsAnnotationOrLabel(err error) bool {
-	return errors.Is(err, metrics.ErrInstanceLabelNoValue) ||
-		errors.Is(err, metrics.ErrMissingInstanceLabel) ||
-		errors.Is(err, metrics.ErrShootAnnotationNoValue) ||
-		errors.Is(err, metrics.ErrMissingShootAnnotation)
 }

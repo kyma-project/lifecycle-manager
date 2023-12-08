@@ -48,7 +48,7 @@ To support the ModuleTemplate CR with the `oci-registry-cred` label, use Kyma CL
 For example, you can run the following command to push your module image and generate a ModuleTemplate CR with the `oci-registry-cred` label:
 
    ```sh
-   kyma alpha create module -n [name]  --version [module version] --registry [private oci registry] -w -c [access credential with write permission] --registry-cred-selector=operator.kyma-project.io/oci-registry-cred=test-operator
+   kyma alpha create module --module-config-file [module config file] --registry [private oci registry] -c [access credential with write permission] --registry-cred-selector=operator.kyma-project.io/oci-registry-cred=test-operator
    ```
 
 Verify in each **descriptor.component.resources** layer, if it contains the `oci-registry-cred` label.

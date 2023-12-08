@@ -96,7 +96,7 @@ func (kb KymaBuilder) Build() *v1beta2.Kyma {
 func RandomName() string {
 	b := make([]byte, nameLength)
 	for i := range b {
-		//nolint:gosec
+		//nolint:gosec // random number generator sufficient for testing purposes
 		b[i] = charSet[rand.Intn(len(charSet))]
 	}
 	return string(b)

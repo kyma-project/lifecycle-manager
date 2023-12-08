@@ -58,7 +58,7 @@ e2e-coverage: ginkgo ## Generate the effective Acceptance Criteria for all the t
 	@#     tail           - Drops the outline header.
 	@#     sed            - Adjusts the scenarios to the Gherkin syntax.
 
-	@for file in $(shell ls *_test.go | grep -v suite_test.go) ; do \
+	@for file in $(shell ls *_test.go | grep -v suite_test.go | grep -v utils_test.go) ; do \
         $(GINKGO) outline --format indent $$file  | \
 			awk -F "," '{print $$1" "$$2}' | \
 			tail -n +2 | \
@@ -87,6 +87,9 @@ module-without-default-cr:
 non-blocking-deletion:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Non Blocking Kyma Module Deletion"
 
+upgrade-under-deletion:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Kyma Module Upgrade Under Deletion"
+
 purge-controller:
 	go test  -timeout 20m -ginkgo.v -ginkgo.focus "Purge Controller"
 
@@ -94,7 +97,10 @@ purge-metrics:
 	go test -timeout 20m -ginkgo.v -ginkgo.focus "Purge Metrics"
 
 module-upgrade:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Upgrade"
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Module Upgrade By Channel Switch"
 
-certificate-rotation:
-	go test -timeout 20m -ginkgo.v -ginkgo.focus "Certificate Rotation"
+ca-certificate-rotation:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "CA Certificate Rotation"
+
+self-signed-certificate-rotation:
+	go test -timeout 20m -ginkgo.v -ginkgo.focus "Self Signed Certificate Rotation"

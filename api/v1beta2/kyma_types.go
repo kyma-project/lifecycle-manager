@@ -25,10 +25,10 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api/shared"
 )
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
-//+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:printcolumn:name="State",type=string,JSONPath=".status.state"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // Kyma is the Schema for the kymas API.
 type Kyma struct {
@@ -284,7 +284,7 @@ func (kyma *Kyma) GetNoLongerExistingModuleStatus() []*ModuleStatus {
 	return notExistsModules
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // KymaList contains a list of Kyma.
 type KymaList struct {
@@ -293,7 +293,7 @@ type KymaList struct {
 	Items              []Kyma `json:"items"`
 }
 
-//nolint:gochecknoinits
+//nolint:gochecknoinits // registers Kyma CRD on startup
 func init() {
 	SchemeBuilder.Register(&Kyma{}, &KymaList{})
 }
@@ -395,4 +395,33 @@ func (kyma *Kyma) IsInternal() bool {
 func (kyma *Kyma) IsBeta() bool {
 	beta, found := kyma.Labels[BetaLabel]
 	return found && strings.ToLower(beta) == EnableLabelValue
+}
+
+type AvailableModule struct {
+	Module
+	Enabled bool
+}
+
+func (kyma *Kyma) GetAvailableModules() []AvailableModule {
+	moduleMap := make(map[string]bool)
+	modules := make([]AvailableModule, 0)
+	for _, module := range kyma.Spec.Modules {
+		moduleMap[module.Name] = true
+		modules = append(modules, AvailableModule{Module: module, Enabled: true})
+	}
+
+	for _, module := range kyma.Status.Modules {
+		_, exist := moduleMap[module.Name]
+		if exist {
+			continue
+		}
+		modules = append(modules, AvailableModule{
+			Module: Module{
+				Name:    module.Name,
+				Channel: module.Channel,
+			},
+			Enabled: false,
+		})
+	}
+	return modules
 }

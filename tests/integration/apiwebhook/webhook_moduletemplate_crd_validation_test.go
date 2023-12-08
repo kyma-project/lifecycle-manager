@@ -21,8 +21,6 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var testFiles = filepath.Join(integration.GetProjectRoot(), "config", "samples", "tests") //nolint:gochecknoglobals
-
 var _ = Describe("Webhook ValidationCreate Strict", Ordered, func() {
 	sampleCR := builder.NewSampleCRBuilder().Build()
 	It("should successfully fetch accept a moduletemplate based on a compliant crd", func() {
@@ -104,7 +102,7 @@ func GetCRD(group, version, sample string) *apiextensionsv1.CustomResourceDefini
 		version,
 		sample,
 	)
-	modulePath := filepath.Join(testFiles, "crds", crdFileName)
+	modulePath := filepath.Join(integration.GetProjectRoot(), "config", "samples", "tests", "crds", crdFileName)
 	By(fmt.Sprintf("using %s as CRD", modulePath))
 
 	file, err := os.ReadFile(modulePath)

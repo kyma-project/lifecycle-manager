@@ -33,10 +33,12 @@ jobs:
                     "kyma-metrics",
                     "module-without-default-cr",
                     "non-blocking-deletion",
+                    "upgrade-under-deletion",
                     "purge-controller",
                     "purge-metrics",
                     "module-upgrade",
-                    "certificate-rotation"
+                    "ca-certificate-rotation",
+                    "self-signed-certificate-rotation"
         ]
     name: "E2E"
     needs: [wait-for-img]
@@ -133,8 +135,26 @@ jobs:
           cat purge_finalizer.yaml
           kustomize edit add patch --path purge_finalizer.yaml --kind Deployment
           popd
+      - name: Patch self signed certificate lifetime
+        if: ${{matrix.e2e-test == 'self-signed-certificate-rotation'}}
+        working-directory: lifecycle-manager
+        run: |
+          pushd config/watcher_local_test
+          echo \
+          "- op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --self-signed-cert-duration=1h
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --self-signed-cert-renew-before=59m
+          - op: add
+            path: /spec/template/spec/containers/0/args/-
+            value: --self-signed-cert-renew-buffer=1m" >> self-signed-cert.yaml
+          cat self-signed-cert.yaml
+          kustomize edit add patch --path self-signed-cert.yaml --kind Deployment
+          popd
       - name: Patch CA certificate renewBefore
-        if: ${{matrix.e2e-test == 'certificate-rotation'}}
+        if: ${{matrix.e2e-test == 'ca-certificate-rotation'}}
         working-directory: lifecycle-manager
         run: |
           pushd config/watcher_local_test
@@ -187,7 +207,7 @@ jobs:
           kubectl apply -f template.yaml
       - name: Create Template Operator Module for regular and fast channels
         working-directory: lifecycle-manager
-        if: ${{ matrix.e2e-test == 'module-upgrade'}}
+        if: ${{ matrix.e2e-test == 'module-upgrade' || matrix.e2e-test == 'upgrade-under-deletion' }}
         run: |
           kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v2_fast.yaml
           kubectl apply -f tests/moduletemplates/moduletemplate_template_operator_v1_regular.yaml
@@ -235,7 +255,10 @@ jobs:
           kubectl apply -f template.yaml
       - name: Expose Metrics Endpoint
         working-directory: lifecycle-manager
-        if: ${{ matrix.e2e-test == 'kyma-metrics' || matrix.e2e-test == 'purge-metrics' }}
+        if: ${{ matrix.e2e-test == 'kyma-metrics' ||
+          matrix.e2e-test == 'purge-metrics' ||
+          matrix.e2e-test == 'self-signed-certificate-rotation'
+          }}
         run: |
           kubectl patch svc klm-metrics-service -p '{"spec": {"type": "LoadBalancer"}}' -n kcp-system
       - name: Run ${{ matrix.e2e-test }}

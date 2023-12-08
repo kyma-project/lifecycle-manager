@@ -23,7 +23,8 @@ var (
 )
 
 func NewTestKyma(name string) *v1beta2.Kyma {
-	return NewKymaWithSyncLabel(name, apimetav1.NamespaceDefault, v1beta2.DefaultChannel, v1beta2.SyncStrategyLocalClient)
+	return NewKymaWithSyncLabel(name, apimetav1.NamespaceDefault, v1beta2.DefaultChannel,
+		v1beta2.SyncStrategyLocalClient)
 }
 
 // NewKymaWithSyncLabel use this function to initialize kyma CR with SyncStrategyLocalSecret
@@ -47,8 +48,11 @@ func SyncKyma(ctx context.Context, clnt client.Client, kyma *v1beta2.Kyma) error
 	}, kyma)
 	// It might happen in some test case, kyma get deleted, if you need to make sure Kyma should exist,
 	// write expected condition to check it specifically.
-	//nolint:wrapcheck
-	return client.IgnoreNotFound(err)
+	err = client.IgnoreNotFound(err)
+	if err != nil {
+		return fmt.Errorf("failed to fetch Kyma CR: %w", err)
+	}
+	return nil
 }
 
 func KymaExists(ctx context.Context, clnt client.Client, name, namespace string) error {

@@ -8,8 +8,10 @@ import (
 )
 
 func Test_getCertTokenFromXFCCHeader(t *testing.T) {
-	const headerPart1 = `By=http://frontend.lyft.com;Hash=468ed33be74eee6556d90c0149c1309e9ba61d6425303443c0748a02dd8de688`
-	const headerPart2 = `Subject="/C=US/ST=CA/L=San Francisco/OU=Lyft/CN=Test Client";URI=http://testclient.lyft.com;DNS=lyft.com;DNS=www.lyft.com` //nolint:lll
+	const headerPart1 = `By=http://frontend.lyft.com;Hash=
+468ed33be74eee6556d90c0149c1309e9ba61d6425303443c0748a02dd8de688`
+	const headerPart2 = `Subject="/C=US/ST=CA/L=San Francisco/OU=Lyft/CN=Test Client";
+URI=http://testclient.lyft.com;DNS=lyft.com;DNS=www.lyft.com`
 	const headerCert = `Cert=RnJpIE9jdCAxMyAwODoyMTozMSBBTSBDRVNUIDIwMjMK`
 
 	t.Parallel()

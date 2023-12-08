@@ -35,6 +35,7 @@ import (
 	"github.com/kyma-project/lifecycle-manager/api"
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
 	"github.com/kyma-project/lifecycle-manager/internal/controller"
+	"github.com/kyma-project/lifecycle-manager/internal/pkg/metrics"
 	"github.com/kyma-project/lifecycle-manager/pkg/log"
 	"github.com/kyma-project/lifecycle-manager/pkg/matcher"
 	"github.com/kyma-project/lifecycle-manager/tests/integration"
@@ -50,7 +51,6 @@ import (
 
 const useRandomPort = "0"
 
-//nolint:gochecknoglobals
 var (
 	purgeReconciler             *controller.PurgeReconciler
 	controlPlaneClient          client.Client
@@ -90,7 +90,7 @@ var _ = BeforeSuite(func() {
 	Expect(api.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 	Expect(apiextensionsv1.AddToScheme(k8sclientscheme.Scheme)).NotTo(HaveOccurred())
 
-	//+kubebuilder:scaffold:scheme
+	// +kubebuilder:scaffold:scheme
 
 	k8sManager, err := ctrl.NewManager(
 		cfg, ctrl.Options{
@@ -102,7 +102,9 @@ var _ = BeforeSuite(func() {
 		})
 	Expect(err).ToNot(HaveOccurred())
 
-	var useLocalClient controller.RemoteClientResolver = func(context.Context, client.ObjectKey) (client.Client, error) {
+	var useLocalClient controller.RemoteClientResolver = func(context.Context, client.ObjectKey) (client.Client,
+		error,
+	) {
 		return k8sManager.GetClient(), nil
 	}
 
@@ -112,6 +114,7 @@ var _ = BeforeSuite(func() {
 		ResolveRemoteClient:   useLocalClient,
 		PurgeFinalizerTimeout: time.Second,
 		SkipCRDs:              matcher.CreateCRDMatcherFrom(skipFinalizerRemovalForCRDs),
+		Metrics:               metrics.NewPurgeMetrics(),
 	}
 
 	err = purgeReconciler.SetupWithManager(k8sManager, ctrlruntime.Options{})

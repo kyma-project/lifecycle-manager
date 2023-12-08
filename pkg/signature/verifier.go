@@ -39,8 +39,6 @@ type VerificationSettings struct {
 
 type Verification func(descriptor *compdesc.ComponentDescriptor) error
 
-var NoSignatureVerification Verification = func(descriptor *compdesc.ComponentDescriptor) error { return nil } //nolint:lll,gochecknoglobals
-
 func Verify(
 	descriptor *compdesc.ComponentDescriptor, signatureVerification Verification,
 ) error {
@@ -48,6 +46,11 @@ func Verify(
 		return fmt.Errorf("signature verification error, untrusted: %w", err)
 	}
 	return nil
+}
+
+func NewNoSignatureVerification() func(descriptor *compdesc.ComponentDescriptor) error {
+	var NoSignatureVerification Verification = func(descriptor *compdesc.ComponentDescriptor) error { return nil }
+	return NoSignatureVerification
 }
 
 func NewVerification(
@@ -58,7 +61,7 @@ func NewVerification(
 	moduleName string,
 ) (Verification, error) {
 	if !enableVerification {
-		return NoSignatureVerification, nil
+		return NewNoSignatureVerification(), nil
 	}
 
 	var verifier Verifier
@@ -121,7 +124,8 @@ func CreateRSAVerifierFromSecrets(
 	if err = k8sClient.List(ctx, secretList, &client.ListOptions{LabelSelector: selector}); err != nil {
 		return nil, fmt.Errorf("failed to list secrets: %w", err)
 	} else if len(secretList.Items) < 1 {
-		gr := apicorev1.SchemeGroupVersion.WithResource(fmt.Sprintf("secrets with label %s", v1beta2.KymaName)).GroupResource()
+		gr := apicorev1.SchemeGroupVersion.WithResource(fmt.Sprintf("secrets with label %s",
+			v1beta2.KymaName)).GroupResource()
 		return nil, apierrors.NewNotFound(gr, selector.String())
 	}
 	registry := signing.NewKeyRegistry()

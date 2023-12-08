@@ -18,9 +18,9 @@ type (
 	Module  struct {
 		ModuleName string
 		FQDN       string
-		Version    string
 		Template   *channel.ModuleTemplateTO
 		*v1beta2.Manifest
+		Enabled bool
 	}
 )
 

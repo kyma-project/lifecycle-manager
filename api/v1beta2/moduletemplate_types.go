@@ -91,8 +91,8 @@ type ModuleTemplateSpec struct {
 	// downstream modules as it is considered a set of default values. This means that an update of the data block
 	// will only propagate to new Modules created form ModuleTemplate, not any existing Module.
 	//
-	//+kubebuilder:pruning:PreserveUnknownFields
-	//+kubebuilder:validation:XEmbeddedResource
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:XEmbeddedResource
 	Data *unstructured.Unstructured `json:"data,omitempty"`
 
 	// The Descriptor is the Open Component Model Descriptor of a Module, containing all relevant information
@@ -108,7 +108,7 @@ type ModuleTemplateSpec struct {
 	// NOTE: Only Raw Rendering is Supported for the layers. So previously used "config" layers for the helm
 	// charts and kustomize renderers are deprecated and ignored.
 	//
-	//+kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:pruning:PreserveUnknownFields
 	Descriptor machineryruntime.RawExtension `json:"descriptor"`
 
 	CustomStateCheck []*CustomStateCheck `json:"customStateCheck,omitempty"`
@@ -154,7 +154,7 @@ func (m *ModuleTemplate) GetDescriptor() (*Descriptor, error) {
 	return mDesc, nil
 }
 
-//nolint:gochecknoglobals
+//nolint:gochecknoglobals // in-memory cache used for descriptors
 var descriptorCache = sync.Map{}
 
 func (m *ModuleTemplate) GetDescFromCache() *Descriptor {
@@ -176,7 +176,7 @@ func (m *ModuleTemplate) SetDescToCache(descriptor *Descriptor) {
 	descriptorCache.Store(key, descriptor)
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // ModuleTemplateList contains a list of ModuleTemplate.
 type ModuleTemplateList struct {
@@ -185,7 +185,7 @@ type ModuleTemplateList struct {
 	Items              []ModuleTemplate `json:"items"`
 }
 
-//nolint:gochecknoinits
+//nolint:gochecknoinits // registers ModuleTemplate CRD on startup
 func init() {
 	SchemeBuilder.Register(&ModuleTemplate{}, &ModuleTemplateList{}, &Descriptor{})
 }
