@@ -85,5 +85,5 @@ This tutorial assumes that you have a GCP project called `sap-kyma-jellyfish-dev
 7. Use the following setup in conjunction with Kyma CLI:
 
    ```sh
-   kyma alpha create module kyma-project.io/module/template 0.0.1 . -w -c oauth2accesstoken:$GCR_DOCKER_PASSWORD
+   kyma alpha create module --module-config-file ${module config file} -c oauth2accesstoken:$GCR_DOCKER_PASSWORD
    ```
