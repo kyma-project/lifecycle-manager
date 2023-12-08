@@ -1,6 +1,8 @@
 module github.com/kyma-project/lifecycle-manager
 
-go 1.21
+go 1.21.1
+
+replace github.com/kyma-project/lifecycle-manager/api => ./api
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
@@ -31,6 +33,7 @@ require (
 )
 
 require (
+	github.com/kyma-project/lifecycle-manager/api v0.0.0-00010101000000-000000000000
 	k8s.io/api v0.28.4
 	k8s.io/apiextensions-apiserver v0.28.4
 	k8s.io/apimachinery v0.28.4
