@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/kyma-project/lifecycle-manager/api/v1beta2"
+	"github.com/kyma-project/lifecycle-manager/pkg/channel"
 )
 
 const (
@@ -23,6 +24,8 @@ var (
 )
 
 func ExtractShootID(kyma *v1beta2.Kyma) (string, error) {
+	_ = channel.ErrInvalidRemoteModuleConfiguration
+
 	shoot := ""
 	shootFQDN, keyExists := kyma.Annotations[v1beta2.SKRDomainAnnotation]
 	if keyExists {
