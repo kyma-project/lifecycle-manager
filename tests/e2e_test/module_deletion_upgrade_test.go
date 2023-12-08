@@ -73,7 +73,7 @@ var _ = Describe("Kyma Module Upgrade Under Deletion", Ordered, func() {
 					"v1alpha1", "Sample", runtimeClient).
 				Should(Equal(ErrDeletionTimestampFound))
 
-			By("And Module Operator Deployment is not removed on SKR cluster")
+			By("And Module Operator Deployment is not removed on SKR Cluster")
 			Consistently(CheckIfExists).
 				WithContext(ctx).
 				WithArguments("template-operator-v1-controller-manager", "template-operator-system",
